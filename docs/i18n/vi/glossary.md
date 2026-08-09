@@ -1014,3 +1014,36 @@ re-derives them.
 - ETA / time-left inside `{detail}` is formatted elsewhere and arrives as the settled `còn {duration}`; these keys pass
   it through untouched.
 - No `sameAsSourceJustification` needed: all nine values differ from English.
+
+## Lời nhắc xung đột đứng riêng: dòng ngữ cảnh + ghi chú tạm dừng (2026-08-09)
+
+Two keys for the standalone conflict prompt (`fileOperations.operationConflict.context` / `.pausedNote`), the surface
+that asks which operation a name clash belongs to. Both are edits of settled siblings, not fresh translations:
+`queue.row.label` gives the verb arms, `queue.chip.tooltip` gives the destination preposition, `queue.row.status` gives
+the paused word.
+
+- **The progress sentence keeps `vào` for BOTH copy and move, even though macOS splits them.** Finder's own progress
+  lines are `Đang sao chép “thứ gì đó” vào “nơi nào đó”` (AirDrop, Tier 1, exact shape) but
+  `Đang di chuyển “^1” đến “^2”` / `Đang di chuyển ^0 mục đến “^2”` for a move. The catalog already settled one
+  preposition for a destination folder (`vào`, and `queue.chip.tooltip` renders ` · vào {destination}` for every
+  operation kind), so the two arms stay parallel rather than forking on a distinction the rest of the catalog doesn't
+  draw. `high` (catalog-consistent). `đến` stays the `transferDialog.targetGroupTitle` heading word (`Đến`).
+- **"Working in {destination}" → `Đang xử lý trong {destination}`** · `trong` (in), not `vào` (into): the generic arm
+  says work is happening INSIDE the folder, not moving into it. `trong thư mục này` is the catalog's own shape
+  (`shared.conflictExistsFile`). `high`.
+- **`archive_edit` deliberately says two different things.** With a destination it names the archive itself
+  (`Đang chỉnh sửa {destination}` → "Đang chỉnh sửa ảnh.zip"); without one it keeps `queue.row.label`'s generic
+  `Đang chỉnh sửa tệp nén`. English draws the same split, and Vietnamese needs no article to carry it. `high`.
+- **Subject-drop is right here, verb-drop is not.** Every arm is `Đang` + a real verb, so each reads as a complete
+  clause under the title `Tệp đã tồn tại`; the elided subject is what macOS's own progress lines elide too. This is the
+  vi trap in `docs/i18n/translation-learnings.md` (an elided word still reads fluent), so re-read each of the eight
+  formatted outputs standalone before shipping a change here.
+- **"Everything else is paused until you answer." → `Các thao tác khác đã tạm dừng cho đến khi bạn trả lời.`** · NOT a
+  literal `Mọi thứ khác`: in Vietnamese that scopes to the whole app and reads as "Cmdr is frozen", which is the one
+  thing this reassuring line must not say. What actually stops is the rest of the operation queue, so the line names it
+  with the settled head noun `thao tác` plus `Các` (the definite-set plural marker, same as `queue.heading`). The state
+  word is `queue.row.status`'s `Đã tạm dừng` verbatim, so the note and the rows the user then opens read alike;
+  `tạm dừng cho đến khi …` is the ordinary vi collocation for a pause with an endpoint. `trả lời` (answer) over
+  `phản hồi` (respond): the glossary reserves `phản hồi` for a machine responding (macOS AppKit "ứng dụng không phản
+  hồi"). `high` (on the parts); `tentative` (on `trả lời` for answering a dialog).
+- No `sameAsSourceJustification` needed: both values differ from English.

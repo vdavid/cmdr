@@ -505,6 +505,14 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Másolás ide: {destination}} move {Áthelyezés ide: {destination}} archive_edit {{destination} szerkesztése} other {Folyamatban itt: {destination}}}} other {{type, select, copy {Másolás} move {Áthelyezés} archive_edit {Archívum szerkesztése} other {Folyamatban}}}}",
+  "@fileOperations.operationConflict.context": {
+    "sourceHash": "ff68b4d"
+  },
+  "fileOperations.operationConflict.pausedNote": "Minden más szüneteltetve van, amíg nem válaszolsz.",
+  "@fileOperations.operationConflict.pausedNote": {
+    "sourceHash": "1f6444b"
+  },
   "fileOperations.transferProgress.progressBytes": "Bájtok",
   "@fileOperations.transferProgress.progressBytes": {
     "sourceHash": "4d80003"

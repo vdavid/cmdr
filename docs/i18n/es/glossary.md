@@ -993,3 +993,29 @@ and its feminine agreement come from § Cola de operaciones: el cambio de nombre
   `fileOperations.transferProgress.etaRemaining` = "Queda {duration}" (or from `queue.row.status`'s paused arm, "En
   pausa"). If that key ever changes shape, the tooltip's tail changes with it · high
 - No `sameAsSourceJustification` needed: all nine values differ from English.
+
+## El aviso de conflicto de la ventana principal (2026-08-09)
+
+Two keys (`fileOperations.operationConflict.context` / `.pausedNote`), the line under the title "El archivo ya existe"
+and the quiet note under the buttons.
+
+- **The context line is `queue.row.label`'s gerund arm plus the chip's destination clause, nothing re-derived** ·
+  `Copiando` / `Moviendo` / `Trabajando` come from `queue.row.label` verbatim, and ` a {destination}` from
+  `queue.chip.tooltip`, so the chip, the row, and the prompt name one running operation the same way · high
+  (consistency-settled)
+- **`a {destination}` holds even with no direct object in the sentence** · macOS Finder's copy-progress pair is split
+  (`CP4_V1` "Copiando “^1” **en** “^2”" vs `MV4_V1` "Trasladando “^1” **a** “^2”"), and Nautilus uses `a` for both
+  ("Copiando %'d archivos **a** «%s»"). Taking `en` for the copy arm alone would make the copy sentence disagree with
+  the chip tooltip for the same operation, so `a` wins for both arms, as it did in the chip · high. The residual: with
+  no object in the slot, "Copiando a Ana" can momentarily read as personal-`a`. Rejected the safer "Copiando a la
+  carpeta {destination}": `getFolderName()` can hand this a volume root, an SMB share name, or `/`, so "la carpeta"
+  would over-claim · tentative (flagged for review)
+- **"Working in {destination}" → `Trabajando en {destination}`** · English's `in` is locative here, not directional, and
+  the arm covers operation kinds whose destination may not be a folder, so `en` stays and no noun is added · high
+- **The two `archive_edit` arms stay different on purpose** · with a destination the arm names the zip itself
+  (`Editando {destination}` → "Editando fotos.zip"); without one it says `Editando un archivo comprimido` (the article
+  is what a sentence needs and the bare `queue.row.label` badge doesn't) · high
+- **"Everything else is paused until you answer." → `Todo lo demás está en pausa hasta que respondas.`** · `en pausa` is
+  `queue.row.status`'s `paused` arm verbatim, so the note and the rows it describes use one word for one state; "hasta
+  que + subjunctive" matches the catalog's own `tú` pattern ("hasta que la elimines", "hasta que lo desbloquees"), and
+  it promises the resume rather than warning about the stop · high

@@ -899,3 +899,39 @@ its masculine gender are unchanged: see § Operation queue (2026-08-08).
   does, use `Fortschrittsanzeige` (settled `Fortschritt` + macOS's `-anzeige`/`Fortschrittsfenster` pattern) ·
   tentative.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Standalone conflict prompt: the operation-context line (2026-08-09)
+
+Two keys (`fileOperations.operationConflict.context` / `.pausedNote`), the line above the file comparison naming which
+background operation is asking, and the note under the buttons. Head noun, verbs, and `Angehalten` are unchanged; what
+was new is how the destination gets INSIDE the passive clause.
+
+- **Destination inside the action label → verb-final `Wird nach {destination} kopiert` / `… bewegt`** · macOS Finder de
+  ships exactly this frame in its own copy-progress status line (`Finder/ProgressStatusView.json` 104.title: "Es wird
+  „etwas“ nach „etwas“ kopiert."), GNOME Nautilus de confirms it ("»%s« wird nach »%s« kopiert", "… verschoben"), and
+  `nach` is the catalog's settled destination preposition (`transferDialog.targetGroupTitle` = `Nach`,
+  `queue.chip.tooltip` " · nach {destination}", Total Commander de `663="NACH: "`) · high. The placeholder sits after
+  its own preposition, so an arbitrary folder name needs no article and no case ending. ❌ Not the English word order
+  `Wird kopiert nach {destination}`: that trailing form is the marked one § Corner progress chip already rejected. The
+  chip has to split the fact out onto its own `·` because its `{label}` arrives pre-composed; a per-arm sentence can
+  integrate it properly, so it does.
+- **`bewegen` takes `nach` here, not macOS's `in`** · macOS pairs `bewegen` with `in` + accusative ("in „^1“ bewegt"),
+  but that frame wants a definite target ("in den Papierkorb"), while `nach X bewegt` is attested too (AppKit
+  `TouchBar.json` "%1$@ nach %2$@ an den Index %3$ld bewegt") · high. One preposition for copy and move keeps this line
+  parallel with the chip tooltip and the transfer dialog's `Von`/`Nach` headings, which never split by verb.
+- **`archive_edit` names the archive as the subject → `{destination} wird bearbeitet`** (generic arm:
+  `Ein Archiv wird bearbeitet`) · the sibling `queue.row.label` arm is the article-less generic
+  `Archiv wird bearbeitet`; the English deliberately splits "Editing archive" (queue) from "Editing an archive" (here),
+  so the German mirrors the article the way the Ask Cmdr tool pairs do (`Ein Ordner wird aufgelistet`) · high.
+  Subject-first keeps `{destination}` nominative, so an arbitrary archive name needs no inflection.
+- **"Working in {destination}" → impersonal passive `In {destination} wird gearbeitet`** · tentative. No pile source
+  names this state (the fallback arm covers operation kinds that don't exist yet), but the impersonal passive is
+  ordinary German ("Hier wird gearbeitet") and keeps the arm inside the `Wird …` family; the bare fallback arm stays the
+  sibling's `In Arbeit`. ❌ Not `Arbeitet in {destination}`: German isn't pro-drop, so a bare finite verb has no
+  subject.
+- **"Everything else is paused until you answer." → `Alles andere ist angehalten, bis du antwortest.`** · `angehalten`
+  is the settled `queue.row.status` paused arm (macOS "wurde angehalten"), and `…, bis du {Präsens}` is the catalog's
+  own frame (`errors` "bis du es entsperrst", `settings` "bis du ihn löschst") · high. State passive `ist angehalten`,
+  not `wurde angehalten`: the line describes the situation now, and it reassures rather than reports an event.
+  `antworten` is the settled respond verb (`transferProgress.stallWaitingDestination` "eine Antwort vom Ziel").
+- No `sameAsSourceJustification` needed: both values differ from English.

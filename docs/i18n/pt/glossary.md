@@ -836,3 +836,32 @@ main Terms list (**operação** / **Fila de operações**); this section only ad
   `crashReporter.dialog.dismiss` and `lowDiskSpace.toast.closeTooltip` still render "Dismiss" as **Descartar**, against
   the catalog's five "Dispensar"; and `queue.empty.body` still lists deletes as **exclusões**, against the settled
   delete family (Apagar / Apagando / Apagou / apagamento). Worth one reconciliation pass each.
+
+### Standalone conflict-prompt terms (`fileOperations.operationConflict.context`/`pausedNote`, 2026-08-09)
+
+The main window now hosts the name-clash prompt for a backgrounded operation, so a context line under the title
+`O arquivo já existe` names which operation is asking, and a quiet note explains why the rest of the queue stopped.
+
+- Progress line with a destination · **Copiando para {destination}** / **Movendo para {destination}** · macOS Finder
+  pt-BR ships exactly this frame for its own copy/move progress (`CP4_V1` "Copiando “^1” para “^2”", `CP4_V2` "Copiando
+  ^0 itens para “^2”", `MV4_V1`/`MV4_V2` the same for Movendo) · confirmed. The gerund head comes from the sibling
+  `queue.row.label` arms, the preposition **para** from `queue.chip.tooltip`'s ` · para {destination}`. `{destination}`
+  stays UNQUOTED (Finder quotes it, the catalog's own chip tooltip doesn't) and takes no article, since a folder name is
+  an uncontrolled insert.
+- Generic "Working (in X)" arm · **Operação em andamento em {destination}** / **Operação em andamento** · the bare
+  `queue.row.label` `other` arm "Em andamento" is a status label and strands the reader in a full sentence under a
+  dialog title, so the settled head noun **operação** is supplied. macOS Finder pt-BR carries the same shape verbatim
+  ("…ainda há uma operação em andamento em um dispositivo iOS", `LocalizableMerged.json`), so the "em andamento em X"
+  stacking is idiomatic, not a repetition slip · high.
+- `archive_edit` splits by design: the with-destination arm names the archive (**Editando {destination}**, e.g.
+  "Editando fotos.zip"), the no-destination arm stays generic with an article (**Editando um arquivo compactado**),
+  where the queue row's bare label is article-less. Same settled verb/noun (`Editando` + `arquivo compactado`).
+- "Everything else is paused until you answer." · **Todo o resto está pausado até você responder.** · reuses the settled
+  status adjective **Pausado** (`queue.row.status` `paused`, glossary pause row); "até você responder" is the pt-BR
+  personal infinitive and keeps the explicit **você** (dropping it is a pt-PT tell) · high. Reassuring, no error/failed
+  words.
+- Regional-variant check against the style guide's pt-PT tell list (ficheiro, `estar a` + infinitive, consoante,
+  proclisis before an infinitive, Rever, alterar o nome, a dropped você), plus U+2019 and double-space scans: zero hits.
+  Brazilian markers: the gerunds **Copiando / Movendo / Editando** (never "a copiar"), **arquivo compactado** (never
+  "ficheiro"), and the retained **você**.
+- No `sameAsSourceJustification` needed: both values differ from English.

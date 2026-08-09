@@ -996,3 +996,31 @@ auto-dismisses) with a matching failed row carrying a Dismiss button. The head n
   English key's shape, not in one locale.
 
 No `sameAsSourceJustification` needed: all nine values differ from English.
+
+## Standalone conflict prompt (2026-08-09; `fileOperations.operationConflict.context`/`.pausedNote`)
+
+The main-window prompt a BACKGROUNDED operation raises on a name clash. The context line sits directly under the
+already-shipped title `Filen finns redan`, so it has to read as running text, not as a queue row.
+
+- **The context arms are `queue.row.label`'s verbs plus a destination clause, not a fresh translation.** Swedish's queue
+  arms are finite present-tense verbs (`Kopierar`, `Flyttar`), not nominalizations, so they take the clause without
+  restructuring, and macOS Finder ships the resulting sentence verbatim: "Kopierar ”^1” till ”^2”" / "Flyttar ”^1” till
+  ”^2”" (`sv/macOS/Finder/LocalizableMerged.json`). Preposition `till` is the one already settled in
+  `queue.chip.tooltip` (` · till {destination}`). `{destination}` stays UNQUOTED here (English and the chip tooltip are
+  both unquoted), even though Finder quotes its own `^2`. `high`.
+- **The `other` type arm takes `i`, not `till`: `Arbetar i {destination}`** · the fallback names where work is
+  HAPPENING, not where items are going, so the destination is a location, and Swedish marks that with `i`. Using `till`
+  there would promise a transfer the operation may not be doing. `high`.
+- **`archive_edit` splits from the queue row on purpose: `Redigerar {destination}` (names the archive) vs
+  `Redigerar ett arkiv` (no destination to name)** · the queue row's generic `Redigerar arkiv` stays as it is; this key
+  needs the indefinite article in its `other` arm because it's a sentence, not a label. `arkiv` is neuter, so `ett`
+  (matching this catalog's own "ett arkiv" in `errors`/`fileExplorer`/`operationLog`/`settings`). ⚠️ The
+  Archive-password section above calls `arkiv` common-gender; that holds only for that dialog's `den` pronoun choice,
+  not for the noun, which takes `ett`/`arkivet`. `high`.
+- **"Everything else is paused until you answer." → `Allt annat är pausat tills du svarar.`** · `pausat` is the settled
+  queue status word `Pausad` (macOS Finder "Pausad", "Kopiering av ”^0” har pausats") in NEUTER agreement, because the
+  subject is `allt annat`; keeping the same root is what makes the note and the queue rows read as one state.
+  `tills du svarar` over `tills du har svarat`: the English is a simple present, and the shorter form stays calm under a
+  button row. `high` for `pausat`, `tentative` for the `tills du svarar` clause (no pile hit for the idiom; composed).
+
+No `sameAsSourceJustification` needed: both values differ from English.

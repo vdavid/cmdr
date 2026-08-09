@@ -503,6 +503,14 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {正在拷贝到“{destination}”} move {正在移动到“{destination}”} archive_edit {正在编辑“{destination}”} other {正在“{destination}”中进行操作}}} other {{type, select, copy {正在拷贝} move {正在移动} archive_edit {正在编辑压缩文件} other {正在处理}}}}",
+  "@fileOperations.operationConflict.context": {
+    "sourceHash": "ff68b4d"
+  },
+  "fileOperations.operationConflict.pausedNote": "在你做出选择之前，其余操作会一直暂停。",
+  "@fileOperations.operationConflict.pausedNote": {
+    "sourceHash": "1f6444b"
+  },
   "fileOperations.transferProgress.progressBytes": "字节",
   "@fileOperations.transferProgress.progressBytes": {
     "sourceHash": "4d80003"

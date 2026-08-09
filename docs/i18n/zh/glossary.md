@@ -965,3 +965,38 @@ classifier `项` all come from the operation-queue section above; this section o
 - **time left, in the tooltip's `{detail}` slot** · nothing to settle: the runtime fills it from the already-settled
   `fileOperations.transferProgress.etaRemaining` = `剩余 {duration}`, or from `queue.row.status`'s `已暂停` · n/a
 - No `sameAsSourceJustification` needed: all nine values differ from English.
+
+### Standalone conflict prompt (`fileOperations.operationConflict.context`/`.pausedNote`, 2026-08-09)
+
+The context line under the `文件已存在` title of the main-window conflict prompt, plus the quiet note under its buttons.
+The context line is a `select` VARIANT of `queue.row.label`, so its arms start from that key's settled `正在[动词]`
+forms and only add the destination clause.
+
+- **A destination attached directly to a transfer verb in running text** · `正在拷贝到“{destination}”` /
+  `正在移动到“{destination}”` · this is the first place in the zh catalog where the destination is the VERB'S COMPLEMENT
+  rather than its own dot-separated fact (`queue.chip.tooltip` keeps it as ` · 目标：“{destination}”`, and every other
+  surface names it with the noun `目标位置`). Copy takes macOS Finder zh-CN verbatim (`CP3` `Preparing to copy to “^0”`
+  → `正在准备拷贝到“^0”`, `CP4_V1` → `正在将“^1”拷贝到“^2”`). Move takes `移动到`, NOT Finder's contracted `移到` (`MV3`
+  `正在准备移到“^0”`): `queue.row.label`'s settled arm is `正在移动`, and appending `到` keeps the prompt reading as the
+  same operation the queue row named, which is the whole job of this line. The file-manager family agrees (Nautilus
+  zh-CN `Moving “%s” to “%s”` → `正在移动“%s”到“%s”`; Double Commander `正在将 "%s" 移动到 "%s"`; Total Commander
+  `复制到`/`移动到`). Finder's `移到` stays reserved for the fixed idiom `移到废纸篓` · `high`
+- **The destination name is wrapped in full-width `“…”`** · same reason as the chip tooltip: a folder name arrives as
+  Han (`备份`) or Latin (`Backup`) and no fixed spacing suits both, while macOS Finder zh-CN quotes exactly this name in
+  exactly these strings (`拷贝到“^2”`, `移到“^2”`, `已暂停拷贝“^0”`). Quotes are kept even in running text under a title
+  · `high`
+- **`archive_edit` splits by design, and the split is real in Chinese too** · `hasDestination: yes` names the archive
+  itself, `正在编辑“{destination}”` (Finder's file-name quoting); the `other` arm keeps `queue.row.label`'s generic
+  `正在编辑压缩文件`. Never collapse the two · `high`
+- **"Working in {destination}" (the generic `other` arm with a destination)** · `正在“{destination}”中进行操作` · the
+  sibling's bare `正在处理` is idiomatic ALONE as a status label but strands the sentence once a locative is attached
+  (`处理` wants an object), so the arm switches to the head noun `操作` with `进行`, which the queue's own running
+  status `进行中` already carries. The no-destination arm stays the sibling's `正在处理` verbatim; the two never render
+  together · `high`
+- **"Everything else is paused until you answer." → `在你做出选择之前，其余操作会一直暂停。`** · shaped on the catalog's
+  own `errors.listing.archiveNeedsPassword.explanation` (`在你解锁之前，里面的内容会一直锁着。`): fronted `在你 V 之前`,
+  then `会一直…` for a state that lasts until the boundary and quietly implies it ends there. `暂停` is
+  `queue.row.status`'s paused word. `其余` (the rest of a known set) carries "everything else" without a `都` pile.
+  `做出选择` over a literal `回答`: the Chinese title `文件已存在` is a STATEMENT, not a question, so "answer" has
+  nothing to answer, while the buttons below are literally a choice · `high`
+- No `sameAsSourceJustification` needed: both values differ from English.

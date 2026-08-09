@@ -506,6 +506,14 @@
     "sourceHash": "c591f55",
     "sameAsSourceJustification": "Style guide glossary: rollback -> Rollback (kept loanword; MS terminology keeps 'Rollback', standard DE dev/file-op term). Matches the existing rollback strings in the de catalog."
   },
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Wird nach {destination} kopiert} move {Wird nach {destination} bewegt} archive_edit {{destination} wird bearbeitet} other {In {destination} wird gearbeitet}}} other {{type, select, copy {Wird kopiert} move {Wird bewegt} archive_edit {Ein Archiv wird bearbeitet} other {In Arbeit}}}}",
+  "@fileOperations.operationConflict.context": {
+    "sourceHash": "ff68b4d"
+  },
+  "fileOperations.operationConflict.pausedNote": "Alles andere ist angehalten, bis du antwortest.",
+  "@fileOperations.operationConflict.pausedNote": {
+    "sourceHash": "1f6444b"
+  },
   "fileOperations.transferProgress.progressBytes": "Bytes",
   "@fileOperations.transferProgress.progressBytes": {
     "sourceHash": "4d80003",

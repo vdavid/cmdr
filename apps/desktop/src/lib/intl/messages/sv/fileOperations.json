@@ -505,6 +505,14 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Kopierar till {destination}} move {Flyttar till {destination}} archive_edit {Redigerar {destination}} other {Arbetar i {destination}}}} other {{type, select, copy {Kopierar} move {Flyttar} archive_edit {Redigerar ett arkiv} other {Arbetar}}}}",
+  "@fileOperations.operationConflict.context": {
+    "sourceHash": "ff68b4d"
+  },
+  "fileOperations.operationConflict.pausedNote": "Allt annat är pausat tills du svarar.",
+  "@fileOperations.operationConflict.pausedNote": {
+    "sourceHash": "1f6444b"
+  },
   "fileOperations.transferProgress.progressBytes": "Byte",
   "@fileOperations.transferProgress.progressBytes": {
     "sourceHash": "4d80003"

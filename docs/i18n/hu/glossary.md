@@ -1184,3 +1184,37 @@ either wraps badly, the fix is the shorter macOS variant `a Kukába helyezést` 
 `Áthelyezés a Kukába`), not a new failure wording.
 
 No `sameAsSourceJustification` needed: all nine values differ from English.
+
+Settled while translating the standalone conflict prompt (2 keys in `fileOperations.json`, 2026-08-09). The prompt is
+hosted by the main window when a backgrounded operation hits a name clash, so a context line names which operation is
+asking and a quiet note explains why the rest of the queue stopped.
+
+- **`operationConflict.context`: the four `hasDestination: yes` arms keep the settled `queue.row.label` verbal nouns and
+  add the destination as a deictic colon clause, never as a case suffix** · `Másolás ide: {destination}` /
+  `Áthelyezés ide: {destination}` · macOS Finder Tier 1 (`Áthelyezés ide: %@`, plus the menu items `Másolás ide`,
+  `Áthelyezés ide…`) and Nautilus (`Fájlok másolása ide: „%s”…`, `„%s” másolása ide: „%s”`) both ship this exact
+  verb-then-`ide:` shape, and it is already the catalog's own rendering in `queue.chip.tooltip`
+  (` · ide: {destination}`) · high. Unquoted, matching English and the chip tooltip; macOS quotes the name in this
+  shape, but mixing quoted and unquoted arms inside one select would be the worse defect.
+- **`ide:` (illative, "to") vs `itt:` (locative, "in") tracks English's own preposition split across the arms** ·
+  copy/move say "to {destination}" so they take `ide:`; the `other` arm says "Working **in** {destination}" (work
+  happening inside a folder, not items going into one) so it takes `Folyamatban itt: {destination}`, the catalog's
+  settled `itt: {placeholder}` neutral slot (`errors.*` `nem található itt: {hostName}`,
+  `Bármikor visszavonhatod itt: {systemSettings}`) on top of the sibling's `Folyamatban` · high.
+- **An uncontrolled placeholder can sit in the POSSESSOR slot of a possessive verbal-noun phrase, which needs no suffix
+  on it at all**: "Editing {destination}" (the archive itself) → `{destination} szerkesztése` · the possessor is
+  unmarked in Hungarian, so only the head noun inflects (`-e`), and the pile ships the shape with a runtime name in that
+  slot (macOS `„^0” másolása szüneteltetve lett`, Nautilus `„%s” másolása ide: „%s”`; Thunar/TC `Fájlnév szerkesztése`,
+  `Eszközsor fájl szerkesztése`) · high. This is a third suffix-dodge alongside the postposition and the `itt:`/`ide:`
+  colon slot already recorded in `style.md` § Notes and decisions, and the only one that keeps the value in subject
+  position. No article, since `a`/`az` would have to agree with an unknown first sound. The generic `other`-branch arm
+  stays the sibling's `Archívum szerkesztése` ("Editing an archive"), so the English yes/other distinction survives.
+- **`operationConflict.pausedNote` "Everything else is paused until you answer." →
+  `Minden más szüneteltetve van, amíg nem válaszolsz.`** · `szüneteltetve` is lifted verbatim from the
+  `queue.row.status` `paused` arm so the prompt and the queue rows word one state with one word (macOS confirms it in
+  running prose: `A(z) „^0” másolása szüneteltetve lett`); the trailing `amíg nem …` clause is macOS Tier 1
+  (`Tartsa csatlakoztatva az eszközt, amíg a törlés be nem fejeződik.`) and needs no `addig` correlative; informal `te`
+  (`válaszolsz`) per Formality; `minden más` is already the catalog's phrase (`zárj be minden más appot`) · high.
+  Deliberately the stative `szüneteltetve van` over the intransitive `szünetel`: the latter is correct Hungarian but
+  would show the user a different word than the row they are being told about.
+- No `sameAsSourceJustification` needed: both values differ from English.

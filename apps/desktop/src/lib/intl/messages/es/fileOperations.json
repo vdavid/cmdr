@@ -504,6 +504,14 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Copiando a {destination}} move {Moviendo a {destination}} archive_edit {Editando {destination}} other {Trabajando en {destination}}}} other {{type, select, copy {Copiando} move {Moviendo} archive_edit {Editando un archivo comprimido} other {Trabajando}}}}",
+  "@fileOperations.operationConflict.context": {
+    "sourceHash": "ff68b4d"
+  },
+  "fileOperations.operationConflict.pausedNote": "Todo lo demás está en pausa hasta que respondas.",
+  "@fileOperations.operationConflict.pausedNote": {
+    "sourceHash": "1f6444b"
+  },
   "fileOperations.transferProgress.progressBytes": "Bytes",
   "@fileOperations.transferProgress.progressBytes": {
     "sourceHash": "4d80003",

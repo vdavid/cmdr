@@ -506,6 +506,14 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Copie vers {destination}} move {Déplacement vers {destination}} archive_edit {Modification de l''archive {destination}} other {Opération en cours dans {destination}}}} other {{type, select, copy {Copie en cours} move {Déplacement en cours} archive_edit {Modification de l''archive} other {Opération en cours}}}}",
+  "@fileOperations.operationConflict.context": {
+    "sourceHash": "ff68b4d"
+  },
+  "fileOperations.operationConflict.pausedNote": "Tout le reste est en pause tant que vous n''avez pas répondu.",
+  "@fileOperations.operationConflict.pausedNote": {
+    "sourceHash": "1f6444b"
+  },
   "fileOperations.transferProgress.progressBytes": "Octets",
   "@fileOperations.transferProgress.progressBytes": {
     "sourceHash": "4d80003"

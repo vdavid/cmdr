@@ -504,6 +504,14 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Đang sao chép vào {destination}} move {Đang di chuyển vào {destination}} archive_edit {Đang chỉnh sửa {destination}} other {Đang xử lý trong {destination}}}} other {{type, select, copy {Đang sao chép} move {Đang di chuyển} archive_edit {Đang chỉnh sửa tệp nén} other {Đang xử lý}}}}",
+  "@fileOperations.operationConflict.context": {
+    "sourceHash": "ff68b4d"
+  },
+  "fileOperations.operationConflict.pausedNote": "Các thao tác khác đã tạm dừng cho đến khi bạn trả lời.",
+  "@fileOperations.operationConflict.pausedNote": {
+    "sourceHash": "1f6444b"
+  },
   "fileOperations.transferProgress.progressBytes": "Byte",
   "@fileOperations.transferProgress.progressBytes": {
     "sourceHash": "4d80003"

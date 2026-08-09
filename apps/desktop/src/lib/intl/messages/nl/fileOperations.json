@@ -505,6 +505,14 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Bezig met kopiëren naar {destination}} move {Bezig met verplaatsen naar {destination}} archive_edit {Bezig met {destination} bewerken} other {Bezig in {destination}}}} other {{type, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} archive_edit {Bezig met archief bewerken} other {Bezig}}}}",
+  "@fileOperations.operationConflict.context": {
+    "sourceHash": "ff68b4d"
+  },
+  "fileOperations.operationConflict.pausedNote": "Al het andere is gepauzeerd totdat je antwoordt.",
+  "@fileOperations.operationConflict.pausedNote": {
+    "sourceHash": "1f6444b"
+  },
   "fileOperations.transferProgress.progressBytes": "Bytes",
   "@fileOperations.transferProgress.progressBytes": {
     "sourceHash": "4d80003",

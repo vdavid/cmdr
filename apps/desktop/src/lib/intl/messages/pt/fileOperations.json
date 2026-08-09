@@ -505,6 +505,14 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Copiando para {destination}} move {Movendo para {destination}} archive_edit {Editando {destination}} other {Operação em andamento em {destination}}}} other {{type, select, copy {Copiando} move {Movendo} archive_edit {Editando um arquivo compactado} other {Operação em andamento}}}}",
+  "@fileOperations.operationConflict.context": {
+    "sourceHash": "ff68b4d"
+  },
+  "fileOperations.operationConflict.pausedNote": "Todo o resto está pausado até você responder.",
+  "@fileOperations.operationConflict.pausedNote": {
+    "sourceHash": "1f6444b"
+  },
   "fileOperations.transferProgress.progressBytes": "Bytes",
   "@fileOperations.transferProgress.progressBytes": {
     "sourceHash": "4d80003",

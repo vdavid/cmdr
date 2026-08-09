@@ -1200,3 +1200,38 @@ REVIEW FLAGS (corner-chip + failure-notice pass):
   description asks us to keep.
 - **`Wis alles`** can read as "clear the whole list" rather than "clear the rows that couldn't finish", which is the
   same ambiguity English's "Dismiss all" carries. Kept deliberately.
+
+## Het losse conflictvenster (`fileOperations.operationConflict.*`, 2026-08-09)
+
+Two keys for the standalone conflict prompt the main window hosts when a backgrounded operation hits a name clash: the
+context line under the title `Bestand bestaat al`, and the quiet note under the buttons.
+
+- **A destination clause on the `Bezig met <infinitief>` frame goes AFTER the infinitive: `Bezig met kopiëren naar X`**,
+  never `Bezig met naar X kopiëren` · a PP extraposes past a Dutch bare infinitive while a direct object may not, and
+  `queue.chip.tooltip` already puts its `naar {destination}` clause after the `queue.row.label` arm (there as its own
+  dot-separated fact) · high. ⚠️ macOS Finder's own progress titles use a DIFFERENT frame, verb-final with the
+  destination in the middle (`nl/macOS/Finder/LocalizableMerged.json`: `CP4_V1` "Copying “^1” to “^2”" → "'^1' naar '^2'
+  kopiëren", `MV4_V1` → "'^1' naar '^2' verplaatsen"). Cmdr does not follow it here: the whole job of this line is to
+  let the user match the prompt to a row in the `Bewerkingenwachtrij`, so the row's own `Bezig met …` head has to
+  survive verbatim. Finder's form stays the model only for keys that have no queue-row sibling.
+- **A direct object DOES sit before the infinitive**, so the archive_edit arm that names the archive is
+  `Bezig met {destination} bewerken` (the sibling `queue.row.label` arm with its generic `archief` swapped for the name)
+  · high. The no-destination arm keeps the sibling verbatim, `Bezig met archief bewerken`; English's indefinite article
+  ("Editing an archive") is dropped, because `Bezig met een archief bewerken` reads heavier than the label the user just
+  saw on the queue row.
+- **"Working in {destination}" → `Bezig in {destination}`** · the settled `other` arm `Bezig` (queue.row.status running,
+  queue.row.label fallback) plus a plain locative `in`, which is what Dutch takes for being at work inside a folder ·
+  high.
+- **"until you answer" → `totdat je antwoordt`** · `totdat je …` is this catalog's settled shape for the construction
+  (`errors.listing.archiveNeedsPassword.explanation` "totdat je het ontgrendelt", `indexing.staleDialog.body` "totdat je
+  opnieuw doorzoekt", `settings.mediaIndex.reclaim.line`), and `totdat` is attested in `nl/macOS/` · high. Microsoft's
+  `answer` (Verb) → `beantwoorden` is transitive and would need an object; the intransitive `antwoorden` fits a prompt
+  waiting on the user. ❌ NOT `reageren`, which this catalog reserves for a device or share answering
+  (`transferProgress.stallWaiting*` "Wachten tot … reageert").
+- **"Everything else is paused" → `Al het andere is gepauzeerd`** · `gepauzeerd` is the queue's own state word
+  (`queue.row.status` paused arm, `transferProgress.titlePaused`), and macOS Finder models the exact copula (`NE110`
+  "Copying “^0” has paused" → "Kopiëren van '^0' is gepauzeerd") · high.
+- No `sameAsSourceJustification` needed: both values differ from English.
+
+REVIEW FLAG: `Bezig in {destination}` is the terse fallback arm and reads slightly clipped on its own; the fuller
+`Bezig in de map {destination}` is wrong whenever the operand isn't a folder, so the short form stands.

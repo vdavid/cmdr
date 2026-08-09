@@ -1195,3 +1195,43 @@ Phrasing notes for this pass:
     arms to the `queue.row.label` nouns so the toast and the row agree, and that row says "Placement dans la corbeille".
   - The chip itself only ever shows `queue.row.label` / `queue.row.status`, which this pass didn't touch, so the ~80 px
     chip carries no new risk.
+
+## The standalone conflict prompt (2026-08-09, `fileOperations.operationConflict.{context,pausedNote}`)
+
+The context line under the dialog title `Le fichier existe déjà`, naming which background operation is asking, plus the
+quiet note under the buttons. Both are ICU, so apostrophes are doubled. The verbal nouns come from `queue.row.label` and
+the destination preposition from `queue.chip.tooltip`; nothing here re-derives them.
+
+- **A bare verbal noun needs `en cours` to stand as a line; one with a complement doesn''t.** `Copie vers Backup` and
+  `Modification de l''archive photos.zip` read as running text under the title, but a lone `Copie` reads as a row label,
+  so the no-destination arms take the catalog''s progress qualifier: `Copie en cours` / `Déplacement en cours` (the
+  shape of `transferProgress.titleActive`, "Copie en cours..."). English needs no such split, because "-ing" is
+  progressive on its own; don''t "fix" the asymmetry between the two branches · high.
+- **"Copying/Moving to {destination}" → `Copie vers {destination}` / `Déplacement vers {destination}`** · `vers` is the
+  settled destination preposition (`queue.chip.tooltip`), Tier-1 attested in exactly this progress-line shape by macOS
+  Finder ("Copie de « ^1 » vers « ^2 »", "Préparation de la copie vers « ^0 »", "Déplacement de ^0 éléments vers « ^2
+  »") and by GNOME Nautilus ("Copie de « %s » vers « %s »") · high. The destination stays BARE, no guillemets, as the
+  corner-chip pass settled.
+- **"Editing {destination}" (the archive itself) → `Modification de l''archive {destination}`, NOT
+  `Modification de {destination}`** · `de` before an uncontrolled name would need elision on a vowel-initial one
+  ("d''Archives 2026"), which the catalog can''t do; naming the settled noun `archive` moves the elision onto
+  `l''archive` where it is fixed. Same discipline as the archive-password pass''s gender rule · high. The no-destination
+  arm keeps the sibling verbatim, `Modification de l''archive`: French already reads that as generic, so English''s "an
+  archive" needs no indefinite here.
+- **"Working (in {destination})" → `Opération en cours dans {destination}` / `Opération en cours`** · the settled head
+  noun `opération` (operation-queue rename pass), already in-catalog at `commands.queueShow.description` ("chaque
+  opération en cours et en attente"); `dans` for the locative, since a catch-all operation happens IN a folder, not
+  toward it · high. `queue.row.label`''s bare `En cours` was set aside: as a line under the dialog title it names
+  nothing.
+- **"until you answer" → `tant que vous n''avez pas répondu`** · macOS Tier-1 renders "until" with the
+  `tant que … ne … pas` shape ("Ne déconnectez pas l''appareil tant que l''effacement n''est pas terminé.", "Vos
+  modifications ne seront pas enregistrées tant que le problème ne sera pas résolu."), not "jusqu''à ce que" · high.
+  Full line: `Tout le reste est en pause tant que vous n''avez pas répondu.`, on the settled `paused → en pause`
+  (`queue.row.status`).
+
+Phrasing notes for this pass:
+
+- All 10 branch combinations were rendered with `intl-messageformat` under locale `fr` (both `hasDestination` values ×
+  the five `type` paths, with destinations "Backup", "photos.zip", "Archives 2026", "Été"). Every apostrophe is ASCII
+  (U+0027) and doubled; no `:` `;` `!` `?` `%`, so the spacing rule doesn''t arise.
+- No `sameAsSourceJustification` needed: both values differ from English.
