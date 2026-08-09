@@ -883,11 +883,11 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.operationConflict.context": "{type, select, copy {Copying} move {Moving} other {Working}}{hasDestination, select, yes { to {destination}} other {}}",
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Copying to {destination}} move {Moving to {destination}} archive_edit {Editing {destination}} other {Working in {destination}}}} other {{type, select, copy {Copying} move {Moving} archive_edit {Editing an archive} other {Working}}}}",
   "@fileOperations.operationConflict.context": {
-    "description": "Line above the file comparison in the standalone conflict prompt, naming which operation is asking. That prompt appears when an operation running in the background hits a name clash, and several can be running at once, so this is how the user tells which transfer the buttons below act on. Reads as a present-continuous action followed by where the items are going, for example \"Copying to Backup\". The destination clause disappears when there is nothing to name.",
+    "description": "Line above the file comparison in the standalone conflict prompt, naming which operation is asking. That prompt appears when an operation running in the background hits a name clash, and several can be running at once, so this is how the user tells which transfer the buttons below act on. Reads as a present-continuous action naming where the items are going, for example \"Copying to Backup\". Each operation kind carries its own whole sentence rather than a shared verb slot, so every language can phrase it naturally; the second half covers the case where there is no destination to name. \"Archive\" means a zip file.",
     "placeholders": {
-      "type": "the kind of operation: copy, move, or something else",
+      "type": "the kind of operation: copy, move, archive_edit (changing a zip), or something else",
       "hasDestination": "\"yes\" when the destination folder is known, anything else when it isn't",
       "destination": "the name of the destination folder, for example Backup"
     }
