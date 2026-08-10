@@ -95,9 +95,9 @@ paths aren't reachable via `std::fs`, so no `copyfile` fast path and the legacy 
 pointlessly); `max_concurrent_ops = 1`; `supports_export`/`supports_streaming = true`. `listing_watch_coverage` reports
 the ceiling `start_content_watch` was armed with, and only while that watch is established (`src/watch/DETAILS.md`):
 `EveryWriter` for an archive on local disk, `ThisMachineOnly` for one on an OS-mounted share (the watch is FSEvents on
-the archive's parent directory, blind to other clients there), `None` otherwise.
-`can_watch_listings` stays `false`: that flag drives the generic per-listing FSEvents dir-watcher, which can't watch an
-archive-inner path — the archive self-watches its backing `.zip` instead.
+the archive's parent directory, blind to other clients there), `None` otherwise. `can_watch_listings` stays `false`:
+that flag drives the generic per-listing FSEvents dir-watcher, which can't watch an archive-inner path — the archive
+self-watches its backing `.zip` instead.
 
 **Bulk extract is one-pass for sequential archives.** Extracting a whole subtree from a compressed tar / solid 7z would
 be O(n²) if the copy engine read it entry-by-entry (each `open_read_stream` re-decodes the prefix). It doesn't:

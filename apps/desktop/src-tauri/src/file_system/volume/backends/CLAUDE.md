@@ -5,11 +5,10 @@ checklist live in `../CLAUDE.md` + `../DETAILS.md`.
 
 ## Module map
 
-- `local_posix.rs`, `archive.rs` (a re-export of the `crates/cmdr-archive` crate, zip/tar/7z).
-- `mtp/` (macOS/Linux only): `mod.rs` (the `impl Volume` plus path conversion and the read stream), `scan.rs` (the
-  oracle-aware `scan_for_copy` family, split out like `smb/scan.rs`).
+- `local_posix.rs`, `archive.rs` (a re-export of `crates/cmdr-archive`, zip/tar/7z), `mtp/` (macOS/Linux only:
+  `mod.rs` + `scan.rs`, split like `smb/`).
 - `smb/`: `SmbVolume` over direct async smb2, split into `events`, `state`, `mapping`, `session`, `reconnect`,
-  `streams`, `scan`, `scan_pool`, `volume_impl` (the whole `impl Volume`, since a trait impl can't span files).
+  `streams`, `scan`, `scan_pool`, `volume_impl` (the whole `impl Volume`; a trait impl can't span files).
   `smb_watcher.rs`: background change watcher.
 - `InMemoryVolume` isn't here — needing no host, it rides with the trait in `cmdr-fs`.
 

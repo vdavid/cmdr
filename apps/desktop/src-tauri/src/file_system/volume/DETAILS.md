@@ -220,7 +220,7 @@ The rest of this section is about **read-side** lifetime handling. Which pattern
 
 ### Pattern A: cached session + bounded windows (use when the SDK exposes a stateless partial-read primitive)
 
-If the SDK can read an arbitrary byte range on demand (no held streaming handle), cache the resolved session in your stream struct and issue one bounded read per `next_chunk`. Nothing is held between reads, so there's no lifetime gymnastics, no task, no channel, and no `Drop` to write. **Example: `MtpReadStream`** (`backends/mtp.rs`), which loops mtp-rs's `WindowedDownload::next_window` (one `GetPartialObject64` each).
+If the SDK can read an arbitrary byte range on demand (no held streaming handle), cache the resolved session in your stream struct and issue one bounded read per `next_chunk`. Nothing is held between reads, so there's no lifetime gymnastics, no task, no channel, and no `Drop` to write. **Example: `MtpReadStream`** (`backends/mtp/mod.rs`), which loops mtp-rs's `WindowedDownload::next_window` (one `GetPartialObject64` each).
 
 ```rust
 struct MtpReadStream {

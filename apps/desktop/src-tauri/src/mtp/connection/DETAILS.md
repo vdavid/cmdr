@@ -149,7 +149,7 @@ write-op layer.
 The delete needs a live device/session. If the device just disconnected, the delete fails: we log under
 `target: "mtp_upload"` and move on (the partial lingers, recognizable; nothing we can do with a dead device). A failed
 cleanup never masks the original upload error. Pinned by `upload_failure_deletes_partial_object_on_device` and
-`upload_cancel_deletes_partial_and_surfaces_cancelled` (virtual-mtp tests in `volume/backends/mtp.rs`).
+`upload_cancel_deletes_partial_and_surfaces_cancelled` (virtual-mtp tests in `volume/backends/mtp_test.rs`).
 
 ## Stale parent handle on upload (self-heal + one-shot retry)
 

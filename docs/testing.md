@@ -118,10 +118,10 @@ wait_until_async(Duration::from_secs(5), "recovery to reopen the device", || {
 - Phrase `description` as a noun phrase: it completes "timed out after 2.0s waiting for …".
 - Pick the timeout as a **backstop**, not a guess: far above the real work, so a trip means a regression rather than a
   loaded machine. Never enlarge one to fix a flake; find the missing condition instead.
-- **A `wait_until` longer than the test's nextest cap is dead code.** The global cap is 8 s
-  (`.config/nextest.toml`), and nextest SIGKILLs at it, so a 30 s in-test wait under the default cap can never fail with
-  its own message: the test just dies saying nothing. Writing a generous wait means also giving the test an override
-  whose period exceeds that wait, so the in-test deadline stays the authoritative one and the cap stays a hang backstop.
+- **A `wait_until` longer than the test's nextest cap is dead code.** The global cap is 8 s (`.config/nextest.toml`),
+  and nextest SIGKILLs at it, so a 30 s in-test wait under the default cap can never fail with its own message: the test
+  just dies saying nothing. Writing a generous wait means also giving the test an override whose period exceeds that
+  wait, so the in-test deadline stays the authoritative one and the cap stays a hang backstop.
 - ❌ Don't call the sync one from an async test: `std::thread::sleep` blocks the runtime worker and deadlocks a
   current-thread scheduler. `wait_until_async` measures on tokio's clock, so a `start_paused` runtime auto-advances
   through the wait.

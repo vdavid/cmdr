@@ -122,7 +122,9 @@ async fn a_rewrite_asks_the_host_to_refresh_the_archive_listings() {
         "a volume with no watch must not claim its listings are watched"
     );
 
-    fixture.volume.start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
+    fixture
+        .volume
+        .start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
     assert_eq!(
         fixture.volume.listing_watch_coverage(&fixture.zip_path),
         WatchCoverage::EveryWriter,
@@ -151,7 +153,9 @@ async fn a_rewrite_asks_the_host_to_refresh_the_archive_listings() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_temp_rename_swap_still_asks_for_a_refresh() {
     let fixture = WatchedArchive::new(&[stored("a.txt", b"a".to_vec())]);
-    fixture.volume.start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
+    fixture
+        .volume
+        .start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
 
     fixture
         .drive_until_refreshed("a temp+rename inode swap", || {

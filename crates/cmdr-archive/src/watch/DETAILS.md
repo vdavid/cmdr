@@ -62,8 +62,8 @@ idempotent refreshes). `active_watch_count` (incremented on start, decremented i
 `lru_eviction_releases_the_archive_and_its_watch` prove eviction leaks no watcher. `listing_watch_coverage` reports
 coverage only while the handle is present, so a listing never claims freshness the backend can't back; if the watch
 fails to establish (`notify` refuses the path — e.g. a non-local parent), it stays `None`. The handle also carries the
-CEILING the caller armed it with, so an archive on an OS-mounted share reports `ThisMachineOnly` even with a live
-watch: coverage and the watch that earned it are dropped together, and a stale claim can't outlive its watch.
+CEILING the caller armed it with, so an archive on an OS-mounted share reports `ThisMachineOnly` even with a live watch:
+coverage and the watch that earned it are dropped together, and a stale claim can't outlive its watch.
 
 ## Decision: remote archives have NO live watch — freshness is "as of last read"
 

@@ -7,11 +7,11 @@
 //! impl can span files within a crate), so every method stays at
 //! `VolumeManager::…` regardless of which file it's in.
 
-use super::super::{Volume, WatchCoverage};
 use super::super::backends::archive::{
     ARCHIVE_MAGIC_PREFIX_LEN, ArchiveFormat, ArchiveVolume, archive_boundary_candidate, bytes_match_archive_magic,
     confirm_archive_boundary, format_for_path,
 };
+use super::super::{Volume, WatchCoverage};
 use super::VolumeManager;
 use crate::ignore_poison::IgnorePoison;
 use std::path::{Path, PathBuf};
