@@ -16,7 +16,7 @@ wiring), or in `crates/cmdr-archive/DETAILS.md` for `ArchiveVolume`. Only the la
 - **`smb/events.rs` deliberately does NOT own `VolumeConnectionChanged`.** It holds the global `AppHandle`
   (`set_app_handle` from `lib.rs::setup`) and `emit_state_change`, but the typed `tauri_specta::Event` struct and its
   `VolumeConnection` state enum stay in the always-compiled `network/mod.rs`, so `collect_events!` in `ipc.rs` can
-  reference them on EVERY platform. The `smb/` module is `#[cfg]`-gated to macOS and Linux (as is `mtp.rs`); moving the
+  reference them on EVERY platform. The `smb/` module is `#[cfg]`-gated to macOS and Linux (as is `mtp/`); moving the
   struct in here breaks the Windows build of the event collector.
 - **`volume-connection-changed` is backend-neutral, and SMB is only its first emitter.** Any backend that holds a
   session (FTP, S3, SFTP) emits the same event and inherits the frontend's unreachable banner, per-volume backoff, and
@@ -324,7 +324,7 @@ otherwise resolve the id to the SUCCESSOR and mark a perfectly healthy volume `D
 
 - `in_memory_test.rs`: unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)
 - `local_posix_test.rs`: real-FS tests (write ops, symlinks, copy, space info) using `std::env::temp_dir()`
-- `mtp.rs` inline tests: path conversion and capability flags (no device needed)
+- `mtp/` inline tests: path conversion and capability flags (no device needed)
 - `smb_test.rs`: SMB unit tests (no server needed): type mapping (DirectoryEntry→FileEntry, FsInfo→SpaceInfo,
   Error→VolumeError), connection state transitions, path conversion, capability flags, and the channel-backed
   `SmbReadStream` consumer. These run by default.
