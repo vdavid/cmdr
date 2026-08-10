@@ -43,9 +43,11 @@ const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main windo
 const SNAPSHOT_PANE_PATH_HEADER = '[aria-label="Right file pane"] .full-list .header-row'
 
 /**
- * Reads the right pane's active-tab path from the MCP `cmdr://state` resource.
+ * Reads one pane's active-tab path from the MCP `cmdr://state` resource. Both
+ * sides are readable because a failure needs to say WHICH pane the snapshot
+ * landed in, not just that the right one missed it.
  *
- * We can't read `volumeId` from `cmdr://state`'s `right:` block directly:
+ * We can't read `volumeId` from `cmdr://state`'s pane block directly:
  * `FilePane.syncPaneStateToMcp` bails out for virtual-volume views (network
  * and search-results) because their content isn't a real directory MCP
  * agents should query. So the `volumeId:` field stays stale (`root`) even
@@ -57,18 +59,20 @@ const SNAPSHOT_PANE_PATH_HEADER = '[aria-label="Right file pane"] .full-list .he
  * `tabs:` section. Paths starting with `search-results://` map to the
  * `search-results` virtual volume; everything else is a local-volume path.
  */
-async function getRightPaneActiveTabPath(): Promise<string | null> {
+async function getPaneActiveTabPath(side: 'left' | 'right'): Promise<string | null> {
   const state = await mcpReadResource('cmdr://state?compact=true')
-  const rightIdx = state.indexOf('\nright:\n')
-  if (rightIdx === -1) return null
-  // The `right:` block runs until the next top-level YAML key (left margin).
+  const header = `\n${side}:\n`
+  const sideIdx = state.indexOf(header)
+  if (sideIdx === -1) return null
+  // The pane's block runs until the next top-level YAML key (left margin).
   // `volumes:`, `dialogs:`, etc. live further down with no leading spaces.
-  // Skip past `\nright:\n` (which is itself a `\n[a-z]` match) before
-  // searching for the next top-level key.
-  const blockStart = rightIdx + '\nright:\n'.length
-  const rightBlock = state.slice(blockStart)
-  const endIdx = rightBlock.search(/\n[a-z]/)
-  const scoped = endIdx === -1 ? rightBlock : rightBlock.slice(0, endIdx)
+  // Skip past the header (which is itself a `\n[a-z]` match) before searching
+  // for the next top-level key. Measure the header rather than hardcoding its
+  // width: `left` and `right` differ by a character.
+  const blockStart = sideIdx + header.length
+  const sideBlock = state.slice(blockStart)
+  const endIdx = sideBlock.search(/\n[a-z]/)
+  const scoped = endIdx === -1 ? sideBlock : sideBlock.slice(0, endIdx)
   // Active-tab line: `    - i:N id:... [active] ... (<path>)`
   const m = /^\s+- i:\d+ id:\S+ \[active\][^\n]*\(([^)\n]+)\)\s*$/m.exec(scoped)
   return m?.[1] ?? null
@@ -100,12 +104,40 @@ async function pollRightPaneVolumeId(
   return pollUntil(
     tauriPage,
     async () => {
-      const path = await getRightPaneActiveTabPath()
+      const path = await getPaneActiveTabPath('right')
       if (path === null) return false
       if (typeof expected === 'string') return matches(path, expected)
       return !matches(path, expected.not)
     },
     timeoutMs,
+  )
+}
+
+/**
+ * Asserts the right pane reaches `expected`, and FAILS WITH EVIDENCE.
+ *
+ * `expect(await pollRightPaneVolumeId(...)).toBe(true)` reports "Expected: true,
+ * Received: false" and nothing else, which is why this spec's flake survived two
+ * fix attempts: the message can't distinguish "the snapshot landed in the LEFT
+ * pane" from "no snapshot was created" from "the `cmdr://state` sync lagged past
+ * the deadline". Those need different fixes. So on failure this reports where BOTH
+ * panes actually ended up, and the CI artifact upload now keeps the page snapshot
+ * beside it (`ci.yml`, "Upload E2E screenshots on failure").
+ */
+async function expectRightPaneVolumeId(
+  tauriPage: PageLike,
+  expected: string | { not: string },
+  timeoutMs = 10000,
+): Promise<void> {
+  if (await pollRightPaneVolumeId(tauriPage, expected, timeoutMs)) return
+  const [right, left] = [await getPaneActiveTabPath('right'), await getPaneActiveTabPath('left')]
+  const wanted = typeof expected === 'string' ? expected : `anything but ${expected.not}`
+  throw new Error(
+    `Right pane never reached ${wanted} within ${String(timeoutMs)} ms.\n` +
+      `  right pane active tab: ${right ?? '(unreadable)'}\n` +
+      `  left pane active tab:  ${left ?? '(unreadable)'}\n` +
+      `If the left pane holds the search-results path, the promotion targeted the wrong pane ` +
+      `(a focus race), not the navigation history.`,
   )
 }
 
@@ -167,7 +199,7 @@ async function resetRightPaneToLocalIfNeeded(
   localVolumeName: string,
   fixtureRightPath: string,
 ): Promise<void> {
-  const path = await getRightPaneActiveTabPath()
+  const path = await getPaneActiveTabPath('right')
   if (path === null || !path.startsWith('search-results://')) return
   // Swap volumes off the snapshot first, then nav back to the fixture's
   // right directory. Without the explicit nav, the reset lands on the
@@ -184,7 +216,7 @@ async function resetRightPaneToLocalIfNeeded(
   await expect
     .poll(
       async () => {
-        const p = await getRightPaneActiveTabPath()
+        const p = await getPaneActiveTabPath('right')
         return p !== null && !p.startsWith('search-results://')
       },
       { timeout: 3000 },
@@ -200,7 +232,7 @@ async function resetRightPaneToLocalIfNeeded(
   await expect
     .poll(
       async () => {
-        const p = await getRightPaneActiveTabPath()
+        const p = await getPaneActiveTabPath('right')
         return p === fixtureRightPath
       },
       { timeout: 3000 },
@@ -293,7 +325,7 @@ test.describe('Search dialog: Open in pane', () => {
     await tauriPage.click(OPEN_IN_PANE_BUTTON)
 
     expect(await pollOverlayGone(tauriPage)).toBe(true)
-    expect(await pollRightPaneVolumeId(tauriPage, 'search-results')).toBe(true)
+    await expectRightPaneVolumeId(tauriPage, 'search-results')
 
     // The path column header is the shrink-wrapped marker for the search-results pane
     // (FullList + showPathColumn). Confirms the view actually rendered and isn't a
@@ -312,7 +344,7 @@ test.describe('Search dialog: Open in pane', () => {
     await tauriPage.click(OPEN_IN_PANE_BUTTON)
 
     expect(await pollOverlayGone(tauriPage)).toBe(true)
-    expect(await pollRightPaneVolumeId(tauriPage, 'search-results')).toBe(true)
+    await expectRightPaneVolumeId(tauriPage, 'search-results')
 
     // ⌘[ goes back. The right pane's history landed an entry for the
     // previous local-volume path before the snapshot, so back must leave
@@ -323,10 +355,10 @@ test.describe('Search dialog: Open in pane', () => {
     // event before it bubbles to `handleGlobalKeyDown`. The Tauri-event
     // path is direct and immune to that race.
     await dispatchMenuCommand(tauriPage, 'nav.back')
-    expect(await pollRightPaneVolumeId(tauriPage, { not: 'search-results' })).toBe(true)
+    await expectRightPaneVolumeId(tauriPage, { not: 'search-results' })
 
     // ⌘] goes forward, back to the snapshot.
     await dispatchMenuCommand(tauriPage, 'nav.forward')
-    expect(await pollRightPaneVolumeId(tauriPage, 'search-results')).toBe(true)
+    await expectRightPaneVolumeId(tauriPage, 'search-results')
   })
 })

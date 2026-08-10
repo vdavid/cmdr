@@ -456,12 +456,22 @@ jobs:
         if: always()
         run: sudo chown -R "$(id -u):$(id -g)" /tmp/cmdr-docker-cache
 
+      # ❗ The path is the Playwright `outputDir`, which for THIS lane is
+      # `./test-results` resolved against the config's own directory
+      # (`playwright.config.ts`), NOT the app root. Only the macOS lane overrides
+      # `CMDR_E2E_OUTPUT_DIR` (see `desktop-svelte-e2e-playwright.go`). Pointed at
+      # `apps/desktop/test-results/` this step matched nothing, so every failing run
+      # uploaded an empty artifact and the `error-context.md` page snapshots (the
+      # only evidence of what the UI actually looked like) were discarded. That's
+      # why the search-open-in-pane flake outlived two fix attempts.
+      # `if-no-files-found: error` keeps a future path drift loud instead of silent.
       - name: Upload E2E screenshots on failure
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
           name: e2e-screenshots
-          path: apps/desktop/test-results/
+          path: apps/desktop/test/e2e-playwright/test-results/
+          if-no-files-found: error
           retention-days: 7
 
   # ===========================================
