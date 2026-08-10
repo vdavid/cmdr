@@ -80,6 +80,9 @@ mod tests {
         use cmdr_fs::volume::mtp_ids::device_id_for;
         assert!(device_id_for(None, 336_592_896).starts_with("mtp-"));
         assert_ne!(device_id_for(None, 336_592_896), device_id_for(None, 1));
-        assert_eq!(device_id_for(Some("PIXEL7"), 336_592_896), device_id_for(Some("PIXEL7"), 1));
+        assert_eq!(
+            device_id_for(Some("PIXEL7"), 336_592_896),
+            device_id_for(Some("PIXEL7"), 1)
+        );
     }
 }
