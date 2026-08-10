@@ -55,6 +55,6 @@ planning, reorganizing, or advising.
   serialization lane and real disk cost, and this dodges a false `available = 0` disk-full block.
 - **Local vs remote byte source is picked by `parent.supports_local_fs_access()`, NOT by whether the path opens
   locally** — a direct-SMB parent must read through the parent, never its possibly-hung OS mount.
-- **`listing_watch_coverage` reflects the live [content watch](src/watch/CLAUDE.md)**, capped by the ceiling the
-  caller armed it with: `None` without a live watch (always, for a remote parent), `ThisMachineOnly` on an OS-mounted
-  share. `can_watch_listings` stays `false` (a generic dir-watcher can't watch an archive-inner path).
+- **`listing_watch_coverage` reflects the live [content watch](src/watch/CLAUDE.md)**, capped by the ceiling the caller
+  armed it with: `None` without a live watch (always, for a remote parent), `ThisMachineOnly` on an OS-mounted share.
+  `can_watch_listings` stays `false` (a generic dir-watcher can't watch an archive-inner path).
