@@ -422,10 +422,7 @@ errorReport.post('/error-report', async (c) => {
     },
   })
 
-  await scheduleBackground(
-    c,
-    postUploadWork(c.env, { id, key, sizeBytes, meta, uploadedUnixSeconds, date: today }),
-  )
+  await scheduleBackground(c, postUploadWork(c.env, { id, key, sizeBytes, meta, uploadedUnixSeconds, date: today }))
 
   return c.json({ id })
 })

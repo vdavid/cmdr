@@ -21,7 +21,10 @@ live in `CLAUDE.md`.
   map in KV (`LINK_CODES`). Pure `sanitizeUtmValue`/`isValidCode` are unit-tested
 - **`src/link-codes.test.ts`**: Tests for `/r-codes.json` (public map, CORS, cache), the admin CRUD (auth, upsert,
   delete), and the validators
-- **`src/error-report-eviction.ts`**: Eviction logic: 8/6 GB watermarks, KV lock, recompute helper
+- **`src/error-report-eviction.ts`**: Eviction logic: 8/6 GB watermarks, 60-day age floor, KV lock, recompute helper
+- **`src/error-report-intake.ts`**: Admission control for `POST /error-report`: daily byte budget, intake pause flag,
+  once-a-day alert claims, notification fan-out cap
+- **`src/error-report-intake.test.ts`**: Tests for the budget, the pause switch, and both claim counters
 - **`src/discord.ts`**: Discord webhook client (single-retry on 429, drop-on-failure)
 - **`src/scheduled.ts`**: Cron handler functions (crash notifications, aggregation, DB size, eviction)
 - **`src/license.ts`**: Short code + license key generation, `LicenseType` enum
@@ -65,9 +68,9 @@ live in `CLAUDE.md`.
 | GET     | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                            |
 | GET     | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first  |
 | GET     | `/download/:version/:arch` | none          | Log download to D1 (bots skipped, source + `ref` tagged), 302 → GitHub; `:version` takes `latest`  |
-| POST    | `/crash-report`            | none          | Ingest crash report to D1                                                                          |
+| POST    | `/crash-report`            | IP rate-limit | Ingest crash report to D1                                                                          |
 | POST    | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                               |
-| POST    | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                                                 |
+| POST    | `/error-report`            | IP rate-limit | Multipart upload (zip + meta) → R2, Discord notify. Also gated by the global intake budget         |
 | POST    | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                                |
 | POST    | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                       |
 | GET     | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                                |
@@ -112,14 +115,30 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
 
-| Binding                | Type         | Purpose                                                                              |
-| ---------------------- | ------------ | ------------------------------------------------------------------------------------ |
-| `ERROR_REPORTS_BUCKET` | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)                   |
-| `ERROR_REPORT_META`    | KV namespace | `total_bytes` counter + `eviction_in_progress` lock for the eviction logic           |
-| `LINK_CODES`           | KV namespace | One key (`codes`) holds the whole `?r=<code>` → UTM map (see the note below)         |
-| `HEARTBEAT_LIMITER`    | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)        |
-| `BETA_SIGNUP_LIMITER`  | Rate limit   | Gates `POST /beta-signup` at 5 req/min/IP (signups are rare; tighter than heartbeat) |
-| `FEEDBACK_LIMITER`     | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)    |
+| Binding                | Type         | Purpose                                                                                |
+| ---------------------- | ------------ | -------------------------------------------------------------------------------------- |
+| `ERROR_REPORTS_BUCKET` | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)                     |
+| `ERROR_REPORT_META`    | KV namespace | Eviction bookkeeping + intake admission counters (key list below)                      |
+| `LINK_CODES`           | KV namespace | One key (`codes`) holds the whole `?r=<code>` → UTM map (see the note below)           |
+| `HEARTBEAT_LIMITER`    | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)          |
+| `BETA_SIGNUP_LIMITER`  | Rate limit   | Gates `POST /beta-signup` at 5 req/min/IP (signups are rare; tighter than heartbeat)   |
+| `FEEDBACK_LIMITER`     | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)      |
+| `ERROR_REPORT_LIMITER` | Rate limit   | Gates `POST /error-report` at 3 req/min/IP (tightest: each request stores up to 10 MB) |
+| `CRASH_REPORT_LIMITER` | Rate limit   | Gates `POST /crash-report` at 10 req/min/IP (a crashing app flushes a small burst)     |
+
+**Rate limits are per data center, not global.** Cloudflare's rate-limit bindings count per colo
+([docs](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)), so each one bounds a single
+abusive client and not a distributed flood. `enforceIpRateLimit` (`types.ts`) is the single gate every route calls;
+`/error-report` carries a global ceiling on top (below), because it's the one where a flood is expensive.
+
+`ERROR_REPORT_META` keys:
+
+- `total_bytes`: running bucket size. Approximate (racy read-then-write), corrected by the daily sweep.
+- `eviction_in_progress`: 60-s TTL lock preventing concurrent eviction.
+- `bytes_today:{yyyy-mm-dd}`: accepted bundle bytes for the day, against `DAILY_INTAKE_BUDGET_BYTES`. 48-h TTL.
+- `intake_paused`: kill switch. Present = `/error-report` returns 503.
+- `budget_alert:{yyyy-mm-dd}`: claimed by the one caller that sends the day's "budget exhausted" ping. 48-h TTL.
+- `notify_count:{yyyy-mm-dd}`: per-upload Discord pings sent today, against `DAILY_NOTIFICATION_CAP`. 48-h TTL.
 
 `LINK_CODES` detail: the one `codes` key maps `?r=<code>` → `{ utm_source, utm_medium?, note? }` (id
 `6dbba67c8ece475daf3e8c0406d242c9`). Created with `wrangler kv namespace create LINK_CODES`; no preview id (matches the
@@ -230,7 +249,9 @@ Subscription validation: POST /validate → Paddle API transactions + subscripti
 
 Download redirect: GET /download/:version/:arch → write to D1 (fire-and-forget) → 302 to GitHub Releases
 
-Crash report: POST /crash-report → validate payload (size + required fields + optional diagId/email shape) → hash IP with daily salt → write to D1 incl. nullable diag_id + email (fire-and-forget via waitUntil) → 204
+Crash report: POST /crash-report → rate-limit by IP (CRASH_REPORT_LIMITER, 429 if over) → validate payload (size + required fields + optional diagId/email shape) → hash IP with daily salt → write to D1 incl. nullable diag_id + email (fire-and-forget via waitUntil) → 204
+
+Error report: POST /error-report → rate-limit by IP (ERROR_REPORT_LIMITER, 429 if over) → global intake gates (intake_paused, then the day's byte budget; 503 + Retry-After if either trips, plus one Discord ping the day the budget runs out) → read the body under MAX_BODY_BYTES, cancelling past it (413) → parse multipart, validate bundle + meta (400/413) → stream the bundle to R2 under error-reports/{prod|dev}/{date}/{id}-{uuid}.zip → in waitUntil: bump total_bytes, charge the daily budget, tryEvict, then a Discord embed (capped at DAILY_NOTIFICATION_CAP/day) → 200 {id}
 
 Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over) → validate payload (size + required fields + analId/version shape + config-size cap) → write to D1 heartbeat (fire-and-forget via waitUntil), no IP stored → 204
 
@@ -263,8 +284,9 @@ try-catch so one failure doesn't block the others:
 3. **DB size check** (00:00 UTC only): queries D1 pragma for total database size. Sends an alert email if over 100 MB.
 
 4. **Daily eviction sweep** (00:00 UTC only): `handleDailyEvictionSweep` recomputes `total_bytes` from R2 ground truth
-   (the per-upload KV counter is racy and drifts), then triggers `tryEvict` if still over 8 GB. Idempotent. Catches
-   drift from concurrent uploads or a Worker dying mid-eviction.
+   (the per-upload KV counter is racy and drifts), clears `intake_paused` if the bucket is back under the LOW watermark,
+   then triggers `tryEvict` if still over 8 GB. Idempotent. Catches drift from concurrent uploads or a Worker dying
+   mid-eviction.
 
 The default export uses the object form (`{ fetch, scheduled }`) required for cron support. The Hono `app` is also
 exported as a named export so tests can use `app.request()`.
@@ -519,18 +541,59 @@ sort order. Legacy keys (`error-reports/{yyyy-mm-dd}/...`, pre-env-prefix) still
 via `extractDateSegment` which handles both shapes. The 90-day R2 lifecycle drains the legacy shape naturally. No
 migration needed.
 
-**Error report eviction (8/6 GB watermarks + lifecycle):** Three layers keep the bucket bounded.
+**Error report eviction (8/6 GB watermarks + 60-day age floor + lifecycle):** Three layers keep the bucket bounded.
 
 1. **On-upload eviction**: every `POST /error-report` schedules `tryEvict` in `waitUntil(...)`. If `total_bytes` (KV) >
-   8 GB and `eviction_in_progress` (KV, 60-s TTL lock) isn't set, lists R2 objects under `error-reports/`, sorts
-   oldest-first by the embedded `yyyy-mm-dd` segment (via `extractDateSegment`, which handles both new and legacy key
-   shapes) then by `uploaded`, deletes until ≤ 6 GB, then resets the counter to the recomputed ground truth.
-2. **Daily cron sweep**: corrects KV drift by recomputing from R2 and re-running `tryEvict`.
+   8 GB and `eviction_in_progress` (KV, 60-s TTL lock) isn't set, lists R2 objects under `error-reports/`, keeps only
+   those older than `EVICTION_MIN_AGE_DAYS`, sorts oldest-first by the embedded `yyyy-mm-dd` segment (via
+   `extractDateSegment`, which handles both new and legacy key shapes) then by `uploaded`, deletes until ≤ 6 GB, then
+   resets the counter to the recomputed ground truth.
+2. **Daily cron sweep**: corrects KV drift by recomputing from R2, lifts an intake pause once the bucket is back under
+   the LOW watermark, and re-runs `tryEvict`.
 3. **R2 lifecycle rule**: 90-day expiration applied at provisioning time via `scripts/setup-cf-infra.sh`.
 
 The KV counter is approximate (read-then-write, no atomic increment; same as `_meta:activation_count`). Both the daily
 sweep and post-eviction recompute correct it. R2 deletes are idempotent; concurrent evictors deleting the same oldest
 object cause no harm.
+
+**Why the age floor exists (`EVICTION_MIN_AGE_DAYS`, 60 days):** `/error-report` is unauthenticated, so without a floor
+anyone able to push the bucket past 8 GB turns eviction into a delete primitive aimed at the oldest (most likely
+genuine) reports. Eviction's real job is only to pull the 90-day lifecycle forward under space pressure, so what it
+deletes should already be near its natural end; under normal growth there is plenty of 60-day-old material, and a 30-day
+eviction window remains before the lifecycle takes over.
+
+Eviction is therefore **all-or-nothing**: when the eligible bundles can't free enough on their own, `tryEvict` deletes
+NOTHING, sets `intake_paused`, and returns `{ outcome: 'paused' }` so the caller alerts Discord. Half-evicting would
+destroy real reports AND leave the bucket over its watermark. A flood of fresh junk finds nothing eligible and costs
+zero deletions; reaching eligibility would take 60 days of sustained flooding, alerting daily along the way.
+
+A pause reads as one of two things: a flood filled the bucket with fresh bundles, or real traffic outgrew the watermarks
+(raise them, or shorten the lifecycle). The daily sweep clears the flag on its own once the bucket is back under 6 GB;
+resuming at the high watermark instead would reopen intake straight into the level that paused it.
+
+**Error report intake admission (`error-report-intake.ts`):** the global ceiling the per-colo rate limiter can't give.
+Both gates run before the body is read, so a rejected upload costs no parsing and no storage.
+
+- **Daily byte budget** (`DAILY_INTAKE_BUDGET_BYTES`, 2 GB/UTC day): past it, `/error-report` returns 503 +
+  `Retry-After` for the rest of the day and pings Discord ONCE (`budget_alert:{date}` claim). Legitimate traffic is
+  orders of magnitude below this, so the ping is as much the point as the rejection. It also means filling the 8 GB
+  watermark takes days of flooding, alerting each day.
+- **Intake pause** (`intake_paused`): 503 while set. Written by eviction (above), cleared by the daily sweep, and
+  settable by hand for an incident (`wrangler kv key put --binding ERROR_REPORT_META intake_paused 1`).
+- **Notification cap** (`DAILY_NOTIFICATION_CAP`, 50/day): per-upload Discord embeds stop after 50, with one notice
+  saying so, then silence until tomorrow. A webhook takes 30 messages/min, and a channel that goes quiet without
+  explanation reads as "no reports". Bundles remain in R2 and in `GET /admin/error-reports` regardless. Eviction and
+  budget alerts are NOT capped.
+
+Every counter here is a racy read-then-write (KV has no atomic increment), so a concurrent burst can overshoot by
+roughly the in-flight amount. Deliberate: these are coarse circuit breakers, and the 10 MB bundle cap keeps a single
+overshoot small.
+
+**Error report body cap:** `content-length` is advisory (a chunked upload declares no length; a declared one can lie),
+so `readReportUpload` reads the body itself through `readCappedBody` and cancels past `MAX_BODY_BYTES` (bundle cap + 1
+MB for the `meta` part and multipart framing, sized against the client's 100,000-char `userNote` limit). Without it the
+multipart parser would buffer up to Cloudflare's 100 MB request limit inside a 128 MB isolate. Over-cap returns null
+rather than throwing, so 413 stays distinguishable from a malformed-multipart 400 without matching on parser text.
 
 **Error report Discord notifications:** Every upload triggers a Discord embed with a 7-day presigned R2 GET URL. Uses
 the R2 S3-compatible API via `aws4fetch` (`AwsClient.sign` with `signQuery: true` + `X-Amz-Expires`). 7 days is R2's max

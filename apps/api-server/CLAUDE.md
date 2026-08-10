@@ -7,10 +7,11 @@ and decisions: `DETAILS.md`.
 
 ## Module map
 
-- `src/index.ts`: Hono app assembly + scheduled-handler wiring. `src/types.ts`: shared `Bindings`, constants, auth.
+- `src/index.ts`: Hono app assembly + scheduled-handler wiring. `src/types.ts`: shared `Bindings`, constants, auth,
+  `enforceIpRateLimit`.
 - Route modules: `licensing.ts`, `admin.ts`, `telemetry.ts` (crash/heartbeat/download/update-check), `likes.ts`,
   `error-report.ts`, `beta-signup.ts`, `feedback.ts`, `funnel.ts`, `link-codes.ts` (`?r=` codes). Cron in
-  `scheduled.ts`; eviction in `error-report-eviction.ts`.
+  `scheduled.ts`; eviction in `error-report-eviction.ts`; error-report admission in `error-report-intake.ts`.
 - Crypto/Paddle: `license.ts`, `paddle.ts` (HMAC verify), `paddle-api.ts`, `email.ts`, `discord.ts`,
   `device-tracking.ts`.
 
@@ -42,6 +43,11 @@ and decisions: `DETAILS.md`.
   stores a daily-hashed IP for same-day dedup, and tags `source`. Keep Homebrew exempt from the bot filter (it uses
   curl) and `?src=website` on the website button, or installs misclassify. `:version` also takes `latest`, resolved to a
   real version before the redirect and the write, so no row reads `latest`. DETAILS § Download tracking.
+- **Eviction never touches bundles younger than `EVICTION_MIN_AGE_DAYS` (60) and is all-or-nothing**: it pauses intake
+  instead of half-deleting, and resumes only at the LOW watermark. Drop either property and unauthenticated
+  `/error-report` becomes a delete primitive aimed at real reports. DETAILS § age floor.
+- **`/error-report` bodies go through `readCappedBody`, never `c.req.parseBody()`**: `content-length` is advisory, so
+  the parser would otherwise buffer up to 100 MB in a 128 MB isolate.
 - **Apply D1 migrations before deploying** schema changes: `wrangler d1 migrations apply cmdr-telemetry`. The
   `heartbeat` `config_json` column is one verbatim JSON blob on purpose (new settings absorb without a migration).
 - **The default export uses the object form** (`{ fetch, scheduled }`); cron breaks without it. `app` is also exported

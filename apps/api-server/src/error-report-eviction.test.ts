@@ -305,10 +305,7 @@ describe('tryEvict age floor', () => {
   })
 
   it('leaves bundles just under the age floor alone', async () => {
-    const objs = [
-      freshBundle(1, EVICTION_MIN_AGE_DAYS - 1, 3 * GB),
-      freshBundle(2, EVICTION_MIN_AGE_DAYS - 2, 3 * GB),
-    ]
+    const objs = [freshBundle(1, EVICTION_MIN_AGE_DAYS - 1, 3 * GB), freshBundle(2, EVICTION_MIN_AGE_DAYS - 2, 3 * GB)]
     const bucket = createR2(objs)
     const kv = createKv({ [TOTAL_BYTES_KEY]: String(6 * GB) })
 
