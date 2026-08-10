@@ -10,8 +10,10 @@ import {
 } from './error-report-eviction'
 import {
   DAILY_INTAKE_BUDGET_BYTES,
+  DAILY_NOTIFICATION_CAP,
   checkIntakeAllowed,
   claimBudgetAlert,
+  claimNotificationSlot,
   recordIntakeBytes,
   type IntakeRejection,
 } from './error-report-intake'
@@ -20,6 +22,7 @@ import {
   postEvictionBlockedNotification,
   postEvictionNotification,
   postIntakeRejectedNotification,
+  postNotificationsSuppressedNotification,
 } from './discord'
 
 const errorReport = new Hono<{ Bindings: Bindings }>()
@@ -226,24 +229,35 @@ async function postUploadWork(
   }
 
   if (env.DISCORD_WEBHOOK_URL) {
-    let downloadUrl: string | null = null
-    try {
-      downloadUrl = await buildPresignedUrl(env, args.key)
-    } catch (e) {
-      console.error('Error report: presign failed', e)
+    // Per-upload pings are capped for the day; the eviction alerts below are not. Those are rare
+    // and are the ones worth waking up for.
+    const decision = await claimNotificationSlot(env.ERROR_REPORT_META, args.date)
+    if (decision === 'suppress-notice') {
+      await postNotificationsSuppressedNotification(env.DISCORD_WEBHOOK_URL, {
+        cap: DAILY_NOTIFICATION_CAP,
+        date: args.date,
+      })
     }
-    await postErrorReportNotification(env.DISCORD_WEBHOOK_URL, {
-      id: args.id,
-      kind: args.meta.kind,
-      buildMode: args.meta.buildMode ?? 'release',
-      appVersion: args.meta.appVersion,
-      osVersion: args.meta.osVersion,
-      arch: args.meta.arch,
-      sizeBytes: args.sizeBytes,
-      uploadedUnixSeconds: args.uploadedUnixSeconds,
-      downloadUrl: downloadUrl ?? '(presign unavailable; fetch via admin)',
-      userNote: args.meta.userNote,
-    })
+    if (decision === 'notify') {
+      let downloadUrl: string | null = null
+      try {
+        downloadUrl = await buildPresignedUrl(env, args.key)
+      } catch (e) {
+        console.error('Error report: presign failed', e)
+      }
+      await postErrorReportNotification(env.DISCORD_WEBHOOK_URL, {
+        id: args.id,
+        kind: args.meta.kind,
+        buildMode: args.meta.buildMode ?? 'release',
+        appVersion: args.meta.appVersion,
+        osVersion: args.meta.osVersion,
+        arch: args.meta.arch,
+        sizeBytes: args.sizeBytes,
+        uploadedUnixSeconds: args.uploadedUnixSeconds,
+        downloadUrl: downloadUrl ?? '(presign unavailable; fetch via admin)',
+        userNote: args.meta.userNote,
+      })
+    }
 
     if (evictionResult?.outcome === 'evicted' && evictionResult.evictedCount > 0) {
       await postEvictionNotification(env.DISCORD_WEBHOOK_URL, {

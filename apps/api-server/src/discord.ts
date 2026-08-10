@@ -62,6 +62,13 @@ export interface IntakeRejectedInfo {
   date: string
 }
 
+export interface NotificationsSuppressedInfo {
+  /** Pings allowed per day before suppression kicks in. */
+  cap: number
+  /** UTC day (`yyyy-mm-dd`) whose allowance ran out. */
+  date: string
+}
+
 export interface EvictionBlockedInfo {
   /** Current bucket size. */
   totalBytes: number
@@ -222,6 +229,19 @@ export function buildEvictionBlockedPayload(info: EvictionBlockedInfo): unknown 
   }
 }
 
+/**
+ * Build the Discord webhook JSON body for the one notice that says per-upload pings are done for
+ * the day. Sent once, so the channel knows it went quiet on purpose.
+ */
+export function buildNotificationsSuppressedPayload(info: NotificationsSuppressedInfo): unknown {
+  return {
+    content:
+      `That's ${info.cap.toString()} error report pings for ${info.date}, so the rest of today's are suppressed ` +
+      `to keep this channel usable. Nothing is lost: every bundle is still in R2 and listed by ` +
+      `\`GET /admin/error-reports\`. Pings resume tomorrow.`,
+  }
+}
+
 async function postOnce(url: string, body: unknown): Promise<Response> {
   return fetch(url, {
     method: 'POST',
@@ -268,6 +288,13 @@ export async function postIntakeRejectedNotification(webhookUrl: string, info: I
 
 export async function postEvictionBlockedNotification(webhookUrl: string, info: EvictionBlockedInfo): Promise<void> {
   await postWithRetry(webhookUrl, buildEvictionBlockedPayload(info), 'eviction-blocked')
+}
+
+export async function postNotificationsSuppressedNotification(
+  webhookUrl: string,
+  info: NotificationsSuppressedInfo,
+): Promise<void> {
+  await postWithRetry(webhookUrl, buildNotificationsSuppressedPayload(info), 'notifications-suppressed')
 }
 
 export async function postFeedbackNotification(webhookUrl: string, notification: FeedbackNotification): Promise<void> {

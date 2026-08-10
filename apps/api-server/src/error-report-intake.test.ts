@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   DAILY_INTAKE_BUDGET_BYTES,
+  DAILY_NOTIFICATION_CAP,
   INTAKE_PAUSED_KEY,
   checkIntakeAllowed,
   claimBudgetAlert,
+  claimNotificationSlot,
   dailyBytesKey,
   isIntakePaused,
   pauseIntake,
@@ -87,6 +89,32 @@ describe('intake pause', () => {
 
     expect(await kv.get(INTAKE_PAUSED_KEY)).toBeNull()
     await expect(checkIntakeAllowed(kv, today)).resolves.toEqual({ accept: true })
+  })
+})
+
+describe('notification fan-out cap', () => {
+  it('notifies normally up to the daily cap', async () => {
+    const kv = createKv()
+
+    for (let i = 0; i < DAILY_NOTIFICATION_CAP; i++) {
+      await expect(claimNotificationSlot(kv, today)).resolves.toBe('notify')
+    }
+  })
+
+  it('posts exactly one suppression notice when the cap is passed', async () => {
+    const kv = createKv()
+    for (let i = 0; i < DAILY_NOTIFICATION_CAP; i++) await claimNotificationSlot(kv, today)
+
+    await expect(claimNotificationSlot(kv, today)).resolves.toBe('suppress-notice')
+    await expect(claimNotificationSlot(kv, today)).resolves.toBe('silent')
+    await expect(claimNotificationSlot(kv, today)).resolves.toBe('silent')
+  })
+
+  it('gives each day a fresh allowance', async () => {
+    const kv = createKv()
+    for (let i = 0; i < DAILY_NOTIFICATION_CAP + 5; i++) await claimNotificationSlot(kv, today)
+
+    await expect(claimNotificationSlot(kv, '2026-08-11')).resolves.toBe('notify')
   })
 })
 

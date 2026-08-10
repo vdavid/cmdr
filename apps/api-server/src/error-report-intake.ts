@@ -36,6 +36,20 @@ export const DAILY_BYTES_PREFIX = 'bytes_today:'
 /** KV key prefix for the once-per-day "budget exhausted" alert claim. */
 const BUDGET_ALERT_PREFIX = 'budget_alert:'
 
+/** KV key prefix for the per-day count of error-report Discord notifications. */
+const NOTIFY_COUNT_PREFIX = 'notify_count:'
+
+/**
+ * Error-report Discord pings allowed per UTC day, after which the channel gets one "suppressing
+ * the rest" notice and nothing more.
+ *
+ * A Discord webhook accepts 30 messages/min, and this endpoint posts one embed per accepted upload.
+ * Without a cap, a burst that clears the per-IP limiter and the byte budget still drowns the
+ * channel, and the notification that mattered scrolls away. Nothing is lost when this trips: every
+ * bundle is still in R2 and listed by `GET /admin/error-reports`.
+ */
+export const DAILY_NOTIFICATION_CAP = 50
+
 /**
  * Day-scoped keys outlive their day by a margin so a late-arriving request still lands on the
  * right counter, then expire on their own. No cleanup job needed.
@@ -92,6 +106,30 @@ export async function recordIntakeBytes(kv: KVNamespace, date: string, bytes: nu
   const next = parseInt((await kv.get(key)) ?? '0', 10) + bytes
   await kv.put(key, String(next), { expirationTtl: DAY_KEY_TTL_SECONDS })
   return next
+}
+
+/**
+ * What to do with the Discord ping for one accepted upload:
+ * - `notify`: post the embed as usual.
+ * - `suppress-notice`: post one line saying the rest of today's pings are suppressed.
+ * - `silent`: post nothing.
+ */
+export type NotificationDecision = 'notify' | 'suppress-notice' | 'silent'
+
+/**
+ * Take one slot from the day's notification allowance. Exactly one caller per day gets
+ * `suppress-notice`, so the channel learns it stopped hearing about uploads instead of going
+ * quiet without explanation. Racy like the other KV counters, which at worst shifts the cutoff by
+ * a message or two.
+ */
+export async function claimNotificationSlot(kv: KVNamespace, date: string): Promise<NotificationDecision> {
+  const key = `${NOTIFY_COUNT_PREFIX}${date}`
+  const count = parseInt((await kv.get(key)) ?? '0', 10) + 1
+  await kv.put(key, String(count), { expirationTtl: DAY_KEY_TTL_SECONDS })
+
+  if (count <= DAILY_NOTIFICATION_CAP) return 'notify'
+  if (count === DAILY_NOTIFICATION_CAP + 1) return 'suppress-notice'
+  return 'silent'
 }
 
 /**

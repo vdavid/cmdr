@@ -1,6 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from 'vitest'
 import { app } from './index'
-import { DAILY_INTAKE_BUDGET_BYTES, dailyBytesKey, pauseIntake } from './error-report-intake'
+import {
+  DAILY_INTAKE_BUDGET_BYTES,
+  DAILY_NOTIFICATION_CAP,
+  dailyBytesKey,
+  pauseIntake,
+} from './error-report-intake'
 
 /** The UTC day the route charges an upload against. */
 function todayUtc(): string {
@@ -506,6 +511,33 @@ describe('POST /error-report', () => {
 
     expect(res.status).toBe(503)
     expect(bucket._store.size).toBe(0)
+  })
+
+  it('stops pinging Discord per upload once the daily notification cap is passed', async () => {
+    const kv = createKv()
+    // Start one slot below the cap so the run is short: one more ping, then the single suppression
+    // notice, then silence however many uploads follow.
+    await kv.put(`notify_count:${todayUtc()}`, String(DAILY_NOTIFICATION_CAP - 1))
+    const posts: string[] = []
+    globalThis.fetch = ((_url: string, init: { body: string }) => {
+      posts.push(init.body)
+      return Promise.resolve(new Response(null, { status: 204 }))
+    }) as unknown as typeof fetch
+    const bindings = createBindings({
+      ERROR_REPORT_META: kv,
+      DISCORD_WEBHOOK_URL: 'https://discord.example/webhook',
+    })
+
+    for (let i = 0; i < 4; i++) {
+      const fd = buildMultipart(new Uint8Array([1]), validMeta)
+      const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+      expect(res.status).toBe(200)
+    }
+
+    // Upload 1 pings, upload 2 posts the suppression notice, uploads 3 and 4 post nothing.
+    expect(posts).toHaveLength(2)
+    expect(posts[0]).toContain('ERR-A2345')
+    expect(posts[1]).toContain('suppressed')
   })
 
   it('pings Discord once when the budget runs out, not once per rejected upload', async () => {
