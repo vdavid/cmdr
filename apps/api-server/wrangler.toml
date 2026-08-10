@@ -89,6 +89,33 @@ namespace_id = "1003"
 limit = 5
 period = 60
 
+# Rate limit for POST /error-report, keyed by the caller IP (transient, never stored). The tightest
+# of the set: each accepted request stores up to 10 MB in R2 and posts a Discord embed. Real
+# reporting is a handful per user per day, and the client's auto-dispatcher throttles itself, so
+# 3/min/IP is far above legitimate use. `period` must be 10 or 60. `namespace_id` is a per-account
+# integer id. NOTE: these limits count per data center, not globally, so this bounds one abusive
+# client, not a distributed flood; the daily byte budget in `error-report-intake.ts` is the global
+# ceiling.
+[[ratelimits]]
+name = "ERROR_REPORT_LIMITER"
+namespace_id = "1004"
+
+[ratelimits.simple]
+limit = 3
+period = 60
+
+# Rate limit for POST /crash-report, keyed by the caller IP (transient, never stored). A crashing
+# app can legitimately send a small burst (queued reports flush on the next launch), so this is
+# looser than the error-report limiter but still far under what a flood needs. `period` must be 10
+# or 60. `namespace_id` is a per-account integer id.
+[[ratelimits]]
+name = "CRASH_REPORT_LIMITER"
+namespace_id = "1005"
+
+[ratelimits.simple]
+limit = 10
+period = 60
+
 [triggers]
 crons = ["0 */3 * * *"]
 

@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono'
-import type { Bindings } from './types'
+import { callerIp, enforceIpRateLimit, type Bindings } from './types'
 
 const telemetry = new Hono<{ Bindings: Bindings }>()
 
@@ -155,6 +155,11 @@ function validateCrashReportShape(report: Record<string, unknown>): string | nul
 }
 
 telemetry.post('/crash-report', async (c) => {
+  // Rate-limit by the caller IP before parsing. The IP keys the limiter's sliding window only;
+  // the row stores a daily-salted hash of it, never the address itself.
+  const limited = await enforceIpRateLimit(c.env.CRASH_REPORT_LIMITER, c.req)
+  if (limited) return limited
+
   // Reject oversized payloads before parsing
   const contentLength = c.req.header('content-length')
   if (contentLength && parseInt(contentLength, 10) > maxCrashReportBytes) {
@@ -189,7 +194,7 @@ telemetry.post('/crash-report', async (c) => {
   const report = rawReport as CrashReport
 
   // Hash IP with daily salt for deduplication (same pattern as update-check)
-  const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for') ?? 'unknown'
+  const ip = callerIp(c.req)
   const dailySalt = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
   const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip + dailySalt))
   const hashedIp = [...new Uint8Array(hashBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('')
@@ -336,15 +341,10 @@ async function readHeartbeatBody(c: Context<{ Bindings: Bindings }>): Promise<Re
 }
 
 telemetry.post('/heartbeat', async (c) => {
-  // Rate-limit by the caller IP before doing any work. The IP is used only for the limiter's
-  // sliding window and is never stored. The binding is optional, so the gate is a no-op when absent.
-  const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for') ?? 'unknown'
-  if (c.env.HEARTBEAT_LIMITER) {
-    const { success } = await c.env.HEARTBEAT_LIMITER.limit({ key: ip })
-    if (!success) {
-      return c.json({ error: 'Too many requests' }, 429)
-    }
-  }
+  // Rate-limit by the caller IP before doing any work. The IP keys the limiter's sliding window
+  // only and is never stored.
+  const limited = await enforceIpRateLimit(c.env.HEARTBEAT_LIMITER, c.req)
+  if (limited) return limited
 
   const parsed = await readHeartbeatBody(c)
   if (parsed instanceof Response) return parsed

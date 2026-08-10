@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono'
-import type { Bindings } from './types'
+import { enforceIpRateLimit, type Bindings } from './types'
 import { postFeedbackNotification } from './discord'
 
 const feedback = new Hono<{ Bindings: Bindings }>()
@@ -101,15 +101,9 @@ async function readFeedbackBody(c: Context<{ Bindings: Bindings }>): Promise<Rec
 
 feedback.post('/feedback', async (c) => {
   // Rate-limit by the caller IP before any parsing. The IP keys the limiter's sliding
-  // window only and is never stored. The binding is optional, so the gate is a no-op
-  // when absent (tests, incomplete envs). Same pattern as /heartbeat and /beta-signup.
-  const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for') ?? 'unknown'
-  if (c.env.FEEDBACK_LIMITER) {
-    const { success } = await c.env.FEEDBACK_LIMITER.limit({ key: ip })
-    if (!success) {
-      return c.json({ error: 'Too many requests' }, 429)
-    }
-  }
+  // window only and is never stored.
+  const limited = await enforceIpRateLimit(c.env.FEEDBACK_LIMITER, c.req)
+  if (limited) return limited
 
   const parsed = await readFeedbackBody(c)
   if (parsed instanceof Response) return parsed

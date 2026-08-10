@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { AwsClient } from 'aws4fetch'
-import type { Bindings } from './types'
+import { enforceIpRateLimit, type Bindings } from './types'
 import {
   ERROR_REPORT_PREFIX,
   incrementTotalBytes,
@@ -187,6 +187,11 @@ async function postUploadWork(
 }
 
 errorReport.post('/error-report', async (c) => {
+  // Rate-limit by the caller IP before touching the body: every accepted request stores up to
+  // 10 MB in R2 and posts a Discord notification, so an ungated flood is expensive.
+  const limited = await enforceIpRateLimit(c.env.ERROR_REPORT_LIMITER, c.req)
+  if (limited) return limited
+
   // Pre-parse size guard. The body parser would slurp it all anyway, but cheap to fail fast.
   const contentLength = c.req.header('content-length')
   if (contentLength && parseInt(contentLength, 10) > MAX_BUNDLE_BYTES) {

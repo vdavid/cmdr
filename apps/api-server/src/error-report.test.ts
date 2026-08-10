@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from 'vitest'
 import { app } from './index'
 
 interface StoredObj {
@@ -96,6 +96,12 @@ function createMockD1(): D1Database {
   return { prepare } as unknown as D1Database
 }
 
+/** Mock the Workers rate-limit binding. Defaults to allowing every request. */
+function createMockRateLimiter(success = true): { limiter: RateLimit; limitMock: Mock } {
+  const limitMock = vi.fn(() => Promise.resolve({ success }))
+  return { limiter: { limit: limitMock }, limitMock }
+}
+
 function createBindings(overrides: Record<string, unknown> = {}) {
   return {
     LICENSE_CODES: createKv(),
@@ -103,6 +109,7 @@ function createBindings(overrides: Record<string, unknown> = {}) {
     TELEMETRY_DB: createMockD1(),
     ERROR_REPORTS_BUCKET: createR2(),
     ERROR_REPORT_META: createKv(),
+    ERROR_REPORT_LIMITER: createMockRateLimiter().limiter,
     ED25519_PRIVATE_KEY: 'deadbeef'.repeat(8),
     RESEND_API_KEY: 'test-resend-key',
     PRODUCT_NAME: 'Cmdr',
@@ -291,6 +298,33 @@ describe('POST /error-report', () => {
     const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
 
     expect(res.status).toBe(400)
+  })
+
+  it('returns 429 when the caller is over the IP rate limit', async () => {
+    const { limiter } = createMockRateLimiter(false)
+    const bucket = createR2()
+    const bindings = createBindings({ ERROR_REPORT_LIMITER: limiter, ERROR_REPORTS_BUCKET: bucket })
+    const fd = buildMultipart(new Uint8Array([1, 2, 3, 4]), validMeta)
+
+    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+
+    expect(res.status).toBe(429)
+    // The gate runs before the body is parsed or stored, so a flood costs no R2 writes.
+    expect(bucket._store.size).toBe(0)
+  })
+
+  it('keys the rate limiter by the caller IP', async () => {
+    const { limiter, limitMock } = createMockRateLimiter(true)
+    const bindings = createBindings({ ERROR_REPORT_LIMITER: limiter })
+    const fd = buildMultipart(new Uint8Array([1]), validMeta)
+
+    await app.request(
+      '/error-report',
+      { method: 'POST', body: fd, headers: { 'cf-connecting-ip': '203.0.113.7' } },
+      bindings,
+    )
+
+    expect(limitMock).toHaveBeenCalledWith({ key: '203.0.113.7' })
   })
 
   it('increments the total_bytes counter by the upload size', async () => {

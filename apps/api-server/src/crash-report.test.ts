@@ -24,11 +24,18 @@ function createMockAnalyticsEngine(): AnalyticsEngineDataset {
   return { writeDataPoint: vi.fn() }
 }
 
+/** Mock the Workers rate-limit binding. Defaults to allowing every request. */
+function createMockRateLimiter(success = true): { limiter: RateLimit; limitMock: Mock } {
+  const limitMock = vi.fn(() => Promise.resolve({ success }))
+  return { limiter: { limit: limitMock }, limitMock }
+}
+
 function createBindings(overrides: Record<string, unknown> = {}) {
   return {
     LICENSE_CODES: createMockKv(),
     DEVICE_COUNTS: createMockAnalyticsEngine(),
     TELEMETRY_DB: createMockD1().db,
+    CRASH_REPORT_LIMITER: createMockRateLimiter().limiter,
     ED25519_PRIVATE_KEY: 'deadbeef'.repeat(8),
     RESEND_API_KEY: 'test-resend-key',
     PRODUCT_NAME: 'Cmdr',
@@ -379,6 +386,35 @@ describe('POST /crash-report', () => {
         expect(arg.startsWith('anal_')).toBe(false)
       }
     }
+  })
+
+  it('returns 429 when the caller is over the IP rate limit', async () => {
+    const { limiter } = createMockRateLimiter(false)
+    const { db, prepareMock } = createMockD1()
+    const bindings = createBindings({ CRASH_REPORT_LIMITER: limiter, TELEMETRY_DB: db })
+
+    const res = await postCrashReport(validCrashReport, bindings)
+
+    expect(res.status).toBe(429)
+    // The gate runs before the body is parsed or written, so a flood costs no D1 writes.
+    expect(prepareMock).not.toHaveBeenCalled()
+  })
+
+  it('keys the rate limiter by the caller IP', async () => {
+    const { limiter, limitMock } = createMockRateLimiter(true)
+    const bindings = createBindings({ CRASH_REPORT_LIMITER: limiter })
+
+    await app.request(
+      '/crash-report',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '203.0.113.7' },
+        body: JSON.stringify(validCrashReport),
+      },
+      bindings,
+    )
+
+    expect(limitMock).toHaveBeenCalledWith({ key: '203.0.113.7' })
   })
 })
 

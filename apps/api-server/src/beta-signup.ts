@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono'
-import { type Bindings, isValidEmail, redactEmail } from './types'
+import { type Bindings, enforceIpRateLimit, isValidEmail, redactEmail } from './types'
 import { postBetaSignupNotification, type BetaSignupNotification } from './discord'
 
 const betaSignup = new Hono<{ Bindings: Bindings }>()
@@ -214,15 +214,9 @@ async function readSignupEmail(c: Context<{ Bindings: Bindings }>): Promise<stri
 
 betaSignup.post('/beta-signup', async (c) => {
   // Rate-limit by the caller IP before any work. Signups are rare, so the dedicated limiter is
-  // tighter than the heartbeat's. The IP keys the sliding window only and is never stored. The
-  // binding is optional, so the gate is a no-op when absent (tests, incomplete envs).
-  const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for') ?? 'unknown'
-  if (c.env.BETA_SIGNUP_LIMITER) {
-    const { success } = await c.env.BETA_SIGNUP_LIMITER.limit({ key: ip })
-    if (!success) {
-      return c.json({ error: 'Too many requests' }, 429)
-    }
-  }
+  // tighter than the heartbeat's. The IP keys the sliding window only and is never stored.
+  const limited = await enforceIpRateLimit(c.env.BETA_SIGNUP_LIMITER, c.req)
+  if (limited) return limited
 
   const email = await readSignupEmail(c)
   if (email instanceof Response) return email

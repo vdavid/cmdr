@@ -18,6 +18,13 @@ export type Bindings = {
   // Workers rate-limit binding gating POST /feedback, keyed by the caller IP (never stored).
   // Optional; the route skips the gate when absent.
   FEEDBACK_LIMITER?: RateLimit
+  // Workers rate-limit binding gating POST /error-report, keyed by the caller IP (never stored).
+  // The tightest of the set: each accepted request stores up to 10 MB in R2. Optional; the route
+  // skips the gate when absent.
+  ERROR_REPORT_LIMITER?: RateLimit
+  // Workers rate-limit binding gating POST /crash-report, keyed by the caller IP (never stored).
+  // Optional; the route skips the gate when absent.
+  CRASH_REPORT_LIMITER?: RateLimit
   // Paddle webhook secrets (both optional to support gradual rollout)
   PADDLE_WEBHOOK_SECRET_LIVE?: string
   PADDLE_WEBHOOK_SECRET_SANDBOX?: string
@@ -121,6 +128,39 @@ export function getPaddleConfig(env: Bindings): { apiKey: string; environment: '
   const apiKey = environment === 'live' ? env.PADDLE_API_KEY_LIVE : env.PADDLE_API_KEY_SANDBOX
   if (!apiKey) return null
   return { apiKey, environment }
+}
+
+/** Minimal request shape the header-reading helpers below need. Hono's `c.req` satisfies it. */
+interface HeaderReader {
+  header: (name: string) => string | undefined
+}
+
+/**
+ * The caller's IP, as Cloudflare reports it. Used to key rate limiters (transient, never stored)
+ * and to derive daily-salted hashes for dedup. `'unknown'` when neither header is present, which
+ * lumps such callers into one shared bucket rather than exempting them.
+ */
+export function callerIp(req: HeaderReader): string {
+  return req.header('cf-connecting-ip') ?? req.header('x-forwarded-for') ?? 'unknown'
+}
+
+/**
+ * Gate a request on a Workers rate-limit binding, keyed by the caller IP. Returns a 429 to
+ * return from the route, or null to continue. Call it before parsing a body, so an abusive
+ * caller costs no CPU or storage.
+ *
+ * The binding is optional so tests and incomplete envs can omit it; an absent binding is a no-op.
+ *
+ * Gotcha: Cloudflare counts these limits per data center, NOT globally
+ * (https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/), so one of these
+ * bounds a single abusive client, not a distributed flood. Endpoints where a flood is expensive
+ * need a global ceiling of their own too (see the error-report daily byte budget in
+ * `error-report-intake.ts`).
+ */
+export async function enforceIpRateLimit(limiter: RateLimit | undefined, req: HeaderReader): Promise<Response | null> {
+  if (!limiter) return null
+  const { success } = await limiter.limit({ key: callerIp(req) })
+  return success ? null : Response.json({ error: 'Too many requests' }, { status: 429 })
 }
 
 /** Verify admin auth and return error response if unauthorized, or null if authorized. */
