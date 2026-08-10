@@ -507,7 +507,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
     })
 }
 
-pub(crate) use crate::file_system::volume::{local_volume_id, path_volume_id, smb_volume_id};
+pub(crate) use crate::file_system::volume::{local_volume_id, smb_volume_id};
 
 /// Volume ID for a mount path: the Linux twin of `volumes::ids::volume_id_for`.
 ///
@@ -627,6 +627,7 @@ fn get_username() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::file_system::volume::path_volume_id;
 
     const SAMPLE_MOUNTS: &str = "\
 sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
