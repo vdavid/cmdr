@@ -134,6 +134,84 @@ function buildMultipart(bundleBytes: Uint8Array, meta: unknown, bundleName = 'bu
   return fd
 }
 
+const MULTIPART_BOUNDARY = '----CmdrTestBoundary7hK2'
+
+/** The framing around a `bundle` part of `bundleBytes`, plus the `meta` part. */
+function multipartFraming(): { head: Uint8Array; tail: Uint8Array } {
+  const encoder = new TextEncoder()
+  return {
+    head: encoder.encode(
+      `--${MULTIPART_BOUNDARY}\r\n` +
+        'Content-Disposition: form-data; name="bundle"; filename="bundle.zip"\r\n' +
+        'Content-Type: application/zip\r\n\r\n',
+    ),
+    tail: encoder.encode(
+      `\r\n--${MULTIPART_BOUNDARY}\r\n` +
+        'Content-Disposition: form-data; name="meta"\r\n\r\n' +
+        `${JSON.stringify(validMeta)}\r\n` +
+        `--${MULTIPART_BOUNDARY}--\r\n`,
+    ),
+  }
+}
+
+/**
+ * Hand-rolled multipart as one buffer, so the request carries a real `content-length` and undici
+ * has no async body pump to leave dangling when the route rejects without reading.
+ */
+function multipartBytes(bundleBytes: number): { body: ArrayBuffer; contentType: string } {
+  const { head, tail } = multipartFraming()
+  const buffer = new ArrayBuffer(head.byteLength + bundleBytes + tail.byteLength)
+  const body = new Uint8Array(buffer)
+  body.set(head, 0)
+  body.set(tail, head.byteLength + bundleBytes)
+  return { body: buffer, contentType: `multipart/form-data; boundary=${MULTIPART_BOUNDARY}` }
+}
+
+/**
+ * Hand-rolled multipart delivered as a stream, so the request carries no `content-length` and the
+ * bundle bytes are produced lazily. `FormData` can't express this: it always yields a known-length
+ * body. `bundleBytes` is emitted in 1 MB chunks, so a 30 MB case never materializes as one buffer.
+ */
+function streamingMultipart(bundleBytes: number): {
+  body: ReadableStream<Uint8Array>
+  contentType: string
+  /** Bytes the server actually pulled off the stream. The point of the cap is that this stays small. */
+  bytesProduced: () => number
+} {
+  const { head, tail } = multipartFraming()
+
+  const chunkSize = 1024 * 1024
+  let sent = 0
+  let produced = 0
+  // The route cancels the read as soon as the cap trips, so `pull` can still be in flight against
+  // a closed controller. Enqueuing then would throw an unhandled rejection outliving the test.
+  let cancelled = false
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      produced += head.byteLength
+      controller.enqueue(head)
+    },
+    pull(controller) {
+      if (cancelled) return
+      if (sent >= bundleBytes) {
+        produced += tail.byteLength
+        controller.enqueue(tail)
+        controller.close()
+        return
+      }
+      const size = Math.min(chunkSize, bundleBytes - sent)
+      controller.enqueue(new Uint8Array(size))
+      sent += size
+      produced += size
+    },
+    cancel() {
+      cancelled = true
+    },
+  })
+
+  return { body, contentType: `multipart/form-data; boundary=${MULTIPART_BOUNDARY}`, bytesProduced: () => produced }
+}
+
 const validMeta = {
   id: 'ERR-A2345',
   kind: 'user' as const,
@@ -236,15 +314,21 @@ describe('POST /error-report', () => {
 
   it('returns 413 for a bundle over 10 MB', async () => {
     const bindings = createBindings()
-    // 11 MB of 0s
-    const big = new Uint8Array(11 * 1024 * 1024)
-    const fd = buildMultipart(big, validMeta)
+    // A pre-serialized body, not `FormData`: the route rejects this on the declared length without
+    // reading it, and undici's FormData pump throws an unhandled rejection when its stream is left
+    // undrained. (workerd discards an undrained body without complaint, so this is a test-host
+    // artifact, but an unhandled rejection is never worth tolerating in the suite.)
+    const { body, contentType } = multipartBytes(12 * 1024 * 1024)
 
-    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+    const res = await app.request(
+      '/error-report',
+      { method: 'POST', body, headers: { 'content-type': contentType } },
+      bindings,
+    )
 
     expect(res.status).toBe(413)
-    const body = await res.json<{ error: string }>()
-    expect(body.error).toContain('too large')
+    const parsed = await res.json<{ error: string }>()
+    expect(parsed.error).toContain('too large')
   })
 
   it('returns 400 when "meta" is missing', async () => {
@@ -345,6 +429,44 @@ describe('POST /error-report', () => {
     // Background work (waitUntil fallback awaits inline in tests)
     const total = await kv.get('total_bytes')
     expect(total).toBe('1234')
+  })
+
+  it('rejects an oversized body that never declares a content-length', async () => {
+    // The pre-parse `content-length` check is advisory: a chunked upload declares no length at
+    // all, and a lying one declares whatever it likes. Without a cap on the bytes actually read,
+    // the multipart parser would buffer up to Cloudflare's 100 MB request limit inside a 128 MB
+    // isolate.
+    const bucket = createR2()
+    const bindings = createBindings({ ERROR_REPORTS_BUCKET: bucket })
+    const total = 30 * 1024 * 1024
+    const { body, contentType, bytesProduced } = streamingMultipart(total)
+
+    const res = await app.request(
+      '/error-report',
+      { method: 'POST', body, headers: { 'content-type': contentType }, duplex: 'half' } as RequestInit,
+      bindings,
+    )
+
+    expect(res.status).toBe(413)
+    expect(bucket._store.size).toBe(0)
+    // The status alone proves nothing: buffering all 30 MB and then measuring would also 413.
+    // What matters is that the server stopped reading near the cap instead of taking the body.
+    expect(bytesProduced()).toBeLessThan(total / 2)
+  })
+
+  it('accepts a streamed body that stays under the cap', async () => {
+    // Same streaming shape, legitimate size: the cap must not reject uploads that simply arrive
+    // without a content-length.
+    const bindings = createBindings()
+    const { body, contentType } = streamingMultipart(64 * 1024)
+
+    const res = await app.request(
+      '/error-report',
+      { method: 'POST', body, headers: { 'content-type': contentType }, duplex: 'half' } as RequestInit,
+      bindings,
+    )
+
+    expect(res.status).toBe(200)
   })
 
   it('charges the accepted upload against the daily intake budget', async () => {

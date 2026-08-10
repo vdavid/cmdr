@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { AwsClient } from 'aws4fetch'
 import { enforceIpRateLimit, type Bindings } from './types'
 import {
@@ -24,7 +24,57 @@ import {
 
 const errorReport = new Hono<{ Bindings: Bindings }>()
 
-const MAX_BUNDLE_BYTES = 10 * 1024 * 1024 // 10 MB hard cap on the multipart payload
+const MAX_BUNDLE_BYTES = 10 * 1024 * 1024 // 10 MB hard cap on the bundle part
+
+/**
+ * Hard cap on the whole multipart body, enforced against bytes actually read.
+ *
+ * The slack over {@link MAX_BUNDLE_BYTES} covers the `meta` part and the multipart framing. The
+ * client caps `userNote` at 100,000 chars (`validate_user_note` in the desktop commands layer),
+ * which is at most ~400 KB of UTF-8, so 1 MB leaves room without inviting a second payload.
+ */
+const MAX_BODY_BYTES = MAX_BUNDLE_BYTES + 1024 * 1024
+
+/**
+ * Read a request body, stopping at `maxBytes`. Returns the bytes, or null when the body is over
+ * the cap (the read is cancelled at that point, so the rest is never pulled off the socket).
+ *
+ * `content-length` can't carry this weight: a chunked upload declares no length, and a declared
+ * one can lie, either way leaving the multipart parser to buffer up to Cloudflare's 100 MB request
+ * limit inside a 128 MB isolate. Reading it ourselves bounds that at `maxBytes` no matter what the
+ * headers claim.
+ *
+ * Returning null rather than throwing keeps "too large" distinguishable from "malformed multipart"
+ * without matching on a parser message (the `no-string-matching` rule).
+ */
+async function readCappedBody(body: ReadableStream<Uint8Array>, maxBytes: number): Promise<ArrayBuffer | null> {
+  const reader = body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        await reader.cancel()
+        return null
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  const buffer = new ArrayBuffer(total)
+  const out = new Uint8Array(buffer)
+  let offset = 0
+  for (const chunk of chunks) {
+    out.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return buffer
+}
 const PRESIGN_TTL_SECONDS = 7 * 24 * 60 * 60 // R2 max for presigned URLs
 const DEFAULT_BUCKET_NAME = 'cmdr-error-reports'
 
@@ -226,48 +276,68 @@ function intakeRejectedResponse(reason: IntakeRejection): Response {
   )
 }
 
-errorReport.post('/error-report', async (c) => {
-  // Rate-limit by the caller IP before touching the body: every accepted request stores up to
-  // 10 MB in R2 and posts a Discord notification, so an ungated flood is expensive.
-  const limited = await enforceIpRateLimit(c.env.ERROR_REPORT_LIMITER, c.req)
-  if (limited) return limited
+/** The route context the upload helpers below receive. */
+type UploadContext = Context<{ Bindings: Bindings }>
 
-  // Global gates (daily byte budget + intake pause). The per-IP limiter above counts per data
-  // center, so this is what actually bounds a distributed flood. See `error-report-intake.ts`.
-  const today = todayDatePrefix()
+/**
+ * Run the global admission gates (daily byte budget + intake pause) and, when the budget is what
+ * ran out, claim the day's single Discord ping. Returns the 503 to send, or null to continue.
+ */
+async function enforceIntakeGates(c: UploadContext, today: string): Promise<Response | null> {
   const decision = await checkIntakeAllowed(c.env.ERROR_REPORT_META, today)
-  if (!decision.accept) {
-    console.error(`Error report: intake rejected (${decision.reason})`)
-    if (decision.reason === 'daily_budget' && c.env.DISCORD_WEBHOOK_URL) {
-      // One ping per day, not one per rejected upload; a flood is exactly when this fires.
-      const webhookUrl = c.env.DISCORD_WEBHOOK_URL
-      await scheduleBackground(
-        c,
-        claimBudgetAlert(c.env.ERROR_REPORT_META, today).then(async (claimed) => {
-          if (claimed) {
-            await postIntakeRejectedNotification(webhookUrl, { budgetBytes: DAILY_INTAKE_BUDGET_BYTES, date: today })
-          }
-        }),
-      )
-    }
-    return intakeRejectedResponse(decision.reason)
-  }
+  if (decision.accept) return null
 
-  // Pre-parse size guard. The body parser would slurp it all anyway, but cheap to fail fast.
+  console.error(`Error report: intake rejected (${decision.reason})`)
+  const webhookUrl = c.env.DISCORD_WEBHOOK_URL
+  if (decision.reason === 'daily_budget' && webhookUrl) {
+    // One ping per day, not one per rejected upload; a flood is exactly when this fires.
+    await scheduleBackground(
+      c,
+      claimBudgetAlert(c.env.ERROR_REPORT_META, today).then(async (claimed) => {
+        if (claimed) {
+          await postIntakeRejectedNotification(webhookUrl, { budgetBytes: DAILY_INTAKE_BUDGET_BYTES, date: today })
+        }
+      }),
+    )
+  }
+  return intakeRejectedResponse(decision.reason)
+}
+
+/**
+ * Read the multipart body under a hard byte cap and validate both parts. Returns the error
+ * Response to send, or the validated bundle and manifest.
+ */
+async function readReportUpload(c: UploadContext): Promise<Response | { bundle: File; meta: ErrorReportMeta }> {
+  // Fast-fail on a declared oversize. Advisory only: an honest client saves everyone the transfer,
+  // but the authority is the byte cap on the stream below.
   const contentLength = c.req.header('content-length')
-  if (contentLength && parseInt(contentLength, 10) > MAX_BUNDLE_BYTES) {
+  if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
     return c.json({ error: 'Bundle too large (max 10 MB)' }, 413)
   }
 
-  let form: Record<string, string | File>
+  const rawBody = c.req.raw.body
+  if (!rawBody) {
+    return c.json({ error: 'Missing request body' }, 400)
+  }
+
+  // Read under our own cap rather than handing the socket to `c.req.parseBody()`, which buffers
+  // whatever arrives.
+  const bytes = await readCappedBody(rawBody, MAX_BODY_BYTES)
+  if (!bytes) {
+    return c.json({ error: 'Bundle too large (max 10 MB)' }, 413)
+  }
+
+  let form: FormData
   try {
-    form = await c.req.parseBody()
+    form = await new Response(bytes, {
+      headers: { 'content-type': c.req.header('content-type') ?? '' },
+    }).formData()
   } catch {
     return c.json({ error: 'Invalid multipart body' }, 400)
   }
 
-  const bundle = form['bundle']
-  const metaRaw = form['meta']
+  const bundle = form.get('bundle')
+  const metaRaw = form.get('meta')
 
   if (!(bundle instanceof File)) {
     return c.json({ error: 'Missing or invalid "bundle" file part' }, 400)
@@ -288,6 +358,25 @@ errorReport.post('/error-report', async (c) => {
   if (!isValidMeta(meta)) {
     return c.json({ error: 'Invalid meta shape' }, 400)
   }
+
+  return { bundle, meta }
+}
+
+errorReport.post('/error-report', async (c) => {
+  // Rate-limit by the caller IP before touching the body: every accepted request stores up to
+  // 10 MB in R2 and posts a Discord notification, so an ungated flood is expensive.
+  const limited = await enforceIpRateLimit(c.env.ERROR_REPORT_LIMITER, c.req)
+  if (limited) return limited
+
+  // Global gates. The per-IP limiter above counts per data center, so these are what actually
+  // bound a distributed flood. See `error-report-intake.ts`.
+  const today = todayDatePrefix()
+  const rejected = await enforceIntakeGates(c, today)
+  if (rejected) return rejected
+
+  const upload = await readReportUpload(c)
+  if (upload instanceof Response) return upload
+  const { bundle, meta } = upload
 
   const id = meta.id
   // Same day the intake gate charged above, so the key prefix and the budget never disagree
