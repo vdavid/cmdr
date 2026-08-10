@@ -101,6 +101,25 @@ pub(super) fn deregister(state: &WriteOperationState, temp: &Path) {
     compact_if_large(&mut store);
 }
 
+/// Pushes whatever the ledger is holding out to the kernel, so the next launch's
+/// sweep can see it. The quit teardown's last act before the process ends.
+///
+/// Today every record already reaches the kernel inside [`register`] — the log is
+/// a bare `File`, so there is no user-space buffer to lose — and this is the
+/// explicit fence that keeps it that way: if the handle ever gains a `BufWriter`,
+/// the quit path won't silently start dropping the last partials it recorded.
+/// Deliberately NOT an `fsync`; see the module docs on why a power loss is the
+/// directory scan's problem, not this ledger's.
+pub fn flush() {
+    let mut store = STORE.lock_ignore_poison();
+    let Some(log) = &mut store.log else {
+        return;
+    };
+    if let Err(e) = log.flush() {
+        log::warn!(target: "copy", "couldn't flush the in-flight temp ledger before exit: {e}");
+    }
+}
+
 /// Points the persisted ledger at the app data dir and clears whatever an
 /// earlier run left behind. Call once at startup, before any copy can start.
 ///

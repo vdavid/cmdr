@@ -43,6 +43,10 @@ export const SOFT_DIALOG_REGISTRY = [
   { id: 'viewer-copy-confirm', description: 'Confirms copying a 10 to 100 MB selection from the file viewer' },
   { id: 'viewer-copy-refuse', description: 'Tells the user a > 100 MB viewer selection is too large to copy' },
   { id: 'drive-index-stale', description: 'One-time explainer the first time an external drive index goes stale' },
+  {
+    id: 'quit-confirmation',
+    description: 'Asks whether to quit while copies or other operations are still running, on a countdown',
+  },
 ] as const satisfies readonly { id: string; description?: string }[]
 
 export type SoftDialogId = (typeof SOFT_DIALOG_REGISTRY)[number]['id']

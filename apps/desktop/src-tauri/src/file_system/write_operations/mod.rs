@@ -81,6 +81,9 @@ use validation::{
 };
 
 // Re-export public types
+/// The quit teardown's fence over that same ledger: everything recorded is with
+/// the kernel before the process ends, so the next launch's sweep sees it.
+pub use in_flight_temps::flush as flush_in_flight_temps;
 /// Points the in-flight transfer-partial ledger at the app data dir and clears
 /// what an earlier run left behind. Startup only, before any copy can start.
 pub use in_flight_temps::init_and_sweep as init_and_sweep_in_flight_temps;
@@ -89,10 +92,11 @@ pub use state::{
     VolumesBusyChanged, busy_volume_ids, cancel_all_write_operations, cancel_write_operation, get_operation_status,
     init_busy_volume_emitter, list_active_operations, resolve_write_conflict,
 };
-// The hard-abort tier (`state::abort_all_write_operations`) is deliberately NOT
-// re-exported here: it has exactly one legitimate caller, the quit deadline, and
-// a name sitting in this facade is a name something reaches for. The quit gate
-// adds the re-export along with its call site.
+// The hard-abort tier. Exactly one legitimate caller: the quit deadline
+// (`crate::quit`), which fires it only after the cooperative cancel has had its
+// window. ❌ Never reach for it from anything a person clicked — it skips the
+// backend's own partial cleanup. `transfer/DETAILS.md` § "Two tiers of cancel".
+pub use state::abort_all_write_operations;
 // Operation manager: the single scheduler + registry every write op flows
 // through. `OperationsChanged` / `OperationSnapshot` are the thin
 // `operations-changed` event payload (the queue window consumes them; `LifecycleStatus` rides

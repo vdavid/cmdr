@@ -94,6 +94,7 @@ use crate::error_reporter::auto_dispatcher::ErrorReportAutoSent;
 use crate::file_system::watcher::{DirectoryDeletedEvent, DirectoryDiff};
 use crate::menu::{MediaIndexFolderChoice, MediaIndexFolderExclusion, MenuSort, SettingsChanged, ViewModeChanged};
 use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
+use crate::quit::QuitRequested;
 use crate::restricted_paths::RestrictedPathsChangedPayload;
 use crate::system_events::{
     AccentColorChanged, DragImageSize, DragModifiers, ReduceTransparencyChanged, SessionCompleteEvent,
@@ -654,6 +655,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::favorites::reorder_favorites,
         crate::commands::whats_new::get_whats_new,
         crate::commands::whats_new::whats_new_dev_override,
+        crate::quit::commands::quit_confirm,
+        crate::quit::commands::quit_cancel,
         crate::commands::operation_log::get_recent_operation_log_entries,
         crate::commands::operation_log::get_operation_log_detail,
         crate::commands::operation_log::undo_operations,
@@ -739,6 +742,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             WriteSettledEvent,
             // Operation manager registry snapshot (write_operations/manager.rs).
             OperationsChanged,
+            // The quit gate holding an exit while operations run (quit/).
+            QuitRequested,
             // Listing sink (file_system/listing/streaming.rs `TauriListingEventSink`).
             ListingOpeningEvent,
             ListingProgressEvent,

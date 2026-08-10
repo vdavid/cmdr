@@ -272,6 +272,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::favorites::reorder_favorites,
         crate::commands::whats_new::get_whats_new,
         crate::commands::whats_new::whats_new_dev_override,
+        crate::quit::commands::quit_confirm,
+        crate::quit::commands::quit_cancel,
         crate::commands::operation_log::get_recent_operation_log_entries,
         crate::commands::operation_log::get_operation_log_detail,
         crate::commands::operation_log::undo_operations,

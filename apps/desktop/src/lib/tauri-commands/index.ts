@@ -261,6 +261,11 @@ export {
 } from './operations'
 export type { OperationSnapshot, OperationsChanged } from './operations'
 
+// The quit gate: the backend holding an exit while operations run, and the
+// dialog's two answers.
+export { quitConfirm, quitCancel, onQuitRequested } from './quit'
+export type { QuitRequested } from './quit'
+
 // Network types
 export type { ManualConnectResult } from './networking'
 

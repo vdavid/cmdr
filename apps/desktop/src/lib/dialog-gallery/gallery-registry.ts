@@ -377,6 +377,19 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
 
   // ── Licensing and app lifecycle ───────────────────────────────────────────
   {
+    dialogId: 'quit-confirmation',
+    label: 'Quit while operations run',
+    hostWindow: 'main',
+    status: 'ready',
+    note: 'Static here, and quitting nothing: the real dialog mirrors a countdown the Rust quit gate owns, and both buttons are props the gallery leaves pointing at close. Each state pins its own second, so you can review the last-second wording without waiting for it. It renders above any other dialog (`--z-modal-top`), which you can see by opening a conflict dialog first.',
+    states: [
+      { id: 'one-copy', label: 'One copy running' },
+      { id: 'several-operations', label: 'Five operations' },
+      { id: 'long-names', label: 'Names that never fit' },
+      { id: 'last-second', label: 'One second left' },
+    ],
+  },
+  {
     dialogId: 'acknowledgements',
     label: 'Acknowledgements',
     hostWindow: 'main',

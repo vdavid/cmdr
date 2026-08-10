@@ -445,6 +445,12 @@
   --z-dropdown: 100;
   --z-overlay: 200;
   --z-modal: 300;
+  /* One rung above every other modal, for the rare dialog that must be answerable
+     even while another one is up. Modals otherwise all share `--z-modal` and
+     stack by DOM order, which is not a contract a window-level prompt can rest
+     on. `ModalDialog`'s `topmost` prop is the only way in; keep it that way, or
+     "above everything" stops meaning anything. */
+  --z-modal-top: 350;
   --z-notification: 400;
   /* Tooltips (above all other layers) */
   --z-tooltip: 500;

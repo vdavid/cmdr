@@ -2305,6 +2305,16 @@ export const commands = {
    */
   whatsNewDevOverride: () => __TAURI_INVOKE<string | null>('whats_new_dev_override'),
   /**
+   *  The user pressed Quit. Stops every operation and ends the process; see
+   *  [`super::tear_down_and_exit`] for the order and the budget.
+   */
+  quitConfirm: () => __TAURI_INVOKE<void>('quit_confirm'),
+  /**
+   *  The user pressed "Keep working". Releases the gate and **removes** the
+   *  countdown; it is not a snooze.
+   */
+  quitCancel: () => __TAURI_INVOKE<void>('quit_cancel'),
+  /**
    *  The recent-operations feed (newest first), paged — the alpha UI's "last 50 +
    *  load 50 more" and the Debug panel's list.
    */
@@ -3383,6 +3393,7 @@ export const events = {
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
   quickLookClosed: makeEvent<QuickLookClosed>('quick-look-closed'),
   quickLookKey: makeEvent<QuickLookKeyEvent>('quick-look-key'),
+  quitRequested: makeEvent<QuitRequested>('quit-requested'),
   reduceTransparencyChanged: makeEvent<ReduceTransparencyChanged>('reduce-transparency-changed'),
   restrictedPathsChanged: makeEvent<RestrictedPathsChangedPayload>('restricted-paths-changed'),
   scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
@@ -7103,6 +7114,19 @@ export type QuickLookKeyEvent = {
   metaKey: boolean
   altKey: boolean
   ctrlKey: boolean
+}
+
+/**
+ *  Emitted when a quit is held: what's still running, and how long the user has.
+ *
+ *  Kebab-cases to `quit-requested`. The `countdownMs` is what the dialog counts
+ *  down for display; it is NOT the authority, [`QuitGate`]'s thread is.
+ */
+export type QuitRequested = {
+  // The non-instant operations holding the quit, in registration order.
+  operations: OperationSnapshot[]
+  // Milliseconds from this event to the automatic quit.
+  countdownMs: number
 }
 
 /**

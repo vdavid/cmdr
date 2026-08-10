@@ -58,6 +58,7 @@
     import NewFileDialog from '$lib/file-operations/mkfile/NewFileDialog.svelte'
     import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
     import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
+    import QuitConfirmationDialog from '$lib/quit/QuitConfirmationDialog.svelte'
     import DeleteAiModelDialog from '$lib/settings/sections/DeleteAiModelDialog.svelte'
     // The viewer copy dialogs live in the viewer window's route. Same relative-import
     // shape `lib/search/ImageSearchResults.svelte` uses for `routes/viewer/media-view`.
@@ -76,6 +77,7 @@
     import type { ArchivePasswordFixture } from './fixtures/archive-password'
     import type { TransferErrorFixture } from './fixtures/transfer-error'
     import type { PtpcameradFixture } from './fixtures/devices'
+    import type { QuitFixture } from './fixtures/quit'
     import type { SelectionFixture } from './fixtures/selection'
 
     const log = getAppLogger('dialogGallery')
@@ -104,6 +106,7 @@
         | { kind: 'mkfile'; props: NewEntryFixture }
         | { kind: 'go-to-path'; props: GoToPathFixture }
         | { kind: 'delete-ai-model'; props: DeleteAiModelFixture }
+        | { kind: 'quit-confirmation'; props: QuitFixture }
         /** Renders nothing: the app's own mount site shows the seeded dialog. */
         | { kind: 'store-seeded'; seed: StoreSeed }
         | null
@@ -170,6 +173,8 @@
         'transfer-error': (id) =>
             withFixture(fixtureRecords['transfer-error'][id], (f) => ({ kind: 'transfer-error', props: f })),
         ptpcamerad: (id) => withFixture(fixtureRecords.ptpcamerad[id], (f) => ({ kind: 'ptpcamerad', props: f })),
+        'quit-confirmation': (id) =>
+            withFixture(fixtureRecords['quit-confirmation'][id], (f) => ({ kind: 'quit-confirmation', props: f })),
         'crash-report': (id) =>
             withFixture(fixtureRecords['crash-report'][id], (report) => ({ kind: 'crash-report', props: { report } })),
         'viewer-copy-confirm': (id) =>
@@ -309,6 +314,8 @@
         <MtpPermissionDialog onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
     {:else if plan?.kind === 'ptpcamerad'}
         <PtpcameradDialog {...plan.props} onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
+    {:else if plan?.kind === 'quit-confirmation'}
+        <QuitConfirmationDialog {...plan.props} onQuit={closeGalleryDialog} onKeepWorking={closeGalleryDialog} />
     {:else if plan?.kind === 'crash-report'}
         <CrashReportDialog {...plan.props} onClose={closeGalleryDialog} />
     {:else if plan?.kind === 'viewer-copy'}

@@ -91,6 +91,17 @@
         overlayClass?: string
         /** Clicking the scrim closes the dialog. Off by default (macOS panels don't dismiss on backdrop). */
         closeOnOverlayClick?: boolean
+        /**
+         * Puts the dialog one rung above every other modal (`--z-modal-top`), so
+         * it's answerable even with a conflict prompt or a progress dialog already
+         * open. Modals otherwise all sit at `--z-modal` and stack by DOM order,
+         * which no window-level prompt can rely on.
+         *
+         * For a dialog the app itself raises and the user MUST answer — today
+         * exactly one, the quit prompt. ❌ Not a "make mine important" switch: two
+         * topmost dialogs are back to racing on DOM order.
+         */
+        topmost?: boolean
         /** Renders × button and handles Escape key */
         onclose?: () => void
     }
@@ -115,6 +126,7 @@
         ownsKeyboard = false,
         overlayClass = '',
         closeOnOverlayClick = false,
+        topmost = false,
         onclose,
     }: Props = $props()
 
@@ -428,6 +440,7 @@
     bind:this={overlayElement}
     class="modal-overlay {overlayClass}"
     class:blur
+    class:topmost
     class:align-top={align === 'top'}
     {role}
     aria-modal="true"
@@ -506,6 +519,12 @@
         align-items: center;
         justify-content: center;
         z-index: var(--z-modal);
+    }
+
+    /* One rung above every other modal, so the panel AND its scrim cover a
+       dialog that's already open. See the `topmost` prop. */
+    .modal-overlay.topmost {
+        z-index: var(--z-modal-top);
     }
 
     /* `align="top"`: the Spotlight placement. 10vh reads as "near the top" at any

@@ -25,7 +25,6 @@
         onMtpPermissionError,
         onMtpDeviceConnected,
         connectMtpDevice,
-        cancelAllWriteOperations,
         checkPendingCrashReport,
         sendCrashReport,
         type MtpExclusiveAccessErrorEvent,
@@ -55,6 +54,8 @@
     // production builds. The gallery flag is what lets the i18n screenshot driver and
     // the E2E lane open gallery states in their builds; see `dialog-gallery/DETAILS.md`.
     import DialogGallery from '$lib/dialog-gallery/DialogGallery.svelte'
+    import QuitConfirmationDialog from '$lib/quit/QuitConfirmationDialog.svelte'
+    import { quitPrompt, initQuitPrompt, cleanupQuitPrompt } from '$lib/quit/quit-prompt.svelte'
     import type { Snippet } from 'svelte'
 
     const crashLog = getAppLogger('crashReporter')
@@ -182,6 +183,12 @@
         // because it uses $effect, which requires Svelte's reactive context.
         initAiToastSync()
 
+        // Listen for the backend holding a quit. Synchronous and first: the
+        // gate can raise the prompt at any moment, including while the rest of
+        // this mount is still awaiting IPC, and a missed `quit-requested` means
+        // the app quits on its own countdown with no dialog ever shown.
+        initQuitPrompt()
+
         // Catch focus leaks: if neither pane is keyboard-focused for 500 ms+
         // while the main window is active and no dialog is open, log a WARN
         // with the offending activeElement so we can trace the culprit.
@@ -277,11 +284,6 @@
 
             // Initialize AI state and event listeners (shows offer toast if eligible)
             aiCleanup = await initAiState()
-
-            // Cancel all active write operations on page unload (hot-reload, close, navigation)
-            window.addEventListener('beforeunload', () => {
-                void cancelAllWriteOperations()
-            })
         })()
     })
 
@@ -311,6 +313,7 @@
         cleanupMcpMainBridge()
         cleanupRestrictedSettingsBridge()
         cleanupAutoSendToastListener()
+        cleanupQuitPrompt()
     })
 </script>
 
@@ -342,6 +345,22 @@
         {@render children?.()}
     {/if}
 </div>
+<!-- Last in the markup AND `topmost` (`--z-modal-top`): the quit prompt has to
+     be answerable over anything already open, a modal conflict dialog included.
+     The z-index is what actually guarantees it; the position here just keeps the
+     DOM honest about the intent. -->
+{#if quitPrompt.open}
+    <QuitConfirmationDialog
+        operations={quitPrompt.operations}
+        secondsLeft={quitPrompt.secondsLeft}
+        onQuit={() => {
+            quitPrompt.confirm()
+        }}
+        onKeepWorking={() => {
+            quitPrompt.keepWorking()
+        }}
+    />
+{/if}
 
 <style>
     .page-wrapper {

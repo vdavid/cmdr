@@ -139,6 +139,9 @@ mod permissions_linux;
 mod platform;
 pub mod priority;
 mod quick_look;
+/// The quit gate: the backend owns the decision to exit, and the countdown that
+/// backs it. See `quit/CLAUDE.md`.
+mod quit;
 mod redact;
 #[cfg(target_os = "macos")]
 mod reduce_transparency;
@@ -943,15 +946,25 @@ pub fn run() {
                 // match. Idempotent when nothing changed.
                 downloads::refresh_global_go_to_latest_shortcut(window.app_handle());
             }
-            // When the main window is closed, quit the entire app (including settings/debug/viewer windows)
-            if let tauri::WindowEvent::CloseRequested { .. } = event
+            // Closing the main window quits the whole app (settings, debug, and
+            // viewer windows included) — but only once the quit gate says so.
+            // With work in flight the gate holds the exit, asks the user, and
+            // runs its own countdown; the window must STAY OPEN for that, or
+            // the dialog it's about to show goes with it. Nothing is torn down
+            // on this path until the gate has waved the quit through, so a
+            // "Keep working" leaves AI, MCP, and mDNS running. See `quit/`.
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event
                 && window.label() == "main"
             {
-                ai::manager::shutdown();
-                mcp::stop_mcp_server();
-                #[cfg(any(target_os = "macos", target_os = "linux"))]
-                network::mdns_discovery::stop_discovery();
-                window.app_handle().exit(0);
+                if quit::request_quit(window.app_handle()) == quit::QuitOutcome::Held {
+                    api.prevent_close();
+                } else {
+                    ai::manager::shutdown();
+                    mcp::stop_mcp_server();
+                    #[cfg(any(target_os = "macos", target_os = "linux"))]
+                    network::mdns_discovery::stop_discovery();
+                    window.app_handle().exit(0);
+                }
             }
             // Clean up app-wide resources only when the main window is destroyed
             if let tauri::WindowEvent::Destroyed = event
@@ -983,6 +996,23 @@ pub fn run() {
                     // discover wry's ObjC class, so it runs at Ready (not setup).
                     #[cfg(target_os = "macos")]
                     drag_image_detection::install(_app.clone());
+                }
+                // ⌘Q, the app menu's Quit, the Dock's Quit, a logout or
+                // restart, and every `AppHandle::exit` in the app all land
+                // here. With non-instant work in flight the gate holds the
+                // exit and takes the decision over (dialog + its own
+                // countdown); with nothing running this is a pass-through and
+                // the app quits exactly as it always did.
+                //
+                // A `restart()` carries `RESTART_EXIT_CODE`, for which Tauri
+                // ignores `prevent_exit` outright — asking there would show a
+                // dialog nobody could answer, so the gate never sees it.
+                tauri::RunEvent::ExitRequested { ref api, code, .. } => {
+                    if code != Some(tauri::RESTART_EXIT_CODE)
+                        && quit::request_quit(_app) == quit::QuitOutcome::Held
+                    {
+                        api.prevent_exit();
+                    }
                 }
                 tauri::RunEvent::Exit => {
                     // Flush window geometry synchronously: the debounced writer

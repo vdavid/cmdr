@@ -781,12 +781,14 @@ pub fn cancel_all_write_operations() {
 /// instead of the server's.
 ///
 /// ❌ Not a cancel with a shorter fuse: the backend's own partial cleanup is
-/// skipped, and the abandoned bytes are left to the staged-write sweep. Fire it
-/// only from a deadline holder (the quit gate), ❌ never from a user's Cancel.
-#[allow(
-    dead_code,
-    reason = "The quit gate is the caller and lands separately; the trigger ships with the mechanism it fires so that milestone wires rather than builds it. Exercised by the tier-2 suites."
-)]
+/// skipped, and the abandoned bytes are left to the staged-write sweep.
+///
+/// **Test-only, and that's the honest scope.** The one production caller is the
+/// quit deadline, and a deadline always aborts EVERYTHING (see
+/// [`abort_all_write_operations`]); there is no situation where one live
+/// operation's wait is worth ending and its neighbour's isn't. The per-op form
+/// stays because the tier-2 suites drive one operation at a time.
+#[cfg(test)]
 pub fn abort_write_operation(operation_id: &str) {
     cancel_write_operation(operation_id, false);
     let Some(state) = WRITE_OPERATION_STATE.get(operation_id) else {
@@ -800,13 +802,14 @@ pub fn abort_write_operation(operation_id: &str) {
 /// TIER 2 for every live operation: what the quit deadline fires once the
 /// cooperative cancel has had its chance.
 ///
-/// Same contract as [`abort_write_operation`], applied to the whole registry. The
-/// caller owns the "has had its chance" part: cancel first, give the operations a
-/// beat to settle, and call this for whatever is still there.
-#[allow(
-    dead_code,
-    reason = "The quit gate is the caller and lands separately; the trigger ships with the mechanism it fires so that milestone wires rather than builds it. Exercised by the tier-2 suites."
-)]
+/// Cancels every live operation, then fires [`WriteOperationState::backend_abort`]
+/// on each: the cross-volume streaming write is raced against it, so a wait that
+/// a dead server would own ends on our clock instead. The backend's own partial
+/// cleanup is skipped; the staging layer and the startup sweep own the leftovers.
+///
+/// The caller owns the "has had its chance" part: cancel first, give the
+/// operations a beat to settle, and call this for whatever is still there.
+/// `crate::quit` is that caller, and ❌ nothing a person clicked ever is.
 pub fn abort_all_write_operations() {
     WRITE_OPERATION_STATE.abort_all();
 }

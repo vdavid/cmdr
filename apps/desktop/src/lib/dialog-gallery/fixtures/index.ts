@@ -32,6 +32,7 @@ import { ptpcameradFixtures } from './devices'
 import { staleDriveFixtures } from './indexing'
 import { expirationFixtures } from './licensing'
 import { onboardingFixtures } from './onboarding'
+import { quitFixtures } from './quit'
 import { extensionChangeFixtures, renameConflictFixtures } from './rename'
 import { selectionAddFixtures, selectionRemoveFixtures } from './selection'
 import {
@@ -62,6 +63,7 @@ export const fixtureRecords = {
   onboarding: onboardingFixtures,
   'operation-log': operationLogFixtures,
   ptpcamerad: ptpcameradFixtures,
+  'quit-confirmation': quitFixtures,
   'rename-conflict': renameConflictFixtures,
   'selection-add': selectionAddFixtures,
   'selection-remove': selectionRemoveFixtures,
