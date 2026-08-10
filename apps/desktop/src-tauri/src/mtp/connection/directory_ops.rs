@@ -1,7 +1,7 @@
 //! MTP directory listing and path resolution.
 
 use log::{debug, error, info};
-use mtp_rs::{CancelToken, ObjectHandle, StorageId};
+use mtp_rs::{CancelToken, ListingItem, ObjectHandle, StorageId};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
@@ -255,7 +255,7 @@ impl MtpConnectionManager {
             let mut done = false;
             for _ in 0..SCAN_METADATA_BATCH {
                 match listing.next().await {
-                    Some(Ok(info)) => {
+                    Some(Ok(ListingItem::Object(info))) => {
                         let is_dir = info.is_folder();
                         let child_path = parent_path.join(&info.filename);
                         cache_updates.push((child_path.clone(), info.handle));
@@ -275,15 +275,23 @@ impl MtpConnectionManager {
                             )
                         });
                     }
+                    Some(Ok(ListingItem::Skipped(skipped))) => {
+                        // The device listed this handle and then wouldn't describe
+                        // it. mtp-rs decides what's safe to skip (see
+                        // `Storage::collect_objects`), so we no longer guess: a
+                        // single unreadable object doesn't abort the folder.
+                        debug!(
+                            "list_directory_for_scan: {device_id}:{storage_id} handle {} unreadable: {}",
+                            skipped.handle.0, skipped.error
+                        );
+                    }
                     Some(Err(e)) => {
-                        // A per-handle failure: cancel surfaces as Cancelled;
-                        // anything else, skip this handle and keep walking (a
-                        // single bad object shouldn't abort the folder).
-                        let mapped = map_mtp_error(e, device_id);
-                        if matches!(mapped, MtpConnectionError::Cancelled { .. }) {
-                            return Err(mapped);
-                        }
-                        debug!("list_directory_for_scan: skipping a handle on {device_id}:{storage_id}: {mapped:?}");
+                        // Now genuinely fatal. This arm used to swallow everything
+                        // except Cancelled and keep walking, so a transport or
+                        // session failure mid-listing quietly produced a SHORT
+                        // folder that looked complete. mtp-rs 0.30 separates the
+                        // two cases, so this can propagate again.
+                        return Err(map_mtp_error(e, device_id));
                     }
                     None => {
                         done = true;
@@ -586,15 +594,23 @@ impl MtpConnectionManager {
 
         while let Some(result) = listing.next().await {
             let info = match result {
-                Ok(info) => info,
-                Err(e) => {
+                Ok(ListingItem::Object(info)) => info,
+                Ok(ListingItem::Skipped(skipped)) => {
+                    // The device listed this handle and then wouldn't describe it.
+                    // mtp-rs decides what's safe to skip (see
+                    // `Storage::collect_objects`), so we no longer guess.
                     debug!(
-                        "MTP list_directory_with_progress [req#{}]: skipping handle at index {}: {:?}",
-                        request_id,
-                        listing.fetched(),
-                        e
+                        "MTP list_directory_with_progress [req#{}]: handle {} unreadable: {}",
+                        request_id, skipped.handle.0, skipped.error
                     );
                     continue;
+                }
+                Err(e) => {
+                    // Now genuinely fatal. This arm used to `continue` on ANY
+                    // error, so a transport or session failure mid-listing quietly
+                    // produced a SHORT folder that looked complete. mtp-rs 0.30
+                    // separates the two cases, so this can propagate again.
+                    return Err(map_mtp_error(e, device_id));
                 }
             };
 
