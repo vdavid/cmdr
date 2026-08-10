@@ -487,13 +487,7 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
             }
         };
 
-        let outcome = copy_file_with_strategy(
-            source,
-            &actual_dest,
-            needs_safe_overwrite,
-            &state.intent,
-            Some(progress_cb),
-        )?;
+        let outcome = copy_file_with_strategy(state, source, &actual_dest, needs_safe_overwrite, Some(progress_cb))?;
         // Byte accounting uses `write_weight` below (matches the scan's
         // `total_bytes` even when a clonefile reports 0 copied bytes), so the
         // strategy's own byte count is intentionally unused here.

@@ -22,7 +22,6 @@
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::AtomicU8;
 
 #[cfg(target_os = "linux")]
 use super::linux_copy::copy_single_file_linux;
@@ -30,6 +29,7 @@ use super::linux_copy::copy_single_file_linux;
 use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
 use super::super::overwrite::safe_overwrite_file;
+use super::super::state::WriteOperationState;
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use super::super::types::IoResultExt;
 use super::super::types::WriteOperationError;
@@ -180,10 +180,10 @@ pub(super) fn select_local_copy_strategy(source: &Path, dest: &Path) -> LocalCop
 
 /// Copies file contents using the best strategy for the source/destination combination.
 pub(super) fn copy_file_with_strategy(
+    state: &Arc<WriteOperationState>,
     source: &Path,
     dest: &Path,
     needs_safe_overwrite: bool,
-    cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<StrategyCopyOutcome, WriteOperationError> {
     let strategy = select_local_copy_strategy(source, dest);
@@ -192,18 +192,19 @@ pub(super) fn copy_file_with_strategy(
         source.display(),
         dest.display()
     );
-    copy_file_using(strategy, source, dest, needs_safe_overwrite, cancelled, progress_callback)
+    copy_file_using(strategy, state, source, dest, needs_safe_overwrite, progress_callback)
 }
 
 /// [`copy_file_with_strategy`] with the mechanism chosen by the caller.
 pub(super) fn copy_file_using(
     strategy: LocalCopyStrategy,
+    state: &Arc<WriteOperationState>,
     source: &Path,
     dest: &Path,
     needs_safe_overwrite: bool,
-    cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<StrategyCopyOutcome, WriteOperationError> {
+    let cancelled = &state.intent;
     match strategy {
         #[cfg(target_os = "macos")]
         LocalCopyStrategy::AppleClone => {
@@ -269,10 +270,16 @@ mod tests {
     use super::*;
     use crate::test_support::TestDir;
     use std::fs;
-    use std::sync::atomic::AtomicU8;
+    use std::time::Duration;
 
     fn create_temp_dir(name: &str) -> TestDir {
         TestDir::new(&format!("copy_strategy_test_{}", name))
+    }
+
+    /// A running operation to copy under. Its `intent` is the cancel token and
+    /// its liveness owns whatever the copy stages.
+    fn running_state() -> Arc<WriteOperationState> {
+        Arc::new(WriteOperationState::new(Duration::from_millis(50)))
     }
 
     #[test]
@@ -283,8 +290,7 @@ mod tests {
 
         fs::write(&src, "Hello, copy strategy!").unwrap();
 
-        let cancelled = Arc::new(AtomicU8::new(0));
-        let result = copy_file_with_strategy(&src, &dst, false, &cancelled, None);
+        let result = copy_file_with_strategy(&running_state(), &src, &dst, false, None);
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap().bytes, 21);
@@ -301,8 +307,7 @@ mod tests {
         fs::write(&src, "New content").unwrap();
         fs::write(&dst, "Old content").unwrap();
 
-        let cancelled = Arc::new(AtomicU8::new(0));
-        let result = copy_file_with_strategy(&src, &dst, true, &cancelled, None);
+        let result = copy_file_with_strategy(&running_state(), &src, &dst, true, None);
 
         assert!(result.is_ok());
         assert!(dst.exists());
@@ -320,8 +325,7 @@ mod tests {
         fs::write(&src, "#!/bin/bash").unwrap();
         fs::set_permissions(&src, fs::Permissions::from_mode(0o755)).unwrap();
 
-        let cancelled = Arc::new(AtomicU8::new(0));
-        let result = copy_file_with_strategy(&src, &dst, false, &cancelled, None);
+        let result = copy_file_with_strategy(&running_state(), &src, &dst, false, None);
 
         assert!(result.is_ok());
         let dst_perms = fs::metadata(&dst).unwrap().permissions().mode();
@@ -405,8 +409,7 @@ mod tests {
 
         fs::write(&src, "").unwrap();
 
-        let cancelled = Arc::new(AtomicU8::new(0));
-        let result = copy_file_with_strategy(&src, &dst, false, &cancelled, None);
+        let result = copy_file_with_strategy(&running_state(), &src, &dst, false, None);
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap().bytes, 0);
