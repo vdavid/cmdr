@@ -351,7 +351,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **miniz_oxide** 0.8.9, MIT OR Zlib OR Apache-2.0, <https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide>
 - **mio** 1.2.1, MIT, <https://github.com/tokio-rs/mio>
 - **moxcms** 0.8.1, BSD-3-Clause OR Apache-2.0, <https://github.com/awxkee/moxcms.git>
-- **mtp-rs** 0.29.0, MIT OR Apache-2.0, <https://github.com/vdavid/mtp-rs>
+- **mtp-rs** 0.30.0, MIT OR Apache-2.0, <https://github.com/vdavid/mtp-rs>
 - **muda** 0.19.3, Apache-2.0 OR MIT, <https://github.com/tauri-apps/muda>
 - **new_debug_unreachable** 1.0.6, MIT, <https://github.com/mbrubeck/rust-debug-unreachable>
 - **no_std_io2** 0.9.4, Apache-2.0 OR MIT, <https://github.com/wcampbell0x2a/no-std-io2>
@@ -373,7 +373,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **num_enum** 0.7.6, BSD-3-Clause OR MIT OR Apache-2.0, <https://github.com/illicitonion/num_enum>
 - **num_enum_derive** 0.7.6, BSD-3-Clause OR MIT OR Apache-2.0, <https://github.com/illicitonion/num_enum>
 - **numkong** 7.7.1, Apache-2.0, <https://github.com/ashvardanian/NumKong>
-- **nusb** 0.2.4, Apache-2.0 OR MIT, <https://github.com/kevinmehall/nusb>
+- **nusb** 0.2.7, Apache-2.0 OR MIT, <https://github.com/kevinmehall/nusb>
 - **objc-sys** 0.3.5, MIT, <https://github.com/madsmtm/objc2>
 - **objc2** 0.5.2, MIT, <https://github.com/madsmtm/objc2>
 - **objc2** 0.6.4, MIT, <https://github.com/madsmtm/objc2>
@@ -696,7 +696,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **@tauri-apps/plugin-updater** 2.10.1, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
 - **@types/estree** 1.0.9, MIT, <https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/estree>
 - **@types/trusted-types** 2.0.7, MIT, <https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/trusted-types>
-- **@typescript-eslint/types** 8.65.0, MIT, <https://typescript-eslint.io>
+- **@typescript-eslint/types** 8.66.0, MIT, <https://typescript-eslint.io>
 - **@zag-js/accordion** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
 - **@zag-js/anatomy** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
 - **@zag-js/angle-slider** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
@@ -3370,7 +3370,7 @@ Text from: `LICENSE.txt`
 
 ### MIT
 
-Covers: adler2 2.0.1, anyhow 1.0.103, async-trait 0.1.89, atomic-waker 1.1.2, camino 1.2.4, cargo-platform 0.1.9, cargo_metadata 0.19.2, curve25519-dalek-derive 0.1.1, cxx 1.0.198, cxx-build 1.0.198, cxxbridge-flags 1.0.198, cxxbridge-macro 1.0.198, displaydoc 0.2.6, dtoa 1.0.11, dyn-clone 1.0.20, erased-serde 0.4.10, fastrand 2.4.1, itoa 1.0.18, link-cplusplus 1.0.12, minimal-lexical 0.2.1, num_enum 0.7.6, num_enum_derive 0.7.6, nusb 0.2.4, once_cell 1.21.4, paste 1.0.15, pastey 0.1.1, pin-project-lite 0.2.17, proc-macro-crate 3.5.0, proc-macro2 1.0.106, quote 1.0.46, rustix 1.1.4, rustversion 1.0.22, scratch 1.0.9, semver 1.0.28, serde 1.0.229, serde-untagged 0.1.9, serde_core 1.0.229, serde_derive 1.0.229, serde_derive_internals 0.29.1, serde_json 1.0.151, serde_path_to_error 0.1.20, serde_repr 0.1.20, servo_arc 0.4.3, syn 2.0.118, syn 3.0.3, thiserror 1.0.69, thiserror 2.0.18, thiserror-impl 1.0.69, thiserror-impl 2.0.18, typed-path 0.12.3, typeid 1.0.3, unicode-ident 1.0.24, utf-8 0.7.6, zmij 1.0.21
+Covers: adler2 2.0.1, anyhow 1.0.103, async-trait 0.1.89, atomic-waker 1.1.2, camino 1.2.4, cargo-platform 0.1.9, cargo_metadata 0.19.2, curve25519-dalek-derive 0.1.1, cxx 1.0.198, cxx-build 1.0.198, cxxbridge-flags 1.0.198, cxxbridge-macro 1.0.198, displaydoc 0.2.6, dtoa 1.0.11, dyn-clone 1.0.20, erased-serde 0.4.10, fastrand 2.4.1, itoa 1.0.18, link-cplusplus 1.0.12, minimal-lexical 0.2.1, num_enum 0.7.6, num_enum_derive 0.7.6, nusb 0.2.7, once_cell 1.21.4, paste 1.0.15, pastey 0.1.1, pin-project-lite 0.2.17, proc-macro-crate 3.5.0, proc-macro2 1.0.106, quote 1.0.46, rustix 1.1.4, rustversion 1.0.22, scratch 1.0.9, semver 1.0.28, serde 1.0.229, serde-untagged 0.1.9, serde_core 1.0.229, serde_derive 1.0.229, serde_derive_internals 0.29.1, serde_json 1.0.151, serde_path_to_error 0.1.20, serde_repr 0.1.20, servo_arc 0.4.3, syn 2.0.118, syn 3.0.3, thiserror 1.0.69, thiserror 2.0.18, thiserror-impl 1.0.69, thiserror-impl 2.0.18, typed-path 0.12.3, typeid 1.0.3, unicode-ident 1.0.24, utf-8 0.7.6, zmij 1.0.21
 
 Text from: `LICENSE-MIT`
 
@@ -4143,7 +4143,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: bisync 0.3.0, bisync_macros 0.2.3, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, file_icon_provider 1.0.1, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, minisign-verify 0.2.5, mtp-rs 0.29.0, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-pdf-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-uniform-type-identifiers 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
+Covers: bisync 0.3.0, bisync_macros 0.2.3, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, file_icon_provider 1.0.1, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, minisign-verify 0.2.5, mtp-rs 0.30.0, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-pdf-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-uniform-type-identifiers 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
 
 ```text
 MIT License
