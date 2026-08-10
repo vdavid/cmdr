@@ -65,7 +65,7 @@ import { DIALOG_GALLERY_ENTRIES } from '../../src/lib/dialog-gallery/gallery-reg
  * The run reports every zero-unique surface it produces (see the coverage
  * report's own section), so this list is how a reviewer acts on that report.
  */
-const DROPPED_GALLERY_STATES: Record<string, string> = {
+const DROPPED_GALLERY_STATES: Record<string, string | undefined> = {
   'operation-log-populated': 'operation-log-more-pages covers every key it has',
   'operation-log-loading': 'a spinner; its one key reads fine against the populated log',
   'alert-short': 'the other alert states carry the same dialog with more copy',
