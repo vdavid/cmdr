@@ -7,7 +7,7 @@ import { resolveSelection } from '$lib/server/types.js'
  * `+page.server.ts` re-resolves it for its data fetch (loads run independently), but the picker UI and
  * the active-day highlight all key off this.
  */
-export const load: LayoutServerLoad = async ({ url }) => {
+export const load: LayoutServerLoad = ({ url }) => {
   return {
     selection: resolveSelection(url.searchParams.get('range'), url.searchParams.get('day')),
   }

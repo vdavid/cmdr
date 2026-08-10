@@ -30,7 +30,7 @@ describe('parseHogQLResponse', () => {
   })
 
   it('returns empty array for missing results', () => {
-    expect(parseHogQLResponse({ columns: [], results: undefined } as unknown as typeof sampleHogQLResponse)).toEqual([])
+    expect(parseHogQLResponse({ columns: [], results: undefined })).toEqual([])
   })
 })
 
@@ -45,7 +45,7 @@ describe('fetchPostHogData', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => sampleHogQLResponse,
+        json: () => Promise.resolve(sampleHogQLResponse),
       }),
     )
 
@@ -60,7 +60,7 @@ describe('fetchPostHogData', () => {
   it('sends correct request to PostHog EU query endpoint', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => sampleHogQLResponse,
+      json: () => Promise.resolve(sampleHogQLResponse),
     })
     vi.stubGlobal('fetch', fetchMock)
 
@@ -84,7 +84,7 @@ describe('fetchPostHogData', () => {
   it('uses correct interval for 24h', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => sampleHogQLResponse,
+      json: () => Promise.resolve(sampleHogQLResponse),
     })
     vi.stubGlobal('fetch', fetchMock)
 

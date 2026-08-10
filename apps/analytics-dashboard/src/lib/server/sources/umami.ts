@@ -56,7 +56,7 @@ async function authenticate(apiUrl: string, username: string, password: string):
     body: JSON.stringify({ username, password }),
   })
   if (!response.ok) {
-    throw new Error(`Umami auth returned ${response.status}`)
+    throw new Error(`Umami auth returned ${String(response.status)}`)
   }
   const body = (await response.json()) as { token: string }
   return body.token
@@ -68,7 +68,8 @@ interface UmamiRawStats {
   visits: number
   bounces: number
   totaltime: number
-  comparison: {
+  /** Only present when Umami has a previous window to compare against, so treat it as optional. */
+  comparison?: {
     pageviews: number
     visitors: number
     visits: number
@@ -84,10 +85,10 @@ async function fetchStats(
   startAt: number,
   endAt: number,
 ): Promise<UmamiSiteStats> {
-  const url = `${apiUrl}/api/websites/${websiteId}/stats?startAt=${startAt}&endAt=${endAt}`
+  const url = `${apiUrl}/api/websites/${websiteId}/stats?startAt=${String(startAt)}&endAt=${String(endAt)}`
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   if (!response.ok) {
-    throw new Error(`Umami stats returned ${response.status}`)
+    throw new Error(`Umami stats returned ${String(response.status)}`)
   }
   const raw = (await response.json()) as UmamiRawStats
   return {
@@ -107,10 +108,10 @@ async function fetchMetrics(
   endAt: number,
   type: string,
 ): Promise<UmamiMetricItem[]> {
-  const url = `${apiUrl}/api/websites/${websiteId}/metrics?startAt=${startAt}&endAt=${endAt}&type=${type}`
+  const url = `${apiUrl}/api/websites/${websiteId}/metrics?startAt=${String(startAt)}&endAt=${String(endAt)}&type=${type}`
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   if (!response.ok) {
-    throw new Error(`Umami metrics (${type}) returned ${response.status}`)
+    throw new Error(`Umami metrics (${type}) returned ${String(response.status)}`)
   }
   return (await response.json()) as UmamiMetricItem[]
 }
@@ -146,10 +147,10 @@ export async function fetchUmamiDailySeries(
   startAt: number,
   endAt: number,
 ): Promise<Map<string, number>> {
-  const url = `${apiUrl}/api/websites/${websiteId}/pageviews?startAt=${startAt}&endAt=${endAt}&unit=day&timezone=UTC`
+  const url = `${apiUrl}/api/websites/${websiteId}/pageviews?startAt=${String(startAt)}&endAt=${String(endAt)}&unit=day&timezone=UTC`
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   if (!response.ok) {
-    throw new Error(`Umami pageviews series returned ${response.status}`)
+    throw new Error(`Umami pageviews series returned ${String(response.status)}`)
   }
   const body = (await response.json()) as { sessions?: UmamiDailyPoint[] }
   const byDay = new Map<string, number>()
@@ -172,10 +173,10 @@ export async function fetchUmamiDailyEventSeries(
   endAt: number,
   eventName: string,
 ): Promise<Map<string, number>> {
-  const url = `${apiUrl}/api/websites/${websiteId}/events/series?startAt=${startAt}&endAt=${endAt}&unit=day&timezone=UTC`
+  const url = `${apiUrl}/api/websites/${websiteId}/events/series?startAt=${String(startAt)}&endAt=${String(endAt)}&unit=day&timezone=UTC`
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   if (!response.ok) {
-    throw new Error(`Umami events series returned ${response.status}`)
+    throw new Error(`Umami events series returned ${String(response.status)}`)
   }
   const points = (await response.json()) as UmamiEventSeriesPoint[]
   const byDay = new Map<string, number>()

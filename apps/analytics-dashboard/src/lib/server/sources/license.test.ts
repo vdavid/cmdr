@@ -29,7 +29,7 @@ describe('fetchLicenseData', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => sampleResponse,
+        json: () => Promise.resolve(sampleResponse),
       }),
     )
 
@@ -43,7 +43,7 @@ describe('fetchLicenseData', () => {
   it('sends correct auth header', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => sampleResponse,
+      json: () => Promise.resolve(sampleResponse),
     })
     vi.stubGlobal('fetch', fetchMock)
 

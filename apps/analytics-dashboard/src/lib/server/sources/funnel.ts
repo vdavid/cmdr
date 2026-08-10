@@ -113,6 +113,74 @@ export function buildFunnelDateList(days: number, now: Date): string[] {
   return dates
 }
 
+/** One day of a single-column source: a present source with no entry that day is a real 0. */
+function dailyCount(byDay: Map<string, number> | null, date: string): number | null {
+  return byDay ? (byDay.get(date) ?? 0) : null
+}
+
+/** The columns the worker funnel owns. Split out so each source's null handling stays readable. */
+type WorkerColumns = Pick<
+  FunnelRow,
+  | 'serverDownloads'
+  | 'downloadsByRef'
+  | 'downloadsByReferer'
+  | 'downloadsByUaFamily'
+  | 'humanInstalls'
+  | 'newInstalls'
+  | 'd7Retention'
+  | 'd7Retained'
+  | 'newsletterSignups'
+>
+
+/**
+ * One day's worker-sourced columns. A `null` source makes every one of them unknown; a present source
+ * with no row that day is a real empty day (0 / `{}`). D7 and signups stay `null` even on a present
+ * row: a young cohort or Listmonk being down is genuinely unknown, not zero.
+ */
+function workerColumns(workerByDay: Map<string, WorkerFunnelDay> | null, date: string): WorkerColumns {
+  if (!workerByDay) {
+    return {
+      serverDownloads: null,
+      downloadsByRef: null,
+      downloadsByReferer: null,
+      downloadsByUaFamily: null,
+      humanInstalls: null,
+      newInstalls: null,
+      d7Retention: null,
+      d7Retained: null,
+      newsletterSignups: null,
+    }
+  }
+
+  const worker = workerByDay.get(date)
+  if (!worker) {
+    return {
+      serverDownloads: 0,
+      downloadsByRef: {},
+      downloadsByReferer: {},
+      downloadsByUaFamily: { human: 0, bot: 0, unknown: 0 },
+      humanInstalls: 0,
+      newInstalls: 0,
+      d7Retention: null,
+      d7Retained: null,
+      newsletterSignups: null,
+    }
+  }
+
+  // The `??` defaults cover a worker deployed before these fields existed.
+  return {
+    serverDownloads: worker.downloads,
+    downloadsByRef: worker.downloadsByRef,
+    downloadsByReferer: worker.downloadsByReferer ?? {},
+    downloadsByUaFamily: worker.downloadsByUaFamily ?? { human: 0, bot: 0, unknown: 0 },
+    humanInstalls: worker.humanInstalls ?? 0,
+    newInstalls: worker.newInstalls,
+    d7Retention: worker.d7Retention,
+    d7Retained: worker.d7Retained,
+    newsletterSignups: worker.newsletterSignups,
+  }
+}
+
 /**
  * Merge the four per-day inputs into one row array over the canonical `dates` list. Pure for testing.
  * Each source is passed as a `Map<day, number>` or `null` (the whole source failed); a missing day
@@ -127,29 +195,13 @@ export function assembleFunnelRows(
   clicksByDay: Map<string, number> | null,
   purchasesByDay: Map<string, number> | null,
 ): FunnelRow[] {
-  return dates.map((date) => {
-    const worker = workerByDay?.get(date)
-    return {
-      date,
-      visitors: visitorsByDay ? (visitorsByDay.get(date) ?? 0) : null,
-      downloadClicks: clicksByDay ? (clicksByDay.get(date) ?? 0) : null,
-      // When the worker source is present, a day with no row is a real 0; when it's null, the whole
-      // column is unknown.
-      serverDownloads: workerByDay ? (worker?.downloads ?? 0) : null,
-      // A present worker source with no row that day means a real empty breakdown (`{}`), not unknown.
-      downloadsByRef: workerByDay ? (worker?.downloadsByRef ?? {}) : null,
-      downloadsByReferer: workerByDay ? (worker?.downloadsByReferer ?? {}) : null,
-      downloadsByUaFamily: workerByDay ? (worker?.downloadsByUaFamily ?? { human: 0, bot: 0, unknown: 0 }) : null,
-      humanInstalls: workerByDay ? (worker?.humanInstalls ?? 0) : null,
-      newInstalls: workerByDay ? (worker?.newInstalls ?? 0) : null,
-      // D7 and signups can be null even when the worker responded (young cohort / Listmonk down), so
-      // read them straight off the worker row and default a missing day to null, not 0.
-      d7Retention: workerByDay ? (worker?.d7Retention ?? null) : null,
-      d7Retained: workerByDay ? (worker?.d7Retained ?? null) : null,
-      newsletterSignups: workerByDay ? (worker?.newsletterSignups ?? null) : null,
-      purchases: purchasesByDay ? (purchasesByDay.get(date) ?? 0) : null,
-    }
-  })
+  return dates.map((date) => ({
+    date,
+    visitors: dailyCount(visitorsByDay, date),
+    downloadClicks: dailyCount(clicksByDay, date),
+    ...workerColumns(workerByDay, date),
+    purchases: dailyCount(purchasesByDay, date),
+  }))
 }
 
 export async function fetchFunnelData(env: FunnelEnv): Promise<SourceResult<FunnelData>> {

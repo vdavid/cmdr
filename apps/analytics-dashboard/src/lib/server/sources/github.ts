@@ -40,7 +40,7 @@ async function fetchAllStargazers(repo: string, headers: Record<string, string>)
     const response: Response = await fetch(url, {
       headers: { ...headers, Accept: 'application/vnd.github.star+json' },
     })
-    if (!response.ok) throw new Error(`GitHub stargazers API returned ${response.status} for ${repo}`)
+    if (!response.ok) throw new Error(`GitHub stargazers API returned ${String(response.status)} for ${repo}`)
 
     const items = (await response.json()) as RawStargazer[]
     for (const item of items) dates.push(item.starred_at)
@@ -187,7 +187,7 @@ export async function fetchGitHubData(env: GitHubEnv): Promise<SourceResult<GitH
 
     const response = await fetch('https://api.github.com/repos/vdavid/cmdr/releases', { headers })
     if (!response.ok) {
-      throw new Error(`GitHub API returned ${response.status}`)
+      throw new Error(`GitHub API returned ${String(response.status)}`)
     }
 
     const raw = (await response.json()) as GitHubRawRelease[]

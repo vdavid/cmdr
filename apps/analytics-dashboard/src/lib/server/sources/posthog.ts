@@ -20,7 +20,8 @@ export interface PostHogEnv {
 
 interface HogQLResponse {
   columns: string[]
-  results: Array<[string, number]>
+  /** Absent when PostHog answers with an `error` instead of rows, so guard before reading it. */
+  results?: Array<[string, number]>
   error?: string
 }
 
@@ -64,7 +65,7 @@ export async function fetchPostHogData(
     })
 
     if (!response.ok) {
-      throw new Error(`PostHog returned ${response.status}`)
+      throw new Error(`PostHog returned ${String(response.status)}`)
     }
 
     const raw = (await response.json()) as HogQLResponse

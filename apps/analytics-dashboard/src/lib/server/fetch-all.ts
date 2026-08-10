@@ -68,12 +68,18 @@ const sourceTimeoutMs = 20_000
 export function withTimeout<T>(name: string, promise: Promise<SourceResult<T>>): Promise<SourceResult<T>> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
-      resolve({ ok: false, error: `${name}: timed out after ${sourceTimeoutMs / 1000}s` })
+      resolve({ ok: false, error: `${name}: timed out after ${String(sourceTimeoutMs / 1000)}s` })
     }, sourceTimeoutMs)
     promise
-      .then((result) => { resolve(result); })
-      .catch((e) => { resolve({ ok: false, error: `${name}: ${e instanceof Error ? e.message : String(e)}` }); })
-      .finally(() => { clearTimeout(timer); })
+      .then((result) => {
+        resolve(result)
+      })
+      .catch((e: unknown) => {
+        resolve({ ok: false, error: `${name}: ${e instanceof Error ? e.message : String(e)}` })
+      })
+      .finally(() => {
+        clearTimeout(timer)
+      })
   })
 }
 
@@ -91,25 +97,40 @@ function guardedFetch<T>(
 /** The resolved env object, narrowed to what every source reads. */
 type DashboardEnv = NonNullable<App.Platform['env']>
 
+/** A var the sources always read: a missing one becomes `''`, which their env guards treat as unset. */
+function required(value: string | undefined): string {
+  return value ?? ''
+}
+
+/** A var the sources check for presence: an empty value means "not set", so it collapses to `undefined`. */
+function optional(value: string | undefined): string | undefined {
+  return value || undefined
+}
+
+/** Maps the loose `$env/dynamic/private` bag onto the exact env shape the sources expect. */
+function envFromDotEnv(env: Record<string, string | undefined>): DashboardEnv {
+  return {
+    UMAMI_API_URL: required(env.UMAMI_API_URL),
+    UMAMI_USERNAME: required(env.UMAMI_USERNAME),
+    UMAMI_PASSWORD: required(env.UMAMI_PASSWORD),
+    UMAMI_WEBSITE_ID: required(env.UMAMI_WEBSITE_ID),
+    UMAMI_BLOG_WEBSITE_ID: required(env.UMAMI_BLOG_WEBSITE_ID),
+    UMAMI_PRVW_WEBSITE_ID: required(env.UMAMI_PRVW_WEBSITE_ID),
+    PADDLE_API_KEY_LIVE: required(env.PADDLE_API_KEY_LIVE),
+    POSTHOG_API_KEY: required(env.POSTHOG_API_KEY),
+    POSTHOG_PROJECT_ID: required(env.POSTHOG_PROJECT_ID),
+    POSTHOG_API_URL: required(env.POSTHOG_API_URL),
+    GITHUB_TOKEN: optional(env.GITHUB_TOKEN),
+    LICENSE_SERVER_ADMIN_TOKEN: required(env.LICENSE_SERVER_ADMIN_TOKEN),
+    WORKER_BASE_URL: optional(env.WORKER_BASE_URL),
+  }
+}
+
 /** Returns the env object from CF Pages platform, falling back to $env/dynamic/private for local dev. */
 export async function resolveEnv(platform: App.Platform | undefined): Promise<DashboardEnv> {
   if (platform?.env) return platform.env
   const { env } = await import('$env/dynamic/private')
-  return {
-    UMAMI_API_URL: env.UMAMI_API_URL ?? '',
-    UMAMI_USERNAME: env.UMAMI_USERNAME ?? '',
-    UMAMI_PASSWORD: env.UMAMI_PASSWORD ?? '',
-    UMAMI_WEBSITE_ID: env.UMAMI_WEBSITE_ID ?? '',
-    UMAMI_BLOG_WEBSITE_ID: env.UMAMI_BLOG_WEBSITE_ID ?? '',
-    UMAMI_PRVW_WEBSITE_ID: env.UMAMI_PRVW_WEBSITE_ID ?? '',
-    PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE ?? '',
-    POSTHOG_API_KEY: env.POSTHOG_API_KEY ?? '',
-    POSTHOG_PROJECT_ID: env.POSTHOG_PROJECT_ID ?? '',
-    POSTHOG_API_URL: env.POSTHOG_API_URL ?? '',
-    GITHUB_TOKEN: env.GITHUB_TOKEN || undefined,
-    LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN ?? '',
-    WORKER_BASE_URL: env.WORKER_BASE_URL || undefined,
-  }
+  return envFromDotEnv(env)
 }
 
 // --- Per-source loaders -----------------------------------------------------------------------

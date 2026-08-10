@@ -67,7 +67,7 @@ describe('verifyAccessJwt', () => {
   beforeEach(async () => {
     keys = await generateKeyPair()
     const jwks = await toJwks(keys.publicKey, KID)
-    fetchMock = vi.fn(async () => new Response(JSON.stringify(jwks), { status: 200 }))
+    fetchMock = vi.fn(() => Promise.resolve(new Response(JSON.stringify(jwks), { status: 200 })))
     vi.stubGlobal('fetch', fetchMock)
     resetKeyCache()
   })

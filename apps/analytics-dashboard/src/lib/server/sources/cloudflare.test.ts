@@ -118,16 +118,16 @@ describe('fetchCloudflareData', () => {
   it('returns parsed data on success', async () => {
     const fetchMock = vi.fn()
     fetchMock.mockImplementation((url: string) => {
-      if (String(url).includes('/admin/update-activity')) {
-        return Promise.resolve({ ok: true, json: async () => sampleUpdateActivityResponse })
+      if (url.includes('/admin/update-activity')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(sampleUpdateActivityResponse) })
       }
-      if (String(url).includes('/admin/downloads')) {
-        return Promise.resolve({ ok: true, json: async () => sampleDownloadsResponse })
+      if (url.includes('/admin/downloads')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(sampleDownloadsResponse) })
       }
-      if (String(url).includes('/admin/heartbeat-dau')) {
-        return Promise.resolve({ ok: true, json: async () => sampleHeartbeatDauResponse })
+      if (url.includes('/admin/heartbeat-dau')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(sampleHeartbeatDauResponse) })
       }
-      return Promise.resolve({ ok: false, status: 404, text: async () => 'Not found' })
+      return Promise.resolve({ ok: false, status: 404, text: () => Promise.resolve('Not found') })
     })
     vi.stubGlobal('fetch', fetchMock)
 
@@ -146,7 +146,7 @@ describe('fetchCloudflareData', () => {
   })
 
   it('uses correct range parameters', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) })
     vi.stubGlobal('fetch', fetchMock)
 
     await fetchCloudflareData(mockEnv, { range: '24h', day: null })
@@ -164,7 +164,10 @@ describe('fetchCloudflareData', () => {
   })
 
   it('returns error when API fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => 'Forbidden' }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 403, text: () => Promise.resolve('Forbidden') }),
+    )
 
     const result = await fetchCloudflareData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(false)

@@ -51,13 +51,13 @@ export function toTimeWindow(selection: DashboardSelection): { startAt: number; 
     return { startAt, endAt: startAt + msPerDay }
   }
 
-  const durationMs: Record<'24h' | '7d' | '30d', number> = {
+  const durationMs: Partial<Record<TimeRange, number>> = {
     '24h': msPerDay,
     '7d': 7 * msPerDay,
     '30d': 30 * msPerDay,
   }
   // Falls back to 7d for `today`/`day` without the data they need (shouldn't happen given the branches above).
-  const duration = durationMs[selection.range as '24h' | '7d' | '30d'] ?? 7 * msPerDay
+  const duration = durationMs[selection.range] ?? 7 * msPerDay
   return { startAt: now - duration, endAt: now }
 }
 

@@ -60,7 +60,7 @@ describe('fetchUmamiData', () => {
     // Auth response
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ token: 'test-jwt-token' }),
+      json: () => Promise.resolve({ token: 'test-jwt-token' }),
     })
 
     // 9 parallel requests: personalSite stats, website stats, prvw stats, referrers, pages, countries, events, prvwReferrers, prvwPages
@@ -75,7 +75,7 @@ describe('fetchUmamiData', () => {
     for (let i = 0; i < 9; i++) {
       fetchMock.mockResolvedValueOnce({
         ok: true,
-        json: async () => (i < 3 ? rawStats : sampleMetrics),
+        json: () => Promise.resolve(i < 3 ? rawStats : sampleMetrics),
       })
     }
 
@@ -111,12 +111,12 @@ describe('fetchUmamiData', () => {
 
   it('returns error when stats endpoint fails', async () => {
     const fetchMock = vi.fn()
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ token: 'tok' }) })
+    fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ token: 'tok' }) })
     fetchMock.mockResolvedValueOnce({ ok: false, status: 500 })
     // The other parallel requests also need to resolve for Promise.all to work,
     // but the first rejection will be caught
     for (let i = 0; i < 8; i++) {
-      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => sampleStats })
+      fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(sampleStats) })
     }
 
     vi.stubGlobal('fetch', fetchMock)

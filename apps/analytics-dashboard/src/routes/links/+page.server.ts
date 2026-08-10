@@ -21,6 +21,16 @@ export const load: PageServerLoad = async ({ platform }) => {
 }
 
 /**
+ * Reads one text field off a submitted form. A `FormData` entry can also be a `File` (any multipart
+ * upload), and stringifying one gives `[object Object]`, so a non-string entry counts as absent and
+ * falls through to the same validation an empty field gets.
+ */
+function textField(form: FormData, name: string): string {
+  const value = form.get(name)
+  return typeof value === 'string' ? value : ''
+}
+
+/**
  * Form actions for the page. Both validate + normalize on the server (the source of truth is the
  * api-server, which re-validates), then proxy to the admin CRUD with the server-only bearer token.
  * On a validation or proxy failure they return `fail(...)` with the offending values so the form
@@ -30,10 +40,10 @@ export const actions: Actions = {
   save: async ({ request, platform }) => {
     const form = await request.formData()
     const raw = {
-      code: String(form.get('code') ?? ''),
-      utm_source: String(form.get('utm_source') ?? ''),
-      utm_medium: String(form.get('utm_medium') ?? ''),
-      note: String(form.get('note') ?? ''),
+      code: textField(form, 'code'),
+      utm_source: textField(form, 'utm_source'),
+      utm_medium: textField(form, 'utm_medium'),
+      note: textField(form, 'note'),
     }
 
     const validated = validateLinkCode(raw)
@@ -56,7 +66,7 @@ export const actions: Actions = {
 
   delete: async ({ request, platform }) => {
     const form = await request.formData()
-    const code = String(form.get('code') ?? '').trim()
+    const code = textField(form, 'code').trim()
     if (!code) {
       return fail(400, { action: 'delete', error: 'No code to delete.' })
     }

@@ -3,6 +3,13 @@ import { fetchLinkCodes, upsertLinkCode, deleteLinkCode } from './link-codes.js'
 
 const env = { LICENSE_SERVER_ADMIN_TOKEN: 'test-admin-token' }
 
+/** The `RequestInit` these sources actually pass, narrowed so the recorded mock calls stay typed. */
+interface RecordedInit {
+  method?: string
+  headers: Record<string, string>
+  body: string
+}
+
 describe('fetchLinkCodes', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -10,7 +17,7 @@ describe('fetchLinkCodes', () => {
 
   it('returns the map and sends the bearer token to the admin endpoint', async () => {
     const map = { hn: { utm_source: 'hackernews', utm_medium: 'social' } }
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => map })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(map) })
     vi.stubGlobal('fetch', fetchMock)
 
     const result = await fetchLinkCodes(env)
@@ -30,7 +37,7 @@ describe('fetchLinkCodes', () => {
   })
 
   it('honors WORKER_BASE_URL override', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) })
     vi.stubGlobal('fetch', fetchMock)
     await fetchLinkCodes({ ...env, WORKER_BASE_URL: 'http://127.0.0.1:18900' })
     expect(fetchMock.mock.calls[0][0]).toBe('http://127.0.0.1:18900/admin/r-codes')
@@ -43,12 +50,12 @@ describe('upsertLinkCode', () => {
   })
 
   it('PUTs the code with only the non-empty fields and auth + JSON headers', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '' })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve('') })
     vi.stubGlobal('fetch', fetchMock)
 
     const result = await upsertLinkCode(env, { code: 'hn', utm_source: 'hackernews', utm_medium: 'social' })
     expect(result.ok).toBe(true)
-    const [url, init] = fetchMock.mock.calls[0]
+    const [url, init] = fetchMock.mock.calls[0] as [string, RecordedInit]
     expect(url).toBe('https://api.getcmdr.com/admin/r-codes/hn')
     expect(init.method).toBe('PUT')
     expect(init.headers).toEqual({ Authorization: 'Bearer test-admin-token', 'Content-Type': 'application/json' })
@@ -56,21 +63,25 @@ describe('upsertLinkCode', () => {
   })
 
   it('omits empty medium and note from the body', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '' })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve('') })
     vi.stubGlobal('fetch', fetchMock)
     await upsertLinkCode(env, { code: 'nl', utm_source: 'newsletter' })
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ utm_source: 'newsletter' })
+    const [, init] = fetchMock.mock.calls[0] as [string, RecordedInit]
+    expect(JSON.parse(init.body)).toEqual({ utm_source: 'newsletter' })
   })
 
   it('url-encodes the code in the path', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '' })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve('') })
     vi.stubGlobal('fetch', fetchMock)
     await upsertLinkCode(env, { code: 'a.b_c', utm_source: 'x' })
     expect(fetchMock.mock.calls[0][0]).toBe('https://api.getcmdr.com/admin/r-codes/a.b_c')
   })
 
   it('surfaces the worker error text on a 400', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400, text: async () => 'Invalid code' }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 400, text: () => Promise.resolve('Invalid code') }),
+    )
     const result = await upsertLinkCode(env, { code: 'hn', utm_source: 'x' })
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -84,7 +95,7 @@ describe('deleteLinkCode', () => {
   })
 
   it('DELETEs the code with the bearer token', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '' })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve('') })
     vi.stubGlobal('fetch', fetchMock)
     const result = await deleteLinkCode(env, 'hn')
     expect(result.ok).toBe(true)
@@ -95,7 +106,10 @@ describe('deleteLinkCode', () => {
   })
 
   it('returns an error on 401', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, text: async () => 'Unauthorized' }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 401, text: () => Promise.resolve('Unauthorized') }),
+    )
     const result = await deleteLinkCode(env, 'hn')
     expect(result.ok).toBe(false)
   })

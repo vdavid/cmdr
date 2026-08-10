@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { RequestEvent } from '@sveltejs/kit'
+import { handle, handleError } from './hooks.server.js'
 
-const verifyAccessJwt = vi.fn()
+// `vi.hoisted` runs with the hoisted `vi.mock`, so the stub exists by the time the mocked module's
+// factory is evaluated. Without it, the static import below would hit the mock before this file's
+// top-level bindings are initialized.
+const { verifyAccessJwt } = vi.hoisted(() => ({ verifyAccessJwt: vi.fn() }))
 vi.mock('./lib/server/access-jwt.js', () => ({ verifyAccessJwt }))
-
-const { handle, handleError } = await import('./hooks.server.js')
 
 function eventFor(path = '/api/report'): RequestEvent {
   return {
@@ -48,7 +50,7 @@ describe('handle', () => {
 
   it('runs the route and records the identity when the JWT verifies', async () => {
     verifyAccessJwt.mockResolvedValue({ email: 'veszelovszki@gmail.com', sub: 'user-123' })
-    const resolve = vi.fn(async () => new Response('ok', { status: 200 }))
+    const resolve = vi.fn(() => Promise.resolve(new Response('ok', { status: 200 })))
     const event = eventFor('/product')
 
     const response = await handle({ event, resolve })

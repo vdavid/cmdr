@@ -99,18 +99,20 @@ describe('fetchPaddleData', () => {
     // Transactions (single page)
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
-        data: [sampleRawTransaction],
-        meta: { pagination: { has_more: false, estimated_total: 1 } },
-      }),
+      json: () =>
+        Promise.resolve({
+          data: [sampleRawTransaction],
+          meta: { pagination: { has_more: false, estimated_total: 1 } },
+        }),
     })
     // Subscriptions (single page)
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
-        data: [sampleRawSubscription],
-        meta: { pagination: { has_more: false, estimated_total: 1 } },
-      }),
+      json: () =>
+        Promise.resolve({
+          data: [sampleRawSubscription],
+          meta: { pagination: { has_more: false, estimated_total: 1 } },
+        }),
     })
 
     vi.stubGlobal('fetch', fetchMock)
@@ -131,28 +133,31 @@ describe('fetchPaddleData', () => {
       if (url.includes('/transactions') && !url.includes('after=')) {
         return Promise.resolve({
           ok: true,
-          json: async () => ({
-            data: [sampleRawTransaction],
-            meta: { pagination: { has_more: true, next: 'cursor_abc', estimated_total: 2 } },
-          }),
+          json: () =>
+            Promise.resolve({
+              data: [sampleRawTransaction],
+              meta: { pagination: { has_more: true, next: 'cursor_abc', estimated_total: 2 } },
+            }),
         })
       }
       if (url.includes('/transactions') && url.includes('after=cursor_abc')) {
         return Promise.resolve({
           ok: true,
-          json: async () => ({
-            data: [{ ...sampleRawTransaction, id: 'txn_02' }],
-            meta: { pagination: { has_more: false, estimated_total: 2 } },
-          }),
+          json: () =>
+            Promise.resolve({
+              data: [{ ...sampleRawTransaction, id: 'txn_02' }],
+              meta: { pagination: { has_more: false, estimated_total: 2 } },
+            }),
         })
       }
       if (url.includes('/subscriptions')) {
         return Promise.resolve({
           ok: true,
-          json: async () => ({
-            data: [],
-            meta: { pagination: { has_more: false, estimated_total: 0 } },
-          }),
+          json: () =>
+            Promise.resolve({
+              data: [],
+              meta: { pagination: { has_more: false, estimated_total: 0 } },
+            }),
         })
       }
       return Promise.resolve({ ok: false, status: 404 })

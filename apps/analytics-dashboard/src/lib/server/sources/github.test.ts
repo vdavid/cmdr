@@ -62,7 +62,7 @@ describe('fetchGitHubData', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => sampleRawReleases,
+        json: () => Promise.resolve(sampleRawReleases),
       }),
     )
 
@@ -77,7 +77,7 @@ describe('fetchGitHubData', () => {
   it('sends auth header when token is provided', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => [],
+      json: () => Promise.resolve([]),
     })
     vi.stubGlobal('fetch', fetchMock)
 
@@ -90,7 +90,7 @@ describe('fetchGitHubData', () => {
   it('works without auth token', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => [],
+      json: () => Promise.resolve([]),
     })
     vi.stubGlobal('fetch', fetchMock)
 

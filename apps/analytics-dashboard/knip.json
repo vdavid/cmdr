@@ -2,8 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "treatConfigHintsAsErrors": true,
   "ignoreExportsUsedInFile": true,
-  "project": ["src/**/*.{ts,svelte}"],
-  "entry": ["src/hooks.server.ts", "src/app.d.ts"],
+  "project": ["src/**/*.{ts,svelte,css}"],
+  "ignoreDependencies": ["oxlint"],
   "svelte": {
     "entry": [
       "src/routes/**/+page.svelte",

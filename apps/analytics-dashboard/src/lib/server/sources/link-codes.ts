@@ -22,7 +22,9 @@ function baseUrl(env: LinkCodesEnv): string {
   return env.WORKER_BASE_URL || defaultWorkerBaseUrl
 }
 
-function authHeaders(env: LinkCodesEnv): HeadersInit {
+// A plain record rather than `HeadersInit`: callers spread it into a header object, and spreading the
+// array/`Headers` arms of `HeadersInit` would produce index keys instead of header names.
+function authHeaders(env: LinkCodesEnv): Record<string, string> {
   return { Authorization: `Bearer ${env.LICENSE_SERVER_ADMIN_TOKEN}` }
 }
 

@@ -54,7 +54,7 @@ async function paddleFetch<T>(apiKey: string, path: string): Promise<PaddleListR
     headers: { Authorization: `Bearer ${apiKey}` },
   })
   if (!response.ok) {
-    throw new Error(`Paddle ${path} returned ${response.status}`)
+    throw new Error(`Paddle ${path} returned ${String(response.status)}`)
   }
   return (await response.json()) as PaddleListResponse<T>
 }

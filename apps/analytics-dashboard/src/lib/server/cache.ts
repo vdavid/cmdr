@@ -53,7 +53,7 @@ export function clearMemoryCache(): void {
 }
 
 /** Writes to cache with TTL based on time range. */
-export async function cacheSet<T>(source: string, range: CacheRange, data: T, extra?: string): Promise<void> {
+export async function cacheSet(source: string, range: CacheRange, data: unknown, extra?: string): Promise<void> {
   const url = buildCacheUrl(source, range, extra)
   const ttl = getTtl(range)
   const body = JSON.stringify(data)
@@ -64,7 +64,7 @@ export async function cacheSet<T>(source: string, range: CacheRange, data: T, ex
       await cache.put(
         new Request(url),
         new Response(body, {
-          headers: { 'Content-Type': 'application/json', 'Cache-Control': `max-age=${ttl}` },
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': `max-age=${String(ttl)}` },
         }),
       )
       return

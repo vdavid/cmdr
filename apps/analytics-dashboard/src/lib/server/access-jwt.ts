@@ -87,7 +87,7 @@ async function fetchKeys(): Promise<CachedKeys | null> {
     try {
       const response = await fetch(CERTS_URL)
       if (!response.ok) {
-        console.error(`Access certs fetch returned ${response.status}`)
+        console.error(`Access certs fetch returned ${String(response.status)}`)
         return null
       }
       const body = (await response.json()) as { keys?: Array<Record<string, unknown>> }
@@ -158,6 +158,25 @@ function audienceMatches(aud: unknown): boolean {
 }
 
 /**
+ * Checks the registered claims on an already signature-verified payload and returns the caller's
+ * identity, or `null` to reject. Only reached once the signature checks out.
+ */
+function identityFromPayload(payload: Record<string, unknown>): AccessIdentity | null {
+  if (payload.iss !== ISSUER) return null
+  if (!audienceMatches(payload.aud)) return null
+
+  const now = Math.floor(Date.now() / 1000)
+  if (typeof payload.exp !== 'number' || payload.exp + CLOCK_SKEW_S < now) return null
+  if (typeof payload.nbf === 'number' && payload.nbf - CLOCK_SKEW_S > now) return null
+
+  const email = typeof payload.email === 'string' ? payload.email : ''
+  const sub = typeof payload.sub === 'string' ? payload.sub : ''
+  if (!email) return null
+
+  return { email, sub }
+}
+
+/**
  * Verifies the Access JWT on `request` and returns the caller's identity, or `null` if the request
  * isn't provably from an Access-authenticated user. Never throws: every failure path is a rejection.
  */
@@ -177,7 +196,7 @@ export async function verifyAccessJwt(request: Request): Promise<AccessIdentity 
   const key = await resolveKey(header.kid)
   if (!key) return null
 
-  let verified = false
+  let verified: boolean
   try {
     verified = await crypto.subtle.verify(
       ALGORITHM,
@@ -192,16 +211,6 @@ export async function verifyAccessJwt(request: Request): Promise<AccessIdentity 
 
   const payload = decodeJsonSegment(payloadSegment)
   if (!payload) return null
-  if (payload.iss !== ISSUER) return null
-  if (!audienceMatches(payload.aud)) return null
 
-  const now = Math.floor(Date.now() / 1000)
-  if (typeof payload.exp !== 'number' || payload.exp + CLOCK_SKEW_S < now) return null
-  if (typeof payload.nbf === 'number' && payload.nbf - CLOCK_SKEW_S > now) return null
-
-  const email = typeof payload.email === 'string' ? payload.email : ''
-  const sub = typeof payload.sub === 'string' ? payload.sub : ''
-  if (!email) return null
-
-  return { email, sub }
+  return identityFromPayload(payload)
 }

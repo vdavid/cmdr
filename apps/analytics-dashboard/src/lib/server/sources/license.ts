@@ -35,10 +35,10 @@ export async function fetchLicenseData(env: LicenseEnv): Promise<SourceResult<Li
     })
 
     if (!response.ok) {
-      throw new Error(`License server returned ${response.status}`)
+      throw new Error(`License server returned ${String(response.status)}`)
     }
 
-    const raw = await response.json()
+    const raw: unknown = await response.json()
     const data = parseLicenseStats(raw)
     await cacheSet('license', '30d', data)
     return { ok: true, data }

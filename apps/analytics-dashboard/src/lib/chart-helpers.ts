@@ -44,7 +44,7 @@ function stackByDay<T>(
     const key = getKey(row)
     let arr = byKey.get(key)
     if (!arr) {
-      arr = new Array(days.length).fill(0)
+      arr = new Array<number>(days.length).fill(0)
       byKey.set(key, arr)
     }
     arr[di] += getValue(row)
@@ -61,9 +61,10 @@ export function downloadSourceSeries(rows: DownloadRow[], days: string[]): Stack
     (r) => r.source,
     (r) => r.uniqueDownloads,
   )
-  return SOURCE_STACK.map((s) => ({ ...s, values: byKey.get(s.key) ?? new Array(days.length).fill(0) })).filter((s) =>
-    s.values.some((v) => v > 0),
-  )
+  return SOURCE_STACK.map((s) => ({
+    ...s,
+    values: byKey.get(s.key) ?? new Array<number>(days.length).fill(0),
+  })).filter((s) => s.values.some((v) => v > 0))
 }
 
 /** Update activity stacked by the version each install was running when it checked. */
@@ -82,10 +83,10 @@ export function updateVersionSeries(rows: UpdateActivityRow[], days: string[]): 
     key: v,
     label: `v${v}`,
     color: VERSION_PALETTE[i],
-    values: byKey.get(v) ?? new Array(days.length).fill(0),
+    values: byKey.get(v) ?? new Array<number>(days.length).fill(0),
   }))
   if (rest.length > 0) {
-    const olderValues = new Array(days.length).fill(0)
+    const olderValues = new Array<number>(days.length).fill(0)
     for (const v of rest) {
       const arr = byKey.get(v) ?? []
       for (let i = 0; i < days.length; i++) olderValues[i] += arr[i] ?? 0
@@ -136,12 +137,15 @@ export function compareSemverDesc(a: string, b: string): number {
   return 0
 }
 
-/** Finds the max daily download value across a set of groups. */
+/**
+ * Finds the max daily download value across a set of groups. `_allDays` is the caller's day axis,
+ * kept for a uniform call shape with `buildTimeline`; the max is taken over every row's own day.
+ */
 export function maxDailyAcrossGroups(
   rows: DownloadRow[],
   groupField: keyof DownloadRow,
   groupKeys: string[],
-  allDays: string[],
+  _allDays: string[],
 ): number {
   let max = 1
   for (const key of groupKeys) {

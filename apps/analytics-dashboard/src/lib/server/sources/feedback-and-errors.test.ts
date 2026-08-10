@@ -113,13 +113,13 @@ describe('fetchFeedbackAndErrorsData', () => {
   it('returns both streams on success', async () => {
     const fetchMock = vi.fn()
     fetchMock.mockImplementation((url: string) => {
-      if (String(url).includes('/admin/feedback')) {
-        return Promise.resolve({ ok: true, json: async () => sampleFeedback })
+      if (url.includes('/admin/feedback')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(sampleFeedback) })
       }
-      if (String(url).includes('/admin/error-reports')) {
-        return Promise.resolve({ ok: true, json: async () => sampleErrors })
+      if (url.includes('/admin/error-reports')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(sampleErrors) })
       }
-      return Promise.resolve({ ok: false, status: 404, text: async () => 'Not found' })
+      return Promise.resolve({ ok: false, status: 404, text: () => Promise.resolve('Not found') })
     })
     vi.stubGlobal('fetch', fetchMock)
 
@@ -132,7 +132,7 @@ describe('fetchFeedbackAndErrorsData', () => {
   })
 
   it('maps the 24h range up to the worker 7d window', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) })
     vi.stubGlobal('fetch', fetchMock)
 
     await fetchFeedbackAndErrorsData(mockEnv, { range: '24h', day: null })
@@ -142,7 +142,7 @@ describe('fetchFeedbackAndErrorsData', () => {
   })
 
   it('passes 30d through unchanged', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) })
     vi.stubGlobal('fetch', fetchMock)
 
     await fetchFeedbackAndErrorsData(mockEnv, { range: '30d', day: null })
@@ -151,7 +151,10 @@ describe('fetchFeedbackAndErrorsData', () => {
   })
 
   it('returns an error when a worker endpoint fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, text: async () => 'Unauthorized' }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 401, text: () => Promise.resolve('Unauthorized') }),
+    )
     const result = await fetchFeedbackAndErrorsData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
