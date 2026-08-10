@@ -21,6 +21,11 @@ loaders and the per-page composers.
 SvelteKit + `@sveltejs/adapter-cloudflare`, Tailwind v4 (CSS-first in `src/app.css`, dark mode only), uPlot for charts.
 All API keys stay server-side, proxied via `+server.ts` / `+page.server.ts`.
 
+## Checks
+
+`pnpm check dashboard` runs all eight (eslint, stylelint, svelte-check, import-cycles, knip, tests, build, plus the
+`svelte-kit sync` they depend on). Don't judge a change by raw `pnpm lint`: the runner owns the ordering.
+
 ## Must-knows
 
 - **Auth is the app's job, not just Cloudflare's.** Access binds to a hostname, so the default
@@ -43,11 +48,8 @@ All API keys stay server-side, proxied via `+server.ts` / `+page.server.ts`.
   Map for local dev. Don't assume the CF Cache API works locally.
 - **A `null` cell renders as a dash (`–`), kept distinct from a real 0** in the funnel and metric tables: "couldn't get
   this" and "this was zero" mean different things. Every source is best-effort and independent.
-- **Color coding is consistent across the dashboard** (metric dots, chart strokes/fills). Keep it when adding UI:
-  - Gold (`#ffc206`): getcmdr.com / vdavid/cmdr (primary product).
-  - Purple (`#a78bfa`): vdavid/mtp-rs (library repo).
-  - Autumn green (`#8faa3b`): veszelovszki.com (personal site).
-  - Cyan (`#22d3ee`): getprvw.com (Prvw product site).
+- **One color means one property across the whole dashboard** (metric dots, chart strokes and fills). Keep it when
+  adding UI; the palette and what each color stands for is in `DETAILS.md`.
 - **No new dashboard env vars** for the funnel: it reuses the worker admin token, Umami creds, and Paddle key already
   present (Listmonk signups are sourced inside the api-server, so no Listmonk secret reaches the dashboard).
 

@@ -1,6 +1,6 @@
 # Check runner
 
-Go CLI that runs all code quality checks for the Cmdr monorepo (~42 checks across 4 apps) in parallel with dependency
+Go CLI that runs all code quality checks for the Cmdr monorepo (~50 checks across 5 apps) in parallel with dependency
 ordering. Invoked via `pnpm check` at the repo root.
 
 For check authoring (how to add a check, `CheckDefinition` shape, naming rules, helpers, allowlists), see
@@ -22,8 +22,8 @@ For check authoring (how to add a check, `CheckDefinition` shape, naming rules, 
 
 - **Run from repo root via `pnpm check`.** Positional args select checks/apps/groups in any mix; named checks run even
   if slow/CI-only, app/group selectors keep the default lanes. `ValidateCheckNames` fails startup if a check ID or
-  nickname would shadow a reserved group/app keyword (`desktop`, `website`, `api-server`, `scripts`, `rust`, `svelte`,
-  `go`), so resolution order (check → app → group) can't silently change meaning.
+  nickname would shadow a reserved group/app keyword (`desktop`, `website`, `api-server`, `dashboard`, `scripts`,
+  `rust`, `svelte`, `go`), so resolution order (check → app → group) can't silently change meaning.
 - **Checks refuse to run in the main clone** (the auto-fixers reformat tracked files; the solo-dev workflow only does
   that in a worktree). Detection: `--git-dir` == `--git-common-dir` (`isMainWorkingTree`). CI is exempt via `--ci`;
   override a deliberate local main run with `--allow-main` / `-m`. The same guard lives in `tauri-wrapper.ts` for

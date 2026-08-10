@@ -27,7 +27,9 @@ Rules the filter block follows (comments in `ci.yml` restate these next to the f
 - **A filter covers every path its job's checks read**, not just the app dir. The `rust` filter includes
   `apps/desktop/test/smb-servers/` because the SMB integration tests run against those containers; the `svelte` filter
   includes `apps/desktop/eslint-plugins/` and `test/e2e-shared/` because ESLint and Vitest cover them; the `desktop`
-  filter (gating the Linux E2E job, which builds the whole app) includes the Rust workspace inputs.
+  filter (gating the Linux E2E job, which builds the whole app) includes the Rust workspace inputs. The root
+  `eslint-plugins/` (custom rules both the desktop app and the dashboard enforce) is in the `svelte` and `dashboard`
+  filters for the same reason.
 - **`.mise.toml` and `.github/workflows/ci.yml` are in every filter**: a toolchain bump or a CI edit can change any
   job's behavior, so everything reruns.
 - **`pnpm-lock.yaml` is in every Node-based filter** so lockfile-only bumps (`pnpm dedupe`, transitive updates) still

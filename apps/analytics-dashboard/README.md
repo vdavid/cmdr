@@ -22,6 +22,11 @@ at `analdash.getcmdr.com`.
 The dashboard works without env vars too, but each data source will show a "not configured" message instead of live
 data. Fill in only the sources you need.
 
+## Checks
+
+Run `pnpm check dashboard` from the repo root. It covers ESLint, Stylelint, svelte-check, import cycles, knip, the test
+suite, and the production build, in the right order. Locally the lint steps auto-fix; CI runs the same checks read-only.
+
 ## Deployment
 
 Auto-deploys to Cloudflare Pages on push to `main` when files in `apps/analytics-dashboard/` change. The workflow lives

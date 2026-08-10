@@ -199,6 +199,40 @@ All env vars are CF Pages secrets, never in code:
 - `GITHUB_TOKEN`: optional, avoids public-repo API rate limits.
 - `LICENSE_SERVER_ADMIN_TOKEN`: dedicated admin secret, also set on the API server.
 
+## Color coding
+
+One color means one property everywhere it appears (metric dots, chart strokes and fills), so a reader can carry the
+association from one section to the next:
+
+- Gold (`#ffc206`): getcmdr.com / vdavid/cmdr, the primary product.
+- Purple (`#a78bfa`): vdavid/mtp-rs, the library repo.
+- Autumn green (`#8faa3b`): veszelovszki.com, the personal site.
+- Cyan (`#22d3ee`): getprvw.com, the Prvw product site.
+
+## Tooling
+
+The dashboard is a first-class app in the Go check runner (`pnpm check dashboard`); the per-check rationale and what it
+deliberately omits live in `scripts/check/checks/DETAILS.md` § "Apps and check counts".
+
+What's specific to this app's configs:
+
+- **ESLint** (`eslint.config.js`) mirrors the api-server's `strictTypeChecked` base plus the desktop app's Svelte parser
+  blocks. Type-aware rules need `.svelte-kit/tsconfig.json`, which `tsconfig.json` extends, so `svelte-kit sync` has to
+  run first; the `dashboard-eslint` check hard-fails when it's missing rather than let the rules quietly no-op.
+- Config files (`svelte.config.js`, `vite.config.ts`, `vitest.config.ts`) lint with `disableTypeChecked`. They sit
+  outside the generated tsconfig's include list, and adding them to the TS project purely to satisfy the linter would
+  be the tail wagging the dog.
+- **Component props are typed, not inferred.** Route pages annotate with `PageProps` / `LayoutProps` from `./$types`;
+  reusable components declare an explicit `interface Props`. Cross-boundary type imports (`import type` from
+  `$lib/server/...`) are safe and expected: only a *runtime* value import would pull server code into the browser
+  bundle.
+- **Stylelint** (`.stylelintrc.mjs`) is deliberately lighter than desktop's. Tailwind v4 supplies the utilities, so
+  there's no design-token ladder to police here; the config's real job is allowing Tailwind's CSS-first at-rules
+  (`@theme` and friends, which `stylelint-config-standard` would reject as unknown) while keeping the actual-mistake
+  rules.
+- **knip** (`knip.json`) treats SvelteKit's `+page` / `+layout` / `+server` files and `hooks.server.ts` as entry points.
+  Without that it reports every route as unused, since nothing imports them by name.
+
 ## Auth
 
 Two layers, and both are load-bearing.
