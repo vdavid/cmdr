@@ -296,3 +296,72 @@ fn a_local_copy_never_acts_on_a_preview_of_a_different_selection() {
         "a preview of another file must never authorize copying it"
     );
 }
+
+// ============================================================================
+// Local many-small-files bench (what the staging rename costs)
+// ============================================================================
+
+/// Wall-clock for a local copy of many small files: the shape a per-file
+/// rename shows up in, where per-file overhead dominates and byte throughput
+/// doesn't.
+///
+/// `#[ignore]`d — it's a measurement, not an assertion. Run it with:
+///
+/// ```text
+/// cd apps/desktop/src-tauri && cargo test --release --lib \
+///   local_copy_bench_many_small_files -- --ignored --nocapture --test-threads=1
+/// ```
+#[test]
+#[ignore = "benchmark: run on demand with --ignored --nocapture"]
+#[allow(
+    clippy::print_stdout,
+    reason = "Bench prints its timing report by design (run with --nocapture)."
+)]
+fn local_copy_bench_many_small_files() {
+    const FILE_COUNT: usize = 2_000;
+    const FILE_BYTES: usize = 4 * 1024;
+    const ROUNDS: usize = 5;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    fs::create_dir_all(&src_dir).unwrap();
+    let payload = vec![0xAB_u8; FILE_BYTES];
+    let sources: Vec<PathBuf> = (0..FILE_COUNT)
+        .map(|i| {
+            let p = src_dir.join(format!("f_{i:05}.bin"));
+            fs::write(&p, &payload).unwrap();
+            p
+        })
+        .collect();
+
+    let mut millis: Vec<u128> = Vec::with_capacity(ROUNDS);
+    for round in 0..ROUNDS {
+        let dst_dir = tmp.path().join(format!("dst-{round}"));
+        fs::create_dir_all(&dst_dir).unwrap();
+
+        let events = Arc::new(CollectorEventSink::new());
+        let state = make_state(1_000_000); // effectively no progress emits
+        let config = WriteOperationConfig::default();
+
+        let started = std::time::Instant::now();
+        let result = copy_files_with_progress_inner(
+            &*events,
+            &format!("op-local-copy-bench-{round}"),
+            &state,
+            &sources,
+            &dst_dir,
+            &config,
+        );
+        let elapsed = started.elapsed();
+        result.expect("bench copy must succeed");
+        millis.push(elapsed.as_millis());
+        println!("round {round}: {FILE_COUNT} × {FILE_BYTES} B in {elapsed:?}");
+    }
+
+    millis.sort_unstable();
+    let median = millis[millis.len() / 2];
+    println!(
+        "local many-small-files copy: {FILE_COUNT} files, rounds(ms)={millis:?}, median={median} ms, per-file={:.3} ms",
+        median as f64 / FILE_COUNT as f64
+    );
+}
