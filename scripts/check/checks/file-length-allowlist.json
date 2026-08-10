@@ -31,7 +31,6 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/copy_tests.rs": 2102,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/merge_tests.rs": 1067,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/rename_merge_tests.rs": 897,
-    "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/strategy.rs": 962,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/strategy_test_support.rs": 1245,
     "apps/desktop/src-tauri/src/file_system/write_operations/types.rs": 838,
     "apps/desktop/src-tauri/src/file_viewer/session.rs": 1459,

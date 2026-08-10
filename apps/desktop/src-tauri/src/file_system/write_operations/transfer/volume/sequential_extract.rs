@@ -16,9 +16,8 @@ use std::sync::{Arc, Mutex};
 
 use super::super::super::state::WriteOperationState;
 use super::super::staged_write::StagedWrite;
-use super::strategy::{
-    CreatedPaths, MergeCtx, copy_directory_streaming, note_pending_for_local_dest, resolve_staging, staging_for,
-};
+use super::merge::copy_directory_streaming;
+use super::strategy::{CreatedPaths, MergeCtx, note_pending_for_local_dest, resolve_staging, staging_for};
 use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;

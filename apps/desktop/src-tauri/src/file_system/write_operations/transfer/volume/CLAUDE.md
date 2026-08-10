@@ -2,7 +2,7 @@
 
 Copy and move across backends (Local ↔ MTP ↔ SMB ↔ archive): the phase runner (`copy.rs` driving ONE
 of `copy_concurrent.rs` / `copy_serial.rs`), the move paths (`move.rs` cross-volume, `move_same.rs` + `rename_merge.rs`
-same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`), plus `conflict.rs`, `cleanup.rs`,
+same-volume), the merge/staging engine (`strategy.rs`, `merge.rs`, `sequential_extract.rs`), plus `conflict.rs`, `cleanup.rs`,
 `preflight.rs`, `transfer_error.rs`. Shared scaffolding, local-FS copy, and the drivers: `../CLAUDE.md`.
 
 - **This directory is a facade: outside code reaches it only as `transfer::volume::<item>`.** Every module here is

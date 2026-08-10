@@ -16,6 +16,7 @@ mod conflict;
 mod copy;
 mod copy_concurrent;
 mod copy_serial;
+mod merge;
 /// `move` is a Rust keyword, so the module is `r#move`. Nothing outside this
 /// facade names it: the move entry points are re-exported below.
 mod r#move;
