@@ -6,9 +6,9 @@ the app, with its license, and reproduces the license texts in full.
 Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it
 by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.
 
-- Rust crates: 652
+- Rust crates: 654
 - npm packages: 125
-- Distinct license texts: 290
+- Distinct license texts: 291
 
 ## Rust crates
 
@@ -28,6 +28,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **arboard** 3.6.1, MIT OR Apache-2.0, <https://github.com/1Password/arboard>
 - **arc-swap** 1.9.2, MIT OR Apache-2.0, <https://github.com/vorner/arc-swap>
 - **arg_enum_proc_macro** 0.3.4, MIT, <https://github.com/lu-zero/arg_enum_proc_macro>
+- **arrayref** 0.3.9, BSD-2-Clause, <https://github.com/droundy/arrayref>
 - **arrayvec** 0.7.8, MIT OR Apache-2.0, <https://github.com/bluss/arrayvec>
 - **as-slice** 0.2.1, MIT OR Apache-2.0, <https://github.com/japaric/as-slice>
 - **async-compression** 0.4.42, MIT OR Apache-2.0, <https://github.com/Nullus157/async-compression>
@@ -53,6 +54,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **bitflags** 1.3.2, MIT OR Apache-2.0, <https://github.com/bitflags/bitflags>
 - **bitflags** 2.13.1, MIT OR Apache-2.0, <https://github.com/bitflags/bitflags>
 - **bitstream-io** 4.10.0, MIT OR Apache-2.0, <https://github.com/tuffy/bitstream-io>
+- **blake3** 1.8.5, CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception, <https://github.com/BLAKE3-team/BLAKE3>
 - **block-buffer** 0.10.4, MIT OR Apache-2.0, <https://github.com/RustCrypto/utils>
 - **block-buffer** 0.12.1, MIT OR Apache-2.0, <https://github.com/RustCrypto/utils>
 - **block-padding** 0.4.2, MIT OR Apache-2.0, <https://github.com/RustCrypto/utils>
@@ -801,7 +803,7 @@ carried along.
 
 ### Apache-2.0
 
-Covers: aws-lc-sys 0.42.0, constant_time_eq 0.4.2, dunce 1.0.5, numkong 7.7.1, ryu 1.0.23, sync_wrapper 1.0.2, usearch 2.26.0
+Covers: aws-lc-sys 0.42.0, blake3 1.8.5, constant_time_eq 0.4.2, dunce 1.0.5, numkong 7.7.1, ryu 1.0.23, sync_wrapper 1.0.2, usearch 2.26.0
 
 ```text
 Apache License
@@ -2573,6 +2575,41 @@ Redistribution and use in source and binary forms, with or without modification,
 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+### BSD-2-Clause
+
+Covers: arrayref 0.3.9
+
+Text from: `LICENSE`
+
+```text
+Copyright (c) 2015 David Roundy <roundyd@physics.oregonstate.edu>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the
+   distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
 ### BSD-2-Clause

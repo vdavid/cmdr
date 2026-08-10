@@ -122,7 +122,10 @@ mod tests {
     fn prefers_serial_when_present() {
         // Serial beats topology: the same device on two ports keeps one id, so its
         // index survives a replug (asserted in full below).
-        assert_eq!(device_id_for(Some("ABC123"), 336_592_896), device_id_for(Some("ABC123"), 1));
+        assert_eq!(
+            device_id_for(Some("ABC123"), 336_592_896),
+            device_id_for(Some("ABC123"), 1)
+        );
         assert_ne!(device_id_for(Some("ABC123"), 42), device_id_for(None, 42));
     }
 
@@ -205,13 +208,17 @@ mod tests {
         let device_id = device_id_for(Some("ABC"), 0);
         assert!(is_mtp_device_id(&device_id));
         assert!(!is_mtp_device_id("root"));
-        assert!(!is_mtp_device_id(&super::super::ids::smb_volume_id("nas", 445, "share")));
+        assert!(!is_mtp_device_id(&super::super::ids::smb_volume_id(
+            "nas", 445, "share"
+        )));
 
         assert!(is_mtp_volume_id(&mtp_volume_id(&device_id, 65537)));
         assert!(is_mtp_volume_id("mtp-AA:BB:CC:65537"));
         // An SMB volume id carries no `:` at all, so it can't even split; the
         // `mtp-` prefix check excludes it a second time.
-        assert!(!is_mtp_volume_id(&super::super::ids::smb_volume_id("host", 445, "1234")));
+        assert!(!is_mtp_volume_id(&super::super::ids::smb_volume_id(
+            "host", 445, "1234"
+        )));
         assert!(!is_mtp_volume_id("root"));
     }
 

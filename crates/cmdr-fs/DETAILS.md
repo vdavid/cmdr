@@ -53,6 +53,45 @@ body, and `#[cfg(test)]` items are all invisible to a header grep.
   follow: `COUNTING_ALLOCATOR` is a `#[global_allocator]`, and a second one in any binary linking this crate is a hard
   compile error.
 
+## `volume::ids`: why an ID is a digest and not a rendering
+
+A volume ID is identity, not a label. It keys `index-{id}.db` and its `importance-`/`media-` siblings, `lastUsedPaths`,
+tab `volumeId` fields, the `VolumeManager` registry, and therefore which disk an operation acts on. Two consequences run
+in opposite directions, and both have bitten:
+
+- Two volumes sharing one ID cross-wire their state, and route reads (and deletes) to the wrong disk.
+- One volume getting two IDs over its lifetime orphans its index and saved paths, so a full rescan runs for a disk that
+  was already indexed.
+
+The retired scheme did both, because it built an ID by DELETING everything outside `[a-z0-9-]` and lowercasing the rest,
+from the MOUNT PATH. Deleting characters is a many-to-one map (`/Volumes/My Disk` and `/Volumes/My_Disk` → one ID), and
+a mount path isn't stable (macOS mounts a second same-named disk at `/Volumes/Backup 1`).
+
+So the funnel here mints `{scheme}-{slug}-{digest}`:
+
+- **`digest`** is 64 bits of BLAKE3 over the scheme followed by each canonical part, LENGTH-PREFIXED. The prefixing is
+  what keeps the map injective across component boundaries: without it `("nas", "polyashare")` and
+  `("naspolya", "share")` feed the hasher identical bytes. The scheme goes in first as domain separation. Cryptographic
+  rather than a fast hash because volume names are user-controlled, so a _chosen_ collision (name a USB stick to steal
+  another volume's index) has to cost ~2^64, not a few seconds.
+- **`slug`** is lossy, capped, and purely so a data dir and a log line stay readable. ❌ Nothing may parse or key off
+  it.
+- **`scheme`** records which identity source the ID came from, best first: `vol-` (filesystem UUID), `smb-` (server,
+  port, share), `mtp-` (device serial), `path-` (mount path, the fallback). `root` stays a bare literal, being unique by
+  definition and special-cased across the app.
+
+Case folding happens only where the protocol says two spellings ARE one thing (DNS hostnames, SMB share names, hex
+UUIDs). That's canonicalization; everywhere else, folding would be exactly the information loss that caused the bug.
+
+The 64-bit digest also bounds the length, which is load-bearing: an ID is a filename component, and macOS and Linux both
+stop at 255 bytes. It's the reason a fully-injective escaping scheme (percent-encode the path) was rejected: reversible
+and elegant, but unbounded, and it renders a mount path with spaces unreadable anyway.
+
+Nothing enforces the funnel in the type system. An ID crosses IPC as a `String` in ~3,600 Rust and ~1,600 TypeScript
+sites, so a `VolumeId` newtype would be a very large refactor for a property one module already guarantees; the
+guardrail is instead "❌ never build an ID by hand" in each caller's `CLAUDE.md`, plus `VolumeManager::register` logging
+an error whenever one ID does end up covering two mount roots.
+
 ## The four cuts that made the closure finite
 
 Measured at file granularity over transitive `crate::` references, the hypothesised seed set dragged in **89 files and

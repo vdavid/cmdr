@@ -1,14 +1,15 @@
 # Indexing resources (process-wide caps)
 
-Process-wide resource governance for indexing: bounded memory and bounded disk. Unlike `../lifecycle` (which is
-per-volume), these cap the WHOLE indexing pool.
+Process-wide resource governance for indexing: bounded memory and bounded disk. Unlike `../lifecycle` (per-volume),
+these cap the WHOLE indexing pool.
 
 ## Module map
 
 - **memory_watchdog.rs** — the single global `phys_footprint` budget (warn 8 GB, stop ALL indexing 16 GB, then keep
-  watching). Policy only; the memory readers live in `cmdr_fs::process_memory`, re-exported as `crate::process_memory`.
-- **subsystem_stop.rs** — the stop-hook registry the watchdog runs alongside the index stop.
-- **retention.rs** — the external-index-DB count cap with LRU eviction.
+  watching). Policy only; the readers live in `cmdr_fs::process_memory`, re-exported as `crate::process_memory`.
+- **subsystem_stop.rs** — the stop-hook registry the watchdog runs beside the index stop.
+- **retention.rs** — the external-index-DB count cap with LRU eviction, plus `sweep_legacy_scheme_dbs` (one shot from
+  `IndexBuilder::build`: deletes databases keyed by a retired volume-ID scheme, which nothing can open again).
 
 ## Must-knows
 
@@ -39,9 +40,9 @@ per-volume), these cap the WHOLE indexing pool.
   (`Running`/`Initializing`) volume's DB nor `root`, no matter how old its mtime. `forget`/`disable`/`clear` are
   lifecycle's, not here.
 - **The same enumeration answers what the whole index OCCUPIES** (`Index::disk_footprint`) and which volumes have a
-  database at all. Both read the FILES: ❌ the registry can't be asked, since it can't see the database a search's walk
-  built and nothing re-registered. There is ❌ no size cap, by decision (`docs/specs/unindexed-search-plan.md` Decision
-  17); coverage that has to be rebuilt from scratch is EVICTED instead, and `DETAILS.md` names the three cases.
+  database. Both read the FILES: ❌ the registry can't be asked, since it can't see a database a search's walk built and
+  nothing re-registered. ❌ No size cap, by decision (`docs/specs/unindexed-search-plan.md` Decision 17); coverage that
+  would have to be rebuilt from scratch is EVICTED instead, and `DETAILS.md` names the three cases.
 
 Thresholds, the memory-snapshot breakdown, the shared-ceiling rationale, and the LRU + safety logic: `DETAILS.md`. Read
 it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -131,6 +131,11 @@ impl IndexBuilder {
         }
         let index = self.install();
         crate::indexing::lifecycle::state::init();
+        // Reclaim the databases keyed by a retired volume-ID scheme, now that the
+        // data dir is configured. Off-thread (it reads a directory and unlinks
+        // files) and race-free: nothing can mint one of those IDs any more, so no
+        // volume coming online will ever want one of these files.
+        crate::indexing::host::runtime::spawn_blocking(crate::indexing::resources::retention::sweep_legacy_scheme_dbs);
         Ok(index)
     }
 

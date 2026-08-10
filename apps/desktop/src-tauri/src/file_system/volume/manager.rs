@@ -41,9 +41,9 @@ fn report_identity_conflict(id: &str, existing: &Arc<dyn Volume>, incoming: &Arc
     if !is_identity_conflict(existing, incoming) {
         return;
     }
-    log::error!(
+    crate::log_error!(
         target: "cmdr_lib::file_system::volume",
-        "Volume ID {id} covers two different roots ({} and {}); {resolution}, and they share per-volume state. Expected only for a cloned volume or a doubly-mounted filesystem.",
+        "Two different mount roots ({} and {}) claim volume ID {id}; {resolution}, so the two share per-volume state. Expected only for a cloned volume or a doubly-mounted filesystem.",
         existing.root().display(),
         incoming.root().display(),
     );

@@ -262,10 +262,11 @@ pub(crate) fn enforce_external_index_cap() {
 /// dir until the LRU cap happened to reach them, which for a user under the cap
 /// is never.
 ///
-/// Safe to run at any time and safe to fail: a legacy ID can't be live (nothing
-/// can produce one), and these databases are disposable caches. Best-effort by
-/// design, so a delete that doesn't work out is a log line, not an error path.
-pub fn sweep_legacy_scheme_dbs() {
+/// Runs once per process, from `IndexBuilder::build`, off-thread. Safe to run at
+/// any time and safe to fail: a legacy ID can't be live (nothing can produce
+/// one), and these databases are disposable caches. Best-effort by design, so a
+/// delete that doesn't work out is a log line, not an error path.
+pub(crate) fn sweep_legacy_scheme_dbs() {
     let Some(data_dir) = data_dir_for_sweep("sweep index databases from the retired ID scheme") else {
         return;
     };

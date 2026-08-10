@@ -17,6 +17,12 @@ Location categories: `Favorite` (user-editable, from the `favorites/` store, exi
 
 ## Must-knows
 
+- **❌ Never derive a volume ID yourself; call `volume_id_for_mount`.** It's the twin of macOS `volumes::ids` and owns
+  the same ladder: CIFS and GVFS SMB key on `(server, port, share)`, everything else on its filesystem UUID
+  (`/dev/disk/by-uuid`, matched against the `/proc/mounts` device), falling back to the mount path. An ID keys the index
+  DB, `lastUsedPaths`, tab state, and operation routing, so one that loses information sends reads and deletes to the
+  wrong disk. Mint IDs only through `cmdr_fs::volume::ids`; the rationale lives in macOS `volumes/DETAILS.md` § "A
+  volume ID is derived from the volume's IDENTITY".
 - **Two separate inotify watchers: `/proc/mounts` AND `/run/user/<uid>/gvfs/`.** GVFS SMB shares never appear in
   `/proc/mounts` (the whole `gvfs/` dir is one FUSE mount; each share is a subdirectory), so a share mount/unmount is a
   directory create/remove invisible to `/proc/mounts`. Watching both is the only way to catch all volume changes.

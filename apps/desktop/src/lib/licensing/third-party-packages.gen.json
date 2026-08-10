@@ -98,6 +98,12 @@
       "url": "https://github.com/lu-zero/arg_enum_proc_macro"
     },
     {
+      "name": "arrayref",
+      "version": "0.3.9",
+      "license": "BSD-2-Clause",
+      "url": "https://github.com/droundy/arrayref"
+    },
+    {
       "name": "arrayvec",
       "version": "0.7.8",
       "license": "MIT OR Apache-2.0",
@@ -246,6 +252,12 @@
       "version": "4.10.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/tuffy/bitstream-io"
+    },
+    {
+      "name": "blake3",
+      "version": "1.8.5",
+      "license": "CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception",
+      "url": "https://github.com/BLAKE3-team/BLAKE3"
     },
     {
       "name": "block-buffer",

@@ -212,7 +212,10 @@ fn ends_with_digest(id: &str) -> bool {
     let Some(dash) = bytes.len().checked_sub(DIGEST_HEX_LEN + 1) else {
         return false;
     };
-    bytes[dash] == b'-' && bytes[dash + 1..].iter().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(b))
+    bytes[dash] == b'-'
+        && bytes[dash + 1..]
+            .iter()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(b))
 }
 
 #[cfg(test)]
@@ -292,7 +295,10 @@ mod id_tests {
     fn component_boundaries_cannot_be_shifted() {
         // Length-prefixed hashing: without it, ("nas", "polya…") and ("naspolya…")
         // would feed the hasher identical bytes.
-        assert_ne!(smb_volume_id("nas", 445, "polyashare"), smb_volume_id("naspolya", 445, "share"));
+        assert_ne!(
+            smb_volume_id("nas", 445, "polyashare"),
+            smb_volume_id("naspolya", 445, "share")
+        );
     }
 
     #[test]
@@ -307,8 +313,14 @@ mod id_tests {
     fn the_same_identity_always_produces_the_same_id() {
         // Required for `lastUsedPaths`, tabs, and the index DB to round-trip.
         assert_eq!(path_volume_id("/Volumes/naspi"), path_volume_id("/Volumes/naspi"));
-        assert_eq!(smb_volume_id("naspolya", 445, "naspi"), smb_volume_id("naspolya", 445, "naspi"));
-        assert_eq!(local_volume_id(Some("A1B2-C3D4"), "/Volumes/X"), local_volume_id(Some("A1B2-C3D4"), "/Volumes/X"));
+        assert_eq!(
+            smb_volume_id("naspolya", 445, "naspi"),
+            smb_volume_id("naspolya", 445, "naspi")
+        );
+        assert_eq!(
+            local_volume_id(Some("A1B2-C3D4"), "/Volumes/X"),
+            local_volume_id(Some("A1B2-C3D4"), "/Volumes/X")
+        );
     }
 
     #[test]
@@ -371,7 +383,10 @@ mod id_tests {
                 id.chars().all(|c| c.is_alphanumeric() || c == '-'),
                 "id must be alphanumerics and dashes only: {id}",
             );
-            assert!(id.len() <= 64, "id must stay far under the 255-byte filename limit: {id}");
+            assert!(
+                id.len() <= 64,
+                "id must stay far under the 255-byte filename limit: {id}"
+            );
             assert!(!id.is_empty());
         }
     }
@@ -417,23 +432,38 @@ mod id_tests {
         // Docker container's `public` share would both collide on `volumespublic`
         // under a path-shape ID scheme, cross-contaminating `lastUsedPaths`, tabs,
         // and per-volume state.
-        assert_ne!(smb_volume_id("Naspolya", 445, "Public"), smb_volume_id("localhost", 10494, "public"));
+        assert_ne!(
+            smb_volume_id("Naspolya", 445, "Public"),
+            smb_volume_id("localhost", 10494, "public")
+        );
     }
 
     #[test]
     fn smb_volume_id_folds_case_where_the_protocol_does() {
         // DNS hostnames and SMB share names are both case-insensitive, so these are
         // the same mount and must share an ID.
-        assert_eq!(smb_volume_id("Naspolya", 445, "naspi"), smb_volume_id("naspolya", 445, "naspi"));
-        assert_eq!(smb_volume_id("naspolya", 445, "Public"), smb_volume_id("naspolya", 445, "public"));
+        assert_eq!(
+            smb_volume_id("Naspolya", 445, "naspi"),
+            smb_volume_id("naspolya", 445, "naspi")
+        );
+        assert_eq!(
+            smb_volume_id("naspolya", 445, "Public"),
+            smb_volume_id("naspolya", 445, "public")
+        );
     }
 
     #[test]
     fn smb_volume_id_distinguishes_ports_and_ip_addresses() {
         // Same host, same share, different port = a different server in practice
         // (reverse proxies, dev fixtures on localhost).
-        assert_ne!(smb_volume_id("localhost", 10480, "public"), smb_volume_id("localhost", 10494, "public"));
-        assert_ne!(smb_volume_id("192.168.1.111", 445, "naspi"), smb_volume_id("192.168.1.112", 445, "naspi"));
+        assert_ne!(
+            smb_volume_id("localhost", 10480, "public"),
+            smb_volume_id("localhost", 10494, "public")
+        );
+        assert_ne!(
+            smb_volume_id("192.168.1.111", 445, "naspi"),
+            smb_volume_id("192.168.1.112", 445, "naspi")
+        );
     }
 
     // ── Legacy detection (the one-shot sweep of stranded index DBs) ───────

@@ -319,7 +319,10 @@ mod tests {
         );
         let remounted = mount("/Volumes/USB 1", "exfat", "/dev/disk4s1", false);
         let remounted_loc = build_attached_location(&remounted, resolve).expect("local mount is an attached volume");
-        assert_eq!(loc.id, remounted_loc.id, "the same disk keeps its ID at a new mount point");
+        assert_eq!(
+            loc.id, remounted_loc.id,
+            "the same disk keeps its ID at a new mount point"
+        );
 
         assert_eq!(loc.name, "My USB");
         assert!(loc.is_ejectable);

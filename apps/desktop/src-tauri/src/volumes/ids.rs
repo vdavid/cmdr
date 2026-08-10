@@ -77,12 +77,32 @@ mod tests {
         // The same share reached at two mount points is one volume; two same-named
         // shares on different servers are two.
         assert_eq!(
-            volume_id_for("/Volumes/naspi", Some("smbfs"), Some(&smb_info("nas", 445, "naspi")), None),
-            volume_id_for("/Volumes/naspi-1", Some("smbfs"), Some(&smb_info("nas", 445, "naspi")), None),
+            volume_id_for(
+                "/Volumes/naspi",
+                Some("smbfs"),
+                Some(&smb_info("nas", 445, "naspi")),
+                None
+            ),
+            volume_id_for(
+                "/Volumes/naspi-1",
+                Some("smbfs"),
+                Some(&smb_info("nas", 445, "naspi")),
+                None
+            ),
         );
         assert_ne!(
-            volume_id_for("/Volumes/public", Some("smbfs"), Some(&smb_info("nas", 445, "Public")), None),
-            volume_id_for("/Volumes/public", Some("smbfs"), Some(&smb_info("localhost", 10494, "public")), None),
+            volume_id_for(
+                "/Volumes/public",
+                Some("smbfs"),
+                Some(&smb_info("nas", 445, "Public")),
+                None
+            ),
+            volume_id_for(
+                "/Volumes/public",
+                Some("smbfs"),
+                Some(&smb_info("localhost", 10494, "public")),
+                None
+            ),
         );
     }
 

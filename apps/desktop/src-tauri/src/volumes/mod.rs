@@ -38,8 +38,8 @@ pub(crate) use nsurl::{
     get_bool_resource, get_icon_for_path, get_volume_name, get_volume_uuid, get_volume_uuid_for_path,
     volume_name_from_path,
 };
-pub use smb::{SmbMountInfo, enrich_smb_connection_state, get_smb_mount_info};
 pub(crate) use smb::parse_smb_mount_source;
+pub use smb::{SmbMountInfo, enrich_smb_connection_state, get_smb_mount_info};
 
 /// Category of a location item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]

@@ -13,8 +13,17 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the decision detail lives
 - **Network**: variant exists but is currently unconstructed.
 
 `parse_cloud_provider_name` maps `~/Library/CloudStorage/` dir prefixes to display names (Dropbox, GoogleDrive→Google
-Drive, OneDrive/Business, Box, pCloud, else the first `-`-segment). The `ICLOUD_VOLUME_ID` / provider-list sync points
-with `friendly_error.rs` are called out in `CLAUDE.md`.
+Drive, OneDrive/Business, Box, pCloud, else the first `-`-segment).
+
+## Location IDs (two cross-file sync points)
+
+`DEFAULT_VOLUME_ID = "root"`; `ICLOUD_VOLUME_ID = "cloud-icloud"` is the only hardcoded cloud-drive ID (the others
+derive from the `~/Library/CloudStorage/<provider>` dir name). Both the ID and the provider mapping are mirrored in
+`friendly_error.rs`, which `crate::volumes` can't reach, being macOS-only: it matches the `ICLOUD_VOLUME_ID` literal
+under a sync-point comment, and `parse_cloud_provider_name`'s provider list must stay in sync with
+`friendly_error::enrich_with_provider`'s separate one.
+
+Every other ID is minted by `cmdr_fs::volume::ids` (below).
 
 ## `list_locations()`
 
@@ -94,18 +103,55 @@ SD card, an optical disc), not just MTP locked storage. The frontend guard machi
 `transfer-entry.ts`) already keys on `isReadOnly`, so populating the flag activates it with no frontend change; backend
 `validate_destination_writable` (via `libc::access`) is the second line of defense.
 
-**Decision**: SMB volume IDs are keyed by `(server, port, share)`, not by mount path.
-**Why**: `path_to_id("/Volumes/Public")` and `path_to_id("/Volumes/public")` both produce `volumespublic`, so a NAS's
-`Public` share and a Docker container's `public` share collided on one ID. The collision cross-contaminated every
-per-volume store (`lastUsedPaths`, persisted tab `volumeId` fields, the in-memory `VolumeManager`, future per-volume
-prefs). The user-visible bug: a wrong-case path leaking from a stale `lastUsedPaths` entry into
-`SmbVolume::list_directory`, where the case-sensitive `strip_prefix` against `mount_path` failed and the smb2 path was
-built as `Volumes\Public` (relative under the share root), producing `STATUS_OBJECT_PATH_NOT_FOUND` from Samba.
-`smb_volume_id(server, port, share)` removes the entire class: server lowercased (DNS case-insensitive), share
-lowercased (SMB share names case-insensitive per Windows/Samba default), server dots replaced by `-` so the ID stays in
-`[a-z0-9-]`. Statfs is the canonical source for both the watcher and mount-time `register_smb_volume`, so they agree.
-The unmount path looks up by `VolumeManager::find_by_root` because statfs no longer recovers SMB info once the mount is
-gone.
+**Decision**: A volume ID is derived from the volume's IDENTITY, never from the shape of its mount path, and every ID is
+built by one funnel (`cmdr_fs::volume::ids`; `ids.rs` here picks the constructor).
+**Why**: A volume ID keys the index DB, `lastUsedPaths`, tab `volumeId` fields, the `VolumeManager` registry, and
+therefore operation routing. Deriving it by DELETING characters (strip everything outside `[a-z0-9-]`, then lowercase)
+is a many-to-one map, so it hands two volumes one identity: `/Volumes/My Disk` and `/Volumes/My_Disk` both became
+`volumesmydisk`, and a NAS's `Public` share and a Docker container's `public` share both became `volumespublic`. The
+collision cross-contaminates every per-volume store, and the user-visible bug was a wrong-case path leaking from a
+stale `lastUsedPaths` entry into `SmbVolume::list_directory`, where the case-sensitive `strip_prefix` against
+`mount_path` failed and the smb2 path was built as `Volumes\Public` (relative under the share root), producing
+`STATUS_OBJECT_PATH_NOT_FOUND` from Samba. Reads and destructive operations landing on the wrong disk is the same bug
+with worse consequences.
+
+Three properties make that unreachable rather than unlikely:
+
+1. **Injective encoding.** Every derived ID is `{scheme}-{slug}-{digest}`, where the digest is 64 bits of BLAKE3 over
+   the length-prefixed, scheme-separated canonical tuple. The slug is lossy and cosmetic (so a data dir stays
+   eyeballable); nothing may key off it. Length-prefixing is what stops `("nas", "polyashare")` and `("naspolya",
+   "share")` hashing the same bytes. Cryptographic rather than a fast hash because volume names are user-controlled, so
+   a *chosen* collision has to be out of reach too. The bounded length matters: these are filename components
+   (`index-{id}.db`).
+2. **The best available identity source, per kind.** SMB keys on `(server, port, share)` with server and share
+   lowercased (DNS hostnames and SMB share names are both case-insensitive, so that's canonicalization, not loss); MTP
+   on the device serial; a local volume on its filesystem UUID; anything else on its mount path. `volume_id_for` is the
+   single rule, shared by `get_attached_volumes` and `resolve_path_volume_fast` so they can't disagree about one
+   volume.
+3. **A loud registry.** `VolumeManager::register` logs an error when one ID would cover two different `root()`s. Not
+   reachable from a derived ID, but a byte-for-byte volume clone reports the same UUID as its original, and so does a
+   filesystem mounted twice; both are genuinely ambiguous, and neither may be silent.
+
+**Decision**: A local volume's ID keys on its filesystem UUID (`NSURLVolumeUUIDStringKey`), not on its mount point.
+**Why**: The mount point isn't stable. Plug a disk in while `/Volumes/Backup` is taken and macOS mounts it at
+`/Volumes/Backup 1`; rename a volume and it moves too. A path-keyed ID therefore orphaned that volume's index and saved
+paths and forced a full rescan, for the same physical disk. The UUID is read through `LocalVolumeMeta`, the existing
+"blocking, local mounts only" seam, so the NSURL round-trip never happens for a network mount (it hangs on a dead one,
+which is the whole point of § "Hung mounts"). A volume without a UUID (tmpfs, most FUSE mounts) falls back to its path.
+`NSURLVolumeUUIDStringKey` is stringly-typed, and a typo would silently return `None` forever while every volume
+quietly fell back to a path ID, so `nsurl::tests::the_boot_volume_reports_a_uuid` pins that the key still resolves
+(verified on macOS 26.5.2, `getResourceValue:forKey:`, 2026-08-10).
+
+The unmount path can't use any of this: it looks up by `VolumeManager::find_by_root`, because neither statfs nor NSURL
+recovers a gone mount's identity.
+
+**Decision**: Index databases keyed by an ID from the retired scheme are deleted at launch
+(`cmdr_index::sweep_legacy_scheme_dbs`, driven by `is_legacy_volume_id`), rather than migrated.
+**Why**: They're disposable caches, so the cost of dropping one is a rescan, while the cost of a mis-targeted rename is
+a corrupt index. Nothing can mint a legacy ID any more, so nothing will ever open these files again; left alone they'd
+sit in the data dir until the LRU cap happened to reach them, which for a user under the cap is never. Persisted tab
+IDs need no migration at all: `pane/initialization.ts` already re-resolves every tab's volume from its path at startup
+precisely because a stored ID can go stale.
 
 **Decision**: Gate launch-time icon fetches on the FDA decision (`crate::fda_gate::is_fda_pending_runtime()`).
 **Why**: `NSWorkspace.iconForFile:` resolution touches LaunchServices and several adjacent TCC services beyond the input

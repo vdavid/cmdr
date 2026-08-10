@@ -151,6 +151,21 @@ mod tests {
     use super::*;
 
     #[test]
+    fn the_boot_volume_reports_a_uuid() {
+        // `NSURLVolumeUUIDStringKey` is a stringly-typed API: a typo returns `None`
+        // forever, which looks like nothing at all while every volume silently
+        // drops back to a path-derived ID. macOS always gives the boot volume a
+        // UUID, so this is what proves the key still resolves.
+        let uuid = get_volume_uuid_for_path("/").expect("macOS reports a UUID for the boot volume");
+        assert!(!uuid.trim().is_empty(), "got: {uuid:?}");
+    }
+
+    #[test]
+    fn a_path_that_does_not_exist_has_no_uuid() {
+        assert_eq!(get_volume_uuid_for_path("/Volumes/definitely-not-mounted-xyz"), None);
+    }
+
+    #[test]
     fn test_get_volume_space_root() {
         let space = get_volume_space("/");
         assert!(space.is_some(), "Should get space info for root volume");

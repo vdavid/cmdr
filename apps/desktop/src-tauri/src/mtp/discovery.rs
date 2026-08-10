@@ -73,16 +73,13 @@ mod tests {
 
     #[test]
     fn test_device_id_format() {
-        // Without a serial the id is location-based; with one it's serial-based.
-        // The derivation itself is covered by `cmdr_fs::volume::mtp_ids` tests; this pins
-        // that discovery routes through it (so the two never drift).
-        assert_eq!(
-            cmdr_fs::volume::mtp_ids::device_id_for(None, 336_592_896),
-            "mtp-336592896"
-        );
-        assert_eq!(
-            cmdr_fs::volume::mtp_ids::device_id_for(Some("PIXEL7"), 336_592_896),
-            "mtp-PIXEL7"
-        );
+        // Without a serial the id is location-based; with one it's serial-based, so
+        // the same device on another port keeps its index. The derivation itself is
+        // covered by `cmdr_fs::volume::mtp_ids` tests; this pins that discovery
+        // routes through it (so the two never drift).
+        use cmdr_fs::volume::mtp_ids::device_id_for;
+        assert!(device_id_for(None, 336_592_896).starts_with("mtp-"));
+        assert_ne!(device_id_for(None, 336_592_896), device_id_for(None, 1));
+        assert_eq!(device_id_for(Some("PIXEL7"), 336_592_896), device_id_for(Some("PIXEL7"), 1));
     }
 }
