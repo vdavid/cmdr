@@ -109,21 +109,32 @@ fn test_rebase_event_path_rejects_non_children() {
 }
 
 #[test]
-fn event_targets_watch_root_matches_the_dir_itself_in_either_path_form() {
+fn event_targets_watch_root_matches_the_dir_itself() {
     // The signal that a directory was replaced wholesale is an event naming the WATCH
     // ROOT, which `rebase_event_path` rejects (its parent isn't the watched dir). This
-    // predicate is what catches it, and it needs the same two path forms.
+    // predicate is what catches it.
     let dir = Path::new("/tmp/work");
     assert!(event_targets_watch_root(Path::new("/tmp/work"), dir, dir));
+
+    // A symlinked watch root: the notifier reports the resolved target.
+    let listing_dir = Path::new("/Users/jane/Library/CloudStorage/GoogleDrive-jane/My Drive");
+    let canonical_dir = Path::new("/Users/jane/My Drive");
+    assert!(event_targets_watch_root(canonical_dir, listing_dir, canonical_dir));
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn event_targets_watch_root_matches_the_private_symlink_form() {
+    // The predicate needs BOTH path forms, same as `rebase_event_path` above.
+    // `firmlinks::normalize_path` maps `/tmp` → `/private/tmp` only on macOS (the
+    // `PRIVATE_SYMLINK_DIRS` block is `cfg`-gated), so this equivalence is a macOS
+    // fact, not a portable one: on Linux the two paths normalize to themselves and
+    // the predicate correctly says no.
+    let dir = Path::new("/tmp/work");
     assert!(
         event_targets_watch_root(Path::new("/private/tmp/work"), dir, dir),
         "FSEvents' canonical form of the watch root is still the watch root"
     );
-
-    // A symlinked watch root: FSEvents reports the resolved target.
-    let listing_dir = Path::new("/Users/jane/Library/CloudStorage/GoogleDrive-jane/My Drive");
-    let canonical_dir = Path::new("/Users/jane/My Drive");
-    assert!(event_targets_watch_root(canonical_dir, listing_dir, canonical_dir));
 }
 
 #[test]
