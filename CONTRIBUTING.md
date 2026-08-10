@@ -169,6 +169,35 @@ pnpm test:e2e:linux
 
 See `apps/desktop/test/e2e-linux/CLAUDE.md` for VNC debugging, VM setup details, and WebKitGTK quirks.
 
+### Building a `.deb` on Linux
+
+On Ubuntu 24.04, install the system libraries Tauri needs first:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev libacl1-dev patchelf
+```
+
+Then build, install, and run it:
+
+```bash
+pnpm --filter @cmdr/desktop tauri build --bundles deb
+sudo dpkg -i target/release/bundle/deb/Cmdr_*_amd64.deb
+Cmdr                              # /usr/bin/Cmdr
+sudo apt remove cmdr              # to uninstall
+```
+
+The launcher entry comes from `apps/desktop/src-tauri/linux/cmdr.desktop.hbs`, wired up through `bundle.linux.deb` in
+`tauri.conf.json`. That's what puts Cmdr in a real file-manager category instead of the default catch-all.
+
+**Gotcha: don't run `pnpm check bindings-fresh` on Linux.** `pnpm bindings:regen` exports `bindings.ts` from whatever
+the host platform's `cfg` gates compile, so on Linux every macOS-only IPC command regenerates as its
+`#[cfg(not(target_os = "macos"))]` stub, doc comment and all. Running it there rewrites hundreds of lines of the
+committed macOS-generated file.
+
+Linux support isn't advertised and has known gaps: `docs/notes/linux-gaps-2026-08-10.md` records what's broken and
+where.
+
 ## Building
 
 From repo root:

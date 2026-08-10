@@ -47,3 +47,10 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 - `size-only-subtrees-rejected-2026-08-06.md` — why storing folder totals instead of per-file rows under `CACHEDIR.TAG`
   subtrees was dropped (the CPU case is ~1%, measured in release), the cross-directory hardlink finding any revival has
   to solve first, and the search-arena and APFS-clone leads that came out of it.
+
+**A ledger of known gaps on an unsupported platform:**
+
+- `linux-gaps-2026-08-10.md` — what a Linux user actually hits: the inotify watcher that never starts because one
+  unreadable directory aborts the recursive watch, the `Cmd+` menu accelerators that bind to Super rather than Ctrl, and
+  the 504 macOS-specific strings in the English catalog. Contributed alongside the Linux `.deb` bundling, and kept
+  because Linux isn't advertised, so nothing here has an issue behind it.
