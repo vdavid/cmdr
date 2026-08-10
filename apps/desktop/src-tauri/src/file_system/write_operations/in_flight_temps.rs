@@ -103,6 +103,14 @@ pub(super) fn deregister(state: &WriteOperationState, temp: &Path) {
 
 /// Points the persisted ledger at the app data dir and clears whatever an
 /// earlier run left behind. Call once at startup, before any copy can start.
+///
+/// Only the app-data-dir work happens inline. **The deletes go to their own
+/// thread**, because a recorded partial can sit on a Finder-mounted NAS that is
+/// no longer answering, and `unlink` on a dead mount blocks for a minute or two
+/// — on the setup thread that reads to the user as an app that won't launch.
+/// Nothing waits on the sweep: it is cleanup, and the records it acts on were
+/// already retired from the log by the truncate below, so a new copy can start
+/// underneath it safely.
 pub fn init_and_sweep(data_dir: &Path) {
     let path = data_dir.join(STORE_FILENAME);
     let recorded = read_recorded(&path);
@@ -126,7 +134,15 @@ pub fn init_and_sweep(data_dir: &Path) {
         ),
     }
 
-    sweep_persisted_orphans(&recorded);
+    if recorded.is_empty() {
+        return;
+    }
+    if let Err(e) = std::thread::Builder::new()
+        .name("cmdr-temp-sweep".to_string())
+        .spawn(move || sweep_persisted_orphans(&recorded))
+    {
+        log::warn!(target: "copy", "couldn't start the orphaned-partial sweep: {e}");
+    }
 }
 
 /// Removes the partials an earlier run recorded and never finished.
@@ -307,7 +323,7 @@ pub(super) mod test_support {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::TestDir;
+    use crate::test_support::{TestDir, wait_until};
     use cmdr_fs::staging::StagingTemp;
     use std::sync::Arc;
     use std::time::Duration;
@@ -344,9 +360,12 @@ mod tests {
 
         init_and_sweep(&data_dir);
 
-        assert!(
-            !orphan.exists(),
-            "a partial recorded by an earlier run must be swept at startup, with no age gate"
+        // The sweep runs off the startup thread (a partial can live on a dead
+        // mount), so wait for it rather than racing it.
+        wait_until(
+            Duration::from_secs(5),
+            "the recorded orphan to be swept at startup, with no age gate",
+            || !orphan.exists(),
         );
         assert!(
             test_support::live_paths().is_empty(),
@@ -472,15 +491,28 @@ mod tests {
         std::fs::create_dir_all(&data_dir).unwrap();
         let precious = dir.join("taxes.pdf");
         std::fs::write(&precious, b"the user's own file").unwrap();
+        // A real temp the sweep visits AFTER the precious file, so the test has
+        // something to wait for: its removal means the sweep already had its
+        // chance at `taxes.pdf`. The `zz-` prefix is what puts it later — the
+        // sweep walks the replayed set in path order.
+        let real_temp = dir.join("zz-holiday.raw.cmdr-tmp-9999");
+        std::fs::write(&real_temp, b"half a photo").unwrap();
         std::fs::write(
             data_dir.join(STORE_FILENAME),
-            format!("+{}\n", serde_json::to_string(&precious).unwrap()),
+            format!(
+                "+{}\n+{}\n",
+                serde_json::to_string(&precious).unwrap(),
+                serde_json::to_string(&real_temp).unwrap()
+            ),
         )
         .unwrap();
         test_support::clear();
 
         init_and_sweep(&data_dir);
 
+        wait_until(Duration::from_secs(5), "the startup sweep to finish", || {
+            !real_temp.exists()
+        });
         assert!(
             precious.exists(),
             "the sweep must only ever remove files carrying our scratch marker"

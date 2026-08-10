@@ -439,6 +439,12 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
         // after the cancellation check so a cancel-just-before-write doesn't
         // leak an entry — the 5 s TTL would clean it up anyway, but this
         // keeps the map tighter under cancel-heavy workloads.
+        //
+        // `stage_and_land_file` registers this path AND its staging temp again
+        // (the create lands on the temp, the rename on this name, and the
+        // watcher keys on exact paths). Re-registering is a no-op bump, and
+        // keeping the call here means the habit survives a strategy that
+        // someday doesn't stage.
         crate::downloads::note_pending_write_for_cmdr(&actual_dest);
 
         // Copy file using appropriate strategy (network, safe overwrite, or native)

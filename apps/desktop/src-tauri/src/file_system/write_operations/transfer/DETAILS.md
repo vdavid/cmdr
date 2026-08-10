@@ -152,8 +152,10 @@ left is a thread that never came back.
   any copy can start) replays the persisted log and removes what an earlier run left in flight. The age gate below
   exists to protect a temp a CONCURRENT Cmdr is streaming into; a path this app recorded when it minted the UUID in it
   needs no such protection, and the instance lock already keeps two processes off one data dir. It only ever removes
-  paths carrying the scratch marker, so a corrupted log can't become a delete-anything primitive. Granularity and why
-  there is no fsync: `in_flight_temps.rs` module docs.
+  paths carrying the scratch marker, so a corrupted log can't become a delete-anything primitive. The deletes run on
+  their own thread, ❌ never inline in `setup`: a recorded partial can sit on a Finder-mounted NAS that stopped
+  answering, and an `unlink` there blocks for a minute or two, which on the startup thread reads as an app that won't
+  launch. Granularity and why there is no fsync: `in_flight_temps.rs` module docs.
 - **The rest, on the next transfer into that directory.** `volume::cleanup::reap_stale_transfer_temps` runs once at the
   start of each cross-volume copy, over the destination directory only: one `list_directory`, then a `delete` for each
   `.cmdr-tmp-*` FILE whose mtime is at least `STALE_TEMP_MIN_AGE` (1 hour) old. The age gate is what makes it safe
