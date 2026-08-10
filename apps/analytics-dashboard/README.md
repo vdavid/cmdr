@@ -72,7 +72,7 @@ leaves the data reachable. The in-app gate covers every hostname and every route
 | ---------------------------- | -------- | -------------------------------------------------------- | -------------------------------------------- |
 | `UMAMI_API_URL`              | Yes      | Umami instance URL                                       | Your Umami deployment                        |
 | `UMAMI_USERNAME`             | Yes      | Umami login username                                     | Umami admin panel                            |
-| `UMAMI_PASSWORD`             | Yes      | Umami login password                                     | Umami admin panel                            |
+| `UMAMI_PASSWORD`             | Yes      | Umami login password                                     | `secret UMAMI_PASSWORD` (sops is the source) |
 | `UMAMI_WEBSITE_ID`           | Yes      | getcmdr.com website UUID                                 | Umami > Websites                             |
 | `UMAMI_BLOG_WEBSITE_ID`      | Yes      | Blog website UUID                                        | Umami > Websites                             |
 | `PADDLE_API_KEY_LIVE`        | Yes      | Live API key (not sandbox)                               | Paddle > Developer Tools > API Keys          |

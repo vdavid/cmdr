@@ -207,7 +207,9 @@ Pages only populates `platform.env` on a real deployment, so local dev would see
 
 All env vars are CF Pages secrets, never in code:
 
-- `UMAMI_API_URL`: `https://anal.veszelovszki.com`. `UMAMI_USERNAME` / `UMAMI_PASSWORD`: Umami credentials.
+- `UMAMI_API_URL`: `https://anal.veszelovszki.com`. `UMAMI_USERNAME`: `admin`. `UMAMI_PASSWORD`: read it with
+  `secret UMAMI_PASSWORD`; sops is the source of truth, and the copies here and in the Pages secrets are exactly that,
+  copies. Rotating means updating all three together (the recipe lives in the maintainer's Umami tooling note).
 - `UMAMI_WEBSITE_ID`: getcmdr.com. `UMAMI_BLOG_WEBSITE_ID`: veszelovszki.com (name kept for CF secret compatibility).
   `UMAMI_PRVW_WEBSITE_ID`: getprvw.com (add when deploying).
 - `PADDLE_API_KEY_LIVE`: live key (not sandbox).
