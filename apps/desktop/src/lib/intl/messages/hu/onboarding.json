@@ -464,6 +464,10 @@
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
     "sourceHash": "16f0ee4"
   },
+  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "A kulcsod el van mentve. Írj be egy újat a cseréjéhez.",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
+    "sourceHash": "974ffdf"
+  },
   "onboarding.cloudSetup.status.checking": "A kulcsod ellenőrzése…",
   "@onboarding.cloudSetup.status.checking": {
     "sourceHash": "e8c3a83"

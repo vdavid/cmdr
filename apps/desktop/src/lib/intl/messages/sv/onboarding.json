@@ -463,6 +463,10 @@
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
     "sourceHash": "16f0ee4"
   },
+  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "Din nyckel är sparad. Skriv en ny för att ersätta den.",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
+    "sourceHash": "974ffdf"
+  },
   "onboarding.cloudSetup.status.checking": "Kontrollerar din nyckel…",
   "@onboarding.cloudSetup.status.checking": {
     "sourceHash": "e8c3a83"

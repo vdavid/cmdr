@@ -46,8 +46,8 @@ vi.mock('$lib/tauri-commands', () => ({
   cancelAiDownload: vi.fn(() => Promise.resolve()),
   checkAiConnection: vi.fn(() => Promise.resolve({ connected: false, authError: false, models: [], error: null })),
   saveAiApiKey: vi.fn(() => Promise.resolve(null)),
-  getAiApiKey: vi.fn(() => Promise.resolve('')),
-  configureAi: vi.fn(() => Promise.resolve()),
+  getAiApiKeyStatus: vi.fn(() => Promise.resolve({ isSet: false, fingerprint: '' })),
+  configureAi: vi.fn(() => Promise.resolve({ secretStoreError: null })),
   getAiRuntimeStatus: vi.fn(() =>
     Promise.resolve({
       serverRunning: false,

@@ -153,3 +153,22 @@ with their own API key. Privacy posture:
   construction (each pinned by a test).
 - **Chats and optional call logs stay local.** Conversations live in a local `main.db`; the optional LLM call log writes
   to a local folder and is never transmitted.
+
+## AI API keys
+
+The user's BYOK cloud key lives in the OS secret store (`crate::secrets`: macOS Keychain, Linux Secret Service, or an
+encrypted-file fallback), never in `settings.json`. On top of that:
+
+- **A stored key never crosses IPC into a webview.** There is deliberately no command that returns it. `configure_ai`
+  and `check_ai_connection` take a PROVIDER ID and read the key in the backend; `get_ai_api_key_status` returns only
+  `isSet` plus a truncated SHA-256 fingerprint (the settings UI needs a change-detector for its model-list cache, not
+  the key). ❌ Don't add a key-returning command back: it would hand the plaintext key to any window that can invoke
+  (see the caller-window section below). Guardrail lives in `apps/desktop/src-tauri/src/ai/api_keys.rs`.
+- **So the key field can't be pre-filled**, and it isn't: it starts empty with a "your key is saved" placeholder, and
+  typing replaces the stored key. A key the user has typed but not yet saved is invisible to `check_ai_connection`, so
+  both key fields flush their debounced save before scheduling a check (`AiCloudSection.svelte`,
+  `CloudProviderSetup.svelte`).
+- **A key the user types is still plaintext in that window** for as long as they're typing it. That's unavoidable and
+  fine; the contract is about PERSISTED keys flowing back out of the secret store.
+- **`validate_ai_base_url` stays**: it refuses to send a key over plaintext `http://` to a non-loopback host, which is
+  what stops a malicious "free proxy" base URL from harvesting keys. See `ai/CLAUDE.md`.

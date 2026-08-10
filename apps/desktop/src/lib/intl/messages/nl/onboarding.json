@@ -465,6 +465,10 @@
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
     "sourceHash": "16f0ee4"
   },
+  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "Je sleutel is opgeslagen. Typ een nieuwe om deze te vervangen.",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
+    "sourceHash": "974ffdf"
+  },
   "onboarding.cloudSetup.status.checking": "Je sleutel controleren…",
   "@onboarding.cloudSetup.status.checking": {
     "sourceHash": "e8c3a83"

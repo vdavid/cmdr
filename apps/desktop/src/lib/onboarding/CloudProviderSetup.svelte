@@ -10,7 +10,7 @@
     } from '$lib/settings'
     import {
         checkAiConnection,
-        getAiApiKey,
+        getAiApiKeyStatus,
         saveAiApiKey,
         openExternalUrl,
     } from '$lib/tauri-commands'
@@ -35,10 +35,11 @@
      *   4. Pick a model: ✓ when the user has picked a non-empty model
      *
      * The connection-check pipeline mirrors `AiCloudSection.svelte`: 1 s debounce on
-     * key/base-URL change, calls `checkAiConnection(baseUrl, apiKey)`, surfaces the
-     * model list through the shared `ui/Combobox`. Unlike the settings section, the
-     * model list already loads on open here (a stored key triggers a check in
-     * `loadApiKeyForProvider`), so there's no separate mount-trigger to add.
+     * key/base-URL change, calls `checkAiConnection(baseUrl, providerId)` (the backend
+     * reads the saved key itself), surfaces the model list through the shared
+     * `ui/Combobox`. Unlike the settings section, the model list already loads on open
+     * here (a stored key triggers a check in `loadKeyStatusForProvider`), so there's no
+     * separate mount-trigger to add.
      *
      * Provider switching is owned by the parent (`StepAi.svelte`); on `providerId`
      * change we reload the per-provider state from the store + secret keychain. Keys
@@ -62,7 +63,12 @@
         | 'connection-error'
         | 'error'
 
+    // What the user has TYPED this session. A saved key never comes back from the backend
+    // (see `docs/security.md` § "AI API keys"), so this stays empty until they type.
     let currentApiKey = $state('')
+    // Whether a key is already stored for this provider. Drives the "your key is saved"
+    // placeholder and the checkable-config gate.
+    let keyIsSet = $state(false)
     let currentModel = $state('')
     let currentBaseUrl = $state('')
     let connectionStatus = $state<ConnectionStatus>('idle')
@@ -87,11 +93,11 @@
         const id = providerId
         activeProviderId = id
         // Flush any in-flight typing to the OLD provider so we don't lose those chars
-        // by overwriting `currentApiKey` below.
+        // by clearing `currentApiKey` below.
         flushPendingApiKeySave()
         resetConnectionState()
         loadFromStore(id)
-        void loadApiKeyForProvider(id)
+        void loadKeyStatusForProvider(id)
     })
 
     onDestroy(() => {
@@ -111,21 +117,23 @@
                 ? (providerConfig?.baseUrl ?? preset?.baseUrl ?? '')
                 : (preset?.baseUrl ?? '')
         currentApiKey = ''
+        keyIsSet = false
         secretError = null
     }
 
-    async function loadApiKeyForProvider(id: string): Promise<void> {
+    async function loadKeyStatusForProvider(id: string): Promise<void> {
         try {
-            const fetched = await getAiApiKey(id)
+            const status = await getAiApiKeyStatus(id)
             if (id !== activeProviderId) return
-            currentApiKey = fetched
-            // If we just loaded a stored key, trigger an immediate check (no debounce):
+            keyIsSet = status.isSet
+            // If a key is already stored, trigger an immediate check (no debounce):
             // the user expects "I came back; tell me if my key still works."
-            if (currentApiKey !== '' && hasCheckableConfig()) {
+            if (keyIsSet && hasCheckableConfig()) {
                 void triggerConnectionCheck()
             }
         } catch (e) {
             if (id !== activeProviderId) return
+            keyIsSet = false
             secretError = describeSecretError(e, 'read')
         }
     }
@@ -134,7 +142,7 @@
         const preset = getCloudProvider(activeProviderId)
         const requiresApiKey = preset?.requiresApiKey ?? false
         const baseUrl = resolvedBaseUrl()
-        if (requiresApiKey && currentApiKey === '') return false
+        if (requiresApiKey && !keyIsSet && currentApiKey === '') return false
         return baseUrl !== ''
     }
 
@@ -162,14 +170,15 @@
         if (!hasCheckableConfig()) return
 
         const baseUrl = resolvedBaseUrl()
-        const key = currentApiKey
         const idAtStart = activeProviderId
         connectionStatus = 'checking'
         connectionError = null
         // Keep the prior list during a refetch so the model combobox never blanks mid-check.
 
         try {
-            const result = await checkAiConnection(baseUrl, key)
+            // The backend reads the saved key for this provider, so anything the user just
+            // typed has to be committed first. `persistApiKey` schedules this check after a save.
+            const result = await checkAiConnection(baseUrl, idAtStart)
             // Drop the result if the user switched providers mid-flight.
             if (idAtStart !== activeProviderId) return
             if (result.authError) {
@@ -239,6 +248,7 @@
         }
         // Only check if we're still on this provider.
         if (id !== activeProviderId) return
+        keyIsSet = value !== ''
         scheduleConnectionCheck()
     }
 
@@ -325,11 +335,13 @@
 
     const links = $derived(providerLinksById[activeProviderId] ?? { signup: '', apiKeys: '' })
     const apiKeyPlaceholder = $derived(
-        activeProviderId === 'openai'
-            ? tString('onboarding.cloudSetup.apiKeyPlaceholder.openai')
-            : activeProviderId === 'anthropic'
-              ? tString('onboarding.cloudSetup.apiKeyPlaceholder.anthropic')
-              : tString('onboarding.cloudSetup.apiKeyPlaceholder.generic'),
+        keyIsSet
+            ? tString('onboarding.cloudSetup.apiKeyPlaceholder.saved')
+            : activeProviderId === 'openai'
+              ? tString('onboarding.cloudSetup.apiKeyPlaceholder.openai')
+              : activeProviderId === 'anthropic'
+                ? tString('onboarding.cloudSetup.apiKeyPlaceholder.anthropic')
+                : tString('onboarding.cloudSetup.apiKeyPlaceholder.generic'),
     )
 </script>
 

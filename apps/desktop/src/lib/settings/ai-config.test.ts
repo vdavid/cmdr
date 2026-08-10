@@ -13,32 +13,40 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+interface KeyStatus {
+  isSet: boolean
+  fingerprint: string
+}
+interface ConfigureOutcome {
+  secretStoreError: unknown
+}
+
 const saveAiApiKey = vi.fn<(id: string, key: string) => Promise<null>>(() => Promise.resolve(null))
-const getAiApiKey = vi.fn<(id: string) => Promise<string>>(() => Promise.resolve(''))
-const hasAiApiKey = vi.fn<(id: string) => Promise<boolean>>(() => Promise.resolve(false))
+const getAiApiKeyStatus = vi.fn<(id: string) => Promise<KeyStatus>>(() =>
+  Promise.resolve({ isSet: false, fingerprint: '' }),
+)
 const configureAi = vi.fn<
   (
     provider: string,
     contextSize: number,
-    apiKey: string,
+    cloudProviderId: string,
     baseUrl: string,
     model: string,
     requiresApiKey: boolean,
-  ) => Promise<null>
->(() => Promise.resolve(null))
+  ) => Promise<ConfigureOutcome>
+>(() => Promise.resolve({ secretStoreError: null }))
 
 vi.mock('$lib/tauri-commands', () => ({
   saveAiApiKey: (id: string, key: string) => saveAiApiKey(id, key),
-  getAiApiKey: (id: string) => getAiApiKey(id),
-  hasAiApiKey: (id: string) => hasAiApiKey(id),
+  getAiApiKeyStatus: (id: string) => getAiApiKeyStatus(id),
   configureAi: (
     provider: string,
     contextSize: number,
-    apiKey: string,
+    cloudProviderId: string,
     baseUrl: string,
     model: string,
     requiresApiKey: boolean,
-  ) => configureAi(provider, contextSize, apiKey, baseUrl, model, requiresApiKey),
+  ) => configureAi(provider, contextSize, cloudProviderId, baseUrl, model, requiresApiKey),
 }))
 
 const settingsMap: Record<string, string> = {}
@@ -100,12 +108,10 @@ function resetState(): void {
   }
   saveAiApiKey.mockReset()
   saveAiApiKey.mockResolvedValue(null)
-  getAiApiKey.mockReset()
-  getAiApiKey.mockResolvedValue('')
-  hasAiApiKey.mockReset()
-  hasAiApiKey.mockResolvedValue(false)
+  getAiApiKeyStatus.mockReset()
+  getAiApiKeyStatus.mockResolvedValue({ isSet: false, fingerprint: '' })
   configureAi.mockReset()
-  configureAi.mockResolvedValue(null)
+  configureAi.mockResolvedValue({ secretStoreError: null })
   addToast.mockReset()
   loggerWarn.mockReset()
   loggerInfo.mockReset()
@@ -214,7 +220,7 @@ describe('migrateApiKeysFromSettings', () => {
     rawStoreMap['ai.openaiApiKey'] = 'sk-legacy-123'
     rawStoreMap['ai.openaiBaseUrl'] = 'https://api.openai.com/v1'
     rawStoreMap['ai.openaiModel'] = 'gpt-4o-mini'
-    hasAiApiKey.mockResolvedValue(false) // not yet in the secret store
+    getAiApiKeyStatus.mockResolvedValue({ isSet: false, fingerprint: '' }) // not yet in the secret store
 
     await migrateApiKeysFromSettings()
 
@@ -226,7 +232,7 @@ describe('migrateApiKeysFromSettings', () => {
 
   it('drops the flat keys without re-saving when the secret store already has the key', async () => {
     rawStoreMap['ai.openaiApiKey'] = 'sk-legacy-123'
-    hasAiApiKey.mockResolvedValue(true) // already migrated
+    getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'abc123' }) // already migrated
 
     await migrateApiKeysFromSettings()
 
@@ -236,7 +242,7 @@ describe('migrateApiKeysFromSettings', () => {
 
   it('keeps the legacy key if the secret-store save fails (never loses the only copy)', async () => {
     rawStoreMap['ai.openaiApiKey'] = 'sk-legacy-123'
-    hasAiApiKey.mockResolvedValue(false)
+    getAiApiKeyStatus.mockResolvedValue({ isSet: false, fingerprint: '' })
     saveAiApiKey.mockRejectedValueOnce(new Error('keychain locked'))
 
     await migrateApiKeysFromSettings()
@@ -248,21 +254,20 @@ describe('migrateApiKeysFromSettings', () => {
 describe('pushConfigToBackend', () => {
   beforeEach(resetState)
 
-  it('reads provider + key + base URL fresh and pushes to configureAi', async () => {
+  it('reads provider + base URL fresh and pushes the provider ID, never a key, to configureAi', async () => {
     settingsMap['ai.provider'] = 'cloud'
     settingsMap['ai.cloudProvider'] = 'openai'
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: { model: 'gpt-4o' } })
     settingsMap['ai.localContextSize'] = '32768'
-    getAiApiKey.mockResolvedValue('sk-fresh')
 
     await pushConfigToBackend()
 
-    expect(getAiApiKey).toHaveBeenCalledWith('openai')
+    // The backend reads the key from the OS secret store itself; this window never sees it.
     // OpenAI requires a key, so requiresApiKey is true.
     expect(configureAi).toHaveBeenCalledWith(
       'cloud',
       32768,
-      'sk-fresh',
+      'openai',
       expect.stringContaining('openai.com'),
       'gpt-4o',
       true,
@@ -274,26 +279,25 @@ describe('pushConfigToBackend', () => {
     settingsMap['ai.cloudProvider'] = 'ollama'
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ ollama: { model: 'llama3.2' } })
     settingsMap['ai.localContextSize'] = '32768'
-    getAiApiKey.mockResolvedValue('')
 
     await pushConfigToBackend()
 
     expect(configureAi).toHaveBeenCalledWith(
       'cloud',
       32768,
-      '',
+      'ollama',
       expect.stringContaining('localhost'),
       'llama3.2',
       false,
     )
   })
 
-  it('surfaces a persistent toast and keeps pushing when the secret store read fails', async () => {
+  it('surfaces a persistent toast when the backend reports a secret-store read failure', async () => {
     settingsMap['ai.provider'] = 'cloud'
     settingsMap['ai.cloudProvider'] = 'openai'
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: { model: 'gpt-4o' } })
     settingsMap['ai.localContextSize'] = '16384'
-    getAiApiKey.mockRejectedValue(new Error('keyring locked'))
+    configureAi.mockResolvedValue({ secretStoreError: { type: 'access_denied', message: 'keyring locked' } })
 
     await pushConfigToBackend()
 
@@ -301,9 +305,18 @@ describe('pushConfigToBackend', () => {
     const [body, opts] = addToast.mock.calls[0]
     expect(typeof body).toBe('string')
     expect(opts).toMatchObject({ dismissal: 'persistent' })
-    // Still pushed with an empty key so the rest of the config reaches the backend.
-    expect(configureAi).toHaveBeenCalledWith('cloud', 16384, '', expect.any(String), 'gpt-4o', true)
     expect(loggerError).toHaveBeenCalled()
+  })
+
+  it('stays quiet when the backend read the key fine', async () => {
+    settingsMap['ai.provider'] = 'cloud'
+    settingsMap['ai.cloudProvider'] = 'openai'
+    settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: { model: 'gpt-4o' } })
+    settingsMap['ai.localContextSize'] = '16384'
+
+    await pushConfigToBackend()
+
+    expect(addToast).not.toHaveBeenCalled()
   })
 
   it('logs and swallows configureAi failures', async () => {
@@ -326,5 +339,16 @@ describe('pushConfigToBackend', () => {
     await pushConfigToBackend()
 
     expect(configureAi).toHaveBeenCalledWith('local', 16384, '', expect.any(String), expect.any(String), false)
+  })
+
+  it('never reaches for a command that reads the key back', async () => {
+    settingsMap['ai.provider'] = 'cloud'
+    settingsMap['ai.cloudProvider'] = 'openai'
+    settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: { model: 'gpt-4o' } })
+    settingsMap['ai.localContextSize'] = '16384'
+
+    await pushConfigToBackend()
+
+    expect(getAiApiKeyStatus).not.toHaveBeenCalled()
   })
 })

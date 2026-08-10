@@ -3,11 +3,17 @@
 //! Delegates to `crate::secrets::store()` for platform-agnostic secret storage so each provider's
 //! key sits in the OS-native secret backend (macOS Keychain, Linux Secret Service, etc.) instead
 //! of `settings.json`. One entry per provider keyed as `ai.apiKey.<providerId>`.
+//!
+//! **A stored key never crosses IPC back to a webview.** There is deliberately no "read the key"
+//! command: `configure_ai` and `check_ai_connection` take a provider id and read the key here, in
+//! the backend. The only key-shaped thing a renderer can obtain is [`AiApiKeyStatus`], which
+//! carries "is one set" plus an opaque fingerprint. See `docs/security.md` § "AI API keys".
 
 use crate::pluralize::pluralize;
 use crate::secrets::SecretStoreError;
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 /// Builds the secret-store key for a given provider id.
 fn store_key(provider_id: &str) -> String {
@@ -82,9 +88,66 @@ pub fn delete(provider_id: &str) -> Result<(), AiApiKeyError> {
     }
 }
 
-/// Returns true if an API key is stored for the provider.
-pub fn has(provider_id: &str) -> bool {
-    get(provider_id).is_ok()
+/// Hex characters of the SHA-256 digest we expose as a key fingerprint. 16 hex chars (64 bits) is
+/// far past collision range for the handful of keys one user holds, and reveals nothing about a
+/// high-entropy secret.
+const FINGERPRINT_HEX_LEN: usize = 16;
+
+/// What a renderer may know about a stored key: whether there is one, and an opaque handle that
+/// changes when the key changes. Never the key itself.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AiApiKeyStatus {
+    /// True when a non-empty key is stored for this provider.
+    pub is_set: bool,
+    /// Truncated SHA-256 of the key, or empty when none is stored. The settings UI uses it to
+    /// fingerprint its model-list cache, which must miss when the key changes.
+    pub fingerprint: String,
+}
+
+/// Truncated SHA-256 of the key, as lowercase hex.
+fn fingerprint(api_key: &str) -> String {
+    let digest = Sha256::digest(api_key.as_bytes());
+    let mut hex = String::with_capacity(FINGERPRINT_HEX_LEN);
+    for byte in digest.iter().take(FINGERPRINT_HEX_LEN / 2) {
+        hex.push_str(&format!("{byte:02x}"));
+    }
+    hex
+}
+
+/// Returns whether a key is stored for the provider, plus its fingerprint. A missing key is
+/// `is_set: false`, not an error; a secret store that can't be READ (locked keyring, denied
+/// Keychain ACL) is an error, because the UI has to tell those two apart.
+pub fn status(provider_id: &str) -> Result<AiApiKeyStatus, AiApiKeyError> {
+    match get(provider_id) {
+        Ok(key) if key.is_empty() => Ok(AiApiKeyStatus {
+            is_set: false,
+            fingerprint: String::new(),
+        }),
+        Ok(key) => Ok(AiApiKeyStatus {
+            is_set: true,
+            fingerprint: fingerprint(&key),
+        }),
+        Err(AiApiKeyError::NotFound(_)) => Ok(AiApiKeyStatus {
+            is_set: false,
+            fingerprint: String::new(),
+        }),
+        Err(e) => Err(e),
+    }
+}
+
+/// Reads the key for a provider for backend-internal use, mapping "none stored" to an empty
+/// string. Returns the secret-store failure so callers can surface it: a key that exists but
+/// can't be read is a broken keyring the user needs to hear about, not a missing key.
+pub(crate) fn read_for_backend(provider_id: &str) -> (String, Option<AiApiKeyError>) {
+    match get(provider_id) {
+        Ok(key) => (key, None),
+        Err(AiApiKeyError::NotFound(_)) => (String::new(), None),
+        Err(e) => {
+            log::warn!("Couldn't read the AI API key for provider {provider_id}: {e}");
+            (String::new(), Some(e))
+        }
+    }
 }
 
 // --- Tauri commands ---
@@ -95,29 +158,20 @@ pub fn save_ai_api_key(provider_id: String, api_key: String) -> Result<(), AiApi
     save(&provider_id, &api_key)
 }
 
-/// Returns the stored API key for the provider, or an empty string if none is stored.
-/// Returning empty (rather than an error) on missing keys keeps the call sites simple: they all
-/// pass the value through to `configure_ai`, which already treats empty-string as "not configured."
+/// Returns whether a key is stored for the provider, plus an opaque fingerprint.
+///
+/// ❌ Don't add a command that returns the key itself. The backend reads it directly wherever it's
+/// needed (`configure_ai`, `check_ai_connection`), so a compromised webview has nothing to ask for.
 #[tauri::command]
 #[specta::specta]
-pub fn get_ai_api_key(provider_id: String) -> Result<String, AiApiKeyError> {
-    match get(&provider_id) {
-        Ok(key) => Ok(key),
-        Err(AiApiKeyError::NotFound(_)) => Ok(String::new()),
-        Err(e) => Err(e),
-    }
+pub fn get_ai_api_key_status(provider_id: String) -> Result<AiApiKeyStatus, AiApiKeyError> {
+    status(&provider_id)
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn delete_ai_api_key(provider_id: String) -> Result<(), AiApiKeyError> {
     delete(&provider_id)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn has_ai_api_key(provider_id: String) -> bool {
-    has(&provider_id)
 }
 
 #[cfg(test)]
@@ -168,13 +222,13 @@ mod tests {
     }
 
     #[test]
-    fn has_reflects_save_and_delete() {
+    fn status_reflects_save_and_delete() {
         let _dir = isolate_secrets();
-        assert!(!has("openai"));
+        assert!(!status("openai").unwrap().is_set);
         save("openai", "sk-test").unwrap();
-        assert!(has("openai"));
+        assert!(status("openai").unwrap().is_set);
         delete("openai").unwrap();
-        assert!(!has("openai"));
+        assert!(!status("openai").unwrap().is_set);
     }
 
     #[test]
@@ -190,5 +244,43 @@ mod tests {
         save("openai", "sk-first").unwrap();
         save("openai", "sk-second").unwrap();
         assert_eq!(get("openai").unwrap(), "sk-second");
+    }
+
+    #[test]
+    fn status_reports_unset_without_a_fingerprint() {
+        let _dir = isolate_secrets();
+        let status = status("openai").unwrap();
+        assert!(!status.is_set);
+        assert_eq!(status.fingerprint, "");
+    }
+
+    #[test]
+    fn status_reports_set_with_a_fingerprint() {
+        let _dir = isolate_secrets();
+        save("openai", "sk-test-abc123").unwrap();
+        let status = status("openai").unwrap();
+        assert!(status.is_set);
+        assert_eq!(status.fingerprint.len(), FINGERPRINT_HEX_LEN);
+    }
+
+    /// The fingerprint is the model cache's change-detector, so two different keys must never
+    /// share one (a revoked-then-replaced key would otherwise serve the old model list).
+    #[test]
+    fn status_fingerprint_changes_with_the_key() {
+        let _dir = isolate_secrets();
+        save("openai", "sk-first").unwrap();
+        let first = status("openai").unwrap().fingerprint;
+        save("openai", "sk-second").unwrap();
+        let second = status("openai").unwrap().fingerprint;
+        assert_ne!(first, second);
+    }
+
+    /// The whole point of the fingerprint: it goes to a renderer, so it must not be the key.
+    #[test]
+    fn status_fingerprint_does_not_contain_the_key() {
+        let _dir = isolate_secrets();
+        save("openai", "sk-test-abc123").unwrap();
+        let fingerprint = status("openai").unwrap().fingerprint;
+        assert!(!fingerprint.contains("sk-test-abc123"));
     }
 }

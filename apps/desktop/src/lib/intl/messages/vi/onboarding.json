@@ -464,6 +464,10 @@
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
     "sourceHash": "16f0ee4"
   },
+  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "Khóa của bạn đã được lưu. Nhập khóa mới để thay thế.",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
+    "sourceHash": "974ffdf"
+  },
   "onboarding.cloudSetup.status.checking": "Đang kiểm tra khóa của bạn…",
   "@onboarding.cloudSetup.status.checking": {
     "sourceHash": "e8c3a83"

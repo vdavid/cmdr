@@ -281,10 +281,12 @@ render here in exactly one place: `network.smbConcurrency` under "Network and mo
 
 ### Cloud AI API keys never go through registry primitives
 
-Cloud API keys live in the OS secret store via `saveAiApiKey` / `getAiApiKey`, not in `settings.json`.
+Cloud API keys live in the OS secret store via `saveAiApiKey` / `getAiApiKeyStatus`, not in `settings.json`.
 `AiCloudSection.svelte` uses `SettingPasswordInput` in **controlled** mode (passes `value` + `onchange`) so the store
-isn't touched. Error mapping flows through `ai-secret-error.ts`. See parent DETAILS.md § "Why store cloud AI API keys in
-the OS secret store".
+isn't touched. The controlled value is only what the user TYPED this session: a stored key is never readable from a
+window (`docs/security.md` § "AI API keys"), so the field starts empty over a "your key is saved" placeholder, and
+`keyIsSet` (not the field's contents) is what makes the config checkable. Error mapping flows through
+`ai-secret-error.ts`. See parent DETAILS.md § "Why store cloud AI API keys in the OS secret store".
 
 ### Hot-apply for AI provider/key/model is wired in the applier, not here
 

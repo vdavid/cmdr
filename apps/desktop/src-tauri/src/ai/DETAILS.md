@@ -17,7 +17,7 @@ Three provider modes:
 ## Key files
 
 - **`mod.rs`**: Types (`AiStatus`, `AiState`, `DownloadProgress`, `ModelInfo`), model registry (`AVAILABLE_MODELS`, `DEFAULT_MODEL_ID`), `is_local_ai_supported()` gate
-- **`api_keys.rs`**: Per-provider cloud API key storage. Delegates to `crate::secrets::store()` (macOS Keychain, Linux Secret Service, or encrypted-file fallback). One entry per provider under key `ai.apiKey.<providerId>`. Exposes `save_ai_api_key` / `get_ai_api_key` / `delete_ai_api_key` / `has_ai_api_key` Tauri commands. Keys are NOT stored in `settings.json`.
+- **`api_keys.rs`**: Per-provider cloud API key storage. Delegates to `crate::secrets::store()` (macOS Keychain, Linux Secret Service, or encrypted-file fallback). One entry per provider under key `ai.apiKey.<providerId>`. Exposes `save_ai_api_key` / `get_ai_api_key_status` / `delete_ai_api_key` Tauri commands. Keys are NOT stored in `settings.json`, and there is deliberately no command that READS a key back to a webview (`docs/security.md` § "AI API keys"): `configure_ai` and `check_ai_connection` take a provider id and read it here via `read_for_backend`.
 ### Local-AI lifecycle (split by concern around one shared singleton)
 
 The local-AI machinery is decomposed so each file has one nameable responsibility; they coordinate around the single `ManagerState` owned in `state.rs`. The sibling modules borrow `&mut ManagerState` through the `MANAGER` lock rather than holding their own copy — keep it that way so the shared state stays coherent.
@@ -46,7 +46,7 @@ Each concern module's Tauri commands are registered from their real module path 
 ### Tauri commands
 
 Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `check_ai_connection`, `start_ai_download`, `cancel_ai_download`, `get_folder_suggestions`, `stream_folder_suggestions`, `cancel_folder_suggestions`. Note: `get_system_memory_info` moved to top-level `system_memory.rs`.
-API keys: `save_ai_api_key`, `get_ai_api_key`, `delete_ai_api_key`, `has_ai_api_key` (in `api_keys.rs`).
+API keys: `save_ai_api_key`, `get_ai_api_key_status`, `delete_ai_api_key` (in `api_keys.rs`).
 Also: `uninstall_ai` (the Uninstall button in `AiLocalSection.svelte`). The dead opt-out machinery (`opt_in_ai`, `is_ai_opted_out`, `dismiss_ai_offer`, `opt_out_ai`, and the `AiState.opted_out` field) was removed with the onboarding revamp — `ai.provider` is the single source of truth for whether AI is on.
 
 ## Startup flow
@@ -57,11 +57,12 @@ Tauri setup()
 
 Frontend loads
   -> initializeSettings()           <- loads settings from tauri-plugin-store
-  -> getAiApiKey(providerId)        <- fetches API key from OS secret store
-  -> configureAi({                  <- pushes AI config to backend
-       provider, contextSize,
-       cloudApiKey, cloudBaseUrl, cloudModel
+  -> configureAi({                  <- pushes AI config to backend. No key: the frontend
+       provider, contextSize,          sends the provider id and never sees the key.
+       cloudProviderId, cloudBaseUrl, cloudModel
      })
+       -> backend: read_for_backend(cloudProviderId)  <- reads the key from the OS secret store,
+                                                         reports a read failure back in the outcome
        -> backend: if provider === 'local' && model installed && local AI supported
             -> spawn_and_track_server() (sync, inside lock, PID tracked immediately)
             -> wait_for_server_health() (async, polls up to 60s)

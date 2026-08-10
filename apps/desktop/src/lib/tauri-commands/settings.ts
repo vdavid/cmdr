@@ -396,17 +396,35 @@ export async function getAiRuntimeStatus(): Promise<AiRuntimeStatus> {
   return commands.getAiRuntimeStatus()
 }
 
-/** Pushes AI config to the backend. Triggers server start if provider is local + model installed. */
+/** Outcome of a `configureAi` push. */
+export interface ConfigureAiOutcome {
+  /** Set when the provider's key exists but the OS secret store wouldn't hand it over. */
+  secretStoreError: unknown
+}
+
+/**
+ * Pushes AI config to the backend. Triggers server start if provider is local + model installed.
+ *
+ * Takes the cloud provider's ID, NOT its API key: the backend reads the key from the OS secret
+ * store itself, so the key never passes through this window. See `docs/security.md` § "AI API keys".
+ */
 export async function configureAi(
   provider: string,
   contextSize: number,
-  cloudApiKey: string,
+  cloudProviderId: string,
   cloudBaseUrl: string,
   cloudModel: string,
   cloudRequiresApiKey: boolean,
-): Promise<void> {
+): Promise<ConfigureAiOutcome> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
-  await invoke('configure_ai', { provider, contextSize, cloudApiKey, cloudBaseUrl, cloudModel, cloudRequiresApiKey })
+  return invoke('configure_ai', {
+    provider,
+    contextSize,
+    cloudProviderId,
+    cloudBaseUrl,
+    cloudModel,
+    cloudRequiresApiKey,
+  })
 }
 
 /** Stops the local llama-server without uninstalling. */
@@ -428,9 +446,14 @@ export interface AiConnectionCheckResult {
   error: string | null
 }
 
-/** Checks connectivity to an AI API endpoint by calling GET {baseUrl}/models. */
-export async function checkAiConnection(baseUrl: string, apiKey: string): Promise<AiConnectionCheckResult> {
-  return commands.checkAiConnection(baseUrl, apiKey)
+/**
+ * Checks connectivity to a cloud provider's endpoint by calling GET {baseUrl}/models.
+ *
+ * Takes the provider's ID, NOT its API key: the backend reads the stored key itself. A key the
+ * user has typed but not yet saved isn't visible to this check, so flush the pending save first.
+ */
+export async function checkAiConnection(baseUrl: string, providerId: string): Promise<AiConnectionCheckResult> {
+  return commands.checkAiConnection(baseUrl, providerId)
 }
 
 // ============================================================================
@@ -443,9 +466,21 @@ export async function saveAiApiKey(providerId: string, apiKey: string): Promise<
   if (res.status === 'error') throwIpcError(res.error)
 }
 
-/** Returns the stored API key for a cloud provider, or '' if none is stored. */
-export async function getAiApiKey(providerId: string): Promise<string> {
-  const res = await commands.getAiApiKey(providerId)
+/** What a window may know about a stored key: that there is one, and an opaque fingerprint. */
+export interface AiApiKeyStatus {
+  isSet: boolean
+  /** Changes when the key changes; empty when none is stored. Not derivable back to the key. */
+  fingerprint: string
+}
+
+/**
+ * Returns whether a key is stored for the provider, plus an opaque fingerprint.
+ *
+ * ❌ There is deliberately no way to read the key back. If you need it, you need it in the Rust
+ * backend, which reads the secret store directly. See `docs/security.md` § "AI API keys".
+ */
+export async function getAiApiKeyStatus(providerId: string): Promise<AiApiKeyStatus> {
+  const res = await commands.getAiApiKeyStatus(providerId)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -454,11 +489,6 @@ export async function getAiApiKey(providerId: string): Promise<string> {
 export async function deleteAiApiKey(providerId: string): Promise<void> {
   const res = await commands.deleteAiApiKey(providerId)
   if (res.status === 'error') throwIpcError(res.error)
-}
-
-/** Returns true if an API key is stored for the provider. */
-export async function hasAiApiKey(providerId: string): Promise<boolean> {
-  return commands.hasAiApiKey(providerId)
 }
 
 // ============================================================================

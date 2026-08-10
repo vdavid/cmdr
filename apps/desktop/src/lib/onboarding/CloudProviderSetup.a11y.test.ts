@@ -10,7 +10,7 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 vi.mock('$lib/tauri-commands', () => ({
   checkAiConnection: vi.fn(() => Promise.resolve({ connected: false, authError: false, models: [], error: null })),
   saveAiApiKey: vi.fn(() => Promise.resolve(null)),
-  getAiApiKey: vi.fn(() => Promise.resolve('')),
+  getAiApiKeyStatus: vi.fn(() => Promise.resolve({ isSet: false, fingerprint: '' })),
   openExternalUrl: vi.fn(() => Promise.resolve()),
 }))
 

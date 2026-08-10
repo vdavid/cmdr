@@ -19,10 +19,10 @@ vi.mock('$lib/tauri-commands', () => ({
     Promise.resolve({ connected: true, authError: false, models: ['gpt-4.1-mini'], error: null }),
   ),
   saveAiApiKey: vi.fn(() => Promise.resolve(null)),
-  getAiApiKey: vi.fn(() => Promise.resolve('')),
+  getAiApiKeyStatus: vi.fn(() => Promise.resolve({ isSet: false, fingerprint: '' })),
   openExternalUrl: vi.fn(() => Promise.resolve()),
   openPrivacySettings: vi.fn(() => Promise.resolve()),
-  configureAi: vi.fn(() => Promise.resolve()),
+  configureAi: vi.fn(() => Promise.resolve({ secretStoreError: null })),
   getAiRuntimeStatus: vi.fn(() =>
     Promise.resolve({
       serverRunning: false,

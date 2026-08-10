@@ -48,10 +48,14 @@ const checkAiConnection = vi.fn<
   }>
 >(() => Promise.resolve({ connected: true, authError: false, models: ['gpt-4.1-mini'], error: null }))
 const saveAiApiKey = vi.fn<(id: string, key: string) => Promise<null>>(() => Promise.resolve(null))
-const getAiApiKey = vi.fn<(id: string) => Promise<string>>(() => Promise.resolve(''))
+const getAiApiKeyStatus = vi.fn<(id: string) => Promise<{ isSet: boolean; fingerprint: string }>>(() =>
+  Promise.resolve({ isSet: false, fingerprint: '' }),
+)
 const openExternalUrl = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
 const openPrivacySettings = vi.fn<() => Promise<void>>(() => Promise.resolve())
-const configureAi = vi.fn<(...args: unknown[]) => Promise<void>>(() => Promise.resolve())
+const configureAi = vi.fn<(...args: unknown[]) => Promise<{ secretStoreError: unknown }>>(() =>
+  Promise.resolve({ secretStoreError: null }),
+)
 const getAiRuntimeStatus = vi.fn(() =>
   Promise.resolve({
     serverRunning: false,
@@ -73,9 +77,9 @@ vi.mock('$lib/tauri-commands', () => ({
   checkFullDiskAccess: () => checkFullDiskAccess(),
   startAiDownload: () => startAiDownload(),
   cancelAiDownload: () => cancelAiDownload(),
-  checkAiConnection: (baseUrl: string, apiKey: string) => checkAiConnection(baseUrl, apiKey),
+  checkAiConnection: (baseUrl: string, providerId: string) => checkAiConnection(baseUrl, providerId),
   saveAiApiKey: (id: string, key: string) => saveAiApiKey(id, key),
-  getAiApiKey: (id: string) => getAiApiKey(id),
+  getAiApiKeyStatus: (id: string) => getAiApiKeyStatus(id),
   openExternalUrl: (url: string) => openExternalUrl(url),
   openPrivacySettings: () => openPrivacySettings(),
   configureAi: (...args: unknown[]) => configureAi(...args),
@@ -159,8 +163,8 @@ describe('StepAi', () => {
     cancelAiDownload.mockClear()
     checkAiConnection.mockClear()
     saveAiApiKey.mockClear()
-    getAiApiKey.mockReset()
-    getAiApiKey.mockResolvedValue('')
+    getAiApiKeyStatus.mockReset()
+    getAiApiKeyStatus.mockResolvedValue({ isSet: false, fingerprint: '' })
     openExternalUrl.mockClear()
     pushConfigToBackend.mockClear()
     loadSettings.mockReset()
@@ -322,7 +326,7 @@ describe('StepAi', () => {
   })
 
   it('No-key-blocks-advance: cloud with empty key still calls pushConfigToBackend', async () => {
-    // Default mocks: getAiApiKey resolves '', so the key field stays empty.
+    // Default mocks: no key is stored, so the key field stays empty.
     mounted = mountStep()
     await waitForAsync()
     radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))

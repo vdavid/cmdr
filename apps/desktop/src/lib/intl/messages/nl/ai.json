@@ -168,6 +168,10 @@
   "@ai.cloud.apiKeyPlaceholderGeneric": {
     "sourceHash": "16f0ee4"
   },
+  "ai.cloud.apiKeyPlaceholderSaved": "Je sleutel is opgeslagen. Typ een nieuwe om deze te vervangen.",
+  "@ai.cloud.apiKeyPlaceholderSaved": {
+    "sourceHash": "974ffdf"
+  },
   "ai.cloud.modelLabel": "Model",
   "@ai.cloud.modelLabel": {
     "sourceHash": "5e2c614",

@@ -355,24 +355,39 @@ pub fn get_ai_runtime_status() -> AiRuntimeStatus {
     }
 }
 
+/// Outcome of a [`configure_ai`] call. Carries the secret-store failure (if any) rather than
+/// failing the whole call: the rest of the config still applies, and the frontend needs the typed
+/// error to tell the user their keyring is locked.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfigureAiOutcome {
+    /// Set when the provider's key exists but couldn't be read from the OS secret store.
+    pub secret_store_error: Option<super::api_keys::AiApiKeyError>,
+}
+
 /// Stores provider + context size + OpenAI config in manager state.
 /// If provider is `local` and model is installed and hardware is supported, starts the server
 /// in a background task. If provider is NOT `local` and a server is running, stops it.
 /// Returns immediately.
+///
+/// Takes a provider ID, NOT a key: the BYOK key is read here from the OS secret store, so it never
+/// travels through a webview. See `api_keys.rs`.
 #[tauri::command]
 #[specta::specta]
 pub fn configure_ai<R: Runtime>(
     app: AppHandle<R>,
     provider: String,
     context_size: u32,
-    cloud_api_key: String,
+    cloud_provider_id: String,
     cloud_base_url: String,
     cloud_model: String,
     cloud_requires_api_key: bool,
-) -> Result<(), String> {
+) -> Result<ConfigureAiOutcome, String> {
     log::debug!(
-        "AI configure: provider={provider}, context_size={context_size}, base_url={cloud_base_url}, model={cloud_model}, requires_api_key={cloud_requires_api_key}"
+        "AI configure: provider={provider}, context_size={context_size}, cloud_provider={cloud_provider_id}, base_url={cloud_base_url}, model={cloud_model}, requires_api_key={cloud_requires_api_key}"
     );
+
+    let (cloud_api_key, secret_store_error) = super::api_keys::read_for_backend(&cloud_provider_id);
 
     // Guard the BYOK key against plaintext exfiltration before we store config that
     // suggestions.rs / search will later send with an Authorization header. Only
@@ -385,7 +400,9 @@ pub fn configure_ai<R: Runtime>(
     let spawn_result;
     {
         let mut manager = MANAGER.lock_ignore_poison();
-        let Some(ref mut m) = *manager else { return Ok(()) };
+        let Some(ref mut m) = *manager else {
+            return Ok(ConfigureAiOutcome { secret_store_error });
+        };
 
         // Switching away from local: cancel any in-flight startup (so its waiter exits
         // quietly instead of reporting the deliberate stop as a failure) and stop a
@@ -438,7 +455,7 @@ pub fn configure_ai<R: Runtime>(
         });
     }
 
-    Ok(())
+    Ok(ConfigureAiOutcome { secret_store_error })
 }
 
 #[cfg(test)]

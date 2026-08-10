@@ -729,6 +729,12 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
+  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "Your key is saved. Type a new one to replace it.",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
+    "description": "Placeholder in the API-key input when a key for this provider is already stored in the OS secret store. The field starts empty because a saved key is never read back into the window, so this tells the user their key is still there.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
 
   "onboarding.cloudSetup.status.checking": "Checking your key…",
   "@onboarding.cloudSetup.status.checking": {

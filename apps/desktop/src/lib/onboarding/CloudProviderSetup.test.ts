@@ -27,13 +27,15 @@ const checkAiConnection = vi.fn<
   }),
 )
 const saveAiApiKey = vi.fn<(id: string, key: string) => Promise<null>>(() => Promise.resolve(null))
-const getAiApiKey = vi.fn<(id: string) => Promise<string>>(() => Promise.resolve(''))
+const getAiApiKeyStatus = vi.fn<(id: string) => Promise<{ isSet: boolean; fingerprint: string }>>(() =>
+  Promise.resolve({ isSet: false, fingerprint: '' }),
+)
 const openExternalUrl = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
 
 vi.mock('$lib/tauri-commands', () => ({
-  checkAiConnection: (baseUrl: string, key: string) => checkAiConnection(baseUrl, key),
+  checkAiConnection: (baseUrl: string, providerId: string) => checkAiConnection(baseUrl, providerId),
   saveAiApiKey: (id: string, k: string) => saveAiApiKey(id, k),
-  getAiApiKey: (id: string) => getAiApiKey(id),
+  getAiApiKeyStatus: (id: string) => getAiApiKeyStatus(id),
   openExternalUrl: (url: string) => openExternalUrl(url),
 }))
 
@@ -92,8 +94,8 @@ describe('CloudProviderSetup', () => {
     })
     saveAiApiKey.mockReset()
     saveAiApiKey.mockResolvedValue(null)
-    getAiApiKey.mockReset()
-    getAiApiKey.mockResolvedValue('')
+    getAiApiKeyStatus.mockReset()
+    getAiApiKeyStatus.mockResolvedValue({ isSet: false, fingerprint: '' })
     openExternalUrl.mockReset()
     openExternalUrl.mockResolvedValue()
     vi.useFakeTimers()
@@ -142,8 +144,10 @@ describe('CloudProviderSetup', () => {
     expect(checkAiConnection).toHaveBeenCalled()
   })
 
-  it('switching provider reloads state and reads the new key from the secret store', async () => {
-    getAiApiKey.mockImplementation((id: string) => Promise.resolve(id === 'anthropic' ? 'sk-ant-stored' : ''))
+  it("switching provider reloads state and re-reads the new provider's key status", async () => {
+    getAiApiKeyStatus.mockImplementation((id: string) =>
+      Promise.resolve(id === 'anthropic' ? { isSet: true, fingerprint: 'abc123' } : { isSet: false, fingerprint: '' }),
+    )
     const { target } = mountSetup('openai')
     await settle()
     // Re-mount with a new providerId prop; simplest way to test `$effect(providerId)`.
@@ -154,7 +158,28 @@ describe('CloudProviderSetup', () => {
     mounted = { target, instance, providerId: 'anthropic' }
     await settle()
     expect(mounted.target.textContent).toContain('Set up Anthropic')
-    expect(getAiApiKey).toHaveBeenCalledWith('anthropic')
+    expect(getAiApiKeyStatus).toHaveBeenCalledWith('anthropic')
+  })
+
+  /** The security contract: a saved key never comes back into a window, so the field can't be
+   *  pre-filled with one. It shows a "your key is saved" placeholder instead. */
+  it('a saved key leaves the field empty and shows the saved placeholder', async () => {
+    getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'abc123' })
+    mountSetup('openai')
+    await settle()
+    if (!mounted) throw new Error('not mounted')
+    const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
+    if (!keyInput) throw new Error('API key input missing')
+    expect(keyInput.value).toBe('')
+    expect(keyInput.placeholder).toContain('saved')
+  })
+
+  /** A stored key still makes the config checkable, even though the window can't see the key. */
+  it('checks the connection on open when a key is already stored', async () => {
+    getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'abc123' })
+    mountSetup('openai')
+    await settle()
+    expect(checkAiConnection).toHaveBeenCalledWith(expect.stringContaining('openai.com'), 'openai')
   })
 
   it('connection-check returning models reveals the model combobox and ticks the API-key step', async () => {
@@ -319,7 +344,7 @@ describe('CloudProviderSetup', () => {
   })
 
   it('a secret store read failure surfaces an inline error', async () => {
-    getAiApiKey.mockRejectedValue(new Error('keyring locked'))
+    getAiApiKeyStatus.mockRejectedValue(new Error('keyring locked'))
     mountSetup('openai')
     await settle()
     if (!mounted) throw new Error('not mounted')

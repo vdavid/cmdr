@@ -5,10 +5,11 @@
  * so reopening Settings refetches the list. This process-lifetime `Map` lets a warm reopen serve the
  * list instantly while a config change (new key/URL/provider) still misses and refetches.
  *
- * The key is a SHA-256 hex digest of `providerId \0 baseUrl \0 apiKey` (Web Crypto, available in the
- * webview). The NUL separators stop boundary collisions (`('ab','c')` vs `('a','bc')`). We hash, not
- * length-key: two equal-length keys must NOT collide, or a revoked-vs-new key would serve the old,
- * wrong list. We NEVER store or log the raw API key or the digest input, only the opaque digest.
+ * The key is a SHA-256 hex digest of `providerId \0 baseUrl \0 keyFingerprint` (Web Crypto, available
+ * in the webview). The NUL separators stop boundary collisions (`('ab','c')` vs `('a','bc')`). The
+ * key fingerprint comes from `getAiApiKeyStatus`: the raw API key is never readable from a window,
+ * and the fingerprint still changes on every key change, so a revoked-vs-new key can't serve the
+ * old, wrong list. We store only the opaque digest, never its input.
  *
  * Not reactive: a plain module `Map`, not `$state`. Consumers copy the list into their own `$state`
  * on a hit. The cache lives for the process; there's no eviction (a handful of entries at most).
@@ -27,9 +28,16 @@ function toHex(buffer: ArrayBuffer): string {
 /**
  * SHA-256 hex digest of the provider config tuple. Async (Web Crypto's `digest` is). The input is
  * NUL-separated so field boundaries can't collide; it's never stored or logged.
+ *
+ * `keyFingerprint` is the backend's opaque handle for the stored key (`getAiApiKeyStatus`), not the
+ * key itself.
  */
-export async function computeModelCacheKey(providerId: string, baseUrl: string, apiKey: string): Promise<string> {
-  const input = [providerId, baseUrl, apiKey].join(FIELD_SEPARATOR)
+export async function computeModelCacheKey(
+  providerId: string,
+  baseUrl: string,
+  keyFingerprint: string,
+): Promise<string> {
+  const input = [providerId, baseUrl, keyFingerprint].join(FIELD_SEPARATOR)
   const bytes = new TextEncoder().encode(input)
   const digest = await crypto.subtle.digest('SHA-256', bytes)
   return toHex(digest)

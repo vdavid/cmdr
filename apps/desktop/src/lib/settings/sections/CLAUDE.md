@@ -27,9 +27,10 @@ Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUD
 - **Don't push AI config from a section.** Just `setSetting(...)`; `settings-applier.ts` →
   `ai-config.ts::pushConfigToBackend()` hot-applies (re-reads fresh).
 - **Cloud AI keys never touch registry primitives.** `AiCloudSection` uses `SettingPasswordInput` in controlled mode;
-  keys live in the OS secret store (`saveAiApiKey` / `getAiApiKey`).
-- **AI model picker (`ui/Combobox`) loads on open.** Don't zero `availableModels` mid-refetch (empty-list flash); never
-  store or log the raw key (SHA-256 cache key). DETAILS § model picker.
+  keys live in the OS secret store (`saveAiApiKey` / `getAiApiKeyStatus`). ❌ Never pre-fill the field: a stored key is
+  not readable from a window. `docs/security.md` § "AI API keys".
+- **AI model picker (`ui/Combobox`) loads on open.** Don't zero `availableModels` mid-refetch (empty-list flash); the
+  cache key hashes the backend's key FINGERPRINT, never a raw key. DETAILS § model picker.
 - **Don't hand-render a `section: ['Advanced']` setting on a feature page.** It auto-renders in `AdvancedSection`; a
   setting's `section` is its ONE home. (The mirror pattern is for two FEATURE pages only.)
 - **`KeyboardShortcutsSection` "+ add" is UI-only; never write a provisional `''` to the store.** Nothing hits

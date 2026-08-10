@@ -17,7 +17,7 @@
         setProviderConfig,
         cloudProviderPresets,
     } from '$lib/settings'
-    import { checkAiConnection, getAiApiKey, saveAiApiKey } from '$lib/tauri-commands'
+    import { checkAiConnection, getAiApiKeyStatus, saveAiApiKey } from '$lib/tauri-commands'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
     import { computeModelCacheKey, getCachedModels, setCachedModels } from '$lib/settings/ai-model-cache'
     import { isE2eRun } from '$lib/app-mode'
@@ -34,7 +34,14 @@
 
     // Cloud provider state
     let cloudProviderId = $state(getSetting('ai.cloudProvider'))
+    // What the user has TYPED this session. A saved key never comes back from the backend (see
+    // `docs/security.md` § "AI API keys"), so this stays empty until they type, and the field
+    // shows a "your key is saved" placeholder instead of dots standing in for a real key.
     let currentApiKey = $state('')
+    // What the backend will tell us about the saved key: that there is one, and a fingerprint that
+    // changes when it does. The fingerprint feeds the model-list cache, which must miss on a new key.
+    let keyIsSet = $state(false)
+    let keyFingerprint = $state('')
     let currentModel = $state('')
     let currentBaseUrl = $state('')
 
@@ -139,7 +146,7 @@
         // Capture the config we're checking so we can cache the result under the right fingerprint
         // even if the user keeps typing while the request is in flight.
         const baseUrlAtStart = resolvedBaseUrl
-        const apiKeyAtStart = currentApiKey
+        const fingerprintAtStart = keyFingerprint
         const providerIdAtStart = cloudProviderId
 
         connectionStatus = 'checking'
@@ -148,7 +155,9 @@
         // flashing-empty suggestion list mid-check is a regression we forbid (finding #4).
 
         try {
-            const result = await checkAiConnection(baseUrlAtStart, apiKeyAtStart)
+            // The backend reads the saved key for this provider, so anything the user just typed
+            // has to be committed first. `persistApiKey` is what schedules this check after a save.
+            const result = await checkAiConnection(baseUrlAtStart, providerIdAtStart)
 
             if (result.authError) {
                 connectionStatus = 'auth-error'
@@ -162,7 +171,7 @@
             } else if (result.models.length > 0) {
                 connectionStatus = 'connected'
                 availableModels = result.models
-                void cacheModels(providerIdAtStart, baseUrlAtStart, apiKeyAtStart, result.models)
+                void cacheModels(providerIdAtStart, baseUrlAtStart, fingerprintAtStart, result.models)
             } else {
                 connectionStatus = 'connected-no-models'
             }
@@ -180,7 +189,7 @@
      */
     async function populateModelsOnOpen(): Promise<void> {
         if (!hasCheckableConfig) return
-        const fingerprint = await computeModelCacheKey(cloudProviderId, resolvedBaseUrl, currentApiKey)
+        const fingerprint = await computeModelCacheKey(cloudProviderId, resolvedBaseUrl, keyFingerprint)
         const cached = getCachedModels(fingerprint)
         if (cached) {
             availableModels = cached
@@ -195,8 +204,13 @@
         scheduleConnectionCheck()
     }
 
-    async function cacheModels(providerId: string, baseUrl: string, apiKey: string, models: string[]): Promise<void> {
-        const fingerprint = await computeModelCacheKey(providerId, baseUrl, apiKey)
+    async function cacheModels(
+        providerId: string,
+        baseUrl: string,
+        keyFingerprintForCheck: string,
+        models: string[],
+    ): Promise<void> {
+        const fingerprint = await computeModelCacheKey(providerId, baseUrl, keyFingerprintForCheck)
         setCachedModels(fingerprint, models)
     }
 
@@ -225,20 +239,25 @@
         // Reset eagerly so a stale key from the previous provider doesn't flash while the secret
         // store read is in flight.
         currentApiKey = ''
+        keyIsSet = false
+        keyFingerprint = ''
         clearSecretError()
-        await loadApiKeyForProvider(providerId)
+        await loadKeyStatusForProvider(providerId)
     }
 
-    async function loadApiKeyForProvider(providerId: string): Promise<void> {
+    async function loadKeyStatusForProvider(providerId: string): Promise<void> {
         try {
-            const fetched = await getAiApiKey(providerId)
+            const status = await getAiApiKeyStatus(providerId)
             // Bail out if the user switched providers again before the fetch resolved.
             if (providerId !== cloudProviderId) return
-            currentApiKey = fetched
+            keyIsSet = status.isSet
+            keyFingerprint = status.fingerprint
         } catch (e) {
             if (providerId !== cloudProviderId) return
-            // Empty key is the right user-visible state when the read fails so the user can re-enter.
-            // We surface the failure inline + via toast so the cause is actionable.
+            // "No key" is the right user-visible state when the read fails, so the user can re-enter
+            // one. We surface the failure inline + via toast so the cause is actionable.
+            keyIsSet = false
+            keyFingerprint = ''
             setSecretError(describeSecretError(e, 'read'))
         }
     }
@@ -298,6 +317,10 @@
         // Only sync the backend if the user is still on this provider. Otherwise the new
         // provider's pushConfigToBackend (triggered by the switch) is the authoritative push.
         if (providerId !== cloudProviderId) return
+        // Re-read the status so the fingerprint matches the key we just stored: the connection
+        // check below caches its model list under that fingerprint, and a stale one would serve
+        // the old provider's models after a key change.
+        await loadKeyStatusForProvider(providerId)
         void pushConfigToBackend()
         scheduleConnectionCheck()
     }
@@ -350,13 +373,15 @@
     const showEditableBaseUrl = $derived(cloudProviderId === 'custom' || cloudProviderId === 'azure-openai')
     const resolvedBaseUrl = $derived(showEditableBaseUrl ? currentBaseUrl : (currentPreset?.baseUrl ?? ''))
     const requiresApiKey = $derived(currentPreset?.requiresApiKey ?? false)
-    const hasCheckableConfig = $derived(requiresApiKey ? currentApiKey !== '' : resolvedBaseUrl !== '')
+    const hasCheckableConfig = $derived(requiresApiKey ? keyIsSet || currentApiKey !== '' : resolvedBaseUrl !== '')
     const apiKeyPlaceholder = $derived(
-        cloudProviderId === 'openai'
-            ? tString('ai.cloud.apiKeyPlaceholderOpenai')
-            : cloudProviderId === 'anthropic'
-              ? tString('ai.cloud.apiKeyPlaceholderAnthropic')
-              : tString('ai.cloud.apiKeyPlaceholderGeneric'),
+        keyIsSet
+            ? tString('ai.cloud.apiKeyPlaceholderSaved')
+            : cloudProviderId === 'openai'
+              ? tString('ai.cloud.apiKeyPlaceholderOpenai')
+              : cloudProviderId === 'anthropic'
+                ? tString('ai.cloud.apiKeyPlaceholderAnthropic')
+                : tString('ai.cloud.apiKeyPlaceholderGeneric'),
     )
 </script>
 

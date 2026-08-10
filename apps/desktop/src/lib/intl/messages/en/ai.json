@@ -260,6 +260,12 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
+  "ai.cloud.apiKeyPlaceholderSaved": "Your key is saved. Type a new one to replace it.",
+  "@ai.cloud.apiKeyPlaceholderSaved": {
+    "description": "Placeholder in the API key field when a key is already stored in the OS secret store. The field starts empty because a saved key is never read back into the window, so this tells the user their key is still there.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
   "ai.cloud.modelLabel": "Model",
   "@ai.cloud.modelLabel": {
     "description": "Setting row label and aria-label for the cloud AI model picker (a combobox of available model names).",

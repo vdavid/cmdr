@@ -553,9 +553,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::ai::install::cancel_ai_download,
         crate::ai::install::uninstall_ai,
         crate::ai::api_keys::save_ai_api_key,
-        crate::ai::api_keys::get_ai_api_key,
+        crate::ai::api_keys::get_ai_api_key_status,
         crate::ai::api_keys::delete_ai_api_key,
-        crate::ai::api_keys::has_ai_api_key,
         crate::ai::suggestions::get_folder_suggestions,
         // stream_folder_suggestions / cancel_folder_suggestions: streaming via tauri Channel<T>;
         // not specta-friendly yet, kept on raw invoke (eslint opt-out at FE call sites).

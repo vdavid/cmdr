@@ -167,6 +167,10 @@
   "@ai.cloud.apiKeyPlaceholderGeneric": {
     "sourceHash": "16f0ee4"
   },
+  "ai.cloud.apiKeyPlaceholderSaved": "Khóa của bạn đã được lưu. Nhập khóa mới để thay thế.",
+  "@ai.cloud.apiKeyPlaceholderSaved": {
+    "sourceHash": "974ffdf"
+  },
   "ai.cloud.modelLabel": "Mô hình",
   "@ai.cloud.modelLabel": {
     "sourceHash": "5e2c614"

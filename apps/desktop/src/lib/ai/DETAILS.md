@@ -19,7 +19,7 @@ config to Rust via `lib/settings/ai-config.ts::pushConfigToBackend()`.
 ## Wizard step 2 reuse
 
 `lib/onboarding/StepAi.svelte` + `CloudProviderSetup.svelte` reuse the `checkAiConnection` / `saveAiApiKey` /
-`getAiApiKey` pipeline from `lib/settings/sections/AiCloudSection.svelte` verbatim (1 s debounce, `/models` fetch,
+`getAiApiKeyStatus` pipeline from `lib/settings/sections/AiCloudSection.svelte` verbatim (1 s debounce, `/models` fetch,
 in-place model combobox). The pipeline is documented in `lib/settings/DETAILS.md` § "AiSection". Step 2 calls
 `pushConfigToBackend()` explicitly on its "Start using Cmdr!" / "One more optional setup step" handlers so the backend
 reconfigure is ordered ahead of the wizard's `onComplete()`. The wizard's step 2 doesn't need backend wiring beyond

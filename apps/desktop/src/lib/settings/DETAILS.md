@@ -284,8 +284,8 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
 - **cloud-providers.ts**: Cloud provider preset definitions (OpenAI, Anthropic, Qwen, Groq, etc.) and per-provider
   config helpers (`getProviderConfigs`, `setProviderConfig`, `resolveCloudConfig`). Used by `AiSection` and the startup
   flow in `+layout.svelte` to resolve the effective base URL and model. Custom is an API-key-backed OpenAI-compatible
-  provider with an editable base URL; Qwen presets DashScope's compatible endpoint. API keys are fetched separately from
-  the OS secret store via `getAiApiKey(providerId)` before calling `configureAi`.
+  provider with an editable base URL; Qwen presets DashScope's compatible endpoint. API keys never appear here: the
+  backend reads them from the OS secret store when `configureAi` hands it the provider id.
 - **settings-search.ts**: Fuzzy search over setting definitions; returns ranked matches with highlight ranges
 - **settings-applier.ts**: Listens for setting changes and applies side effects (CSS vars, backend config sync). The
   `passthroughBackendHandlers` table includes three entries for `ai.provider` / `ai.cloudProvider` /
@@ -428,10 +428,11 @@ Defining all settings in a registry enables:
 ### Why store cloud AI API keys in the OS secret store, not `settings.json`?
 
 API keys live in the OS-native secret store (macOS Keychain, Linux Secret Service, or an encrypted file fallback on
-Linux without Secret Service) via `crate::secrets`. Access goes through the `saveAiApiKey` / `getAiApiKey` /
-`deleteAiApiKey` / `hasAiApiKey` Tauri commands. `ai.cloudProviderConfigs` in `settings.json` only holds non-secret
-fields (`model`, `baseUrl`). This keeps API keys out of Time Machine, cloud-sync backups, and any tool that mirrors
-`~/Library/Application Support`. Same secret store backs SMB credentials. See `src-tauri/src/secrets/CLAUDE.md`.
+Linux without Secret Service) via `crate::secrets`. Access goes through the `saveAiApiKey` / `getAiApiKeyStatus` /
+`deleteAiApiKey` Tauri commands; a stored key is never readable from a window (`docs/security.md` § "AI API keys").
+`ai.cloudProviderConfigs` in `settings.json` only holds non-secret fields (`model`, `baseUrl`). This keeps API keys out
+of Time Machine, cloud-sync backups, and any tool that mirrors `~/Library/Application Support`. Same secret store backs
+SMB credentials. See `src-tauri/src/secrets/CLAUDE.md`.
 
 ### Why debounced saves?
 

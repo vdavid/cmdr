@@ -1447,11 +1447,14 @@ export const commands = {
   // Stops the local llama-server without uninstalling.
   stopAiServer: () => __TAURI_INVOKE<void>('stop_ai_server'),
   /**
-   *  Checks connectivity to an AI API endpoint by calling GET {base_url}/models.
-   *  Returns connection status, auth status, and available model list.
+   *  Checks connectivity to the given provider's AI API endpoint.
+   *
+   *  Takes a provider ID, NOT a key: the key is read here from the OS secret store, so it never
+   *  travels through a webview. See `api_keys.rs`. A key that can't be read probes unauthenticated,
+   *  which surfaces as the auth error it effectively is.
    */
-  checkAiConnection: (baseUrl: string, apiKey: string) =>
-    __TAURI_INVOKE<AiConnectionCheckResult>('check_ai_connection', { baseUrl, apiKey }),
+  checkAiConnection: (baseUrl: string, providerId: string) =>
+    __TAURI_INVOKE<AiConnectionCheckResult>('check_ai_connection', { baseUrl, providerId }),
   /**
    *  Returns system memory breakdown using macOS `host_statistics64` for accurate,
    *  non-overlapping categories (unlike `sysinfo` where used + available > total).
@@ -1472,15 +1475,15 @@ export const commands = {
   saveAiApiKey: (providerId: string, apiKey: string) =>
     typedError<null, AiApiKeyError>(__TAURI_INVOKE('save_ai_api_key', { providerId, apiKey })),
   /**
-   *  Returns the stored API key for the provider, or an empty string if none is stored.
-   *  Returning empty (rather than an error) on missing keys keeps the call sites simple: they all
-   *  pass the value through to `configure_ai`, which already treats empty-string as "not configured."
+   *  Returns whether a key is stored for the provider, plus an opaque fingerprint.
+   *
+   *  ❌ Don't add a command that returns the key itself. The backend reads it directly wherever it's
+   *  needed (`configure_ai`, `check_ai_connection`), so a compromised webview has nothing to ask for.
    */
-  getAiApiKey: (providerId: string) =>
-    typedError<string, AiApiKeyError>(__TAURI_INVOKE('get_ai_api_key', { providerId })),
+  getAiApiKeyStatus: (providerId: string) =>
+    typedError<AiApiKeyStatus, AiApiKeyError>(__TAURI_INVOKE('get_ai_api_key_status', { providerId })),
   deleteAiApiKey: (providerId: string) =>
     typedError<null, AiApiKeyError>(__TAURI_INVOKE('delete_ai_api_key', { providerId })),
-  hasAiApiKey: (providerId: string) => __TAURI_INVOKE<boolean>('has_ai_api_key', { providerId }),
   /**
    *  Generates folder name suggestions for the given directory.
    *
@@ -3479,6 +3482,20 @@ export type AiApiKeyError =
   | { type: 'not_found'; message: string }
   | { type: 'access_denied'; message: string }
   | { type: 'other'; message: string }
+
+/**
+ *  What a renderer may know about a stored key: whether there is one, and an opaque handle that
+ *  changes when the key changes. Never the key itself.
+ */
+export type AiApiKeyStatus = {
+  // True when a non-empty key is stored for this provider.
+  isSet: boolean
+  /**
+   *  Truncated SHA-256 of the key, or empty when none is stored. The settings UI uses it to
+   *  fingerprint its model-list cache, which must miss when the key changes.
+   */
+  fingerprint: string
+}
 
 // Result of checking connectivity to an AI API endpoint.
 export type AiConnectionCheckResult = {

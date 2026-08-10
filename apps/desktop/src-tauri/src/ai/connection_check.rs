@@ -19,11 +19,21 @@ pub struct AiConnectionCheckResult {
     pub error: Option<String>,
 }
 
-/// Checks connectivity to an AI API endpoint by calling GET {base_url}/models.
-/// Returns connection status, auth status, and available model list.
+/// Checks connectivity to the given provider's AI API endpoint.
+///
+/// Takes a provider ID, NOT a key: the key is read here from the OS secret store, so it never
+/// travels through a webview. See `api_keys.rs`. A key that can't be read probes unauthenticated,
+/// which surfaces as the auth error it effectively is.
 #[tauri::command]
 #[specta::specta]
-pub async fn check_ai_connection(base_url: String, api_key: String) -> AiConnectionCheckResult {
+pub async fn check_ai_connection(base_url: String, provider_id: String) -> AiConnectionCheckResult {
+    let (api_key, _) = super::api_keys::read_for_backend(&provider_id);
+    probe_ai_endpoint(base_url, api_key).await
+}
+
+/// Probes GET {base_url}/models with an explicit key. Returns connection status, auth status, and
+/// the available model list. Split from the command so it stays pure and testable.
+async fn probe_ai_endpoint(base_url: String, api_key: String) -> AiConnectionCheckResult {
     // Same plaintext-key guard as `configure_ai`: never send the BYOK key over
     // `http://` to a non-loopback host.
     if let Err(message) = validate_ai_base_url(&base_url, &api_key) {

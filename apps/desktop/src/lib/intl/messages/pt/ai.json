@@ -168,6 +168,10 @@
   "@ai.cloud.apiKeyPlaceholderGeneric": {
     "sourceHash": "16f0ee4"
   },
+  "ai.cloud.apiKeyPlaceholderSaved": "Sua chave está salva. Digite uma nova para substituí-la.",
+  "@ai.cloud.apiKeyPlaceholderSaved": {
+    "sourceHash": "974ffdf"
+  },
   "ai.cloud.modelLabel": "Modelo",
   "@ai.cloud.modelLabel": {
     "sourceHash": "5e2c614"

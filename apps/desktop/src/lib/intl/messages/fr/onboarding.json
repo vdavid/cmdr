@@ -463,6 +463,10 @@
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
     "sourceHash": "16f0ee4"
   },
+  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "Votre clé est enregistrée. Saisissez-en une nouvelle pour la remplacer.",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
+    "sourceHash": "974ffdf"
+  },
   "onboarding.cloudSetup.status.checking": "Vérification de votre clé…",
   "@onboarding.cloudSetup.status.checking": {
     "sourceHash": "e8c3a83"

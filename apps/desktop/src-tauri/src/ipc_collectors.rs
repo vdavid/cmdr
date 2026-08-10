@@ -176,9 +176,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::ai::install::cancel_ai_download,
         crate::ai::install::uninstall_ai,
         crate::ai::api_keys::save_ai_api_key,
-        crate::ai::api_keys::get_ai_api_key,
+        crate::ai::api_keys::get_ai_api_key_status,
         crate::ai::api_keys::delete_ai_api_key,
-        crate::ai::api_keys::has_ai_api_key,
         crate::ai::suggestions::get_folder_suggestions,
         // set_mcp_enabled, set_mcp_port are generic (<R: Runtime>): excluded from specta
         crate::commands::mcp::get_mcp_running,

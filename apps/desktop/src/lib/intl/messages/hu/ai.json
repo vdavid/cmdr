@@ -167,6 +167,10 @@
   "@ai.cloud.apiKeyPlaceholderGeneric": {
     "sourceHash": "16f0ee4"
   },
+  "ai.cloud.apiKeyPlaceholderSaved": "A kulcsod el van mentve. Írj be egy újat a cseréjéhez.",
+  "@ai.cloud.apiKeyPlaceholderSaved": {
+    "sourceHash": "974ffdf"
+  },
   "ai.cloud.modelLabel": "Modell",
   "@ai.cloud.modelLabel": {
     "sourceHash": "5e2c614"

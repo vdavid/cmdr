@@ -6,9 +6,10 @@
  *
  * 1. **`pushConfigToBackend()`** — read-fresh push of the current AI provider config to
  *    Rust. Re-reads `ai.provider` / `ai.cloudProvider` / `ai.cloudProviderConfigs` /
- *    `ai.localContextSize` from `getSetting(...)` on every call, fetches the matching
- *    API key from the OS secret store, calls `configureAi(...)`. Surfaces secret-store
- *    failures via a deduped persistent toast so a silently-broken keyring isn't invisible.
+ *    `ai.localContextSize` from `getSetting(...)` on every call and passes the cloud
+ *    provider ID to `configureAi(...)`, which reads that provider's key in the backend.
+ *    Surfaces the reported secret-store failure via a deduped persistent toast so a
+ *    silently-broken keyring isn't invisible.
  *    Callers MUST NOT pass cached values: the helper has read-fresh semantics so that the
  *    "user flips provider mid-flight" race resolves to whichever provider is current at
  *    the actual IPC moment (see `settings-applier.ts` for the listener wiring).
@@ -31,7 +32,7 @@ import {
   getRawStoreValue,
   deleteRawStoreKeys,
 } from '$lib/settings'
-import { configureAi, getAiApiKey, saveAiApiKey, hasAiApiKey } from '$lib/tauri-commands'
+import { configureAi, getAiApiKeyStatus, saveAiApiKey } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { addToast } from '$lib/ui/toast'
 import { describeSecretError } from './sections/ai-secret-error'
@@ -117,7 +118,7 @@ const LEGACY_OPENAI_KEYS = ['ai.openaiApiKey', 'ai.openaiBaseUrl', 'ai.openaiMod
 
 async function migrateLegacyOpenAiKeys(): Promise<void> {
   const legacyKey = (await getRawStoreValue<string>('ai.openaiApiKey')) ?? ''
-  if (legacyKey.length > 0 && !(await hasAiApiKey('openai'))) {
+  if (legacyKey.length > 0 && !(await getAiApiKeyStatus('openai')).isSet) {
     try {
       await saveAiApiKey('openai', legacyKey)
       logger.info('Lifted a legacy flat OpenAI API key into the secret store')
@@ -133,10 +134,13 @@ async function migrateLegacyOpenAiKeys(): Promise<void> {
 }
 
 /**
- * Push current AI config (provider, context size, cloud credentials) to the Rust backend. The API
- * key is fetched from the OS secret store; the rest comes from `settings.json`. Surfaces secret
- * store failures as a persistent toast (deduped) so a silently-broken keyring isn't invisible to
- * the user.
+ * Push current AI config (provider, context size, cloud endpoint) to the Rust backend. Everything
+ * here comes from `settings.json`; the API key does NOT travel with it. We send the cloud provider
+ * ID and the backend reads that provider's key from the OS secret store itself, so a plaintext key
+ * never sits in a webview. See `docs/security.md` § "AI API keys".
+ *
+ * The backend reports a secret-store read failure back in the outcome, which we surface as a
+ * persistent toast (deduped) so a silently-broken keyring isn't invisible to the user.
  *
  * **Read-fresh contract (load-bearing).** Every relevant setting is re-read from `getSetting(...)`
  * at call time. Callers MUST NOT pass cached values. The applier listener may fire while the user
@@ -151,12 +155,18 @@ export async function pushConfigToBackend(): Promise<void> {
     // the backend doesn't treat their empty key as "not configured". See `resolve_backend` (Rust).
     const requiresApiKey = getCloudProvider(providerId)?.requiresApiKey ?? false
 
-    let apiKey = ''
-    try {
-      apiKey = await getAiApiKey(providerId)
-    } catch (e) {
-      logger.error("Couldn't read AI API key from secret store: {error}", { error: e })
-      const msg = describeSecretError(e, 'read')
+    const outcome = await configureAi(
+      getSetting('ai.provider'),
+      Number(getSetting('ai.localContextSize')),
+      providerId,
+      resolved.baseUrl,
+      resolved.model,
+      requiresApiKey,
+    )
+
+    if (outcome.secretStoreError != null) {
+      logger.error("Couldn't read AI API key from secret store: {error}", { error: outcome.secretStoreError })
+      const msg = describeSecretError(outcome.secretStoreError, 'read')
       const body = msg.body ? `\n${msg.body}` : ''
       addToast(`${msg.title}${body}`, {
         level: msg.level,
@@ -164,15 +174,6 @@ export async function pushConfigToBackend(): Promise<void> {
         id: secretErrorToastId,
       })
     }
-
-    await configureAi(
-      getSetting('ai.provider'),
-      Number(getSetting('ai.localContextSize')),
-      apiKey,
-      resolved.baseUrl,
-      resolved.model,
-      requiresApiKey,
-    )
   } catch (e) {
     logger.error("Couldn't push AI config to backend: {error}", { error: e })
   }
