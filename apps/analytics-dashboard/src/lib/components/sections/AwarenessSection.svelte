@@ -1,6 +1,7 @@
 <!-- Acquisition § Awareness: top-of-funnel reach across the three sites, top referrers, and GitHub stars. -->
 <script lang="ts">
     import type { SourceResult, DashboardSelection } from '$lib/server/types.js'
+    import type { UmamiSiteUrls } from '$lib/server/fetch-all.js'
     import type { UmamiData } from '$lib/server/sources/umami.js'
     import type { GitHubStarsData } from '$lib/server/sources/github.js'
     import { formatNumber, formatDelta } from '$lib/format.js'
@@ -14,17 +15,28 @@
 
     const {
         umami,
+        umamiSiteUrls,
         githubStars,
         selection,
         starChartXMin,
     }: {
         umami: SourceResult<UmamiData>
+        umamiSiteUrls: UmamiSiteUrls
         githubStars: SourceResult<GitHubStarsData>
         selection: DashboardSelection
         starChartXMin: number
     } = $props()
 
     const repoColors: Record<string, string> = { 'vdavid/cmdr': COLOR_GOLD, 'vdavid/mtp-rs': COLOR_PURPLE }
+
+    // A site with no configured website ID drops out rather than linking to a broken dashboard.
+    const umamiLinks = $derived(
+        [
+            { label: 'View getcmdr.com in Umami', href: umamiSiteUrls.website },
+            { label: 'View veszelovszki.com in Umami', href: umamiSiteUrls.personalSite },
+            { label: 'View getprvw.com in Umami', href: umamiSiteUrls.prvw },
+        ].filter((l): l is { label: string; href: string } => l.href !== null),
+    )
 </script>
 
 <section class="rounded-xl border border-border bg-surface p-6">
@@ -101,9 +113,7 @@
 
         <ExternalLinks
             links={[
-                { label: 'View veszelovszki.com in Umami', href: 'https://anal.veszelovszki.com' },
-                { label: 'View getcmdr.com in Umami', href: 'https://anal.veszelovszki.com' },
-                { label: 'View getprvw.com in Umami', href: 'https://anal.veszelovszki.com' },
+                ...umamiLinks,
                 { label: 'cmdr on GitHub', href: 'https://github.com/vdavid/cmdr' },
                 { label: 'mtp-rs on GitHub', href: 'https://github.com/vdavid/mtp-rs' },
             ]}

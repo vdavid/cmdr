@@ -48,6 +48,12 @@ The funnel is always 30 days (`fetchFunnelData` ignores the selection); it's sti
 Umami and Paddle degrading to dashes inside. Each source returns `SourceResult<T>` (ok+data, or an error string the UI
 shows as "Couldn't load this data").
 
+`AcquisitionData` also carries `umamiSiteUrls`, which is **config, not a source**: the per-site Umami dashboard deep
+links, built from the `UMAMI_*_WEBSITE_ID` env vars so the IDs live in exactly one place instead of being hardcoded in a
+component. It has no `SourceResult` wrapper because it has no failure mode; a site whose ID isn't configured is `null`
+and the UI drops that link rather than pointing at a broken page. `fetch-all.subset.test.ts` pins both that shape and
+the fact that it's excluded from the "which sources does this page load" contract.
+
 The 20s cap is load-bearing, not belt-and-braces: Workers `fetch` has no built-in timeout, so without it a single hung
 upstream stalls the whole `Promise.all` until Cloudflare gives up with a 524 at 100 seconds, taking the entire page down
 over one slow third party. Results cache via `cache.ts`: 5 minutes for the 24h and 7d ranges, 1 hour for 30d.

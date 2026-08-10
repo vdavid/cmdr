@@ -28,10 +28,16 @@ const emptyEnv = {
 const platform = { env: emptyEnv } as unknown as App.Platform
 const selection = { range: '7d', day: null } as const
 
-/** Source keys (everything in the result except the shared `selection` / `updatedAt` envelope). */
+/**
+ * Source keys: everything in the result except the shared envelope and the plain-config fields.
+ * `umamiSiteUrls` is derived from env, not fetched, so it has no `SourceResult` shape and isn't a
+ * source; it's asserted separately below.
+ */
+const nonSourceKeys = new Set(['selection', 'updatedAt', 'umamiSiteUrls'])
+
 function sourceKeys(data: object): string[] {
   return Object.keys(data)
-    .filter((k) => k !== 'selection' && k !== 'updatedAt')
+    .filter((k) => !nonSourceKeys.has(k))
     .sort()
 }
 
@@ -52,6 +58,28 @@ describe('per-page data-loading split', () => {
     expect(data).not.toHaveProperty('feedbackAndErrors')
     expect(data.selection).toEqual(selection)
     expect(typeof data.updatedAt).toBe('string')
+  })
+
+  it('drops a Umami site link when that site has no website ID configured', async () => {
+    const data = await fetchAcquisitionData(platform, selection)
+    // Empty env: every ID is unset, so every link is null and the UI renders none of them.
+    expect(data.umamiSiteUrls).toEqual({ website: null, personalSite: null, prvw: null })
+  })
+
+  it('builds one Umami deep link per configured site', async () => {
+    const configured = {
+      ...emptyEnv,
+      UMAMI_API_URL: 'https://anal.example.com/',
+      UMAMI_WEBSITE_ID: 'aaa',
+      UMAMI_PRVW_WEBSITE_ID: 'ccc',
+    }
+    const data = await fetchAcquisitionData({ env: configured }, selection)
+    expect(data.umamiSiteUrls).toEqual({
+      website: 'https://anal.example.com/websites/aaa',
+      // Still unset, so still dropped, even though its siblings resolved.
+      personalSite: null,
+      prvw: 'https://anal.example.com/websites/ccc',
+    })
   })
 
   it('Product loads exactly the active-use, payment, retention, and feedback sources', async () => {

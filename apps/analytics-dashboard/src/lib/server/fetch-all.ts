@@ -25,10 +25,25 @@ export interface SelectionEnvelope {
 }
 
 /** The Acquisition page's sources: the funnel, awareness, interest, and download sections. */
+/**
+ * Deep links to each site's own Umami dashboard. Plain config derived from env, not a fetched
+ * source, so there's no failure mode: a site whose website ID isn't configured is `null` and the UI
+ * drops its link rather than pointing at a broken page.
+ */
+export interface UmamiSiteUrls {
+  /** getcmdr.com */
+  website: string | null
+  /** veszelovszki.com */
+  personalSite: string | null
+  /** getprvw.com */
+  prvw: string | null
+}
+
 export interface AcquisitionData extends SelectionEnvelope {
   /** Always the last 30 UTC days, independent of `selection` (the funnel section's own window). */
   funnel: SourceResult<FunnelData>
   umami: SourceResult<UmamiData>
+  umamiSiteUrls: UmamiSiteUrls
   cloudflare: SourceResult<CloudflareData>
   github: SourceResult<GitHubData>
   githubStars: SourceResult<GitHubStarsData>
@@ -131,6 +146,22 @@ export async function resolveEnv(platform: App.Platform | undefined): Promise<Da
   if (platform?.env) return platform.env
   const { env } = await import('$env/dynamic/private')
   return envFromDotEnv(env)
+}
+
+/**
+ * Builds each site's Umami dashboard link from the website IDs already in env, so the IDs live in
+ * exactly one place. The IDs aren't secret (each is embedded in its site's public tracking script),
+ * but they're env-resolved, which is why this runs server-side and rides down with the page data.
+ */
+function umamiSiteUrls(env: DashboardEnv): UmamiSiteUrls {
+  const base = env.UMAMI_API_URL.replace(/\/+$/, '')
+  const link = (websiteId: string | undefined): string | null =>
+    base && websiteId ? `${base}/websites/${websiteId}` : null
+  return {
+    website: link(env.UMAMI_WEBSITE_ID),
+    personalSite: link(env.UMAMI_BLOG_WEBSITE_ID),
+    prvw: link(env.UMAMI_PRVW_WEBSITE_ID),
+  }
 }
 
 // --- Per-source loaders -----------------------------------------------------------------------
@@ -248,7 +279,17 @@ export async function fetchAcquisitionData(
     fetchGitHubStarsSource(env),
     fetchPostHogSource(env, selection),
   ])
-  return { selection, updatedAt: new Date().toISOString(), funnel, umami, cloudflare, github, githubStars, posthog }
+  return {
+    selection,
+    updatedAt: new Date().toISOString(),
+    funnel,
+    umami,
+    umamiSiteUrls: umamiSiteUrls(env),
+    cloudflare,
+    github,
+    githubStars,
+    posthog,
+  }
 }
 
 /** Fetches only the sources the Product page (`/product`) renders, in parallel. */

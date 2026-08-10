@@ -46,7 +46,13 @@
 
 <!-- Acquisition sections -->
 <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-    <AwarenessSection umami={data.umami} githubStars={data.githubStars} selection={data.selection} {starChartXMin} />
+    <AwarenessSection
+        umami={data.umami}
+        umamiSiteUrls={data.umamiSiteUrls}
+        githubStars={data.githubStars}
+        selection={data.selection}
+        {starChartXMin}
+    />
     <InterestSection umami={data.umami} posthog={data.posthog} selection={data.selection} />
     <DownloadSection cloudflare={data.cloudflare} github={data.github} selection={data.selection} />
 </div>
