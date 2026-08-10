@@ -1,5 +1,9 @@
 declare global {
   namespace App {
+    interface Locals {
+      /** Email from the verified Cloudflare Access JWT, set by `hooks.server.ts`. */
+      email?: string
+    }
     interface Platform {
       env?: {
         UMAMI_API_URL: string

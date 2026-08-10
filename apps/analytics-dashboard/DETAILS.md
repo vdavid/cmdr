@@ -179,6 +179,15 @@ Manual setup (not in code): create CF Pages project `cmdr-analytics-dashboard`; 
 `CLOUDFLARE_ACCOUNT_ID` to GitHub repo secrets; set all env vars below as CF Pages secrets; configure the custom domain
 `analdash.getcmdr.com` and the Cloudflare Access policy.
 
+If the Access application is ever recreated, its audience tag changes and the constant in `src/lib/server/access-jwt.ts`
+must change with it, or every request starts 403ing. Read the current values with the CF API (needs
+`Access: Apps and Policies → Read` and `Access: Organizations → Read`):
+
+```bash
+curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps"
+```
+
 All env vars are CF Pages secrets, never in code:
 
 - `UMAMI_API_URL`: `https://anal.veszelovszki.com`. `UMAMI_USERNAME` / `UMAMI_PASSWORD`: Umami credentials.
@@ -189,6 +198,43 @@ All env vars are CF Pages secrets, never in code:
   `POSTHOG_API_URL`: `https://eu.posthog.com` (must be EU).
 - `GITHUB_TOKEN`: optional, avoids public-repo API rate limits.
 - `LICENSE_SERVER_ADMIN_TOKEN`: dedicated admin secret, also set on the API server.
+
+## Auth
+
+Two layers, and both are load-bearing.
+
+1. **Cloudflare Access** on `analdash.getcmdr.com` runs the login flow (team domain `getcmdr.cloudflareaccess.com`, app
+   "Cmdr analytics dashboard"). It's what makes the dashboard usable without any login UI in the app.
+2. **`src/hooks.server.ts` verifies the Access JWT** on every server-handled request, via
+   `src/lib/server/access-jwt.ts`, and answers 403 when it doesn't check out.
+
+**Why the second layer.** Access binds to a _hostname_, not to a Pages project. The project's default
+`cmdr-analytics-dashboard.pages.dev` alias serves the identical deployment and never passes through Access, so an
+Access-only setup leaves every page, form action, and `/api/report` open to anyone who guesses the alias. Edge config
+can't be the only gate; an in-app check covers all hostnames and all routes at once.
+
+**How the verification works.** Read the token from the `cf-access-jwt-assertion` header, or the `CF_Authorization`
+cookie on browser navigations. Pin `alg` to RS256 _before_ touching the signature (this is what defeats `alg: none` and
+HS256-over-the-public-key confusion), resolve the `kid` against Cloudflare's published JWKS at
+`https://getcmdr.cloudflareaccess.com/cdn-cgi/access/certs`, verify the RSASSA-PKCS1-v1_5 signature with WebCrypto, then
+check `iss`, `aud`, `exp`, and `nbf` (60s clock skew). Keys are cached for an hour; an unrecognized `kid` triggers
+exactly one refetch, so a Cloudflare key rotation doesn't lock everyone out and a bogus `kid` can't drive unbounded
+fetches at the certs endpoint.
+
+**Constants, not env vars.** The team domain and audience tag live in `access-jwt.ts` as constants. Both are public (the
+audience tag appears in Access's own login-redirect URL), and a missing env var would fail _open_ on a deploy slip,
+which is the one direction an auth gate must never fail. Reading the audience from config would trade a real risk for no
+benefit.
+
+**Local dev.** The gate is skipped under `import.meta.env.DEV`, which Vite inlines at build time, so the deployed bundle
+contains no bypass branch at all (verifiable: the compiled `handle` in
+`.svelte-kit/output/server/entries/hooks.server.js` has a bare block where the condition was). `pnpm dev:dashboard`
+works with no token. `wrangler pages dev` serves a built bundle, so it enforces the gate and needs a real Access token.
+
+**No hand-rolled crypto beyond this.** Verification is ~60 lines of WebCrypto against a pinned algorithm, which is what
+Cloudflare's own guidance describes. `src/lib/server/access-jwt.test.ts` covers the attack cases directly: `alg: none`,
+HS256 confusion, foreign signing key, tampered payload, wrong audience, wrong issuer, expired, not-yet-valid, malformed,
+and certs-endpoint failure (must reject, never fail open).
 
 ## Key decisions
 

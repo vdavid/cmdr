@@ -27,8 +27,8 @@ data. Fill in only the sources you need.
 Auto-deploys to Cloudflare Pages on push to `main` when files in `apps/analytics-dashboard/` change. The workflow lives
 at `.github/workflows/deploy-dashboard.yml`.
 
-Env vars are set as CF Pages secrets (via `wrangler pages secret put` or the CF dashboard). Auth is handled by
-Cloudflare Access (zero-trust policy on `analdash.getcmdr.com`), so there's no auth code in the app.
+Env vars are set as CF Pages secrets (via `wrangler pages secret put` or the CF dashboard). See "Auth" below for how
+requests are authenticated.
 
 ## Architecture
 
@@ -52,8 +52,14 @@ and 1-hour TTL for 30d.
 
 ### Auth
 
-Cloudflare Access enforces authentication before requests reach the app. There's no login page or session management in
-the codebase.
+Cloudflare Access sits in front of `analdash.getcmdr.com` and handles the login flow, so there's no login page or
+session management in the codebase. The app then verifies Access's word itself: `src/hooks.server.ts` runs
+`verifyAccessJwt` (`src/lib/server/access-jwt.ts`) on every server-handled request and answers 403 without a valid
+token.
+
+That second layer isn't redundant. Access binds to a hostname, and the Pages project's default
+`cmdr-analytics-dashboard.pages.dev` alias reaches the same deployment without passing through it, so edge config alone
+leaves the data reachable. The in-app gate covers every hostname and every route.
 
 ## Env var reference
 

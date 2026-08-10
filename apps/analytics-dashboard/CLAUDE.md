@@ -1,7 +1,7 @@
 # Analytics dashboard
 
 Private SvelteKit dashboard consolidating Cmdr business metrics, organized by acquisition stage. Deployed to Cloudflare
-Pages at `analdash.getcmdr.com`, auth via Cloudflare Access (zero-trust, no application code).
+Pages at `analdash.getcmdr.com`, behind Cloudflare Access plus an in-app JWT gate (`src/hooks.server.ts`).
 
 ## Pages
 
@@ -23,6 +23,10 @@ All API keys stay server-side, proxied via `+server.ts` / `+page.server.ts`.
 
 ## Must-knows
 
+- **Auth is the app's job, not just Cloudflare's.** Access binds to a hostname, so the default
+  `cmdr-analytics-dashboard.pages.dev` alias reaches the same deployment around it. `src/hooks.server.ts` verifies the
+  Access JWT on every server-handled request and 403s otherwise; every failure path must fail closed. Never gate on the
+  spoofable `cf-access-authenticated-user-email` header. Details: `src/lib/server/access-jwt.ts`.
 - **Don't import `$lib/server/*` as a runtime value into browser-bundled code** (components, route `.svelte` files).
   Type-only imports are fine. A runtime-value import trips `vite-plugin-sveltekit-guard` at BUILD time, and
   **`svelte-check` does NOT catch it**, so run `pnpm build` (not just `pnpm check`) after touching imports across the

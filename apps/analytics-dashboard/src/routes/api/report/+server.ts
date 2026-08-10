@@ -516,8 +516,10 @@ export const GET: RequestHandler = async ({ url, platform }) => {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     })
   } catch (e) {
-    const err = e instanceof Error ? `${e.message}\n${e.stack}` : String(e)
-    return new Response(`Report generation failed:\n${err}`, {
+    // Detail goes to the Workers log, not to the response: stacks name internals and env vars.
+    console.error('Report generation failed:', e)
+    return new Response("Couldn't generate the report. Check the Workers log for details.", {
+      status: 500,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     })
   }
