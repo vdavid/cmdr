@@ -75,6 +75,16 @@ sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" apps/desktop/src-tauri/C
 TODAY=$(date +%Y-%m-%d)
 sed -i '' "s/## \[Unreleased\]/## [$VERSION] - $TODAY/" CHANGELOG.md
 
+# Roll the BSL Change Date forward so THIS release converts to AGPL three years after it
+# ships. The Change Date is a static field, not a rolling window: left alone, every version
+# ever shipped converts on one shared date, and the protection window shrinks with every
+# release (a build shipped in December 2028 against a 2029-01-10 date would go AGPL a month
+# later). BSL takes whichever of the Change Date and the version's fourth anniversary comes
+# FIRST, so the anniversary can only ever pull conversion earlier; three years leaves a year
+# of headroom under that four-year cap.
+CHANGE_DATE=$(date -v+3y +%Y-%m-%d)
+sed -i '' "s/^Change Date:.*/Change Date:          $CHANGE_DATE/" LICENSE
+
 # Refresh the website's visual baselines against the finalized release copy. Roadmap and
 # feature-status edits grow pages that have snapshots (most often /features), so a release
 # would otherwise ship a stale Linux baseline and turn CI red right after tagging. This
@@ -94,6 +104,7 @@ pnpm check oxfmt -m
 # Stage the files the script itself just bumped.
 git add \
   CHANGELOG.md \
+  LICENSE \
   apps/website/src/pages/roadmap.astro \
   apps/desktop/package.json \
   apps/desktop/src-tauri/tauri.conf.json \
