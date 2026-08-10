@@ -64,7 +64,7 @@ export const commands = {
    *  Used after write operations (move) when the file watcher may not fire promptly.
    *
    *  Short-circuits when the listing lives on a **non-local** volume that reports
-   *  `listing_is_watched(path) == true`. There the cache is being kept fresh by the
+   *  [`WatchCoverage::EveryWriter`]. There the cache is being kept fresh by the
    *  volume's `notify_mutation` pipeline (per-file `Added` / `Removed` / `Modified`
    *  events patched into `LISTING_CACHE` after every successful mutation), so a full
    *  `list_directory` re-read is pure redundancy and costs a lot on slow backends:

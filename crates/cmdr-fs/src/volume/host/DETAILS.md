@@ -84,8 +84,8 @@ with archive, MTP, and local POSIX checked for anything SMB doesn't exercise.
   `volume_impl.rs::notify_mutation` and from nine arms of the watcher's event batch; MTP calls it from four. One call
   covers three host concerns — the panes, the file index, the cloud-badge cache — so a backend never learns which of
   them exist.
-- `watched_listing` ⇐ `listing::caching::try_get_watched_listing`. The fresh-listing oracle, consulted per unique parent
-  directory by SMB's and MTP's batch scans.
+- `authoritative_listing` ⇐ `listing::caching::try_get_authoritative_listing`. The fresh-listing oracle, consulted per
+  unique parent directory by SMB's and MTP's batch scans.
 - `refresh_archive_listings` ⇐ `listing::caching::refresh_archive_listings`. Two callers, both watching the drive that
   HOLDS an archive rather than the archive itself: the local archive content watch and the SMB share watcher.
 
@@ -93,7 +93,7 @@ with archive, MTP, and local POSIX checked for anything SMB doesn't exercise.
 `patch_listing_after_local_mutation` have exactly one caller between them, `local_posix.rs`, which is permanently
 app-resident. `patch_listing_after_local_mutation` is by definition local: it `std::fs`-stats the changed entry, which a
 backend on a protocol can neither do nor want (it can build the entry from a cheaper protocol reply). And SMB's own
-`listing_is_watched` answers from its connection state and watcher handle, not from the listing cache, so it needs
+`listing_watch_coverage` answers from its connection state and watcher handle, not from the listing cache, so it needs
 neither. Adding them would have meant two trait methods no extractable backend could ever call.
 
 **`FullRefresh` re-enters the backend, but never synchronously.** The host answers a `FullRefresh` by re-reading the
@@ -244,8 +244,8 @@ surfaces at the end of a move: check every `[\`Type::method\`]` link for an app-
    `write_from_stream`. A watcher event is not a substitute: watchers on network protocols are lossy under load.
 4. If you have a watcher: report every exit through `indexing().watch_gap`, including the ones that look like setup
    failures rather than deaths. A never-connected watcher leaves the index just as blind as a dead one.
-5. If you have no watcher (S3 has none), leave `Volume::listing_is_watched` at its `false` default and never call
-   `watched_listing`. Claiming freshness you can't keep is how a pre-flight scan reuses a stale cache.
+5. If you have no watcher (S3 has none), leave `Volume::listing_watch_coverage` at its `None` default and never call
+   `authoritative_listing`. Claiming freshness you can't keep is how a pre-flight scan reuses a stale cache.
 6. Spawn through `host.runtime()`, never `tokio::spawn`.
 7. Read `settings().max_concurrent_operations(BACKEND)` per batch dispatch, not once at construction. Until your
    namespace has a row in `file_system::backend_settings`, you get a conservative built-in rather than someone else's
@@ -269,7 +269,7 @@ the subsystem that can actually give it.
 - `BackendSettings` ⇒ `file_system::backend_settings::AppBackendSettings`
 - the runtime ⇒ the app's own `tauri::async_runtime` handle, so there's one thread pool
 
-Both signatures the design left open resolved to "no change" against the real app. `watched_listing`'s owned
+Both signatures the design left open resolved to "no change" against the real app. `authoritative_listing`'s owned
 `Vec<FileEntry>` is what the cache can give: it clones the entries under its read lock and drops the lock before
 anything crosses a volume boundary, so a borrow-shaped variant would have to hold that lock across the caller's work.
 And `CredentialStore`'s blocking contract matches the keychain wrapper exactly, which is synchronous down to the OS

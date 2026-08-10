@@ -1,6 +1,8 @@
 //! Local POSIX file system volume implementation.
 
-use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
+use super::{
+    CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
+};
 use crate::file_system::git;
 use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core};
 #[cfg(feature = "playwright-e2e")]
@@ -240,11 +242,11 @@ impl Volume for LocalPosixVolume {
         })
     }
 
-    fn supports_watching(&self) -> bool {
+    fn can_watch_listings(&self) -> bool {
         true
     }
 
-    fn listing_is_watched(&self, path: &Path) -> bool {
+    fn listing_watch_coverage(&self, path: &Path) -> WatchCoverage {
         // Resolve relative-to-volume paths to their absolute form so the comparison
         // against `LISTING_CACHE` (which stores absolute paths) lines up.
         let abs_path = self.resolve(path);
@@ -253,18 +255,19 @@ impl Volume for LocalPosixVolume {
         // store its own volume_id — the manager assigns it at registration time).
         let listings = crate::file_system::listing::caching::find_listings_for_path_on_volume(None, &abs_path);
         if listings.is_empty() {
-            return false;
+            return WatchCoverage::None;
         }
-        // A listing exists; check whether an FSEvents watcher is attached to any
-        // matching listing_id. There's a race window between the listing being
-        // populated and the watcher being registered, during which we deliberately
-        // return false (the listing exists but isn't being kept fresh yet).
-        match crate::file_system::watcher::WATCHER_MANAGER.read() {
-            Ok(manager) => listings
-                .iter()
-                .any(|(lid, ..)| manager.watches.contains_key(lid.as_str())),
-            Err(_) => false,
-        }
+        // A listing exists; report what the FSEvents watch attached to it covers.
+        // There's a race window between the listing being populated and the watcher
+        // being registered, during which this deliberately answers `None` (the
+        // listing exists but isn't being kept fresh yet).
+        //
+        // The coverage was decided when the watch was armed, so this stays a pure
+        // in-memory read: a `statfs` here would land in the middle of every
+        // recursive scan walk. `watcher::coverage_for_watched_path` is where the
+        // network-mount question is actually asked.
+        let listing_ids: Vec<String> = listings.into_iter().map(|(lid, ..)| lid).collect();
+        crate::file_system::watcher::coverage_for_listings(&listing_ids)
     }
 
     fn local_path(&self) -> Option<PathBuf> {

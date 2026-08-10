@@ -345,9 +345,9 @@ async fn test_list_subdirectory() {
 }
 
 #[test]
-fn test_supports_watching_returns_false() {
+fn test_can_watch_listings_returns_false() {
     let volume = InMemoryVolume::new("Test");
-    assert!(!volume.supports_watching());
+    assert!(!volume.can_watch_listings());
 }
 
 // ============================================================================

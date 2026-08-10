@@ -20,6 +20,7 @@ use tokio::time::Duration;
 use crate::commands::util::{IpcError, TimedOut, blocking_result_with_timeout, blocking_with_timeout_flag};
 use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
 use crate::file_system::volume::manager::get_volume_manager;
+use cmdr_fs::volume::WatchCoverage;
 
 use super::expand_tilde;
 
@@ -400,7 +401,7 @@ pub fn list_directory_end(listing_id: String) {
 /// Used after write operations (move) when the file watcher may not fire promptly.
 ///
 /// Short-circuits when the listing lives on a **non-local** volume that reports
-/// `listing_is_watched(path) == true`. There the cache is being kept fresh by the
+/// [`WatchCoverage::EveryWriter`]. There the cache is being kept fresh by the
 /// volume's `notify_mutation` pipeline (per-file `Added` / `Removed` / `Modified`
 /// events patched into `LISTING_CACHE` after every successful mutation), so a full
 /// `list_directory` re-read is pure redundancy and costs a lot on slow backends:
@@ -431,7 +432,7 @@ pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
     if let Some((resolved, path)) = resolved
         && let Some(volume) = resolved.volume
         && volume.local_path().is_none()
-        && volume.listing_is_watched(&path)
+        && volume.listing_watch_coverage(&path) == WatchCoverage::EveryWriter
     {
         log::debug!(
             target: "refresh_listing",
@@ -494,14 +495,14 @@ mod refresh_listing_tests {
     //! Tests for the `refresh_listing` short-circuit on watcher-backed listings (M1
     //! of the cancel-settled plan). Pattern adapted from
     //! `write_operations::delete_volume_reuse_tests` — a counter-wrapping
-    //! `InMemoryVolume` whose `listing_is_watched` is flipped per test, seeded into
+    //! `InMemoryVolume` whose `listing_watch_coverage` is flipped per test, seeded into
     //! `LISTING_CACHE` and `VolumeManager`, then we call `refresh_listing` and
     //! assert `list_directory` was or wasn't invoked.
     use super::*;
     use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard, unique_test_id};
     use crate::file_system::listing::metadata::FileEntry;
     use crate::file_system::volume::manager::get_volume_manager;
-    use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
+    use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError, WatchCoverage};
     use std::future::Future;
     use std::path::Path;
     use std::pin::Pin;
@@ -568,8 +569,12 @@ mod refresh_listing_tests {
             self.inner.is_directory(path)
         }
 
-        fn listing_is_watched(&self, _path: &Path) -> bool {
-            self.watched.load(Ordering::Relaxed)
+        fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
+            if self.watched.load(Ordering::Relaxed) {
+                WatchCoverage::EveryWriter
+            } else {
+                WatchCoverage::None
+            }
         }
     }
 
@@ -640,7 +645,7 @@ mod refresh_listing_tests {
     }
 
     /// Cache has the listing but the volume isn't registered: short-circuit
-    /// can't ask `listing_is_watched`, so we fall through to today's behaviour
+    /// can't ask `listing_watch_coverage`, so we fall through to today's behaviour
     /// (`handle_directory_change` finds no volume, falls back to local std::fs
     /// for the path which doesn't exist, and returns cleanly without panic).
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

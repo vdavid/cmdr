@@ -22,6 +22,7 @@ use crate::file_system::listing::caching_test_support::{TestListing, TestListing
 use crate::file_system::listing::listing_host::AppListings;
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::volume::Volume;
+use crate::file_system::volume::WatchCoverage;
 use crate::file_system::volume::backends::archive::ArchiveVolume;
 use crate::file_system::volume::manager::get_volume_manager;
 
@@ -195,12 +196,17 @@ async fn lru_eviction_releases_the_archive_and_its_watch() {
     // `resolve` registers the archive but gates the watch on a registered app
     // handle, which a headless test has none of — so no real OS watch starts
     // behind our back, and this test starts one itself.
-    assert!(
-        !a.listing_is_watched(&zip_a),
+    assert_eq!(
+        a.listing_watch_coverage(&zip_a),
+        WatchCoverage::None,
         "resolve must not auto-start the watch without an app handle"
     );
     start_watch_on(&a, "root");
-    assert!(a.listing_is_watched(&zip_a), "A's watch must be live while registered");
+    assert_eq!(
+        a.listing_watch_coverage(&zip_a),
+        WatchCoverage::EveryWriter,
+        "A's watch must be live while registered"
+    );
     assert_eq!(Arc::strong_count(&a), 2, "the registry and the test each hold one Arc");
 
     // Resolve well past the LRU cap so A is evicted (cap is 16; 20 clears it).
@@ -217,8 +223,9 @@ async fn lru_eviction_releases_the_archive_and_its_watch() {
         1,
         "eviction must release the registry's Arc, leaving only the test's"
     );
-    assert!(
-        a.listing_is_watched(&zip_a),
+    assert_eq!(
+        a.listing_watch_coverage(&zip_a),
+        WatchCoverage::EveryWriter,
         "the still-held Arc keeps the watch alive until the last reference drops"
     );
     drop(a); // final reference gone → ArchiveVolume drops → watch stops

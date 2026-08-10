@@ -15,12 +15,12 @@ use super::scan_preview::run_oracle_aware_batch_scan;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_system::volume::{BatchScanResult, CopyScanResult, InMemoryVolume, Volume, VolumeError};
+use crate::file_system::volume::{BatchScanResult, CopyScanResult, InMemoryVolume, Volume, VolumeError, WatchCoverage};
 
 /// Wraps an `InMemoryVolume` and counts `list_directory` calls so tests can
 /// assert that the oracle short-circuited or fell through.
 ///
-/// `watched` is the test-only `listing_is_watched` override. Each test flips
+/// `watched` is the test-only `listing_watch_coverage` override. Each test flips
 /// it independently — the oracle picker reads it via the `Volume` trait
 /// dispatch through `get_volume_manager()`, so we need the wrapper registered
 /// in the manager.
@@ -87,8 +87,12 @@ impl Volume for CountingWatchedVolume {
         self.inner.is_directory(path)
     }
 
-    fn listing_is_watched(&self, _path: &Path) -> bool {
-        self.watched.load(Ordering::Relaxed)
+    fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
+        if self.watched.load(Ordering::Relaxed) {
+            WatchCoverage::EveryWriter
+        } else {
+            WatchCoverage::None
+        }
     }
 
     fn scan_for_copy<'a>(
@@ -189,7 +193,7 @@ fn insert_listing(tag: &str, volume_id: &str, path: &str, entries: Vec<FileEntry
 /// Test 1: when the parent listing is watcher-backed, scan-preview reads sizes
 /// from the cache and never calls `list_directory` on the volume.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn scan_preview_uses_watched_listing_for_top_level_files() {
+async fn scan_preview_uses_authoritative_listing_for_top_level_files() {
     let vid = unique("uses_watched");
 
     // Pre-populate the InMemoryVolume so the wrapper's `list_directory` would
@@ -233,7 +237,7 @@ async fn scan_preview_uses_watched_listing_for_top_level_files() {
     get_volume_manager().unregister(&vid);
 }
 
-/// Test 2: when `listing_is_watched` returns false (watcher dead), the oracle
+/// Test 2: when `listing_watch_coverage` returns false (watcher dead), the oracle
 /// returns None and we fall through to the volume's `scan_for_copy_batch`
 /// path, which on InMemoryVolume calls scan_for_copy per path (no list_directory
 /// call). What we really want to assert: the oracle did NOT short-circuit
@@ -288,7 +292,7 @@ async fn scan_preview_uses_cached_subfolder_listing_when_other_pane_has_it() {
     let _parent_listing = insert_listing("listing", &vid, "/a", parent_cached);
 
     // Other pane lists `/a/sub` with two cached files. Both panes share the
-    // same volume; `listing_is_watched` returns true volume-wide so the oracle
+    // same volume; `listing_watch_coverage` returns true volume-wide so the oracle
     // hits both.
     let sub_cached = vec![
         make_file_entry("x.txt", "/a/sub", 100),

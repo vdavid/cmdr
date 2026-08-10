@@ -24,7 +24,7 @@ through a `Volume`, with **paths relative to the volume root**.
   watcher events are lossy, so skipping it leaves a stale pane. `DETAILS.md` § "Mutation notification".
 - **Capability flags default to the conservative answer** (`Err(NotSupported)` / `false`), so a new backend starts at
   `list_directory` + `get_metadata` and opts in. Read `DETAILS.md` § "Trait capability model" before overriding one:
-  `create_directory_all`, `listing_is_watched`, `operations_are_local`, and `create_directory_errors_on_existing_dir`
+  `create_directory_all`, `listing_watch_coverage`, `operations_are_local`, and `create_directory_errors_on_existing_dir`
   each gate behavior that breaks silently on a wrong answer. New backend? § "Building a new volume".
 - **`lane_key()` is the operation manager's serialization key** (default = the volume root). Override it when several
   `Volume`s share one physical resource.

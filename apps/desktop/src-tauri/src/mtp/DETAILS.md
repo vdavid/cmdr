@@ -53,7 +53,7 @@ only hide the next real race.
 
 The virtual device (via mtp-rs) runs a filesystem watcher over its backing dirs that turns out-of-band disk writes into
 `ObjectAdded` / `ObjectRemoved` events. This models nothing in production MTP: real MTP has no watcher, and Cmdr treats
-MTP listings as unwatched (`listing_is_watched(path) == false` — freshness comes from explicit `notify_mutation` +
+MTP listings as uncovered (`listing_watch_coverage(path) == WatchCoverage::None` — freshness comes from explicit `notify_mutation` +
 refresh, never a watcher). The virtual watcher exists only so one E2E test can exercise Cmdr's device-event → directory-
 diff pipeline.
 

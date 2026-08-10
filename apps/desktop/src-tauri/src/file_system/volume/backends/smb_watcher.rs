@@ -59,7 +59,7 @@ async fn stat_via_volume(volume_id: &str, path: &Path) -> Option<FileEntry> {
 /// A no-op when the path isn't an archive or no inner listing is open (the
 /// refresh scans the listing cache for keys at/inside the archive path). This is
 /// purely a visible-listing UX nicety and a SEPARATE consumer from the write-op
-/// fresh-listing oracle: `ArchiveVolume::listing_is_watched` stays `false` for a
+/// fresh-listing oracle: `ArchiveVolume::listing_watch_coverage` stays `false` for a
 /// remote parent regardless, because the SMB watcher is lossy under load and the
 /// oracle must keep re-reading pre-flight scans honestly.
 ///

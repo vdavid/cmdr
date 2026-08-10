@@ -25,7 +25,7 @@ fn a_detached_host_answers_every_seam() {
     host.listings()
         .directory_changed("vol", path, DirectoryChange::Removed("gone.txt".to_string()));
     assert!(
-        host.listings().watched_listing("vol", path).is_none(),
+        host.listings().authoritative_listing("vol", path).is_none(),
         "nothing is showing anything, so the oracle must miss rather than claim an empty directory"
     );
     host.events().connection_changed("vol", VolumeConnection::Disconnected);
@@ -94,7 +94,7 @@ fn thread_name() -> Option<String> {
 /// nothing crosses wires on the way.
 #[test]
 fn what_a_backend_reports_reaches_the_installed_seam() {
-    let listings = Arc::new(RecordingListings::new().with_watched_listing("share", "/share/open", Vec::new()));
+    let listings = Arc::new(RecordingListings::new().with_authoritative_listing("share", "/share/open", Vec::new()));
     let events = Arc::new(RecordingVolumeEvents::new());
     let indexing = Arc::new(RecordingIndexNotifier::new());
     let analytics = Arc::new(RecordingAnalytics::new());
@@ -121,17 +121,17 @@ fn what_a_backend_reports_reaches_the_installed_seam() {
     assert_eq!(listings.changes()[0].0, "share");
     assert!(
         host.listings()
-            .watched_listing("share", Path::new("/share/open"))
+            .authoritative_listing("share", Path::new("/share/open"))
             .is_some_and(|entries| entries.is_empty()),
         "a pane IS showing this directory, so the oracle hits"
     );
     assert!(
         host.listings()
-            .watched_listing("share", Path::new("/share/elsewhere"))
+            .authoritative_listing("share", Path::new("/share/elsewhere"))
             .is_none(),
         "a directory no pane is showing has to miss, so the caller asks the protocol"
     );
-    assert_eq!(listings.watched_lookup_count(), 2);
+    assert_eq!(listings.authoritative_lookup_count(), 2);
     assert_eq!(
         events.transitions(),
         vec![("share".to_string(), VolumeConnection::NeedsCredentials)]

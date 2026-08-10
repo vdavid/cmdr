@@ -27,6 +27,7 @@ use crate::file_system::listing::{
 };
 use crate::index_host::index;
 use cmdr_fs::firmlinks;
+use cmdr_fs::volume::WatchCoverage;
 
 /// Default debounce duration in milliseconds (used if not configured)
 const DEFAULT_DEBOUNCE_MS: u64 = 200;
@@ -87,6 +88,17 @@ pub struct DirectoryDeletedEvent {
 pub(crate) struct WatchedDirectory {
     #[allow(dead_code, reason = "Debouncer must be held to keep watching")]
     debouncer: Debouncer<RecommendedWatcher, RecommendedCache>,
+    /// What this particular watch observes, decided once when it was armed.
+    ///
+    /// Resolved here rather than in `Volume::listing_watch_coverage` because the
+    /// answer needs a `statfs` on the path, and the oracle that asks for it runs
+    /// inside sync recursive scan walkers, once per directory. Deciding at arm
+    /// time costs one syscall per open listing, on a path whose `read_dir` has
+    /// just succeeded, and leaves the read side a pure in-memory lookup.
+    ///
+    /// Private on purpose: `coverage_for_listings` is the only reader, so the
+    /// backend asks a function rather than reaching into the manager's map.
+    coverage: WatchCoverage,
 }
 
 /// Manages file watchers for directories
@@ -163,11 +175,49 @@ pub fn start_watching(listing_id: &str, path: &Path) -> Result<(), String> {
         .map_err(|e| format!("Failed to watch path: {}", e))?;
 
     // Store in manager (no entries - we use LISTING_CACHE)
+    let coverage = coverage_for_watched_path(path);
     let mut manager = WATCHER_MANAGER.write().map_err(|_| "Failed to acquire watcher lock")?;
 
-    manager.watches.insert(listing_id_owned, WatchedDirectory { debouncer });
+    manager
+        .watches
+        .insert(listing_id_owned, WatchedDirectory { debouncer, coverage });
 
     Ok(())
+}
+
+/// What an FSEvents watch on `path` can actually see.
+///
+/// A network mount answers [`WatchCoverage::ThisMachineOnly`]: FSEvents is a
+/// local-VFS notifier, so it reports this machine's writes through the mount and
+/// nothing another client does to the share. The pane still updates from the
+/// user's own work, which is why the watch is worth arming at all; the oracle
+/// just can't treat that cache as a substitute for reading the directory.
+fn coverage_for_watched_path(path: &Path) -> WatchCoverage {
+    if crate::file_system::index_provider::path_is_on_network_mount(path) {
+        WatchCoverage::ThisMachineOnly
+    } else {
+        WatchCoverage::EveryWriter
+    }
+}
+
+/// The coverage recorded for any live watch on `listing_ids`, best answer first.
+///
+/// Backs `LocalPosixVolume::listing_watch_coverage`, so it must stay a pure
+/// in-memory read: it runs once per directory inside recursive scan walkers.
+pub(crate) fn coverage_for_listings(listing_ids: &[String]) -> WatchCoverage {
+    let Ok(manager) = WATCHER_MANAGER.read() else {
+        return WatchCoverage::None;
+    };
+    let mut best = WatchCoverage::None;
+    for id in listing_ids {
+        match manager.watches.get(id.as_str()).map(|w| w.coverage) {
+            // Nothing beats full coverage, so stop at the first one.
+            Some(WatchCoverage::EveryWriter) => return WatchCoverage::EveryWriter,
+            Some(WatchCoverage::ThisMachineOnly) => best = WatchCoverage::ThisMachineOnly,
+            Some(WatchCoverage::None) | None => {}
+        }
+    }
+    best
 }
 
 /// Stop watching a directory for a given listing.

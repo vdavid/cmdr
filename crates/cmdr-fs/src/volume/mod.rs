@@ -520,8 +520,15 @@ pub trait Volume: Send + Sync {
     // Watching: Optional, default no-op
     // ========================================
 
-    /// Returns true if this volume supports file watching.
-    fn supports_watching(&self) -> bool {
+    /// Whether a `notify`-based OS watch can be established on this volume's
+    /// paths, which is the one thing this gates: `listing::operations` and
+    /// `listing::streaming` call `start_watching` only when it's true.
+    ///
+    /// ❌ Says NOTHING about what such a watch would see. A backend whose paths
+    /// don't exist on the local filesystem (MTP), or that has no watcher yet
+    /// (SMB), answers `false`; a backend answering `true` still has to declare
+    /// its coverage in [`listing_watch_coverage`](Self::listing_watch_coverage).
+    fn can_watch_listings(&self) -> bool {
         false
     }
 
@@ -532,20 +539,26 @@ pub trait Volume: Send + Sync {
         true
     }
 
-    /// Returns `true` when the listing at `path` is currently being kept in sync
-    /// by a live watcher on this volume. Used by
-    /// `file_system::listing::caching::try_get_watched_listing` to decide whether
-    /// a cached listing can replace a real read in write-op pre-flight.
+    /// What a live watch on the listing at `path` observes right now. Used by
+    /// `file_system::listing::caching::try_get_authoritative_listing` to decide
+    /// whether a cached listing can replace a real read in write-op pre-flight,
+    /// which only [`WatchCoverage::EveryWriter`] allows.
     ///
-    /// "Live watcher" is intentionally coarse for non-local backends; the
-    /// returned `true` does NOT mean the cache is byte-perfect with the device
-    /// right now. Every backend has a debounce or settling window between a real
-    /// change and the cache reflecting it. See the freshness contract on
-    /// `try_get_watched_listing` for the per-backend windows callers must tolerate.
+    /// Two facts fold into the answer, and a backend owes both: whether a watch
+    /// is live for this path at all, and what a live one can see. Answer
+    /// [`None`](WatchCoverage::None) whenever no watch is attached, including
+    /// during the gap between a listing being populated and its watcher being
+    /// registered.
     ///
-    /// Default `false`: new backends without an active watcher opt in explicitly.
-    fn listing_is_watched(&self, _path: &Path) -> bool {
-        false
+    /// `EveryWriter` is a claim about WHICH WRITERS reach us, not about latency:
+    /// every backend has a debounce or settling window between a real change and
+    /// the cache reflecting it. See the freshness contract on
+    /// `try_get_authoritative_listing` for the per-backend windows callers must
+    /// tolerate.
+    ///
+    /// Default `None`: a new backend claims coverage explicitly or gets none.
+    fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
+        WatchCoverage::None
     }
 
     // ========================================

@@ -29,8 +29,8 @@ impl ListingHost for AppListings {
         caching::notify_directory_changed(volume_id, parent_path, change);
     }
 
-    fn watched_listing(&self, volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
-        caching::try_get_watched_listing(volume_id, path)
+    fn authoritative_listing(&self, volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
+        caching::try_get_authoritative_listing(volume_id, path)
     }
 
     fn refresh_archive_listings<'a>(
@@ -48,9 +48,9 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use crate::file_system::listing::caching_test_support::{TestListing, WatchedFlagVolume, unique_test_id};
+    use crate::file_system::listing::caching_test_support::{TestListing, WatchCoverageVolume, unique_test_id};
     use crate::file_system::volume::manager::get_volume_manager;
-    use crate::file_system::volume::{InMemoryVolume, Volume};
+    use crate::file_system::volume::{InMemoryVolume, Volume, WatchCoverage};
 
     fn entry_at(dir: &str, name: &str) -> FileEntry {
         FileEntry {
@@ -65,7 +65,10 @@ mod tests {
     fn the_oracle_answers_from_the_real_cache_when_a_watcher_keeps_it_fresh() {
         let volume_id = unique_test_id("listing-host-watched");
         let path = "/host/watched";
-        get_volume_manager().register(&volume_id, Arc::new(WatchedFlagVolume::new("watched-vol", true)));
+        get_volume_manager().register(
+            &volume_id,
+            Arc::new(WatchCoverageVolume::new("watched-vol", WatchCoverage::EveryWriter)),
+        );
 
         let listing = TestListing::new()
             .volume(&volume_id)
@@ -74,7 +77,7 @@ mod tests {
             .insert("listing-host-watched");
 
         let answer = AppListings
-            .watched_listing(&volume_id, Path::new(path))
+            .authoritative_listing(&volume_id, Path::new(path))
             .expect("a watched listing is the whole point of the oracle");
         assert_eq!(
             answer.iter().map(|e| e.name.as_str()).collect::<Vec<_>>(),
@@ -91,7 +94,10 @@ mod tests {
     fn the_oracle_misses_when_no_watcher_is_keeping_the_listing_fresh() {
         let volume_id = unique_test_id("listing-host-unwatched");
         let path = "/host/unwatched";
-        get_volume_manager().register(&volume_id, Arc::new(WatchedFlagVolume::new("unwatched-vol", false)));
+        get_volume_manager().register(
+            &volume_id,
+            Arc::new(WatchCoverageVolume::new("unwatched-vol", WatchCoverage::None)),
+        );
 
         let listing = TestListing::new()
             .volume(&volume_id)
@@ -100,7 +106,7 @@ mod tests {
             .insert("listing-host-unwatched");
 
         assert!(
-            AppListings.watched_listing(&volume_id, Path::new(path)).is_none(),
+            AppListings.authoritative_listing(&volume_id, Path::new(path)).is_none(),
             "an unwatched listing must send the caller to the protocol"
         );
 

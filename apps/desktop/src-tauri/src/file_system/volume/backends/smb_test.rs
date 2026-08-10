@@ -298,9 +298,9 @@ fn to_display_path_with_subpath() {
 }
 
 #[test]
-fn supports_watching_returns_false() {
+fn can_watch_listings_returns_false() {
     let vol = make_test_volume();
-    assert!(!vol.supports_watching());
+    assert!(!vol.can_watch_listings());
 }
 
 #[test]
@@ -462,35 +462,36 @@ async fn transition_to_direct_idempotent() {
 }
 
 #[test]
-fn listing_is_watched_false_when_disconnected() {
-    // No watcher_cancel set and state Disconnected: false.
+fn listing_watch_coverage_is_none_when_disconnected() {
+    // No watcher_cancel set and state Disconnected: no coverage.
     let vol = make_test_volume();
-    assert!(!vol.listing_is_watched(Path::new("/")));
+    assert_eq!(vol.listing_watch_coverage(Path::new("/")), WatchCoverage::None);
 }
 
 #[test]
-fn listing_is_watched_false_when_direct_but_no_watcher() {
-    // State Direct but `watcher_cancel` empty: still false (we need both).
+fn listing_watch_coverage_is_none_when_direct_but_no_watcher() {
+    // State Direct but `watcher_cancel` empty: still `None` (we need both).
     let vol = make_test_volume_direct();
-    assert!(!vol.listing_is_watched(Path::new("/")));
+    assert_eq!(vol.listing_watch_coverage(Path::new("/")), WatchCoverage::None);
 }
 
 #[test]
-fn listing_is_watched_false_when_watcher_set_but_disconnected() {
-    // `watcher_cancel` populated but state Disconnected: false.
+fn listing_watch_coverage_is_none_when_watcher_set_but_disconnected() {
+    // `watcher_cancel` populated but state Disconnected: `None`.
     let vol = make_test_volume();
     let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
     *vol.watcher_cancel.lock().unwrap() = Some(tx);
-    assert!(!vol.listing_is_watched(Path::new("/")));
+    assert_eq!(vol.listing_watch_coverage(Path::new("/")), WatchCoverage::None);
 }
 
 #[test]
-fn listing_is_watched_true_when_direct_and_watcher_set() {
-    // Both conditions met: true.
+fn listing_watch_coverage_is_every_writer_when_direct_and_watcher_set() {
+    // Both conditions met. CHANGE_NOTIFY is raised by the server, so it sees
+    // every client's writes, not only ours.
     let vol = make_test_volume_direct();
     let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
     *vol.watcher_cancel.lock().unwrap() = Some(tx);
-    assert!(vol.listing_is_watched(Path::new("/")));
+    assert_eq!(vol.listing_watch_coverage(Path::new("/")), WatchCoverage::EveryWriter);
 }
 
 #[test]

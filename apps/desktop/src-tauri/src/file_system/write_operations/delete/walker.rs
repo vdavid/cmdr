@@ -13,7 +13,7 @@ use super::super::types::{
     DryRunResult, IoResultExt, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
-use crate::file_system::listing::caching::try_get_watched_listing;
+use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::file_system::volume::{Volume, VolumeError};
 
 // ============================================================================
@@ -414,7 +414,7 @@ async fn scan_volume_recursive(
         // reuse the cached entries and skip the volume round-trip entirely.
         // Falls through to `volume.list_directory` on miss, preserving the
         // per-entry progress callback for slow MTP listings.
-        let children = match try_get_watched_listing(volume_id, path) {
+        let children = match try_get_authoritative_listing(volume_id, path) {
             Some(cached) => {
                 // The cached listing is already complete, so synthesize a
                 // single end-of-listing progress tick (with the tally we'd
@@ -742,7 +742,7 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
             // calling `volume.is_directory`, which on MTP lists the parent.
             // Falls through to the trait probe when the oracle can't answer.
             let parent_hint = source.parent().and_then(|parent| {
-                let cached_entries = try_get_watched_listing(volume_id, parent)?;
+                let cached_entries = try_get_authoritative_listing(volume_id, parent)?;
                 let name = source.file_name()?.to_string_lossy().to_string();
                 cached_entries
                     .iter()

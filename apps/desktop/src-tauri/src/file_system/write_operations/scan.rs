@@ -16,7 +16,7 @@ use super::types::{
     WriteOperationType, WriteProgressEvent,
 };
 use super::validation::is_symlink_loop;
-use crate::file_system::listing::caching::try_get_watched_listing;
+use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::file_system::listing::{FileEntry, SortColumn, SortOrder};
 use crate::file_system::volume::{CopyScanResult, Volume, VolumeError};
 
@@ -130,7 +130,7 @@ pub(super) fn walk_sources_with_per_path<E>(
 /// **Oracle reuse**: when `volume_id` is provided and the listing cache holds a
 /// watcher-backed listing for the directory currently being walked, the walker
 /// hydrates that level's entries from the cache instead of touching the disk.
-/// See `file_system::listing::caching::try_get_watched_listing` for the full
+/// See `file_system::listing::caching::try_get_authoritative_listing` for the full
 /// freshness contract. Pass `None` for `volume_id` to opt out (no listing
 /// lookup is performed, behavior is identical to the pre-oracle walker).
 ///
@@ -209,7 +209,7 @@ pub(super) fn walk_dir_recursive<E>(
         // step below still goes through `walk_dir_recursive`, which re-applies
         // the oracle at each level.
         if let Some(vid) = volume_id
-            && let Some(cached_entries) = try_get_watched_listing(vid, path)
+            && let Some(cached_entries) = try_get_authoritative_listing(vid, path)
         {
             walk_cached_entries(
                 path,
@@ -402,7 +402,7 @@ pub(super) async fn scan_subtree_with_oracle(
     }
 
     // Load entries from oracle or the volume itself.
-    let entries: Vec<FileEntry> = match try_get_watched_listing(volume_id, path) {
+    let entries: Vec<FileEntry> = match try_get_authoritative_listing(volume_id, path) {
         Some(e) => e,
         None => volume.list_directory(path, on_progress).await?,
     };

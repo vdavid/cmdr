@@ -20,14 +20,14 @@ use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_system::volume::{BatchScanResult, CopyScanResult, InMemoryVolume, Volume, VolumeError};
+use crate::file_system::volume::{BatchScanResult, CopyScanResult, InMemoryVolume, Volume, VolumeError, WatchCoverage};
 
 // ----------------------------------------------------------------------------
 // Counter-wrapping volume
 // ----------------------------------------------------------------------------
 
 /// Wraps an `InMemoryVolume` and counts `list_directory`, `is_directory`, and
-/// `delete` calls. Lets `listing_is_watched` be flipped at runtime so tests can
+/// `delete` calls. Lets `listing_watch_coverage` be flipped at runtime so tests can
 /// pin both oracle-hit and oracle-miss behaviours.
 struct CountingVolume {
     inner: InMemoryVolume,
@@ -110,8 +110,12 @@ impl Volume for CountingVolume {
         self.inner.delete(path)
     }
 
-    fn listing_is_watched(&self, _path: &Path) -> bool {
-        self.watched.load(Ordering::Relaxed)
+    fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
+        if self.watched.load(Ordering::Relaxed) {
+            WatchCoverage::EveryWriter
+        } else {
+            WatchCoverage::None
+        }
     }
 
     fn scan_for_copy<'a>(

@@ -20,25 +20,27 @@ use crate::file_system::volume::InMemoryVolume;
 
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-async fn smb_integration_listing_is_watched_flips_with_connection() {
+async fn smb_integration_listing_watch_coverage_flips_with_connection() {
     // End-to-end check against a live Docker SMB server: after
     // `connect_smb_volume`, the watcher is spawned and state is Direct,
-    // so the oracle gate returns true. After flipping the state to
+    // so the oracle gate reports full coverage. After flipping the state to
     // Disconnected (simulating a ConnectionLost event), the gate flips
     // false even though `watcher_cancel` is still set: the contract is
     // "watcher present AND Direct," and a half-broken volume must not be
     // treated as fresh.
     let vol = make_docker_volume().await;
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
-    assert!(
-        vol.listing_is_watched(Path::new("/")),
-        "expected true on a freshly-connected Docker volume"
+    assert_eq!(
+        vol.listing_watch_coverage(Path::new("/")),
+        WatchCoverage::EveryWriter,
+        "expected full coverage on a freshly-connected Docker volume"
     );
 
     vol.transition_to_disconnected();
-    assert!(
-        !vol.listing_is_watched(Path::new("/")),
-        "expected false after transitioning to Disconnected"
+    assert_eq!(
+        vol.listing_watch_coverage(Path::new("/")),
+        WatchCoverage::None,
+        "expected no coverage after transitioning to Disconnected"
     );
 }
 
@@ -58,8 +60,9 @@ async fn smb_integration_pane_close_does_not_kill_index_watcher() {
 
     let vol = make_docker_volume().await;
     assert_eq!(vol.connection_state(), ConnectionState::Direct);
-    assert!(
-        vol.listing_is_watched(Path::new("/")),
+    assert_eq!(
+        vol.listing_watch_coverage(Path::new("/")),
+        WatchCoverage::EveryWriter,
         "watcher must be alive right after connect",
     );
 
@@ -69,8 +72,9 @@ async fn smb_integration_pane_close_does_not_kill_index_watcher() {
     list_directory_end("some-pane-listing-id");
     list_directory_end("another-pane-listing-id");
 
-    assert!(
-        vol.listing_is_watched(Path::new("/")),
+    assert_eq!(
+        vol.listing_watch_coverage(Path::new("/")),
+        WatchCoverage::EveryWriter,
         "pane close must NOT tear down the volume's index watcher",
     );
 }
@@ -726,8 +730,9 @@ async fn smb_integration_superseded_volume_still_serves_its_holders() {
     // The watcher IS retired, though: the successor spawns its own on its own
     // session, and two watchers on one volume id double-feed the index and let
     // the retired one's death path reach the successor.
-    assert!(
-        !held.listing_is_watched(Path::new("/")),
+    assert_eq!(
+        held.listing_watch_coverage(Path::new("/")),
+        WatchCoverage::None,
         "the superseded volume's watcher must be cancelled"
     );
 

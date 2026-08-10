@@ -92,10 +92,10 @@ A single file is one entry at its uncompressed size; a directory walks the subtr
 **Capability flags (set explicitly, not inherited).** `local_path = None` and `supports_local_fs_access = false` (inner
 paths aren't reachable via `std::fs`, so no `copyfile` fast path and the legacy synthetic-diff path is skipped);
 `space_poll_interval = None` (a read-only archive's space never changes — the default `Some(2s)` would poll
-pointlessly); `max_concurrent_ops = 1`; `supports_export`/`supports_streaming = true`. `listing_is_watched` is `true`
-only while the live content watch is established (`src/watch/DETAILS.md`), `false` otherwise. `supports_watching` stays
-`false`: that flag drives the generic per-listing FSEvents dir-watcher, which can't watch an archive-inner path — the
-archive self-watches its backing `.zip` instead.
+pointlessly); `max_concurrent_ops = 1`; `supports_export`/`supports_streaming = true`. `listing_watch_coverage` reports
+`EveryWriter` only while the live content watch is established (`src/watch/DETAILS.md`), `false` otherwise.
+`can_watch_listings` stays `false`: that flag drives the generic per-listing FSEvents dir-watcher, which can't watch an
+archive-inner path — the archive self-watches its backing `.zip` instead.
 
 **Bulk extract is one-pass for sequential archives.** Extracting a whole subtree from a compressed tar / solid 7z would
 be O(n²) if the copy engine read it entry-by-entry (each `open_read_stream` re-decodes the prefix). It doesn't:
@@ -260,9 +260,9 @@ An `ArchiveVolume` is never constructed here directly in production — it's min
     code change, the moment the backend's `read_range` works. Only a _successful_ read whose bytes AREN'T a zip
     signature (a genuinely mislabeled remote file) declines the route.
   - **The sync `resolve_local_only`** confirms only LOCAL boundaries (no async I/O) for the one caller that can't
-    `.await`: the write-op fresh-listing oracle (`listing::caching::try_get_watched_listing`), which runs on sync
+    `.await`: the write-op fresh-listing oracle (`listing::caching::try_get_authoritative_listing`), which runs on sync
     recursive scan walkers. That oracle guards a REMOTE archive-inner path itself (a non-local parent's volume-level
-    `listing_is_watched` would falsely claim freshness for an archive whose content watch is local-only and never
+    `listing_watch_coverage` would falsely claim freshness for an archive whose content watch is local-only and never
     established), declining the cache so the pre-op scan reruns honestly.
 - **`SUPPORTED_ARCHIVE_EXTENSIONS` is the one source of truth** shared by `is_archive` and boundary detection; confirm's
   magic check carries a sibling signature per format.
@@ -284,9 +284,9 @@ never rewrites the path) and keeps the listing cache, the FE, and the entries al
 enters FE state, history, persistence, or MCP sync. The FE holds the PARENT drive id (display), and
 `resolve_path_volume` / `resolve_location` return that parent drive for an archive-inner path (resolved from the
 `.zip`'s real location, since the inner path isn't a real FS path). So the listing cache keys on the parent id too, and
-the downstream re-read sites (`notify_full_refresh`, `try_get_watched_listing`, `watcher::handle_directory_change`,
-`refresh_listing`) RE-RESOLVE from `(parent_id, full_path)` rather than `get`-ing a stored archive id — which is what
-makes LRU eviction safe.
+the downstream re-read sites (`notify_full_refresh`, `try_get_authoritative_listing`,
+`watcher::handle_directory_change`, `refresh_listing`) RE-RESOLVE from `(parent_id, full_path)` rather than `get`-ing a
+stored archive id — which is what makes LRU eviction safe.
 
 **Archive LRU (cap 16).** `VolumeManager` tracks archive registration recency; resolving past the cap unregisters the
 least-recently-resolved archive (its `ArchiveIndexCache` drops with the volume). Eviction is harmless because every read

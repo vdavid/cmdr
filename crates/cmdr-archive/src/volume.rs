@@ -49,7 +49,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::{
     CopyScanResult, DirectoryCreation, ExtractedFile, LaneKey, ListingProgress, SequentialExtract, SpaceInfo, Volume,
-    VolumeError, VolumeReadStream,
+    VolumeError, VolumeReadStream, WatchCoverage,
 };
 
 /// A read-only [`Volume`] that presents a zip archive as a browsable folder.
@@ -73,8 +73,9 @@ pub struct ArchiveVolume {
     /// Live content watch on the backing `.zip`. `None` until
     /// [`start_content_watch`](Self::start_content_watch) runs (the routing layer
     /// starts it once, when the volume first registers), or when the watch can't
-    /// be established. Its presence is what [`listing_is_watched`](Volume::listing_is_watched)
-    /// reports; dropping it (on LRU eviction) stops the OS watch.
+    /// be established. Its presence is what
+    /// [`listing_watch_coverage`](Volume::listing_watch_coverage) reports;
+    /// dropping it (on LRU eviction) stops the OS watch.
     watch: Mutex<Option<super::watch::ArchiveContentWatch>>,
     /// The password for a password-protected archive, remembered for the lifetime
     /// of THIS `ArchiveVolume` instance. `VolumeManager::resolve` mints one per
@@ -582,12 +583,26 @@ impl Volume for ArchiveVolume {
         Box::pin(async move { self.parent.get_space_info().await })
     }
 
-    /// `true` only while the content watch is genuinely live (established by
+    /// Covered only while the content watch is genuinely live (established by
     /// [`start_content_watch`](Self::start_content_watch) and not yet dropped by
-    /// LRU eviction). If the watch failed to establish, this stays `false`, so a
-    /// listing never claims freshness the backend can't back.
-    fn listing_is_watched(&self, _path: &Path) -> bool {
-        self.watch.lock_ignore_poison().is_some()
+    /// LRU eviction). If the watch failed to establish, this stays
+    /// [`WatchCoverage::None`], so a listing never claims freshness the backend
+    /// can't back.
+    ///
+    /// **Known gap**: a live watch reports `EveryWriter`, which is right for an
+    /// archive on a local disk but over-claims for one sitting on an OS-mounted
+    /// network share, where the watch is FSEvents and blind to other clients
+    /// (`WatchCoverage::ThisMachineOnly` is the honest answer there). Closing it
+    /// needs the backing file's mount type, which this crate can't see: the
+    /// kind → network mapping is per-platform and lives app-side
+    /// (`file_system::index_provider`). A remote-BACKED archive is unaffected,
+    /// since its watch never arms at all (`volume_test.rs`).
+    fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
+        if self.watch.lock_ignore_poison().is_some() {
+            WatchCoverage::EveryWriter
+        } else {
+            WatchCoverage::None
+        }
     }
 }
 

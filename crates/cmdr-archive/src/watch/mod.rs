@@ -72,8 +72,8 @@ impl Drop for ArchiveContentWatch {
 /// open listing inside the zip.
 ///
 /// Returns `None` when the watch can't be established (no parent directory, or
-/// `notify` refuses the path) — the caller then leaves `listing_is_watched`
-/// reporting `false`, so a listing never claims freshness it can't back.
+/// `notify` refuses the path) — the caller then leaves `listing_watch_coverage`
+/// reporting `None`, so a listing never claims freshness it can't back.
 ///
 /// `parent_volume_id` is the archive's PARENT DRIVE id (the id the listing cache
 /// keys on); the refresh re-resolves `(parent_volume_id, inner_path)` back to this

@@ -94,7 +94,7 @@ mod tests {
         );
         assert!(
             host.listings()
-                .watched_listing("test://volume-host/detached", std::path::Path::new("/nowhere"))
+                .authoritative_listing("test://volume-host/detached", std::path::Path::new("/nowhere"))
                 .is_none()
         );
         assert!(

@@ -41,6 +41,11 @@ Directory listing, file writing, sync status, volume management, and file watchi
   Remove+Create on the ROOT plus one Create per NEW child, and never a remove for the old ones. ❌ Don't add
   `Modify(Metadata(_))` to that trigger: every ordinary child change bumps the dir's mtime, so it would re-read on
   everything. `DETAILS.md` § "Replacing a watch root".
+- **A watch on an OS-mounted network share is `WatchCoverage::ThisMachineOnly`, never `EveryWriter`** (`watcher.rs`
+  decides it once at arm time, so the oracle stays a pure in-memory read). FSEvents on `smbfs` is a local-VFS notifier:
+  it delivers this machine's writes through the mount and NOTHING another client does to the share. The pane still
+  updates from the user's own work, so ❌ don't "fix" it by refusing to arm the watch; what it must not do is let a
+  delete walker or copy scan skip a read. `volume/DETAILS.md` § "Trait capability model".
 - **`cloud_actions.rs` is iCloud Drive only**, gated by `is_in_icloud_drive`. The cross-provider-looking
   `NSFileProviderManager` methods are reserved for the app bundling the extension. Don't widen it.
 

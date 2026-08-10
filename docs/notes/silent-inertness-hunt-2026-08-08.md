@@ -89,6 +89,13 @@ Two consequences:
 cost lands on exactly the volumes where a re-read is most expensive, which is why it wants a deliberate decision rather
 than a drive-by fix.
 
+> **Resolved (2026-08-10).** Taken, with a sharper shape than "answer `false`": the boolean became
+> `Volume::listing_watch_coverage -> WatchCoverage`, whose `ThisMachineOnly` variant names this exact state. The watch
+> still arms (it's what updates the pane after the user's own writes, which answering `false` would have thrown away),
+> and only `EveryWriter` lets the oracle skip a read. Current behavior lives in
+> `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model"; this note stays as the evidence
+> that motivated it.
+
 ### 3. A delete reports "complete, 0 skipped" when directories it couldn't remove are still standing
 
 Both delete tails discard the directory-removal result and then emit a completion event:

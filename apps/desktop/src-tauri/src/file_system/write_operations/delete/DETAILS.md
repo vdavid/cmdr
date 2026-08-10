@@ -51,7 +51,7 @@ UI looked frozen. The fix has three parts. (1) `take_cached_scan_result(preview_
 are recorded from `CopyScanResult::total_bytes` with no `is_directory` probe and no `list_directory` round-trip, and
 top-level dirs recurse via the oracle-aware `scan_volume_recursive` (passing `is_dir_hint = Some(true)` so the recursion
 never re-probes). (2) The walker's internal `volume.list_directory(path, ...)` is preceded by
-`try_get_watched_listing(volume_id, path)`; on hit, the cached entries replace the volume call at every recursion level.
+`try_get_authoritative_listing(volume_id, path)`; on hit, the cached entries replace the volume call at every recursion level.
 (3) On the no-preview path, the parent oracle supplies the top-level type when a pane has the source's parent open and
 watcher-fresh, skipping the probe; on a miss the hint stays `None` and the walker resolves it (see the branch audit
 above). The cache-hit path emits a throttled scan-progress event per `progress_interval` while building the entry list,

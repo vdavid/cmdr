@@ -585,7 +585,7 @@ fn capability_flags_are_read_only_and_virtual() {
     assert!(!volume.supports_local_fs_access());
     assert_eq!(volume.space_poll_interval(), None);
     // No live watcher yet: never claim listing freshness.
-    assert!(!volume.listing_is_watched(Path::new("")));
+    assert_eq!(volume.listing_watch_coverage(Path::new("")), WatchCoverage::None);
 }
 
 // ---- Remote-backed archives (SMB / MTP parent) ----------------------------
@@ -659,26 +659,28 @@ async fn remote_central_directory_parse_is_a_single_tail_read() {
 }
 
 #[tokio::test]
-async fn remote_backed_archive_never_reports_listing_is_watched() {
+async fn remote_backed_archive_never_reports_watch_coverage() {
     // Data-safety guardrail: a remote parent has no local `notify` transport, so
-    // the content watch can't arm and `listing_is_watched` must stay `false` even
+    // the content watch can't arm and `listing_watch_coverage` must stay `None` even
     // after `start_content_watch`. The SMB push-refresh (`smb_watcher`) is a
-    // SEPARATE, visible-listing-only consumer; it must never flip this flag, or
+    // SEPARATE, visible-listing-only consumer; it must never widen this answer, or
     // the write-op fresh-listing oracle would trust a lossy watcher's cache for
     // pre-flight sizing. See `watch/DETAILS.md` § remote-no-watch.
     let bytes = build_zip(&[stored("a.txt", "x")]);
     let (_parent, volume) = remote_archive(bytes).await;
     let archive_path = PathBuf::from("/remote/archive.zip");
 
-    assert!(
-        !volume.listing_is_watched(&archive_path),
+    assert_eq!(
+        volume.listing_watch_coverage(&archive_path),
+        WatchCoverage::None,
         "a remote-backed archive must never claim listing freshness"
     );
     // Starting the content watch is a no-op for a remote parent (no local path);
-    // the flag must remain false.
+    // the answer must remain `None`.
     volume.start_content_watch("remote");
-    assert!(
-        !volume.listing_is_watched(&archive_path),
+    assert_eq!(
+        volume.listing_watch_coverage(&archive_path),
+        WatchCoverage::None,
         "start_content_watch must not arm a watch for a remote parent"
     );
 }

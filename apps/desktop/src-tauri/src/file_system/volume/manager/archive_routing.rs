@@ -110,9 +110,9 @@ impl VolumeManager {
     /// needs async I/O this method can't do.
     ///
     /// The ONE caller is the write-op fresh-listing oracle
-    /// (`listing::caching::try_get_watched_listing`), which runs on sync recursive
+    /// (`listing::caching::try_get_authoritative_listing`), which runs on sync recursive
     /// scan walkers. That oracle guards remote archives separately (a non-local
-    /// parent's volume-level `listing_is_watched` would falsely claim freshness),
+    /// parent's volume-level `listing_watch_coverage` would falsely claim freshness),
     /// so the local-only routing here is sufficient there. Every other caller uses
     /// the async [`resolve`](Self::resolve) and gets full remote routing.
     pub fn resolve_local_only(&self, volume_id: &str, path: &Path) -> ResolvedVolume {
@@ -199,7 +199,7 @@ impl VolumeManager {
         // starting real OS watches (production sets the handle at startup, before
         // any archive is browsed). A non-local parent's watch never establishes
         // (notify can't watch an `smb://` / `mtp://` path), so a remote archive's
-        // `listing_is_watched` stays false — pre-op rescans stay honest.
+        // `listing_watch_coverage` stays `None` — pre-op rescans stay honest.
         if self.register_if_absent(&archive_id, archive.clone()) && crate::file_system::watcher::app_handle_present() {
             archive.start_content_watch(volume_id);
         }

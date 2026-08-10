@@ -20,7 +20,7 @@ use super::types::{
     ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent,
     ScanPreviewStartResult,
 };
-use crate::file_system::listing::caching::try_get_watched_listing;
+use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::file_system::listing::{SortColumn, SortOrder};
 use crate::file_system::volume::{BatchScanResult, CopyScanResult, Volume};
 
@@ -31,7 +31,7 @@ use crate::file_system::volume::{BatchScanResult, CopyScanResult, Volume};
 /// enabling MTP and other non-local volumes to produce scan previews.
 ///
 /// `source_volume_id` identifies the volume the sources live on. It's used by the
-/// fresh-listing oracle (`try_get_watched_listing`) to short-circuit re-reading
+/// fresh-listing oracle (`try_get_authoritative_listing`) to short-circuit re-reading
 /// directories that an open pane is already keeping in sync. Pass `"root"` for
 /// local-FS scans.
 /// `sample_for_estimate` turns on the compressed-size sampler for the LOCAL
@@ -479,7 +479,7 @@ pub(super) async fn run_oracle_aware_batch_scan(
             .get(parent)
             .expect("group_order tracks every parent inserted into groups");
 
-        if let Some(cached_entries) = try_get_watched_listing(volume_id, parent) {
+        if let Some(cached_entries) = try_get_authoritative_listing(volume_id, parent) {
             log::debug!(
                 "scan-preview: oracle hit for parent {} ({} cached entries, {} selected children)",
                 parent.display(),

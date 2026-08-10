@@ -130,7 +130,7 @@ pub async fn list_directory_start_with_volume(
 
     // Start watching the directory (only if volume supports it)
     // TODO: Update watcher to be volume-aware
-    if volume.supports_watching()
+    if volume.can_watch_listings()
         && let Err(e) = start_watching(&listing_id, path)
     {
         log::warn!("Failed to start watcher: {}", e);

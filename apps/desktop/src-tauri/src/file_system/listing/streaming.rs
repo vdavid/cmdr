@@ -584,7 +584,7 @@ pub(crate) async fn read_directory_with_progress(
     // `git::watcher::invalidate_virtual_listings` instead.
     let watcher_start_t = std::time::Instant::now();
     if !crate::file_system::git::is_virtual(path)
-        && volume.supports_watching()
+        && volume.can_watch_listings()
         && let Err(e) = start_watching(listing_id, path)
     {
         log::warn!("Failed to start watcher: {}", e);

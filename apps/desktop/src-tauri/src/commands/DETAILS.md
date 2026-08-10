@@ -11,7 +11,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`file_system/`**: directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, tests.
   `listing.rs`: streaming + virtual-scroll listing, path queries, `find_first_fuzzy_match` (type-to-jump),
   benchmarking, `get_brief_column_text_widths` (per-column widest-filename text widths for Brief mode). `refresh_listing`
-  short-circuits on watcher-backed listings (`Volume::listing_is_watched(path) == true`): the cache is kept fresh by
+  short-circuits on fully-covered listings (`Volume::listing_watch_coverage(path) == WatchCoverage::EveryWriter`): the cache is kept fresh by
   `notify_mutation`, so a redundant full re-read after every transfer (the FE's `refreshPanesAfterTransfer`) used to
   wedge slow volumes (MTP 17 s + USB session collision). Logs at debug `target: "refresh_listing"` on short-circuit.
   `write_ops.rs`: create, copy, move, delete, trash, scan preview, conflict resolution, synthetic diff helpers.

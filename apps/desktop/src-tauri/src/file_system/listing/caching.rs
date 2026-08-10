@@ -6,6 +6,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};
 use std::time::{Duration, Instant};
 
+use cmdr_fs::volume::WatchCoverage;
+
 use crate::file_system::listing::metadata::{FileEntry, TagRef};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, entry_comparator};
 pub use cmdr_fs::volume::DirectoryChange;
@@ -275,7 +277,7 @@ pub fn find_listings_for_path_on_volume(
 
 /// Returns the newest cached pane listing for a `(volume_id, path)` pair.
 ///
-/// Unlike [`try_get_watched_listing`], this doesn't require a watcher: SMB, MTP, and
+/// Unlike [`try_get_authoritative_listing`], this doesn't require a watcher: SMB, MTP, and
 /// other virtual panes still have a UI listing cache. No filesystem call happens here.
 pub(crate) fn get_cached_listing(volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
     let cache = LISTING_CACHE.read().ok()?;
@@ -347,7 +349,7 @@ pub fn get_listing_path(listing_id: &str) -> Option<PathBuf> {
 /// Returns `(volume_id, path)` for a cached listing in one read-lock acquisition.
 ///
 /// Used by `refresh_listing` so the short-circuit check can ask the volume
-/// `listing_is_watched(path)` without two separate cache reads.
+/// `listing_watch_coverage(path)` without two separate cache reads.
 pub fn get_listing_volume_id_and_path(listing_id: &str) -> Option<(String, PathBuf)> {
     let cache = LISTING_CACHE.read().ok()?;
     cache
@@ -861,16 +863,18 @@ pub(crate) fn increment_sequence(listing_id: &str) -> Option<u64> {
     Some(seq)
 }
 
-/// Returns cached entries for `(volume_id, path)` when the volume reports that this
-/// listing is being kept in sync by an active watcher. Otherwise `None`.
+/// Returns cached entries for `(volume_id, path)` when the volume reports
+/// [`WatchCoverage::EveryWriter`] for this listing. Otherwise `None`.
 ///
 /// **Freshness contract (read carefully)**: a `Some(_)` result means the volume has
-/// an active change-notification channel and the cache reflects the volume's most
-/// recently observed state. It does NOT mean the cache is byte-perfect with the
-/// device right now: every backend has a debounce or settling window between a real
-/// change and the cache reflecting it.
+/// a change-notification channel that every writer's changes reach, and the cache
+/// reflects the volume's most recently observed state. It does NOT mean the cache is
+/// byte-perfect with the device right now: every backend has a debounce or settling
+/// window between a real change and the cache reflecting it.
 ///
-/// - Local FS: FSEvents coalesce window (~10 ms).
+/// - Local FS: FSEvents coalesce window (~10 ms). An OS-mounted network share is
+///   served by the same backend but never qualifies: FSEvents can't see other
+///   clients there, so it reports `ThisMachineOnly` and this returns `None`.
 /// - SMB: 200 ms watcher debounce; > 50 events per directory triggers a `FullRefresh` which arrives
 ///   via a real re-read.
 /// - MTP: 500 ms event debouncer plus per-device polling. Many MTP devices (cameras especially)
@@ -891,7 +895,7 @@ pub(crate) fn increment_sequence(listing_id: &str) -> Option<u64> {
 /// `sequence`, ties broken by the latest `created_at`. Both listings receive watcher
 /// events, so they're equally fresh; the tiebreaker is just to keep the result
 /// stable across calls.
-pub fn try_get_watched_listing(volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
+pub fn try_get_authoritative_listing(volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
     // Step 1: find all listings on this (volume_id, path) and pick the most-recently-updated
     // one (highest sequence, ties broken by latest created_at). Read the entries out
     // under the cache lock and drop the lock before crossing any async / volume boundary.
@@ -918,18 +922,18 @@ pub fn try_get_watched_listing(volume_id: &str, path: &Path) -> Option<Vec<FileE
         listing.entries.clone()
     };
 
-    // Step 2: ask the volume whether this listing is being kept fresh by a watcher.
+    // Step 2: ask the volume what a watch on this listing actually covers.
     // `resolve_local_only` (the sync sibling of `resolve`) routes a LOCAL `.zip`
     // listing to its ArchiveVolume, whose live content watch answers
-    // `listing_is_watched` honestly (true once established, false if it couldn't
-    // start). This oracle runs on sync recursive scan walkers, so it can't `.await`
-    // the async remote confirm — hence the local-only variant.
+    // `listing_watch_coverage` honestly (covered once established, `None` if it
+    // couldn't start). This oracle runs on sync recursive scan walkers, so it can't
+    // `.await` the async remote confirm — hence the local-only variant.
     let resolved = crate::file_system::volume::manager::get_volume_manager().resolve_local_only(volume_id, path);
     let volume = resolved.volume?;
 
     // Honesty guard for a REMOTE archive-inner path. `resolve_local_only` can't
     // confirm a remote boundary, so such a path stays a passthrough to its parent
-    // (a direct-SMB / MTP volume). That parent's `listing_is_watched` is
+    // (a direct-SMB / MTP volume). That parent's `listing_watch_coverage` is
     // VOLUME-level ("device reachable"), which would falsely claim freshness for an
     // archive whose content watch is local-only and never established. Decline, so
     // the write-op pre-flight rescans through the ArchiveVolume rather than reusing
@@ -943,9 +947,12 @@ pub fn try_get_watched_listing(volume_id: &str, path: &Path) -> Option<Vec<FileE
         return None;
     }
 
-    if volume.listing_is_watched(path) {
-        Some(entries)
-    } else {
-        None
+    // Only full coverage substitutes for a read. `ThisMachineOnly` means a live
+    // watch that can't see other writers (an OS-mounted share), so the cache may
+    // be missing entries nobody told us about — exactly the case where handing
+    // these to a delete walker or a copy scan does damage. Pay the re-read.
+    match volume.listing_watch_coverage(path) {
+        WatchCoverage::EveryWriter => Some(entries),
+        WatchCoverage::ThisMachineOnly | WatchCoverage::None => None,
     }
 }

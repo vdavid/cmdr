@@ -28,6 +28,43 @@ pub enum DirectoryCreation {
     AlreadyExisted,
 }
 
+/// What a live watch on a listing actually observes.
+///
+/// A boolean can't answer this. "Is this listing watched?" has a third answer on
+/// an OS-mounted network share: yes, and the watch is blind to the writers that
+/// matter most. Naming that state is the point of this enum, so a caller has to
+/// decide which side of it belongs on rather than defaulting to the comfortable
+/// `true`.
+///
+/// The rule for a new backend: pick the variant that matches what your
+/// notification channel is wired to, not what you wish it covered. Under-claiming
+/// costs a re-read; over-claiming hands stale entries to a delete walker.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WatchCoverage {
+    /// No live watch for this listing. Nothing is keeping it fresh.
+    ///
+    /// Also the honest answer while a watch is being established: a listing that
+    /// exists but isn't wired up yet is not being kept fresh yet.
+    None,
+    /// A live watch that reports only what THIS machine wrote.
+    ///
+    /// An OS-mounted network share (SMB, NFS, AFP, WebDAV) watched by FSEvents:
+    /// it's a local-VFS notifier, not a share notifier, so a write by another
+    /// client on the share produces no event at all. Good enough to keep a pane
+    /// current with the user's own work, never good enough to skip a read before
+    /// a destructive operation. (Verified on macOS 26.5.2 against a live `smbfs`
+    /// mount, 2026-08-08: a write from another client produced no event in 30 s,
+    /// while a write through the mount delivered immediately. See
+    /// `docs/notes/silent-inertness-hunt-2026-08-08.md`.)
+    ThisMachineOnly,
+    /// A live watch that reports every change to the directory, whoever made it.
+    ///
+    /// A local disk under FSEvents, an SMB share under `CHANGE_NOTIFY`, an MTP
+    /// device forwarding its own object events. The only variant that lets a
+    /// caller substitute a cached listing for a real read.
+    EveryWriter,
+}
+
 /// Describes a change to a directory's contents on a specific volume.
 ///
 /// Used by `file_system::listing::caching::notify_directory_changed` to apply targeted cache updates

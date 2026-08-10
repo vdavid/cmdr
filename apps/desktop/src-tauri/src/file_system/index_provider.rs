@@ -15,6 +15,41 @@ use cmdr_index::host::volumes::{
     EnsureDirectSmbFut, MountFacts, ResolveMtpFut, ResolvedMtpObject, SmbUpgradeRefusal, VolumeProvider,
 };
 
+/// Whether `path` sits on a network filesystem (SMB, NFS, AFP, WebDAV, ...).
+///
+/// One `statfs`, so ❌ never call it in a loop over entries or on a hot read
+/// path: it can block for as long as the mount takes to answer. `mount_facts`
+/// below is the index's caller; `watcher::start_watching` is the other, deciding
+/// a watch's [`WatchCoverage`](cmdr_fs::volume::WatchCoverage) once at arm time
+/// rather than per query.
+///
+/// The kind → network mapping is per-platform, which is why this lives app-side
+/// rather than as a predicate `cmdr-fs` could offer.
+pub fn path_is_on_network_mount(path: &Path) -> bool {
+    is_network(&super::filesystem_kind::detect_filesystem_for_path(path))
+}
+
+/// The kind → network mapping, split out so one probe can answer both of
+/// [`mount_facts`](AppVolumeProvider::mount_facts)' questions.
+fn is_network(info: &cmdr_fs::filesystem_kind::FilesystemInfo) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        crate::volumes::is_network_fs_type(info.raw_type.as_deref())
+    }
+    #[cfg(target_os = "linux")]
+    {
+        info.raw_type
+            .as_deref()
+            .map(super::linux_mounts::is_network_fs_type)
+            .unwrap_or(false)
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    {
+        let _ = info;
+        false
+    }
+}
+
 /// Answers the index from the app's real volume registry and platform probes.
 pub struct AppVolumeProvider;
 
@@ -36,22 +71,11 @@ impl VolumeProvider for AppVolumeProvider {
     }
 
     fn mount_facts(&self, path: &Path) -> MountFacts {
-        // ONE `detect_filesystem_for_path` probe answers both questions. The
-        // kind → network mapping is per-platform, which is the reason this lives
-        // app-side rather than as a predicate the index could call itself.
+        // ONE `detect_filesystem_for_path` probe answers both questions: it can
+        // block on a wedged mount, so don't grow this into two.
         let info = super::filesystem_kind::detect_filesystem_for_path(path);
-        #[cfg(target_os = "macos")]
-        let is_network = crate::volumes::is_network_fs_type(info.raw_type.as_deref());
-        #[cfg(target_os = "linux")]
-        let is_network = info
-            .raw_type
-            .as_deref()
-            .map(super::linux_mounts::is_network_fs_type)
-            .unwrap_or(false);
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        let is_network = false;
         MountFacts {
-            is_network,
+            is_network: is_network(&info),
             inodes_trustworthy: info.kind.has_stable_inodes(),
         }
     }

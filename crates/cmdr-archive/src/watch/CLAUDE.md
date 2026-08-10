@@ -18,4 +18,4 @@ planning, reorganizing, or advising.
 - **Off the executor**: the debouncer callback runs on notify-rs's own thread (no Tokio runtime), so it spawns through
   `host.runtime()`, never `tokio::spawn` (which inherits an ambient runtime and would panic).
 - **Local only**: a REMOTE parent has no local path for `notify`, so `start_watch` returns `None` and
-  `listing_is_watched` stays `false` — freshness is "as of last read". See `DETAILS.md`.
+  `listing_watch_coverage` stays `None` — freshness is "as of last read". See `DETAILS.md`.

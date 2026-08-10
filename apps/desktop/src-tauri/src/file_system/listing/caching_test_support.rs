@@ -3,7 +3,7 @@
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 use std::time::Instant;
 
 use super::caching::{CachedListing, LISTING_CACHE, epoch_millis_now};
@@ -12,7 +12,7 @@ use super::operations::list_directory_end;
 use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::volume::{
     BatchScanResult, CopyScanResult, InMemoryVolume, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError,
-    VolumeReadStream,
+    VolumeReadStream, WatchCoverage,
 };
 use crate::ignore_poison::RwLockIgnorePoison;
 
@@ -183,32 +183,50 @@ pub(crate) fn unique_test_id(tag: &str) -> String {
     )
 }
 
-/// A `Volume` whose `listing_is_watched` answer a test pins, delegating every
+/// A `Volume` whose `listing_watch_coverage` answer a test pins, delegating every
 /// other method to an `InMemoryVolume`.
 ///
-/// The fresh-listing oracle only answers when the volume says a live watcher is
-/// keeping the view fresh, and `InMemoryVolume` says `false` (the trait's
-/// default). Pinning the flag is what lets a test drive both sides of that
-/// without an `AppHandle` or a real `WATCHER_MANAGER` entry.
-pub(crate) struct WatchedFlagVolume {
+/// The fresh-listing oracle only answers on `EveryWriter`, and `InMemoryVolume`
+/// reports `None` (the trait's default). Pinning the answer is what lets a test
+/// drive all three states without an `AppHandle` or a real `WATCHER_MANAGER`
+/// entry — including `ThisMachineOnly`, which has no other reachable fixture.
+pub(crate) struct WatchCoverageVolume {
     inner: InMemoryVolume,
-    watched: AtomicBool,
+    /// The pinned answer, as the `WatchCoverage` discriminant so the field stays
+    /// lock-free (`set_coverage` races with the oracle reading it).
+    coverage: AtomicU8,
 }
 
-impl WatchedFlagVolume {
-    pub(crate) fn new(name: &str, watched: bool) -> Self {
+impl WatchCoverageVolume {
+    pub(crate) fn new(name: &str, coverage: WatchCoverage) -> Self {
         Self {
             inner: InMemoryVolume::new(name),
-            watched: AtomicBool::new(watched),
+            coverage: AtomicU8::new(encode_coverage(coverage)),
         }
     }
 
-    pub(crate) fn set_watched(&self, v: bool) {
-        self.watched.store(v, Ordering::Relaxed);
+    pub(crate) fn set_coverage(&self, coverage: WatchCoverage) {
+        self.coverage.store(encode_coverage(coverage), Ordering::Relaxed);
     }
 }
 
-impl Volume for WatchedFlagVolume {
+fn encode_coverage(coverage: WatchCoverage) -> u8 {
+    match coverage {
+        WatchCoverage::None => 0,
+        WatchCoverage::ThisMachineOnly => 1,
+        WatchCoverage::EveryWriter => 2,
+    }
+}
+
+fn decode_coverage(raw: u8) -> WatchCoverage {
+    match raw {
+        1 => WatchCoverage::ThisMachineOnly,
+        2 => WatchCoverage::EveryWriter,
+        _ => WatchCoverage::None,
+    }
+}
+
+impl Volume for WatchCoverageVolume {
     fn name(&self) -> &str {
         self.inner.name()
     }
@@ -247,8 +265,8 @@ impl Volume for WatchedFlagVolume {
         self.inner.is_directory(path)
     }
 
-    fn listing_is_watched(&self, _path: &Path) -> bool {
-        self.watched.load(Ordering::Relaxed)
+    fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
+        decode_coverage(self.coverage.load(Ordering::Relaxed))
     }
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {

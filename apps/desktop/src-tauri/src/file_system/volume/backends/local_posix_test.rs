@@ -97,9 +97,9 @@ async fn test_get_metadata_nonexistent_returns_error() {
 }
 
 #[test]
-fn test_supports_watching_returns_true() {
+fn test_can_watch_listings_returns_true() {
     let volume = LocalPosixVolume::new("Test", "/tmp");
-    assert!(volume.supports_watching());
+    assert!(volume.can_watch_listings());
 }
 
 #[test]
@@ -664,10 +664,10 @@ async fn test_list_directory_includes_symlinks() {
     assert!(link_dir_entry.is_directory); // Points to directory
 }
 
-/// `listing_is_watched` flips with the watcher lifecycle: false before a listing
-/// opens, true after `start_watching` succeeds, false after `stop_watching`.
+/// `listing_watch_coverage` follows the watcher lifecycle: `None` before a listing
+/// opens, covered after `start_watching` succeeds, `None` again after `stop_watching`.
 #[test]
-fn test_listing_is_watched_flips_with_watcher_lifecycle() {
+fn test_listing_watch_coverage_flips_with_watcher_lifecycle() {
     use crate::file_system::listing::caching_test_support::TestListing;
     use crate::file_system::watcher::{start_watching, stop_watching};
 
@@ -675,26 +675,37 @@ fn test_listing_is_watched_flips_with_watcher_lifecycle() {
     let path = test_dir.path().to_path_buf();
     let volume = LocalPosixVolume::new("Test", &path);
 
-    // No listing yet, no watcher: false.
-    assert!(!volume.listing_is_watched(&path), "expected false before listing opens");
+    // No listing yet, no watcher: no coverage.
+    assert_eq!(
+        volume.listing_watch_coverage(&path),
+        WatchCoverage::None,
+        "expected no coverage before listing opens"
+    );
 
     // Seed a listing in the cache (the watcher reads its path via LISTING_CACHE).
     let listing = TestListing::new().path(&path).insert("listing-is-watched");
 
-    // Listing exists but no watcher: still false (the race-window contract).
-    assert!(
-        !volume.listing_is_watched(&path),
-        "expected false during the listing->watcher gap"
+    // Listing exists but no watcher: still `None` (the race-window contract).
+    assert_eq!(
+        volume.listing_watch_coverage(&path),
+        WatchCoverage::None,
+        "expected no coverage during the listing->watcher gap"
     );
 
-    // Start the watcher: now true.
+    // Start the watcher: now covered. A temp dir is local disk, so every writer
+    // reaches FSEvents (a network mount would report `ThisMachineOnly` here).
     start_watching(listing.id(), &path).expect("start_watching should succeed on a real temp dir");
-    assert!(
-        volume.listing_is_watched(&path),
-        "expected true once watcher is attached"
+    assert_eq!(
+        volume.listing_watch_coverage(&path),
+        WatchCoverage::EveryWriter,
+        "expected full coverage once the watcher is attached"
     );
 
-    // Stop the watcher: back to false.
+    // Stop the watcher: back to `None`.
     stop_watching(listing.id());
-    assert!(!volume.listing_is_watched(&path), "expected false after watcher stops");
+    assert_eq!(
+        volume.listing_watch_coverage(&path),
+        WatchCoverage::None,
+        "expected no coverage after the watcher stops"
+    );
 }

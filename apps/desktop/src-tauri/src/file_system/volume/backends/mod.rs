@@ -36,7 +36,7 @@ pub use smb::SmbVolume;
 // having to spell `crate::file_system::volume::...` everywhere.
 pub(crate) use super::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SourceItemInfo,
-    SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
 
 #[cfg(test)]

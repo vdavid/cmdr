@@ -114,7 +114,7 @@ handle threaded through its callers needs none of it.
   `brief_columns::compute_brief_column_text_widths` to size each Brief column to its widest filename (plus a per-row
   trailing suffix that reserves room for the Finder tag-dot cluster).
 - **Sequence counter on `CachedListing`, not `WatchedDirectory`**: SMB and MTP volumes don't use FSEvents
-  (`supports_watching() == false`), so they have no `WatchedDirectory`. With the sequence on the watcher,
+  (`can_watch_listings() == false`), so they have no `WatchedDirectory`. With the sequence on the watcher,
   `increment_sequence` returned `None` and `directory-diff` events never fired for those volumes. The `AtomicU64` on
   `CachedListing` works for all volume types; the FSEvents path uses the same counter.
 - **`ListingEventSink` trait decouples streaming from Tauri** (same pattern as `OperationEventSink`):
@@ -140,8 +140,8 @@ Used by the watcher's incremental path and synthetic mkdir to patch listings wit
   same directory).
 - `find_listings_for_path_on_volume(volume_id, path)`: same, also filtered by volume ID. Prevents false matches when two
   volumes serve overlapping paths.
-- `try_get_watched_listing(volume_id, path)`: the fresh-listing oracle for write-op pre-flight scans. Returns
-  `Some(entries)` when a cached listing exists for `(volume_id, path)` and `listing_is_watched(path) == true`
+- `try_get_authoritative_listing(volume_id, path)`: the fresh-listing oracle for write-op pre-flight scans. Returns
+  `Some(entries)` when a cached listing exists for `(volume_id, path)` and `listing_watch_coverage(path) == WatchCoverage::EveryWriter`
   (delegated to the backend via the `Volume` trait), else `None`. When multiple listings exist for the same pair (two
   panes), picks the most-recently-updated one deterministically: highest `sequence` (an `AtomicU64`), ties broken by
   latest `created_at`. Entries are cloned out under the cache `RwLock`, then the lock is released before the volume call

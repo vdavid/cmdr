@@ -28,7 +28,7 @@ use super::scan_preview::run_oracle_aware_batch_scan;
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{
-    BatchScanResult, CopyScanResult, InMemoryVolume, ListingProgress, Volume, VolumeError,
+    BatchScanResult, CopyScanResult, InMemoryVolume, ListingProgress, Volume, VolumeError, WatchCoverage,
 };
 
 /// Stub Volume that emits a non-zero `ListingProgress` from its
@@ -87,10 +87,10 @@ impl Volume for ProgressEmittingVolume {
         self.inner.is_directory(path)
     }
 
-    fn listing_is_watched(&self, _path: &Path) -> bool {
+    fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
         // Force the cold-cache path in `run_oracle_aware_batch_scan` so it
         // delegates to `scan_for_copy_batch_with_progress`.
-        false
+        WatchCoverage::None
     }
 
     fn scan_for_copy<'a>(

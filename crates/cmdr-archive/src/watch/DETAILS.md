@@ -59,29 +59,30 @@ when the archive LRU evicts the volume (`unregister` drops the registry's `Arc`)
 and the `Debouncer`'s own `Drop` stops the OS watch. A held `Arc` (an in-flight read) keeps the watch alive until the
 last reference drops — harmless (a re-resolve after eviction starts a fresh watch; two briefly overlap, both fire
 idempotent refreshes). `active_watch_count` (incremented on start, decremented in the handle's `Drop`) lets
-`lru_eviction_releases_the_archive_and_its_watch` prove eviction leaks no watcher. `listing_is_watched` is `true` only
-while the handle is present, so a listing never claims freshness the backend can't back; if the watch fails to establish
-(`notify` refuses the path — e.g. a non-local parent), it stays `false`.
+`lru_eviction_releases_the_archive_and_its_watch` prove eviction leaks no watcher. `listing_watch_coverage` reports
+coverage only while the handle is present, so a listing never claims freshness the backend can't back; if the watch
+fails to establish (`notify` refuses the path — e.g. a non-local parent), it stays `false`.
 
 ## Decision: remote archives have NO live watch — freshness is "as of last read"
 
 The content watch is a LOCAL `notify` watch on the backing `.zip`'s parent directory. A REMOTE parent (direct SMB / MTP)
 has no local path for `notify` to watch, so `start_watch` returns `None` and a remote `ArchiveVolume`'s
-`listing_is_watched` is permanently `false`. Two consequences, both correct-by-construction rather than a gap to close:
+`listing_watch_coverage` is permanently `None`. Two consequences, both correct-by-construction rather than a gap to
+close:
 
-- **The write-op fresh-listing oracle never serves a remote archive listing from cache.** `listing_is_watched == false`
-  means every pre-flight scan of a remote archive re-reads it honestly (and `try_get_watched_listing` also guards a
-  remote archive-inner path explicitly — see `apps/desktop/src-tauri/src/file_system/volume/CLAUDE.md` on
-  `VolumeManager::resolve`). So a copy/delete inside a remote archive always sizes against a fresh parse, never a stale
-  cache.
+- **The write-op fresh-listing oracle never serves a remote archive listing from cache.**
+  `listing_watch_coverage == None` means every pre-flight scan of a remote archive re-reads it honestly (and
+  `try_get_authoritative_listing` also guards a remote archive-inner path explicitly — see
+  `apps/desktop/src-tauri/src/file_system/volume/CLAUDE.md` on `VolumeManager::resolve`). So a copy/delete inside a
+  remote archive always sizes against a fresh parse, never a stale cache.
 - **Push-refresh for an EXTERNAL edit of a remote `.zip`: SMB yes, MTP no.** SMB: the recursive share watcher
   (`smb_watcher.rs`) already receives a `CHANGE_NOTIFY` for any changed `.zip` on the share, so its Modified/Renamed
   handlers ALSO call `caching::refresh_archive_listings` for a supported-archive path, pushing an out-of-band edit to
-  any open inner listing. That refresh is a SEPARATE, visible-listing-only consumer from this `listing_is_watched`
+  any open inner listing. That refresh is a SEPARATE, visible-listing-only consumer from this `listing_watch_coverage`
   oracle: the flag stays `false` for a remote parent regardless (the SMB watcher is lossy under load, so the write-op
   oracle must keep re-reading pre-flight scans honestly — see
   `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "SMB archive push-refresh" for the mechanism and
-  `src/volume_test.rs`'s `remote_backed_archive_never_reports_listing_is_watched` pinning it). MTP: nothing forwards an
+  `src/volume_test.rs`'s `remote_backed_archive_never_reports_watch_coverage` pinning it). MTP: nothing forwards an
   out-of-band change to an open inner listing (MTP's `ObjectInfoChanged` is absent on many devices and hooking it isn't
   a clean few-liner), so an MTP-backed archive pane shows the zip as of its last read until the user re-navigates or
   refreshes (F5). For both, the app's OWN edit refreshes the pane through the normal listing-cache path (the edit's

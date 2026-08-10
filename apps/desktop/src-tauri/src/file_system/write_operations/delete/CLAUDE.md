@@ -12,7 +12,7 @@ copy + move. Frontend counterpart:
 
 - **`walker.rs`**: local delete (`delete_files_with_progress_inner`) and volume delete
   (`delete_volume_files_with_progress_inner`), both taking `&dyn OperationEventSink`; `delete_files_start` routes by
-  `volume_id`. The volume walker (`scan_volume_recursive`) consults `try_get_watched_listing` before every
+  `volume_id`. The volume walker (`scan_volume_recursive`) consults `try_get_authoritative_listing` before every
   `list_directory`, so a subtree open in another pane is cache-fed. DETAILS § "Volume-delete internals".
 - **`trash.rs`**: `move_to_trash_sync()` (macOS ObjC `trashItemAtURL`; Linux `trash` crate; reused by
   `commands/rename.rs`) and `trash_files_with_progress()` (batch trash with per-item progress, cancellation, partial

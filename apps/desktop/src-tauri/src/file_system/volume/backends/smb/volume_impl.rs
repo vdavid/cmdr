@@ -10,7 +10,7 @@ use super::state::ConnectionState;
 use super::streams::InlineReadStream;
 use super::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SmbVolume,
-    SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, foreground_yield,
+    SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage, foreground_yield,
 };
 use crate::file_system::listing::FileEntry;
 use log::{debug, trace, warn};
@@ -264,15 +264,20 @@ impl Volume for SmbVolume {
         })
     }
 
-    fn supports_watching(&self) -> bool {
-        // False because nothing here watches yet, NOT because the OS mount covers
-        // it. FSEvents on an `smbfs` mount is a local-VFS notifier: it reports only
-        // what this machine wrote through the mount, and delivers nothing for a
-        // change another client makes to the share (verified on macOS 26.5.2,
-        // `notify` 8.2.0, one watcher and both write paths against a live share,
-        // 2026-08-08; see `docs/notes/silent-inertness-hunt-2026-08-08.md`).
-        // Remote changes are exactly what a share watcher is for, so smb2-native
-        // watching remains genuinely missing, not merely unoptimized.
+    fn can_watch_listings(&self) -> bool {
+        // A `notify` watch is the wrong instrument for this volume, not a missing
+        // optimization. Watching happens over smb2 instead: `smb_watcher` long-polls
+        // CHANGE_NOTIFY on the share root, which is what `listing_watch_coverage`
+        // reports on.
+        //
+        // ❌ Don't "fix" this by pointing `notify` at the OS mount path. FSEvents on
+        // an `smbfs` mount is a local-VFS notifier: it reports only what this machine
+        // wrote through the mount, and delivers nothing for a change another client
+        // makes to the share (verified on macOS 26.5.2, `notify` 8.2.0, one watcher
+        // and both write paths against a live share, 2026-08-08; see
+        // `docs/notes/silent-inertness-hunt-2026-08-08.md`). Remote changes are
+        // exactly what a share watcher is for, so that swap would trade a real
+        // channel for a blind one.
         false
     }
 
@@ -311,20 +316,26 @@ impl Volume for SmbVolume {
         Box::pin(async move { foreground_yield::wait_until_foreground_idle(&self.volume_id).await })
     }
 
-    fn listing_is_watched(&self, _path: &Path) -> bool {
+    fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
         // SMB watching is volume-level: the smb_watcher monitors the whole share
-        // via CHANGE_NOTIFY. So once the watcher is alive and the session is
-        // Direct, every cached listing on this volume is oracle-eligible.
+        // via CHANGE_NOTIFY, which the SERVER raises, so it reports every client's
+        // writes and not only ours. That's what earns `EveryWriter` here while the
+        // same share seen through an OS mount only earns `ThisMachineOnly`.
+        //
         // `watcher_cancel` is a std `Mutex` (not async): use `try_lock` and treat
-        // contention as "not watched" to keep the oracle out of the lock-wait path.
+        // contention as "no coverage" to keep the oracle out of the lock-wait path.
         // The oracle will simply fall through to a real read; that's the safe
         // direction. Don't hold the lock across awaits (we never `.await` here
         // anyway: this is a sync method).
         let has_watcher = match self.watcher_cancel.try_lock() {
             Ok(guard) => guard.is_some(),
-            Err(_) => return false,
+            Err(_) => return WatchCoverage::None,
         };
-        has_watcher && self.connection_state() == ConnectionState::Direct
+        if has_watcher && self.connection_state() == ConnectionState::Direct {
+            WatchCoverage::EveryWriter
+        } else {
+            WatchCoverage::None
+        }
     }
 
     fn notify_mutation<'a>(

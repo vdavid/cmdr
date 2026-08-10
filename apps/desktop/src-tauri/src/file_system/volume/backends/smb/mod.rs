@@ -18,10 +18,10 @@
 
 use super::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SourceItemInfo,
-    SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
 use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::try_get_watched_listing;
+use crate::file_system::listing::caching::try_get_authoritative_listing;
 use log::{debug, info, trace, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};

@@ -5,10 +5,10 @@
 
 use super::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
-    VolumeError, VolumeReadStream,
+    VolumeError, VolumeReadStream, WatchCoverage,
 };
 use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::try_get_watched_listing;
+use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::mtp::connection::{MtpConnectionError, MtpDeleteScope, MtpReadSession, connection_manager};
 use log::debug;
 use std::future::Future;
@@ -322,14 +322,14 @@ impl Volume for MtpVolume {
         Box::pin(async move { self.get_metadata(path).await.map(|e| e.is_directory) })
     }
 
-    fn supports_watching(&self) -> bool {
+    fn can_watch_listings(&self) -> bool {
         // Return false because MTP has its OWN file watching mechanism that is
         // independent of the listing pipeline. The MtpConnectionManager starts an
         // event loop when a device connects (see start_event_loop) that polls for
         // USB interrupt endpoint events (ObjectAdded/ObjectRemoved/ObjectInfoChanged).
         // These events emit `mtp-directory-changed` directly to the frontend.
         //
-        // The `supports_watching()` check in operations.rs is used to decide whether
+        // The `can_watch_listings()` check in operations.rs is used to decide whether
         // to start the local notify-based file watcher, which only works for POSIX
         // paths. MTP paths like "/DCIM/Camera" don't exist on the local filesystem,
         // so we must return false to prevent the notify watcher from failing.
@@ -340,14 +340,23 @@ impl Volume for MtpVolume {
         false
     }
 
-    fn listing_is_watched(&self, _path: &Path) -> bool {
+    fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
         // MTP "watching" is volume-level, not path-level. The MTP event loop is
         // per-device and would report any changes the device emits to any path.
         // So as long as the device is connected, treat every cached listing on
-        // this volume as oracle-eligible. Caveat: many MTP devices (cameras
-        // especially) never emit per-object events, so `true` means only "the
-        // device is reachable and would forward changes if it sent any".
-        connection_manager().is_connected(&self.device_id)
+        // this volume as oracle-eligible.
+        //
+        // `EveryWriter` is right in the sense the variant means: the device is
+        // the only writer, and every event it emits reaches us. The residual
+        // risk is a device that emits nothing (many cameras don't), which is a
+        // silent source, not a source we're deaf to. `ThisMachineOnly` would be
+        // the wrong shape for that: it names a channel that misses OTHER
+        // writers, and MTP has none.
+        if connection_manager().is_connected(&self.device_id) {
+            WatchCoverage::EveryWriter
+        } else {
+            WatchCoverage::None
+        }
     }
 
     fn notify_mutation<'a>(
@@ -643,7 +652,7 @@ impl Volume for MtpVolume {
     ///    path is the load-bearing optimization: selecting 135 photos in `/DCIM/Camera` should
     ///    produce ONE `list_directory` call, not 135 `get_metadata` calls each of which lists the
     ///    parent).
-    /// 2. For each unique parent, ask `try_get_watched_listing(volume_id, parent)` first. On hit,
+    /// 2. For each unique parent, ask `try_get_authoritative_listing(volume_id, parent)` first. On hit,
     ///    every child entry's size + `is_directory` comes from the cached `FileEntry`, no MTP I/O.
     ///    On miss, fall through to the existing single `list_directory(parent)` per group.
     ///
@@ -730,7 +739,7 @@ impl Volume for MtpVolume {
                 // freshness contract for MTP is volume-level: when this
                 // returns `Some`, the device is connected and would forward
                 // any change events it sends.
-                let cached = try_get_watched_listing(&self.volume_id, &group.original_parent);
+                let cached = try_get_authoritative_listing(&self.volume_id, &group.original_parent);
 
                 // List the parent directory once on cold cache (goes through
                 // the listing cache). The MTP listing is what dominates

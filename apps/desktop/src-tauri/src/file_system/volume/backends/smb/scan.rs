@@ -6,7 +6,7 @@
 use super::mapping::map_smb_error;
 use super::{BatchScanResult, CopyScanResult, ScanConflict, SmbVolume, SourceItemInfo, VolumeError};
 use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::try_get_watched_listing;
+use crate::file_system::listing::caching::try_get_authoritative_listing;
 use log::{debug, warn};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -129,7 +129,7 @@ impl SmbVolume {
             }
 
             // Oracle short-circuit: group inputs by parent and ask
-            // `try_get_watched_listing` for each unique parent. Any path whose
+            // `try_get_authoritative_listing` for each unique parent. Any path whose
             // parent is watcher-backed gets its size + is_directory from the
             // cached `FileEntry` (no SMB stat). Remaining paths fall through
             // to the pipelined-stat flow below. Decision is per-parent: one
@@ -150,7 +150,7 @@ impl SmbVolume {
                     let original_parent = path.parent().unwrap_or(Path::new("")).to_path_buf();
                     let entries = parent_cache
                         .entry(original_parent.clone())
-                        .or_insert_with(|| try_get_watched_listing(&self.volume_id, &original_parent));
+                        .or_insert_with(|| try_get_authoritative_listing(&self.volume_id, &original_parent));
 
                     let Some(cached_entries) = entries.as_ref() else {
                         leftover_indices.push(idx);

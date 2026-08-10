@@ -35,20 +35,20 @@ pub trait ListingHost: Send + Sync {
     /// for the watcher event would show a stale directory after a copy.
     fn directory_changed(&self, volume_id: &str, parent_path: &Path, change: DirectoryChange);
 
-    /// The entries of `path`, but ONLY if a pane is showing it and a live
-    /// watcher is keeping that view fresh.
+    /// The entries of `path`, but ONLY if a pane is showing it and a live watch
+    /// is reporting every writer's changes to that view.
     ///
     /// This is an oracle for bulk work: a pre-flight scan that's about to
     /// enumerate a directory the user already has open can take the answer from
     /// here instead of paying a network round trip. `None` means "ask the
     /// protocol", never "the directory is empty".
     ///
-    /// "Fresh" here is the same guarantee a `list_directory` call gives: the
-    /// state as of the most recent observation, not as of this instant. A
-    /// backend whose watcher can silently miss changes must report
-    /// `Volume::listing_is_watched() == false` so the oracle is never consulted
-    /// for it in the first place.
-    fn watched_listing(&self, volume_id: &str, path: &Path) -> Option<Vec<FileEntry>>;
+    /// The guarantee is the same one a `list_directory` call gives: the state as
+    /// of the most recent observation, not as of this instant. A backend whose
+    /// watch can silently miss changes says so by reporting anything other than
+    /// [`WatchCoverage::EveryWriter`](crate::volume::WatchCoverage::EveryWriter)
+    /// from `Volume::listing_watch_coverage`, and the oracle then declines for it.
+    fn authoritative_listing(&self, volume_id: &str, path: &Path) -> Option<Vec<FileEntry>>;
 
     /// The archive file at `archive_path` on `volume_id` changed, so re-read
     /// every open pane at or INSIDE it.
@@ -81,7 +81,7 @@ pub(super) struct NoListings;
 impl ListingHost for NoListings {
     fn directory_changed(&self, _volume_id: &str, _parent_path: &Path, _change: DirectoryChange) {}
 
-    fn watched_listing(&self, _volume_id: &str, _path: &Path) -> Option<Vec<FileEntry>> {
+    fn authoritative_listing(&self, _volume_id: &str, _path: &Path) -> Option<Vec<FileEntry>> {
         None
     }
 
@@ -118,7 +118,7 @@ mod recording {
     pub struct RecordingListings {
         changes: Mutex<Vec<(String, PathBuf, DirectoryChange)>>,
         watched: Mutex<Vec<(String, PathBuf, Vec<FileEntry>)>>,
-        watched_lookups: AtomicUsize,
+        authoritative_lookups: AtomicUsize,
         archive_refreshes: Mutex<Vec<(String, PathBuf)>>,
     }
 
@@ -129,9 +129,14 @@ mod recording {
         }
 
         /// Makes `entries` the answer for one
-        /// [`watched_listing`](super::ListingHost::watched_listing) lookup, as if
+        /// [`authoritative_listing`](super::ListingHost::authoritative_listing) lookup, as if
         /// a pane were showing that directory with a live watcher on it.
-        pub fn with_watched_listing(self, volume_id: &str, path: impl Into<PathBuf>, entries: Vec<FileEntry>) -> Self {
+        pub fn with_authoritative_listing(
+            self,
+            volume_id: &str,
+            path: impl Into<PathBuf>,
+            entries: Vec<FileEntry>,
+        ) -> Self {
             self.watched
                 .lock_ignore_poison()
                 .push((volume_id.to_string(), path.into(), entries));
@@ -150,8 +155,8 @@ mod recording {
         }
 
         /// How many times the fresh-listing oracle was consulted.
-        pub fn watched_lookup_count(&self) -> usize {
-            self.watched_lookups.load(Ordering::Relaxed)
+        pub fn authoritative_lookup_count(&self) -> usize {
+            self.authoritative_lookups.load(Ordering::Relaxed)
         }
 
         /// Every `(volume_id, archive_path)` an archive refresh was asked for.
@@ -167,8 +172,8 @@ mod recording {
                 .push((volume_id.to_string(), parent_path.to_path_buf(), change));
         }
 
-        fn watched_listing(&self, volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
-            self.watched_lookups.fetch_add(1, Ordering::Relaxed);
+        fn authoritative_listing(&self, volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
+            self.authoritative_lookups.fetch_add(1, Ordering::Relaxed);
             self.watched
                 .lock_ignore_poison()
                 .iter()

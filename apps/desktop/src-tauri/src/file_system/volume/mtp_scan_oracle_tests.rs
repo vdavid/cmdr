@@ -23,7 +23,7 @@ use std::sync::Arc;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_system::volume::{MtpVolume, Volume};
+use crate::file_system::volume::{MtpVolume, Volume, WatchCoverage};
 use crate::mtp::connection::{MtpDisconnectReason, connection_manager};
 use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
@@ -106,7 +106,7 @@ async fn connect_virtual_device() -> (String, Arc<MtpVolume>, String, VirtualDev
 async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
     let (device_id, vol, vid, _guard) = connect_virtual_device().await;
     // Register the volume so the oracle's `VolumeManager::get(vid)` finds it
-    // and the `listing_is_watched` gate returns true (device connected).
+    // and the `listing_watch_coverage` gate reports coverage (device connected).
     get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
 
     // Pre-populate `LISTING_CACHE` for the parent with sizes that don't match
@@ -121,10 +121,11 @@ async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
     let _listing = insert_listing("mtp-oracle-hit", &vid, "/DCIM", cached);
 
     // Sanity-check the oracle gate. Without this, an unrelated regression in
-    // `listing_is_watched` would make the test claim the wrong cause.
-    assert!(
-        vol.listing_is_watched(Path::new("/DCIM")),
-        "virtual device must report connected (listing watched)"
+    // `listing_watch_coverage` would make the test claim the wrong cause.
+    assert_eq!(
+        vol.listing_watch_coverage(Path::new("/DCIM")),
+        WatchCoverage::EveryWriter,
+        "virtual device must report connected (listing covered)"
     );
 
     let paths = vec![

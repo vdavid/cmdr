@@ -148,7 +148,7 @@ indicator.
 **SMB shipped 2026-07-09; MTP stays manual by contract.** SMB reuses the existing recursive CHANGE_NOTIFY watcher (push,
 not poll): `smb_watcher.rs`'s Modified/Renamed handlers now call `caching::refresh_archive_listings` for a
 supported-archive path, so an out-of-band edit of a remote `.zip` refreshes any open inner listing.
-`ArchiveVolume::listing_is_watched` stays `false` for a remote parent (the push-refresh is a separate,
+`ArchiveVolume::listing_watch_coverage` stays `None` for a remote parent (the push-refresh is a separate,
 visible-listing-only consumer from the write-op oracle). Canonical mechanism: `backends/DETAILS.md` § "SMB archive
 push-refresh"; the remote-freshness decision and guardrail test: `archive/watch/DETAILS.md`. MTP kept manual refresh
 (F5): its `ObjectInfoChanged` is absent on many devices and hooking the event-loop's targeted refresh isn't a clean
@@ -166,25 +166,25 @@ fires. It's a no-op when no inner listing is open (it scans `LISTING_CACHE` for 
 near-zero: the watcher already runs, and the re-parse only happens when the `.zip` actually changes AND an inner listing
 is open.
 
-- **Keep `ArchiveVolume::listing_is_watched` FALSE for a remote parent regardless.** The SMB watcher is documented
-  lossy-under-load (`backends/CLAUDE.md`, `volume/CLAUDE.md`), so the write-op fresh-listing oracle must still re-read
-  pre-flight scans honestly. The push-refresh above is a VISIBLE-listing UX nicety; it's a SEPARATE consumer from the
-  data-safety oracle — don't conflate them by flipping `listing_is_watched` to true.
+- **Keep `ArchiveVolume::listing_watch_coverage` at `None` for a remote parent regardless.** The SMB watcher is
+  documented lossy-under-load (`backends/CLAUDE.md`, `volume/CLAUDE.md`), so the write-op fresh-listing oracle must
+  still re-read pre-flight scans honestly. The push-refresh above is a VISIBLE-listing UX nicety; it's a SEPARATE
+  consumer from the data-safety oracle — don't conflate them by flipping `listing_watch_coverage` to `EveryWriter`.
 
 **MTP — manual refresh (F5).** No poll, no watch. Rationale: `MtpVolume::get_metadata` lists the ENTIRE parent directory
 (MTP has no single-file stat — `backends/CLAUDE.md`), so a visible-pane metadata poll is expensive per tick; the MTP
-event loop's `ObjectInfoChanged` is absent on many devices (cameras especially — `mtp.rs` `listing_is_watched` note), so
-it's not a dependable transport; MTP zip editing is itself a stretch (item 9 / M6); and an out-of-band rewrite of a
-`.zip` on a connected device while it's being browsed is rare. The `(path, size, mtime)` index-cache key already forces
-a re-parse on the next navigation/refresh, so a stale render never outlives an F5. If the MTP event loop DOES already
-emit an `mtp-directory-changed` for the `.zip`'s object on a given device, hooking the same `refresh_archive_listings`
-opportunistically is a cheap bonus — but don't build a poll and don't promise freshness (`listing_is_watched` stays as
-is).
+event loop's `ObjectInfoChanged` is absent on many devices (cameras especially — `mtp.rs` `listing_watch_coverage`
+note), so it's not a dependable transport; MTP zip editing is itself a stretch (item 9 / M6); and an out-of-band rewrite
+of a `.zip` on a connected device while it's being browsed is rare. The `(path, size, mtime)` index-cache key already
+forces a re-parse on the next navigation/refresh, so a stale render never outlives an F5. If the MTP event loop DOES
+already emit an `mtp-directory-changed` for the `.zip`'s object on a given device, hooking the same
+`refresh_archive_listings` opportunistically is a cheap bonus — but don't build a poll and don't promise freshness
+(`listing_watch_coverage` stays as is).
 
 Rejected alternatives: polling `get_metadata` on a visible-pane cadence for SMB (strictly worse than the CHANGE_NOTIFY
 we already receive — adds latency and periodic round-trips for a push signal that already exists); polling for MTP (a
-full parent-dir listing per tick for a rare event); flipping SMB archives to `listing_is_watched = true` (would let the
-write-op oracle trust a lossy watcher's cache for pre-flight sizing — a data-safety regression).
+full parent-dir listing per tick for a rare event); flipping SMB archives to `listing_watch_coverage = EveryWriter`
+(would let the write-op oracle trust a lossy watcher's cache for pre-flight sizing — a data-safety regression).
 
 Rough effort: SMB small (a few lines in `smb_watcher.rs` plus the reused `refresh_archive_listings` call); MTP zero
 (document the manual-refresh contract; the cache key already guarantees correctness on the next read).

@@ -25,7 +25,7 @@ use cmdr_fs::volume::host::listings::{ListingHost, RecordingListings};
 
 use crate::test_fixtures::{FixtureFile, build_zip, stored};
 use crate::{ArchiveFormat, ArchiveVolume, active_watch_count};
-use cmdr_fs::volume::{InMemoryVolume, Volume};
+use cmdr_fs::volume::{InMemoryVolume, Volume, WatchCoverage};
 
 /// The parent drive id the listing cache keys archive listings on. The refresh
 /// must carry this, never the archive's own registry id.
@@ -116,15 +116,17 @@ impl WatchedArchive {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_rewrite_asks_the_host_to_refresh_the_archive_listings() {
     let fixture = WatchedArchive::new(&[stored("a.txt", b"a".to_vec())]);
-    assert!(
-        !fixture.volume.listing_is_watched(&fixture.zip_path),
+    assert_eq!(
+        fixture.volume.listing_watch_coverage(&fixture.zip_path),
+        WatchCoverage::None,
         "a volume with no watch must not claim its listings are watched"
     );
 
     fixture.volume.start_content_watch(PARENT_DRIVE);
-    assert!(
-        fixture.volume.listing_is_watched(&fixture.zip_path),
-        "an archive with an established watch must report listing_is_watched"
+    assert_eq!(
+        fixture.volume.listing_watch_coverage(&fixture.zip_path),
+        WatchCoverage::EveryWriter,
+        "an archive with an established watch must report coverage"
     );
     // `active_watch_count` is process-wide, so a sibling test's watch can be live
     // at the same time under a threaded runner: assert presence, not an exact
@@ -175,8 +177,9 @@ async fn a_remote_parent_establishes_no_watch() {
 
     volume.start_content_watch(PARENT_DRIVE);
 
-    assert!(
-        !volume.listing_is_watched(&path),
+    assert_eq!(
+        volume.listing_watch_coverage(&path),
+        WatchCoverage::None,
         "a watch that couldn't establish must never claim freshness"
     );
     assert!(listings.archive_refreshes().is_empty(), "no watch, no refresh");

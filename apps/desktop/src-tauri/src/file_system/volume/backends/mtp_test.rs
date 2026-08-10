@@ -72,13 +72,13 @@ fn test_to_mtp_path_mtp_url_with_path() {
 }
 
 #[test]
-fn test_supports_watching_returns_false() {
-    // MTP volumes return false for supports_watching because they have their
+fn test_can_watch_listings_returns_false() {
+    // MTP volumes return false for can_watch_listings because they have their
     // own event loop (in MtpConnectionManager) that handles file watching
-    // independently. The supports_watching check in operations.rs is only
+    // independently. The can_watch_listings check in operations.rs is only
     // for the local notify-based watcher, which doesn't work for MTP paths.
     let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
-    assert!(!vol.supports_watching());
+    assert!(!vol.can_watch_listings());
 }
 
 #[test]
@@ -193,18 +193,18 @@ async fn volume_read_stream_to_chunk_stream_surfaces_cancellation() {
 }
 
 #[test]
-fn test_listing_is_watched_false_when_device_not_connected() {
+fn test_listing_watch_coverage_is_none_when_device_not_connected() {
     // Without `virtual-mtp`, we can still assert the negative case: a freshly
-    // created `MtpVolume` whose device_id was never connected returns false.
+    // created `MtpVolume` whose device_id was never connected reports no coverage.
     let vol = MtpVolume::new("mtp-never-connected-9999", 65537, "Test");
-    assert!(!vol.listing_is_watched(Path::new("/DCIM")));
+    assert_eq!(vol.listing_watch_coverage(Path::new("/DCIM")), WatchCoverage::None);
 }
 
-/// Connects to a virtual MTP device, asserts the oracle gate flips true, then
-/// disconnects and asserts it flips false. Requires the `virtual-mtp` feature.
+/// Connects to a virtual MTP device, asserts the oracle gate reports coverage,
+/// then disconnects and asserts it drops. Requires the `virtual-mtp` feature.
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn test_listing_is_watched_flips_with_connection() {
+async fn test_listing_watch_coverage_flips_with_connection() {
     use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
     // Register a virtual device backed by a tmp dir.
@@ -217,11 +217,15 @@ async fn test_listing_is_watched_flips_with_connection() {
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
 
-    // Before connect: false.
+    // Before connect: no coverage.
     let vol = MtpVolume::new(&device_id, 65537, "Test");
-    assert!(!vol.listing_is_watched(Path::new("/")), "expected false before connect");
+    assert_eq!(
+        vol.listing_watch_coverage(Path::new("/")),
+        WatchCoverage::None,
+        "expected no coverage before connect"
+    );
 
-    // Connect, then assert true.
+    // Connect, then assert coverage.
     let info = connection_manager()
         .connect(&device_id, None)
         .await
@@ -230,16 +234,21 @@ async fn test_listing_is_watched_flips_with_connection() {
     // which storage; the gate is volume-level).
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
     let vol = MtpVolume::new(&device_id, storage_id, "Test");
-    assert!(vol.listing_is_watched(Path::new("/")), "expected true once connected");
+    assert_eq!(
+        vol.listing_watch_coverage(Path::new("/")),
+        WatchCoverage::EveryWriter,
+        "expected coverage once connected"
+    );
 
-    // Disconnect, then assert false again.
+    // Disconnect, then assert it drops again.
     connection_manager()
         .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
-    assert!(
-        !vol.listing_is_watched(Path::new("/")),
-        "expected false after disconnect"
+    assert_eq!(
+        vol.listing_watch_coverage(Path::new("/")),
+        WatchCoverage::None,
+        "expected no coverage after disconnect"
     );
 }
 
