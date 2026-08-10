@@ -52,9 +52,9 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
   - **`edit.paste` into a text input**: ❌ keep the `readClipboardText` IPC (`navigator.clipboard.readText()` surfaces a
     WebKit "Paste" confirmation). The capability guard exempts it.
   - **`view.showHidden` is local-first**: ❌ don't route it through Rust; the extra hop flaked the E2E.
-- **Right-click is Cmdr's except in text fields.** The CAPTURE-phase document `contextmenu` listener keys on an
-  editable TARGET (not `activeElement`; the field may be unfocused): stop propagation there for WebKit's editing menu,
-  else `preventDefault()` so rows/tabs keep their own. DETAILS § Right-click ownership.
+- **Right-click is Cmdr's except in text fields.** The CAPTURE-phase document `contextmenu` listener keys on an editable
+  TARGET (not `activeElement`; the field may be unfocused): stop propagation there for WebKit's editing menu, else
+  `preventDefault()` so rows/tabs keep their own. DETAILS § Right-click ownership.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
