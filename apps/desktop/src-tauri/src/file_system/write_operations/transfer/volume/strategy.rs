@@ -504,10 +504,17 @@ async fn stream_pipe_file(
         // stream's `total_size()` — the same number the destination gets, so the
         // exemption is asked about exactly the write that will be performed.
         // Nothing is staged yet, so a failure here has nothing to clean up.
+        //
+        // Raced against TIER 2 for the same reason the write below is: on the
+        // SERIAL path nothing above this await can end it, and a device round trip
+        // that hangs before the first byte is half of the wedge shape. Nothing is
+        // staged yet, so the abort just returns.
         set_task_phase(TaskPhase::OpeningSource);
-        let stream = source_volume
-            .open_read_stream_with_hint(source_path, source_size_hint)
-            .await?;
+        let stream = tokio::select! {
+            biased;
+            () = state.backend_abort.cancelled() => return Err(hard_abort_error(source_path)),
+            opened = source_volume.open_read_stream_with_hint(source_path, source_size_hint) => opened?,
+        };
         let size = stream.total_size();
         let resolved_staging = resolve_staging(staging, dest_volume, size).await;
         let staged = StagedWrite::begin(state, dest_path, resolved_staging);
@@ -549,19 +556,53 @@ async fn stream_pipe_file(
         } else {
             arm_current_task_stall_abort()
         };
+        //
+        // TIER 2 (`state.backend_abort`) rides the same `select!`, and it is a
+        // different animal from tier 1: the user's Cancel travels to the backend
+        // through `on_file_progress` so the backend drops its own handle and
+        // deletes its own partial, and that stays the default for every cancel.
+        // This arm is the quit deadline saying it will not wait for a backend
+        // that is not answering — armed for EVERY write, single-shot included
+        // (dropping one indivisible frame is what the process dying would do
+        // anyway, which `volume/DETAILS.md` § "The single-shot exemption" already
+        // accounts for). ❌ Never fire it for anything a user clicked.
+        //
+        // Cost on the happy path: two already-live atomics polled per wakeup of
+        // the write future. No allocation, no timer, no syscall, and no change to
+        // any backend.
         let write_fut = dest_volume.write_from_stream(staged.target(), size, stream, on_file_progress);
-        let write_result = match stall_abort {
-            Some(abort) => {
-                tokio::select! {
-                    biased;
-                    () = abort.cancelled() => Err(VolumeError::ConnectionTimeout(format!(
-                        "the write of {} stopped moving and the transfer stopped waiting for it",
-                        dest_path.display()
-                    ))),
-                    result = write_fut => result,
-                }
+        let outcome = tokio::select! {
+            biased;
+            () = state.backend_abort.cancelled() => WriteAttemptOutcome::HardAborted,
+            () = cancelled_or_never(stall_abort.as_ref()) => WriteAttemptOutcome::Finished(Err(
+                VolumeError::ConnectionTimeout(format!(
+                    "the write of {} stopped moving and the transfer stopped waiting for it",
+                    dest_path.display()
+                )),
+            )),
+            result = write_fut => WriteAttemptOutcome::Finished(result),
+        };
+        let write_result = match outcome {
+            WriteAttemptOutcome::Finished(result) => result,
+            WriteAttemptOutcome::HardAborted => {
+                log::warn!(
+                    target: "copy",
+                    "stream_pipe_file: stopped waiting for the write of {}; the app is shutting down. \
+                     Its partial stays registered for the startup sweep.",
+                    dest_path.display(),
+                );
+                // ❌ No `staged.abandon` here. The delete would go back through
+                // the connection that just failed to answer, which is a second
+                // hold on the very deadline this tier exists to keep. A staged
+                // write's temp stays in `in_flight_temps` — in memory AND in the
+                // persisted log — so `in_flight_temps::init_and_sweep` removes it
+                // at the next launch, and nothing sits at a real name meanwhile.
+                // A SINGLE-SHOT write has no temp and needs none: the destination
+                // promised one indivisible frame, so dropping it leaves either the
+                // whole file or nothing, which is the same outcome the process
+                // dying produces.
+                return Err(hard_abort_error(dest_path));
             }
-            None => write_fut.await,
         };
         let bytes = match write_result {
             Ok(bytes) => {
@@ -642,6 +683,38 @@ async fn stream_pipe_file(
             Err(e) => return Err(e),
         }
     }
+}
+
+/// TIER 2: the operation's hard-abort signal, or a future that never resolves.
+///
+/// One `select!` arm covers both the armed and the unarmed case without a token
+/// allocation, so an inert tier costs a poll of an already-live atomic.
+async fn cancelled_or_never(token: Option<&tokio_util::sync::CancellationToken>) {
+    match token {
+        Some(token) => token.cancelled().await,
+        None => std::future::pending().await,
+    }
+}
+
+/// What tier 2 reports when it ends a wait.
+///
+/// A `Cancelled`, deliberately, and it decides three things at once: `retry.rs`
+/// never re-runs a cancel, the post-loop keys `write-cancelled` off a
+/// `Cancelled`-shaped error (so an abort closes the dialog instead of logging a
+/// failed transfer), and no caller mistakes it for a transport fault worth
+/// reporting to the user.
+fn hard_abort_error(path: &Path) -> VolumeError {
+    VolumeError::Cancelled(format!("stopped waiting for {} so the app can quit", path.display()))
+}
+
+/// How one attempt at a file's write ended.
+enum WriteAttemptOutcome {
+    /// The destination's `write_from_stream` returned, one way or the other.
+    Finished(Result<u64, VolumeError>),
+    /// TIER 2 ended the wait: the write future was dropped mid-flight and the
+    /// backend ran none of its own cleanup. ❌ Nothing may go back through that
+    /// connection now; the staged partial is left to the sweep.
+    HardAborted,
 }
 
 /// Resolve `dest_path` against `dest_volume.local_path()` and register it
@@ -1008,6 +1081,9 @@ async fn resolve_merge_child(
     }
 }
 
+#[cfg(test)]
+#[path = "strategy_abort_tests.rs"]
+mod abort_tests;
 #[cfg(test)]
 #[path = "strategy_copy_tests.rs"]
 mod copy_tests;

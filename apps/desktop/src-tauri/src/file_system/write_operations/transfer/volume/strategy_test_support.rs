@@ -590,6 +590,167 @@ impl Volume for WedgedThenWorkingDest {
     }
 }
 
+/// A source whose `open_read_stream` never returns — the `OpeningSource` half of
+/// the wedge shape, where a device round trip to open the file hangs before a
+/// single byte has moved.
+///
+/// The serial driver awaits each file directly, so nothing above this can end the
+/// wait; only the hard-abort tier can (`volume/strategy_abort_tests.rs`).
+pub(super) struct WedgedOpenSource {
+    /// Set once the open has actually been entered, so a test waits on the state
+    /// it needs instead of guessing at a duration.
+    pub(super) opening: Arc<AtomicBool>,
+}
+
+impl Volume for WedgedOpenSource {
+    fn name(&self) -> &str {
+        "wedged-open-source"
+    }
+    fn root(&self) -> &Path {
+        Path::new("/")
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(Vec::new()) })
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+    fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async { true })
+    }
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(false) })
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    fn open_read_stream<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        let opening = Arc::clone(&self.opening);
+        Box::pin(async move {
+            opening.store(true, Ordering::SeqCst);
+            // Never returns, never errors. Only the hard abort can end this.
+            std::future::pending::<()>().await;
+            unreachable!("a pending future never resolves")
+        })
+    }
+}
+
+/// A destination that behaves like every real backend does on a COOPERATIVE
+/// cancel: it notices through `on_progress`, removes the partial it was writing,
+/// and reports `Cancelled` — and it records that it did.
+///
+/// That self-cleanup is the reason tier 1 exists and the reason writes are NOT
+/// raced against `backend_cancel`. `own_cleanup_ran` is what a regression would
+/// leave `false`.
+pub(super) struct TierOneWitnessDest {
+    pub(super) inner: Arc<crate::file_system::volume::InMemoryVolume>,
+    /// Set when the backend removed its own partial after observing the cancel.
+    pub(super) own_cleanup_ran: Arc<AtomicBool>,
+    /// Bytes handed to the destination so far, so a test can wait on "the write
+    /// is really under way" instead of racing it.
+    pub(super) written: Arc<std::sync::atomic::AtomicU64>,
+}
+
+impl TierOneWitnessDest {
+    pub(super) fn new() -> Arc<Self> {
+        Arc::new(Self {
+            inner: Arc::new(
+                crate::file_system::volume::InMemoryVolume::new("tier-one-witness-dest")
+                    .with_space_info(10_000_000, 10_000_000),
+            ),
+            own_cleanup_ran: Arc::new(AtomicBool::new(false)),
+            written: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        })
+    }
+
+    /// Everything sitting in the destination root, by name.
+    pub(super) async fn names(&self) -> Vec<String> {
+        self.inner
+            .list_directory(Path::new("/"), None)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|e| e.name)
+            .collect()
+    }
+
+    /// Replaces whatever is at `path` with `data`, so a growing write is visible
+    /// at the write path chunk by chunk (`InMemoryVolume::create_file` refuses to
+    /// overwrite an existing entry).
+    async fn publish(&self, path: &Path, data: &[u8]) -> Result<(), VolumeError> {
+        let _ = self.inner.delete(path).await;
+        self.inner.create_file(path, data).await
+    }
+}
+
+impl Volume for TierOneWitnessDest {
+    forward_volume_methods!(
+        inner => name,
+        root,
+        max_concurrent_ops,
+        list_directory,
+        get_metadata,
+        exists,
+        is_directory,
+        create_directory,
+        create_directory_all,
+        create_file,
+        delete,
+        rename,
+        get_space_info,
+        open_read_stream,
+        create_directory_errors_on_existing_dir,
+    );
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
+        size: u64,
+        mut stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mut data: Vec<u8> = Vec::new();
+            self.publish(dest, &data).await?;
+            while let Some(chunk) = stream.next_chunk().await {
+                data.extend_from_slice(&chunk?);
+                self.publish(dest, &data).await?;
+                self.written.store(data.len() as u64, Ordering::SeqCst);
+                if on_progress(data.len() as u64, size).is_break() {
+                    // What every real backend does on a cooperative cancel: drop
+                    // the handle and remove the partial it was writing.
+                    let _ = self.inner.delete(dest).await;
+                    self.own_cleanup_ran.store(true, Ordering::SeqCst);
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                }
+            }
+            Ok(data.len() as u64)
+        })
+    }
+}
+
 // ========================================================================
 // MTP-shaped "releasing" source (bounded-window park-in-place) doubles.
 // ========================================================================

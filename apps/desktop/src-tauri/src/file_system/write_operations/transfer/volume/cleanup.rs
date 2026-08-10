@@ -202,7 +202,22 @@ pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[P
 ///
 /// Best-effort: a temp whose task is wedged with an open handle may refuse to
 /// delete, which is why it wears a recognizable name.
+///
+/// **Skipped entirely once tier 2 has fired** (`state.backend_abort`). Every
+/// delete here is a round trip through the destination, and the reason the abort
+/// fired is that the destination stopped answering — so this pass would hold the
+/// quit deadline for a second time, right after the streaming write stopped
+/// holding it. The entries stay in both ledgers instead, and
+/// `write_operations::in_flight_temps`'s startup sweep clears them at the next
+/// launch, with no age gate, off the launch thread.
 pub(super) async fn clean_abandoned_staged_writes(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>) {
+    if state.backend_abort.is_cancelled() {
+        log::info!(
+            target: "copy",
+            "clean_abandoned_staged_writes: the app is shutting down, leaving the staged partial(s) to the startup sweep"
+        );
+        return;
+    }
     let temps: Vec<PathBuf> = std::mem::take(&mut *state.in_flight_temps.lock_ignore_poison());
     if temps.is_empty() {
         return;
