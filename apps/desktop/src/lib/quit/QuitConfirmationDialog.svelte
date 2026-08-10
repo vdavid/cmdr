@@ -94,7 +94,7 @@
     <p class="countdown" aria-live="polite" aria-label={tString('main.quit.countdownAria')}>{countdown}</p>
 
     {#snippet footer()}
-        <Button variant="secondary" onclick={onKeepWorking} autoFocus>{tString('main.quit.keepWorking')}</Button>
+        <Button variant="secondary" autoFocus onclick={onKeepWorking}>{tString('main.quit.keepWorking')}</Button>
         <Button variant="danger" onclick={onQuit}>{tString('main.quit.quitNow')}</Button>
     {/snippet}
 </ModalDialog>

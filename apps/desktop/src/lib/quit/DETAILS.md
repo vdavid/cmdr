@@ -1,7 +1,7 @@
 # Quit prompt: the frontend half
 
-Must-knows and the module map: `CLAUDE.md`. The design, the phase machine, the two clocks, and the teardown ordering
-all live on the backend side: `apps/desktop/src-tauri/src/quit/DETAILS.md`.
+Must-knows and the module map: `CLAUDE.md`. The design, the phase machine, the two clocks, and the teardown ordering all
+live on the backend side: `apps/desktop/src-tauri/src/quit/DETAILS.md`.
 
 ## Why the store is a class singleton, not a component `$state`
 
@@ -31,5 +31,5 @@ per-frame loop.
 ## What the gallery row can and can't show
 
 The gallery renders the dialog with fixed props, so its countdown doesn't move and its buttons close the preview rather
-than quitting. That's the honest arrangement (the component takes both answers as props and never calls IPC itself),
-and it's why the last-second wording gets a state of its own instead of a 15-second wait.
+than quitting. That's the honest arrangement (the component takes both answers as props and never calls IPC itself), and
+it's why the last-second wording gets a state of its own instead of a 15-second wait.

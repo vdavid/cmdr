@@ -130,9 +130,9 @@ there rendering a row for it.
 
 The fix was larger than a frontend edit (the backend had to own operation lifetime and the quit decision, and local
 copies had to stage before a worker could be safely abandoned), so it got its own spec:
-`docs/specs/quit-and-operation-lifetime.md`. That document WAS M0, and all three of its milestones have landed. A
-window going away is no longer an event an operation hears about; the quit gate (`src-tauri/src/quit/`) is the only
-thing that stops work. M1 onward can reason from the premise.
+`docs/specs/quit-and-operation-lifetime.md`. That document WAS M0, and all three of its milestones have landed. A window
+going away is no longer an event an operation hears about; the quit gate (`src-tauri/src/quit/`) is the only thing that
+stops work. M1 onward can reason from the premise.
 
 ## The in-dialog guards, and why they retire
 

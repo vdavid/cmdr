@@ -76,6 +76,7 @@ Props:
 | `ownsKeyboard`        | `boolean`                     | Default `false`. Forwards EVERY key to `onkeydown`, Escape included   |
 | `overlayClass`        | `string`                      | Extra class on the overlay, for a shared dialog's stable test hook    |
 | `closeOnOverlayClick` | `boolean`                     | Default `false`. Scrim click dismisses                                |
+| `topmost`             | `boolean`                     | Default `false`. Renders at `--z-modal-top`, above every other modal  |
 
 **The panel surface is `--color-bg-dialog`**, not `--color-bg-secondary`. It's the opaque twin of the settings window's
 backdrop, deliberately one step off `--color-bg-secondary` (the `SectionCard` fill), so a card, a details box, or any
@@ -172,6 +173,12 @@ filter popover. Those three props exist so it gets the standard chrome without f
 - `overlayClass` exists because that one component renders under three different `dialogId`s: a selector keyed on
   `data-dialog-id` can't name "the query dialog", and the E2E suite plus the overlay-dismissal safety net need one that
   can. It's a structural hook, not a styling escape hatch.
+- `topmost` exists because every modal shares `--z-modal`, so two open at once stack by DOM ORDER. That's fine between
+  dialogs the same subtree raises, and useless for one the APP raises over whatever the user was already answering. It
+  adds `--z-modal-top` (350) to the overlay, so both the panel and its scrim cover the dialog underneath. Exactly one
+  caller today, the quit prompt (`lib/quit/`), and it should stay that way: two topmost dialogs are back to racing on
+  DOM order, and the guarantee stops meaning anything. Pinned by `lib/quit/QuitConfirmationDialog.svelte.test.ts` and
+  measured in the real app by `test/e2e-playwright/quit-gate.spec.ts`.
 
 **`footerLeading`** puts a control on the SAME line as the action buttons, pinned left (`margin-right: auto` on the
 wrapper, so the buttons stay hard right at any leading width). Use it for a modifier on the primary action, the way

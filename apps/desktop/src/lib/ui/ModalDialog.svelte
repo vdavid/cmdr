@@ -92,14 +92,10 @@
         /** Clicking the scrim closes the dialog. Off by default (macOS panels don't dismiss on backdrop). */
         closeOnOverlayClick?: boolean
         /**
-         * Puts the dialog one rung above every other modal (`--z-modal-top`), so
-         * it's answerable even with a conflict prompt or a progress dialog already
-         * open. Modals otherwise all sit at `--z-modal` and stack by DOM order,
-         * which no window-level prompt can rely on.
-         *
-         * For a dialog the app itself raises and the user MUST answer — today
-         * exactly one, the quit prompt. ❌ Not a "make mine important" switch: two
-         * topmost dialogs are back to racing on DOM order.
+         * Renders at `--z-modal-top`, above every other modal (they all share
+         * `--z-modal` and stack by DOM order, which nothing the APP raises over
+         * the user's current dialog can rely on). ❌ Not a "make mine important"
+         * switch: exactly one caller, the quit prompt. DETAILS § ModalDialog.
          */
         topmost?: boolean
         /** Renders × button and handles Escape key */

@@ -8,15 +8,15 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 - [x] 2026-08-10 `quit-and-operation-lifetime.md` - **Done (Q1, Q2, Q3 all landed).** The backend now owns operation
       lifetime and the quit decision. The `beforeunload` handler that cancelled the GLOBAL registry (killing a
-      backgrounded transfer on a dev reload, and racing un-awaited at quit) is gone, replaced by a Rust-owned quit
-      gate: it prompts when anything non-instant is active, counts down 15 seconds on its own OS thread (so a wedged
-      webview can't block the quit), then cancels with no rollback, keeping completed files and removing only the
-      in-flight partial, inside a hard 2-second budget. Two enabling changes made that budget real: **local copies
-      stage through temp+rename** (they used to write to the FINAL name, so a quit mid-copy left a truncated file
-      looking complete — a crash- and power-loss hole too), and a **hard-abort tier** races the chunk await against a
-      second token so an SMB chunk's 30-second deadline can't hold the quit, with the cooperative cancel path that lets
-      backends clean their own partials still the default. Prerequisite (M0) of `operation-session-plan.md`, now
-      satisfied. Ready to wipe once someone confirms the colocated docs carry everything.
+      backgrounded transfer on a dev reload, and racing un-awaited at quit) is gone, replaced by a Rust-owned quit gate:
+      it prompts when anything non-instant is active, counts down 15 seconds on its own OS thread (so a wedged webview
+      can't block the quit), then cancels with no rollback, keeping completed files and removing only the in-flight
+      partial, inside a hard 2-second budget. Two enabling changes made that budget real: **local copies stage through
+      temp+rename** (they used to write to the FINAL name, so a quit mid-copy left a truncated file looking complete — a
+      crash- and power-loss hole too), and a **hard-abort tier** races the chunk await against a second token so an SMB
+      chunk's 30-second deadline can't hold the quit, with the cooperative cancel path that lets backends clean their
+      own partials still the default. Prerequisite (M0) of `operation-session-plan.md`, now satisfied. Ready to wipe
+      once someone confirms the colocated docs carry everything.
 - [ ] 2026-08-09 `operation-session-plan.md` - Make the progress dialogs looking glasses instead of the process, so a
       "Foreground" button (click a running row in the operation queue, get the rich progress dialog back) becomes
       buildable. `createTransferProgressState` (1,294 lines) OWNS its operation: it scans, dispatches, and only then

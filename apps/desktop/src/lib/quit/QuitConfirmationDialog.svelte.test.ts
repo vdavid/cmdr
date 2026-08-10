@@ -69,18 +69,18 @@ describe('QuitConfirmationDialog', () => {
     const rows = target.querySelectorAll('.operation')
     expect(rows).toHaveLength(2)
     // Basenames, not the full paths: the paths ride in the tooltip.
-    expect(rows[0]?.textContent).toContain('Copying')
-    expect(rows[0]?.textContent).toContain('Holiday.mov')
-    expect(rows[0]?.textContent).toContain('Backup')
-    expect(rows[0]?.textContent).not.toContain('/Volumes')
-    expect(rows[1]?.textContent).toContain('Deleting')
+    expect(rows[0].textContent).toContain('Copying')
+    expect(rows[0].textContent).toContain('Holiday.mov')
+    expect(rows[0].textContent).toContain('Backup')
+    expect(rows[0].textContent).not.toContain('/Volumes')
+    expect(rows[1].textContent).toContain('Deleting')
   })
 
   it('offers exactly two answers, with quitting as the destructive one', async () => {
     const target = await renderDialog([operation('op-1', 'copy')], 15)
     const buttons = [...target.querySelectorAll<HTMLButtonElement>('.modal-footer button')]
-    expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Keep working', 'Quit now'])
-    expect(buttons[1]?.className).toContain('btn-danger')
+    expect(buttons.map((b) => b.textContent.trim())).toEqual(['Keep working', 'Quit now'])
+    expect(buttons[1].className).toContain('btn-danger')
   })
 
   it('answers through its callbacks, never on its own', async () => {

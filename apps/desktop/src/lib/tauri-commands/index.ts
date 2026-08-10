@@ -233,7 +233,6 @@ export {
   deleteFiles,
   trashFiles,
   cancelWriteOperation,
-  cancelAllWriteOperations,
   resolveWriteConflict,
   onWriteProgress,
   onWriteComplete,

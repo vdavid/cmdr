@@ -190,9 +190,12 @@ export async function cancelWriteOperation(operationId: string, rollback: boolea
   await commands.cancelWriteOperation(operationId, rollback)
 }
 
-export async function cancelAllWriteOperations(): Promise<void> {
-  await commands.cancelAllWriteOperations()
-}
+// ❌ There is deliberately NO wrapper for the cancel-every-operation command.
+// Stopping the whole registry at once belongs to the quit gate
+// (`src-tauri/src/quit/`), which calls it in Rust as the first step of its
+// teardown. A frontend wrapper is how a window teardown once came to kill
+// backgrounded transfers; pinned by `lib/quit/no-teardown-cancel.test.ts`,
+// which is also why this note doesn't spell the name out.
 
 /** In Stop mode, the operation pauses on conflict and waits for this call to proceed. */
 export async function resolveWriteConflict(

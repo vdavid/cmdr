@@ -23,58 +23,58 @@ const log = getAppLogger('quit')
 const TICK_MS = 250
 
 class QuitPrompt {
-    /** The operations the backend is holding the quit for. Empty means closed. */
-    operations = $state<OperationSnapshot[]>([])
-    open = $state(false)
-    /** Seconds left, floored, never below zero. Display only. */
-    secondsLeft = $state(0)
+  /** The operations the backend is holding the quit for. Empty means closed. */
+  operations = $state<OperationSnapshot[]>([])
+  open = $state(false)
+  /** Seconds left, floored, never below zero. Display only. */
+  secondsLeft = $state(0)
 
-    /** Wall-clock moment the backend's deadline expires. */
-    #deadlineAt = 0
-    #ticker: ReturnType<typeof setInterval> | null = null
+  /** Wall-clock moment the backend's deadline expires. */
+  #deadlineAt = 0
+  #ticker: ReturnType<typeof setInterval> | null = null
 
-    /** Opens the prompt for a fresh `quit-requested`. */
-    show(operations: OperationSnapshot[], countdownMs: number) {
-        this.operations = operations
-        this.#deadlineAt = Date.now() + countdownMs
-        this.open = true
-        this.#retick()
-        this.#ticker ??= setInterval(() => {
-            this.#retick()
-        }, TICK_MS)
+  /** Opens the prompt for a fresh `quit-requested`. */
+  show(operations: OperationSnapshot[], countdownMs: number) {
+    this.operations = operations
+    this.#deadlineAt = Date.now() + countdownMs
+    this.open = true
+    this.#retick()
+    this.#ticker ??= setInterval(() => {
+      this.#retick()
+    }, TICK_MS)
+  }
+
+  /** The user is going ahead. The dialog stays up (with the buttons gone
+   *  nowhere useful) because the app is about to disappear anyway; leaving it
+   *  visible avoids a flash of the file panes on the way out. */
+  confirm() {
+    void quitConfirm().catch((e: unknown) => {
+      // The gate's deadline is the backstop, so a dropped confirm costs
+      // the user a wait, not the quit.
+      log.warn('Confirming the quit returned an error: {error}', { error: String(e) })
+    })
+  }
+
+  /** The user is staying. Closes the prompt and drops the countdown. */
+  keepWorking() {
+    this.#close()
+    void quitCancel().catch((e: unknown) => {
+      log.warn('Calling off the quit returned an error: {error}', { error: String(e) })
+    })
+  }
+
+  #retick() {
+    this.secondsLeft = Math.max(0, Math.ceil((this.#deadlineAt - Date.now()) / 1000))
+  }
+
+  #close() {
+    this.open = false
+    this.operations = []
+    if (this.#ticker !== null) {
+      clearInterval(this.#ticker)
+      this.#ticker = null
     }
-
-    /** The user is going ahead. The dialog stays up (with the buttons gone
-     *  nowhere useful) because the app is about to disappear anyway; leaving it
-     *  visible avoids a flash of the file panes on the way out. */
-    confirm() {
-        void quitConfirm().catch((e: unknown) => {
-            // The gate's deadline is the backstop, so a dropped confirm costs
-            // the user a wait, not the quit.
-            log.warn('Confirming the quit returned an error: {error}', { error: String(e) })
-        })
-    }
-
-    /** The user is staying. Closes the prompt and drops the countdown. */
-    keepWorking() {
-        this.#close()
-        void quitCancel().catch((e: unknown) => {
-            log.warn('Calling off the quit returned an error: {error}', { error: String(e) })
-        })
-    }
-
-    #retick() {
-        this.secondsLeft = Math.max(0, Math.ceil((this.#deadlineAt - Date.now()) / 1000))
-    }
-
-    #close() {
-        this.open = false
-        this.operations = []
-        if (this.#ticker !== null) {
-            clearInterval(this.#ticker)
-            this.#ticker = null
-        }
-    }
+  }
 }
 
 export const quitPrompt = new QuitPrompt()
@@ -84,14 +84,14 @@ let unlisten: Promise<UnlistenFn> | undefined
 /** Starts listening for the backend holding a quit. Main window only: it's the
  *  window that owns the app's dialogs. */
 export function initQuitPrompt() {
-    unlisten ??= onQuitRequested((event) => {
-        quitPrompt.show(event.operations, event.countdownMs)
-    })
+  unlisten ??= onQuitRequested((event) => {
+    quitPrompt.show(event.operations, event.countdownMs)
+  })
 }
 
 export function cleanupQuitPrompt() {
-    void unlisten?.then((stop) => {
-        stop()
-    })
-    unlisten = undefined
+  void unlisten?.then((stop) => {
+    stop()
+  })
+  unlisten = undefined
 }

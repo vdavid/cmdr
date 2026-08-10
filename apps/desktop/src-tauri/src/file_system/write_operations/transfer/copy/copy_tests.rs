@@ -364,6 +364,7 @@ fn local_copy_bench_many_small_files() {
     millis.sort_unstable();
     let median = millis[millis.len() / 2];
     println!(
+        // allowed-pluralize-noun: `FILE_COUNT` is a fixed benchmark constant well above 1, never a live count
         "local many-small-files copy: {FILE_COUNT} files, rounds(ms)={millis:?}, median={median} ms, per-file={:.3} ms",
         median as f64 / FILE_COUNT as f64
     );

@@ -11,8 +11,8 @@ The main window's view of a held quit. The backend owns the decision and the clo
 
 ## Must-knows
 
-- **The countdown here is decoration.** If this module never runs, Rust's timer still fires and the app still quits.
-  ❌ Never make the frontend the authority.
+- **The countdown here is decoration.** If this module never runs, Rust's timer still fires and the app still quits. ❌
+  Never make the frontend the authority.
 - **It's derived from a wall-clock target, not decremented per tick**, so a throttled or busy webview shows the honest
   number instead of drifting behind the backend.
 - **`initQuitPrompt()` runs synchronously at the top of `onMount`**, before the awaited setup. The gate can hold a quit
@@ -25,4 +25,6 @@ The main window's view of a held quit. The backend owns the decision and the clo
   out.
 - **"Keep working" is not a snooze** — the backend deletes the countdown. Keep any copy edit honest about that.
 
-Deeper notes live with the backend gate: `apps/desktop/src-tauri/src/quit/DETAILS.md`.
+Why the store is a singleton, why the countdown is computed, and what the gallery row can honestly show: `DETAILS.md`.
+The design itself (phase machine, the two clocks, teardown ordering) lives with the backend gate:
+`apps/desktop/src-tauri/src/quit/DETAILS.md`.

@@ -135,10 +135,10 @@ misleading", not "every thread wound down politely".
 ## Q1: local copies get temp+rename staging
 
 **Landed.** Durable notes now live in `write_operations/transfer/DETAILS.md` § "Local copies stage" and
-`in_flight_temps.rs`. What follows is the original plan; two things went further than written, both noted in the commits:
-the four strategies were named (`LocalCopyStrategy`) so the chunked branch is reachable in a test on a Mac, and the
-landing refuses to clobber a destination that appeared underneath a non-overwrite copy, which the old direct `O_EXCL`
-create used to do for free.
+`in_flight_temps.rs`. What follows is the original plan; two things went further than written, both noted in the
+commits: the four strategies were named (`LocalCopyStrategy`) so the chunked branch is reachable in a test on a Mac, and
+the landing refuses to clobber a destination that appeared underneath a non-overwrite copy, which the old direct
+`O_EXCL` create used to do for free.
 
 The enabler, and independently the most valuable fix here.
 
@@ -198,8 +198,8 @@ original plan; three things went beyond it, all deliberate:
 ## Q3: the quit gate, with the countdown owned by Rust
 
 **Landed.** Durable notes are `src-tauri/src/quit/CLAUDE.md` + `DETAILS.md` (the phase machine, the two clocks, the
-teardown ordering) and `src/lib/quit/CLAUDE.md` + `DETAILS.md` (the frontend mirror). What follows is the original
-plan; five things it left open or got differently:
+teardown ordering) and `src/lib/quit/CLAUDE.md` + `DETAILS.md` (the frontend mirror). What follows is the original plan;
+five things it left open or got differently:
 
 - **The countdown is 15 s, not 20.** Settled with David: 20 plus the ~2 s teardown sits too close to the window macOS
   gives an app during logout or restart.
