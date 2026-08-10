@@ -71,9 +71,9 @@ export function withTimeout<T>(name: string, promise: Promise<SourceResult<T>>):
       resolve({ ok: false, error: `${name}: timed out after ${sourceTimeoutMs / 1000}s` })
     }, sourceTimeoutMs)
     promise
-      .then((result) => resolve(result))
-      .catch((e) => resolve({ ok: false, error: `${name}: ${e instanceof Error ? e.message : String(e)}` }))
-      .finally(() => clearTimeout(timer))
+      .then((result) => { resolve(result); })
+      .catch((e) => { resolve({ ok: false, error: `${name}: ${e instanceof Error ? e.message : String(e)}` }); })
+      .finally(() => { clearTimeout(timer); })
   })
 }
 

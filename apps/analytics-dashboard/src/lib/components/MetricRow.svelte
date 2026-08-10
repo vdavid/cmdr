@@ -7,7 +7,7 @@
         color?: string
     }
 
-    let { metrics }: { metrics: Metric[] } = $props()
+    const { metrics }: { metrics: Metric[] } = $props()
 </script>
 
 <div class="flex flex-wrap gap-6">

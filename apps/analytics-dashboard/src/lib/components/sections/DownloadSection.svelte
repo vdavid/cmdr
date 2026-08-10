@@ -30,7 +30,7 @@
     import SectionDescription from '$lib/components/SectionDescription.svelte'
     import ExternalLinks from '$lib/components/ExternalLinks.svelte'
 
-    let {
+    const {
         cloudflare,
         github,
         selection,
@@ -137,7 +137,7 @@
                     <!-- svelte-ignore a11y_no_static_element_interactions -->
                     <div
                         class="grid gap-4 md:grid-cols-3"
-                        onwheel={(e) => handleDownloadWheel(e, allTimestamps[0], allTimestamps[allTimestamps.length - 1])}
+                        onwheel={(e) => { handleDownloadWheel(e, allTimestamps[0], allTimestamps[allTimestamps.length - 1]); }}
                         onmousemove={(e: MouseEvent) => {
                             dayTooltipX = e.clientX
                             dayTooltipY = e.clientY

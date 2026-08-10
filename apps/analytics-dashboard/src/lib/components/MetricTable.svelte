@@ -2,7 +2,7 @@
 <script lang="ts">
     import { formatNumber } from '$lib/format.js'
 
-    let {
+    const {
         items,
         colLabel,
         colValue,

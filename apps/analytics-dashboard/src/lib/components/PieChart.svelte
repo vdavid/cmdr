@@ -4,7 +4,7 @@
         size?: number
     }
 
-    let { slices, size = 72 }: Props = $props()
+    const { slices, size = 72 }: Props = $props()
 
     const colors = [
         '#ffc206', '#22c55e', '#3b82f6', '#ef4444',

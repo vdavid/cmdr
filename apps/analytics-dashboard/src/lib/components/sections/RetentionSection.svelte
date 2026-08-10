@@ -10,7 +10,7 @@
     import SectionDescription from '$lib/components/SectionDescription.svelte'
     import ExternalLinks from '$lib/components/ExternalLinks.svelte'
 
-    let { paddle, selection }: { paddle: SourceResult<PaddleData>; selection: DashboardSelection } = $props()
+    const { paddle, selection }: { paddle: SourceResult<PaddleData>; selection: DashboardSelection } = $props()
 </script>
 
 <section class="rounded-xl border border-border bg-surface p-6">

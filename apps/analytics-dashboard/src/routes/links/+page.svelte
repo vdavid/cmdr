@@ -9,7 +9,7 @@
     import SectionDescription from '$lib/components/SectionDescription.svelte'
     import { exampleLink, isValidCode, type LinkCodeRow } from '$lib/link-codes.js'
 
-    let { data, form } = $props()
+    const { data, form } = $props()
 
     /** The form's working values. Editing a row copies its values in; saving or canceling clears it. */
     let code = $state('')
@@ -218,7 +218,7 @@
                                 <div class="flex justify-end gap-2">
                                     <button
                                         type="button"
-                                        onclick={() => startEdit(row)}
+                                        onclick={() => { startEdit(row); }}
                                         class="rounded-md border border-border px-2.5 py-1 text-xs text-text-secondary
                                             transition-colors hover:text-text-primary"
                                     >

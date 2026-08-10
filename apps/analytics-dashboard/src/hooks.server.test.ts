@@ -87,7 +87,7 @@ describe('handleError', () => {
     })
     const result = await handleError({
       error,
-      event: { ...event, request: spoofed } as unknown as RequestEvent,
+      event: { ...event, request: spoofed },
       status: 500,
       message: 'Internal Error',
     })

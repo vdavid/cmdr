@@ -8,7 +8,7 @@
     import RetentionSection from '$lib/components/sections/RetentionSection.svelte'
     import FeedbackErrorsSection from '$lib/components/sections/FeedbackErrorsSection.svelte'
 
-    let { data } = $props()
+    const { data } = $props()
 </script>
 
 <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">

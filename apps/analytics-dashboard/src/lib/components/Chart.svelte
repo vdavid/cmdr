@@ -18,7 +18,7 @@
         xMax?: number | null
     }
 
-    let { data, labels = [], colors = [], height = 200, xMin = null, xMax = null }: Props = $props()
+    const { data, labels = [], colors = [], height = 200, xMin = null, xMax = null }: Props = $props()
 
     let zoomedXMin: number | null = $state(null)
     let zoomedXMax: number | null = $state(null)
@@ -43,8 +43,8 @@
     function handleWheel(e: WheelEvent) {
         e.preventDefault()
         if (data[0].length < 2) return
-        const dataXMin = data[0][0] as number
-        const dataXMax = data[0][data[0].length - 1] as number
+        const dataXMin = data[0][0]
+        const dataXMax = data[0][data[0].length - 1]
         const zoomFactor = e.deltaY > 0 ? 1.3 : 1 / 1.3
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
         const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
@@ -123,7 +123,7 @@
         if (effMin != null && effMax != null) {
             chart.setScale('x', { min: effMin, max: effMax })
         } else if (data[0].length > 0) {
-            chart.setScale('x', { min: data[0][0] as number, max: data[0][data[0].length - 1] as number })
+            chart.setScale('x', { min: data[0][0], max: data[0][data[0].length - 1] })
         }
     }
 

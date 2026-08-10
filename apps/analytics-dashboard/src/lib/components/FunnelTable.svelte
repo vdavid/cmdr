@@ -14,7 +14,7 @@
     import SectionDescription from './SectionDescription.svelte'
     import type { DashboardSelection } from '$lib/server/types.js'
 
-    let {
+    const {
         funnel,
         selection,
         selectedDay,
@@ -78,7 +78,7 @@
                         <tr
                             class="cursor-pointer border-b border-border-subtle transition-colors hover:bg-surface-elevated
                                 {isActiveDay ? 'bg-accent/10' : ''}"
-                            onclick={() => onselectday(row.date)}
+                            onclick={() => { onselectday(row.date); }}
                         >
                             <td class="py-1.5 pr-4 font-medium text-text-primary">
                                 {row.date}{#if isToday}<span class="ml-1 text-xs font-normal text-text-tertiary"

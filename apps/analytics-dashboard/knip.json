@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "treatConfigHintsAsErrors": true,
+  "ignoreExportsUsedInFile": true,
+  "project": ["src/**/*.{ts,svelte}"],
+  "entry": ["src/hooks.server.ts", "src/app.d.ts"],
+  "svelte": {
+    "entry": [
+      "src/routes/**/+page.svelte",
+      "src/routes/**/+layout.svelte",
+      "src/routes/**/+page.server.ts",
+      "src/routes/**/+layout.server.ts",
+      "src/routes/**/+server.ts"
+    ]
+  }
+}

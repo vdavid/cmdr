@@ -9,7 +9,7 @@
     import InterestSection from '$lib/components/sections/InterestSection.svelte'
     import DownloadSection from '$lib/components/sections/DownloadSection.svelte'
 
-    let { data } = $props()
+    const { data } = $props()
 
     /** True when a single specific UTC day is selected (vs a relative range). */
     const isDaySelected = $derived(data.selection.range === 'day')

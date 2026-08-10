@@ -23,7 +23,7 @@
         height?: number
     }
 
-    let { days, series, unitLabel, height = 160 }: Props = $props()
+    const { days, series, unitLabel, height = 160 }: Props = $props()
 
     let hoveredDay = $state<number | null>(null)
 

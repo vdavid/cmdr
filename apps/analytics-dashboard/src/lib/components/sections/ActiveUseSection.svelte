@@ -18,7 +18,7 @@
     import BetaEmptyState from '$lib/components/BetaEmptyState.svelte'
     import ExternalLinks from '$lib/components/ExternalLinks.svelte'
 
-    let {
+    const {
         cloudflare,
         license,
         selection,

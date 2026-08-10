@@ -3,7 +3,7 @@
   `insight` is the one-line "use this to..." purpose; `caveat` is the reliability footnote (optional).
 -->
 <script lang="ts">
-    let { insight, caveat }: { insight: string; caveat?: string } = $props()
+    const { insight, caveat }: { insight: string; caveat?: string } = $props()
 </script>
 
 <p class="mb-4 text-xs leading-relaxed text-text-secondary">

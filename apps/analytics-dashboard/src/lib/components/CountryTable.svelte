@@ -10,7 +10,7 @@
     import { formatNumber, formatCountry } from '$lib/format.js'
     import MiniTimeline from '$lib/components/MiniTimeline.svelte'
 
-    let {
+    const {
         downloads,
         allDays,
         allTimestamps,

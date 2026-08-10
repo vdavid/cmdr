@@ -19,7 +19,7 @@
         onhover?: (idx: number | null) => void
     }
 
-    let { data, height = 48, maxY, xMin = null, xMax = null, syncKey, onhover }: Props = $props()
+    const { data, height = 48, maxY, xMin = null, xMax = null, syncKey, onhover }: Props = $props()
 
     let container: HTMLDivElement
     let chart: uPlot | null = null
@@ -112,8 +112,8 @@
             chart.setScale('x', { min: xMin, max: xMax })
         } else if (chart && xMin == null && xMax == null && data[0].length > 0) {
             chart.setScale('x', {
-                min: data[0][0] as number,
-                max: data[0][data[0].length - 1] as number,
+                min: data[0][0],
+                max: data[0][data[0].length - 1],
             })
         }
     })

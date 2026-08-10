@@ -2,7 +2,7 @@
 <script lang="ts">
     import type { DashboardSelection } from '$lib/server/types.js'
 
-    let { error, selection }: { error: string; selection: DashboardSelection } = $props()
+    const { error, selection }: { error: string; selection: DashboardSelection } = $props()
 
     const tryAgainHref = $derived(
         selection.range === 'day' && selection.day ? `?day=${selection.day}` : `?range=${selection.range}`,

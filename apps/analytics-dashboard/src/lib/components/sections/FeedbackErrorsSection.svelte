@@ -16,7 +16,7 @@
     import SectionDescription from '$lib/components/SectionDescription.svelte'
     import ExternalLinks from '$lib/components/ExternalLinks.svelte'
 
-    let {
+    const {
         feedbackAndErrors,
         selection,
     }: {

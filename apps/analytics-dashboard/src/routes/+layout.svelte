@@ -10,7 +10,7 @@
     import { page } from '$app/state'
     import { formatTime } from '$lib/format.js'
 
-    let { children, data } = $props()
+    const { children, data } = $props()
 
     const navItems = [
         { href: '/', label: 'Acquisition' },
@@ -78,7 +78,7 @@
                 <div class="flex rounded-lg border border-border bg-surface p-0.5">
                     {#each rangeButtons as r}
                         <button
-                            onclick={() => selectRange(r)}
+                            onclick={() => { selectRange(r); }}
                             class="rounded-md px-3 py-1 text-sm font-medium transition-colors
                                 {!isDaySelected && data.selection.range === r
                                 ? 'bg-accent text-accent-contrast'
@@ -92,7 +92,7 @@
                     type="date"
                     max={todayIso}
                     value={selectedDay}
-                    onchange={(e) => selectDay((e.currentTarget as HTMLInputElement).value)}
+                    onchange={(e) => { selectDay((e.currentTarget).value); }}
                     aria-label="View a specific UTC day"
                     class="rounded-lg border px-2 py-1 text-sm transition-colors
                         {isDaySelected
