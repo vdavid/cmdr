@@ -38,7 +38,7 @@ describe('self-drag identity lifecycle', () => {
     expect(getSelfDragIdentity()).toBeNull()
   })
 
-  it('records the source volume id and paths verbatim (volume-relative for MTP/SMB)', () => {
+  it('records the source volume id and paths verbatim (volume-relative for MTP)', () => {
     recordSelfDragIdentity('mtp-dev:65537', ['/photos/sunset.jpg', '/photos/moon.jpg'])
     const identity = getSelfDragIdentity()
     expect(identity).not.toBeNull()

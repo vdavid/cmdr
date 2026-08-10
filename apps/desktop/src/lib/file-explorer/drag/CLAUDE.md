@@ -21,9 +21,9 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
   sessions (MTP, search-results, archive-inner — ❌ NOT direct SMB, whose share stays OS-mounted) offer only an
   `NSFilePromiseProvider`, which nothing but Finder reads. The policy is pure in
   `native_drag/type_plan.rs::plan_pasteboard_items`.
-- **In-app drops never trust the pasteboard round-trip.** Virtual-volume paths are volume-relative
-  (`/photos/sunset.jpg`) and round-trip through wry looking like local absolute paths, so the resolver mis-resolves to
-  local and the dialog reads 0 bytes. `drag-drop.ts::recordSelfDragIdentity` stamps the true
+- **In-app drops never trust the pasteboard round-trip.** MTP paths are volume-relative (`/photos/sunset.jpg`) and
+  round-trip through wry looking like local absolute paths, so the resolver mis-resolves to local and the dialog reads 0
+  bytes. (❌ NOT SMB: its paths are absolute `/Volumes/…`.) `drag-drop.ts::recordSelfDragIdentity` stamps the true
   `{ sourceVolumeId, sourcePaths }` at drag start; `drag-drop-controller.svelte.ts::handleDrop` consumes it via
   `consumableSelfDragIdentity()` ONLY when `getIsDraggingFromSelf()` is true AND the recorded `sourceVolumeId` is a
   REGISTERED backend-real volume. The registry-membership gate (not a virtual-id string compare) is what makes a

@@ -178,20 +178,25 @@ export function clearSelfDragFingerprint(): void {
  * pasteboard-derived paths.
  *
  * Why this exists: in-app drags put the source listing's paths on the pasteboard
- * (a single-file path, or the backend-resolved selection paths). For a virtual
- * volume (MTP, smb2-native SMB) those paths are VOLUME-RELATIVE
- * (`/photos/sunset.jpg`), and after a round-trip through wry's native drop event
- * they look exactly like a local absolute path. The drop resolver can't tell
- * them apart, mis-resolves the source to the local volume, and the transfer
- * dialog reports 0 bytes / 0 files. Recording the real `{ sourceVolumeId,
- * sourcePaths }` at drag start and consuming it on our own drop sidesteps the
- * lossy round-trip entirely. External drops (no in-flight self-drag) keep the
- * resolver path — their paths are genuine local absolute paths from Finder.
+ * (a single-file path, or the backend-resolved selection paths). MTP paths are
+ * VOLUME-RELATIVE (`/photos/sunset.jpg`), and after a round-trip through wry's
+ * native drop event they look exactly like a local absolute path. The drop
+ * resolver can't tell them apart, mis-resolves the source to the local volume,
+ * and the transfer dialog reports 0 bytes / 0 files. Recording the real
+ * `{ sourceVolumeId, sourcePaths }` at drag start and consuming it on our own
+ * drop sidesteps the lossy round-trip entirely. External drops (no in-flight
+ * self-drag) keep the resolver path — their paths are genuine local absolute
+ * paths from Finder.
+ *
+ * ❌ Direct SMB is NOT one of the relative-path cases: `SmbVolume` builds every
+ * listing path from `to_display_path()`, which prefixes the OS mount point, so
+ * an SMB pane holds `/Volumes/naspi/photos/sunset.jpg`. It rides this path for
+ * consistency, not out of necessity.
  */
 export interface SelfDragIdentity {
   /** The volume the drag originates from (`'root'` for a local pane). */
   sourceVolumeId: string
-  /** The source paths AS THE VOLUME KNOWS THEM (volume-relative for MTP/SMB). */
+  /** The source paths AS THE VOLUME KNOWS THEM (volume-relative for MTP). */
   sourcePaths: string[]
   /** Drag-start timestamp (epoch ms). Diagnostic only; staleness is gated by the self-drag flag, not by time. */
   startedAt: number
@@ -465,7 +470,7 @@ async function performSingleFileDrag(
 
   // Record the true identity so our own drop builds the transfer from the source
   // volume + path, not the lossy pasteboard round-trip. The single path IS the
-  // path as the source volume knows it (volume-relative for MTP/SMB).
+  // path as the source volume knows it (volume-relative for MTP).
   recordSelfDragIdentity(sourceVolumeId, [filePath])
 
   // Store cleanup for later; the temp file must survive the entire drag session

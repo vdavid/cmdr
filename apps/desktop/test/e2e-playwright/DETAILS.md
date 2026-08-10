@@ -262,12 +262,13 @@ Two drop SHAPES, both modeled:
 - **External drop** (no `recordedIdentity`): the dropped `paths` are genuine local absolute paths from Finder; the
   source-volume RESOLVER runs. The read-only / local→MTP / external-mtp-path specs use this.
 - **In-app self-drag** (`recordedIdentity = { sourceVolumeId, sourcePaths }`, or the `triggerSelfFileDrop` wrapper): the
-  drop builds its transfer from the recorded source volume + the paths the volume KNOWS (volume-relative for MTP/SMB),
-  exactly as a real self-drag does — NOT by resolving the pasteboard paths. This is the ONLY shape that reproduces the
-  live MTP/SMB self-drag failure class (a relative path round-trips through wry's drop event looking like a local
-  absolute path, and the resolver mis-resolves it to local → 0 bytes). Feeding invented full paths through the resolver
-  (the old specs' only shape) is exactly how that bug escaped. Covered by `drag-drop-entry.spec.ts` (local) and
-  `mtp-drag-drop-entry.spec.ts` (MTP self-drag + the external-drop variant + read-only).
+  drop builds its transfer from the recorded source volume + the paths the volume KNOWS (volume-relative for MTP; an
+  OS-mounted SMB share hands out absolute `/Volumes/…` paths), exactly as a real self-drag does — NOT by resolving the
+  pasteboard paths. This is the ONLY shape that reproduces the live MTP self-drag failure class (a relative path
+  round-trips through wry's drop event looking like a local absolute path, and the resolver mis-resolves it to local → 0
+  bytes). Feeding invented full paths through the resolver (the old specs' only shape) is exactly how that bug escaped.
+  Covered by `drag-drop-entry.spec.ts` (local) and `mtp-drag-drop-entry.spec.ts` (MTP self-drag + the external-drop
+  variant + read-only).
 
 ## Multi-window testing
 

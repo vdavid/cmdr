@@ -193,7 +193,7 @@ export interface ExplorerAPI {
    *
    *  `recordedIdentity` models an IN-APP self-drag: the drop builds its transfer
    *  from the recorded source volume + the paths the volume knows (volume-relative
-   *  for MTP/SMB), exactly as a real self-drag does, instead of resolving the
+   *  for MTP), exactly as a real self-drag does, instead of resolving the
    *  pasteboard paths. Omit it to model a genuine EXTERNAL drop (local absolute
    *  paths through the resolver). */
   triggerFileDrop: (

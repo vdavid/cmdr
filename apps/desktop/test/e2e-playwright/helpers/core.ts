@@ -98,9 +98,10 @@ export async function dispatchMenuCommand(tauriPage: PageLike, commandId: string
  *
  * `recordedIdentity` models an IN-APP self-drag (what `triggerSelfFileDrop`
  * wraps): the drop builds its transfer from the recorded source volume + the
- * paths the volume knows (volume-relative for MTP/SMB), exactly as a real
- * self-drag does — NOT by resolving the pasteboard `paths`. This is the only
- * shape that reproduces the live MTP/SMB self-drag failure class. Omit it for a
+ * paths the volume knows (volume-relative for MTP; an OS-mounted SMB share hands
+ * out absolute `/Volumes/…` paths), exactly as a real self-drag does — NOT by
+ * resolving the pasteboard `paths`. This is the only shape that reproduces the
+ * live MTP self-drag failure class. Omit it for a
  * genuine EXTERNAL drop (local absolute paths through the resolver).
  */
 export async function triggerFileDrop(
@@ -128,15 +129,15 @@ export async function triggerFileDrop(
 
 /**
  * Drives the native drag-and-drop entry for an IN-APP self-drag — the shape that
- * reproduces the live MTP/SMB failure class (a virtual volume's RELATIVE listing
- * path lands on the pasteboard and, after wry's drop round-trip, looks exactly
- * like a local absolute path). The drop builds its transfer from the recorded
+ * reproduces the live MTP failure class (a volume-RELATIVE listing path lands on
+ * the pasteboard and, after wry's drop round-trip, looks exactly like a local
+ * absolute path). The drop builds its transfer from the recorded
  * `{ sourceVolumeId, sourcePaths }` (app state recorded at drag start), never by
  * resolving the pasteboard paths, exactly as a real self-drag does.
  *
  * `pasteboardPaths` are the lossy paths the OS would deliver (used only for
  * hit-testing in the real flow); the transfer uses `recordedIdentity.sourcePaths`.
- * They're usually the same volume-relative strings, matching reality.
+ * They're usually the same strings the volume knows, matching reality.
  */
 export async function triggerSelfFileDrop(
   tauriPage: PageLike,

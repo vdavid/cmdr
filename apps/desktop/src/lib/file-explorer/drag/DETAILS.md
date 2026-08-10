@@ -91,10 +91,18 @@ Key files:
 
 ### Self-drag identity (in-app drops never trust the pasteboard round-trip)
 
-An in-app drag puts the source listing's paths on the pasteboard. For a virtual volume (MTP, smb2-native SMB) those
-paths are **volume-relative** (`/photos/sunset.jpg`), and after a round-trip through wry's native drop event they look
-exactly like a local absolute path. The drop resolver can't tell them apart, mis-resolves the source to the local
-volume, and the transfer dialog reports 0 bytes / 0 files (and the move-vs-copy badge can read wrong).
+An in-app drag puts the source listing's paths on the pasteboard. MTP paths are **volume-relative**
+(`/photos/sunset.jpg`), and after a round-trip through wry's native drop event they look exactly like a local absolute
+path. The drop resolver can't tell them apart, mis-resolves the source to the local volume, and the transfer dialog
+reports 0 bytes / 0 files (and the move-vs-copy badge can read wrong).
+
+**Direct SMB is NOT one of the relative-path cases**, despite being non-local for every other purpose:
+`SmbVolume::list_directory_impl` builds each entry's path from `to_display_path()`, which prefixes the OS mount point,
+so an SMB pane holds `/Volumes/naspi/photos/sunset.jpg`. The reverse direction agrees: `to_smb_path` has an explicit
+branch for "paths that start with the mount path (absolute paths from frontend)". An SMB self-drag would therefore
+resolve correctly through the resolver too; it takes the recorded-identity path for consistency, not out of necessity.
+This also means an SMB pane's drag-out publishes REAL file URLs (see `native_drag/type_plan.rs`) — the paths are
+genuinely openable, which is the whole reason the locality flag has to say so.
 
 The fix: record the drag's **true identity** at drag start and consume it on our own drop, sidestepping the lossy
 round-trip entirely.

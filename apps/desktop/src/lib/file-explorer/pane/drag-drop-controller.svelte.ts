@@ -123,10 +123,11 @@ export function createDragDropController(deps: DragDropControllerDeps) {
    *
    * - **In-app self-drag** (`recordedIdentity` set): the source volume id AND the
    *   source paths come from app state recorded at drag start — NOT from the
-   *   pasteboard-derived `paths`. This is the only correct source for a virtual
-   *   volume (MTP, smb2-native SMB), whose volume-relative paths
-   *   (`/photos/sunset.jpg`) round-trip through wry's drop event looking exactly
-   *   like local absolute paths, defeating the resolver. The kind probe is
+   *   pasteboard-derived `paths`. This is the only correct source for MTP, whose
+   *   volume-relative paths (`/photos/sunset.jpg`) round-trip through wry's drop
+   *   event looking exactly like local absolute paths, defeating the resolver.
+   *   (Direct SMB paths are absolute `/Volumes/…` mount paths and would resolve
+   *   either way; it takes this path for consistency.) The kind probe is
    *   skipped: a relative path can't be stat'd locally (it would either
    *   all-unknown or, worse, coincidentally stat a same-named local path), so we
    *   use the approximate count shape — honest beats half-right.
@@ -455,10 +456,10 @@ export function createDragDropController(deps: DragDropControllerDeps) {
 
   /**
    * The source path fed to `pickDropOperation` (move-vs-copy). For a recorded
-   * self-drag the pasteboard path is volume-relative (can't be matched to a
-   * volume root), so we use the recorded source volume's ROOT path instead —
-   * that's what makes a same-volume MTP/SMB move resolve to Move, not Copy.
-   * Otherwise the first dropped path.
+   * self-drag the pasteboard path may be volume-relative (MTP), which can't be
+   * matched to a volume root, so we use the recorded source volume's ROOT path
+   * instead — that's what makes a same-volume MTP move resolve to Move, not
+   * Copy. Otherwise the first dropped path.
    */
   function operationSourcePath(recordedIdentity: SelfDragIdentity | undefined, paths: string[]): string | null {
     const firstPath = paths.at(0) ?? null
@@ -471,7 +472,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
   /**
    * The recorded self-drag identity to consume, or undefined when there's none
    * to trust. We trust it only when its `sourceVolumeId` is a REGISTERED
-   * backend-real volume: that's what makes the MTP/SMB self-drag correct (a real
+   * backend-real volume: that's what makes the MTP self-drag correct (a real
    * volume + volume-relative paths) while letting a search-results self-drag
    * (virtual `'search-results'` id, real absolute paths spanning volumes) fall
    * through to the resolver. A registry-membership check, not a string compare.

@@ -382,12 +382,13 @@ does.
 **Self-drag identity (drop builds from app state, not the pasteboard).** `drag-drop-controller.svelte.ts::handleDrop`
 consumes the self-drag identity recorded at drag start (`drag/drag-drop.ts::recordSelfDragIdentity`) instead of
 resolving the pasteboard-derived paths, but only when `getIsDraggingFromSelf()` is true AND the recorded
-`sourceVolumeId` is a registered backend-real volume (`consumableSelfDragIdentity`). This is what fixes the MTP/SMB
-self-drag: a virtual volume's relative listing path (`/photos/sunset.jpg`) round-trips through wry's drop event looking
-like a local absolute path, so the resolver would mis-resolve it to local and the dialog would read 0 bytes. The
-recorded identity carries the truth (source volume id + the paths the volume knows). External drops and search-results
-drags (virtual id, real absolute paths) fall through to `resolveSourceVolumeId`. `FilePane` threads its `volumeId` as a
-prop into `FullList` / `BriefList` so the drag-start sites can stamp the source volume onto the recorded identity. Full
+`sourceVolumeId` is a registered backend-real volume (`consumableSelfDragIdentity`). This is what fixes the MTP
+self-drag: a volume-relative listing path (`/photos/sunset.jpg`) round-trips through wry's drop event looking like a
+local absolute path, so the resolver would mis-resolve it to local and the dialog would read 0 bytes. (Direct SMB isn't
+in that class — its listing paths are absolute `/Volumes/…` mount paths — but it rides the same branch.) The recorded
+identity carries the truth (source volume id + the paths the volume knows). External drops and search-results drags
+(virtual id, real absolute paths) fall through to `resolveSourceVolumeId`. `FilePane` threads its `volumeId` as a prop
+into `FullList` / `BriefList` so the drag-start sites can stamp the source volume onto the recorded identity. Full
 architecture in `../drag/DETAILS.md` § "Self-drag identity".
 
 **Dialog state lifecycle.** `dialog-state.svelte.ts` exposes one factory per `DualPaneExplorer`. Handlers like

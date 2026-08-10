@@ -71,8 +71,14 @@ export const MTP_VOLUME: VolumeInfo = {
   supportsTrash: false,
 } as unknown as VolumeInfo
 
-// An smb2-native SMB share, registered with an `smb://…` root. Its listing paths
-// are volume-relative, same class as MTP.
+// A non-local share modeled with an `smb://…` root, standing in for the
+// "registered backend-real volume that isn't the local disk" case.
+//
+// ⚠️ Not the shape a REAL connected SMB share has: that one is OS-mounted, so it
+// reaches the FE from the `/Volumes` enumeration with `path: '/Volumes/share'`
+// and absolute listing paths (see `../drag/DETAILS.md` § "Self-drag identity").
+// The tests here only need a registered non-local id, so the unrealistic root
+// doesn't weaken them — but don't read this fixture as documentation of SMB.
 export const SMB_VOLUME: VolumeInfo = {
   id: 'smb-server-share',
   name: 'share on server',
