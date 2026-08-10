@@ -822,15 +822,13 @@ mod tests {
             "expected SMB-shaped ID (smb-...), got {}",
             volume.id
         );
-        assert!(
-            volume.id.contains(&format!("-{port}-")),
-            "expected ID to embed the port ({port}); got {}",
-            volume.id
-        );
-        assert!(
-            volume.id.ends_with("-public"),
-            "expected ID to end with the share name; got {}",
-            volume.id
+        // The mount's own coordinates, not the path's. Asserted through the funnel
+        // rather than against a spelled-out ID, so the shape can change without
+        // this test going stale (only the identity it keys on may not).
+        assert_eq!(
+            volume.id,
+            crate::file_system::volume::smb_volume_id(&host, port, "public"),
+            "expected the ID keyed on (server, port, share)"
         );
     }
 }
