@@ -5643,9 +5643,9 @@ dependencies = [
 
 [[package]]
 name = "mtp-rs"
-version = "0.29.0"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e89822ef6d73fc8d8a8c3c976bcadb81adae5736ba3d21e40d8eb838a0a8bb6"
+checksum = "101fdd60ac8bf39f698f257555f3920ec3ee0971e6fd05f73ec5d8d44d0f3b60"
 dependencies = [
  "async-trait",
  "bytes",
@@ -5956,19 +5956,23 @@ dependencies = [
 
 [[package]]
 name = "nusb"
-version = "0.2.4"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "215a49c10e8cff30a0da93b258b21846c4e9242f7683748cfa8474fdc2e4d22b"
+checksum = "18ef13beb3b3a8fc16fd7aea912ebd3d45dde00a9a5b968d0742297468065845"
 dependencies = [
  "core-foundation 0.10.1",
  "core-foundation-sys",
  "futures-core",
  "io-kit-sys",
+ "js-sys",
  "linux-raw-sys",
  "log",
  "once_cell",
  "rustix",
  "slab",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
  "windows-sys 0.61.2",
 ]
 
