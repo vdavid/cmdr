@@ -121,26 +121,18 @@ Note David is considering moving the queue out of a separate window into a soft 
 change would make the queue's sessions the _same_ sessions as the main window's, which this design absorbs without
 alteration. Don't build anything that assumes two windows.
 
-## M0's premise: an operation does not currently survive a reload
+## M0: an operation now survives a reload
 
-Every "the operation outlives the view" sentence above is false today, and not because of the dialog.
+**Done.** Every "the operation outlives the view" sentence above used to be false, and not because of the dialog: a
+`beforeunload` handler in `(main)/+layout.svelte` walked the GLOBAL registry and stopped every operation, backgrounded
+ones included. Start a copy, press Queue, hot-reload the main window, and the transfer died while the queue window sat
+there rendering a row for it.
 
-`apps/desktop/src/routes/(main)/+layout.svelte:282-284` registers a `beforeunload` handler that calls
-`cancelAllWriteOperations()`. That command walks the GLOBAL registry and stops every operation
-(`src-tauri/src/file_system/write_operations/state.rs`, pinned by a test literally named
-`cancel_all_write_operations_walks_the_global_registry`). Backgrounded operations included. Operations the main window
-has no view on at all, included.
-
-The reproduction is one line long: start a copy, press Queue, hot-reload the main window, and the transfer dies while
-the queue window sits there rendering a row for it.
-
-This is a defect independent of the refactor, and it contradicts David's model more directly than the dialog coupling
-does: the dialog at least only stops the operation it owns. Fix it first, because M1 through M6 all reason from a
-premise it currently invalidates.
-
-The fix turned out to be larger than a frontend edit (the backend has to own operation lifetime and the quit decision,
-and local copies have to stage before a worker can be safely abandoned), so it has its own spec:
-`docs/specs/quit-and-operation-lifetime.md`. That document IS M0.
+The fix was larger than a frontend edit (the backend had to own operation lifetime and the quit decision, and local
+copies had to stage before a worker could be safely abandoned), so it got its own spec:
+`docs/specs/quit-and-operation-lifetime.md`. That document WAS M0, and all three of its milestones have landed. A
+window going away is no longer an event an operation hears about; the quit gate (`src-tauri/src/quit/`) is the only
+thing that stops work. M1 onward can reason from the premise.
 
 ## The in-dialog guards, and why they retire
 

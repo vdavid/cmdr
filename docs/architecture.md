@@ -178,6 +178,9 @@ All under `apps/desktop/src-tauri/src/`.
   the `tauri-apis` rule in `.claude/rules/`
 - `instance_lock.rs`: Single-instance guard: one process per data dir, claimed at startup. See
   `tooling/instance-isolation.md` § Instance lock
+- `quit/`: The quit gate. Both exit paths ask it first; with non-instant operations in flight it holds the exit, raises
+  the countdown dialog, and runs the teardown on its own deadline. See `apps/desktop/src-tauri/src/quit/CLAUDE.md` and
+  the frontend `apps/desktop/src/lib/quit/CLAUDE.md`
 - `stubs/`: Linux compilation stubs for macOS-only modules (Docker E2E pipeline)
 - `menu/`: Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable. The Help
   menu carries the "What's new" item (above "Send feedback…")

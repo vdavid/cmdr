@@ -19,9 +19,11 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
 - **`OperationIntent` is one `AtomicU8`**; ❌ never `store(...)` it directly. Cancel keeps copied files, Rollback
   deletes them in reverse. **`PauseGate` is separate** and orthogonal; cancel wins.
 - **Stopping has TWO tiers.** Tier 1 is `backend_cancel` (cooperative, the backend cleans up after itself) and is what
-  EVERY user-initiated cancel uses. Tier 2 is `backend_abort` (`abort_write_operation` / `abort_all_write_operations`):
-  it stops WAITING, skips backend cleanup, and is ❌ for a deadline holder only, never for anything a person clicked.
+  EVERY user-initiated cancel uses. Tier 2 is `backend_abort` (`abort_all_write_operations`): it stops WAITING, skips
+  backend cleanup, and has exactly ONE caller, the quit deadline (`crate::quit`) — ❌ never anything a person clicked.
   Both triggers fire tier 1 first. `transfer/DETAILS.md` § "Two tiers of cancel".
+- **A window going away never stops work.** `cancel_all_write_operations` belongs to the quit gate alone; ❌ no
+  frontend teardown hook may call it. `../../quit/CLAUDE.md`.
 - **Stop-mode conflicts store the oneshot sender BEFORE emitting `write-conflict`** (emit-first hangs the recv); the
   dispatch mutex serializes merges and ❌ never spans the file write.
 - **Emit through `OperationEventSink`, never `AppHandle`.** `write-settled` fires once, AFTER the terminal event; a

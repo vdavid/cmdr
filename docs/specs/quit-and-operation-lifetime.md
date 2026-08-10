@@ -197,6 +197,25 @@ original plan; three things went beyond it, all deliberate:
 
 ## Q3: the quit gate, with the countdown owned by Rust
 
+**Landed.** Durable notes are `src-tauri/src/quit/CLAUDE.md` + `DETAILS.md` (the phase machine, the two clocks, the
+teardown ordering) and `src/lib/quit/CLAUDE.md` + `DETAILS.md` (the frontend mirror). What follows is the original
+plan; five things it left open or got differently:
+
+- **The countdown is 15 s, not 20.** Settled with David: 20 plus the ~2 s teardown sits too close to the window macOS
+  gives an app during logout or restart.
+- **The two open questions are answered.** `DialogManager` couldn't do it — every modal sits at `--z-modal` and they
+  stack by DOM order, which a window-level prompt can't rest on — so `ModalDialog` gained a `topmost` prop over a new
+  `--z-modal-top` token, and the dialog mounts at the top level of `(main)/+layout.svelte` rather than inside the
+  explorer's dialog tree. And Tauri does NOT surface the logout case distinctly: `RunEvent::ExitRequested` carries only
+  an exit code, `None` for any user-driven quit, so one countdown has to fit the strictest case.
+- **A `restart()` never reaches the gate**: Tauri ignores `prevent_exit` for `RESTART_EXIT_CODE`, so asking there would
+  show a dialog nobody could answer.
+- **The deadline runs on a dedicated OS thread**, not a tokio task: the timer whose job is firing when things are stuck
+  must not be schedulable behind the runtime that's stuck.
+- **The teardown's exit re-enters the gate.** `AppHandle::exit(0)` comes back as `ExitRequested` with the aborted
+  operations still registered, so a terminal `Quitting` phase is what stops the app prompting over its own teardown
+  forever.
+
 **Why Rust owns the timer:** if the frontend drives a `setInterval` and the webview is wedged, the app never quits. A
 wedged UI is a likely reason someone is quitting in the first place. The dialog is a looking glass here too.
 
