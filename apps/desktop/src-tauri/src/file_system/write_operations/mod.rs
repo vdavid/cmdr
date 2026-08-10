@@ -89,6 +89,10 @@ pub use state::{
     VolumesBusyChanged, busy_volume_ids, cancel_all_write_operations, cancel_write_operation, get_operation_status,
     init_busy_volume_emitter, list_active_operations, resolve_write_conflict,
 };
+// The hard-abort tier (`state::abort_all_write_operations`) is deliberately NOT
+// re-exported here: it has exactly one legitimate caller, the quit deadline, and
+// a name sitting in this facade is a name something reaches for. The quit gate
+// adds the re-export along with its call site.
 // Operation manager: the single scheduler + registry every write op flows
 // through. `OperationsChanged` / `OperationSnapshot` are the thin
 // `operations-changed` event payload (the queue window consumes them; `LifecycleStatus` rides

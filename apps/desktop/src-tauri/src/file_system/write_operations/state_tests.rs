@@ -273,6 +273,127 @@ fn cancel_all_write_operations_walks_the_global_registry() {
     );
 }
 
+// ---- the hard-abort tier (Q2) --------------------------------------------
+//
+// Tier 2 exists so a deadline holder can stop WAITING for a backend that isn't
+// answering. Its whole safety story is that it is unreachable from anything a
+// user clicks, so the negatives here matter more than the positives.
+
+#[test]
+fn backend_abort_starts_unset_on_fresh_state() {
+    let state = WriteOperationState::new(Duration::from_millis(50));
+    assert!(!state.backend_abort.is_cancelled());
+}
+
+/// The invariant the whole two-tier split rests on: an ordinary cancel — the one
+/// every Cancel button, every queue-window stop, and the frontend teardown net
+/// fire — must NEVER reach tier 2. Tier 2 skips each backend's own partial
+/// cleanup, so a cancel that leaked into it would trade a clean wind-down for
+/// litter on every single cancel.
+#[test]
+fn an_ordinary_cancel_never_fires_the_hard_abort() {
+    let op = install_state("cancel-never-aborts", OperationIntent::Running);
+    cancel_write_operation(op.id(), false);
+    assert!(
+        !op.state().backend_abort.is_cancelled(),
+        "a user's Cancel must stay in tier 1: the backend deletes its own partial"
+    );
+
+    let rb = install_state("rollback-never-aborts", OperationIntent::Running);
+    cancel_write_operation(rb.id(), true);
+    assert!(
+        !rb.state().backend_abort.is_cancelled(),
+        "a Rollback is a user decision too, and stays in tier 1"
+    );
+}
+
+/// The same negative for the teardown walk, which is the one a wrong wiring
+/// would most plausibly route through tier 2 ("we're going away anyway").
+#[test]
+fn cancel_all_never_fires_the_hard_abort() {
+    let registry = WriteOperationRegistry::new();
+    let running = registered_in(&registry, "cancel-all-never-aborts", OperationIntent::Running);
+
+    registry.cancel_all();
+
+    assert!(running.backend_cancel.is_cancelled(), "tier 1 fires");
+    assert!(
+        !running.backend_abort.is_cancelled(),
+        "tier 2 is for a deadline holder, ❌ never for a teardown that can still afford to wait"
+    );
+}
+
+/// Aborting one operation fires BOTH tiers: an abort is a cancel that ran out of
+/// patience, so the backend still gets its cooperative signal first.
+#[test]
+fn abort_write_operation_fires_both_tiers() {
+    let op = install_state("abort-one", OperationIntent::Running);
+
+    abort_write_operation(op.id());
+
+    assert_eq!(load_intent(&op.state().intent), OperationIntent::Stopped);
+    assert!(op.state().backend_cancel.is_cancelled(), "tier 1 first");
+    assert!(op.state().backend_abort.is_cancelled(), "then tier 2");
+}
+
+/// An abort must reach an op that was ALREADY cancelled — that is the whole quit
+/// sequence (cancel, wait a beat, abort whatever is left). `cancel_write_operation`
+/// no-ops on an already-`Stopped` op, so an abort that rode entirely on it would
+/// silently do nothing exactly when it is needed.
+#[test]
+fn abort_reaches_an_operation_that_was_already_cancelled() {
+    let op = install_state("abort-after-cancel", OperationIntent::Running);
+    cancel_write_operation(op.id(), false);
+
+    abort_write_operation(op.id());
+
+    assert!(
+        op.state().backend_abort.is_cancelled(),
+        "the quit path cancels first and aborts second; the second step has to land"
+    );
+}
+
+#[test]
+fn abort_unknown_operation_is_a_silent_noop() {
+    abort_write_operation("does-not-exist-xyzzy");
+}
+
+#[test]
+fn abort_all_write_operations_walks_the_global_registry() {
+    // Same shape and same reason as `cancel_all_write_operations_walks_the_global_registry`:
+    // the public function's one job is to point at the process-global registry,
+    // so it only runs when it has the process to itself.
+    if !crate::file_system::write_operations::test_support::one_test_per_process() {
+        return;
+    }
+    let op = install_state("abort-all-global-wiring", OperationIntent::Running);
+
+    abort_all_write_operations();
+
+    assert!(
+        op.state().backend_abort.is_cancelled(),
+        "the public quit-deadline entry point must reach ops in the global registry"
+    );
+}
+
+#[test]
+fn abort_all_fires_both_tiers_on_every_live_operation() {
+    let registry = WriteOperationRegistry::new();
+    let running = registered_in(&registry, "abort-all-running", OperationIntent::Running);
+    // Already stopped: `cancel_all` skips it, but the deadline still has to stop
+    // waiting for whatever it left in flight.
+    let stopped = registered_in(&registry, "abort-all-stopped", OperationIntent::Stopped);
+
+    registry.abort_all();
+
+    assert!(running.backend_cancel.is_cancelled());
+    assert!(running.backend_abort.is_cancelled());
+    assert!(
+        stopped.backend_abort.is_cancelled(),
+        "an op cancelled a moment ago is exactly the one still holding the quit"
+    );
+}
+
 // Panic-safe cache + lane cleanup is now `manager::ManagedTaskGuard`; its
 // panic-unwind pin lives in `manager::tests`.
 

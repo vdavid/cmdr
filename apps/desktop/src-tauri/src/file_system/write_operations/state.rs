@@ -81,6 +81,29 @@ pub struct WriteOperationState {
     /// token to mtp-rs's poll-based flag at the entry point of each MTP-aware
     /// call.
     pub backend_cancel: CancellationToken,
+    /// TIER 2: stop WAITING for in-flight backend I/O, rather than asking it to
+    /// stop. Fired only by [`abort_write_operation`] / [`abort_all_write_operations`],
+    /// which today means the quit deadline and nothing else.
+    ///
+    /// [`backend_cancel`](Self::backend_cancel) above is tier 1 and stays the
+    /// default for every user-initiated cancel: it travels to the backend through
+    /// the per-chunk `on_progress` callback, so the backend drops its own handle
+    /// and deletes its own partial. That is the RIGHT wind-down, and the only
+    /// thing wrong with it is that it is only observed once the in-flight chunk's
+    /// read and write both return — on SMB, 20 s to send plus 30 s of server
+    /// silence, so one chunk can hold a quit for ~30 s.
+    ///
+    /// Tier 2 is what a deadline holder fires when that is too long: the
+    /// cross-volume streaming write is raced against this token
+    /// (`transfer/volume/strategy.rs`), so the wait ends whether or not the
+    /// backend ever comes back. The cost is that the backend's own cleanup is
+    /// skipped, which is why it is NEVER fired by an ordinary cancel — the
+    /// abandoned bytes are a registered `.cmdr-tmp-*` that the staging layer's
+    /// startup sweep removes ([`super::in_flight_temps`]).
+    ///
+    /// ❌ Don't read this to decide anything a user asked for; it means "the app
+    /// is going away", not "the user changed their mind".
+    pub backend_abort: CancellationToken,
     /// Cooperative pause gate. The drivers call `pause_gate.wait_while_paused_*`
     /// at each between-files boundary, right after the `is_cancelled` check.
     /// Pause is orthogonal to `intent` (the cancel/rollback machine); the
@@ -141,6 +164,7 @@ impl WriteOperationState {
             conflict_dispatch_lock: tokio::sync::Mutex::new(()),
             estimator: std::sync::Mutex::new(EtaEstimator::new()),
             backend_cancel: CancellationToken::new(),
+            backend_abort: CancellationToken::new(),
             pause_gate: PauseGate::new(),
             journal_volumes: None,
             in_flight_temps: std::sync::Mutex::new(Vec::new()),
@@ -357,6 +381,25 @@ impl WriteOperationRegistry {
                 let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
                 // Wake a paused, parked op so teardown's cancel is observed.
                 state.pause_gate.wake();
+            }
+        }
+    }
+
+    /// Stops every registered operation and stops WAITING for the ones that
+    /// don't answer. See [`abort_all_write_operations`].
+    pub(super) fn abort_all(&self) {
+        // Tier 1 first, and unconditionally: an abort is a cancel that ran out
+        // of patience, so an operation must never observe tier 2 without the
+        // cooperative signal that gives its backends the chance to wind down
+        // cleanly in the moments before the process goes.
+        self.cancel_all();
+        let Ok(entries) = self.entries.read() else {
+            return;
+        };
+        for (id, state) in entries.iter() {
+            if !state.backend_abort.is_cancelled() {
+                log::info!("abort_all_write_operations: no longer waiting for op={id}");
+                state.backend_abort.cancel();
             }
         }
     }
@@ -726,6 +769,46 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
 /// delete files in the background without visual feedback.
 pub fn cancel_all_write_operations() {
     WRITE_OPERATION_STATE.cancel_all();
+}
+
+/// TIER 2 for one operation: cancel it, and stop waiting for whatever in-flight
+/// backend call doesn't answer.
+///
+/// A plain [`cancel_write_operation`] reaches a backend through its per-chunk
+/// `on_progress` callback, so a write that never returns never sees it. This runs
+/// that cancel AND fires [`WriteOperationState::backend_abort`], which the
+/// cross-volume streaming write is raced against — so the wait ends on our clock
+/// instead of the server's.
+///
+/// ❌ Not a cancel with a shorter fuse: the backend's own partial cleanup is
+/// skipped, and the abandoned bytes are left to the staged-write sweep. Fire it
+/// only from a deadline holder (the quit gate), ❌ never from a user's Cancel.
+#[allow(
+    dead_code,
+    reason = "The quit gate is the caller and lands separately; the trigger ships with the mechanism it fires so that milestone wires rather than builds it. Exercised by the tier-2 suites."
+)]
+pub fn abort_write_operation(operation_id: &str) {
+    cancel_write_operation(operation_id, false);
+    let Some(state) = WRITE_OPERATION_STATE.get(operation_id) else {
+        log::warn!("abort_write_operation: op={operation_id}: no such operation, ignoring");
+        return;
+    };
+    log::info!("abort_write_operation: op={operation_id}: no longer waiting for in-flight backend calls");
+    state.backend_abort.cancel();
+}
+
+/// TIER 2 for every live operation: what the quit deadline fires once the
+/// cooperative cancel has had its chance.
+///
+/// Same contract as [`abort_write_operation`], applied to the whole registry. The
+/// caller owns the "has had its chance" part: cancel first, give the operations a
+/// beat to settle, and call this for whatever is still there.
+#[allow(
+    dead_code,
+    reason = "The quit gate is the caller and lands separately; the trigger ships with the mechanism it fires so that milestone wires rather than builds it. Exercised by the tier-2 suites."
+)]
+pub fn abort_all_write_operations() {
+    WRITE_OPERATION_STATE.abort_all();
 }
 
 /// Sets the pause flag on the live state for `operation_id`, if present.
