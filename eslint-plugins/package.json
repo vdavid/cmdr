@@ -1,0 +1,5 @@
+{
+  "name": "@cmdr/eslint-plugins",
+  "private": true,
+  "type": "module"
+}

@@ -138,14 +138,13 @@ export function compareSemverDesc(a: string, b: string): number {
 }
 
 /**
- * Finds the max daily download value across a set of groups. `_allDays` is the caller's day axis,
- * kept for a uniform call shape with `buildTimeline`; the max is taken over every row's own day.
+ * Finds the max daily download value across a set of groups, taken over every row's own day. Needs
+ * no day axis: a day with no rows contributes nothing to a maximum.
  */
 export function maxDailyAcrossGroups(
   rows: DownloadRow[],
   groupField: keyof DownloadRow,
   groupKeys: string[],
-  _allDays: string[],
 ): number {
   let max = 1
   for (const key of groupKeys) {

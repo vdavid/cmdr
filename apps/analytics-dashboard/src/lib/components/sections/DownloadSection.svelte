@@ -103,7 +103,7 @@
                 {@const versions = aggregateBy(cf.downloads, 'version', 'downloads')
                     .sort((a, b) => compareSemverDesc(a.x, b.x))
                     .slice(0, 8)}
-                {@const versionMaxY = maxDailyAcrossGroups(cf.downloads, 'version', versions.map((v) => v.x), allDays)}
+                {@const versionMaxY = maxDailyAcrossGroups(cf.downloads, 'version', versions.map((v) => v.x))}
 
                 <MetricRow
                     metrics={[

@@ -64,8 +64,8 @@
     {@const countryRows = downloads.filter((r) => r.country === hoveredCountry)}
     {@const arches = aggregateBy(countryRows, 'arch', 'downloads')}
     {@const countryVersions = aggregateBy(countryRows, 'version', 'downloads').slice(0, 5)}
-    {@const archMaxY = maxDailyAcrossGroups(countryRows, 'arch', arches.map((a) => a.x), allDays)}
-    {@const verMaxY = maxDailyAcrossGroups(countryRows, 'version', countryVersions.map((v) => v.x), allDays)}
+    {@const archMaxY = maxDailyAcrossGroups(countryRows, 'arch', arches.map((a) => a.x))}
+    {@const verMaxY = maxDailyAcrossGroups(countryRows, 'version', countryVersions.map((v) => v.x))}
     <div
         class="pointer-events-none fixed z-50 w-80 rounded-lg border border-border bg-surface-elevated p-3 shadow-lg"
         style="left: {Math.max(16, tooltipX - 336)}px; top: {Math.max(16, tooltipY - 120)}px;"
