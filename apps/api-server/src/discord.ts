@@ -55,6 +55,13 @@ export interface BetaSignupNotification {
   status: 'new' | 'added-existing'
 }
 
+export interface IntakeRejectedInfo {
+  /** The ceiling that was hit, so the alert states the number without a lookup. */
+  budgetBytes: number
+  /** UTC day (`yyyy-mm-dd`) whose budget ran out. */
+  date: string
+}
+
 export interface EvictionInfo {
   evictedCount: number
   freedBytes: number
@@ -177,6 +184,20 @@ export function buildEvictionPayload(info: EvictionInfo): unknown {
   }
 }
 
+/**
+ * Build the Discord webhook JSON body for an exhausted daily intake budget. Sent at most once a
+ * day (`claimBudgetAlert`), because the flood that triggers it would otherwise be the thing that
+ * floods the webhook.
+ */
+export function buildIntakeRejectedPayload(info: IntakeRejectedInfo): unknown {
+  return {
+    content:
+      `Error report intake hit its daily budget of ${formatBytes(info.budgetBytes)} on ${info.date} ` +
+      `and is turning uploads away (503) until tomorrow. Legitimate traffic is nowhere near this, ` +
+      `so check for a flood before raising \`DAILY_INTAKE_BUDGET_BYTES\`.`,
+  }
+}
+
 async function postOnce(url: string, body: unknown): Promise<Response> {
   return fetch(url, {
     method: 'POST',
@@ -215,6 +236,10 @@ export async function postErrorReportNotification(
 
 export async function postEvictionNotification(webhookUrl: string, info: EvictionInfo): Promise<void> {
   await postWithRetry(webhookUrl, buildEvictionPayload(info), 'eviction')
+}
+
+export async function postIntakeRejectedNotification(webhookUrl: string, info: IntakeRejectedInfo): Promise<void> {
+  await postWithRetry(webhookUrl, buildIntakeRejectedPayload(info), 'intake-rejected')
 }
 
 export async function postFeedbackNotification(webhookUrl: string, notification: FeedbackNotification): Promise<void> {

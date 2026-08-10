@@ -8,7 +8,14 @@ import {
   EVICTION_HIGH_WATERMARK,
   EVICTION_LOW_WATERMARK,
 } from './error-report-eviction'
-import { postErrorReportNotification, postEvictionNotification } from './discord'
+import {
+  DAILY_INTAKE_BUDGET_BYTES,
+  checkIntakeAllowed,
+  claimBudgetAlert,
+  recordIntakeBytes,
+  type IntakeRejection,
+} from './error-report-intake'
+import { postErrorReportNotification, postEvictionNotification, postIntakeRejectedNotification } from './discord'
 
 const errorReport = new Hono<{ Bindings: Bindings }>()
 
@@ -141,12 +148,19 @@ async function postUploadWork(
     sizeBytes: number
     meta: ErrorReportMeta
     uploadedUnixSeconds: number
+    date: string
   },
 ): Promise<void> {
   try {
     await incrementTotalBytes(env.ERROR_REPORT_META, args.sizeBytes)
   } catch (e) {
     console.error('Error report: incrementTotalBytes failed', e)
+  }
+
+  try {
+    await recordIntakeBytes(env.ERROR_REPORT_META, args.date, args.sizeBytes)
+  } catch (e) {
+    console.error('Error report: recordIntakeBytes failed', e)
   }
 
   let evictionResult: Awaited<ReturnType<typeof tryEvict>> | null = null
@@ -186,11 +200,50 @@ async function postUploadWork(
   }
 }
 
+/**
+ * How long a turned-away client should wait. One hour covers the common case (a pause cleared by
+ * the next cron sweep) without pinning a client to a precise reopening time we can't promise.
+ */
+const INTAKE_RETRY_AFTER_SECONDS = 60 * 60
+
+/** 503 + `Retry-After` for a request the global gates turned away. */
+function intakeRejectedResponse(reason: IntakeRejection): Response {
+  const message =
+    reason === 'paused'
+      ? "Error report intake is paused right now. Your report wasn't sent."
+      : "Error report intake is at its limit for today. Your report wasn't sent."
+  return Response.json(
+    { error: message },
+    { status: 503, headers: { 'Retry-After': INTAKE_RETRY_AFTER_SECONDS.toString() } },
+  )
+}
+
 errorReport.post('/error-report', async (c) => {
   // Rate-limit by the caller IP before touching the body: every accepted request stores up to
   // 10 MB in R2 and posts a Discord notification, so an ungated flood is expensive.
   const limited = await enforceIpRateLimit(c.env.ERROR_REPORT_LIMITER, c.req)
   if (limited) return limited
+
+  // Global gates (daily byte budget + intake pause). The per-IP limiter above counts per data
+  // center, so this is what actually bounds a distributed flood. See `error-report-intake.ts`.
+  const today = todayDatePrefix()
+  const decision = await checkIntakeAllowed(c.env.ERROR_REPORT_META, today)
+  if (!decision.accept) {
+    console.error(`Error report: intake rejected (${decision.reason})`)
+    if (decision.reason === 'daily_budget' && c.env.DISCORD_WEBHOOK_URL) {
+      // One ping per day, not one per rejected upload; a flood is exactly when this fires.
+      const webhookUrl = c.env.DISCORD_WEBHOOK_URL
+      await scheduleBackground(
+        c,
+        claimBudgetAlert(c.env.ERROR_REPORT_META, today).then(async (claimed) => {
+          if (claimed) {
+            await postIntakeRejectedNotification(webhookUrl, { budgetBytes: DAILY_INTAKE_BUDGET_BYTES, date: today })
+          }
+        }),
+      )
+    }
+    return intakeRejectedResponse(decision.reason)
+  }
 
   // Pre-parse size guard. The body parser would slurp it all anyway, but cheap to fail fast.
   const contentLength = c.req.header('content-length')
@@ -229,7 +282,9 @@ errorReport.post('/error-report', async (c) => {
   }
 
   const id = meta.id
-  const datePrefix = todayDatePrefix()
+  // Same day the intake gate charged above, so the key prefix and the budget never disagree
+  // across a UTC midnight mid-request.
+  const datePrefix = today
   const env = envSegment(meta.buildMode)
   // The trailing UUID guarantees object uniqueness on its own. On the astronomically
   // rare (id, date, uuid) collision, retry with a fresh UUID, never a fresh id, so
@@ -256,7 +311,10 @@ errorReport.post('/error-report', async (c) => {
     },
   })
 
-  await scheduleBackground(c, postUploadWork(c.env, { id, key, sizeBytes, meta, uploadedUnixSeconds }))
+  await scheduleBackground(
+    c,
+    postUploadWork(c.env, { id, key, sizeBytes, meta, uploadedUnixSeconds, date: today }),
+  )
 
   return c.json({ id })
 })

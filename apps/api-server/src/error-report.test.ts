@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from 'vitest'
 import { app } from './index'
+import { DAILY_INTAKE_BUDGET_BYTES, dailyBytesKey, pauseIntake } from './error-report-intake'
+
+/** The UTC day the route charges an upload against. */
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10)
+}
 
 interface StoredObj {
   body: Uint8Array
@@ -339,5 +345,66 @@ describe('POST /error-report', () => {
     // Background work (waitUntil fallback awaits inline in tests)
     const total = await kv.get('total_bytes')
     expect(total).toBe('1234')
+  })
+
+  it('charges the accepted upload against the daily intake budget', async () => {
+    const kv = createKv()
+    const bindings = createBindings({ ERROR_REPORT_META: kv })
+    const fd = buildMultipart(new Uint8Array(4321), validMeta)
+
+    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+    expect(res.status).toBe(200)
+
+    expect(await kv.get(dailyBytesKey(todayUtc()))).toBe('4321')
+  })
+
+  it('returns 503 once the global daily byte budget is spent', async () => {
+    const kv = createKv()
+    await kv.put(dailyBytesKey(todayUtc()), String(DAILY_INTAKE_BUDGET_BYTES))
+    const bucket = createR2()
+    const bindings = createBindings({ ERROR_REPORT_META: kv, ERROR_REPORTS_BUCKET: bucket })
+    const fd = buildMultipart(new Uint8Array([1, 2, 3]), validMeta)
+
+    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+
+    expect(res.status).toBe(503)
+    expect(res.headers.get('Retry-After')).toBeTruthy()
+    // A rejected upload costs no storage: the whole point of the ceiling.
+    expect(bucket._store.size).toBe(0)
+  })
+
+  it('returns 503 while intake is paused', async () => {
+    const kv = createKv()
+    await pauseIntake(kv)
+    const bucket = createR2()
+    const bindings = createBindings({ ERROR_REPORT_META: kv, ERROR_REPORTS_BUCKET: bucket })
+    const fd = buildMultipart(new Uint8Array([1, 2, 3]), validMeta)
+
+    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+
+    expect(res.status).toBe(503)
+    expect(bucket._store.size).toBe(0)
+  })
+
+  it('pings Discord once when the budget runs out, not once per rejected upload', async () => {
+    const kv = createKv()
+    await kv.put(dailyBytesKey(todayUtc()), String(DAILY_INTAKE_BUDGET_BYTES))
+    const posts: string[] = []
+    globalThis.fetch = ((url: string) => {
+      posts.push(url)
+      return Promise.resolve(new Response(null, { status: 204 }))
+    }) as unknown as typeof fetch
+    const bindings = createBindings({
+      ERROR_REPORT_META: kv,
+      DISCORD_WEBHOOK_URL: 'https://discord.example/webhook',
+    })
+
+    for (let i = 0; i < 3; i++) {
+      const fd = buildMultipart(new Uint8Array([1]), validMeta)
+      const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+      expect(res.status).toBe(503)
+    }
+
+    expect(posts).toHaveLength(1)
   })
 })
