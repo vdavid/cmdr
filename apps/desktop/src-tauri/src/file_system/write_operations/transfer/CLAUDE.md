@@ -20,6 +20,11 @@ map: `DETAILS.md` § Files.
   opt-ins, ❌ don't merge them: SOURCE read-yield (MTP + SMB) is unbounded, DESTINATION write-yield (SMB only) is capped.
 - **Every phase announces itself to `transfer_probe.rs`, on BOTH drivers**: ❌ no `.await` on a transfer path without a
   phase, ❌ never derive a stall from FE timing.
+- **Cancel has TWO tiers, and ❌ nothing a user clicks reaches tier 2.** Tier 1 (`state.backend_cancel`) travels via
+  `on_progress` so the BACKEND deletes its own partial; ❌ never race a write against it. Tier 2
+  (`state.backend_abort`, fired only by `abort_*_write_operation`, i.e. the quit deadline) races the source open and
+  the write in `stream_pipe_file`, skips all backend cleanup, and leaves the temp to the startup sweep. The driver's
+  drain deadline is caller-chosen too (`copy.rs::drain_deadline`): 15 s cancel, 1 s abort.
 - **Retry is per-FILE, ONLY inside `stream_pipe_file`** (`retry.rs`): ❌ never higher, ❌ never on a `Cancelled`. **The
   stall watchdog is GATED and inert** (`connection_liveness() == Dead` AND `STALL_ABORT_AFTER`, and nothing answers
   `Dead` today), so ❌ never collapse the AND.

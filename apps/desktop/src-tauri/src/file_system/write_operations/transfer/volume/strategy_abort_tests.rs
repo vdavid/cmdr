@@ -273,5 +273,8 @@ async fn an_ordinary_cancel_still_routes_through_tier_one_and_the_backend_delete
         "and nothing may sit at the destination, under a real name or a temp one; got {:?}",
         witness.names().await
     );
-    assert!(bytes_seen.load(Ordering::SeqCst) > 0, "the fixture must really have streamed");
+    assert!(
+        bytes_seen.load(Ordering::SeqCst) > 0,
+        "the fixture must really have streamed"
+    );
 }

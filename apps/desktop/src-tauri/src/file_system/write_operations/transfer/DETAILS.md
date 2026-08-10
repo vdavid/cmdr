@@ -399,7 +399,7 @@ take this long, an 8 MiB MTP window needs USB at 45 KB/s.
   self-limiting — a pause ends when the user resumes, a source yield when foreground drains, a destination yield at its
   hard cap, a conflict when the human answers, a backoff on its timer — so aborting one would break something working
   as designed. A deliberate park also RESTARTS the clock, so parked seconds are never charged to the budget.
-- **Never while cancelling.** Cancel and rollback own their teardown via the driver's `CANCEL_DRAIN_DEADLINE`; a second
+- **Never while cancelling.** Cancel and rollback own their teardown via the driver's drain deadline; a second
   abort path racing them would only make the wind-down harder to reason about.
 - **Never for a `SingleShot` write** (the arm isn't even armed in `stream_pipe_file`). Those land in one indivisible
   frame at the file's FINAL name, and only the backend can tell "the server created the file and then refused the
@@ -412,7 +412,7 @@ take this long, an 8 MiB MTP window needs USB at 45 KB/s.
 **Residual risk, accepted (an abandoned write handle).** Ending the wait drops the destination's `write_from_stream`
 future mid-write, so an SMB `FileWriter` goes away without `finish()` or `abort()` and its handle leaks until the server
 reaps it on idle timeout. The `abandon_attempt` delete of the staged temp may then hit a sharing violation and leave a
-`.cmdr-tmp-*` behind. This is the same trade the driver's `CANCEL_DRAIN_DEADLINE` abandon already takes, and it is
+`.cmdr-tmp-*` behind. This is the same trade the driver's drain-deadline abandon already takes, and it is
 narrower here: the abort only fires on a path that has been silent for three minutes, so the session holding that handle
 was not working anyway. What it cannot cost is data at a real name — the write was staged, so the user's filename was
 never involved.
@@ -423,12 +423,10 @@ reports the failure. Bounded where the incident was not (it needed a force-quit)
 throughout, but it is the obvious knob to tune when the keepalive lands: cap the stall-aborts per file at one, or
 shorten the window against the keepalive's own. Today it is unreachable — the gate is shut.
 
-**Not covered: a cancel does not reach a wedged write itself.** The backend learns about a cancel through its
+**A cancel does not reach a wedged write itself; a second tier does.** The backend learns about a cancel through its
 `on_progress` callback, which a wedged write never calls, so on the SERIAL path a Cancel is only observed once the write
-returns — which now happens at the abort rather than never. The concurrent path bounds it independently by dropping its
-in-flight futures at `CANCEL_DRAIN_DEADLINE`. Racing every write against `state.backend_cancel` would fix the serial
-case too, but it would also skip each backend's own partial cleanup on the healthy cancel path, so it is deliberately
-not done here.
+returns. That is what § "Two tiers of cancel" below exists for. The concurrent path bounds it independently too, by
+dropping its in-flight futures at the drain deadline.
 
 The gate itself is pinned by `transfer_probe::tests::a_connection_with_no_liveness_verdict_is_never_aborted` — a
 volume answering `None` is never acted on however long it stays still, while the watchdog keeps reporting. That test is
@@ -461,6 +459,56 @@ semantics for a partially-successful op — and, more importantly, a product dec
 files copied with three quietly absent. That is a bigger change than M4.1 asked for and a worse default to guess at, so
 it is deliberately left for David to call.
 
+## Two tiers of cancel
+
+**Decision**: stopping a transfer has two tiers, and they are not the same signal with different urgency. Tier 1 asks
+the backend to stop; tier 2 stops waiting for it. Tier 1 is the default for every user-initiated cancel and tier 2 is
+❌ unreachable from anything a person clicks.
+
+**Tier 1, cooperative (`state.backend_cancel`).** The cancel travels to the backend through the per-chunk
+`on_progress` callback, and the backend answers by dropping its own handle and deleting its own partial
+(`volume/backends/local_posix.rs`, `smb/streams.rs` — the `writer.abort()` + `delete_partial()` sequence). Writes are
+❌ deliberately NOT raced against this token: dropping the write future would skip exactly that cleanup, on the healthy
+path, for every cancel. Every Cancel button, the queue window's stop, a Rollback, and the frontend teardown walk are
+tier 1 and stay tier 1.
+
+**Tier 2, hard abort (`state.backend_abort`).** What tier 1 cannot do is bound the WAIT. A write that never calls
+`on_progress` never sees the cancel, and `smb2`'s own deadlines are 20 s to send plus 30 s of server silence, so one
+chunk can hold a quit for ~30 s. Tier 2 is a deadline holder's answer: `strategy.rs::stream_pipe_file` races the source
+open and the destination write against it, so the wait ends on our clock whether or not the backend comes back. Fired
+only by `state::abort_write_operation` / `abort_all_write_operations`, which today means the quit deadline and nothing
+else. Both fire tier 1 first — an abort is a cancel that ran out of patience, never a cancel with a shorter fuse — and
+both work on an already-`Stopped` operation, which is the real sequence (cancel, wait a beat, abort what's left).
+
+**What tier 2 costs, and where the cleanup goes instead.** The backend runs none of its own cleanup, and ❌ nothing may
+go back through that connection to tidy up: the delete would hold the very deadline the tier exists to keep, a second
+time. So the staged `.cmdr-tmp-*` stays registered in both `in_flight_temps` ledgers and
+`in_flight_temps::init_and_sweep` removes it at the next launch, with no age gate, off the launch thread.
+`volume::cleanup::clean_abandoned_staged_writes` stands down for the same reason. Nothing is ever left at a real name,
+because the write was staged — which is what Q1 bought.
+
+**Why the two phases it races are the source open and the write, and no others.** They are `TaskPhase::OpeningSource`
+and `Streaming`, the same two the stall watchdog considers abortable, and for the same reason: every other await on the
+path is either a deliberate, self-limiting park (a pause, a foreground yield, a conflict prompt, a retry backoff) or
+short enough that the drain deadline covers it. The LANDING rename is deliberately left un-raced, so a task wedged
+there is ended by the driver's drain deadline rather than by an abort mid-rename.
+
+**Armed for a single-shot write too**, unlike the stall watchdog. The watchdog's exemption exists because an abort there
+would be a *client-initiated* instance of the transport hazard, on a path that is otherwise fine. Tier 2 only ever fires
+when the process is seconds from exiting, so dropping one indivisible compound frame produces exactly what the process
+dying produces — the case `volume/DETAILS.md` § "The single-shot exemption" already accounts for.
+
+**Cost on the happy path**: two already-live atomics polled per wakeup of the write future. No allocation, no timer, no
+syscall, no backend change, and ❌ nothing added per chunk (the `select!` wraps the whole `write_from_stream`, which the
+chunk loop lives inside).
+
+Pinned by `volume/strategy_abort_tests.rs`: an abort ends a wedged write and a wedged source open promptly, never
+retries the file, and leaves the partial registered for the sweep — plus
+`an_ordinary_cancel_still_routes_through_tier_one_and_the_backend_deletes_its_own_partial`, which is the guard for the
+invariant above and asserts all three of "the backend removed its own partial", "`backend_abort` never fired", and "no
+temp left behind". `state_tests.rs` carries the negatives at the state layer
+(`an_ordinary_cancel_never_fires_the_hard_abort`, `cancel_all_never_fires_the_hard_abort`).
+
 ## Cancel and rollback reach a parked driver
 
 **Decision**: the concurrent copy driver observes `OperationIntent` on the await it actually sits on, and bounds how
@@ -477,7 +525,14 @@ thing it is escaping is healthy is not an escape hatch.
 one arm covers both Cancel and Rollback; `biased` makes the cancel win deterministically, and a task result that was
 also ready is simply re-polled on the next pass. Observing the cancel arms `drain_deadline`; from then on the same await
 is a `timeout_at`, so healthy tasks still get to finish (their results keep flowing through the normal handler, which is
-what keeps the rollback ledger complete), while `CANCEL_DRAIN_DEADLINE` (15 s) caps the wait.
+what keeps the rollback ledger complete), while the drain deadline caps the wait.
+
+**The deadline belongs to whoever asked for the wind-down** (`copy.rs::drain_deadline(aborting)`): 15 s for a
+cooperative cancel, because a task that hasn't answered yet might still come back with its own cleanup done; 1 s once
+the hard-abort tier is live, because that caller has already given up on exactly that and is holding a promise to a
+person. It stays re-negotiable WHILE it runs: the quit sequence cancels first and aborts a beat later, by which point
+the driver is already sitting on the cooperative deadline, so tier 2 has its own `select!` arm that cuts it short. That
+arm is latched (`drain_shortened`) because a fired token is ready forever and an unguarded arm would spin.
 
 **When the deadline fires** the driver logs at error level with the full `transfer_probe` dump — naming every task and
 what it is awaiting — and breaks. Dropping `in_flight` aborts the parked futures, which is what makes an in-flight task

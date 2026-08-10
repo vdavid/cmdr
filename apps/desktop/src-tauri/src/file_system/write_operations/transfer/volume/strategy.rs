@@ -507,8 +507,8 @@ async fn stream_pipe_file(
         //
         // Raced against TIER 2 for the same reason the write below is: on the
         // SERIAL path nothing above this await can end it, and a device round trip
-        // that hangs before the first byte is half of the wedge shape. Nothing is
-        // staged yet, so the abort just returns.
+        // that hangs before the first byte is half of the wedge shape. With
+        // nothing staged, the abort has nothing to do but return.
         set_task_phase(TaskPhase::OpeningSource);
         let stream = tokio::select! {
             biased;
@@ -556,7 +556,6 @@ async fn stream_pipe_file(
         } else {
             arm_current_task_stall_abort()
         };
-        //
         // TIER 2 (`state.backend_abort`) rides the same `select!`, and it is a
         // different animal from tier 1: the user's Cancel travels to the backend
         // through `on_file_progress` so the backend drops its own handle and

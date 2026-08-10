@@ -310,6 +310,12 @@ connection gone there is no session to delete through, and the client cannot kno
 all. It is also the narrowest window on this path (one frame, no client round trip inside it), which is exactly why the
 exemption is scoped to single-shot writes and nothing wider.
 
+**The hard-abort tier IS armed for a single-shot write**, unlike the stall watchdog (which never is — `../DETAILS.md`
+§ "The guards, each load-bearing"). The difference is when each fires. An abort only ever fires with the process seconds
+from exiting, so dropping the compound frame mid-send produces exactly what the process dying produces, which is the
+transport residual risk above and nothing new. A stall abort fires on a live app, where it WOULD be a new,
+client-initiated instance of it. `../DETAILS.md` § "Two tiers of cancel".
+
 **Residual risk, accepted**: a source stream that reports a `total_size` smaller than the bytes it then yields, past the
 compound limit, falls back to the streaming writer at an unstaged final name. That needs a source lying about its own
 length (a file being appended to under us) AND a force-quit inside a 2–3 round-trip window, and what would be left at

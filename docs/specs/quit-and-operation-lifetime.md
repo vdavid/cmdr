@@ -172,6 +172,19 @@ instance doesn't apply.
 
 ## Q2: the hard-abort tier
 
+**Landed.** Durable notes are `transfer/DETAILS.md` § "Two tiers of cancel" (the mechanism, the cost, and the invariant
+tier 1 keeps) and § "Cancel and rollback reach a parked driver" (the caller-chosen drain deadline). What follows is the
+original plan; three things went beyond it, all deliberate:
+
+- The abort races the **source open** as well as the write. On the serial path nothing above `stream_pipe_file` can end
+  either wait, and a device round trip that hangs before the first byte is half of the wedge shape.
+- It is armed for **single-shot writes** too, which the stall watchdog never is. The exemption is about a
+  client-initiated abort on a live app; an abort only fires seconds before the process exits, where dropping the frame
+  produces what the process dying produces.
+- `clean_abandoned_staged_writes` **stands down** once the abort is live, for the same reason `stream_pipe_file` skips
+  `staged.abandon`: every delete there is a round trip through the destination that just stopped answering, so the
+  post-loop would hold the deadline a second time.
+
 `backend_abort` token, raced per chunk; drain deadline parameterized. Tier 1 untouched.
 
 - **Tests:** a cross-volume copy against a deliberately stalled fixture volume aborts within the deadline (the

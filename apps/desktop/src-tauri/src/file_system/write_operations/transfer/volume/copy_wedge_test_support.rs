@@ -394,12 +394,7 @@ pub(super) fn fixture_with_wedged_landing(size: u64) -> (Fixture, Arc<AtomicU64>
     (assemble(size, dest, dest_inner, written), renames)
 }
 
-fn assemble(
-    size: u64,
-    dest: Arc<dyn Volume>,
-    dest_inner: Arc<InMemoryVolume>,
-    written: Arc<AtomicU64>,
-) -> Fixture {
+fn assemble(size: u64, dest: Arc<dyn Volume>, dest_inner: Arc<InMemoryVolume>, written: Arc<AtomicU64>) -> Fixture {
     let source_inner = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
     let gate = Arc::new(tokio::sync::Semaphore::new(0));
     let opened = Arc::new(AtomicU64::new(0));

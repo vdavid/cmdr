@@ -198,6 +198,8 @@ The four copy mechanisms (`copy_strategy::LocalCopyStrategy`) each hand `stage_a
 
 **`cancel_all_write_operations` for teardown safety.** A `beforeunload` listener calls this to cancel all active operations (with rollback) on hot-reload, tab close, window close, or navigation. Prevents orphaned background operations when the frontend is destroyed.
 
+**`abort_write_operation` / `abort_all_write_operations` are the second tier, and are ❌ NOT this.** They fire `WriteOperationState::backend_abort` on top of a cooperative cancel, which makes the cross-volume streaming path stop WAITING for a backend rather than asking it to stop — buying a bounded wind-down at the cost of the backend's own partial cleanup. That is a trade only a deadline holder may make, so the caller is the quit gate and nothing else; a teardown that can still afford to wait stays on `cancel_all_write_operations`. Mechanism, cost, and the invariant it must not break: `transfer/DETAILS.md` § "Two tiers of cancel".
+
 **Special files skipped.** Sockets, FIFOs, and device files are filtered out during scan.
 
 ## Cmdr-own-write hook (downloads watcher)
