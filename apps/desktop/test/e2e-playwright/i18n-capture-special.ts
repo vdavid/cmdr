@@ -11,7 +11,7 @@
  * frontend can't toggle. All use the shared engines in `i18n-capture-helpers.ts`.
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect } from './fixtures.js'
 import {
@@ -119,6 +119,24 @@ function makeQueueSource(fixtureRoot: string, name: string): void {
   mkdirSync(dir, { recursive: true })
   for (let i = 0; i < QUEUE_FILES_PER_SOURCE; i++) {
     writeFileSync(join(dir, `file-${String(i).padStart(2, '0')}.txt`), 'x'.repeat(1024))
+  }
+}
+
+/**
+ * Removes every directory the queue surfaces staged, from BOTH sides of the tree:
+ * the sources under `left/` and the copies the transfers landed in `right/`.
+ *
+ * ❗ The fixture tree is SHARED, and `fixtures.ts` fails any test that leaves it
+ * dirty. Skipping this doesn't just leave litter: it fails the capture spec at the
+ * very end, which aborts the orchestrator's multi-launch loop, so the license and
+ * FDA passes never run and six surfaces silently keep last run's images. That's
+ * how this cleanup came to exist, so don't drop it.
+ */
+function removeQueueSources(fixtureRoot: string): void {
+  for (const name of [...QUEUE_SOURCES, ...QUEUE_DOOMED_SOURCES]) {
+    for (const side of ['left', 'right']) {
+      rmSync(join(fixtureRoot, side, name), { recursive: true, force: true })
+    }
   }
 }
 
@@ -247,6 +265,7 @@ export async function captureQueueWindow(
   } finally {
     await resetOperationState(main)
     if (queue) await closeScopedWindow(main, queue, 'queue').catch(() => {})
+    removeQueueSources(fixtureRoot)
   }
 }
 
@@ -323,6 +342,7 @@ export async function captureOperationChipSurfaces(
   } finally {
     await resetOperationState(main)
     await captureCall(main, 'disable').catch(() => {})
+    removeQueueSources(fixtureRoot)
   }
 }
 

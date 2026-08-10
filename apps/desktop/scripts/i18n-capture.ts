@@ -45,7 +45,7 @@
 
 import { spawn, spawnSync, execSync } from 'node:child_process'
 import type { ChildProcess, SpawnSyncOptions } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -57,6 +57,12 @@ const desktopDir = join(here, '..')
 // `<repo-root>/target/<triple>/release/Cmdr`, NOT under `apps/desktop/src-tauri`.
 // This matches `desktop-svelte-e2e-playwright.go`'s binary resolution.
 const repoRoot = join(desktopDir, '..', '..')
+/**
+ * Where this run's artifacts land, mirroring `i18n-capture-config.ts`'s split so
+ * an overflow pass is judged against its own directory rather than the coupling
+ * one. Used by the completeness check at the end of the run.
+ */
+const screenshotsBaseDir = join(desktopDir, 'src', 'lib', 'intl', 'messages', 'screenshots')
 const wantBuild = process.argv.includes('--build')
 
 /**
@@ -85,6 +91,14 @@ const isOverflow = captureLocale !== 'en'
 // never overwrites the default-size overflow shots. This is the maximal-overflow
 // scenario a translator must fit. `pnpm i18n:overflow --worst-case`.
 const wantWorstCase = process.argv.includes('--worst-case')
+
+/** This run's screenshot dir and report path, matching the spec's own three-way split. */
+const screenshotsDir = wantWorstCase
+  ? join(screenshotsBaseDir, 'overflow', 'worst-case')
+  : isOverflow
+    ? join(screenshotsBaseDir, 'overflow')
+    : screenshotsBaseDir
+const reportPath = join(screenshotsDir, 'capture-report.json')
 if (wantWorstCase && !isOverflow) {
   throw new Error(
     '`--worst-case` only applies to an overflow pass; use it with `--locale en-XA` (or `pnpm i18n:overflow --worst-case`)',
@@ -341,7 +355,19 @@ async function main() {
   // shrink each window to its minimum before each shot + clip scan, and to
   // redirect output to `overflow/worst-case/`.
   if (wantWorstCase) mainEnv.CMDR_I18N_WORST_CASE = '1'
-  await launchAndCapture(binary, startPath, mainEnv, 'main')
+  // The MAIN pass is caught for the same reason the mock passes below are: a
+  // failure here used to abort the whole loop, so the license and FDA launches
+  // never happened and their six surfaces silently kept the PREVIOUS run's
+  // images. Record it and keep going; the completeness check at the end is what
+  // turns any hole into a loud failure.
+  const failedPasses: string[] = []
+  const runStartedAtMs = Date.now()
+  try {
+    await launchAndCapture(binary, startPath, mainEnv, 'main')
+  } catch (e) {
+    failedPasses.push('main')
+    console.warn(`[i18n-capture] pass 'main' FAILED: ${e instanceof Error ? e.message : String(e)}`)
+  }
 
   // The mock-license / FDA-variant passes are coupling-only (they capture extra
   // surfaces for `@key.screenshot`). An overflow pass only needs the main-pass
@@ -358,22 +384,26 @@ async function main() {
   // debug-assertions capture build is what makes `CMDR_MOCK_LICENSE` /
   // `CMDR_MOCK_FDA` (both `#[cfg(debug_assertions)]`) take effect in a release
   // binary. `CMDR_MOCK_LICENSE` values per `app_status.rs::get_mock_status`.
-  const passes: { env: Record<string, string>; label: string }[] = [
+  //
+  // `surfaces` is what each pass MUST end up contributing to the report. It's the
+  // completeness contract: these launches are the only way their surfaces can be
+  // captured, so a pass that silently doesn't run is otherwise invisible in a
+  // green report. Keep it in sync when a pass gains or loses a surface.
+  const passes: { env: Record<string, string>; label: string; surfaces: string[] }[] = [
     // License states (paid About, perpetual About, commercial reminder, expired).
-    { env: { CMDR_MOCK_LICENSE: 'commercial' }, label: 'license:commercial' },
-    { env: { CMDR_MOCK_LICENSE: 'perpetual' }, label: 'license:perpetual' },
-    { env: { CMDR_MOCK_LICENSE: 'personal_reminder' }, label: 'license:reminder' },
-    { env: { CMDR_MOCK_LICENSE: 'expired' }, label: 'license:expired' },
+    { env: { CMDR_MOCK_LICENSE: 'commercial' }, label: 'license:commercial', surfaces: ['about-commercial'] },
+    { env: { CMDR_MOCK_LICENSE: 'perpetual' }, label: 'license:perpetual', surfaces: ['about-perpetual'] },
+    { env: { CMDR_MOCK_LICENSE: 'personal_reminder' }, label: 'license:reminder', surfaces: ['commercial-reminder'] },
+    { env: { CMDR_MOCK_LICENSE: 'expired' }, label: 'license:expired', surfaces: ['expiration'] },
     // FDA-variant onboarding step 1 (the default macOS launch already grants FDA,
     // so these drive the not-yet-granted / denied banner copy).
-    { env: { CMDR_MOCK_FDA: 'notgranted' }, label: 'fda:notgranted' },
-    { env: { CMDR_MOCK_FDA: 'denied' }, label: 'fda:denied' },
+    { env: { CMDR_MOCK_FDA: 'notgranted' }, label: 'fda:notgranted', surfaces: ['onboarding-fda-notgranted'] },
+    { env: { CMDR_MOCK_FDA: 'denied' }, label: 'fda:denied', surfaces: ['onboarding-fda-denied'] },
   ]
   // Run every pass even if one fails: a single broken pass must not abort the
   // others (each pass MERGES into the report, so partial progress is kept). A
   // failed Playwright run throws out of `launchAndCapture`; catch it, record the
   // pass, and continue. We surface the failures (non-zero exit) at the very end.
-  const failedPasses: string[] = []
   for (const { env: passEnv, label } of passes) {
     try {
       await launchAndCapture(binary, startPath, { ...passEnv, CMDR_I18N_CAPTURE_PASS: label }, label)
@@ -383,11 +413,70 @@ async function main() {
     }
   }
 
+  assertRunIsComplete(passes, runStartedAtMs, failedPasses)
+
   if (failedPasses.length > 0) {
     throw new Error(`capture passes failed: ${failedPasses.join(', ')}`)
   }
 
   console.log('[i18n-capture] done. Next: `pnpm i18n:couple` to write @key.screenshot couplings.')
+}
+
+/**
+ * Fails the run when it produced LESS than the surface set defines.
+ *
+ * The hole this closes: a pass that never runs leaves its surfaces out of the
+ * report while their PNGs from a PREVIOUS run sit on disk looking current, so the
+ * run reads as a success that just happens to be smaller. That is the same class
+ * of silent wrongness as a blank screenshot, and it gets the same treatment: name
+ * it and fail.
+ *
+ * Two independent checks, because either alone has a blind spot:
+ *  - **Declared surfaces**: every surface a per-launch pass owes must be in the
+ *    report. Catches a pass that didn't run at all.
+ *  - **Freshness**: every screenshot the report points at must have been written
+ *    during THIS run. Catches a surface that IS in the report (merged from an
+ *    older file) but whose image is stale, which the first check can't see.
+ *
+ * Adds to `failedPasses` rather than throwing, so the caller reports every
+ * problem at once instead of one per re-run.
+ */
+function assertRunIsComplete(
+  passes: { label: string; surfaces: string[] }[],
+  runStartedAtMs: number,
+  failedPasses: string[],
+): void {
+  let report: Record<string, { screenshot: string }>
+  try {
+    report = JSON.parse(readFileSync(reportPath, 'utf8')) as Record<string, { screenshot: string }>
+  } catch (e) {
+    failedPasses.push(`no readable capture report at ${reportPath}: ${e instanceof Error ? e.message : String(e)}`)
+    return
+  }
+
+  for (const { label, surfaces } of passes) {
+    const missing = surfaces.filter((surface) => !(surface in report))
+    if (missing.length > 0) {
+      failedPasses.push(`pass '${label}' produced no ${missing.join(', ')} (its launch is the only source for it)`)
+    }
+  }
+
+  const stale: string[] = []
+  for (const [surface, { screenshot }] of Object.entries(report)) {
+    const file = join(screenshotsDir, screenshot)
+    try {
+      if (statSync(file).mtimeMs < runStartedAtMs) stale.push(`${surface} (${screenshot})`)
+    } catch {
+      stale.push(`${surface} (${screenshot} is missing)`)
+    }
+  }
+  if (stale.length > 0) {
+    failedPasses.push(
+      `${String(stale.length)} surface(s) kept an image this run never wrote, so the report overstates what it has: ` +
+        stale.slice(0, 10).join('; ') +
+        (stale.length > 10 ? `, and ${String(stale.length - 10)} more` : ''),
+    )
+  }
 }
 
 /**
