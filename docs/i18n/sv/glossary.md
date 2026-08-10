@@ -1091,13 +1091,15 @@ buttons. Reuses the settled `åtgärd` head noun (§ Operation queue), `Pågår`
   reads better than repeating the brand. `high`.
 - **"Whatever''s finished stays done." → `Allt som redan är klart förblir klart.`** · `klar` is the catalog's settled
   done-state word (`queue.row.status` `done {Klar}`), neuter agreement with `allt`. `high`.
-- **"the one item still in flight" → `det enda objektet som fortfarande skrivs`** · "in flight" is rendered by what it
-  MEANS here (currently being written), per the key description; `skrivas` is macOS's write verb (`PW18` "Writing track"
-  → "Skriver spår") and `objekt` is the settled item noun. Definite `det enda objektet` because Swedish takes the
-  definite after `enda`. `high`.
-- **"half-written file" → `den delvis skrivna filen`** · identical concept to the already-settled "partly written" (§
-  Stalled-transfer notice, `transferProgress.stallInFlight` "kan redan vara delvis skriven/skrivna"), so it reuses that
-  wording rather than coining `halvskriven`. `high`.
+- **"anything still being written" → `Allt som fortfarande skrivs`** · **the body must stay number-neutral**: one
+  operation writes several files at once and several operations can run at once, so
+  `det enda objektet som fortfarande skrivs` states something false. `Allt som` scopes it without a numeral and mirrors
+  the opening `Allt som redan är klart`; `skrivas` is macOS's write verb (`PW18` "Writing track" → "Skriver spår").
+  `high`.
+- **"what it leaves half-written" → `det som blivit delvis skrivet`** · identical concept to the already-settled "partly
+  written" (§ Stalled-transfer notice, `transferProgress.stallInFlight` "kan redan vara delvis skriven/skrivna"), so it
+  reuses that wording rather than coining `halvskriven`; neuter agreement with `det`, since the definite
+  `den delvis skrivna filen` can't stay number-neutral. `high`.
 - **"clears away" (the cleanup, softer than deleting) → `rensar bort`** · the catalog's own soft-removal verb
   (`errorReporter.dialog.description` "…rensas bort innan de skickas"); deliberately NOT `raderar`, which is the settled
   destructive delete the user asked for elsewhere, nor `tar bort`. `high`.

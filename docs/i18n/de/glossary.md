@@ -1008,15 +1008,17 @@ still running. Head noun `Vorgang` and the running status `Läuft` are unchanged
 - **"Time until Cmdr quits on its own" (aria) → `Zeit, bis sich Cmdr von selbst beendet`** · high. `von selbst` is the
   catalog's own self-acting phrase (`errors` "der sich … von selbst klärt"). No visible label to contain, so WCAG 2.5.3
   doesn't bind this one; it just names what the number measures.
-- **"clears away the half-written file" → `entfernt die halb geschriebene Datei`** · `halb geschriebene Datei` is
-  already shipped verbatim in the de catalog (`settings.advanced.showStagingTempFiles.description`), and remove →
-  `entfernen` is settled · high. The English picks the warm "clears away" over "deletes"; German has no attested warm
-  equivalent (`wegräumen` is unsourced, and macOS's `Aufräumen` is Finder's tidy-icons command), so the neutral
-  `entfernen` carries it and the warmth sits in the opening `Was fertig ist, bleibt fertig.` ❌ Not `löschen`: that's
-  the user-facing delete verb and would read as data loss on a dialog whose whole job is reassurance.
-- **"the one item still in flight" → `Das eine Objekt, das gerade geschrieben wird`** · item → `Objekt` (settled); the
-  en `@key` says "in flight" means currently being written, so the German states that literally instead of borrowing an
-  aviation idiom · high. It "stops where it is" → `stoppt genau dort, wo es ist`; `stoppen` is macOS Finder's verb for
-  halting a running job (`CP5` "Kopieren stoppen", `NE111.1` "den Vorgang stoppen"), kept distinct from the button verb
-  `abbrechen`.
+- **"clears away what it leaves half-written" → `entfernt, was dabei halb geschrieben zurückbleibt`** ·
+  `halb geschrieben` is already shipped in the de catalog (`settings.advanced.showStagingTempFiles.description`), and
+  remove → `entfernen` is settled · high. A free relative, NOT the definite `die halb geschriebene Datei`: a definite
+  noun phrase can't stay number-neutral (see below). The English picks the warm "clears away" over "deletes"; German has
+  no attested warm equivalent (`wegräumen` is unsourced, and macOS's `Aufräumen` is Finder's tidy-icons command), so the
+  neutral `entfernen` carries it and the warmth sits in the opening `Was fertig ist, bleibt fertig.` ❌ Not `löschen`:
+  that's the user-facing delete verb and would read as data loss on a dialog whose whole job is reassurance.
+- **"anything still being written" → `Alles, was gerade geschrieben wird`** · **the body must stay number-neutral**: one
+  operation writes several files at once and several operations can run at once, so a singular
+  (`Das eine Objekt, das gerade geschrieben wird`) states something false · high. `Alles, was` scopes it without a
+  numeral, and it keeps the sentence off a third `was` clause. It "stops where it is" → `stoppt genau dort, wo es ist`;
+  `stoppen` is macOS Finder's verb for halting a running job (`CP5` "Kopieren stoppen", `NE111.1` "den Vorgang
+  stoppen"), kept distinct from the button verb `abbrechen`.
 - No `sameAsSourceJustification` needed: every value differs from English.

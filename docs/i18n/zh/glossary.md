@@ -1045,13 +1045,15 @@ operation-queue section above.
 - **"Whatever's finished stays done." (body, first sentence)** · `已经完成的都会保留。` · `已完成` is the settled
   done-status word (`queue.row.status`), `保留` the catalog's settled keep/retain verb (~10 hits, e.g.
   `settings.operationLog.maxAge.label` `保留历史记录时长`) · `high`
-- **"the one item still in flight" (the file being written when the app stops)** · `正在写入的那个项目` · the
-  description says to render "in flight" by meaning, not literally; `写入` is settled
-  (`fileOperations.transferProgress.titleFlushing` `正在写入最后一部分…`), and `个项目` is the catalog's counted-item
-  measure word. "stops where it is" → `会就此停下`, calm and non-alarmist · `high`
-- **"the half-written file" (what quitting leaves behind, and Cmdr removes)** · `半个文件` · lifted verbatim from the
-  catalog's own `settings.advanced.showStagingTempFiles.description` (`这样崩溃就不会留下用真实名称保存的半个文件`),
-  which explains the very same staging mechanism · `high`
+- **"anything still being written" (what the app stops mid-write)** · `正在写入的项目` · **the body must stay
+  number-neutral**: one operation writes several files at once and several operations can run at once, so the
+  classifier-bound `那个项目` states something false. Chinese nouns carry no number, so dropping `那个` is the whole
+  fix; `写入` is settled (`fileOperations.transferProgress.titleFlushing` `正在写入最后一部分…`). "stops where it is" →
+  `会就此停下`, calm and non-alarmist · `high`
+- **"what it leaves half-written" (what quitting leaves behind, and Cmdr removes)** · `写了一半的文件` · the catalog's
+  own `settings.advanced.showStagingTempFiles.description` says `半个文件`
+  (`这样崩溃就不会留下用真实名称保存的半个文件`), but the measure word `个` binds that to exactly one, so the quit
+  dialog takes the verbal `写了一半的` instead · `high`
 - **"clears away" (removing that partial file)** · `清理掉` · `清理` = tidy away; chosen over `清除` (which the catalog
   reserves for clearing an index or a search: `清除索引`, `清除搜索`) and over `删除`, because the point is cleanup, not
   a delete the user asked for · `high`

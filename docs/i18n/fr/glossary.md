@@ -1318,13 +1318,18 @@ nothing here re-derives them.
   conservé" would be wrong for a delete or a trash, where "done" means the files are gone · high for the terms,
   tentative for the phrasing. Known momentary garden path: a reader can start to parse `le reste` as the noun "the
   remainder", but that reading leaves the sentence verbless and self-corrects. Don''t "fix" it with a keeping verb.
-- **"in flight" (the one item currently being written) → `en cours d''écriture`** · the English `@key` defines it as
-  "currently being written", and the next clause is about the half-written file, so the concrete writing sense is what
-  French carries; `en cours` is the catalog''s settled running word (`queue.row.status`) · high.
-- **"half-written file" → `le fichier à moitié écrit`** · already shipped verbatim in this catalog at
-  `settings.advanced.showStagingTempFiles.description` ("Un plantage ne peut donc pas laisser un fichier à moitié écrit
-  sous un vrai nom."), which describes the same temp-file mechanism · high. "clears away" → `supprime`, per the
-  glossary''s `delete → supprimer` (and NOT `efface`, which style.md reserves for the erase/wipe sense).
+- **"anything still being written" → `Ce qui est encore en cours d''écriture`** · **the body must stay number-neutral**:
+  one operation writes several files at once and several operations can run at once, so a singular
+  (`Le seul élément encore en cours d''écriture`) states something false, and the free relative `Ce qui` scopes it
+  without a numeral · high. The English `@key` defines the state as "currently being written", so French carries the
+  concrete writing sense; `en cours` is the catalog''s settled running word (`queue.row.status`).
+- **"what it leaves half-written" → `tout fichier à moitié écrit`** · `fichier à moitié écrit` is already shipped
+  verbatim in this catalog at `settings.advanced.showStagingTempFiles.description` ("Un plantage ne peut donc pas
+  laisser un fichier à moitié écrit sous un vrai nom."), which describes the same temp-file mechanism · high. `tout` +
+  singular is French''s number-neutral form, so the settled phrase survives where the definite `le fichier …` could not;
+  it also avoids a second `il` (the first binds to `ce qui`) and an echo of `rester` from the opening sentence. "clears
+  away" → `supprime`, per the glossary''s `delete → supprimer` (and NOT `efface`, which style.md reserves for the
+  erase/wipe sense).
 - **logout (the OS session, in the countdown''s reason clause) → `une fermeture de session`** · macOS Tier-1
   (`AppKit/Menus.json` "Log Out" → "Fermer la session", the item the user sees in the Apple menu); Microsoft terminology
   FRA agrees (`log off` → "fermer une session", FRA) · high. restart → `un redémarrage` · `AppKit/Menus.json` "Restart"

@@ -1301,19 +1301,21 @@ come from the operation-queue rename pass above; this section records what was n
     bewerking" would read like a tally on a title line.
   - Total Commander nl ships the same dialog and independently confirms both the noun and the verb: `WCMD.LNG.utf8`
     `1237="WAARSCHUWING: %i bewerking(en) actief op achtergrond!\nToch stoppen?"`.
-- **"in flight" (the one item being written when the app stops) → `het onderdeel dat op dat moment wordt geschreven`** ·
-  the `@key` description defines in-flight as "currently being written", and `onderdeel` is the settled macOS Finder
-  word for an item (glossary above). English's "the ONE item" is carried by a fronted `Alleen …`, which is how Dutch
-  scopes it without a numeral · high.
+- **"anything still being written" → `Alles wat nog wordt geschreven`** · **the body must stay number-neutral**: one
+  operation writes several files at once and several operations can run at once, so the old fronted
+  `Alleen het onderdeel dat …` states something false · high. `Alles wat` scopes it without a numeral and mirrors the
+  opening `Wat al klaar is`.
 - **"half-written" → `gedeeltelijk geschreven`** · reuses the settled `partly written → gedeeltelijk geschreven`
-  (stalled-transfer pass), so the quit dialog and the stall dialog describe the same leftover the same way · high.
+  (stalled-transfer pass), so the quit dialog and the stall dialog describe the same leftover the same way · high. It
+  attaches to the free relative `wat … achterblijft`, not to a definite `het bestand`, for the same number-neutral
+  reason.
 - **"clears away" (deletes the leftover so it can't look complete) → `opruimen` (`ruimt … op`)** · plain Dutch for
   tidying something away, and deliberately NOT `verwijdert`: the dialog sits above a queue whose rows can literally say
   `Bezig met verwijderen`, and a second "verwijder" in the reassurance would read as more deleting rather than as
   cleanup · high on the sense, `tentative` on the word (no pile string names this act).
-  - The body fronts that clause (`… en het gedeeltelijk geschreven bestand dat achterblijft, ruimt Cmdr op.`) so the
-    relative clause never lands between the object and the separable `op`. The SVO alternative "… ruimt Cmdr het bestand
-    op dat achterblijft" garden-paths on `op dat`.
+  - The body fronts that clause (`… en wat gedeeltelijk geschreven achterblijft, ruimt Cmdr op.`) so the relative clause
+    never lands between the object and the separable `op`. The SVO alternative "… ruimt Cmdr het bestand op dat
+    achterblijft" garden-paths on `op dat`.
 - **"Whatever''s finished stays done." → `Wat al klaar is, blijft klaar.`** · `klaar` is this catalog's plain
   finished-word (`indexing` "Bijna klaar"); `blijft staan` was rejected because for a delete the finished work is files
   GONE, and "blijft staan" would promise the opposite · high.

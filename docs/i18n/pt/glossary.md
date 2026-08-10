@@ -923,14 +923,17 @@ already-shipped `queue.*` strings, since the dialog reuses `queue.row.label` ver
   uma reinicialização ou o encerramento da sessão** · a literal "nunca espera pelo Cmdr" puts the OS in the subject slot
   and reads heavier in pt-BR; the active form matches the catalog's running-text pattern of naming **o Cmdr** as the
   doer ("O Cmdr cuida da cópia automaticamente") · high.
-- "in flight" (the one item being written when the app stops) · **ainda sendo gravado** · **gravado** is the shipped
-  word for a partly-written transfer target (`fileOperations.transferProgress.stallInFlight` "já pode estar parcialmente
-  gravado") · confirmed. ❌ Never a literal "em voo". "stops where it is" → **é interrompido onde está**: the
-  natural-looking active "para onde está" garden-paths badly, since **para** is read first as the preposition.
-- "half-written file" · **arquivo pela metade** · verbatim from the shipped
+- "anything still being written" · **O que ainda está sendo gravado** · **the body must stay number-neutral**: one
+  operation writes several files at once and several operations can run at once, so "O único item ainda sendo gravado"
+  states something false, and **O que** scopes it without a numeral. **gravado** is the shipped word for a
+  partly-written transfer target (`fileOperations.transferProgress.stallInFlight` "já pode estar parcialmente gravado")
+  · confirmed. ❌ Never a literal "em voo". "stops where it is" → **é interrompido onde está**: the natural-looking
+  active "para onde está" garden-paths badly, since **para** is read first as the preposition.
+- "what it leaves half-written" · **o que ficou gravado pela metade** · **pela metade** is verbatim from the shipped
   `settings.advanced.showStagingTempFiles.description` ("uma falha não pode deixar um arquivo pela metade com um nome
-  real") · confirmed. "clears away … it leaves behind" → **remove o arquivo pela metade que sobra** ("que sobra" instead
-  of "que ele deixa para trás", where **ele** would be ambiguous between the item and o Cmdr).
+  real") · confirmed; the verbal form replaces the noun **arquivo pela metade**, which can't stay number-neutral. The
+  **gravado** echo one clause later is deliberate, the same root-repetition call this section already makes for
+  **encerr-**: each is the sourced term for its own concept.
 - "on its own" (the countdown's aria label) · **sozinho** · agrees with **o Cmdr**, not with the user, so the gender
   rule is satisfied without the longer "por conta própria" · high. `main.quit.countdownAria` = "Tempo até o Cmdr
   encerrar sozinho". No WCAG 2.5.3 constraint here: the countdown region has no visible label key of its own, so this

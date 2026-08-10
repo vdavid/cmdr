@@ -1108,15 +1108,19 @@ delete, trash, or archive edit is still running. Title + body + live countdown +
   "reinicio" nor "cierre de sesión" appears as an entry, nor in the macOS corpus in this sense. "el Mac" is added
   because a bare "al reiniciar" could be read as restarting Cmdr; the catalog already says "el Mac" ("mientras no estás
   usando el Mac") · high (the verbs), tentative (adding "el Mac")
-- **"half-written file" → archivo a medio escribir** · verbatim from the catalog's own
-  `settings.advanced.showStagingTempFiles.description` ("no puede dejar un archivo a medio escribir con un nombre
-  real"), which describes this very mechanism · high (consistency-settled)
+- **"what it leaves half-written" → lo que quede a medio escribir** · `a medio escribir` is verbatim from the catalog's
+  own `settings.advanced.showStagingTempFiles.description` ("no puede dejar un archivo a medio escribir con un nombre
+  real"), which describes this very mechanism · high (consistency-settled). A free relative, NOT the definite
+  `el archivo a medio escribir`: see the number-neutral rule below
 - **"clears away" (Cmdr removing its own temp leftover) → borra** · deliberately NOT the settled delete verb `eliminar`,
   which names the user-facing delete OPERATION; English softens to "clears away" for the same reason, and `borrar` is
   the catalog's non-operation removal verb (glossary: clear → borrar, macOS "Borrar búsquedas recientes") · high
-- **"stops where it is" → se interrumpe donde esté** · "interrumpir" is the catalog's own word for a copy cut short
-  ("Los restos de una copia interrumpida siempre se muestran"). ❌ Avoided "se detiene" / "se para": the style guide
-  rules those out nearby because they read as PAUSED, which is `En pausa` · high
+- **"anything still being written stops where it is" → Lo que aún se está escribiendo se interrumpe donde esté** · **the
+  body must stay number-neutral**: one operation writes several files at once and several operations can run at once, so
+  a singular ("El único elemento que aún se está escribiendo") states something false, and `Lo que` scopes it without a
+  numeral. "interrumpir" is the catalog's own word for a copy cut short ("Los restos de una copia interrumpida siempre
+  se muestran"). ❌ Avoided "se detiene" / "se para": the style guide rules those out nearby because they read as
+  PAUSED, which is `En pausa` · high
 - **"item" → elemento** · REAFFIRMS the 44-to-8 catalog preference over macOS's "ítem" · high (consistency-settled)
 - **`countdownAria` is not bound by WCAG 2.5.3** · it labels the countdown REGION, not a control whose visible label is
   another key, so there is no containment to satisfy; it only names what the number measures ("Tiempo hasta que Cmdr se

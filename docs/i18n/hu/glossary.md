@@ -1300,15 +1300,17 @@ settled in the operation-queue rename block above; these keys only reuse them.
   indicative `így …` rather than a subjunctive `hogy … ne …`, matching English''s plain "so … never waits" and reading
   lighter · high. The brand suffix `Cmdrre` follows `style.md`''s hyphen-free, front-vowel pattern (`Cmdrben`,
   `Cmdrből`, `Cmdrnek` in the shipped catalog), with the `r` doubled by the sublative `-re`.
-- **"half-written file" → `félig megírt fájl`** · lifted verbatim from the shipped catalog, where the identical English
-  phrase already renders this way (`settings.advanced.showStagingTempFiles.description` =
-  `… nem hagyhat félig megírt fájlt valódi néven`) · high. **"clears away" → `eltávolítja`**, the catalog''s and
-  Microsoft''s `remove` = `eltávolítás`, chosen over `törli`: the sibling `transferProgress.rollbackTooltip` uses
-  `törlése` for the same cleanup, but that is a destructive-action button label, while this sentence is reassurance and
-  must not flash "Cmdr deletes a file" at the reader · high.
-- **"the one item still in flight" → `Az éppen írás alatt álló elem`** · `elem` is the settled counted-item noun (macOS
-  `Kuka elemei`, `Másolni kívánt elemek`); `írás alatt álló` is the plain participial "being written", and the definite
-  singular already carries English''s "the one" · high. "stops where it is" → `ott áll meg, ahol tart`.
+- **"what it leaves half-written" → `minden félig megírt fájlt`** · `félig megírt fájl` is lifted verbatim from the
+  shipped catalog, where the identical English phrase already renders this way
+  (`settings.advanced.showStagingTempFiles.description` = `… nem hagyhat félig megírt fájlt valódi néven`) · high.
+  `minden` + singular is the Hungarian generic, which keeps the settled phrase while staying number-neutral (see below).
+  **"clears away" → `eltávolít`**, the catalog''s and Microsoft''s `remove` = `eltávolítás`, chosen over `törli`: the
+  sibling `transferProgress.rollbackTooltip` uses `törlése` for the same cleanup, but that is a destructive-action
+  button label, while this sentence is reassurance and must not flash "Cmdr deletes a file" at the reader · high.
+- **"anything still being written" → `Ami éppen íródik`** · **the body must stay number-neutral**: one operation writes
+  several files at once and several operations can run at once, so a definite singular (`Az éppen írás alatt álló elem`)
+  states something false · high. `íródik` over the participial `írás alatt álló` only to keep `áll` out of a clause that
+  already ends in `ott áll meg`. "stops where it is" → `ott áll meg, ahol tart`.
 - **"Whatever''s finished stays done." → `Ami elkészült, az kész marad.`** · reuses the settled `Done` = `Kész`
   (`queue.row.status` done arm) · high.
 - **`countdownAria` → `Hátralévő idő a Cmdr automatikus kilépéséig`** · nominal, like every other aria label in the

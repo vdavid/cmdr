@@ -1131,11 +1131,12 @@ buttons. Reuses the settled head terms (operation → `thao tác`, item → `m�
   `mà nó để lại` would put `nó` in a clause whose subject is already `Cmdr`, reading as Cmdr cleaning up after itself
   twice. `còn sót lại` (left over) is the catalog's own word for exactly this artifact
   (`showStagingTempFiles.description`: `Các tệp còn sót lại từ lần sao chép bị gián đoạn`). `high` (catalog-consistent).
-- **"The one item still in flight": `Mục duy nhất đang được ghi`** · the en `@key` says "in flight" means currently
-  being written, so vi says that outright: `đang được ghi`, the same `được` + write-verb passive the glossary settled in
-  `đã được ghi một phần`. `duy nhất` (the only one) carries English's "the one". ⚠️ **Never open this clause with
-  `Chỉ mục …`**: `chỉ mục` is this glossary's word for an INDEX, so `Chỉ mục đang được ghi` would read "the index being
-  written". `high`.
+- **"Anything still being written": `Những gì đang được ghi`** · **the body must stay number-neutral**: one operation
+  writes several files at once and several operations can run at once, so `Mục duy nhất đang được ghi` states something
+  false. Vietnamese nouns carry no number, so dropping `duy nhất` was the whole fix and `tệp ghi dở còn sót lại` was
+  already neutral. `đang được ghi` is the same `được` + write-verb passive the glossary settled in
+  `đã được ghi một phần`. ⚠️ **Never open this clause with `Chỉ mục …`**: `chỉ mục` is this glossary's word for an
+  INDEX, so `Chỉ mục đang được ghi` would read "the index being written". `high`.
 - **"Whatever's finished stays done": `Những gì đã xong vẫn được giữ nguyên.`** · `Xong` is `queue.row.status`'s Done,
   and `giữ nguyên` is the catalog's keep-as-is verb (`Đã giữ nguyên tên gốc`, `Cmdr giữ nguyên tên hiện tại`). NOT
   `Mọi thứ`, which scopes to the whole app (the trap the 2026-08-09 conflict-prompt pass recorded for "Everything else
