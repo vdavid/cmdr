@@ -20,10 +20,7 @@ import noErrorStringMatch from '../../eslint-plugins/no-error-string-match.js'
 import noIsolatedTests from '../../eslint-plugins/no-isolated-tests.js'
 
 // Underscore-prefixed names are an intentional "deliberately unused" marker, same as desktop.
-const unusedVarsRule = [
-  'error',
-  { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
-]
+const unusedVarsRule = ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }]
 
 const projectServiceConfig = { projectService: true, tsconfigRootDir: import.meta.dirname }
 

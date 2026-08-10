@@ -55,8 +55,8 @@ All API keys stay server-side, proxied via `+server.ts` / `+page.server.ts`.
 - **The funnel needs no new env vars:** it reuses the worker admin token, Umami creds, and Paddle key already present
   (Listmonk signups come via the api-server, so no Listmonk secret reaches the dashboard).
 
-Local dev: `pnpm dev:dashboard` serves on port 4830, reading `.env` (copy `.env.example`; escape a literal `$` as
-`\$`). Env resolution and the full variable list: `DETAILS.md`.
+Local dev: `pnpm dev:dashboard` serves on port 4830, reading `.env` (copy `.env.example`; escape a literal `$` as `\$`).
+Env resolution and the full variable list: `DETAILS.md`.
 
 Full details (multi-page structure, data-loading split, link-codes CRUD, selection state, componentization, the data
 source list, decision rationale, env-var list, local QA against a local worker, deployment): `DETAILS.md`.

@@ -141,11 +141,7 @@ export function compareSemverDesc(a: string, b: string): number {
  * Finds the max daily download value across a set of groups, taken over every row's own day. Needs
  * no day axis: a day with no rows contributes nothing to a maximum.
  */
-export function maxDailyAcrossGroups(
-  rows: DownloadRow[],
-  groupField: keyof DownloadRow,
-  groupKeys: string[],
-): number {
+export function maxDailyAcrossGroups(rows: DownloadRow[], groupField: keyof DownloadRow, groupKeys: string[]): number {
   let max = 1
   for (const key of groupKeys) {
     const byDay = new Map<string, number>()

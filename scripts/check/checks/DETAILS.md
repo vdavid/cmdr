@@ -691,13 +691,13 @@ doubles as production code.
 - **Website / Docker**: docker-build
 - **API server / TS**: oxfmt, eslint, typecheck, tests
 - **Analytics dashboard / Svelte**: svelte-kit-sync, eslint, stylelint, svelte-check, import-cycles, knip, tests, build.
-  Stylelint, knip, and import-cycles run through the same `runStylelintCheck` / `runKnipCheck` /
-  `runImportCyclesCheck` helpers the desktop lanes use, parameterized by app dir. `dashboard-build` is NOT redundant
-  with `dashboard-svelte-check`: the `$lib/server` boundary guard trips only at build time, so it's the only check
-  standing between a stray runtime import and shipping a server-side API key into the browser bundle. The dashboard
-  deliberately has no css-unused (Tailwind supplies every utility class, so "undefined class" would fire on all of
-  them), no a11y-contrast (that tool models desktop's accent matrix and light/dark token pairs; the dashboard is
-  dark-only), no type-drift (no Rust), and no bare-poll (no Playwright helpers).
+  Stylelint, knip, and import-cycles run through the same `runStylelintCheck` / `runKnipCheck` / `runImportCyclesCheck`
+  helpers the desktop lanes use, parameterized by app dir. `dashboard-build` is NOT redundant with
+  `dashboard-svelte-check`: the `$lib/server` boundary guard trips only at build time, so it's the only check standing
+  between a stray runtime import and shipping a server-side API key into the browser bundle. The dashboard deliberately
+  has no css-unused (Tailwind supplies every utility class, so "undefined class" would fire on all of them), no
+  a11y-contrast (that tool models desktop's accent matrix and light/dark token pairs; the dashboard is dark-only), no
+  type-drift (no Rust), and no bare-poll (no Playwright helpers).
 - **Scripts / Go**: gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck
 - **Other / Metrics**: file-length (warn-only), CLAUDE.md-reminder (warn-only), claude-md-length (warn-only),
   resident-doc-budget (warn-only; caps the always-resident root-CLAUDE.md + @-imports + rules bundle), docs-reachable

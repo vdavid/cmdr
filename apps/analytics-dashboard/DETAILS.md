@@ -195,8 +195,8 @@ curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
   "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps"
 ```
 
-`resolveEnv` reads from `platform.env` when deployed and falls back to SvelteKit's `$env/dynamic/private` otherwise:
-CF Pages only populates `platform.env` on a real deployment, so local dev would see nothing without the fallback. Copy
+`resolveEnv` reads from `platform.env` when deployed and falls back to SvelteKit's `$env/dynamic/private` otherwise: CF
+Pages only populates `platform.env` on a real deployment, so local dev would see nothing without the fallback. Copy
 `.env.example` to `.env` and escape a literal `$` as `\$`.
 
 All env vars are CF Pages secrets, never in code:
@@ -252,11 +252,11 @@ What's specific to this app's configs:
   blocks. Type-aware rules need `.svelte-kit/tsconfig.json`, which `tsconfig.json` extends, so `svelte-kit sync` has to
   run first; the `dashboard-eslint` check hard-fails when it's missing rather than let the rules quietly no-op.
 - Config files (`svelte.config.js`, `vite.config.ts`, `vitest.config.ts`) lint with `disableTypeChecked`. They sit
-  outside the generated tsconfig's include list, and adding them to the TS project purely to satisfy the linter would
-  be the tail wagging the dog.
+  outside the generated tsconfig's include list, and adding them to the TS project purely to satisfy the linter would be
+  the tail wagging the dog.
 - **Component props are typed, not inferred.** Route pages annotate with `PageProps` / `LayoutProps` from `./$types`;
   reusable components declare an explicit `interface Props`. Cross-boundary type imports (`import type` from
-  `$lib/server/...`) are safe and expected: only a *runtime* value import would pull server code into the browser
+  `$lib/server/...`) are safe and expected: only a _runtime_ value import would pull server code into the browser
   bundle.
 - **Stylelint** (`.stylelintrc.mjs`) is deliberately lighter than desktop's. Tailwind v4 supplies the utilities, so
   there's no design-token ladder to police here; the config's real job is allowing Tailwind's CSS-first at-rules
