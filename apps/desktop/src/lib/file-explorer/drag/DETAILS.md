@@ -23,12 +23,12 @@ Two backend commands, both routed through `native_drag.rs` so the pasteboard pay
 Pasteboard layout is decided ONCE per drag session by the source volume's locality, never per item (a single drag can't
 mix local and virtual items — single-pane selections, single-volume panes). The locality-aware composition is a pure,
 unit-tested policy in `native_drag/type_plan.rs::plan_pasteboard_items`; `native_drag/mod.rs` is a thin executor of the
-plan. The backend derives locality from `Volume::supports_local_fs_access()`: `start_selection_drag` reads it off the
+plan. The backend derives locality from `Volume::paths_are_os_visible()`: `start_selection_drag` reads it off the
 listing's volume; `start_drag_paths` takes an optional `sourceVolumeId` (threaded from the FE drag-start path, which has
 it since the recorded-identity work; `null` defaults to local).
 
-- **Local sessions** (real local FS or OS-mounted shares — `file://` URLs are real) match Finder: files only, no path
-  text, one `NSPasteboardItem` per file:
+- **Local sessions** (real local FS, OS-mounted shares, and direct SMB — the share stays mounted alongside the smb2
+  session, so `file://` URLs are real) match Finder: files only, no path text, one `NSPasteboardItem` per file:
   - Every item: `public.file-url` (the URL's `absoluteString`): Finder, IntelliJ, etc. iterate items reading this.
   - First item only: `NSFilenamesPboardType` (legacy `NSArray<NSString>` of all paths). Required for stock wry's
     `collect_paths`, which reads only this type and `unwrap()`s if absent; see
@@ -40,12 +40,14 @@ it since the recorded-identity work; `null` defaults to local).
     file URL / filenames and insert the path themselves, exactly as for a Finder drag, so dropping the text item costs
     nothing there. Verified with a browser drop probe: Finder/Forklift expose `types: ["Files"]`, Cmdr-with-text exposed
     `["text/plain", "Files"]`.
-- **Virtual sessions** (MTP, direct SMB, search-results — paths with no local backing) advertise NOTHING external apps
-  can materialize: no file-url, no text, no filenames, across EVERY item. A virtual path's `file://` URL is bogus and
-  the legacy types are exactly what Finder turned into the `.textClipping` junk file. Promise-only items still fire
-  wry's drop event with empty paths (no panic), so in-app self-drags keep working via recorded identity (below); an
-  external drop fulfills the promise instead. The drag image and count badge are unaffected (one `NSDraggingItem` per
-  file regardless; `setDraggingFrame:contents:` is writer-agnostic).
+- **Virtual sessions** (MTP, search-results, archive-inner paths — no local backing) advertise NOTHING external apps can
+  materialize: no file-url, no text, no filenames, across EVERY item. A virtual path's `file://` URL is bogus and the
+  legacy types are exactly what Finder turned into the `.textClipping` junk file. Promise-only items still fire wry's
+  drop event with empty paths (no panic), so in-app self-drags keep working via recorded identity (below); an external
+  drop fulfills the promise instead. The cost of this layout is that ONLY Finder can read it (an `NSFilePromiseReceiver`
+  implementer), so a browser or mail composer refuses the drop outright: a volume whose paths other apps CAN open must
+  stay local, which is why direct SMB is not on this list. The drag image and count badge are unaffected (one
+  `NSDraggingItem` per file regardless; `setDraggingFrame:contents:` is writer-agnostic).
 
 Source operation mask: permissive (`Copy | Link | Generic | Move`). macOS arbitrates the actual operation via modifier
 keys (Alt → Copy, Cmd → Move, Ctrl-Alt → Link) and destination preference. Restricting the mask to a single op breaks

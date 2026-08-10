@@ -31,6 +31,11 @@
 //!
 //! ## Virtual sessions: nothing external apps can materialize as garbage
 //!
+//! Reserved for volumes with NO OS-visible paths (MTP, search-results,
+//! archive-inner). Direct SMB is NOT one of them: its share stays OS-mounted, so
+//! it drags local. A promise-only session is readable by Finder alone, so
+//! misclassifying a volume here makes every other drop target refuse silently.
+//!
 //! NO file-url, NO filenames — across EVERY item. A virtual path's `file://` URL
 //! is bogus (the file doesn't exist locally) and an auto-derived (or explicit)
 //! filenames entry is the textClipping junk Finder materializes. Promise-only
@@ -39,9 +44,10 @@
 //! pasteboard payload is empty here; the parent module attaches the
 //! `NSFilePromiseProvider` writer that streams the real bytes on an external drop.
 
-/// Whether a drag session's source volume is locally materialized (local FS or
-/// an OS-mounted share, where a `file://` URL is real) or protocol-only /
-/// virtual (MTP, direct SMB, search-results), where it isn't.
+/// Whether a drag session's source volume is locally materialized (local FS, an
+/// OS-mounted share, or direct SMB — whose share stays mounted alongside the
+/// smb2 session, so a `file://` URL is real) or protocol-only / virtual (MTP,
+/// search-results, archive-inner paths), where it isn't.
 ///
 /// Decided once per session at the drag-start boundary, never per item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

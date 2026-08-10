@@ -6,16 +6,24 @@ breakage; the mechanism lives here.
 ## How drag-out works
 
 1. The FE starts a drag; the command resolves the session's **locality** (`locality_for_volume`, keyed on
-   `Volume::supports_local_fs_access()`) and the source volume id, and calls `start_drag`.
+   `Volume::paths_are_os_visible()`) and the source volume id, and calls `start_drag`.
 2. `start_drag` (on the main thread) builds one `NSDraggingItem` per file:
-   - **Local session**: writer is an `NSPasteboardItem` filled from the pure type plan (file-url + legacy filenames, no
-     path text, matching Finder). Source carries `NO_PROMISE_SESSION`.
-   - **Virtual session** (MTP, direct SMB, search-results): writer is an `NSFilePromiseProvider` per item, carrying NO
-     legacy types. The providers register their delegates under a fresh `session_key`; the source carries that key.
+   - **Local session** (local disks, OS-mounted shares, and direct SMB, whose share stays mounted alongside the smb2
+     session): writer is an `NSPasteboardItem` filled from the pure type plan (file-url + legacy filenames, no path
+     text, matching Finder). Source carries `NO_PROMISE_SESSION`.
+   - **Virtual session** (MTP, search-results, archive-inner paths): writer is an `NSFilePromiseProvider` per item,
+     carrying NO legacy types. The providers register their delegates under a fresh `session_key`; the source carries
+     that key.
 3. Dropping on **Finder** invokes the promise delegate, which streams the real bytes off the device into the
    Finder-chosen destination via the fulfillment service. Dropping back **into Cmdr** still fires wry's drop event
    (empty paths, no panic) and the recorded-identity self-drag path handles it. Dropping on a **terminal** from a
    virtual pane is a clean no-op (no text to insert).
+
+**A virtual session is Finder-only, and that's why locality has to be right.** `NSFilePromiseProvider` items are
+readable only by a target implementing `NSFilePromiseReceiver`; a browser upload widget, a mail composer, or an editor
+sees nothing on the pasteboard and refuses the drop. So a volume that CAN hand out openable paths must never be
+classified `Virtual` — the failure is invisible from the Finder-based test protocol below, which is exactly how direct
+SMB stayed misclassified.
 
 ## File promises (the drag-out-to-Finder feature)
 
@@ -149,4 +157,8 @@ The Finder leg can't be automated honestly (Finder owns the drop gesture), so it
 8. Drag back into Cmdr (self-drag) → recorded-identity path, unchanged.
 9. Drag from a LOCAL pane to Finder/terminal → byte-identical to today (URL drop + terminal text).
 10. Drag from a non-local pane to a terminal → clean no-op, no textClipping junk.
-11. SMB-native pane variant of (1).
+11. Direct-SMB pane → drag to Finder: a plain file-URL drop (NOT a promise; the share is OS-mounted).
+12. **A non-Finder target from every pane kind.** Drag into a browser upload widget (`<input type="file">`) and into a
+    mail composer, from a local pane, a direct-SMB pane, and a virtual (MTP) pane. Local and SMB must attach the files;
+    MTP is expected to be refused (promise-only, no receiver). Finder accepts promises, so it can't tell a correctly
+    classified session from a wrongly virtual one — this step is the one that can.

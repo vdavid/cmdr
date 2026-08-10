@@ -336,6 +336,28 @@ fn supports_foreground_yield_is_on() {
     assert!(vol.supports_foreground_yield());
 }
 
+/// The two locality questions an SMB share answers DIFFERENTLY, which is the
+/// whole reason `paths_are_os_visible` exists as its own capability.
+///
+/// Cmdr's own I/O never goes through `std::fs` here (it rides the smb2 session),
+/// but the share stays OS-mounted alongside it, so other apps CAN open the paths
+/// this volume hands out. The macOS drag-out path reads the second answer: while
+/// it read the first, dragging from an SMB pane published file promises only,
+/// and every drop target except Finder (a browser upload widget, a mail
+/// composer) rejected the drop.
+#[test]
+fn os_mounted_share_is_os_visible_even_though_cmdr_avoids_std_fs() {
+    let vol = make_test_volume();
+    assert!(
+        !vol.supports_local_fs_access(),
+        "Cmdr's own reads go over smb2, not std::fs"
+    );
+    assert!(
+        vol.paths_are_os_visible(),
+        "the sneaky mount is what makes an SMB path droppable into another app"
+    );
+}
+
 /// The UPLOAD counterpart: an SMB share also opts into the DESTINATION-side yield,
 /// so writing to it stands aside for navigation on the same share. SMB writes are
 /// discrete WRITE chunks with no lease, so a bounded park between them is safe.

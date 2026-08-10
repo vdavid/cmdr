@@ -30,14 +30,13 @@ subsystems are the reverse, since they can't carry `tauri::`. Inventory and rati
 - **`expand_tilde` is conditional.** For listing it's gated on `volume_id == "root"`; for write operations (copy, move,
   delete, scan preview) it's always applied. NEVER tilde-expand MTP or network volume paths.
 - **`create_directory` / `create_file` / `rename_file` are thin: the logic + the managed instant op live in
-  `file_system::write_operations::{create,rename}`.** These commands only expand tilde (root), resolve `volume_id`, apply
-  the write timeout, and map to `IpcError`. The mutation runs via `manager::run_instant` (busy-marks the volume,
-  appears briefly in the queue, still inline and result-returning). `check_rename_validity` /
-  `check_rename_permission` stay UNMANAGED — the snappy read-only path.
-- **The create core errors on an unregistered volume; NO `std::fs` fallback.** Every mount is registered in `VolumeManager`
-  at startup, so an unregistered `volume_id` means a race (unmount mid-op). A bare `std::fs` fallback
-  has no timeout and breaks the "every FS-touching command is timed" contract; don't re-add it. Unit tests register a
-  real local "root" via `ensure_root_volume()` (never `init_volume_manager`).
+  `file_system::write_operations::{create,rename}`.** They only expand tilde (root), resolve `volume_id`, apply the
+  write timeout, and map to `IpcError`; the mutation runs via `manager::run_instant` (busy-marks the volume, appears
+  briefly in the queue, still inline and result-returning). `check_rename_validity` / `check_rename_permission` stay
+  UNMANAGED — the snappy read-only path.
+- **The create core errors on an unregistered volume; NO `std::fs` fallback.** Every mount registers at startup, so an
+  unregistered `volume_id` means a race (unmount mid-op), and a bare `std::fs` fallback has no timeout — don't re-add
+  it. Unit tests register a real local "root" via `ensure_root_volume()` (never `init_volume_manager`).
 - **Platform gates at the module level in `mod.rs`, not per-function**, so an unsupported command isn't even
   registered. `volumes` is macOS-only; `mtp`/`network`/`eject` are macOS+Linux;
   `volumes_linux` is Linux-only. Use per-function `#[cfg]` only where behavior differs (for example `sync_status`).
@@ -46,11 +45,11 @@ subsystems are the reverse, since they can't carry `tauri::`. Inventory and rati
   and skips permission checks. The rename notifies the listing cache after success (local via
   `notify_rename_in_listing`, volume via its own `notify_mutation`).
 - **`start_selection_drag` / `start_drag_paths` require the main thread** (`run_drag_on_main_thread`). Each derives
-  session locality (`locality_for_volume`, keyed on `Volume::supports_local_fs_access()`): a LOCAL session gets file-URL
-  + legacy filenames per item (matching Finder, no path text, which broke browser uploads); a VIRTUAL session (MTP,
-  direct SMB, search-results) gets no legacy types plus an `NSFilePromiseProvider` per item.
-- **⌘W: `CLOSE_TAB_ID` is the one menu item NOT disabled when the main window loses focus.** On macOS ⌘W must keep
-  closing the front window (Settings, viewer, debug); disabling it stops its accelerator firing there. See
-  `menu/DETAILS.md`.
+  session locality (`locality_for_volume`, keyed on `Volume::paths_are_os_visible()`, ❌ never
+  `supports_local_fs_access()` — direct SMB says `false` there yet its mounted paths open anywhere): a LOCAL session
+  gets file-URL + legacy filenames per item (matching Finder, no path text, which broke browser uploads); a VIRTUAL one
+  (MTP, search-results, archive-inner) gets an `NSFilePromiseProvider` per item, which only Finder can read.
+- **⌘W: `CLOSE_TAB_ID` is the one menu item NOT disabled when the main window loses focus** — disabling it stops the
+  accelerator closing the front Settings/viewer/debug window. `menu/DETAILS.md`.
 - **`list_shares_with_credentials` carries `#[allow(clippy::too_many_arguments)]`**: Tauri params must be top-level
   args.

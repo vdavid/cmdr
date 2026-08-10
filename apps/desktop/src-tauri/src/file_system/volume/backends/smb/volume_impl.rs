@@ -287,6 +287,18 @@ impl Volume for SmbVolume {
         false
     }
 
+    fn paths_are_os_visible(&self) -> bool {
+        // The share stays OS-mounted at `mount_path` alongside the smb2 session
+        // (the "sneaky mount"), and every path this volume hands out is an
+        // absolute path under it. So a `file://` URL built from one opens in any
+        // other app, which is what a drag-out drop target needs.
+        //
+        // ❌ Don't fold this into `supports_local_fs_access` (which is `false`
+        // here on purpose): five write/caching call sites read that one as "is
+        // this remote?", and the honest answer there stays yes.
+        true
+    }
+
     fn supports_foreground_yield(&self) -> bool {
         // A running copy and the pane's listings share ONE SMB session, so a
         // transfer off this share competes with every navigation on it. Opting in

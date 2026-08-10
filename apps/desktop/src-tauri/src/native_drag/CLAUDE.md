@@ -26,16 +26,14 @@ details: `DETAILS.md`.
 Break any of these and a virtual drag-out silently produces no file, leaks objects, or leaves a partial. Mechanism for
 each in `DETAILS.md`.
 
-- **Fulfillment cleanup contract**: on ANY `Err`, the destination this fulfillment created is removed before returning.
-  `LocalPosixVolume::write_from_stream` self-cleans its partial ONLY on the cancel branch, NOT on a propagated
-  source-read error (device unplugged mid-stream), which is exactly the promise failure mode. So the service removes the
-  partial file or the whole created tree itself. Pinned by `read_failure_midstream_leaves_no_file_at_dest…` and
+- **Fulfillment cleanup contract**: on ANY `Err`, the service removes the destination it created (partial file, or the
+  whole tree). `LocalPosixVolume::write_from_stream` self-cleans only on cancel, NOT on a source-read error, which is
+  exactly the promise failure mode. Pinned by `read_failure_midstream_leaves_no_file_at_dest…` and
   `folder_error_midstream_removes_the_created_tree`.
-- **Delegate lifetime**: `NSFilePromiseProvider.delegate` is WEAK. A delegate that's a drag-start local would drop when
-  `start_drag` returns, zeroing the provider's weak ref, so Finder queries a nil delegate and silently produces no file.
-  Each session's delegates + providers live in process-global storage in `promises.rs`, freed only when BOTH the gesture
-  has ended AND every in-flight fulfillment has completed (freeing on session-end alone yanks a delegate mid-write,
-  since Finder pumps the fulfillment queue AFTER the drop). Pinned by `session_counters_wait_for_in_flight_to_drain`.
+- **Delegate lifetime**: `NSFilePromiseProvider.delegate` is WEAK, so a drag-start local would drop on return and Finder
+  would query a nil delegate, silently producing no file. Delegates + providers live in process-global storage in
+  `promises.rs`, freed only when the gesture has ended AND every in-flight fulfillment has drained (Finder pumps the
+  queue AFTER the drop). Pinned by `session_counters_wait_for_in_flight_to_drain`.
 - **Main-thread invariant**: the fulfillment service never does synchronous main-thread work from the queue thread (no
   `run_on_main_thread`), so `block_on`-ing it on the queue thread can't deadlock against a busy main thread.
 - **Folder fulfillment is a hand-rolled recursive walk**, NOT the cross-volume copy engine: the copy engine derives
@@ -44,6 +42,9 @@ each in `DETAILS.md`.
 
 ## Gotchas
 
+- **A virtual session is Finder-only** (nothing else reads promise items), so locality (`locality_for_volume`) keys on
+  `Volume::paths_are_os_visible()`, ❌ never `supports_local_fs_access()` — direct SMB says `false` there yet its mounted
+  paths open anywhere. Only manual step 12 catches this.
 - **The promise delegate is NOT `MainThreadOnly`.** `writePromiseToURL:completionHandler:` runs on the operation-queue
   thread, so the delegate must be usable off-main. The one main-thread-only method (`fileNameForType:`) gets its
   `MainThreadMarker` from the protocol signature; ivars are all `Send + Sync` (queue via the `SendQueue` wrapper). The
@@ -52,8 +53,7 @@ each in `DETAILS.md`.
   drag begins (weak refs alive the instant Finder might query them), but `draggingSequenceNumber` is only known AFTER
   `beginDraggingSessionWithItems:…` returns. A monotonic key generated up front and stashed on the source sidesteps the
   chicken-and-egg; the source reads its own key back in the end callback.
-- **Completion toasts**: there's no Finder feedback while a promise downloads, so Cmdr emits typed
-  `SessionStarted`/`SessionComplete` events (in `crate::system_events`, always-compiled) that
-  `lib/file-explorer/drag/drag-out-event-bridge.ts` turns into ONE toast per drag session. Counts are top-level dragged
-  items (one folder = one folder). A drag dropped back into Cmdr never fulfills, so it emits nothing. Detail in
-  `DETAILS.md`.
+- **Completion toasts**: Finder shows nothing while a promise downloads, so typed
+  `SessionStarted`/`SessionComplete` events (in the always-compiled `crate::system_events`) become ONE toast per session
+  via `lib/file-explorer/drag/drag-out-event-bridge.ts`. Counts are top-level items (one folder = one folder); a drag
+  dropped back into Cmdr never fulfills, so it emits nothing.

@@ -200,6 +200,11 @@ about an "unexpected `cfg` condition value" and takes the false branch forever.
   this crate can NAME but never decide: the vocabulary is portable, the mount probe isn't. A backend here answers
   `Volume::listing_watch_coverage` from what it knows; the app answers for OS-mounted shares. Capability model and the
   per-backend answers: `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md`.
+- **Every answer to "is this path visible outside Cmdr?"** The trait NAMES the question (`Volume::paths_are_os_visible`,
+  defaulting to `supports_local_fs_access`), because "can another app open a `file://` URL for this?" is portable
+  vocabulary. Which backends split the two isn't: only the app knows an SMB share stays OS-mounted beside its own smb2
+  session, so `SmbVolume` is where the override lives and `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` is
+  where the per-backend answers are listed. Same shape as `listing_watch_coverage` above.
 - **`icons/per_path.rs`'s custom-folder-icon half**, the NSWorkspace fetch, and the icon disk cache.
 - **The scratch-visibility settings** (`advanced.showStagingTempFiles`, `advanced.showSafeSaveFiles`) and the listing
   read-path filter over them. "Is this ours, and does a live operation own it?" is vocabulary; "does the user see it?"

@@ -539,6 +539,26 @@ pub trait Volume: Send + Sync {
         true
     }
 
+    /// Whether OTHER apps can reach this volume's paths as real filesystem
+    /// paths — that is, whether a `file://` URL built from a path this volume
+    /// hands out is one Finder, a browser, or a mail client can open.
+    ///
+    /// A different question from
+    /// [`supports_local_fs_access`](Self::supports_local_fs_access), which asks
+    /// whether CMDR should reach a path through `std::fs`. A direct-SMB volume
+    /// answers `false` there (its own I/O goes over smb2) while answering `true`
+    /// here, because the share stays OS-mounted alongside the smb2 session and
+    /// its paths are ordinary `/Volumes/…` paths. Conflating the two is what
+    /// made a drag out of an SMB pane offer file promises only, which every
+    /// drop target except Finder rejects.
+    ///
+    /// Consumed by the macOS drag-out path (`commands::file_system::drag`) to
+    /// pick the pasteboard layout. Default: whatever `supports_local_fs_access`
+    /// says, which is right for every backend where the two questions coincide.
+    fn paths_are_os_visible(&self) -> bool {
+        self.supports_local_fs_access()
+    }
+
     /// What a live watch on the listing at `path` observes right now. Used by
     /// `file_system::listing::caching::try_get_authoritative_listing` to decide
     /// whether a cached listing can replace a real read in write-op pre-flight,

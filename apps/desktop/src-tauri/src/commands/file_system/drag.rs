@@ -13,18 +13,27 @@ use tauri::Manager;
 
 /// Resolves a source volume id to its drag-session locality.
 ///
-/// Local FS and OS-mounted shares (`supports_local_fs_access() == true`) keep the
-/// legacy file-url layout; protocol-only / virtual volumes (MTP, direct SMB,
-/// search-results) advertise nothing materializable. An unknown or absent id
-/// (the back-compatible default for callers that don't know their volume)
-/// resolves to `Local` — the conservative choice that preserves today's layout.
+/// Keyed on `Volume::paths_are_os_visible()`: the question a drop target asks is
+/// whether a `file://` URL built from the path opens in ANOTHER app, not whether
+/// Cmdr reads it through `std::fs`. Local disks and OS-mounted shares (direct
+/// SMB included, since the share stays mounted alongside the smb2 session) keep
+/// the file-url layout; protocol-only volumes (MTP, search-results) advertise
+/// nothing materializable and drag as promises. An unknown or absent id (the
+/// back-compatible default for callers that don't know their volume) resolves to
+/// `Local` — the conservative choice that preserves today's layout.
+///
+/// ❌ Don't key this on `supports_local_fs_access()`: that asks a different
+/// question, and direct SMB answers `false` to it while handing out perfectly
+/// openable `/Volumes/…` paths. Promise-only drags are rejected by every target
+/// except Finder, so the mistake looks like "drag to Mail/browser silently does
+/// nothing" while a Finder drop keeps working.
 #[cfg(target_os = "macos")]
 fn locality_for_volume(volume_id: Option<&str>) -> DragSessionLocality {
     let Some(volume_id) = volume_id else {
         return DragSessionLocality::Local;
     };
     match crate::file_system::volume::manager::get_volume_manager().get(volume_id) {
-        Some(volume) if !volume.supports_local_fs_access() => DragSessionLocality::Virtual,
+        Some(volume) if !volume.paths_are_os_visible() => DragSessionLocality::Virtual,
         _ => DragSessionLocality::Local,
     }
 }
@@ -198,3 +207,124 @@ pub fn set_self_drag_resolved_op(operation: String) {
 #[tauri::command]
 #[specta::specta]
 pub fn set_self_drag_resolved_op(_operation: String) {}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::*;
+    use crate::file_system::listing::FileEntry;
+    use crate::file_system::volume::{ListingProgress, Volume, VolumeError};
+    use std::future::Future;
+    use std::path::Path;
+    use std::pin::Pin;
+    use std::sync::Arc;
+
+    /// A volume that answers only the two capability questions the drag path
+    /// asks. Every I/O method is unreachable: `locality_for_volume` decides from
+    /// flags alone, and a stub that could be listed would invite a test that
+    /// asserts something this seam doesn't own.
+    struct CapabilityStub {
+        supports_local_fs_access: bool,
+        paths_are_os_visible: bool,
+    }
+
+    impl Volume for CapabilityStub {
+        fn name(&self) -> &str {
+            "stub"
+        }
+
+        fn root(&self) -> &Path {
+            Path::new("/Volumes/stub")
+        }
+
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+
+        fn list_directory<'a>(
+            &'a self,
+            _path: &'a Path,
+            _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+            unreachable!("the drag locality seam never lists")
+        }
+
+        fn get_metadata<'a>(
+            &'a self,
+            _path: &'a Path,
+        ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+            unreachable!("the drag locality seam never stats")
+        }
+
+        fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+            unreachable!("the drag locality seam never probes existence")
+        }
+
+        fn is_directory<'a>(
+            &'a self,
+            _path: &'a Path,
+        ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+            unreachable!("the drag locality seam never stats")
+        }
+
+        fn supports_local_fs_access(&self) -> bool {
+            self.supports_local_fs_access
+        }
+
+        fn paths_are_os_visible(&self) -> bool {
+            self.paths_are_os_visible
+        }
+    }
+
+    /// Registers a stub under a unique id and returns the locality the drag path
+    /// derives for it. Ids are per-test so the process-wide manager can't make
+    /// two tests collide.
+    fn locality_of(id: &str, supports_local_fs_access: bool, paths_are_os_visible: bool) -> DragSessionLocality {
+        let manager = crate::file_system::volume::manager::get_volume_manager();
+        manager.register(
+            id,
+            Arc::new(CapabilityStub {
+                supports_local_fs_access,
+                paths_are_os_visible,
+            }) as Arc<dyn Volume>,
+        );
+        let locality = locality_for_volume(Some(id));
+        manager.unregister(id);
+        locality
+    }
+
+    /// The direct-SMB shape: Cmdr's own I/O goes over smb2 (no `std::fs`), but
+    /// the share stays OS-mounted, so other apps CAN open the paths. This must
+    /// drag as a local session; a virtual one publishes file promises, which
+    /// every drop target except Finder rejects.
+    #[test]
+    fn os_visible_volume_drags_as_local_even_without_local_fs_access() {
+        assert_eq!(locality_of("stub-smb-shaped", false, true), DragSessionLocality::Local);
+    }
+
+    /// The MTP shape: no local paths at all, so promises are the only honest
+    /// offer.
+    #[test]
+    fn volume_with_no_os_visible_paths_drags_as_virtual() {
+        assert_eq!(
+            locality_of("stub-mtp-shaped", false, false),
+            DragSessionLocality::Virtual
+        );
+    }
+
+    /// A plain local disk keeps the file-url layout.
+    #[test]
+    fn local_volume_drags_as_local() {
+        assert_eq!(locality_of("stub-local", true, true), DragSessionLocality::Local);
+    }
+
+    /// An id nobody registered resolves to `Local`, the back-compatible default
+    /// for callers that don't know their volume.
+    #[test]
+    fn unknown_volume_id_drags_as_local() {
+        assert_eq!(
+            locality_for_volume(Some("stub-never-registered")),
+            DragSessionLocality::Local
+        );
+        assert_eq!(locality_for_volume(None), DragSessionLocality::Local);
+    }
+}
