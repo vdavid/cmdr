@@ -11,9 +11,9 @@
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
-  "main.quit.body": "Những gì đã xong vẫn được giữ nguyên. Mục duy nhất đang được ghi sẽ dừng lại ngay tại chỗ, và Cmdr dọn dẹp tệp ghi dở còn sót lại.",
+  "main.quit.body": "Những gì đã xong vẫn được giữ nguyên. Những gì đang được ghi sẽ dừng lại ngay tại chỗ, và Cmdr dọn dẹp tệp ghi dở còn sót lại.",
   "@main.quit.body": {
-    "sourceHash": "9b1c574"
+    "sourceHash": "c17f6e7"
   },
   "main.quit.countdown": "{seconds, plural, other {Sẽ thoát sau {secondsText} giây, để việc khởi động lại máy hoặc đăng xuất không bao giờ phải chờ Cmdr.}}",
   "@main.quit.countdown": {

@@ -11,9 +11,9 @@
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
-  "main.quit.body": "Tudo o que já terminou continua concluído. O único item ainda sendo gravado é interrompido onde está, e o Cmdr remove o arquivo pela metade que sobra.",
+  "main.quit.body": "Tudo o que já terminou continua concluído. O que ainda está sendo gravado é interrompido onde está, e o Cmdr remove o que ficou gravado pela metade.",
   "@main.quit.body": {
-    "sourceHash": "9b1c574"
+    "sourceHash": "c17f6e7"
   },
   "main.quit.countdown": "{seconds, plural, one {Encerrando em {secondsText} segundo, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.} many {Encerrando em {secondsText} segundos, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.} other {Encerrando em {secondsText} segundos, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.}}",
   "@main.quit.countdown": {

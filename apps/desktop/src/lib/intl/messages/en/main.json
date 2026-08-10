@@ -18,9 +18,9 @@
     }
   },
 
-  "main.quit.body": "Whatever''s finished stays done. The one item still in flight stops where it is, and Cmdr clears away the half-written file it leaves behind.",
+  "main.quit.body": "Whatever''s finished stays done. Anything still being written stops where it is, and Cmdr clears away what it leaves half-written.",
   "@main.quit.body": {
-    "description": "Body text of the quit-while-running dialog, directly under the title. It reassures the user that quitting is safe: completed files are kept, nothing is undone, and the single item being written when the app stops is cleaned up rather than left looking complete. \"In flight\" means currently being written; render it as whatever reads naturally, not literally. Keep the reassuring, matter-of-fact tone; this is not a warning."
+    "description": "Body text of the quit-while-running dialog, directly under the title. It reassures the user that quitting is safe: completed files are kept, nothing is undone, and anything caught mid-write is cleaned up rather than left looking complete. IMPORTANT: keep this number-neutral. One operation can be writing several files at once, and several operations can run at once, so the sentence must read correctly whether one file or many are interrupted — do NOT introduce a singular that commits to exactly one. Keep the reassuring, matter-of-fact tone; this is not a warning."
   },
 
   "main.quit.countdown": "{seconds, plural, one {Quitting in {secondsText} second, so a restart or logout never waits on Cmdr.} other {Quitting in {secondsText} seconds, so a restart or logout never waits on Cmdr.}}",

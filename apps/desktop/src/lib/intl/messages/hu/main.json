@@ -11,9 +11,9 @@
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
-  "main.quit.body": "Ami elkészült, az kész marad. Az éppen írás alatt álló elem ott áll meg, ahol tart, a Cmdr pedig eltávolítja a félig megírt fájlt, ami utána marad.",
+  "main.quit.body": "Ami elkészült, az kész marad. Ami éppen íródik, ott áll meg, ahol tart, a Cmdr pedig eltávolít minden félig megírt fájlt.",
   "@main.quit.body": {
-    "sourceHash": "9b1c574"
+    "sourceHash": "c17f6e7"
   },
   "main.quit.countdown": "{seconds, plural, one {Kilépés {secondsText} másodperc múlva, így egy újraindítás vagy kijelentkezés soha nem vár a Cmdrre.} other {Kilépés {secondsText} másodperc múlva, így egy újraindítás vagy kijelentkezés soha nem vár a Cmdrre.}}",
   "@main.quit.countdown": {

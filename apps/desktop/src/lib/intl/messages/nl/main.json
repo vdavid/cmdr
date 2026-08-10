@@ -11,9 +11,9 @@
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
-  "main.quit.body": "Wat al klaar is, blijft klaar. Alleen het onderdeel dat op dat moment wordt geschreven, stopt waar het is, en het gedeeltelijk geschreven bestand dat achterblijft, ruimt Cmdr op.",
+  "main.quit.body": "Wat al klaar is, blijft klaar. Alles wat nog wordt geschreven, stopt waar het is, en wat gedeeltelijk geschreven achterblijft, ruimt Cmdr op.",
   "@main.quit.body": {
-    "sourceHash": "9b1c574"
+    "sourceHash": "c17f6e7"
   },
   "main.quit.countdown": "Over {seconds, plural, one {{secondsText} seconde} other {{secondsText} seconden}} stopt Cmdr vanzelf, zodat herstarten of uitloggen nooit hoeft te wachten.",
   "@main.quit.countdown": {

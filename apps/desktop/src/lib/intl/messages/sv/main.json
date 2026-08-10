@@ -11,9 +11,9 @@
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
-  "main.quit.body": "Allt som redan är klart förblir klart. Det enda objektet som fortfarande skrivs stannar där det är, och Cmdr rensar bort den delvis skrivna filen som blir kvar.",
+  "main.quit.body": "Allt som redan är klart förblir klart. Allt som fortfarande skrivs stannar där det är, och Cmdr rensar bort det som blivit delvis skrivet.",
   "@main.quit.body": {
-    "sourceHash": "9b1c574"
+    "sourceHash": "c17f6e7"
   },
   "main.quit.countdown": "{seconds, plural, one {Cmdr avslutas om {secondsText} sekund, så att en omstart eller utloggning aldrig behöver vänta.} other {Cmdr avslutas om {secondsText} sekunder, så att en omstart eller utloggning aldrig behöver vänta.}}",
   "@main.quit.countdown": {

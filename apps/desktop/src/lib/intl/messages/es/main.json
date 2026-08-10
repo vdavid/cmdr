@@ -11,9 +11,9 @@
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
-  "main.quit.body": "Todo lo que ya ha terminado se conserva. El único elemento que aún se está escribiendo se interrumpe donde esté, y Cmdr borra el archivo a medio escribir que deja atrás.",
+  "main.quit.body": "Todo lo que ya ha terminado se conserva. Lo que aún se está escribiendo se interrumpe donde esté, y Cmdr borra lo que quede a medio escribir.",
   "@main.quit.body": {
-    "sourceHash": "9b1c574"
+    "sourceHash": "c17f6e7"
   },
   "main.quit.countdown": "{seconds, plural, one {Cmdr se cerrará en {secondsText} segundo, para no hacerte esperar al reiniciar el Mac o cerrar sesión.} many {Cmdr se cerrará en {secondsText} segundos, para no hacerte esperar al reiniciar el Mac o cerrar sesión.} other {Cmdr se cerrará en {secondsText} segundos, para no hacerte esperar al reiniciar el Mac o cerrar sesión.}}",
   "@main.quit.countdown": {

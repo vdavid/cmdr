@@ -11,9 +11,9 @@
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
-  "main.quit.body": "已经完成的都会保留。正在写入的那个项目会就此停下，Cmdr 会把它留下的半个文件清理掉。",
+  "main.quit.body": "已经完成的都会保留。正在写入的项目会就此停下，Cmdr 会把写了一半的文件清理掉。",
   "@main.quit.body": {
-    "sourceHash": "9b1c574"
+    "sourceHash": "c17f6e7"
   },
   "main.quit.countdown": "{seconds, plural, other {将在 {secondsText} 秒后自动退出，这样系统重新启动或退出登录时就不用等 Cmdr。}}",
   "@main.quit.countdown": {

@@ -11,9 +11,9 @@
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
-  "main.quit.body": "Tout ce qui est déjà terminé le reste. Le seul élément encore en cours d''écriture s''arrête là où il en est, et Cmdr supprime le fichier à moitié écrit qu''il laisse derrière lui.",
+  "main.quit.body": "Tout ce qui est déjà terminé le reste. Ce qui est encore en cours d''écriture s''arrête là où il en est, et Cmdr supprime tout fichier à moitié écrit.",
   "@main.quit.body": {
-    "sourceHash": "9b1c574"
+    "sourceHash": "c17f6e7"
   },
   "main.quit.countdown": "{seconds, plural, one {Cmdr quitte dans {secondsText} seconde, pour ne jamais retarder un redémarrage ou une fermeture de session.} many {Cmdr quitte dans {secondsText} secondes, pour ne jamais retarder un redémarrage ou une fermeture de session.} other {Cmdr quitte dans {secondsText} secondes, pour ne jamais retarder un redémarrage ou une fermeture de session.}}",
   "@main.quit.countdown": {

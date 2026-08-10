@@ -11,9 +11,9 @@
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
-  "main.quit.body": "Was fertig ist, bleibt fertig. Das eine Objekt, das gerade geschrieben wird, stoppt genau dort, wo es ist, und Cmdr entfernt die halb geschriebene Datei, die dabei zurückbleibt.",
+  "main.quit.body": "Was fertig ist, bleibt fertig. Alles, was gerade geschrieben wird, stoppt genau dort, wo es ist, und Cmdr entfernt, was dabei halb geschrieben zurückbleibt.",
   "@main.quit.body": {
-    "sourceHash": "9b1c574"
+    "sourceHash": "c17f6e7"
   },
   "main.quit.countdown": "{seconds, plural, one {Cmdr beendet sich in {secondsText} Sekunde, damit ein Neustart oder eine Abmeldung nie darauf warten muss.} other {Cmdr beendet sich in {secondsText} Sekunden, damit ein Neustart oder eine Abmeldung nie darauf warten muss.}}",
   "@main.quit.countdown": {
