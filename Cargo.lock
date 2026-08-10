@@ -1424,6 +1424,7 @@ dependencies = [
 name = "cmdr-fs"
 version = "0.0.0"
 dependencies = [
+ "blake3",
  "dirs 6.0.0",
  "libc",
  "libmimalloc-sys",

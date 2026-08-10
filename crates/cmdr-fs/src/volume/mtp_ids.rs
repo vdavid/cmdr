@@ -15,36 +15,41 @@
 //! so [`device_id_for`] prefers it, falling back to `location_id` (with a
 //! documented "same-port-only" limitation) when absent.
 //!
-//! ## Why parsing must be `:`-robust (the riskiest part)
+//! ## The `{device_id}:{storage_id}` shape
 //!
-//! The volume id is `{device_id}:{storage_id}` and is split on `:` at several
-//! call sites to recover the device id and storage id. A device id built from a
-//! serial CAN contain a `:` (some devices report serials with colons), which a
-//! naive `split(':').nth(1)` mis-parses (it takes the SECOND segment, not the
-//! storage). The storage id is ALWAYS the trailing numeric component, so the one
-//! robust split is from the RIGHT ([`rsplit_once(':')`](str::rsplit_once)):
-//! everything before the last `:` is the device id, the tail is the storage id.
-//! [`split_volume_id`] is the single funnel every parser must use, so a `:` in a
-//! serial never breaks classification (`.claude/rules/no-string-matching.md`:
-//! structured parse over substring branching). The serial is otherwise OPAQUE —
-//! we never interpret its contents, only round-trip it.
+//! A volume id is `{device_id}:{storage_id}`, split at several call sites to
+//! recover each half. [`split_volume_id`] is the single funnel every parser must
+//! use (`.claude/rules/no-string-matching.md`: structured parse over substring
+//! branching), and it splits from the RIGHT, because the storage id is always the
+//! trailing numeric component.
+//!
+//! Two layers keep that honest. The device id comes out of the id funnel
+//! ([`super::ids::mtp_device_id`]), so it holds only alphanumerics and dashes no
+//! matter what the device reports: a serial with a `:` in it (some devices do)
+//! can't shift the split, and a serial with a `/` or a `.` can't break the
+//! `index-{volume_id}.db` filename. The right-split then holds even if that ever
+//! regressed. The serial itself is OPAQUE — we never interpret its contents.
 
 /// The `mtp-` prefix every MTP device id carries, so a volume id is recognizable
-/// as MTP and distinct from `root` / SMB ids.
+/// as MTP and distinct from `root` / SMB ids. Must match the scheme
+/// [`super::ids::mtp_device_id`] mints under; `prefix_matches_the_id_funnel`
+/// holds the two together.
 pub const MTP_DEVICE_ID_PREFIX: &str = "mtp-";
 
 /// Build the stable MTP device id for a device, preferring its serial number.
 ///
-/// - With a non-empty serial: `mtp-{serial}` (stable across replug to ANY port).
-/// - Without (or an empty serial): `mtp-{location_id}` (stable for the SAME port
-///   only — a different-port replug changes it and forces a rescan).
+/// - With a non-empty serial: keyed by the serial (stable across replug to ANY port).
+/// - Without (or an empty serial): keyed by the `location_id` (stable for the
+///   SAME port only — a different-port replug changes it and forces a rescan).
 ///
-/// The serial is taken verbatim (it may contain a `:`; parsing stays robust via
-/// [`split_volume_id`]). An all-whitespace serial is treated as absent.
+/// An all-whitespace serial is treated as absent. The serial itself is OPAQUE:
+/// it goes through [`super::ids::mtp_device_id`] rather than into the id
+/// verbatim, so a serial carrying a `/`, a `.`, or a `:` can't break the
+/// `index-{volume_id}.db` filename or the `{device}:{storage}` split.
 pub fn device_id_for(serial: Option<&str>, location_id: u64) -> String {
     match serial.map(str::trim).filter(|s| !s.is_empty()) {
-        Some(serial) => format!("{MTP_DEVICE_ID_PREFIX}{serial}"),
-        None => format!("{MTP_DEVICE_ID_PREFIX}{location_id}"),
+        Some(serial) => super::ids::mtp_device_id(serial),
+        None => super::ids::mtp_device_id(&location_id.to_string()),
     }
 }
 
@@ -101,52 +106,74 @@ mod tests {
     // ── device_id_for: serial preferred, location fallback ────────────────
 
     #[test]
-    fn prefers_serial_when_present() {
-        assert_eq!(device_id_for(Some("ABC123"), 336_592_896), "mtp-ABC123");
+    fn prefixes_every_device_id() {
+        assert!(device_id_for(Some("ABC123"), 336_592_896).starts_with(MTP_DEVICE_ID_PREFIX));
+        assert!(device_id_for(None, 336_592_896).starts_with(MTP_DEVICE_ID_PREFIX));
     }
 
     #[test]
-    fn falls_back_to_location_id_without_serial() {
-        assert_eq!(device_id_for(None, 336_592_896), "mtp-336592896");
+    fn prefix_matches_the_id_funnel() {
+        // `MTP_DEVICE_ID_PREFIX` and the funnel's scheme are two spellings of one
+        // fact; a drift would make `is_mtp_device_id` blind to real MTP ids.
+        assert!(super::super::ids::mtp_device_id("anything").starts_with(MTP_DEVICE_ID_PREFIX));
+    }
+
+    #[test]
+    fn prefers_serial_when_present() {
+        // Serial beats topology: the same device on two ports keeps one id, so its
+        // index survives a replug (asserted in full below).
+        assert_eq!(device_id_for(Some("ABC123"), 336_592_896), device_id_for(Some("ABC123"), 1));
+        assert_ne!(device_id_for(Some("ABC123"), 42), device_id_for(None, 42));
+    }
+
+    #[test]
+    fn distinct_serials_and_locations_get_distinct_ids() {
+        assert_ne!(device_id_for(Some("ABC123"), 0), device_id_for(Some("ABC124"), 0));
+        assert_ne!(device_id_for(None, 336_592_896), device_id_for(None, 336_592_897));
     }
 
     #[test]
     fn treats_empty_or_whitespace_serial_as_absent() {
         // A device that reports an empty/blank serial must fall back to the
-        // topology id rather than producing the degenerate `mtp-` id.
-        assert_eq!(device_id_for(Some(""), 42), "mtp-42");
-        assert_eq!(device_id_for(Some("   "), 42), "mtp-42");
+        // topology id rather than to one degenerate id shared by every such device.
+        assert_eq!(device_id_for(Some(""), 42), device_id_for(None, 42));
+        assert_eq!(device_id_for(Some("   "), 42), device_id_for(None, 42));
+        assert_ne!(device_id_for(Some(""), 42), device_id_for(Some(""), 43));
     }
 
     #[test]
-    fn serial_with_colon_is_taken_verbatim() {
-        // The whole point of the robust parse: a serial may contain a `:`. The id
-        // keeps it; round-tripping through split_volume_id still works (below).
-        let id = device_id_for(Some("AA:BB:CC"), 7);
-        assert_eq!(id, "mtp-AA:BB:CC");
+    fn a_punctuated_serial_cannot_break_the_id() {
+        // Serials arrive from the device, so they're hostile input: a `:` would
+        // shift the storage split, and a `/` or `.` would break `index-{id}.db`.
+        // The funnel encodes them out of existence.
+        let id = device_id_for(Some("AA:BB/CC.DD"), 7);
+        assert!(id.chars().all(|c| c.is_alphanumeric() || c == '-'), "got: {id}");
+        assert_ne!(id, device_id_for(Some("AABBCCDD"), 7));
     }
 
-    // ── split_volume_id: the `:`-in-serial robustness (the riskiest part) ──
+    // ── split_volume_id: recovering both halves ───────────────────────────
 
     #[test]
     fn splits_a_plain_location_volume_id() {
-        assert_eq!(split_volume_id("mtp-336592896:65537"), Some(("mtp-336592896", 65537)));
-    }
-
-    #[test]
-    fn splits_a_serial_volume_id_without_colon() {
-        assert_eq!(split_volume_id("mtp-ABC123:65537"), Some(("mtp-ABC123", 65537)));
-    }
-
-    #[test]
-    fn splits_a_serial_volume_id_that_contains_colons() {
-        // The headline case. With `mtp-AA:BB:CC` as the device id and 65537 as the
-        // storage, a naive `split(':').nth(1)` would return "BB" and fail the u32
-        // parse. rsplit_once takes the LAST `:`, recovering device + storage right.
-        let device_id = device_id_for(Some("AA:BB:CC"), 0);
+        let device_id = device_id_for(None, 336_592_896);
         let volume_id = mtp_volume_id(&device_id, 65537);
-        assert_eq!(volume_id, "mtp-AA:BB:CC:65537");
-        assert_eq!(split_volume_id(&volume_id), Some(("mtp-AA:BB:CC", 65537)));
+        assert_eq!(split_volume_id(&volume_id), Some((device_id.as_str(), 65537)));
+    }
+
+    #[test]
+    fn splits_a_serial_volume_id() {
+        let device_id = device_id_for(Some("ABC123"), 0);
+        let volume_id = mtp_volume_id(&device_id, 65537);
+        assert_eq!(split_volume_id(&volume_id), Some((device_id.as_str(), 65537)));
+    }
+
+    #[test]
+    fn splits_from_the_right_so_a_stray_colon_cannot_shift_it() {
+        // Defense in depth: the funnel already keeps `:` out of a device id, and
+        // rsplit_once holds even for an id that somehow carries one (the storage id
+        // is always the trailing numeric component). A naive `split(':').nth(1)`
+        // would return "BB" here and fail the u32 parse.
+        assert_eq!(split_volume_id("mtp-AA:BB:CC:65537"), Some(("mtp-AA:BB:CC", 65537)));
     }
 
     #[test]
@@ -175,16 +202,16 @@ mod tests {
 
     #[test]
     fn recognizes_mtp_device_and_volume_ids() {
-        assert!(is_mtp_device_id("mtp-ABC"));
+        let device_id = device_id_for(Some("ABC"), 0);
+        assert!(is_mtp_device_id(&device_id));
         assert!(!is_mtp_device_id("root"));
-        assert!(!is_mtp_device_id("smb-nas:445:share"));
+        assert!(!is_mtp_device_id(&super::super::ids::smb_volume_id("nas", 445, "share")));
 
-        assert!(is_mtp_volume_id("mtp-ABC:65537"));
+        assert!(is_mtp_volume_id(&mtp_volume_id(&device_id, 65537)));
         assert!(is_mtp_volume_id("mtp-AA:BB:CC:65537"));
-        // An SMB volume id is `{server}:{port}:{share}` — the tail isn't numeric
-        // ... unless a share is all-digits, but it never carries the mtp- prefix,
-        // so the device-id prefix check excludes it.
-        assert!(!is_mtp_volume_id("smb-host:445:1234"));
+        // An SMB volume id carries no `:` at all, so it can't even split; the
+        // `mtp-` prefix check excludes it a second time.
+        assert!(!is_mtp_volume_id(&super::super::ids::smb_volume_id("host", 445, "1234")));
         assert!(!is_mtp_volume_id("root"));
     }
 

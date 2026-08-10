@@ -16,6 +16,7 @@ pub mod watcher;
 
 mod cloud;
 mod fs_type;
+mod ids;
 mod mounts;
 mod nsurl;
 mod smb;
@@ -25,17 +26,20 @@ use std::collections::HashSet;
 use std::path::Path;
 
 pub use crate::file_system::volume::SmbConnectionState;
-pub(crate) use crate::file_system::volume::{path_to_id, smb_volume_id};
 
 pub use cloud::get_cloud_drives;
 pub(crate) use cloud::resolve_cloud_drive_for_path;
 pub(crate) use fs_type::{get_fs_type, get_mount_point, read_only_from_statfs};
 pub use fs_type::{is_network_fs_type, is_smb_fs_type, supports_trash_for_fs_type};
+pub(crate) use ids::{volume_id_for, volume_id_for_mount};
 pub use mounts::get_attached_volumes;
 pub use nsurl::{VolumeSpaceInfo, get_volume_space};
-pub(crate) use nsurl::{get_bool_resource, get_icon_for_path, get_volume_name, volume_name_from_path};
+pub(crate) use nsurl::{
+    get_bool_resource, get_icon_for_path, get_volume_name, get_volume_uuid, get_volume_uuid_for_path,
+    volume_name_from_path,
+};
 pub use smb::{SmbMountInfo, enrich_smb_connection_state, get_smb_mount_info};
-pub(crate) use smb::{parse_smb_mount_source, volume_id_for_mount};
+pub(crate) use smb::parse_smb_mount_source;
 
 /// Category of a location item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -128,9 +132,17 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         let is_disk_image = matches!(category, LocationCategory::AttachedVolume)
             && !is_smb_fs_type(Some(&fs_type))
             && disk_image::is_disk_image_mount(&mount_point);
+        // Ask for a UUID only where `get_attached_volumes` does (local mounts), or
+        // the same volume would get two different IDs depending on which path
+        // discovered it. A network mount's UUID probe can also hang.
+        let smb = get_smb_mount_info(&mount_point);
+        let uuid = match smb.is_some() || is_network_fs_type(Some(&fs_type)) {
+            true => None,
+            false => get_volume_uuid(&url),
+        };
 
         Some(VolumeInfo {
-            id: volume_id_for_mount(&mount_point),
+            id: volume_id_for(&mount_point, Some(&fs_type), smb.as_ref(), uuid.as_deref()),
             name,
             path: mount_point,
             category,
@@ -289,12 +301,6 @@ mod tests {
         for loc in &locations {
             assert!(seen_paths.insert(&loc.path), "Duplicate path found: {}", loc.path);
         }
-    }
-
-    #[test]
-    fn test_path_to_id() {
-        assert_eq!(path_to_id("/"), "root");
-        assert_eq!(path_to_id("/Volumes/External"), "volumesexternal");
     }
 
     #[test]

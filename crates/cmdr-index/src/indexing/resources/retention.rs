@@ -254,6 +254,42 @@ pub(crate) fn enforce_external_index_cap() {
     }
 }
 
+/// Delete the index databases keyed by a volume ID from the retired ID scheme.
+///
+/// Volume IDs are now identity-keyed (`cmdr_fs::volume::ids`), so a database
+/// named by an ID of the old shape can never be opened again: nothing mints
+/// those IDs, so nothing will ever look one up. Left alone they'd sit in the data
+/// dir until the LRU cap happened to reach them, which for a user under the cap
+/// is never.
+///
+/// Safe to run at any time and safe to fail: a legacy ID can't be live (nothing
+/// can produce one), and these databases are disposable caches. Best-effort by
+/// design, so a delete that doesn't work out is a log line, not an error path.
+pub fn sweep_legacy_scheme_dbs() {
+    let Some(data_dir) = data_dir_for_sweep("sweep index databases from the retired ID scheme") else {
+        return;
+    };
+    let stale: Vec<IndexDbFile> = enumerate_index_dbs(&data_dir)
+        .into_iter()
+        .filter(|db| cmdr_fs::volume::is_legacy_volume_id(&db.volume_id))
+        .collect();
+    if stale.is_empty() {
+        return;
+    }
+    log::info!(
+        target: "indexing::retention",
+        "deleting {} index database(s) stranded by the switch to identity-keyed volume IDs",
+        stale.len()
+    );
+    for db in stale {
+        // The two sidecar caches are named after the same volume ID and are just
+        // as unreachable, so they go together (`importance/store`, `media_index/store`).
+        delete_index_db_files(&db.path);
+        delete_index_db_files(&crate::importance::store::importance_db_path(&data_dir, &db.volume_id));
+        delete_index_db_files(&crate::media_index::store::media_db_path(&data_dir, &db.volume_id));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -33,6 +33,12 @@ playwright-e2e = []
 testing = ["dep:tempfile"]
 
 [dependencies]
+# The digest half of every volume ID (`volume::ids`). Cryptographic on purpose:
+# an ID is identity, and a volume name is user-controlled, so a *chosen*
+# collision (name a USB stick so it steals another volume's index and saved
+# paths) has to be out of reach, which a fast non-cryptographic hash wouldn't
+# manage. Same version the app pins.
+blake3 = "1.8.3"
 serde = { version = "1", features = ["derive"] }
 # Type export for the Rust↔TS bindings. Pinned to the EXACT same version the app
 # uses: two `specta` crates in one graph would make these `Type` impls stop

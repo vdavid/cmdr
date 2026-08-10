@@ -32,6 +32,28 @@ pub(crate) fn get_volume_name(url: &objc2_foundation::NSURL, path: &str) -> Stri
     volume_name_from_path(path)
 }
 
+/// The volume's filesystem UUID, the identity its volume ID keys on.
+///
+/// `None` for a volume that has none (tmpfs, most FUSE mounts, some disk
+/// images), which sends `volume_id_for` to the path-derived fallback.
+///
+/// ❌ Never call this for a network mount: it's an NSURL round-trip that can hang
+/// for minutes on a dead one. `ids::volume_id_for_mount` gates it on the
+/// filesystem type; `DETAILS.md` § "Hung mounts" is why.
+pub(crate) fn get_volume_uuid(url: &objc2_foundation::NSURL) -> Option<String> {
+    get_string_resource(url, "NSURLVolumeUUIDStringKey")
+}
+
+/// [`get_volume_uuid`] for a caller that holds a path rather than an `NSURL`.
+pub(crate) fn get_volume_uuid_for_path(path: &str) -> Option<String> {
+    use objc2::rc::autoreleasepool;
+    use objc2_foundation::{NSString, NSURL};
+
+    // Drain the autoreleased NSURL/NSString: callers run on helper threads that
+    // have no AppKit pool of their own.
+    autoreleasepool(|_| get_volume_uuid(&NSURL::fileURLWithPath(&NSString::from_str(path))))
+}
+
 /// Get icon for a path as base64-encoded WebP.
 ///
 /// Returns `None` while the FDA decision is pending. NSWorkspace icon

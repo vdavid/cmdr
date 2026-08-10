@@ -435,7 +435,7 @@ mod tests {
 
         // Unique path so this test doesn't collide with parallel tests.
         let volume_path = "/Volumes/cmdr-test-mount-register";
-        let volume_id = super::super::path_to_id(volume_path);
+        let volume_id = super::super::volume_id_for_mount(volume_path);
 
         // Make sure we start clean.
         get_volume_manager().unregister(&volume_id);
@@ -461,7 +461,7 @@ mod tests {
         use std::sync::Arc;
 
         let volume_path = "/Volumes/cmdr-test-mount-unregister";
-        let volume_id = super::super::path_to_id(volume_path);
+        let volume_id = super::super::volume_id_for_mount(volume_path);
 
         // Pre-register so the unmount handler has something to remove.
         let volume = Arc::new(LocalPosixVolume::new("cmdr-test", volume_path));
@@ -484,7 +484,7 @@ mod tests {
         use crate::file_system::volume::manager::get_volume_manager;
 
         let volume_path = "/Volumes/cmdr-test-roundtrip";
-        let volume_id = super::super::path_to_id(volume_path);
+        let volume_id = super::super::volume_id_for_mount(volume_path);
         get_volume_manager().unregister(&volume_id);
 
         handle_volume_mounted(volume_path);
@@ -514,7 +514,7 @@ mod tests {
         install_observers();
 
         let volume_path = "/Volumes/cmdr-test-e2e-post";
-        let volume_id = super::super::path_to_id(volume_path);
+        let volume_id = super::super::volume_id_for_mount(volume_path);
 
         // Start clean.
         get_volume_manager().unregister(&volume_id);

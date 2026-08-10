@@ -3,8 +3,8 @@
 //! Every filesystem operation in Cmdr goes through a `Volume`, with **paths
 //! relative to the volume root**. The data types the trait exchanges live in
 //! `types` (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`,
-//! `MutationEvent`, …) and the volume ID helpers in `ids` (`path_to_id`,
-//! `smb_volume_id`); both are re-exported here.
+//! `MutationEvent`, …) and the volume ID funnel in `ids` (`local_volume_id`,
+//! `smb_volume_id`, …); both are re-exported here.
 //!
 //! Real-storage backends (local POSIX, SMB, MTP, archive) live in the app, where
 //! their `smb2` / `mtp-rs` / git / mount-detection dependencies belong. The one
@@ -1102,9 +1102,9 @@ pub trait Volume: Send + Sync {
 }
 
 // Shared data types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `MutationEvent`,
-// …) live in `types`; the volume ID helpers (`path_to_id`, `smb_volume_id`) live
-// in `ids`. Both are re-exported below so callers keep importing
-// `volume::VolumeError`, `volume::smb_volume_id`, etc. unchanged.
+// …) live in `types`; the volume ID funnel (`local_volume_id`, `smb_volume_id`,
+// …) lives in `ids`. Both are re-exported below so callers import
+// `volume::VolumeError`, `volume::smb_volume_id`, etc.
 mod ids;
 mod in_memory;
 pub mod mtp_ids;

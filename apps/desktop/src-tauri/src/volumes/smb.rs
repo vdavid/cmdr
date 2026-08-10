@@ -2,7 +2,7 @@
 //! of a `statfs` mount source, tagging volumes with their SMB connection state,
 //! and deriving the SMB-aware volume ID.
 
-use super::{LocationInfo, SmbConnectionState, is_smb_fs_type, path_to_id, smb_volume_id};
+use super::{LocationInfo, SmbConnectionState, is_smb_fs_type};
 
 /// Returns true if the filesystem type is SMB (macOS `smbfs` or Linux `cifs`).
 /// Enriches volume entries with SMB connection state from the `VolumeManager`.
@@ -118,22 +118,5 @@ pub(crate) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
     })
 }
 
-/// Volume ID for a mount path, SMB-aware.
-///
-/// For SMB mounts (smbfs), the ID is keyed by `(server, port, share)` via
-/// [`smb_volume_id`], not by the path-shape. Two SMB shares with the same
-/// case-folded name on different servers (a NAS sharing `Public`, a Docker
-/// container sharing `public`) thus get distinct IDs, instead of colliding on
-/// `volumespublic`. See [`smb_volume_id`] for the full rationale.
-///
-/// Falls back to [`path_to_id`] for non-SMB mounts and for SMB mounts where
-/// `statfs` no longer recovers the mount info (typical right after unmount).
-/// The unmount path should generally use [`VolumeManager::find_by_root`]
-/// instead, which doesn't depend on `statfs`.
-pub(crate) fn volume_id_for_mount(mount_path: &str) -> String {
-    if let Some(info) = get_smb_mount_info(mount_path) {
-        smb_volume_id(&info.server, info.port, &info.share)
-    } else {
-        path_to_id(mount_path)
-    }
-}
+// Deriving a volume ID from a mount lives in `ids.rs`, which owns the rule for
+// every mount kind (SMB, other network, local) in one place.

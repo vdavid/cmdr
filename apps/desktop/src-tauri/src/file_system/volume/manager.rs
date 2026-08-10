@@ -28,6 +28,33 @@ pub struct VolumeManager {
     archive_lru: Mutex<VecDeque<String>>,
 }
 
+/// Complain loudly when one ID is about to cover two different mount roots.
+///
+/// A volume ID is identity: it keys the index DB, `lastUsedPaths`, tab state, and
+/// operation routing, so two volumes sharing one would send reads (and writes) to
+/// the wrong disk. `cmdr_fs::volume::ids` makes that unreachable for every
+/// derived ID, which leaves exactly two ways here: a byte-for-byte volume clone
+/// (two disks really do report one UUID) and a filesystem mounted twice. Both are
+/// genuinely ambiguous, so this reports rather than resolves. What it must never
+/// be again is silent.
+fn report_identity_conflict(id: &str, existing: &Arc<dyn Volume>, incoming: &Arc<dyn Volume>, resolution: &str) {
+    if !is_identity_conflict(existing, incoming) {
+        return;
+    }
+    log::error!(
+        target: "cmdr_lib::file_system::volume",
+        "Volume ID {id} covers two different roots ({} and {}); {resolution}, and they share per-volume state. Expected only for a cloned volume or a doubly-mounted filesystem.",
+        existing.root().display(),
+        incoming.root().display(),
+    );
+}
+
+/// Whether re-registering `id` means two DIFFERENT mounts, rather than the same
+/// mount changing backends (which is routine: that's the SMB upgrade).
+fn is_identity_conflict(existing: &Arc<dyn Volume>, incoming: &Arc<dyn Volume>) -> bool {
+    existing.root() != incoming.root()
+}
+
 impl VolumeManager {
     /// Creates a new empty volume manager.
     pub fn new() -> Self {
@@ -40,9 +67,14 @@ impl VolumeManager {
 
     /// Registers a volume with the given ID.
     ///
-    /// If a volume with this ID already exists, it will be replaced.
+    /// If a volume with this ID already exists, it will be replaced. Replacing
+    /// the volume at the SAME root is routine: that's how an OS-mounted SMB share
+    /// is upgraded in place to a direct `smb2` session.
     pub fn register(&self, id: &str, volume: Arc<dyn Volume>) {
         if let Ok(mut volumes) = self.volumes.write() {
+            if let Some(existing) = volumes.get(id) {
+                report_identity_conflict(id, existing, &volume, "the newer registration takes over");
+            }
             volumes.insert(id.to_string(), volume);
         }
     }
@@ -55,7 +87,10 @@ impl VolumeManager {
         if let Ok(mut volumes) = self.volumes.write() {
             use std::collections::hash_map::Entry;
             match volumes.entry(id.to_string()) {
-                Entry::Occupied(_) => false,
+                Entry::Occupied(existing) => {
+                    report_identity_conflict(id, existing.get(), &volume, "the existing registration is kept");
+                    false
+                }
                 Entry::Vacant(e) => {
                     e.insert(volume);
                     true
@@ -345,6 +380,26 @@ mod tests {
 
         // Original should be kept
         assert_eq!(manager.get("test").unwrap().name(), "Original");
+    }
+
+    #[test]
+    fn re_registering_the_same_mount_is_not_an_identity_conflict() {
+        // The SMB upgrade swaps an OS-mounted `LocalPosixVolume` for a direct
+        // `SmbVolume` at the same root. Routine, and it must stay quiet.
+        let existing: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("OS mount").with_root("/Volumes/naspi"));
+        let incoming: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/naspi"));
+        assert!(!is_identity_conflict(&existing, &incoming));
+    }
+
+    #[test]
+    fn one_id_over_two_roots_is_an_identity_conflict() {
+        // Two different disks under one ID would cross-wire their index, saved
+        // paths, and operation routing. IDs are built so this can't happen from a
+        // derivation; if it ever does (a cloned volume, a double mount), it has to
+        // be loud rather than silent.
+        let existing: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Disk A").with_root("/Volumes/A"));
+        let incoming: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Disk B").with_root("/Volumes/B"));
+        assert!(is_identity_conflict(&existing, &incoming));
     }
 
     #[test]

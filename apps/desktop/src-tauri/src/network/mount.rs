@@ -732,18 +732,16 @@ mod tests {
 
     /// Regression test for the SMB volume-ID-per-mount fix.
     ///
-    /// `path_to_id` lowercases the mount path, so two SMB shares with the same
-    /// case-folded name on different servers (a NAS sharing `Public`, a Docker
-    /// container sharing `public`) used to collide on `volumespublic`. The
-    /// collision cross-contaminated `lastUsedPaths` and tab state and surfaced
-    /// as wrong-case paths flowing into `SmbVolume::list_directory`, producing
-    /// `STATUS_OBJECT_PATH_NOT_FOUND` from the server. After the fix, the ID
-    /// is keyed by `(server, port, share)`, so two same-named shares on
-    /// different ports/hosts must produce distinct IDs.
+    /// An SMB volume ID must key on `(server, port, share)`, never on the mount
+    /// path. A path-derived ID gives two shares with the same case-folded name on
+    /// different servers (a NAS sharing `Public`, a Docker container sharing
+    /// `public`) one ID, which cross-contaminates `lastUsedPaths` and tab state
+    /// and surfaces as wrong-case paths flowing into `SmbVolume::list_directory`,
+    /// producing `STATUS_OBJECT_PATH_NOT_FOUND` from the server.
     ///
-    /// Exercises the real OS-mount → `resolve_path_volume_fast` path against
-    /// the Docker guest container, then asserts the resulting volume ID is in
-    /// the new `smb-…-…-…` shape rather than the legacy path-shape form.
+    /// Exercises the real OS-mount → `resolve_path_volume_fast` path against the
+    /// Docker guest container, then asserts the resulting volume ID is SMB-shaped
+    /// and embeds the port.
     #[cfg(target_os = "macos")]
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
@@ -813,8 +811,8 @@ mod tests {
         .await;
         let volume = volume.expect("the satisfied wait stores the resolved volume");
 
-        // The pre-fix ID was `volumespublic`, which is what `path_to_id` produces
-        // for `/Volumes/public`. The new ID encodes server, port, and share.
+        // A path-shape ID for `/Volumes/public` would be `volumespublic`, the exact
+        // value two different shares used to collide on.
         assert_ne!(
             volume.id, "volumespublic",
             "expected SMB-shaped ID, got the path-shape one (regression)"

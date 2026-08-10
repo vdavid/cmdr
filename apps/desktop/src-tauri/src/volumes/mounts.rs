@@ -4,9 +4,9 @@
 //! mount can't stall discovery). See `DETAILS.md` § "Hung mounts".
 
 use super::{
-    LocationCategory, LocationInfo, disk_image, get_bool_resource, get_icon_for_path, get_volume_name,
-    is_network_fs_type, is_smb_fs_type, parse_smb_mount_source, path_to_id, smb_volume_id, supports_trash_for_fs_type,
-    volume_name_from_path,
+    LocationCategory, LocationInfo, SmbMountInfo, disk_image, get_bool_resource, get_icon_for_path, get_volume_name,
+    get_volume_uuid, is_network_fs_type, is_smb_fs_type, parse_smb_mount_source, supports_trash_for_fs_type,
+    volume_id_for, volume_name_from_path,
 };
 use std::path::Path;
 
@@ -107,24 +107,31 @@ struct LocalVolumeMeta {
     is_ejectable: bool,
     icon: Option<String>,
     is_disk_image: bool,
+    /// The volume's filesystem UUID, what its ID keys on. Gathered here because
+    /// this struct is exactly the "blocking, local mounts only" seam the NSURL
+    /// lookup belongs behind.
+    uuid: Option<String>,
 }
 
-/// The `(id, display_name)` for a network mount, from the non-blocking
-/// `f_mntfromname`. SMB mounts key their ID on `(server, port, share)` and read
-/// as "share on server"; other network mounts fall back to a path-derived ID and
-/// name. No syscalls: everything comes from the `getfsstat` snapshot. Pure.
-fn network_id_and_name(mount: &MountEntry) -> (String, String) {
-    if is_smb_fs_type(Some(&mount.fs_type))
-        && let Some(info) = parse_smb_mount_source(&mount.mount_from)
-    {
-        let display = crate::network::smb_upgrade::friendly_server_name(&info.server);
-        let name = format!("{} on {}", info.share, display);
-        return (smb_volume_id(&info.server, info.port, &info.share), name);
+/// The SMB mount info for a network mount, or `None` if it isn't an SMB mount we
+/// can parse. Read straight out of the `getfsstat` snapshot, no syscall.
+fn smb_info(mount: &MountEntry) -> Option<SmbMountInfo> {
+    is_smb_fs_type(Some(&mount.fs_type))
+        .then(|| parse_smb_mount_source(&mount.mount_from))
+        .flatten()
+}
+
+/// The display name for a network mount, from the non-blocking `f_mntfromname`.
+/// SMB mounts read as "share on server"; other network mounts fall back to the
+/// path. No syscalls: everything comes from the `getfsstat` snapshot. Pure.
+fn network_name(mount: &MountEntry) -> String {
+    match smb_info(mount) {
+        Some(info) => {
+            let display = crate::network::smb_upgrade::friendly_server_name(&info.server);
+            format!("{} on {}", info.share, display)
+        }
+        None => volume_name_from_path(&mount.mount_point),
     }
-    (
-        path_to_id(&mount.mount_point),
-        volume_name_from_path(&mount.mount_point),
-    )
 }
 
 /// Classify one mount-table entry into a switcher [`LocationInfo`], or `None` if
@@ -150,16 +157,17 @@ fn build_attached_location(
     let (id, name, is_ejectable, icon, is_disk_image) = if is_network_fs_type(Some(&fs_type)) {
         // Network mount: derive everything from the non-blocking snapshot. Never
         // touch NSURL / NSWorkspace / DiskArbitration here — those are exactly the
-        // calls that hang on a dead mount. `is_ejectable` is cosmetically moot for
-        // network mounts (the eject affordance keys on `smbConnectionState`, and
-        // the eject flow forces it true), so a safe `false` costs nothing.
-        let (id, name) = network_id_and_name(mount);
-        (id, name, false, None, false)
+        // calls that hang on a dead mount (which is also why the ID gets no UUID
+        // to key on). `is_ejectable` is cosmetically moot for network mounts (the
+        // eject affordance keys on `smbConnectionState`, and the eject flow forces
+        // it true), so a safe `false` costs nothing.
+        let id = volume_id_for(path, Some(&fs_type), smb_info(mount).as_ref(), None);
+        (id, network_name(mount), false, None, false)
     } else {
         // Local mount: safe to run the blocking enrichment.
         let meta = resolve_local(path);
         (
-            path_to_id(path),
+            volume_id_for(path, Some(&fs_type), None, meta.uuid.as_deref()),
             meta.name,
             meta.is_ejectable,
             meta.icon,
@@ -206,6 +214,7 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
                         is_ejectable: get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false),
                         icon: get_icon_for_path(path),
                         is_disk_image: disk_image::is_disk_image_mount(path),
+                        uuid: get_volume_uuid(&url),
                     }
                 })
             })
@@ -262,7 +271,10 @@ mod tests {
         let m = mount("/Volumes/naspi", "smbfs", "//david@192.168.1.111/naspi", false);
         let loc = build_attached_location(&m, forbidden_resolver).expect("SMB mount is an attached volume");
 
-        assert_eq!(loc.id, smb_volume_id("192.168.1.111", 445, "naspi"));
+        assert_eq!(
+            loc.id,
+            crate::file_system::volume::smb_volume_id("192.168.1.111", 445, "naspi")
+        );
         assert!(loc.name.contains("naspi"), "name shows the share: {}", loc.name);
         assert!(loc.name.contains(" on "), "name shows 'share on server': {}", loc.name);
         assert_eq!(loc.fs_type.as_deref(), Some("smbfs"));
@@ -276,7 +288,7 @@ mod tests {
     fn nfs_mount_classifies_without_blocking_enrichment() {
         let m = mount("/Volumes/export", "nfs", "server:/export", true);
         let loc = build_attached_location(&m, forbidden_resolver).expect("NFS mount is an attached volume");
-        assert_eq!(loc.id, path_to_id("/Volumes/export"));
+        assert_eq!(loc.id, crate::file_system::volume::path_volume_id("/Volumes/export"));
         assert_eq!(loc.name, "export");
         assert!(loc.is_read_only, "MNT_RDONLY flag propagates from getfsstat");
         assert_eq!(loc.fs_type.as_deref(), Some("nfs"));
@@ -286,19 +298,29 @@ mod tests {
     fn local_mount_runs_the_enrichment_closure() {
         // Local mounts DO get the (safe) blocking enrichment; here we inject a
         // fake so the test stays hermetic and asserts the values flow through.
+        // The UUID coming back through this closure is what the ID keys on, so
+        // the same disk keeps its ID when macOS remounts it as `/Volumes/USB 1`.
         let m = mount("/Volumes/USB", "exfat", "/dev/disk4s1", false);
-        let loc = build_attached_location(&m, |path| {
-            assert_eq!(path, "/Volumes/USB");
+        let resolve = |path: &str| {
+            assert!(path.starts_with("/Volumes/USB"));
             LocalVolumeMeta {
                 name: "My USB".to_string(),
                 is_ejectable: true,
                 icon: Some("icon-data".to_string()),
                 is_disk_image: false,
+                uuid: Some("A1B2-C3D4".to_string()),
             }
-        })
-        .expect("local mount is an attached volume");
+        };
+        let loc = build_attached_location(&m, resolve).expect("local mount is an attached volume");
 
-        assert_eq!(loc.id, path_to_id("/Volumes/USB"));
+        assert_eq!(
+            loc.id,
+            crate::file_system::volume::local_volume_id(Some("A1B2-C3D4"), "/Volumes/USB")
+        );
+        let remounted = mount("/Volumes/USB 1", "exfat", "/dev/disk4s1", false);
+        let remounted_loc = build_attached_location(&remounted, resolve).expect("local mount is an attached volume");
+        assert_eq!(loc.id, remounted_loc.id, "the same disk keeps its ID at a new mount point");
+
         assert_eq!(loc.name, "My USB");
         assert!(loc.is_ejectable);
         assert_eq!(loc.icon.as_deref(), Some("icon-data"));

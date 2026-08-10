@@ -69,6 +69,13 @@ pub fn install(app: &AppHandle) {
         }
         Err(e) => crate::log_error!(target: "indexing", "the index was built before install(): {e}"),
     }
+
+    // Reclaim the index databases keyed by the retired volume-ID scheme. Off the
+    // main thread because it reads a directory and unlinks files, and after the
+    // build because it needs the configured data dir. Nothing can be racing it: a
+    // legacy ID is unmintable, so no volume coming online will ever want one of
+    // these files.
+    tauri::async_runtime::spawn_blocking(cmdr_index::sweep_legacy_scheme_dbs);
 }
 
 /// This app's index.
