@@ -27,6 +27,18 @@ resolver = "2"
 [profile.release]
 lto = "thin"
 
+# Debug builds carry line tables instead of full DWARF. Panics, `backtrace`, and every log line still
+# resolve to file and line; what's gone is inspecting variables in a debugger, which isn't how we work.
+#
+# This is not a size-for-speed trade, it's both: a from-scratch build of `cmdr_lib` plus its 648 deps
+# went 11 GB -> 7.5 GB and 193s -> 125s (measured on rustc 1.97.1, macOS 15, four counterbalanced
+# clean builds, 2026-08-10). Full DWARF dominates the `.rcgu.o` files that make up most of `target/`.
+#
+# `[profile.test]` inherits this; `[profile.bench]` inherits `release` and is untouched, so benchmark
+# numbers are unaffected. Release builds keep full debug info, so shipped crash reports still symbolicate.
+[profile.dev]
+debug = "line-tables-only"
+
 # The house lint set, in ONE place. A member opts in with `lints.workspace = true`
 # rather than repeating a `#![deny(…)]` block at its crate root, so a new crate
 # can't quietly become a lint-free zone and the set can't drift between crates.
