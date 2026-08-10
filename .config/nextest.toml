@@ -40,6 +40,11 @@
 # self-interference; the 20 s cap (plus, for the tests that still block on one
 # delivery, retries) covers load from the rest of the suite. See the two
 # overrides below for which tests self-heal in-test and which lean on retries.
+#
+# ❌ Membership is "blocks on a delivery", NOT "touches a watcher". A test that
+# merely ARMS a watch and then asserts on lifecycle has no event to starve on, so
+# putting it here only serializes something fast; give it a cap-only override
+# instead (see the arming-only block below).
 real-notify = { max-threads = 1 }
 # Synthetic FAT32/exFAT disk-image fixtures (`indexing::external_drive_fixture`,
 # macOS-only, `#[ignore]`d — run via `--run-ignored`). Each attaches a real disk
@@ -156,6 +161,77 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # by waiting — the event is gone. The tests below all block on real delivery and
 # use a 15 s internal wait (recv fails cleanly BELOW the 20 s cap so a merely-slow
 # event still arrives; the cap stays a hang-catcher). They split into two classes.
+
+[[profile.default.overrides]]
+# `entries_that_went_with_a_replaced_watch_root_leave_the_listing` waits 30 s for
+# the watch to prove itself with a probe file, then 45 s for the replaced
+# directory's contents to reach the listing. Under the global 8 s cap those waits
+# were unreachable: nextest SIGKILLed the test long before either could fail with
+# its own message, so the test could only ever pass when everything landed inside
+# 8 s and otherwise died saying nothing. 90 s puts the cap above the in-test
+# budget (30 + 45) so the waits stay authoritative — their panics name WHICH stage
+# starved — with nextest as the hang backstop. Don't read it as a runtime:
+# measured 0.9 s on an idle machine; it only elapses if the watcher stops
+# delivering entirely.
+filter = 'test(file_system::watcher_test::entries_that_went_with_a_replaced_watch_root_leave_the_listing)'
+test-group = 'real-notify'
+slow-timeout = { period = "90s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# The file-viewer SESSION tests that block on a real watcher (distinct from
+# `file_viewer::watcher_test::` below, which was already covered). Membership is
+# exactly "calls `wait_for_watcher_subscribed`" — that helper is what parks on a
+# real subscribe, and its `GATE_TIMEOUT` is 30 s, so 40 s keeps the gate
+# authoritative with the cap as a backstop.
+#
+# ❌ Deliberately NOT `test(file_viewer::session_test::)`: that module is ~69 tests
+# and most of them just read files, so the prefix would serialize a pile of fast
+# tests behind the group for no reason.
+filter = '''
+    test(file_viewer::session_test::test_session_close_stops_watcher)
+  + test(file_viewer::session_test::test_session_tail_mode_off_does_not_extend_index)
+  + test(file_viewer::session_test::test_session_emits_file_changed_on_append)
+  + test(file_viewer::session_test::test_session_rotation_reopens_backend)
+  + test(file_viewer::session_test::tail_mode_on_extends_backend_when_watcher_reports_grew)
+'''
+test-group = 'real-notify'
+slow-timeout = { period = "40s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# `a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_does_not`
+# starts a real `DriveWatcher` and waits 30 s for the change to reach the index —
+# the one cold-drive test that proves `ensure_branch_watch` starts something that
+# actually works. Same unreachable-deadline shape as the watch-root test above:
+# 40 s puts the cap over its own wait. Precedes the general cold-drive override
+# below so it wins (first matching override per setting).
+filter = 'test(indexing::lifecycle::cover::cold_drive_tests::a_change_inside_a_walked_branch)'
+test-group = 'real-notify'
+slow-timeout = { period = "40s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# Tests that ARM a real OS watch (or real drive/disk I/O behind one) without
+# blocking on a specific delivery: the reaper dropping a watcher with its listing,
+# an LRU eviction releasing one, the coverage answer flipping with the watcher
+# lifecycle, a cold-drive walk standing a branch watch up. There's no event to
+# wait for, so they need neither retries nor the group — ❌ don't add them to
+# `real-notify`, which is for delivery-blocking tests and would serialize a pile of
+# fast ones for nothing. What they DO need is headroom over the global 8 s cap,
+# because arming and tearing down a real FSEvents stream (or standing up an index
+# on a real tree) is itself slow on a saturated host.
+#
+# All of these timed out together on 2026-08-10 during a full run that overlapped a
+# release benchmark in another worktree (host load ~30). Every one passed when the
+# check runner re-ran it alone at the SAME deadline, which is the contention
+# signature rather than a defect, and each takes well under a second when idle.
+filter = '''
+    test(file_system::listing::caching_reaper_test::)
+  + test(file_system::volume::backends::archive::watch_integration_test::)
+  + test(file_system::volume::backends::local_posix_test::test_listing_watch_coverage_flips_with_watcher_lifecycle)
+  + test(downloads::commands::tests::go_to_latest_)
+  + test(downloads::runtime::tests::note_pending_write_for_cmdr_)
+  + test(indexing::lifecycle::cover::cold_drive_tests::)
+'''
+slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 # SELF-HEALING real-FSEvents tests — no retries. Each keeps producing the
