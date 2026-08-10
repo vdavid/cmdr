@@ -43,7 +43,7 @@ Current version: ${version}
 
 - **Personal**: Free forever. All features, your own devices, automatic updates. No commercial use.
 - **Commercial**: $59/year (discounted from $79 for first 1,000 licenses). All features, commercial use, per user, your own devices.
-- **Perpetual**: $199 one-time. All features, commercial use, per user, your own devices, three years of updates.
+- **Perpetual**: $199 one-time. All features, commercial use, per user, your own devices, one year of updates.
 
 ## System requirements
 

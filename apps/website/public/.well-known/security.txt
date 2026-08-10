@@ -1,0 +1,11 @@
+# Security contact for Cmdr and getcmdr.com
+# https://getcmdr.com
+
+Contact: mailto:security@getcmdr.com
+Expires: 2027-08-10T00:00:00.000Z
+Preferred-Languages: en, sv, hu
+Canonical: https://getcmdr.com/.well-known/security.txt
+Policy: https://getcmdr.com/terms-and-conditions
+
+# Please give us a chance to ship a fix before you publish.
+# Cmdr auto-updates, so a fix reaches users quickly once we have one.

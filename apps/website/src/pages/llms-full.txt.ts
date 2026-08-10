@@ -115,7 +115,7 @@ Yes! Use Cmdr on as many machines as you like. Laptop, desktop, remote debugging
 
 ### What's the difference between subscription and perpetual?
 
-Subscription ($59/year) auto-renews annually and always includes the latest updates. Perpetual ($199) is a one-time purchase that includes three years of updates. After that, you can keep using your current version forever or renew updates at a reduced rate.
+Subscription ($59/year) auto-renews annually and always includes the latest updates. Perpetual ($199) is a one-time purchase that includes one year of updates. After that, you can keep using your current version forever or renew updates at a reduced rate.
 
 ### Can I see the source code?
 
