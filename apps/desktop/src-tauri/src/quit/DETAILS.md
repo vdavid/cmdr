@@ -63,7 +63,7 @@ The 2 s budget is `DRAIN` plus a tier-2 abort (token flips, no I/O), a ledger fl
    1's whole reason for existing, `transfer/DETAILS.md` § "Two tiers of cancel").
 3. **`abort_all_write_operations`** (tier 2) for whatever didn't answer. It stops *waiting* rather than asking again, so
    a dead SMB mount can't hold the exit. The abandoned bytes become the staging layer's problem, which is safe because
-   of Q1.
+   every write stages: an abandoned worker is only ever filling a `.cmdr-tmp-*` nobody will rename.
 4. **`flush_in_flight_temps`.** Every temp is recorded at registration (before its first byte), on a bare `File` with
    no user-space buffer, so this is a fence rather than a repair — but naming it keeps a future `BufWriter` from
    quietly dropping the last records the next launch's sweep needs.
