@@ -33,7 +33,6 @@ use super::super::state::WriteOperationState;
 use super::transfer_probe::{TaskPhase, set_task_phase};
 use crate::file_system::staging::StagingTemp;
 use crate::file_system::volume::{Volume, VolumeError};
-use crate::ignore_poison::IgnorePoison;
 
 /// Who owns the `.cmdr-tmp-*` staging for one file write.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,10 +91,7 @@ impl StagedWrite {
         match staging {
             WriteStaging::Stage => {
                 let staged = StagingTemp::mint(final_path, state.liveness_token());
-                state
-                    .in_flight_temps
-                    .lock_ignore_poison()
-                    .push(staged.path().to_path_buf());
+                super::super::in_flight_temps::register(state, staged.path());
                 temp = Some(staged);
             }
             // The caller's temp is the caller's to land; all we take is
@@ -216,7 +212,7 @@ impl StagedWrite {
     }
 
     fn deregister(&self, temp: &Path) {
-        self.state.in_flight_temps.lock_ignore_poison().retain(|p| p != temp);
+        super::super::in_flight_temps::deregister(&self.state, temp);
     }
 }
 
@@ -248,6 +244,7 @@ async fn land(dest_volume: &Arc<dyn Volume>, temp: &Path, final_path: &Path) -> 
 mod tests {
     use super::*;
     use crate::file_system::volume::InMemoryVolume;
+    use crate::ignore_poison::IgnorePoison;
     use std::time::Duration;
 
     fn state() -> Arc<WriteOperationState> {

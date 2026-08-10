@@ -28,6 +28,7 @@ mod durability;
 mod error_classification;
 mod eta;
 mod event_sinks;
+mod in_flight_temps;
 mod journal;
 mod journal_search;
 mod manager;
@@ -85,6 +86,9 @@ use validation::{
 };
 
 // Re-export public types
+/// Points the in-flight transfer-partial ledger at the app data dir and clears
+/// what an earlier run left behind. Startup only, before any copy can start.
+pub use in_flight_temps::init_and_sweep as init_and_sweep_in_flight_temps;
 pub use scan_preview::{cancel_scan_preview, get_scan_preview_totals, start_scan_preview};
 pub use state::{
     VolumesBusyChanged, busy_volume_ids, cancel_all_write_operations, cancel_write_operation, get_operation_status,

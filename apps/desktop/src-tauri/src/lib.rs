@@ -482,6 +482,13 @@ pub fn run() {
             // other's live temps), and reap any `.cmdr-viewer-*` orphan left by a crash.
             if let Ok(data_dir) = config::resolved_app_data_dir(app.handle()) {
                 file_viewer::init_archive_extract_dir(data_dir.join("viewer-extract"));
+
+                // Point the in-flight transfer-partial ledger at the data dir and
+                // clear the `.cmdr-tmp-*` partials an earlier run recorded and never
+                // finished (a quit or a crash mid-copy). Before any copy can start,
+                // so nothing we're about to write is in the list we sweep. See
+                // `file_system/write_operations/in_flight_temps.rs`.
+                file_system::write_operations::init_and_sweep_in_flight_temps(&data_dir);
             }
 
             // Initialize the volume manager with the root volume
