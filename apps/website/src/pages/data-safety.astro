@@ -1,0 +1,84 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+---
+
+<LegalLayout
+    title="How Cmdr protects your files"
+    description="What Cmdr does to keep your files safe during copies, moves, and deletes, and where the limits are."
+    lastUpdated="2026-08-10"
+>
+    <p>
+        Protecting your data is the first principle Cmdr is built on. This page describes what that means in practice,
+        and where the limits are. It's the detail behind section 3 of our <a href="/terms-and-conditions">terms</a>.
+    </p>
+
+    <h2>Replacing a file</h2>
+    <p>
+        When Cmdr replaces an existing file, it writes the new version to a temporary file alongside it and swaps it in
+        only once every byte has landed. An interrupted write doesn't leave a half-written file wearing your filename.
+    </p>
+    <p>
+        One case can't work that way: replacing a file with a folder, or a folder with a file, across two different
+        devices. There's no way to swap types atomically across two storage backends, so Cmdr removes the destination
+        first. It tells you before it starts.
+    </p>
+    <p>An overwritten original isn't recoverable afterwards. Cmdr doesn't keep a hidden copy of what you replaced.</p>
+
+    <h2>Deleting</h2>
+    <p>
+        Deleting asks first, every time, and nothing in Cmdr's settings turns that confirmation off. Where the
+        filesystem has a Trash, that's the default and the dialog says so. On a filesystem without one (network shares,
+        FAT32 and exFAT, phones over USB, inside an archive) the delete is permanent, and the dialog warns you before it
+        runs.
+    </p>
+    <p>
+        The one way past the confirmation is Cmdr's MCP server, which lets an outside AI client drive the app. It's off
+        by default, and a client needs the access token to use it. If you turn it on and share that token, that client
+        can delete without the dialog.
+    </p>
+
+    <h2>Long-running work</h2>
+    <p>
+        File operations show honest progress, and you can pause or cancel them at any point, including after you've sent
+        them to the background. Canceling stops the remaining work. It doesn't undo what already finished, and a delete
+        can't be undone at all.
+    </p>
+    <p>
+        Not everything in Cmdr is cancelable. Installing or removing a local AI model has to finish once it's underway,
+        and background indexing has no cancel button (you can switch indexing off per drive in settings).
+    </p>
+
+    <h2>How we test this</h2>
+    <p>
+        The data-writing paths carry a large automated test suite, including deliberately hostile cases: a transfer
+        killed partway through, a device disconnected mid-copy, a backend that fails on demand, and cancels and
+        rollbacks at every stage. Where the OS can tell us, free space is checked before an operation starts.
+    </p>
+
+    <h2>What this isn't</h2>
+    <p>
+        This describes how Cmdr works today and how we intend to keep building it. Features change, so the app itself is
+        the authority on how it behaves right now, not this page. It isn't a warranty that nothing will ever go wrong.
+    </p>
+    <p>
+        Cmdr copies, moves, renames, and deletes real files on real disks, sometimes across a flaky network, on
+        operating systems that change underneath it. No software is free of defects, so we can't guarantee the safety of
+        your data. <strong>Cmdr is a file manager, not a backup tool</strong>, and it isn't a substitute for one. Please
+        keep current backups of anything you'd be upset to lose, and check now and then that you can actually restore
+        from them.
+    </p>
+
+    <h2>If something goes wrong</h2>
+    <p>
+        If Cmdr loses or corrupts a file, we want to know, quickly and in detail. Write to
+        <a href="mailto:hello@getcmdr.com">hello@getcmdr.com</a> with what you were doing and what happened, or use
+        <strong>Help &gt; Send error report…</strong> in the app, which shows you what the report contains and a preview
+        of the log before anything leaves your machine. Paths and personal details are stripped first, and your email
+        address is included only if you add it.
+    </p>
+    <p>
+        Data-loss reports go to the front of the queue, and when we find a bug we ship the fix to everyone through
+        Cmdr's built-in updater. We're describing our practice, not offering a warranty on top of the rights you already
+        have by law, and it isn't a promise you can make a claim on.
+    </p>
+</LegalLayout>

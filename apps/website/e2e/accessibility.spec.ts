@@ -19,6 +19,7 @@ const pages = [
   { name: 'Privacy policy', path: '/privacy-policy' },
   { name: 'Terms and conditions', path: '/terms-and-conditions' },
   { name: 'Refund', path: '/refund' },
+  { name: 'Data safety', path: '/data-safety' },
   { name: 'Renew', path: '/renew' },
 ]
 
