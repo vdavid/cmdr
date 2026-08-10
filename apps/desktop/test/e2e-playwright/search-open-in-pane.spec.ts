@@ -149,38 +149,51 @@ async function pollOverlayGone(tauriPage: PageLike, timeoutMs = 10000): Promise<
 }
 
 /**
- * Polls `cmdr://state` until the `focused:` field matches `expected`.
- * The Tab key dispatches `pane.switch` through the command system; this
- * guards against running the dialog before the focus flip lands.
- */
-async function pollFocusedPane(tauriPage: PageLike, expected: 'left' | 'right', timeoutMs = 3000): Promise<boolean> {
-  return pollUntil(
-    tauriPage,
-    async () => {
-      const state = await mcpReadResource('cmdr://state?compact=true')
-      const m = /^focused:\s*(\S+)/m.exec(state)
-      return m?.[1] === expected
-    },
-    timeoutMs,
-  )
-}
-
-/**
- * Idempotently focuses the right pane. Reads `cmdr://state.focused`; dispatches
- * `pane.switch` via the command system if it isn't already on the right.
+ * Idempotently focuses the right pane, and proves it from the DOM.
  *
- * Previously this pressed `Tab`, but a bare Tab keypress is brittle: it only
- * dispatches `pane.switch` when `document.activeElement` is inside the file
- * explorer, and prior tests can leave focus on a dialog overlay or an input.
- * Routing through `dispatchMenuCommand` is the same command path the F-key bar
- * and the menu use; it works regardless of where DOM focus currently is.
+ * "Open in pane" targets `focusedPane` (`DualPaneExplorer.openSearchSnapshotInPane`),
+ * which is FRONTEND state; `.file-pane.is-focused` renders straight off it, so the
+ * class is the authoritative read. ❌ Don't steer by `cmdr://state`'s `focused:`
+ * field: that's a separate backend mirror, written only by `handleFocus` /
+ * `switchPane` through the fire-and-forget `updateFocusedPane` IPC. The MCP
+ * listeners this spec's own setup drives (`mcp-volume-select`, `mcp-nav-to-path`)
+ * shift FE focus through the store-only `setFocusedPane`, deliberately leaving the
+ * mirror to the backend's `nav_to_path` tool — which a test emitting the FE event
+ * directly never goes through. So after `resetRightPaneToLocalIfNeeded` the FE is
+ * on the right pane while the mirror still says `left`, and a helper that reads the
+ * mirror and answers with a TOGGLE (`pane.switch`) moves focus the WRONG way, then
+ * can return happy on a stale read with the LEFT pane focused. The snapshot lands
+ * left and the test fails three assertions later, in the navigation-history step.
+ *
+ * Clicking the pane is idempotent and needs no reading of anything: it routes
+ * through `handlePaneClick` → `onRequestFocus` → `handleFocus('right')`, the same
+ * path `ensureAppReady` uses to claim the left pane.
  */
 async function focusRightPane(tauriPage: PageLike): Promise<void> {
-  for (let attempt = 0; attempt < 4; attempt++) {
-    if (await pollFocusedPane(tauriPage, 'right', 1000)) return
-    await dispatchMenuCommand(tauriPage, 'pane.switch')
+  const focused = await pollUntil(
+    tauriPage,
+    async () =>
+      tauriPage.evaluate<boolean>(`(function() {
+            var right = document.querySelector('[aria-label="Right file pane"]');
+            if (!right) return false;
+            // Svelte applies the class on the next tick, so the click's effect is
+            // observed by the NEXT poll iteration, not this return.
+            if (!right.classList.contains('is-focused')) right.click();
+            return right.classList.contains('is-focused');
+        })()`),
+    5000,
+  )
+  if (!focused) {
+    const diag = await tauriPage.evaluate<string>(`(function() {
+            var panes = document.querySelectorAll('.file-pane');
+            return JSON.stringify({
+                paneCount: panes.length,
+                focusedPaneIndex: Array.from(panes).findIndex(function(p){ return p.classList.contains('is-focused'); }),
+                rightPaneFound: !!document.querySelector('[aria-label="Right file pane"]'),
+            });
+        })()`)
+    throw new Error(`Failed to focus the right pane within 5000 ms. State: ${diag}`)
   }
-  throw new Error('Failed to focus right pane after retries')
 }
 
 /**
@@ -306,11 +319,10 @@ test.describe('Search dialog: Open in pane', () => {
     await ensureMcpClient(tauriPage)
     await resetRightPaneToLocalIfNeeded(tauriPage, LOCAL_VOLUME_NAME, `${getFixtureRoot()}/right`)
 
-    // Focus the right pane so "Open in pane" targets it. Tab toggles the
-    // focused pane via `pane.switch`; press only when needed since prior
-    // tests in the same session can leave focus on either side. We poll
-    // `cmdr://state.focused` to confirm the swap before opening the dialog
-    // so the dialog's `onOpenInPane` handoff reads the right `focusedPane`.
+    // Focus the right pane so "Open in pane" targets it: the promotion routes to
+    // `focusedPane`, and prior tests (plus the reset above) can leave focus on
+    // either side. `focusRightPane` confirms it from the DOM before we open the
+    // dialog, so the handoff can't read a pane we only THINK is focused.
     await focusRightPane(tauriPage)
 
     await openSearchDialog(tauriPage)

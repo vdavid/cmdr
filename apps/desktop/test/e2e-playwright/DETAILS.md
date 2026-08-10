@@ -661,3 +661,34 @@ pane index, and visible overlays so a future regression names the culprit direct
 **If you add a new auto-mounted modal** in `(main)/+layout.svelte` or anywhere that can flip a render to a `ModalDialog`
 after onboarding finishes, the recovery loop covers you. Consider whether the dialog should be gated on a user gesture
 in production too, so it doesn't fight focus with the explorer in real use.
+
+## Claiming a pane's focus inside a spec
+
+A spec that needs the OTHER pane focused (so a focused-pane action targets it) claims it the same way `ensureAppReady`
+claims the left one: **click the `.file-pane` when it isn't `is-focused`, and read the class back**.
+`settleFocusedPaneOnLeft` (`helpers/navigation.ts`) and `search-open-in-pane.spec.ts`'s `focusRightPane` are the two
+worked examples.
+
+Both halves matter, and both have bitten:
+
+- **Click, don't toggle.** `pane.switch` is a TOGGLE, so dispatching it in answer to a "we're on the wrong pane" reading
+  moves focus the wrong way whenever the reading was wrong. A click is idempotent: `handlePaneClick` → `onRequestFocus`
+  → `handleFocus(side)` either does nothing or lands exactly the side you asked for.
+- **Read `.file-pane.is-focused`, ❌ never `cmdr://state`'s `focused:` field.** They are two different variables. The
+  class renders off `explorerState.focusedPane`, which is what `openSearchSnapshotInPane` and every other focused-pane
+  action reads. The MCP field is a backend mirror in `mcp/pane_state.rs`, written by exactly two paths: the FE's
+  fire-and-forget `updateFocusedPane` IPC (from `handleFocus` / `switchPane`), and the backend MCP executor, which sets
+  it optimistically for its own tools (`executor/nav.rs`). Which means a spec that emits an `mcp-*` event STRAIGHT at
+  the FE listener — `mcp-nav-to-path`, `mcp-volume-select`, what every reset helper here does — takes the FE-side focus
+  shift (`mcp-listeners.ts` calls the store-only `setFocusedPane`) without the backend half, and the two disagree until
+  something calls `handleFocus`. Production is consistent, because a real agent goes through the executor; the harness's
+  shortcut is what splits them.
+
+Getting both wrong at once cost this suite a long-lived flake: `search-open-in-pane.spec.ts` answered a mirror read with
+a toggle, so "Open in pane" promoted the snapshot into the LEFT pane while the focus helper reported success, and the
+test failed three steps later on what looked like broken navigation history.
+
+Both facts are measured, not inferred (probe spec against the E2E binary, macOS 26.5.2, 2026-08-10): after
+`ensureAppReady` the two agree (`dom=left mirror=left`); one `mcp-volume-select` at the right pane splits them
+(`dom=right mirror=left`); and one `pane.switch` dispatched at that split state moves focus to `dom=left`, the opposite
+of what the dispatcher wanted.
