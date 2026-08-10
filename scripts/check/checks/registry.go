@@ -956,10 +956,13 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "knip",
 		App:         AppDashboard,
 		Tech:        "🎨 Svelte",
-		DependsOn:   nil,
-		IsFast:      true,
-		Inputs:      dashboardInputs,
-		Run:         RunDashboardKnip,
+		// Needs the sync: every route file imports `./$types`, which only exists under `.svelte-kit/`
+		// once `svelte-kit sync` has run. Without the edge, a fresh worktree races it and knip reports
+		// nine unresolved imports.
+		DependsOn: []string{"dashboard-svelte-kit-sync"},
+		IsFast:    true,
+		Inputs:    dashboardInputs,
+		Run:       RunDashboardKnip,
 	},
 	{
 		ID:          "dashboard-tests",
