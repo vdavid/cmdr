@@ -361,6 +361,17 @@ suite. Covered by `tooltip.test.ts`.
 Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (default) | `mini`. Extends
 `HTMLButtonAttributes` so all native button attributes pass through.
 
+**`disabled` vs `ariaDisabled` ("blocked").** `disabled` is the inert one: no click, no focus, `pointer-events: none`.
+`ariaDisabled` renders the same dimmed look and `not-allowed` cursor but keeps the button focusable, in the tab order,
+and still firing `onclick`, so the handler can say what's missing (`aria-disabled="true"` tells assistive tech the same
+thing). Reach for `ariaDisabled` whenever the block is something the user can clear, and pair it with `tooltipContent`
+naming the precondition; the onboarding wizard's footer does exactly this while the terms checkbox is unticked
+(`lib/onboarding/DETAILS.md` § "Terms acceptance"). A `disabled` button in that spot is a dead end: it swallows the
+click that would have explained itself, and a keyboard user can't even land on it. The hover rules exclude both states.
+
+`tooltipContent` (a `TooltipParam`) applies `use:tooltip` to the `<button>` itself. It has to live on the button, not on
+a wrapper: `focus` doesn't bubble, so a wrapping element never sees keyboard focus and the tooltip would be mouse-only.
+
 Every button is a capsule: `border-radius: var(--radius-full)` on `.btn`, both sizes, matching the shape macOS gives an
 alert's action buttons. `--radius-full` (9999px) rather than `50%`, which curves against the box and goes oval on a wide
 button.

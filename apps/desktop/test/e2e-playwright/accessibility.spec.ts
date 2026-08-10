@@ -16,6 +16,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { test, expect } from './fixtures.js'
 import {
+  acceptOnboardingTermsIfPresent,
   closeScopedWindow,
   dismissOverlay,
   dispatchMenuCommand,
@@ -492,7 +493,16 @@ for (const mode of ['light', 'dark'] as const) {
       )
       expect(step3Violations, `Violations on wizard step 3 (${mode})`).toHaveLength(0)
 
-      // Advance step 3 → step 4 (Optional) via the "Next" forward button.
+      // The step also renders the required terms checkbox, and the audit above ran with it
+      // still unticked, so the blocked-footer state is what axe just scanned.
+      const hasTermsCheckbox = await tauriPage.evaluate<boolean>(
+        `!!document.querySelector('${WIZARD_SELECTOR} .terms-block input[type="checkbox"][aria-required="true"]')`,
+      )
+      expect(hasTermsCheckbox, `Open beta step should render the required terms checkbox (${mode})`).toBe(true)
+
+      // Advance step 3 → step 4 (Optional). Both of its buttons are blocked until the terms
+      // are accepted, so tick the box first.
+      await acceptOnboardingTermsIfPresent(tauriPage)
       await advanceTo(4)
       const { all: step4Violations } = await runAxeAudit(
         tauriPage,

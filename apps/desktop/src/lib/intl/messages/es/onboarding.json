@@ -359,6 +359,22 @@
   "@onboarding.stepBeta.emailNote": {
     "sourceHash": "9d262c8"
   },
+  "onboarding.stepBeta.terms.title": "Ah, y esto también, por favor",
+  "@onboarding.stepBeta.terms.title": {
+    "sourceHash": "f2a6e08"
+  },
+  "onboarding.stepBeta.terms.lede": "Es una obligación legal tenerlo aquí.",
+  "@onboarding.stepBeta.terms.lede": {
+    "sourceHash": "c59e47e"
+  },
+  "onboarding.stepBeta.terms.consent": "He leído y acepto los <terms>términos y condiciones</terms>.",
+  "@onboarding.stepBeta.terms.consent": {
+    "sourceHash": "620a4b6"
+  },
+  "onboarding.stepBeta.terms.blockedTooltip": "Acepta los términos y condiciones para continuar.",
+  "@onboarding.stepBeta.terms.blockedTooltip": {
+    "sourceHash": "f03426e"
+  },
   "onboarding.stepOptional.footer.start": "Empezar a usar Cmdr",
   "@onboarding.stepOptional.footer.start": {
     "sourceHash": "d11e058"

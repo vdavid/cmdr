@@ -296,6 +296,17 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
       "Drop your email and I'll reach out with the occasional question or update. The email address you enter here is stored only on your Mac and it's never connected to your usage stats, the two are intentionally two separate subsystems.",
     )
   })
+
+  it('resolves the terms-acceptance block', () => {
+    expect(tString('onboarding.stepBeta.terms.title')).toBe('Oh, and this too please')
+    expect(tString('onboarding.stepBeta.terms.lede')).toBe("It's a legal obligation to have it here.")
+    // The consent sentence is the legally load-bearing string on this page: it must stay a
+    // plain, unconditional statement of agreement. Pin it word for word.
+    expect(renderRich('onboarding.stepBeta.terms.consent', ['terms'])).toBe(
+      "I've read and agree to the <terms>terms and conditions</terms>.",
+    )
+    expect(tString('onboarding.stepBeta.terms.blockedTooltip')).toBe('Accept the terms and conditions to continue.')
+  })
 })
 
 describe('onboarding step 4 (optional setup) parity (en)', () => {

@@ -42,7 +42,13 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, dismissAllToasts, dismissOverlay, getFixtureRoot } from './helpers.js'
+import {
+  ensureAppReady,
+  dismissAllToasts,
+  dismissOverlay,
+  getFixtureRoot,
+  acceptOnboardingTermsIfPresent,
+} from './helpers.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { DIALOG_GALLERY_ENTRIES } from '../../src/lib/dialog-gallery/gallery-registry.js'
@@ -222,6 +228,8 @@ async function closeGallerySurface(page: TauriPage, dialogId: string): Promise<b
   await dismissOverlay(page).catch(() => {})
   // Four steps plus slack, matching the wizard's own bound.
   for (let i = 0; i < 6 && (await isOpen()); i++) {
+    // The onboarding wizard's Beta step blocks its forward button until the terms are ticked.
+    await acceptOnboardingTermsIfPresent(page)
     await page.evaluate(`(function() {
         var btns = document.querySelectorAll('${selector} .primary-slot button');
         if (btns.length > 0) btns[btns.length - 1].click();

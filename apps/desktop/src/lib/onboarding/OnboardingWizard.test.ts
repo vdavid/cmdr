@@ -76,6 +76,9 @@ vi.mock('@tauri-apps/plugin-process', () => ({
 
 vi.mock('$lib/settings-store', () => ({
   saveSettings: vi.fn(() => Promise.resolve()),
+  // StepBeta reads the stored terms acceptance on mount; a barrel mock that drops it
+  // breaks every wizard test that renders step 3.
+  loadSettings: vi.fn(() => Promise.resolve({ termsAcceptedVersion: null, termsAcceptedAt: null })),
 }))
 
 // Force macOS in jsdom so the wizard renders step 1 (StepFda) instead of skipping it.
@@ -114,6 +117,18 @@ function footerButtonByLabel(target: HTMLElement, label: string): HTMLButtonElem
 
 function backButton(target: HTMLElement): HTMLButtonElement | null {
   return target.querySelector<HTMLButtonElement>('.back-button')
+}
+
+/**
+ * Ticks the Beta step's required terms checkbox. Both of that step's footer buttons stay
+ * blocked until it's on, so any test that walks PAST step 3 has to go through it, exactly
+ * like a user does.
+ */
+function acceptTerms(target: HTMLElement): void {
+  const checkbox = target.querySelector<HTMLInputElement>('.terms-block input[type="checkbox"]')
+  if (!checkbox) throw new Error('terms checkbox not found on the Beta step')
+  checkbox.click()
+  flushSync()
 }
 
 describe('OnboardingWizard', () => {
@@ -190,6 +205,7 @@ describe('OnboardingWizard', () => {
     expect(getOnboardingState().currentStep).toBe(3)
     // Step 3 (Beta) owns two buttons. "One more optional setup step" continues to Optional (step 4).
     expect(footerButtonByLabel(mounted.target, 'One more optional setup step')).not.toBeNull()
+    acceptTerms(mounted.target)
     footerButtonByLabel(mounted.target, 'One more optional setup step')?.click()
     flushSync()
     await tick()
@@ -238,10 +254,44 @@ describe('OnboardingWizard', () => {
     await tick()
     expect(getOnboardingState().currentStep).toBe(3)
     // "Start using Cmdr!" finishes here without advancing to step 4.
+    acceptTerms(mounted.target)
     footerButtonByLabel(mounted.target, 'Start using Cmdr!')?.click()
     flushSync()
     expect(onComplete).toHaveBeenCalledOnce()
     expect(getOnboardingState().currentStep).toBe(3)
+  })
+
+  it("renders the Beta step's footer buttons as blocked (not disabled) until the terms are accepted", async () => {
+    const onComplete = vi.fn()
+    openWizard('menu')
+    setStep1Variant('already-granted')
+    mounted = mountWizard(onComplete)
+    await tick()
+    primaryFooterButton(mounted.target)?.click()
+    flushSync()
+    await tick()
+    primaryFooterButton(mounted.target)?.click()
+    for (let i = 0; i < 10; i++) await Promise.resolve()
+    flushSync()
+    await tick()
+    expect(getOnboardingState().currentStep).toBe(3)
+
+    const start = footerButtonByLabel(mounted.target, 'Start using Cmdr!')
+    const contin = footerButtonByLabel(mounted.target, 'One more optional setup step')
+    // Blocked, NOT `disabled`: a disabled button leaves the keyboard with no way to find out
+    // why it won't move, and swallows the click that would explain it.
+    for (const button of [start, contin]) {
+      expect(button?.getAttribute('aria-disabled')).toBe('true')
+      expect(button?.disabled).toBe(false)
+    }
+
+    contin?.click()
+    flushSync()
+    expect(getOnboardingState().currentStep).toBe(3)
+    expect(onComplete).not.toHaveBeenCalled()
+
+    acceptTerms(mounted.target)
+    expect(footerButtonByLabel(mounted.target, 'Start using Cmdr!')?.hasAttribute('aria-disabled')).toBe(false)
   })
 
   it('Back from step 2 resets the footer mode to `decide` (Allow/Deny live again)', async () => {

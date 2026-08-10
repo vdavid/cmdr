@@ -135,6 +135,8 @@
         onclick: () => void
         variant: 'primary' | 'secondary' | 'danger'
         disabled?: boolean
+        /** Set by a step that wants the button blocked-but-clickable; see `WizardFooterButton`. */
+        blockedReason?: string
         ariaLabel?: string
     }
 
@@ -147,6 +149,7 @@
                 onclick: b.onclick,
                 variant: b.variant,
                 disabled: b.disabled,
+                blockedReason: b.blockedReason,
                 ariaLabel: b.ariaLabel,
             }))
         }
@@ -242,9 +245,13 @@
             </div>
             <div class="primary-slot">
                 {#each footerButtons as button, i (`${String(i)}-${button.label}`)}
+                    <!-- A blocked button keeps its click and its place in the tab order on
+                         purpose: pressing it is how the user finds out what's missing. -->
                     <Button
                         variant={button.variant}
                         disabled={button.disabled ?? false}
+                        ariaDisabled={button.blockedReason !== undefined}
+                        tooltipContent={button.blockedReason}
                         onclick={button.onclick}
                         aria-label={button.ariaLabel ?? button.label}
                     >

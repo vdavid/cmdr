@@ -25,7 +25,7 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, dispatchMenuCommand, type PageLike } from './helpers.js'
+import { ensureAppReady, dispatchMenuCommand, acceptOnboardingTermsIfPresent, type PageLike } from './helpers.js'
 
 const WIZARD_SELECTOR = '[data-dialog-id="onboarding"]'
 const PALETTE_OVERLAY = '.palette-overlay'
@@ -62,6 +62,9 @@ async function clickForwardButton(tauriPage: PageLike): Promise<void> {
  * would finish early), step 4 "Start using Cmdr". Clicking the last primary button advances
  * one step until the Optional step's button completes onboarding and the wizard unmounts.
  * Linux opens at step 2, so the macOS-only step 1 hop is skipped.
+ *
+ * Step 3 blocks both its buttons until the terms checkbox is ticked, so each pass clears
+ * that gate first (`acceptOnboardingTermsIfPresent`), a no-op on every other step.
  */
 async function closeWizardIfOpen(tauriPage: PageLike): Promise<void> {
   if (!(await wizardIsOpen(tauriPage))) return
@@ -71,6 +74,8 @@ async function closeWizardIfOpen(tauriPage: PageLike): Promise<void> {
   for (let i = 0; i < 6; i++) {
     if (!(await wizardIsOpen(tauriPage))) return
     const before = await activeStep(tauriPage)
+    // The Beta step's forward button stays blocked until the terms are accepted.
+    await acceptOnboardingTermsIfPresent(tauriPage)
     await clickForwardButton(tauriPage)
     // Either the wizard closed (final step) or the step advanced. Wait for one to happen.
     await expect

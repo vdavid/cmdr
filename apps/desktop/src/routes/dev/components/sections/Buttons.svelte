@@ -63,6 +63,17 @@
                 <Button variant={c.variant} size={c.size} disabled>{cellLabel(c)}</Button>
             </div>
         {/each}
+
+        <!-- Blocked reads like disabled but stays focusable and clickable, so the press can
+             explain the missing precondition through the tooltip and the handler. -->
+        <div class="row-head">blocked</div>
+        {#each cells as c, i (`blocked-${String(i)}`)}
+            <div class="cell">
+                <Button variant={c.variant} size={c.size} ariaDisabled tooltipContent="Tick the box first"
+                    >{cellLabel(c)}</Button
+                >
+            </div>
+        {/each}
     </div>
 </SectionCard>
 

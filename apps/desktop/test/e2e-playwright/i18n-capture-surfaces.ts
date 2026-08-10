@@ -19,6 +19,7 @@ import { expect } from './fixtures.js'
 import {
   ensureAppReady,
   dismissOverlay,
+  acceptOnboardingTermsIfPresent,
   skipParentEntry,
   moveCursorToFile,
   openSettingsWindowViaProd,
@@ -594,8 +595,10 @@ export async function captureOnboardingWizard(
           return { page: main, fitSelector: '[data-dialog-id="onboarding"]' }
         })
       }
-      // Advance to the next step; the final step's button finishes + unmounts.
+      // Advance to the next step; the final step's button finishes + unmounts. The Beta
+      // step's buttons stay blocked until the terms are accepted, so clear that gate first.
       const before = step
+      await acceptOnboardingTermsIfPresent(main)
       await clickForward()
       await expect
         .poll(async () => !(await main.isVisible(WIZARD)) || (await activeStep()) !== before, { timeout: 5000 })

@@ -19,6 +19,12 @@
         id?: string
         /** Accessible name when there's no visible `children` label. */
         ariaLabel?: string
+        /**
+         * Marks the box as a required choice (`aria-required` on the control). A visible
+         * asterisk is decoration only; this is what a screen reader announces, so set it
+         * whenever the surrounding UI marks the field required.
+         */
+        required?: boolean
         onCheckedChange?: (checked: boolean) => void
         children?: Snippet
     }
@@ -30,6 +36,7 @@
         indeterminate = false,
         id,
         ariaLabel,
+        required = false,
         onCheckedChange,
         children,
     }: Props = $props()
@@ -63,7 +70,7 @@
          a dangling reference leaves the control with NO accessible name. `aria-label`
          on the wrapping `<label>` names the label, not the control. `aria-labelledby`
          still wins when a visible label IS rendered, so passing both is safe. -->
-    <Checkbox.HiddenInput aria-label={ariaLabel} />
+    <Checkbox.HiddenInput aria-label={ariaLabel} aria-required={required ? 'true' : undefined} />
 </Checkbox.Root>
 
 <style>

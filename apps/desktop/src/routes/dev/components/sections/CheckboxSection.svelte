@@ -6,6 +6,7 @@
     let checked = $state(true)
     const indeterminate = $state(true)
     let withLabel = $state(false)
+    let required = $state(false)
 </script>
 
 <SectionCard id="components-checkbox" label="Checkbox">
@@ -38,6 +39,11 @@
         <div class="cell">
             <p class="caption">With an inline label</p>
             <Checkbox bind:checked={withLabel}>Remember this device</Checkbox>
+        </div>
+
+        <div class="cell">
+            <p class="caption">Required (aria-required; the asterisk is the caller's own decoration)</p>
+            <Checkbox bind:checked={required} required>I agree to the terms</Checkbox>
         </div>
     </div>
 </SectionCard>

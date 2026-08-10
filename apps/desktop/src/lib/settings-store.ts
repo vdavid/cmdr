@@ -15,12 +15,23 @@ export interface Settings {
   showHiddenFiles: boolean
   fullDiskAccessChoice: FullDiskAccessChoice
   isOnboarded: boolean
+  /**
+   * Which terms the user accepted (`TERMS_VERSION` from `$lib/legal/terms`), or `null` if
+   * they never have. The version, not a boolean: consent to a superseded document isn't
+   * consent to the current one, so a terms change makes every stored acceptance stale and
+   * the onboarding beta step asks again.
+   */
+  termsAcceptedVersion: string | null
+  /** When that acceptance happened, as an ISO 8601 instant. `null` alongside a `null` version. */
+  termsAcceptedAt: string | null
 }
 
 const DEFAULT_SETTINGS: Settings = {
   showHiddenFiles: true,
   fullDiskAccessChoice: 'notAskedYet',
   isOnboarded: false,
+  termsAcceptedVersion: null,
+  termsAcceptedAt: null,
 }
 
 let storeInstance: Store | null = null
@@ -45,6 +56,8 @@ export async function loadSettings(): Promise<Settings> {
     const showHiddenFiles = await store.get('showHiddenFiles')
     const fullDiskAccessChoice = await store.get('fullDiskAccessChoice')
     const isOnboarded = await store.get('isOnboarded')
+    const termsAcceptedVersion = await store.get('termsAcceptedVersion')
+    const termsAcceptedAt = await store.get('termsAcceptedAt')
 
     const validChoices: FullDiskAccessChoice[] = ['allow', 'deny', 'notAskedYet']
     return {
@@ -53,6 +66,10 @@ export async function loadSettings(): Promise<Settings> {
         ? (fullDiskAccessChoice as FullDiskAccessChoice)
         : DEFAULT_SETTINGS.fullDiskAccessChoice,
       isOnboarded: typeof isOnboarded === 'boolean' ? isOnboarded : DEFAULT_SETTINGS.isOnboarded,
+      // Anything that isn't a string reads as "never accepted", so a corrupted store asks
+      // again rather than passing off garbage as consent.
+      termsAcceptedVersion: typeof termsAcceptedVersion === 'string' ? termsAcceptedVersion : null,
+      termsAcceptedAt: typeof termsAcceptedAt === 'string' ? termsAcceptedAt : null,
     }
   } catch {
     // If store fails, return defaults
@@ -81,6 +98,12 @@ export async function saveSettings(settings: Partial<Settings>): Promise<boolean
     }
     if (settings.isOnboarded !== undefined) {
       await store.set('isOnboarded', settings.isOnboarded)
+    }
+    if (settings.termsAcceptedVersion !== undefined) {
+      await store.set('termsAcceptedVersion', settings.termsAcceptedVersion)
+    }
+    if (settings.termsAcceptedAt !== undefined) {
+      await store.set('termsAcceptedAt', settings.termsAcceptedAt)
     }
     await store.save()
     return true

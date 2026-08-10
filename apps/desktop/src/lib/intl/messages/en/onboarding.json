@@ -559,6 +559,26 @@
     "screenshot": "onboarding-beta.png"
   },
 
+  "onboarding.stepBeta.terms.title": "Oh, and this too please",
+  "@onboarding.stepBeta.terms.title": {
+    "description": "Heading of the terms-acceptance block, the last thing on the open-beta step. Apologetic, light, first-person (David). It introduces the one required item on an otherwise optional page."
+  },
+
+  "onboarding.stepBeta.terms.lede": "It''s a legal obligation to have it here.",
+  "@onboarding.stepBeta.terms.lede": {
+    "description": "One-line explanation under the terms-acceptance heading: the checkbox is there because the law requires it, not because David wants to add friction. Keep it short and offhand."
+  },
+
+  "onboarding.stepBeta.terms.consent": "I''ve read and agree to the <terms>terms and conditions</terms>.",
+  "@onboarding.stepBeta.terms.consent": {
+    "description": "Label of the required terms checkbox. This sentence is the user's legal act of agreement, so it must stay unambiguous: a first-person statement that the user has read the terms and agrees to them. Don't soften it to \"I acknowledge\" or make it conditional. <terms> wraps a link to the public terms page."
+  },
+
+  "onboarding.stepBeta.terms.blockedTooltip": "Accept the terms and conditions to continue.",
+  "@onboarding.stepBeta.terms.blockedTooltip": {
+    "description": "Tooltip on the two footer buttons while the terms checkbox is unticked, explaining why they don't move the user forward. Matter-of-fact, not scolding."
+  },
+
   "onboarding.stepOptional.footer.start": "Start using Cmdr",
   "@onboarding.stepOptional.footer.start": {
     "description": "Primary footer button on the final optional-setup step that completes onboarding and opens the app. \"Cmdr\" is the product name and stays untranslated. Note there is no exclamation mark here, unlike the similar button on the previous step.",

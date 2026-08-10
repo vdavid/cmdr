@@ -83,6 +83,16 @@ export interface WizardFooterButton {
   variant: 'primary' | 'secondary' | 'danger'
   onclick: () => void
   disabled?: boolean
+  /**
+   * Why this button can't move the user forward yet, in one sentence. When set, the wizard
+   * renders the button BLOCKED rather than `disabled`: dimmed, `not-allowed` cursor,
+   * `aria-disabled`, this text as its tooltip, but still focusable and still firing
+   * `onclick`. The step's handler is then responsible for sending the user to whatever is
+   * missing (the Beta step scrolls its terms checkbox into view and focuses it), which a
+   * truly `disabled` button can't do: it fires no click and takes no keyboard focus, so a
+   * keyboard user gets a dead end with no explanation.
+   */
+  blockedReason?: string
   /** Optional aria-label override; falls back to `label`. */
   ariaLabel?: string
 }

@@ -680,9 +680,14 @@ a background window. Ark owns the keyboard and ARIA contract; the wrappers own t
 house controls by `cmdr/prefer-ui-primitive` (no raw native checkbox / radio).
 
 **`Checkbox`** is a single on/off box. Props: `checked` (bindable, default `false`), `disabled`, `indeterminate` (mixed
-dash state, overrides `checked` visually), `id`, `ariaLabel` (accessible name when there's no visible label),
-`onCheckedChange`, and `children` (an inline label to the right of the box; omit for a bare box in list rows or dense
-grids that own their own label). Bind with `<Checkbox bind:checked={value} />`.
+dash state, overrides `checked` visually), `id`, `ariaLabel` (accessible name when there's no visible label), `required`
+(sets `aria-required` on the control), `onCheckedChange`, and `children` (an inline label to the right of the box; omit
+for a bare box in list rows or dense grids that own their own label). Bind with `<Checkbox bind:checked={value} />`.
+
+A required box is marked twice, and the visual half is the caller's: pass `required` so assistive tech announces it, and
+render your own red asterisk (`--color-error-text`) beside the label, `aria-hidden` so it doesn't double up in the
+accessibility tree. An asterisk alone tells a screen-reader user nothing; `required` alone leaves sighted users
+guessing. The onboarding beta step's terms checkbox is the reference implementation.
 
 **`RadioGroup`** is an items-driven single-select. Props: `value` (bindable, `''` means nothing selected), `items`
 (`RadioItem[]`, each `{ value, label, description?, disabled? }`; `description` renders as quieter text below the

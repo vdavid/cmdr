@@ -3,9 +3,9 @@
 Pull-tier docs for `apps/desktop/src/lib/onboarding/`: architecture, flows, and decision rationale. Must-know invariants
 and gotchas live in `CLAUDE.md`.
 
-Owns first-launch consent: Full Disk Access (macOS only), AI provider, the open-beta analytics disclosure, and a small
-optional-settings step. Renders the `OnboardingWizard` (a soft-sheet that covers ~90% of the viewport over the running
-app) as the single first-launch path.
+Owns first-launch consent: Full Disk Access (macOS only), AI provider, the open-beta analytics disclosure, terms
+acceptance, and a small optional-settings step. Renders the `OnboardingWizard` (a soft-sheet that covers ~90% of the
+viewport over the running app) as the single first-launch path.
 
 Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). The Beta page is **non-skippable** (see § "Step 3 (Open beta)"
 and the Decision below): the AI step's forward button always lands the user there, and only the final Optional step
@@ -27,8 +27,9 @@ finishes onboarding.
   stored API key before the endpoint check runs.
 - **`StepBeta.svelte`**: Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels: in-app, GitHub,
   Discord, book-a-call) + anonymous-analytics disclosure + `analytics.enabled` opt-out switch + optional
-  `analytics.email` contact field. Footer = "Start using Cmdr!" (finish here) + "One more optional setup step"
-  (continue). Reuses the Settings `UpdatesSection` email/`betaSignup` wiring.
+  `analytics.email` contact field + the required terms checkbox. Footer = "Start using Cmdr!" (finish here) + "One more
+  optional setup step" (continue), both gated on the terms. Reuses the Settings `UpdatesSection` email/`betaSignup`
+  wiring.
 - **`StepOptional.svelte`**: Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry
   settings.
 - **`onboarding-state.svelte.ts`**: Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner
@@ -223,8 +224,8 @@ the backend reconfigure before the user lands in the app deterministically.
 
 ## Step 3 (Open beta)
 
-`StepBeta.svelte`: David's personal open-beta intro, the analytics disclosure, and an optional contact channel. Three
-blocks:
+`StepBeta.svelte`: David's personal open-beta intro, the analytics disclosure, an optional contact channel, and the
+required terms acceptance. Four blocks:
 
 1. **Personal intro**: first-person welcome (solo dev, rough parts marked with an inline `StatusBadge status="alpha"`,
    feedback shapes the roadmap) plus the feedback channels as a numbered list: the `Help > Send feedback…` menu item
@@ -246,6 +247,36 @@ The footer has two buttons: a secondary **Start using Cmdr!** that finishes onbo
 step, via `requestWizardComplete()`) and a primary **One more optional setup step** that `nextStep()`s to the Optional
 step. There is no skip-to-finish that bypasses this page: every first-launch user sees the analytics disclosure once,
 because the AI step always lands here and both buttons start from this page.
+
+### Terms acceptance
+
+A fourth block closes the page: a required checkbox reading "I've read and agree to the terms and conditions", with the
+phrase linking `TERMS_URL` through `openExternalUrl` like every other link on the step. It's the last thing on the last
+page a user can't skip, and it gates both footer buttons.
+
+**Why a checkbox at all.** "By downloading, installing, or using Cmdr, you agree to these terms" is browsewrap, which US
+courts treat as presumptively unenforceable absent a deliberate act of assent (Berman v. Freedom Financial Network, 30
+F.4th 849 (9th Cir. 2022)). Without that act, every liability limit in the terms rests on nothing. The tick IS the act,
+so: never pre-tick it, never add a path that reaches the app around it, and keep the consent sentence an unconditional
+first-person statement of agreement (the parity test pins it word for word for exactly that reason).
+
+**Why the version, not a boolean.** Consent to a superseded document isn't consent to the current one. `TERMS_VERSION`
+(`$lib/legal/terms`, the terms page's `lastUpdated` date) is stored with the acceptance as `termsAcceptedVersion` +
+`termsAcceptedAt` (an ISO instant) in `$lib/settings-store`. On mount the step ticks the box only when the stored
+version EQUALS the current one, so bumping the constant after a terms change re-asks everyone. Unticking clears both
+fields rather than leaving a stale record we couldn't stand behind.
+
+**Why the buttons are blocked, not disabled.** While the box is unticked, both footer buttons carry `blockedReason`
+(`WizardFooterButton`), which the wizard renders as `aria-disabled` + dimmed + `not-allowed` cursor + the reason as a
+tooltip, while keeping the button focusable and still firing `onclick`. The handler then calls `revealTermsCheckbox()`:
+`scrollIntoView({ block: 'center' })` (`behavior: 'auto'` under `prefers-reduced-motion`) plus focus on the checkbox
+itself. A truly `disabled` button fires no click and takes no focus, so a user who pressed it would get silence, and a
+keyboard user couldn't even reach it to find out why the wizard won't move. Focusing the control, not just scrolling to
+it, is what makes the keyboard path equal to the pointer one.
+
+**Marking it required.** The red asterisk after the block heading is `aria-hidden` decoration; `<Checkbox required>`
+puts `aria-required` on the control, which is what a screen reader announces. Neither alone is enough (see
+`docs/design-system.md` § "Checkbox and radio group").
 
 ## Step 4 (optional setup)
 
@@ -409,7 +440,8 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 - `$lib/tauri-commands`: `checkFullDiskAccess`, `checkFullDiskAccessQuiet` (Step 1's 500 ms grant-detection poller),
   `getMacosMajorVersion`, `openPrivacySettings`, `startIndexingAfterFdaDecision`, `openExternalUrl`,
   `notifyDialogOpened`, `notifyDialogClosed`, `isForceOnboarding`, `betaSignup` (Step 3's email signup)
-- `$lib/settings-store`: `saveSettings`, `loadSettings`
+- `$lib/settings-store`: `saveSettings`, `loadSettings` (also Step 3's `termsAcceptedVersion` / `termsAcceptedAt`)
+- `$lib/legal/terms`: `TERMS_VERSION`, `TERMS_URL` (Step 3's terms checkbox)
 - `$lib/shortcuts/key-capture`: `isMacOS`
 - `$lib/system-strings.svelte`: localized system pane names
 - `$lib/ui`: `Button`, `LinkButton`

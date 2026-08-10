@@ -1,7 +1,8 @@
 <script lang="ts">
-    import { onDestroy } from 'svelte'
+    import { onDestroy, onMount } from 'svelte'
     import OnboardingStepShell from './OnboardingStepShell.svelte'
     import SettingSwitch from '$lib/settings/components/SettingSwitch.svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
@@ -17,6 +18,8 @@
         ABOUT_DAVID_URL,
         DISCORD_INVITE_URL,
     } from '$lib/beta-links'
+    import { TERMS_URL, TERMS_VERSION } from '$lib/legal/terms'
+    import { loadSettings, saveSettings } from '$lib/settings-store'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
@@ -26,13 +29,14 @@
     /**
      * Step 3: Open beta disclosure.
      *
-     * Three parts:
+     * Four parts:
      *
      *   [Personal open-beta intro: David's first-person welcome + the three feedback
      *    channels (Help > Send feedback…, GitHub issues, book-a-call), linked through
      *    the shared `$lib/beta-links` constants]
      *   [Anonymous-analytics disclosure + an opt-out switch bound to `analytics.enabled`]
      *   [Optional contact email]
+     *   [Required terms acceptance: the one gate on this page]
      *
      * The analytics + email parts reuse the exact wiring `settings/sections/UpdatesSection.svelte`
      * uses, so the Settings page and this onboarding page behave identically:
@@ -46,8 +50,8 @@
      * This page is non-skippable: the AI step's forward button lands the user here. The
      * footer offers two ways forward: a secondary "Start using Cmdr!" that finishes
      * onboarding right here (skipping the optional setup), and a primary "One more optional
-     * setup step" that advances to the final Optional step. See
-     * `lib/onboarding/CLAUDE.md` § "Step 3 (Open beta)".
+     * setup step" that advances to the final Optional step. Both are BLOCKED until the
+     * terms checkbox is ticked. See `lib/onboarding/CLAUDE.md` § "Step 3 (Open beta)".
      */
 
     const log = getAppLogger('onboarding-beta')
@@ -69,12 +73,66 @@
         }
     }
 
+    // Terms acceptance: the one required control on this page. The checkbox is the user's
+    // deliberate act of assent, and we record WHICH terms it applied to (see
+    // `$lib/legal/terms`), so a later terms change can ask again instead of coasting on a
+    // consent that was given to a different document.
+    let termsAccepted = $state(false)
+    /** The terms `<section>`, so a blocked click can bring it back on screen. */
+    let termsBlockEl: HTMLElement | undefined = $state()
+    /** Guards the mount-time read from overwriting a tick the user got in first. */
+    let termsTouched = false
+
+    onMount(async () => {
+        // Re-entry from the menu / palette (or a Back from the Optional step) shouldn't make
+        // the user re-tick a box they already ticked. An acceptance of an OLDER version
+        // doesn't count, which is the whole point of storing the version.
+        const settings = await loadSettings()
+        if (termsTouched) return
+        termsAccepted = settings.termsAcceptedVersion === TERMS_VERSION
+    })
+
+    function handleTermsChange(accepted: boolean): void {
+        termsTouched = true
+        termsAccepted = accepted
+        // Write through immediately, like every other control on this page. Clearing the box
+        // clears the record too: keeping a stale "accepted" after the user unticked it would
+        // be a claim we can't back up.
+        void saveSettings(
+            accepted
+                ? { termsAcceptedVersion: TERMS_VERSION, termsAcceptedAt: new Date().toISOString() }
+                : { termsAcceptedVersion: null, termsAcceptedAt: null },
+        )
+    }
+
+    /**
+     * Bring the terms checkbox back on screen and put focus on it. This is what a press on a
+     * blocked footer button does, for pointer and keyboard alike: the button is far from the
+     * checkbox, and a press that neither advances nor explains reads as a broken app.
+     */
+    function revealTermsCheckbox(): void {
+        const block = termsBlockEl
+        if (!block) return
+        const reduceMotion =
+            typeof window !== 'undefined' &&
+            typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        block.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' })
+        // Focus the control itself, not just the region: a scroll alone leaves a keyboard
+        // user's caret back on the footer with nothing to act on.
+        block.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus()
+    }
+
     // Guards a double-trigger while the step tears down. Both handlers are synchronous, so
     // this only matters for a rapid double-click on the same button.
     let advanceBusy = $state(false)
 
     function handleStart(): void {
         if (advanceBusy) return
+        if (!termsAccepted) {
+            revealTermsCheckbox()
+            return
+        }
         advanceBusy = true
         // Finish onboarding right here, skipping the optional setup step.
         requestWizardComplete()
@@ -82,18 +140,25 @@
 
     function handleContinue(): void {
         if (advanceBusy) return
+        if (!termsAccepted) {
+            revealTermsCheckbox()
+            return
+        }
         advanceBusy = true
         nextStep()
     }
 
-    // Re-register on `advanceBusy` change so the disabled state stays fresh.
+    // Re-register on `advanceBusy` / `termsAccepted` change so the blocked state stays fresh.
     $effect(() => {
         void advanceBusy
+        // `blockedReason` (not `disabled`) so the press still reaches the handler above.
+        const blockedReason = termsAccepted ? undefined : tString('onboarding.stepBeta.terms.blockedTooltip')
         setFooterOverride([
             {
                 label: tString('onboarding.stepBeta.footer.start'),
                 variant: 'secondary',
                 disabled: advanceBusy,
+                blockedReason,
                 onclick: () => {
                     handleStart()
                 },
@@ -102,6 +167,7 @@
                 label: tString('onboarding.stepBeta.footer.continue'),
                 variant: 'primary',
                 disabled: advanceBusy,
+                blockedReason,
                 onclick: () => {
                     handleContinue()
                 },
@@ -201,6 +267,12 @@
         rel="noopener noreferrer"
         onclick={openLink(BOOK_A_CALL_URL)}>{@render children()}</LinkButton
     >{/snippet}
+{#snippet terms(children: Snippet)}<LinkButton
+        href={TERMS_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick={openLink(TERMS_URL)}>{@render children()}</LinkButton
+    >{/snippet}
 {#snippet repoLink(children: Snippet)}<LinkButton
         href={GITHUB_REPO_URL}
         target="_blank"
@@ -261,6 +333,19 @@
             <p class="signup-feedback failure" role="status">{tString('onboarding.stepBeta.signup.failure')}</p>
         {/if}
         <p class="email-note">{tString('onboarding.stepBeta.emailNote')}</p>
+    </section>
+
+    <section class="terms-block" bind:this={termsBlockEl} aria-labelledby="beta-terms-title">
+        <h3 id="beta-terms-title" class="toggle-title">
+            {tString('onboarding.stepBeta.terms.title')}<span class="required-mark" aria-hidden="true">*</span>
+        </h3>
+        <p class="toggle-desc">{tString('onboarding.stepBeta.terms.lede')}</p>
+        <div class="terms-consent">
+            <!-- The asterisk above is decoration; `required` is what a screen reader hears. -->
+            <Checkbox checked={termsAccepted} required onCheckedChange={handleTermsChange}>
+                <Trans key="onboarding.stepBeta.terms.consent" snippets={{ terms }} />
+            </Checkbox>
+        </div>
     </section>
 </OnboardingStepShell>
 
@@ -368,6 +453,27 @@
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         background: var(--color-bg-primary);
+    }
+
+    .terms-block {
+        margin-top: var(--spacing-lg);
+        padding: var(--spacing-lg);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-primary);
+    }
+
+    .terms-consent {
+        margin-top: var(--spacing-md);
+        line-height: var(--font-line-height-prose);
+    }
+
+    /* The required marker. Red and set slightly apart from the heading, matching how forms
+       everywhere mark a required field; `aria-hidden` keeps it out of the a11y tree, where
+       the control's own `aria-required` carries the same fact. */
+    .required-mark {
+        margin-left: var(--spacing-xxs);
+        color: var(--color-error-text);
     }
 
     .signup-feedback {

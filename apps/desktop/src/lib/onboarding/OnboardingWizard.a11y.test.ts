@@ -39,6 +39,9 @@ vi.mock('@tauri-apps/plugin-process', () => ({
 
 vi.mock('$lib/settings-store', () => ({
   saveSettings: vi.fn(() => Promise.resolve()),
+  // StepBeta reads the stored terms acceptance on mount; a barrel mock that drops it
+  // breaks every wizard test that renders step 3.
+  loadSettings: vi.fn(() => Promise.resolve({ termsAcceptedVersion: null, termsAcceptedAt: null })),
 }))
 
 vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => {

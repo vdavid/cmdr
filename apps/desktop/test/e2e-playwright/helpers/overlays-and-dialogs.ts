@@ -99,6 +99,23 @@ export async function dismissOverlay(tauriPage: PageLike): Promise<void> {
 }
 
 /**
+ * Ticks the onboarding wizard's terms checkbox if it's on screen and still unticked.
+ *
+ * The Beta step (step 3) blocks BOTH of its footer buttons until the user accepts the
+ * terms, so any walk through the wizard has to pass this gate exactly like a person does.
+ * Safe to call on any step and with the wizard closed: it's a no-op when the checkbox
+ * isn't rendered, and when a previous run already accepted (the acceptance persists to the
+ * store, so the box comes back pre-ticked). See `lib/onboarding/DETAILS.md` § "Terms
+ * acceptance".
+ */
+export async function acceptOnboardingTermsIfPresent(tauriPage: PageLike): Promise<void> {
+  await tauriPage.evaluate(`(function(){
+        var box = document.querySelector('[data-dialog-id="onboarding"] .terms-block input[type="checkbox"]');
+        if (box && !box.checked) box.click();
+    })()`)
+}
+
+/**
  * Assert that exactly ONE toast whose text contains `substring` appears within
  * `timeout`, then dismiss that single toast.
  *

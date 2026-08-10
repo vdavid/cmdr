@@ -359,6 +359,22 @@
   "@onboarding.stepBeta.emailNote": {
     "sourceHash": "9d262c8"
   },
+  "onboarding.stepBeta.terms.title": "Åh, och det här också, tack",
+  "@onboarding.stepBeta.terms.title": {
+    "sourceHash": "f2a6e08"
+  },
+  "onboarding.stepBeta.terms.lede": "Det är ett juridiskt krav att ha det här.",
+  "@onboarding.stepBeta.terms.lede": {
+    "sourceHash": "c59e47e"
+  },
+  "onboarding.stepBeta.terms.consent": "Jag har läst och godkänner <terms>användarvillkoren</terms>.",
+  "@onboarding.stepBeta.terms.consent": {
+    "sourceHash": "620a4b6"
+  },
+  "onboarding.stepBeta.terms.blockedTooltip": "Godkänn användarvillkoren för att fortsätta.",
+  "@onboarding.stepBeta.terms.blockedTooltip": {
+    "sourceHash": "f03426e"
+  },
   "onboarding.stepOptional.footer.start": "Börja använda Cmdr",
   "@onboarding.stepOptional.footer.start": {
     "sourceHash": "d11e058"

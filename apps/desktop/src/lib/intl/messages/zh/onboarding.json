@@ -360,6 +360,22 @@
   "@onboarding.stepBeta.emailNote": {
     "sourceHash": "9d262c8"
   },
+  "onboarding.stepBeta.terms.title": "哦，还有这个，麻烦您了",
+  "@onboarding.stepBeta.terms.title": {
+    "sourceHash": "f2a6e08"
+  },
+  "onboarding.stepBeta.terms.lede": "这是法律上的要求，所以得放在这里。",
+  "@onboarding.stepBeta.terms.lede": {
+    "sourceHash": "c59e47e"
+  },
+  "onboarding.stepBeta.terms.consent": "我已阅读并同意<terms>条款与条件</terms>。",
+  "@onboarding.stepBeta.terms.consent": {
+    "sourceHash": "620a4b6"
+  },
+  "onboarding.stepBeta.terms.blockedTooltip": "接受条款与条件后即可继续。",
+  "@onboarding.stepBeta.terms.blockedTooltip": {
+    "sourceHash": "f03426e"
+  },
   "onboarding.stepOptional.footer.start": "开始使用 Cmdr",
   "@onboarding.stepOptional.footer.start": {
     "sourceHash": "d11e058"

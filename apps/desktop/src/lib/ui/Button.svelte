@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, type Snippet } from 'svelte'
+    import { tooltip, type TooltipParam } from '$lib/tooltip/tooltip'
 
     type Variant = 'primary' | 'secondary' | 'danger'
     type Size = 'regular' | 'mini'
@@ -8,6 +9,17 @@
         variant?: Variant
         size?: Size
         disabled?: boolean
+        /**
+         * Blocked, not disabled: the button looks and reads unavailable (`aria-disabled`,
+         * dimmed, `not-allowed` cursor) but stays focusable and still fires `onclick`, so
+         * the handler can explain WHY instead of the press silently doing nothing. Reach
+         * for this over `disabled` whenever the user can do something about the block, and
+         * pair it with a `tooltipContent` naming the missing precondition. `disabled` stays right
+         * for a button that's inert for reasons the user can't act on.
+         */
+        ariaDisabled?: boolean
+        /** Tooltip on the button itself; a wrapper can't carry it, since focus doesn't bubble. */
+        tooltipContent?: TooltipParam
         type?: 'button' | 'submit'
         onclick?: (e: MouseEvent) => void
         'aria-label'?: string
@@ -24,6 +36,8 @@
         variant = 'secondary',
         size = 'regular',
         disabled = false,
+        ariaDisabled = false,
+        tooltipContent,
         type = 'button',
         onclick,
         'aria-label': ariaLabel,
@@ -45,8 +59,10 @@
     {type}
     class="btn btn-{variant} btn-{size}"
     {disabled}
+    aria-disabled={ariaDisabled ? 'true' : undefined}
     {onclick}
     aria-label={ariaLabel}
+    use:tooltip={tooltipContent}
 >
     {@render children()}
 </button>
@@ -66,6 +82,13 @@
         opacity: 0.4;
         cursor: not-allowed;
         pointer-events: none;
+    }
+
+    /* Blocked: same read as disabled, but pointer events stay live (and the button stays
+       focusable) so the press reaches `onclick` and the handler can say what's missing. */
+    .btn[aria-disabled='true'] {
+        opacity: 0.4;
+        cursor: not-allowed;
     }
 
     .btn:focus-visible {
@@ -94,7 +117,7 @@
         border: none;
     }
 
-    .btn-primary:hover:not(:disabled) {
+    .btn-primary:hover:not(:disabled, [aria-disabled='true']) {
         background: var(--color-accent-hover);
     }
 
@@ -105,7 +128,7 @@
         border: 1px solid var(--color-border);
     }
 
-    .btn-secondary:hover:not(:disabled) {
+    .btn-secondary:hover:not(:disabled, [aria-disabled='true']) {
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
     }
@@ -117,7 +140,7 @@
         border: 1px solid var(--color-error);
     }
 
-    .btn-danger:hover:not(:disabled) {
+    .btn-danger:hover:not(:disabled, [aria-disabled='true']) {
         background: color-mix(in srgb, var(--color-error), transparent 90%);
     }
 </style>

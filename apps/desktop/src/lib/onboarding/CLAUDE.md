@@ -1,7 +1,8 @@
 # Onboarding module
 
-Owns first-launch consent: Full Disk Access (macOS only), AI provider, the open-beta analytics disclosure, and a small
-optional-settings step. Renders the `OnboardingWizard` soft-sheet as the single first-launch path.
+Owns first-launch consent: Full Disk Access (macOS only), AI provider, the open-beta analytics disclosure, terms
+acceptance, and a small optional-settings step. Renders the `OnboardingWizard` soft-sheet as the single first-launch
+path.
 
 Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 and resumes at step 2.
 
@@ -18,6 +19,10 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
   AI step's only forward button ("Next") always lands on Beta. Beta itself offers "Start using Cmdr!" (skips the
   optional step) and "One more optional setup step", so the user can't reach the app without passing through Beta. Don't
   re-add a skip-to-finish on the AI step (it bypasses the disclosure).
+- **Step 3's terms checkbox gates both footer buttons.** ❌ Never pre-tick or route around it: it's the assent the terms
+  rest on. Unticked, buttons take `blockedReason`, ❌ not `disabled`, so the press still fires and scrolls + focuses the
+  checkbox. Acceptance stores `TERMS_VERSION` (`$lib/legal/terms`) + timestamp; bumping it re-asks everyone.
+  `DETAILS.md` § "Terms acceptance".
 - **The step-2 "Full disk access granted" banner shows ONLY on a fresh first-run grant** (`hasFda && !isOnboarded`).
   Once onboarded, menu / palette re-entry with FDA on shows no banner (`stepTwoBanner === 'none'`). Gated in both
   `stepTwoBannerFor()` and `StepAi`'s on-mount probe.
