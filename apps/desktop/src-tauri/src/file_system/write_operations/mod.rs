@@ -43,6 +43,7 @@ mod scan_cache;
 mod scan_preview;
 mod scratch_dir;
 mod state;
+mod status_cache;
 mod transfer;
 mod types;
 mod validation;

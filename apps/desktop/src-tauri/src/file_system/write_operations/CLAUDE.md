@@ -4,9 +4,10 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
 
 ## Module map
 
-- Spine: `manager.rs` (registry, lanes, admission), `state.rs` (op state, status cache, `CopyTransaction`, busy
-  volumes), `mod.rs` (public API). Subdirs `transfer/`, `delete/`, `archive_edit/`. Full inventory: DETAILS § Files.
-  Frontend counterpart: `apps/desktop/src/lib/file-operations/CLAUDE.md`.
+- Spine: `manager.rs` (registry, lanes, admission), `state.rs` (op state, `CopyTransaction`, the cancel/abort
+  commands), `status_cache.rs` (the status cache, the busy-volume set it drives, and the queries over it; reached
+  through `state::`), `mod.rs` (public API). Subdirs `transfer/`, `delete/`, `archive_edit/`. Full inventory:
+  DETAILS § Files. Frontend counterpart: `apps/desktop/src/lib/file-operations/CLAUDE.md`.
 
 ## Must-knows
 
