@@ -209,9 +209,9 @@ ms debounce on API-key persist, 1 s debounce on `checkAiConnection(baseUrl, prov
 because the backend reads the stored key itself (`docs/security.md` § "AI API keys"), so the key persist has to land
 first; that's why the check is scheduled from `persistApiKey`, never straight off a keystroke. The field is likewise
 never pre-filled with a stored key: `keyIsSet` from `getAiApiKeyStatus` drives the "your key is saved" placeholder and
-the checkable-config gate. On `connected`, the right column
-reveals the model combobox populated from `/models` and the API-key step gets a green check. The wizard never disables
-advance based on connection status; the auto-check is purely informational.
+the checkable-config gate. On `connected`, the right column reveals the model combobox populated from `/models` and the
+API-key step gets a green check. The wizard never disables advance based on connection status; the auto-check is purely
+informational.
 
 ### `pushConfigToBackend()` belt-and-braces
 

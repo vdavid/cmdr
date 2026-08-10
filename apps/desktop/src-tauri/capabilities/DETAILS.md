@@ -5,10 +5,16 @@ rationale.
 
 ## Why one file per window
 
-Each window type has a different trust level, and the capability system is the only security boundary between webview
-code and native APIs. The main window needs filesystem access, drag-and-drop, clipboard, and the updater. The settings
-window only needs event dispatch and theme control. The viewer only needs window management. Splitting by window means a
-compromised viewer webview can't invoke filesystem operations.
+Each window type has a different trust level, and the capability system is the boundary controlling which PLUGIN and
+`core:` APIs a webview reaches. The main window needs filesystem access, drag-and-drop, clipboard, and the updater. The
+settings window only needs event dispatch and theme control. The viewer only needs window management. Splitting by
+window means a compromised viewer webview can't reach the `fs` plugin, the store, or the updater.
+
+**It does NOT cover our own commands.** Tauri ACL-checks an app-defined command only when the app ships an ACL manifest
+(`src-tauri/permissions/`, which we don't have) or the call comes from a remote origin, so everything in
+`generate_handler![]` is callable from every window. That's a deliberate position, not an oversight: the reasoning, the
+assumption it rests on, and what would overturn it are in `docs/security.md` § "Why there's no caller-window
+authorization guard". Don't write "a compromised viewer can't invoke X" about an app command.
 
 ## Debug window draws solely from `debug.json`
 

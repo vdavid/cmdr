@@ -172,3 +172,36 @@ encrypted-file fallback), never in `settings.json`. On top of that:
   fine; the contract is about PERSISTED keys flowing back out of the secret store.
 - **`validate_ai_base_url` stays**: it refuses to send a key over plaintext `http://` to a non-loopback host, which is
   what stops a malicious "free proxy" base URL from harvesting keys. See `ai/CLAUDE.md`.
+
+## Why there's no caller-window authorization guard
+
+Tauri's capability system does NOT gate the app's own commands. It gates plugin and `core:` commands; an app-defined
+command is ACL-checked only when the app ships its own ACL manifest (`src-tauri/permissions/`, which we don't) or the
+call comes from a remote origin (the `resolve_access` gate in tauri's webview module). So every command in
+`generate_handler![]` is callable from every window, including `viewer-*`. The per-window capability files still matter
+for everything they do cover (plugins, `core:`, and the store), just not for our commands.
+
+We know, and we're deliberately not adding a per-window allowlist. The reasoning, so nobody re-derives it:
+
+- **The escalation an attacker would gain is small.** The viewer legitimately owns `viewer_open` / `viewer_get_lines`,
+  so a compromised viewer can already read any file the process can read. A caller guard wouldn't change that. It would
+  only block arbitrary deletion, key/licensing/updater access, and the outbound request in `check_ai_connection` (which
+  hits an attacker-chosen host from the Rust process, bypassing the webview CSP).
+- **There's no live path into a viewer window.** Viewer content renders through Svelte's escaping interpolation with no
+  `{@html}`; the CSP is `script-src 'self'` with no `unsafe-inline`; images and PDFs render via `<img>` / `<embed>` on
+  the `cmdr-media:` scheme, which yields no script in the app origin. Reaching IPC needs a WebKit decoder 0-day or a
+  `{@html}` we introduce ourselves.
+- **The guard wouldn't cover the realistic XSS surface anyway.** The `{@html}` sinks that DO exist (Ask Cmdr assistant
+  markdown, error messages carrying filenames, operation-failure toasts) are all in the MAIN window, which legitimately
+  needs the privileged commands.
+
+What holds this position up, and what would overturn it:
+
+- ❌ **Never render untrusted content through `{@html}` in a viewer or queue window.** That's the assumption the whole
+  argument rests on. The general `{@html}` rules are in `apps/desktop/src/lib/error-messages/CLAUDE.md` and
+  `lib/ask-cmdr/CLAUDE.md`; here it's load-bearing rather than good practice.
+- **Revisit if a viewer window gains a renderer for attacker-authored markup** (HTML preview, a markdown view, an SVG
+  surface, an embedded font/media decoder we drive ourselves). At that point add the guard.
+- **The cheap version, if it's ever wanted**, is a denylist rather than a per-window allowlist of ~450 commands: wrap
+  `specta_builder.invoke_handler()` in `lib.rs` and reject a set of privileged commands (write ops, AI keys, licensing,
+  updater, `check_ai_connection`) for any window label other than `main`. One choke point, no per-command edits.
