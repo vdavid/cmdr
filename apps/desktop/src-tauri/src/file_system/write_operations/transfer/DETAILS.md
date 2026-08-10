@@ -64,12 +64,28 @@ facts that none of those carry live here:
 - Local move `move_with_rename` / `merge_move_directory`: when `resolve_conflict` returns Overwrite for a type-mismatched pair, the closure does `fs::rename(source, target)`.
 - Volume copy/move via `volume::conflict::apply_volume_conflict_resolution`: a type swap can't temp-rename across backends, so **cross-type** Overwrite deletes the dest first (`remove_tree(…, UserChoseOverwriteAcrossTypes)` for folder dests, `Volume::delete` for file dests) before the streaming writer / recursive copy lands the source. **File→file** Overwrite does NOT delete first — it uses the safe-replace temp+finalize path (see "Cross-volume file→file Overwrite is a safe-replace" below). Same-type dir-vs-dir still skips the delete to honor the merge-not-replace guarantee. Pinned by `volume/copy_tests.rs::test_volume_overwrite_{file_over_existing_folder,folder_over_existing_file}`.
 
-**Copy strategy selection** (`copy_strategy.rs`):
-- macOS, same APFS volume → `copyfile(3)` with `COPYFILE_CLONE` for instant clonefile
-- macOS, everything else → `chunked_copy_with_metadata` (1 MB chunks, cancellation between chunks)
-- Linux, network → `chunked_copy_with_metadata`
-- Linux, local → `copy_single_file_linux` (`copy_file_range(2)`, supports reflink on btrfs/XFS)
-- Other platforms → `std::fs::copy` fallback
+**Copy strategy selection** (`copy_strategy.rs`). `select_local_copy_strategy` names the mechanism, `copy_file_using` runs it:
+- macOS, same APFS volume → `LocalCopyStrategy::AppleClone`, `copyfile(3)` with `COPYFILE_CLONE` for instant clonefile
+- macOS, everything else → `Chunked` (`chunked_copy_with_metadata`, 1 MB chunks, cancellation between chunks)
+- Linux, network → `Chunked`
+- Linux, local → `KernelCopyRange` (`copy_single_file_linux`, `copy_file_range(2)`, reflink on btrfs/XFS)
+- Other platforms → `StdCopy`, the `std::fs::copy` fallback
+
+The split exists so the landing discipline is written once instead of once per branch, and so a test can drive a mechanism the machine's own filesystems would never select — on a Mac every tempdir pair is one APFS volume, so without `copy_file_using` nothing would ever exercise the chunked branch that runs for an external drive or a Finder-mounted NAS.
+
+### Local copies stage
+
+**Decision**: every local file copy writes to a `.cmdr-tmp-<uuid>` sibling of its destination and takes the real name by one same-directory `rename(2)`, whether or not a conflict made it an overwrite. `overwrite::stage_and_land_file` owns it and every `LocalCopyStrategy` arm goes through it, handing it a closure that puts bytes at a path.
+
+**Why**: only the overwrite case staged before. A fresh copy wrote straight to the final name, so copying a 4 GB file to an external drive and force-quitting halfway left a truncated file wearing the user's real filename, indistinguishable from a complete one — the same failure the cross-volume staging work eliminated, still live on the most ordinary path in the app, and reachable by a crash or a power loss too. It is also what makes ABANDONING a worker safe: a thread wedged in a `read`/`write` we can't interrupt is writing to a temp nobody will rename, so the quit deadline can walk away from it.
+
+Two latent overwrite holes closed with it: the macOS non-APFS branch and the Linux network branch both ignored `needs_safe_overwrite` entirely and truncated the destination in place.
+
+**The landing refuses to clobber when it isn't an overwrite.** Moving the create off the destination name lost something: a plain POSIX `rename` replaces silently, where the direct create's `COPYFILE_EXCL` / `O_EXCL` refused. `overwrite::rename_no_replace` restores it with `renamex_np(RENAME_EXCL)` on macOS and `renameat2(RENAME_NOREPLACE)` on Linux, degrading to a check-then-rename on a filesystem that supports neither (racy, but strictly better than an unconditional clobber). The case it defends is a file appearing between conflict resolution and the landing.
+
+**On error the temp goes.** A failed write, a failed aside, or a failed landing removes the temp and deregisters it: the bytes there are a partial, or at most a complete copy whose source is still on disk (the item reports failed, so no source is ever deleted). This differs from the async cross-volume `StagedWrite::commit`, which deregisters BEFORE landing because a landing that fails there can leave the only complete copy of the new bytes. Locally the landing is one synchronous syscall, so that window doesn't exist.
+
+**Cost**: one extra rename per file, and it doesn't show. 2 000 × 4 KB local files measured a 394-400 ms median against a 372-449 ms baseline (`transfer/copy/copy_tests.rs::local_copy_bench_many_small_files`). Pinned by `volume/copy_crashsafe_tests.rs` § `local_staging`.
 
 **Background cleanup is best-effort.** `remove_file_in_background` and `remove_dir_all_in_background` run on detached threads (used for temp/backup file cleanup, not for user-visible rollback). If the network mount disconnects or the app exits, partial files or staging directories may remain on disk. These use the `.cmdr-` prefix, so they're recognizable.
 
@@ -124,12 +140,28 @@ DROPPED mid-write — the concurrent driver drops the rest of its window on canc
 `volume::cleanup::clean_abandoned_staged_writes` removes those, and the deep-merge children that were never tracked at
 all are now covered too.
 
-**Crash recovery.** `volume::cleanup::reap_stale_transfer_temps` runs once at the start of each cross-volume copy, over
-the destination directory only: one `list_directory`, then a `delete` for each `.cmdr-tmp-*` FILE whose mtime is at
-least `STALE_TEMP_MIN_AGE` (1 hour) old. The age gate is what makes it safe against a concurrent instance — a live
-staged write touches its temp every chunk, and even a destination-side foreground park is capped at a second — and an
-entry with no reported mtime is spared. It mirrors `archive_remote_edit::reap_remote_temps`. A leftover deeper inside a
-copied subtree waits for a transfer into that directory; there is no global filesystem sweep and there shouldn't be.
+Registration goes through `write_operations::in_flight_temps`, which keeps the operation's in-memory list AND a
+process-wide log in the app data dir. Local copies register there too (`overwrite::stage_and_land_file`), so
+`in_flight_temps` is no longer cross-volume-only — though only the cross-volume drivers run
+`clean_abandoned_staged_writes`, since a local op's temps are registered and deregistered synchronously and anything
+left is a thread that never came back.
+
+**Crash recovery, two sweeps.**
+
+- **The recorded ones, at startup, with NO age gate.** `in_flight_temps::init_and_sweep` (called from `lib.rs` before
+  any copy can start) replays the persisted log and removes what an earlier run left in flight. The age gate below
+  exists to protect a temp a CONCURRENT Cmdr is streaming into; a path this app recorded when it minted the UUID in it
+  needs no such protection, and the instance lock already keeps two processes off one data dir. It only ever removes
+  paths carrying the scratch marker, so a corrupted log can't become a delete-anything primitive. Granularity and why
+  there is no fsync: `in_flight_temps.rs` module docs.
+- **The rest, on the next transfer into that directory.** `volume::cleanup::reap_stale_transfer_temps` runs once at the
+  start of each cross-volume copy, over the destination directory only: one `list_directory`, then a `delete` for each
+  `.cmdr-tmp-*` FILE whose mtime is at least `STALE_TEMP_MIN_AGE` (1 hour) old. The age gate is what makes it safe
+  against a concurrent instance — a live staged write touches its temp every chunk, and even a destination-side
+  foreground park is capped at a second — and an entry with no reported mtime is spared. It mirrors
+  `archive_remote_edit::reap_remote_temps`. This is the backstop for anything the log missed (a power loss, a
+  non-UTF-8 path); a leftover deeper inside a copied subtree waits for a transfer into that directory, and there is no
+  global filesystem sweep and there shouldn't be.
 
 **Cost**: one extra rename per staged file. On SMB that is one round trip, which roughly doubles the wire cost of a file
 that would otherwise take the compound CREATE+WRITE+FLUSH+CLOSE fast path — the exemption below is what keeps a

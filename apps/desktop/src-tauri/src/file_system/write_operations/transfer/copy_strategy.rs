@@ -1,4 +1,12 @@
-//! Copy strategy selection for file operations.
+//! Copy strategy selection for file operations: which mechanism moves the bytes
+//! ([`select_local_copy_strategy`]) and running a chosen one ([`copy_file_using`]).
+//!
+//! **Every arm stages.** The bytes go to a `.cmdr-tmp-*` sibling and take the
+//! destination's real name by one same-directory rename, via
+//! `overwrite::stage_and_land_file`. ❌ Never add a mechanism that writes
+//! straight to the destination: a local destination path must never hold a
+//! partial file. Rationale and the no-clobber rule: `DETAILS.md` § "Local
+//! copies stage".
 //!
 //! The only reason to use platform-native copy APIs (`copyfile(3)`, `copy_file_range(2)`) is
 //! filesystem-level cloning (APFS clonefile, btrfs/XFS reflink): instant, zero-cost copies

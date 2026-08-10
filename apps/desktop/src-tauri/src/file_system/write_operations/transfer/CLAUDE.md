@@ -11,6 +11,11 @@ map: `DETAILS.md` § Files.
 
 ## Streaming, cancel, and diagnosis
 
+- **EVERY write stages, local included**: bytes land on a `.cmdr-tmp-<uuid>` SIBLING and take the real name by one
+  same-directory rename. Local-FS goes through `overwrite::stage_and_land_file` (all four `LocalCopyStrategy` arms, ❌
+  never straight to the destination); cross-volume asks `strategy.rs::resolve_staging`. Staging is what makes
+  abandoning a wedged worker safe. A non-overwrite landing REFUSES an occupied destination (`RENAME_EXCL` /
+  `RENAME_NOREPLACE`), keeping the guarantee the old direct `O_EXCL` create gave.
 - **Cross-volume copy parks and yields between chunks** (`CheckpointStream`): park in place, ❌ no release/reopen. TWO
   opt-ins, ❌ don't merge them: SOURCE read-yield (MTP + SMB) is unbounded, DESTINATION write-yield (SMB only) is capped.
 - **Every phase announces itself to `transfer_probe.rs`, on BOTH drivers**: ❌ no `.await` on a transfer path without a

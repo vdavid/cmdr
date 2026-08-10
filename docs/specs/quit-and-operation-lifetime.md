@@ -134,6 +134,12 @@ misleading", not "every thread wound down politely".
 
 ## Q1: local copies get temp+rename staging
 
+**Landed.** Durable notes now live in `write_operations/transfer/DETAILS.md` § "Local copies stage" and
+`in_flight_temps.rs`. What follows is the original plan; two things went further than written, both noted in the commits:
+the four strategies were named (`LocalCopyStrategy`) so the chunked branch is reachable in a test on a Mac, and the
+landing refuses to clobber a destination that appeared underneath a non-overwrite copy, which the old direct `O_EXCL`
+create used to do for free.
+
 The enabler, and independently the most valuable fix here.
 
 **The problem.** Local copies write straight to the **final filename**. `chunked_copy.rs`, `macos_copy.rs`, and

@@ -24,8 +24,9 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
   volume-aware op doesn't re-emit `write-error` on `Cancelled`.
 - **Register a destination with the downloads watcher's ignore set BEFORE the syscall**
   (`crate::downloads::note_pending_write_for_cmdr`; renames register both halves).
-- **Safe overwrite is temp + rename-aside + rename**, temps carry the recoverable `.cmdr-` prefix, symlinks are never
-  dereferenced.
+- **EVERY local write lands via temp + rename** (`overwrite::stage_and_land_file`), with a rename-aside only when
+  replacing; ❌ never write at the destination name. Temps carry the recoverable `.cmdr-` marker and are registered via
+  `in_flight_temps` (op list + a persisted log swept with NO age gate at startup). Symlinks are never dereferenced.
 - **❌ Never `statvfs` for macOS disk space** (it rejects copies APFS purgeable space allows):
   `crate::volumes::get_volume_space()`.
 - **Scans report `total_bytes` (write footprint, copy/move) and `dedup_bytes` (delete).** ❌ Don't point copy at the

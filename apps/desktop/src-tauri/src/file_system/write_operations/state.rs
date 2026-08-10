@@ -109,7 +109,14 @@ pub struct WriteOperationState {
     /// tasks were dropped mid-flight (a cancel that abandoned a wedged task);
     /// `transfer::volume::cleanup::clean_abandoned_staged_writes` removes them.
     ///
-    /// Empty for local-FS operations, which stage through `overwrite.rs` instead.
+    /// Local-FS copies stage too (`overwrite::stage_and_land_file`) and register
+    /// here, but they add and remove entries synchronously, so anything they
+    /// leave belongs to a thread that never came back. No local driver runs
+    /// `clean_abandoned_staged_writes`; the startup sweep is their answer.
+    ///
+    /// ❌ Don't push or retain here directly: go through
+    /// [`super::in_flight_temps`], which also keeps the persisted half that
+    /// outlives the process.
     pub in_flight_temps: std::sync::Mutex<Vec<PathBuf>>,
     /// "This operation is still going." Dropped by [`end_liveness`](Self::end_liveness)
     /// when it settles.
