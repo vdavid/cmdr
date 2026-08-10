@@ -222,9 +222,16 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         show_hidden_files,
         Some("Cmd+Shift+."),
     )?;
-    // GTK intercepts F-row keys at the toolkit level, but Cmd+digit chords (which
-    // map to Ctrl+digit on Linux) come through fine. ⌘F3-⌘F6 alts go through JS
-    // dispatch only on Linux.
+    // GTK intercepts F-row keys at the toolkit level, but Cmd+digit chords come
+    // through fine. ⌘F3-⌘F6 alts go through JS dispatch only on Linux.
+    //
+    // ❗ These `Cmd+…` strings bind to SUPER here, not Ctrl: muda maps `"CMD"` to
+    // `Modifiers::META`, which is Super on GTK, and only `CmdOrCtrl` resolves to
+    // Ctrl off macOS. So the menu prints Super chords. Users still get Ctrl because
+    // the frontend keydown layer accepts `metaKey || ctrlKey`; it's the LABEL that's
+    // wrong. Switching to `CmdOrCtrl` also changes the macOS binding, so it needs a
+    // check on both platforms rather than a blind sweep.
+    // See `docs/notes/linux-gaps-2026-08-10.md`.
     let sort_items = build_sort_submenu(
         app,
         "&Sort by",
