@@ -38,9 +38,7 @@
             'and one person on two devices counts twice.'}
     />
 
-    {#if !umami.ok}
-        <ErrorState error={umami.error} {selection} />
-    {:else}
+    {#if umami.ok}
         {@const u = umami.data}
         {@const totalPageviews = u.personalSite.pageviews.value + u.website.pageviews.value + u.prvw.pageviews.value}
         {@const prevPageviews = u.personalSite.pageviews.prev + u.website.pageviews.prev + u.prvw.pageviews.prev}
@@ -80,7 +78,7 @@
                         color: repoColors[r.repo],
                     }))}
                 />
-                {#each stars.repos as repo}
+                {#each stars.repos as repo (repo.repo)}
                     {@const c = repoColors[repo.repo] ?? COLOR_GOLD}
                     {#if repo.daily.length > 1}
                         <div class="mt-2">
@@ -110,5 +108,7 @@
                 { label: 'mtp-rs on GitHub', href: 'https://github.com/vdavid/mtp-rs' },
             ]}
         />
+    {:else}
+        <ErrorState error={umami.error} {selection} />
     {/if}
 </section>

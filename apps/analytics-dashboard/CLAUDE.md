@@ -23,8 +23,8 @@ All API keys stay server-side, proxied via `+server.ts` / `+page.server.ts`.
 
 ## Checks
 
-`pnpm check dashboard` runs all eight (eslint, stylelint, svelte-check, import-cycles, knip, tests, build, plus the
-`svelte-kit sync` they depend on). Don't judge a change by raw `pnpm lint`: the runner owns the ordering.
+`pnpm check dashboard` runs all eight (eslint, stylelint, svelte-check, import-cycles, knip, tests, build, plus
+`svelte-kit sync`). Don't judge a change by raw `pnpm lint`: the runner owns ordering.
 
 ## Must-knows
 
@@ -32,15 +32,17 @@ All API keys stay server-side, proxied via `+server.ts` / `+page.server.ts`.
   `cmdr-analytics-dashboard.pages.dev` alias reaches the same deployment around it. `src/hooks.server.ts` verifies the
   Access JWT on every server-handled request and 403s otherwise; every failure path must fail closed. Never gate on the
   spoofable `cf-access-authenticated-user-email` header. Details: `src/lib/server/access-jwt.ts`.
+- **Write `{#if source.ok}` with the error state in `{:else}`, never the inverse.** Inverted, the Svelte ESLint parser
+  loses the narrowing and every read off `source.data` becomes an unsafe-member-access error that looks like missing
+  prop types. Flipping the branch is the fix, not an `any`. Why: `DETAILS.md`.
 - **Don't import `$lib/server/*` as a runtime value into browser-bundled code** (components, route `.svelte` files).
   Type-only imports are fine. A runtime-value import trips `vite-plugin-sveltekit-guard` at BUILD time, and
   **`svelte-check` does NOT catch it**, so run `pnpm build` (not just `pnpm check`) after touching imports across the
   boundary. Client-shared runtime values live outside `$lib/server`: `$lib/funnel.ts`, `$lib/feedback-and-errors.ts`,
   `$lib/link-codes.ts`, `$lib/format.ts`, `$lib/colors.ts`, `$lib/chart-helpers.ts`.
-- **Every data source must go behind the 20s `withTimeout` cap in `fetch-all.ts`.** Workers `fetch` has no built-in
-  timeout, so without the cap one hung upstream stalls the whole `Promise.all` until Cloudflare returns a 524 at 100s.
-  Each source returns `SourceResult<T>` (ok+data, or an error string the UI shows as "Couldn't load this data"); results
-  are cached via `cache.ts` (5 min for 24h/7d, 1 hour for 30d). The page server calls all sources in parallel.
+- **Every data source must go behind the 20s `withTimeout` cap in `fetch-all.ts`.** Workers `fetch` has no timeout, so
+  one hung upstream otherwise stalls the whole `Promise.all` until Cloudflare's 524 at 100s. Sources run in parallel,
+  return `SourceResult<T>`, and cache via `cache.ts`. Details: `DETAILS.md`.
 - **The admin token (`LICENSE_SERVER_ADMIN_TOKEN`) stays server-side.** `/links` and the worker-backed sources resolve
   it in `+page.server.ts` only; the browser bundle gets only rows and a load-error string. `pnpm build` confirms nothing
   token-bearing leaks past the boundary.
@@ -50,12 +52,11 @@ All API keys stay server-side, proxied via `+server.ts` / `+page.server.ts`.
   this" and "this was zero" mean different things. Every source is best-effort and independent.
 - **One color means one property across the whole dashboard** (metric dots, chart strokes and fills). Keep it when
   adding UI; the palette and what each color stands for is in `DETAILS.md`.
-- **No new dashboard env vars** for the funnel: it reuses the worker admin token, Umami creds, and Paddle key already
-  present (Listmonk signups are sourced inside the api-server, so no Listmonk secret reaches the dashboard).
+- **The funnel needs no new env vars:** it reuses the worker admin token, Umami creds, and Paddle key already present
+  (Listmonk signups come via the api-server, so no Listmonk secret reaches the dashboard).
 
-Local dev reads env vars via SvelteKit's `$env/dynamic/private` when `platform?.env` is undefined (CF Pages
-`platform.env` only exists when deployed). Copy `.env.example` to `.env`; values containing `$` must use `\$`.
-`pnpm dev:dashboard` serves on `http://localhost:4830`.
+Local dev: `pnpm dev:dashboard` serves on port 4830, reading `.env` (copy `.env.example`; escape a literal `$` as
+`\$`). Env resolution and the full variable list: `DETAILS.md`.
 
 Full details (multi-page structure, data-loading split, link-codes CRUD, selection state, componentization, the data
 source list, decision rationale, env-var list, local QA against a local worker, deployment): `DETAILS.md`.

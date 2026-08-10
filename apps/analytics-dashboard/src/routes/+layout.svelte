@@ -7,15 +7,17 @@
 -->
 <script lang="ts">
     import '../app.css'
+    import type { LayoutProps } from './$types'
     import { page } from '$app/state'
+    import { resolve } from '$app/paths'
     import { formatTime } from '$lib/format.js'
 
-    const { children, data } = $props()
+    const { children, data }: LayoutProps = $props()
 
     const navItems = [
-        { href: '/', label: 'Acquisition' },
-        { href: '/product', label: 'Product' },
-        { href: '/links', label: 'Link codes' },
+        { href: resolve('/'), label: 'Acquisition' },
+        { href: resolve('/product'), label: 'Product' },
+        { href: resolve('/links'), label: 'Link codes' },
     ]
 
     /** The relative ranges shown as picker buttons, in display order. `day` is set via the date input. */
@@ -59,7 +61,7 @@
         <div class="flex items-center gap-6">
             <h1 class="text-lg font-bold text-text-primary">Cmdr analytics</h1>
             <nav class="flex items-center gap-1">
-                {#each navItems as item}
+                {#each navItems as item (item.href)}
                     {@const active = pathname === item.href}
                     <a
                         href={item.href}
@@ -76,7 +78,7 @@
         {#if showPicker}
             <div class="flex items-center gap-3">
                 <div class="flex rounded-lg border border-border bg-surface p-0.5">
-                    {#each rangeButtons as r}
+                    {#each rangeButtons as r (r)}
                         <button
                             onclick={() => { selectRange(r); }}
                             class="rounded-md px-3 py-1 text-sm font-medium transition-colors

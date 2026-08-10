@@ -37,9 +37,7 @@
             'id. Both are low-volume, so a short window can look empty even when things are fine.'}
     />
 
-    {#if !feedbackAndErrors.ok}
-        <ErrorState error={feedbackAndErrors.error} {selection} />
-    {:else}
+    {#if feedbackAndErrors.ok}
         {@const fe = feedbackAndErrors.data}
         {@const awaitingReply = countFeedbackWithReplyTo(fe.feedback)}
         {@const errorsPerDay = errorReportsByDay(fe.errorReports)}
@@ -91,7 +89,7 @@
             <div class="mt-4">
                 <h3 class="mb-2 text-sm font-medium text-text-secondary">Recent feedback</h3>
                 <div class="space-y-2">
-                    {#each fe.feedback.slice(0, 15) as msg}
+                    {#each fe.feedback.slice(0, 15) as msg (msg.id)}
                         <div class="rounded-lg border border-border-subtle bg-surface-elevated px-3 py-2">
                             <p class="whitespace-pre-wrap text-sm text-text-primary">{msg.feedback}</p>
                             <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
@@ -129,7 +127,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {#each fe.errorReports.slice(0, 15) as report}
+                            {#each fe.errorReports.slice(0, 15) as report (report.id)}
                                 <tr class="border-b border-border-subtle/50">
                                     <td class="py-1.5 pr-4 font-mono text-text-primary">{report.id}</td>
                                     <td class="py-1.5 pr-4 text-text-secondary">{report.kind}</td>
@@ -144,5 +142,7 @@
         {/if}
 
         <ExternalLinks links={[{ label: 'View bundles in Cloudflare R2', href: 'https://dash.cloudflare.com' }]} />
+    {:else}
+        <ErrorState error={feedbackAndErrors.error} {selection} />
     {/if}
 </section>

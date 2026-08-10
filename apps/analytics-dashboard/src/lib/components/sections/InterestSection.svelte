@@ -34,10 +34,7 @@
     />
 
     {#if !umami.ok && !posthog.ok}
-        <ErrorState
-            error={[!umami.ok ? umami.error : '', !posthog.ok ? posthog.error : ''].filter(Boolean).join('; ')}
-            {selection}
-        />
+        <ErrorState error={[umami.error, posthog.error].filter(Boolean).join('; ')} {selection} />
     {:else}
         <div class="space-y-4">
             {#if umami.ok}

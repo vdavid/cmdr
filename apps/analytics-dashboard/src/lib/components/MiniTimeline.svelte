@@ -79,7 +79,7 @@
     }
 
     function createChart() {
-        if (!container || data[0].length === 0) return
+        if (data[0].length === 0) return
         chart?.destroy()
         chart = new uPlot(buildOpts(container.clientWidth), data, container)
         if (xMin != null && xMax != null) {
@@ -104,7 +104,7 @@
     $effect(() => {
         void data
         void maxY
-        if (container) createChart()
+        createChart()
     })
 
     $effect(() => {

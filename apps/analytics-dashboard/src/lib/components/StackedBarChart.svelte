@@ -40,7 +40,7 @@
 
 <div class="w-full">
     <div class="flex items-end gap-px" style="height: {height}px;" role="group" aria-label="Daily {unitLabel} by category">
-        {#each days as day, dayIdx}
+        {#each days as day, dayIdx (day)}
             {@const total = dayTotals[dayIdx]}
             <button
                 type="button"
@@ -58,7 +58,7 @@
                         ? 'opacity-100'
                         : ''}"
                 ></span>
-                {#each series as s}
+                {#each series as s (s.key)}
                     {@const value = s.values[dayIdx] ?? 0}
                     {#if value > 0}
                         <span
@@ -73,7 +73,7 @@
 
     <!-- X-axis labels -->
     <div class="mt-1 flex gap-px">
-        {#each days as day, dayIdx}
+        {#each days as day, dayIdx (day)}
             <div class="flex-1 text-center text-[9px] tabular-nums text-text-tertiary">
                 {dayIdx % labelEvery === 0 ? shortDay(day) : ''}
             </div>
@@ -82,7 +82,7 @@
 
     <!-- Legend -->
     <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-        {#each series as s}
+        {#each series as s (s.key)}
             <div class="flex items-center gap-1.5 text-xs text-text-secondary">
                 <span class="inline-block h-2.5 w-2.5 rounded-sm" style="background-color: {s.color};"></span>
                 {s.label}
@@ -99,7 +99,7 @@
                 <span class="ml-2 tabular-nums text-text-secondary">{dayTotals[dayIdx]} {unitLabel}</span>
             </p>
             <div class="flex flex-col gap-0.5">
-                {#each series as s}
+                {#each series as s (s.key)}
                     {@const value = s.values[dayIdx] ?? 0}
                     <div class="flex items-center justify-between gap-4 text-xs">
                         <span class="flex items-center gap-1.5 text-text-secondary">

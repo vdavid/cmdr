@@ -37,7 +37,7 @@
 
     /** Format a D7 retention fraction as a percent, or an en dash when unknown (null / young cohort). */
     function funnelPercent(fraction: number | null): string {
-        return fraction === null ? '–' : `${Math.round(fraction * 100)}%`
+        return fraction === null ? '–' : `${String(Math.round(fraction * 100))}%`
     }
 </script>
 
@@ -53,9 +53,7 @@
         caveat={"All days are UTC, and today's row is partial (it's still going). A dash means we couldn't get that cell " +
             '(not a zero). Click a day to filter the sections below to it.'}
     />
-    {#if !funnel.ok}
-        <ErrorState error={funnel.error} {selection} />
-    {:else}
+    {#if funnel.ok}
         {@const rows = funnel.data.rows}
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -191,5 +189,7 @@
                 />
             {/if}
         </div>
+    {:else}
+        <ErrorState error={funnel.error} {selection} />
     {/if}
 </section>

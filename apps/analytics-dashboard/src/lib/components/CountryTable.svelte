@@ -40,8 +40,7 @@
             </tr>
         </thead>
         <tbody>
-            {#each countries as item}
-                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+            {#each countries as item (item.x)}
                 <tr
                     class="border-b border-border-subtle/50"
                     onmouseenter={(e: MouseEvent) => {
@@ -75,7 +74,7 @@
 
         {#if arches.length > 0}
             <p class="mb-1 text-xs text-text-tertiary">By architecture</p>
-            {#each arches as arch}
+            {#each arches as arch (arch.x)}
                 {@const td = buildTimeline(countryRows.filter((r) => r.arch === arch.x), allDays, allTimestamps)}
                 <div class="mb-1">
                     <div class="flex items-baseline justify-between text-xs">
@@ -89,7 +88,7 @@
 
         {#if countryVersions.length > 0}
             <p class="mt-2 mb-1 text-xs text-text-tertiary">By version</p>
-            {#each countryVersions as ver}
+            {#each countryVersions as ver (ver.x)}
                 {@const td = buildTimeline(countryRows.filter((r) => r.version === ver.x), allDays, allTimestamps)}
                 <div class="mb-1">
                     <div class="flex items-baseline justify-between text-xs">

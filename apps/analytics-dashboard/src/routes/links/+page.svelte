@@ -5,11 +5,12 @@
   and never reaches the browser. The layout hides the range/day picker here.
 -->
 <script lang="ts">
+    import type { PageProps } from './$types'
     import { enhance } from '$app/forms'
     import SectionDescription from '$lib/components/SectionDescription.svelte'
     import { exampleLink, isValidCode, type LinkCodeRow } from '$lib/link-codes.js'
 
-    const { data, form } = $props()
+    const { data, form }: PageProps = $props()
 
     /** The form's working values. Editing a row copies its values in; saving or canceling clears it. */
     let code = $state('')
@@ -102,7 +103,7 @@
             use:enhance={() =>
                 ({ update }) =>
                     update({ reset: false }).then(() => {
-                        if (form?.action === 'save' && form?.saved) resetForm()
+                        if (form?.action === 'save' && form.saved) resetForm()
                     })}
             class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"
         >

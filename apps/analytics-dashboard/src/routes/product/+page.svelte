@@ -3,12 +3,13 @@
   picker and nav live in the layout; this page renders the four sections from its own loaded subset.
 -->
 <script lang="ts">
+    import type { PageProps } from './$types'
     import ActiveUseSection from '$lib/components/sections/ActiveUseSection.svelte'
     import PaymentSection from '$lib/components/sections/PaymentSection.svelte'
     import RetentionSection from '$lib/components/sections/RetentionSection.svelte'
     import FeedbackErrorsSection from '$lib/components/sections/FeedbackErrorsSection.svelte'
 
-    const { data } = $props()
+    const { data }: PageProps = $props()
 </script>
 
 <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">

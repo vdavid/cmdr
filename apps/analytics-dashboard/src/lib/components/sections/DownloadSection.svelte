@@ -18,7 +18,6 @@
     } from '$lib/chart-helpers.js'
     import { formatNumber, formatCountry } from '$lib/format.js'
     import { COLOR_GOLD } from '$lib/colors.js'
-    import Chart from '$lib/components/Chart.svelte'
     import MiniTimeline from '$lib/components/MiniTimeline.svelte'
     import PieChart from '$lib/components/PieChart.svelte'
     import StackedBarChart from '$lib/components/StackedBarChart.svelte'
@@ -92,10 +91,7 @@
     />
 
     {#if !cloudflare.ok && !github.ok}
-        <ErrorState
-            error={[!cloudflare.ok ? cloudflare.error : '', !github.ok ? github.error : ''].filter(Boolean).join('; ')}
-            {selection}
-        />
+        <ErrorState error={[cloudflare.error, github.error].filter(Boolean).join('; ')} {selection} />
     {:else}
         <div class="space-y-4">
             {#if cloudflare.ok}
@@ -145,7 +141,7 @@
                     >
                         <div>
                             <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>
-                            {#each versions as version}
+                            {#each versions as version (version.x)}
                                 {@const timelineData = buildTimeline(
                                     cf.downloads.filter((r) => r.version === version.x),
                                     allDays,
@@ -268,7 +264,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {#each github.data.releases.slice(0, 5) as release}
+                                {#each github.data.releases.slice(0, 5) as release (release.tagName)}
                                     <tr class="border-b border-border-subtle/50">
                                         <td class="py-1.5 pr-4 text-text-primary">{release.tagName}</td>
                                         <td class="py-1.5 text-right tabular-nums text-text-secondary"

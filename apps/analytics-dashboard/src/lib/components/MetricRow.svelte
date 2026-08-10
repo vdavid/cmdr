@@ -11,7 +11,7 @@
 </script>
 
 <div class="flex flex-wrap gap-6">
-    {#each metrics as metric}
+    {#each metrics as metric (metric.label)}
         <div>
             <p class="flex items-center gap-1.5 text-xs text-text-tertiary">
                 {#if metric.color}

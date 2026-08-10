@@ -41,9 +41,7 @@
             'anyone who opts out of analytics are excluded.'}
     />
 
-    {#if !cloudflare.ok}
-        <ErrorState error={cloudflare.error} {selection} />
-    {:else}
+    {#if cloudflare.ok}
         {@const cf = cloudflare.data}
         {@const dau = cf.heartbeatDau}
         {@const latestDau = dau.length > 0 ? dau[dau.length - 1].dau : 0}
@@ -108,5 +106,7 @@
         {/if}
 
         <ExternalLinks links={[{ label: 'View in Cloudflare', href: 'https://dash.cloudflare.com' }]} />
+    {:else}
+        <ErrorState error={cloudflare.error} {selection} />
     {/if}
 </section>

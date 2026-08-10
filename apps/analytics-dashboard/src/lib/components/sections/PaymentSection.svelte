@@ -23,9 +23,7 @@
             'present.'}
     />
 
-    {#if !paddle.ok}
-        <ErrorState error={paddle.error} {selection} />
-    {:else}
+    {#if paddle.ok}
         {@const p = paddle.data}
         {@const totalRevenue = p.transactions.reduce((sum, t) => sum + Number(t.total), 0)}
         {@const currency = p.transactions[0]?.currencyCode ?? 'USD'}
@@ -51,7 +49,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {#each p.transactions.slice(0, 10) as txn}
+                            {#each p.transactions.slice(0, 10) as txn (txn.id)}
                                 <tr class="border-b border-border-subtle/50">
                                     <td class="py-1.5 pr-4 tabular-nums text-text-primary">{txn.createdAt.split('T')[0]}</td>
                                     <td class="py-1.5 pr-4 text-text-secondary">{txn.status}</td>
@@ -69,5 +67,7 @@
         {/if}
 
         <ExternalLinks links={[{ label: 'View in Paddle', href: 'https://vendors.paddle.com' }]} />
+    {:else}
+        <ErrorState error={paddle.error} {selection} />
     {/if}
 </section>

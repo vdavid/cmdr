@@ -37,7 +37,8 @@
     const defaultColors = ['#ffc206', '#a1a1aa', '#8b5cf6', '#10b981']
 
     function colorAt(i: number): string {
-        return colors[i] ?? defaultColors[i] ?? '#a1a1aa'
+        // `.at()` rather than `[i]`: the index can run past either array, and only `.at()` says so in the type.
+        return colors.at(i) ?? defaultColors.at(i) ?? '#a1a1aa'
     }
 
     function handleWheel(e: WheelEvent) {
@@ -128,7 +129,7 @@
     }
 
     function createChart() {
-        if (!container || data[0].length === 0) return
+        if (data[0].length === 0) return
         chart?.destroy()
         const opts = buildOpts(container.clientWidth)
         chart = new uPlot(opts, data, container)
@@ -155,7 +156,7 @@
     // Recreate chart when data changes
     $effect(() => {
         void data
-        if (container) createChart()
+        createChart()
     })
 
     // Apply zoom when it changes
@@ -166,5 +167,4 @@
     })
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div bind:this={container} class="w-full" onwheel={handleWheel}></div>

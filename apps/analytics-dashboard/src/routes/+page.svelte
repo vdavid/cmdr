@@ -4,12 +4,14 @@
   funnel's row-click "filter to this day". Each section is its own component under `$lib/components`.
 -->
 <script lang="ts">
+    import type { PageProps } from './$types'
+    import type { TimeRange } from '$lib/server/types.js'
     import FunnelTable from '$lib/components/FunnelTable.svelte'
     import AwarenessSection from '$lib/components/sections/AwarenessSection.svelte'
     import InterestSection from '$lib/components/sections/InterestSection.svelte'
     import DownloadSection from '$lib/components/sections/DownloadSection.svelte'
 
-    const { data } = $props()
+    const { data }: PageProps = $props()
 
     /** True when a single specific UTC day is selected (vs a relative range). */
     const isDaySelected = $derived(data.selection.range === 'day')
@@ -19,7 +21,12 @@
     const todayIso = new Date().toISOString().slice(0, 10)
 
     /** Time range in seconds per relative range, the default zoom window for the star charts. */
-    const rangeSeconds: Record<string, number> = { today: 86400, '24h': 86400, '7d': 7 * 86400, '30d': 30 * 86400 }
+    const rangeSeconds: Partial<Record<TimeRange, number>> = {
+        today: 86400,
+        '24h': 86400,
+        '7d': 7 * 86400,
+        '30d': 30 * 86400,
+    }
     const starChartXMin = $derived(Date.now() / 1000 - (rangeSeconds[data.selection.range] ?? 7 * 86400))
 
     /** Filter the dashboard to a specific UTC day (funnel row click), staying on this page. */

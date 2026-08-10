@@ -48,6 +48,10 @@ The funnel is always 30 days (`fetchFunnelData` ignores the selection); it's sti
 Umami and Paddle degrading to dashes inside. Each source returns `SourceResult<T>` (ok+data, or an error string the UI
 shows as "Couldn't load this data").
 
+The 20s cap is load-bearing, not belt-and-braces: Workers `fetch` has no built-in timeout, so without it a single hung
+upstream stalls the whole `Promise.all` until Cloudflare gives up with a 524 at 100 seconds, taking the entire page down
+over one slow third party. Results cache via `cache.ts`: 5 minutes for the 24h and 7d ranges, 1 hour for 30d.
+
 ### The Cloudflare source is shared by both pages
 
 `fetchCloudflareData` returns `downloads` (Download section, on `/`) AND `heartbeatDau` + `updateActivity` (Active use,
@@ -188,6 +192,10 @@ curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
   "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps"
 ```
 
+`resolveEnv` reads from `platform.env` when deployed and falls back to SvelteKit's `$env/dynamic/private` otherwise:
+CF Pages only populates `platform.env` on a real deployment, so local dev would see nothing without the fallback. Copy
+`.env.example` to `.env` and escape a literal `$` as `\$`.
+
 All env vars are CF Pages secrets, never in code:
 
 - `UMAMI_API_URL`: `https://anal.veszelovszki.com`. `UMAMI_USERNAME` / `UMAMI_PASSWORD`: Umami credentials.
@@ -208,6 +216,27 @@ association from one section to the next:
 - Purple (`#a78bfa`): vdavid/mtp-rs, the library repo.
 - Autumn green (`#8faa3b`): veszelovszki.com, the personal site.
 - Cyan (`#22d3ee`): getprvw.com, the Prvw product site.
+
+## Write `{#if source.ok}`, never `{#if !source.ok}`
+
+Every section renders a `SourceResult<T>`, which is a discriminated union on `ok`. Put the happy path in the `{#if}`
+branch and the error state in `{:else}`:
+
+```svelte
+{#if source.ok}
+  {@const data = source.data}
+  ...
+{:else}
+  <ErrorState message={source.error} />
+{/if}
+```
+
+Inverted, `svelte-eslint-parser` narrows the union correctly inside `{#if !source.ok}` but loses the negated narrowing
+in the `{:else}`, so `source.data` resolves to an error type and every read off it cascades into
+`@typescript-eslint/no-unsafe-member-access`. The two forms are behavior-identical, so this costs nothing. It's worth
+knowing because the failure looks like "the props are untyped" and invites a bogus fix (an `any`, or a type assertion);
+flipping the branch is the actual fix. Six sections were written inverted, and flipping them cleared about 200 of the
+270 lint errors the app had when ESLint was introduced.
 
 ## Tooling
 

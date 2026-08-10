@@ -14,6 +14,11 @@
 
     const total = $derived(slices.reduce((sum, s) => sum + s.value, 0))
 
+    /** SVG path coordinates: `d` is a string attribute, so every number goes in as text. */
+    function n(value: number): string {
+        return String(value)
+    }
+
     const arcs = $derived.by(() => {
         let angle = -Math.PI / 2
         return slices.map((slice, i) => {
@@ -26,7 +31,7 @@
 
             let path: string
             if (frac >= 0.9999) {
-                path = `M ${cx},${cy - r} A ${r},${r} 0 1,1 ${cx - 0.01},${cy - r} Z`
+                path = `M ${n(cx)},${n(cy - r)} A ${n(r)},${n(r)} 0 1,1 ${n(cx - 0.01)},${n(cy - r)} Z`
             } else if (frac <= 0.0001) {
                 path = ''
             } else {
@@ -35,7 +40,7 @@
                 const x2 = cx + r * Math.cos(end)
                 const y2 = cy + r * Math.sin(end)
                 const large = sweep > Math.PI ? 1 : 0
-                path = `M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 ${large},1 ${x2},${y2} Z`
+                path = `M ${n(cx)},${n(cy)} L ${n(x1)},${n(y1)} A ${n(r)},${n(r)} 0 ${n(large)},1 ${n(x2)},${n(y2)} Z`
             }
 
             const result = {
@@ -53,7 +58,7 @@
 
 <div>
     <svg viewBox="0 0 100 100" width={size} height={size} role="img" class="pointer-events-none">
-        {#each arcs as arc}
+        {#each arcs as arc (arc.label)}
             {#if arc.path}
                 <path
                     d={arc.path}
@@ -65,7 +70,7 @@
         {/each}
     </svg>
     <div class="mt-1 space-y-px">
-        {#each arcs as arc}
+        {#each arcs as arc (arc.label)}
             <div class="flex items-center gap-1.5 text-xs leading-tight">
                 <span style="color: {arc.color}" class="text-[10px]">●</span>
                 <span class="text-text-secondary">{arc.label}</span>

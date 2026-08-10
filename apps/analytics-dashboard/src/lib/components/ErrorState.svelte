@@ -12,5 +12,8 @@
 <div class="rounded-lg border border-border-subtle bg-surface-elevated px-4 py-6 text-center">
     <p class="text-sm text-text-secondary">Couldn't load this data</p>
     <p class="mt-1 text-xs text-text-tertiary">{error}</p>
+    <!-- The retry link keeps the current path and swaps only the query, and `resolve()` takes a literal
+         route, so there's no way to express a page-relative query-only href it accepts. -->
+    <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
     <a href={tryAgainHref} class="mt-2 inline-block text-xs text-accent hover:text-accent-hover"> Try again </a>
 </div>

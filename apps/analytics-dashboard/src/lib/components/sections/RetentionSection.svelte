@@ -25,9 +25,7 @@
             "the Active use section and the funnel's D7)."}
     />
 
-    {#if !paddle.ok}
-        <ErrorState error={paddle.error} {selection} />
-    {:else}
+    {#if paddle.ok}
         {@const p = paddle.data}
         {@const statusEntries = Object.entries(p.subscriptionsByStatus)}
         {@const totalSubs = statusEntries.reduce((sum, entry) => sum + entry[1], 0)}
@@ -56,5 +54,7 @@
         {/if}
 
         <ExternalLinks links={[{ label: 'View in Paddle', href: 'https://vendors.paddle.com' }]} />
+    {:else}
+        <ErrorState error={paddle.error} {selection} />
     {/if}
 </section>
