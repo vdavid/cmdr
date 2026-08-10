@@ -30,11 +30,17 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>You can use Cmdr for free for personal, non-commercial purposes</li>
         <li>Commercial use requires a paid license</li>
         <li>
-            Each version converts to AGPL-3.0 on 2029-01-10, or on the fourth anniversary of that version's first
-            public release, whichever comes first. So in case we're hit by a bus, you'll still get the code and can
-            maintain and continue it under AGPL.
+            Each version converts to AGPL-3.0 on the Change Date in that version's LICENSE file, which the BSL caps at
+            four years after the version's release. The version shipping today converts on 2029-01-10. So in case we're
+            hit by a bus, you'll still get the code and can maintain and continue it under AGPL.
         </li>
     </ul>
+
+    <p>
+        Two documents are in play. The LICENSE file in the source governs the source code and what you may do with
+        builds you make yourself. These terms govern the official signed app we distribute, your paid license, and
+        everything else between you and us. Where the two differ about the source code, the LICENSE wins.
+    </p>
 
     <h3>Personal use (free)</h3>
     <p>You may use Cmdr for free if:</p>
@@ -80,9 +86,16 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <ul>
         <li>Share your license key with others or use it on behalf of multiple people</li>
         <li>Redistribute the official signed Cmdr binary commercially or claim it as your own product</li>
-        <li>Circumvent or tamper with the licensing system in the official binary</li>
+        <li>
+            Circumvent or tamper with the licensing system in the official signed binary, or use a build with the
+            licensing removed for commercial work (the BSL still lets you modify the source and use your own build
+            non-productively)
+        </li>
         <li>Use Cmdr for any illegal activities</li>
-        <li>Attempt to reverse engineer our license key signing infrastructure</li>
+        <li>
+            Attack or reverse engineer our license key signing servers. Studying Cmdr's own source, and the
+            decompilation rights your local law gives you for interoperability, aren't affected.
+        </li>
     </ul>
     <p>
         <strong>Fair use:</strong> Each license is meant for the single person using it, on their own devices. We don't set
@@ -90,7 +103,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         we spot a pattern that looks like key sharing rather than one person with a few computers, we'll write to you
         first and explain what we're seeing. If we still believe the key is being shared after that, we may suspend it,
         and if you've paid for it we'll refund the unused part. If you think we've got it wrong, tell us and we'll
-        reinstate it.
+        take another look.
     </p>
     <p>
         These restrictions exist to protect the sustainability of the project. We're a small team, and license revenue
@@ -131,12 +144,12 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>
             The data-writing paths carry a large automated test suite, including deliberately hostile cases: a transfer
             killed partway through, a device disconnected mid-copy, a backend that fails on demand, and cancels and
-            rollbacks at every stage. Free space is checked before an operation starts.
+            rollbacks at every stage. Where the OS can tell us, free space is checked before an operation starts.
         </li>
     </ul>
     <p>
-        This describes how we build Cmdr and how we intend to keep building it. Please hold us to it. It isn't a
-        warranty that nothing will ever go wrong.
+        This describes how Cmdr works today and how we intend to keep building it. Features change, so the app itself is
+        the authority on how it behaves right now, not this page. It isn't a warranty that nothing will ever go wrong.
     </p>
 
     <h3>Please keep backups</h3>
@@ -222,8 +235,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <strong>What we won't do is talk you out of rights you already have.</strong> In many countries the law
         guarantees that software you buy is of acceptable quality, fit for its ordinary purpose, and matches how it was
         described. Nothing here removes that. If Cmdr doesn't work the way software of this kind should, you can ask us
-        to fix it, and if we can't or don't within a reasonable time, you can ask for a price reduction or your money
-        back. In Sweden that comes from konsumentköplagen (2022:260); elsewhere in the EU
+        to fix it. If we can't or don't within a reasonable time, you can ask for a price reduction or your money back,
+        and because Paddle is the seller we'll arrange that with them for you rather than sending you off to chase it. In Sweden that comes from konsumentköplagen (2022:260); elsewhere in the EU
         it's your country's version of the digital content rules; and Australia, the UK, Canada, and many US states have
         their own. Those rights apply in full.
     </p>
@@ -256,8 +269,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>Death or personal injury</li>
         <li>
             Anything that mandatory product liability law makes us liable for, including Swedish product liability law
-            and the EU product liability rules. From 2026-12-09, those rules treat software as a product and treat
-            destroyed or corrupted personal files as compensable damage, and they can't be limited by agreement. Being
+            and the EU product liability rules. For versions we release after 2026-12-09, those rules treat software as
+            a product and treat destroyed or corrupted personal files as compensable damage, and they can't be limited
+            by agreement. Being
             source-available doesn't exempt us: the open-source carve-out only covers software supplied outside a
             commercial activity.
         </li>
@@ -267,8 +281,10 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 
     <h3>Lost or damaged files</h3>
     <p>
-        If a defect in Cmdr destroys or corrupts your files, we're liable for that under the law, and nothing in these
-        terms limits it.
+        If a defect in Cmdr destroys or corrupts files you keep for personal reasons, we're liable for that under
+        product liability law, and nothing in these terms limits it. If you're using Cmdr for work, product liability
+        law doesn't cover work data, and the limits under "Everything else" and "If you're using Cmdr for work" apply
+        instead.
     </p>
     <p>
         One thing worth understanding about how compensation works: the loss is what it actually costs you to get your
@@ -288,18 +304,20 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         we've been grossly negligent or acted deliberately, none of this applies and we're liable in full.
     </p>
     <p>
-        Everything under "What we're responsible for no matter what" sits outside any cap, including damage to your
-        files. Where a cap is allowed, our total liability is limited to the greater of USD 100 or what you paid for
-        your Cmdr license through Paddle, our reseller.
+        Everything under "What we're responsible for no matter what" sits outside any cap. Where a cap is allowed, our
+        total liability for all claims together is limited to what you paid for your Cmdr license through Paddle, our
+        reseller, in the 12 months before the claim. That's a ceiling on what we can owe, not an amount we're promising
+        to pay.
     </p>
     <h3>If you're using Cmdr for work</h3>
     <p>
         A commercial license is a business purchase in most places, and in most places that means consumer protection
         rules don't apply to it. Some countries disagree, and where they do, their rules win: Australia treats anyone
         paying under AUD 100,000 for goods as a consumer, so Australian licensees keep the full consumer guarantees. Consumer rules also follow how you're actually using Cmdr, not which license you
-        bought, and in some places (Quebec) on whether you're a business at all rather than an employee of one. Where consumer rules genuinely don't apply, our total liability is limited to the greater of USD 100 or
-        what you've paid for your Cmdr license, and we're not liable for lost profits, lost revenue, business
-        interruption, or the cost of reconstructing lost data. Everything at the top of this section still stands, and
+        bought, and in some places (Quebec) on whether you're a business at all rather than an employee of one. Where
+        consumer rules genuinely don't apply, our total liability is limited to what you've paid for your Cmdr license
+        in the 12 months before the claim, and we're not liable for lost profits, lost revenue, business interruption,
+        or the cost of reconstructing lost data. Everything at the top of this section still stands, and
         if you're a person rather than a company, your rights under product liability law aren't affected by any of
         this.
     </p>
@@ -307,11 +325,12 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <h2>9. Changes to these terms</h2>
     <p>
         We may update these terms when the law changes, when Cmdr changes in a way the terms need to describe, or to fix
-        something unclear. We'll tell you at least 30 days ahead by email if you hold a license, and post a notice on the
-        website.
+        something unclear. Whenever a change reduces your rights or adds an obligation, we'll tell you at least 30 days
+        ahead by email if you hold a license, and post a notice on the website. Corrections that don't change what
+        either of us owes take effect when we post them.
     </p>
     <p>
-        If a change makes things worse for you and you don't want it, tell us within 30 days. If you're on a
+        If a change reduces your rights and you don't want it, tell us within 30 days. If you're on a
         subscription, you can cancel and we'll refund the unused part. If you bought a perpetual license, you keep the
         terms you bought under.
     </p>
