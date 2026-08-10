@@ -122,52 +122,63 @@ pub(super) struct StrategyCopyOutcome {
     pub already_durable: bool,
 }
 
-/// Copies file contents using the best strategy for the source/destination combination.
+/// How the bytes of one local file get from source to destination.
 ///
-/// On macOS, uses `copyfile(3)` only for same-APFS-volume copies (APFS clonefile: instant,
-/// zero-cost copy-on-write). All other cases use chunked copy for reliable cancellation and
-/// progress reporting.
-#[cfg(target_os = "macos")]
-pub(super) fn copy_file_with_strategy(
-    source: &Path,
-    dest: &Path,
-    needs_safe_overwrite: bool,
-    cancelled: &Arc<AtomicU8>,
-    progress_callback: Option<ChunkedCopyProgressFn>,
-) -> Result<StrategyCopyOutcome, WriteOperationError> {
-    if is_same_apfs_volume(source, dest) {
-        log::debug!(
-            "copy_file_with_strategy: same APFS volume, using copyfile for clonefile (src={}, dest={})",
-            source.display(),
-            dest.display()
-        );
-        let context = CopyProgressContext::with_cancellation(Arc::clone(cancelled));
-        let bytes = if needs_safe_overwrite {
-            safe_overwrite_file(source, dest, Some(&context))?
+/// Naming the choice (rather than branching inline) splits "which mechanism
+/// fits this source/destination pair" from "run it", so the landing discipline
+/// around the write is written once instead of once per branch — and so a test
+/// can exercise a mechanism this machine's filesystems would never select.
+/// Each platform carries only the variants it can actually pick.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum LocalCopyStrategy {
+    /// `copyfile(3)` with `COPYFILE_CLONE`: an instant APFS clone, only
+    /// possible within one APFS volume.
+    #[cfg(target_os = "macos")]
+    AppleClone,
+    /// A userspace 1 MiB read/write loop that checks cancellation between
+    /// chunks. The fallback wherever a kernel-side copy isn't available or
+    /// isn't cancellable in time (network mounts, non-APFS or cross-volume
+    /// destinations).
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    Chunked,
+    /// `copy_file_range(2)`: kernel-side, and a reflink on btrfs/XFS.
+    #[cfg(target_os = "linux")]
+    KernelCopyRange,
+    /// `std::fs::copy`, for platforms with neither of the above.
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    StdCopy,
+}
+
+/// Picks the mechanism for copying `source` to `dest`.
+///
+/// The only reason to prefer a platform-native API is filesystem-level cloning;
+/// everywhere else the chunked loop is equivalent in speed and strictly better
+/// for progress and cancellation. See the module docs.
+pub(super) fn select_local_copy_strategy(source: &Path, dest: &Path) -> LocalCopyStrategy {
+    #[cfg(target_os = "macos")]
+    {
+        if is_same_apfs_volume(source, dest) {
+            LocalCopyStrategy::AppleClone
         } else {
-            copy_single_file_native(source, dest, false, Some(&context))?
-        };
-        // Clonefile shares CoW extents with the source: flushing is moot.
-        Ok(StrategyCopyOutcome {
-            bytes,
-            already_durable: true,
-        })
-    } else {
-        log::debug!(
-            "copy_file_with_strategy: different volumes or non-APFS, using chunked copy (src={}, dest={})",
-            source.display(),
-            dest.display()
-        );
-        // Chunked copy `sync_data`s the file itself before returning.
-        let bytes = chunked_copy_with_metadata(source, dest, cancelled, progress_callback)?;
-        Ok(StrategyCopyOutcome {
-            bytes,
-            already_durable: true,
-        })
+            LocalCopyStrategy::Chunked
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if is_network_filesystem(source) || is_network_filesystem(dest) {
+            LocalCopyStrategy::Chunked
+        } else {
+            LocalCopyStrategy::KernelCopyRange
+        }
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    {
+        let _ = (source, dest);
+        LocalCopyStrategy::StdCopy
     }
 }
 
-#[cfg(target_os = "linux")]
+/// Copies file contents using the best strategy for the source/destination combination.
 pub(super) fn copy_file_with_strategy(
     source: &Path,
     dest: &Path,
@@ -175,56 +186,82 @@ pub(super) fn copy_file_with_strategy(
     cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<StrategyCopyOutcome, WriteOperationError> {
-    if is_network_filesystem(source) || is_network_filesystem(dest) {
-        log::debug!(
-            "copy_file_with_strategy: using chunked copy for network path (src={}, dest={})",
-            source.display(),
-            dest.display()
-        );
-        // Chunked copy `sync_data`s the file itself before returning.
-        let bytes = chunked_copy_with_metadata(source, dest, cancelled, progress_callback)?;
-        Ok(StrategyCopyOutcome {
-            bytes,
-            already_durable: true,
-        })
-    } else if needs_safe_overwrite {
-        // `safe_overwrite_file` uses `std::fs::copy` on Linux, which leaves the
-        // bytes in the page cache; the caller flushes in the end-of-op pass.
-        let bytes = safe_overwrite_file(source, dest)?;
-        Ok(StrategyCopyOutcome {
-            bytes,
-            already_durable: false,
-        })
-    } else {
-        // `copy_file_range(2)` doesn't flush (and reflink shares CoW extents,
-        // but we can't cheaply tell here), so the caller flushes the dest.
-        let bytes = copy_single_file_linux(source, dest, false, cancelled, progress_callback)?;
-        Ok(StrategyCopyOutcome {
-            bytes,
-            already_durable: false,
-        })
-    }
+    let strategy = select_local_copy_strategy(source, dest);
+    log::debug!(
+        "copy_file_with_strategy: {strategy:?} (src={}, dest={})",
+        source.display(),
+        dest.display()
+    );
+    copy_file_using(strategy, source, dest, needs_safe_overwrite, cancelled, progress_callback)
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-pub(super) fn copy_file_with_strategy(
+/// [`copy_file_with_strategy`] with the mechanism chosen by the caller.
+pub(super) fn copy_file_using(
+    strategy: LocalCopyStrategy,
     source: &Path,
     dest: &Path,
     needs_safe_overwrite: bool,
     cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<StrategyCopyOutcome, WriteOperationError> {
-    let _ = (cancelled, progress_callback); // Unused on this platform
-    let bytes = if needs_safe_overwrite {
-        safe_overwrite_file(source, dest)?
-    } else {
-        fs::copy(source, dest).with_path(source)?
-    };
-    // The std fallback doesn't flush; the caller's end-of-op pass does.
-    Ok(StrategyCopyOutcome {
-        bytes,
-        already_durable: false,
-    })
+    match strategy {
+        #[cfg(target_os = "macos")]
+        LocalCopyStrategy::AppleClone => {
+            let context = CopyProgressContext::with_cancellation(Arc::clone(cancelled));
+            let bytes = if needs_safe_overwrite {
+                safe_overwrite_file(source, dest, Some(&context))?
+            } else {
+                copy_single_file_native(source, dest, false, Some(&context))?
+            };
+            // Clonefile shares CoW extents with the source: flushing is moot.
+            Ok(StrategyCopyOutcome {
+                bytes,
+                already_durable: true,
+            })
+        }
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        LocalCopyStrategy::Chunked => {
+            // Chunked copy `sync_data`s the file itself before returning.
+            let bytes = chunked_copy_with_metadata(source, dest, cancelled, progress_callback)?;
+            Ok(StrategyCopyOutcome {
+                bytes,
+                already_durable: true,
+            })
+        }
+        #[cfg(target_os = "linux")]
+        LocalCopyStrategy::KernelCopyRange => {
+            if needs_safe_overwrite {
+                // `safe_overwrite_file` uses `std::fs::copy` on Linux, which leaves
+                // the bytes in the page cache; the caller flushes in the end-of-op pass.
+                let bytes = safe_overwrite_file(source, dest)?;
+                return Ok(StrategyCopyOutcome {
+                    bytes,
+                    already_durable: false,
+                });
+            }
+            // `copy_file_range(2)` doesn't flush (and reflink shares CoW extents,
+            // but we can't cheaply tell here), so the caller flushes the dest.
+            let bytes = copy_single_file_linux(source, dest, false, cancelled, progress_callback)?;
+            Ok(StrategyCopyOutcome {
+                bytes,
+                already_durable: false,
+            })
+        }
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        LocalCopyStrategy::StdCopy => {
+            let _ = (cancelled, progress_callback); // Unused on this platform
+            let bytes = if needs_safe_overwrite {
+                safe_overwrite_file(source, dest)?
+            } else {
+                fs::copy(source, dest).with_path(source)?
+            };
+            // The std fallback doesn't flush; the caller's end-of-op pass does.
+            Ok(StrategyCopyOutcome {
+                bytes,
+                already_durable: false,
+            })
+        }
+    }
 }
 
 #[cfg(test)]
