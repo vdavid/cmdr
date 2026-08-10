@@ -7,7 +7,7 @@
 //! impl can span files within a crate), so every method stays at
 //! `VolumeManager::…` regardless of which file it's in.
 
-use super::super::Volume;
+use super::super::{Volume, WatchCoverage};
 use super::super::backends::archive::{
     ARCHIVE_MAGIC_PREFIX_LEN, ArchiveFormat, ArchiveVolume, archive_boundary_candidate, bytes_match_archive_magic,
     confirm_archive_boundary, format_for_path,
@@ -23,6 +23,26 @@ use std::sync::Arc;
 /// navigation re-resolves and re-registers lazily (`ArchiveVolume::new` is cheap;
 /// the index re-parses on demand).
 const ARCHIVE_LRU_CAP: usize = 16;
+
+/// What an FSEvents watch on `backing_path`'s directory can observe, which is the
+/// ceiling on what an archive's content watch can honestly report.
+///
+/// An archive on an OS-mounted share is watched by FSEvents like any other local
+/// path, and FSEvents there is blind to other clients, so the archive inherits
+/// [`WatchCoverage::ThisMachineOnly`]. A remote-BACKED archive (direct SMB / MTP
+/// parent) never gets here: its watch can't arm at all.
+///
+/// One `statfs`, called once per archive registration.
+fn watch_coverage_for_backing_file(backing_path: &Path) -> WatchCoverage {
+    let on_network = backing_path
+        .parent()
+        .is_some_and(crate::file_system::index_provider::path_is_on_network_mount);
+    if on_network {
+        WatchCoverage::ThisMachineOnly
+    } else {
+        WatchCoverage::EveryWriter
+    }
+}
 
 /// Outcome of [`VolumeManager::resolve`]: the volume that should serve `path`.
 ///
@@ -188,6 +208,7 @@ impl VolumeManager {
         // boundary always carries a supported extension, so `format_for_path`
         // yields `Some`; the `Zip` fallback only guards a future path shape.
         let format = format_for_path(&zip_path).unwrap_or(ArchiveFormat::Zip);
+        let backing_path = zip_path.clone();
         let archive = Arc::new(ArchiveVolume::new(parent, zip_path, format, crate::volume_host::host()));
         // Only the resolve that actually registered starts the content watch, so
         // repeated resolves of an already-registered archive don't churn notify
@@ -200,8 +221,15 @@ impl VolumeManager {
         // any archive is browsed). A non-local parent's watch never establishes
         // (notify can't watch an `smb://` / `mtp://` path), so a remote archive's
         // `listing_watch_coverage` stays `None` — pre-op rescans stay honest.
+        //
+        // The coverage ceiling is resolved HERE because the mount probe is
+        // per-platform and app-side: the watch is an FSEvents watch on the
+        // archive's parent directory, so an archive on an OS-mounted share can
+        // only ever report this machine's writes. One `statfs` per archive
+        // registration, off any hot path (this runs once, and only when the
+        // register actually happened).
         if self.register_if_absent(&archive_id, archive.clone()) && crate::file_system::watcher::app_handle_present() {
-            archive.start_content_watch(volume_id);
+            archive.start_content_watch(volume_id, watch_coverage_for_backing_file(&backing_path));
         }
         self.touch_archive_lru(&archive_id);
 

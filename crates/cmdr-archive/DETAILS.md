@@ -93,7 +93,9 @@ A single file is one entry at its uncompressed size; a directory walks the subtr
 paths aren't reachable via `std::fs`, so no `copyfile` fast path and the legacy synthetic-diff path is skipped);
 `space_poll_interval = None` (a read-only archive's space never changes — the default `Some(2s)` would poll
 pointlessly); `max_concurrent_ops = 1`; `supports_export`/`supports_streaming = true`. `listing_watch_coverage` reports
-`EveryWriter` only while the live content watch is established (`src/watch/DETAILS.md`), `false` otherwise.
+the ceiling `start_content_watch` was armed with, and only while that watch is established (`src/watch/DETAILS.md`):
+`EveryWriter` for an archive on local disk, `ThisMachineOnly` for one on an OS-mounted share (the watch is FSEvents on
+the archive's parent directory, blind to other clients there), `None` otherwise.
 `can_watch_listings` stays `false`: that flag drives the generic per-listing FSEvents dir-watcher, which can't watch an
 archive-inner path — the archive self-watches its backing `.zip` instead.
 

@@ -677,7 +677,7 @@ async fn remote_backed_archive_never_reports_watch_coverage() {
     );
     // Starting the content watch is a no-op for a remote parent (no local path);
     // the answer must remain `None`.
-    volume.start_content_watch("remote");
+    volume.start_content_watch("remote", WatchCoverage::EveryWriter);
     assert_eq!(
         volume.listing_watch_coverage(&archive_path),
         WatchCoverage::None,

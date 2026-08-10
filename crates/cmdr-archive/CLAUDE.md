@@ -56,5 +56,6 @@ planning, reorganizing, or advising.
 - **Local vs remote byte source is picked by `parent.supports_local_fs_access()`, NOT by whether the path opens
   locally** — a direct-SMB parent must read through the parent, never its possibly-hung OS mount.
 - **`listing_watch_coverage` reflects the live [content watch](src/watch/CLAUDE.md)** — covered only while the local
-  content watch is established (never for a remote parent). `can_watch_listings` stays `false` (a generic FSEvents
+  content watch is established (never for a remote parent), and capped by the CEILING the caller armed it with, so an
+  archive on an OS-mounted share reports `ThisMachineOnly`. `can_watch_listings` stays `false` (a generic FSEvents
   dir-watcher can't watch an archive-inner path).

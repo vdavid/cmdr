@@ -37,7 +37,7 @@ fn start_watch_on(volume: &Arc<dyn Volume>, parent_volume_id: &str) {
         .as_any()
         .downcast_ref::<ArchiveVolume>()
         .expect("resolved volume is an ArchiveVolume")
-        .start_content_watch(parent_volume_id);
+        .start_content_watch(parent_volume_id, WatchCoverage::EveryWriter);
 }
 
 /// A temp directory with a `.zip` inside, cleaned up on drop. The zip lives in

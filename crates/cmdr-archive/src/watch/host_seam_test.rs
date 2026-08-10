@@ -122,7 +122,7 @@ async fn a_rewrite_asks_the_host_to_refresh_the_archive_listings() {
         "a volume with no watch must not claim its listings are watched"
     );
 
-    fixture.volume.start_content_watch(PARENT_DRIVE);
+    fixture.volume.start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
     assert_eq!(
         fixture.volume.listing_watch_coverage(&fixture.zip_path),
         WatchCoverage::EveryWriter,
@@ -151,13 +151,37 @@ async fn a_rewrite_asks_the_host_to_refresh_the_archive_listings() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_temp_rename_swap_still_asks_for_a_refresh() {
     let fixture = WatchedArchive::new(&[stored("a.txt", b"a".to_vec())]);
-    fixture.volume.start_content_watch(PARENT_DRIVE);
+    fixture.volume.start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
 
     fixture
         .drive_until_refreshed("a temp+rename inode swap", || {
             fixture.rewrite_via_temp_rename(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
         })
         .await;
+}
+
+/// An archive on an OS-mounted network share reports only what the ceiling its
+/// caller armed it with allows, even though the watch itself is genuinely live.
+///
+/// The watch is an FSEvents watch on the archive's parent DIRECTORY, so on a
+/// share it sees this machine's writes and nothing another client does. Without
+/// the ceiling, a live watch would answer `EveryWriter` and let a pre-flight scan
+/// reuse a listing that another client had already invalidated. The app resolves
+/// the ceiling in `manager::archive_routing::watch_coverage_for_backing_file`;
+/// this pins that the backend actually honors it.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_archive_on_a_network_mount_reports_only_this_machine() {
+    let fixture = WatchedArchive::new(&[stored("a.txt", b"a".to_vec())]);
+
+    fixture
+        .volume
+        .start_content_watch(PARENT_DRIVE, WatchCoverage::ThisMachineOnly);
+
+    assert_eq!(
+        fixture.volume.listing_watch_coverage(&fixture.zip_path),
+        WatchCoverage::ThisMachineOnly,
+        "a live watch must not report more coverage than its backing storage allows"
+    );
 }
 
 /// A remote parent has no local path for `notify`, so no watch establishes and
@@ -175,7 +199,7 @@ async fn a_remote_parent_establishes_no_watch() {
     let path = PathBuf::from("/nowhere-remote/bundle.zip");
     let volume = ArchiveVolume::new(parent, path.clone(), ArchiveFormat::Zip, host);
 
-    volume.start_content_watch(PARENT_DRIVE);
+    volume.start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
 
     assert_eq!(
         volume.listing_watch_coverage(&path),

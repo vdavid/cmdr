@@ -52,6 +52,20 @@ use cmdr_fs::volume::{
     VolumeError, VolumeReadStream, WatchCoverage,
 };
 
+/// A live content watch on the backing archive, paired with what it observes.
+///
+/// The two travel together because coverage is a property of THIS watch: it
+/// comes from the mount the backing file sits on, which the caller resolves once
+/// when arming it. Dropping the pair stops the OS watch and drops the claim
+/// with it, so a stale coverage answer can't outlive the watch that earned it.
+struct LiveContentWatch {
+    /// Held to keep the OS watch alive; dropping it stops watching.
+    #[allow(dead_code, reason = "The watch is kept alive by being held, not by being read")]
+    watch: super::watch::ArchiveContentWatch,
+    /// What this watch reports, capped by the backing file's storage.
+    coverage: WatchCoverage,
+}
+
 /// A read-only [`Volume`] that presents a zip archive as a browsable folder.
 pub struct ArchiveVolume {
     /// The volume physically holding the `.zip`. Source of the shared lane key
@@ -70,13 +84,13 @@ pub struct ArchiveVolume {
     /// blocking parse can run inside `spawn_blocking`; an external edit to the
     /// `.zip` (size/mtime change) is a natural miss and re-parse.
     cache: Arc<ArchiveIndexCache>,
-    /// Live content watch on the backing `.zip`. `None` until
-    /// [`start_content_watch`](Self::start_content_watch) runs (the routing layer
-    /// starts it once, when the volume first registers), or when the watch can't
-    /// be established. Its presence is what
+    /// Live content watch on the backing `.zip`, and what it can observe. `None`
+    /// until [`start_content_watch`](Self::start_content_watch) runs (the routing
+    /// layer starts it once, when the volume first registers), or when the watch
+    /// can't be established. Its presence is what
     /// [`listing_watch_coverage`](Volume::listing_watch_coverage) reports;
     /// dropping it (on LRU eviction) stops the OS watch.
-    watch: Mutex<Option<super::watch::ArchiveContentWatch>>,
+    watch: Mutex<Option<LiveContentWatch>>,
     /// The password for a password-protected archive, remembered for the lifetime
     /// of THIS `ArchiveVolume` instance. `VolumeManager::resolve` mints one per
     /// archive and LRU-caches it, so this is exactly "remember for this archive"
@@ -148,7 +162,15 @@ impl ArchiveVolume {
     /// already-registered archive don't churn watchers; a no-op if a watch is
     /// already live. `parent_volume_id` is the drive id the listing cache keys
     /// on, threaded through so the refresh re-resolves back to this archive.
-    pub fn start_content_watch(&self, parent_volume_id: &str) {
+    ///
+    /// `coverage` is what a watch on the backing file can see, which only the
+    /// caller can know: this watch is an OS directory watch on the archive's
+    /// parent, so an archive on an OS-mounted network share earns
+    /// [`WatchCoverage::ThisMachineOnly`] (FSEvents there is blind to other
+    /// clients), and one on local disk earns [`WatchCoverage::EveryWriter`].
+    /// The mount probe is per-platform and lives app-side, which is why this
+    /// crate takes the answer rather than computing it.
+    pub fn start_content_watch(&self, parent_volume_id: &str, coverage: WatchCoverage) {
         let mut watch = self.watch.lock_ignore_poison();
         if watch.is_some() {
             return;
@@ -158,7 +180,8 @@ impl ArchiveVolume {
             parent_volume_id.to_string(),
             Arc::clone(&self.cache),
             self.host.clone(),
-        );
+        )
+        .map(|watch| LiveContentWatch { watch, coverage });
     }
 
     /// Maps a path from the volume's namespace to the archive-inner path the
@@ -589,20 +612,17 @@ impl Volume for ArchiveVolume {
     /// [`WatchCoverage::None`], so a listing never claims freshness the backend
     /// can't back.
     ///
-    /// **Known gap**: a live watch reports `EveryWriter`, which is right for an
-    /// archive on a local disk but over-claims for one sitting on an OS-mounted
-    /// network share, where the watch is FSEvents and blind to other clients
-    /// (`WatchCoverage::ThisMachineOnly` is the honest answer there). Closing it
-    /// needs the backing file's mount type, which this crate can't see: the
-    /// kind → network mapping is per-platform and lives app-side
-    /// (`file_system::index_provider`). A remote-BACKED archive is unaffected,
-    /// since its watch never arms at all (`volume_test.rs`).
+    /// A live watch reports whatever ceiling the caller armed it with, so an
+    /// archive on an OS-mounted network share answers `ThisMachineOnly` (the
+    /// watch is FSEvents on the archive's parent directory, which is blind to
+    /// other clients on the share) while one on local disk answers
+    /// `EveryWriter`. A remote-BACKED archive never arms a watch at all, so it
+    /// stays `None` by construction (`volume_test.rs`).
     fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
-        if self.watch.lock_ignore_poison().is_some() {
-            WatchCoverage::EveryWriter
-        } else {
-            WatchCoverage::None
-        }
+        self.watch
+            .lock_ignore_poison()
+            .as_ref()
+            .map_or(WatchCoverage::None, |live| live.coverage)
     }
 }
 
