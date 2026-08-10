@@ -263,6 +263,60 @@ function unshootableReason(entry: (typeof DIALOG_GALLERY_ENTRIES)[number], hasFi
 }
 
 /**
+ * The ledgers a gallery pass appends to as it walks the registry. `skipped` is
+ * the tracked `capture-skipped.json` list; `redundant` is the subset that only
+ * feeds the summary line, so the two can't blur together.
+ */
+interface GalleryLedger {
+  failed: string[]
+  skipped: string[]
+  redundant: string[]
+}
+
+/**
+ * Captures the reviewable states of ONE gallery entry, appending every outcome
+ * to `ledger`. Returns how many states earned a screenshot.
+ */
+async function captureEntryStates(
+  main: TauriPage,
+  entry: (typeof DIALOG_GALLERY_ENTRIES)[number],
+  fixtures: FixtureDirPayload | null,
+  report: Record<string, SurfaceEntry>,
+  alreadyCovered: Set<string>,
+  ledger: GalleryLedger,
+): Promise<number> {
+  const stateFixtures = entry.usesFixtureDir === true ? fixtures : null
+  let captured = 0
+
+  for (const state of entry.states) {
+    const label = `${entry.dialogId}-${state.id}`
+    // A hand-staged surface already owns this name; never overwrite its PNG.
+    if (label in report) {
+      ledger.skipped.push(`gallery-redundant:${label}`)
+      continue
+    }
+    const droppedBecause = DROPPED_GALLERY_STATES[label]
+    if (droppedBecause !== undefined) {
+      ledger.skipped.push(`gallery-redundant:${label}`)
+      console.log(`[i18n-capture] gallery ${label} dropped: ${droppedBecause}.`)
+      continue
+    }
+    const outcome = await captureGalleryState(main, entry.dialogId, state.id, stateFixtures, report, alreadyCovered)
+    if (outcome === 'captured') captured += 1
+    else if (outcome === 'redundant') {
+      ledger.redundant.push(label)
+      ledger.skipped.push(`gallery-redundant:${label}`)
+    } else if (outcome === 'failed') {
+      ledger.failed.push(label)
+    } else {
+      ledger.skipped.push(`gallery-unavailable:${label}`)
+    }
+  }
+
+  return captured
+}
+
+/**
  * Captures every reviewable state of every main-window soft dialog the gallery
  * registry lists, keeping the ones whose copy nothing else in this run recorded.
  *
@@ -296,7 +350,7 @@ export async function captureGalleryDialogs(
   }
 
   let captured = 0
-  const redundant: string[] = []
+  const ledger: GalleryLedger = { failed, skipped, redundant: [] }
 
   // The skip list is tracked, so it's worth saying WHICH kind of skip each was:
   // `redundant` is the pass working as designed, `unavailable` is a gap someone
@@ -308,38 +362,13 @@ export async function captureGalleryDialogs(
       console.log(`[i18n-capture] gallery ${entry.dialogId} skipped: ${blocked}.`)
       continue
     }
-    const stateFixtures = entry.usesFixtureDir === true ? fixtures : null
-
-    for (const state of entry.states) {
-      const label = `${entry.dialogId}-${state.id}`
-      // A hand-staged surface already owns this name; never overwrite its PNG.
-      if (label in report) {
-        skipped.push(`gallery-redundant:${label}`)
-        continue
-      }
-      const droppedBecause = DROPPED_GALLERY_STATES[label]
-      if (droppedBecause !== undefined) {
-        skipped.push(`gallery-redundant:${label}`)
-        console.log(`[i18n-capture] gallery ${label} dropped: ${droppedBecause}.`)
-        continue
-      }
-      const outcome = await captureGalleryState(main, entry.dialogId, state.id, stateFixtures, report, alreadyCovered)
-      if (outcome === 'captured') captured += 1
-      else if (outcome === 'redundant') {
-        redundant.push(label)
-        skipped.push(`gallery-redundant:${label}`)
-      } else if (outcome === 'failed') {
-        failed.push(label)
-      } else {
-        skipped.push(`gallery-unavailable:${label}`)
-      }
-    }
+    captured += await captureEntryStates(main, entry, fixtures, report, alreadyCovered, ledger)
   }
 
   // Say what was dropped and why: a silent cap reads as "we covered everything".
-  const dropped = redundant.length > 0 ? `: ${redundant.join(', ')}` : ''
+  const dropped = ledger.redundant.length > 0 ? `: ${ledger.redundant.join(', ')}` : ''
   console.log(
-    `[i18n-capture] gallery: ${String(captured)} states captured, ${String(redundant.length)} dropped as ` +
+    `[i18n-capture] gallery: ${String(captured)} states captured, ${String(ledger.redundant.length)} dropped as ` +
       `redundant (every key already on an earlier surface)${dropped}`,
   )
 }
