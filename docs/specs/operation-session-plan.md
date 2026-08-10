@@ -125,25 +125,22 @@ alteration. Don't build anything that assumes two windows.
 
 Every "the operation outlives the view" sentence above is false today, and not because of the dialog.
 
-`apps/desktop/src/routes/(main)/+layout.svelte:279-282` registers a `beforeunload` handler that calls
+`apps/desktop/src/routes/(main)/+layout.svelte:282-284` registers a `beforeunload` handler that calls
 `cancelAllWriteOperations()`. That command walks the GLOBAL registry and stops every operation
-(`src-tauri/src/file_system/write_operations/state.rs:720`, pinned by a test literally named
+(`src-tauri/src/file_system/write_operations/state.rs`, pinned by a test literally named
 `cancel_all_write_operations_walks_the_global_registry`). Backgrounded operations included. Operations the main window
 has no view on at all, included.
 
 The reproduction is one line long: start a copy, press Queue, hot-reload the main window, and the transfer dies while
-the queue window sits there rendering a row for it. Under `pnpm dev` this is constant. In production it fires on any
-main-window teardown that goes through page unload.
+the queue window sits there rendering a row for it.
 
 This is a defect independent of the refactor, and it contradicts David's model more directly than the dialog coupling
-does: the dialog at least only stops the operation it owns. Fix it first, in M0, because M1 through M6 all reason from a
+does: the dialog at least only stops the operation it owns. Fix it first, because M1 through M6 all reason from a
 premise it currently invalidates.
 
-**The shape of the fix, to settle with David before building:** either scope the unload cancel to operations no view
-owns (which under sessions is knowable), or drop it entirely. The complication is that a genuine app quit may still want
-to stop in-flight writes rather than orphan half-written files, and `beforeunload` cannot tell a quit from a reload. So
-the fix needs the quit path distinguished from the reload path, which is a Tauri-side question (a real window-close or
-`RunEvent::ExitRequested` hook), not a frontend one. Flag it, don't guess.
+The fix turned out to be larger than a frontend edit (the backend has to own operation lifetime and the quit decision,
+and local copies have to stage before a worker can be safely abandoned), so it has its own spec:
+`docs/specs/quit-and-operation-lifetime.md`. That document IS M0.
 
 ## The in-dialog guards, and why they retire
 
@@ -195,17 +192,12 @@ Sequential. None of these are safe to parallelize: each one moves state out of a
 
 ### M0: an operation survives a reload
 
-Stop `beforeunload` from stopping operations nothing is watching. See the section above for the defect and the two
-candidate shapes.
+Specced separately: `docs/specs/quit-and-operation-lifetime.md`, whose Q1-Q3 all land before M1 starts.
 
 - **Why first:** every later milestone's "the operation outlives the view" reasoning is false until this lands, so
   shipping M1 first would mean proving session lifetimes against a runtime that kills them.
-- **Blocked on David:** whether a real quit should still stop in-flight writes, and therefore whether quit and reload
-  have to be told apart before this can ship.
-- **Tests:** a page-unload path that leaves a backgrounded operation running. Red first; this is a bug fix.
-- **Docs:** `transfer/CLAUDE.md`'s teardown must-know, and the write-operations backend `CLAUDE.md` if the quit path
-  gains a hook.
-- **Checks:** `pnpm check svelte -q`, plus `pnpm check rust -q` if a Tauri-side hook lands.
+- **What it settles for the milestones below:** the backend owns operation lifetime and the quit decision, local writes
+  are staged, and a window closing is just a viewer detaching.
 
 ### M1: the fan-out and the session module, read-only
 

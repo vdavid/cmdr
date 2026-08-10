@@ -6,15 +6,23 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-10 `quit-and-operation-lifetime.md` - The backend takes ownership of operation lifetime and the quit
+      decision. Today `(main)/+layout.svelte:282-284` cancels the GLOBAL operation registry on `beforeunload`, so a dev
+      reload kills a backgrounded transfer, while in production that handler only ever fires at quit as an un-awaited
+      race. Replaces it with a Rust-owned quit gate: prompt when anything is active, a 20-second countdown whose timer
+      lives in Rust (so a wedged webview can't block the quit), then cancel with no rollback, keeping completed files
+      and removing only the in-flight partial. Two enabling changes make the 2-second exit real: **local copies get
+      temp+rename staging** (they write to the FINAL name today, so a quit mid-copy can leave a truncated file looking
+      complete — a crash- and power-loss hole too), and a **hard-abort tier** races the chunk await against a new token
+      so an SMB chunk's 30-second deadline can't hold the quit, while leaving the cooperative cancel path that lets
+      backends clean their own partials as the default. Prerequisite (M0) of `operation-session-plan.md`.
 - [ ] 2026-08-09 `operation-session-plan.md` - Make the progress dialogs looking glasses instead of the process, so a
       "Foreground" button (click a running row in the operation queue, get the rich progress dialog back) becomes
       buildable. `createTransferProgressState` (1,294 lines) OWNS its operation: it scans, dispatches, and only then
       learns its `operationId`, so "attach to operation X" doesn't exist. The fix is an **operation session** keyed by
       `operationId` plus **views** that bind to one, with zero views a legal state. Three findings reshape the work.
-      **M0 comes first and is a plain defect**: `(main)/+layout.svelte:279-282` calls `cancelAllWriteOperations()` on
-      `beforeunload`, which walks the GLOBAL registry, so hot-reloading the main window stops a backgrounded transfer
-      while the queue window still renders its row; every later milestone's "the operation outlives the view" reasoning
-      is false until that lands, and quit-versus-reload needs David's call. The registry earns its place not because two
+      **M0 comes first and is now its own spec** (`quit-and-operation-lifetime.md`): every later milestone's "the
+      operation outlives the view" reasoning is false until it lands. The registry earns its place not because two
       smoothers disagree (the EMA is deterministic; the shipped ETA bug was smoothed-versus-raw) but because smoothers
       **started at different times** diverge, which is exactly what a late-attaching view creates, so M2 must DELETE
       `operations-store`'s per-id smoother map rather than stack a second layer. And M5's hardest problem is birth
