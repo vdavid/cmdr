@@ -266,10 +266,72 @@ function warnIfForeignCmdr() {
   }
 }
 
+/**
+ * The apps whose holding the front position doesn't stop a capture. Finder and the
+ * window server's own agents own the front whenever a user has simply hidden
+ * everything, which is the state we ASK for, so refusing on them would make the
+ * check impossible to satisfy.
+ */
+const FRONT_POSITION_OK = new Set(['Finder', 'Cmdr', 'loginwindow', 'WindowManager', 'Dock'])
+
+/** How long to wait for a real app to give up the front, and how often to look. */
+const FRONT_WAIT_MS = 30000
+const FRONT_POLL_MS = 1000
+
+/** The frontmost app's display name, or null when macOS won't say (or we're not on macOS). */
+function frontmostApp(): string | null {
+  if (process.platform !== 'darwin') return null
+  const asn = spawnSync('lsappinfo', ['front'], { encoding: 'utf8' })
+  if (asn.status !== 0 || asn.stdout.trim() === '') return null
+  const info = spawnSync('lsappinfo', ['info', '-only', 'name', asn.stdout.trim()], { encoding: 'utf8' })
+  if (info.status !== 0) return null
+  return /"LSDisplayName"="([^"]*)"/.exec(info.stdout)?.[1] ?? null
+}
+
+/**
+ * Waits for the front position to be free before any window is photographed, and
+ * refuses to start if it never is.
+ *
+ * ❗ An idle machine is NOT enough. This binary is spawned raw rather than through
+ * LaunchServices, so macOS cooperative activation won't let it take the front from
+ * an app that already holds it: `shoot()`'s `set_focus` remedy no-ops and the
+ * capture reads stale frames. Measured with Chrome frontmost and nobody touching
+ * the laptop, a run captured 13-14 of ~71 surfaces.
+ *
+ * It WAITS rather than checking once, because whoever starts the run is usually
+ * typing in the very app that has to be hidden. Two seconds spent refusing beats
+ * a full run of blanks that reads like a harness bug.
+ */
+async function waitForFrontPositionToClear(): Promise<void> {
+  const started = frontmostApp()
+  if (started === null || FRONT_POSITION_OK.has(started)) return
+
+  console.warn(
+    `[i18n-capture] '${started}' holds the front position. Hide or quit it (⌘H is enough); ` +
+      `waiting up to ${String(FRONT_WAIT_MS / 1000)}s. A run started behind another app captures blanks.`,
+  )
+  const deadline = Date.now() + FRONT_WAIT_MS
+  for (;;) {
+    const now = frontmostApp()
+    if (now === null || FRONT_POSITION_OK.has(now) || now !== started) {
+      console.log(`[i18n-capture] front position clear (now '${now ?? '<none>'}'); starting.`)
+      return
+    }
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `'${now}' still holds the front position after ${String(FRONT_WAIT_MS / 1000)}s. Hide or quit it and ` +
+          're-run: macOS will not let this binary take the front from it, so every shot would read a stale frame.',
+      )
+    }
+    await new Promise((resolve) => setTimeout(resolve, FRONT_POLL_MS))
+  }
+}
+
 async function main() {
   // Coexisting with a running Cmdr is safe (PID-scoped teardown, window-ID-scoped
   // capture); just warn, since a busy screen can spoil separate-window shots.
   warnIfForeignCmdr()
+  await waitForFrontPositionToClear()
 
   if (isOverflow) {
     // Generate the target locale BEFORE the build: the frontend's catalog glob
