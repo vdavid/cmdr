@@ -140,13 +140,23 @@ impl Index {
 
     // ── Turning volumes on and off ───────────────────────────────────
 
-    /// Start the boot disk's index at launch, if the launch gate allows it.
+    /// Do the index's launch work: reclaim what's stranded in the data dir, then
+    /// start the boot disk's index if the launch gate allows it.
     ///
     /// `fda_pending` is the host's answer to "are we still waiting for the user
     /// to decide about full disk access?" — walking protected folders before
     /// they've chosen would stack one permission prompt per folder on top of
     /// onboarding. Reports whether indexing actually started.
+    ///
+    /// The reclaim half runs either way (a host that indexes nothing still
+    /// shouldn't carry dead databases) and off-thread, since it reads a directory
+    /// and unlinks files. It lives here rather than in
+    /// [`build`](IndexBuilder::build) on purpose: `build` also backs the lazy
+    /// no-host fallback a test binary gets, and a sweep firing there would delete
+    /// a test fixture's database out from under it. This is the ONE call a host
+    /// makes exactly once, at a real launch.
     pub fn start_root_at_launch(&self, fda_pending: bool) -> Result<bool, IndexError> {
+        crate::indexing::host::runtime::spawn_blocking(crate::indexing::resources::retention::sweep_legacy_scheme_dbs);
         if !state::should_auto_start_indexing(Some(crate::indexing::lifecycle::master::master_enabled()), fda_pending) {
             return Ok(false);
         }

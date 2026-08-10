@@ -9,7 +9,7 @@ these cap the WHOLE indexing pool.
   watching). Policy only; the readers live in `cmdr_fs::process_memory`, re-exported as `crate::process_memory`.
 - **subsystem_stop.rs** — the stop-hook registry the watchdog runs beside the index stop.
 - **retention.rs** — the external-index-DB count cap with LRU eviction, plus `sweep_legacy_scheme_dbs` (one shot from
-  `IndexBuilder::build`: deletes databases keyed by a retired volume-ID scheme, which nothing can open again).
+  `Index::start_root_at_launch`: deletes databases keyed by a retired volume-ID scheme, which nothing can open again).
 
 ## Must-knows
 

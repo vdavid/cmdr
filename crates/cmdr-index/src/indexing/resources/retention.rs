@@ -262,17 +262,22 @@ pub(crate) fn enforce_external_index_cap() {
 /// dir until the LRU cap happened to reach them, which for a user under the cap
 /// is never.
 ///
-/// Runs once per process, from `IndexBuilder::build`, off-thread. Safe to run at
-/// any time and safe to fail: a legacy ID can't be live (nothing can produce
-/// one), and these databases are disposable caches. Best-effort by design, so a
-/// delete that doesn't work out is a log line, not an error path.
+/// Runs once per launch, from `Index::start_root_at_launch`, off-thread. Safe to
+/// fail: these are disposable caches, so a delete that doesn't work out is a log
+/// line rather than an error path.
+///
+/// Carries the same safety invariant as the eviction path even though a legacy ID
+/// shouldn't be able to be live (nothing can mint one): a registered volume's
+/// database is never deleted, whatever its ID looks like.
 pub(crate) fn sweep_legacy_scheme_dbs() {
     let Some(data_dir) = data_dir_for_sweep("sweep index databases from the retired ID scheme") else {
         return;
     };
+    let registered = state::all_registered_volume_ids();
     let stale: Vec<IndexDbFile> = enumerate_index_dbs(&data_dir)
         .into_iter()
         .filter(|db| cmdr_fs::volume::is_legacy_volume_id(&db.volume_id))
+        .filter(|db| !registered.iter().any(|live| live == &db.volume_id))
         .collect();
     if stale.is_empty() {
         return;

@@ -145,8 +145,8 @@ quietly fell back to a path ID, so `nsurl::tests::the_boot_volume_reports_a_uuid
 The unmount path can't use any of this: it looks up by `VolumeManager::find_by_root`, because neither statfs nor NSURL
 recovers a gone mount's identity.
 
-**Decision**: Index databases keyed by an ID from the retired scheme are deleted at launch
-(`cmdr_index::sweep_legacy_scheme_dbs`, driven by `is_legacy_volume_id`), rather than migrated.
+**Decision**: Index databases keyed by an ID from the retired scheme are deleted at launch (the reclaim half of
+`Index::start_root_at_launch`, driven by `is_legacy_volume_id`), rather than migrated.
 **Why**: They're disposable caches, so the cost of dropping one is a rescan, while the cost of a mis-targeted rename is
 a corrupt index. Nothing can mint a legacy ID any more, so nothing will ever open these files again; left alone they'd
 sit in the data dir until the LRU cap happened to reach them, which for a user under the cap is never. Persisted tab
