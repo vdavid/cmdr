@@ -36,9 +36,9 @@
 //!   it, and then the hour-gated directory scan is the backstop; that's the
 //!   right trade, since a power loss can equally lose the temp's own directory
 //!   entry and leave nothing to sweep.
-//! - **Compaction is free**: the log is truncated whenever nothing is in flight
-//!   and it has grown past [`COMPACT_ABOVE_BYTES`], which for a serial copy is
-//!   between two files. Nothing accumulates across a session.
+//! - **Compaction is cheap and unconditional**: past [`COMPACT_ABOVE_BYTES`] the
+//!   log is rewritten down to just what's in flight (a handful of paths), so
+//!   nothing accumulates across a long copy or a long session.
 //!
 //! The format is one line per record: `+` or `-`, then the path as a JSON
 //! string (so a newline in a filename can't forge a record). A trailing torn
@@ -58,9 +58,9 @@ use crate::ignore_poison::IgnorePoison;
 /// The persisted log's file name inside the app data dir.
 const STORE_FILENAME: &str = "in-flight-temps.log";
 
-/// Truncate the log once nothing is in flight and it has grown past this. Small
-/// enough that a session never carries a big file, large enough that a serial
-/// copy doesn't truncate after every single file.
+/// Rewrite the log down to just what's in flight once it has grown past this.
+/// Small enough that a session never carries a big file, large enough that a
+/// serial copy doesn't rewrite after every single file (~50 files' worth).
 const COMPACT_ABOVE_BYTES: u64 = 8 * 1024;
 
 /// The process-wide half: the open log, and what's currently in flight.
@@ -98,7 +98,7 @@ pub(super) fn deregister(state: &WriteOperationState, temp: &Path) {
     let mut store = STORE.lock_ignore_poison();
     store.live.remove(temp);
     append(&mut store, b'-', temp);
-    compact_if_idle(&mut store);
+    compact_if_large(&mut store);
 }
 
 /// Points the persisted ledger at the app data dir and clears whatever an
@@ -224,19 +224,30 @@ fn append(store: &mut Store, op: u8, temp: &Path) {
     }
 }
 
-/// Truncates the log once nothing is in flight and it has grown past
-/// [`COMPACT_ABOVE_BYTES`], so a long session doesn't leave a big file behind.
-fn compact_if_idle(store: &mut Store) {
-    if !store.live.is_empty() || store.logged_bytes < COMPACT_ABOVE_BYTES {
+/// Rewrites the log down to just what's in flight once it has grown past
+/// [`COMPACT_ABOVE_BYTES`], so a long copy can't grow an unbounded file.
+///
+/// ❌ Don't gate this on "nothing is in flight": the concurrent cross-volume
+/// driver keeps a window open for the whole transfer, so an idle-only rule would
+/// let a 100k-file copy append megabytes before it ever got a chance to run.
+/// Rewriting the live set (a handful of paths) costs one truncate and one write
+/// every ~50 files.
+fn compact_if_large(store: &mut Store) {
+    if store.logged_bytes < COMPACT_ABOVE_BYTES {
         return;
     }
+    let live: Vec<PathBuf> = store.live.iter().cloned().collect();
     let Some(log) = &mut store.log else {
         return;
     };
     // The handle is in append mode, so writes go to the new end without a seek.
-    match log.set_len(0) {
-        Ok(()) => store.logged_bytes = 0,
-        Err(e) => log::debug!(target: "copy", "couldn't compact the in-flight temp ledger: {e}"),
+    if let Err(e) = log.set_len(0) {
+        log::debug!(target: "copy", "couldn't compact the in-flight temp ledger: {e}");
+        return;
+    }
+    store.logged_bytes = 0;
+    for temp in &live {
+        append(store, b'+', temp);
     }
 }
 
@@ -370,6 +381,43 @@ mod tests {
         assert!(
             read_recorded(&data_dir.join(STORE_FILENAME)).is_empty(),
             "a temp that came and went must replay as nothing in flight"
+        );
+        test_support::clear();
+    }
+
+    /// Compaction runs on size alone, ❌ not on "nothing is in flight" — the
+    /// concurrent cross-volume driver holds a window open for a whole transfer,
+    /// so an idle-only rule would let a big copy grow megabytes. So it has to
+    /// survive being run while something IS in flight: the still-live partial
+    /// must still be there to sweep afterwards.
+    #[test]
+    fn compaction_shrinks_the_log_without_forgetting_what_is_still_in_flight() {
+        let dir = TestDir::new("in_flight_temps_compaction");
+        let data_dir = dir.join("data");
+        std::fs::create_dir_all(&data_dir).unwrap();
+        let log_path = data_dir.join(STORE_FILENAME);
+        test_support::clear();
+        let _guard = test_support::use_store_in(&data_dir);
+
+        let state = state();
+        let long_lived = dir.join("a-big-download.iso.cmdr-tmp-0000");
+        register(&state, &long_lived);
+
+        // Enough churn to cross the compaction threshold several times over.
+        for i in 0..400 {
+            let churn = dir.join(format!("small-file-{i:04}.txt.cmdr-tmp-{i:04}"));
+            register(&state, &churn);
+            deregister(&state, &churn);
+        }
+
+        assert!(
+            std::fs::metadata(&log_path).unwrap().len() < COMPACT_ABOVE_BYTES * 2,
+            "the log must stay bounded while a long transfer churns through it"
+        );
+        assert_eq!(
+            read_recorded(&log_path),
+            vec![long_lived],
+            "compaction must keep the partial that is still being written"
         );
         test_support::clear();
     }
