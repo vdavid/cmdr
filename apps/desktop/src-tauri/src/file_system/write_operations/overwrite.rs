@@ -71,9 +71,10 @@ pub(super) fn stage_and_land_file<F>(
 where
     F: FnOnce(&Path) -> Result<u64, WriteOperationError>,
 {
-    // Both guards live to the end of this function, keeping the two scratch
-    // files out of the pane for as long as they're on disk. Sharing one uuid
-    // makes a crash leftover legible as two halves of one overwrite.
+    // The temp's guard lives to the end of this function (and the aside's too,
+    // when there is one), keeping the scratch out of the pane for as long as
+    // it's on disk. One uuid covers both, so a crash leftover reads as two
+    // halves of one overwrite.
     let uuid = Uuid::new_v4();
     let owner = state.liveness_token();
     let temp = StagingTemp::mint_with_uuid(dest, uuid, owner.clone());
