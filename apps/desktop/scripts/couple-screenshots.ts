@@ -731,17 +731,6 @@ function main() {
     for (const line of missingTwins) console.warn(`  - ${line}`)
   }
 
-  // Safety net: confirm the surgical edits are oxfmt-clean. With line-surgical
-  // editing this is a no-op in practice (we preserve oxfmt's shape), but if a
-  // future catalog has an unusual layout, oxfmt repairs it rather than leaving a
-  // formatting-check failure.
-  if (changedFiles.length > 0) {
-    const res = spawnSync('pnpm', ['exec', 'oxfmt', ...changedFiles], { cwd: desktopDir, stdio: 'inherit' })
-    if (res.status !== 0) {
-      console.warn('oxfmt did not exit cleanly; run `pnpm exec oxfmt` on the changed files manually.')
-    }
-  }
-
   // Coverage report (Decision 4: no silent gaps): a tracked, text artifact that
   // shows which areas have screenshots (direct vs representative) and which keys
   // remain uncoupled.
@@ -754,6 +743,17 @@ function main() {
     `Wrote coverage report: ${String(coverage.direct)} direct + ${String(coverage.representative)} representative ` +
       `/ ${String(coverage.total)} keys → ${coveragePath}`,
   )
+
+  // Safety net: confirm every file this run wrote is oxfmt-clean. For the
+  // surgical catalog edits it's a no-op in practice (we preserve oxfmt's shape),
+  // but the coverage report is rendered from scratch and its reflowed prose and
+  // padded tables are oxfmt's call, not ours; without this the next `pnpm check`
+  // fails on a file nobody hand-edited.
+  const toFormat = [...changedFiles, coveragePath]
+  const res = spawnSync('pnpm', ['exec', 'oxfmt', ...toFormat], { cwd: desktopDir, stdio: 'inherit' })
+  if (res.status !== 0) {
+    console.warn('oxfmt did not exit cleanly; run `pnpm exec oxfmt` on the changed files manually.')
+  }
 }
 
 // Run the CLI only when executed directly, not when imported by a test.

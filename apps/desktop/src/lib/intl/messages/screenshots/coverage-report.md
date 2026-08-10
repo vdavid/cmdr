@@ -12,41 +12,42 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2069 / 2754 keys have a screenshot (75%):** 1180 direct (43%) and 889 representative (32%). 685 remain uncoupled.
+**Total: 2069 / 2754 keys have a screenshot (75%):** 1180 direct (43%) and 889 representative (32%). 685 remain
+uncoupled.
 
-| Area | Direct | Representative | Uncoupled | Total | Any % |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| ai | 0 | 101 | 0 | 101 | 100% |
-| askCmdr | 73 | 0 | 76 | 149 | 49% |
-| commandPalette | 3 | 0 | 3 | 6 | 50% |
-| commands | 132 | 0 | 40 | 172 | 77% |
-| common | 0 | 0 | 2 | 2 | 0% |
-| crashReporter | 9 | 5 | 0 | 14 | 100% |
-| downloads | 10 | 0 | 26 | 36 | 28% |
-| errorReporter | 10 | 0 | 24 | 34 | 29% |
-| errors | 68 | 293 | 0 | 361 | 100% |
-| feedback | 7 | 0 | 6 | 13 | 54% |
-| fileExplorer | 112 | 89 | 148 | 349 | 58% |
-| fileOperations | 96 | 42 | 30 | 168 | 82% |
-| goToPath | 5 | 0 | 5 | 10 | 50% |
-| indexing | 31 | 0 | 28 | 59 | 53% |
-| licensing | 47 | 35 | 25 | 107 | 77% |
-| lowDiskSpace | 0 | 0 | 5 | 5 | 0% |
-| main | 0 | 0 | 2 | 2 | 0% |
-| mtp | 18 | 4 | 0 | 22 | 100% |
-| notifications | 0 | 0 | 1 | 1 | 0% |
-| onboarding | 79 | 32 | 14 | 125 | 89% |
-| operationLog | 22 | 15 | 0 | 37 | 100% |
-| queryUi | 44 | 122 | 0 | 166 | 100% |
-| queue | 23 | 1 | 3 | 27 | 89% |
-| search | 9 | 44 | 0 | 53 | 100% |
-| settings | 310 | 0 | 226 | 536 | 58% |
-| shortcuts | 26 | 28 | 0 | 54 | 100% |
-| transfer | 2 | 0 | 10 | 12 | 17% |
-| ui | 13 | 0 | 9 | 22 | 59% |
-| updates | 0 | 10 | 0 | 10 | 100% |
-| viewer | 25 | 68 | 0 | 93 | 100% |
-| whatsNew | 6 | 0 | 2 | 8 | 75% |
+| Area           | Direct | Representative | Uncoupled | Total | Any % |
+| -------------- | -----: | -------------: | --------: | ----: | ----: |
+| ai             |      0 |            101 |         0 |   101 |  100% |
+| askCmdr        |     73 |              0 |        76 |   149 |   49% |
+| commandPalette |      3 |              0 |         3 |     6 |   50% |
+| commands       |    132 |              0 |        40 |   172 |   77% |
+| common         |      0 |              0 |         2 |     2 |    0% |
+| crashReporter  |      9 |              5 |         0 |    14 |  100% |
+| downloads      |     10 |              0 |        26 |    36 |   28% |
+| errorReporter  |     10 |              0 |        24 |    34 |   29% |
+| errors         |     68 |            293 |         0 |   361 |  100% |
+| feedback       |      7 |              0 |         6 |    13 |   54% |
+| fileExplorer   |    112 |             89 |       148 |   349 |   58% |
+| fileOperations |     96 |             42 |        30 |   168 |   82% |
+| goToPath       |      5 |              0 |         5 |    10 |   50% |
+| indexing       |     31 |              0 |        28 |    59 |   53% |
+| licensing      |     47 |             35 |        25 |   107 |   77% |
+| lowDiskSpace   |      0 |              0 |         5 |     5 |    0% |
+| main           |      0 |              0 |         2 |     2 |    0% |
+| mtp            |     18 |              4 |         0 |    22 |  100% |
+| notifications  |      0 |              0 |         1 |     1 |    0% |
+| onboarding     |     79 |             32 |        14 |   125 |   89% |
+| operationLog   |     22 |             15 |         0 |    37 |  100% |
+| queryUi        |     44 |            122 |         0 |   166 |  100% |
+| queue          |     23 |              1 |         3 |    27 |   89% |
+| search         |      9 |             44 |         0 |    53 |  100% |
+| settings       |    310 |              0 |       226 |   536 |   58% |
+| shortcuts      |     26 |             28 |         0 |    54 |  100% |
+| transfer       |      2 |              0 |        10 |    12 |   17% |
+| ui             |     13 |              0 |         9 |    22 |   59% |
+| updates        |      0 |             10 |         0 |    10 |  100% |
+| viewer         |     25 |             68 |         0 |    93 |  100% |
+| whatsNew       |      6 |              0 |         2 |     8 |   75% |
 
 ## Surfaces to review
 
@@ -54,7 +55,10 @@ The run captured 131 surfaces. This section is regenerated every run, so it stay
 
 ### No unique keys (20)
 
-Every key on these surfaces also renders on another captured surface, so dropping one costs no coverage: its keys would simply couple to whichever surface keeps them. Worth considering, NOT an automatic delete. A surface can be the clearest picture of a key several surfaces share, and being the clearest is reason enough to keep it. To drop one, remove its staging (or add it to `DROPPED_GALLERY_STATES` for a gallery state) in `test/e2e-playwright/`.
+Every key on these surfaces also renders on another captured surface, so dropping one costs no coverage: its keys would
+simply couple to whichever surface keeps them. Worth considering, NOT an automatic delete. A surface can be the clearest
+picture of a key several surfaces share, and being the clearest is reason enough to keep it. To drop one, remove its
+staging (or add it to `DROPPED_GALLERY_STATES` for a gallery state) in `test/e2e-playwright/`.
 
 - `search-dialog` (90 keys, none unique)
 - `transfer-confirmation-copy` (76 keys, none unique)
@@ -79,7 +83,9 @@ Every key on these surfaces also renders on another captured surface, so droppin
 
 ### Captured at a reduced UI zoom (3)
 
-❗ These surfaces are taller than the display allows even with the window grown to full height, so the driver reduced the UI zoom to fit the whole surface in frame. **The text in these images is smaller than what a user sees.** Judge length against the other screenshots, not these.
+❗ These surfaces are taller than the display allows even with the window grown to full height, so the driver reduced
+the UI zoom to fit the whole surface in frame. **The text in these images is smaller than what a user sees.** Judge
+length against the other screenshots, not these.
 
 - `bulk-rename-review-some-blocked`: captured at 90% zoom
 - `bulk-rename-review-why-this-name`: captured at 75% zoom

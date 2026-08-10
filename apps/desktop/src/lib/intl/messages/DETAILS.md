@@ -182,7 +182,9 @@ What's where, and what's tracked:
   representative are counted separately so a stand-in is never mistaken for a precise capture. Coverage is partial until
   the driver covers the full inventory. Its "Surfaces to review" tail is per-SURFACE rather than per-key: which surfaces
   contributed no unique key (candidates to prune, see § Keeping the surface set honest) and which were captured at a
-  reduced UI zoom (their text is smaller than a user sees).
+  reduced UI zoom (their text is smaller than a user sees). The coupler runs `oxfmt` over it before finishing: it's
+  rendered from scratch, and its reflowed prose and padded tables are the formatter's call, so without that step every
+  regeneration hands the next `pnpm check` a format failure in a file nobody hand-edited.
 - The `@key.screenshot` / `@key.screenshotNote` refs in `en/*.json`: **tracked.** Written line-surgically (only those
   two fields change; the coupler has a value-safety test covering both).
 
