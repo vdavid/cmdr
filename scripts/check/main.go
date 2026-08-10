@@ -284,7 +284,7 @@ func handleFreestyleFlags(rootDir string, flags *cliFlags) bool {
 // positional selectors (and by --app / the group flags). ValidateCheckNames
 // rejects any check ID/nickname that would shadow one, because positional
 // resolution tries check names first.
-var reservedSelectorNames = []string{"desktop", "website", "api-server", "scripts", "crates", "rust", "svelte", "go"}
+var reservedSelectorNames = []string{"desktop", "website", "api-server", "dashboard", "scripts", "crates", "rust", "svelte", "go"}
 
 // parseFlags parses command-line flags and positional selectors (check
 // names, app names, and tech groups, in any order and mix; commas work too).
@@ -432,7 +432,7 @@ func applySelector(flags *cliFlags, name string) error {
 		return nil
 	}
 	switch strings.ToLower(name) {
-	case "desktop", "website", "api-server", "scripts", "crates":
+	case "desktop", "website", "api-server", "dashboard", "scripts", "crates":
 		flags.appNames = append(flags.appNames, strings.ToLower(name))
 	case "rust":
 		flags.rustOnly = true
@@ -514,12 +514,14 @@ func selectChecksByApp(appName string) ([]checks.CheckDefinition, error) {
 		return checks.GetChecksByApp(checks.AppWebsite), nil
 	case "api-server":
 		return checks.GetChecksByApp(checks.AppApiServer), nil
+	case "dashboard":
+		return checks.GetChecksByApp(checks.AppDashboard), nil
 	case "scripts":
 		return checks.GetChecksByApp(checks.AppScripts), nil
 	case "crates":
 		return checks.GetChecksByApp(checks.AppCrates), nil
 	default:
-		return nil, fmt.Errorf("unknown app: %s\nAvailable apps: desktop, website, api-server, scripts, crates", appName)
+		return nil, fmt.Errorf("unknown app: %s\nAvailable apps: desktop, website, api-server, dashboard, scripts, crates", appName)
 	}
 }
 
@@ -635,7 +637,7 @@ func needsPnpmInstall(checksToRun []checks.CheckDefinition) bool {
 	for _, check := range checksToRun {
 		// Checks that need pnpm: Svelte, Astro, TS (api-server)
 		switch check.App {
-		case checks.AppDesktop, checks.AppWebsite, checks.AppApiServer:
+		case checks.AppDesktop, checks.AppWebsite, checks.AppApiServer, checks.AppDashboard:
 			return true
 		}
 	}
@@ -678,7 +680,7 @@ func showUsage() {
 	fmt.Println()
 	fmt.Println("Name what to run as positional args, in any mix (flags can go anywhere):")
 	fmt.Println("    - Check IDs or nicknames (run even if slow/CI-only): oxfmt, clippy, website-build, ...")
-	fmt.Println("    - App names: desktop, website, api-server, scripts")
+	fmt.Println("    - App names: desktop, website, api-server, dashboard, scripts")
 	fmt.Println("    - Tech groups: rust, svelte, go")
 	fmt.Println("Comma-separated works too: pnpm check oxfmt,clippy")
 	fmt.Println()

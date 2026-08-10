@@ -25,6 +25,7 @@ const (
 	AppDesktop   App = "desktop"
 	AppWebsite   App = "website"
 	AppApiServer App = "api-server"
+	AppDashboard App = "dashboard"
 	AppScripts   App = "scripts"
 	// AppCrates is the shared Rust crates under `crates/`. It exists so
 	// crate-boundary checks have a selector of their own; the crates' code is also
@@ -42,6 +43,8 @@ func AppDisplayName(app App) string {
 		return "🌐 Website"
 	case AppApiServer:
 		return "🌐 API server"
+	case AppDashboard:
+		return "📊 Analytics dashboard"
 	case AppCrates:
 		return "📦 Crates"
 	case AppScripts:
@@ -610,6 +613,80 @@ func runESLintCheck(ctx *CheckContext, dir string, extensions []string, requireC
 		return result, nil
 	}
 	return Success("All files passed"), nil
+}
+
+// runStylelintCheck lints (and locally fixes) CSS and Svelte `<style>` blocks in a given app dir.
+// The app supplies the globs via its own `stylelint` / `stylelint:fix` package scripts.
+func runStylelintCheck(ctx *CheckContext, dir string) (CheckResult, error) {
+	findCmd := exec.Command("find", "src", "-type", "f", "-name", "*.css")
+	findCmd.Dir = dir
+	findOutput, _ := RunCommand(findCmd, true)
+	fileCount := 0
+	if strings.TrimSpace(findOutput) != "" {
+		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
+	}
+
+	var cmd *exec.Cmd
+	if ctx.CI {
+		cmd = exec.Command("pnpm", "stylelint")
+	} else {
+		cmd = exec.Command("pnpm", "stylelint:fix")
+	}
+	cmd.Dir = dir
+	output, err := RunCommand(cmd, true)
+	if err != nil {
+		if ctx.CI {
+			return CheckResult{}, fmt.Errorf("CSS lint errors found, run pnpm stylelint:fix locally\n%s", indentOutput(output))
+		}
+		return CheckResult{}, fmt.Errorf("stylelint found unfixable errors\n%s", indentOutput(output))
+	}
+
+	if fileCount > 0 {
+		result := Success(fmt.Sprintf("%d CSS %s valid", fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		return result, nil
+	}
+	return Success("All CSS valid"), nil
+}
+
+// runKnipCheck finds unused files, exports, and dependencies in a given app dir.
+func runKnipCheck(ctx *CheckContext, dir string) (CheckResult, error) {
+	findCmd := exec.Command("find", "src", "-type", "f", "(", "-name", "*.ts", "-o", "-name", "*.svelte", ")")
+	findCmd.Dir = dir
+	findOutput, _ := RunCommand(findCmd, true)
+	fileCount := 0
+	if strings.TrimSpace(findOutput) != "" {
+		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
+	}
+
+	cmd := exec.Command("pnpm", "knip")
+	cmd.Dir = dir
+	output, err := RunCommand(cmd, true)
+	if err != nil {
+		return CheckResult{}, fmt.Errorf("knip found unused code or dependencies\n%s", indentOutput(output))
+	}
+
+	if fileCount > 0 {
+		return Success(fmt.Sprintf("%d %s checked, no unused code", fileCount, Pluralize(fileCount, "file", "files"))), nil
+	}
+	return Success("No unused code"), nil
+}
+
+// runImportCyclesCheck uses oxlint's import plugin to detect circular imports in a given app dir.
+func runImportCyclesCheck(ctx *CheckContext, dir string) (CheckResult, error) {
+	cmd := exec.Command("pnpm", "exec", "oxlint",
+		"--import-plugin",
+		"--allow", "all",
+		"--deny", "import/no-cycle",
+		"src",
+	)
+	cmd.Dir = dir
+	output, err := RunCommand(cmd, true)
+	if err != nil {
+		return CheckResult{}, fmt.Errorf("circular imports detected\n%s", indentOutput(output))
+	}
+
+	return Success("No circular imports"), nil
 }
 
 // buildFindArgs constructs arguments for a find command to locate files with given extensions.

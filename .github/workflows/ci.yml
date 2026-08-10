@@ -58,6 +58,7 @@ jobs:
               - 'apps/desktop/static/**'
               - 'apps/desktop/test/e2e-shared/**'
               - 'apps/desktop/eslint-plugins/**'
+              - 'eslint-plugins/**'
               - 'apps/desktop/scripts/**'
               - 'apps/desktop/package.json'
               - 'apps/desktop/svelte.config.js'
@@ -92,6 +93,7 @@ jobs:
               - '.github/workflows/ci.yml'
             dashboard:
               - 'apps/analytics-dashboard/**'
+              - 'eslint-plugins/**'
               - 'pnpm-lock.yaml'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
@@ -590,9 +592,6 @@ jobs:
   # ===========================================
   # Analytics dashboard
   # ===========================================
-  # The dashboard has no entries in the check registry (it's a small private
-  # SvelteKit app), so this job runs its package scripts directly. Without it,
-  # dashboard changes only got validated by the deploy build, after landing on main.
   dashboard:
     name: Analytics dashboard
     runs-on: ubuntu-latest
@@ -620,17 +619,37 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run svelte-check
-        run: pnpm check
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      # The type-aware checks need `.svelte-kit/tsconfig.json`, which the app's tsconfig extends.
+      # The `dashboard-svelte-kit-sync` check generates it locally; CI does it as a setup step so
+      # the checks below can run in any order.
+      - name: Generate SvelteKit types
+        run: pnpm exec svelte-kit sync
         working-directory: ./apps/analytics-dashboard
+
+      - name: Run ESLint
+        run: ./scripts/check/check --check dashboard-eslint --ci
+
+      - name: Run Stylelint
+        run: ./scripts/check/check --check dashboard-stylelint --ci
+
+      - name: Run svelte-check
+        run: ./scripts/check/check --check dashboard-svelte-check --ci
+
+      - name: Check for import cycles
+        run: ./scripts/check/check --check dashboard-import-cycles --ci
+
+      - name: Run knip
+        run: ./scripts/check/check --check dashboard-knip --ci
 
       - name: Run tests
-        run: pnpm test
-        working-directory: ./apps/analytics-dashboard
+        run: ./scripts/check/check --check dashboard-tests --ci
 
       - name: Build
-        run: pnpm build
-        working-directory: ./apps/analytics-dashboard
+        run: ./scripts/check/check --check dashboard-build --ci
 
   # ===========================================
   # Repo hygiene (always runs, no change gate)

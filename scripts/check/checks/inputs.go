@@ -38,6 +38,7 @@ var svelteInputs = []string{
 	"apps/desktop/static/**",
 	"apps/desktop/test/**",
 	"apps/desktop/eslint-plugins/**",
+	"eslint-plugins/**", // the two custom rules shared with the dashboard
 	"apps/desktop/scripts/**",
 	"apps/desktop/package.json",
 	"apps/desktop/svelte.config.js",
@@ -75,6 +76,14 @@ var websiteInputs = []string{
 // apiServerInputs mirrors ci.yml's `api-server` filter.
 var apiServerInputs = []string{
 	"apps/api-server/**",
+	"pnpm-lock.yaml",
+}
+
+// dashboardInputs mirrors ci.yml's `dashboard` filter, plus the shared custom ESLint rules the
+// dashboard's config imports from the repo root.
+var dashboardInputs = []string{
+	"apps/analytics-dashboard/**",
+	"eslint-plugins/**",
 	"pnpm-lock.yaml",
 }
 

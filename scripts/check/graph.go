@@ -390,7 +390,7 @@ func renderGraphDot(defs []checks.CheckDefinition, durs map[string]float64) {
 	fmt.Println("  rankdir=TB;")
 	fmt.Println("  node [shape=box, style=\"filled,rounded\", fontname=\"Helvetica\"];")
 	// Group nodes into per-app clusters for readability.
-	apps := []checks.App{checks.AppOther, checks.AppDesktop, checks.AppWebsite, checks.AppApiServer, checks.AppScripts}
+	apps := []checks.App{checks.AppOther, checks.AppDesktop, checks.AppWebsite, checks.AppApiServer, checks.AppDashboard, checks.AppScripts}
 	byApp := map[checks.App][]*checks.CheckDefinition{}
 	for i := range defs {
 		byApp[defs[i].App] = append(byApp[defs[i].App], &defs[i])
