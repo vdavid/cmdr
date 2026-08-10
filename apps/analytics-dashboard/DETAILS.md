@@ -116,7 +116,10 @@ runtime values live outside `$lib/server`: `$lib/funnel.ts`, `$lib/feedback-and-
 - `src/routes/+page.{svelte,server.ts}`: Acquisition page (funnel/Umami/Cloudflare/GitHub/PostHog subset).
   `src/routes/product/+page.{svelte,server.ts}`: Product page (Cloudflare/Paddle/license/feedback subset).
   `src/routes/links/+page.{svelte,server.ts}`: Link codes CRUD (`load` lists, `save`/`delete` form actions proxy).
-- `src/routes/api/report/+server.ts`: agent-readable plain-text report (all sections, via `fetchDashboardData`).
+- `src/routes/api/report/+server.ts`: the agent-readable plain-text report endpoint. It only fetches (via
+  `fetchDashboardData`) and responds; all the formatting is in `src/routes/api/report/format-report.ts`, which imports
+  no SvelteKit-only modules so a plain unit test can reach it. `format-report.test.ts` pins the whole output as golden
+  strings across four fixtures, so any wording, ordering, or spacing change to the report is a deliberate act.
 - `src/lib/server/fetch-all.ts`: per-source loaders, per-page composers (`fetchAcquisitionData`, `fetchProductData`),
   and the all-sources `fetchDashboardData`.
 - `src/lib/server/types.ts`: `TimeRange`, `DashboardSelection`, `SourceResult`, time window + selection helpers.
