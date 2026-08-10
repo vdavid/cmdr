@@ -16,7 +16,7 @@
 use super::tests::make_state;
 use super::wedge_test_support::*;
 use super::*;
-use crate::file_system::write_operations::state::cancel_write_operation;
+use crate::file_system::write_operations::state::{abort_write_operation, cancel_write_operation};
 use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::CollectorEventSink;
 use cmdr_fs::testing::wait_until_async;
@@ -222,5 +222,79 @@ async fn a_task_that_never_winds_down_is_abandoned_at_the_deadline() {
     assert!(
         names.is_empty(),
         "the abandoned tasks' staged partials must be swept too; dest holds {names:?}"
+    );
+}
+
+/// The drain deadline belongs to whoever asked for the wind-down, not to a
+/// constant. A user's Cancel can afford to wait 15 s for a task that might still
+/// come back; a quit that has already fired the hard-abort tier cannot, and it
+/// has to be able to shorten a window the cancel already armed — because that is
+/// the real sequence (cancel, wait a beat, abort what's left).
+///
+/// The wedge here is the LANDING, deliberately: tier 2 races the source open and
+/// the streaming write, so a task stuck in `rename` is out of its reach and only
+/// the deadline can end it. That makes this test about the deadline and nothing
+/// else.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_abort_shortens_the_drain_window_a_cancel_already_armed() {
+    // A cooperative window far longer than the test's own patience, so a fast
+    // return can only be the abort's doing.
+    let _drain = CancelDrainGuard::set_both(Duration::from_secs(60), Duration::from_millis(150));
+    let (fx, renames) = fixture_with_wedged_landing(CHUNK as u64);
+    let mut sources = Vec::new();
+    for name in ["/wedge-a.bin", "/wedge-b.bin", "/wedge-c.bin"] {
+        fx.source_inner
+            .create_file(Path::new(name), &vec![0xAB; CHUNK])
+            .await
+            .unwrap();
+        sources.push(PathBuf::from(name));
+    }
+
+    let events = Arc::new(CollectorEventSink::new());
+    let op = TestOperationGuard::register_state("abort-shortens-drain", make_state());
+    let config = VolumeCopyConfig::default();
+
+    let copy = copy_volumes_with_progress(
+        events.clone(),
+        op.id(),
+        op.state(),
+        Arc::clone(&fx.source),
+        &sources,
+        Arc::clone(&fx.dest),
+        Path::new("/"),
+        &config,
+    );
+    tokio::pin!(copy);
+
+    // Every source streams its one chunk, so each task reaches its landing and
+    // wedges there.
+    fx.gate.add_permits(16);
+    tokio::select! {
+        r = &mut copy => panic!("the copy must still be running: {r:?}"),
+        () = wait_until_async(WAIT, "every task to reach its wedged landing", || {
+            renames.load(Ordering::SeqCst) >= 3
+        }) => {}
+    }
+
+    // The cancel arms the 60 s cooperative window. Nothing about these tasks can
+    // end before it.
+    cancel_write_operation(op.id(), false);
+    tokio::select! {
+        r = &mut copy => panic!("the cooperative drain must still be running: {r:?}"),
+        // allowed-test-sleep: a negative assertion over a window — the 60 s drain
+        // publishes nothing to wait on, and the point is that it does NOT expire.
+        () = tokio::time::sleep(Duration::from_millis(400)) => {}
+    }
+
+    let started = tokio::time::Instant::now();
+    abort_write_operation(op.id());
+    tokio::time::timeout(RETURN_WITHIN, copy)
+        .await
+        .expect("the abort must shorten the drain the cancel armed")
+        .expect_err("an abandoned wind-down still ends the operation as cancelled");
+    assert!(
+        started.elapsed() < Duration::from_secs(2),
+        "the driver must abandon on the ABORT deadline, not serve out the cancel's (took {:?})",
+        started.elapsed()
     );
 }

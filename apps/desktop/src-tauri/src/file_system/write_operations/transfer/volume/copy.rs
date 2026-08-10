@@ -60,13 +60,29 @@ use super::transfer_error::{WriteFailure, write_error_event_from};
 /// news, and it is logged as such.
 const CANCEL_DRAIN_DEADLINE: Duration = Duration::from_secs(15);
 
-/// The drain deadline in force, honoring a test override.
-pub(super) fn cancel_drain_deadline() -> Duration {
+/// The same wait once the hard-abort tier has fired (`state.backend_abort`).
+///
+/// A cooperative cancel can be generous because a task that hasn't answered yet
+/// might still come back with its own cleanup done. An abort has already given up
+/// on that: something is holding a deadline the app promised a person — today
+/// that means "the app quits within two seconds" — and a second of grace is all
+/// that's left to spend. Anything still running when it expires is abandoned
+/// exactly as before, which staging makes safe.
+const ABORT_DRAIN_DEADLINE: Duration = Duration::from_secs(1);
+
+/// How long a wind-down waits for its in-flight tasks, chosen by whoever asked
+/// for it rather than by a constant: `aborting` is the hard-abort tier being
+/// live. Honors a test override.
+pub(super) fn drain_deadline(aborting: bool) -> Duration {
     #[cfg(test)]
-    if let Some(d) = wedge_test_support::cancel_drain_override() {
+    if let Some(d) = wedge_test_support::drain_override(aborting) {
         return d;
     }
-    CANCEL_DRAIN_DEADLINE
+    if aborting {
+        ABORT_DRAIN_DEADLINE
+    } else {
+        CANCEL_DRAIN_DEADLINE
+    }
 }
 
 /// Starts a copy operation between two volumes.

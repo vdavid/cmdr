@@ -161,6 +161,16 @@ pub(super) struct IncrementalDest {
     /// Bytes published so far, so a test can wait on "the write is under way"
     /// with a plain synchronous condition.
     pub(super) written: Arc<AtomicU64>,
+    /// When set, `rename` never returns: the LANDING wedges instead of the write.
+    ///
+    /// That shape matters because it is out of the hard-abort tier's reach — tier
+    /// 2 races the source open and the streaming write, not the landing round
+    /// trip — so a task wedged here can only be ended by the driver's drain
+    /// deadline. It is what lets a test measure that deadline and nothing else.
+    wedge_rename: bool,
+    /// How many renames have been entered, so a test can wait for the wedge
+    /// rather than guessing at a duration.
+    pub(super) renames_entered: Arc<AtomicU64>,
 }
 
 impl IncrementalDest {
@@ -171,8 +181,26 @@ impl IncrementalDest {
         let vol: Arc<dyn Volume> = Arc::new(Self {
             inner,
             written: Arc::clone(&written),
+            wedge_rename: false,
+            renames_entered: Arc::new(AtomicU64::new(0)),
         });
         (vol, written)
+    }
+
+    /// Same destination, but every staged write's LANDING hangs forever. Hands
+    /// back the written-bytes and entered-renames counters.
+    pub(super) fn build_with_wedged_rename(
+        inner: Arc<InMemoryVolume>,
+    ) -> (Arc<dyn Volume>, Arc<AtomicU64>, Arc<AtomicU64>) {
+        let written = Arc::new(AtomicU64::new(0));
+        let renames_entered = Arc::new(AtomicU64::new(0));
+        let vol: Arc<dyn Volume> = Arc::new(Self {
+            inner,
+            written: Arc::clone(&written),
+            wedge_rename: true,
+            renames_entered: Arc::clone(&renames_entered),
+        });
+        (vol, written, renames_entered)
     }
 }
 
@@ -255,7 +283,17 @@ impl Volume for IncrementalDest {
         to: &'a Path,
         force: bool,
     ) -> StdPin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        self.inner.rename(from, to, force)
+        if !self.wedge_rename {
+            return self.inner.rename(from, to, force);
+        }
+        let entered = Arc::clone(&self.renames_entered);
+        Box::pin(async move {
+            entered.fetch_add(1, Ordering::SeqCst);
+            // Never returns: the landing is outside the hard-abort tier's reach,
+            // so only the driver's drain deadline can end this task.
+            std::future::pending::<()>().await;
+            unreachable!("a pending future never resolves")
+        })
     }
     fn get_space_info<'a>(&'a self) -> StdPin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
         self.inner.get_space_info()
@@ -342,6 +380,26 @@ pub(super) struct Fixture {
 /// Builds the standard fixture: a gated source whose non-empty files stream
 /// `size` bytes, and a destination that publishes bytes as they arrive.
 pub(super) fn fixture(size: u64) -> Fixture {
+    let dest_inner = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+    let (dest, written) = IncrementalDest::build(Arc::clone(&dest_inner));
+    assemble(size, dest, dest_inner, written)
+}
+
+/// The same fixture with a destination whose LANDING never returns, so its tasks
+/// wedge somewhere the hard-abort tier deliberately doesn't reach. Also hands
+/// back the entered-renames counter to wait on.
+pub(super) fn fixture_with_wedged_landing(size: u64) -> (Fixture, Arc<AtomicU64>) {
+    let dest_inner = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+    let (dest, written, renames) = IncrementalDest::build_with_wedged_rename(Arc::clone(&dest_inner));
+    (assemble(size, dest, dest_inner, written), renames)
+}
+
+fn assemble(
+    size: u64,
+    dest: Arc<dyn Volume>,
+    dest_inner: Arc<InMemoryVolume>,
+    written: Arc<AtomicU64>,
+) -> Fixture {
     let source_inner = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
     let gate = Arc::new(tokio::sync::Semaphore::new(0));
     let opened = Arc::new(AtomicU64::new(0));
@@ -351,8 +409,6 @@ pub(super) fn fixture(size: u64) -> Fixture {
         file_size: size,
         opened: Arc::clone(&opened),
     });
-    let dest_inner = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
-    let (dest, written) = IncrementalDest::build(Arc::clone(&dest_inner));
     Fixture {
         source,
         source_inner,
@@ -365,37 +421,46 @@ pub(super) fn fixture(size: u64) -> Fixture {
 }
 
 thread_local! {
-    /// Per-test override of the cancel drain deadline, read by
-    /// `super::cancel_drain_deadline()` in test builds. `None` ⇒ the production
-    /// constant. Set through [`CancelDrainGuard`].
-    static CANCEL_DRAIN_OVERRIDE: std::cell::Cell<Option<Duration>> = const { std::cell::Cell::new(None) };
+    /// Per-test override of the drain deadlines, `(cooperative cancel, hard
+    /// abort)`, read by `super::drain_deadline()` in test builds. `None` ⇒ the
+    /// production constants. Set through [`CancelDrainGuard`].
+    static DRAIN_OVERRIDE: std::cell::Cell<Option<(Duration, Duration)>> = const { std::cell::Cell::new(None) };
 }
 
-pub(super) fn cancel_drain_override() -> Option<Duration> {
-    CANCEL_DRAIN_OVERRIDE.with(std::cell::Cell::get)
+pub(super) fn drain_override(aborting: bool) -> Option<Duration> {
+    DRAIN_OVERRIDE
+        .with(std::cell::Cell::get)
+        .map(|(cancel, abort)| if aborting { abort } else { cancel })
 }
 
-/// Shortens the cancel drain deadline for the current thread, restoring it on
-/// drop, so a suite can watch the abandon path fire without waiting out the
-/// production window.
+/// Shortens the drain deadlines for the current thread, restoring them on drop,
+/// so a suite can watch the abandon path fire without waiting out the production
+/// window.
 ///
 /// Thread-local, like `volume::strategy`'s `AutoYieldTuningGuard`: the driver runs
 /// inline on the test's own task (these tests `.await` it rather than spawning),
 /// so it reads this thread's value.
 pub(super) struct CancelDrainGuard {
-    prev: Option<Duration>,
+    prev: Option<(Duration, Duration)>,
 }
 
 impl CancelDrainGuard {
+    /// Overrides the cooperative-cancel deadline, leaving the abort one at a
+    /// value so short it can't be what a test is measuring.
     pub(super) fn set(deadline: Duration) -> Self {
+        Self::set_both(deadline, Duration::from_millis(1))
+    }
+
+    /// Overrides both, for the suite that has to tell the two apart.
+    pub(super) fn set_both(cancel: Duration, abort: Duration) -> Self {
         Self {
-            prev: CANCEL_DRAIN_OVERRIDE.with(|c| c.replace(Some(deadline))),
+            prev: DRAIN_OVERRIDE.with(|c| c.replace(Some((cancel, abort)))),
         }
     }
 }
 
 impl Drop for CancelDrainGuard {
     fn drop(&mut self) {
-        CANCEL_DRAIN_OVERRIDE.with(|c| c.set(self.prev));
+        DRAIN_OVERRIDE.with(|c| c.set(self.prev));
     }
 }

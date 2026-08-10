@@ -39,7 +39,7 @@ use super::super::dest_name_index::{DestLookup, DestNameIndex};
 use super::super::transfer_driver::make_concurrent_per_file_progress;
 use super::super::transfer_probe::OperationProbe;
 use super::conflict::resolve_volume_conflict;
-use super::copy::cancel_drain_deadline;
+use super::copy::drain_deadline as drain_deadline_for;
 use super::preflight::SourceHint;
 use super::strategy::{copy_single_path, resolve_source_is_directory};
 use super::transfer_error::{WriteFailure, map_volume_error};
@@ -301,6 +301,9 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
     // it stops waiting indefinitely for its tasks and gives them a bounded
     // window to wind down. See `CANCEL_DRAIN_DEADLINE`.
     let mut drain_deadline: Option<tokio::time::Instant> = None;
+    // Whether that window is the hard-abort tier's short one rather than the
+    // cooperative cancel's. Latched, so the abort re-arms the deadline once.
+    let mut drain_shortened = false;
     loop {
         // Keep pushing new tasks until either sources run out or the window is full.
         while in_flight.len() < concurrency {
@@ -712,23 +715,44 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
         let next = match drain_deadline {
             // Already winding down: bounded, so one task that never returns
             // can't hold the operation (and the user's dialog) open.
-            Some(deadline) => match tokio::time::timeout_at(deadline, in_flight.next()).await {
-                Ok(next) => next,
-                Err(_) => {
-                    crate::log_error!(
+            //
+            // The window stays re-negotiable while it runs. A quit cancels first
+            // and aborts what's left a beat later, and by then this await is
+            // already sitting on the cooperative deadline — so tier 2 gets its own
+            // `select!` arm to shorten it. Guarded on `drain_shortened` because a
+            // fired token is ready forever, and an unguarded arm would spin.
+            Some(deadline) => tokio::select! {
+                biased;
+                () = state.backend_abort.cancelled(), if !drain_shortened => {
+                    drain_shortened = true;
+                    let shortened = drain_deadline_for(true);
+                    log::info!(
                         target: "copy",
-                        "copy_volumes_with_progress: op={} abandoning {} task(s) that did not wind down within {:?} of the cancel. \
-                         Their handles are left for the backend to reap; their staged partials are cleaned up below.{}",
-                        operation_id,
+                        "copy_volumes_with_progress: op={operation_id} is no longer waiting for its {} in-flight task(s); \
+                         cutting the wind-down short (to {shortened:?})",
                         in_flight.len(),
-                        cancel_drain_deadline(),
-                        op_probe
-                            .as_ref()
-                            .map(|p| format!("\n{}", p.render_dump("abandoning wedged tasks")))
-                            .unwrap_or_default(),
                     );
-                    break;
+                    drain_deadline = Some(tokio::time::Instant::now() + shortened);
+                    continue;
                 }
+                result = tokio::time::timeout_at(deadline, in_flight.next()) => match result {
+                    Ok(next) => next,
+                    Err(_) => {
+                        crate::log_error!(
+                            target: "copy",
+                            "copy_volumes_with_progress: op={} abandoning {} task(s) that did not wind down within {:?} of the cancel. \
+                             Their handles are left for the backend to reap; their staged partials are cleaned up below.{}",
+                            operation_id,
+                            in_flight.len(),
+                            drain_deadline_for(drain_shortened),
+                            op_probe
+                                .as_ref()
+                                .map(|p| format!("\n{}", p.render_dump("abandoning wedged tasks")))
+                                .unwrap_or_default(),
+                        );
+                        break;
+                    }
+                },
             },
             None => {
                 tokio::select! {
@@ -736,16 +760,19 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                     // is re-polled on the next pass, so nothing is dropped.
                     biased;
                     () = state.backend_cancel.cancelled() => {
+                        // An abort fires tier 1 first, so it can be what woke this
+                        // arm; ask which window we're owed rather than assuming.
+                        drain_shortened = state.backend_abort.is_cancelled();
+                        let window = drain_deadline_for(drain_shortened);
                         log::info!(
                             target: "copy",
                             "copy_volumes_with_progress: op={} observed {:?} while awaiting {} in-flight task(s); \
-                             winding them down (up to {:?})",
+                             winding them down (up to {window:?})",
                             operation_id,
                             load_intent(&state.intent),
                             in_flight.len(),
-                            cancel_drain_deadline(),
                         );
-                        drain_deadline = Some(tokio::time::Instant::now() + cancel_drain_deadline());
+                        drain_deadline = Some(tokio::time::Instant::now() + window);
                         continue;
                     }
                     next = in_flight.next() => next,
