@@ -106,8 +106,7 @@
   "fileOperations.delete.titleCursorFile": "Delete 1 file under cursor",
   "@fileOperations.delete.titleCursorFile": {
     "description": "Delete dialog title when deleting the single file the cursor is on (nothing multi-selected). 'under cursor' means the highlighted row.",
-    "screenshot": "delete-confirm.png",
-    "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
+    "screenshot": "delete-confirmation-long-name.png"
   },
 
   "fileOperations.delete.titleCursorFolder": "Delete 1 folder under cursor",
@@ -887,8 +886,7 @@
   "fileOperations.transferProgress.progressBytes": "Bytes",
   "@fileOperations.transferProgress.progressBytes": {
     "description": "Label for the bytes-progress bar in the transfer progress dialog (how many bytes are done out of the total), sitting directly above the file-count bar labelled \"Files\". \"Bytes\" is the unit of data, and pairs with that label; keep it short, it sits in a narrow column.",
-    "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.progressItems": "Items",

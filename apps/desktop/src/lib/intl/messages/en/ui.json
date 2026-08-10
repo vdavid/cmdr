@@ -2,12 +2,13 @@
   "ui.alertDialog.defaultButton": "OK",
   "@ui.alertDialog.defaultButton": {
     "description": "Default label for the single dismiss button in a generic alert dialog, used when the caller passes no custom button text. A confirmation/acknowledgement, like the standard OK button.",
-    "screenshot": "alert-short.png"
+    "screenshot": "alert-long.png"
   },
 
   "ui.alertDialog.copyPathAria": "Copy path to clipboard",
   "@ui.alertDialog.copyPathAria": {
-    "description": "aria-label for the Copy button beside the path shown in an alert dialog (for example \"Path is too long\"). Screen-reader-only; the visible button label is the shared \"Copy\" / \"Copied!\" pair. \"Path\" here means a filesystem path such as /Users/dave/photos/img.jpg. Keep it identical in wording to commands.fileCopyPath.label."
+    "description": "aria-label for the Copy button beside the path shown in an alert dialog (for example \"Path is too long\"). Screen-reader-only; the visible button label is the shared \"Copy\" / \"Copied!\" pair. \"Path\" here means a filesystem path such as /Users/dave/photos/img.jpg. Keep it identical in wording to commands.fileCopyPath.label.",
+    "screenshot": "alert-long-unbroken-path.png"
   },
 
   "ui.modalDialog.close": "Close",
@@ -48,7 +49,7 @@
   "ui.copyBox.copy": "Copy",
   "@ui.copyBox.copy": {
     "description": "Resting label of the Copy button next to a string shown for copying (a terminal command, a file path). Tight button; keep short.",
-    "screenshot": "mtp-permission-default.png"
+    "screenshot": "alert-long-unbroken-path.png"
   },
   "ui.copyBox.copied": "Copied!",
   "@ui.copyBox.copied": {
@@ -74,7 +75,7 @@
   "ui.toast.dismissAria": "Dismiss notification",
   "@ui.toast.dismissAria": {
     "description": "aria-label for the × button that closes (dismisses) a toast notification.",
-    "screenshot": "toast-favorite.png"
+    "screenshot": "main-window.png"
   },
 
   "ui.loadingIcon.finalizing": "All {countText} {count, plural, one {file} other {files}} loaded. Sorting your files, preparing view...",
@@ -84,7 +85,7 @@
       "countText": "how many files, already formatted for display (for example 1,234)",
       "count": "the same number of files (drives the singular/plural form of the noun)"
     },
-    "screenshot": "ask-cmdr-consent.png"
+    "screenshot": "conflict-dialog.png"
   },
   "ui.loadingIcon.loaded": "Loaded {countText} {count, plural, one {file} other {files}}...",
   "@ui.loadingIcon.loaded": {
@@ -110,7 +111,7 @@
     "placeholders": {
       "key": "position of the inline Esc key pill (a styled chip the app fills in); keep the empty wrapper tag"
     },
-    "screenshot": "ask-cmdr-consent.png"
+    "screenshot": "conflict-dialog.png"
   },
   "ui.numberInput.decrease": "Decrease {label}",
   "@ui.numberInput.decrease": {

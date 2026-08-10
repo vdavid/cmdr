@@ -149,32 +149,32 @@
   "licensing.commercialReminder.title": "Thanks for using Cmdr!",
   "@licensing.commercialReminder.title": {
     "description": "Title of the periodic reminder modal shown to personal-license users. Warm and grateful, not nagging. 'Cmdr' is the product name; do NOT translate.",
-    "screenshot": "commercial-reminder-default.png"
+    "screenshot": "commercial-reminder.png"
   },
   "licensing.commercialReminder.usingPersonal": "You''re using a Personal license.",
   "@licensing.commercialReminder.usingPersonal": {
     "description": "First line of the commercial-reminder modal stating the current license tier. 'Personal' is a license tier name; keep it capitalized and consistent with the other license labels.",
-    "screenshot": "commercial-reminder-default.png"
+    "screenshot": "commercial-reminder.png"
   },
   "licensing.commercialReminder.askCommercial": "If you''re using Cmdr at work, please get a Commercial license to stay compliant.",
   "@licensing.commercialReminder.askCommercial": {
     "description": "Body of the commercial-reminder modal politely asking work users to buy a commercial license. 'Cmdr' is the product name; 'Commercial' is a license tier name.",
-    "screenshot": "commercial-reminder-default.png"
+    "screenshot": "commercial-reminder.png"
   },
   "licensing.commercialReminder.priceInfo": "Commercial licenses are $59/year/user and support continued development.",
   "@licensing.commercialReminder.priceInfo": {
     "description": "Supporting line in the commercial-reminder modal giving the price and framing it as support for development. Keep the price '$59/year/user' literal (currency and amount must not change).",
-    "screenshot": "commercial-reminder-default.png"
+    "screenshot": "commercial-reminder.png"
   },
   "licensing.commercialReminder.declinePersonal": "I only use Cmdr<break></break>for personal purposes",
   "@licensing.commercialReminder.declinePersonal": {
     "description": "Secondary (dismiss) button in the commercial-reminder modal, for users who only use the app personally. <break> is an inline line break for two-line layout in a narrow button; place it at a sensible wrap point for the target language. 'Cmdr' is the product name.",
-    "screenshot": "commercial-reminder-default.png"
+    "screenshot": "commercial-reminder.png"
   },
   "licensing.commercialReminder.getCommercial": "Get commercial license",
   "@licensing.commercialReminder.getCommercial": {
     "description": "Primary button in the commercial-reminder modal that opens the pricing page. Keep it short (a button).",
-    "screenshot": "commercial-reminder-default.png"
+    "screenshot": "commercial-reminder.png"
   },
   "licensing.expiration.title": "Your commercial license has expired",
   "@licensing.expiration.title": {

@@ -1272,7 +1272,7 @@
   "fileExplorer.dirSize.dirPlaceholder": "'<'dir>",
   "@fileExplorer.dirSize.dirPlaceholder": {
     "description": "Placeholder shown in the Size column for a folder whose recursive size is not computed yet. Rendered literally as <dir> (with the angle brackets). The leading apostrophe-quote ICU-escapes the < so it is not parsed as a markup tag; keep the literal text <dir> intact.",
-    "screenshot": "ask-cmdr-consent.png"
+    "screenshot": "conflict-dialog.png"
   },
   "fileExplorer.dirSize.mismatchTooltipPrefix": "Content and on-disk sizes differ significantly.",
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
@@ -1280,12 +1280,13 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "At least this much: some subfolders weren''t scanned yet, so the real total may be larger.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "description": "Line in a folder''s size tooltip when the shown size is a lower bound (displayed with a ≥ prefix) because part of the subtree hasn''t been scanned. Explains the number is a floor: the real total is at least this much and may be larger (not necessarily larger — the unscanned parts could be empty)."
+    "description": "Line in a folder''s size tooltip when the shown size is a lower bound (displayed with a ≥ prefix) because part of the subtree hasn''t been scanned. Explains the number is a floor: the real total is at least this much and may be larger (not necessarily larger — the unscanned parts could be empty).",
+    "screenshot": "operation-failure.png"
   },
   "fileExplorer.dirSize.unknownTooltip": "Size unknown: this folder hasn''t been scanned yet.",
   "@fileExplorer.dirSize.unknownTooltip": {
     "description": "Hover tooltip on a folder whose recursive size is unknown (shown as an em dash —) because nothing in its subtree has been scanned. Distinct from a genuinely-empty folder, which shows 0 bytes.",
-    "screenshot": "empty-pane.png"
+    "screenshot": "operation-failure.png"
   },
   "fileExplorer.dirSize.staleLine": "These sizes are from an earlier scan and may be out of date.",
   "@fileExplorer.dirSize.staleLine": {

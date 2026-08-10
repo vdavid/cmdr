@@ -77,12 +77,14 @@
 
   "queue.row.dismiss": "Dismiss",
   "@queue.row.dismiss": {
-    "description": "Button on an operation row that couldn''t finish, removing that row from the list. It only stops showing the row: nothing is undone, retried, or deleted. It''s the only way a row like that goes away, so the reason stays readable until the user is done with it."
+    "description": "Button on an operation row that couldn''t finish, removing that row from the list. It only stops showing the row: nothing is undone, retried, or deleted. It''s the only way a row like that goes away, so the reason stays readable until the user is done with it.",
+    "screenshot": "queue-failed.png"
   },
 
   "queue.row.dismissAria": "Dismiss this operation",
   "@queue.row.dismissAria": {
-    "description": "Screen-reader label for the per-row Dismiss button on an operation that couldn''t finish (the visible button shows only \"Dismiss\")."
+    "description": "Screen-reader label for the per-row Dismiss button on an operation that couldn''t finish (the visible button shows only \"Dismiss\").",
+    "screenshot": "queue-failed.png"
   },
 
   "queue.row.selectAria": "Select this operation",
@@ -117,7 +119,8 @@
 
   "queue.toolbar.dismissAll": "Dismiss all",
   "@queue.toolbar.dismissAll": {
-    "description": "Toolbar button that removes every row for an operation that couldn''t finish, in one go. It appears only when more than one such row is listed. Like the per-row Dismiss, it only stops showing them; nothing is undone or retried."
+    "description": "Toolbar button that removes every row for an operation that couldn''t finish, in one go. It appears only when more than one such row is listed. Like the per-row Dismiss, it only stops showing them; nothing is undone or retried.",
+    "screenshot": "queue-failed.png"
   },
 
   "queue.toolbar.selectedCount": "{count, plural, one {# selected} other {# selected}}",
@@ -133,12 +136,14 @@
     "description": "Headline of the notice that pops up in the main window when an operation running in the background stops before it''s done. The explanation underneath says why; this line only says what was interrupted. Avoid the words \"error\" and \"failed\": \"couldn''t finish\" is the house wording, and it matches the status word on the operation''s row in the queue window.",
     "placeholders": {
       "type": "the kind of operation: copy, move, delete, trash, rename, create_folder, create_file, or archive_edit"
-    }
+    },
+    "screenshot": "operation-chip.png"
   },
 
   "queue.failureToast.action": "Show in operation queue",
   "@queue.failureToast.action": {
-    "description": "Button on the failure notice that opens the operation queue window, where the operation''s row carries the full reason and what to do about it. \"Operation queue\" is the window''s name; keep it identical to the window title."
+    "description": "Button on the failure notice that opens the operation queue window, where the operation''s row carries the full reason and what to do about it. \"Operation queue\" is the window''s name; keep it identical to the window title.",
+    "screenshot": "operation-chip.png"
   },
 
   "queue.failureToast.summary": "{count, plural, one {{countText} operation couldn''t finish} other {{countText} operations couldn''t finish}}",
@@ -147,7 +152,9 @@
     "placeholders": {
       "count": "how many operations couldn''t finish",
       "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,024)"
-    }
+    },
+    "screenshot": "operation-failure.png",
+    "screenshotNote": "The notice the main window raises when a backgrounded operation stops early, pictured here with one failure. Your string is the summary that replaces these when several stop at once, in the same place, with a count instead of a name."
   },
 
   "queue.chip.failed": "{count, plural, one {{countText} operation couldn''t finish} other {{countText} operations couldn''t finish}}. Open the operation queue to see why.",
@@ -156,7 +163,8 @@
     "placeholders": {
       "count": "how many operations couldn''t finish",
       "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,024)"
-    }
+    },
+    "screenshot": "operation-failure.png"
   },
 
   "queue.chip.ariaLabel": "{label}, {percentText} percent. Open the operation queue.",
@@ -165,7 +173,8 @@
     "placeholders": {
       "label": "what the chip shows: the action word from queue.row.label (\"Copying\"), or the status word \"Paused\" when the operation is paused",
       "percentText": "how far along the operation is, a whole number already formatted (for example 42)"
-    }
+    },
+    "screenshot": "operation-chip.png"
   },
 
   "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} item} other { · {countText} items}}{hasDestination, select, yes { · to {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
@@ -180,6 +189,7 @@
       "percentText": "how far along the operation is, a whole number already formatted (for example 42)",
       "hasDetail": "\"yes\" when there''s a trailing detail to show, anything else when there isn''t",
       "detail": "the trailing detail: the time left, already formatted (for example \"1m 20s left\")"
-    }
+    },
+    "screenshot": "operation-chip.png"
   }
 }
