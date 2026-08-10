@@ -117,10 +117,11 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             case Cmdr can't do this way, and it tells you before it starts.
         </li>
         <li>
-            Deleting asks first, every time, and there's no way to switch that confirmation off. Where the filesystem
-            has a Trash, that's the default and the dialog says so. On a filesystem without one (network shares, FAT32
-            and exFAT, phones over USB, inside an archive) the delete is permanent, and the dialog warns you before it
-            runs.
+            Deleting asks first, every time, and nothing in the app's own settings turns that off. The one exception is
+            the MCP server described in section 5: if you turn it on and hand a client the access token, that client can
+            delete without the dialog. Where the filesystem has a Trash, that's the default and the dialog says so. On a
+            filesystem without one (network shares, FAT32 and exFAT, phones over USB, inside an archive) the delete is
+            permanent, and the dialog warns you before it runs.
         </li>
         <li>
             Long-running file operations show honest progress, and you can pause or cancel them at any point, including
@@ -165,7 +166,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         Here's how we work: data-loss reports go to the front of the queue, and when we find a bug we ship the fix to
         everyone through Cmdr's built-in updater (on by default, downloaded in the background, applied when you
         restart). We're describing our practice, not offering a separate warranty on top of the rights you already have
-        by law.
+        by law, and it isn't a promise you can make a claim on.
     </p>
 
     <h2>5. AI features</h2>
@@ -220,9 +221,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <p>
         <strong>What we won't do is talk you out of rights you already have.</strong> In many countries the law
         guarantees that software you buy is of acceptable quality, fit for its ordinary purpose, and matches how it was
-        described. Nothing here removes that. If you bought a license and Cmdr doesn't work the way software of this
-        kind should, you can ask us to fix it, and if we can't or don't within a reasonable time, you can ask for a
-        price reduction or your money back. In Sweden that comes from konsumentköplagen (2022:260); elsewhere in the EU
+        described. Nothing here removes that. If Cmdr doesn't work the way software of this kind should, you can ask us
+        to fix it, and if we can't or don't within a reasonable time, you can ask for a price reduction or your money
+        back. In Sweden that comes from konsumentköplagen (2022:260); elsewhere in the EU
         it's your country's version of the digital content rules; and Australia, the UK, Canada, and many US states have
         their own. Those rights apply in full.
     </p>
@@ -236,8 +237,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <p>
         Plenty of places don't allow that. If you're in Australia, the UK, the EU, Canada, or a US state that limits
         warranty disclaimers on consumer products (including Massachusetts, Maryland, Kansas, Connecticut, Vermont,
-        Minnesota, Maine, New Hampshire, Mississippi, West Virginia, Washington, and the District of Columbia), the
-        paragraph above doesn't apply to you and your legal warranties stand in full.
+        Minnesota, Maine, New Hampshire, Mississippi, West Virginia, Washington, California, Louisiana, and the District
+        of Columbia), the paragraph above doesn't apply to you and your legal warranties stand in full.
     </p>
     <p>
         The Business Source License in section 1 carries its own broad "as is" disclaimer, which we can't edit because
@@ -289,19 +290,13 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         files. Where a cap is allowed, our total liability is limited to the greater of USD 100 or what you paid for
         your Cmdr license, whether you paid us directly or through Paddle, our reseller.
     </p>
-    <p>
-        <strong>New Jersey residents:</strong> none of the limits in this section are void, unenforceable, or inapplicable
-        in New Jersey, except that we don't limit our liability for our own intentional acts, gross negligence, fraud, or
-        for death or personal injury.
-    </p>
-
     <h3>If you're using Cmdr for work</h3>
     <p>
         A commercial license is a business purchase in most places, and in most places that means consumer protection
         rules don't apply to it. Some countries disagree, and where they do, their rules win: Australia treats anyone
         paying under AUD 100,000 for goods as a consumer no matter what they use them for, so Australian licensees keep
         the full consumer guarantees. Consumer rules also follow how you're actually using Cmdr, not which license you
-        bought. Where consumer rules genuinely don't apply, our total liability is limited to the greater of USD 100 or
+        bought, and in some places (Quebec) on whether you're a business at all rather than an employee of one. Where consumer rules genuinely don't apply, our total liability is limited to the greater of USD 100 or
         what you've paid for your Cmdr license, and we're not liable for lost profits, lost revenue, business
         interruption, or the cost of reconstructing lost data. Everything at the top of this section still stands, and
         if you're a person rather than a company, your rights under product liability law aren't affected by any of
@@ -317,7 +312,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <p>
         If a change makes things worse for you and you don't want it, tell us within 30 days. If you're on a
         subscription, you can cancel and we'll refund the unused part. If you bought a perpetual license, you keep the
-        version and the terms you bought under.
+        terms you bought under.
     </p>
 
     <h2>10. Who we are</h2>
@@ -352,7 +347,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     </p>
     <p>
         <strong>United Kingdom.</strong> Cmdr is digital content under the Consumer Rights Act 2015, so it has to be of
-        satisfactory quality, fit for purpose, and as described (sections 34 to 36). If Cmdr damages your device or
+        satisfactory quality, fit for purpose, and as described (sections 34 to 36, which apply to a paid license). If
+        Cmdr damages your device or
         other digital content you own, and that damage wouldn't have happened had we taken reasonable care and skill,
         section 46 entitles you to repair or compensation. That applies whether you paid for Cmdr or use it free.
     </p>
@@ -378,6 +374,11 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         These terms are written for people all over the world, and no single set of words is valid everywhere. If a
         court or regulator finds any part of these terms unenforceable where you live, that part applies in the
         narrowest form the law there does allow, or drops out entirely if it can't. The rest keeps working.
+    </p>
+    <p>
+        <strong>New Jersey residents:</strong> nothing in these terms is void, unenforceable, or inapplicable in New Jersey,
+        except that we don't limit our liability for our own intentional acts, gross negligence, fraud, or for death or
+        personal injury.
     </p>
 
     <h2>13. Contact</h2>
