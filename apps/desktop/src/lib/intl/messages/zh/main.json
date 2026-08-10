@@ -6,5 +6,33 @@
   "main.upgradeNudge.other": "我们新增了入门引导选项。打开命令面板并运行入门引导… 来查看。",
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
+  },
+  "main.quit.title": "{count, plural, other {有 {countText} 项操作仍在进行，要退出吗？}}",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "已经完成的都会保留。正在写入的那个项目会就此停下，Cmdr 会把它留下的半个文件清理掉。",
+  "@main.quit.body": {
+    "sourceHash": "9b1c574"
+  },
+  "main.quit.countdown": "{seconds, plural, other {将在 {secondsText} 秒后自动退出，这样系统重新启动或退出登录时就不用等 Cmdr。}}",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Cmdr 自动退出前的剩余时间",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "继续工作",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "立即退出",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "仍在进行",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
   }
 }

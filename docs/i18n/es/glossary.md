@@ -1065,3 +1065,61 @@ medio"), no por el sustantivo del fondo de una imagen.
     conciencia.
 - Ninguno de los dos valores lleva apóstrofo, así que no hay nada que duplicar para ICU; tampoco hay marcadores.
 - No hace falta `sameAsSourceJustification`: los dos valores difieren del inglés.
+
+## La salida con operaciones en curso (2026-08-10)
+
+Seven keys (`main.quit.*`): the modal that intercepts a quit (⌘Q, the menu, closing the main window) while a copy, move,
+delete, trash, or archive edit is still running. Title + body + live countdown + a list heading + two buttons.
+
+- **quit (the USER's action, in a title or a button) → salir** · macOS Tier 1, in exactly this concept: Finder A17 "The
+  Finder can't quit because some operations are still in progress." → "No se puede salir del Finder porque hay
+  operaciones en curso."; AppKit `Quit` → "Salir", `Quit Anyway` → "Salir", `Quit and Close All Windows` → "Salir y
+  cerrar todas las ventanas". The catalog already settles it too (`commands.appQuit.label` = "Salir de Cmdr") · high
+- **quit (the APP as subject, ending itself) → cerrarse** · a Spanish app doesn't "sale", it "se cierra": macOS Finder
+  BN36/BN23 "The Finder is about to quit." → "El Finder está a punto de cerrarse." So the countdown says "Cmdr se
+  cerrará …" while the title and the button keep the user-action "Salir". ⚠️ This is NOT a collision with the crash
+  phrase "se cerró inesperadamente" (glossary): there the crash sense is carried by "inesperadamente", not by "cerrarse"
+  · high
+- **"still running" (said of operations) → en curso** · macOS Finder Tier 1 in this exact sense (A17 above; NE82
+  "another operation is in progress" → "hay otra operación en curso"), and Double Commander (orthodox two-pane) agrees
+  ("Show operations progress initially in" → "Mostrar inicialmente las operaciones en curso en"). The heading takes "Aún
+  en curso" (carrying the "still"), and the title reuses the same two words, so the dialog names one state one way ·
+  high
+  - Deliberately NOT `queue.row.status`'s `running` arm "En ejecución": that is the per-row status BADGE, while the
+    title and heading are prose about the same fact, and "en curso" is what macOS writes in prose. Worth knowing if a
+    later consistency pass tries to merge the two.
+- **The title takes the catalog's own infinitive-question shape** · "¿Salir mientras hay {countText} operaciones en
+  curso?" follows the settled dialog-title pattern ("¿Eliminar el modelo de IA?", "¿Enviar informe de fallos?", "¿Copiar
+  {size} al portapapeles?", "¿Indexar {name}?") rather than a macOS-style "¿Seguro que quieres…?" · high
+  (consistency-settled). All three CLDR arms carry the WHOLE sentence, because "una operación" / "operaciones" sits
+  inside it; the `one` arm says "una operación" and skips `{countText}`, exactly as English does.
+- **"Keep working" (the button that calls the quit off) → Seguir trabajando** · composed: no source in the pile names
+  this button (Total Commander's equivalent prompt is the formal "¿Está seguro de querer salir?" with plain yes/no,
+  Nautilus, Thunar, Dolphin, and Double Commander have no such dialog). "Seguir" is the catalog's own carry-on verb
+  ("sigue funcionando", "se puede seguir buscando"), the infinitive matches the button-label convention, and it carries
+  no hint of postponing. ❌ Rejected "Más tarde" (the settled DEFER label, precisely the wrong sense here) and a bare
+  "Cancelar", which next to a list of running operations would read as cancelling THEM · tentative (unsourced wording),
+  high (that it can't be misread as defer-or-cancel)
+- **"Quit now" → Salir ahora** · the "now" is load-bearing (Cmdr quits either way when the countdown ends; this button
+  only skips the wait), and Spanish carries it with the plain adverb, no restructuring needed · high
+- **the countdown's "so a restart or logout never waits on Cmdr" → "para no hacerte esperar al reiniciar el Mac o cerrar
+  sesión"** · restructured onto the two Tier-1 VERBS (AppKit Menus "Restart" → "Reiniciar", "Log Out" → "Cerrar sesión")
+  because the matching NOUNS are unsourced: MS terminology carries `restart` and `sign out` as verbs only, and neither
+  "reinicio" nor "cierre de sesión" appears as an entry, nor in the macOS corpus in this sense. "el Mac" is added
+  because a bare "al reiniciar" could be read as restarting Cmdr; the catalog already says "el Mac" ("mientras no estás
+  usando el Mac") · high (the verbs), tentative (adding "el Mac")
+- **"half-written file" → archivo a medio escribir** · verbatim from the catalog's own
+  `settings.advanced.showStagingTempFiles.description` ("no puede dejar un archivo a medio escribir con un nombre
+  real"), which describes this very mechanism · high (consistency-settled)
+- **"clears away" (Cmdr removing its own temp leftover) → borra** · deliberately NOT the settled delete verb `eliminar`,
+  which names the user-facing delete OPERATION; English softens to "clears away" for the same reason, and `borrar` is
+  the catalog's non-operation removal verb (glossary: clear → borrar, macOS "Borrar búsquedas recientes") · high
+- **"stops where it is" → se interrumpe donde esté** · "interrumpir" is the catalog's own word for a copy cut short
+  ("Los restos de una copia interrumpida siempre se muestran"). ❌ Avoided "se detiene" / "se para": the style guide
+  rules those out nearby because they read as PAUSED, which is `En pausa` · high
+- **"item" → elemento** · REAFFIRMS the 44-to-8 catalog preference over macOS's "ítem" · high (consistency-settled)
+- **`countdownAria` is not bound by WCAG 2.5.3** · it labels the countdown REGION, not a control whose visible label is
+  another key, so there is no containment to satisfy; it only names what the number measures ("Tiempo hasta que Cmdr se
+  cierre solo") · high
+- None of the seven values contains an apostrophe, so there is nothing to double for ICU.
+- No `sameAsSourceJustification` needed: all seven values differ from English.

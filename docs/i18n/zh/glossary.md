@@ -1020,3 +1020,64 @@ cross-check. macOS has NO coverage: every `background` hit in the Finder/AppKit 
   label they see). `继续在后台运行` is the equally idiomatic word order, so nothing is lost. **Don't "fix" this back to
   the tooltip's order**: that silently breaks the containment · `high`
 - No `sameAsSourceJustification` needed: both values differ from English.
+
+### Quit-while-running gate (`main.quit.*`, 2026-08-10)
+
+The modal that appears when the user quits (⌘Q, the menu, closing the main window) while copies, moves, deletes,
+trashes, or archive edits are still going: a title, a reassuring body, a list of the running operations, and a 15-second
+countdown after which Cmdr quits on its own. macOS zh-CN Tier 1 (Finder has this EXACT surface), AppKit for the
+quit/restart/logout verbs, Double Commander zh-CN cross-check. Head noun `操作` and classifier `项` come from the
+operation-queue section above.
+
+- **quit (the app stopping)** · `退出` · macOS AppKit Menus (`Quit` → `退出`, `Quit Anyway` → `仍要退出`,
+  `Quit and Keep Windows` → `退出并保留窗口`), Finder `A17`/`BN36`, Double Commander zh-CN
+  (`Are you sure you want to quit?` → `您确定要退出吗？`; DC's formal `您` is its register, not ours), plus the
+  catalog's own `commands.appQuit.label` = `退出 Cmdr` · `confirmed`
+- **"Quit while N operations are running?" (title)** · `有 {countText} 项操作仍在进行，要退出吗？` · macOS Finder `A17`
+  is the same sentence from the other side (`The Finder can't quit because some operations are still in progress.` →
+  `“访达”不能退出，因为有些操作仍在进行。`), so `操作仍在进行` is lifted from it; the catalog's own
+  `settings.mediaIndex.importanceThreshold.waitingForDriveIndex` already ships `仍在进行中`. Chinese fronts the
+  condition and asks at the end, which is why the title isn't verb-initial like the English. `有` also gives
+  `{countText}` a character to sit after, so the Latin digits keep a space on BOTH sides · `high`
+- **"Still running" (heading over the operation rows)** · `仍在进行` · the same `A17` phrase, cut to four characters for
+  a small heading; deliberately the same wording as the title's clause so the two read as one thought. Distinct from
+  `queue.row.status`'s running arm `进行中`, which labels ONE row's state · `high`
+- **"Whatever's finished stays done." (body, first sentence)** · `已经完成的都会保留。` · `已完成` is the settled
+  done-status word (`queue.row.status`), `保留` the catalog's settled keep/retain verb (~10 hits, e.g.
+  `settings.operationLog.maxAge.label` `保留历史记录时长`) · `high`
+- **"the one item still in flight" (the file being written when the app stops)** · `正在写入的那个项目` · the
+  description says to render "in flight" by meaning, not literally; `写入` is settled
+  (`fileOperations.transferProgress.titleFlushing` `正在写入最后一部分…`), and `个项目` is the catalog's counted-item
+  measure word. "stops where it is" → `会就此停下`, calm and non-alarmist · `high`
+- **"the half-written file" (what quitting leaves behind, and Cmdr removes)** · `半个文件` · lifted verbatim from the
+  catalog's own `settings.advanced.showStagingTempFiles.description` (`这样崩溃就不会留下用真实名称保存的半个文件`),
+  which explains the very same staging mechanism · `high`
+- **"clears away" (removing that partial file)** · `清理掉` · `清理` = tidy away; chosen over `清除` (which the catalog
+  reserves for clearing an index or a search: `清除索引`, `清除搜索`) and over `删除`, because the point is cleanup, not
+  a delete the user asked for · `high`
+- **"a restart or logout" (the OS's, not Cmdr's)** · `系统重新启动或退出登录` · macOS AppKit Menus verbatim (`Restart` →
+  `重新启动`, `Log Out` → `退出登录`); the leading `系统` is added because the sentence already carries `退出` in the
+  app sense, and without it `退出登录` could read as Cmdr's own sign-out. NOT Windows' `注销` (the macOS term wins) ·
+  `high`
+- **"Quitting in {secondsText} seconds, so …" (countdown)** ·
+  `将在 {secondsText} 秒后自动退出，这样系统重新启动或退出登录时就不用等 Cmdr。` · `将在 X 秒后` is the standard Chinese
+  countdown frame, and the catalog already counts seconds this way (`indexing.eta.secondsLeft` `剩余 {secondsText} 秒`);
+  `自动` carries "on its own"; the subject is dropped at the front because `Cmdr` is named at the end, exactly as the
+  English does it · `high`
+- **"Time until Cmdr quits on its own" (aria on the countdown region)** · `Cmdr 自动退出前的剩余时间` · `剩余` is the
+  settled remaining-time word (`fileOperations.transferProgress.etaRemaining` `剩余 {duration}`). This aria has no
+  visible label to contain (the visible text is the counting sentence), so WCAG 2.5.3 Label in Name doesn't bind it ·
+  `high`
+- **"Keep working" (the button that calls the quit off entirely)** · `继续工作` · deliberately NOT `稍后` (the settled
+  "later" button in the update surfaces), NOT `取消` (which, next to a list of running operations, would read as
+  cancelling the OPERATIONS), and NOT `不退出` (a bare negation, colder than the English). `继续` is the catalog's
+  settled carry-on verb, and both readings of `继续工作` land on the right outcome: you keep working AND the operations
+  keep going. Nothing is paused on this dialog, so the queue's `继续` = resume-a-paused-operation sense can't be
+  triggered here · `high`
+- **"Quit now" (the destructive primary; "now" = skip the countdown)** · `立即退出` · macOS Finder's `立即 + 动词`
+  button family carries exactly this "don't wait" sense (`立即删除` = Delete Immediately, `立即停止刻录`, `立即备份`),
+  so `立即` is what makes the skip-the-wait meaning land. Four characters, matching `继续工作` beside it · `high`
+- **Pre-formatted Latin count tokens** · `{countText}` and `{secondsText}` arrive as Latin digits, so they keep a space
+  on BOTH sides (`有 {countText} 项操作`, `将在 {secondsText} 秒后`), per style.md and the `{duration}` precedent ·
+  `high`
+- No `sameAsSourceJustification` needed: all seven values differ from English.

@@ -6,5 +6,33 @@
   "main.upgradeNudge.other": "Adicionamos novas opções de introdução. Abra a paleta de comandos e execute Introdução… para vê-las.",
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
+  },
+  "main.quit.title": "{count, plural, one {Encerrar com uma operação em andamento?} many {Encerrar com {countText} operações em andamento?} other {Encerrar com {countText} operações em andamento?}}",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "Tudo o que já terminou continua concluído. O único item ainda sendo gravado é interrompido onde está, e o Cmdr remove o arquivo pela metade que sobra.",
+  "@main.quit.body": {
+    "sourceHash": "9b1c574"
+  },
+  "main.quit.countdown": "{seconds, plural, one {Encerrando em {secondsText} segundo, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.} many {Encerrando em {secondsText} segundos, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.} other {Encerrando em {secondsText} segundos, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.}}",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Tempo até o Cmdr encerrar sozinho",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "Continuar trabalhando",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "Encerrar agora",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "Ainda em andamento",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
   }
 }

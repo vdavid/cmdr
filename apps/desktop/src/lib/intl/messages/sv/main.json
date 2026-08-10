@@ -6,5 +6,33 @@
   "main.upgradeNudge.other": "Vi har lagt till nya alternativ för att komma igång. Öppna kommandopaletten och kör Onboarding… för att se dem.",
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
+  },
+  "main.quit.title": "{count, plural, one {Avsluta medan en åtgärd pågår?} other {Avsluta medan {countText} åtgärder pågår?}}",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "Allt som redan är klart förblir klart. Det enda objektet som fortfarande skrivs stannar där det är, och Cmdr rensar bort den delvis skrivna filen som blir kvar.",
+  "@main.quit.body": {
+    "sourceHash": "9b1c574"
+  },
+  "main.quit.countdown": "{seconds, plural, one {Cmdr avslutas om {secondsText} sekund, så att en omstart eller utloggning aldrig behöver vänta.} other {Cmdr avslutas om {secondsText} sekunder, så att en omstart eller utloggning aldrig behöver vänta.}}",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Tid kvar tills Cmdr avslutas av sig själv",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "Fortsätt arbeta",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "Avsluta nu",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "Pågår fortfarande",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
   }
 }

@@ -888,3 +888,58 @@ it names the action instead of the destination ("Background" / "Queue"; same cli
 - Regional-variant check against the style guide's pt-PT tell list: zero hits; **rodando** (not pt-PT "a correr" / "está
   a correr") is the Brazilian marker, matching the shipped `queueTooltip` and `backgroundedToast`.
 - No `sameAsSourceJustification` needed: both values differ from English.
+
+### Quit-gate dialog terms (`main.quit.*`, 2026-08-10)
+
+The modal Cmdr raises when the user quits while a copy, move, delete, trash, or archive edit is still going: title,
+reassurance body, a list of running operations, a live countdown, and two buttons. Terminology is anchored to the
+already-shipped `queue.*` strings, since the dialog reuses `queue.row.label` verbatim for its rows.
+
+- quit (the app stopping) · **Encerrar** (gerund **Encerrando**; "quit now" → **Encerrar agora**) · macOS Finder pt-BR
+  ("Encerrar Finder", "Encerrar Sem Salvar"), MS terminology pt-BR (`quit` id 1133557 → "encerrar"), and already the
+  catalog's word via `commands.appQuit.label` "Encerrar Cmdr" · confirmed. `main.quit.title/countdown/quitNow`.
+- "operations are running" (the state the dialog gates on) · **operações em andamento** · macOS Finder pt-BR carries
+  this exact sentence: "O Finder não pode ser encerrado porque algumas operações ainda estão em andamento." (plus
+  "…outra operação está em andamento…") · confirmed. Matches the shipped `queue.row.status` `running` arm ("Em
+  andamento") and the glossary's operation → **operação** row, so the dialog, the queue window, and the row statuses all
+  use one word. ❌ Not Dolphin/Double Commander's "em execução": the Tier-1 Finder wording wins, and the catalog already
+  settled "Em andamento".
+- "Still running" (heading above the operation rows) · **Ainda em andamento** · the Finder sentence's own "ainda … em
+  andamento", trimmed to a heading · confirmed. Shares its head with the row statuses beneath it.
+- "Keep working" (the button that calls the quit off entirely) · **Continuar trabalhando** · standard pt-BR
+  continue-what-you-were-doing phrasing; no direct pile hit for this exact button, since no file manager in the pile has
+  a quit gate · high. Deliberately NOT **Cancelar**: in this dialog a bare "Cancelar" would read as cancelling the
+  _operations_, the opposite of what the button does. It also carries no postpone sense (❌ "Agora não", ❌ "Mais
+  tarde", ❌ "Lembrar depois"), because the countdown is deleted, not deferred.
+- "Quit now" · **Encerrar agora** · **agora** is load-bearing (the app quits either way when the countdown ends; this
+  button skips the wait), and pt-BR carries it as naturally as English · high.
+- restart / logout (the OS actions Cmdr must never hold up) · **reinicialização** / **encerramento da sessão** · MS
+  terminology pt-BR (`restart` ids 99514/640295 → "reiniciar"; "reinicialização" is the standard pt-BR noun) and macOS
+  pt-BR's own Apple-menu wording "Encerrar Sessão", already shipped in the catalog as `shortcuts.system.loggingOut`
+  ("encerrar a sessão") · high. ❌ Not MS's Windows-flavored "fazer logoff" (term-choice principle 2: the macOS term
+  wins). The sentence deliberately repeats the `encerr-` root ("Encerrando … o encerramento da sessão"); each word is
+  the Finder-sourced term for its own concept, and swapping either for a synonym would fork terminology.
+- "so a restart or logout never waits on Cmdr" · rendered actively with Cmdr as the agent: **para o Cmdr nunca atrasar
+  uma reinicialização ou o encerramento da sessão** · a literal "nunca espera pelo Cmdr" puts the OS in the subject slot
+  and reads heavier in pt-BR; the active form matches the catalog's running-text pattern of naming **o Cmdr** as the
+  doer ("O Cmdr cuida da cópia automaticamente") · high.
+- "in flight" (the one item being written when the app stops) · **ainda sendo gravado** · **gravado** is the shipped
+  word for a partly-written transfer target (`fileOperations.transferProgress.stallInFlight` "já pode estar parcialmente
+  gravado") · confirmed. ❌ Never a literal "em voo". "stops where it is" → **é interrompido onde está**: the
+  natural-looking active "para onde está" garden-paths badly, since **para** is read first as the preposition.
+- "half-written file" · **arquivo pela metade** · verbatim from the shipped
+  `settings.advanced.showStagingTempFiles.description` ("uma falha não pode deixar um arquivo pela metade com um nome
+  real") · confirmed. "clears away … it leaves behind" → **remove o arquivo pela metade que sobra** ("que sobra" instead
+  of "que ele deixa para trás", where **ele** would be ambiguous between the item and o Cmdr).
+- "on its own" (the countdown's aria label) · **sozinho** · agrees with **o Cmdr**, not with the user, so the gender
+  rule is satisfied without the longer "por conta própria" · high. `main.quit.countdownAria` = "Tempo até o Cmdr
+  encerrar sozinho". No WCAG 2.5.3 constraint here: the countdown region has no visible label key of its own, so this
+  aria has nothing to contain.
+- **Plurals**: both `main.quit.title` (`{count}`) and `main.quit.countdown` (`{seconds}`) write the full pt CLDR set
+  `one`/`many`/`other`. `one` covers 0..1 and renders "uma operação" / "{secondsText} segundo"; the whole sentence is
+  duplicated into each branch (mirroring the English), so nothing that agrees with the count sits outside. The visible
+  numbers are the preformatted `{countText}` / `{secondsText}`; the raw `count`/`seconds` only select the branch.
+- Regional-variant check against the style guide's pt-PT tell list: zero hits across all seven values (**arquivo**, not
+  "ficheiro"; the gerunds **Encerrando** / **sendo gravado**, never "a encerrar" / "está a gravar"; no "consoante", no
+  "Rever", no proclitic pronoun before an infinitive).
+- No `sameAsSourceJustification` needed: all seven values differ from English.

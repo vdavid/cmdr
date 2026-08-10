@@ -6,5 +6,33 @@
   "main.upgradeNudge.other": "Nous avons ajouté de nouvelles options de configuration. Ouvrez la palette de commandes et lancez Prise en main… pour les découvrir.",
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
+  },
+  "main.quit.title": "{count, plural, one {Quitter alors qu''une opération est en cours ?} many {Quitter alors que {countText} opérations sont en cours ?} other {Quitter alors que {countText} opérations sont en cours ?}}",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "Tout ce qui est déjà terminé le reste. Le seul élément encore en cours d''écriture s''arrête là où il en est, et Cmdr supprime le fichier à moitié écrit qu''il laisse derrière lui.",
+  "@main.quit.body": {
+    "sourceHash": "9b1c574"
+  },
+  "main.quit.countdown": "{seconds, plural, one {Cmdr quitte dans {secondsText} seconde, pour ne jamais retarder un redémarrage ou une fermeture de session.} many {Cmdr quitte dans {secondsText} secondes, pour ne jamais retarder un redémarrage ou une fermeture de session.} other {Cmdr quitte dans {secondsText} secondes, pour ne jamais retarder un redémarrage ou une fermeture de session.}}",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Temps restant avant que Cmdr quitte de lui-même",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "Continuer à travailler",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "Quitter maintenant",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "Toujours en cours",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
   }
 }

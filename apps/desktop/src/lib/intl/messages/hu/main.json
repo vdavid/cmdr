@@ -6,5 +6,33 @@
   "main.upgradeNudge.other": "Új bevezető beállításokat adtunk hozzá. Az átnézésükhöz nyisd meg a parancspalettát, és futtasd a Bevezető… parancsot.",
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
+  },
+  "main.quit.title": "{count, plural, one {Kilépsz, amíg egy művelet folyamatban van?} other {Kilépsz, amíg {countText} művelet folyamatban van?}}",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "Ami elkészült, az kész marad. Az éppen írás alatt álló elem ott áll meg, ahol tart, a Cmdr pedig eltávolítja a félig megírt fájlt, ami utána marad.",
+  "@main.quit.body": {
+    "sourceHash": "9b1c574"
+  },
+  "main.quit.countdown": "{seconds, plural, one {Kilépés {secondsText} másodperc múlva, így egy újraindítás vagy kijelentkezés soha nem vár a Cmdrre.} other {Kilépés {secondsText} másodperc múlva, így egy újraindítás vagy kijelentkezés soha nem vár a Cmdrre.}}",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Hátralévő idő a Cmdr automatikus kilépéséig",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "Munka folytatása",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "Kilépés most",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "Még folyamatban",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
   }
 }

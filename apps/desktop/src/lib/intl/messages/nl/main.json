@@ -6,5 +6,33 @@
   "main.upgradeNudge.other": "We hebben nieuwe onboardingopties toegevoegd. Open het opdrachtenpalet en voer Onboarding… uit om ze te bekijken.",
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
+  },
+  "main.quit.title": "Stoppen terwijl er nog {count, plural, one {een bewerking wordt} other {{countText} bewerkingen worden}} uitgevoerd?",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "Wat al klaar is, blijft klaar. Alleen het onderdeel dat op dat moment wordt geschreven, stopt waar het is, en het gedeeltelijk geschreven bestand dat achterblijft, ruimt Cmdr op.",
+  "@main.quit.body": {
+    "sourceHash": "9b1c574"
+  },
+  "main.quit.countdown": "Over {seconds, plural, one {{secondsText} seconde} other {{secondsText} seconden}} stopt Cmdr vanzelf, zodat herstarten of uitloggen nooit hoeft te wachten.",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Tijd totdat Cmdr vanzelf stopt",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "Werk door",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "Stop nu",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "Nog bezig",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
   }
 }

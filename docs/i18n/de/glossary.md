@@ -965,3 +965,58 @@ queue. "Background" is a VERB in the English; German says that action with the p
   here: a directional label (`In den Hintergrund`) would force the aria to be rebuilt around the accusative and to drop
   the settled wording. If either string is ever re-worded, keep the label a prefix of the aria.
 - No `sameAsSourceJustification` needed: both values differ from English.
+
+## The quit gate (`main.quit.*`, 2026-08-10)
+
+Seven keys: the modal Cmdr raises when ⌘Q lands while a copy, move, delete, trash, rename, create, or archive edit is
+still running. Head noun `Vorgang` and the running status `Läuft` are unchanged (§ Operation queue).
+
+- **"Quit while N operation(s) are running?" (title) → `Ein Vorgang läuft noch. Trotzdem beenden?` /
+  `{countText} Vorgänge laufen noch. Trotzdem beenden?`** · high. The English single clause becomes the catalog's own
+  state-then-question shape, which is what every tier ships for this exact dialog: Total Commander de renders the
+  quit-with-running-operations warning as `WARNUNG: %i Operationen aktiv im Hintergrund!\nTrotzdem beenden?`
+  (`WCMD.LNG.utf8` 1237), macOS AppKit renders `Quit Anyway` → `Trotzdem beenden` (`Document.json`), and the shipped de
+  catalog already uses the pattern next door (`Dieser Tab ist fixiert. Trotzdem schließen?`, itself mirroring TC's
+  `Dieser Tab ist gesperrt! Trotzdem schließen?`). ❌ Not the literal `Beenden, während ein Vorgang läuft?`: a bare
+  infinitive plus a `während`-clause is stiff, and the pile has no such title. ❌ Not TC's loanword `Operationen` —
+  `Vorgang` is settled. The verb is the queue's own `läuft` (`queue.row.status` running arm), so the title, the row
+  list, and the queue window all say one thing.
+- **"Still running" (heading over the operation rows) → `Noch aktiv`** · macOS Finder de says exactly this about
+  in-progress Finder jobs ("The Finder can''t quit because some operations are still in progress." → `A17` = "Der Finder
+  kann nicht beendet werden, da noch Vorgänge aktiv sind.", and `A19` "… da auf dem iOS-Gerät noch ein Vorgang aktiv
+  ist.") · high. Deliberately NOT a second `Läuft noch` two lines under the title: German repeats badly at that
+  distance, and Apple's own word for the same state is `aktiv`. ❌ Not Double Commander's `Laufende Vorgänge`
+  (`rsmsgfileoperationsactive`): that names the rows as a noun phrase, while the English heading is a bare state and the
+  rows below already say `Wird kopiert`.
+- **"Keep working" (the button that calls the quit off) → `Weiterarbeiten`** · tentative — no pile source names this
+  button, so it's constructed. It's built from the catalog's settled continue-sense `weiter` (`Weiter umbenennen`,
+  `Läuft weiter im Hintergrund`, `Im Hintergrund weiterlaufen lassen`) and reads as "carry on", never as "later". ❌
+  Absolutely not `Abbrechen`, even though that's macOS's word on an unsaved-changes quit alert: in Cmdr's German
+  `abbrechen` IS the cancel-the-operation verb (`Diesen Vorgang abbrechen`, `Alle abbrechen`), so on this dialog it
+  would read as the exact opposite of what the button does. ❌ Not `Später` / `Nicht jetzt`: the countdown is deleted,
+  not deferred.
+- **"Quit now" → `Jetzt beenden`** · quit → beenden (macOS `Beenden`, `Finder beenden`); the load-bearing "now" is macOS
+  Finder's own `jetzt beenden` ("Du kannst das Kopieren jetzt beenden oder …", `NE111`) · high. ❌ Not `Sofort beenden`,
+  which is Apple's Force Quit (glossary above) and would promise a hard stop.
+- **The countdown →
+  `Cmdr beendet sich in {secondsText} Sekunde(n), damit ein Neustart oder eine Abmeldung nie darauf warten muss.`** ·
+  high. Active reflexive `beendet sich` over macOS's passive `wird beendet` per the active-voice rule, and it keeps the
+  sentence to one `Cmdr` (the closing `darauf` carries the second mention, which a literal "nie auf Cmdr warten muss"
+  would repeat). restart → `Neustart` and logout → `Abmeldung` are the settled terms (`Neustart`, "logging out" →
+  `das Abmelden`); the nominal `eine Abmeldung` is used here so it stays parallel with `ein Neustart`. Only
+  `Sekunde`/`Sekunden` differs between the two branches, which is exactly what the plural block is for.
+- **"Time until Cmdr quits on its own" (aria) → `Zeit, bis sich Cmdr von selbst beendet`** · high. `von selbst` is the
+  catalog's own self-acting phrase (`errors` "der sich … von selbst klärt"). No visible label to contain, so WCAG 2.5.3
+  doesn't bind this one; it just names what the number measures.
+- **"clears away the half-written file" → `entfernt die halb geschriebene Datei`** · `halb geschriebene Datei` is
+  already shipped verbatim in the de catalog (`settings.advanced.showStagingTempFiles.description`), and remove →
+  `entfernen` is settled · high. The English picks the warm "clears away" over "deletes"; German has no attested warm
+  equivalent (`wegräumen` is unsourced, and macOS's `Aufräumen` is Finder's tidy-icons command), so the neutral
+  `entfernen` carries it and the warmth sits in the opening `Was fertig ist, bleibt fertig.` ❌ Not `löschen`: that's
+  the user-facing delete verb and would read as data loss on a dialog whose whole job is reassurance.
+- **"the one item still in flight" → `Das eine Objekt, das gerade geschrieben wird`** · item → `Objekt` (settled); the
+  en `@key` says "in flight" means currently being written, so the German states that literally instead of borrowing an
+  aviation idiom · high. It "stops where it is" → `stoppt genau dort, wo es ist`; `stoppen` is macOS Finder's verb for
+  halting a running job (`CP5` "Kopieren stoppen", `NE111.1` "den Vorgang stoppen"), kept distinct from the button verb
+  `abbrechen`.
+- No `sameAsSourceJustification` needed: every value differs from English.

@@ -1082,3 +1082,82 @@ in the English, not the backdrop noun.
   on the label's first letter. Any future rewording of either key must preserve the containment: the aria is not free to
   drop the label's words.
 - No `sameAsSourceJustification` needed: both values differ from English.
+
+## Hộp thoại thoát khi thao tác đang chạy (`main.quit.*`, 2026-08-10)
+
+Seven keys for the modal Cmdr raises when the user quits while a copy, move, delete, trash, or archive edit is still
+running: a title, a reassuring body, the running-operations heading, a live countdown plus its aria label, and the two
+buttons. Reuses the settled head terms (operation → `thao tác`, item → `mục`, file → `tệp`, quit → `thoát`, restart →
+`khởi động lại`, running → `đang chạy`, wait → `chờ`). New or newly-sourced below:
+
+- **"while X is running": `trong khi X đang chạy`** · macOS Finder Tier 1 ships the exact structural parallel (`N144` =
+  "You can't open “^0” while the Finder is running." → `Bạn không thể mở “^0” trong khi Finder đang chạy.`; `RN26` =
+  "…while it's open?" → `…trong khi đang mở không?`). So `main.quit.title` is
+  `Thoát trong khi {countText} thao tác đang chạy?`, the Finder shape with Cmdr's settled head noun. `high`.
+- **The title is ONE `other` branch, and the count always shows.** vi has a single CLDR category, so English's
+  `one {an operation}` / `other {{countText} operations}` split collapses; the counted noun takes no marker and no
+  inflection (`1 thao tác`, `12 thao tác`), matching `queue.failureToast.summary`'s shipped
+  `{countText} thao tác chưa hoàn tất được`. No `=1` arm: the style guide forbids re-introducing an English-shaped
+  singular/plural split where the noun doesn't change.
+- **"Quit now" (primary, destructive button): `Thoát ngay`** · `thoát` (quit, macOS AppKit `Quit` → `Thoát`; MS
+  terminology `quit` Noun → `thoát`) + `ngay` (right now). `ngay` is the pile's immediacy adverb (macOS
+  `xóa ngay lập tức`; MS `Họp ngay` = Meet now, `Quay lại ngay` = Back now), and it carries the load-bearing "now" the
+  en `@key` flags: the app quits either way, this button skips the wait. NOT macOS's `Vẫn Thoát` ("Quit Anyway",
+  `AppKit/Document.json`), which answers a different question (overriding an objection, not skipping a timer). `high`.
+- **"Keep working" (the button that calls the quit off): `Tiếp tục làm việc`** · `tiếp tục` + verb is densely attested
+  in the pile as "carry on doing X" (macOS `tiếp tục sao chép`, `tiếp tục chạy`, `tiếp tục duyệt`, `tiếp tục xem`), and
+  `làm việc` is MS's work verb (`giờ làm việc`, `làm việc từ xa`). Deliberately NOT a bare `Hủy` (cancel): on a dialog
+  that lists running operations, `Hủy` would read as cancelling THEM, the exact opposite of what the button does. Also
+  NOT `Để sau` (the catalog's "Not now", `askCmdr.consent`) nor anything built on `sau` / `nhắc lại`: the countdown is
+  deleted, not deferred, and the en `@key` forbids a postpone reading. The object `làm việc` is what keeps `Tiếp tục`
+  from colliding with `queue.row.resume`'s bare `Tiếp tục` (Resume) — different surface, and the operations here are
+  running, not paused. `high` (on the parts); `tentative` (on the whole label reading unambiguously as "you keep
+  working" to a native ear).
+- **"Still running" (heading over the operation rows): `Vẫn đang chạy`** · `Đang chạy` is `queue.row.status`'s Running
+  verbatim, and `Vẫn đang chạy` already ships as the head of `fileOperations.transferProgress.backgroundedToast`
+  (`Vẫn đang chạy ở chế độ nền.`). The heading and the rows below it now use the same words. `high`
+  (catalog-consistent).
+- **"half-written file": `tệp ghi dở`** (kept) · the shipped vi catalog already renders this exact English phrase in
+  `settings.advanced.showStagingTempFiles.description` ("a crash can't leave a half-written file under a real name" →
+  `sự cố không thể để lại tệp ghi dở dưới một tên thật`), so the dialog matches it rather than coining a second form.
+  The glossary's `đã được ghi một phần` (`stallInFlight`) stays for the predicative "may already be partly written";
+  `ghi dở` is the attributive one. `high` (catalog-consistent).
+- **"clears away" (removing the leftover partial file): `dọn dẹp`** · MS terminology's cleanup verb (`dọn dẹp nhanh`,
+  `dọn dẹp phân phối`, `dọn dẹp bản ghi ghost`). Deliberately NOT `xóa` (delete): `xóa` is Cmdr's delete verb, and a
+  reassurance inside a quit dialog must not read as "Cmdr deletes your file". Also NOT macOS's `Dọn sạch` (`Clean Up` →
+  `Dọn sạch`, and Finder's `Dọn sạch Thùng rác` = Empty Trash), which names emptying a container, not tidying one
+  leftover away. `high` (on `dọn dẹp`); `tentative` (on choosing it over `xóa` for this register).
+- **"it leaves behind" → `còn sót lại`, with the pronoun dropped** · `Cmdr dọn dẹp tệp ghi dở còn sót lại.` A literal
+  `mà nó để lại` would put `nó` in a clause whose subject is already `Cmdr`, reading as Cmdr cleaning up after itself
+  twice. `còn sót lại` (left over) is the catalog's own word for exactly this artifact
+  (`showStagingTempFiles.description`: `Các tệp còn sót lại từ lần sao chép bị gián đoạn`). `high` (catalog-consistent).
+- **"The one item still in flight": `Mục duy nhất đang được ghi`** · the en `@key` says "in flight" means currently
+  being written, so vi says that outright: `đang được ghi`, the same `được` + write-verb passive the glossary settled in
+  `đã được ghi một phần`. `duy nhất` (the only one) carries English's "the one". ⚠️ **Never open this clause with
+  `Chỉ mục …`**: `chỉ mục` is this glossary's word for an INDEX, so `Chỉ mục đang được ghi` would read "the index being
+  written". `high`.
+- **"Whatever's finished stays done": `Những gì đã xong vẫn được giữ nguyên.`** · `Xong` is `queue.row.status`'s Done,
+  and `giữ nguyên` is the catalog's keep-as-is verb (`Đã giữ nguyên tên gốc`, `Cmdr giữ nguyên tên hiện tại`). NOT
+  `Mọi thứ`, which scopes to the whole app (the trap the 2026-08-09 conflict-prompt pass recorded for "Everything else
+  is paused"). `high`.
+- **"Quitting in {secondsText} seconds": `Sẽ thoát sau {secondsText} giây`** · subject-drop under a sentence-initial
+  `Sẽ` is the catalog's own shape for a future statement about Cmdr (`fileExplorer.smbReconnect.willKeepTrying` =
+  `Sẽ tiếp tục thử trong tổng cộng {duration}.`); `sau N giây` is macOS-attested (`sau 15 giây`, `sau 30 giây`) and
+  `giây` is the settled seconds noun. One `other` branch, both placeholders kept. `high`.
+- **"a restart or logout" gets an explicit `máy`: `việc khởi động lại máy hoặc đăng xuất`** · the en `@key` states these
+  are the OPERATING SYSTEM's, not Cmdr's, and vi needs the disambiguation English gets free from context: this catalog
+  uses bare `khởi động lại` for restarting the APP in several places (`settings.control.restartRequired`,
+  `ai.local.statusRestarting`, `onboarding.stepFda.postAction.intro`), so a bare one here, one clause after `Sẽ thoát`,
+  would read "Cmdr will restart". `máy` (the user's machine) is the catalog's word for it
+  (`Không dữ liệu nào rời khỏi máy của bạn`). Logout → `đăng xuất` · MS terminology (`log off` / `sign out` →
+  `đăng xuất`) and the catalog's `shortcuts.system.loggingOut`. `việc` nominalizes both so they can be the subject of
+  `phải chờ`. `high`.
+- **"never waits on Cmdr": `không bao giờ phải chờ Cmdr`** · `chờ` is the settled wait verb (`Đang chờ`,
+  `Đang chờ đích phản hồi`), `không bao giờ` the catalog's "never" (`Cmdr không bao giờ gửi chính các tệp`). `phải` (has
+  to) is what keeps it from reading as a choice. `high`.
+- **`countdownAria`: `Thời gian còn lại trước khi Cmdr tự thoát`** · `trước khi thoát` is macOS AppKit Tier-1 verbatim
+  ("before quitting" → `trước khi thoát`, the three unsaved-documents alerts), and `tự` + verb is the catalog's "on its
+  own" (`thường tự hết trong vài giây`, `Tự lặng lẽ tiến lên mỗi lần khởi chạy`). `còn lại` names what the number
+  actually measures (time remaining), which the visible countdown doesn't spell out. This key has NO visible label to
+  contain, so WCAG 2.5.3 doesn't bind it; it may be reworded independently of `main.quit.countdown`. `high`.
+- No `sameAsSourceJustification` needed: all seven values differ from English.

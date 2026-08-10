@@ -1057,3 +1057,63 @@ of sight"), not the backdrop noun.
   for the trap this avoids: the bare noun `Bakgrund` is NOT a substring of `i bakgrunden` (indefinite vs definite), so
   the noun choice would have broken containment as well as the part of speech.
 - No `sameAsSourceJustification` needed: both values differ from English.
+
+## Quit gate: dialogen som stoppar ⌘Q medan något pågår (2026-08-10; the seven `main.quit.*` keys)
+
+The modal Cmdr raises when the user quits while a copy, move, delete, trash, or archive edit is still running: a
+question title, a reassuring body, the list of running operations under a small heading, a live countdown, and the two
+buttons. Reuses the settled `åtgärd` head noun (§ Operation queue), `Pågår` (`queue.row.status`), `objekt`,
+`delvis skriven` (§ Stalled-transfer notice), and `Avsluta` (the quit verb). New/settled:
+
+- **"Quit while N operation(s) are running?" → `Avsluta medan en åtgärd pågår?` /
+  `Avsluta medan {countText} åtgärder pågår?`** · macOS Finder ships the collocation verbatim: "Finder kan inte avslutas
+  eftersom **en åtgärd fortfarande pågår** på en iOS-enhet" and "…eftersom några aktiviteter fortfarande pågår"
+  (`sv/macOS/Finder/LocalizableMerged.json`), which pins both the quit verb and `åtgärd … pågår` in exactly this
+  surface. Total Commander sv ships the same dialog one tier down (`WCMD.LNG.utf8`
+  `1237="VARNING: %i pågående aktivitet(er) i bakgrunden!\nAvsluta ändå?"`), confirming the shape; Cmdr keeps its own
+  settled head noun `åtgärd` rather than TC's `aktivitet`, so the title, the queue window (`Åtgärdskö`), and the log
+  (`Åtgärdslogg`) all say the same word. `high`.
+- **"Quitting in N seconds…" → `Cmdr avslutas om {secondsText} sekund(er)…`, NOT a subject-less `Avslutar om …`** ·
+  Swedish marks an app quitting ITSELF with the deponent `-s` form, the way Apple does ("Finder kan inte **avslutas**",
+  "Finder kommer att **avslutas**", "Systeminställningar **avslutas** och startas om"). Active `Avslutar` is transitive
+  (it wants an object) and collides with Finder's own progress stage `Avslutar` = **Finishing** (key `PW21`/`BN4`), so
+  it would read as "finishing something", not "quitting". Naming Cmdr as the subject also lets the tail drop the
+  English's trailing "on Cmdr" instead of repeating the brand twice in one sentence. `sekund` / `sekunder` per Nautilus
+  sv (`msgstr[0] "%d sekund"` / `msgstr[1] "%d sekunder"`). `high`.
+- **restart / logout (the OS's, as nouns): `omstart` / `utloggning`** · the verbs are Tier-1 attested as the Apple-menu
+  items themselves (`sv/macOS/AppKit/Menus.json`: `Restart` → "Starta om", `Log Out` → "Logga ut"; MS terminology
+  agrees, `restart` → "starta om", `sign out`/`log off` → "logga ut"). The nouns are the regular deverbal forms: MS
+  terminology has `omstart` directly ("automatisk omstart", "Interaktiv omstart") and `utloggning` in compounds
+  ("webbsida för klientutloggning"), and the shipped sv catalog already uses the noun (`settings.json` "Omstart krävs").
+  One shared article covers both ("en omstart eller utloggning"). `high`.
+- **"never waits on Cmdr" → `aldrig behöver vänta`** · `vänta på` is Finder's own construction (`N178` "…vänta på att
+  den visas på skrivbordet"); with `Cmdr` already the sentence subject the object is implicit, so the shorter clause
+  reads better than repeating the brand. `high`.
+- **"Whatever''s finished stays done." → `Allt som redan är klart förblir klart.`** · `klar` is the catalog's settled
+  done-state word (`queue.row.status` `done {Klar}`), neuter agreement with `allt`. `high`.
+- **"the one item still in flight" → `det enda objektet som fortfarande skrivs`** · "in flight" is rendered by what it
+  MEANS here (currently being written), per the key description; `skrivas` is macOS's write verb (`PW18` "Writing track"
+  → "Skriver spår") and `objekt` is the settled item noun. Definite `det enda objektet` because Swedish takes the
+  definite after `enda`. `high`.
+- **"half-written file" → `den delvis skrivna filen`** · identical concept to the already-settled "partly written" (§
+  Stalled-transfer notice, `transferProgress.stallInFlight` "kan redan vara delvis skriven/skrivna"), so it reuses that
+  wording rather than coining `halvskriven`. `high`.
+- **"clears away" (the cleanup, softer than deleting) → `rensar bort`** · the catalog's own soft-removal verb
+  (`errorReporter.dialog.description` "…rensas bort innan de skickas"); deliberately NOT `raderar`, which is the settled
+  destructive delete the user asked for elsewhere, nor `tar bort`. `high`.
+- **"Still running" (heading over the operation rows) → `Pågår fortfarande`** · reuses `queue.row.status`'s running arm
+  `Pågår` plus Finder's own `fortfarande pågår` adverb placement, so the heading and the rows below it say the same
+  word. Finite verb with the list as its implied subject, mirroring English's participle. `high`.
+- **"Keep working" (the button that calls the quit OFF) → `Fortsätt arbeta`** · `Fortsätt` is macOS's Continue
+  (`sv/macOS/AppKit/NSExceptionAlert.json` `66.title`, Finder "Klicka på Fortsätt om du vill…"). It is an imperative to
+  the USER, so it can't be misread as postponing (no `senare`, no `påminn mig`) and can't be misread as cancelling the
+  operations (that button is `Avbryt` and isn't on this dialog). `high`.
+- **"Quit now" → `Avsluta nu`** · the settled quit verb (`commands.appQuit.label` "Avsluta Cmdr", macOS "Avsluta
+  Finder") plus `nu`, which is load-bearing: the app quits either way when the countdown ends. ❌ Deliberately NOT
+  macOS/TC's `Avsluta ändå` (Quit anyway): that answers "should I at all?", while this button answers "skip the wait".
+  `high`.
+- **`countdownAria` → `Tid kvar tills Cmdr avslutas av sig själv`** · not a Label-in-Name pair (the countdown region has
+  no visible label to contain), so it just names what the number measures; `kvar` is the catalog's settled
+  time-remaining word (`etaRemaining` "{duration} kvar"). `high`.
+
+No `sameAsSourceJustification` needed: all seven values differ from English.

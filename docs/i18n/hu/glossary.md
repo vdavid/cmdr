@@ -1245,3 +1245,75 @@ asking and a quiet note explains why the rest of the queue stopped.
   uses is what makes this free — see `style.md` § Notes and decisions. The sibling pair holds the same way: `Sorba` ⊂
   `Áthelyezés a műveleti sorba`.
 - No `sameAsSourceJustification` needed: both values differ from English.
+
+Settled while translating the quit gate (7 keys in `main.json`, 2026-08-10). The backend refuses to quit silently while
+a copy, move, delete, trash, or archive edit is running, so a modal asks whether to go ahead, lists the running
+operations, and counts 15 seconds down to an automatic quit. The head noun `művelet` and the window it points at are
+settled in the operation-queue rename block above; these keys only reuse them.
+
+- **quit → `kilépés`; the button "Quit now" → `Kilépés most`** · macOS Tier 1 throughout (`Kilépés`,
+  `Kilépés a Finderből`, `Kilépés mindenképp`, `Kilépés és az ablakok megtartása`), Microsoft terminology (`quit` =
+  `kilépés`, `Exit` = `Kilépés`), Double Commander (`E&xit` = `Kilépé&s`, `E&xit program` = `Kilépés a &programból`),
+  Total Commander (`Alt+F4 Kilépés`) · high. The `<Noun> most` shape carrying "now" is macOS Tier 1 as well
+  (`Biztonsági mentés most`, `Letöltés most`), and it keeps English''s load-bearing "now": the app quits either way,
+  this button skips the wait. NOT macOS''s `Kilépés mindenképp` ("Quit anyway"): that answers a refusal, while Cmdr''s
+  dialog is a countdown the button short-circuits.
+- **"an operation is running" (the state, in running prose) → `folyamatban van`; the heading "Still running" →
+  `Még folyamatban`** · macOS Finder Tier 1 ships this exact surface, a quit blocked by unfinished file operations:
+  `A Finder nem képes kilépni, mert néhány művelet még folyamatban van.` (plus
+  `… mert egy művelet még folyamatban van egy iOS-eszközön.` and
+  `… mert egy másik művelet van folyamatban, mint például egy elem mozgatása vagy másolása`), and the verbless heading
+  form is macOS-attested too (`Első biztonsági mentés folyamatban`); Microsoft terminology agrees (`in progress` =
+  `folyamatban`) · high.
+  - **NOTE the register split with `queue.row.status` running = `Fut`**, which stays as it is: `Fut` is a one-word
+    status cell in a table column, `folyamatban van` is the running-prose form, and macOS uses exactly this pair of
+    registers itself. Same shape as the settled `host` split (`gép`/`Gépnév` in the browser column vs `gazdagép` in
+    error prose). Don''t "unify" them.
+  - The heading is deliberately verbless: `Még fut` would be singular while the list holds 1..N rows, `Még futnak`
+    breaks at one row, and `Futó műveletek` would repeat the noun the title just used (English avoids that with the
+    terse "Still running").
+- **The title is a second-person question: `Kilépsz, amíg egy művelet folyamatban van?`** · every question-shaped title
+  in the shipped `hu` catalog uses informal `te` per `style.md` § Formality (`Törlöd az AI-modellt?`,
+  `Elküldöd az összeomlási jelentést?`, `Megváltoztatod a fájlkiterjesztést?`, `Mindenképp bezárod?`) · high. Counted
+  noun singular in BOTH plural branches (`{countText} művelet folyamatban van`, never `műveletek`), and the verb stays
+  singular with it, per the no-pluralize-after-a-numeral rule.
+- **"Keep working" (the button that calls the quit off) → `Munka folytatása`** · no source names this control (mining
+  gotcha 3: the concept is absent from macOS, Microsoft, and all five file managers, none of which offers a
+  stay-in-the-app button on a quit countdown), so it is composed from macOS''s own Tier-1 `<Noun> folytatása` shape
+  (`Biztonsági mentés folytatása`, `Másolás folytatása`) plus the nominal-label rule · tentative. FLAGGED.
+  - Deliberately NOT `Mégsem`, the catalog''s settled dialog Cancel: next to a list of running operations it would read
+    as "cancel the operations", the exact opposite of what the button does.
+  - Deliberately NOT `Később` (the settled dismiss-for-now word) or any "remind me" wording: the countdown is deleted,
+    not deferred.
+  - Residual risk a reviewer should judge: `Folytatás` alone is the queue''s Resume, so `Munka folytatása` could be read
+    for a moment as resuming an operation. The object `munka` (the user''s work, not an operation) is what separates
+    them, and English carries the same overlap ("Keep working" vs "Resume").
+- **"in {n} seconds" → `{secondsText} másodperc múlva`** · the postposition `múlva` is the only correct Hungarian for
+  this and needs no suffix on the placeholder (per `style.md` § Notes and decisions); zero pile attestation, since no
+  corpus counts a quit down · high on the grammar, and `másodperc` itself is macOS Tier 1 (`Kb. ^0 másodperc`). Singular
+  `másodperc` in both plural branches.
+- **restart / logout (the operating system''s, not Cmdr''s) → `újraindítás` / `kijelentkezés`** · macOS Tier 1
+  (`Újraindítás`, `Kijelentkezés`, `Kijelentkezés…`) and Microsoft terminology (`restart` = `újraindít`,
+  `log off`/`log out`/`sign out` = `kijelentkezik`, `Sign Out` = `Kijelentkezés`) · high. Lowercase mid-sentence, as
+  Hungarian sentence case requires.
+- **The countdown''s "so … never waits on Cmdr" → `így egy újraindítás vagy kijelentkezés soha nem vár a Cmdrre.`** ·
+  indicative `így …` rather than a subjunctive `hogy … ne …`, matching English''s plain "so … never waits" and reading
+  lighter · high. The brand suffix `Cmdrre` follows `style.md`''s hyphen-free, front-vowel pattern (`Cmdrben`,
+  `Cmdrből`, `Cmdrnek` in the shipped catalog), with the `r` doubled by the sublative `-re`.
+- **"half-written file" → `félig megírt fájl`** · lifted verbatim from the shipped catalog, where the identical English
+  phrase already renders this way (`settings.advanced.showStagingTempFiles.description` =
+  `… nem hagyhat félig megírt fájlt valódi néven`) · high. **"clears away" → `eltávolítja`**, the catalog''s and
+  Microsoft''s `remove` = `eltávolítás`, chosen over `törli`: the sibling `transferProgress.rollbackTooltip` uses
+  `törlése` for the same cleanup, but that is a destructive-action button label, while this sentence is reassurance and
+  must not flash "Cmdr deletes a file" at the reader · high.
+- **"the one item still in flight" → `Az éppen írás alatt álló elem`** · `elem` is the settled counted-item noun (macOS
+  `Kuka elemei`, `Másolni kívánt elemek`); `írás alatt álló` is the plain participial "being written", and the definite
+  singular already carries English''s "the one" · high. "stops where it is" → `ott áll meg, ahol tart`.
+- **"Whatever''s finished stays done." → `Ami elkészült, az kész marad.`** · reuses the settled `Done` = `Kész`
+  (`queue.row.status` done arm) · high.
+- **`countdownAria` → `Hátralévő idő a Cmdr automatikus kilépéséig`** · nominal, like every other aria label in the
+  catalog (`Ennek a műveletnek a szüneteltetése`); `hátralévő idő` is the Microsoft-attested shape (`remaining duration`
+  = `hátralévő időtartam`, `remaining work` = `hátralévő munka`), and `automatikus` carries "on its own" · high. **Not
+  bound by WCAG 2.5.3**: it names a countdown REGION, not a control with a visible label, so there is no label to
+  contain (the visible text is the countdown sentence itself).
+- No `sameAsSourceJustification` needed: all seven values differ from English.

@@ -1275,3 +1275,92 @@ REVIEW FLAGS (empty-queue button pass):
   its other state, so the dialog's primary button changes width noticeably between the two states. If it crowds the
   neighbouring `Pauzeer` / `Annuleer`, the fallback is the TC-nl bare `Achtergrond` (11), which costs the action reading
   and the exact-containment aria.
+
+## Het stoppoortje: afsluiten terwijl er nog werk loopt (`main.quit.*`, 2026-08-10)
+
+Seven `main.json` keys for the modal Cmdr raises when the user quits (⌘Q, the menu, or closing the main window) while a
+copy, move, delete, trash, or archive edit is still running: a question title, a reassuring body, a list heading, a live
+countdown plus its screen-reader name, and the two buttons. The head noun `bewerking` and the queue's own verb family
+come from the operation-queue rename pass above; this section records what was new.
+
+- **"Quit" (the app stopping, in a sentence) → `stoppen`; the imperative button → `Stop`** · macOS Dutch Tier 1 uses
+  `stoppen`, NOT `afsluiten`: Finder's `A17` "The Finder can't quit because some operations are still in progress." →
+  "De Finder kan niet worden gestopt, omdat er nog bewerkingen worden uitgevoerd.", `A19` (singular) → "… omdat er nog
+  een bewerking wordt uitgevoerd …", AppKit "Quit Anyway" → "Stop toch", the menu "Stop Finder". Already the glossary's
+  settled `quit (app) → Stop` · high.
+- **"Quit while N operations are running?" (title) →
+  `Stoppen terwijl er nog {countText} bewerkingen worden uitgevoerd?`** · this is macOS `A17`/`A19` almost word for
+  word, with Finder's own `er nog … wordt/worden uitgevoerd` frame carrying the count · high. The infinitive `Stoppen`
+  opens it, the terse question shape Dutch uses for a yes/no dialog title (Finder's own `Wil je …?` frame needs an
+  object and would stretch the line).
+  - Only the noun plus its finite verb sits inside the plural branches
+    (`{count, plural, one {een bewerking wordt} other {{countText} bewerkingen worden}}`), per `style.md` § Plurals; the
+    shared tail carries `uitgevoerd?`. Renders "Stoppen terwijl er nog een bewerking wordt uitgevoerd?" / "… nog 3
+    bewerkingen worden uitgevoerd?". Dutch CLDR categories are `one` / `other`.
+  - The `one` arm takes the indefinite `een bewerking` (Finder `A19`), not `{countText}`: English does the same, and "1
+    bewerking" would read like a tally on a title line.
+  - Total Commander nl ships the same dialog and independently confirms both the noun and the verb: `WCMD.LNG.utf8`
+    `1237="WAARSCHUWING: %i bewerking(en) actief op achtergrond!\nToch stoppen?"`.
+- **"in flight" (the one item being written when the app stops) → `het onderdeel dat op dat moment wordt geschreven`** ·
+  the `@key` description defines in-flight as "currently being written", and `onderdeel` is the settled macOS Finder
+  word for an item (glossary above). English's "the ONE item" is carried by a fronted `Alleen …`, which is how Dutch
+  scopes it without a numeral · high.
+- **"half-written" → `gedeeltelijk geschreven`** · reuses the settled `partly written → gedeeltelijk geschreven`
+  (stalled-transfer pass), so the quit dialog and the stall dialog describe the same leftover the same way · high.
+- **"clears away" (deletes the leftover so it can't look complete) → `opruimen` (`ruimt … op`)** · plain Dutch for
+  tidying something away, and deliberately NOT `verwijdert`: the dialog sits above a queue whose rows can literally say
+  `Bezig met verwijderen`, and a second "verwijder" in the reassurance would read as more deleting rather than as
+  cleanup · high on the sense, `tentative` on the word (no pile string names this act).
+  - The body fronts that clause (`… en het gedeeltelijk geschreven bestand dat achterblijft, ruimt Cmdr op.`) so the
+    relative clause never lands between the object and the separable `op`. The SVO alternative "… ruimt Cmdr het bestand
+    op dat achterblijft" garden-paths on `op dat`.
+- **"Whatever''s finished stays done." → `Wat al klaar is, blijft klaar.`** · `klaar` is this catalog's plain
+  finished-word (`indexing` "Bijna klaar"); `blijft staan` was rejected because for a delete the finished work is files
+  GONE, and "blijft staan" would promise the opposite · high.
+- **"Quitting in N seconds, so a restart or logout never waits on Cmdr." →
+  `Over {secondsText} seconden stopt Cmdr vanzelf, zodat herstarten of uitloggen nooit hoeft te wachten.`** ·
+  `over N seconden` is the standard Dutch "N seconds from now"; `seconde` / `seconden` plural per Nautilus nl
+  (`%d seconds` → `%d seconde` / `%d seconden`) · high.
+  - `vanzelf` ("of its own accord") carries the `@key`'s point that Cmdr stops without being asked again, and pairs the
+    countdown with its aria label.
+  - **restart → `herstarten`, log out → `uitloggen`** · macOS Dutch Tier 1 labels the two menu items `Herstart` and
+    `Log uit`, and the catalog already ships `Herstart` (glossary above) and `inloggen`/`Log in`. Microsoft's
+    `opnieuw opstarten` (restart, Verb) and `afmelden` (log out / sign out, Verb) are the Windows forms and lose per
+    term-choice principle 2 · high.
+  - Cmdr is named ONCE. English repeats the app as the thing not being waited on; a second `op Cmdr` in the same Dutch
+    sentence reads clumsy, and with Cmdr as the subject of the main clause the referent of `nooit hoeft te wachten` is
+    unambiguous.
+  - Only `{secondsText} seconde` / `{secondsText} seconden` sits inside the branches; `Over` leads and the whole `zodat`
+    clause is shared.
+- **"Time until Cmdr quits on its own" (aria) → `Tijd totdat Cmdr vanzelf stopt`** · `totdat` is this catalog's settled
+  until-clause word (conflict-prompt pass: "totdat je antwoordt"; `indexing.staleDialog.body`), and `vanzelf stopt`
+  repeats the countdown's own words so the spoken label and the visible line agree · high. WCAG 2.5.3 does not bind
+  here: the countdown region has no visible label to contain, only a live number.
+- **"Keep working" (button that calls the quit off entirely) → `Werk door`** · the bare-stem imperative of the separable
+  `doorwerken`, the same shape as macOS's `Ga door` (Continue) and Double Commander's `Werk op de achtergrond` ·
+  `tentative` (no pile string carries this exact button).
+  - ❌ NOT `Annuleer`: the queue rows and the progress dialog next to it use `Annuleer` for cancelling the OPERATIONS,
+    which is the opposite outcome. ❌ NOT `Later` (the settled dismiss-for-now word, `updates.later`): the countdown is
+    deleted, not deferred. ❌ NOT `Behoud` (macOS's "Keep"), which is the keep-this-file sense.
+  - `Stop niet` (macOS Finder `BN63` "Don't Stop" → "Stop niet") is the attested negative twin and would be defensible,
+    but English deliberately frames this positively, and `Werk door` reads as the friendlier of the two.
+- **"Quit now" (primary, destructive) → `Stop nu`** · `Stop` (above) plus `nu`, which does the same load-bearing work as
+  English's "now": the app quits either way when the countdown ends, and this skips the wait · high.
+- **"Still running" (heading over the operation rows) → `Nog bezig`** · `Bezig` is the queue's own running-state word
+  (`queue.row.status` running arm, `queue.row.label` fallback), so the heading and the rows under it speak one
+  vocabulary; `nog` carries "still" · high.
+- No `fout` / `mislukt` anywhere in the seven values, per the voice rule. No apostrophes, so no ICU doubling was needed.
+  No `sameAsSourceJustification`: all seven differ from English.
+
+REVIEW FLAGS (quit-gate pass):
+
+- **`Werk door`** is the one coined value here. It is unambiguous against "later" and against "cancel the operations",
+  but no source ships this button. Alternatives a native reviewer might prefer: `Blijf werken` (closer to the English
+  wording, 12 chars), `Ga door met werken` (explicit, 18), or the attested-but-negative `Stop niet`.
+- **`opruimen` for "clears away"** is judgment, not evidence: the pile has no string for an app tidying up its own
+  half-written output. `verwijdert` is the obvious literal and was rejected on the delete-collision above.
+- **Title length**: `Stoppen terwijl er nog 3 bewerkingen worden uitgevoerd?` is 55 characters against English's 45. It
+  follows macOS's own phrasing, so shortening it costs the Tier-1 match; if the dialog title wraps, the terser
+  `Stoppen terwijl er nog 3 bewerkingen lopen?` (43, using `queue.empty.body`'s own "terwijl ze lopen") is the fallback.
+- **Body length**: 174 characters against English's 138, the longest of the seven. It is a wrapping body paragraph, so
+  this should be fine, but it is the first place to look if the dialog grows taller than expected.

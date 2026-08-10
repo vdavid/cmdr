@@ -1290,3 +1290,94 @@ Phrasing notes for this pass:
 - No `: ; ! ? %` in either value, so the ASCII-space-before-punctuation rule doesn''t arise; no apostrophe, so no ICU
   doubling; no U+2019 or U+202F leaked in.
 - Neither value is identical to English, so no `sameAsSourceJustification` is needed.
+
+## The quit gate (2026-08-10, 7 keys in `main.quit`)
+
+The modal Cmdr raises when the user quits (⌘Q, the menu, or closing the main window) while a copy, move, delete, trash,
+or archive edit is still running: a title asking whether to go ahead, a reassuring body, a short list of what's running,
+a live countdown from 15, and two buttons. ICU values, so single apostrophes are doubled below to match this doc's
+convention. The head noun `opération` and the `en cours` status word come from the operation-queue rename pass above;
+nothing here re-derives them.
+
+- **"Quit while … running?" (the dialog title) → `Quitter alors qu''une opération est en cours ?` /
+  `Quitter alors que {countText} opérations sont en cours ?`** · macOS Tier-1 states this exact situation in
+  `Finder/LocalizableMerged.json` A17 ("The Finder can''t quit because some operations are still in progress." → "Vous
+  ne pouvez quitter le Finder parce que certaines opérations sont toujours en cours."), which settles both the head noun
+  and the `être en cours` predicate for a running file operation; `quitter` for an app is AppKit Tier-1 (`Document.json`
+  "Quit" → "Quitter", "Quit Anyway" → "Quitter quand même") and already in-catalog at `commands.appQuit.label` ("Quitter
+  Cmdr") · high.
+  - **The elliptical infinitive question is this catalog''s settled title shape**, not a calque of English''s ellipsis:
+    `ai.local.deleteDialogTitle` ("Supprimer le modèle d''IA ?"), `fileExplorer.extensionChange.title` ("Changer
+    l''extension du fichier ?"), `indexing.firstConnect.title` ("Indexer {name} ?"). Don''t expand it to "Voulez-vous
+    vraiment quitter…".
+  - `alors que` over `pendant que`: the dialog asks about quitting DESPITE running work, and `alors que` carries that
+    concessive edge where `pendant que` is purely temporal. (Finder N144 renders a different "while" with `quand`, but
+    that one is plain simultaneity.)
+- **"stays done" (nothing already completed is undone) → `Tout ce qui est déjà terminé le reste.`** · the neutral
+  pronominal `le reste` is the only short form that stays true for EVERY operation type: "reste en place" or "est
+  conservé" would be wrong for a delete or a trash, where "done" means the files are gone · high for the terms,
+  tentative for the phrasing. Known momentary garden path: a reader can start to parse `le reste` as the noun "the
+  remainder", but that reading leaves the sentence verbless and self-corrects. Don''t "fix" it with a keeping verb.
+- **"in flight" (the one item currently being written) → `en cours d''écriture`** · the English `@key` defines it as
+  "currently being written", and the next clause is about the half-written file, so the concrete writing sense is what
+  French carries; `en cours` is the catalog''s settled running word (`queue.row.status`) · high.
+- **"half-written file" → `le fichier à moitié écrit`** · already shipped verbatim in this catalog at
+  `settings.advanced.showStagingTempFiles.description` ("Un plantage ne peut donc pas laisser un fichier à moitié écrit
+  sous un vrai nom."), which describes the same temp-file mechanism · high. "clears away" → `supprime`, per the
+  glossary''s `delete → supprimer` (and NOT `efface`, which style.md reserves for the erase/wipe sense).
+- **logout (the OS session, in the countdown''s reason clause) → `une fermeture de session`** · macOS Tier-1
+  (`AppKit/Menus.json` "Log Out" → "Fermer la session", the item the user sees in the Apple menu); Microsoft terminology
+  FRA agrees (`log off` → "fermer une session", FRA) · high. restart → `un redémarrage` · `AppKit/Menus.json` "Restart"
+  → "Redémarrer" · high.
+  - **Deliberate divergence from `shortcuts.system.loggingOut` ("la déconnexion")**, recorded so the next pass sees it
+    instead of "fixing" one side blind. That shortcuts entry was settled as "descriptive FR" with no Tier-1 citation,
+    and it sits in a list of system shortcuts where nothing competes with it. Here the neighbouring words are a file
+    manager''s own: this catalog uses `se déconnecter` for leaving a SERVER (macOS Finder "Disconnect" → "Se
+    déconnecter"), so "un redémarrage ou une déconnexion" inside Cmdr could read as dropping an SMB share.
+    `fermeture de session` is unambiguous and is what the user''s Apple menu says. **Open item for a future pass**:
+    re-settle `shortcuts.system.loggingOut` to "la fermeture de session" so the pair agrees; it is outside this pass''s
+    seven keys.
+- **"Quitting in N seconds" (the live countdown) → `Cmdr quitte dans {secondsText} seconde(s)`** · intransitive
+  `quitter` with the app as subject is AppKit Tier-1 ("%@ a quitté inopinément pendant la réouverture des fenêtres"),
+  and it keeps the whole dialog on ONE verb root (title "Quitter alors que…", button "Quitter maintenant", aria "avant
+  que Cmdr quitte…") · high. **Why not `Fermeture de Cmdr dans …` or `Cmdr se ferme dans …`** (both also Tier-1, Finder
+  BN36 "Le Finder est sur le point de se fermer"): the `ferm-` root would collide with `fermeture de session` three
+  words later, and it would split the dialog across two verbs. Naming Cmdr is load-bearing here: the English value
+  carries the brand, and `desktop-i18n-dont-translate` flags a dropped one.
+  - The reason clause is restructured from English''s "so a restart or logout never waits on Cmdr" to
+    `pour ne jamais retarder un redémarrage ou une fermeture de session`: same meaning, with Cmdr as the already-named
+    implied subject, so the brand isn''t repeated twice in one short line.
+- **"Time until Cmdr quits on its own" (the countdown''s screen-reader label) →
+  `Temps restant avant que Cmdr quitte de lui-même`** · `temps restant` is Finder Tier-1 (`PW2`, the copy window''s
+  "Estimation du temps restant…"), and `de lui-même` is the standard French for "on its own" · high. **Not a WCAG 2.5.3
+  pair**: the countdown region has no visible label of its own (the visible text is the sentence being announced), so
+  there is nothing to contain; keep it short and naming what the number measures.
+- **"Keep working" (the button that calls the quit off entirely) → `Continuer à travailler`** · a full infinitive per
+  style.md''s button rule, and the object is what makes it safe · high for the shape, tentative for the exact verb.
+  - **Why not `Annuler`**: this catalog uses `Annuler` for cancelling an OPERATION on the queue surfaces
+    (`queue.row.cancel`, `queue.row.cancelAria` "Annuler cette opération", `queue.toolbar.cancelSelected`), and this
+    dialog lists running operations directly above its buttons, so a bare "Annuler" would read as the exact opposite of
+    what the button does.
+  - **Why not a bare `Continuer`**: macOS uses "Continuer" as the GO-AHEAD button in confirmation alerts (Finder BN23
+    "Cliquez sur Continuer pour éjecter le disque…"), so alone it would read as "continue quitting". The object
+    `à travailler` flips it back and, unlike "Plus tard" or "Me le rappeler", carries no postponement: the countdown is
+    deleted, not deferred (the English `@key` is explicit about this).
+- **"Quit now" → `Quitter maintenant`** · `maintenant` keeps the load-bearing "now": the app quits either way when the
+  countdown ends, and this button only skips the wait · high. Distinct from macOS''s "Quitter quand même" (Quit Anyway),
+  which answers a "you shouldn''t" objection rather than a wait.
+- **"Still running" (the heading over the list of operations) → `Toujours en cours`** · lifted from the Finder A17
+  sentence above ("… sont toujours en cours"), so the heading and the rows under it speak the catalog''s one running
+  word; the bare `En cours` (`queue.row.status`) drops the "still" that makes it a heading · high.
+
+Phrasing notes for this pass:
+
+- All branches were rendered with `intl-messageformat` under locale `fr`: the title for 0/1/2/15/1 000 000 and the
+  countdown for 0/1/2/15. French counts 0 as `one`, so the countdown''s zero tick reads "0 seconde" (correct); the
+  title''s `one` branch at 0 is unreachable, since the dialog only opens with work running. FR CLDR `one`/`many`/`other`
+  with `many` written identical to `other`, as everywhere else in this set.
+- Both plurals keep the agreeing verb INSIDE the branches (`est en cours` / `sont en cours`, `seconde` / `secondes`),
+  per style.md § Plurals.
+- The two title branches end in `?` with the settled ASCII space before it, never U+202F. No other `: ; ! %` occurs.
+  Every apostrophe is ASCII (U+0027) and doubled: `qu''une`, `d''écriture`, `s''arrête`, `qu''il`.
+- Neither "erreur" nor "échec" appears, per style.md; the body stays matter-of-fact rather than warning-shaped.
+- No `sameAsSourceJustification` needed: all seven values differ from English.

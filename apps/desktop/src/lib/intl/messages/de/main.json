@@ -6,5 +6,33 @@
   "main.upgradeNudge.other": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne die Befehlspalette und führe Einführung… aus, um sie anzusehen.",
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
+  },
+  "main.quit.title": "{count, plural, one {Ein Vorgang läuft noch. Trotzdem beenden?} other {{countText} Vorgänge laufen noch. Trotzdem beenden?}}",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "Was fertig ist, bleibt fertig. Das eine Objekt, das gerade geschrieben wird, stoppt genau dort, wo es ist, und Cmdr entfernt die halb geschriebene Datei, die dabei zurückbleibt.",
+  "@main.quit.body": {
+    "sourceHash": "9b1c574"
+  },
+  "main.quit.countdown": "{seconds, plural, one {Cmdr beendet sich in {secondsText} Sekunde, damit ein Neustart oder eine Abmeldung nie darauf warten muss.} other {Cmdr beendet sich in {secondsText} Sekunden, damit ein Neustart oder eine Abmeldung nie darauf warten muss.}}",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Zeit, bis sich Cmdr von selbst beendet",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "Weiterarbeiten",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "Jetzt beenden",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "Noch aktiv",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
   }
 }
