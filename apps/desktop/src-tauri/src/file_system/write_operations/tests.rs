@@ -394,7 +394,29 @@ fn test_copy_transaction_commit_prevents_drop_rollback() {
 // safe_overwrite_file tests
 // ============================================================================
 
-use super::overwrite::safe_overwrite_file;
+use super::overwrite::stage_and_land_file;
+use super::state::WriteOperationState;
+
+/// A running operation to land a write under.
+fn overwrite_state() -> Arc<WriteOperationState> {
+    Arc::new(WriteOperationState::new(std::time::Duration::from_millis(50)))
+}
+
+/// `stage_and_land_file` with the platform's default byte-copier, which is what
+/// the copy strategies hand it for a same-volume local copy.
+fn safe_overwrite_file(source: &std::path::Path, dest: &std::path::Path) -> Result<u64, WriteOperationError> {
+    stage_and_land_file(&overwrite_state(), dest, true, |target| {
+        #[cfg(target_os = "macos")]
+        {
+            transfer::macos_copy::copy_single_file_native(source, target, false, None)
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            use super::types::IoResultExt;
+            std::fs::copy(source, target).with_path(source)
+        }
+    })
+}
 
 #[test]
 fn test_safe_overwrite_basic() {
@@ -405,9 +427,6 @@ fn test_safe_overwrite_basic() {
     fs::write(&source, "new-data!!").unwrap();
     fs::write(&dest, "old-data").unwrap();
 
-    #[cfg(target_os = "macos")]
-    let result = safe_overwrite_file(&source, &dest, None);
-    #[cfg(not(target_os = "macos"))]
     let result = safe_overwrite_file(&source, &dest);
 
     let bytes = result.expect("safe_overwrite_file should succeed");
@@ -431,9 +450,6 @@ fn test_safe_overwrite_preserves_dest_on_missing_source() {
 
     fs::write(&dest, "old-data").unwrap();
 
-    #[cfg(target_os = "macos")]
-    let result = safe_overwrite_file(&source, &dest, None);
-    #[cfg(not(target_os = "macos"))]
     let result = safe_overwrite_file(&source, &dest);
 
     assert!(result.is_err(), "should fail when source doesn't exist");
@@ -454,9 +470,6 @@ fn test_safe_overwrite_dest_has_new_content_after_completion() {
     fs::write(&source, new_content).unwrap();
     fs::write(&dest, "original").unwrap();
 
-    #[cfg(target_os = "macos")]
-    let result = safe_overwrite_file(&source, &dest, None);
-    #[cfg(not(target_os = "macos"))]
     let result = safe_overwrite_file(&source, &dest);
 
     result.expect("safe_overwrite_file should succeed");
@@ -476,9 +489,6 @@ fn test_safe_overwrite_different_sizes() {
     fs::write(&source_large, &large_content).unwrap();
     fs::write(&dest_small, "tiny").unwrap();
 
-    #[cfg(target_os = "macos")]
-    let result = safe_overwrite_file(&source_large, &dest_small, None);
-    #[cfg(not(target_os = "macos"))]
     let result = safe_overwrite_file(&source_large, &dest_small);
 
     result.expect("large-to-small overwrite should succeed");
@@ -491,9 +501,6 @@ fn test_safe_overwrite_different_sizes() {
     fs::write(&source_small, "tiny").unwrap();
     fs::write(&dest_large, &large_dest_content).unwrap();
 
-    #[cfg(target_os = "macos")]
-    let result = safe_overwrite_file(&source_small, &dest_large, None);
-    #[cfg(not(target_os = "macos"))]
     let result = safe_overwrite_file(&source_small, &dest_large);
 
     result.expect("small-to-large overwrite should succeed");
@@ -522,9 +529,6 @@ fn test_safe_overwrite_file_replaces_existing_folder() {
     fs::create_dir_all(dest.join("sub")).unwrap();
     fs::write(dest.join("sub").join("deep.txt"), "deep").unwrap();
 
-    #[cfg(target_os = "macos")]
-    let result = safe_overwrite_file(&source, &dest, None);
-    #[cfg(not(target_os = "macos"))]
     let result = safe_overwrite_file(&source, &dest);
 
     result.expect("safe_overwrite_file should succeed when dest is an existing folder");

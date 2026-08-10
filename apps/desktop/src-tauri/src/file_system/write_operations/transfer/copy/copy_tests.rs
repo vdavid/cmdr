@@ -323,6 +323,9 @@ fn local_copy_bench_many_small_files() {
     const ROUNDS: usize = 5;
 
     let tmp = tempfile::tempdir().expect("tempdir");
+    // Measure with the persisted in-flight-temp ledger live, since production
+    // rewrites it twice per file. Without this the bench would quietly skip it.
+    let _store = crate::file_system::write_operations::in_flight_temps::test_support::use_store_in(tmp.path());
     let src_dir = tmp.path().join("src");
     fs::create_dir_all(&src_dir).unwrap();
     let payload = vec![0xAB_u8; FILE_BYTES];

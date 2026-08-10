@@ -1,9 +1,13 @@
-//! Crash-safety / safe-replace tests for `volume::copy`, split out of
-//! `volume/copy_tests.rs` to keep each suite focused. These cover the
-//! cross-volume file→file Overwrite safe-replace guarantee: the original
-//! destination must survive a mid-stream read/write or finalize-rename
-//! failure. The Volume test doubles below (`FailAfterOneChunkStream`,
-//! `FailingReadSourceVolume`, `RenameFailsDestVolume`) model those failures.
+//! Crash-safety tests for the copy engines: the destination path must never
+//! hold a partial, and the original must survive every failure short of the
+//! final swap.
+//!
+//! Two suites live here. The cross-volume one covers the file→file Overwrite
+//! safe-replace guarantee against a mid-stream read/write or finalize-rename
+//! failure; its Volume test doubles (`FailAfterOneChunkStream`,
+//! `FailingReadSourceVolume`, `RenameFailsDestVolume`) model those. The
+//! local-FS one at the bottom covers the same promise for
+//! `copy_strategy::copy_file_using` against a real tempdir.
 //!
 //! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests.rs`
 //! (`super::tests`) so they aren't duplicated.
@@ -519,4 +523,223 @@ async fn cross_volume_overwrite_concurrent_preserves_new_data_on_finalize_failur
     assert!(result.is_err(), "a finalize-rename failure must surface as an error");
     // The /b.txt new content must survive (orig slot or a temp sibling).
     assert_new_data_survives(&dest_inner, b"BBB-new").await;
+}
+
+// ========================================================================
+// Local-FS staging: the destination NAME never holds a partial
+// ========================================================================
+//
+// The same promise as the cross-volume suite above, on the most ordinary path
+// in the app. A local copy writes to a `.cmdr-tmp-*` sibling and takes the real
+// name by one same-directory rename, so a crash, a force-quit, or a worker
+// thread abandoned in a syscall we can't interrupt leaves a recognizable
+// leftover rather than a truncated file wearing the user's filename.
+//
+// These drive `copy_file_using` with an explicitly chosen `Chunked` strategy:
+// on a Mac every tempdir pair is one APFS volume, so the selector always picks
+// the clone branch and nothing would otherwise exercise the branch that runs
+// for an external drive, an SD card, or a Finder-mounted NAS — the very case
+// the 4 GB-copy-then-quit scenario describes.
+
+mod local_staging {
+    use crate::file_system::write_operations::state::{OperationIntent, WriteOperationState};
+    use crate::file_system::write_operations::transfer::copy_strategy::{LocalCopyStrategy, copy_file_using};
+    use crate::file_system::write_operations::types::WriteOperationError;
+    use crate::ignore_poison::IgnorePoison;
+    use crate::test_support::TestDir;
+    use cmdr_fs::staging::STAGING_TEMP_MARKER;
+    use std::cell::Cell;
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::sync::Arc;
+    use std::sync::atomic::Ordering;
+    use std::time::Duration;
+
+    /// 3.5 chunks of the chunked copier's 1 MiB window, so the progress
+    /// callback fires several times mid-write.
+    const MULTI_CHUNK_BYTES: usize = 1024 * 1024 * 3 + 12_345;
+
+    fn running_state() -> Arc<WriteOperationState> {
+        Arc::new(WriteOperationState::new(Duration::from_millis(50)))
+    }
+
+    /// The names in `dir` that carry Cmdr's incoming-scratch marker.
+    fn staging_temps(dir: &Path) -> Vec<String> {
+        let Ok(entries) = fs::read_dir(dir) else {
+            return Vec::new();
+        };
+        entries
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .filter(|n| n.contains(STAGING_TEMP_MARKER))
+            .collect()
+    }
+
+    /// While the bytes are still arriving, the destination name must not exist
+    /// and a recognizable temp must. That snapshot IS what a force-quit or an
+    /// abandoned worker thread leaves on disk, so asserting it mid-write is the
+    /// in-process equivalent of pulling the plug.
+    #[test]
+    fn an_abandoned_local_copy_leaves_a_cmdr_temp_and_no_file_at_the_real_name() {
+        let dir = TestDir::new("local_staging_abandoned");
+        let src = dir.join("holiday.raw");
+        let dest = dir.join("dst").join("holiday.raw");
+        fs::create_dir_all(dest.parent().expect("dest has a parent")).unwrap();
+        fs::write(&src, vec![0x5A_u8; MULTI_CHUNK_BYTES]).unwrap();
+
+        let state = running_state();
+        let dest_dir = dest.parent().expect("dest has a parent").to_path_buf();
+        let saw_real_name = Cell::new(false);
+        let saw_temp = Cell::new(false);
+        let tracked_mid_write = Cell::new(false);
+        let observe = |_done: u64, _total: u64| {
+            if dest.exists() {
+                saw_real_name.set(true);
+            }
+            if !staging_temps(&dest_dir).is_empty() {
+                saw_temp.set(true);
+            }
+            if !state.in_flight_temps.lock_ignore_poison().is_empty() {
+                tracked_mid_write.set(true);
+            }
+        };
+
+        copy_file_using(LocalCopyStrategy::Chunked, &state, &src, &dest, false, Some(&observe))
+            .expect("the copy itself must succeed");
+
+        assert!(
+            !saw_real_name.get(),
+            "the destination name held a partially-written file: a crash there leaves the user a truncated file that looks complete"
+        );
+        assert!(
+            saw_temp.get(),
+            "mid-write there must be a recognizable `.cmdr-tmp-*` sibling holding the incoming bytes"
+        );
+        assert!(
+            tracked_mid_write.get(),
+            "the partial must be listed in the operation's in-flight temps so an abandoned copy's litter can be found"
+        );
+
+        // And when it does finish, the file is at its real name, complete, with
+        // nothing left over.
+        assert_eq!(fs::metadata(&dest).unwrap().len(), MULTI_CHUNK_BYTES as u64);
+        assert!(
+            staging_temps(&dest_dir).is_empty(),
+            "a completed copy leaves no scratch behind: {:?}",
+            staging_temps(&dest_dir)
+        );
+        assert!(state.in_flight_temps.lock_ignore_poison().is_empty());
+    }
+
+    /// Cancelling mid-copy must leave nothing at the destination name — not a
+    /// zero-byte file, not a truncated one, not briefly. The "not briefly"
+    /// matters: cleanup after the fact is a race a force-quit wins, so the
+    /// observation is taken from inside the write rather than after it.
+    #[test]
+    fn a_cancelled_local_chunked_copy_leaves_no_file_at_the_destination_name() {
+        let dir = TestDir::new("local_staging_cancelled");
+        let src = dir.join("holiday.raw");
+        let dest = dir.join("dst").join("holiday.raw");
+        let dest_dir = dest.parent().expect("dest has a parent").to_path_buf();
+        fs::create_dir_all(&dest_dir).unwrap();
+        fs::write(&src, vec![0x5A_u8; MULTI_CHUNK_BYTES]).unwrap();
+
+        let state = running_state();
+        let saw_real_name = Cell::new(false);
+        let cancel_after_first_chunk = |_done: u64, _total: u64| {
+            if dest.exists() {
+                saw_real_name.set(true);
+            }
+            state.intent.store(OperationIntent::Stopped as u8, Ordering::SeqCst);
+        };
+
+        let result = copy_file_using(
+            LocalCopyStrategy::Chunked,
+            &state,
+            &src,
+            &dest,
+            false,
+            Some(&cancel_after_first_chunk),
+        );
+
+        assert!(
+            matches!(result, Err(WriteOperationError::Cancelled { .. })),
+            "expected a Cancelled outcome, got {result:?}"
+        );
+        assert!(
+            !saw_real_name.get(),
+            "the destination name held a partial while the copy was still running"
+        );
+        assert!(
+            !dest.exists(),
+            "a cancelled copy must leave nothing at the destination name"
+        );
+        assert!(
+            state.in_flight_temps.lock_ignore_poison().is_empty(),
+            "a cancelled copy must stop tracking its partial"
+        );
+    }
+
+    /// Staging moved the create off the destination name, and a plain POSIX
+    /// rename replaces silently — so the landing has to refuse a destination
+    /// that appeared underneath a non-overwrite copy, the way the direct
+    /// `O_EXCL` create used to.
+    #[test]
+    fn a_non_overwrite_local_copy_refuses_to_clobber_a_destination_that_appeared() {
+        let dir = TestDir::new("local_staging_no_clobber");
+        let src = dir.join("incoming.txt");
+        let dest = dir.join("occupied.txt");
+        fs::write(&src, "new bytes").unwrap();
+        fs::write(&dest, "the user's own file").unwrap();
+
+        let result = copy_file_using(
+            LocalCopyStrategy::Chunked,
+            &running_state(),
+            &src,
+            &dest,
+            // Not an overwrite: nobody resolved a conflict for this path.
+            false,
+            None,
+        );
+
+        assert!(
+            matches!(result, Err(WriteOperationError::DestinationExists { .. })),
+            "expected DestinationExists, got {result:?}"
+        );
+        assert_eq!(
+            fs::read_to_string(&dest).unwrap(),
+            "the user's own file",
+            "the file that was there must be untouched"
+        );
+        assert!(
+            staging_temps(&dir).is_empty(),
+            "the refused copy's temp must be cleaned up: {:?}",
+            staging_temps(&dir)
+        );
+    }
+
+    /// An overwrite still replaces, and still leaves no scratch behind.
+    #[test]
+    fn a_local_overwrite_replaces_the_destination_and_cleans_up_both_scratch_files() {
+        let dir = TestDir::new("local_staging_overwrite");
+        let src = dir.join("incoming.txt");
+        let dest = dir.join("target.txt");
+        fs::write(&src, "new bytes").unwrap();
+        fs::write(&dest, "old bytes").unwrap();
+
+        copy_file_using(LocalCopyStrategy::Chunked, &running_state(), &src, &dest, true, None)
+            .expect("the overwrite must succeed");
+
+        assert_eq!(fs::read_to_string(&dest).unwrap(), "new bytes");
+        let leftovers: Vec<PathBuf> = fs::read_dir(&dir)
+            .unwrap()
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| {
+                let name = p.file_name().unwrap_or_default().to_string_lossy().into_owned();
+                cmdr_fs::staging::is_staging_temp_name(&name)
+            })
+            .collect();
+        assert!(leftovers.is_empty(), "no temp or aside may survive: {leftovers:?}");
+    }
 }

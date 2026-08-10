@@ -47,11 +47,6 @@ mod transfer;
 mod types;
 mod validation;
 
-// Re-export `macos_copy` at this level so existing call sites
-// (`crate::file_system::write_operations::macos_copy`) keep compiling.
-#[cfg(target_os = "macos")]
-pub(crate) use transfer::macos_copy;
-
 // Re-export `trash` at this level so `crate::file_system::write_operations::trash`
 // keeps resolving (used by `commands/rename.rs`).
 pub(crate) use delete::trash;

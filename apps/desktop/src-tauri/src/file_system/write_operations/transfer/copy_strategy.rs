@@ -28,7 +28,7 @@ use super::linux_copy::copy_single_file_linux;
 #[cfg(target_os = "macos")]
 use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
-use super::super::overwrite::safe_overwrite_file;
+use super::super::overwrite::stage_and_land_file;
 use super::super::state::WriteOperationState;
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use super::super::types::IoResultExt;
@@ -205,15 +205,17 @@ pub(super) fn copy_file_using(
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<StrategyCopyOutcome, WriteOperationError> {
     let cancelled = &state.intent;
+    // Every arm below writes through `stage_and_land_file`: the bytes go to a
+    // `.cmdr-tmp-*` sibling and take the real name by one same-directory rename.
+    // ❌ Don't add an arm that writes straight to `dest` — that is the whole
+    // hazard this exists to remove (`overwrite.rs`).
     match strategy {
         #[cfg(target_os = "macos")]
         LocalCopyStrategy::AppleClone => {
             let context = CopyProgressContext::with_cancellation(Arc::clone(cancelled));
-            let bytes = if needs_safe_overwrite {
-                safe_overwrite_file(source, dest, Some(&context))?
-            } else {
-                copy_single_file_native(source, dest, false, Some(&context))?
-            };
+            let bytes = stage_and_land_file(state, dest, needs_safe_overwrite, |target| {
+                copy_single_file_native(source, target, false, Some(&context))
+            })?;
             // Clonefile shares CoW extents with the source: flushing is moot.
             Ok(StrategyCopyOutcome {
                 bytes,
@@ -223,7 +225,9 @@ pub(super) fn copy_file_using(
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         LocalCopyStrategy::Chunked => {
             // Chunked copy `sync_data`s the file itself before returning.
-            let bytes = chunked_copy_with_metadata(source, dest, cancelled, progress_callback)?;
+            let bytes = stage_and_land_file(state, dest, needs_safe_overwrite, |target| {
+                chunked_copy_with_metadata(source, target, cancelled, progress_callback)
+            })?;
             Ok(StrategyCopyOutcome {
                 bytes,
                 already_durable: true,
@@ -231,18 +235,11 @@ pub(super) fn copy_file_using(
         }
         #[cfg(target_os = "linux")]
         LocalCopyStrategy::KernelCopyRange => {
-            if needs_safe_overwrite {
-                // `safe_overwrite_file` uses `std::fs::copy` on Linux, which leaves
-                // the bytes in the page cache; the caller flushes in the end-of-op pass.
-                let bytes = safe_overwrite_file(source, dest)?;
-                return Ok(StrategyCopyOutcome {
-                    bytes,
-                    already_durable: false,
-                });
-            }
             // `copy_file_range(2)` doesn't flush (and reflink shares CoW extents,
             // but we can't cheaply tell here), so the caller flushes the dest.
-            let bytes = copy_single_file_linux(source, dest, false, cancelled, progress_callback)?;
+            let bytes = stage_and_land_file(state, dest, needs_safe_overwrite, |target| {
+                copy_single_file_linux(source, target, false, cancelled, progress_callback)
+            })?;
             Ok(StrategyCopyOutcome {
                 bytes,
                 already_durable: false,
@@ -251,12 +248,10 @@ pub(super) fn copy_file_using(
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         LocalCopyStrategy::StdCopy => {
             let _ = (cancelled, progress_callback); // Unused on this platform
-            let bytes = if needs_safe_overwrite {
-                safe_overwrite_file(source, dest)?
-            } else {
-                fs::copy(source, dest).with_path(source)?
-            };
             // The std fallback doesn't flush; the caller's end-of-op pass does.
+            let bytes = stage_and_land_file(state, dest, needs_safe_overwrite, |target| {
+                fs::copy(source, target).with_path(source)
+            })?;
             Ok(StrategyCopyOutcome {
                 bytes,
                 already_durable: false,
