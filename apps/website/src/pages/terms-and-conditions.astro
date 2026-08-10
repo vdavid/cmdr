@@ -2,7 +2,7 @@
 import LegalLayout from '../layouts/LegalLayout.astro'
 ---
 
-<LegalLayout title="Terms of service" description="Terms and conditions for using Cmdr." lastUpdated="2026-03-11">
+<LegalLayout title="Terms of service" description="Terms and conditions for using Cmdr." lastUpdated="2026-08-10">
     <p>
         Welcome to Cmdr! These terms apply to your use of Cmdr, the desktop file manager app. By downloading,
         installing, or using Cmdr, you agree to these terms.
@@ -12,7 +12,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <p>
             <strong>The short version:</strong> Cmdr is source-available under the Business Source License (BSL 1.1). It's
             free forever for <strong>personal use</strong>. Commercial use requires a <strong>paid license</strong>. The
-            source code converts to AGPL-3.0 after 3 years. Be nice and respectful, and we'll all get along great.
+            source code converts to AGPL-3.0 in 2029. Protecting your files is the first thing Cmdr is built for.
+            Even so, Cmdr isn't a substitute for backups. Be nice and respectful, and we'll all get along great.
         </p>
     </div>
     <h2>1. The software and its license</h2>
@@ -29,8 +30,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>You can use Cmdr for free for personal, non-commercial purposes</li>
         <li>Commercial use requires a paid license</li>
         <li>
-            After 3 years from each release date, that version converts to AGPL-3.0, so in case we're hit by a bus,
-            you'll still get the code and can maintain/continue it under AGPL after 3 years.
+            Each version converts to AGPL-3.0 on 2029-01-10, or on the fourth anniversary of that version's first
+            public release, whichever comes first. So in case we're hit by a bus, you'll still get the code and can
+            maintain and continue it under AGPL.
         </li>
     </ul>
 
@@ -41,7 +43,10 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>You're not using it as part of your employment, freelancing, or business activities</li>
         <li>You're the only person using your installation</li>
     </ul>
-    <p>Personal use is completely free: no trial, no limitations, no nags.</p>
+    <p>
+        Personal use is completely free: no trial, no feature limits, no watermarks. About once a month, Cmdr shows one
+        dismissible reminder that commercial use needs a license. That's the only thing it will ever ask you for.
+    </p>
 
     <h3>Commercial use (paid)</h3>
     <p>A commercial license is required if you're using Cmdr for work. This includes:</p>
@@ -74,43 +79,126 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <p>You agree not to:</p>
     <ul>
         <li>Share your license key with others or use it on behalf of multiple people</li>
-        <li>
-            <strong>Fair use:</strong> Each license is meant for the single person using it, on their own devices. We don't
-            set a hard limit on how many machines you can use, but we do keep an eye on the number of distinct devices per
-            key. If we spot something that looks like key sharing rather than one person with a few computers, we'll reach
-            out first. If the situation isn't resolved, we may suspend the key.
-        </li>
         <li>Redistribute the official signed Cmdr binary commercially or claim it as your own product</li>
         <li>Circumvent or tamper with the licensing system in the official binary</li>
         <li>Use Cmdr for any illegal activities</li>
         <li>Attempt to reverse engineer our license key signing infrastructure</li>
     </ul>
     <p>
+        <strong>Fair use:</strong> Each license is meant for the single person using it, on their own devices. We don't set
+        a hard limit on how many machines you can use, but we do keep an eye on the number of distinct devices per key. If
+        we spot a pattern that looks like key sharing rather than one person with a few computers, we'll write to you
+        first and explain what we're seeing. If we still believe the key is being shared after that, we may suspend it,
+        and if you've paid for it we'll refund the unused part. If you think we've got it wrong, tell us and we'll
+        reinstate it.
+    </p>
+    <p>
         These restrictions exist to protect the sustainability of the project. We're a small team, and license revenue
         keeps Cmdr alive. We are not millionaires, we're ordinary folks. Please respect our work and the policies that
         come with this software.
     </p>
 
-    <h2>4. AI features disclaimer</h2>
+    <h2>4. Your files and how we protect them</h2>
+    <p>
+        Protecting your data is the first principle Cmdr is built on. Here's what that means in practice, what we ask of
+        you in return, and what happens when we get it wrong.
+    </p>
+
+    <h3>How Cmdr is built</h3>
+    <p>
+        Cmdr is built so that a crash, a full disk, or a cable pulled at the wrong moment is far less likely to cost you
+        a file:
+    </p>
+    <ul>
+        <li>
+            When Cmdr replaces an existing file, it writes the new version to a temporary file alongside it and swaps it
+            in only once every byte has landed, so an interrupted write doesn't leave a half-written file wearing your
+            filename. Replacing a file with a folder, or a folder with a file, across two different devices is the one
+            case Cmdr can't do this way, and it tells you before it starts.
+        </li>
+        <li>
+            Deleting asks first, every time, and there's no way to switch that confirmation off. Where the filesystem
+            has a Trash, that's the default and the dialog says so. On a filesystem without one (network shares, FAT32
+            and exFAT, phones over USB, inside an archive) the delete is permanent, and the dialog warns you before it
+            runs.
+        </li>
+        <li>
+            Long-running file operations show honest progress, and you can pause or cancel them at any point, including
+            after you've sent them to the background. Canceling stops the remaining work; it doesn't undo what already
+            finished, and a delete can't be undone at all.
+        </li>
+        <li>
+            The data-writing paths carry a large automated test suite, including deliberately hostile cases: a transfer
+            killed partway through, a device disconnected mid-copy, a backend that fails on demand, and cancels and
+            rollbacks at every stage. Free space is checked before an operation starts.
+        </li>
+    </ul>
+    <p>
+        This describes how we build Cmdr and how we intend to keep building it. Please hold us to it. It isn't a
+        warranty that nothing will ever go wrong.
+    </p>
+
+    <h3>Please keep backups</h3>
+    <p>
+        Cmdr copies, moves, renames, and deletes real files on real disks, sometimes across a flaky network, on
+        operating systems that change underneath it. No software is free of defects, so we can't guarantee the safety
+        of your data.
+    </p>
+    <p>
+        So please keep current backups of anything you'd be upset to lose, and check now and then that you can actually
+        restore from them. <strong>Cmdr is a file manager, not a backup tool</strong>, and it isn't a substitute for
+        one. Before something large or unusual (a bulk rename across thousands of files, a move onto a share you've
+        just mounted, or the first run of a new feature on files you care about), take a moment to confirm your backup
+        is current.
+    </p>
+
+    <h3>Reporting problems</h3>
+    <p>
+        If Cmdr loses or corrupts a file, we want to know, quickly and in detail. Write to
+        <a href="mailto:hello@getcmdr.com">hello@getcmdr.com</a> with what you were doing and what happened, or use
+        <strong>Help &gt; Send error report…</strong> in the app, which shows you what the report contains and a preview
+        of the log before anything leaves your machine. Paths and personal details are stripped first, and your email
+        address is included only if you add it. If you've found a security problem, email the same address and please
+        give us a chance to ship a fix before you publish.
+    </p>
+    <p>
+        Here's how we work: data-loss reports go to the front of the queue, and when we find a bug we ship the fix to
+        everyone through Cmdr's built-in updater (on by default, downloaded in the background, applied when you
+        restart). We're describing our practice, not offering a separate warranty on top of the rights you already have
+        by law.
+    </p>
+
+    <h2>5. AI features</h2>
     <p>Cmdr includes AI-powered features (such as natural language file renaming and search). Please be aware:</p>
     <ul>
         <li>
-            AI features are <strong>non-deterministic</strong>, so results may vary and aren't guaranteed to be accurate.
+            AI features are <strong>non-deterministic</strong>, so results vary and aren't guaranteed to be accurate.
+            They're switched off until you turn them on, and you choose the provider.
         </li>
-        <li>You are responsible for reviewing and confirming any file operations suggested by AI</li>
-        <li>We recommend previewing changes before applying them, especially for bulk operations</li>
-        <li>Cmdr is not liable for data loss resulting from AI-suggested operations you confirm</li>
         <li>
-            In order to mitigate the risks, we use a human confirmation step by default before applying any changes. You
-            may turn these off at your own risk.
+            Cmdr's own AI can only <strong>propose</strong> file operations, never carry them out. Every AI-suggested
+            change opens a review screen listing exactly what would happen, you can edit any suggested name before
+            approving, and nothing runs until you do. This isn't a setting you can switch off.
+        </li>
+        <li>
+            Cmdr can also act as an MCP server so an outside AI client drives it. That server is off by default. If you
+            turn it on and hand a client the access token, that client can run file operations without the review
+            screen. That's a meaningful risk, and it's yours to take.
+        </li>
+        <li>
+            If you review an AI suggestion and approve it, that's your call, and a court will take it into account when
+            working out who's responsible for what. It doesn't get us off the hook for defects in Cmdr itself, which
+            section 8 covers.
         </li>
     </ul>
 
-    <h2>5. Payment and refunds</h2>
+    <h2>6. Payment and refunds</h2>
     <p>
-        Payments are processed by
-        <a href="https://paddle.com" target="_blank" rel="noopener noreferrer">Paddle</a>, our Merchant of Record.
-        Paddle handles all payment processing, tax collection, and invoicing.
+        Your purchase contract is with
+        <a href="https://paddle.com" target="_blank" rel="noopener noreferrer">Paddle</a>, who sells Cmdr licenses as
+        Merchant of Record and handles payment, tax, invoicing, and refunds. Your license to use Cmdr, and everything
+        else in these terms, is with us, Rymdskottkärra AB. If you're not sure who to contact about something, write to
+        us and we'll sort it out.
     </p>
     <p>
         <strong>Subscription renewals:</strong> Commercial subscriptions auto-renew annually. You can cancel anytime from
@@ -118,36 +206,118 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     </p>
     <p>
         We offer a <strong>30-day, no-questions-asked refund policy</strong>. See our <a href="/refund">Refund policy</a
-        > for details.
+        > for details. This is something we offer on top of your legal rights, not instead of them: if the law where you
+        live gives you a longer or stronger right to a refund or a remedy, that right still applies.
     </p>
 
-    <h2>6. Disclaimer of warranties</h2>
-    <p>Cmdr is provided "as is" without warranty of any kind, express or implied. We don't guarantee that:</p>
+    <h2>7. What we do and don't promise</h2>
+    <p>
+        We're not going to pretend Cmdr is perfect. Beyond the rights your local law gives you (section 11), we don't
+        promise that Cmdr will run without interruption, that every feature will work on every system or keep working
+        after an operating system update, or that Cmdr will do everything you specifically need. Section 4 has the
+        fuller picture on files.
+    </p>
+    <p>
+        <strong>What we won't do is talk you out of rights you already have.</strong> In many countries the law
+        guarantees that software you buy is of acceptable quality, fit for its ordinary purpose, and matches how it was
+        described. Nothing here removes that. If you bought a license and Cmdr doesn't work the way software of this
+        kind should, you can ask us to fix it, and if we can't or don't within a reasonable time, you can ask for a
+        price reduction or your money back. In Sweden that comes from konsumentköplagen (2022:260); elsewhere in the EU
+        it's your country's version of the digital content rules; and Australia, the UK, Canada, and many US states have
+        their own. Those rights apply in full.
+    </p>
+    <p>
+        <strong
+            >EXCEPT WHERE THE LAW SAYS OTHERWISE, CMDR IS PROVIDED "AS IS" AND "WITH ALL FAULTS", AND WE DISCLAIM ALL
+            IMPLIED WARRANTIES, INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+            AND NON-INFRINGEMENT.</strong
+        >
+    </p>
+    <p>
+        Plenty of places don't allow that. If you're in Australia, the UK, the EU, Canada, or a US state that limits
+        warranty disclaimers on consumer products (including Massachusetts, Maryland, Kansas, Connecticut, Vermont,
+        Minnesota, Maine, New Hampshire, Mississippi, West Virginia, Washington, and the District of Columbia), the
+        paragraph above doesn't apply to you and your legal warranties stand in full.
+    </p>
+    <p>
+        The Business Source License in section 1 carries its own broad "as is" disclaimer, which we can't edit because
+        the license text is fixed. As between you and us, these terms and the mandatory law where you live govern, and
+        nothing in the BSL text reduces the statutory rights you have as a consumer.
+    </p>
+
+    <h2>8. Limitation of liability</h2>
+
+    <h3>What we're responsible for no matter what</h3>
+    <p>Some responsibility can't be signed away. Nothing here limits or excludes our liability for:</p>
     <ul>
-        <li>The software will be error-free or uninterrupted</li>
-        <li>All features will work on all systems</li>
-        <li>The software will meet your specific requirements</li>
+        <li>Intent or gross negligence on our part</li>
+        <li>Death or personal injury</li>
+        <li>
+            Anything that mandatory product liability law makes us liable for, including Swedish product liability law
+            and the EU product liability rules. From 2026-12-09, those rules treat software as a product and treat
+            destroyed or corrupted personal files as compensable damage, and they can't be limited by agreement. Being
+            source-available doesn't exempt us: the open-source carve-out only covers software supplied outside a
+            commercial activity.
+        </li>
+        <li>Fraud or fraudulent misrepresentation</li>
+        <li>Anything else the mandatory law where you live doesn't allow us to exclude</li>
     </ul>
-    <p>That said, we work hard to make Cmdr reliable and will do our best to fix issues you report.</p>
 
-    <h2>7. Limitation of liability</h2>
+    <h3>Lost or damaged files</h3>
     <p>
-        To the maximum extent permitted by law, Rymdskottkärra AB shall not be liable for any indirect, incidental,
-        special, consequential, or punitive damages, including loss of data, arising from your use of Cmdr.
+        If a defect in Cmdr destroys or corrupts your files, we're liable for that under the law, and nothing in these
+        terms limits it.
     </p>
-    <p>Our total liability shall not exceed the amount you paid for your Cmdr license.</p>
-
-    <h2>8. Changes to these terms</h2>
     <p>
-        We may update these terms from time to time. We'll notify you of significant changes via email (if you've
-        purchased a license) or by posting a notice on our website.
+        One thing worth understanding about how compensation works: the loss is what it actually costs you to get your
+        data back. Where a backup exists, or the file can be downloaded again, the real loss is usually the cost of
+        restoring it rather than the value of the file itself. Where no backup exists, a court may weigh that when
+        deciding how much of the loss falls on each of us. That's the law's doing, not ours, and it's the honest reason
+        we keep asking you to keep backups.
     </p>
-    <p>Continued use of Cmdr after changes constitutes acceptance of the new terms.</p>
 
-    <h2>9. Governing law</h2>
+    <h3>Everything else</h3>
     <p>
-        These terms are governed by the laws of Sweden. Any disputes shall be resolved in Swedish courts. However,
-        nothing in these terms limits your statutory consumer rights under EU law.
+        For anything other than the above, we're liable for losses that follow normally and foreseeably from what went
+        wrong. Only where the law where you live permits an exclusion at all, we're not liable for losses remote from
+        it: lost profits, lost business, lost time, or knock-on costs we had no way to anticipate. In Quebec, and
+        anywhere else that grants a consumer a right to punitive or exemplary damages, that right isn't affected. Where
+        we've been grossly negligent or acted deliberately, none of this applies and we're liable in full.
+    </p>
+    <p>
+        Everything under "What we're responsible for no matter what" sits outside any cap, including damage to your
+        files. Where a cap is allowed, our total liability is limited to the greater of USD 100 or what you paid for
+        your Cmdr license, whether you paid us directly or through Paddle, our reseller.
+    </p>
+    <p>
+        <strong>New Jersey residents:</strong> none of the limits in this section are void, unenforceable, or inapplicable
+        in New Jersey, except that we don't limit our liability for our own intentional acts, gross negligence, fraud, or
+        for death or personal injury.
+    </p>
+
+    <h3>If you're using Cmdr for work</h3>
+    <p>
+        A commercial license is a business purchase in most places, and in most places that means consumer protection
+        rules don't apply to it. Some countries disagree, and where they do, their rules win: Australia treats anyone
+        paying under AUD 100,000 for goods as a consumer no matter what they use them for, so Australian licensees keep
+        the full consumer guarantees. Consumer rules also follow how you're actually using Cmdr, not which license you
+        bought. Where consumer rules genuinely don't apply, our total liability is limited to the greater of USD 100 or
+        what you've paid for your Cmdr license, and we're not liable for lost profits, lost revenue, business
+        interruption, or the cost of reconstructing lost data. Everything at the top of this section still stands, and
+        if you're a person rather than a company, your rights under product liability law aren't affected by any of
+        this.
+    </p>
+
+    <h2>9. Changes to these terms</h2>
+    <p>
+        We may update these terms when the law changes, when Cmdr changes in a way the terms need to describe, or to fix
+        something unclear. We'll tell you at least 30 days ahead by email if you hold a license, and post a notice on the
+        website.
+    </p>
+    <p>
+        If a change makes things worse for you and you don't want it, tell us within 30 days. If you're on a
+        subscription, you can cancel and we'll refund the unused part. If you bought a perpetual license, you keep the
+        version and the terms you bought under.
     </p>
 
     <h2>10. Who we are</h2>
@@ -160,7 +330,57 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a>.
     </p>
 
-    <h2>11. Contact</h2>
+    <h2>11. Governing law and your local rights</h2>
+    <p>
+        These terms are governed by Swedish law.
+    </p>
+    <p>
+        <strong>That doesn't take away the rights you have where you live.</strong> If you're a consumer, you keep every
+        protection your local law gives you, you can bring a claim in your local courts, and where those rules conflict
+        with anything in these terms, those rules win and these terms give way. That isn't us being generous, it's how
+        the law already works. Concretely: Australian consumers keep the consumer guarantees under the Australian
+        Consumer Law, UK consumers keep their rights under the Consumer Rights Act 2015, EU consumers keep the mandatory
+        protections of their country of residence, and consumers in Quebec and Ontario keep their provincial consumer
+        protection rights.
+    </p>
+    <p>
+        <strong>Australia.</strong> Our goods come with guarantees that cannot be excluded under the Australian Consumer
+        Law. You are entitled to a replacement or refund for a major failure and compensation for any other reasonably
+        foreseeable loss or damage. You are also entitled to have the goods repaired or replaced if the goods fail to be
+        of acceptable quality and the failure does not amount to a major failure. These guarantees apply whether you use
+        Cmdr personally or for work, and nothing anywhere in these terms limits them.
+    </p>
+    <p>
+        <strong>United Kingdom.</strong> Cmdr is digital content under the Consumer Rights Act 2015, so it has to be of
+        satisfactory quality, fit for purpose, and as described (sections 34 to 36). If Cmdr damages your device or
+        other digital content you own, and that damage wouldn't have happened had we taken reasonable care and skill,
+        section 46 entitles you to repair or compensation. That applies whether you paid for Cmdr or use it free.
+    </p>
+    <p>
+        If you're a consumer in the EU, two things are true whatever any contract says: you can sue us either in Sweden
+        or in the courts where you live, whichever suits you, and we can only ever bring a claim against you in the
+        courts of the country where you live. Outside the EU, your local rules on this may differ, and where they do,
+        they win.
+    </p>
+    <p>
+        We'd much rather sort things out by email than in a courtroom, so please write to
+        <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a> first. If you're a consumer and we can't agree, you can
+        take the matter to the
+        <a href="https://www.arn.se/om-arn/Languages/english-what-is-arn/" target="_blank" rel="noopener noreferrer"
+            >Swedish National Board for Consumer Disputes</a
+        > (Allmänna reklamationsnämnden, ARN), Box 174, 101 23 Stockholm, Sweden. ARN applies Swedish law, charges a small
+        filing fee, and has minimum claim values, so it won't fit every dispute. If you're a consumer elsewhere in the EU,
+        your national dispute resolution body may also be open to you.
+    </p>
+
+    <h2>12. If part of this doesn't hold up</h2>
+    <p>
+        These terms are written for people all over the world, and no single set of words is valid everywhere. If a
+        court or regulator finds any part of these terms unenforceable where you live, that part applies in the
+        narrowest form the law there does allow, or drops out entirely if it can't. The rest keeps working.
+    </p>
+
+    <h2>13. Contact</h2>
     <p>
         Questions? Concerns? We're happy to help. Reach out at
         <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a>.
