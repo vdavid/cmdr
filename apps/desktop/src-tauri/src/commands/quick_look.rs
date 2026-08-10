@@ -138,14 +138,19 @@ pub async fn quick_look_close(_app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Helper: returns true if the named volume supports `std::fs`-style access
-/// (local POSIX, OS-mounted SMB). False for MTP and other protocol-only
+/// Helper: returns true if the named volume's paths are OS-visible (local
+/// POSIX, OS-mounted shares, direct SMB). False for MTP and other protocol-only
 /// volumes — those have no NSURL the Quick Look panel can preview.
+///
+/// ❌ Not `supports_local_fs_access()`: that asks whether CMDR reads through
+/// `std::fs`, and direct SMB answers `false` while its `/Volumes/…` paths are
+/// exactly the NSURL the panel needs. Keying on it made Quick Look a silent
+/// no-op on a direct-SMB pane.
 #[cfg(target_os = "macos")]
 fn volume_supports_local_fs(volume_id: &str) -> bool {
     let manager = crate::file_system::volume::manager::get_volume_manager();
     match manager.get(volume_id) {
-        Some(volume) => volume.supports_local_fs_access(),
+        Some(volume) => volume.paths_are_os_visible(),
         None => {
             // Unknown volume id — assume yes so we don't accidentally silence
             // working previews. The frontend always sends a real id for entries

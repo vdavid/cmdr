@@ -21,9 +21,11 @@ Full details (decisions, NSOpenPanel coexistence, the testing gap, multi-selecti
 
 - **The panel is process-wide (`sharedPreviewPanel`), behind a singleton `Mutex<QuickLookController>`.** Don't "new one
   each time"; opening installs ourselves as data source + delegate and orders the shared panel front.
-- **Gate on `Volume::supports_local_fs_access()`, NOT `Path::exists()`.** MTP virtual paths return `false` from
-  `exists()` even when the file is real on the device, and `QLPreviewPanel` needs an `NSURL` to a local file. Non-FS
-  volumes no-op (debug log). The volume kind is the correct signal; Finder doesn't preview MTP either.
+- **Gate on `Volume::paths_are_os_visible()`, NOT `Path::exists()` and ❌ not `supports_local_fs_access()`.** MTP
+  virtual paths return `false` from `exists()` even when the file is real on the device, and `QLPreviewPanel` needs an
+  `NSURL` to a local file. Non-FS volumes no-op (debug log). The volume kind is the correct signal; Finder doesn't
+  preview MTP either. Direct SMB reads over smb2 (`supports_local_fs_access() == false`) but stays OS-mounted, so its
+  paths ARE previewable; keying on the other flag silently killed Quick Look on an SMB pane.
 - **All three commands hop to the AppKit main thread** via `app.run_on_main_thread()` + a one-shot `mpsc`, wrapped in
   `blocking_with_timeout` (2 s) so a wedged AppKit pump can't freeze the IPC pool. Keep new entry points on this
   pattern.
