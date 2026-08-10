@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Install mise
-        uses: jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea # v4
+        uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4
         # Caching left at the action's default (on). A hosted runner is ephemeral, so there's no
         # local ~/.local/share/mise to persist and the cache is what keeps `mise install` cheap.
         # ❌ Don't set `cache: false` here without also moving back to the self-hosted runner;
