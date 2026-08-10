@@ -18,7 +18,7 @@ use crate::file_system::volume::friendly_error::{
     ListingError, archive_needs_password_listing_error, archive_unreadable_listing_error, enrich_with_provider,
     listing_error_for_restricted_empty_root, listing_error_from_volume_error,
 };
-use crate::file_system::watcher::start_watching;
+use crate::file_system::watcher::start_watching_detached;
 #[cfg(test)]
 use crate::ignore_poison::IgnorePoison;
 
@@ -583,12 +583,8 @@ pub(crate) async fn read_directory_with_progress(
     // Cache invalidation for those listings flows through
     // `git::watcher::invalidate_virtual_listings` instead.
     let watcher_start_t = std::time::Instant::now();
-    if !crate::file_system::git::is_virtual(path)
-        && volume.can_watch_listings()
-        && let Err(e) = start_watching(listing_id, path)
-    {
-        log::warn!("Failed to start watcher: {}", e);
-        // Continue anyway - watcher is optional enhancement
+    if !crate::file_system::git::is_virtual(path) && volume.can_watch_listings() {
+        start_watching_detached(listing_id, path);
     }
     let watcher_start_ms = watcher_start_t.elapsed().as_millis();
 

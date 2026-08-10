@@ -472,3 +472,77 @@ fn entries_that_went_with_a_replaced_watch_root_leave_the_listing() {
         || listing.entry_names() == vec!["gamma.txt".to_string()],
     );
 }
+
+/// Whether a watch is currently registered for `listing_id`.
+///
+/// Reads the manager directly rather than going through
+/// `Volume::listing_watch_coverage`, which answers `None` for a listing that left the
+/// cache and so can't tell "torn down" from "leaked behind a dead listing".
+fn is_watching(listing_id: &str) -> bool {
+    use crate::file_system::watcher::WATCHER_MANAGER;
+    use crate::ignore_poison::RwLockIgnorePoison;
+
+    WATCHER_MANAGER.read_ignore_poison().watches.contains_key(listing_id)
+}
+
+/// Arming is detached, so the listing pipeline no longer waits on it. It still has to
+/// actually attach: a watch that never lands leaves the pane blind to changes on disk,
+/// which is the same bug as never arming at all.
+#[cfg(target_os = "macos")]
+#[test]
+fn a_detached_arm_attaches_the_watch() {
+    use crate::file_system::listing::caching_test_support::TestListing;
+    use crate::file_system::watcher::{start_watching_detached, stop_watching};
+    use crate::test_support::{TestDir, wait_until};
+    use std::time::Duration;
+
+    let scratch = TestDir::new("detached-arm-attaches");
+    let watched = scratch.join("dir");
+    std::fs::create_dir(&watched).expect("scratch dir is writable");
+
+    let listing = TestListing::new().path(&watched).insert("detached-arm-attaches");
+    assert!(!is_watching(listing.id()), "nothing should be watching before the arm");
+
+    start_watching_detached(listing.id(), &watched);
+
+    // Generous deadline: the arm runs on the blocking pool and a saturated `rust-tests`
+    // run starves it. A satisfied wait returns immediately, so the headroom is free.
+    wait_until(Duration::from_secs(30), "the detached arm to attach the watch", || {
+        is_watching(listing.id())
+    });
+
+    stop_watching(listing.id());
+}
+
+/// A detached arm can land AFTER its listing already ended, because
+/// `list_directory_end` removes the cache entry and then removes a watch that hasn't
+/// been inserted yet. The arm has to notice it lost that race and hand the watch back.
+///
+/// Otherwise every such navigation strands an FSEvents stream, its CFRunLoop thread, and
+/// a manager entry for a listing nobody will ever close again: they accumulate for the
+/// life of the process and each one keeps costing `fseventsd` fan-out.
+///
+/// Drives `arm_and_reconcile` directly instead of racing the real spawn, so the losing
+/// interleaving is the only one under test.
+#[cfg(target_os = "macos")]
+#[test]
+fn a_detached_arm_that_lost_the_race_leaves_no_watch_behind() {
+    use crate::file_system::listing::caching_test_support::unique_test_id;
+    use crate::file_system::watcher::arm_and_reconcile;
+    use crate::test_support::TestDir;
+
+    let scratch = TestDir::new("detached-arm-orphan");
+    let watched = scratch.join("dir");
+    std::fs::create_dir(&watched).expect("scratch dir is writable");
+
+    // No listing in the cache: exactly the state `list_directory_end` leaves behind when
+    // it beats the arm.
+    let listing_id = unique_test_id("detached-arm-orphan");
+
+    arm_and_reconcile(&listing_id, &watched);
+
+    assert!(
+        !is_watching(&listing_id),
+        "an arm for an already-ended listing must not leave its watch behind"
+    );
+}

@@ -104,6 +104,52 @@ ambiguous event kinds), then again in v0.24.0 via `git::watcher::refresh_local_l
 through `caching::spawn_full_refresh`. Use `tauri::async_runtime::spawn` (same as `indexing::watch::watcher`), and
 apply the rule to every watcher OS thread (git, SMB, MTP, archive), not just notify-rs.
 
+## Arming a listing watch is detached
+
+`start_watching_detached` hands the arm to the blocking pool; the listing pipeline never waits for it. Arming is slow,
+and slow by an amount that has nothing to do with the directory being listed:
+
+- `FSEventStreamCreate` + `FSEventStreamStart` are a handshake with `fseventsd`, and `notify` blocks until the stream's
+  new CFRunLoop thread has published its `CFRunLoopRef`.
+- `coverage_for_watched_path` adds a `statfs`.
+- Worst of all, it queues on `WATCHER_MANAGER` behind the PREVIOUS listing's teardown, because the frontend fires
+  `listDirectoryEnd(old)` immediately before loading the new directory (`listing-loader.ts`).
+
+That mattered because `read_directory_with_progress` armed the watch before it emitted `listing-complete`, and the pane
+renders nothing until that event (`listing-loader.ts::handleListingComplete` is the only place a listing is committed).
+So the whole arm was dead time the user saw as a stalled "Sorting your files, preparing view…".
+
+Measured while navigating a warm `~/Downloads` (macOS 26.5.2, 2026-08-11, from the `stall_probe::listing` line): p50
+88 ms, p75 288 ms, p90 653 ms, max 1,509 ms, against `read_dir` 0–8 ms and `sort` 0 ms. A release build on the same
+machine was worse (p90 775 ms, max 5,081 ms), so this was never a debug-build artifact. **Cost is independent of
+directory size** — a 3-entry folder hit 723 ms while a 265-entry folder hit 57 ms — which is what says "lock and
+run-loop scheduling", not "I/O proportional to the work".
+
+Two supporting changes came with it:
+
+- **`stop_watching` drops the `WatchedDirectory` OUTSIDE the manager's write lock.** Dropping it tears an FSEvents run
+  loop down, and notify's teardown busy-spins on `CFRunLoopIsWaiting` before joining the stream's thread. Holding the
+  write lock across that is what made an arm queue behind the previous teardown. ❌ Don't fold the removal and the drop
+  back into one `if let Ok(mut manager) = …` block.
+- **The debouncer uses `NoCache`, not the platform-default `RecommendedCache`** (a `FileIdMap` on macOS). The map exists
+  to pair a rename's `From` with its `To` by file id, and pays for it by walking the watched directory and `stat`ing
+  every entry at arm time, then re-`stat`ing on every create, rename, and remove. Cmdr gets nothing for that:
+  `handle_directory_change_incremental` collects the unique paths out of a batch and re-stats each one, so a rename
+  classifies identically whether it arrives as one paired event carrying both paths or as a separate `From` and `To`.
+  Root-rename detection is unaffected too, since `watch_root_identity_changed` matches on `Modify(Name(_))`, which the
+  debouncer emits either way. Linux already ran this path with `NoCache`.
+
+**The reconcile half of a detached arm is not optional.** `list_directory_end` removes the listing from `LISTING_CACHE`
+and then removes a watch the arm may not have inserted yet, so an arm can land on a listing nobody will ever close
+again. `arm_and_reconcile` re-checks `LISTING_CACHE` membership after arming and tears the watch down if the listing
+went away; without that, each such navigation strands an FSEvents stream, its CFRunLoop thread, and a manager entry for
+the life of the process, each one still costing `fseventsd` fan-out. Pinned by
+`watcher_test::a_detached_arm_that_lost_the_race_leaves_no_watch_behind`, which drives `arm_and_reconcile` directly so
+the losing interleaving is the only one under test.
+
+`watcher_start_ms` in the `stall_probe::listing` line now measures only the dispatch, so it should read ~0. A
+regression that puts arming back on the critical path shows up there first.
+
 ## Watcher path rebasing
 
 On macOS, FSEvents reports canonical paths (`/private/tmp/…`) while `LISTING_CACHE` holds the user-navigated form

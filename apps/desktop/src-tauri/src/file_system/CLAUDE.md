@@ -33,6 +33,10 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - **Never `tokio::spawn` from a watcher OS thread** (notify-rs, git, SMB, MTP, archive): no reactor is running, so it
   panics. Use `tauri::async_runtime::spawn`; FullRefresh dispatch funnels through `caching::spawn_full_refresh` for
   exactly this reason. `DETAILS.md` § "Watcher threading".
+- **Arm a listing watch with `start_watching_detached`, ❌ never `start_watching`.** Arming waits on `fseventsd` and on
+  the previous listing's teardown, and the pane shows nothing until `listing-complete`, so an inline arm was p90 653 ms
+  of dead time. Keep the three rules that made it cheap (detached, drop outside the manager lock, `NoCache`, and a
+  detached arm tears itself down if the listing ended). `DETAILS.md` § "Arming a listing watch is detached".
 - **Watcher event paths must be rebased into the listing's path space** (`watcher.rs::rebase_event_path`). Raw
   `path.parent() == dir_path` drops every event under `/tmp`, `/var`, `/etc` (firmlinks) and under a symlinked watch
   root (Google Drive's `My Drive`). `DETAILS.md` § "Watcher path rebasing".

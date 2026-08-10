@@ -16,12 +16,16 @@ Frontend                          Backend
    |<--- listing-opening event --------| (just before read_dir)
    |<--- listing-progress event -------| (every 200ms, { listingId, loadedCount })
    |<--- listing-read-complete event --| (when read_dir finishes, { listingId, totalCount })
-   |                            [sorting + caching + watcher start]
+   |                            [sorting + caching; watcher arm dispatched, not awaited]
    |<--- listing-complete event -------| (ready, { listingId, totalCount, volumeRoot })
    |                                   |
    |-- getFileRange(listingId, ...) -->| (on-demand fetching)
    |<-- [FileEntry, FileEntry, ...]    |
 ```
+
+`listing-complete` is what commits the listing in the pane, so nothing slow may sit in front of it. Arming the FSEvents
+watch used to, and no longer does: `start_watching_detached` hands it to the blocking pool. Why arming is slow, what
+that cost, and the two rules that keep it cheap: `../DETAILS.md` § "Arming a listing watch is detached".
 
 ## Caching
 

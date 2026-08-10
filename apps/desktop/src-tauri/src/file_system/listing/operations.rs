@@ -12,7 +12,7 @@ use crate::benchmark;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
-use crate::file_system::watcher::{start_watching, stop_watching};
+use crate::file_system::watcher::{start_watching_detached, stop_watching};
 use crate::index_host::index;
 
 /// Returns true if the entry is not a hidden dotfile.
@@ -130,11 +130,8 @@ pub async fn list_directory_start_with_volume(
 
     // Start watching the directory (only if volume supports it)
     // TODO: Update watcher to be volume-aware
-    if volume.can_watch_listings()
-        && let Err(e) = start_watching(&listing_id, path)
-    {
-        log::warn!("Failed to start watcher: {}", e);
-        // Continue anyway - watcher is optional enhancement
+    if volume.can_watch_listings() {
+        start_watching_detached(&listing_id, path);
     }
 
     benchmark::log_event("list_directory_start RETURNING");

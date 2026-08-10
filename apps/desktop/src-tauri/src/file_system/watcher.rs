@@ -7,9 +7,9 @@
 //! event kinds).
 
 use notify_debouncer_full::{
-    DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache, new_debouncer,
+    DebounceEventResult, DebouncedEvent, Debouncer, NoCache, new_debouncer_opt,
     notify::{
-        RecommendedWatcher, RecursiveMode,
+        self, RecommendedWatcher, RecursiveMode,
         event::{EventKind, ModifyKind},
     },
 };
@@ -87,7 +87,7 @@ pub struct DirectoryDeletedEvent {
 /// NOTE: No `entries` field - we use the unified LISTING_CACHE instead.
 pub(crate) struct WatchedDirectory {
     #[allow(dead_code, reason = "Debouncer must be held to keep watching")]
-    debouncer: Debouncer<RecommendedWatcher, RecommendedCache>,
+    debouncer: Debouncer<RecommendedWatcher, NoCache>,
     /// What this particular watch observes, decided once when it was armed.
     ///
     /// Resolved here rather than in `Volume::listing_watch_coverage` because the
@@ -150,7 +150,7 @@ pub fn start_watching(listing_id: &str, path: &Path) -> Result<(), String> {
 
     // Create the debouncer with a callback that handles changes
     let debounce_duration = Duration::from_millis(get_debounce_ms());
-    let mut debouncer = new_debouncer(
+    let mut debouncer = new_debouncer_opt::<_, RecommendedWatcher, NoCache>(
         debounce_duration,
         None, // No tick rate limit
         move |result: DebounceEventResult| {
@@ -166,6 +166,19 @@ pub fn start_watching(listing_id: &str, path: &Path) -> Result<(), String> {
                 }
             }
         },
+        // `NoCache`, not the platform default `RecommendedCache` (a `FileIdMap` on
+        // macOS). The map exists to pair a rename's `From` with its `To` by file id, and
+        // it pays for that by walking the watched directory and `stat`ing every entry at
+        // arm time, then re-`stat`ing on every create, rename, and remove.
+        //
+        // We get nothing for it: `handle_directory_change_incremental` collects the
+        // unique paths out of a batch and re-stats each one, so a rename classifies
+        // identically whether it arrives as one paired event carrying both paths or as a
+        // separate `From` and `To`. Root-rename detection is unaffected too, since
+        // `watch_root_identity_changed` matches on `Modify(Name(_))`, which the debouncer
+        // emits either way. Linux already runs this path with `NoCache`.
+        NoCache,
+        notify::Config::default(),
     )
     .map_err(|e| format!("Failed to create watcher: {}", e))?;
 
@@ -220,12 +233,72 @@ pub(crate) fn coverage_for_listings(listing_ids: &[String]) -> WatchCoverage {
     best
 }
 
+/// Arms the listing watcher without making the caller wait for it.
+///
+/// ❌ Don't call [`start_watching`] from the listing pipeline instead. Arming is slow
+/// and, worse, slow by an amount that has nothing to do with the directory being
+/// listed: it waits on an `FSEventStreamStart` handshake with `fseventsd`, on a
+/// CFRunLoop thread bootstrap, and on [`stop_watching`] finishing the PREVIOUS
+/// listing's teardown. The pipeline arms the watch before it emits `listing-complete`
+/// and the pane renders nothing until that event, so every one of those waits used to
+/// be dead time the user saw as a stalled "Sorting your files, preparing view…"
+/// (measured p50 88 ms, p90 653 ms, max 1.5 s while navigating a warm `~/Downloads`,
+/// macOS 26.5.2, 2026-08-11; a 3-entry folder hit 723 ms and a 265-entry folder 57 ms,
+/// which is what "not about the directory" looks like in the data).
+///
+/// The listing doesn't depend on the watch: entries are read, sorted, and cached
+/// before this is called. The watch only has to be in place before the user notices a
+/// change on disk, and the window between the read and the arm is unchanged in
+/// duration by detaching it, since it's the same work either way.
+pub fn start_watching_detached(listing_id: &str, path: &Path) {
+    let listing_id = listing_id.to_string();
+    let path = path.to_path_buf();
+    // `spawn_blocking`, not `spawn`: arming is a chain of blocking syscalls, so it must
+    // not sit on a runtime worker. `tauri::async_runtime` rather than `tokio` because
+    // the sync `list_directory_start` path calls this from the IPC handler thread,
+    // which has no Tokio runtime context.
+    tauri::async_runtime::spawn_blocking(move || arm_and_reconcile(&listing_id, &path));
+}
+
+/// Arms the watch, then hands it back if the listing ended while we were arming.
+///
+/// The reconcile half is not optional. `list_directory_end` removes the listing from
+/// `LISTING_CACHE` and then removes a watch that a detached arm may not have inserted
+/// yet, so the arm can land on a listing nobody will ever close again. Left alone that
+/// strands an FSEvents stream, its CFRunLoop thread, and a manager entry for the life
+/// of the process, each still costing `fseventsd` fan-out.
+///
+/// `LISTING_CACHE` membership is the liveness signal because `list_directory_end` is
+/// what clears it, and reading it is a plain lookup that doesn't bump `last_accessed_ms`
+/// (this is background work, not user activity — see `listing/CLAUDE.md`).
+pub(super) fn arm_and_reconcile(listing_id: &str, path: &Path) {
+    if let Err(e) = start_watching(listing_id, path) {
+        log::warn!("Failed to start watcher: {}", e);
+        return;
+    }
+
+    if get_listing_volume_id_and_path(listing_id).is_none() {
+        log::debug!(
+            "start_watching_detached: listing {} ended while arming, dropping the watch",
+            listing_id
+        );
+        stop_watching(listing_id);
+    }
+}
+
 /// Stop watching a directory for a given listing.
 pub fn stop_watching(listing_id: &str) {
-    if let Ok(mut manager) = WATCHER_MANAGER.write() {
-        // Dropping the WatchedDirectory will drop the debouncer
-        manager.watches.remove(listing_id);
-    }
+    let removed = match WATCHER_MANAGER.write() {
+        Ok(mut manager) => manager.watches.remove(listing_id),
+        Err(_) => None,
+    };
+
+    // Drop OUTSIDE the lock. Dropping a `WatchedDirectory` tears an FSEvents run loop
+    // down, and notify's teardown busy-spins on `CFRunLoopIsWaiting` before it joins the
+    // stream's thread. Holding the manager's write lock across that made every
+    // navigation's arm queue behind the previous listing's teardown, since the frontend
+    // fires `listDirectoryEnd(old)` immediately before loading the new directory.
+    drop(removed);
 }
 
 /// Maps an FSEvents/inotify path to the watched listing's path space, returning the
