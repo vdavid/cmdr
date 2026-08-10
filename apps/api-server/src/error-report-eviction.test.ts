@@ -4,9 +4,18 @@ import {
   recomputeTotal,
   tryEvict,
   ERROR_REPORT_PREFIX,
+  EVICTION_MIN_AGE_DAYS,
   TOTAL_BYTES_KEY,
   EVICTION_LOCK_KEY,
 } from './error-report-eviction'
+import { INTAKE_PAUSED_KEY } from './error-report-intake'
+
+/** Fixed clock for the age-floor tests, so eligibility never depends on the wall clock. */
+const NOW = new Date('2026-08-10T12:00:00Z')
+
+function daysBefore(days: number): Date {
+  return new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000)
+}
 
 /** In-memory KV stub matching the subset of KVNamespace we use. */
 function createKv(initial: Record<string, string> = {}): KVNamespace {
@@ -105,14 +114,14 @@ describe('tryEvict', () => {
     const kv = createKv({ [TOTAL_BYTES_KEY]: String(5 * GB) })
     const bucket = createR2()
     const result = await tryEvict({ ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv })
-    expect(result).toEqual({ skipped: 'under_threshold' })
+    expect(result).toEqual({ outcome: 'skipped', reason: 'under_threshold' })
   })
 
   it('skips when the lock is held', async () => {
     const kv = createKv({ [TOTAL_BYTES_KEY]: String(10 * GB), [EVICTION_LOCK_KEY]: '1' })
     const bucket = createR2()
     const result = await tryEvict({ ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv })
-    expect(result).toEqual({ skipped: 'lock_held' })
+    expect(result).toEqual({ outcome: 'skipped', reason: 'lock_held' })
   })
 
   it('evicts oldest first until under the low watermark', async () => {
@@ -153,8 +162,8 @@ describe('tryEvict', () => {
       { highWatermark: 8 * GB, lowWatermark: 6 * GB },
     )
 
-    expect('evictedCount' in result).toBe(true)
-    if (!('evictedCount' in result)) throw new Error('unreachable')
+    expect(result.outcome).toBe('evicted')
+    if (result.outcome !== 'evicted') throw new Error('unreachable')
     // 9 GB → need to drop at least 3 GB → delete oldest (2 GB, 2 GB = 4 GB) to reach 5 GB ≤ 6 GB
     expect(result.evictedCount).toBe(2)
     expect(result.freedBytes).toBe(4 * GB)
@@ -186,7 +195,7 @@ describe('tryEvict', () => {
       { highWatermark: 4 * GB, lowWatermark: 3 * GB },
     )
 
-    if (!('evictedCount' in result)) throw new Error('expected eviction')
+    if (result.outcome !== 'evicted') throw new Error('expected eviction')
     // 5 GB → 3 GB = delete 2 oldest (2 GB)
     expect(result.evictedCount).toBe(2)
     expect(result.newTotal).toBe(3 * GB)
@@ -261,5 +270,121 @@ describe('tryEvict', () => {
     const remaining = await bucket.list({ prefix: ERROR_REPORT_PREFIX })
     expect(remaining.objects).toHaveLength(1)
     expect(remaining.objects[0].key).toContain('ERR-CCCCC')
+  })
+})
+
+/**
+ * The age floor is what stops an upload flood from turning eviction into a delete primitive
+ * against real reports. Without it, anyone who can push the bucket past the high watermark makes
+ * the oldest (most likely genuine) bundles disappear.
+ */
+describe('tryEvict age floor', () => {
+  const evictionOptions = { highWatermark: 4 * GB, lowWatermark: 3 * GB, now: NOW }
+
+  function freshBundle(index: number, ageDays: number, size: number): StubObj {
+    const uploaded = daysBefore(ageDays)
+    return {
+      key: `${ERROR_REPORT_PREFIX}prod/${uploaded.toISOString().slice(0, 10)}/ERR-${String(index).padStart(5, '0')}-u.zip`,
+      size,
+      uploaded,
+    }
+  }
+
+  it('deletes nothing and pauses intake when every bundle is too young to evict', async () => {
+    // A flood: 6 GB of bundles uploaded today, well over the 4 GB high watermark.
+    const objs = Array.from({ length: 6 }, (_, i) => freshBundle(i, 0, 1 * GB))
+    const bucket = createR2(objs)
+    const kv = createKv({ [TOTAL_BYTES_KEY]: String(6 * GB) })
+
+    const result = await tryEvict({ ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv }, evictionOptions)
+
+    expect(result.outcome).toBe('paused')
+    const remaining = await bucket.list({ prefix: ERROR_REPORT_PREFIX })
+    expect(remaining.objects).toHaveLength(6)
+    expect(await kv.get(INTAKE_PAUSED_KEY)).not.toBeNull()
+  })
+
+  it('leaves bundles just under the age floor alone', async () => {
+    const objs = [
+      freshBundle(1, EVICTION_MIN_AGE_DAYS - 1, 3 * GB),
+      freshBundle(2, EVICTION_MIN_AGE_DAYS - 2, 3 * GB),
+    ]
+    const bucket = createR2(objs)
+    const kv = createKv({ [TOTAL_BYTES_KEY]: String(6 * GB) })
+
+    const result = await tryEvict({ ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv }, evictionOptions)
+
+    expect(result.outcome).toBe('paused')
+    const remaining = await bucket.list({ prefix: ERROR_REPORT_PREFIX })
+    expect(remaining.objects).toHaveLength(2)
+  })
+
+  it('evicts bundles past the age floor and leaves the young ones', async () => {
+    const objs = [
+      freshBundle(1, EVICTION_MIN_AGE_DAYS + 20, 2 * GB), // eligible, oldest
+      freshBundle(2, EVICTION_MIN_AGE_DAYS + 1, 1 * GB), // eligible
+      freshBundle(3, 1, 3 * GB), // too young to touch
+    ]
+    const bucket = createR2(objs)
+    const kv = createKv({ [TOTAL_BYTES_KEY]: String(6 * GB) })
+
+    const result = await tryEvict({ ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv }, evictionOptions)
+
+    // 6 GB total, need ≤ 3 GB: the two eligible bundles (3 GB) are exactly enough.
+    if (result.outcome !== 'evicted') throw new Error('expected eviction')
+    expect(result.evictedCount).toBe(2)
+    expect(result.freedBytes).toBe(3 * GB)
+
+    const remaining = await bucket.list({ prefix: ERROR_REPORT_PREFIX })
+    expect(remaining.objects).toHaveLength(1)
+    expect(remaining.objects[0].key).toContain('ERR-00003')
+    // Eviction succeeded, so intake keeps running.
+    expect(await kv.get(INTAKE_PAUSED_KEY)).toBeNull()
+  })
+
+  it('pauses rather than half-evicting when the eligible bundles are not enough', async () => {
+    // 2 GB of old bundles cannot bring 6 GB down to 3 GB. Deleting them anyway would destroy real
+    // reports and still leave the bucket over its watermark, which is the worst of both.
+    const objs = [freshBundle(1, EVICTION_MIN_AGE_DAYS + 5, 2 * GB), freshBundle(2, 0, 4 * GB)]
+    const bucket = createR2(objs)
+    const kv = createKv({ [TOTAL_BYTES_KEY]: String(6 * GB) })
+
+    const result = await tryEvict({ ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv }, evictionOptions)
+
+    expect(result.outcome).toBe('paused')
+    if (result.outcome !== 'paused') throw new Error('unreachable')
+    expect(result.evictableBytes).toBe(2 * GB)
+    expect(result.neededBytes).toBe(3 * GB)
+
+    const remaining = await bucket.list({ prefix: ERROR_REPORT_PREFIX })
+    expect(remaining.objects).toHaveLength(2)
+  })
+
+  it('is the age floor, not anything else, that spares the fresh bundles', async () => {
+    // Same fixture as the pause case above, with the floor dropped to zero: every bundle becomes
+    // eligible and eviction proceeds. Pins the pause outcome to the floor rather than to some
+    // other guard that would keep passing if the floor were removed.
+    const objs = Array.from({ length: 6 }, (_, i) => freshBundle(i, 0, 1 * GB))
+    const bucket = createR2(objs)
+    const kv = createKv({ [TOTAL_BYTES_KEY]: String(6 * GB) })
+
+    const result = await tryEvict(
+      { ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv },
+      { ...evictionOptions, minAgeDays: 0 },
+    )
+
+    if (result.outcome !== 'evicted') throw new Error('expected eviction')
+    expect(result.evictedCount).toBe(3)
+    expect(await kv.get(INTAKE_PAUSED_KEY)).toBeNull()
+  })
+
+  it('releases the lock after pausing', async () => {
+    const objs = [freshBundle(1, 0, 6 * GB)]
+    const bucket = createR2(objs)
+    const kv = createKv({ [TOTAL_BYTES_KEY]: String(6 * GB) })
+
+    await tryEvict({ ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv }, evictionOptions)
+
+    expect(await kv.get(EVICTION_LOCK_KEY)).toBeNull()
   })
 })

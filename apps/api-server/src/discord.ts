@@ -62,6 +62,15 @@ export interface IntakeRejectedInfo {
   date: string
 }
 
+export interface EvictionBlockedInfo {
+  /** Current bucket size. */
+  totalBytes: number
+  /** Bytes held by bundles old enough to evict. */
+  evictableBytes: number
+  /** Bytes that would have to go to reach the low watermark. */
+  neededBytes: number
+}
+
 export interface EvictionInfo {
   evictedCount: number
   freedBytes: number
@@ -198,6 +207,21 @@ export function buildIntakeRejectedPayload(info: IntakeRejectedInfo): unknown {
   }
 }
 
+/**
+ * Build the Discord webhook JSON body for an eviction that refused to run. This is the alert that
+ * matters most in the set: it means the bucket is full of bundles too young to touch, so intake is
+ * now paused and reports are being turned away.
+ */
+export function buildEvictionBlockedPayload(info: EvictionBlockedInfo): unknown {
+  return {
+    content:
+      `Error report intake PAUSED. The bucket holds ${formatBytes(info.totalBytes)} and needs to shed ` +
+      `${formatBytes(info.neededBytes)}, but only ${formatBytes(info.evictableBytes)} is old enough to evict, ` +
+      `so nothing was deleted. Either a flood filled the bucket with fresh bundles, or real traffic outgrew ` +
+      `the watermarks. Intake resumes on its own once the bucket is back under the low watermark.`,
+  }
+}
+
 async function postOnce(url: string, body: unknown): Promise<Response> {
   return fetch(url, {
     method: 'POST',
@@ -240,6 +264,10 @@ export async function postEvictionNotification(webhookUrl: string, info: Evictio
 
 export async function postIntakeRejectedNotification(webhookUrl: string, info: IntakeRejectedInfo): Promise<void> {
   await postWithRetry(webhookUrl, buildIntakeRejectedPayload(info), 'intake-rejected')
+}
+
+export async function postEvictionBlockedNotification(webhookUrl: string, info: EvictionBlockedInfo): Promise<void> {
+  await postWithRetry(webhookUrl, buildEvictionBlockedPayload(info), 'eviction-blocked')
 }
 
 export async function postFeedbackNotification(webhookUrl: string, notification: FeedbackNotification): Promise<void> {

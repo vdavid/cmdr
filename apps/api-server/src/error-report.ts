@@ -15,7 +15,12 @@ import {
   recordIntakeBytes,
   type IntakeRejection,
 } from './error-report-intake'
-import { postErrorReportNotification, postEvictionNotification, postIntakeRejectedNotification } from './discord'
+import {
+  postErrorReportNotification,
+  postEvictionBlockedNotification,
+  postEvictionNotification,
+  postIntakeRejectedNotification,
+} from './discord'
 
 const errorReport = new Hono<{ Bindings: Bindings }>()
 
@@ -190,12 +195,15 @@ async function postUploadWork(
       userNote: args.meta.userNote,
     })
 
-    if (evictionResult && 'evictedCount' in evictionResult && evictionResult.evictedCount > 0) {
+    if (evictionResult?.outcome === 'evicted' && evictionResult.evictedCount > 0) {
       await postEvictionNotification(env.DISCORD_WEBHOOK_URL, {
         evictedCount: evictionResult.evictedCount,
         freedBytes: evictionResult.freedBytes,
         newTotalBytes: evictionResult.newTotal,
       })
+    }
+    if (evictionResult?.outcome === 'paused') {
+      await postEvictionBlockedNotification(env.DISCORD_WEBHOOK_URL, evictionResult)
     }
   }
 }

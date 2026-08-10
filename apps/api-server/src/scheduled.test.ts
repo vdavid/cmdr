@@ -1,6 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck, handleDailyEvictionSweep } from './index'
-import { ERROR_REPORT_PREFIX, TOTAL_BYTES_KEY } from './error-report-eviction'
+import { ERROR_REPORT_PREFIX, EVICTION_MIN_AGE_DAYS, TOTAL_BYTES_KEY } from './error-report-eviction'
+import { INTAKE_PAUSED_KEY } from './error-report-intake'
+
+/** Fixtures age relative to now, so eviction eligibility never depends on the calendar. */
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+}
 
 // Mock Resend: intercept email sends
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock stands in for Resend's send; a precise signature adds no test value
@@ -479,12 +485,16 @@ describe('handleDailyEvictionSweep', () => {
 
   it('evicts when recomputed total exceeds high watermark', async () => {
     const GB = 1024 ** 3
-    // 10 × 1 GB = 10 GB > 8 GB threshold
-    const objs: StubR2Obj[] = Array.from({ length: 10 }, (_, i) => ({
-      key: `${ERROR_REPORT_PREFIX}2026-04-${String(i + 1).padStart(2, '0')}/ERR-${String(i).padStart(5, '0')}-u.zip`,
-      size: 1 * GB,
-      uploaded: new Date(`2026-04-${String(i + 1).padStart(2, '0')}`),
-    }))
+    // 10 × 1 GB = 10 GB > 8 GB threshold. Ages are relative to now and well past
+    // EVICTION_MIN_AGE_DAYS, so every bundle is eligible whenever this suite runs.
+    const objs: StubR2Obj[] = Array.from({ length: 10 }, (_, i) => {
+      const uploaded = daysAgo(EVICTION_MIN_AGE_DAYS + 10 + i)
+      return {
+        key: `${ERROR_REPORT_PREFIX}${uploaded.toISOString().slice(0, 10)}/ERR-${String(i).padStart(5, '0')}-u.zip`,
+        size: 1 * GB,
+        uploaded,
+      }
+    })
     const bucket = createR2Stub(objs)
     const kv = createKvStub()
     const env = { ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv } as never
@@ -494,6 +504,55 @@ describe('handleDailyEvictionSweep', () => {
     // Final recomputed total should be ≤ 6 GB
     const finalTotal = parseInt((await kv.get(TOTAL_BYTES_KEY)) ?? '0', 10)
     expect(finalTotal).toBeLessThanOrEqual(6 * GB)
+  })
+
+  it('pauses intake instead of evicting when the bucket is full of young bundles', async () => {
+    const GB = 1024 ** 3
+    const objs: StubR2Obj[] = Array.from({ length: 10 }, (_, i) => {
+      const uploaded = daysAgo(1)
+      return {
+        key: `${ERROR_REPORT_PREFIX}prod/${uploaded.toISOString().slice(0, 10)}/ERR-${String(i).padStart(5, '0')}-u.zip`,
+        size: 1 * GB,
+        uploaded,
+      }
+    })
+    const bucket = createR2Stub(objs)
+    const kv = createKvStub()
+    const env = { ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv } as never
+
+    await handleDailyEvictionSweep(env)
+
+    expect(await kv.get(INTAKE_PAUSED_KEY)).not.toBeNull()
+    const finalTotal = parseInt((await kv.get(TOTAL_BYTES_KEY)) ?? '0', 10)
+    expect(finalTotal).toBe(10 * GB) // nothing deleted
+  })
+
+  it('resumes a paused intake once the bucket is back under the low watermark', async () => {
+    const GB = 1024 ** 3
+    const bucket = createR2Stub([
+      { key: `${ERROR_REPORT_PREFIX}prod/2026-04-01/a.zip`, size: 1 * GB, uploaded: daysAgo(120) },
+    ])
+    const kv = createKvStub({ [INTAKE_PAUSED_KEY]: '1' })
+    const env = { ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv } as never
+
+    await handleDailyEvictionSweep(env)
+
+    expect(await kv.get(INTAKE_PAUSED_KEY)).toBeNull()
+  })
+
+  it('keeps intake paused while the bucket sits between the watermarks', async () => {
+    const GB = 1024 ** 3
+    // 7 GB: under the 8 GB high watermark (so no eviction) but over the 6 GB low one, which is
+    // the level that paused intake in the first place. Reopening here would just refill it.
+    const bucket = createR2Stub([
+      { key: `${ERROR_REPORT_PREFIX}prod/2026-04-01/a.zip`, size: 7 * GB, uploaded: daysAgo(120) },
+    ])
+    const kv = createKvStub({ [INTAKE_PAUSED_KEY]: '1' })
+    const env = { ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv } as never
+
+    await handleDailyEvictionSweep(env)
+
+    expect(await kv.get(INTAKE_PAUSED_KEY)).not.toBeNull()
   })
 })
 

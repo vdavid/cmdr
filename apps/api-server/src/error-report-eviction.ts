@@ -1,4 +1,5 @@
 import type { Bindings } from './types'
+import { pauseIntake } from './error-report-intake'
 
 /**
  * Error report bundle eviction.
@@ -23,6 +24,21 @@ export const EVICTION_HIGH_WATERMARK = 8 * 1024 ** 3 // 8 GB
 /** Eviction stops once total bytes drop to or below this. */
 export const EVICTION_LOW_WATERMARK = 6 * 1024 ** 3 // 6 GB
 
+/**
+ * A bundle is only ever a candidate for eviction once it is this old.
+ *
+ * Eviction exists to pull the 90-day R2 lifecycle forward under space pressure, so anything it
+ * deletes should already be near its natural end. Under normal growth the bucket takes a long time
+ * to reach the high watermark, and there is plenty of 60-day-old material to free.
+ *
+ * The floor is also the guardrail that keeps eviction from becoming an attacker-controlled delete
+ * primitive: `/error-report` is unauthenticated, so anyone able to push the bucket past the high
+ * watermark could otherwise make the oldest (most likely genuine) reports disappear. With the
+ * floor, a flood of fresh junk finds nothing eligible, and {@link tryEvict} pauses intake instead
+ * of deleting. Reaching eligibility would take 60 days of sustained flooding, alerting daily.
+ */
+export const EVICTION_MIN_AGE_DAYS = 60
+
 /** R2 key prefix for all error report bundles. */
 export const ERROR_REPORT_PREFIX = 'error-reports/'
 
@@ -32,8 +48,13 @@ export const EVICTION_LOCK_KEY = 'eviction_in_progress'
 const EVICTION_LOCK_TTL_SECONDS = 60
 
 export type TryEvictResult =
-  | { evictedCount: number; freedBytes: number; newTotal: number }
-  | { skipped: 'lock_held' | 'under_threshold' }
+  | { outcome: 'evicted'; evictedCount: number; freedBytes: number; newTotal: number }
+  | { outcome: 'skipped'; reason: 'lock_held' | 'under_threshold' }
+  /**
+   * Over the high watermark, but the bundles old enough to evict don't add up to what freeing
+   * would need. Nothing was deleted and intake is now paused. See {@link EVICTION_MIN_AGE_DAYS}.
+   */
+  | { outcome: 'paused'; totalBytes: number; evictableBytes: number; neededBytes: number }
 
 /**
  * Atomically-ish add `deltaBytes` to the running total.
@@ -113,23 +134,29 @@ async function listAllObjects(bucket: R2Bucket): Promise<ListedObject[]> {
 }
 
 /**
- * If total bytes exceed `highWatermark`, delete oldest objects (sorted by date prefix
- * in the R2 key, then by upload time) until total ≤ `lowWatermark`. Holds a KV lock
- * to prevent concurrent eviction. Recomputes the counter from R2 ground truth before
- * returning. Best-effort: clears the lock even on error.
+ * If total bytes exceed `highWatermark`, delete the oldest objects past
+ * {@link EVICTION_MIN_AGE_DAYS} (sorted by date prefix in the R2 key, then by upload time) until
+ * total ≤ `lowWatermark`. Holds a KV lock to prevent concurrent eviction. Recomputes the counter
+ * from R2 ground truth before returning. Best-effort: clears the lock even on error.
+ *
+ * All-or-nothing by design: when the eligible bundles can't free enough on their own, this deletes
+ * NOTHING and pauses intake instead. Half-evicting would destroy real reports and still leave the
+ * bucket over its watermark, which is the worst of both outcomes. See {@link EVICTION_MIN_AGE_DAYS}.
  */
 export async function tryEvict(
   env: Pick<Bindings, 'ERROR_REPORTS_BUCKET' | 'ERROR_REPORT_META'>,
-  options: { highWatermark?: number; lowWatermark?: number } = {},
+  options: { highWatermark?: number; lowWatermark?: number; minAgeDays?: number; now?: Date } = {},
 ): Promise<TryEvictResult> {
   const high = options.highWatermark ?? EVICTION_HIGH_WATERMARK
   const low = options.lowWatermark ?? EVICTION_LOW_WATERMARK
+  const minAgeDays = options.minAgeDays ?? EVICTION_MIN_AGE_DAYS
+  const now = options.now ?? new Date()
 
   const lock = await env.ERROR_REPORT_META.get(EVICTION_LOCK_KEY)
-  if (lock) return { skipped: 'lock_held' }
+  if (lock) return { outcome: 'skipped', reason: 'lock_held' }
 
   const current = parseInt((await env.ERROR_REPORT_META.get(TOTAL_BYTES_KEY)) ?? '0', 10)
-  if (current <= high) return { skipped: 'under_threshold' }
+  if (current <= high) return { outcome: 'skipped', reason: 'under_threshold' }
 
   await env.ERROR_REPORT_META.put(EVICTION_LOCK_KEY, '1', { expirationTtl: EVICTION_LOCK_TTL_SECONDS })
 
@@ -137,11 +164,18 @@ export async function tryEvict(
   let freedBytes = 0
   try {
     const all = await listAllObjects(env.ERROR_REPORTS_BUCKET)
+    const totalBytes = all.reduce((s, o) => s + o.size, 0)
+
+    // Age comes from R2's `uploaded`, not the key's date segment: it's storage ground truth and
+    // can't drift with however the key was built.
+    const cutoff = now.getTime() - minAgeDays * 24 * 60 * 60 * 1000
+    const evictable = all.filter((o) => o.uploaded.getTime() <= cutoff)
+
     // Sort oldest first. The date segment inside the key is the primary signal
     // (yyyy-mm-dd sorts lexically); extracted via `extractDateSegment` so the
     // sort works across both the new `{env}/{date}` layout and the legacy
     // `{date}` layout. R2 `uploaded` breaks ties for same-day uploads.
-    all.sort((a, b) => {
+    evictable.sort((a, b) => {
       const da = extractDateSegment(a.key)
       const db = extractDateSegment(b.key)
       if (da < db) return -1
@@ -149,8 +183,19 @@ export async function tryEvict(
       return a.uploaded.getTime() - b.uploaded.getTime()
     })
 
-    let runningTotal = all.reduce((s, o) => s + o.size, 0)
-    for (const obj of all) {
+    const neededBytes = totalBytes - low
+    const evictableBytes = evictable.reduce((s, o) => s + o.size, 0)
+    if (evictableBytes < neededBytes) {
+      await pauseIntake(env.ERROR_REPORT_META)
+      console.error(
+        `Error report eviction: nothing old enough to free ${neededBytes.toString()} bytes ` +
+          `(only ${evictableBytes.toString()} evictable of ${totalBytes.toString()}); intake paused`,
+      )
+      return { outcome: 'paused', totalBytes, evictableBytes, neededBytes }
+    }
+
+    let runningTotal = totalBytes
+    for (const obj of evictable) {
       if (runningTotal <= low) break
       await env.ERROR_REPORTS_BUCKET.delete(obj.key)
       runningTotal -= obj.size
@@ -159,7 +204,7 @@ export async function tryEvict(
     }
 
     const newTotal = await recomputeTotal(env)
-    return { evictedCount, freedBytes, newTotal }
+    return { outcome: 'evicted', evictedCount, freedBytes, newTotal }
   } finally {
     // Best-effort lock release. KV TTL would clear it anyway after 60 s.
     await env.ERROR_REPORT_META.delete(EVICTION_LOCK_KEY).catch(() => {})

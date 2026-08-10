@@ -1,7 +1,8 @@
 import { sendCrashNotificationEmail, sendDbSizeAlert, type CrashEmailRow } from './email'
 import type { Bindings } from './types'
-import { recomputeTotal, tryEvict, EVICTION_HIGH_WATERMARK } from './error-report-eviction'
-import { postEvictionNotification } from './discord'
+import { recomputeTotal, tryEvict, EVICTION_HIGH_WATERMARK, EVICTION_LOW_WATERMARK } from './error-report-eviction'
+import { isIntakePaused, resumeIntake } from './error-report-intake'
+import { postEvictionBlockedNotification, postEvictionNotification } from './discord'
 
 const dbSizeThresholdBytes = 100 * 1024 * 1024 // 100 MB
 
@@ -120,20 +121,33 @@ async function handleDbSizeCheck(env: Bindings): Promise<void> {
 
 /**
  * Daily sweep that corrects `total_bytes` KV drift (KV increments are racy: see
- * `incrementTotalBytes`) and evicts oldest bundles if still above the high watermark.
- * Idempotent: safe to run multiple times.
+ * `incrementTotalBytes`), lifts an intake pause once there's room again, and evicts oldest
+ * bundles if still above the high watermark. Idempotent: safe to run multiple times.
  */
 async function handleDailyEvictionSweep(env: Bindings): Promise<void> {
   const recomputed = await recomputeTotal(env)
+
+  // Resume at the LOW watermark, not the high one: resuming the moment the bucket dips under the
+  // high watermark would reopen intake straight into the level that paused it.
+  if (recomputed <= EVICTION_LOW_WATERMARK && (await isIntakePaused(env.ERROR_REPORT_META))) {
+    await resumeIntake(env.ERROR_REPORT_META)
+    console.log(`Error report intake resumed: bucket back to ${recomputed.toString()} bytes`)
+  }
+
   if (recomputed <= EVICTION_HIGH_WATERMARK) return
 
   const result = await tryEvict(env)
-  if ('evictedCount' in result && result.evictedCount > 0 && env.DISCORD_WEBHOOK_URL) {
+  if (!env.DISCORD_WEBHOOK_URL) return
+
+  if (result.outcome === 'evicted' && result.evictedCount > 0) {
     await postEvictionNotification(env.DISCORD_WEBHOOK_URL, {
       evictedCount: result.evictedCount,
       freedBytes: result.freedBytes,
       newTotalBytes: result.newTotal,
     })
+  }
+  if (result.outcome === 'paused') {
+    await postEvictionBlockedNotification(env.DISCORD_WEBHOOK_URL, result)
   }
 }
 
