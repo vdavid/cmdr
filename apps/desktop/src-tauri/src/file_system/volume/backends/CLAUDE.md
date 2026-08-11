@@ -33,6 +33,11 @@ checklist live in `../CLAUDE.md` + `../DETAILS.md`.
   on an ECHO-proven-alive link, so nothing slow-but-alive is cut). Both tear the connection down. Read `sent_age`
   first: `None` means we never asked the server. The watcher's session is probed too, so a dead one ends its long poll
   instead of parking forever. The deadlines, and why the keepalive still can't declare a death: `DETAILS.md`.
+- **`to_smb_path` matches the mount root by COMPONENT and errors on anything outside it** (returns
+  `Result<String, VolumeError>`, `NotFound` for an out-of-root path). A string prefix compare stripped
+  `/Volumes/naspi-1/x` to `-1/x` against root `/Volumes/naspi`, and the old "strip the leading slash" fallback turned
+  `/Users/me/x` into share-relative `Users/me/x`: both sent a real request to the wrong place. Post-mutation cache
+  patches use `display_path_for` (an `Option`) so a done write is never reported as failed.
 - **Watcher filenames need NFC→NFD normalizing** before cache lookups, and ❌ nothing else: smb2 ≥ 0.18 hands back `/`
   separators with illegal characters already decoded, so a `\` in one is part of a file's NAME. Re-normalizing it to `/`
   turns that name into a path and the lookup misses forever.

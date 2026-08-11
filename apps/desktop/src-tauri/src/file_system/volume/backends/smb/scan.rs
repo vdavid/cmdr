@@ -87,7 +87,7 @@ impl SmbVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let smb_path = self.to_smb_path(path);
+            let smb_path = self.to_smb_path(path)?;
 
             debug!(
                 "SmbVolume::scan_for_copy: share={}, path={:?}",
@@ -120,7 +120,7 @@ impl SmbVolume {
                 });
             }
             if paths.len() == 1 {
-                let smb_path = self.to_smb_path(&paths[0]);
+                let smb_path = self.to_smb_path(&paths[0])?;
                 let scan = self.scan_recursive(&smb_path).await?;
                 return Ok(BatchScanResult {
                     aggregate: scan.clone(),
@@ -174,7 +174,7 @@ impl SmbVolume {
                         // Directories still need a recursive scan to count
                         // descendants. The oracle just told us "this is a
                         // dir without an SMB stat"; recurse to expand it.
-                        let smb_path = self.to_smb_path(path);
+                        let smb_path = self.to_smb_path(path)?;
                         let scan = self.scan_recursive(&smb_path).await?;
                         per_path_results[idx] = Some(scan);
                     } else {
@@ -227,8 +227,8 @@ impl SmbVolume {
             // `to_smb_path` calls below.
             let smb_paths: Vec<(usize, String)> = leftover_indices
                 .iter()
-                .map(|&idx| (idx, self.to_smb_path(&paths[idx])))
-                .collect();
+                .map(|&idx| Ok((idx, self.to_smb_path(&paths[idx])?)))
+                .collect::<Result<_, VolumeError>>()?;
 
             debug!(
                 "SmbVolume::scan_for_copy_batch: share={}, {} paths leftover for pipelined stats (oracle handled {})",

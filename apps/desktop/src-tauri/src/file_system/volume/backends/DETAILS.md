@@ -198,6 +198,9 @@ listings, and media enrichment's parallel prefetch reads.
 
 ## Per-backend decisions
 
+**Decision**: `SmbVolume::to_smb_path` returns `Result<String, VolumeError>` and refuses a path outside the mount root
+**Why**: it turns a path the frontend sent into the share-relative string that goes on the wire, and every way of GUESSING an answer for an out-of-root path put a real request at a real, wrong place. It compared the root as a raw STRING, so with root `/Volumes/naspi` a path under the sibling mount `/Volumes/naspi-1/x` stripped to `-1/x` — a legal file name on the share, which the server would happily create or delete. Anything that matched neither fell through to "strip the leading slash", so `/Users/me/notes.txt` went out as the share-relative `Users/me/notes.txt`. Matching whole path COMPONENTS (`Path::strip_prefix`) kills the first, and `VolumeError::NotFound` for the rest kills the second: a path that isn't on this volume genuinely isn't found there, and the caller surfaces that instead of acting elsewhere. `exists` maps the error to `false` (the honest answer to the question it was asked), and the post-mutation listing-cache patches go through `display_path_for`, which returns an `Option` so a write that already succeeded is never reported as failed because its parent path didn't convert.
+
 **Decision**: `SmbVolume` and `MtpVolume` store `volume_id: String` for listing cache lookups
 **Why**: `notify_mutation` needs to call `notify_directory_changed(volume_id, ...)` to find the right cached listings. The volume_id is computed at creation time (`smb_volume_id(server, port, share)` for SMB so two same-named shares on different servers don't collide — see `volumes/CLAUDE.md` § "Volume IDs"; `"{device_id}:{storage_id}"` for MTP) and stored on the struct rather than recomputed on every mutation.
 

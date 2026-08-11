@@ -443,7 +443,7 @@ impl SmbVolume {
     pub(super) async fn list_directory_for_scan_impl(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
         let pool = { self.scan_pool.read().await.clone() };
         if let Some(pool) = pool {
-            let smb_path = self.to_smb_path(path);
+            let smb_path = self.to_smb_path(path)?;
             let display_path = self.to_display_path(&smb_path);
             // At most one attempt per member: a sibling retry after each dead
             // member, bailing to the main-session fallback once all are exhausted.
@@ -504,7 +504,7 @@ impl SmbVolume {
         {
             let pool = { self.scan_pool.read().await.clone() };
             if let Some(pool) = pool {
-                let smb_path = self.to_smb_path(path);
+                let smb_path = self.to_smb_path(path)?;
                 for _ in 0..pool.member_count() {
                     let Some((idx, tree, mut conn)) = pool.acquire().await else {
                         break; // every member momentarily dead ⇒ main session

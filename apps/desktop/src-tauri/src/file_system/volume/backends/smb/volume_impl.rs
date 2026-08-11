@@ -32,25 +32,54 @@ impl SmbVolume {
     /// NFC-normalizes the result because macOS sends NFD (decomposed) paths
     /// but SMB servers expect NFC (composed). Without this, paths with accented
     /// characters (like "ä") fail with STATUS_OBJECT_PATH_NOT_FOUND.
-    pub(super) fn to_smb_path(&self, path: &Path) -> String {
+    ///
+    /// # Why this returns a `Result`
+    ///
+    /// An absolute path that ISN'T under the mount root has no answer here, and
+    /// both ways of guessing one sent a real request for a real file at the
+    /// wrong place:
+    ///
+    /// - A raw STRING prefix compare made `/Volumes/naspi-1/x` strip to `-1/x`
+    ///   against the root `/Volumes/naspi` (macOS suffixes a second mount of one
+    ///   share `-1`, and `-1` is a perfectly legal file name). `strip_prefix` on
+    ///   `Path` compares whole COMPONENTS, so a sibling can't false-match.
+    /// - Falling through to "strip the leading slash" turned `/Users/me/x` into
+    ///   the share-relative `Users/me/x`.
+    ///
+    /// So an out-of-root path is `NotFound`: it genuinely isn't on this volume,
+    /// and the caller surfaces that rather than acting somewhere unintended.
+    pub(super) fn to_smb_path(&self, path: &Path) -> Result<String, VolumeError> {
         use unicode_normalization::UnicodeNormalization;
 
         let path_str = path.to_string_lossy();
 
-        // Handle paths that start with the mount path (absolute paths from frontend)
-        if let Some(relative) = path_str.strip_prefix(self.mount_path.to_string_lossy().as_ref()) {
-            let trimmed = relative.trim_start_matches('/');
-            return trimmed.nfc().collect();
-        }
-
-        // Handle empty or root paths
+        // Empty, `.`, and `/` all mean the volume root.
         if path_str.is_empty() || path_str == "/" || path_str == "." {
-            return String::new();
+            return Ok(String::new());
         }
 
-        // Strip leading slash for absolute paths
-        let raw = path_str.strip_prefix('/').unwrap_or(&path_str);
-        raw.nfc().collect()
+        // Relative paths are what the trait contract asks for: use them as-is.
+        if !path.is_absolute() {
+            return Ok(path_str.nfc().collect());
+        }
+
+        // Absolute (the frontend does send these): must be inside the mount.
+        match path.strip_prefix(&self.mount_path) {
+            Ok(relative) => Ok(relative.to_string_lossy().nfc().collect()),
+            Err(_) => Err(VolumeError::NotFound(path_str.into_owned())),
+        }
+    }
+
+    /// The absolute display path for `path`'s own location on this share, or
+    /// `None` when `path` isn't on this share at all.
+    ///
+    /// For the post-mutation listing-cache patches: the mutation has already
+    /// succeeded by the time they run, so a path that doesn't convert must skip
+    /// the notification rather than turn a done write into a reported failure.
+    pub(super) fn display_path_for(&self, path: &Path) -> Option<PathBuf> {
+        self.to_smb_path(path)
+            .ok()
+            .map(|smb_path| PathBuf::from(self.to_display_path(&smb_path)))
     }
 
     /// Returns the full absolute path for a relative SMB path (under mount point).
@@ -65,7 +94,7 @@ impl SmbVolume {
     /// Shared async implementation of list_directory used by both the trait method
     /// and internal helpers (which need to call it without going through the trait).
     pub(super) async fn list_directory_impl(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
-        let smb_path = self.to_smb_path(path);
+        let smb_path = self.to_smb_path(path)?;
         let display_path = self.to_display_path(&smb_path);
 
         // TRACE, not DEBUG: this fires per listing for both the live pane and the index
@@ -191,7 +220,7 @@ impl Volume for SmbVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let smb_path = self.to_smb_path(path);
+            let smb_path = self.to_smb_path(path)?;
 
             debug!(
                 "SmbVolume::get_metadata: share={}, input={:?}, smb_path={:?}",
@@ -230,7 +259,11 @@ impl Volume for SmbVolume {
 
     fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
         Box::pin(async move {
-            let smb_path = self.to_smb_path(path);
+            // A path outside this share doesn't exist ON THIS VOLUME, which is
+            // exactly the question asked.
+            let Ok(smb_path) = self.to_smb_path(path) else {
+                return false;
+            };
             if smb_path.is_empty() {
                 return true; // Root always exists if we're connected
             }
@@ -249,7 +282,7 @@ impl Volume for SmbVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let smb_path = self.to_smb_path(path);
+            let smb_path = self.to_smb_path(path)?;
             if smb_path.is_empty() {
                 return Ok(true); // Root is always a directory
             }
@@ -449,7 +482,7 @@ impl Volume for SmbVolume {
         content: &'a [u8],
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let smb_path = self.to_smb_path(path);
+            let smb_path = self.to_smb_path(path)?;
             let data = content.to_vec();
 
             debug!("SmbVolume::create_file: share={}, path={:?}", self.share_name, smb_path);
@@ -472,8 +505,9 @@ impl Volume for SmbVolume {
                 self.handle_smb_result("create_file(finish)", finish_result)?;
             }
 
-            if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
-                let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+            if let (Some(parent), Some(name)) = (path.parent(), path.file_name())
+                && let Some(parent_display) = self.display_path_for(parent)
+            {
                 self.notify_mutation(
                     &self.volume_id,
                     &parent_display,
@@ -490,7 +524,7 @@ impl Volume for SmbVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let smb_path = self.to_smb_path(path);
+            let smb_path = self.to_smb_path(path)?;
 
             debug!(
                 "SmbVolume::create_directory: share={}, path={:?}",
@@ -503,8 +537,9 @@ impl Volume for SmbVolume {
                 self.handle_smb_result("create_directory", result)?;
             }
 
-            if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
-                let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+            if let (Some(parent), Some(name)) = (path.parent(), path.file_name())
+                && let Some(parent_display) = self.display_path_for(parent)
+            {
                 self.notify_mutation(
                     &self.volume_id,
                     &parent_display,
@@ -518,7 +553,7 @@ impl Volume for SmbVolume {
 
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let smb_path = self.to_smb_path(path);
+            let smb_path = self.to_smb_path(path)?;
 
             debug!("SmbVolume::delete: share={}, path={:?}", self.share_name, smb_path);
 
@@ -542,8 +577,9 @@ impl Volume for SmbVolume {
                 Err(e) => return Err(e),
             }
 
-            if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
-                let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+            if let (Some(parent), Some(name)) = (path.parent(), path.file_name())
+                && let Some(parent_display) = self.display_path_for(parent)
+            {
                 self.notify_mutation(
                     &self.volume_id,
                     &parent_display,
@@ -562,8 +598,8 @@ impl Volume for SmbVolume {
         force: bool,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let smb_from = self.to_smb_path(from);
-            let smb_to = self.to_smb_path(to);
+            let smb_from = self.to_smb_path(from)?;
+            let smb_to = self.to_smb_path(to)?;
 
             debug!(
                 "SmbVolume::rename: share={}, from={:?}, to={:?}, force={}",
@@ -618,12 +654,13 @@ impl Volume for SmbVolume {
             }
 
             // Notify listing cache about the rename
-            if let (Some(from_parent), Some(from_name)) = (from.parent(), from.file_name()) {
+            if let (Some(from_parent), Some(from_name)) = (from.parent(), from.file_name())
+                && let Some(from_parent_display) = self.display_path_for(from_parent)
+            {
                 let to_name = to
                     .file_name()
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_default();
-                let from_parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(from_parent)));
 
                 if from.parent() == to.parent() {
                     // Same-directory rename
@@ -644,8 +681,7 @@ impl Volume for SmbVolume {
                         MutationEvent::Deleted(from_name.to_string_lossy().to_string()),
                     )
                     .await;
-                    if let Some(to_parent) = to.parent() {
-                        let to_parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(to_parent)));
+                    if let Some(to_parent_display) = to.parent().and_then(|p| self.display_path_for(p)) {
                         self.notify_mutation(&self.volume_id, &to_parent_display, MutationEvent::Created(to_name))
                             .await;
                     }
@@ -700,7 +736,7 @@ impl Volume for SmbVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let smb_path = self.to_smb_path(path);
+            let smb_path = self.to_smb_path(path)?;
 
             debug!(
                 "SmbVolume::open_read_stream: share={}, path={:?}",
@@ -718,7 +754,7 @@ impl Volume for SmbVolume {
         size_hint: Option<u64>,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let smb_path = self.to_smb_path(path);
+            let smb_path = self.to_smb_path(path)?;
 
             // Compound fast-path: if the caller-provided hint fits in one READ,
             // send CREATE+READ+CLOSE as a single compound frame (1 RTT) instead
@@ -789,7 +825,7 @@ impl Volume for SmbVolume {
             if len == 0 {
                 return Ok(Vec::new());
             }
-            let smb_path = self.to_smb_path(path);
+            let smb_path = self.to_smb_path(path)?;
             debug!(
                 "SmbVolume::read_range: share={}, path={:?}, offset={}, len={}",
                 self.share_name, smb_path, offset, len

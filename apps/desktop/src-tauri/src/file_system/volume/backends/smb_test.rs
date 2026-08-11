@@ -251,17 +251,17 @@ fn connection_state_unknown_value_defaults_to_disconnected() {
 #[test]
 fn to_smb_path_empty() {
     let vol = make_test_volume();
-    assert_eq!(vol.to_smb_path(Path::new("")), "");
-    assert_eq!(vol.to_smb_path(Path::new("/")), "");
-    assert_eq!(vol.to_smb_path(Path::new(".")), "");
+    assert_eq!(vol.to_smb_path(Path::new("")).unwrap(), "");
+    assert_eq!(vol.to_smb_path(Path::new("/")).unwrap(), "");
+    assert_eq!(vol.to_smb_path(Path::new(".")).unwrap(), "");
 }
 
 #[test]
 fn to_smb_path_relative() {
     let vol = make_test_volume();
-    assert_eq!(vol.to_smb_path(Path::new("Documents")), "Documents");
+    assert_eq!(vol.to_smb_path(Path::new("Documents")).unwrap(), "Documents");
     assert_eq!(
-        vol.to_smb_path(Path::new("Documents/report.pdf")),
+        vol.to_smb_path(Path::new("Documents/report.pdf")).unwrap(),
         "Documents/report.pdf"
     );
 }
@@ -269,9 +269,13 @@ fn to_smb_path_relative() {
 #[test]
 fn to_smb_path_absolute_under_mount() {
     let vol = make_test_volume();
-    assert_eq!(vol.to_smb_path(Path::new("/Volumes/TestShare/Documents")), "Documents");
     assert_eq!(
-        vol.to_smb_path(Path::new("/Volumes/TestShare/Documents/report.pdf")),
+        vol.to_smb_path(Path::new("/Volumes/TestShare/Documents")).unwrap(),
+        "Documents"
+    );
+    assert_eq!(
+        vol.to_smb_path(Path::new("/Volumes/TestShare/Documents/report.pdf"))
+            .unwrap(),
         "Documents/report.pdf"
     );
 }
@@ -279,7 +283,38 @@ fn to_smb_path_absolute_under_mount() {
 #[test]
 fn to_smb_path_mount_root() {
     let vol = make_test_volume();
-    assert_eq!(vol.to_smb_path(Path::new("/Volumes/TestShare")), "");
+    assert_eq!(vol.to_smb_path(Path::new("/Volumes/TestShare")).unwrap(), "");
+}
+
+#[test]
+fn to_smb_path_rejects_a_sibling_mount_that_merely_shares_a_name_prefix() {
+    // macOS mounts a second copy of a share at `/Volumes/TestShare-1`. A raw
+    // string prefix compare strips `/Volumes/TestShare` off that path and sends
+    // the server the share-relative `-1/Documents`, which is a real file name
+    // on the share. Matching whole path components is the only safe compare.
+    let vol = make_test_volume();
+    assert!(matches!(
+        vol.to_smb_path(Path::new("/Volumes/TestShare-1/Documents")),
+        Err(VolumeError::NotFound(_))
+    ));
+    assert!(matches!(
+        vol.to_smb_path(Path::new("/Volumes/TestShareX")),
+        Err(VolumeError::NotFound(_))
+    ));
+}
+
+#[test]
+fn to_smb_path_rejects_a_path_outside_the_mount() {
+    // Falling back to "strip the leading slash" turned `/Volumes/Other/x` into
+    // the share-relative `Volumes/Other/x` and asked the server for it. A path
+    // that isn't on this volume has to say so instead of guessing.
+    let vol = make_test_volume();
+    for outside in ["/Volumes/Other/x", "/Users/david/notes.txt", "/Volumes"] {
+        assert!(
+            matches!(vol.to_smb_path(Path::new(outside)), Err(VolumeError::NotFound(_))),
+            "{outside} is not on this share"
+        );
+    }
 }
 
 #[test]

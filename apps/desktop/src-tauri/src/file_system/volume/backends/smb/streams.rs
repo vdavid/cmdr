@@ -294,7 +294,7 @@ impl SmbVolume {
         // `smb_integration_concurrent_streaming_writes_no_deadlock`
         // pins this shape.
         Box::pin(async move {
-            let smb_path = self.to_smb_path(dest);
+            let smb_path = self.to_smb_path(dest)?;
 
             debug!(
                 "SmbVolume::write_from_stream: share={}, path={:?}, size={}",
@@ -481,8 +481,9 @@ impl SmbVolume {
             // consecutive `next_events()` calls; relying on it alone left
             // bulk cross-volume copies showing only a subset of the just-
             // copied files until the user navigated away and back.
-            if let (Some(parent), Some(name)) = (dest.parent(), dest.file_name()) {
-                let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+            if let (Some(parent), Some(name)) = (dest.parent(), dest.file_name())
+                && let Some(parent_display) = self.display_path_for(parent)
+            {
                 self.notify_mutation(
                     &self.volume_id,
                     &parent_display,
