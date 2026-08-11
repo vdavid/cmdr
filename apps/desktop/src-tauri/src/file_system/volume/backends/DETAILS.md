@@ -7,8 +7,9 @@ modifying `SmbVolume`, `MtpVolume`, `LocalPosixVolume`, the SMB watcher, or `InM
 
 ## Key files
 
-Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape, including the `smb/`
-submodule split: `CLAUDE.md` § Module map. What each piece DOES is in the sections below (§ "SMB auto-upgrade
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` §
+Module map. `smb/` splits into `events`, `state`, `mapping`, `session`, `reconnect`, `streams`, `scan`, `scan_pool`,
+and `volume_impl`; `mtp/` into `mod.rs` and `scan.rs`. What each piece DOES is in the sections below (§ "SMB auto-upgrade
 lifecycle", § "SMB live-reconnect lifecycle", § "SMB scan-connection pool", § "Per-backend decisions" for the session
 split / watcher session / `write_from_stream` shape, § Testing for the SMB suites and their `#[path = "../smb_*.rs"]`
 wiring), or in `crates/cmdr-archive/DETAILS.md` for `ArchiveVolume`. Only the layout facts that none of those carry live here:
@@ -227,6 +228,10 @@ listings, and media enrichment's parallel prefetch reads.
 
 **Decision**: we run `smb2`'s deadline and keepalive defaults unchanged, and read none of them as a liveness verdict
 **Why**: every wait a request can make is bounded by the crate, so Cmdr needs no timeout layer of its own. A frame gets 20 s to reach the socket (`Error::SendTimeout`); once out, the server gets 30 s of SILENCE (not elapsed time — every interim `STATUS_PENDING` restarts the clock, so a multi-minute write to a loaded NAS is never cut off), stretched to 6× that on a connection an ECHO probe has just proven alive. A breach tears the connection down, which is why `retry.rs` sees a typed `DeviceDisconnected` / `ConnectionTimeout` instead of a hang. The ECHO keepalive (5 s, on by default) only probes when the wire has gone quiet with work outstanding, so a busy transfer pays nothing for it. ❌ **A missed probe is NOT evidence of death** and nothing here may treat it as such: a QNAP TS-464 drops probes precisely while it writes (measured 2026-08-02: 1 of 3 dropped under write load, 0 of 3 idle). The crate agrees — its only death verdict, `Error::ServerUnresponsive`, needs a request to burn its whole deadline AND the connection to have put nothing at all on the wire meanwhile. That is also why `SmbVolume::connection_liveness()` stays unimplemented; the full argument and what `smb2` would have to expose to change it: `write_operations/transfer/DETAILS.md` § "The watchdog ACTS".
+
+**Read `sent_age` before drawing any conclusion from a stall.** `None` means the request never reached the wire, so
+the server has not been asked yet and none of the deadlines above are even running; a `Some` age is the only number
+that says how long the server has actually been silent.
 
 **Silence measured across a frozen Cmdr is discounted, not counted** (`smb2` 0.18.1+). Every clock in the crate measures wall time, so a stretch where this process was not scheduled at all — a laptop sleep, an App Nap, a machine starved by a parallel build — used to read as the server going quiet, and the reconnect that followed was against a NAS that had been answering the whole time (2026-08-08: three freezes of 62 s, 175 s, and 355 s in twelve minutes). The crate now recognizes the gap from its own loop cadence and shifts every liveness clock forward by it. Two consequences for Cmdr: an `SmbVolume` reconnect after a wake is now evidence about the *network*, not about the sleep, and `MetricsSnapshot::scheduling_stalls` (surfaced through `commands/smb_diagnostics.rs`) is the counter that says whether the app stopped running. ❌ Don't add a Cmdr-side sleep/wake hook for this — the crate handles any stall from any cause, and a hook would only cover the one macOS reports.
 
