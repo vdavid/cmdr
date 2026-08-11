@@ -32,10 +32,13 @@ pub(crate) struct TestVolumeRegistration {
 
 impl TestVolumeRegistration {
     /// Registers `volume` under `volume_id`, remembering whatever was there.
+    ///
+    /// `force_register`, because swapping in a volume with a DIFFERENT root is
+    /// the whole point of the guard, and `register` keeps the incumbent there.
     pub(crate) fn install(volume_id: &str, volume: Arc<dyn Volume>) -> Self {
         let manager = get_volume_manager();
         let previous = manager.get(volume_id);
-        manager.register(volume_id, volume);
+        manager.force_register(volume_id, volume);
         Self {
             volume_id: volume_id.to_string(),
             previous,
@@ -47,7 +50,10 @@ impl Drop for TestVolumeRegistration {
     fn drop(&mut self) {
         let manager = get_volume_manager();
         match self.previous.take() {
-            Some(previous) => manager.register(&self.volume_id, previous),
+            // `force_register`, not `register`: putting the previous value back
+            // has to be unconditional, and `register` keeps the incumbent when
+            // the two volumes have different roots.
+            Some(previous) => manager.force_register(&self.volume_id, previous),
             None => manager.unregister(&self.volume_id),
         }
     }

@@ -16,7 +16,9 @@ through a `Volume`, with **paths relative to the volume root**.
   routes a `.zip`-crossing path to a read-only `ArchiveVolume`, path UNCHANGED; it's async because a remote `.zip`
   probes the network. `resolve_local_only` is for the ONE caller that can't `.await`.
 - **Watcher-pre-registered volumes go in via `register_if_absent`**, else the FSEvents watcher overwrites an
-  `SmbVolume` with a `LocalPosixVolume`. Plain `register` is for explicit replacement only.
+  `SmbVolume` with a `LocalPosixVolume`. Plain `register` is for explicit replacement only, and it replaces ONLY at the
+  same root: two roots claiming one ID (a doubly-mounted filesystem) keeps the incumbent and logs, so registration
+  order can't decide where a volume is rooted. `DETAILS.md` § "Key decisions".
 - **Cross-volume copy flows only through `open_read_stream` / `write_from_stream`, chunk by chunk.** ❌ Never drain a
   `VolumeReadStream` or collect a remote file into a `Vec<u8>`; ❌ don't reintroduce `export_to_local` /
   `import_from_local`. `DETAILS.md` § "Streaming patterns".

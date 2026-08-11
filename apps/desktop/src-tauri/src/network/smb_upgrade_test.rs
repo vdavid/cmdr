@@ -174,12 +174,23 @@ mod tracking {
             label: &str,
             smb_state: Option<crate::file_system::volume::SmbConnectionState>,
         ) -> (Arc<dyn Volume>, Hooks) {
+            Self::create_at(&format!("/tmp/tracking-{label}"), smb_state)
+        }
+
+        /// A volume rooted at an explicit mount path. A replace happens at ONE
+        /// root (the upgrade swaps the backend serving a mount, never the mount
+        /// itself), and the registry keeps the incumbent when two roots claim
+        /// one ID, so a pair standing in for a replace has to share this.
+        pub(super) fn create_at(
+            root: &str,
+            smb_state: Option<crate::file_system::volume::SmbConnectionState>,
+        ) -> (Arc<dyn Volume>, Hooks) {
             let unmounted = Arc::new(AtomicBool::new(false));
             let superseded = Arc::new(AtomicBool::new(false));
             let vol = Arc::new(Self {
                 on_unmount_called: Arc::clone(&unmounted),
                 on_superseded_called: Arc::clone(&superseded),
-                root: PathBuf::from(format!("/tmp/tracking-{label}")),
+                root: PathBuf::from(root),
                 smb_state,
             }) as Arc<dyn Volume>;
             (vol, Hooks { unmounted, superseded })
@@ -256,8 +267,10 @@ async fn predecessor_is_superseded_not_unmounted() {
     let volume_id = "test-register-replacing-predecessor-replace";
     let manager = crate::file_system::volume::manager::get_volume_manager();
 
-    let (old_volume, old_hooks) = tracking::TrackingVolume::create("old");
-    let (new_volume, new_hooks) = tracking::TrackingVolume::create("new");
+    // Both at the SAME mount root: an upgrade replaces the backend serving a
+    // mount, so this is not an identity conflict and the swap goes through.
+    let (old_volume, old_hooks) = tracking::TrackingVolume::create_at("/Volumes/naspi", None);
+    let (new_volume, new_hooks) = tracking::TrackingVolume::create_at("/Volumes/naspi", None);
 
     manager.register(volume_id, old_volume);
     assert!(!old_hooks.superseded.load(Ordering::Relaxed));
@@ -300,7 +313,7 @@ async fn a_held_volume_reference_keeps_working_across_a_replace() {
     let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.unregister(volume_id);
 
-    let (old_volume, _) = tracking::TrackingVolume::create("busy");
+    let (old_volume, _) = tracking::TrackingVolume::create_at("/Volumes/naspi", None);
     manager.register(volume_id, old_volume);
 
     // What a running transfer holds: an `Arc` clone taken before the swap.
@@ -310,7 +323,7 @@ async fn a_held_volume_reference_keeps_working_across_a_replace() {
         "the held reference works before the swap"
     );
 
-    let (new_volume, _) = tracking::TrackingVolume::create("upgraded");
+    let (new_volume, _) = tracking::TrackingVolume::create_at("/Volumes/naspi", None);
     register_replacing_predecessor(volume_id, new_volume).await;
 
     assert!(

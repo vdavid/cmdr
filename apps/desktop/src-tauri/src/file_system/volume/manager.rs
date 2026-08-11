@@ -35,8 +35,9 @@ pub struct VolumeManager {
 /// the wrong disk. `cmdr_fs::volume::ids` makes that unreachable for every
 /// derived ID, which leaves exactly two ways here: a byte-for-byte volume clone
 /// (two disks really do report one UUID) and a filesystem mounted twice. Both are
-/// genuinely ambiguous, so this reports rather than resolves. What it must never
-/// be again is silent.
+/// genuinely ambiguous, so the registry picks the deterministic answer (keep the
+/// incumbent) and says so rather than resolving the ambiguity quietly. What it
+/// must never be again is silent.
 fn report_identity_conflict(id: &str, existing: &Arc<dyn Volume>, incoming: &Arc<dyn Volume>, resolution: &str) {
     if !is_identity_conflict(existing, incoming) {
         return;
@@ -67,14 +68,37 @@ impl VolumeManager {
 
     /// Registers a volume with the given ID.
     ///
-    /// If a volume with this ID already exists, it will be replaced. Replacing
-    /// the volume at the SAME root is routine: that's how an OS-mounted SMB share
-    /// is upgraded in place to a direct `smb2` session.
+    /// Replacing the volume at the SAME root is routine, and this is how it's
+    /// done: that's an OS-mounted SMB share being upgraded in place to a direct
+    /// `smb2` session. An IDENTITY CONFLICT (a different root under an ID that's
+    /// already taken) keeps the INCUMBENT instead, so registration order stops
+    /// deciding where a doubly-mounted filesystem is rooted. Discovery collapses
+    /// those mounts before they get here (`volumes::mounts::collapse_by_volume_id`);
+    /// this is the registry's own guard, and it stays loud either way.
     pub fn register(&self, id: &str, volume: Arc<dyn Volume>) {
         if let Ok(mut volumes) = self.volumes.write() {
             if let Some(existing) = volumes.get(id) {
-                report_identity_conflict(id, existing, &volume, "the newer registration takes over");
+                report_identity_conflict(id, existing, &volume, "the existing registration is kept");
+                if is_identity_conflict(existing, &volume) {
+                    return;
+                }
             }
+            volumes.insert(id.to_string(), volume);
+        }
+    }
+
+    /// Registers a volume under `id`, replacing whatever is there even across a
+    /// root change.
+    ///
+    /// Only for restoring a registration a test remembered
+    /// (`test_support::TestVolumeRegistration`): putting back the previous value
+    /// has to be unconditional, since [`register`]'s conflict guard would
+    /// otherwise strand the test's own volume in the process-global registry.
+    ///
+    /// [`register`]: Self::register
+    #[cfg(test)]
+    pub(crate) fn force_register(&self, id: &str, volume: Arc<dyn Volume>) {
+        if let Ok(mut volumes) = self.volumes.write() {
             volumes.insert(id.to_string(), volume);
         }
     }
@@ -400,6 +424,48 @@ mod tests {
         let existing: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Disk A").with_root("/Volumes/A"));
         let incoming: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Disk B").with_root("/Volumes/B"));
         assert!(is_identity_conflict(&existing, &incoming));
+    }
+
+    #[test]
+    fn an_identity_conflict_keeps_the_incumbent_whatever_the_order() {
+        // One share mounted at two paths registers twice under one ID. Letting
+        // the last writer win made registration ORDER decide where the volume
+        // was rooted, so a saved path under the first mount reached a backend
+        // rooted at the second and every listing under it failed.
+        for (first_root, second_root) in [("/Volumes/naspi", "/Volumes/naspi-1"), ("/Volumes/naspi-1", "/Volumes/naspi")]
+        {
+            let manager = VolumeManager::new();
+            manager.register(
+                "smb-share",
+                Arc::new(InMemoryVolume::new("First").with_root(first_root)),
+            );
+            manager.register(
+                "smb-share",
+                Arc::new(InMemoryVolume::new("Second").with_root(second_root)),
+            );
+
+            let registered = manager.get("smb-share").expect("registered above");
+            assert_eq!(registered.name(), "First", "the incumbent keeps the ID");
+            assert_eq!(registered.root(), Path::new(first_root));
+        }
+    }
+
+    #[test]
+    fn replacing_the_volume_at_the_same_root_still_wins() {
+        // The SMB upgrade swaps an OS-mounted `LocalPosixVolume` for a direct
+        // `SmbVolume` at the same root, and the manual "Connect directly" and
+        // reconnect paths do the same. Not an identity conflict, so it replaces.
+        let manager = VolumeManager::new();
+        manager.register(
+            "smb-share",
+            Arc::new(InMemoryVolume::new("OS mount").with_root("/Volumes/naspi")),
+        );
+        manager.register(
+            "smb-share",
+            Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/naspi")),
+        );
+
+        assert_eq!(manager.get("smb-share").expect("registered above").name(), "Direct SMB");
     }
 
     #[test]
