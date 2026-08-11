@@ -18,13 +18,27 @@ const mtpSpecMatch = /mtp(-[a-z-]+)?\.spec\.ts$/
 // by `pnpm i18n:capture`). Keeping it out of `all`/`mtp`/`non-mtp` means a full
 // suite run never spends time taking screenshots.
 const i18nCaptureSpecMatch = /i18n-capture\.spec\.ts$/
-const testMatch = shardKind === 'mtp' ? mtpSpecMatch : shardKind === 'i18n-capture' ? i18nCaptureSpecMatch : '*.spec.ts'
+// The marketing capture (`pnpm marketing:shots`) is the same shape: a screenshot
+// driver, not a pass/fail suite. It gets its own shard for a second reason too — it
+// is the only spec that runs with NO fixture tree, photographing real folders, so it
+// must never land on a lane that arms the fixture-restore guard. It is also macOS
+// only, hence excluded from `all`, which is what the Linux Docker lane runs.
+const marketingShotsSpecMatch = /marketing-shots\.spec\.ts$/
+const captureSpecMatches = [i18nCaptureSpecMatch, marketingShotsSpecMatch]
+const testMatch =
+  shardKind === 'mtp'
+    ? mtpSpecMatch
+    : shardKind === 'i18n-capture'
+      ? i18nCaptureSpecMatch
+      : shardKind === 'marketing-shots'
+        ? marketingShotsSpecMatch
+        : '*.spec.ts'
 const testIgnore =
-  shardKind === 'i18n-capture'
+  shardKind === 'i18n-capture' || shardKind === 'marketing-shots'
     ? undefined
     : shardKind === 'non-mtp'
-      ? [mtpSpecMatch, i18nCaptureSpecMatch]
-      : i18nCaptureSpecMatch
+      ? [mtpSpecMatch, ...captureSpecMatches]
+      : captureSpecMatches
 
 // Per-shard JSON report path keeps parallel Playwright processes from
 // overwriting each other's output. Defaults preserve the legacy filename.

@@ -47,6 +47,17 @@ const { test: baseTest, expect } = createTauriTest({
 export { expect }
 
 /**
+ * The bare `test` with NO auto fixture, for the marketing capture only.
+ *
+ * That shard runs with no fixture tree at all (it photographs the developer's real
+ * folders, so `CMDR_E2E_START_PATH` is deliberately unset), which makes the leak
+ * guard's fixture diff meaningless there — and its overlay check actively wrong,
+ * since the search master is a picture of an open dialog. Every other spec imports
+ * `test` below and keeps both guards.
+ */
+export const captureTest = baseTest
+
+/**
  * Every test gets the window-title decoration and, on the way out, the leak
  * guard. `auto: true` is what makes that true for every spec file rather than
  * for one file per worker (see the file header).

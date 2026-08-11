@@ -43,13 +43,19 @@
  * here is needed.
  */
 
-import { spawn, spawnSync, execSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess, SpawnSyncOptions } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import net from 'node:net'
+import {
+  hostTriple,
+  reserveFreePort,
+  waitForFrontPositionToClear,
+  waitForSocket,
+  warnIfForeignCmdr,
+} from './capture-runtime.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const desktopDir = join(here, '..')
@@ -114,65 +120,6 @@ function run(cmd: string, args: string[], opts: SpawnSyncOptions = {}) {
   if (res.status !== 0) {
     throw new Error(`${cmd} ${args.join(' ')} exited ${String(res.status)}`)
   }
-}
-
-/**
- * Resolves the host target triple (matches the build target).
- */
-function hostTriple(): string {
-  const line = execSync('rustc -vV', { encoding: 'utf8' })
-    .split('\n')
-    .find((l) => l.startsWith('host:'))
-  if (line === undefined) throw new Error('could not parse host triple from `rustc -vV`')
-  return line.replace('host:', '').trim()
-}
-
-/**
- * Polls a Unix socket until connectable or the deadline passes.
- */
-async function waitForSocket(path: string, timeoutMs: number): Promise<void> {
-  const deadline = Date.now() + timeoutMs
-  for (;;) {
-    const ok = await new Promise<boolean>((resolve) => {
-      const c = net.connect(path, () => {
-        c.end()
-        resolve(true)
-      })
-      c.on('error', () => {
-        resolve(false)
-      })
-    })
-    if (ok) return
-    if (Date.now() > deadline) throw new Error(`tauri-playwright socket ${path} never became ready`)
-    await new Promise<void>((r) => {
-      setTimeout(r, 150)
-    })
-  }
-}
-
-/**
- * Reserves a free high port by binding ephemeral and reading the assigned port,
- * then releasing it. Used to pin `CMDR_MCP_PORT` so the in-app MCP server binds a
- * known port the capture spec's MCP-client helpers can reach (the empty-pane and
- * MTP surfaces, and cursor helpers, drive the app via `/mcp`). Without a pinned
- * port the capture launch starts MCP on its default and the helper's port
- * discovery comes back unusable, failing those surfaces. A tiny bind/release race
- * window is acceptable here (single local process, no contention). Returns a
- * number in the OS ephemeral range (high), matching the no-standard-ports rule.
- */
-function reserveFreePort(): Promise<number> {
-  return new Promise<number>((resolve, reject) => {
-    const srv = net.createServer()
-    srv.on('error', reject)
-    srv.listen(0, '127.0.0.1', () => {
-      const addr = srv.address()
-      const port = addr && typeof addr === 'object' ? addr.port : 0
-      srv.close(() => {
-        if (port > 0) resolve(port)
-        else reject(new Error('could not reserve a free MCP port'))
-      })
-    })
-  })
 }
 
 // A fresh, isolated data dir for the capture run. The app resolves its
@@ -246,92 +193,11 @@ async function killAppAndWait(timeoutMs = 10000): Promise<void> {
   })
 }
 
-/**
- * Warns (does not block) if another Cmdr is already running. Teardown only stops
- * the PID we launch and the native screenshot targets our own window IDs, so a
- * foreign instance (a dev session in another worktree) is safe to coexist with.
- * BUT separate-window captures (Settings, Viewer, Shortcuts, About) rely on
- * `set_focus` bringing an occluded window frontmost, which macOS won't honor if
- * another app is actively foreground, so for clean shots the screen should be
- * idle during a run. We surface the foreign instance rather than hard-failing.
- */
-function warnIfForeignCmdr() {
-  const res = spawnSync('pgrep', ['-fl', 'target.*Cmdr'], { encoding: 'utf8' })
-  // pgrep exits 0 with matches, 1 with none.
-  if (res.status === 0 && res.stdout.trim() !== '') {
-    console.warn(
-      `[i18n-capture] WARNING: another Cmdr is running, so separate-window shots may capture stale frames ` +
-        `if the screen isn't idle:\n${res.stdout.trim()}`,
-    )
-  }
-}
-
-/**
- * The apps whose holding the front position doesn't stop a capture. Finder and the
- * window server's own agents own the front whenever a user has simply hidden
- * everything, which is the state we ASK for, so refusing on them would make the
- * check impossible to satisfy.
- */
-const FRONT_POSITION_OK = new Set(['Finder', 'Cmdr', 'loginwindow', 'WindowManager', 'Dock'])
-
-/** How long to wait for a real app to give up the front, and how often to look. */
-const FRONT_WAIT_MS = 30000
-const FRONT_POLL_MS = 1000
-
-/** The frontmost app's display name, or null when macOS won't say (or we're not on macOS). */
-function frontmostApp(): string | null {
-  if (process.platform !== 'darwin') return null
-  const asn = spawnSync('lsappinfo', ['front'], { encoding: 'utf8' })
-  if (asn.status !== 0 || asn.stdout.trim() === '') return null
-  const info = spawnSync('lsappinfo', ['info', '-only', 'name', asn.stdout.trim()], { encoding: 'utf8' })
-  if (info.status !== 0) return null
-  return /"LSDisplayName"="([^"]*)"/.exec(info.stdout)?.[1] ?? null
-}
-
-/**
- * Waits for the front position to be free before any window is photographed, and
- * refuses to start if it never is.
- *
- * ❗ An idle machine is NOT enough. This binary is spawned raw rather than through
- * LaunchServices, so macOS cooperative activation won't let it take the front from
- * an app that already holds it: `shoot()`'s `set_focus` remedy no-ops and the
- * capture reads stale frames. Measured with Chrome frontmost and nobody touching
- * the laptop, a run captured 13-14 of ~71 surfaces.
- *
- * It WAITS rather than checking once, because whoever starts the run is usually
- * typing in the very app that has to be hidden. Two seconds spent refusing beats
- * a full run of blanks that reads like a harness bug.
- */
-async function waitForFrontPositionToClear(): Promise<void> {
-  const started = frontmostApp()
-  if (started === null || FRONT_POSITION_OK.has(started)) return
-
-  console.warn(
-    `[i18n-capture] '${started}' holds the front position. Hide or quit it (⌘H is enough); ` +
-      `waiting up to ${String(FRONT_WAIT_MS / 1000)}s. A run started behind another app captures blanks.`,
-  )
-  const deadline = Date.now() + FRONT_WAIT_MS
-  for (;;) {
-    const now = frontmostApp()
-    if (now === null || FRONT_POSITION_OK.has(now) || now !== started) {
-      console.log(`[i18n-capture] front position clear (now '${now ?? '<none>'}'); starting.`)
-      return
-    }
-    if (Date.now() >= deadline) {
-      throw new Error(
-        `'${now}' still holds the front position after ${String(FRONT_WAIT_MS / 1000)}s. Hide or quit it and ` +
-          're-run: macOS will not let this binary take the front from it, so every shot would read a stale frame.',
-      )
-    }
-    await new Promise((resolve) => setTimeout(resolve, FRONT_POLL_MS))
-  }
-}
-
 async function main() {
   // Coexisting with a running Cmdr is safe (PID-scoped teardown, window-ID-scoped
   // capture); just warn, since a busy screen can spoil separate-window shots.
-  warnIfForeignCmdr()
-  await waitForFrontPositionToClear()
+  warnIfForeignCmdr('[i18n-capture]')
+  await waitForFrontPositionToClear('[i18n-capture]')
 
   if (isOverflow) {
     // Generate the target locale BEFORE the build: the frontend's catalog glob

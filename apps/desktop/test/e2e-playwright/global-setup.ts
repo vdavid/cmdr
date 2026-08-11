@@ -14,6 +14,14 @@ import { createFixtures, recreateFixtures } from '../e2e-shared/fixtures.js'
 import { recreateMtpFixtures } from '../e2e-shared/mtp-fixtures.js'
 
 export default function globalSetup(): void {
+  // ❗ The marketing capture is the one shard with NO fixture tree: it photographs the
+  // developer's REAL folders, and `CMDR_E2E_START_PATH` is what arms the post-test
+  // guard that deletes anything not in the fixture manifest. Creating a tree here
+  // would also SET that variable, so "the orchestrator leaves it unset" is only half
+  // the protection; this is the other half. It skips `recreateMtpFixtures()` for the
+  // ordinary reason too: the backing dir is shared, and a parallel MTP shard is real.
+  if (process.env.CMDR_E2E_SHARD_KIND === 'marketing-shots') return
+
   const existingRoot = process.env.CMDR_E2E_START_PATH
   if (existingRoot && fs.existsSync(existingRoot)) {
     // App already running with this fixture dir: refresh text files

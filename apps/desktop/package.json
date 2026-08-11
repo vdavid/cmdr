@@ -40,6 +40,7 @@
     "i18n:check-coverage": "node scripts/i18n-check-coverage.ts",
     "i18n:check-dont-translate": "node scripts/i18n-check-dont-translate.ts",
     "i18n:capture": "node scripts/i18n-capture.ts",
+    "marketing:shots": "node scripts/marketing-shots.ts",
     "i18n:couple": "node scripts/couple-screenshots.ts",
     "i18n:shots": "node scripts/i18n-capture.ts --build && node scripts/couple-screenshots.ts",
     "i18n:overflow": "node scripts/i18n-capture.ts --build --locale en-XA"

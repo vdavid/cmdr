@@ -94,6 +94,7 @@ export function captureWindow(windowId: number, path: string): void {
     throw new Error(
       `\`screencapture\` could not photograph window ${String(windowId)}: ${messageOf(err)}. ` +
         'Grant Screen Recording permission to the terminal running this, then re-run.',
+      { cause: err },
     )
   }
 }
@@ -126,6 +127,7 @@ function runOsascript(args: string[], extraEnv: Record<string, string> = {}): st
         'If this mentions "not allowed assistive access", grant Accessibility permission to the terminal running ' +
         'this: the capture asks System Events to bring the app to the front, and macOS draws the wide window ' +
         'shadow only for the key window.',
+      { cause: err },
     )
   }
 }
