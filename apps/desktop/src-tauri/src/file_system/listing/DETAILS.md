@@ -27,6 +27,35 @@ Frontend                          Backend
 watch used to, and no longer does: `start_watching_detached` hands it to the blocking pool. Why arming is slow, what
 that cost, and the two rules that keep it cheap: `../DETAILS.md` § "Arming a listing watch is detached".
 
+## Local listing progress
+
+`listing-progress` is the only thing the user sees during a big folder's read: without it the pane sits on "Opening
+folder..." from the first keystroke to `listing-read-complete`, however long the stat loop takes. `streaming.rs` builds
+the callback and passes it down through `Volume::list_directory`, so a backend that ignores its `on_progress` argument
+turns that state off for every folder it serves. Nothing about that fails loudly (the symptom is a UI state that stops
+appearing), which is why `a_local_directory_read_emits_progress_events` in `streaming_test.rs` drives the whole chain
+against a real `LocalPosixVolume`: the rest of that suite runs on `InMemoryVolume` and can't see a backend drop it.
+
+The local backend can't take the callback where the work happens. `on_progress` is `Sync` but not `Send`, and
+`LocalPosixVolume` runs its stat loop on `spawn_blocking`, which demands `Send + 'static`. So the two halves are split:
+
+- `list_directory_core_with_tally` publishes into a `ListingTally` (`reading.rs`) as it stats, one relaxed atomic bump
+  per entry, unthrottled. That's free next to the `stat` it accompanies.
+- `LocalPosixVolume::list_directory` samples the tally every `PROGRESS_SAMPLE_INTERVAL` from a `tokio::select!` against
+  the `JoinHandle`, and calls `on_progress` from there. The callback never leaves the async task that owns it.
+
+Two details the loop depends on. The `select!` is `biased` so a listing that finished during a tick returns its real
+result rather than spending another sample on an approximate count. And a snapshot of zero is dropped rather than
+emitted, because the blocking pool may not have picked the task up yet and "Loaded 0 files..." is worse than the
+"Opening folder..." it would replace.
+
+Putting the throttle in the sampler rather than the stat loop means one place decides how often the number changes,
+and it's the place that knows it's driving a UI. `PROGRESS_SAMPLE_INTERVAL` is 200 ms in production and 1 ms under
+test, so `listing_a_local_directory_reports_progress_while_it_reads` can pin the wiring against a 5,000-entry scratch
+dir instead of needing one big enough to outlast a real interval.
+
+SMB and MTP wire `on_progress` through their own listing loops directly, having no `spawn_blocking` hop to cross.
+
 ## Caching
 
 - **`LISTING_CACHE`**: global `RwLock<HashMap<String, CachedListing>>`, keyed by `listing_id` (UUID per navigation).

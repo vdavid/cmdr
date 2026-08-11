@@ -137,7 +137,7 @@ Work through it top-to-bottom. Each tier depends on the previous being solid. Sh
 Without these, the volume can't even appear in the UI:
 
 - [ ] Implement `name()` and `root()` (return the display name and the path everything is relative to).
-- [ ] Implement `list_directory(path, on_progress)`: the core read. Call `on_progress(count)` at least once.
+- [ ] Implement `list_directory(path, on_progress)`: the core read. **Feed `on_progress` as you enumerate**, and don't rename the parameter to `_on_progress` to quiet the compiler. It drives the pane's "Loaded N files..." readout, which is all the user sees while a big folder reads; dropping it leaves them on "Opening folder..." for the whole wait, and nothing fails to say so. If your enumeration happens on a thread the callback can't reach (it's `Sync` but not `Send`, so `spawn_blocking` is out), publish counts into a shared tally and sample it from the async side: `LocalPosixVolume` is the worked example, described in `listing/DETAILS.md` § "Local listing progress".
 - [ ] Implement `get_metadata(path)`: per-entry stat.
 - [ ] Implement `exists(path)` and `is_directory(path)`. On backends where these would issue two round-trips, implement them in terms of `get_metadata` to share the cost.
 - [ ] Implement `get_space_info()`: for the volume usage bar and pre-copy space checks. Return zeros if the backend doesn't report it.

@@ -42,6 +42,9 @@ checklist: `../CLAUDE.md` + `../DETAILS.md`.
 
 ## Local and MTP must-knows
 
+- **`list_directory` must feed `on_progress`; ❌ never `_on_progress`.** It's the pane's only "Loaded N files..."
+  signal, so dropping it silently strands a big folder on "Opening folder..." for its whole read. A `spawn_blocking`
+  hop is no excuse; use the tally: `../../listing/DETAILS.md` § "Local listing progress".
 - **`LocalPosixVolume::write_from_stream` `sync_data`s each file** (+ best-effort parent-dir fsync) before returning.
   Every cross-volume copy landing on local disk flows through it; a bare `flush()` leaves bytes in the page cache, so an
   eject or sleep loses data (on a move, from both sides).

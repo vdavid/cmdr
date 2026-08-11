@@ -11,10 +11,12 @@
 use std::fs;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 use crate::benchmark;
 use crate::file_system::listing::metadata::{ExtendedMetadata, FileEntry, get_group_name, get_owner_name};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
+use crate::file_system::volume::ListingProgress;
 
 /// Lists the contents of a directory with full metadata (including macOS extended metadata).
 ///
@@ -66,22 +68,51 @@ pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error
     list_directory_core_impl(path, None)
 }
 
-/// Like `list_directory_core`, but calls `on_progress(loaded_count)` every ~200ms
-/// during the stat loop so callers can report incremental progress.
-pub fn list_directory_core_with_progress(
-    path: &Path,
-    on_progress: &dyn Fn(usize),
-) -> Result<Vec<FileEntry>, std::io::Error> {
-    list_directory_core_impl(path, Some(on_progress))
+/// Like `list_directory_core`, but publishes a running count into `tally` as it stats.
+///
+/// The tally is the bridge across a `spawn_blocking` boundary: `Volume::list_directory`
+/// takes a `Sync`-but-not-`Send` progress callback that can't move onto the blocking
+/// thread, so the lister publishes here and the async side samples and forwards on its
+/// own cadence. Publishing is unthrottled (a relaxed store is nothing next to the `stat`
+/// it accompanies); deciding how often the user sees a number belongs to the sampler.
+pub fn list_directory_core_with_tally(path: &Path, tally: &ListingTally) -> Result<Vec<FileEntry>, std::io::Error> {
+    list_directory_core_impl(path, Some(tally))
 }
 
-/// Interval between progress callbacks during the stat loop.
-const PROGRESS_REPORT_INTERVAL: std::time::Duration = std::time::Duration::from_millis(200);
+/// A listing's running entry counts, readable from another thread while the stat loop
+/// fills it. Sample it with `snapshot`.
+// DEFAULT-OK: zero is where every tally starts, before the walk has stat'ed anything. It
+// claims nothing about the disk; it's the count of what we've looked at so far.
+#[derive(Default)]
+pub struct ListingTally {
+    files: AtomicUsize,
+    dirs: AtomicUsize,
+    bytes: AtomicU64,
+}
 
-fn list_directory_core_impl(
-    path: &Path,
-    on_progress: Option<&dyn Fn(usize)>,
-) -> Result<Vec<FileEntry>, std::io::Error> {
+impl ListingTally {
+    fn record(&self, entry: &FileEntry) {
+        if entry.is_directory {
+            self.dirs.fetch_add(1, Ordering::Relaxed);
+        } else {
+            self.files.fetch_add(1, Ordering::Relaxed);
+            self.bytes.fetch_add(entry.size.unwrap_or(0), Ordering::Relaxed);
+        }
+    }
+
+    /// Reads the counts as they stand right now. The three fields are loaded
+    /// separately, so a snapshot taken mid-stat can be an entry out of step with
+    /// itself; that's fine for a progress readout and it never over-counts.
+    pub fn snapshot(&self) -> ListingProgress {
+        ListingProgress {
+            files: self.files.load(Ordering::Relaxed),
+            dirs: self.dirs.load(Ordering::Relaxed),
+            bytes: self.bytes.load(Ordering::Relaxed),
+        }
+    }
+}
+
+fn list_directory_core_impl(path: &Path, tally: Option<&ListingTally>) -> Result<Vec<FileEntry>, std::io::Error> {
     benchmark::log_event("list_directory_core START");
     let overall_start = std::time::Instant::now();
     let mut entries = Vec::new();
@@ -93,16 +124,15 @@ fn list_directory_core_impl(
     benchmark::log_event_value("readdir END, count", dir_entries.len());
 
     benchmark::log_event("stat_loop START");
-    let mut last_progress = std::time::Instant::now();
     for entry in dir_entries {
         let entry = entry?;
-        match process_dir_entry(&entry) {
-            Some(file_entry) => entries.push(file_entry),
+        let file_entry = match process_dir_entry(&entry) {
+            Some(file_entry) => file_entry,
             None => {
                 // Permission denied or broken symlink: return minimal entry
                 let is_symlink = entry.file_type().map(|ft| ft.is_symlink()).unwrap_or(false);
                 let name = entry.file_name().to_string_lossy().to_string();
-                entries.push(FileEntry {
+                FileEntry {
                     icon_id: if is_symlink {
                         "symlink-broken".to_string()
                     } else {
@@ -110,16 +140,14 @@ fn list_directory_core_impl(
                     },
                     extended_metadata_loaded: true, // Nothing to load for broken entries
                     ..FileEntry::new(name, entry.path().to_string_lossy().to_string(), false, is_symlink)
-                });
+                }
             }
-        }
+        };
 
-        if let Some(cb) = on_progress
-            && last_progress.elapsed() >= PROGRESS_REPORT_INTERVAL
-        {
-            cb(entries.len());
-            last_progress = std::time::Instant::now();
+        if let Some(tally) = tally {
+            tally.record(&file_entry);
         }
+        entries.push(file_entry);
     }
     benchmark::log_event_value("stat_loop END, entries", entries.len());
 

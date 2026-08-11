@@ -1,6 +1,8 @@
 //! Tests for LocalPosixVolume.
 
 use super::*;
+use crate::file_system::volume::ListingProgress;
+use crate::ignore_poison::IgnorePoison;
 use crate::test_support::TestDir;
 use std::path::Path;
 
@@ -707,5 +709,48 @@ fn test_listing_watch_coverage_flips_with_watcher_lifecycle() {
         volume.listing_watch_coverage(&path),
         WatchCoverage::None,
         "expected no coverage after the watcher stops"
+    );
+}
+
+/// The streaming listing UI renders "Loaded N files..." off these ticks, so a local
+/// listing that never calls `on_progress` leaves a big folder on "Opening folder..."
+/// for its entire read.
+#[tokio::test]
+async fn listing_a_local_directory_reports_progress_while_it_reads() {
+    let dir = TestDir::new("local_listing_progress");
+    for i in 0..5_000 {
+        std::fs::write(dir.join(format!("file_{i:05}.txt")), b"x").expect("writing a scratch file succeeds");
+    }
+
+    let volume = LocalPosixVolume::new("Test", &*dir);
+    let ticks: std::sync::Mutex<Vec<ListingProgress>> = std::sync::Mutex::new(Vec::new());
+    let on_progress = |p: ListingProgress| ticks.lock_ignore_poison().push(p);
+
+    let entries = volume
+        .list_directory(Path::new(""), Some(&on_progress))
+        .await
+        .expect("listing the scratch dir succeeds");
+    assert_eq!(entries.len(), 5_000);
+
+    let ticks = ticks.lock_ignore_poison();
+    assert!(
+        !ticks.is_empty(),
+        "expected at least one progress tick while reading 5,000 entries"
+    );
+    for tick in ticks.iter() {
+        assert!(
+            tick.entries() > 0,
+            "a tick with nothing read yet would render 'Loaded 0 files...'"
+        );
+        assert!(
+            tick.entries() <= 5_000,
+            "a tick counted {} of 5,000 entries",
+            tick.entries()
+        );
+    }
+    assert!(
+        ticks.windows(2).all(|w| w[0].entries() <= w[1].entries()),
+        "counts must climb, never go backwards: {:?}",
+        ticks.iter().map(ListingProgress::entries).collect::<Vec<_>>()
     );
 }

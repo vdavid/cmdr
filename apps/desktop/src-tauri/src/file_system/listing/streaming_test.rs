@@ -16,8 +16,10 @@ use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOr
 use crate::file_system::listing::streaming::{
     CollectorListingEventSink, ListingEventSink, StreamingListingState, read_directory_with_progress,
 };
-use crate::file_system::volume::{InMemoryVolume, ListingProgress, Volume, VolumeError};
-use crate::test_support::wait_until_async;
+use crate::file_system::volume::manager::get_volume_manager;
+use crate::file_system::volume::{InMemoryVolume, ListingProgress, LocalPosixVolume, Volume, VolumeError};
+use crate::ignore_poison::IgnorePoison;
+use crate::test_support::{TestDir, wait_until_async};
 
 /// Creates a test file entry under the root directory.
 fn test_entry(name: &str, is_dir: bool) -> FileEntry {
@@ -37,13 +39,13 @@ fn test_entry(name: &str, is_dir: bool) -> FileEntry {
 /// Caller must call `cleanup_volume` after the test.
 fn register_test_volume(volume_id: &str, entries: Vec<FileEntry>) {
     let volume = Arc::new(InMemoryVolume::with_entries("Test Volume", entries));
-    crate::file_system::volume::manager::get_volume_manager().register(volume_id, volume);
+    get_volume_manager().register(volume_id, volume);
 }
 
 /// Removes the test volume. The listing entry is owned by a `TestListingGuard`,
 /// which tears it down on drop (unwind included).
 fn cleanup(volume_id: &str) {
-    crate::file_system::volume::manager::get_volume_manager().unregister(volume_id);
+    get_volume_manager().unregister(volume_id);
 }
 
 fn new_state() -> Arc<StreamingListingState> {
@@ -393,8 +395,7 @@ async fn test_cancel_unwinds_the_listing_instead_of_aborting_it() {
     let started = Arc::clone(&volume.started);
     let finished = Arc::clone(&volume.finished);
     let aborted = Arc::clone(&volume.aborted);
-    crate::file_system::volume::manager::get_volume_manager()
-        .register(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
+    get_volume_manager().register(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
 
     let sink = Arc::new(CollectorListingEventSink::new());
     let events: Arc<dyn ListingEventSink> = Arc::clone(&sink) as Arc<dyn ListingEventSink>;
@@ -446,6 +447,57 @@ async fn test_cancel_unwinds_the_listing_instead_of_aborting_it() {
     assert!(
         !aborted.load(Ordering::SeqCst),
         "the listing future was dropped mid-flight; on MTP that abandons a PTP transaction and wedges the device"
+    );
+
+    cleanup(volume_id);
+}
+
+/// The whole chain a real local folder takes to the pane's "Loaded N files..." line:
+/// `read_directory_with_progress` -> `Volume::list_directory` -> `listing-progress`. The
+/// other tests here run on `InMemoryVolume`, which can't catch a local backend that drops
+/// its `on_progress`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_local_directory_read_emits_progress_events() {
+    let dir = TestDir::new("streaming_local_progress");
+    for i in 0..5_000 {
+        std::fs::write(dir.join(format!("file_{i:05}.txt")), b"x").expect("writing a scratch file succeeds");
+    }
+
+    let volume_id = &format!("test-local-progress-{}", uuid::Uuid::new_v4());
+    let listing = TestListingGuard::adopt(unique_test_id("streaming-local-progress"));
+    get_volume_manager().register(volume_id, Arc::new(LocalPosixVolume::new("Test Volume", &*dir)));
+
+    let sink = Arc::new(CollectorListingEventSink::new());
+    let events: Arc<dyn ListingEventSink> = Arc::clone(&sink) as Arc<dyn ListingEventSink>;
+    let state = new_state();
+
+    let result = read_directory_with_progress(
+        &events,
+        listing.id(),
+        &state,
+        volume_id,
+        Path::new(""),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
+    assert!(result.is_ok(), "listing the scratch dir succeeds: {:?}", result.err());
+
+    let progress = sink.progress.lock_ignore_poison();
+    assert!(
+        !progress.is_empty(),
+        "reading 5,000 local entries emitted no listing-progress, so the pane would sit on \"Opening folder...\""
+    );
+    assert!(
+        progress.iter().all(|(id, _)| id == listing.id()),
+        "progress must be tagged with the listing that asked for it"
+    );
+    assert_eq!(
+        sink.read_complete.lock_ignore_poison().first().map(|(_, total)| *total),
+        Some(5_000),
+        "read-complete reports the full count"
     );
 
     cleanup(volume_id);

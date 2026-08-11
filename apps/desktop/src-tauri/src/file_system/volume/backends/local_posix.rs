@@ -4,15 +4,28 @@ use super::{
     CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
 use crate::file_system::git;
-use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core};
+use crate::file_system::listing::{FileEntry, ListingTally, get_single_entry, list_directory_core_with_tally};
+use crate::file_system::volume::ListingProgress;
 #[cfg(feature = "playwright-e2e")]
 use crate::ignore_poison::IgnorePoison;
 use std::future::Future;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::task::spawn_blocking;
 use walkdir::WalkDir;
+
+/// How often a local listing samples its running tally and reports progress.
+///
+/// Sets the cadence of the pane's "Loaded N files..." readout: fast enough that a
+/// multi-second folder visibly climbs, slow enough that the number stays readable.
+/// Shortened under test so a scratch dir produces ticks without needing to be huge.
+#[cfg(not(test))]
+const PROGRESS_SAMPLE_INTERVAL: Duration = Duration::from_millis(200);
+#[cfg(test)]
+const PROGRESS_SAMPLE_INTERVAL: Duration = Duration::from_millis(1);
 
 /// Atomically renames a local path only when `destination` is unoccupied.
 #[cfg(target_os = "macos")]
@@ -144,7 +157,7 @@ impl Volume for LocalPosixVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
-        _on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         #[cfg(feature = "playwright-e2e")]
         {
@@ -160,19 +173,48 @@ impl Volume for LocalPosixVolume {
         }
         let abs_path = self.resolve(path);
         Box::pin(async move {
-            spawn_blocking(move || {
+            // `on_progress` is `Sync` but not `Send`, so it can't ride into `spawn_blocking`
+            // with the lister. Instead the lister publishes into a shared `ListingTally` and
+            // this side samples it on a timer, leaving the callback on the async task that
+            // owns it. Without this the pane sits on "Opening folder..." for a big folder's
+            // whole read. `listing/DETAILS.md` § "Local listing progress".
+            let tally = Arc::new(ListingTally::default());
+            let tally_for_listing = Arc::clone(&tally);
+            let mut listing = spawn_blocking(move || {
                 if let Some(routed) = git::try_route_listing(&abs_path) {
                     return routed;
                 }
-                list_directory_core(&abs_path).map_err(VolumeError::from)
-            })
-            .await
-            .expect("spawn_blocking listing closure doesn't panic and the task is uncancelable")
+                list_directory_core_with_tally(&abs_path, &tally_for_listing).map_err(VolumeError::from)
+            });
+
+            let Some(on_progress) = on_progress else {
+                return listing
+                    .await
+                    .expect("spawn_blocking listing closure doesn't panic and the task is uncancelable");
+            };
+
+            loop {
+                tokio::select! {
+                    // Biased so a listing that finished during the tick reports its real
+                    // result instead of one more approximate count.
+                    biased;
+                    finished = &mut listing => {
+                        return finished
+                            .expect("spawn_blocking listing closure doesn't panic and the task is uncancelable");
+                    }
+                    () = tokio::time::sleep(PROGRESS_SAMPLE_INTERVAL) => {
+                        let progress = tally.snapshot();
+                        // Nothing stat'ed yet (the blocking pool hasn't picked the task up, or
+                        // this is a slow `read_dir` on a network path): a zero would render as
+                        // "Loaded 0 files...".
+                        if progress.entries() > 0 {
+                            on_progress(progress);
+                        }
+                    }
+                }
+            }
         })
     }
-
-    // list_directory_with_progress: delegate to the trait default (which calls list_directory).
-    // The `on_progress` callback is not `Send`, so it can't go into `spawn_blocking`.
 
     #[cfg(feature = "playwright-e2e")]
     fn inject_error(&self, errno: i32) {
