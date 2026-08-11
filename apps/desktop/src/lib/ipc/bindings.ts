@@ -243,12 +243,10 @@ export const commands = {
    *  point comes back in `missingCodePoints`; the FE measures those, calls
    *  `extend_font_metrics`, and re-queries for exact widths.
    *
-   *  Error mapping (consumed by the FE):
-   *  - `font_metrics_not_ready`: the font ID isn't in the cache at all. FE
-   *    retries after `ensureFontMetricsLoaded` resolves.
-   *  - `invalid_items_per_column`: caller sent 0; FE clamps to >= 1 normally.
-   *  - `listing_not_found:{id}`: listing already ended (or never started).
-   *  - Anything else is a pass-through (cache-lock poisoning etc.).
+   *  Failures arrive as a typed `BriefColumnsIpcError { kind, message }`. The FE
+   *  branches on `kind` alone (`fontMetricsNotReady` drives a measure-and-retry,
+   *  `listingNotFound` / `timeout` / `other` a bounded backoff retry,
+   *  `invalidItemsPerColumn` an immediate give-up); `message` is log text only.
    */
   getBriefColumnTextWidths: (
     listingId: string,
@@ -257,7 +255,7 @@ export const commands = {
     fontId: string,
     includeHidden: boolean,
   ) =>
-    typedError<BriefColumnWidths, IpcError>(
+    typedError<BriefColumnWidths, BriefColumnsIpcError>(
       __TAURI_INVOKE('get_brief_column_text_widths', { listingId, itemsPerColumn, hasParent, fontId, includeHidden }),
     ),
   findFileIndex: (listingId: string, name: string, includeHidden: boolean) =>
@@ -3718,6 +3716,43 @@ export type BetaSignupResult =
 export type BriefColumnWidths = {
   widths: number[]
   missingCodePoints: number[]
+}
+
+/**
+ *  What went wrong, as a value the frontend can branch on.
+ *
+ *  The frontend decides "recover, retry, or give up" from this alone. Keep every
+ *  case that leads to a DIFFERENT decision as its own variant: `Other` means
+ *  "unclassified", so folding a real case into it costs the FE its recovery.
+ */
+export type BriefColumnsErrorKind =
+  /**
+   *  The font metrics cache has no entry for the requested font yet. Recoverable:
+   *  the FE measures the font, then asks again.
+   */
+  | 'fontMetricsNotReady'
+  // `items_per_column == 0`. A caller bug, never transient: retrying can't help.
+  | 'invalidItemsPerColumn'
+  // The listing ended or hasn't started. Transient across a navigation.
+  | 'listingNotFound'
+  /**
+   *  The IPC deadline expired before the computation finished, typically because
+   *  a large listing held `LISTING_CACHE`'s write lock. Transient.
+   */
+  | 'timeout'
+  // Unclassified (lock poisoning and the like). Treated as transient.
+  | 'other'
+
+/**
+ *  The wire form of a failed `get_brief_column_text_widths`.
+ *
+ *  `kind` is the classifier; `message` is diagnostic text for logs and error
+ *  reports. ❌ Nothing may branch on `message` (`.claude/rules/no-string-matching.md`):
+ *  it carries listing IDs and OS text that change without notice.
+ */
+export type BriefColumnsIpcError = {
+  kind: BriefColumnsErrorKind
+  message: string
 }
 
 export type BulkRenameBlockReason =

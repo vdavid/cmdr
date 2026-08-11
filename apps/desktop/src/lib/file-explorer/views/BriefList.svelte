@@ -397,7 +397,7 @@
             )
             if (capturedListingId !== listingId || capturedGeneration !== widthsGeneration) return
             if (result.status === 'error') {
-                if (result.error.message === 'font_metrics_not_ready' && !attempt.afterFontLoad) {
+                if (result.error.kind === 'fontMetricsNotReady' && !attempt.afterFontLoad) {
                     await ensureFontMetricsLoaded()
                     if (capturedListingId !== listingId || capturedGeneration !== widthsGeneration) return
                     await doFetchColumnWidths({ ...attempt, afterFontLoad: true })

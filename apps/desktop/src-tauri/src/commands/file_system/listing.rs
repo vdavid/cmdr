@@ -3,8 +3,8 @@
 use crate::file_system::get_files_at_indices as ops_get_files_at_indices;
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 use crate::file_system::{
-    BriefColumnWidths, BriefColumnsError, DirectorySortMode, FileEntry, ListingStartResult, ListingStats, ResortResult,
-    SortColumn, SortOrder, StreamingListingStartResult, cancel_listing as ops_cancel_listing,
+    BriefColumnWidths, BriefColumnsIpcError, DirectorySortMode, FileEntry, ListingStartResult, ListingStats,
+    ResortResult, SortColumn, SortOrder, StreamingListingStartResult, cancel_listing as ops_cancel_listing,
     compute_brief_column_text_widths as ops_compute_brief_column_text_widths, find_file_index as ops_find_file_index,
     find_file_indices as ops_find_file_indices,
     fuzzy_find_first_match_in_listing as ops_fuzzy_find_first_match_in_listing, get_file_at as ops_get_file_at,
@@ -17,7 +17,7 @@ use crate::file_system::{
 use std::path::{Path, PathBuf};
 use tokio::time::Duration;
 
-use crate::commands::util::{IpcError, TimedOut, blocking_result_with_timeout, blocking_with_timeout_flag};
+use crate::commands::util::{IpcError, TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
 use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
 use crate::file_system::volume::manager::get_volume_manager;
 use cmdr_fs::volume::WatchCoverage;
@@ -301,12 +301,10 @@ pub fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize
 /// point comes back in `missingCodePoints`; the FE measures those, calls
 /// `extend_font_metrics`, and re-queries for exact widths.
 ///
-/// Error mapping (consumed by the FE):
-/// - `font_metrics_not_ready`: the font ID isn't in the cache at all. FE
-///   retries after `ensureFontMetricsLoaded` resolves.
-/// - `invalid_items_per_column`: caller sent 0; FE clamps to >= 1 normally.
-/// - `listing_not_found:{id}`: listing already ended (or never started).
-/// - Anything else is a pass-through (cache-lock poisoning etc.).
+/// Failures arrive as a typed `BriefColumnsIpcError { kind, message }`. The FE
+/// branches on `kind` alone (`fontMetricsNotReady` drives a measure-and-retry,
+/// `listingNotFound` / `timeout` / `other` a bounded backoff retry,
+/// `invalidItemsPerColumn` an immediate give-up); `message` is log text only.
 #[tauri::command]
 #[specta::specta]
 pub async fn get_brief_column_text_widths(
@@ -315,15 +313,10 @@ pub async fn get_brief_column_text_widths(
     has_parent: bool,
     font_id: String,
     include_hidden: bool,
-) -> Result<BriefColumnWidths, IpcError> {
-    blocking_result_with_timeout(Duration::from_secs(2), move || {
+) -> Result<BriefColumnWidths, BriefColumnsIpcError> {
+    blocking_typed_result_with_timeout(Duration::from_secs(2), BriefColumnsIpcError::timeout, move || {
         ops_compute_brief_column_text_widths(&listing_id, items_per_column, has_parent, &font_id, include_hidden)
-            .map_err(|e| match e {
-                BriefColumnsError::FontMetricsNotReady => "font_metrics_not_ready".to_string(),
-                BriefColumnsError::InvalidItemsPerColumn => "invalid_items_per_column".to_string(),
-                BriefColumnsError::ListingNotFound(id) => format!("listing_not_found:{}", id),
-                BriefColumnsError::Other(msg) => msg,
-            })
+            .map_err(BriefColumnsIpcError::from)
     })
     .await
 }

@@ -36,7 +36,7 @@ pub struct BriefColumnWidths {
 }
 
 /// Errors from `compute_brief_column_text_widths`. Internal to the backend;
-/// the IPC command wrapper maps these to `IpcError` for the wire.
+/// the IPC command wrapper converts these into `BriefColumnsIpcError` for the wire.
 #[derive(Debug, Clone, PartialEq)]
 pub enum BriefColumnsError {
     /// `calculate_max_width_with_suffixes` returned `None` for at least one column:
@@ -49,6 +49,73 @@ pub enum BriefColumnsError {
     ListingNotFound(String),
     /// Catch-all for cache-lock poisoning etc.
     Other(String),
+}
+
+/// What went wrong, as a value the frontend can branch on.
+///
+/// The frontend decides "recover, retry, or give up" from this alone. Keep every
+/// case that leads to a DIFFERENT decision as its own variant: `Other` means
+/// "unclassified", so folding a real case into it costs the FE its recovery.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum BriefColumnsErrorKind {
+    /// The font metrics cache has no entry for the requested font yet. Recoverable:
+    /// the FE measures the font, then asks again.
+    FontMetricsNotReady,
+    /// `items_per_column == 0`. A caller bug, never transient: retrying can't help.
+    InvalidItemsPerColumn,
+    /// The listing ended or hasn't started. Transient across a navigation.
+    ListingNotFound,
+    /// The IPC deadline expired before the computation finished, typically because
+    /// a large listing held `LISTING_CACHE`'s write lock. Transient.
+    Timeout,
+    /// Unclassified (lock poisoning and the like). Treated as transient.
+    Other,
+}
+
+/// The wire form of a failed `get_brief_column_text_widths`.
+///
+/// `kind` is the classifier; `message` is diagnostic text for logs and error
+/// reports. ❌ Nothing may branch on `message` (`.claude/rules/no-string-matching.md`):
+/// it carries listing IDs and OS text that change without notice.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BriefColumnsIpcError {
+    pub kind: BriefColumnsErrorKind,
+    pub message: String,
+}
+
+impl BriefColumnsIpcError {
+    /// The command's own 2 s deadline expired.
+    pub fn timeout() -> Self {
+        Self {
+            kind: BriefColumnsErrorKind::Timeout,
+            message: "Timed out measuring Brief column widths".to_string(),
+        }
+    }
+}
+
+impl From<BriefColumnsError> for BriefColumnsIpcError {
+    fn from(err: BriefColumnsError) -> Self {
+        match err {
+            BriefColumnsError::FontMetricsNotReady => Self {
+                kind: BriefColumnsErrorKind::FontMetricsNotReady,
+                message: "Font metrics are not loaded for the requested font".to_string(),
+            },
+            BriefColumnsError::InvalidItemsPerColumn => Self {
+                kind: BriefColumnsErrorKind::InvalidItemsPerColumn,
+                message: "items_per_column must be at least 1".to_string(),
+            },
+            BriefColumnsError::ListingNotFound(id) => Self {
+                kind: BriefColumnsErrorKind::ListingNotFound,
+                message: format!("Listing {} is no longer cached", id),
+            },
+            BriefColumnsError::Other(message) => Self {
+                kind: BriefColumnsErrorKind::Other,
+                message,
+            },
+        }
+    }
 }
 
 /// Returns true if the entry is not a hidden dotfile.
@@ -219,7 +286,31 @@ pub fn compute_brief_column_text_widths(
 
 #[cfg(test)]
 mod tests {
-    use super::tag_cluster_width;
+    use super::{BriefColumnsError, BriefColumnsErrorKind, BriefColumnsIpcError, tag_cluster_width};
+
+    // The frontend decides retry-or-give-up from `kind` alone. If a variant ever loses
+    // its own kind and collapses into `Other`, the FE silently stops retrying (or starts
+    // retrying a caller bug forever) with nothing to notice it by.
+    #[test]
+    fn every_backend_variant_keeps_its_own_wire_kind() {
+        assert_eq!(
+            BriefColumnsIpcError::from(BriefColumnsError::FontMetricsNotReady).kind,
+            BriefColumnsErrorKind::FontMetricsNotReady
+        );
+        assert_eq!(
+            BriefColumnsIpcError::from(BriefColumnsError::InvalidItemsPerColumn).kind,
+            BriefColumnsErrorKind::InvalidItemsPerColumn
+        );
+        assert_eq!(
+            BriefColumnsIpcError::from(BriefColumnsError::ListingNotFound("listing-7".to_string())).kind,
+            BriefColumnsErrorKind::ListingNotFound
+        );
+        assert_eq!(
+            BriefColumnsIpcError::from(BriefColumnsError::Other("lock poisoned".to_string())).kind,
+            BriefColumnsErrorKind::Other
+        );
+        assert_eq!(BriefColumnsIpcError::timeout().kind, BriefColumnsErrorKind::Timeout);
+    }
 
     // Mirrors `tagClusterWidthPx` in `tag-dots-utils.ts`; keep the two in sync.
     #[test]

@@ -91,6 +91,29 @@ pub async fn blocking_result_with_timeout<T: Send + 'static>(
     }
 }
 
+/// Like `blocking_result_with_timeout`, but for a command that ships its OWN typed
+/// error enum instead of `IpcError`.
+///
+/// The closure's error crosses the wire unchanged, and `on_timeout` mints the same
+/// type for the deadline case, so the frontend keeps one exhaustive thing to match on
+/// rather than a typed error plus a stringly-typed timeout beside it.
+pub async fn blocking_typed_result_with_timeout<T, E>(
+    timeout_duration: Duration,
+    on_timeout: impl FnOnce() -> E,
+    f: impl FnOnce() -> Result<T, E> + Send + 'static,
+) -> Result<T, E>
+where
+    T: Send + 'static,
+    E: Send + 'static,
+{
+    match tokio::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
+        Ok(Ok(result)) => result,
+        // A JoinError means the blocking task panicked; the deadline is the honest
+        // thing to report either way, since no result is coming.
+        Ok(Err(_)) | Err(_) => Err(on_timeout()),
+    }
+}
+
 /// Bounds how long the FRONTEND waits, never the work itself.
 ///
 /// `fut` runs in its own task and the timeout races that task's join handle. On
