@@ -80,12 +80,10 @@ export function requestVolumeRefresh(): void {
  * place the frontend's volume list is built, so no consumer has to repeat it.
  */
 function dedupeById(list: VolumeInfo[]): VolumeInfo[] {
-  const seen = new Set<string>()
-  const unique = list.filter((volume) => {
-    if (seen.has(volume.id)) return false
-    seen.add(volume.id)
-    return true
-  })
+  // Keep-the-first by index comparison rather than a seen-set: the list is every
+  // mounted volume (a handful, tens at most), so the scan costs nothing and the
+  // function stays free of a mutable accumulator.
+  const unique = list.filter((volume, index) => list.findIndex((other) => other.id === volume.id) === index)
   if (unique.length !== list.length) {
     logger.warn('Dropped {count} {volumesNoun} repeating a volume ID already in the list', {
       count: list.length - unique.length,
