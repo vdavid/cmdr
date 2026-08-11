@@ -191,6 +191,46 @@ fn build_attached_location(
     })
 }
 
+/// Collapse locations that share a volume ID down to one, at a canonical root.
+///
+/// A volume ID is identity, and one filesystem can be mounted at two paths: an
+/// SMB share keys on `(server, port, share)`, a local disk on its filesystem
+/// UUID, so a second mount of either derives the ID the first already has.
+/// Publishing both hands one identity two locations, and everything downstream
+/// keys on the ID: the registry ends up rooted at whichever mount registered
+/// last, and a keyed frontend list gets duplicate keys.
+///
+/// The survivor is the SHORTEST path, ties broken lexicographically. macOS
+/// suffixes the LATER mount (`/Volumes/naspi-1`), so the shortest is the
+/// original, which is the root every saved path and favorite already refers to.
+/// Pure and order-independent, so discovery order can't decide identity.
+fn collapse_by_volume_id(volumes: Vec<LocationInfo>) -> Vec<LocationInfo> {
+    let mut canonical: Vec<LocationInfo> = Vec::with_capacity(volumes.len());
+    let mut index_of_id: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+    for volume in volumes {
+        match index_of_id.get(&volume.id) {
+            Some(&at) => {
+                if is_more_canonical_root(&volume.path, &canonical[at].path) {
+                    canonical[at] = volume;
+                }
+            }
+            None => {
+                index_of_id.insert(volume.id.clone(), canonical.len());
+                canonical.push(volume);
+            }
+        }
+    }
+
+    canonical
+}
+
+/// Whether `candidate` should win over `current` as a volume's published root:
+/// shorter first, then lexicographic so the choice never depends on order.
+fn is_more_canonical_root(candidate: &str, current: &str) -> bool {
+    (candidate.len(), candidate) < (current.len(), current)
+}
+
 /// Get attached volumes (external drives, USB, network mounts, etc.).
 ///
 /// Enumerates via the non-blocking `getfsstat` snapshot, then enriches only LOCAL
@@ -204,7 +244,7 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
     // Drain autoreleased ObjC objects from the per-local-mount NSURL enrichment.
     // Called from spawn_blocking / helper threads that lack AppKit's pool.
     autoreleasepool(|_| {
-        let mut volumes: Vec<LocationInfo> = enumerate_mounts()
+        let discovered: Vec<LocationInfo> = enumerate_mounts()
             .iter()
             .filter_map(|mount| {
                 build_attached_location(mount, |path| {
@@ -220,6 +260,7 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
             })
             .collect();
 
+        let mut volumes = collapse_by_volume_id(discovered);
         // Sort alphabetically
         volumes.sort_by_key(|a| a.name.to_lowercase());
         volumes
@@ -337,6 +378,58 @@ mod tests {
         assert!(
             build_attached_location(&mount("/System/Volumes/Data", "apfs", "x", false), forbidden_resolver).is_none()
         );
+    }
+
+    // ========================================================================
+    // One volume ID means one published mount root
+    // ========================================================================
+
+    #[test]
+    fn two_mount_roots_for_one_share_collapse_to_the_shortest_path() {
+        // macOS happily mounts the same share twice, suffixing the LATER mount
+        // `-1`. Both mounts derive the same volume ID (a share keys on
+        // `(server, port, share)`), so publishing both hands one identity two
+        // locations. The original path wins: it's what saved paths refer to.
+        let first = mount("/Volumes/naspi", "smbfs", "//david@192.168.1.111/naspi", false);
+        let second = mount("/Volumes/naspi-1", "smbfs", "//david@192.168.1.111/naspi", false);
+        let locations: Vec<LocationInfo> = [&second, &first]
+            .iter()
+            .filter_map(|m| build_attached_location(m, forbidden_resolver))
+            .collect();
+        assert_eq!(locations.len(), 2, "both mounts start out as separate locations");
+
+        let collapsed = collapse_by_volume_id(locations);
+        assert_eq!(collapsed.len(), 1, "one volume ID publishes one location");
+        assert_eq!(
+            collapsed[0].path, "/Volumes/naspi",
+            "the canonical root is the original mount, whatever order they arrive in"
+        );
+    }
+
+    #[test]
+    fn collapsing_keeps_distinct_volumes_and_breaks_ties_lexicographically() {
+        let smb = mount("/Volumes/naspi", "smbfs", "//david@192.168.1.111/naspi", false);
+        let nfs = mount("/Volumes/export", "nfs", "server:/export", true);
+        let collapsed = collapse_by_volume_id(
+            [&smb, &nfs]
+                .iter()
+                .filter_map(|m| build_attached_location(m, forbidden_resolver))
+                .collect(),
+        );
+        assert_eq!(collapsed.len(), 2, "different volumes stay separate");
+
+        // Equal-length roots for one share: the lexicographic winner is stable,
+        // so discovery order can't decide which root the registry gets.
+        let b = mount("/Volumes/bbb", "smbfs", "//david@nas/naspi", false);
+        let a = mount("/Volumes/aaa", "smbfs", "//david@nas/naspi", false);
+        let collapsed = collapse_by_volume_id(
+            [&b, &a]
+                .iter()
+                .filter_map(|m| build_attached_location(m, forbidden_resolver))
+                .collect(),
+        );
+        assert_eq!(collapsed.len(), 1);
+        assert_eq!(collapsed[0].path, "/Volumes/aaa");
     }
 
     #[test]

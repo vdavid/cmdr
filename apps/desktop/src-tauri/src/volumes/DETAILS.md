@@ -27,9 +27,30 @@ Every other ID is minted by `cmdr_fs::volume::ids` (below).
 
 ## `list_locations()`
 
-Aggregates all `LocationCategory` entries in order and deduplicates by path using a `HashSet<String>`. The OS-level
-`/Network` browseable location doesn't surface as a sidebar entry yet, so `LocationCategory::Network` is currently
-unconstructed.
+Aggregates all `LocationCategory` entries in order and deduplicates by path AND by volume ID, two `HashSet<String>`s.
+The OS-level `/Network` browseable location doesn't surface as a sidebar entry yet, so `LocationCategory::Network` is
+currently unconstructed.
+
+### One volume ID publishes one mount root
+
+**Decision**: `get_attached_volumes` collapses mounts that share a volume ID (`mounts.rs::collapse_by_volume_id`),
+keeping the SHORTEST path and breaking ties lexicographically. `list_locations` then dedupes on ID as well as path.
+
+**Why**: a volume ID is identity, and one filesystem can legitimately be mounted twice: macOS mounts the same SMB share
+at `/Volumes/naspi` and `/Volumes/naspi-1`, and both derive the same ID (a share keys on `(server, port, share)`; a
+local disk on its filesystem UUID). Deduplicating on path alone let both survive under one ID, and everything
+downstream keys on the ID:
+
+- `file_system::register_discovered_volumes` registered both, so the registry ended up rooted at whichever mount
+  registered last. A pane restoring a saved `/Volumes/naspi/…` path then hit a backend rooted at `/Volumes/naspi-1` and
+  the listing failed.
+- The frontend builds keyed lists from the volume list, and duplicate keys throw during render (Svelte
+  `each_key_duplicate`), which took the transfer dialog down with it.
+
+The shortest path wins because macOS suffixes the LATER mount, so the shortest is the original: the root every saved
+path, favorite, and index row already refers to. The choice is pure and order-independent, so discovery order can't
+decide identity. Registration keeps the incumbent on a conflict too (`file_system/volume/DETAILS.md` § "Key
+decisions"), so no single source has to get this right alone.
 
 ## Hung mounts
 

@@ -159,36 +159,44 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
 }
 
 /// Get all locations organized by category, deduplicated.
+///
+/// Deduplicates on BOTH path and ID. Path alone isn't enough: one filesystem can
+/// be mounted at two paths (macOS suffixes the second `-1`) and both derive the
+/// same volume ID, which every downstream consumer keys on. `get_attached_volumes`
+/// already collapses those, so the ID set here is the second line of defense
+/// against another source (a favorite, a cloud drive) reintroducing one.
 pub fn list_locations() -> Vec<LocationInfo> {
     let mut locations = Vec::new();
     let mut seen_paths: HashSet<String> = HashSet::new();
+    let mut seen_ids: HashSet<String> = HashSet::new();
+
+    let mut push_unique = |locations: &mut Vec<LocationInfo>, loc: LocationInfo| {
+        // Both inserts must run, so the sets can't drift apart on a partial hit.
+        let new_path = seen_paths.insert(loc.path.clone());
+        let new_id = seen_ids.insert(loc.id.clone());
+        if new_path && new_id {
+            locations.push(loc);
+        }
+    };
 
     // 1. Favorites
     for loc in get_favorites() {
-        if seen_paths.insert(loc.path.clone()) {
-            locations.push(loc);
-        }
+        push_unique(&mut locations, loc);
     }
 
     // 2. Main volume
-    if let Some(loc) = get_main_volume()
-        && seen_paths.insert(loc.path.clone())
-    {
-        locations.push(loc);
+    if let Some(loc) = get_main_volume() {
+        push_unique(&mut locations, loc);
     }
 
     // 3. Attached volumes
     for loc in get_attached_volumes() {
-        if seen_paths.insert(loc.path.clone()) {
-            locations.push(loc);
-        }
+        push_unique(&mut locations, loc);
     }
 
     // 4. Cloud drives (skip if already in favorites)
     for loc in get_cloud_drives() {
-        if seen_paths.insert(loc.path.clone()) {
-            locations.push(loc);
-        }
+        push_unique(&mut locations, loc);
     }
 
     locations
@@ -296,10 +304,21 @@ mod tests {
 
     #[test]
     fn test_locations_are_deduplicated() {
+        // IDs matter more than paths: an ID is identity (index DB, saved paths,
+        // registry routing, and the frontend's keyed lists), and a doubly-mounted
+        // share has two distinct paths under one ID, so a path-only assertion
+        // passes on exactly the case that breaks the app.
         let locations = list_locations();
         let mut seen_paths = HashSet::new();
+        let mut seen_ids = HashSet::new();
         for loc in &locations {
             assert!(seen_paths.insert(&loc.path), "Duplicate path found: {}", loc.path);
+            assert!(
+                seen_ids.insert(&loc.id),
+                "Duplicate volume ID found: {} (at {})",
+                loc.id,
+                loc.path
+            );
         }
     }
 
