@@ -134,18 +134,52 @@ the drag controller.
 
 ### Brief column widths and the font-metrics fill-in
 
-`BriefList.doFetchColumnWidths` gets `{ widths, missingCodePoints }` back from `get_brief_column_text_widths`. It paints
-the widths immediately; a non-empty `missingCodePoints` means some characters were costed at the font's average width,
-so it calls `fillMissingFontMetrics` (which measures them off the main thread) and re-fetches once for exact widths. The
-full contract lives in `$lib/font-metrics/DETAILS.md` § On-demand fill-in.
+`brief-column-widths.svelte.ts` owns the RAW backend text widths and the whole fetch policy; `BriefList.svelte` derives
+what renders. `createBriefColumnWidths(deps)` returns `{ rawWidths, status, request, reset, destroy }`, and the pure
+`clampColumnWidths(rawWidths, capPx)` / `provisionalColumnWidth(capPx)` turn raw numbers into rendered ones.
+`get_brief_column_text_widths` answers with `{ widths, missingCodePoints }`; a non-empty `missingCodePoints` means some
+characters were costed at the font's average width, so the store calls `fillMissingFontMetrics` (which measures them off
+the main thread) and re-fetches once for exact widths. The full fill-in contract lives in `$lib/font-metrics/DETAILS.md`
+§ On-demand fill-in.
 
-**`WidthFetchAttempt` carries one flag per recovery step (`afterFontLoad`, `afterFill`), and each bounds only its own
-recursion.** That's load-bearing twice over. A fetch that already filled won't fill again, so a code point that stays
-unmeasurable (it comes back in `missingCodePoints` regardless) can't drive an endless measure-and-refetch loop. And
-because the flags are separate, a fetch that waited for `ensureFontMetricsLoaded` can still fill afterwards — collapsing
+**`WidthFetchAttempt` carries one flag per recovery step (`afterFontLoad`, `afterFill`, `retries`), and each bounds only
+its own recursion.** That's load-bearing three ways. A fetch that already filled won't fill again, so a code point that
+stays unmeasurable (it comes back in `missingCodePoints` regardless) can't drive an endless measure-and-refetch loop.
+Because the flags are separate, a fetch that waited for `ensureFontMetricsLoaded` can still fill afterwards — collapsing
 them into one `retry` boolean silently strands non-Latin names at the average width on exactly the path where the font
-was measured fresh. ❌ Don't merge them, and thread `{ ...attempt, … }` through recursive calls rather than a bare
-literal.
+was measured fresh. And `retries` is its own counter, so waiting for the font doesn't consume a transient-failure retry.
+❌ Don't merge them, and thread `{ ...attempt, … }` through recursive calls rather than a bare literal.
+
+### Cursor visibility never waits on measurement
+
+Three rules keep a Brief pane usable when the width IPC is slow, fails, or never answers. Each exists because its
+absence shipped a bug in which the cursor was invisible and every column filled the pane, with nothing in the logs.
+
+1. **The cursor highlight is unconditional.** `class:is-under-cursor={globalIndex === cursorIndex}`. ❌ Never gate it on
+   widths having arrived: an async IPC then decides whether the user can see where they are.
+2. **An unmeasured column renders at `provisionalColumnWidth(capPx)`**, roughly 260 px, never at `capPx`. `capPx` IS the
+   pane width, so a `capPx` fallback makes one column swallow the whole view — which is what made a cursor stripe drawn
+   at that width look wrong enough to suppress in the first place. The constant sits between the `MIN_COLUMN_WIDTH`
+   floor (100) short names bottom out at and the 400 px `listing.briefColumnWidthMaxPx` ceiling users can opt into, so a
+   provisional column reads as a column.
+3. **Readiness is a state (`pending` / `ready` / `degraded`), never inferred from `rawWidths.length`.** An empty
+   directory legitimately measures to `[]`, so length can't tell "no columns" from "no answer".
+4. **Every failed attempt logs.** Retries log a `warn` naming the listing, the `BriefColumnsErrorKind`, and the attempt
+   number; giving up logs one more. The original bug was undiagnosable from production logs precisely because both bail
+   paths returned silently.
+
+**Decision**: the pane width is NOT an input to the IPC, and there is no `capPx` effect. The backend measures TEXT,
+which a resize can't change, so a resize re-clamps the widths already in hand: synchronous frontend math, no IPC, no new
+chance to fail. **Why**: storing CLAMPED widths made `capPx` a fetch trigger, so every pane resize spent an IPC, and
+each one could fail and (pre-fix) leave the pane with nothing. ❌ Don't reintroduce a `capPx`-change refetch.
+
+**Decision**: a response is discarded only when the listing changed under it (an `epoch` bumped by `reset()`) or a NEWER
+response already landed (a monotonic `requestId`). **Why**: the earlier guard bumped a generation on the way OUT of
+every fetch, so merely ASKING again threw away an answer that was already in flight — and if the newer ask then failed,
+the pane kept nothing. Asking is not answering.
+
+Transient failures (`timeout`, `listingNotFound`, `other`, a thrown IPC) get two bounded retries at 150 ms and 400 ms,
+cancelled on listing change and on unmount. `invalidItemsPerColumn` is a caller bug and is never retried.
 
 ## Key decisions
 
@@ -211,26 +245,25 @@ dotless but still listed in the cluster's accessible label.
 frontend rendering to those measurements **Why**: Long filenames deserve their full width while short ones let the user
 scan more columns at once. The Rust backend owns the text data and the font metrics cache, so it computes the widest
 filename's text width per column in one IPC call
-(`get_brief_column_text_widths(listingId, itemsPerColumn, hasParent, fontId, includeHidden)`). The FE adds CSS chrome
-(icon + gaps + padding), clamps to `[MIN_COLUMN_WIDTH, capPx]` where
-`capPx = min(containerWidth, MAX_BRIEF_COLUMN_WIDTH)`, and stores the result as `columnWidths: number[]`. A `prefixSums`
-array (`$derived`) drives all virtual-scroll math: `totalSize` is the final prefix sum, `calculateVirtualWindowVariable`
-binary-searches `prefixSums` for the visible range, and `getScrollToPositionVariable` looks up exact column edges.
-Scrollbar size and cursor visibility now agree with what's actually rendered. `transition: width 300ms ease` still
-animates width changes within a directory; nav resets snap via the `skipTransition` 2-rAF trick. While widths are in
-flight (first paint, after `FontMetricsNotReady`), every column renders at `capPx` as a fallback, and the cursor
-highlight is suppressed until `columnWidths.length > 0` so the user doesn't see a full-pane-wide cursor stripe for a
-frame. The initial fetch after a dir change skips the 50 ms coalesce so that gap is as short as possible; re-fetches
+(`get_brief_column_text_widths(listingId, itemsPerColumn, hasParent, fontId, includeHidden)`). The FE stores those raw
+text widths and DERIVES `columnWidths` from them: add CSS chrome (icon + gaps + padding), clamp to
+`[MIN_COLUMN_WIDTH, capPx]` where `capPx = min(usableWidth, the user's optional cap)`. A `prefixSums` array (`$derived`)
+drives all virtual-scroll math: `totalSize` is the final prefix sum, `calculateVirtualWindowVariable` binary-searches
+`prefixSums` for the visible range, and `getScrollToPositionVariable` looks up exact column edges. Scrollbar size and
+cursor visibility now agree with what's actually rendered. `transition: width 300ms ease` still animates width changes
+within a directory; nav resets snap via the `skipTransition` 2-rAF trick. Unmeasured columns render at
+`provisionalColumnWidth(capPx)` and the cursor is drawn regardless; see § "Cursor visibility never waits on measurement"
+below. The initial fetch after a dir change skips the 50 ms coalesce so that gap is as short as possible; re-fetches
 during resize keep the coalesce.
 
 **Decision**: A single `$effect` keeps the cursor in view, depending on `cursorIndex`, `containerWidth`,
-`containerHeight`, and `columnWidths.length` **Why**: With exact prefix-sum math, every input that could move the
-cursor's column out of view is a state read, so one consolidated effect replaces the old height-only effect plus the
-implicit width-resize gap. It re-runs naturally after `columnWidths` arrives (the reassignment retriggers the
-dependency), so a fast resize-drag → fetch → widths-arrive sequence ends with `scrollToIndex(cursorIndex)` settling the
-view exactly once. PageUp/PageDown step distance is content-dependent, derived from `prefixSums` directly (not from the
-container width), so a "page" of skinny columns moves more files than a page of wide ones. Intentional UX: the step
-matches what's visible.
+`containerHeight`, and `columnWidths` **Why**: With exact prefix-sum math, every input that could move the cursor's
+column out of view is a state read, so one consolidated effect replaces the old height-only effect plus the implicit
+width-resize gap. It re-runs naturally when `columnWidths` changes (widths arriving, or a re-clamp after a resize), so a
+fast resize-drag → fetch → widths-arrive sequence ends with `scrollToIndex(cursorIndex)` settling the view exactly once.
+PageUp/PageDown step distance is content-dependent, derived from `prefixSums` directly (not from the container width),
+so a "page" of skinny columns moves more files than a page of wide ones. Intentional UX: the step matches what's
+visible.
 
 **Decision**: Shrink-wrap Ext / Size / Modified columns from the rows **currently on screen**, not the prefetch buffer
 or the full directory **Why**: The name column should keep every spare pixel, so columns track live content. Pretext's
@@ -368,8 +401,9 @@ fine (measured). Latin is fine (measured). Expanding the measured set is a follo
 
 **Gotcha**: Index-size refresh (`refresh_listing_index_sizes`) triggers a column-width refetch through the existing
 cache-reset path, not a separate trigger **Why**: When `recursive_size` enrichment lands, the listing may re-sort; the
-existing `cacheGeneration` bump propagates into BriefList's reset-cache effect, which clears `columnWidths`, bumps
-`widthsGeneration`, and kicks off `fetchColumnWidths()`. Don't add a separate trigger: it would double-fetch.
+existing `cacheGeneration` bump propagates into BriefList's reset-cache effect, which calls the width store's `reset()`
+(dropping the widths and every in-flight response) then `request()`. Don't add a separate trigger: it would
+double-fetch.
 
 **Gotcha**: No `will-change: transform` on `.virtual-window` (`FullList.svelte`). **Why**: it force-promoted a permanent
 GPU compositor layer that WebKit kept re-backing on every scroll/content change, ballooning `IOAccelerator` (GPU) memory
