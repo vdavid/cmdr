@@ -148,6 +148,18 @@ brand/screenshots/*.png  +  brand/screenshots/hero-cutouts.json
 Everything under `test/e2e-playwright/` so the harness, helpers, and `shoot()`'s hard-won lessons are reused rather than
 reimplemented; the orchestrator lives beside `i18n-capture.ts` for the same reason.
 
+## Where this stands (2026-08-12)
+
+- **M1 done and proven.** The shutter, the window lookup, and the frame verdict work against a live window.
+- **M2 done.** `pnpm marketing:shots` launches, connects, stages, shoots, and tears down. Two deviations from the plan
+  below, both recorded in the code: the run does NOT refuse to start behind another app (it claims the front through
+  System Events, which works across apps, and proves it in the pixels), and the first-run seed lives in the orchestrator
+  rather than a separate script until M4 gives it a database to write.
+- **M3 partly done.** The `app-main` pair and `hero-cutouts.json` come out correct: 2508x1634 at `+112+76`, and the
+  measured rectangles match the hand-measured ones exactly. Still to stage: the pinned-tab arrangement, the pane paths,
+  hidden files, the index-freshness gate, and the `search` / `chat` / `settings` pairs.
+- **M4 and M5 not started.**
+
 ## Milestones
 
 Each milestone ends green and committed. Run the narrow check the change touches (`check-scope-matches-change`), not the
