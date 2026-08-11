@@ -3,8 +3,9 @@
 Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form creates
 and modifies a listing (search the app name at the top to modify).
 
-Status: submitted 2026-07-29 for v0.36.2. The fields below are refreshed for v0.37.0 and ready to paste; that refresh is
-not submitted yet. Edit them here first when refreshing, then paste.
+Status: submitted 2026-07-29 for v0.36.2. The fields below are refreshed for v0.38.0 and ready to paste; that refresh is
+not submitted yet. Edit them here first when refreshing, then paste. Because the 0.37.0 refresh was prepared but never
+submitted, "Version changes" below covers both 0.37.0 and 0.38.0.
 
 Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
@@ -19,12 +20,12 @@ the Price field and the note to the review team instead.
 - **Download URL**: `https://getcmdr.com/download/latest/universal?ref=macupdate.com`
   - Always points at the current release, so it never needs a resubmission, and it attributes the download to MacUpdate
     in the dashboard. Plain fallback if they reject redirects:
-    `https://github.com/vdavid/cmdr/releases/download/v0.37.0/Cmdr_0.37.0_universal.dmg` (version-pinned, so it would
+    `https://github.com/vdavid/cmdr/releases/download/v0.38.0/Cmdr_0.38.0_universal.dmg` (version-pinned, so it would
     need bumping per release).
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
-- **Version number**: `0.37.0`
+- **Version number**: `0.38.0`
 - **Price**: leave empty (their hint says empty means free). Cmdr is free for personal use; commercial licenses are sold
   on the purchase URL and explained to the review team below.
 
@@ -61,8 +62,8 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
     Optimized for data safety, speed, and transparency.
   </li>
   <li>
-    Queue multiple file operations, pause/resume file transfers, view a full, searchable log of past operations, with
-    rollback for anything that didn't permanently delete data.
+    Queue multiple file operations, send any of them to the background, pause/resume file transfers, view a full,
+    searchable log of past operations, with rollback for anything that didn't permanently delete data.
   </li>
   <li>
     Very fast: Lists 50,000 files near-instantly, and the built-in viewer opens a 10 GB file near-instantly with fast
@@ -82,7 +83,8 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
   <li>Full access to network drives over a custom SMB implementation, roughly 4x faster than the macOS client.</li>
   <li>
     Keeps a full index of your disk (fully local and private) and uses it to display live folder sizes for
-    <em>all</em> your folders, and for near-instant full-drive search.
+    <em>all</em> your folders, and for near-instant full-drive search. A folder that isn't indexed yet gets walked live,
+    with matches arriving as they're found.
   </li>
   <li>For Git repositories, it shows a Git history, branches, worktrees, and stashes browsable like normal folders.</li>
 </ul>
@@ -114,18 +116,30 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
 
 ### Version changes
 
-Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers 0.37.0;
-the 0.36 line went in with the previous submission.
+Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers 0.37.0
+and 0.38.0, since the 0.37.0 refresh was never submitted; the 0.36 line went in with the previous submission.
 
 ```html
 <h5>New</h5>
 <ul>
+  <li>
+    Search reaches folders Cmdr hasn't indexed yet: it walks them live and streams matches as it finds them, and offers
+    the permission for a folder macOS refused.
+  </li>
+  <li>Scope a search to the current folder (the new default) or the whole volume, with ⌥C and ⌥V.</li>
+  <li>
+    A corner chip in the main window for a backgrounded operation, showing its progress and one click from the queue.
+  </li>
+  <li>
+    The Operation queue, opened with ⌥⌘Q, renamed from "Transfer queue" since it holds deletes, renames, and archive
+    edits too.
+  </li>
+  <li>A failed background operation keeps its reason until you dismiss it, in the queue and as a toast.</li>
+  <li>Cmdr asks before quitting with a transfer in flight, and clears away whatever it left half-written.</li>
+  <li>Resize dialogs from any edge, and hover any shortened path or label to see the whole thing.</li>
+  <li>Copy the current folder's path with ⌃⌘C on the ".." row.</li>
   <li>An Acknowledgements dialog crediting all 775 open-source packages Cmdr ships.</li>
   <li>Right-click any text field for Cut, Copy, Paste, and Select all.</li>
-  <li>
-    A "Chat memory size" setting for the AI chat, from Automatic up to 200,000 tokens, with a bar showing how full the
-    conversation is.
-  </li>
   <li>Undo for an AI bulk rename, one batch at a time or a whole multi-batch run at once.</li>
   <li>
     Every rename review row now shows the file itself and the evidence behind its proposed name, and you can correct a
@@ -133,9 +147,30 @@ the 0.36 line went in with the previous submission.
   </li>
   <li>Recent searches live in the query field as a dropdown, each row showing its age, result count, and filters.</li>
   <li>Transfer speed in the Transfers window, plus an honest readout when a transfer has stopped moving.</li>
+  <li>
+    A "Chat memory size" setting for the AI chat, from Automatic up to 200,000 tokens, with a bar showing how full the
+    conversation is.
+  </li>
 </ul>
 <h5>Improved</h5>
 <ul>
+  <li>
+    A new terms of service: a third shorter, accurate about what Cmdr actually does, and each release now converts to
+    open source three years after it ships rather than every version on one shared date.
+  </li>
+  <li>
+    An idle Mac stays idle: a dotfile write in your home folder no longer rescores the whole drive (5.25 s per pass
+    becomes 2.1 ms), 51,081 folder-ranking rows a minute stop being rewritten for an unchanged result, and roughly 9,400
+    log lines an hour are gone.
+  </li>
+  <li>About 97 MB less peak memory during a search, and half the write cost of keeping the index live.</li>
+  <li>
+    The Transfers window shows the same honest readout as the copy dialog: both bars labelled, percentages, speed, and a
+    time left that doesn't shift the layout.
+  </li>
+  <li>What's new opens on the headlines, with each release's details behind a Show more.</li>
+  <li>The copy conflict question is now a card you can read at a glance.</li>
+  <li>One line-height scale across the whole app, so text spacing stops varying screen by screen.</li>
   <li>
     A broad search returns in under half a second instead of twelve, and the dialog opens and takes typing without
     waiting on an index rebuild.
@@ -144,7 +179,6 @@ the 0.36 line went in with the previous submission.
     The Search and Select dialog is redesigned to match the rest of the app: standard window chrome, a tidy 2x2 query
     block, and a Path column with its width back.
   </li>
-  <li>Every text field shares one look: 8px corners, an accent-colored caret, and a solid focus ring.</li>
   <li>
     Copying to a network drive is up to 3.8 times faster, and a small file now costs one round trip instead of two.
   </li>
@@ -152,20 +186,29 @@ the 0.36 line went in with the previous submission.
     A network drive that goes silent recovers in about 50 seconds instead of hanging forever, and a single file retries
     after a blip rather than ending the whole transfer.
   </li>
-  <li>
-    Much lighter on resources: the whole database page cache is capped at 64 MB however many connections are open, and
-    cloud sync badges no longer spawn 300 threads a minute.
-  </li>
+  <li>Every text field shares one look: 8px corners, an accent-colored caret, and a solid focus ring.</li>
   <li>The main window appears a second sooner at startup.</li>
 </ul>
 <h5>Fixed</h5>
 <ul>
+  <li>
+    A folder move to a phone or a NAS could destroy the files you chose to keep or skip, and a folder copy that failed
+    could wipe the destination folder.
+  </li>
+  <li>Copying a local folder to a NAS or a phone could fail outright.</li>
+  <li>
+    A force-quit or a crash mid-copy could leave a truncated file wearing your real filename, on every kind of drive.
+  </li>
+  <li>Two disks could be handed one identity, which could route reads and file operations to the wrong drive.</li>
+  <li>⌘- and ⌘+ could freeze the app for up to 46 seconds while fonts were measured.</li>
+  <li>Copying to a NAS died on a filename containing a "?" or a quote.</li>
+  <li>Quick Look and dragging files out did nothing on a direct-SMB pane.</li>
+  <li>A burst of changes on a phone pegged a CPU core and froze the pane.</li>
+  <li>A file with a newline in its name was unfindable, in search, selection, and excludes.</li>
+  <li>A pane could strand itself on "Path not found" after its network drive disappeared.</li>
+  <li>A saved cloud AI key could come back out of the OS secret store.</li>
   <li>⌘V pasted twice in dialogs, and ⌥⌘A opened the AI chat and selected every file at once.</li>
   <li>Resizing the window could freeze the entire interface.</li>
-  <li>
-    A force-quit mid-transfer could leave a truncated file wearing your filename, and Cancel and Rollback did nothing on
-    a stalled transfer.
-  </li>
   <li>Folders on network drives, inside archives, and on phones showed no size or date.</li>
   <li>The AI could invent names for screenshots whose contents it was never actually shown.</li>
   <li>A maximized window came back in the wrong place after a restart.</li>
