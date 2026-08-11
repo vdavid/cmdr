@@ -15,7 +15,11 @@
     "strict": true,
     "moduleResolution": "bundler"
   },
-  "include": ["src", "scripts", "vite.config.js", "vitest.config.ts", "playwright.config.ts"]
+  // `test/fixtures/*.svelte` are components a unit test mounts (they'd fail
+  // `a11y-coverage` under `src/lib`, which they aren't part of), so they belong to
+  // this project like the tests that import them. The two E2E suites keep their own
+  // tsconfig; everything else under `test/` is data or fixture generators.
+  "include": ["src", "scripts", "test/fixtures/*.svelte", "vite.config.js", "vitest.config.ts", "playwright.config.ts"]
   // Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
   // except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
   //
