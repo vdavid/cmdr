@@ -478,6 +478,10 @@ fn entries_that_went_with_a_replaced_watch_root_leave_the_listing() {
 /// Reads the manager directly rather than going through
 /// `Volume::listing_watch_coverage`, which answers `None` for a listing that left the
 /// cache and so can't tell "torn down" from "leaked behind a dead listing".
+///
+/// Gated to match its callers: both tests below are macOS-only (FSEvents), so on Linux the
+/// helper is dead code and `-D unused` fails the build.
+#[cfg(target_os = "macos")]
 fn is_watching(listing_id: &str) -> bool {
     use crate::file_system::watcher::WATCHER_MANAGER;
     use crate::ignore_poison::RwLockIgnorePoison;
