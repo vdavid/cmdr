@@ -60,7 +60,7 @@ async fn smb_integration_archive_browse_and_extract_via_read_range() {
 
     // Unique root-level name so the no-clobber `create_file` never collides and
     // no directory setup is needed.
-    let zip_path = PathBuf::from(format!("/{}.zip", test_dir_name()));
+    let zip_path = PathBuf::from(share_path(&format!("{}.zip", test_dir_name())));
     vol.create_file(&zip_path, &zip_bytes).await.unwrap();
 
     // Wrap the live SMB volume as the archive's parent. Direct SMB has no local
@@ -166,7 +166,7 @@ async fn smb_integration_archive_routing_detection_and_extract_out() {
     use std::io::Write as _;
 
     let vol = Arc::new(make_docker_volume().await);
-    let zip_path = PathBuf::from(format!("/{}.zip", test_dir_name()));
+    let zip_path = PathBuf::from(share_path(&format!("{}.zip", test_dir_name())));
     vol.create_file(&zip_path, &two_entry_zip()).await.unwrap();
 
     // Register the live SMB volume so the parent-aware predicate confirms the
@@ -222,7 +222,7 @@ async fn smb_integration_remote_zip_edit_deletes_an_entry_through_the_share() {
     use std::time::Duration;
 
     let vol = Arc::new(make_docker_volume().await);
-    let zip_path = PathBuf::from(format!("/{}.zip", test_dir_name()));
+    let zip_path = PathBuf::from(share_path(&format!("{}.zip", test_dir_name())));
     vol.create_file(&zip_path, &two_entry_zip()).await.unwrap();
 
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
@@ -277,7 +277,7 @@ async fn smb_integration_remote_zip_edit_cancel_before_swap_keeps_original() {
     use std::time::Duration;
 
     let vol = Arc::new(make_docker_volume().await);
-    let zip_path = PathBuf::from(format!("/{}.zip", test_dir_name()));
+    let zip_path = PathBuf::from(share_path(&format!("{}.zip", test_dir_name())));
     vol.create_file(&zip_path, &two_entry_zip()).await.unwrap();
 
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));

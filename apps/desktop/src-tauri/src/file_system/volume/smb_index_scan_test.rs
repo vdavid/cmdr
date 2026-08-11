@@ -29,6 +29,11 @@ use cmdr_index::testing::scan::IndexWriter;
 use cmdr_index::testing::scan::ScanProgress;
 use cmdr_index::testing::scan::scan_volume_via_trait;
 
+/// Where the test volume is mounted. Every path handed to it must be absolute
+/// UNDER this root, exactly like the paths a real pane sends: `to_smb_path`
+/// `NotFound`s anything else (`backends/DETAILS.md` § "Per-backend decisions").
+const TEST_MOUNT_ROOT: &str = "/tmp/smb-test-mount";
+
 fn guest_port() -> u16 {
     std::env::var("SMB_CONSUMER_GUEST_PORT")
         .ok()
@@ -42,13 +47,15 @@ async fn connect_public() -> Arc<dyn Volume> {
     let port = guest_port();
     let volume_id = smb_volume_id("127.0.0.1", port, "public");
     let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
-    let vol = connect_smb_volume("public", "/tmp/smb-test-mount", &volume_id, params)
+    let vol = connect_smb_volume("public", TEST_MOUNT_ROOT, &volume_id, params)
         .await
         .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}: {e:?}"));
     Arc::new(vol)
 }
 
-fn unique_dir() -> String {
+/// A unique, mount-rooted base directory for one test, so parallel runs (and the
+/// separate processes nextest forks) never share a subtree on the fixture share.
+fn unique_base() -> String {
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
     static N: AtomicU64 = AtomicU64::new(0);
@@ -57,7 +64,7 @@ fn unique_dir() -> String {
         .expect("system clock is after UNIX_EPOCH")
         .as_nanos();
     format!(
-        "cmdr-index-test-{}-{}-{}",
+        "{TEST_MOUNT_ROOT}/cmdr-index-test-{}-{}-{}",
         std::process::id(),
         ts,
         N.fetch_add(1, Ordering::Relaxed)
@@ -92,7 +99,7 @@ async fn smb_integration_volume_scan_indexes_share() {
     // Seed a known subtree on the share:
     //   <base>/sub/leaf.txt   (11 bytes)
     //   <base>/top.txt        (5 bytes)
-    let base = format!("/{}", unique_dir());
+    let base = unique_base();
     rm_rf(vol.as_ref(), &base).await;
     vol.create_directory(Path::new(&base))
         .await
@@ -163,7 +170,7 @@ async fn smb_integration_volume_scan_via_connection_pool() {
     let vol = connect_public().await;
 
     // Same seeded subtree shape as the plain-scan test.
-    let base = format!("/{}", unique_dir());
+    let base = unique_base();
     rm_rf(vol.as_ref(), &base).await;
     vol.create_directory(Path::new(&base))
         .await
@@ -232,7 +239,7 @@ async fn smb_integration_watch_event_updates_index() {
     let vol = connect_public().await;
 
     // Seed and scan a known subtree (same shape as the scan test).
-    let base = format!("/{}", unique_dir());
+    let base = unique_base();
     rm_rf(vol.as_ref(), &base).await;
     vol.create_directory(Path::new(&base))
         .await
@@ -352,7 +359,7 @@ async fn smb_integration_enrich_listing_shows_sizes() {
 
     // Seed a known subtree:  <base>/sub/ (a dir, with a 11-byte leaf inside)
     //                        <base>/top.txt (5 bytes)
-    let base = format!("/{}", unique_dir());
+    let base = unique_base();
     rm_rf(vol.as_ref(), &base).await;
     vol.create_directory(Path::new(&base))
         .await

@@ -629,7 +629,7 @@ async fn smb_integration_scan_pool_opens_lists_and_closes() {
     let vol = make_docker_volume().await;
 
     // Seed a private directory with two known files, isolated from parallel tests.
-    let dir = format!("/{}", test_dir_name());
+    let dir = share_path(&test_dir_name());
     ensure_clean(&vol, &dir).await;
     vol.create_directory(Path::new(&dir)).await.expect("create test dir");
     vol.create_file(Path::new(&format!("{dir}/a.txt")), b"hello")

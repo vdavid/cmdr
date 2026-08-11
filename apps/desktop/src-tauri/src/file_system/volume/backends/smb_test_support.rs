@@ -9,6 +9,9 @@
 use super::*;
 use crate::file_system::volume::smb_volume_id;
 
+/// Where `make_docker_volume` mounts the fixture share.
+pub(super) const TEST_MOUNT_ROOT: &str = "/tmp/smb-test-mount";
+
 /// Connects to the Docker smb-guest container (share "public"). Default port
 /// 10480 matches smb2's guest test container; override with
 /// `SMB_CONSUMER_GUEST_PORT` to match `smb2::testing::guest_port()`.
@@ -19,11 +22,20 @@ pub(super) async fn make_docker_volume() -> SmbVolume {
         .unwrap_or(10480);
     let volume_id = smb_volume_id("127.0.0.1", port, "public");
     let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
-    connect_smb_volume("public", "/tmp/smb-test-mount", &volume_id, params)
+    connect_smb_volume("public", TEST_MOUNT_ROOT, &volume_id, params)
         .await
         .unwrap_or_else(|e| {
             panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})")
         })
+}
+
+/// An absolute share path the way production builds one: `{mount root}/{relative}`.
+///
+/// An ABSOLUTE path outside the mount root is `VolumeError::NotFound`
+/// (`DETAILS.md` § "Per-backend decisions"), so a test addressing the share
+/// absolutely must go through here rather than prefix a bare `/`.
+pub(super) fn share_path(relative: &str) -> String {
+    format!("{TEST_MOUNT_ROOT}/{}", relative.trim_start_matches('/'))
 }
 
 /// Unique directory name for test isolation.
