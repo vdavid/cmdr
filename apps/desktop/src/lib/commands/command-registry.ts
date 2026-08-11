@@ -37,10 +37,10 @@ import { commandPaletteCommands } from './sources/command-palette'
 export const NATIVE_SHORTCUT_COMMAND_IDS = ['app.quit', 'app.hide', 'app.hideOthers', 'app.showAll'] as const
 
 /**
- * The fixed-key commands: their keys are hardcoded in the owning component's
- * keydown handler (FilePane arrows, palette navigation, modal Enter/Escape) and
- * never consult the shortcuts store, so a customization would be a no-op
- * illusion — the new key wouldn't fire and the built-in key wouldn't release.
+ * The fixed-key commands: their keys are owned by the component that handles them
+ * (FilePane arrows, palette navigation, modal Enter/Escape, the error screen's ⌘D)
+ * rather than by the shortcuts store, so a customization would be a no-op illusion
+ * — the new key wouldn't fire and the built-in key wouldn't release.
  * The shortcuts editor renders them read-only ("Fixed" badge) and the store
  * refuses to customize them. Single source of truth: the registry entries carry
  * `fixedKey: true` for exactly these ids (pinned by `command-registry.test.ts`),
@@ -66,6 +66,11 @@ export const FIXED_KEY_COMMAND_IDS = [
   'share.back',
   'share.selectShare',
   'file.contextMenu',
+  // Family 4 — deliberate override. ErrorPane claims ⌘D through a CAPTURE-phase
+  // document listener that runs ahead of the dispatch spine, so it wins over
+  // whatever the user bound ⌘D to. Fixed because releasing the key would falsify
+  // the "Technical details ⌘D" hint the error screen advertises.
+  'errorPane.toggleTechnicalDetails',
 ] as const
 
 /**

@@ -124,6 +124,12 @@ export const COMMAND_IDS = [
   'nav.pageDown',
   'nav.back',
   'nav.forward',
+  // Navigates the focused pane to the home folder. Distinct from `nav.home`,
+  // which moves the CURSOR to the first row.
+  'nav.goHome',
+  // Opens/closes the "Technical details" disclosure on the full-pane error screen.
+  // Fixed-key (⌘D), handled by ErrorPane's own capture-phase listener.
+  'errorPane.toggleTechnicalDetails',
   // Opens the entry under the focused pane's cursor, awaiting completion so the
   // MCP `open_under_cursor` round-trip can ack on real completion.
   'nav.openUnderCursor',

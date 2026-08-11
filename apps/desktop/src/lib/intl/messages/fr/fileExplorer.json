@@ -96,6 +96,10 @@
     "sourceHash": "d8b8392"
   },
   "fileExplorer.errorPane.openSystemSettings": "Ouvrir {systemSettings}",
+  "fileExplorer.errorPane.goBack": "Revenir",
+  "@fileExplorer.errorPane.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c"
   },
@@ -1408,5 +1412,9 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "L''indexation est désactivée dans les Réglages. Activez-la dans Indexation > Indexation du disque, et ce disque reprendra là où il s''était arrêté.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
+  },
+  "fileExplorer.errorPane.goHome": "Ouvrir le dossier personnel",
+  "@fileExplorer.errorPane.goHome": {
+    "sourceHash": "74b2a8b"
   }
 }

@@ -132,8 +132,16 @@
         unreachable?: UnreachableState | null
         /** Called when user clicks "Retry" on the unreachable banner */
         onRetryUnreachable?: () => void
-        /** Called when user clicks "Open home folder" on the unreachable banner */
+        /** Called when user clicks "Open home folder" on the unreachable banner or the error screen */
         onOpenHome?: () => void
+        /**
+         * Whether this pane's active tab can walk back in history. Drives the error
+         * screen's "Go back" button, which stays hidden when `nav.back` would no-op
+         * (a first-paint error: history isn't persisted across sessions).
+         */
+        canGoBack?: boolean
+        /** Called when user clicks "Go back" on the error screen */
+        onGoBack?: () => void
         /**
          * Bubbles a high-level command id out of the pane. Used by the Selection
          * dialog's `+` / `-` shortcuts so the parent route can dispatch via the
@@ -167,6 +175,8 @@
         unreachable = null,
         onRetryUnreachable,
         onOpenHome,
+        canGoBack = false,
+        onGoBack,
         onCommand,
     }: Props = $props()
 
@@ -1678,7 +1688,15 @@
         {:else if loading}
             <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
         {:else if friendlyError}
-            <ErrorPane friendly={friendlyError} folderPath={currentPath} onRetry={() => navigateToPath(currentPath)} />
+            <ErrorPane
+                friendly={friendlyError}
+                folderPath={currentPath}
+                onRetry={() => navigateToPath(currentPath)}
+                {canGoBack}
+                onGoBack={() => onGoBack?.()}
+                onGoHome={() => onOpenHome?.()}
+                {isFocused}
+            />
         {:else if error}
             <div class="error-message">{error}</div>
         {:else if viewMode === 'brief'}

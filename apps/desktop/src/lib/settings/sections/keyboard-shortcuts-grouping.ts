@@ -46,6 +46,7 @@ const scopeOrder: readonly { scope: CommandScope; titleKey: MessageKey }[] = [
   { scope: 'Main window/Volume chooser', titleKey: 'shortcuts.scope.volumeChooser' },
   { scope: 'Main window/Network', titleKey: 'shortcuts.scope.network' },
   { scope: 'Main window/Share browser', titleKey: 'shortcuts.scope.shareBrowser' },
+  { scope: 'Main window/Error screen', titleKey: 'shortcuts.scope.errorScreen' },
   { scope: 'Command palette', titleKey: 'shortcuts.scope.commandPalette' },
   { scope: 'About window', titleKey: 'shortcuts.scope.aboutWindow' },
   { scope: 'Onboarding', titleKey: 'shortcuts.scope.onboarding' },

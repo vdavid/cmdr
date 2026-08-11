@@ -15,7 +15,11 @@ vi.mock('$lib/tauri-commands', () => ({
   openPrivacySettings: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('$lib/shortcuts/key-capture', () => ({
+// Partial mock: `ShortcutChip` (rendered inside the Go back / Go home buttons and
+// the Technical details summary) needs the real `toDisplayShortcut`. Only `isMacOS`
+// is forced, so the "Open System Settings" branch renders on any host.
+vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/shortcuts/key-capture')>()),
   isMacOS: vi.fn(() => true),
 }))
 
@@ -84,6 +88,27 @@ describe('ErrorPane a11y', () => {
       props: {
         friendly: permissionError,
         folderPath: '/Users/test/Documents',
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  // The busiest row the pane can render: an error-specific CTA plus both ways out,
+  // each carrying a shortcut chip.
+  it('both ways out visible (Go back + Go home, with shortcut chips) has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ErrorPane, {
+      target,
+      props: {
+        friendly: transientError,
+        folderPath: '/Volumes/External/photos',
+        onRetry: () => {},
+        canGoBack: true,
+        onGoBack: () => {},
+        onGoHome: () => {},
+        isFocused: true,
       },
     })
     await tick()

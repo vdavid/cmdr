@@ -40,6 +40,10 @@
     "sourceHash": "1744b96"
   },
   "shortcuts.scope.shareBrowser": "共享浏览器",
+  "shortcuts.scope.errorScreen": "错误屏幕",
+  "@shortcuts.scope.errorScreen": {
+    "sourceHash": "d3da94a"
+  },
   "@shortcuts.scope.shareBrowser": {
     "sourceHash": "5cec2a6"
   },

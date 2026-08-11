@@ -296,6 +296,7 @@ export const menuCommands = [
   'nav.back',
   'nav.forward',
   'nav.parent',
+  'nav.goHome',
   'nav.goToPath',
   // Downloads
   'downloads.goToLatest',

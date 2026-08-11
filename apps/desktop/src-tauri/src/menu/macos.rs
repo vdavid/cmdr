@@ -17,13 +17,13 @@ use super::{
     COMMAND_PALETTE_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID,
     EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
     FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID,
-    GO_BACK_ID, GO_FORWARD_ID, GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_SEND_ERROR_REPORT_ID,
-    HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
-    OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID,
-    REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID,
-    SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID,
-    SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
-    ViewMode,
+    GO_BACK_ID, GO_FORWARD_ID, GO_HOME_ID, GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID,
+    HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID,
+    NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID,
+    QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID,
+    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID,
+    SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
+    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -327,6 +327,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let go_to_path_item = MenuItem::with_id(app, GO_TO_PATH_ID, "Go to path\u{2026}", true, Some("Cmd+G"))?;
     let go_latest_download_item =
         MenuItem::with_id(app, GO_LATEST_DOWNLOAD_ID, "Go to latest download", true, Some("Cmd+J"))?;
+    // Shift+Cmd+H, not Cmd+H: AppKit owns Cmd+H for "Hide Cmdr" and would swallow it
+    // before the webview ever sees a keydown.
+    let go_home_item = MenuItem::with_id(app, GO_HOME_ID, "Home", true, Some("Shift+Cmd+H"))?;
     // No default accelerator: `favorites.add` ships without a default shortcut. The
     // accelerator-sync pass picks up whatever the user later binds in Settings > Keyboard shortcuts.
     let favorites_add_item = MenuItem::with_id(app, FAVORITES_ADD_ID, "Add to favorites", true, None::<&str>)?;
@@ -340,6 +343,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &go_forward_item,
             &PredefinedMenuItem::separator(app)?,
             &go_parent_item,
+            &go_home_item,
             &PredefinedMenuItem::separator(app)?,
             &go_to_path_item,
             &go_latest_download_item,
@@ -499,14 +503,15 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     );
     register_item(&mut items, SORT_BY_SIZE_ID, &sort_items.by_size, &sort_submenu, 3);
 
-    // Go menu positions: back(0), forward(1), sep(2), parent(3), sep(4), go_to_path(5),
-    // go_latest_download(6), sep(7), favorites_add(8)
+    // Go menu positions: back(0), forward(1), sep(2), parent(3), home(4), sep(5), go_to_path(6),
+    // go_latest_download(7), sep(8), favorites_add(9)
     register_item(&mut items, GO_BACK_ID, &go_back_item, &go_menu, 0);
     register_item(&mut items, GO_FORWARD_ID, &go_forward_item, &go_menu, 1);
     register_item(&mut items, GO_PARENT_ID, &go_parent_item, &go_menu, 3);
-    register_item(&mut items, GO_TO_PATH_ID, &go_to_path_item, &go_menu, 5);
-    register_item(&mut items, GO_LATEST_DOWNLOAD_ID, &go_latest_download_item, &go_menu, 6);
-    register_item(&mut items, FAVORITES_ADD_ID, &favorites_add_item, &go_menu, 8);
+    register_item(&mut items, GO_HOME_ID, &go_home_item, &go_menu, 4);
+    register_item(&mut items, GO_TO_PATH_ID, &go_to_path_item, &go_menu, 6);
+    register_item(&mut items, GO_LATEST_DOWNLOAD_ID, &go_latest_download_item, &go_menu, 7);
+    register_item(&mut items, FAVORITES_ADD_ID, &favorites_add_item, &go_menu, 9);
 
     // Tab menu positions: new(0), close(1), reopen(2), sep(3), next(4), prev(5), sep(6), pin(7),
     // close_others(8)
@@ -718,6 +723,7 @@ fn set_macos_menu_icons_inner() {
                 ("Back", "chevron.left"),
                 ("Forward", "chevron.right"),
                 ("Parent folder", "arrow.up"),
+                ("Home", "house"),
                 ("Go to path\u{2026}", "arrow.right.to.line"),
                 ("Go to latest download", "arrow.down.circle"),
             ],

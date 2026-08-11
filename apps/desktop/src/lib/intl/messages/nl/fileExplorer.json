@@ -96,6 +96,10 @@
     "sourceHash": "d8b8392"
   },
   "fileExplorer.errorPane.openSystemSettings": "Open {systemSettings}",
+  "fileExplorer.errorPane.goBack": "Ga terug",
+  "@fileExplorer.errorPane.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c",
     "sameAsSourceJustification": "'Open' is the Dutch bare-stem imperative (macOS 'Open ${target}'); '{systemSettings}' is an OS-localized placeholder kept literal. Native Dutch, identical by coincidence."
@@ -1410,5 +1414,9 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Het indexeren van schijven staat uit in Instellingen. Zet het aan bij Indexeren > Schijf indexeren, dan pakt deze schijf de draad weer op.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
+  },
+  "fileExplorer.errorPane.goHome": "Open thuismap",
+  "@fileExplorer.errorPane.goHome": {
+    "sourceHash": "74b2a8b"
   }
 }

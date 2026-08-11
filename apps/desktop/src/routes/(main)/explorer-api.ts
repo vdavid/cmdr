@@ -51,6 +51,13 @@ export interface ExplorerAPI {
    * string the MCP adapter forwards verbatim (L12).
    */
   navigate: (intent: NavigateIntent) => NavigateResult
+  /**
+   * Opens the home folder in `pane` (the focused pane when omitted), resolving
+   * the default volume first and clearing any `unreachable` banner on the way.
+   * Shares the `handleOpenHome` edge-flow with the unreachable banner and the
+   * error pane's "Go to home folder" button, so all three land identically.
+   */
+  goHome: (pane?: 'left' | 'right') => Promise<void>
   getFileAndPathUnderCursor: () => { path: string; filename: string } | null
   /**
    * The path the "copy path" command copies: the cursor entry's path, or the pane's

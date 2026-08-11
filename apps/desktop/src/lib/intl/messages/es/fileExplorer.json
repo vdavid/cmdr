@@ -96,6 +96,10 @@
     "sourceHash": "d8b8392"
   },
   "fileExplorer.errorPane.openSystemSettings": "Abrir {systemSettings}",
+  "fileExplorer.errorPane.goBack": "Atrás",
+  "@fileExplorer.errorPane.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c"
   },
@@ -1404,5 +1408,9 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "La indexación de unidades está desactivada en Ajustes. Actívala en Indexación > Indexación de unidades, y esta unidad continuará donde lo dejó.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
+  },
+  "fileExplorer.errorPane.goHome": "Abrir la carpeta de inicio",
+  "@fileExplorer.errorPane.goHome": {
+    "sourceHash": "74b2a8b"
   }
 }

@@ -4,7 +4,9 @@
     import type { FriendlyError } from '../types'
     import { openExternalUrl, openPrivacySettings, openSystemSettingsUrl } from '$lib/tauri-commands'
     import { isMacOS } from '$lib/shortcuts/key-capture'
+    import { eventMatchesCommand } from '$lib/shortcuts/shortcut-dispatch'
     import Button from '$lib/ui/Button.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { renderErrorMarkdown } from './error-pane-utils'
     import { systemStrings } from '$lib/system-strings.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -13,9 +15,31 @@
         friendly: FriendlyError
         folderPath: string
         onRetry?: () => void
+        /**
+         * Whether this pane's tab has somewhere to go back to. False on a first-paint
+         * error (history isn't persisted across sessions, and a fresh tab seeds a
+         * single entry), where `nav.back` would be a silent no-op — so the button is
+         * hidden rather than shown dead. "Go to home folder" is the always-available
+         * way out and renders regardless.
+         */
+        canGoBack?: boolean
+        onGoBack?: () => void
+        onGoHome?: () => void
+        /** Whether this pane is the focused one, gating the ⌘D key handler. */
+        isFocused?: boolean
     }
 
-    const { friendly, folderPath, onRetry }: Props = $props()
+    const {
+        friendly,
+        folderPath,
+        onRetry,
+        canGoBack = false,
+        onGoBack,
+        onGoHome,
+        isFocused = false,
+    }: Props = $props()
+
+    let detailsOpen = $state(false)
 
     // Retry tracking (resets when component is destroyed/recreated on navigation)
     let retryCount = $state(0)
@@ -28,6 +52,30 @@
     }, 5000)
 
     onDestroy(() => { clearInterval(intervalId); })
+
+    /**
+     * ⌘D belongs to the error screen for as long as one is showing. The listener is
+     * CAPTURE-phase on `document`, so it runs ahead of both the explorer container's
+     * keydown handler and the document-level command dispatcher: the screen's
+     * "Technical details ⌘D" hint stays true even when the user has bound ⌘D to
+     * another command. That's also why `errorPane.toggleTechnicalDetails` is a
+     * fixed-key command — rebinding it here would be a no-op illusion.
+     *
+     * Gated on `isFocused` so two simultaneous error panes don't both toggle.
+     */
+    $effect(() => {
+        if (!isFocused) return
+
+        function handleDetailsKey(e: KeyboardEvent) {
+            if (!eventMatchesCommand(e, 'errorPane.toggleTechnicalDetails')) return
+            e.preventDefault()
+            e.stopPropagation()
+            detailsOpen = !detailsOpen
+        }
+
+        document.addEventListener('keydown', handleDetailsKey, true)
+        return () => { document.removeEventListener('keydown', handleDetailsKey, true) }
+    })
 
     function handleRetry() {
         retryCount += 1
@@ -107,24 +155,42 @@
             {@html renderErrorMarkdown(friendly.suggestion)}
         </div>
 
-        {#if showRetryButton}
-            <div class="cta">
+        <!--
+          One row for every action, so the error-specific CTA and the two always-there
+          ways out read as one set. Every error screen gets at least "Go to home folder":
+          44 of the ~60 error reasons carry no CTA of their own and were dead ends.
+        -->
+        <div class="cta">
+            {#if showRetryButton}
                 <Button variant="primary" onclick={handleRetry}>{tString('fileExplorer.errorPane.tryAgain')}</Button>
-            </div>
-        {/if}
+            {/if}
 
-        {#if isPermissionDenied && isMacOS()}
-            <div class="cta">
+            {#if isPermissionDenied && isMacOS()}
                 <Button variant="primary" onclick={() => openPrivacySettings()}
                     >{tString('fileExplorer.errorPane.openSystemSettings', {
                         systemSettings: systemStrings.systemSettings,
                     })}</Button
                 >
-            </div>
-        {/if}
+            {/if}
 
-        <details class="technical-details">
-            <summary>{tString('fileExplorer.errorPane.technicalDetails')}</summary>
+            {#if canGoBack}
+                <Button onclick={() => onGoBack?.()}>
+                    {tString('fileExplorer.errorPane.goBack')}
+                    <ShortcutChip commandId="nav.back" clickable={false} size="sm" />
+                </Button>
+            {/if}
+
+            <Button onclick={() => onGoHome?.()}>
+                {tString('fileExplorer.errorPane.goHome')}
+                <ShortcutChip commandId="nav.goHome" clickable={false} size="sm" />
+            </Button>
+        </div>
+
+        <details class="technical-details" bind:open={detailsOpen}>
+            <summary>
+                {tString('fileExplorer.errorPane.technicalDetails')}
+                <ShortcutChip commandId="errorPane.toggleTechnicalDetails" clickable={false} size="sm" />
+            </summary>
             <pre class="raw-detail">{friendly.rawDetail}</pre>
             {#if retryInfo}
                 <p class="retry-info">
@@ -242,9 +308,13 @@
         border-radius: var(--radius-xs);
     }
 
+    /* Wraps rather than overflows: the pane is 450px wide and a localized
+       "Go to home folder" plus its chip can outgrow one line next to a CTA. */
     .cta {
         display: flex;
+        flex-wrap: wrap;
         justify-content: center;
+        gap: var(--spacing-sm);
         margin: var(--spacing-lg) 0;
     }
 
@@ -256,6 +326,15 @@
 
     .technical-details summary {
         user-select: none;
+    }
+
+    /* Chips ride along inside the button labels and the summary. Don't give `summary`
+       a flex/grid display to place its chip: WebKit draws the disclosure triangle off
+       `display: list-item`, and any other value drops it. The chip is inline-flex on
+       its own, so it flows after the label on the markup's own whitespace. */
+    .cta :global(.shortcut-chip),
+    .technical-details summary :global(.shortcut-chip) {
+        vertical-align: middle;
     }
 
     .technical-details summary:hover {

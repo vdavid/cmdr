@@ -85,6 +85,28 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     shortcuts: ['⌘]'],
   },
+  {
+    // ⌘⇧H, not ⌘H: macOS reserves ⌘H for "Hide Cmdr" (an AppKit predefined item
+    // Cmdr can neither rebind nor intercept — see `NATIVE_SHORTCUT_COMMAND_IDS`).
+    id: 'nav.goHome',
+    nameKey: 'commands.navGoHome.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌘⇧H'],
+  },
+  {
+    // ErrorPane owns this key outright: it registers a CAPTURE-phase document
+    // listener while an error screen is showing, so ⌘D reaches the disclosure even
+    // when the user has bound ⌘D to something else. Fixed for exactly that reason
+    // — a rebind here would be a no-op illusion, and releasing the key would break
+    // the "Technical details ⌘D" hint the screen advertises.
+    id: 'errorPane.toggleTechnicalDetails',
+    nameKey: 'commands.errorPaneToggleTechnicalDetails.label',
+    scope: 'Main window/Error screen',
+    showInPalette: false,
+    shortcuts: ['⌘D'],
+    fixedKey: true,
+  },
 
   // ============================================================================
   // Brief mode specific

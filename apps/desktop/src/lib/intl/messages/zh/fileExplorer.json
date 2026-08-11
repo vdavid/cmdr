@@ -96,6 +96,10 @@
     "sourceHash": "d8b8392"
   },
   "fileExplorer.errorPane.openSystemSettings": "打开{systemSettings}",
+  "fileExplorer.errorPane.goBack": "后退",
+  "@fileExplorer.errorPane.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c"
   },
@@ -1399,5 +1403,9 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "驱动器索引已在设置中关闭。可在“索引 > 驱动器索引”中开启，此驱动器会从上次的进度继续。",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
+  },
+  "fileExplorer.errorPane.goHome": "打开个人文件夹",
+  "@fileExplorer.errorPane.goHome": {
+    "sourceHash": "74b2a8b"
   }
 }

@@ -61,6 +61,11 @@
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 
+  "shortcuts.scope.errorScreen": "Error screen",
+  "@shortcuts.scope.errorScreen": {
+    "description": "Group heading in the Keyboard shortcuts list for commands on the error screen, which replaces the file list when a folder cannot be opened. A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
   "shortcuts.scope.shareBrowser": "Share browser",
   "@shortcuts.scope.shareBrowser": {
     "description": "Group heading in the Keyboard shortcuts list for commands in the share browser (the shared folders on a network server). A short section title.",

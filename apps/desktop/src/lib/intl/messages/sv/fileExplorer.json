@@ -96,6 +96,10 @@
     "sourceHash": "d8b8392"
   },
   "fileExplorer.errorPane.openSystemSettings": "Öppna {systemSettings}",
+  "fileExplorer.errorPane.goBack": "Gå bakåt",
+  "@fileExplorer.errorPane.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c"
   },
@@ -1404,5 +1408,9 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Enhetsindexering är avstängd i Inställningar. Slå på den under Indexering > Enhetsindexering, så fortsätter den här enheten där den slutade.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
+  },
+  "fileExplorer.errorPane.goHome": "Öppna hemmappen",
+  "@fileExplorer.errorPane.goHome": {
+    "sourceHash": "74b2a8b"
   }
 }

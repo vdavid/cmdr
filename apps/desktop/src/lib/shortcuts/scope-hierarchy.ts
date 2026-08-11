@@ -19,10 +19,12 @@ export type { CommandScope }
  *   mode-scoped key genuinely collides with a File-list key. Brief and Full stay
  *   siblings (neither chain contains the other), so they don't conflict with each
  *   other — the registry binds ←/→ in both on purpose, and the modes never coexist.
- * - `Main window/Network`, `Main window/Share browser`, and
- *   `Main window/Volume chooser` are siblings of `Main window/File list`: a pane
+ * - `Main window/Network`, `Main window/Share browser`, `Main window/Volume chooser`,
+ *   and `Main window/Error screen` are siblings of `Main window/File list`: a pane
  *   shows one of them INSTEAD of the file list, so their keys don't collide with
- *   File-list keys (they share only `Main window` + `App`).
+ *   File-list keys (they share only `Main window` + `App`). The error screen's ⌘D
+ *   is the clearest case — it deliberately shadows whatever ⌘D is bound to
+ *   elsewhere, and that's not a conflict to report.
  *
  * `Command palette` inherits `Main window` (it overlays the main window, so its
  * keys can collide with Main-window keys). `Onboarding` is a modal under `App`
@@ -38,6 +40,7 @@ const scopeHierarchy: Record<CommandScope, CommandScope[]> = {
   'Main window/Network': ['Main window/Network', 'Main window', 'App'],
   'Main window/Share browser': ['Main window/Share browser', 'Main window', 'App'],
   'Main window/Volume chooser': ['Main window/Volume chooser', 'Main window', 'App'],
+  'Main window/Error screen': ['Main window/Error screen', 'Main window', 'App'],
   'About window': ['About window', 'App'],
   Onboarding: ['Onboarding', 'App'],
   'Command palette': ['Command palette', 'Main window', 'App'],

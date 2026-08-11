@@ -20,6 +20,7 @@ export type CommandScope =
   | 'Main window/Network' // Network browser
   | 'Main window/Share browser' // Share browser
   | 'Main window/Volume chooser' // Volume dropdown
+  | 'Main window/Error screen' // The full-pane error screen (ErrorPane)
   | 'About window' // About window commands
   | 'Onboarding' // FDA prompt
   | 'Command palette' // Command palette modal

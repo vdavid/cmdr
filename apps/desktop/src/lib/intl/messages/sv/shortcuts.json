@@ -41,6 +41,10 @@
     "sourceHash": "1744b96"
   },
   "shortcuts.scope.shareBrowser": "Bläddrare för delade mappar",
+  "shortcuts.scope.errorScreen": "Felskärm",
+  "@shortcuts.scope.errorScreen": {
+    "sourceHash": "d3da94a"
+  },
   "@shortcuts.scope.shareBrowser": {
     "sourceHash": "5cec2a6"
   },

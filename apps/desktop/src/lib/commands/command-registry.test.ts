@@ -74,6 +74,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'nav.pageDown',
   'nav.back',
   'nav.forward',
+  'nav.goHome',
   'file.rename',
   'file.view',
   'file.edit',

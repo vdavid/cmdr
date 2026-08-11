@@ -130,6 +130,16 @@
     },
     "screenshot": "error-message-example.png"
   },
+  "fileExplorer.errorPane.goBack": "Go back",
+  "@fileExplorer.errorPane.goBack": {
+    "description": "Button on the folder error screen that returns to the previously visited folder. Only shown when there is somewhere to go back to. Keep it short: it sits in a row next to other buttons and carries a keyboard-shortcut badge.",
+    "screenshot": "error-message-example.png"
+  },
+  "fileExplorer.errorPane.goHome": "Go to home folder",
+  "@fileExplorer.errorPane.goHome": {
+    "description": "Button on the folder error screen that opens the home folder, the always-available way out. \"Home folder\" means the per-user folder the operating system gives each account (~), not a website home page. Keep it short: it sits in a row next to other buttons and carries a keyboard-shortcut badge.",
+    "screenshot": "error-message-example.png"
+  },
   "fileExplorer.errorPane.technicalDetails": "Technical details",
   "@fileExplorer.errorPane.technicalDetails": {
     "description": "Label for a collapsible disclosure on the folder error screen that reveals raw diagnostic info.",

@@ -390,6 +390,16 @@
     "description": "Command name that navigates forward in history. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "commands.navGoHome.label": "Go to home folder",
+  "@commands.navGoHome.label": {
+    "description": "Command name that opens the home folder in the active pane. Appears in the command palette, the Go menu, and on the button that gets users out of an error screen. \"Home folder\" means the per-user folder the operating system gives each account (~), not a website home page. Distinct from \"Go to first file\", which only moves the cursor within the current folder.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.errorPaneToggleTechnicalDetails.label": "Show technical details",
+  "@commands.errorPaneToggleTechnicalDetails.label": {
+    "description": "Command name for opening and closing the \"Technical details\" section on the error screen shown in place of a file list when a folder cannot be opened. Shown only in the keyboard-shortcuts list (not the palette), where it is marked as a fixed shortcut that cannot be changed.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
   "commands.navOpenUnderCursor.label": "Open item under cursor",
   "@commands.navOpenUnderCursor.label": {
     "description": "Internal command name for opening the item under the cursor, driven by the automation interface; shown only in the keyboard-shortcuts list (not the palette).",

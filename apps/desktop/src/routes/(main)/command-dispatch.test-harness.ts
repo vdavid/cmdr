@@ -21,7 +21,7 @@ import type { ExplorerAPI } from './explorer-api'
  * The 20 ids registered (for the rebinding UI) but with NO dispatch handler —
  * three families: native-menu-owned (`app.quit`/`hide`/`hideOthers`/`showAll`),
  * per-keystroke P2 (`nav.up`/`down`/`left`/`right`/`firstInFull`/`lastInFull`),
- * and component-scoped (palette/volume/network/share/contextMenu). Mirrors the
+ * and component-scoped (palette/volume/network/share/contextMenu/errorPane). Mirrors the
  * production `DispatchExemptId` union (`command-handlers/types.ts`), kept as an
  * independent local copy so this characterization file derives its own dispatchable
  * vs exempt split rather than trusting the code it characterizes.
@@ -47,6 +47,7 @@ export const EXEMPT_IDS = [
   'share.back',
   'share.selectShare',
   'file.contextMenu',
+  'errorPane.toggleTechnicalDetails',
 ] as const satisfies readonly CommandId[]
 
 export const EXEMPT_SET: ReadonlySet<string> = new Set(EXEMPT_IDS)
@@ -89,6 +90,7 @@ export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
     'handleMcpTabAction',
     'sendKeyToFocusedPane',
     'navigate',
+    'goHome',
     'getFocusedPane',
     'openItemUnderCursor',
     'moveCursor',

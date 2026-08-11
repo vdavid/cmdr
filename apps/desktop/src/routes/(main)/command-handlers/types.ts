@@ -55,6 +55,9 @@ export type DispatchExemptId =
   | 'share.back'
   | 'share.selectShare'
   | 'file.contextMenu'
+  // ErrorPane owns ⌘D through its own CAPTURE-phase document listener, which runs
+  // ahead of the dispatch spine on purpose (it must beat any user binding on ⌘D).
+  | 'errorPane.toggleTechnicalDetails'
 
 /**
  * Runtime mirror of `DispatchExemptId` (an `as const` tuple). Backs the

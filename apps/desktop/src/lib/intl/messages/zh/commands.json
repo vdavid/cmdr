@@ -321,6 +321,10 @@
     "sourceHash": "6aadac2"
   },
   "commands.navForward.label": "前进",
+  "commands.navGoHome.label": "前往个人文件夹",
+  "@commands.navGoHome.label": {
+    "sourceHash": "74b2a8b"
+  },
   "@commands.navForward.label": {
     "sourceHash": "8121136"
   },
@@ -329,6 +333,10 @@
     "sourceHash": "6b54df9"
   },
   "commands.cursorMoveTo.label": "移动窗格光标",
+  "commands.errorPaneToggleTechnicalDetails.label": "显示技术详情",
+  "@commands.errorPaneToggleTechnicalDetails.label": {
+    "sourceHash": "bde0de8"
+  },
   "@commands.cursorMoveTo.label": {
     "sourceHash": "4c196ef"
   },

@@ -104,6 +104,9 @@ pub const GO_PARENT_ID: &str = "go_parent";
 pub const GO_TO_PATH_ID: &str = "go_to_path";
 /// "Go to latest download" (⌘J): jumps the focused pane to the most recent download.
 pub const GO_LATEST_DOWNLOAD_ID: &str = "go_latest_download";
+/// "Home" (⇧⌘H): opens the home folder in the focused pane. ⌘H alone belongs to AppKit
+/// ("Hide Cmdr"), so the shifted combo is the one Cmdr can own.
+pub const GO_HOME_ID: &str = "go_home";
 
 /// "Add to favorites", menu bar + palette: maps to the `favorites.add` command, which favorites the
 /// focused pane's current folder. Ships with NO default shortcut (adding a favorite is infrequent);
@@ -243,6 +246,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         GO_PARENT_ID => Some(("nav.parent", CommandScope::FileScoped)),
         GO_TO_PATH_ID => Some(("nav.goToPath", CommandScope::FileScoped)),
         GO_LATEST_DOWNLOAD_ID => Some(("downloads.goToLatest", CommandScope::FileScoped)),
+        GO_HOME_ID => Some(("nav.goHome", CommandScope::FileScoped)),
         FAVORITES_ADD_ID => Some(("favorites.add", CommandScope::FileScoped)),
 
         // Tab commands (file-scoped)
@@ -343,6 +347,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "nav.parent" => Some(GO_PARENT_ID),
         "nav.goToPath" => Some(GO_TO_PATH_ID),
         "downloads.goToLatest" => Some(GO_LATEST_DOWNLOAD_ID),
+        "nav.goHome" => Some(GO_HOME_ID),
         "favorites.add" => Some(FAVORITES_ADD_ID),
         "tab.new" => Some(NEW_TAB_ID),
         "tab.close" => Some(CLOSE_TAB_ID),

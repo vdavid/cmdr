@@ -94,6 +94,38 @@ come for free):
   hidden `behavior.doubleClickOnPaneNotificationSeen` so the hint shows once. "Never do this again" turns the gesture
   off from the toast.
 
+### The error screen's ways out (`ErrorPane.svelte`)
+
+Every listing failure renders through the one `ErrorPane`, so its action row is where "the user is stuck" gets solved
+for all ~60 error reasons at once. Only two reasons-groups carry a CTA of their own (`Try again` for
+`category === 'transient' && retryHint`, `Open System Settings` for `actionKind === 'open_privacy_settings'` on macOS);
+the rest had none, which is why the row always renders at least one way out. All four buttons share ONE `.cta` row,
+above the Technical details disclosure.
+
+- **`Go to home folder` always renders.** It calls the same `onOpenHome` prop the unreachable banner uses, so both land
+  through `edgeFlow.handleOpenHome` (default volume + `~`, clearing `tab.unreachable`).
+- **`Go back` renders only when `canGoBack`.** `DualPaneExplorer` derives it from the active tab's history
+  (`canGoBack(getActiveTab(tabMgr).history)`). The gate is load-bearing, not cosmetic: history is per-tab and is NOT
+  persisted across sessions, and `createHistory` seeds a single entry, so on a first-paint error (restored path fails to
+  list, or a freshly opened tab) `nav.back` is a silent no-op (`navigate.ts` returns `SETTLED_NOOP` — no toast, no
+  feedback). A button that visibly does nothing is worse than no button.
+- **Both labels carry a live `ShortcutChip` in `commandId` mode**, so a rebind of `nav.back` / `nav.goHome` shows up
+  immediately. `clickable={false}` because the chip sits inside a `<Button>` (a nested click target would
+  double-activate).
+
+**⌘D opens Technical details, and deliberately outranks any user binding on ⌘D.** `ErrorPane` registers a CAPTURE-phase
+`document` keydown listener while mounted, which runs ahead of both the explorer container's `onkeydown` and the
+document-level command dispatcher. `errorPane.toggleTechnicalDetails` is therefore a `fixedKey` command (registry +
+`FIXED_KEY_COMMAND_IDS` + `DispatchExemptId`): rebinding it would be a no-op illusion, and releasing the key would
+falsify the "Technical details ⌘D" hint the screen itself advertises. The listener is gated on `isFocused` so two
+simultaneous error panes don't both toggle. Its `Main window/Error screen` scope is a SIBLING of `Main window/File list`
+(an error screen renders instead of the file list), so the shadowing isn't reported as a conflict in Settings.
+
+**Not fixed here (pre-existing):** six reasons set `retry_hint: true` under a non-`transient` category
+(`diskReadProblem`, `unexpectedSystemResponse`, `deviceProblem`, `couldntReadUnknown`, `ioSerious` are `Serious`;
+`emptyRootICloud` is `NeedsAction`), so the `category === 'transient'` half of the gate silently drops their Try again
+button. They still get the two ways out.
+
 ### Tests
 
 Colocated with the code they pin (`codegraph_files` lists them; every alt-view component carries an `*.a11y.test.ts` axe

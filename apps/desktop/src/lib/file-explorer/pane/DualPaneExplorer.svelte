@@ -34,7 +34,7 @@
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath } from '../navigation/path-navigation'
 
-    import { type NavigationHistory } from '../navigation/navigation-history'
+    import { canGoBack, type NavigationHistory } from '../navigation/navigation-history'
     import TabBar from '../tabs/TabBar.svelte'
     import {
         getActiveTab,
@@ -954,6 +954,10 @@
         return navigateIntent(intent)
     }
 
+    export function goHome(pane?: 'left' | 'right'): Promise<void> {
+        return edgeFlow.handleOpenHome(pane ?? focusedPane)
+    }
+
     export function getFileAndPathUnderCursor(): { path: string; filename: string } | null {
         return paneCommands.getFileAndPathUnderCursor()
     }
@@ -1372,6 +1376,10 @@
                 unreachable={getActiveTab(tabMgr).unreachable}
                 onRetryUnreachable={() => edgeFlow.handleRetryUnreachable(paneId)}
                 onOpenHome={() => edgeFlow.handleOpenHome(paneId)}
+                canGoBack={canGoBack(getActiveTab(tabMgr).history)}
+                onGoBack={() => {
+                    navigateIntent({ pane: paneId, to: { history: 'back' }, source: 'user' })
+                }}
                 {onCommand}
             />
         {/key}

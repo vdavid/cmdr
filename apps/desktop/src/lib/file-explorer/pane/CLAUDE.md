@@ -57,5 +57,8 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   `*.ts` helper.
 - **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`. Keep the reactive `mediaTick`,
   or dark-mode / contrast swaps won't repaint the tint.
+- **`ErrorPane`: ⌘D stays a CAPTURE-phase `document` listener** (it must outrank any user ⌘D binding; hence `fixedKey` +
+  dispatch-exempt), and `Go back` renders only when `canGoBack` — history isn't persisted, so a first-paint error would
+  give a dead button. DETAILS § "The error screen's ways out".
 
 Read `DETAILS.md` before any non-trivial work here: editing, planning, reorganizing, or advising.

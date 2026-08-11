@@ -85,6 +85,8 @@ const EXPECTED_NAMES: Record<string, string> = {
   'nav.pageDown': 'Page down',
   'nav.back': 'Go back',
   'nav.forward': 'Go forward',
+  'nav.goHome': 'Go to home folder',
+  'errorPane.toggleTechnicalDetails': 'Show technical details',
   'nav.openUnderCursor': 'Open item under cursor',
   'cursor.moveTo': 'Move pane cursor',
   'cursor.scrollTo': 'Scroll pane to index',

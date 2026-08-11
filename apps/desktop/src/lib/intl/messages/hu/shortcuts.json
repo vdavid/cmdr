@@ -41,6 +41,10 @@
     "sourceHash": "1744b96"
   },
   "shortcuts.scope.shareBrowser": "Megosztásböngésző",
+  "shortcuts.scope.errorScreen": "Hibaképernyő",
+  "@shortcuts.scope.errorScreen": {
+    "sourceHash": "d3da94a"
+  },
   "@shortcuts.scope.shareBrowser": {
     "sourceHash": "5cec2a6"
   },

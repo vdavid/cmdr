@@ -24,6 +24,12 @@ export const navHandlers = {
     explorerRef?.navigate({ pane: explorerRef.getFocusedPane(), to: { history: 'forward' }, source: 'user' })
   },
 
+  'nav.goHome': ({ explorerRef }) => {
+    // Fire-and-forget: `goHome` resolves the default volume before committing, but
+    // nothing here awaits the landing (no MCP round-trip on this id).
+    void explorerRef?.goHome()
+  },
+
   'nav.home': ({ explorerRef }) => {
     explorerRef?.sendKeyToFocusedPane('Home')
   },
