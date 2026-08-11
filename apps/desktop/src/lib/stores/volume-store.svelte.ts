@@ -66,6 +66,36 @@ export function requestVolumeRefresh(): void {
 }
 
 /**
+ * Drops volumes repeating an ID already seen, keeping the first.
+ *
+ * A volume ID is identity, and several consumers feed this list straight into a
+ * keyed `{#each}` (the transfer dialog's destination picker, the tab bar's name
+ * map). Svelte throws `each_key_duplicate` during flush on a repeated key, and a
+ * dialog that throws mid-render leaves the pane's keyboard suppressed with
+ * nothing on screen to escape from.
+ *
+ * The backend already publishes one location per ID (a filesystem mounted twice
+ * collapses to its canonical root, `volumes/DETAILS.md` § "One volume ID
+ * publishes one mount root"). This is the second line of defense, at the ONE
+ * place the frontend's volume list is built, so no consumer has to repeat it.
+ */
+function dedupeById(list: VolumeInfo[]): VolumeInfo[] {
+  const seen = new Set<string>()
+  const unique = list.filter((volume) => {
+    if (seen.has(volume.id)) return false
+    seen.add(volume.id)
+    return true
+  })
+  if (unique.length !== list.length) {
+    logger.warn('Dropped {count} {volumesNoun} repeating a volume ID already in the list', {
+      count: list.length - unique.length,
+      volumesNoun: pluralize(list.length - unique.length, 'volume'),
+    })
+  }
+  return unique
+}
+
+/**
  * Narrows a `volume-connection-changed` state to the `smbConnectionState` the volume
  * picker renders, or `null` when the picker has nothing to show for it.
  *
@@ -102,7 +132,8 @@ export async function initVolumeStore(): Promise<void> {
   // Subscribe to backend-pushed volume list updates
   unlistenVolumesChanged = await onVolumesChanged((payload) => {
     receivedEvent = true
-    volumes = payload.data
+    const published = dedupeById(payload.data)
+    volumes = published
     timedOut = payload.timedOut
 
     // Detect retry failure: we were refreshing and it's still timed out
@@ -117,8 +148,8 @@ export async function initVolumeStore(): Promise<void> {
     }
 
     logger.debug('volumes-changed: {count} {volumesNoun}, timedOut={timedOut}', {
-      count: payload.data.length,
-      volumesNoun: pluralize(payload.data.length, 'volume'),
+      count: published.length,
+      volumesNoun: pluralize(published.length, 'volume'),
       timedOut: payload.timedOut,
     })
   })
@@ -146,11 +177,12 @@ export async function initVolumeStore(): Promise<void> {
   const result = await listVolumes()
   // Only use bootstrap data if no event has arrived yet
   if (!receivedEvent) {
-    volumes = result.data
+    const published = dedupeById(result.data)
+    volumes = published
     timedOut = result.timedOut
     logger.debug('Bootstrap: {count} {volumesNoun}', {
-      count: result.data.length,
-      volumesNoun: pluralize(result.data.length, 'volume'),
+      count: published.length,
+      volumesNoun: pluralize(published.length, 'volume'),
     })
   }
 
