@@ -10,18 +10,28 @@ drift out of sync with the shot.
 Meanwhile the i18n translator capture (`pnpm i18n:capture`) does ~150 verified native screenshots in ~90 seconds,
 because Playwright drives the real app over a Unix socket and every shot goes through one hardened `shoot()` helper.
 
-**Goal**: marketing masters become one command that anyone (agent or David) can run after a UI change, producing the
-same eight PNGs plus the hero geometry, with the failure modes caught by assertions rather than by eyeballing.
+**Goal**: marketing masters become one command that anyone (agent or David) can run after a UI change, producing eight
+PNGs plus the hero geometry, with the failure modes caught by assertions rather than by eyeballing.
+
+Note that eight is a scope increase: `brand/screenshots/` on `main` holds two files, and the guide says search and
+settings aren't in the pass yet. They are here, because the whole argument for automating this is that adding a shot
+should cost a spec block rather than an evening.
 
 **Non-goal**: replacing the i18n capture, or making the marketing shots part of CI. This is a deliberate, run-it-on-
 purpose tool that needs the machine left alone. It stays macOS-only.
 
 ## What the app has to look like (the constraints that drive every decision)
 
-1. **A focused macOS window shadow.** Every master carries the focused-window shadow margins (112 left/right, 76
-   top/bottom in device px). `app-main` lands on a 2508x1634 canvas around a 2284x1410 window at +112+76. The website
-   hero's frame layer is mostly that shadow gradient, and `regenerate-hero.sh` derives each master's window rect from
-   the PNG's own alpha bounding box, so a shot without the shadow silently produces a wrong hero.
+1. **A focused macOS window shadow.** Every master carries the focused-window shadow margins: 112 left and right, 76
+   top, 148 bottom (the shadow falls downward), in device px. Both axes therefore grow the canvas by 224, which is the
+   invariant the pipeline gates on. `app-main` lands on a 2508x1634 canvas around a 2284x1410 window at +112+76. The
+   website hero's frame layer is mostly that shadow gradient, and `regenerate-hero.sh` derives each master's window rect
+   from the PNG's own alpha bounding box, so a shot without the shadow silently produces a wrong hero.
+
+   Measured live on 2026-08-12 against a running Cmdr window (2422x1788 device px): focused gives `+112+76` with a
+   canvas 224 px larger on both axes, unfocused gives `+68+52` with 136. The margins don't move with the window's size,
+   which is what makes them safe as constants.
+
 2. **A prod-looking app.** No pink `DEV MODE`, no blue `E2E MODE`, no yellow `SCREENSHOT` title bar.
 3. **Real content.** Real folders with real names and sizes, a real volume with real free space, a real git chip, real
    search results. Fixture trees look like a toy.
@@ -59,6 +69,20 @@ run could not produce a marketing master even in principle.
 window that can be made key. `guard_e2e_requires_data_dir()` only fires under E2E mode, and we pass `CMDR_DATA_DIR`
 anyway, so nothing is lost.
 
+**The cost, and the alternative we rejected.** `isE2eRun()` is false in this shape, so about a dozen frontend
+suppressions switch back on. Four of them matter and are handled in M2/M4 (analytics, the updater's poll loop, the
+"What's new" showcase, the upgrade-nudge toast); two we actively want back (the rail really grows the window, the
+settings window really raises).
+
+The alternative is a fifth app mode, `shots`, alongside `capture`: `isE2eRun()` stays true so every suppression holds,
+the title bar renders as prod, and only the two activation gates plus the rail/raise sites get refined. It is a real
+option, and the `capture` mode is the precedent for it. We rejected it because it puts production code in the app for a
+marketing tool, and it buys nothing the launch environment cannot: `CMDR_SECRET_STORE=file` already forces the
+plain-file secret store independently of E2E mode (`secrets/mod.rs:103-109`, checked BEFORE the E2E branch), and
+analytics, the updater, whats-new, and the nudge are all settings the seed owns. Zero app-code changes for a tool that
+photographs the app beats six gated call sites inside it. Revisit if the suppression list grows: the moment this needs
+its third app-code gate, the mode is the cleaner shape.
+
 Focus is then claimed from **outside** the app, per shot:
 
 ```
@@ -81,8 +105,12 @@ a fixture tree and sets the variable when it is unset**, so "just don't set it" 
 So the marketing shard must, explicitly and with a comment saying why:
 
 1. leave `CMDR_E2E_START_PATH` unset in both the app and the Playwright process,
-2. skip `global-setup`'s fixture creation for this shard kind, and
-3. skip the post-test fixture guard for this shard kind.
+2. skip `global-setup`'s fixture creation for this shard kind (it also calls `recreateMtpFixtures()`, which can race a
+   parallel session's MTP specs, so skip that too), and
+3. run the spec on its own `createTauriTest` WITHOUT the shared auto fixture. That fixture carries `failOnLeaks`, which
+   diffs the fixture tree and fails any test leaving an overlay up — and the search shot leaves a dialog open by
+   construction. "Reuse the harness" is this plan's principle, so the exception is named here: the leak guard's whole
+   job is protecting a shared fixture tree, and this shard deliberately has none.
 
 Cmdr's first principle is protecting the user's data, and this run is the one place in the repo where test
 infrastructure points at a person's real files. Treat any shortcut here as a blocker, not a nit.
@@ -104,7 +132,7 @@ scripts/marketing-shots.ts  (orchestrator, Node)
    |  launches target/<host>/release/Cmdr   (playwright-e2e feature, CMDR_E2E_MODE unset)
    |  exports CMDR_SHOTS_PID + CMDR_PLAYWRIGHT_SOCKET
    v
-playwright --project=tauri --shard-kind=marketing-shots  test/e2e-playwright/marketing-shots.spec.ts
+CMDR_E2E_SHARD_KIND=marketing-shots playwright  test/e2e-playwright/marketing-shots.spec.ts
    |  stages each shot through the real UI (settings, panes, tabs, search, rail, theme)
    |  measures the hero pane rects off the live DOM
    v
@@ -142,20 +170,30 @@ Build `apps/desktop/test/e2e-playwright/marketing-shots-helpers.ts`:
 - `shootWithShadow(page, windowLabel, outPath, expected)` — mirrors `shoot()`'s contract and reuses its parts:
   `settlePaint`, `clearStrayToasts`, the IEND-complete wait (`isCompletePng`), `assessImageContent` from
   `i18n-capture-png.ts`, three attempts, and a `BlankShotError`-shaped failure. Adds one gate `shoot()` cannot have:
-  **the alpha bounding box must equal the expected window rect at the focused margins** (112/76). An unfocused window
-  yields 68/52 and fails loudly instead of shipping a hero with half the shadow.
-- Export the margin constants (`FOCUSED_SHADOW_X = 112`, `FOCUSED_SHADOW_Y = 76`) with a comment naming what they are
-  and how to re-derive them.
+  **the window rect read back out of the PNG's alpha must sit at the focused margins, on a canvas 224 px larger on both
+  axes.** An unfocused window yields +68+52 and 136, and fails by name.
+- The alpha threshold is `253`, the 8-bit form of the `-threshold 99%` that `regenerate-hero.sh` uses on the same
+  images. Not a round number and not adjustable: at 90% the same master measures `2286x1412+111+75`, so a looser
+  threshold red-lights every good shot and puts this pipeline and the hero compositing on different ideas of where the
+  window ends.
+- The expected window size is read LIVE off the app, never hardcoded. The settings window's size is
+  `SETTINGS_CHROME_WIDTH + 600 × scale` by `SETTINGS_BASE_HEIGHT × scale` (`settings-window.ts:40-47,88-90`), and
+  `getEffectiveScale()` compounds the system text size, so a constant would be right only on the machine it was measured
+  on.
+- Assert `scaleFactor() === 2` before the first shot. Every margin here is a device-pixel number; on a 1x display the
+  shot halves and the gate fails with a puzzling message instead of a true one.
 
-**Tests**: `marketing-shots-helpers.test.ts` (Vitest, in `apps/desktop/test/`), test-first, real red→green, over the
-pure parts only: the alpha-bbox verdict (accept exact, reject 68/52, reject off-centre, reject a bbox that touches the
-canvas edge), and the JXA output parser (zero windows, several windows, malformed JSON). The impure parts (`osascript`,
-`screencapture`) are proven by M2's real run, not mocked.
+**Tests**: `marketing-shots-frame.test.ts`, test-first, real red→green, over the pure parts: the frame verdict (accept
+the focused margins, reject an unfocused shot by name, reject a size the app doesn't report, reject a shifted margin,
+reject a canvas too small to hold the shadow, reject an empty capture), rect insetting, and window picking. Anchored on
+the committed `app-main-dark.png` as well as painted fixtures, so a model that drifts from what macOS actually produces
+fails rather than agreeing with itself. The impure half is proven by a real run, not mocked.
 
-**Manual proof for this milestone**: launch any window, call `shootWithShadow` against it from a scratch script, confirm
-a 2508x1634 PNG with alpha bbox `2284x1410+112+76`.
+**Status: done.** 16 tests green, and the chain verified against a live window: window id by point size → front position
+→ `screencapture -l` → verdict `ok` at `+112+76`. Screen Recording and Accessibility both work from a terminal session
+here (2026-08-12).
 
-**Checks**: `pnpm check -q desktop-vitest`, `pnpm check -q lint`.
+**Checks**: `pnpm check -q desktop-svelte-tests oxfmt desktop-svelte-eslint`.
 
 ### M2 — the orchestrator and the shots data dir
 
@@ -170,8 +208,10 @@ this from M3 keeps "can we drive it at all" separate from "does it look right".
 - `--build` builds via the existing `pnpm test:e2e:playwright:build` (feature set unchanged, so the cargo cache is
   reused). Without it, fail with a clear message when the binary is missing or older than `src-tauri/`.
 - Launch env: `CMDR_DATA_DIR=<shots dir>`, `CMDR_PLAYWRIGHT_SOCKET=<unique>`, `CMDR_MCP_ENABLED=1` +
-  `CMDR_MCP_PORT=<ephemeral>` (the navigation helpers go over MCP), `CMDR_E2E_ASK_CMDR_FAKE=1`,
-  `CMDR_SECRET_STORE=file`, and **unset**: `CMDR_E2E_START_PATH`, `CMDR_E2E_MODE`, `CMDR_I18N_CAPTURE_BUILD`.
+  `CMDR_MCP_PORT=<ephemeral>` (navigation and the index-freshness poll both go over MCP; the port has to be reserved and
+  pinned the way `i18n-capture.ts:563-566` does it, there is no such signal on the Playwright seam),
+  `CMDR_E2E_ASK_CMDR_FAKE=1`, `CMDR_SECRET_STORE=file`, `CI=1`, and **unset**: `CMDR_E2E_START_PATH`, `CMDR_E2E_MODE`,
+  `CMDR_I18N_CAPTURE_BUILD`.
   - `CMDR_SECRET_STORE=file` because without E2E mode the app talks to the **real macOS Keychain**
     (`secrets/mod.rs:112-124`), which can raise a blocking approval dialog mid-run. Nothing here needs a real key: the
     chat is seeded (M4).
@@ -186,8 +226,10 @@ this from M3 keeps "can we drive it at all" separate from "does it look right".
   (`settings-window.ts:68`).
 - **No update check and no analytics from a shots run**, and both are ON by default in a prod-mode release build:
   - Analytics consent is granted unless the setting is explicitly false (`src-tauri/src/analytics/mod.rs:80-81,105`),
-    and the prod PostHog project is chosen for a release build (`:89`). A shots run would otherwise register a fresh
-    install id and emit real events. The seed sets `analytics.enabled: false`.
+    and a release build points at the PRODUCTION PostHog project (`:89`, suppressed only under `debug_assertions` or
+    `CI`). A shots run would otherwise mint a fresh install id from the new data dir and beat a heartbeat into the real
+    dashboard as a phantom user. Belt and braces: `CI=1` in the launch env AND `analytics.enabled: false` in the seed.
+    The env var alone is a coincidence of the suppression list, not a contract.
   - The updater runs a background poll loop driven by `updates.autoCheck` (`src/lib/updates/updater.svelte.ts:232-244`).
     The seed sets it false, which also kills the "Restart to update" toast that would otherwise photobomb a shot. Both
     are seeded settings, ❌ never code patches: a screenshot run must not be a special case inside the app.
@@ -222,9 +264,16 @@ UI (settings commands, navigation, tabs, search dialog, rail toggle, theme toggl
 - `app-main-{dark,light}` — two panes, the pinned-tab arrangement, the F-key bar visible.
 - `search-{dark,light}` — the search dialog over the panes with real results.
 - `chat-{dark,light}` — the Ask Cmdr rail open on the seeded thread (§ below). The rail widens the window, so this pair
-  lands on 3188x1634.
-- `settings-{dark,light}` — the settings window (opened through `openSettingsWindowViaProd`, never by routing the main
-  window), 1928x1426 around a 1704x1202 window.
+  lands on a wider canvas. ❗ Read the achieved rect and shoot that; don't predict it. `growRectForRail` caps at the
+  monitor width (`rail-window.ts:66-76`), so on a smaller display the panes shrink instead of the window growing, and a
+  hardcoded 3188x1634 would fail on a machine that produced a perfectly good shot.
+- `settings-{dark,light}` — the settings window, opened through `openSettingsWindowViaProd`, never by routing the main
+  window. Its size is derived, not fixed: `SETTINGS_CHROME_WIDTH + 600 × scale` by `SETTINGS_BASE_HEIGHT × scale`, and
+  the scale compounds the system text size. Read it live and shoot what the app reports.
+
+Before the first shot, size the main window to **1142x705 logical**, which is what makes the master 2284x1410 and what
+the hero geometry is built on. Assert `scaleFactor() === 2` in the same step: every margin in this pipeline is a
+device-pixel number.
 
 Window sizing has no generic helper: `setWindowSize` is module-private in `i18n-capture-frame.ts:190-197`, and the
 exported path (`fitSurfaceWindow`, `stressLayoutIfWorstCase`) is about fitting content, not hitting an exact canvas.
@@ -267,14 +316,21 @@ call.
 
 `apps/desktop/scripts/marketing-shots-seed.ts` (invoked by the orchestrator on first run, and by `--reseed`):
 
-- Settings and `app-status.json` defaults: onboarding complete, **"What's new" marked seen** (prod mode does not
-  suppress it), rail width, favorites, the cosmetics above.
+- Settings and `app-status.json` defaults: onboarding complete, **"What's new" marked seen** and the **upgrade nudge
+  marked shown** (prod mode suppresses neither, and both would land on top of the first run's shots), favorites, the
+  cosmetics above, `analytics.enabled: false`, `updates.autoCheck: false`.
+- **Seed the rail CLOSED**, and let the spec open it. `hydrateRail` reopens a persisted-open rail with
+  `resizeWindow: false` because it assumes the saved window rect already includes the rail; a flag without a
+  rail-inclusive rect gives squeezed panes, and the spec's first close then shrinks a window that never grew
+  (`rail-window.ts:88`'s `lastGrowth ?? { grewBy: railWidth }` fallback), poisoning exactly the pane widths the hero
+  cutouts measure.
 - Ask Cmdr consent, in `main.db`'s `meta` table (not settings): `ask_cmdr_consent_version = '2'` (the current
   `CONSENT_COPY_VERSION`) and `ask_cmdr_consent_at`. Both must be present or the rail renders the consent screen.
 - One `conversations` row (highest `updated_at`, `archived = 0`, so `bootstrapActiveThread` picks it), plus `messages`
   rows with explicit `seq` and `content_blocks` JSON: a user question about the user's files, one or two real tool calls
   (`list_dir`, `important_folders` — names from the `AgentPart` wire enum), their results, and the assistant's answer.
-  The FTS triggers keep themselves in sync.
+  Fill `text_for_search` with the prose too: the FTS triggers copy that column verbatim, so leaving it empty produces a
+  thread the app's own search can't find. Invisible in the shot, wrong in the artifact.
 - Optionally a `cost_meter` row plus `conversations.last_prompt_tokens` / `last_prompt_budget`, so the footer and the
   context gauge show real numbers instead of "not measured".
 
@@ -288,7 +344,7 @@ draft for David's review like every other human-facing string.
 starting at 0, valid `content_blocks` JSON, and `role` values from the allowed set), written test-first. The seed is
 then proven end-to-end by M3's `chat-*` shots.
 
-**Checks**: `pnpm check -q desktop-vitest`, plus the real chat shots.
+**Checks**: `pnpm check -q desktop-svelte-tests`, plus the real chat shots.
 
 ### M5 — docs, and retiring the manual path
 
@@ -302,10 +358,14 @@ then proven end-to-end by M3's `chat-*` shots.
   at `DETAILS.md`. `DETAILS.md`: the shard's files, why `CMDR_E2E_MODE` is deliberately off, and the alpha-bbox gate.
 - `brand/CLAUDE.md`: the screenshots bullet points at the command, not at a procedure.
 - `docs/architecture.md`: a map line only, no mechanism.
+- `docs/testing.md` § "E2E env-var hooks": every new `CMDR_*` var this run introduces. If the app ever reads one, wire
+  it through `crate::test_mode` rather than reading `std::env` at the use site.
+- `apps/desktop/scripts/CLAUDE.md`'s module map (the new orchestrator) and
+  `apps/desktop/test/e2e-playwright/DETAILS.md`'s shard list and § Files.
 - Check the `claude-md-length` and `docs-reachable` results; ❌ never add or raise an allowlist entry without David's
   explicit consent, surface a warn instead.
 
-**Checks**: `pnpm check -q docs`, then a full `pnpm check -q` once.
+**Checks**: `pnpm check -q docs-reachable dead-links link-text claude-md-length`, then a full `pnpm check -q` once.
 
 ## Seeding the shots data dir (reference)
 
@@ -330,8 +390,12 @@ then proven end-to-end by M3's `chat-*` shots.
 - **A cold shots data dir** costs one whole-drive index reconcile (~20 minutes). Only once, and the orchestrator says so
   up front instead of producing hourglass screenshots.
 - **The E2E binary is not a release build in every respect.** It carries `playwright-e2e` and the baked dialog gallery.
-  With `CMDR_E2E_MODE` unset the app resolves to `prod` app mode, so the title bar is plain, but M1's first real shot is
+  With `CMDR_E2E_MODE` unset the app resolves to `prod` app mode, so the title bar is plain, but the first real shot is
   the moment to compare it against a real release build and record any remaining visible delta.
+- **The shots build and the i18n capture build fight over the same binary path.** `i18n-capture.ts:372-387` adds
+  `--config profile.release.debug-assertions=true`; the shots build must NOT (it would flip `CMDR_MOCK_LICENSE` on).
+  Different cargo config means alternating the two triggers a full rebuild each way. Worth knowing before blaming the
+  cache; not worth solving until it annoys someone.
 - **`marketing-shots.spec.ts` must never reach a Linux lane or CI.** Enforced by the shard exclusion; worth an explicit
   assertion in the spec that `process.platform === 'darwin'`.
 
