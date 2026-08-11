@@ -13,16 +13,18 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount, unmount, flushSync } from 'svelte'
+import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
 
 vi.mock('$lib/ui/AlertDialog.svelte', async () => ({
-  default: (await import('./dialog-throw-fixture.svelte')).default,
+  default: (await import('../../../../test/fixtures/dialog-throw-fixture.svelte')).default,
 }))
 
 import DialogManager from './DialogManager.svelte'
 
+type DialogManagerProps = ComponentProps<typeof DialogManager>
+
 /** Every prop `DialogManager` needs, with nothing open and no-op callbacks. */
-function baseProps(onDialogRenderError: (error: unknown) => void) {
+function baseProps(onDialogRenderError: (error: unknown) => void): DialogManagerProps {
   const noop = (): void => {}
   return {
     onDialogRenderError,
@@ -58,7 +60,16 @@ function baseProps(onDialogRenderError: (error: unknown) => void) {
     onAlertClose: noop,
     onDeleteConfirm: noop,
     onDeleteCancel: noop,
-  } as unknown as Record<string, unknown>
+  }
+}
+
+/** The props for an open alert dialog, which the mock makes throw on render. */
+function openAlertProps(onDialogRenderError: (error: unknown) => void): DialogManagerProps {
+  return {
+    ...baseProps(onDialogRenderError),
+    showAlertDialog: true,
+    alertDialogProps: { title: 'Heads up', message: 'Something to say' },
+  }
 }
 
 describe('DialogManager error boundary', () => {
@@ -80,9 +91,7 @@ describe('DialogManager error boundary', () => {
 
   it('hands a dialog that throws during render to the recovery callback instead of propagating', () => {
     const onDialogRenderError = vi.fn()
-    const props = baseProps(onDialogRenderError)
-    props.showAlertDialog = true
-    props.alertDialogProps = { title: 'Heads up', message: 'Something to say' }
+    const props = openAlertProps(onDialogRenderError)
 
     // Mounting must NOT throw: the boundary is what stands between a broken
     // dialog and a webview with a suppressed keyboard and a blank screen.
@@ -97,15 +106,13 @@ describe('DialogManager error boundary', () => {
   })
 
   it('renders nothing after the failure, so no half-built dialog is left on screen', () => {
-    const props = baseProps(vi.fn())
-    props.showAlertDialog = true
-    props.alertDialogProps = { title: 'Heads up', message: 'Something to say' }
+    const props = openAlertProps(vi.fn())
 
     component = mount(DialogManager, { target: host, props }) as Record<string, unknown>
     flushSync()
 
     expect(host.querySelector('[role="dialog"], [role="alertdialog"]')).toBeNull()
-    expect(host.textContent?.trim()).toBe('')
+    expect(host.textContent.trim()).toBe('')
   })
 
   it('stays quiet and mounts normally when no dialog is open', () => {
