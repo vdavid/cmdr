@@ -64,8 +64,10 @@
   "shortcuts.scope.errorScreen": "Error screen",
   "@shortcuts.scope.errorScreen": {
     "description": "Group heading in the Keyboard shortcuts list for commands on the error screen, which replaces the file list when a folder cannot be opened. A short section title.",
-    "screenshot": "settings-keyboard-shortcuts.png"
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
+
   "shortcuts.scope.shareBrowser": "Share browser",
   "@shortcuts.scope.shareBrowser": {
     "description": "Group heading in the Keyboard shortcuts list for commands in the share browser (the shared folders on a network server). A short section title.",

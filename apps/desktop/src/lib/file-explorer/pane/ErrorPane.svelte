@@ -115,7 +115,13 @@
 
     const isPermissionDenied = $derived(friendly.actionKind === 'open_privacy_settings')
 
-    const showRetryButton = $derived(friendly.category === 'transient' && friendly.retryHint)
+    // `retryHint` alone decides this: it IS the backend's "retrying might help"
+    // signal, and it's deliberately set on Serious errnos (`friendly_error/errno.rs`'s
+    // `serious` helper) and on the NeedsAction `emptyRootICloud` (which promises a
+    // Try again so the user can re-list after granting access). Don't re-add a
+    // `category === 'transient'` condition — it silently swallowed six reasons'
+    // buttons, `emptyRootICloud`'s included.
+    const showRetryButton = $derived(friendly.retryHint)
 
     const retryInfo = $derived.by(() => {
         if (retryTimestamps.length === 0) return null

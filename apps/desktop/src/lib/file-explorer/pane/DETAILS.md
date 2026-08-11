@@ -97,10 +97,16 @@ come for free):
 ### The error screen's ways out (`ErrorPane.svelte`)
 
 Every listing failure renders through the one `ErrorPane`, so its action row is where "the user is stuck" gets solved
-for all ~60 error reasons at once. Only two reasons-groups carry a CTA of their own (`Try again` for
-`category === 'transient' && retryHint`, `Open System Settings` for `actionKind === 'open_privacy_settings'` on macOS);
-the rest had none, which is why the row always renders at least one way out. All four buttons share ONE `.cta` row,
-above the Technical details disclosure.
+for all ~60 error reasons at once. Only two reason-groups carry a CTA of their own (`Try again` for `retryHint`,
+`Open System Settings` for `actionKind === 'open_privacy_settings'` on macOS); the rest have none, which is why the row
+always renders at least one way out. All four buttons share ONE `.cta` row, above the Technical details disclosure.
+
+- **`Try again` keys on `retryHint` ALONE.** That flag is the backend's "retrying might help" signal and is set across
+  categories on purpose: `friendly_error/errno.rs`'s `serious` helper carries it (`diskReadProblem`,
+  `unexpectedSystemResponse`, `deviceProblem`), as do `couldntReadUnknown` and `io_serious`, and the NeedsAction
+  `emptyRootICloud` sets it alongside `OpenPrivacySettings` so the user can re-list after granting access. ❌ Don't
+  re-add a `category === 'transient'` condition: it silently swallowed those six buttons, including the one
+  `empty_root.rs`'s own doc comment promises.
 
 - **`Go to home folder` always renders.** It calls the same `onOpenHome` prop the unreachable banner uses, so both land
   through `edgeFlow.handleOpenHome` (default volume + `~`, clearing `tab.unreachable`).
@@ -120,11 +126,6 @@ document-level command dispatcher. `errorPane.toggleTechnicalDetails` is therefo
 falsify the "Technical details ⌘D" hint the screen itself advertises. The listener is gated on `isFocused` so two
 simultaneous error panes don't both toggle. Its `Main window/Error screen` scope is a SIBLING of `Main window/File list`
 (an error screen renders instead of the file list), so the shadowing isn't reported as a conflict in Settings.
-
-**Not fixed here (pre-existing):** six reasons set `retry_hint: true` under a non-`transient` category
-(`diskReadProblem`, `unexpectedSystemResponse`, `deviceProblem`, `couldntReadUnknown`, `ioSerious` are `Serious`;
-`emptyRootICloud` is `NeedsAction`), so the `category === 'transient'` half of the gate silently drops their Try again
-button. They still get the two ways out.
 
 ### Tests
 
