@@ -1,22 +1,27 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { decodePng, encodePng } from './i18n-capture-png.js'
 import {
+  FOCUSED_CANVAS_GROWTH,
+  FOCUSED_SHADOW_BOTTOM,
+  FOCUSED_SHADOW_TOP,
   FOCUSED_SHADOW_X,
-  FOCUSED_SHADOW_Y,
-  UNFOCUSED_SHADOW_X,
-  UNFOCUSED_SHADOW_Y,
   insetRect,
   opaqueBoundingBox,
   pickWindowId,
   verifyShadowFrame,
 } from './marketing-shots-frame.js'
 
+/** The committed master, four levels up from `apps/desktop/test/e2e-playwright/`. */
+const REPO_ROOT = join(import.meta.dirname, '..', '..', '..', '..')
+
 /**
  * Paints a `canvas`-sized RGBA image whose only opaque area is `rect`, ringed by a
  * faint halo standing in for the macOS shadow. The halo is what makes these tests
  * worth having: a naive "any alpha above zero" bounding box would swallow it and
- * report the whole canvas, which is exactly the mistake that would let an
- * unfocused window pass as a focused one.
+ * report the whole canvas, which is exactly the mistake that would let an unfocused
+ * window pass as a focused one.
  */
 function shotWithWindowAt(
   canvas: { width: number; height: number },
@@ -37,6 +42,36 @@ function shotWithWindowAt(
   return encodePng(canvas.width, canvas.height, pixels)
 }
 
+/** A well-formed focused shot of a `window`-sized window, on the canvas macOS would give it. */
+function focusedShotOf(window: { width: number; height: number }): Buffer {
+  return shotWithWindowAt(
+    { width: window.width + FOCUSED_CANVAS_GROWTH, height: window.height + FOCUSED_CANVAS_GROWTH },
+    { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, ...window },
+  )
+}
+
+describe('the committed masters', () => {
+  // Anchoring on a real capture rather than only on painted fixtures: these numbers
+  // come from macOS, and a model of them that drifts from the pixels would let every
+  // synthetic test pass while the pipeline rejected every good shot.
+  it('measure exactly the focused margins the pipeline gates on', () => {
+    const bytes = readFileSync(join(REPO_ROOT, 'brand', 'screenshots', 'app-main-dark.png'))
+    const decoded = decodePng(bytes)
+
+    const rect = opaqueBoundingBox(bytes)
+
+    expect(rect).toEqual({ x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, width: 2284, height: 1410 })
+    expect(decoded.width).toBe(2284 + FOCUSED_CANVAS_GROWTH)
+    expect(decoded.height).toBe(1410 + FOCUSED_CANVAS_GROWTH)
+    expect(verifyShadowFrame(bytes, { width: 2284, height: 1410 })).toEqual({ ok: true, rect })
+  })
+
+  it('grow by the same amount on both axes, which is what one constant assumes', () => {
+    expect(FOCUSED_SHADOW_X * 2).toBe(FOCUSED_SHADOW_TOP + FOCUSED_SHADOW_BOTTOM)
+    expect(FOCUSED_CANVAS_GROWTH).toBe(FOCUSED_SHADOW_TOP + FOCUSED_SHADOW_BOTTOM)
+  })
+})
+
 describe('opaqueBoundingBox', () => {
   it('finds the window rect and ignores the shadow halo around it', () => {
     const bytes = shotWithWindowAt({ width: 200, height: 160 }, { x: 20, y: 30, width: 120, height: 90 })
@@ -50,8 +85,7 @@ describe('opaqueBoundingBox', () => {
     // edges between the corners are opaque.
     const canvas = { width: 100, height: 80 }
     const rect = { x: 10, y: 10, width: 60, height: 40 }
-    const bytes = shotWithWindowAt(canvas, rect, { haloAlpha: 0 })
-    const rounded = withTransparentCorners(bytes, canvas, rect)
+    const rounded = withTransparentCorners(shotWithWindowAt(canvas, rect, { haloAlpha: 0 }), canvas, rect)
 
     expect(opaqueBoundingBox(rounded)).toEqual(rect)
   })
@@ -65,28 +99,22 @@ describe('opaqueBoundingBox', () => {
 
 describe('verifyShadowFrame', () => {
   const window = { width: 240, height: 180 }
-  const canvas = {
-    width: window.width + 2 * FOCUSED_SHADOW_X,
-    height: window.height + 2 * FOCUSED_SHADOW_Y,
-  }
+  const canvas = { width: window.width + FOCUSED_CANVAS_GROWTH, height: window.height + FOCUSED_CANVAS_GROWTH }
 
   it('accepts a window sitting at the focused margins', () => {
-    const bytes = shotWithWindowAt(canvas, { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_Y, ...window })
-
-    expect(verifyShadowFrame(bytes, window)).toEqual({
+    expect(verifyShadowFrame(focusedShotOf(window), window)).toEqual({
       ok: true,
-      rect: { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_Y, ...window },
+      rect: { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, ...window },
     })
   })
 
   it('rejects the narrower shadow an unfocused window gets', () => {
-    // The whole reason this gate exists: an unfocused window still photographs
-    // fine, just with a thinner shadow, and the hero silently loses half its glow.
-    const unfocusedCanvas = {
-      width: window.width + 2 * UNFOCUSED_SHADOW_X,
-      height: window.height + 2 * UNFOCUSED_SHADOW_Y,
-    }
-    const bytes = shotWithWindowAt(unfocusedCanvas, { x: UNFOCUSED_SHADOW_X, y: UNFOCUSED_SHADOW_Y, ...window })
+    // The whole reason this gate exists: an unfocused window still photographs fine,
+    // just with a thinner shadow, and the hero silently loses half its glow.
+    const bytes = shotWithWindowAt(
+      { width: window.width + 2 * 68, height: window.height + 2 * 52 },
+      { x: 68, y: 52, ...window },
+    )
 
     const verdict = verifyShadowFrame(bytes, window)
 
@@ -94,8 +122,8 @@ describe('verifyShadowFrame', () => {
     expect(!verdict.ok && verdict.reason).toContain('not focused')
   })
 
-  it('rejects a window whose size is not the one that was staged', () => {
-    const bytes = shotWithWindowAt(canvas, { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_Y, width: 200, height: 180 })
+  it('rejects a window whose size is not the one the app reports', () => {
+    const bytes = shotWithWindowAt(canvas, { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, width: 200, height: 180 })
 
     const verdict = verifyShadowFrame(bytes, window)
 
@@ -104,12 +132,24 @@ describe('verifyShadowFrame', () => {
   })
 
   it('rejects a window shifted off the expected margins', () => {
-    const bytes = shotWithWindowAt(canvas, { x: FOCUSED_SHADOW_X + 6, y: FOCUSED_SHADOW_Y, ...window })
+    const bytes = shotWithWindowAt(canvas, { x: FOCUSED_SHADOW_X + 6, y: FOCUSED_SHADOW_TOP, ...window })
 
     const verdict = verifyShadowFrame(bytes, window)
 
     expect(verdict.ok).toBe(false)
     expect(!verdict.ok && verdict.reason).toContain('margin')
+  })
+
+  it('rejects a canvas too small to hold the whole shadow', () => {
+    // What a window pushed against a screen edge produces: right margins and a right
+    // window size, but the shadow runs off the bottom of the image.
+    const cropped = { width: canvas.width, height: canvas.height - 30 }
+    const bytes = shotWithWindowAt(cropped, { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, ...window })
+
+    const verdict = verifyShadowFrame(bytes, window)
+
+    expect(verdict.ok).toBe(false)
+    expect(!verdict.ok && verdict.reason).toContain('canvas')
   })
 
   it('rejects a capture with no window in it at all', () => {
@@ -134,22 +174,24 @@ describe('insetRect', () => {
 
 describe('pickWindowId', () => {
   const windows = [
-    { id: 11, width: 80, height: 40, layer: 0, title: 'Cmdr' },
-    { id: 12, width: 2284, height: 1410, layer: 0, title: 'Cmdr – Personal use only' },
-    { id: 13, width: 4000, height: 3000, layer: 3, title: 'Menubar' },
+    { id: 11, x: 0, y: 0, width: 480, height: 300, layer: 0 },
+    { id: 12, x: 40, y: 60, width: 1142, height: 705, layer: 0 },
+    { id: 13, x: 0, y: 0, width: 2000, height: 1500, layer: 3 },
   ]
 
   it('picks the largest ordinary window, ignoring higher layers', () => {
+    // The menu bar and popovers live above layer 0 and are often bigger than the
+    // window we want, so filtering by layer has to come before picking by size.
     expect(pickWindowId(windows)).toBe(12)
   })
 
-  it('picks by title when one is given, even if it is not the largest', () => {
-    expect(pickWindowId(windows, 'Settings')).toBeNull()
-    expect(pickWindowId(windows, 'Personal use')).toBe(12)
+  it('picks by point size when one is given, so settings never resolves to main', () => {
+    expect(pickWindowId(windows, { width: 480, height: 300 })).toBe(11)
+    expect(pickWindowId(windows, { width: 852, height: 601 })).toBeNull()
   })
 
   it('returns null when the app has no ordinary window yet', () => {
-    expect(pickWindowId([{ id: 13, width: 4000, height: 3000, layer: 3, title: 'Menubar' }])).toBeNull()
+    expect(pickWindowId([{ id: 13, x: 0, y: 0, width: 2000, height: 1500, layer: 3 }])).toBeNull()
   })
 })
 
@@ -159,9 +201,10 @@ function withTransparentCorners(
   canvas: { width: number; height: number },
   rect: { x: number; y: number; width: number; height: number },
 ): Buffer {
-  const pixels = Buffer.alloc(canvas.width * canvas.height * 4)
-  const decoded = decodeForTest(bytes, canvas)
-  decoded.copy(pixels)
+  const decoded = decodePng(bytes)
+  expect(decoded.width).toBe(canvas.width)
+  expect(decoded.height).toBe(canvas.height)
+  const pixels = Buffer.from(decoded.pixels)
   const radius = 3
   for (let dy = 0; dy < radius; dy++) {
     for (let dx = 0; dx < radius - dy; dx++) {
@@ -176,12 +219,4 @@ function withTransparentCorners(
     }
   }
   return encodePng(canvas.width, canvas.height, pixels)
-}
-
-/** Re-decodes a freshly encoded fixture; keeps `withTransparentCorners` honest about the real bytes. */
-function decodeForTest(bytes: Buffer, canvas: { width: number; height: number }): Buffer {
-  const decoded = decodePng(bytes)
-  expect(decoded.width).toBe(canvas.width)
-  expect(decoded.height).toBe(canvas.height)
-  return decoded.pixels
 }

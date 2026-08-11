@@ -6,6 +6,11 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-12 `marketing-screenshot-pipeline-plan.md` - Turn the hand-driven marketing screenshot round (20–30 min of
+      MCP calls) into one Playwright command. The shutter stays `screencapture -l` because the plugin's native capture
+      has no macOS shadow; the run leaves `CMDR_E2E_MODE` unset so the window can become key and earn the focused
+      shadow; and the shard opts out of the fixture guard, which would otherwise delete the real folders being
+      photographed. Also seeds a fake Ask Cmdr thread so the chat shot needs no provider.
 - [x] 2026-08-10 `quit-and-operation-lifetime.md` - **Done (Q1, Q2, Q3 all landed).** The backend now owns operation
       lifetime and the quit decision. The `beforeunload` handler that cancelled the GLOBAL registry (killing a
       backgrounded transfer on a dev reload, and racing un-awaited at quit) is gone, replaced by a Rust-owned quit gate:
