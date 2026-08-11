@@ -5,6 +5,126 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.38.0] - 2026-08-11
+
+The three main advancements:
+
+- Search now works regardless of indexing.
+- Backgrounded operations look and work better now.
+- A ton of stability fixes and resource use improvements around indexing and otherwise.
+
+### Added
+
+- Search a folder Cmdr hasn't indexed yet: it walks the drive live, streams matches as they're found, says which wait
+  you're in, offers the permission for a folder macOS refused, and keeps walking when you send the results to a pane
+  (b3fd1f9a, 11baa340, 1ade70f4, d4c2abaf, 78bcbd41, 45096d95, 75d011fc, 5bfb8c2f, b49f8f75, e846c0ce, dfdd7ab0,
+  e72322ff, efdeef06, bf0c546b, 4c241576)
+- Scope a search to the current folder (the new default) or the whole volume, with ⌥C and ⌥V (b7ccec1a)
+- Add a corner chip in the main window for a backgrounded operation, with its progress and one click to the queue
+  (a447baa7, 221c84dd)
+- Open the operation queue with ⌥⌘Q from View, renamed from "Transfer queue" since it holds deletes, renames, and
+  archive edits too (2a52e4f3, 10110bf3)
+- Keep a failed background operation and its reason until you dismiss it, in the queue and as a toast in the main window
+  (8b97ed94, c53a9961, 0eb03c89, d592d047)
+- Ask before quitting with a transfer in flight, and clear away whatever it left half-written (fe2cb825, f5c5e2b5,
+  20a1022e, 6819a066)
+- Roll back a copy from the Transfers window (7a1e1c3c)
+- Resize dialogs from any edge, and grow every dialog that shows a path (d9de60c0, e7b4871a)
+- Hover any shortened path or label to see the whole thing (3270e3fb)
+- Copy the current folder's path with ⌃⌘C on the `..` row, with a toast showing what landed on the clipboard (e883b528)
+- Ask agents where your disk space is going: one indexed listing tool with size ranking, paging, and honest coverage
+  (45365c16)
+- Agree to the terms during onboarding, instead of consent being assumed from the download (7a166919)
+
+### Changed
+
+- Rewrite the terms of service: 3,423 words down to 2,203, accurate about what Cmdr actually does, and each release now
+  converts to AGPL three years after it ships rather than every version on one shared date (248cfc63, 57249e41,
+  8af24705, 69fa0f52, 1311d8a0, 3ba6b4bc)
+- Cut about 97 MB off peak memory during a search (d75453b8)
+- Stop a dotfile write in your home folder rescoring the whole drive: 5.25 s per pass becomes 2.1 ms (0271855a)
+- Stop an idle machine rewriting 51,081 folder-ranking rows a minute for a result that didn't change (234bd2ae)
+- Halve the live index write cost by committing a burst of changes once instead of once per file (3313aabf)
+- Stop asking iCloud and Dropbox about folders that hold no cloud files (74574516)
+- Cut roughly 9,400 log lines an hour about the things that are always fine (5431df6b, 6834c4de, 1354ab0b, b67ff311)
+- Stop an idle NAS connection filling the log with packet traces (e24382ab)
+- Show the same honest readout in the Transfers window as in the copy dialog: both bars labelled, percentages, speed,
+  and a time left that doesn't shift the layout (b4884f2b, 7a1e1c3c, 442dc733)
+- Open What's new on the headlines, with each release's details behind a Show more (d6d14da9)
+- Ask the copy conflict question in a card you can read at a glance (ec81db88)
+- Give the whole app one line-height scale, so text spacing stops varying screen by screen (22fb4bbf)
+- Say "Background" rather than "Queue" on the progress dialog when there's no queue to join (8441b4e2)
+- Stop the write-error dialogs saying "failed" at you (19ecb6aa)
+
+### Fixed
+
+- Fix a folder move on a phone destroying the child you chose to keep (56047e43, 3971e86e)
+- Fix a folder move to a NAS deleting the local files you chose to skip, and the conflict dialog reporting a real file
+  as 0 bytes (b84a6f86)
+- Fix copying a local folder to a NAS or phone failing outright, and a failed folder copy wiping the destination folder
+  (7046e9db, be819a3e)
+- Stop a force-quit or a crash mid-copy leaving a truncated file wearing your real filename, on every drive (a19325c9,
+  06837bc6)
+- Fix a scan preview authorizing an operation on a different selection (1e75af28)
+- Fix a delete guessing a folder was a file when its details couldn't be read (0cabe9f0)
+- Stop two disks being handed one identity, which could route reads and file operations to the wrong drive (181c2b71,
+  a3c6684e)
+- Fix folder navigation stalling up to a second while the file watcher armed (0141b744)
+- Fix ⌘- and ⌘+ freezing the app for up to 46 seconds while fonts were measured, and non-Latin names staying at an
+  estimated width in Brief mode (62e69c3e, bb781c12)
+- Fix a folder replaced outside Cmdr leaving ghost files in the pane (4b633dfc)
+- Fix copying to a NAS dying on a filename with a `?` or a quote in it (9536ea44)
+- Name the file that actually failed in a transfer, instead of the folder you selected, and say which file the server
+  refused the name of (7f4b50ec, 4062288b, 119cdb8d)
+- Stop blaming macOS for a folder your file server refused, and drop the Full Disk Access prompt that couldn't help
+  (c912c8d3, f37fe124)
+- Fix a pane stranding itself on "Path not found" after its network drive disappeared (b314f814)
+- Fix Quick Look and dragging files out doing nothing on a direct-SMB pane (230ff586, fea26283)
+- Fix a burst of changes on a phone pegging a core and freezing the pane (63d7e0e2, 1b4e667f)
+- Fix a backgrounded transfer's conflict question never reaching you (d744a61a)
+- Fix a search from your home folder reporting that Cmdr doesn't cover it (6d3d7abb)
+- Fix a folder-size filter answering from a ranked sample, so a 1.7 TB folder stops going missing, and add sorting by
+  size or date (7ee6b639)
+- Stop search presenting a filtered count as the whole truth (37e9c931)
+- Fix a file with a newline in its name being unfindable, in search, selection, and excludes (d0b63a13, b71cef17,
+  b73fa8e3, 15e444c7)
+- Fix dialog text sitting further in than its own title, and long paths escaping the panel (555be094, 63be2dc3)
+- Fix a listing on a network share passing as fresh when another machine had already changed it (f0b139af, 23f53281,
+  28431ec1)
+- Stop a NAS getting blamed for the seconds Cmdr itself spent frozen (608b1dd1)
+- Fix network and external drives skipping the per-navigation self-heal that local browsing gets (76863f0f)
+- Fix a dead mount stalling launch while Cmdr swept last session's leftovers (e063f793)
+
+### Security
+
+- Stop a saved cloud AI key ever coming back out of the OS secret store (4f32fe91)
+- Close a bypass that served the private analytics dashboard without authentication (79969dff)
+- Rate-limit every public ingest endpoint, with a global ceiling so an error-report flood can't drown the channel or
+  delete real reports (037186a2, 763b8475, f8169606, 67c125f2, 7a023642)
+- Clear the RUSTSEC-2026-0221 unsoundness advisory (63a0858f)
+
+### Non-app
+
+- Extract the archive backend into its own crate behind named seams, so a future filesystem backend can be written
+  without reaching into the app (6d435cdf, e2be3721, d5ab81b0, 4f3360d8, fe33825a, 3f11fea4, 2cb09848, 057cc9e6)
+- Add a Cmdr IntelliJ plugin: message keys fold to their English text, and a changelog hash ⌘-clicks to its commit
+  (5eeff67d, 8fc5ffc8, bd337760, 64483b36, c623e589, 875f6d54)
+- Regenerate the translator screenshot set at 131 surfaces, framed on their subject, with blank captures now detectable
+  instead of shipping silently (5d48b702, b03fb4c7, aaf7eeb2, 8d03bc65, d1e95c2c, 2c117eba, cbefd514)
+- Store changelog commit refs as bare hashes, dropping 89 KB of URL boilerplate (82694836, c9e70ebd, 35584706, 4adbe77f,
+  96620f4d, ab322339)
+- Cut debug builds 31% smaller and 35% faster by dropping variable-level debug info (ba87ee1b)
+- Give test fixtures a scratch directory that can't collide with another run, across 106 fixtures in 51 files (9ac788e6,
+  af28731a, 25a29f4f, 8f619690)
+- Split 20 oversized files along seams the code already had, shrinking the length allowlist instead of growing it
+  (feb065de, e5ea10d0, 7a45a777, 1a7514a8, b98e3484, fd17b768)
+- Add ESLint, Stylelint, and knip to the analytics dashboard, and wire them into `pnpm check dashboard` (21627bb6,
+  030db66d, 1da89169, dc758cd5, 026b7c70)
+- Make every E2E spec put the shared fixture tree back, so one spec can't fail the one behind it (48c0a0f4, 2cd24c70,
+  b1dbd074, f98ede59)
+- Add two reusable instruments for resource questions: a churn baseline harness and an index size probe (38d391d8,
+  5dc39c44, d74b558a)
+
 ## [0.37.0] - 2026-08-03
 
 Highlights:

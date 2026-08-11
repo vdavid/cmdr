@@ -523,7 +523,12 @@ export const roadmapSections: RoadmapSection[] = [
             date: '(Aug 2)',
             title: 'Speed up network copies',
             description: 'Far fewer round trips per file, up to 3.8x faster to a NAS.',
-            icon: 'zap',
+            done: true,
+          },
+          {
+            date: '(Aug 6)',
+            title: 'Search any folder',
+            description: 'Unindexed folders got a live walk.',
             done: true,
           },
         ],

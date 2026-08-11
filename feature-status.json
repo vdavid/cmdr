@@ -47,7 +47,7 @@
       "id": "network-drives",
       "name": "Network drives (SMB)",
       "status": "beta",
-      "note": "Browsing and fast direct transfers work on common NAS setups, and a server that goes quiet recovers instead of hanging; unusual server configs can still cause surprises."
+      "note": "Browsing and fast direct transfers work on common NAS setups, names with characters SMB forbids copy through, and a server that goes quiet recovers; unusual server configs can still cause surprises."
     },
     {
       "id": "android-devices",
@@ -89,7 +89,7 @@
       "id": "file-operations",
       "name": "File operations",
       "status": "stable",
-      "note": "Copy, move, delete, rename, and new folders with progress, conflict handling, and rollback. The most-tested code in the app."
+      "note": "Copy, move, delete, rename, and new folders with progress, conflict handling, rollback, backgrounding, and parallel processing when possible. The most-tested code in the app."
     },
     {
       "id": "file-viewer",
