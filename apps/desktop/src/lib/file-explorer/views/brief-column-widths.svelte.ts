@@ -200,10 +200,24 @@ export function createBriefColumnWidths(deps: BriefColumnWidthsDeps): BriefColum
       log.debug('Brief column widths for listing {listingId} are waiting on font metrics', {
         listingId: capturedListingId,
       })
-      void ensureFontMetricsLoaded().then(() => {
-        if (isStale(capturedEpoch, capturedListingId)) return
-        void run({ ...attempt, afterFontLoad: true }, capturedEpoch)
-      })
+      void ensureFontMetricsLoaded()
+        .then(() => {
+          if (isStale(capturedEpoch, capturedListingId)) return
+          void run({ ...attempt, afterFontLoad: true }, capturedEpoch)
+        })
+        .catch((err: unknown) => {
+          // Measuring the font is itself an async trip that can fail. Fold it back
+          // into the normal path (the attempt has spent its font-load flag, so this
+          // becomes a bounded retry) rather than dropping an unhandled rejection.
+          if (isStale(capturedEpoch, capturedListingId)) return
+          handleFailure(
+            'fontMetricsNotReady',
+            String(err),
+            { ...attempt, afterFontLoad: true },
+            capturedEpoch,
+            capturedListingId,
+          )
+        })
       return
     }
 
@@ -263,10 +277,19 @@ export function createBriefColumnWidths(deps: BriefColumnWidthsDeps): BriefColum
       // the main thread and come back once; `afterFill` bounds it to one extra round,
       // so a permanently unmeasurable code point can't drive an endless loop.
       if (missingCodePoints.length > 0 && !attempt.afterFill) {
-        void fillMissingFontMetrics(fontId, missingCodePoints).then((filled) => {
-          if (!filled || isStale(capturedEpoch, capturedListingId)) return
-          void run({ ...attempt, afterFill: true }, capturedEpoch)
-        })
+        void fillMissingFontMetrics(fontId, missingCodePoints)
+          .then((filled) => {
+            if (!filled || isStale(capturedEpoch, capturedListingId)) return
+            void run({ ...attempt, afterFill: true }, capturedEpoch)
+          })
+          // Purely an accuracy refinement: usable widths are already painted, so a
+          // failed fill-in leaves a few characters at the font's average width and
+          // nothing else. Log it and stop; retrying would fight a missing measurement.
+          .catch((err: unknown) => {
+            log.debug('Brief column widths could not fill in unmeasured code points: {detail}', {
+              detail: String(err),
+            })
+          })
       }
     } catch (err) {
       if (isStale(capturedEpoch, capturedListingId)) return

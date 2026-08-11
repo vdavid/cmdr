@@ -14,6 +14,20 @@ pub fn inject_listing_error(volume_id: String, error_code: i32) -> Result<(), St
     Ok(())
 }
 
+/// Arms `count` consecutive failures of `get_brief_column_text_widths`.
+///
+/// Lets a spec watch the Brief pane run with NO measured widths: the cursor must stay
+/// visible and columns must render at their provisional width rather than swallowing
+/// the pane. Pass a count above the frontend's retry budget to keep it degraded, or a
+/// smaller one to watch it recover. Counting down (rather than a boolean) is what makes
+/// "fails twice, then succeeds" expressible.
+#[cfg(feature = "playwright-e2e")]
+#[tauri::command]
+#[specta::specta]
+pub fn fail_next_brief_column_widths(count: usize) {
+    crate::file_system::listing::brief_columns::FAIL_NEXT_WIDTH_CALLS.store(count, std::sync::atomic::Ordering::SeqCst);
+}
+
 /// Debug-only: makes sure the dialog gallery's throwaway fixture directory
 /// exists under the app data dir, and returns its path plus the landmarks inside
 /// it the gallery addresses by name.

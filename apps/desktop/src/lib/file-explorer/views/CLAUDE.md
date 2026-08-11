@@ -41,15 +41,15 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
 - **Paired-constant gotcha in `measure-column-widths.ts`**: `HEADER_CHROME_ACTIVE/INACTIVE` mirror `SortableHeader`'s
   gap + caret (12px active / 0 inactive). Change the CSS and you must change the constant, or header column widths drift
   (pretext measures without a reference element, so nothing is derived from the live DOM).
-- **Nothing visible in Brief mode may wait on the width IPC** (how the cursor went invisible in prod). ❌
-  Don't gate `is-under-cursor` on widths, fall back to `capPx` (use `provisionalColumnWidth`), infer readiness from
+- **Nothing visible in Brief mode may wait on the width IPC** (how the cursor went invisible in prod). ❌ Don't gate
+  `is-under-cursor` on widths, fall back to `capPx` (use `provisionalColumnWidth`), infer readiness from
   `rawWidths.length`, make `capPx` a fetch trigger, or bail silently. Failure modes: `DETAILS.md` § Cursor visibility.
 - **Index-size refresh (`refresh_listing_index_sizes`) refetches column widths through the existing `cacheGeneration`
   reset path**; a separate trigger double-fetches.
-- **`listing.showExtensionInName` must stay in lockstep across the renderer and the measurer**: on, `gridTemplate`
-  drops the Ext track and `computeFullListColumnWidths` returns `ext: 0`. Change one side and every column drifts. ❌
-  Don't "clean up" `FullListHeader`'s `.header-name-ext` split: it's the only way left to CLICK sort-by-extension in
-  that mode. Full contract: `DETAILS.md`.
+- **`listing.showExtensionInName` must stay in lockstep across the renderer and the measurer**: on, `gridTemplate` drops
+  the Ext track and `computeFullListColumnWidths` returns `ext: 0`. Change one side and every column drifts. ❌ Don't
+  "clean up" `FullListHeader`'s `.header-name-ext` split: it's the only way left to CLICK sort-by-extension in that
+  mode. Full contract: `DETAILS.md`.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

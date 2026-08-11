@@ -118,6 +118,29 @@ impl From<BriefColumnsError> for BriefColumnsIpcError {
     }
 }
 
+/// How many more `compute_brief_column_text_widths` calls the E2E harness wants to fail.
+///
+/// The frontend's recovery (bounded retries, provisional widths, a cursor that stays
+/// visible) only runs when measurement DOESN'T arrive, and nothing reachable from a spec
+/// can make the real computation fail on demand: the listing is healthy and the font
+/// metrics are loaded. So the failure is injected here.
+#[cfg(feature = "playwright-e2e")]
+pub static FAIL_NEXT_WIDTH_CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+/// Consumes one injected failure, if any are armed. Compiled out of production builds.
+#[cfg(feature = "playwright-e2e")]
+fn take_injected_failure() -> bool {
+    use std::sync::atomic::Ordering;
+    FAIL_NEXT_WIDTH_CALLS
+        .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1))
+        .is_ok()
+}
+
+#[cfg(not(feature = "playwright-e2e"))]
+fn take_injected_failure() -> bool {
+    false
+}
+
 /// Returns true if the entry is not a hidden dotfile.
 fn is_visible(entry: &FileEntry) -> bool {
     !entry.name.starts_with('.')
@@ -171,6 +194,12 @@ pub fn compute_brief_column_text_widths(
 ) -> Result<BriefColumnWidths, BriefColumnsError> {
     if items_per_column == 0 {
         return Err(BriefColumnsError::InvalidItemsPerColumn);
+    }
+
+    // Additive E2E hook: `take_injected_failure` is a `const false` in production builds,
+    // so this branch compiles away entirely.
+    if take_injected_failure() {
+        return Err(BriefColumnsError::Other("injected width failure (E2E)".to_string()));
     }
 
     let start = Instant::now();

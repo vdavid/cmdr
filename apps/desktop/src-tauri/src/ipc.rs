@@ -698,6 +698,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::e2e::flush_file_watcher,
         #[cfg(feature = "playwright-e2e")]
         crate::commands::file_system::inject_listing_error,
+        #[cfg(feature = "playwright-e2e")]
+        crate::commands::file_system::fail_next_brief_column_widths,
         #[cfg(debug_assertions)]
         crate::commands::file_system::preview_friendly_error,
         #[cfg(any(debug_assertions, feature = "playwright-e2e"))]

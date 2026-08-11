@@ -606,6 +606,7 @@ pub(super) fn collect_e2e_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
         crate::commands::file_system::inject_listing_error,
+        crate::commands::file_system::fail_next_brief_column_widths,
         crate::commands::e2e::set_test_throttle,
         crate::commands::e2e::flush_file_watcher,
     ](types)

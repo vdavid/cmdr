@@ -494,6 +494,11 @@ E2E test hooks split along two axes:
 - **`set_test_throttle(ms)`**: Mid-run override of `CMDR_E2E_COPY_THROTTLE_MS`; clears with `null`.
 - **`flush_file_watcher()`**: Synchronously re-reads every active watch, bypassing debouncer + FSEvents latency.
 - **`inject_listing_error()`**: Inject an IoError into a volume's next list_directory for retry coverage.
+- **`fail_next_brief_column_widths(count)`**: Fail the next `count` Brief column-width computations, so a spec can watch
+  the pane run on provisional widths (`brief-cursor-visibility.spec.ts`). Pass `0` to disarm. A hard hook because
+  nothing on the JS side can stand in: Tauri defines `window.__TAURI_INTERNALS__` and its `invoke` non-writable AND
+  non-configurable (verified on Tauri 2 / `@tauri-apps/api` 2.11.1, property-descriptor probe in the live webview,
+  2026-08-12), so the usual "wrap invoke from the spec" trick silently no-ops.
 
 ## Process
 

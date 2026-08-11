@@ -181,6 +181,12 @@ the pane kept nothing. Asking is not answering.
 Transient failures (`timeout`, `listingNotFound`, `other`, a thrown IPC) get two bounded retries at 150 ms and 400 ms,
 cancelled on listing change and on unmount. `invalidItemsPerColumn` is a caller bug and is never retried.
 
+All four rules are pinned end to end by `test/e2e-playwright/brief-cursor-visibility.spec.ts`, which arms the
+`fail_next_brief_column_widths` E2E command (see `docs/testing.md` § E2E env-var hooks) and then asserts the cursor is
+still drawn and every column is provisional-width. The failure has to be injected in the backend because a spec can't
+make a healthy listing fail from JS: Tauri defines `window.__TAURI_INTERNALS__` and its `invoke` non-writable and
+non-configurable, so wrapping them from a spec silently does nothing.
+
 ## Key decisions
 
 **Decision**: `FullList`'s column header lives **inside** the scroll container as a `position: sticky; top: 0;` child,

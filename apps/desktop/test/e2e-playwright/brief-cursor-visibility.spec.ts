@@ -36,6 +36,13 @@ const CURSOR_ENTRY = '.file-pane.is-focused .brief-list-container .file-entry.is
  */
 const PIXEL_TOLERANCE = 2
 
+/**
+ * `DEFAULT_BRIEF_COLUMN_WIDTH` from `src/lib/file-explorer/views/brief-column-widths.svelte.ts`.
+ * Duplicated rather than imported (the specs don't resolve `$lib`), so keep the two in step:
+ * this is what an unmeasured Brief column renders at.
+ */
+const PROVISIONAL_COLUMN_WIDTH = 260
+
 interface Rect {
   left: number
   top: number
@@ -253,6 +260,30 @@ async function pressAndWaitCursorChange(tauriPage: Parameters<typeof ensureAppRe
   await pollUntil(tauriPage, async () => (await getCursorName(tauriPage)) !== before, 100)
 }
 
+/**
+ * Arms `count` consecutive failures of the Brief column-width computation, via the
+ * `playwright-e2e` Tauri command (the same hard-hook pattern `inject_listing_error`
+ * uses). Nothing patchable on the JS side works here: Tauri defines both
+ * `window.__TAURI_INTERNALS__` and its `invoke` non-writable and non-configurable, and
+ * no reachable app state can make a healthy listing with loaded font metrics fail.
+ *
+ * 10 comfortably outlasts the frontend's retry budget (one attempt plus two retries),
+ * so the pane stays on provisional widths for the whole test.
+ */
+async function failBriefColumnWidths(tauriPage: Parameters<typeof ensureAppReady>[0], count: number): Promise<void> {
+  await tauriPage.evaluate(
+    `window.__TAURI_INTERNALS__.invoke('fail_next_brief_column_widths', { count: ${String(count)} })`,
+  )
+}
+
+/** Rendered widths of the focused pane's Brief columns, in DOM order. */
+async function getColumnWidths(tauriPage: Parameters<typeof ensureAppReady>[0]): Promise<number[]> {
+  return tauriPage.evaluate<number[]>(`(function () {
+        var cols = document.querySelectorAll('.file-pane.is-focused .brief-list .column');
+        return Array.prototype.map.call(cols, function (c) { return c.getBoundingClientRect().width; });
+    })()`)
+}
+
 test.describe('Brief view cursor visibility', () => {
   test.beforeAll(() => {
     ensureBriefCursorFixture()
@@ -396,5 +427,60 @@ test.describe('Brief view cursor visibility', () => {
     await sleep(300)
 
     await expectCursorInView(tauriPage, 'after pane resize')
+  })
+
+  test('cursor stays visible and columns stay narrow when column measurement never lands', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await disableTransitions(tauriPage)
+
+    await executeViaCommandPalette(tauriPage, 'Brief view')
+    await expect
+      .poll(async () => tauriPage.isVisible('.file-pane.is-focused .brief-list-container'), { timeout: 5000 })
+      .toBeTruthy()
+
+    await failBriefColumnWidths(tauriPage, 10)
+    try {
+      // Navigating resets the measured widths, so from here the pane is running
+      // entirely on provisional ones: the state a single transient failure used to
+      // leave it in permanently.
+      const fixtureDir = path.join(getFixtureRoot(), FIXTURE_SUBDIR)
+      await navigateFocusedPaneTo(tauriPage, 'left', fixtureDir)
+      await expect
+        .poll(
+          async () =>
+            tauriPage.evaluate<boolean>(`!!document.querySelector('.file-pane.is-focused [data-filename="a-00.txt"]')`),
+          { timeout: 5000 },
+        )
+        .toBeTruthy()
+
+      await tauriPage.keyboard.press('Home')
+
+      // 1. The cursor is drawn. Pre-fix it was suppressed until widths arrived, so with
+      //    no widths ever arriving the user had no idea where they were.
+      await expect.poll(async () => getCursorName(tauriPage), { timeout: 3000 }).not.toBe('')
+      await expectCursorInView(tauriPage, 'with column measurement failing')
+
+      // 2. Columns are provisional-width, not pane-wide. Pre-fix each unmeasured column
+      //    fell back to `capPx`, so a single column filled the whole pane.
+      const container = await getRect(tauriPage, BRIEF_LIST_SCROLL)
+      expect(container, 'brief-list rect should be readable').not.toBeNull()
+      const widths = await getColumnWidths(tauriPage)
+      expect(widths.length, 'several columns should render side by side').toBeGreaterThan(1)
+      for (const width of widths) {
+        expect(width, `column width ${String(width)} exceeds the provisional width`).toBeLessThanOrEqual(
+          PROVISIONAL_COLUMN_WIDTH + PIXEL_TOLERANCE,
+        )
+        expect(width, `column width ${String(width)} should not fill the pane`).toBeLessThan(container?.width ?? 0)
+      }
+
+      // 3. And the injection actually took: this fixture mixes short, medium, and long
+      //    names on purpose, so MEASURED columns come back different widths. Uniform
+      //    widths are only possible when nothing was measured — without this the test
+      //    would pass just as happily against a hook that silently did nothing.
+      expect(new Set(widths).size, `columns should all be provisional, got ${JSON.stringify(widths)}`).toBe(1)
+    } finally {
+      // Disarm, so a later spec in this worker isn't measuring against a rigged backend.
+      await failBriefColumnWidths(tauriPage, 0)
+    }
   })
 })

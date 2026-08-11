@@ -286,6 +286,32 @@ describe('brief column widths', () => {
       expect(store.rawWidths).toEqual([400])
     })
 
+    it('survives the font-metrics load itself failing', async () => {
+      ipc.getBriefColumnTextWidths.mockResolvedValue(fail('fontMetricsNotReady'))
+      ipc.ensureFontMetricsLoaded.mockRejectedValue(new Error('worker gone'))
+      const { store } = makeStore()
+      store.request()
+      await flush()
+      await vi.advanceTimersByTimeAsync(1000)
+      await flush()
+
+      expect(store.status).toBe('degraded')
+      expect(ipc.warn).toHaveBeenCalled()
+    })
+
+    it('keeps the painted widths when the code-point fill-in fails', async () => {
+      ipc.getBriefColumnTextWidths.mockResolvedValue(ok([300], [0x4e2d]))
+      ipc.fillMissingFontMetrics.mockRejectedValue(new Error('measure worker gone'))
+      const { store } = makeStore()
+      store.request()
+      await flush()
+
+      // The estimated widths are already good enough to render; a failed refinement
+      // must not undo them or degrade the pane.
+      expect(store.rawWidths).toEqual([300])
+      expect(store.status).toBe('ready')
+    })
+
     it('gives up after the bounded retries and says so out loud', async () => {
       ipc.getBriefColumnTextWidths.mockResolvedValue(fail('timeout', 'cache write-locked'))
       const { store } = makeStore()
