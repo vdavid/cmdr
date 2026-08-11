@@ -20,11 +20,9 @@ Submodules, all re-exported from `mod.rs` so `crate::volumes::X` stays stable:
   every site. An ID keys the index DB, `lastUsedPaths`, tab state, and routing, so a lossy one sends reads and deletes to
   the wrong disk. It owns the ladder: SMB → `(server, port, share)`, other network → path, local → filesystem UUID.
   DETAILS § "A volume ID is derived from the volume's IDENTITY".
-- **One volume ID publishes exactly ONE location, at one canonical root.** A filesystem can be mounted twice
-  (`/Volumes/naspi` and `/Volumes/naspi-1`) and both mounts derive the same ID, so `get_attached_volumes` collapses them
-  to the shortest path (`collapse_by_volume_id`) and `list_locations` dedupes on ID as well as path. ❌ Don't dedupe on
-  path alone: the registry then roots the volume at whichever mount registered last, and the frontend's keyed lists get
-  duplicate keys. DETAILS § "One volume ID publishes one mount root".
+- **One volume ID publishes ONE location, at ONE canonical root.** A filesystem mounted twice derives one ID from both
+  mounts, so `get_attached_volumes` collapses to the shortest path and `list_locations` dedupes on ID, ❌ never on path
+  alone. DETAILS § "One volume ID publishes one mount root".
 - **The unmount path can't use `volume_id_for_mount`.** Neither `statfs` nor NSURL can identify a gone mount, so it
   falls back to a path ID (the wrong one). Use `VolumeManager::find_by_root(volume_path)`. See `handle_volume_unmounted`.
 - **`resolve_path_volume_fast()` checks cloud-drive prefixes BEFORE `statfs`.** Cloud drives are plain folders on the

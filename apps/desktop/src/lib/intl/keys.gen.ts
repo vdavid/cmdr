@@ -1153,6 +1153,7 @@ export type MessageKey =
   | 'fileExplorer.networkMount.shareFallback'
   | 'fileExplorer.networkMount.tryAgain'
   | 'fileExplorer.pane.connectedDirectlyToast'
+  | 'fileExplorer.pane.dialogRenderFailedToast'
   | 'fileExplorer.pane.directConnectionTooSlowToast'
   | 'fileExplorer.pane.directConnectionUnavailableToast'
   | 'fileExplorer.pane.directConnectionUnexpectedToast'

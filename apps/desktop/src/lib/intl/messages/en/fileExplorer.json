@@ -106,6 +106,10 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "description": "Persistent warning toast shown when moving a file to the Trash (as part of a rename-overwrite) timed out, so Cmdr can''t confirm it landed. Reassures the user it may have worked and asks them to check. \"Trash\" is the macOS Trash; keep the name."
   },
+  "fileExplorer.pane.dialogRenderFailedToast": "That dialog couldn''t open, so we closed it and gave the keyboard back. Please try again.",
+  "@fileExplorer.pane.dialogRenderFailedToast": {
+    "description": "Error toast shown when a dialog threw while rendering. The dialog is dismissed and focus returns to the file pane, so the user can retry."
+  },
   "fileExplorer.pane.ejectFailedToast": "Couldn''t eject {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "description": "Error toast when ejecting a drive or volume did not work. {volumeName} is the drive''s display name; {message} is the underlying reason text.",

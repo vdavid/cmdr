@@ -36,6 +36,9 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   a real path. DETAILS § Conventions.
 - **The MTP clipboard refusal gate keys on `caps.kind === 'mtp'`, not `!supportsSystemClipboard`** (network and
   search-results lack one too, so the MTP toast would misfire).
+- **Every dialog renders inside ONE `<svelte:boundary>` in `DialogManager.svelte`.** A `show*` flag is set before the
+  dialog renders and suppresses pane keys, so a mid-render throw wedges the keyboard with a blank screen; `onerror` →
+  `handleDialogRenderFailure`, then a deferred `reset()`. DETAILS § "A dialog that throws during render".
 - **The focus guard (`key-dispatch.ts`) must keep its `[role="dialog"], [role="alertdialog"]` exemption.** Rename
   dialogs mount inside FilePane; without it the guard and `use:trapFocus` ping-pong focus and freeze the webview
   (E2E-pinned).

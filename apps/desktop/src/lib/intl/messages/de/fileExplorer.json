@@ -83,6 +83,10 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"
   },
+  "fileExplorer.pane.dialogRenderFailedToast": "Dieser Dialog konnte nicht geöffnet werden, deshalb haben wir ihn geschlossen und die Tastatur wieder freigegeben. Bitte versuche es erneut.",
+  "@fileExplorer.pane.dialogRenderFailedToast": {
+    "sourceHash": "059dfbd"
+  },
   "fileExplorer.pane.ejectFailedToast": "{volumeName} ließ sich nicht auswerfen: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "b22501d"

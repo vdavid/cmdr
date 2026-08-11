@@ -33,21 +33,10 @@ impl SmbVolume {
     /// but SMB servers expect NFC (composed). Without this, paths with accented
     /// characters (like "ä") fail with STATUS_OBJECT_PATH_NOT_FOUND.
     ///
-    /// # Why this returns a `Result`
-    ///
-    /// An absolute path that ISN'T under the mount root has no answer here, and
-    /// both ways of guessing one sent a real request for a real file at the
-    /// wrong place:
-    ///
-    /// - A raw STRING prefix compare made `/Volumes/naspi-1/x` strip to `-1/x`
-    ///   against the root `/Volumes/naspi` (macOS suffixes a second mount of one
-    ///   share `-1`, and `-1` is a perfectly legal file name). `strip_prefix` on
-    ///   `Path` compares whole COMPONENTS, so a sibling can't false-match.
-    /// - Falling through to "strip the leading slash" turned `/Users/me/x` into
-    ///   the share-relative `Users/me/x`.
-    ///
-    /// So an out-of-root path is `NotFound`: it genuinely isn't on this volume,
-    /// and the caller surfaces that rather than acting somewhere unintended.
+    /// An absolute path outside the mount root is `NotFound`, and the root is
+    /// matched by whole COMPONENTS: every way of guessing an answer here put a
+    /// real request at a real, wrong place. Both, and what each caller does with
+    /// the error: `backends/DETAILS.md` § "Per-backend decisions".
     pub(super) fn to_smb_path(&self, path: &Path) -> Result<String, VolumeError> {
         use unicode_normalization::UnicodeNormalization;
 

@@ -8,6 +8,7 @@ import {
   setForegroundFailureId,
 } from '$lib/file-operations/foreground-operation.svelte'
 import { addToast } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
 import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
@@ -789,6 +790,44 @@ export function createDialogState(deps: DialogStateDeps) {
         deleteDialogProps = null
         deps.onRefocus()
       }
+    },
+
+    /**
+     * Dismisses every dialog after one of them threw while rendering.
+     *
+     * A dialog that throws mid-render leaves nothing on screen, but the `show*`
+     * flag that opened it is already true, so `isConfirmationDialogOpen()` keeps
+     * suppressing the pane's keyboard: the user is stuck with no dialog to
+     * escape from. Clearing every flag (not only the confirmation ones
+     * `closeConfirmationDialog` covers) and refocusing the pane is the one exit.
+     * Called from `DialogManager`'s error boundary.
+     */
+    handleDialogRenderFailure(error: unknown) {
+      log.error('A dialog threw while rendering; dismissing every dialog and refocusing the pane: {error}', {
+        error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+      })
+      addToast(tString('fileExplorer.pane.dialogRenderFailedToast'), { level: 'error' })
+      this.dismissAllAfterRenderFailure()
+    },
+
+    dismissAllAfterRenderFailure() {
+      showTransferDialog = false
+      transferDialogProps = null
+      showTransferProgressDialog = false
+      transferProgressProps = null
+      showNewFolderDialog = false
+      newFolderDialogProps = null
+      showNewFileDialog = false
+      newFileDialogProps = null
+      showAlertDialog = false
+      alertDialogProps = null
+      showTransferErrorDialog = false
+      transferErrorProps = null
+      showArchivePasswordDialog = false
+      archivePasswordProps = null
+      showDeleteDialog = false
+      deleteDialogProps = null
+      deps.onRefocus()
     },
 
     isConfirmationDialogOpen(): boolean {

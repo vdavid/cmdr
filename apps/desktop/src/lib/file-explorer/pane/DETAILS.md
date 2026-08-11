@@ -396,6 +396,22 @@ architecture in `../drag/DETAILS.md` § "Self-drag identity".
 renders the copy on the FE from that typed error (`transfer-error-messages.ts`). The factory pattern keeps the giant
 component testable: pass deps in, get back a struct of state + handlers.
 
+**A dialog that throws during render must never wedge input.** Every dialog renders inside one `<svelte:boundary>` in
+`DialogManager.svelte`. Opening a dialog sets its `show*` flag BEFORE anything renders, and `isConfirmationDialogOpen()`
+suppresses the pane's keyboard while that flag is true, so a dialog that throws mid-render leaves the user with no keys
+and nothing on screen to escape from. (Lived case: a doubly-mounted NAS put two volumes carrying one id into the
+transfer dialog's destination `{#each}`; Svelte threw `each_key_duplicate` during the flush and F6 killed the keyboard.)
+The boundary's `onerror` calls `dialogs.handleDialogRenderFailure(error)`, which logs through the app's error path,
+toasts the user, and clears EVERY `show*` flag (`dismissAllAfterRenderFailure`, wider than `closeConfirmationDialog`)
+before refocusing the pane. It then re-arms the boundary with `reset()` on a `setTimeout(0)`: without a reset the
+boundary stays failed and no dialog opens again for the rest of the session, and the deferral lets the dismissal flush
+first so the retry renders nothing rather than the same throw. A cap of three failures inside a five-second window stops
+a re-render loop while still letting a later, unrelated failure recover. `setTimeout(0)`, ❌ never
+`requestAnimationFrame`: macOS throttles it in unfocused windows (`docs/testing.md`). The `failed` snippet is
+deliberately empty: by the time it renders there is no dialog left to show. Pinned by `DialogManager.svelte.test.ts`
+(the boundary catches, through the real component) and `dialog-state.render-failure.svelte.test.ts` (the keyboard is
+un-suppressed and every dialog is cleared).
+
 **Live disk space.** `FilePane` registers each pane independently with the backend space poller (`watchVolumeSpace`
 keyed by pane ID). Two panes on the same volume have independent registrations; one navigating away doesn't unwatch the
 other. See parent § "Live disk space". **Disk images (`.dmg`) are excluded from the watch** (mount and volume-change

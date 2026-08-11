@@ -83,6 +83,10 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"
   },
+  "fileExplorer.pane.dialogRenderFailedToast": "这个对话框没能打开，我们已将其关闭并把键盘交还给你。请重试。",
+  "@fileExplorer.pane.dialogRenderFailedToast": {
+    "sourceHash": "059dfbd"
+  },
   "fileExplorer.pane.ejectFailedToast": "无法推出 {volumeName}：{message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "b22501d"

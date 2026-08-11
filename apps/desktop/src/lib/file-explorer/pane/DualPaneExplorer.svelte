@@ -1404,6 +1404,9 @@
 <DragOverlay />
 
 <DialogManager
+    onDialogRenderError={(error: unknown) => {
+        dialogs.handleDialogRenderFailure(error)
+    }}
     showTransferDialog={dialogs.showTransferDialog}
     transferDialogProps={dialogs.transferDialogProps}
     showTransferProgressDialog={dialogs.showTransferProgressDialog}

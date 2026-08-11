@@ -432,8 +432,10 @@ mod tests {
         // the last writer win made registration ORDER decide where the volume
         // was rooted, so a saved path under the first mount reached a backend
         // rooted at the second and every listing under it failed.
-        for (first_root, second_root) in [("/Volumes/naspi", "/Volumes/naspi-1"), ("/Volumes/naspi-1", "/Volumes/naspi")]
-        {
+        for (first_root, second_root) in [
+            ("/Volumes/naspi", "/Volumes/naspi-1"),
+            ("/Volumes/naspi-1", "/Volumes/naspi"),
+        ] {
             let manager = VolumeManager::new();
             manager.register(
                 "smb-share",
