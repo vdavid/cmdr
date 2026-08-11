@@ -135,7 +135,7 @@
         consecutiveFailures = now - lastFailureAt > FAILURE_WINDOW_MS ? 1 : consecutiveFailures + 1
         lastFailureAt = now
         if (consecutiveFailures > MAX_CONSECUTIVE_RESETS) return
-        setTimeout(() => reset(), 0)
+        setTimeout(() => { reset(); }, 0)
     }
 </script>
 
