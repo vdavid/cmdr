@@ -15,10 +15,17 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 1
 fi
 
-# Check for uncommitted changes (CHANGELOG.md and roadmap are allowed, they get included in the release commit)
-EXCLUDE=(':!CHANGELOG.md' ':!apps/website/src/pages/roadmap.astro')
+# Check for uncommitted changes. The release-prep edits are allowed through and get included in
+# the release commit: the changelog, the roadmap (content in roadmap.ts, layout in roadmap.astro),
+# and the feature-status source of truth. See the `release` skill for the steps that produce them.
+EXCLUDE=(
+  ':!CHANGELOG.md'
+  ':!feature-status.json'
+  ':!apps/website/src/lib/roadmap.ts'
+  ':!apps/website/src/pages/roadmap.astro'
+)
 if ! git diff --quiet -- "${EXCLUDE[@]}" || ! git diff --staged --quiet -- "${EXCLUDE[@]}"; then
-  echo "Error: Working tree has uncommitted changes (other than CHANGELOG.md and roadmap.astro). Commit or stash them first."
+  echo "Error: Working tree has uncommitted changes (other than the changelog, roadmap, and feature status). Commit or stash them first."
   exit 1
 fi
 
@@ -35,7 +42,7 @@ while IFS= read -r vol; do
 done < <(mount | awk -F' on ' '/\/Volumes\/Cmdr/ { sub(/ \(.*$/, "", $2); print $2 }')
 
 # Stage allowed files before rebase so they don't block it
-git add CHANGELOG.md apps/website/src/pages/roadmap.astro 2>/dev/null || true
+git add CHANGELOG.md feature-status.json apps/website/src/lib/roadmap.ts apps/website/src/pages/roadmap.astro 2>/dev/null || true
 
 # Pull latest main to avoid push rejection after tagging
 # --autostash: temporarily stashes staged changelog/roadmap changes so rebase can proceed
@@ -105,6 +112,8 @@ pnpm check oxfmt -m
 git add \
   CHANGELOG.md \
   LICENSE \
+  feature-status.json \
+  apps/website/src/lib/roadmap.ts \
   apps/website/src/pages/roadmap.astro \
   apps/desktop/package.json \
   apps/desktop/src-tauri/tauri.conf.json \
