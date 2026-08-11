@@ -73,6 +73,7 @@ describe('dialog render-failure recovery', () => {
       currentPath: '/tmp',
       listingId: 'listing-1',
       showHiddenFiles: false,
+      initialName: '',
       volumeId: 'root',
     })
     expect(dialogs.isConfirmationDialogOpen()).toBe(true)
@@ -108,7 +109,8 @@ describe('dialog render-failure recovery', () => {
     dialogs.handleDialogRenderFailure(new TypeError('each_key_duplicate'))
 
     expect(logError).toHaveBeenCalledTimes(1)
-    expect(logError.mock.calls[0][1]).toMatchObject({ error: expect.stringContaining('each_key_duplicate') })
+    const [, details] = logError.mock.calls[0] as [string, { error: string }]
+    expect(details.error).toContain('each_key_duplicate')
     expect(addToast).toHaveBeenCalledWith('fileExplorer.pane.dialogRenderFailedToast', { level: 'error' })
   })
 })
