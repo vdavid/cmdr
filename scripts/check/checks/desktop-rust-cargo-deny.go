@@ -27,13 +27,17 @@ func RunCargoDeny(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
-	cmd := exec.Command("cargo", "deny", "check", "licenses", "bans", "sources")
+	// `advisories` is in the set: `deny.toml` scopes the graph to the macOS targets we
+	// ship and limits `unmaintained` to workspace crates, so this lane stays green on
+	// Tauri's unfixable transitive noise while still failing on a real RUSTSEC
+	// vulnerability anywhere in a shipped dependency.
+	cmd := exec.Command("cargo", "deny", "check", "advisories", "licenses", "bans", "sources")
 	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("cargo-deny check failed\n%s", indentOutput(output))
 	}
-	return Success("Licenses and deps OK"), nil
+	return Success("Advisories, licenses, and deps OK"), nil
 }
 
 // DenyConfigPath is the single place the cargo-deny config's location is written

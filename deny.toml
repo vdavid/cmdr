@@ -1,14 +1,28 @@
 # cargo-deny configuration
 # See https://embarkstudios.github.io/cargo-deny/
 
-# NOTE: advisories check is disabled because Tauri has many unmaintained
-# transitive dependencies (gtk3-rs, unic-*, fxhash, proc-macro-error, etc.)
-# that we cannot control. Re-enable when Tauri updates these dependencies.
-# For now, use `cargo audit` for security vulnerability scanning.
-#
-# [advisories]
-# version = 2
-# db-path = "~/.cargo/advisory-db"
+# Only the targets we ship. Tauri drags in the whole GTK3 stack for Linux, which
+# carries ~11 permanently-unmaintained advisories and, at times, real CVEs in crates
+# no macOS build ever links (`quick-xml` via `wayland-scanner`, for two). Vetting them
+# buried the findings that do reach users. Add a triple here the moment we ship one.
+[graph]
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+
+[advisories]
+version = 2
+# Only flag unmaintained crates we could actually act on: a direct workspace
+# dependency. The transitive ones (`paste`, the `unic-*` family via tauri's codegen)
+# are Tauri's to replace, and denying them means a red check nobody can fix.
+# Vulnerabilities are NOT scoped this way: every RUSTSEC vuln in the macOS graph,
+# transitive or not, still fails this check.
+unmaintained = "workspace"
+ignore = [
+  # `async-std` is discontinued and reaches us as a dev-dependency of our vendored
+  # `cmdr-fsevent-stream` fork, where it backs the `async-std` feature and the crate's
+  # own tests (`crates/fsevent-stream/src/tests.rs`). Test-only, never in a shipped
+  # binary. Drop this entry if the fork moves those tests to tokio.
+  "RUSTSEC-2025-0052",
+]
 
 [licenses]
 version = 2
@@ -27,9 +41,7 @@ allow = [
   "Unicode-3.0",
   "CC0-1.0",
   "LicenseRef-BSL-1.1", # Our own crate (Business Source License 1.1)
-  "NCSA", # For libfuzzer-sys (transitive dependency of image crate)
   "BSL-1.0", # For clipboard-win (transitive dependency of tauri-plugin-clipboard-manager)
-  "CDLA-Permissive-2.0", # For webpki-roots (TLS cert verification via reqwest)
   "bzip2-1.0.6", # For libbz2-rs-sys (bzip2 codec for archive browsing); permissive BSD-style
 ]
 
