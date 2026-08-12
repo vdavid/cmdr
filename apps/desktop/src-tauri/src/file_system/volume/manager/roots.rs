@@ -345,7 +345,10 @@ mod tests {
     #[test]
     fn stale_mount_errnos_are_told_apart_from_ordinary_file_errors() {
         for errno in [libc::ENOTCONN, libc::ETIMEDOUT, libc::EHOSTDOWN, libc::ESTALE] {
-            assert!(is_stale_mount_errno(errno), "errno {errno}: the mount is gone, not the file");
+            assert!(
+                is_stale_mount_errno(errno),
+                "errno {errno}: the mount is gone, not the file"
+            );
         }
         // A missing file, a permission wall, or a full disk says nothing about
         // the mount, and promoting on one would rotate a healthy volume's root.
