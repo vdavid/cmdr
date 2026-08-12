@@ -1,0 +1,21 @@
+{
+  "measuredWith": "apps/desktop/test/e2e-playwright/marketing-shots.spec.ts, on the live DOM",
+  "window": {
+    "width": 2284,
+    "height": 1410
+  },
+  "panes": {
+    "left": {
+      "x": 2,
+      "y": 232,
+      "width": 1137,
+      "height": 1052
+    },
+    "right": {
+      "x": 1145,
+      "y": 232,
+      "width": 1137,
+      "height": 1052
+    }
+  }
+}
