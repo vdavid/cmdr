@@ -5,6 +5,76 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.38.1] - 2026-08-12
+
+- Double-mounted SMB volumes used to break stuff. Now they are not.
+- Added some convenience buttons to error screens, with keyboard shortcuts!
+- Some stability and UI fixes.
+
+### Added
+
+- Add ways out of every error screen: "Go to home folder", "Go back", ⌘D for technical details, and a Home command (⌘⇧H)
+  (d25245d9)
+- Tell agents over MCP when a folder size is still a lower bound, and show on-disk size where it differs a lot
+  (70295b62)
+
+### Changed
+
+- Stop calling the usage stats anonymous, in all 10 languages: they carry a random per-install id (412b7093)
+- Rewrite the privacy policy to match what Cmdr actually collects, keeps, and shares (4c893e4a, 81107094)
+- Expire personal data in telemetry on a schedule instead of keeping it forever (e9f3465d)
+
+### Fixed
+
+- Fix a share mounted twice breaking the panes and the volume switcher, and freezing the app on F6 (01f93aa4, 1a9208e1,
+  f535a18d, 1e1e74d8, d97e3a7f)
+- Fix ejecting one of a share's two mounts making the share vanish until the next launch (0b3a86ad, 35e42d89, b9678ceb)
+- Fix a dead NAS mount hanging every operation instead of handing over to the mount that still answers (aff924b1,
+  fd04e8ce, 140473b8)
+- Fix the panes and the volume picker freezing during a big transfer, when image-index queries took the whole thread
+  pool (6566f8cc, f89e8c1f, 4401fcfb, 9dde346b)
+- Fix a slow volume listing emptying the volume picker with no way back (7405b534)
+- Fix clicking Move on a slow share looking dead for minutes (cce94565)
+- Fix a big local folder sitting on "Opening folder…" instead of counting files as it loads (b9563bce)
+- Fix the Brief-mode cursor vanishing and every column filling the pane after a measurement blip (53e5c42a, 85a09bc4)
+- Fix six error reasons missing their "Try again" button (f1226f02)
+- Fix a browser download's final rename producing no toast, and Cmdr's own copies toasting behind a symlinked Downloads
+  (6556e538)
+- Fix the Full-view scrollbar running up alongside the column headings (a62fefbd)
+- Fix screen readers announcing a file row that isn't on screen (b8486f70)
+- Fix one purchase minting more than one set of license keys (9826d59f)
+- Fix a rejected license email passing for a sent one (b1649dc9)
+
+### Security
+
+- Stop SMB account names riding along in error reports (14c6221d)
+- Make stored IP hashes one-way, and drop the IP from crash reports entirely (825e7c0b)
+- Stop blog likes storing recoverable IPs, and rate-limit the endpoint (92fc5e40)
+- Sign dev and production licenses with separate keys, moving the production signer out of a dev config file (21785cc2)
+- Stop a page you merely visited publishing to the local dev blog editor (203c1ea1)
+
+### Non-app
+
+- Add `pnpm marketing:shots`: all eight brand masters, staged and frame-verified, in 22 seconds instead of half an
+  evening (66a6eeb9, 3350faf0, 109537fc, 56c5adab, a55384f6, 13a4f5e7, 84ba857a, 245627e4, b1f8f330, 7ec23078, 45253476)
+- Regenerate the website hero with one command, from rectangles measured off the live DOM (dbfe84f1, aa6087da, 71183212)
+- Ship the brand masters as lossless WebP, a fifth of the bytes for identical pixels (7d38351d, 36b5297f)
+- Give back ~30,000 CPU-seconds a month in the local check suite, and stop a docs-only pass re-running the Rust tests
+  (8f3f5a76, cf839c39, a41573c3, 4b71a6f6, 6d8a287f)
+- Make `pnpm check` quiet by default, collapsing ~50 passing lines into one (ced50200)
+- Log every failed and slow test individually, so flake and slowness rankings become a query (45161522, 739d980f)
+- Fix 107 broken Rust doc links, and deny every doc lint the project holds itself to (d10960dc, 85faa8be, ac38e32c,
+  aa706dae, 60c92c58)
+- Fail `pnpm check` on a RUSTSEC vulnerability in a crate we actually ship (5df72a53)
+- Split the Worker's 40 flat files into four self-describing areas, each with its own docs (5c12e78b, 8cc6122b)
+- Bring 13 oversized `CLAUDE.md`s back under the resident-doc budget, and move the project's hard rules into `AGENTS.md`
+  (1245ca05, 2429c1ad, 3be1b799, 39b2f240, f16e5a5d, 6b0df9ed, 15288e46, 571f2c97)
+- Mirror the Linux volume module and the MTP backend on their macOS and SMB siblings, so cross-platform drift is visible
+  (0d836f84, eb3e073e)
+- Take the operation-session plan through four review rounds before any code (cf8ca51e, 63cf6b52, 4280431f, 84c21d70,
+  2e1eff51)
+- Prepare the AlternativeTo listing to paste, describing today's app with today's screenshots (039e17c6)
+
 ## [0.38.0] - 2026-08-11
 
 The three main advancements:

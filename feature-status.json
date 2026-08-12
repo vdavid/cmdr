@@ -47,7 +47,7 @@
       "id": "network-drives",
       "name": "Network drives (SMB)",
       "status": "beta",
-      "note": "Browsing and fast direct transfers work on common NAS setups, names with characters SMB forbids copy through, and a server that goes quiet recovers; unusual server configs can still cause surprises."
+      "note": "Browsing and fast direct transfers work on common NAS setups, names with characters SMB forbids copy through, a server that goes quiet recovers, and a share reachable through two mount points keeps working when one dies; unusual server configs can still cause surprises."
     },
     {
       "id": "android-devices",
@@ -71,7 +71,7 @@
       "id": "download-notifications",
       "name": "Download notifications",
       "status": "beta",
-      "note": "Catches downloads and jumps to the latest with one key; some browsers' temp-file renames can still slip through."
+      "note": "Catches downloads and jumps to the latest with one key."
     },
     {
       "id": "go-to-path",
