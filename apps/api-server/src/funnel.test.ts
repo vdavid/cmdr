@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { app } from './index'
-import { assembleFunnel, buildDateList, classifyUaFamily } from './funnel'
+import { assembleFunnel, buildDateList, classifyUaFamily, resolveUaFamily } from './funnel'
 
 function createMockKv(): KVNamespace {
   return { get: vi.fn(() => null), put: vi.fn() } as unknown as KVNamespace
@@ -196,13 +196,14 @@ describe('assembleFunnel', () => {
       [],
       [],
       [
+        // Legacy rows (no stored family), so the raw UA drives the classification.
         // 2026-06-11: a Mac browser (human), a Windows bot (excluded), and a NULL UA (unknown, kept).
-        { date: '2026-06-11', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', count: 4 },
-        { date: '2026-06-11', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', count: 6 },
-        { date: '2026-06-11', userAgent: null, count: 2 },
+        { date: '2026-06-11', uaFamily: null, userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', count: 4 },
+        { date: '2026-06-11', uaFamily: null, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', count: 6 },
+        { date: '2026-06-11', uaFamily: null, userAgent: null, count: 2 },
         // 2026-06-12: a Homebrew install (human) and a Linux bot (excluded).
-        { date: '2026-06-12', userAgent: 'Homebrew/4.1.0 (Macintosh; arm64)', count: 3 },
-        { date: '2026-06-12', userAgent: 'Mozilla/5.0 (X11; Linux x86_64)', count: 5 },
+        { date: '2026-06-12', uaFamily: null, userAgent: 'Homebrew/4.1.0 (Macintosh; arm64)', count: 3 },
+        { date: '2026-06-12', uaFamily: null, userAgent: 'Mozilla/5.0 (X11; Linux x86_64)', count: 5 },
       ],
       [],
       [],
@@ -214,6 +215,29 @@ describe('assembleFunnel', () => {
     expect(rows[0].humanInstalls).toBe(6) // 4 human + 2 unknown; the 6 Windows bots are excluded
     expect(rows[1].downloadsByUaFamily).toEqual({ human: 3, bot: 5, unknown: 0 })
     expect(rows[1].humanInstalls).toBe(3)
+  })
+
+  it('keeps the UA-family split intact after the retention sweep clears the raw User-Agents', () => {
+    const dates = ['2026-06-11']
+    const rows = assembleFunnel(
+      dates,
+      [],
+      [],
+      [],
+      // Swept rows: the raw UA is gone, the family recorded at write time carries the day.
+      [
+        { date: '2026-06-11', uaFamily: 'human', userAgent: null, count: 4 },
+        { date: '2026-06-11', uaFamily: 'bot', userAgent: null, count: 6 },
+        { date: '2026-06-11', uaFamily: 'unknown', userAgent: null, count: 2 },
+      ],
+      [],
+      [],
+      [],
+      null,
+      now,
+    )
+    expect(rows[0].downloadsByUaFamily).toEqual({ human: 4, bot: 6, unknown: 2 })
+    expect(rows[0].humanInstalls).toBe(6)
   })
 
   it('buckets signups per day from the Listmonk map', () => {
@@ -301,5 +325,25 @@ describe('classifyUaFamily', () => {
   it('is case-insensitive', () => {
     expect(classifyUaFamily('MOZILLA/5.0 (MACINTOSH)')).toBe('human')
     expect(classifyUaFamily('mozilla/5.0 (windows nt 10.0)')).toBe('bot')
+  })
+})
+
+describe('resolveUaFamily', () => {
+  it('trusts the family stored at write time, so a cleared UA keeps its classification', () => {
+    expect(resolveUaFamily({ uaFamily: 'human', userAgent: null })).toBe('human')
+    expect(resolveUaFamily({ uaFamily: 'bot', userAgent: null })).toBe('bot')
+  })
+
+  it('classifies the raw UA for rows written before the column existed', () => {
+    expect(resolveUaFamily({ uaFamily: null, userAgent: 'Mozilla/5.0 (Macintosh)' })).toBe('human')
+    expect(resolveUaFamily({ uaFamily: null, userAgent: 'Mozilla/5.0 (Windows NT 10.0)' })).toBe('bot')
+  })
+
+  it('falls back to unknown for a pre-column row whose UA the sweep already cleared', () => {
+    expect(resolveUaFamily({ uaFamily: null, userAgent: null })).toBe('unknown')
+  })
+
+  it('ignores an unrecognized stored value rather than trusting it blindly', () => {
+    expect(resolveUaFamily({ uaFamily: 'nonsense', userAgent: 'Mozilla/5.0 (Macintosh)' })).toBe('human')
   })
 })

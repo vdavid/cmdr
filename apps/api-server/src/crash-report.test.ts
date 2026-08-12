@@ -72,6 +72,17 @@ describe('POST /crash-report', () => {
     expect(res.status).toBe(204)
   })
 
+  it('derives nothing from the caller IP: no query reads the column, so nothing is stored', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await postCrashReport(validCrashReport, bindings)
+
+    // A caller IP only ever keys the rate limiter's window; no column may carry a hash of it.
+    const stringBinds = bindMock.mock.calls[0].filter((bound): bound is string => typeof bound === 'string')
+    expect(stringBinds.some((bound) => /^[0-9a-f]{64}$/.test(bound))).toBe(false)
+  })
+
   it('inserts correct data into D1', async () => {
     const { db, prepareMock, bindMock } = createMockD1()
     const bindings = createBindings({ TELEMETRY_DB: db })
@@ -84,7 +95,7 @@ describe('POST /crash-report', () => {
 
     const bindArgs = bindMock.mock.calls[0]
     // bindArgs: [hashedIp, appVersion, osVersion, arch, signal, topFunction, backtraceTruncated, buildMode, shortId]
-    expect(bindArgs[0]).toMatch(/^[0-9a-f]{64}$/) // SHA-256 hex
+    expect(bindArgs[0]).toBe('') // hashed_ip: nothing IP-derived is stored, the column is legacy
     expect(bindArgs[1]).toBe('1.2.3') // appVersion
     expect(bindArgs[2]).toBe('15.3.1') // osVersion
     expect(bindArgs[3]).toBe('arm64') // arch

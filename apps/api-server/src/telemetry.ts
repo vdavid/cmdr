@@ -1,7 +1,42 @@
 import { Hono, type Context } from 'hono'
 import { callerIp, enforceIpRateLimit, type Bindings } from './types'
+import { classifyUaFamily } from './funnel'
 
 const telemetry = new Hono<{ Bindings: Bindings }>()
+
+/** The current UTC day as `YYYY-MM-DD`. Also the salt half of {@link hashCallerIp}. */
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+/** Warn at most once per isolate, so a misconfigured deploy is visible without flooding the log. */
+let warnedMissingPepper = false
+
+/**
+ * Hash a caller IP for storage: `SHA-256(pepper + ip + YYYY-MM-DD)`.
+ *
+ * Two independent ingredients, and BOTH are load-bearing:
+ *
+ * - The **daily salt** stops the value linking one visitor across days. It is public and predictable
+ *   by design (it's the date), so it provides no secrecy at all.
+ * - The **pepper** (`IP_HASH_PEPPER`, a Cloudflare secret) is what makes the hash one-way. Without
+ *   it, anyone holding the database recovers the address: IPv4 is 2^32 candidates, which a GPU walks
+ *   in seconds, so an unpeppered hash IS the IP in a thin costume, and our privacy policy's "we don't
+ *   store your IP address" would be false. ❌ Never drop the pepper to "simplify" the scheme.
+ *
+ * Rotating the pepper is safe and re-anonymizes every stored row against the old value; it only costs
+ * one day of same-day dedup accuracy across the rotation. A missing secret still hashes (losing the
+ * count would be worse than a weak hash) but logs loudly: `hashed_ip` is then brute-forceable until
+ * the secret is set and the retention sweep clears the affected rows.
+ */
+async function hashCallerIp(ip: string, day: string, pepper: string | undefined): Promise<string> {
+  if (!pepper && !warnedMissingPepper) {
+    warnedMissingPepper = true
+    console.warn('IP_HASH_PEPPER is not set: stored IP hashes are brute-forceable until it is')
+  }
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode((pepper ?? '') + ip + day))
+  return [...new Uint8Array(hashBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
 
 // Crash report ingestion: writes to D1 for crash analysis
 const maxCrashReportBytes = 64 * 1024
@@ -193,16 +228,10 @@ telemetry.post('/crash-report', async (c) => {
   }
   const report = rawReport as CrashReport
 
-  // Hash IP with daily salt for deduplication (same pattern as update-check)
-  const ip = callerIp(c.req)
-  const dailySalt = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip + dailySalt))
-  const hashedIp = [...new Uint8Array(hashBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('')
-
   const topFunction = extractTopFunction(report.backtraceFrames)
   const backtraceTruncated = JSON.stringify(report.backtraceFrames ?? []).slice(0, maxBacktraceBytes)
 
-  const dbWrite = writeCrashReportToD1(c.env.TELEMETRY_DB, report, { hashedIp, topFunction, backtraceTruncated })
+  const dbWrite = writeCrashReportToD1(c.env.TELEMETRY_DB, report, { topFunction, backtraceTruncated })
 
   try {
     c.executionCtx.waitUntil(dbWrite)
@@ -216,7 +245,6 @@ telemetry.post('/crash-report', async (c) => {
 
 /** Server-derived fields the handler computes before persisting a crash report. */
 interface CrashReportDerived {
-  hashedIp: string
   topFunction: string
   backtraceTruncated: string
 }
@@ -225,6 +253,10 @@ interface CrashReportDerived {
  * Fire-and-forget D1 insert of a crash report. `build_mode`, `short_id`, `diag_id`, `email`, and
  * `panic_message` are nullable; rows from older clients (or reports without an attached email,
  * or signal crashes, which carry no panic payload) stay NULL.
+ *
+ * `hashed_ip` is written as the empty string: nothing reads it (crash rows are grouped by
+ * `top_function` and, where present, `diag_id`), so there is no reason to derive anything from the
+ * caller's address. The NOT NULL column stays for the legacy rows that migration 0013 erased.
  */
 function writeCrashReportToD1(db: D1Database, report: CrashReport, derived: CrashReportDerived): Promise<unknown> {
   return db
@@ -233,7 +265,7 @@ function writeCrashReportToD1(db: D1Database, report: CrashReport, derived: Cras
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
-      derived.hashedIp,
+      '',
       report.appVersion,
       report.osVersion,
       report.arch,
@@ -388,17 +420,15 @@ telemetry.get('/update-check/:version', async (c) => {
 
   const arch = c.req.query('arch') ?? 'unknown'
 
-  // Hash IP with daily salt for deduplication without storing PII
-  const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for') ?? 'unknown'
-  const dailySalt = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip + dailySalt))
-  const hashedIp = [...new Uint8Array(hashBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  // Peppered, daily-salted IP hash: the per-day dedup key, not a recoverable address. See `hashCallerIp`.
+  const day = todayUtc()
+  const hashedIp = await hashCallerIp(callerIp(c.req), day, c.env.IP_HASH_PEPPER)
 
   // Write to D1 (fire-and-forget). INSERT OR IGNORE deduplicates via UNIQUE constraint.
   const dbWrite = c.env.TELEMETRY_DB.prepare(
     `INSERT OR IGNORE INTO update_checks (date, hashed_ip, app_version, arch) VALUES (?, ?, ?, ?)`,
   )
-    .bind(dailySalt, hashedIp, version, arch)
+    .bind(day, hashedIp, version, arch)
     .run()
     .catch(() => {})
 
@@ -583,20 +613,21 @@ telemetry.get('/download/:version/:arch', async (c) => {
   // link (no `?ref`), so the dashboard can attribute the otherwise-unknown downloads. See migration 0010.
   const referer = sanitizeRefererHost(c.req.header('referer'))
   const storedUserAgent = cappedUserAgent(userAgent)
+  // Classify at WRITE time as well as read time, so the install-plausibility signal outlives the raw
+  // UA that the retention sweep clears after `DOWNLOAD_IDENTIFIER_RETENTION_DAYS`. Legacy rows have a
+  // NULL family and fall back to classifying their stored UA (`funnel.ts`).
+  const uaFamily = classifyUaFamily(userAgent)
 
-  // Hash IP with a daily-rotating salt: lets the dashboard count distinct same-day downloaders
-  // (`COUNT(DISTINCT hashed_ip)`) without storing an IP or anything linkable across days. Same
-  // scheme as `/update-check` above.
-  const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for') ?? 'unknown'
-  const dailySalt = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip + dailySalt))
-  const hashedIp = [...new Uint8Array(hashBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  // Peppered, daily-salted IP hash: lets the dashboard count distinct same-day downloaders
+  // (`COUNT(DISTINCT hashed_ip)`) without storing a recoverable address or anything linkable across
+  // days. Same scheme as `/update-check` above; see `hashCallerIp` for why both parts matter.
+  const hashedIp = await hashCallerIp(callerIp(c.req), todayUtc(), c.env.IP_HASH_PEPPER)
 
   // Write to D1 (fire-and-forget). One row per request: the raw count stays `COUNT(*)`.
   const dbWrite = c.env.TELEMETRY_DB.prepare(
-    `INSERT INTO downloads (app_version, arch, country, continent, hashed_ip, source, ref, referer, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO downloads (app_version, arch, country, continent, hashed_ip, source, ref, referer, user_agent, ua_family) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
-    .bind(version, arch, country, continent, hashedIp, source, ref, referer, storedUserAgent)
+    .bind(version, arch, country, continent, hashedIp, source, ref, referer, storedUserAgent, uaFamily)
     .run()
     .catch(() => {})
 

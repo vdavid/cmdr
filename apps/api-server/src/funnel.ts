@@ -88,6 +88,9 @@ interface DownloadByRefererRow {
 
 interface DownloadByUaRow {
   date: string
+  /** The family stored at write time. NULL on rows written before migration 0013. */
+  uaFamily: string | null
+  /** The raw UA. NULL once the retention sweep has cleared it, and on pre-0010 rows. */
   userAgent: string | null
   count: number
 }
@@ -218,20 +221,36 @@ async function queryDownloadsByReferer(db: D1Database, sinceDate: string): Promi
   return results
 }
 
+/** The three families a download row can fall into. Guards the stored column against a bad value. */
+const uaFamilies: ReadonlySet<string> = new Set<UaFamily>(['human', 'bot', 'unknown'])
+
 /**
- * Per-day server downloads, split by the raw stored `user_agent` of the `/download` hit. We group on the
- * stored UA (NULL for pre-migration-0010 rows) and let `classifyUaFamily` bucket each value into a family
- * in `assembleFunnel`, rather than encoding the UA rules in SQL: that keeps the classifier a single pure,
- * unit-tested function and the only place the macOS-only logic lives. Cardinality is low (one row per
- * distinct UA per day over a few hundred downloads), so pulling the grouped rows is cheap.
+ * The family for one grouped download row: the value stored at write time when it's there, else the
+ * classifier run over the raw UA (rows from before migration 0013). A row that has neither, because
+ * the retention sweep cleared the UA of a pre-0013 row, lands in `unknown`, which is never excluded
+ * from anything.
+ */
+export function resolveUaFamily(row: { uaFamily: string | null; userAgent: string | null }): UaFamily {
+  if (row.uaFamily !== null && uaFamilies.has(row.uaFamily)) return row.uaFamily as UaFamily
+  return classifyUaFamily(row.userAgent)
+}
+
+/**
+ * Per-day server downloads, split by install-plausibility family. Rows carry the family recorded at
+ * write time (`ua_family`, migration 0013); `assembleFunnel` falls back to `classifyUaFamily` on the
+ * raw UA for rows written before that column existed. Keeping the fallback out of SQL keeps the
+ * classifier a single pure, unit-tested function and the only place the macOS-only logic lives.
+ *
+ * Grouping on both columns keeps cardinality low (one row per distinct UA per day over a few hundred
+ * downloads) and collapses to one row per family per day once the sweep has cleared the raw UAs.
  */
 async function queryDownloadsByUa(db: D1Database, sinceDate: string): Promise<DownloadByUaRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT date(created_at) AS date, user_agent AS userAgent, COUNT(*) AS count
+      `SELECT date(created_at) AS date, ua_family AS uaFamily, user_agent AS userAgent, COUNT(*) AS count
          FROM downloads
          WHERE date(created_at) >= ?1
-         GROUP BY date, user_agent`,
+         GROUP BY date, ua_family, user_agent`,
     )
     .bind(sinceDate)
     .all<DownloadByUaRow>()
@@ -402,7 +421,7 @@ export function assembleFunnel(
   const uaFamilyMap = new Map<string, { human: number; bot: number; unknown: number }>()
   for (const row of downloadsByUa) {
     const entry = uaFamilyMap.get(row.date) ?? { human: 0, bot: 0, unknown: 0 }
-    entry[classifyUaFamily(row.userAgent)] += row.count
+    entry[resolveUaFamily(row)] += row.count
     uaFamilyMap.set(row.date, entry)
   }
   const newInstallsMap = new Map(newInstalls.map((r) => [r.date, r.newInstalls]))

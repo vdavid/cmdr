@@ -145,6 +145,11 @@ LISTMONK_NEWSLETTER_LIST_ID = 3
 # - PADDLE_API_KEY_LIVE            (from Paddle live dashboard - for /validate)
 # - PADDLE_API_KEY_SANDBOX         (from Paddle sandbox dashboard - for /validate)
 # - ED25519_PRIVATE_KEY            (from generate-keys script)
+# - IP_HASH_PEPPER                 (random 32+ bytes; the ONLY thing making stored IP hashes one-way.
+#                                   The salt beside it is the public date, so without this the IPv4
+#                                   space brute-forces in seconds. Generate with
+#                                   `openssl rand -hex 32`. Safe to rotate: costs one day of
+#                                   same-day download dedup, re-anonymizes every older row.)
 # - RESEND_API_KEY                 (from resend.com)
 # - PRICE_ID_COMMERCIAL_SUBSCRIPTION (Price ID for $59/yr subscription)
 # - PRICE_ID_COMMERCIAL_PERPETUAL  (Price ID for $199 perpetual)

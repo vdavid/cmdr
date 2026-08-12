@@ -33,6 +33,11 @@ export type Bindings = {
   PADDLE_API_KEY_SANDBOX?: string
   // Crypto keys
   ED25519_PRIVATE_KEY: string
+  // Secret pepper mixed into every stored IP hash (`/download`, `/update-check`). The daily salt
+  // beside it is public by design, so this secret is the ONLY thing making those hashes one-way:
+  // without it, the IPv4 space brute-forces in seconds. Optional so tests and incomplete envs can
+  // omit it (the handler warns and still counts); required in any deployed environment.
+  IP_HASH_PEPPER?: string
   // Email
   RESEND_API_KEY: string
   // Config

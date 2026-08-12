@@ -225,6 +225,28 @@ describe('GET /download/:version/:arch', () => {
     expect((bindMock.mock.calls[0][8] as string).length).toBe(400)
   })
 
+  it('classifies the User-Agent family at write time, so the family survives the raw UA aging out', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/download/1.2.3/aarch64', { headers: browserUa }, bindings)
+
+    expect(bindMock.mock.calls[0][9]).toBe('human')
+  })
+
+  it('records a non-macOS client as the bot family (a .dmg it cannot install)', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request(
+      '/download/1.2.3/aarch64',
+      { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } },
+      bindings,
+    )
+
+    expect(bindMock.mock.calls[0][9]).toBe('bot')
+  })
+
   it('skips the D1 insert for bot/unfurler User-Agents but still serves the file', async () => {
     const { db, prepareMock } = createMockD1()
     const bindings = createBindings({ TELEMETRY_DB: db })
@@ -444,5 +466,63 @@ describe('GET /update-check/:version', () => {
     const bindings = createBindings()
     const res = await app.request('/update-check/abc', {}, bindings)
     expect(res.status).toBe(400)
+  })
+})
+
+// The date-only salt these hashes used to carry is public and predictable, so the whole IPv4 space
+// (2^32 hashes) brute-forces in seconds: the stored value WAS the IP in a thin costume. The secret
+// pepper is what makes the hash one-way for anyone holding the database, so these tests guard the
+// property, not the implementation.
+describe('stored IP hashes', () => {
+  const callerIp = { 'cf-connecting-ip': '203.0.113.7' }
+
+  /** Run one `/download` hit and return the `hashed_ip` it bound. */
+  async function hashedIpFor(pepper: string | undefined, ip = '203.0.113.7'): Promise<unknown> {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db, IP_HASH_PEPPER: pepper })
+    await app.request('/download/1.2.3/aarch64', { headers: { ...browserUa, 'cf-connecting-ip': ip } }, bindings)
+    return bindMock.mock.calls[0][4]
+  }
+
+  it('mixes the IP_HASH_PEPPER secret in, so the same IP hashes differently under a different pepper', async () => {
+    const [withOne, withTwo] = await Promise.all([hashedIpFor('pepper-one'), hashedIpFor('pepper-two')])
+
+    expect(withOne).toMatch(/^[0-9a-f]{64}$/)
+    expect(withOne).not.toBe(withTwo)
+  })
+
+  it('stays stable for one IP under one pepper, so same-day dedup still counts distinct downloaders', async () => {
+    const [first, second] = await Promise.all([hashedIpFor('pepper-one'), hashedIpFor('pepper-one')])
+
+    expect(first).toBe(second)
+  })
+
+  it('separates distinct IPs under the same pepper', async () => {
+    const [a, b] = await Promise.all([hashedIpFor('pepper-one'), hashedIpFor('pepper-one', '198.51.100.9')])
+
+    expect(a).not.toBe(b)
+  })
+
+  it('peppers the update-check hash too (same scheme, same table of visitors)', async () => {
+    const first = createMockD1()
+    const second = createMockD1()
+
+    await app.request(
+      '/update-check/1.2.3',
+      { headers: callerIp },
+      createBindings({ TELEMETRY_DB: first.db, IP_HASH_PEPPER: 'pepper-one' }),
+    )
+    await app.request(
+      '/update-check/1.2.3',
+      { headers: callerIp },
+      createBindings({ TELEMETRY_DB: second.db, IP_HASH_PEPPER: 'pepper-two' }),
+    )
+
+    expect(first.bindMock.mock.calls[0][1]).not.toBe(second.bindMock.mock.calls[0][1])
+  })
+
+  it('still writes a usable hash when the pepper secret is missing, rather than dropping the row', async () => {
+    // A missing secret must not take down download counting; the handler warns instead.
+    expect(await hashedIpFor(undefined)).toMatch(/^[0-9a-f]{64}$/)
   })
 })
