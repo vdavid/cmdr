@@ -2,4 +2,6 @@ node_modules/
 dist/
 .wrangler/
 keys/
-.dev.vars
+# Glob, not the bare name: a `.dev.vars.backup` / `.dev.vars.local` sitting next to the
+# real one holds the same secrets and would otherwise be committable.
+.dev.vars*

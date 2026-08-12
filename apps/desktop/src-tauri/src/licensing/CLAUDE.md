@@ -18,6 +18,10 @@ only checks subscription expiry. Frontend counterpart: `src/lib/licensing/CLAUDE
 
 ## Must-knows
 
+- **`PUBLIC_KEY_HEX` has a dev and a production arm, gated on `debug_assertions` exactly like
+  `validation_client.rs`'s `LICENSE_SERVER_URL`.** Each build trusts only the server it talks to. ❌ Never put the
+  production private key in `apps/api-server/.dev.vars`: it mints licenses every shipped build accepts. Changing one
+  gate without the other makes the build reject every license. `DETAILS.md` § Signing keys.
 - **Grace period is 30 days; server re-validation interval is 7 days** (`OFFLINE_GRACE_PERIOD_SECS`,
   `VALIDATION_INTERVAL_SECS` in `app_status.rs`). After the grace window with no successful validation, status reverts to
   Personal.

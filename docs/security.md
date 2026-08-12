@@ -138,6 +138,14 @@ Triage order for a real hit is rotate at the provider first, then remove from th
 history keeps the old value, so resolving without rotating fixes nothing. Access details and API recipes live in
 `~/Dropbox/obsidian/agents/tooling/gitguardian.md`.
 
+## License signing keys
+
+Dev and production sign licenses with different Ed25519 keys, and the desktop app verifies against whichever public key
+matches its build mode. The production private key exists only as a Cloudflare Worker secret, never in
+`apps/api-server/.dev.vars`: it can mint a license every shipped build accepts, and there's no revocation path short of
+shipping a new binary. Mechanism, the rotation caveat, and the test that guards both directions:
+`apps/desktop/src-tauri/src/licensing/DETAILS.md` § Signing keys.
+
 ## Ask Cmdr agent egress (to the user's LLM provider)
 
 Ask Cmdr is the one subsystem that deliberately sends user data OFF the Mac — to the AI provider the user configured,

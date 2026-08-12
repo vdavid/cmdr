@@ -23,8 +23,14 @@ These steps only need to be done once, by a human. After this, agents can handle
 in [CLAUDE.md](CLAUDE.md).
 
 1. `pnpm install`
-2. Generate Ed25519 key pair: `pnpm run generate-keys` → `keys/public.key` + `keys/private.key`
-3. Copy public key hex to `PUBLIC_KEY_HEX` in [`verification.rs`](../desktop/src-tauri/src/licensing/verification.rs)
+2. Generate **two** Ed25519 key pairs with `pnpm run generate-keys`, one for production and one for local dev. They
+   stay separate for the same reason sandbox and live Paddle keys do: the production private key can mint a valid
+   license for every shipped build, so it belongs in Cloudflare and nowhere else, least of all a dev config file.
+3. Copy each public key hex into its arm of `PUBLIC_KEY_HEX` in
+   [`verification.rs`](../desktop/src-tauri/src/licensing/verification.rs): the dev key under `debug_assertions`, the
+   production key under `not(debug_assertions)`. That mirrors `LICENSE_SERVER_URL`, so a build trusts exactly the
+   server it talks to. The private halves go to `.dev.vars` (dev, step 10) and `wrangler secret put` (production,
+   step 9).
 4. **Resend**: Create API key at https://resend.com/api-keys. Add `getcmdr.com` domain at https://resend.com/domains
    (adds DNS records to Cloudflare automatically).
 5. **Paddle**: Create accounts at https://paddle.com (live) and https://sandbox-vendors.paddle.com (sandbox).

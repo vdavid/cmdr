@@ -53,10 +53,26 @@ impl std::error::Error for LicenseActivationError {}
 /// the Ed25519 signature on every call to `get_license_info`.
 static LICENSE_CACHE: Mutex<Option<LicenseInfo>> = Mutex::new(None);
 
-// Ed25519 public key (32 bytes, hex-encoded).
-// Generate this with: cd apps/api-server && pnpm run generate-keys
-// Then copy the public key here.
+// The Ed25519 public key licenses are verified against (32 bytes, hex-encoded).
+//
+// A build verifies exactly the signer it talks to, so this switches on the same
+// `debug_assertions` gate as `LICENSE_SERVER_URL` in `validation_client.rs`. Keep the two
+// in lockstep: a build pointed at one server while trusting the other's key rejects every
+// license it is handed.
+//
+// The dev key's private half lives in `apps/api-server/.dev.vars` (gitignored, developer
+// machines only). The production private half is a Cloudflare Worker secret and MUST NOT
+// be copied into that file: a signer that can mint licenses for every shipped build has no
+// business sitting in a dev config. Rotating either side means regenerating the pair
+// (`cd apps/api-server && pnpm run generate-keys`) and pasting the public half here; note
+// that rotating PRODUCTION invalidates every license already issued, because this constant
+// is the only key a shipped binary trusts.
 //noinspection SpellCheckingInspection
+#[cfg(debug_assertions)]
+const PUBLIC_KEY_HEX: &str = "2b40172372fc65384f2f8e640fc4d546b1b20045be9187ea462432e16eed7c00";
+
+//noinspection SpellCheckingInspection
+#[cfg(not(debug_assertions))]
 const PUBLIC_KEY_HEX: &str = "c3b18e765fc5c74f9fb7f3a9869d14c6bdeda1f28ec85aa6182de78113930d26";
 
 const STORE_KEY_LICENSE: &str = "license_key";
@@ -357,6 +373,43 @@ mod tests {
         // Valid base64 payload, invalid base64 signature
         let result = validate_license_key("YWJj.not_valid_base64!!!");
         assert!(matches!(result, Err(LicenseActivationError::BadEncoding)));
+    }
+
+    /// The production signer's public key, pinned here as a literal on purpose. Tests
+    /// compile with `debug_assertions`, so `PUBLIC_KEY_HEX` below is the DEV arm; this
+    /// constant is the thing it must never equal again.
+    const PRODUCTION_PUBLIC_KEY_HEX: &str = "c3b18e765fc5c74f9fb7f3a9869d14c6bdeda1f28ec85aa6182de78113930d26";
+
+    /// Each build must trust exactly the signer of the server it talks to: a debug build
+    /// points `LICENSE_SERVER_URL` at `localhost:8787` (signed with `apps/api-server/.dev.vars`),
+    /// a release build at `api.getcmdr.com` (signed with the Cloudflare secret).
+    ///
+    /// Both directions matter. Debug drifting to the production key means that key has to
+    /// live in the dev file again to be useful, which is the exposure this split removed;
+    /// release drifting to the dev key means shipping a build that rejects every real
+    /// license. Written to hold under `cargo test` and `cargo test --release` alike.
+    #[test]
+    fn each_build_verifies_against_its_own_servers_signer() {
+        if cfg!(debug_assertions) {
+            assert_ne!(
+                PUBLIC_KEY_HEX, PRODUCTION_PUBLIC_KEY_HEX,
+                "a debug build must verify against the dev signer, never production"
+            );
+        } else {
+            assert_eq!(
+                PUBLIC_KEY_HEX, PRODUCTION_PUBLIC_KEY_HEX,
+                "a release build must verify against the production signer"
+            );
+        }
+    }
+
+    /// A mistyped or truncated paste would fail every activation at runtime with an opaque
+    /// `BadPayload`; catch it at build time instead.
+    #[test]
+    fn compiled_in_public_key_is_a_well_formed_ed25519_key() {
+        let bytes = hex_decode(PUBLIC_KEY_HEX).expect("compiled-in public key is valid hex");
+        let bytes: [u8; 32] = bytes.try_into().expect("compiled-in public key is 32 bytes");
+        VerifyingKey::from_bytes(&bytes).expect("compiled-in public key is a valid Ed25519 point");
     }
 
     /// Integration test: full cryptographic roundtrip

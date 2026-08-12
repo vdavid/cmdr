@@ -48,6 +48,29 @@ Legacy `activate_license` / `activate_license_async` wrappers still exist for ba
 - Key format: `base64(JSON).base64(signature)`, split on a single `.`.
 - Public key embedded at compile time as hex in `verification.rs` (`PUBLIC_KEY_HEX`).
 
+## Signing keys
+
+Two Ed25519 pairs, one per environment, selected by the same `debug_assertions` gate that picks
+`LICENSE_SERVER_URL` in `validation_client.rs`:
+
+- **Dev**: private half in `apps/api-server/.dev.vars` (gitignored, mode 0600, developer machines only), public half in
+  the `debug_assertions` arm of `PUBLIC_KEY_HEX`. Signs the licenses a local `wrangler dev` on `localhost:8787` mints.
+- **Production**: private half is a Cloudflare Worker secret, public half in the `not(debug_assertions)` arm. Signs
+  what `api.getcmdr.com` mints.
+
+**Why they're split**: the two gates have to agree, because a build that talks to one server while trusting the other's
+key rejects every license it's handed. Before the split there was one pair, so the dev config file held the production
+signer, and anything that could read that file could mint a license valid on every shipped build. That's the same
+reasoning as `apps/api-server/CLAUDE.md`'s "sandbox and live never mix", applied to the signing key.
+
+`each_build_verifies_against_its_own_servers_signer` in `verification.rs` guards both directions and is written to
+hold under `cargo test` and `cargo test --release`.
+
+**Rotation**: regenerate with `cd apps/api-server && pnpm run generate-keys` and paste the public half into the matching
+arm. Rotating the dev pair costs nothing. Rotating production invalidates every license already issued, because
+`PUBLIC_KEY_HEX` is the only key a shipped binary trusts and there's no second-key transition path. Adding one (accept
+old and new during a window) is the prerequisite for ever rotating production without reissuing.
+
 ## Key decisions
 
 **Decision**: BSL 1.1 license model: free personal use, paid commercial ($59/year or $199 perpetual), converts to

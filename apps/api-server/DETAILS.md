@@ -77,7 +77,7 @@ Decisions.
 | `PADDLE_API_KEY_LIVE`              | n/a                              | Live API key                       |
 | `PRICE_ID_COMMERCIAL_SUBSCRIPTION` | Sandbox price ID                 | Live price ID                      |
 | `PRICE_ID_COMMERCIAL_PERPETUAL`    | Sandbox price ID                 | Live price ID                      |
-| `ED25519_PRIVATE_KEY`              | Private key hex                  | Same private key hex               |
+| `ED25519_PRIVATE_KEY`              | DEV private key hex              | PRODUCTION private key hex         |
 | `RESEND_API_KEY`                   | Resend key                       | Same Resend key                    |
 | `CRASH_NOTIFICATION_EMAIL`         | `david@getcmdr.com`              | Recipient email for crash alerts   |
 | `DISCORD_WEBHOOK_URL`              | Same webhook URL                 | Discord webhook for error reports  |
@@ -90,6 +90,11 @@ Decisions.
 | `LISTMONK_API_TOKEN`               | Listmonk API token               | Same (least-privilege at deploy)   |
 | `LISTMONK_BETA_LIST_ID`            | Beta-list numeric id             | Same id                            |
 | `IP_HASH_PEPPER`                   | Any random string                | Makes every stored IP hash one-way |
+
+`ED25519_PRIVATE_KEY` is two different keys, unlike the rows marked "Same". The production signer can mint a license
+every shipped build accepts, so it exists only as a wrangler secret; `.dev.vars` gets its own pair, and the desktop app
+verifies against whichever public key matches its build mode. Full rationale and the rotation caveat:
+`apps/desktop/src-tauri/src/licensing/DETAILS.md` § Signing keys.
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
 
