@@ -20,9 +20,11 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
   shrink-wrap". Seven exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the two
   with no § of their own (both are exempt-with-reason lists whose checks FAIL on a dead or redundant entry rather than
   auto-removing it).
-- **Not every scanner is a registry check.** `e2e-durations.go` is embedded in the two E2E checks (§ "E2E test duration
-  flagger" has the why), and `docs_graph.go` is a shared library behind both `docs-reachable` and the `--docs-graph`
-  renderer in `../docs_graph_render.go`. Neither appears in `AllChecks`.
+- **Not every file here is a registry check.** `e2e-durations.go` is embedded in the two E2E checks (§ "E2E test
+  duration flagger" has the why), `docs_graph.go` is a shared library behind both `docs-reachable` and the
+  `--docs-graph` renderer in `../docs_graph_render.go`, and `e2e-build.go` owns producing the Playwright lane's binary
+  (compile, find, sign, freshness stamp) so `desktop-svelte-e2e-playwright.go` is left with running the suite against
+  it. None appears in `AllChecks`.
 - **`changelog-commit-links.go` resolves every commit hash in `CHANGELOG.md` through ONE `git cat-file --batch-check`
   process**, not a process per reference. The recognition rule is § "CHANGELOG commit refs" below.
 
@@ -398,7 +400,7 @@ config — so isolation applies everywhere, with no CI split. Manual `pnpm test:
 ## The Playwright lane's binary is fingerprinted, because its build isn't incremental
 
 **Decision**: `buildTauriBinary` stamps the release binary with a fingerprint of everything it was compiled from
-(`e2eBinaryInputs`, in `e2e-build-cache.go`) and skips the compile when the binary on disk already carries that stamp.
+(`e2eBinaryInputs`, in `e2e-build.go`) and skips the compile when the binary on disk already carries that stamp.
 
 **Why**: `pnpm test:e2e:playwright:build` does not get cheaper when nothing changed. Measured back-to-back on a warm
 `target/` with an untouched tree (macOS, rustc 1.97.1, 2026-08-12): the second build took **172 s**, of which cargo

@@ -132,60 +132,6 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 	return applyE2EFlakyWarning(result, reportPaths), nil
 }
 
-// buildTauriBinary compiles the Tauri binary with the playwright-e2e feature
-// flag, returns the path to the built binary, and code-signs it for Keychain
-// access on macOS. Errors include the build log path for post-mortem.
-//
-// The compile is skipped when the binary on disk was already built from this exact
-// tree (`e2e-build-cache.go`). Code-signing still runs either way: it's fast, it's
-// idempotent, and re-asserting the signature costs less than reasoning about
-// whether a previous run got that far.
-func buildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int64) (string, error) {
-	// Captured BEFORE the build, since the build writes into the tree (Vite's
-	// `apps/desktop/build/`), and stamped only once it succeeds. A fingerprint pass
-	// that fails leaves this empty, which forces the rebuild and skips the stamp.
-	fingerprint, _ := e2eBuildFingerprint(ctx.RootDir)
-
-	binaryPath, buildErr := reuseOrBuildTauriBinary(ctx, desktopDir, timestamp, fingerprint)
-	if buildErr != nil {
-		return "", buildErr
-	}
-	if err := codesignDevBinary(binaryPath); err != nil {
-		return "", err
-	}
-	return binaryPath, nil
-}
-
-// reuseOrBuildTauriBinary returns the path to a binary built from the current tree,
-// compiling one only when the binary on disk isn't already it.
-func reuseOrBuildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int64, fingerprint string) (string, error) {
-	if ctx.ReuseArtifacts {
-		if existing, err := findTauriBinary(ctx.RootDir); err == nil && e2eBinaryIsCurrent(existing, fingerprint) {
-			return existing, nil
-		}
-	}
-
-	buildCmd := exec.Command("pnpm", "test:e2e:playwright:build")
-	buildCmd.Dir = desktopDir
-	buildOutput, err := RunCommand(buildCmd, true)
-	if err != nil {
-		buildLog := fmt.Sprintf("/tmp/cmdr-e2e-playwright-build-%d.log", timestamp)
-		appendToLogFile(buildLog, buildOutput)
-		return "", fmt.Errorf("tauri build failed (log: %s)\n%s", buildLog, indentOutput(buildOutput))
-	}
-
-	binaryPath, err := findTauriBinary(ctx.RootDir)
-	if err != nil {
-		return "", err
-	}
-	// A stamp we can't write costs a rebuild next time, never a wrong verdict, so
-	// it doesn't fail the lane.
-	if fingerprint != "" {
-		_ = recordE2EBuild(binaryPath, fingerprint)
-	}
-	return binaryPath, nil
-}
-
 // allocateShardFixtures creates one fixture directory per shard and returns a
 // cleanup function that removes them all. On error, any fixtures created so
 // far are removed before returning.
@@ -394,32 +340,6 @@ func parsePlaywrightTotals(output string) (passed, failed, skipped int) {
 		skipped, _ = strconv.Atoi(m[1])
 	}
 	return passed, failed, skipped
-}
-
-// findTauriBinary locates the built Cmdr binary by querying rustc for the host triple.
-func findTauriBinary(rootDir string) (string, error) {
-	rustcCmd := exec.Command("rustc", "-vV")
-	output, err := RunCommand(rustcCmd, true)
-	if err != nil {
-		return "", fmt.Errorf("failed to get rust host triple: %w", err)
-	}
-
-	var triple string
-	for line := range strings.SplitSeq(output, "\n") {
-		if rest, ok := strings.CutPrefix(line, "host:"); ok {
-			triple = strings.TrimSpace(rest)
-			break
-		}
-	}
-	if triple == "" {
-		return "", fmt.Errorf("could not parse host triple from `rustc -vV` output")
-	}
-
-	binaryPath := filepath.Join(rootDir, "target", triple, "release", "Cmdr")
-	if _, err := os.Stat(binaryPath); err != nil {
-		return "", fmt.Errorf("built binary not found at %s", binaryPath)
-	}
-	return binaryPath, nil
 }
 
 // createE2EFixtures creates the E2E fixture directory tree (~170 MB) via the shared
@@ -792,32 +712,4 @@ func appendToLogFile(path, text string) {
 	}
 	defer f.Close()
 	f.WriteString(text)
-}
-
-// codesignDevBinary signs the binary with a local dev certificate so macOS Keychain
-// doesn't prompt on every rebuild. The identity is stable across builds, so Keychain
-// items created by a signed binary remain accessible to future signed builds.
-// Skipped on non-macOS and when no signing identity is available.
-func codesignDevBinary(binaryPath string) error {
-	if runtime.GOOS != "darwin" {
-		return nil
-	}
-
-	identity := os.Getenv("CMDR_DEV_SIGNING_IDENTITY")
-	if identity == "" {
-		identity = "Cmdr Dev"
-	}
-
-	checkCmd := exec.Command("security", "find-identity", "-v", "-p", "codesigning")
-	checkOutput, err := RunCommand(checkCmd, true)
-	if err != nil || !strings.Contains(checkOutput, "\""+identity+"\"") {
-		return nil
-	}
-
-	cmd := exec.Command("codesign", "--force", "-s", identity, binaryPath)
-	output, err := RunCommand(cmd, true)
-	if err != nil {
-		return fmt.Errorf("codesign failed for %s: %w\n%s", binaryPath, err, indentOutput(output))
-	}
-	return nil
 }

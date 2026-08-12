@@ -13,7 +13,8 @@ Runner architecture: `../CLAUDE.md`.
   `scripts-go-*`).
 - `inputs.go`: shared `Inputs` blocks. `allowlist.go` / `directives.go`: allowlist shrink-wrap + opt-out tracking.
 - `test-log.go`: per-test record vocabulary; parsers in `rust-test-diagnostics.go`, `vitest-test-log.go`,
-  `e2e-test-log.go`.
+  `e2e-test-log.go`. `e2e-build.go`: producing the Playwright lane's binary (compile, find, sign, freshness stamp);
+  `desktop-svelte-e2e-playwright.go` runs the suite against it.
 - Warn-only scanners with JSON allowlists: `file-length.go`, `claude-md-length.go`, `e2e-durations.go`,
   `website-bundle-size.go`. Error-level doc-graph checks: `docs-reachable.go` (+ shared `docs_graph.go`),
   `docs-dead-links.go`, `docs-link-text.go`.
@@ -52,9 +53,9 @@ Runner architecture: `../CLAUDE.md`.
 - **`svelte-tests` coverage runs in a per-invocation temp `reportsDirectory`** (via `VITEST_COVERAGE_DIR`): a fixed path
   lets concurrent runs clobber each other's in-flight v8 worker files (`ENOENT`). DETAILS.md § "svelte-tests coverage
   isolation".
-- **The Playwright lane's release build is NOT incremental** (a no-op rebuild costs 172 s), so `e2e-build-cache.go`
-  stamps the binary with what it was compiled from and skips the build when that matches. The set drops
-  `apps/desktop/test/**`; every uncertainty rebuilds. DETAILS.md § "The Playwright lane's binary is fingerprinted".
+- **The Playwright lane's release build is NOT incremental** (a no-op rebuild costs 172 s), so `e2e-build.go` stamps the
+  binary with what it was compiled from and skips the build when that matches. The set drops `apps/desktop/test/**`;
+  every uncertainty rebuilds. DETAILS.md § "The Playwright lane's binary is fingerprinted".
 - **A red Rust lane goes through `resolveRustFailure`**, which re-runs failures alone before believing them. Lanes
   inject only WHERE: the Docker lane execs into its still-live container, so don't collapse that into one `docker run`.
   DETAILS.md § "The contention re-run".
