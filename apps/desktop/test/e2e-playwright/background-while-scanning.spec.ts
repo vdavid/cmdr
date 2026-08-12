@@ -27,6 +27,7 @@ import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   closeScopedWindow,
+  dismissAllToasts,
   ensureAppReady,
   getFixtureRoot,
   moveCursorToFile,
@@ -39,10 +40,13 @@ const QUEUE_LABEL = 'queue'
 /** The progress dialog (NOT the destination picker). */
 const PROGRESS_DIALOG = '[data-dialog-id="transfer-progress"]'
 
-/** Long enough that the dialog is unmistakably still in its scanning phase when
- *  the test acts, short enough that the spec never sits on it: every assertion
- *  below polls, so a green run leaves well before this elapses. */
-const SCAN_DELAY_MS = 4_000
+/** The spec's floor: it holds the scan open, and the last assertion waits for
+ *  the copy that follows it, so the run costs roughly this plus overhead. The
+ *  work that has to happen INSIDE the window (cursor, F5, confirm, two DOM
+ *  reads, the Background click) measured ~0.6 s on the slower Linux lane, so
+ *  this leaves about 4x margin while keeping the spec near the duration budget.
+ *  ❌ Don't cut it much further: a flaky proof is worth less than a slow one. */
+const SCAN_DELAY_MS = 2_500
 
 const SOURCE = 'scan-bg-src'
 
@@ -156,6 +160,9 @@ test.describe('Backgrounding a transfer that is still counting', () => {
       .poll(() => fs.existsSync(path.join(fixtureRoot, 'right', SOURCE, 'file-0.txt')), { timeout: 30_000 })
       .toBe(true)
 
+    // Backgrounding raises its own toast; it outlives this spec's window, so
+    // clear it rather than leaving it for the leak guard.
+    await dismissAllToasts(main)
     await closeScopedWindow(main, queuePage, QUEUE_LABEL)
   })
 })
