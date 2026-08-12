@@ -1182,8 +1182,9 @@ mod in_memory;
 pub mod mtp_ids;
 mod types;
 
-/// Which mount root a volume ID publishes when one filesystem is mounted at
-/// several paths. Platform-neutral: both discovery modules funnel through it.
+// Docs live in the file's own `//!` header. ❌ Never add an outer `///` here on
+// top of it: rustdoc resolves the concatenated fragments in THIS module's scope,
+// so the file's own inner-doc links to its items stop resolving.
 pub mod canonical_root;
 
 /// Typed, word-free classification of why a volume operation failed.
