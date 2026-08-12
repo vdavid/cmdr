@@ -24,4 +24,4 @@ behavior detail: `DETAILS.md`.
   Link URLs live in `$lib/beta-links.ts`, shared with other open-beta surfaces.
 
 Backend: `src-tauri/src/feedback.rs` (validation + payload + send), `commands/feedback.rs` (thin IPC). Server:
-`apps/api-server/src/feedback.ts`.
+`apps/api-server/src/telemetry/feedback.ts`.

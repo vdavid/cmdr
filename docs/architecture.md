@@ -264,7 +264,9 @@ are ordinary members.
 
 - `apps/analytics-dashboard/`: Private SvelteKit dashboard on CF Pages. Aggregates Umami, CF Analytics Engine, Paddle,
   PostHog, GitHub metrics
-- `apps/api-server/`: Cloudflare Worker + Hono. Licensing, telemetry, crash reports, downloads, admin endpoints
+- `apps/api-server/`: Cloudflare Worker + Hono, split into four documented areas — `src/licensing/` (Paddle, keys),
+  `src/telemetry/` (crash/heartbeat/download/update-check, error reports, feedback), `src/website/` (beta signup, blog
+  likes, `?r=` codes), and `src/admin/` (the dashboard's aggregations)
 - `apps/website/`: getcmdr.com marketing site (Astro + Tailwind v4), including the dev-only `/dev/blog` Markdown editor
   for drafting posts
 - `apps/website/public/hero/`: Hero illustration assets (frame + pane cutouts, dark/light)
@@ -341,8 +343,9 @@ Detail in the colocated `CLAUDE.md` files.
 Spans four surfaces. A short `?r=<code>` on a link expands to `utm_source` (+ `utm_medium`) client-side before analytics
 runs, so downloads attribute to a channel without a consent banner:
 
-- **api-server** (`apps/api-server/`): KV store for the code map + validation + the `/admin/funnel` aggregation. Serves
-  `GET /r-codes.json` (edge-cached) and `/admin/r-codes` CRUD. See its `CLAUDE.md` / `DETAILS.md`.
+- **api-server** (`apps/api-server/`): KV store for the code map + validation (`src/website/`) and the `/admin/funnel`
+  aggregation (`src/admin/`). Serves `GET /r-codes.json` (edge-cached) and `/admin/r-codes` CRUD. See
+  `apps/api-server/src/website/CLAUDE.md`.
 - **website** (`apps/website/`) and the personal **blog** (separate repo, `~/projects-git/vdavid/blog`): client-side
   `?r=` expansion, with the logic mirrored (pure module + an inline copy that must run before deferred analytics). See
   `apps/website/CLAUDE.md` § Analytics.

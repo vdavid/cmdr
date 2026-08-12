@@ -130,11 +130,11 @@ in `public/fonts/`.
   the universal build) is an nginx `return 302` to the API server's `/download/latest/<arch>`, query string preserved so
   `?ref=` and `?src=` survive. It lives in `nginx.conf`, not Astro, because a static build can only emit a meta-refresh
   page, which a directory's link checker may not follow, and because the target has to stay correct between deploys. The
-  API server resolves `latest` to the current version and logs the download (`apps/api-server/DETAILS.md` § Download
-  tracking). Only the production container serves it: `pnpm dev` and the Playwright E2E run against Astro's dev server,
-  which knows nothing about `nginx.conf`. Use it for links published where we can't edit the URL per release (app
-  directories, the README, blog posts); the site's own download button keeps its version-pinned URL, which carries the
-  `?src=website` tag and the file size.
+  API server resolves `latest` to the current version and logs the download (`apps/api-server/src/telemetry/DETAILS.md`
+  § Download tracking). Only the production container serves it: `pnpm dev` and the Playwright E2E run against Astro's
+  dev server, which knows nothing about `nginx.conf`. Use it for links published where we can't edit the URL per release
+  (app directories, the README, blog posts); the site's own download button keeps its version-pinned URL, which carries
+  the `?src=website` tag and the file size.
 - **Page content as data**: pages whose bulk is content, not logic, keep that content in a typed module under `src/lib/`
   and map over it. `src/lib/roadmap.ts` holds every roadmap milestone (sections → optional month groups → milestones,
   each with a `date`, `title`, `description`, optional `icon`, and `done`); `src/pages/roadmap.astro` is layout and

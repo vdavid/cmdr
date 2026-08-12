@@ -1,6 +1,11 @@
 import { sendCrashNotificationEmail, sendDbSizeAlert, type CrashEmailRow } from './email'
 import type { Bindings } from './types'
-import { recomputeTotal, tryEvict, EVICTION_HIGH_WATERMARK, EVICTION_LOW_WATERMARK } from './telemetry/error-report-eviction'
+import {
+  recomputeTotal,
+  tryEvict,
+  EVICTION_HIGH_WATERMARK,
+  EVICTION_LOW_WATERMARK,
+} from './telemetry/error-report-eviction'
 import { isIntakePaused, resumeIntake } from './telemetry/error-report-intake'
 import { postEvictionBlockedNotification, postEvictionNotification } from './discord'
 

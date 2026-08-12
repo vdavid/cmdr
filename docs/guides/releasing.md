@@ -133,7 +133,7 @@ This is optional and deliberately not part of the release script:
   listing pages age gracefully.
 - **The download URL never goes stale**, so an outdated listing still hands visitors the current DMG. Only the version
   string and the changelog text on the page age. (`getcmdr.com/download/latest/<arch>` resolves at request time; see
-  `apps/api-server/DETAILS.md` § Download tracking.)
+  `apps/api-server/src/telemetry/DETAILS.md` § Download tracking.)
 - **No directory offers an API**, so submitting is a human pasting into a web form. An agent prepares the text and stops
   there: submitting is an external action.
 

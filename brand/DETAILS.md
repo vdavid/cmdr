@@ -22,7 +22,7 @@ Conventions:
   imposes (MacUpdate's description and changelog fields take HTML and ban pricing text, for example).
 - Download URLs go through `getcmdr.com/download/latest/<arch>?ref=<site>`: always the current release (so a listing
   never goes stale on a release), and the `ref` attributes the downloads to that directory in the analytics dashboard.
-  Mechanism: `apps/api-server/DETAILS.md` § Download tracking.
+  Mechanism: `apps/api-server/src/telemetry/DETAILS.md` § Download tracking.
 - Record open decisions (price field, developer name) as the value actually submitted, not as a question. The discussion
   belongs in the commit message. The exception is a "Pending updates" section on a live listing: when the site is known
   to be showing something stale, park the concrete replacement value there so the next edit pass is paste-only.

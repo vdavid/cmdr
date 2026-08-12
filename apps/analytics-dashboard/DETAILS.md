@@ -319,7 +319,7 @@ and certs-endpoint failure (must reject, never fail open).
   (still no cross-site identity); each column is its own per-day aggregate. Clicks won't equal server downloads (clicks
   are in-browser; server downloads also include Homebrew, direct links, GitHub-page traffic, bots filtered imperfectly).
   D7 needs a cohort ≥8 days old that had installs, so recent/empty days show a dash. The api-server owns the funnel
-  contract and the D7 definition (`apps/api-server/DETAILS.md` § "Per-day funnel").
+  contract and the D7 definition (`apps/api-server/src/admin/DETAILS.md` § "Per-day funnel").
 - **Time selection is a `DashboardSelection` (`{ range, day }`) carried in the URL,** not a bare `TimeRange`: David
   needs "today" and any single specific day, not just rolling windows. A valid `?day=YYYY-MM-DD` forces `range: 'day'`
   (so a single-day link is shareable/stable). Worker-backed and PostHog sources can't isolate one day cheaply, so they
