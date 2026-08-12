@@ -8,7 +8,8 @@
 //! trait side stays in `mod.rs` and the work lives here.
 
 use super::super::{BatchScanResult, CopyScanResult, ScanConflict, SourceItemInfo, Volume, VolumeError};
-use super::{MtpVolume, map_mtp_error};
+use super::MtpVolume;
+use super::mapping::map_mtp_error;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::mtp::connection::connection_manager;

@@ -7,7 +7,8 @@ checklist: `../CLAUDE.md` + `../DETAILS.md`.
 
 - `local_posix.rs`, `archive.rs` (re-export of `crates/cmdr-archive`: zip/tar/7z), `mtp/` (macOS and Linux only),
   `smb/` + `smb_watcher.rs`. Both remote backends are split by concern, with the whole `impl Volume` in `volume_impl`
-  (a trait impl can't span files). `InMemoryVolume` rides with the trait in `cmdr-fs`.
+  (a trait impl can't span files), byte movement in `streams`, and error classification in `mapping`.
+  `InMemoryVolume` rides with the trait in `cmdr-fs`.
 
 ## SMB must-knows
 
