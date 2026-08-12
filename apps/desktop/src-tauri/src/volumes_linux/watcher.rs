@@ -364,7 +364,7 @@ fn unregister_volume_from_manager(volume_path: &str) {
             warn!("{volume_path} unmounted and volume {id} can't move to one of its other mounts, so it stays there.");
         }
         RootRemoval::SiblingDropped { id } => {
-            debug!("{volume_path} unmounted; volume {id} keeps serving from its active root");
+            debug!("{volume_path} unmounted; volume {id} still serves from its active root");
         }
         RootRemoval::Unknown => {
             let volume_id = super::volume_id_for_mount(volume_path);

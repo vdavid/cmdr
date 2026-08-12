@@ -206,7 +206,7 @@ pub(crate) fn handle_volume_unmounted(volume_path: &str) {
             );
         }
         RootRemoval::SiblingDropped { id } => {
-            debug!("{volume_path} unmounted; volume {id} keeps serving from its active root");
+            debug!("{volume_path} unmounted; volume {id} still serves from its active root");
         }
         RootRemoval::Unknown => {
             // Nothing knew this root. Fall back to a path-derived ID, which is
