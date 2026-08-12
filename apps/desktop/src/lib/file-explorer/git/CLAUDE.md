@@ -6,7 +6,7 @@ Frontend git browser: the per-pane breadcrumb chip (`RepoChip.svelte`), the opti
 directly. Settings UI lives in `settings/sections/GitSection.svelte`.
 
 Backend counterpart: `apps/desktop/src-tauri/src/file_system/git/CLAUDE.md` for repo discovery, the virtual `.git`
-portal, the per-repo watcher, and the FriendlyError content.
+portal, the per-repo watcher, and git error CLASSIFICATION.
 
 ## File map
 
@@ -33,8 +33,9 @@ portal, the per-repo watcher, and the FriendlyError content.
   `setShowVirtualGitPortal(value)` (Tauri command `set_show_virtual_git_portal`, in `tauri-commands/settings.ts`), which
   flips an atomic consulted on every volume-hook entry, so toggling off stops the portal hijacking `.git` listings in
   real time.
-- **Error/provider wording lives in Rust** (the FriendlyError pipeline), not in the frontend. Git failures land in
-  `ErrorPane`; to change wording or add a state/provider, edit the Rust.
+- **Git error CLASSIFICATION lives in Rust, the WORDING lives here.** Rust ships a typed `FriendlyGitErrorKind`; the
+  copy comes from `error-messages/git-error-messages.ts` + the `errors.git.*` catalog. Changing wording means editing
+  the catalog; adding a state means both sides in one commit. `docs/guides/error-handling.md`.
 - **`FileEntry.redirectToPath`** is honored in `FilePane.svelte::handleNavigate`: when set, opening the entry navigates
   there directly instead of as a virtual subtree (used by `.git/worktrees/<name>` and `.git/submodules/<name>` → working
   dir). `FullList.svelte` shows an "Opens <path>" tooltip.

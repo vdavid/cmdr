@@ -89,7 +89,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `mtp_connected` (backend, `mtp/connection/mod.rs` `connect`): no device/product props.
 - `settings_opened` (frontend, `command-handlers/app-dialog-handlers.ts` `app.settings`): no props.
 - `error_encountered` (backend, `listing/streaming.rs` `TauriListingEventSink::emit_error`): `category` enum (from the
-  FriendlyError); never the path/message/provider.
+  ListingError); never the path/message/provider.
 
 ## The search events, in detail
 

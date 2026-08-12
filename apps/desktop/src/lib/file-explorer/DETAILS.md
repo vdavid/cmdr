@@ -376,15 +376,16 @@ and actionable error experience.
 
 ### How it works
 
-1. `listing-error` Tauri event arrives with `{ message, friendly?: FriendlyError }`
+1. `listing-error` Tauri event arrives with `{ message, friendly?: ListingError }`
 2. `FilePane` checks: is this an MTP volume? → short-circuit to `MtpConnectionView` (MTP has its own UX)
 3. Does the path still exist? → if gone, auto-navigate to nearest valid parent (not an error state)
 4. Path exists but listing failed → render `ErrorPane` (if `friendly` is present) or raw error div (if not)
 
 ### `ErrorPane.svelte`
 
-Receives a `FriendlyError` struct from Rust (all content is pre-baked on the backend, the frontend doesn't do any error
-classification or OS-specific logic):
+Receives a typed `ListingError` from Rust and words it here: Rust classifies (reason, category, provider, action kind,
+retry hint) and ships zero prose, `renderListingError` picks the message factory and applies the provider override.
+The pipeline and both sides' recipes: `docs/guides/error-handling.md`.
 
 - **Title**: large text, always in accent color. A glyph via `<Icon>` signals severity: ⚠ `triangle-alert` in warning
   color for transient, ⊘ `circle-alert` in error color for serious, no icon for needs-action
@@ -421,7 +422,7 @@ button types, or new sections). The content flexibility comes from markdown rend
 
 The debug window has an "Error pane preview" section that can trigger any error state on either pane. The flow is
 cross-window: debug page calls `preview_friendly_error` (Tauri command, `#[cfg(debug_assertions)]` only) to get a real
-`FriendlyError` from Rust, then emits `debug-inject-error` via `emitTo('main', ...)`. The main window's `+page.svelte`
+`ListingError` from Rust, then emits `debug-inject-error` via `emitTo('main', ...)`. The main window's `+page.svelte`
 listens for this event and calls `explorerRef.injectError(pane, friendly)`, which delegates to
 `FilePane.injectError(friendly)` setting the `friendlyError` state directly. Reset works via `debug-reset-error` which
 re-navigates the pane (clearing `friendlyError` in `loadDirectory`).
