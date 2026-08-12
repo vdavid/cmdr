@@ -83,6 +83,10 @@ export type Bindings = {
 
 export interface PaddleWebhookPayload {
   event_type: string
+  // Paddle's per-event id (`evt_...`). Stored on the fulfillment row for support and debugging;
+  // idempotency keys off the transaction id, since one purchase must yield one set of licenses
+  // however many events carry it.
+  event_id?: string
   data?: {
     id?: string
     customer_id?: string

@@ -12,6 +12,14 @@ import {
 } from './paddle-api'
 import { pruneStaleDevices, shouldAlert, type DeviceSet } from './device-tracking'
 import {
+  claimIssuance,
+  classifyIssuance,
+  loadIssuance,
+  markIssuanceDelivered,
+  recordIssuedCodes,
+  takeOverIssuance,
+} from './license-issuance'
+import {
   type Bindings,
   type PaddleWebhookPayload,
   maxOrganizationNameLength,
@@ -296,7 +304,7 @@ licensing.post('/webhook/paddle', async (c) => {
   }
 })
 
-/** Process a completed Paddle transaction: validate, generate licenses, send email. */
+/** Process a completed Paddle transaction: claim it, mint licenses if needed, email them. */
 async function processCompletedTransaction(payload: PaddleWebhookPayload, env: Bindings): Promise<Response> {
   const purchaseData = extractPurchaseData(payload)
   if (!purchaseData) {
@@ -304,13 +312,8 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
     return Response.json({ error: 'Missing customer_id or transaction ID' }, { status: 400 })
   }
 
-  // Idempotency: skip if this transaction was already processed
-  const idempotencyKey = `transaction:${purchaseData.transactionId}`
-  const alreadyProcessed = await env.LICENSE_CODES.get(idempotencyKey)
-  if (alreadyProcessed) {
-    console.log('Transaction already processed:', purchaseData.transactionId)
-    return Response.json({ status: 'already_processed', transactionId: purchaseData.transactionId })
-  }
+  const claim = await claimFulfillment(env.TELEMETRY_DB, purchaseData.transactionId, payload.event_id ?? null)
+  if (!claim.proceed) return claim.response
 
   console.log('Processing transaction:', purchaseData.transactionId, 'for customer:', purchaseData.customerId)
 
@@ -335,48 +338,93 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
     commercialSubscription: env.PRICE_ID_COMMERCIAL_SUBSCRIPTION,
     commercialPerpetual: env.PRICE_ID_COMMERCIAL_PERPETUAL,
   }
-  const licenseType = purchaseData.priceId
-    ? getLicenseTypeFromPriceId(purchaseData.priceId, priceIds)
-    : 'commercial_subscription'
+  // Unknown price IDs fall back to a subscription, for backwards compatibility
+  const licenseType: LicenseType =
+    (purchaseData.priceId ? getLicenseTypeFromPriceId(purchaseData.priceId, priceIds) : null) ??
+    'commercial_subscription'
 
   // Get organization name: prefer customer's business name, fall back to custom_data
   const organizationName = customer.businessName ?? purchaseData.organizationName
 
-  // Generate and send license(s) - one per quantity
-  // If email fails after KV writes, we intentionally don't mark the transaction as processed
-  // so the next Paddle retry will re-generate and re-send the licenses.
-  const result = await generateAndSendLicenses({
-    customerEmail: customer.email,
+  // Mint only when this claim has no codes yet. A redelivery that inherited codes re-sends those,
+  // so a lost email costs a duplicate message, never a second set of usable licenses.
+  let shortCodes = claim.shortCodes
+  if (shortCodes.length === 0) {
+    shortCodes = await mintLicenses({
+      customerEmail: customer.email,
+      transactionId: purchaseData.transactionId,
+      quantity: purchaseData.quantity,
+      licenseType,
+      organizationName,
+      privateKey: env.ED25519_PRIVATE_KEY,
+      kv: env.LICENSE_CODES,
+    })
+    await recordIssuedCodes(env.TELEMETRY_DB, {
+      transactionId: purchaseData.transactionId,
+      shortCodes,
+      quantity: purchaseData.quantity,
+      licenseType,
+      customerEmail: customer.email,
+      now: new Date(),
+    })
+  }
+
+  await sendLicenseEmail({
+    to: customer.email,
     customerName: customer.name ?? 'there',
-    transactionId: purchaseData.transactionId,
-    quantity: purchaseData.quantity,
-    licenseType: licenseType ?? 'commercial_subscription',
-    organizationName,
-    privateKey: env.ED25519_PRIVATE_KEY,
+    licenseKeys: shortCodes,
     productName: env.PRODUCT_NAME,
     supportEmail: env.SUPPORT_EMAIL,
     resendApiKey: env.RESEND_API_KEY,
-    kv: env.LICENSE_CODES,
+    organizationName,
+    licenseType,
   })
 
-  // Mark transaction as processed (7-day TTL)
-  const sevenDaysInSeconds = 604_800
-  await env.LICENSE_CODES.put(idempotencyKey, 'processed', { expirationTtl: sevenDaysInSeconds })
+  await markIssuanceDelivered(env.TELEMETRY_DB, purchaseData.transactionId, new Date())
 
-  console.log(
-    'Licenses sent to:',
-    redactEmail(customer.email),
-    'type:',
-    result.licenseType,
-    'quantity:',
-    result.quantity,
-  )
+  console.log('Licenses sent to:', redactEmail(customer.email), 'type:', licenseType, 'quantity:', shortCodes.length)
   return Response.json({
     status: 'ok',
     email: customer.email,
-    licenseType: result.licenseType,
-    quantity: result.quantity,
+    licenseType,
+    quantity: shortCodes.length,
   })
+}
+
+/** Either this delivery owns the fulfillment (with any codes it inherited), or it has a response. */
+type ClaimOutcome = { proceed: true; shortCodes: string[] } | { proceed: false; response: Response }
+
+/**
+ * Decide whether this delivery should fulfill the transaction. Paddle redelivers the same event
+ * (60 attempts over 3 days on live), and a captured webhook can be replayed, so the durable
+ * `license_issuance` row is what keeps a purchase to one set of licenses. See `license-issuance.ts`.
+ */
+async function claimFulfillment(db: D1Database, transactionId: string, eventId: string | null): Promise<ClaimOutcome> {
+  const now = new Date()
+  if (await claimIssuance(db, { transactionId, eventId, now })) {
+    return { proceed: true, shortCodes: [] }
+  }
+
+  const record = await loadIssuance(db, transactionId)
+  if (!record) return { proceed: false, response: retryLater(transactionId) }
+
+  const state = classifyIssuance(record, now.getTime())
+  if (state === 'delivered') {
+    console.log('Transaction already fulfilled:', transactionId)
+    return { proceed: false, response: Response.json({ status: 'already_processed', transactionId }) }
+  }
+  if (state === 'in_flight') return { proceed: false, response: retryLater(transactionId) }
+
+  // The claim went stale (a delivery died mid-flight). Take it over, unless another delivery got
+  // there first, in which case this one steps aside.
+  if (!(await takeOverIssuance(db, record, now))) return { proceed: false, response: retryLater(transactionId) }
+  return { proceed: true, shortCodes: state === 'resend' ? record.shortCodes : [] }
+}
+
+/** Tell Paddle to redeliver: someone else is fulfilling this transaction right now. */
+function retryLater(transactionId: string): Response {
+  console.log('Fulfillment already in flight, asking Paddle to redeliver:', transactionId)
+  return Response.json({ status: 'in_progress', transactionId }, { status: 503 })
 }
 
 /** Truncate organization name to max allowed length */
@@ -406,20 +454,16 @@ function extractPurchaseData(payload: PaddleWebhookPayload): {
   }
 }
 
-/** Helper to generate license(s), store in KV, and send email */
-async function generateAndSendLicenses(params: {
+/** Generate one signed license per seat and store each under its short code in KV. */
+async function mintLicenses(params: {
   customerEmail: string
-  customerName: string
   transactionId: string
   quantity: number
   licenseType: LicenseType
   organizationName: string | undefined
   privateKey: string
-  productName: string
-  supportEmail: string
-  resendApiKey: string
   kv: KVNamespace
-}): Promise<{ licenseType: LicenseType; quantity: number }> {
+}): Promise<string[]> {
   const licenseCodes: string[] = []
 
   for (let i = 0; i < params.quantity; i++) {
@@ -449,18 +493,7 @@ async function generateAndSendLicenses(params: {
     licenseCodes.push(shortCode)
   }
 
-  await sendLicenseEmail({
-    to: params.customerEmail,
-    customerName: params.customerName,
-    licenseKeys: licenseCodes,
-    productName: params.productName,
-    supportEmail: params.supportEmail,
-    resendApiKey: params.resendApiKey,
-    organizationName: params.organizationName,
-    licenseType: params.licenseType,
-  })
-
-  return { licenseType: params.licenseType, quantity: params.quantity }
+  return licenseCodes
 }
 
 // Manual license generation (for testing or customer service)

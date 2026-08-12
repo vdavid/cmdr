@@ -8,6 +8,8 @@ live in `CLAUDE.md`.
 - **`src/index.ts`**: Hono app assembly: mounts route modules, wires scheduled handler
 - **`src/types.ts`**: Shared types (`Bindings`), constants, and helpers (auth, validation)
 - **`src/licensing.ts`**: Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`
+- **`src/license-issuance.ts`**: The durable fulfillment record behind `/webhook/paddle` (D1 table `license_issuance`):
+  claim, take-over, code storage, delivery marking, and the pure `classifyIssuance`
 - **`src/admin.ts`**: Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`,
   `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`
 - **`src/funnel.ts`**: Route `/admin/funnel`: per-UTC-day acquisition funnel (downloads, new installs, DAU, D7
@@ -33,6 +35,9 @@ live in `CLAUDE.md`.
 - **`src/email.ts`**: Resend email delivery (HTML + plain text, multi-seat support)
 - **`src/device-tracking.ts`**: Device set helpers: prune stale devices, alert threshold
 - **`src/license.test.ts`, `src/paddle.test.ts`**: Vitest tests
+- **`src/webhook-paddle.test.ts`**: Tests for `POST /webhook/paddle`: first delivery, duplicate, retry after a failed
+  email, concurrent delivery, and a Resend rejection
+- **`src/license-issuance.test.ts`**: Tests for the pure `classifyIssuance` state rules
 - **`src/device-tracking.test.ts`**: Tests for device tracking helpers
 - **`src/admin-stats.test.ts`**: Tests for `/admin/stats` endpoint and activation counter
 - **`src/admin-endpoints.test.ts`**: Tests for `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`,
@@ -233,11 +238,12 @@ destination (ngrok for local dev), and the live dashboard sends only to the live
 
 ```
 Paddle webhook → HMAC verify (tries both live + sandbox secrets)
-  → idempotency check (KV key: "transaction:{id}", 7-day TTL)
+  → claim the transaction (D1 license_issuance, conditional INSERT; see "Fulfillment" below)
   → Paddle API: fetch customer details
   → per seat: generateLicenseKey() → generateShortCode() → KV.put(code, {fullKey, orgName})
+  → store the codes on the row (short_codes, issued_at)
   → sendLicenseEmail() via Resend
-  → KV.put(idempotencyKey, "processed")
+  → mark the row delivered (emailed_at)
 
 App activation: POST /activate → KV.get(shortCode) → return fullKey
 
@@ -301,8 +307,49 @@ issuedAt, type, organizationName.
 
 **License types:** `commercial_subscription` | `commercial_perpetual`
 
-**Idempotency:** 7-day KV entry per transaction. If email throws after KV writes but before the idempotency key is set,
-Paddle's retry re-generates and re-sends. Intentional design.
+**Fulfillment (exactly-once issuance, at-least-once delivery):** a purchase must yield ONE set of license codes, but the
+email carrying them is safe to repeat. `license-issuance.ts` keeps those apart, on the D1 table `license_issuance`
+(migration `0012`), one row per Paddle transaction:
+
+1. **Claim**: `INSERT ... ON CONFLICT(transaction_id) DO NOTHING RETURNING transaction_id`, before any side effect. Two
+   concurrent deliveries race on one primary key and SQLite hands the row to exactly one of them. This is the whole
+   atomicity guarantee, and the reason the record lives in D1 rather than KV: KV has no conditional write, and its reads
+   are eventually consistent (a redelivery within the propagation window would read a stale "not processed yet").
+2. **Mint**: one signed license per seat, each stored in KV under its short code, then `short_codes` + `issued_at` on
+   the row. Storing before sending is what makes a later redelivery reuse the SAME codes.
+3. **Deliver**: `sendLicenseEmail`, then `emailed_at`. Only now is the purchase fulfilled.
+
+A delivery that loses the claim reads the row and classifies it (pure `classifyIssuance`, unit-tested):
+
+- `delivered` (`emailed_at` set) → 200 `already_processed`, forever.
+- `in_flight` (claimed under `issuanceStaleAfterMs`, 5 min) → **503**, so Paddle redelivers instead of us running a
+  second issuance beside the first. Live retries are 60 attempts over 3 days (20 in the first hour), so a transient 503
+  costs minutes, and the buyer's licenses are never at stake.
+- `resend` (stale claim, codes stored) → take over and re-send those codes. A duplicate email is the worst case.
+- `remint` (stale claim, no codes: the delivery died before minting) → take over and mint. Any codes a dead attempt
+  wrote to KV before failing are orphaned, which is harmless: nobody has seen them.
+
+Take-over is `UPDATE ... WHERE claimed_at = <the value we read>`, so when two deliveries both find a stale claim, only
+one wins and the other gets the 503.
+
+**Rows never expire.** "This purchase was fulfilled" has no useful end date, and an expiring marker is exactly how a
+late redelivery or a replayed webhook mints a second set of usable perpetual licenses. The table also doubles as the
+support/audit trail (who got which codes, when).
+
+**Decision, why not the Paddle `event_id` as the key:** one purchase must yield one set of licenses however many events
+carry it, so the transaction id is the unit of fulfillment. `event_id` is stored on the row for debugging only.
+
+**Gotcha: Resend reports failures in its response, it doesn't throw.** `resend.emails.send()` returns `{ data, error }`
+(network failures included), so an unchecked `await` reads every failure as success, marks the purchase delivered, and
+stops Paddle retrying: the buyer pays and gets nothing. `sendViaResend` (`email.ts`) is the single wrapper that turns an
+`error` into a thrown one; all four senders go through it. Don't call `emails.send` directly.
+
+**Known gap: no webhook timestamp tolerance.** `verifyPaddleWebhook` signs over `ts:body` but doesn't reject an old
+`ts`, so a captured webhook stays replayable forever. The fulfillment row is what actually blocks the damage (a replay
+finds `emailed_at` and does nothing). Paddle recommends a five-second window, but their docs don't say whether a retry
+is re-signed with a fresh `ts` or replays the original signature, and rejecting legitimate retries would lose a
+delivery, which is worse than the replay. So: log the observed `now - ts` on live deliveries first (including one forced
+retry), then enable rejection with a tolerance the data supports.
 
 **Price ID → license type mapping:** `getLicenseTypeFromPriceId()` in `paddle-api.ts` maps Paddle price IDs (from
 `PRICE_ID_*` env vars) to license types. Unknown price IDs fall back to `commercial_subscription` for backwards
@@ -322,13 +369,16 @@ Read by `/admin/stats`. The counter starts from zero when deployed; initialize v
 needed.
 
 **D1 for telemetry:** Crash reports, downloads, update checks, and heartbeats are stored in D1 (binding: `TELEMETRY_DB`,
-database: `cmdr-telemetry`). Migrations live in `migrations/` (latest: `0007_feedback.sql`, which adds the `feedback`
-table for in-app feedback; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email` columns to `crash_reports`;
-`0005_heartbeat.sql` adds the `heartbeat` table; `0011_crash_panic_message.sql` adds the nullable `panic_message` column
-to `crash_reports`). Apply with `wrangler d1 migrations apply cmdr-telemetry` before deploying changes that add new
-tables or columns. The only remaining Analytics Engine dataset is `DEVICE_COUNTS` for fair-use monitoring. All other
-state (license codes, activation counter, device sets) lives in Cloudflare KV. Short codes never expire (perpetual
-licenses last forever); subscription validity is checked live via Paddle API.
+database: `cmdr-telemetry`). Migrations live in `migrations/` (latest: `0012_license_issuance.sql`, the fulfillment
+record above; `0011_crash_panic_message.sql` adds the nullable `panic_message` column to `crash_reports`;
+`0007_feedback.sql` adds the `feedback` table; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email`
+columns; `0005_heartbeat.sql` adds the `heartbeat` table). Apply with `wrangler d1 migrations apply cmdr-telemetry`
+before deploying changes that add new tables or columns. `license_issuance` is the one money-critical table in an
+otherwise telemetry-shaped database: it shares the binding because a second D1 buys nothing at a few hundred rows a
+year, and nothing prunes it (the daily aggregation job only touches `update_checks`). The only remaining Analytics
+Engine dataset is `DEVICE_COUNTS` for fair-use monitoring. All other state (license codes, activation counter, device
+sets) lives in Cloudflare KV. Short codes never expire (perpetual licenses last forever); subscription validity is
+checked live via Paddle API.
 
 **Validation error granularity:** `/validate` distinguishes "Paddle says invalid" (HTTP 200 + `status: "invalid"`) from
 "Paddle is unreachable" (HTTP 502 + `{ error: "upstream_error" }`). `paddle-api.ts` throws `PaddleApiError` on

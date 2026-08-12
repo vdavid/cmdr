@@ -16,6 +16,11 @@ Cloudflare Worker (Hono): licensing (Paddle, Ed25519 keys, KV activation codes),
   routes. ❌ Never infer it from a transaction id: both use `txn_`.
 - **Secrets are Cloudflare secrets** (`wrangler secret put`), never `wrangler.toml`. Admin auth uses
   `constantTimeEqual`, ❌ never `===`; `/admin/stats` takes `ADMIN_API_TOKEN`, `/admin/generate` the Paddle secret.
+- **One purchase yields ONE set of license codes.** `/webhook/paddle` claims the transaction in D1 (`license_issuance`)
+  before any side effect, stores the codes before emailing, marks `emailed_at` after, and never expires the row. A
+  redelivery re-sends the stored codes; a claim still in flight gets a 503 so Paddle retries. DETAILS § Fulfillment.
+- **Resend reports a failed send in its RESPONSE, it doesn't throw.** Send through `sendViaResend` (`email.ts`), ❌
+  never `resend.emails.send` directly, or a lost license email reads as a fulfilled purchase.
 - **The `anal_` analytics id and the `diag_` diagnostics id must never co-occur on a request** (400 an `anal_`-shaped
   `diagId`), and `/beta-signup` + `/feedback` carry neither: that's what keeps analytics unjoinable to an identity.
 - **`/beta-signup` stays double-opt-in**: ❌ no `preconfirm_subscriptions`, and the 409 path MUST call
