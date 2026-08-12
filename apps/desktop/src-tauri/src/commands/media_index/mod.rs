@@ -21,11 +21,32 @@
 //! - [`thumbnail`]: `cmdr-media://` tokens for the results grid.
 //! - [`policy`]: the setters that change WHAT gets indexed (scope, overrides, threshold).
 //!
-//! This file keeps only what more than one of them needs: the hit-limit clamp and the
-//! ONE enabled-volume rule.
+//! This file keeps only what more than one of them needs: the hit-limit clamp, the ONE
+//! enabled-volume rule, and the [`OVERLAY_QUERIES`] blocking budget.
 
 use cmdr_index::host::config::{IndexConfig, MediaConfig};
 use cmdr_index::media_index::network::config::NetworkEnrichConfig;
+
+use crate::commands::util::BlockingBudget;
+
+/// The shared blocking-pool budget for the queries the FRONTEND re-issues on its own
+/// schedule: the per-file badge, the per-folder coverage badge, the per-volume state
+/// poll, and the covered-count preview.
+///
+/// They're on ONE budget because they contend for the same thing — `media.db`,
+/// `importance.db`, and the drive index behind them — so a cap on each separately
+/// would still let their sum take the pool. ❌ Don't give one of them its own budget
+/// to "unblock" it; that reopens the hole.
+///
+/// **Four permits**, because these queries serialize on SQLite anyway: more
+/// concurrency buys no throughput and costs contention, while four covers both panes
+/// asking at once with room to spare. A burst past that queues (cheap async futures,
+/// in order) instead of taking pool threads other subsystems need.
+///
+/// This is defense in depth, not the fix for any one pileup: a query that's slow
+/// enough to need the cap should also be made cheap. The badge query's own fix is the
+/// score cache in `cmdr_index::media_index::coverage`.
+static OVERLAY_QUERIES: BlockingBudget = BlockingBudget::new(4);
 
 mod clip_model;
 mod file_status;

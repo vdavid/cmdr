@@ -1,5 +1,8 @@
 //! Shared utilities for Tauri command modules.
 
+#[cfg(test)]
+mod budget_tests;
+
 use serde::Serialize;
 use std::future::Future;
 use tokio::time::Duration;
@@ -111,6 +114,66 @@ where
         // A JoinError means the blocking task panicked; the deadline is the honest
         // thing to report either way, since no result is coming.
         Ok(Err(_)) | Err(_) => Err(on_timeout()),
+    }
+}
+
+/// A cap on how many of ONE command family's blocking tasks may occupy the shared
+/// blocking pool at once.
+///
+/// **Why any command needs one.** `spawn_blocking` draws from a pool with a hard
+/// upper bound (tokio's default is 512 threads). A command the frontend can re-issue
+/// faster than it completes will take every one of them, and then EVERY other
+/// `spawn_blocking` in the app — directory listings, the volume list, sync status —
+/// queues behind it forever. That is not a slow feature; it's a frozen app, and it has
+/// happened: the image-index badge query saturated the pool during a burst of
+/// watcher-driven pane refreshes, and the panes and the volume dropdown wedged until
+/// restart.
+///
+/// A budget bounds the damage to the feature that overruns. Callers past the cap wait
+/// as async futures (hundreds of bytes each), not as threads, and they keep their
+/// place in line, so a bounded command degrades to "slower" instead of taking the app
+/// with it.
+///
+/// **Sizing.** Pick the concurrency the underlying resource can actually use, not the
+/// most the pool could give. Queries that serialize on one SQLite connection or one
+/// global mutex gain nothing past a handful and lose throughput to contention.
+///
+/// Declare one per family as a `static`, and share it across the commands that
+/// contend for the same resource so the cap covers their SUM:
+///
+/// ```ignore
+/// static BADGE_QUERIES: BlockingBudget = BlockingBudget::new(4);
+/// // …
+/// BADGE_QUERIES.run(move || classify(…)).await
+/// ```
+pub struct BlockingBudget {
+    permits: tokio::sync::Semaphore,
+}
+
+impl BlockingBudget {
+    /// A budget allowing `permits` concurrent blocking tasks.
+    pub const fn new(permits: usize) -> Self {
+        Self {
+            permits: tokio::sync::Semaphore::const_new(permits),
+        }
+    }
+
+    /// Run `f` on the blocking pool once a permit is free, releasing it when `f`
+    /// returns. `Err` only when the blocking task panicked, matching `spawn_blocking`.
+    ///
+    /// The permit is taken BEFORE the task is spawned, which is the whole point: a
+    /// task that never spawns never holds a pool thread.
+    pub async fn run<T: Send + 'static>(
+        &'static self,
+        f: impl FnOnce() -> T + Send + 'static,
+    ) -> Result<T, tokio::task::JoinError> {
+        // The semaphore is never closed (it lives for the process), so acquiring
+        // cannot fail; treating a closed one as "no budget left" would deadlock the
+        // command rather than degrade it, so the error maps to running unbounded.
+        let permit = self.permits.acquire().await.ok();
+        let result = tokio::task::spawn_blocking(f).await;
+        drop(permit);
+        result
     }
 }
 

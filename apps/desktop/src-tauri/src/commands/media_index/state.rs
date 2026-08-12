@@ -117,8 +117,8 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
         .into_iter()
         .next()
         .map(|(_, mount)| mount);
-    let (enriched_count, qualifying_count, importance_scored, coverage_counts) =
-        tauri::async_runtime::spawn_blocking(move || {
+    let (enriched_count, qualifying_count, importance_scored, coverage_counts) = super::OVERLAY_QUERIES
+        .run(move || {
             let enriched = MediaIndex::open(&data_dir, &vid)
                 .enriched_count()
                 .map_err(|e| e.to_string())?;
@@ -206,51 +206,52 @@ pub async fn media_index_covered_count(
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
     let scope = gate::scope();
 
-    tauri::async_runtime::spawn_blocking(move || {
-        // The enabled volumes + their OS mount roots, resolved by the ONE shared rule
-        // (local always, SMB only when opted in, MTP / LocalExternal never); a requested
-        // volume that isn't ready comes back `pending`.
-        let (volumes, mut pending) = resolve_enabled_volumes(&volume_ids);
+    super::OVERLAY_QUERIES
+        .run(move || {
+            // The enabled volumes + their OS mount roots, resolved by the ONE shared rule
+            // (local always, SMB only when opted in, MTP / LocalExternal never); a requested
+            // volume that isn't ready comes back `pending`.
+            let (volumes, mut pending) = resolve_enabled_volumes(&volume_ids);
 
-        let mut folders = 0u64;
-        let mut images = 0u64;
+            let mut folders = 0u64;
+            let mut images = 0u64;
 
-        for (vid, mount_root) in &volumes {
-            let Some(counts) = coverage::get_or_build(vid) else {
-                // The drive index isn't ready ⇒ unknown for now.
-                pending = true;
-                continue;
-            };
-            // The automatic scope needs importance; the narrow one counts the chosen
-            // folders alone, so an unscored volume is answerable there.
-            let scores = match coverage::importance_scores(&data_dir, vid) {
-                Some(scores) => scores,
-                None if !scope.consults_importance() => std::sync::Arc::new(std::collections::HashMap::new()),
-                None => {
+            for (vid, mount_root) in &volumes {
+                let Some(counts) = coverage::get_or_build(vid) else {
+                    // The drive index isn't ready ⇒ unknown for now.
                     pending = true;
                     continue;
-                }
-            };
-            // Override coverage is OS-path keyed; map each folder into OS space, as the
-            // enrichment gate and the reclaim partition both do.
-            let config = network_config::snapshot();
-            let is_override = |folder: &str| {
-                config.covers(
-                    vid,
-                    &cmdr_index::media_index::network::fetch::os_join(mount_root, folder),
-                )
-            };
-            let (f, i) = coverage::covered_in_scope(&counts, &scores, threshold, scope, &is_override);
-            folders += f;
-            images += i;
-        }
+                };
+                // The automatic scope needs importance; the narrow one counts the chosen
+                // folders alone, so an unscored volume is answerable there.
+                let scores = match coverage::importance_scores(&data_dir, vid) {
+                    Some(scores) => scores,
+                    None if !scope.consults_importance() => Arc::new(std::collections::HashMap::new()),
+                    None => {
+                        pending = true;
+                        continue;
+                    }
+                };
+                // Override coverage is OS-path keyed; map each folder into OS space, as the
+                // enrichment gate and the reclaim partition both do.
+                let config = network_config::snapshot();
+                let is_override = |folder: &str| {
+                    config.covers(
+                        vid,
+                        &cmdr_index::media_index::network::fetch::os_join(mount_root, folder),
+                    )
+                };
+                let (f, i) = coverage::covered_in_scope(&counts, &scores, threshold, scope, &is_override);
+                folders += f;
+                images += i;
+            }
 
-        Ok(CoveredCount {
-            folders,
-            images,
-            pending,
+            Ok(CoveredCount {
+                folders,
+                images,
+                pending,
+            })
         })
-    })
-    .await
-    .map_err(|e| format!("covered-count task panicked: {e}"))?
+        .await
+        .map_err(|e| format!("covered-count task panicked: {e}"))?
 }

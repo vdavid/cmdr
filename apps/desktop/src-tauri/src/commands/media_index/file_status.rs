@@ -98,15 +98,16 @@ pub async fn media_index_file_status(
     let scheduler = app.try_state::<Arc<MediaScheduler>>().map(|s| Arc::clone(s.inner()));
     let vid = volume_id.clone();
 
-    tauri::async_runtime::spawn_blocking(move || {
-        let stamp = scheduler.as_ref().map(|s| s.current_analysis_stamp());
-        // A pass running for this volume ⇒ an un-rowed covered image is being worked on
-        // NOW (`indexing`), not merely queued (`pending`). Cheap in-memory snapshot.
-        let is_enriching = scheduler.as_ref().is_some_and(|s| s.is_enriching(&vid));
-        classify_file_statuses(&data_dir, &vid, paths, scope, threshold, stamp.as_deref(), is_enriching)
-    })
-    .await
-    .map_err(|e| format!("file-status task panicked: {e}"))
+    super::OVERLAY_QUERIES
+        .run(move || {
+            let stamp = scheduler.as_ref().map(|s| s.current_analysis_stamp());
+            // A pass running for this volume ⇒ an un-rowed covered image is being worked on
+            // NOW (`indexing`), not merely queued (`pending`). Cheap in-memory snapshot.
+            let is_enriching = scheduler.as_ref().is_some_and(|s| s.is_enriching(&vid));
+            classify_file_statuses(&data_dir, &vid, paths, scope, threshold, stamp.as_deref(), is_enriching)
+        })
+        .await
+        .map_err(|e| format!("file-status task panicked: {e}"))
 }
 
 /// The coverage `scores` map the file-status gate consults, mirroring `pass_coverage`:
@@ -297,18 +298,19 @@ pub async fn media_index_folder_coverage(
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
     let vid = volume_id.clone();
 
-    tauri::async_runtime::spawn_blocking(move || {
-        let counts = coverage::folder_coverage(&data_dir, &vid, &folder_paths);
-        folder_paths
-            .into_iter()
-            .zip(counts)
-            .map(|(path, c)| FolderCoverage {
-                path,
-                eligible: c.eligible,
-                accounted: c.accounted,
-            })
-            .collect::<Vec<_>>()
-    })
-    .await
-    .map_err(|e| format!("folder-coverage task panicked: {e}"))
+    super::OVERLAY_QUERIES
+        .run(move || {
+            let counts = coverage::folder_coverage(&data_dir, &vid, &folder_paths);
+            folder_paths
+                .into_iter()
+                .zip(counts)
+                .map(|(path, c)| FolderCoverage {
+                    path,
+                    eligible: c.eligible,
+                    accounted: c.accounted,
+                })
+                .collect::<Vec<_>>()
+        })
+        .await
+        .map_err(|e| format!("folder-coverage task panicked: {e}"))
 }
