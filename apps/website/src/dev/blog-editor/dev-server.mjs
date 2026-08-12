@@ -19,6 +19,59 @@ const assetFilenamePattern = /^[a-z0-9][a-z0-9.-]*\.webp$/
 const datePattern = /^\d{4}-\d{2}-\d{2}$/
 const markdownImagePattern = /!\[[^\]]*]\(\.\/([a-z0-9][a-z0-9.-]*\.webp)(?:\s+"[^"]*")?\)/g
 
+/**
+ * Methods that change something on disk. Everything here goes through `assertSameOriginWrite`.
+ */
+const mutatingMethods = new Set(['POST', 'PUT', 'DELETE', 'PATCH'])
+
+/**
+ * Refuse a write that another site drove.
+ *
+ * The editor's API is unauthenticated by design (it's your own machine, editing your own repo), but
+ * "on your machine" is not the same as "you asked for it": while `pnpm dev` runs, ANY page open in
+ * your browser can reach `http://localhost:<port>`. A `fetch` with a simple content type is not
+ * preflighted, so without this gate a page you merely visited could publish a post into
+ * `src/content/blog/` or drop image files in the repo, and you'd find out at `git status`.
+ *
+ * Two conditions, either one enough to block:
+ *
+ * - **`Origin` must be one of ours.** Browsers attach it to every cross-origin write, and it can't be
+ *   spoofed by page JS. A missing `Origin` is fine: that's curl, the editor's own same-origin fetch
+ *   on older browsers, or a server-side script — none of them a confused deputy.
+ * - **A request with a body must be `application/json`.** This is what a cross-site form post (or a
+ *   no-preflight `fetch`) can't set, so it holds even for a client that omits `Origin`. `DELETE`
+ *   carries no body here and is exempt; it's also not a method a browser can send cross-site without
+ *   a preflight this server never answers.
+ *
+ * DNS rebinding (attacker DNS pointing at 127.0.0.1, so the `Origin` looks legitimate) is already
+ * handled a layer up: Vite's own host check rejects a request whose `Host` isn't in `allowedHosts`
+ * before this middleware sees it (verified on vite 8.2.0 by curling with `Host: attacker.example`
+ * and getting Vite's 403 "This host is not allowed", 2026-08-12).
+ */
+function assertSameOriginWrite(req, port) {
+  if (!mutatingMethods.has(req.method ?? '')) {
+    return
+  }
+
+  const origin = req.headers.origin
+  if (origin && !allowedOrigins(port).has(origin)) {
+    throw new BlogEditorError(403, 'Cross-site writes to the blog editor are refused.')
+  }
+
+  if (req.method === 'DELETE') {
+    return
+  }
+
+  const contentType = (req.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase()
+  if (contentType !== 'application/json') {
+    throw new BlogEditorError(415, 'The blog editor only accepts application/json writes.')
+  }
+}
+
+function allowedOrigins(port) {
+  return new Set([`http://localhost:${port}`, `http://127.0.0.1:${port}`, `http://[::1]:${port}`])
+}
+
 export function blogEditorDevServer() {
   return {
     name: 'cmdr-blog-editor-dev-server',
@@ -37,7 +90,10 @@ export function blogEditorDevServer() {
         }
 
         if (requestUrl.pathname.startsWith('/dev/blog/api/')) {
-          await handleApi(req, res, requestUrl.pathname)
+          // Read the port at request time: the resolved one (after `strictPort` / an env override)
+          // is only known once the server is listening.
+          const port = server.httpServer?.address()?.port ?? server.config.server.port
+          await handleApi(req, res, requestUrl.pathname, port)
           return
         }
 
@@ -58,8 +114,10 @@ async function sendHtml(res) {
   }
 }
 
-async function handleApi(req, res, pathname) {
+async function handleApi(req, res, pathname, port) {
   try {
+    assertSameOriginWrite(req, port)
+
     const parts = pathname.slice('/dev/blog/api/'.length).split('/').filter(Boolean).map(decodeURIComponent)
     const [resource, entryId] = parts
 

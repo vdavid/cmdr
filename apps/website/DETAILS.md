@@ -81,6 +81,15 @@ in `src/content/blog/{slug}/` (matching the production layout). The editor inser
 `![Alt text](./image.webp)` and rewrites those relative URLs for preview only (to the draft- or post-asset endpoint per
 kind). Publishing a draft copies its referenced images next to the post.
 
+Decision/Why: every write goes through `assertSameOriginWrite`, which refuses a foreign `Origin` and requires
+`application/json` on any request carrying a body. The API is unauthenticated because it's your own machine editing your
+own repo, but while `pnpm dev:website` runs, any page open in your browser can reach `localhost:4829`, and a `fetch`
+with a simple content type isn't preflighted. Without the gate, a site you merely visited could publish a post into
+`src/content/blog/` or write image files into the repo, and the first sign would be an unexplained `git status`. A
+missing `Origin` stays allowed (curl, scripts); `DELETE` skips the content-type rule because it carries no body here.
+DNS rebinding needs no handling of ours: Vite's `allowedHosts` check rejects a foreign `Host` before this middleware
+runs (verified on vite 8.2.0 with `Host: attacker.example`, 2026-08-12).
+
 | File                                 | Purpose                                                               |
 | ------------------------------------ | --------------------------------------------------------------------- |
 | `src/dev/blog-editor/dev-server.mjs` | Dev-only Vite middleware for draft/post file operations               |
