@@ -5,10 +5,16 @@ shape (`LocationInfo`, `LocationCategory`, `VolumeSpaceInfo`). Distinct from `fi
 
 ## Key files
 
-- **`mod.rs`**: the types plus `list_locations()`, `get_volume_space()`, `get_mounted_volumes()`, cloud-drive detection,
-  GVFS SMB share detection. Mount enumeration via `linux_mounts::parse_proc_mounts()`. `list_locations()` aggregates all
-  categories in order and dedups by path.
-- **`watcher.rs`**: two inotify watchers (see must-knows). Diffs against known state, registers/unregisters with
+Same file names as macOS `volumes/`, so a rule you know on one platform sits where you expect on the other. `mod.rs`
+re-exports every submodule item, keeping `crate::volumes_linux::X` paths stable.
+
+- **`mod.rs`**: model types, `DEFAULT_VOLUME_ID`, orchestrators (`list_locations`, `get_favorites`, `get_main_volume`,
+  `resolve_path_volume_fast`).
+- **`mounts.rs`**: `get_mounted_volumes` and the filters for which `/proc/mounts` rows are user-facing.
+- **`fs_type.rs`**: trash support, `VIRTUAL_FS_TYPES`, `get_mount_point`, `get_volume_space` (`statvfs`).
+- **`ids.rs`**: `volume_id_for_mount` and its `/dev/disk/by-uuid` lookup. **`cloud.rs`**: cloud-sync dirs.
+- **`smb.rs`**: CIFS mount-source and GVFS dirname parsing, plus `get_network_mounts`.
+- **`watcher.rs`**: two inotify watchers (see must-knows). Diffs known state, registers/unregisters with
   `VolumeManager`, emits `volume-mounted` / `volume-unmounted` Tauri events.
 
 Location categories: `Favorite` (user-editable, from the `favorites/` store, existence-checked), `MainVolume` (root
@@ -32,7 +38,7 @@ Location categories: `Favorite` (user-editable, from the `favorites/` store, exi
   `/proc/mounts` (the whole `gvfs/` dir is one FUSE mount; each share is a subdirectory), so a share mount/unmount is a
   directory create/remove invisible to `/proc/mounts`. Watching both is the only way to catch all volume changes.
 - **Virtual filesystems are filtered by an explicit fstype allowlist, NOT by mount path.** The list is duplicated:
-  `VIRTUAL_FS_TYPES` in `mod.rs` and `get_real_mounts` in `watcher.rs` (the watcher doesn't import the constant). Keep
+  `VIRTUAL_FS_TYPES` in `fs_type.rs` and `get_real_mounts` in `watcher.rs` (the watcher doesn't import the constant). Keep
   both in sync, or the watcher emits spurious mount/unmount events for the type added to only one. (proc, sysfs, devpts,
   tmpfs, cgroup/cgroup2, devtmpfs, and similar.)
 - **Hidden mounts (`/snap/`, `/boot/`, `/run/user/`) are filtered by path prefix, not fstype**, because snap loopback
