@@ -26,7 +26,6 @@ function row(id: string, status: OperationSnapshot['status'], type: OperationSna
       error: null,
     },
     progress: null,
-    etaSecondsDisplay: null,
   } satisfies OperationRow
 }
 

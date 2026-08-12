@@ -151,8 +151,11 @@ adopted element keeps updating in place. ⚠️ The action adopts the element it
 own `hidden` attribute, so the INNER div is bound, never the `<div hidden>` wrapper. The content carries a stable
 `min-width` because the action measures once on show.
 
-The ETA is the store's SMOOTHED `row.etaSecondsDisplay`, never `progress.etaSeconds`: the queue window renders the
-smoothed one, and the raw value once had the two surfaces disagreeing about the same operation.
+The ETA is the SMOOTHED `session.etaSecondsDisplay`, never `progress.etaSeconds`: the queue window renders that same
+number for that same operation, and the raw value once had the two surfaces disagreeing. The chip binds to the session
+with `bindOperationSession` (`$lib/file-operations/operation-session/CLAUDE.md`), following its own candidate, so the
+smoother belongs to the operation rather than to whichever surface is watching. It's the chip's only session read: what
+to show and how full the bar is stay pure, in `operation-chip.ts`.
 
 ### A11y
 

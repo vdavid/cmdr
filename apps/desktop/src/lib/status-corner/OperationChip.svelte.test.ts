@@ -1,10 +1,15 @@
 /**
- * The corner chip, driven through a real operations store.
+ * The corner chip, driven through a real operations store and a real session.
  *
  * The store is the one the main window holds (`main-window-operations`), so the
  * seam is mocked to hand back a store this test feeds via `_testApplySnapshot` /
  * `_testApplyProgress` — the same reducers the live `operations-changed` and
  * `write-progress` streams drive.
+ *
+ * One broadcast `write-progress` reaches two places in a real window: the store,
+ * which holds the latest tick, and the operation's session, which holds the
+ * smoothed ETA the chip renders. `emitProgress` feeds both, which is why a
+ * tooltip assertion about the countdown works at all.
  *
  * Every mount goes through `renderChip`, which advances past the chip's settle
  * delay: work that lasts less than a moment deliberately never reaches the
@@ -16,12 +21,18 @@ import { mount, flushSync } from 'svelte'
 import type { OperationSnapshot, WriteProgressEvent } from '$lib/ipc/bindings'
 import { CHIP_SETTLE_MS } from './operation-chip'
 
-// The store subscribes to Tauri events; `init()` is never called here, but the
-// module-level import still has to resolve.
+// The store and the session fan-out both subscribe to Tauri events. The store's
+// `init()` is never called here; the fan-out's is, so every stream it listens to
+// has to be mockable.
 vi.mock('$lib/tauri-commands', () => ({
   listOperations: vi.fn(() => Promise.resolve([])),
   onOperationsChanged: vi.fn(() => Promise.resolve(() => {})),
   onWriteProgress: vi.fn(() => Promise.resolve(() => {})),
+  onWriteComplete: vi.fn(() => Promise.resolve(() => {})),
+  onWriteError: vi.fn(() => Promise.resolve(() => {})),
+  onWriteCancelled: vi.fn(() => Promise.resolve(() => {})),
+  onWriteSettled: vi.fn(() => Promise.resolve(() => {})),
+  onWriteConflict: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 const openQueueWindow = vi.fn(() => Promise.resolve())
@@ -43,6 +54,11 @@ vi.mock('$lib/file-operations/foreground-operation.svelte', () => ({
 }))
 
 import { createOperationsStore } from '$lib/file-operations/queue/operations-store.svelte'
+import {
+  destroyOperationSessions,
+  getOperationSessions,
+  initOperationSessions,
+} from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
 import OperationChip from './OperationChip.svelte'
 
 function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
@@ -83,6 +99,14 @@ function progress(over: Partial<WriteProgressEvent> = {}): WriteProgressEvent {
   }
 }
 
+/** One `write-progress` tick, delivered the way the backend delivers it: to
+ *  every listener in the window at once. The store keeps the latest tick (the
+ *  bar and the count), the session turns it into the smoothed ETA. */
+function emitProgress(event: WriteProgressEvent): void {
+  store?._testApplyProgress(event)
+  getOperationSessions()?._testEmit({ kind: 'progress', event })
+}
+
 let target: HTMLElement
 
 /** Mounts the chip and lets its settle delay elapse, so the assertions are
@@ -101,18 +125,22 @@ function chip(): HTMLButtonElement | null {
   return target.querySelector('.operation-chip')
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.useFakeTimers()
   document.body.innerHTML = ''
   openQueueWindow.mockClear()
   foregroundOperationId = null
   foregroundFailureId = null
   store = createOperationsStore()
+  await initOperationSessions()
 })
 
 afterEach(() => {
   store?.dispose()
   store = null
+  // The registry is a window singleton, so a session left holding `op-1` would
+  // hand the next test a warmed-up smoother.
+  destroyOperationSessions()
   vi.useRealTimers()
 })
 
@@ -124,7 +152,7 @@ describe('OperationChip', () => {
 
   it('names the running operation and carries its percentage in the label', () => {
     store?._testApplySnapshot([snapshot()])
-    store?._testApplyProgress(progress())
+    emitProgress(progress())
     renderChip()
     expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Copying')
     expect(chip()?.getAttribute('aria-label')).toBe('Copying, 42 percent. Open the operation queue.')
@@ -135,7 +163,7 @@ describe('OperationChip', () => {
     // A same-volume move renames server-side: a bytes bar would read 0% start
     // to finish.
     store?._testApplySnapshot([snapshot({ operationType: 'move' })])
-    store?._testApplyProgress(progress({ bytesDone: 0, bytesTotal: 0, filesDone: 3, filesTotal: 10 }))
+    emitProgress(progress({ bytesDone: 0, bytesTotal: 0, filesDone: 3, filesTotal: 10 }))
     renderChip()
     expect(target.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('30')
     expect(chip()?.getAttribute('aria-label')).toContain('30 percent')
@@ -143,7 +171,7 @@ describe('OperationChip', () => {
 
   it('reads 0 percent with nothing to count, and never NaN', () => {
     store?._testApplySnapshot([snapshot()])
-    store?._testApplyProgress(progress({ bytesDone: 0, bytesTotal: 0, filesDone: 0, filesTotal: 0 }))
+    emitProgress(progress({ bytesDone: 0, bytesTotal: 0, filesDone: 0, filesTotal: 0 }))
     renderChip()
     expect(chip()?.getAttribute('aria-label')).toBe('Copying, 0 percent. Open the operation queue.')
   })
@@ -183,7 +211,7 @@ describe('OperationChip', () => {
 
   it('keeps a paused-only queue visible, with a still bar and the paused word', () => {
     store?._testApplySnapshot([snapshot({ status: 'paused' })])
-    store?._testApplyProgress(progress())
+    emitProgress(progress())
     renderChip()
     expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Paused')
     expect(target.querySelector('.fill')?.classList.contains('animated')).toBe(false)
@@ -192,7 +220,7 @@ describe('OperationChip', () => {
 
   it('keeps the shimmer on a running bar', () => {
     store?._testApplySnapshot([snapshot()])
-    store?._testApplyProgress(progress())
+    emitProgress(progress())
     renderChip()
     expect(target.querySelector('.fill')?.classList.contains('animated')).toBe(true)
   })
@@ -224,7 +252,7 @@ describe('OperationChip', () => {
 
   it('spells out the whole operation in its tooltip, ETA included', () => {
     store?._testApplySnapshot([snapshot()])
-    store?._testApplyProgress(progress())
+    emitProgress(progress())
     renderChip()
     expect(target.querySelector('.tooltip-content')?.textContent).toBe(
       'Copying · 214 items · to Backup · 42% · 1m 20s left',
@@ -233,7 +261,7 @@ describe('OperationChip', () => {
 
   it('drops the destination from the tooltip when nothing is being moved anywhere', () => {
     store?._testApplySnapshot([snapshot({ operationType: 'delete', destination: null })])
-    store?._testApplyProgress(progress({ operationType: 'delete', etaSeconds: null }))
+    emitProgress(progress({ operationType: 'delete', etaSeconds: null }))
     renderChip()
     expect(target.querySelector('.tooltip-content')?.textContent).toBe('Deleting · 214 items · 42%')
   })
@@ -244,7 +272,7 @@ describe('OperationChip', () => {
   // stated outright next to 已暂停.
   it('leads with the paused state rather than contradicting it', () => {
     store?._testApplySnapshot([snapshot({ status: 'paused' })])
-    store?._testApplyProgress(progress())
+    emitProgress(progress())
     renderChip()
     expect(target.querySelector('.tooltip-content')?.textContent).toBe('Paused · 214 items · to Backup · 42%')
   })
@@ -276,7 +304,7 @@ describe('OperationChip', () => {
 
   it('lets a running operation win the corner over a retained failure', () => {
     store?._testApplySnapshot([failedSnapshot('a'), snapshot({ operationId: 'b' })])
-    store?._testApplyProgress(progress({ operationId: 'b' }))
+    emitProgress(progress({ operationId: 'b' }))
     renderChip()
     expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Copying')
     expect(target.querySelector('[role="progressbar"]')).not.toBeNull()
@@ -295,7 +323,7 @@ describe('OperationChip', () => {
     // corner would read "Copying · 0%" for as long as the walk takes. Both
     // totals stay 0 through a scan by design, so the bar has nothing to draw.
     store?._testApplySnapshot([snapshot()])
-    store?._testApplyProgress(progress({ phase: 'scanning', filesDone: 900, filesTotal: 0, bytesTotal: 0 }))
+    emitProgress(progress({ phase: 'scanning', filesDone: 900, filesTotal: 0, bytesTotal: 0 }))
     renderChip()
 
     expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Copying')
@@ -305,7 +333,7 @@ describe('OperationChip', () => {
 
   it('goes back to a real bar once the operation starts writing', () => {
     store?._testApplySnapshot([snapshot()])
-    store?._testApplyProgress(progress())
+    emitProgress(progress())
     renderChip()
 
     expect(target.querySelector('[role="progressbar"]')).not.toBeNull()

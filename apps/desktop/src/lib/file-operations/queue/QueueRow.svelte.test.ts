@@ -4,7 +4,6 @@ import QueueRow from './QueueRow.svelte'
 import { operationTypeIcon } from './operation-icon'
 import type { OperationRow } from './operations-store.svelte'
 import type { OperationSnapshot, WriteOperationError, WriteProgressEvent } from '$lib/ipc/bindings'
-import { seconds } from '$lib/units'
 
 // The component reads reactive settings (file-size format) deep in `<Size>`. The
 // real path needs the settings store; stub the format getter to keep the unit
@@ -30,7 +29,6 @@ function buildRow(
       error: null,
     },
     progress,
-    etaSecondsDisplay: progress?.etaSeconds == null ? null : seconds(progress.etaSeconds),
   }
 }
 

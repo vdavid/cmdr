@@ -12,6 +12,7 @@
     import TransferProgressReadout from '../TransferProgressReadout.svelte'
     import ScanPhaseBody from '../transfer/ScanPhaseBody.svelte'
     import { stallNoticeFor } from '../transfer/transfer-stall'
+    import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
 
     interface Props {
         row: OperationRow
@@ -32,6 +33,11 @@
     const snapshot = $derived(row.snapshot)
     const progress = $derived(row.progress)
     const status = $derived(snapshot.status)
+
+    /** This row's looking glass onto the operation. It owns the one ETA smoother
+     *  and the one scan-rate estimator for this operation in this window, so the
+     *  numbers here can't drift from what any other view of it shows. */
+    const session = bindOperationSession(() => snapshot.operationId)
 
     /** A paused op stays in the write-op-state map and reports `is_running:true`,
      *  so the bar-is-moving truth is the SNAPSHOT status, never the progress
@@ -103,12 +109,16 @@
     const stall = $derived(stallNoticeFor(progress?.activity))
 
     /** Speed and ETA describe a transfer that's moving, so a paused row shows
-     *  neither. The ETA is the SMOOTHED value from the store, never
-     *  `progress.etaSeconds`: the copy dialog renders the same smoothed number,
-     *  so the two windows agree. */
+     *  neither. The ETA is the session's SMOOTHED value, never
+     *  `progress.etaSeconds`: every view of this operation reads that one
+     *  number, so no two of them can disagree about how long is left. */
     const byteRate = $derived(isRunning && progress ? transferReadout(progress).bytesPerSecond : null)
     const fileRate = $derived(isRunning ? (progress?.filesPerSecond ?? null) : null)
-    const etaSeconds = $derived(isRunning ? row.etaSecondsDisplay : null)
+    const etaSeconds = $derived(isRunning ? (session.current?.etaSecondsDisplay ?? null) : null)
+
+    /** How fast the walk is going, which the backend doesn't measure during a
+     *  scan: the session computes it from the same ticks this row renders. */
+    const scanRates = $derived(session.current?.scan ?? null)
 
     const pauseResumeLabel = $derived(
         isPaused ? tString('queue.row.resume') : tString('queue.row.pause'),
@@ -233,8 +243,8 @@
                 scanFilesFound={progress.filesDone}
                 scanDirsFound={progress.dirsDone ?? 0}
                 scanBytesFound={progress.bytesDone}
-                scanFilesPerSec={null}
-                scanBytesPerSec={null}
+                scanFilesPerSec={scanRates?.filesPerSecond ?? null}
+                scanBytesPerSec={scanRates?.bytesPerSecond ?? null}
                 scanCurrentDir={progress.currentDir ?? null}
                 currentFile={progress.currentFile}
             />

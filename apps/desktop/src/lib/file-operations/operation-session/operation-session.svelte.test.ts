@@ -183,6 +183,9 @@ describe('seeding', () => {
 
     expect(session.outcome?.kind).toBe('cancelled')
     expect(session.readout?.bytesDone).toBe(900)
+    // Not merely discarded: never asked for. Every view of every row would
+    // otherwise cost an IPC round trip for an answer the attach already gave.
+    expect(listOperationsMock).not.toHaveBeenCalled()
 
     await settleSeed()
 

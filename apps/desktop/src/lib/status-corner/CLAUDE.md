@@ -30,8 +30,9 @@ toast.
 - **A paused-only queue KEEPS the chip**, with a still bar (`animated={false}`) and the word "Paused". Hiding it on
   pause would re-hide the work, the bug the chip exists to fix. Tooltip and aria-label lead with that label, ❌ never
   the verb, so every `queue.chip.tooltip` clause carries its own leading `·`. DETAILS § "The chip's label".
-- **Render `row.etaSecondsDisplay`, never `progress.etaSeconds`.** The raw value once had one operation reading "8m 12s"
-  in one window and "5m 46s" in the other.
+- **Render the session's `etaSecondsDisplay`, never `progress.etaSeconds`.** The chip binds to its candidate's session
+  (`bindOperationSession`) for that one number; the raw value once had one operation reading "8m 12s" in one window and
+  "5m 46s" in the other.
 - **The chip waits `CHIP_SETTLE_MS` before its FIRST appearance.** Work over in a blink never flashes the corner, and
   the beat closes a race with the foreground modal's claim. A handover to the next operation is immediate.
 - **The failure toast NEVER auto-dismisses**, and past three they collapse into one summary. That cap is mechanical: a

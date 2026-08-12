@@ -15,6 +15,7 @@
     import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
     import { getForegroundFailureId, getForegroundOperationId } from '$lib/file-operations/foreground-operation.svelte'
     import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
+    import { bindOperationSession } from '$lib/file-operations/operation-session/bind-operation-session.svelte'
     import { CHIP_SETTLE_MS, destinationName, pickChipState } from './operation-chip'
 
     const chipState = $derived(
@@ -34,6 +35,12 @@
               ? 'failure'
               : chipState.operation.row.snapshot.operationId,
     )
+
+    /** The corner's looking glass onto whatever it's previewing, following the
+     *  candidate as it changes. The chip is a minimal view: all it takes from
+     *  the session is the one smoothed ETA every other view of that operation
+     *  reads too. */
+    const session = bindOperationSession(() => candidate?.row.snapshot.operationId ?? null)
 
     /** The operation the chip has settled on. See the settle effect. */
     let settledId = $state<string | null>(null)
@@ -107,10 +114,10 @@
     const detail = $derived.by(() => {
         if (candidate === null) return null
         if (candidate.paused) return null
-        const eta = candidate.row.etaSecondsDisplay
-        // The SMOOTHED ETA from the store, never `progress.etaSeconds`: the
-        // queue window renders the smoothed one, and two surfaces disagreeing
-        // about the same operation is a bug we've already shipped once.
+        // The session's SMOOTHED ETA, never `progress.etaSeconds`: the queue
+        // window renders that same number for that same operation, and two
+        // surfaces disagreeing about one operation is a bug we've shipped once.
+        const eta = session.current?.etaSecondsDisplay ?? null
         if (eta === null) return null
         return tString('fileOperations.transferProgress.etaRemaining', { duration: formatDuration(eta) })
     })

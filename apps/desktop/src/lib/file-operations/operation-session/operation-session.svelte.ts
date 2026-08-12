@@ -119,6 +119,12 @@ export function createOperationSession(operationId: string, fanout: OperationEve
   let receivedDelivery = false
   let disposed = false
 
+  /** Read through a call rather than the flag, because the attach below sets it
+   *  from inside a callback and straight-line type narrowing can't see that. */
+  function heardAnything(): boolean {
+    return receivedDelivery
+  }
+
   function applyProgress(event: WriteProgressEvent): void {
     // A phase change resets the backend's own estimator, so the displayed
     // number re-warms with it instead of dragging the last phase's value along.
@@ -220,7 +226,11 @@ export function createOperationSession(operationId: string, fanout: OperationEve
     }
   }
 
-  void seed()
+  // Only for an operation the attach told us nothing about. A live window's
+  // fan-out already holds the latest snapshot, so every row that appears while
+  // it is up is claimed with its row in hand, and asking the backend again would
+  // be one IPC round trip per view for an answer we have.
+  if (!heardAnything()) void seed()
 
   return {
     operationId,

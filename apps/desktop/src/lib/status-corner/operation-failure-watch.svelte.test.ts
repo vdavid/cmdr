@@ -48,7 +48,7 @@ function failedRow(operationId: string): OperationRow {
     supportsRollback: false,
     error: { type: 'source_not_found', path: '/Users/me/Documents/report.pdf' },
   }
-  return { snapshot, progress: null, etaSecondsDisplay: null }
+  return { snapshot, progress: null }
 }
 
 function runningRow(operationId: string): OperationRow {

@@ -34,8 +34,8 @@ The window renders from `createOperationsStore()`, which merges:
    `OperationSnapshot` is `{ operationId, operationType, status, source, destination, supportsRollback, error }` —
    membership, lifecycle status, whether the row may offer Rollback, and (on a retained failure only) the typed
    `WriteOperationError` that stopped it. No 200 ms progress. This decides which rows exist and each row's status.
-2. **`write-progress`** (`onWriteProgress`, the existing per-file stream): drives the live per-row progress bars and
-   ETA. The store keys the latest `WriteProgressEvent` by `operationId`.
+2. **`write-progress`** (`onWriteProgress`, the existing per-file stream): drives the live per-row progress bars. The
+   store keys the latest `WriteProgressEvent` by `operationId`.
 
 On every snapshot tick the store prunes the progress map to the new membership, so a finished op's bar can't outlive its
 row, and the map can't grow unbounded. Progress for an op not (yet) in the snapshot is ignored — the snapshot is the
@@ -43,6 +43,26 @@ membership source of truth.
 
 This split keeps `operations-changed` cheap (no progress fattening it every 200 ms) while still giving each row a live
 bar — the design the plan mandates under "subscribe, don't poll" and "thin snapshot".
+
+### What the store may hold, and what belongs to the session
+
+Everything in the store is STATELESS: which operations exist, each one's lifecycle status, and the latest tick each one
+emitted. A second reducer over the same stream is harmless, because two copies of one event object can't disagree.
+
+Every ESTIMATE is stateful and lives on the operation's session instead (`../operation-session/CLAUDE.md`), which each
+row binds to with `bindOperationSession(() => snapshot.operationId)`:
+
+- `session.etaSecondsDisplay`, the backend's ETA through the one smoother this operation has in this window.
+- `session.scan`, the walk's files/s and bytes/s, which the backend doesn't emit while it counts.
+
+Two estimators fed identical samples from identical starting points would agree; the divergence comes from one starting
+later, which is what any view attaching to an operation already in flight does. So the rule is positional rather than
+stylistic: ❌ a smoother in the store is a second layer by construction, and `queue-row-session.svelte.test.ts` counts
+constructions to keep it that way.
+
+⚠️ Bind on the id as a VALUE, never on the row object. `operations-changed` rebuilds every row whenever anything in the
+registry moves, so a binding that re-ran per row object would hand the operation a fresh smoother mid-transfer, every
+time some unrelated operation started or finished. `bindOperationSession` derives the id string for exactly that reason.
 
 ### Why snapshot status, not `is_running`
 
@@ -119,6 +139,8 @@ walking (`apps/desktop/src-tauri/src/file_system/write_operations/scan_bridge.rs
 - **The compact `ScanPhaseBody` instead**, the same component and the same catalog keys the progress dialog uses at
   comfortable density, so the two surfaces can't drift on what a scanning operation looks like. It drops the "From:"
   line and the current dir/file boxes, which the row already says or has no height for.
+- **With a real rate.** The backend emits none during a scan, so the files/s and bytes/s come from the session's
+  `ScanThroughput` over the ticks the row is already rendering. It needs two samples, so a scan opens without one.
 - **`queued` rows render it too.** `showReadout` requires `isRunning || isPaused`, so without this an operation admitted
   behind another on the same lane shows "Waiting" over an empty row for its whole scan — on a busy lane the common case,
   and it reads as a hung queue. "Waiting" over a moving file count is exactly what is happening.
@@ -251,6 +273,9 @@ the MAIN window, which already holds those perms — nothing to add there (see `
   types, and the `data-status` / `data-operation-id` E2E hooks. The readout's own behavior (both bars, percents, rates,
   time left, stall) is covered once, in `../TransferProgressReadout.svelte.test.ts`.
 - `QueueRow.a11y.test.ts`: axe over the row in running / paused / queued / selected states.
+- `queue-row-session.svelte.test.ts`: what a row takes from its session, through real rows on a real registry — one
+  `createEtaSmoother` per operation however many ticks or snapshot rebuilds arrive, none in the store, and a scanning
+  row's files/s.
 - `apps/desktop/src/routes/queue/queue-selection.svelte.test.ts`: the window's selection bookkeeping, driven through the
   real page and the real store — the count and "Cancel selected" following a checked row, and letting go of one that
   fails, leaves, or was never theirs.

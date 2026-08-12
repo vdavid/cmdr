@@ -29,7 +29,6 @@ function row(
       error: null,
     },
     progress: null,
-    etaSecondsDisplay: null,
   }
 }
 

@@ -11,14 +11,19 @@ with their callers. Views bind to a session and render it, and zero views is an 
 - `operation-session.svelte.ts`: `createOperationSession(id, fanout)` — the derived read state, plus the
   `list_operations` seed.
 - `operation-session-registry.ts`: `createOperationSessionRegistry()` — refcounted `acquire` / `release`.
+- `bind-operation-session.svelte.ts`: `bindOperationSession(() => id)` — how a view binds, and how it lets go without
+  having to remember to. What the queue rows and the corner chip use.
 - `window-operation-sessions.svelte.ts`: this window's instance, plus `initOperationSessions()` /
   `destroyOperationSessions()`, called by `routes/(main)/+page.svelte` and `routes/queue/+page.svelte`.
 
 ## Must-knows
 
 - **Two views of one operation MUST share one session.** The ETA smoother and the scan-rate estimator are stateful, so a
-  second one started later disagrees with the first until it converges. Always `acquire` from the registry, ❌ never
-  `createOperationSession` directly.
+  second one started later disagrees with the first until it converges. Views bind with `bindOperationSession`, which
+  `acquire`s and releases for them; ❌ never `createOperationSession` directly.
+- **Bind on the id as a VALUE, never on the object holding it.** The operations store rebuilds every row on each
+  `operations-changed` tick, so a binding keyed on the row would re-acquire mid-transfer and restart the smoother
+  whenever an unrelated operation started or finished. `bindOperationSession` derives the string for that reason.
 - **Claim, flush, and go live are ONE synchronous block.** ❌ Never introduce an `await` between `fanout.attach()` and
   the return: the flush must land before any live event for that id, because feeding the smoother an older sample after
   a newer one corrupts it. The `list_operations` seed is async on purpose and guarded on `receivedDelivery` for the same

@@ -83,7 +83,7 @@ function snapshot(
 }
 
 function operationRow(id: string, status: OperationSnapshot['status'], over: Partial<OperationSnapshot> = {}) {
-  return { snapshot: snapshot(id, status, over), progress: null, etaSecondsDisplay: null } satisfies OperationRow
+  return { snapshot: snapshot(id, status, over), progress: null } satisfies OperationRow
 }
 
 function conflictEvent(over: Partial<WriteConflictEvent> = {}): WriteConflictEvent {

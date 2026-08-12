@@ -27,6 +27,35 @@ FRESH session rather than a revived one (a disposed session has detached from th
 A session's estimators therefore restart if every view lets go and one comes back, which is correct: nothing was on
 screen in between, so there is no continuity to preserve.
 
+## How a view binds
+
+`bindOperationSession(() => operationId)` is the only way a view should reach a session. It acquires when the view names
+an operation, releases when the view unmounts or names another, and hands back `null` for the first frame and for as
+long as the window's registry is still being created (a view renders what it can say without one: a missing ETA for a
+tick, never a missing row).
+
+It derives the id as a VALUE before acquiring, and that is load-bearing rather than tidy. A caller reads its id off an
+object that `operations-changed` rebuilds on every tick, so a binding that re-ran per object would release and re-acquire
+mid-transfer, handing the operation a fresh smoother whenever some unrelated operation started or finished. The
+divergence would then be self-inflicted, in the one place built to prevent it. `queue-row-session.svelte.test.ts` pins
+it by counting `createEtaSmoother` calls across a snapshot rebuild.
+
+The runes in the binder belong to the VIEW's scope, which is why it is a separate module from the session and not a
+method on one: a session may hold no `$derived` at all (see below), and the binder is nothing but view-scoped
+reactivity.
+
+## What a session owns, and what the operations store keeps
+
+Both read the same `write-progress` stream in the same window, and the line between them is stateless versus stateful.
+
+`queue/operations-store.svelte.ts` reduces MEMBERSHIP (which operations exist, each one's lifecycle status) and the
+latest raw tick. All of it is stateless, so a second copy of one event object can't disagree with the first.
+
+A session owns every ESTIMATE built ON that stream: the ETA smoother and `ScanThroughput`. Those are stateful, they
+diverge when one starts later than another, and that is what makes them a single-home concern rather than a preference.
+So the ETA a view renders is `session.etaSecondsDisplay` and the scan rates are `session.scan`, from the corner chip and
+the queue row alike.
+
 ## Sessions are per-window, and that is fine
 
 The operation queue is a separate `WebviewWindow`, so a session cannot be shared across windows; each webview builds its
@@ -96,6 +125,11 @@ here are async.
 A session created for an operation this window has heard nothing about asks `list_operations()`. With operations
 surviving a reload, a reloaded main window has to recover them or the chip shows nothing for a transfer that is very
 much still running.
+
+The test for "heard nothing" is whether the attach delivered anything, and it gates the CALL, not just the result. A
+live window's fan-out already holds the latest snapshot, so every row that appears while it is up is claimed with its
+row in hand: without the gate each view of each row would cost an IPC round trip for an answer already in memory, and
+sessions now have one view per queue row.
 
 The **miss case** is a real path, not a defensive branch: a terminal operation leaves the snapshot entirely (retained
 failures are the one exception), so an operation that finished between the click and the mount seeds nothing. That

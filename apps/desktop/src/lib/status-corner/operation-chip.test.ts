@@ -8,7 +8,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { OperationRow } from '$lib/file-operations/queue/operations-store.svelte'
 import type { OperationSnapshot, WriteProgressEvent } from '$lib/ipc/bindings'
-import { seconds } from '$lib/units'
 
 // The rows' type comes from the operations store, which subscribes to Tauri
 // events at import time. Mock the transport so this pure test needs no backend.
@@ -37,7 +36,6 @@ function progress(over: Partial<WriteProgressEvent> = {}): WriteProgressEvent {
 function row(
   over: Partial<OperationSnapshot> = {},
   progressEvent: WriteProgressEvent | null = progress(),
-  etaSecondsDisplay: number | null = 80,
 ): OperationRow {
   const operationId = over.operationId ?? 'op-1'
   return {
@@ -52,7 +50,6 @@ function row(
       ...over,
     },
     progress: progressEvent === null ? null : { ...progressEvent, operationId },
-    etaSecondsDisplay: etaSecondsDisplay === null ? null : seconds(etaSecondsDisplay),
   }
 }
 
@@ -155,7 +152,6 @@ describe('pickChipOperation', () => {
 function failedRow(operationId = 'gone', operationType: OperationSnapshot['operationType'] = 'copy'): OperationRow {
   return row(
     { operationId, operationType, status: 'failed', error: { type: 'source_not_found', path: '/gone.txt' } },
-    null,
     null,
   )
 }

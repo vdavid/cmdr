@@ -89,7 +89,6 @@ function runningCopy(): OperationRow {
       error: null,
     },
     progress: null,
-    etaSecondsDisplay: null,
   }
 }
 
