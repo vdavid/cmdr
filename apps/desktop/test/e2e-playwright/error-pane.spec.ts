@@ -18,8 +18,8 @@ type PageLike = TauriPage | BrowserPageAdapter
 
 const IS_LINUX = os.platform() === 'linux'
 
-// On macOS, friendly_error_from_errno maps specific errnos to specific titles.
-// On Linux, the fallback maps all errnos to the generic "Couldn't read this folder".
+// `listing_error_from_errno` maps specific macOS errnos to specific reasons.
+// The non-macOS fallback maps every errno to `CouldntReadUnknown`, hence one title.
 const ETIMEDOUT_TITLE = IS_LINUX ? "Couldn't read this folder" : 'Connection timed out'
 const EACCES_TITLE = IS_LINUX ? "Couldn't read this folder" : 'No permission'
 
@@ -66,6 +66,19 @@ async function injectAndNavigateIntoSubDir(tauriPage: PageLike, errorCode: numbe
   await expect
     .poll(async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), { timeout: 3000 })
     .toBeTruthy()
+}
+
+/**
+ * Reads the labels of the error screen's action-row buttons.
+ *
+ * Labels carry a trailing `ShortcutChip` (`Go to home folder ⌘⇧H`), so callers
+ * match with `startsWith` unless the button has no chip (`Try again`).
+ */
+async function ctaLabels(tauriPage: PageLike): Promise<string[]> {
+  return tauriPage.evaluate<string[]>(`(function() {
+        var buttons = document.querySelectorAll('.error-pane .cta button');
+        return Array.from(buttons).map(function(b) { return (b.textContent || '').trim(); });
+    })()`)
 }
 
 /** Navigates the focused pane back to the fixture root's left/ directory. */
@@ -117,16 +130,13 @@ test.describe('Error pane: Transient errors (ETIMEDOUT)', () => {
     expect(explanationHtml).not.toContain('**')
     expect(explanationHtml.length).toBeGreaterThan(0)
 
-    // On macOS, ETIMEDOUT maps to Transient category (retry button visible).
-    // On Linux, the fallback maps all errnos to Serious category (no retry button,
-    // because retry requires category === 'transient').
-    const retryButtonVisible = await tauriPage.evaluate<boolean>(`(function() {
-            var buttons = document.querySelectorAll('.error-pane button');
-            return Array.from(buttons).some(function(b) {
-                return b.textContent.trim() === 'Try again';
-            });
-        })()`)
-    expect(retryButtonVisible).toBe(!IS_LINUX)
+    // `Try again` keys on `retryHint` alone, and both classifications set it:
+    // macOS reads ETIMEDOUT as Transient, the Linux fallback as Serious. So the
+    // button is there on both platforms, and the action row always carries the
+    // always-available way out next to it.
+    const labels = await ctaLabels(tauriPage)
+    expect(labels).toContain('Try again')
+    expect(labels.some((label) => label.startsWith('Go to home folder'))).toBe(true)
 
     // Verify collapsible "Technical details" section exists
     const technicalDetailsExists = await tauriPage.evaluate<boolean>(
@@ -138,10 +148,7 @@ test.describe('Error pane: Transient errors (ETIMEDOUT)', () => {
     await navigateBackToLeft(tauriPage)
   })
 
-  // On Linux, the error fallback maps to Serious category which doesn't show the retry button.
-  // eslint-disable-next-line @typescript-eslint/unbound-method -- conditional skip
-  const retryTest = IS_LINUX ? test.skip : test
-  retryTest('retry loads the directory successfully after injected error clears', async ({ tauriPage }) => {
+  test('retry loads the directory successfully after injected error clears', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
     // Inject ETIMEDOUT and trigger the error
@@ -193,7 +200,7 @@ test.describe('Error pane: Transient errors (ETIMEDOUT)', () => {
 })
 
 test.describe('Error pane: NeedsAction errors (EACCES)', () => {
-  test('shows permission error without retry button', async ({ tauriPage }) => {
+  test('shows a permission error whose way out matches what the platform knows', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
     // Inject EACCES (errno 13) and trigger the error
@@ -210,22 +217,29 @@ test.describe('Error pane: NeedsAction errors (EACCES)', () => {
     )
     expect(title).toBe(EACCES_TITLE)
 
-    // On macOS, EACCES maps to NeedsAction category (no retry button, permission-specific suggestion).
-    // On Linux, the fallback maps all errnos to Serious category (with retry button, generic suggestion).
-    const retryButtonVisible = await tauriPage.evaluate<boolean>(`(function() {
-            var buttons = document.querySelectorAll('.error-pane button');
-            return Array.from(buttons).some(function(b) {
-                return b.textContent.trim() === 'Try again';
-            });
-        })()`)
-    expect(retryButtonVisible).toBe(false) // No retry: macOS=NeedsAction, Linux=Serious (retry requires 'transient')
+    // The two platforms classify EACCES differently, so they earn different ways out,
+    // and each one has to be the RIGHT way out:
+    //   macOS recognizes it as a permission problem (`NoPermissionErrno`, NeedsAction,
+    //     `retryHint: false`, `actionKind: open_privacy_settings`), so retrying can't
+    //     help and the screen sends the user to System Settings instead.
+    //   Linux has no errno mapping yet, so it falls back to `CouldntReadUnknown`
+    //     (Serious, `retryHint: true`): the app doesn't know retrying is futile, and
+    //     offering it beats stranding the user.
+    const labels = await ctaLabels(tauriPage)
+    expect(labels.includes('Try again')).toBe(IS_LINUX)
 
     const suggestionHtml = await tauriPage.evaluate<string>(
       `document.querySelector('.error-pane .suggestion')?.innerHTML || ''`,
     )
-    if (!IS_LINUX) {
+    if (IS_LINUX) {
+      expect(labels.some((label) => label.startsWith('Open '))).toBe(false)
+    } else {
+      expect(labels.some((label) => label.startsWith('Open '))).toBe(true)
       expect(suggestionHtml).toContain('permission')
     }
+
+    // Whichever branch ran, the screen is never a dead end.
+    expect(labels.some((label) => label.startsWith('Go to home folder'))).toBe(true)
 
     // Clean up
     await navigateBackToLeft(tauriPage)

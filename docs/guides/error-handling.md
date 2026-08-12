@@ -31,13 +31,17 @@ pub struct FriendlyError {
 }
 ```
 
-**Categories** determine the UI treatment:
+**Categories** pick the icon; they do NOT gate the buttons:
 
-| Category      | Icon                      | "Try again" button    | Meaning                                              |
-| ------------- | ------------------------- | --------------------- | ---------------------------------------------------- |
-| `Transient`   | Warning triangle (yellow) | Yes (if `retry_hint`) | Retry might work (timeouts, temp glitches)           |
-| `NeedsAction` | None                      | No                    | User must do something (permissions, full disk)      |
-| `Serious`     | Alert circle (red)        | No                    | Something is genuinely broken (hardware, corruption) |
+| Category      | Icon                      | Meaning                                              |
+| ------------- | ------------------------- | ---------------------------------------------------- |
+| `Transient`   | Warning triangle (yellow) | Retry might work (timeouts, temp glitches)           |
+| `NeedsAction` | None                      | User must do something (permissions, full disk)      |
+| `Serious`     | Alert circle (red)        | Something is genuinely broken (hardware, corruption) |
+
+`retry_hint` alone decides the "Try again" button, and it's deliberately set under all three categories. The full action
+row (which buttons render, and why each gate exists) is documented once, in
+`apps/desktop/src/lib/file-explorer/pane/DETAILS.md` § The error screen's ways out.
 
 ## Error sources
 
@@ -126,8 +130,8 @@ Each provider has suggestions per category. For example, MacDroid:
 - Title with category-based icon
 - Folder path in secondary text
 - Explanation and suggestion as markdown (via `snarkdown`)
-- "Try again" button for transient errors (tracks retry count and timestamps)
-- "Open System Settings" button for permission-denied on macOS
+- The action row: "Try again" whenever `retry_hint` is set (tracks retry count and timestamps), "Open System Settings"
+  for permission-denied on macOS, "Go back" when the tab can, and "Go to home folder" always
 - Collapsible "Technical details" with raw errno
 
 ## How to add a new error message
@@ -184,8 +188,11 @@ suggestion: "You may want to try simply reconnecting the device."  ← permissiv
 - **Unit tests**: `friendly_error/` has tests for category assignment, writing rule enforcement, and provider detection
 - **E2E tests**: `test/e2e-playwright/error-pane.spec.ts` injects errno codes via `inject_listing_error` (feature-gated
   behind `playwright-e2e`) and verifies the full render pipeline:
-  - Transient error (ETIMEDOUT): title, markdown rendering, "Try again" button, retry clears error
-  - NeedsAction error (EACCES): title, no "Try again" button, permission-specific suggestion
+  - ETIMEDOUT: title, markdown rendering, "Try again" on both platforms (both classifications set `retry_hint`), and a
+    retry that clears the error
+  - EACCES: title, plus the way out each platform has earned. macOS knows it's a permission problem
+    (`retry_hint: false` + `open_privacy_settings`), so it offers System Settings and no retry; Linux has no errno
+    mapping yet and falls back to `CouldntReadUnknown` (`retry_hint: true`), so it offers the retry
   - Accessibility: `role="alert"`, `<h2>` heading
 - **Debug preview**: In dev builds, the debug window has an "Error pane preview" that calls `preview_friendly_error` to
   render any errno or VolumeError variant on either pane. Use this to visually verify new messages.

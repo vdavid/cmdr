@@ -392,10 +392,9 @@ classification or OS-specific logic):
 - **Explanation**: rendered as markdown via `snarkdown` (plain-language description of what happened)
 - **Suggestion**: rendered as markdown (actionable steps, often provider-specific, for example, "Open **MacDroid** and
   check that your phone is connected")
-- **"Try again" button**: shown only for `transient` category. Calls `navigateTo(currentPath)` to retry the listing.
-  Tracks retry count and timestamps, displays them in the technical details ("Retry #2 · first try 45s ago · last try
-  12s ago")
-- **"Open System Settings" button**: shown for permission-denied errors on macOS (reuses `openPrivacySettings()`)
+- **The action row**: which buttons render and why each gate exists is documented in `pane/DETAILS.md` § The error
+  screen's ways out. "Try again" calls `navigateTo(currentPath)` to retry the listing, and tracks retry count and
+  timestamps for the technical details ("Retry #2 · first try 45s ago · last try 12s ago")
 - **Collapsible "Technical details"**: shows the raw errno name and code for power users / bug reports
 - **Markdown links**: anchors in the explanation/suggestion are routed through a click delegate.
   `x-apple.systempreferences:` URLs go through `openSystemSettingsUrl()` (a dedicated Rust IPC, since Tauri's opener
