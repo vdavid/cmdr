@@ -125,6 +125,13 @@ logical coordinates, independent of which lines happen to be rendered.
 - **Visual collision**: when a search hit and the selection overlap on the same span, search wins on the background
   (`var(--color-highlight)`) and selection wins on the foreground (`var(--color-selection-fg)`, gold). Matches the
   "selected = gold" language from the file list (design-system.md § File list).
+- **Double-click words** come from `findWordBoundsAt` in `viewer-word.ts`: `Intl.Segmenter` gives the boundaries, and
+  `isWordSegment()` decides which segments are words. Gotcha/Why: ❌ never go back to `Intl.Segmenter`'s own
+  `isWordLike`. JavaScriptCore returns `false` for every segment ICU classifies as numeric, which is any word ENDING in
+  a digit (`123`, `3.14`, `v2`, `sha256`, `abc123`), so a double-click on `"1292507278647433"` selected the JSON key
+  before it. The boundaries themselves are correct on every engine; only the flag lies. Node's ICU gets the flag right,
+  so a plain unit test can't see this: `viewer-word.test.ts` stubs a JSC-shaped segmenter to hold the line. (Verified on
+  macOS 26.5.2 WKWebView vs. Node 24 and Playwright WebKit 26.5, offscreen WKWebView probe, 2026-08-13.)
 
 ## Title-bar overlay toolbar
 

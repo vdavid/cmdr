@@ -1,6 +1,36 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 
 import { findWordBoundsAt } from './viewer-word'
+
+/**
+ * Replaces `Intl.Segmenter` with one that keeps the real boundaries but reports
+ * `isWordLike` the way JavaScriptCore does: `false` for every segment ICU classifies as
+ * numeric, which is any word segment ENDING in a digit. See `viewer-word.ts` for the
+ * measurements. Vitest runs on Node (correct ICU flags), so this is the only way to keep
+ * the app's real engine covered.
+ */
+function stubJavaScriptCoreSegmenter(): void {
+  const Real = Intl.Segmenter
+  class JscSegmenter extends Real {
+    segment(input: string): Intl.Segments {
+      const segments = super.segment(input)
+      const patch = (seg: Intl.SegmentData): Intl.SegmentData => ({
+        ...seg,
+        isWordLike: seg.isWordLike === true && !/\d$/.test(seg.segment),
+      })
+      return {
+        containing: (index?: number) => {
+          const seg = segments.containing(index)
+          return seg === undefined ? seg : patch(seg)
+        },
+        [Symbol.iterator]: function* () {
+          for (const seg of segments) yield patch(seg)
+        },
+      } as Intl.Segments
+    }
+  }
+  vi.stubGlobal('Intl', { ...Intl, Segmenter: JscSegmenter })
+}
 
 describe('findWordBoundsAt', () => {
   it('returns zero-length at offset 0 for an empty line', () => {
@@ -54,7 +84,37 @@ describe('findWordBoundsAt', () => {
     expect(findWordBoundsAt('value=12345', 8)).toEqual({ start: 6, end: 11 })
   })
 
+  it('a bare number in a JSON line is its own word', () => {
+    // Offsets 13..29 are the digits of `"1292507278647433"`.
+    expect(findWordBoundsAt('    "fbid": "1292507278647433"', 20)).toEqual({ start: 13, end: 29 })
+  })
+
+  it('an identifier ending in digits is one word', () => {
+    expect(findWordBoundsAt('sha256 rocks', 3)).toEqual({ start: 0, end: 6 })
+  })
+
   it('clamps negative offsets to 0', () => {
     expect(findWordBoundsAt('hello world', -5)).toEqual({ start: 0, end: 5 })
+  })
+})
+
+describe('findWordBoundsAt on JavaScriptCore (the app’s real engine)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('selects a bare number rather than the word before it', () => {
+    stubJavaScriptCoreSegmenter()
+    expect(findWordBoundsAt('    "fbid": "1292507278647433"', 20)).toEqual({ start: 13, end: 29 })
+  })
+
+  it('selects an identifier that ends in digits', () => {
+    stubJavaScriptCoreSegmenter()
+    expect(findWordBoundsAt('sha256 rocks', 3)).toEqual({ start: 0, end: 6 })
+  })
+
+  it('still returns the next word when the caret sits on a leading separator', () => {
+    stubJavaScriptCoreSegmenter()
+    expect(findWordBoundsAt(' 42 rocks', 0)).toEqual({ start: 1, end: 3 })
   })
 })

@@ -9,6 +9,24 @@
  * selection directly.
  */
 
+/** Any letter or digit. A segment holding one is a word, whatever the engine claims. */
+const WORD_CHAR = /[\p{L}\p{N}]/u
+
+/**
+ * Whether a segment counts as a word.
+ *
+ * Gotcha/Why: `Intl.Segmenter` splits at the right places everywhere, but its `isWordLike`
+ * flag is wrong in JavaScriptCore, the app's engine. JSC reports `false` for every segment
+ * ICU classifies as numeric, which is any word ENDING in a digit: `123`, `3.14`, `v2`,
+ * `sha256`, `abc123`. Trusting it made a double-click on `"1292507278647433"` select the
+ * key before it. So we decide word-ness from the segment's own characters and only fall
+ * back to the flag (it can add a word, never remove one). (Verified on macOS 26.5.2
+ * WKWebView vs. Node 24 and Playwright's WebKit, offscreen WKWebView probe, 2026-08-13.)
+ */
+function isWordSegment(seg: Intl.SegmentData): boolean {
+  return seg.isWordLike === true || WORD_CHAR.test(seg.segment)
+}
+
 /**
  * Returns the `[start, end)` UTF-16 bounds of the word containing `offset` in
  * `lineText`. If `offset` doesn't fall on a word segment (it's at a separator like
@@ -33,20 +51,20 @@ export function findWordBoundsAt(lineText: string, offset: number): { start: num
     const end = seg.index + seg.segment.length
 
     if (start <= clamped && clamped < end) {
-      if (seg.isWordLike) return { start, end }
+      if (isWordSegment(seg)) return { start, end }
       // Caret on a non-word segment (whitespace, punctuation). Prefer the closest
       // adjacent word: previous if any, otherwise the next word in the line.
       if (lastWord !== null) return lastWord
       for (let j = i + 1; j < segments.length; j++) {
         const next = segments[j]
-        if (next.isWordLike) {
+        if (isWordSegment(next)) {
           return { start: next.index, end: next.index + next.segment.length }
         }
       }
       return { start: clamped, end: clamped }
     }
 
-    if (seg.isWordLike) lastWord = { start, end }
+    if (isWordSegment(seg)) lastWord = { start, end }
   }
 
   // Caret past the end: return the last word, or zero-length.
