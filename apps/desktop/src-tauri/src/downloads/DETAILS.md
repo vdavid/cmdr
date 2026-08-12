@@ -131,10 +131,17 @@ removes the mutual interference.
 
 **What the self-heal CANNOT cover: a stream that stops delivering outright.** The redo loops assume the watch is still
 alive, so they beat a dropped or coalesced event but not a dead stream. That third failure mode is real on macOS:
-`dropping_a_file_emits_one_event` fails at the full 15 s budget on 5 of 12 runs (measured 2026-08-12 on an M-series
-under moderate load, on `main` with no local changes). A raw-event dump of a failing run shows the stream delivering the
-tempdir's own create plus two priming sentinels, then NOTHING for the remaining 15 s while the test writes a fresh file
-every second — the events never reach the debouncer, so no in-test retry can rescue them.
+`dropping_a_file_emits_one_event` fails at the full 15 s budget on 5 of 12 runs, and
+`latest_download_returns_ring_value_after_event` on 6 of 10, both measured on `main` with NO local changes (2026-08-12,
+M-series, moderate load). A raw-event dump of a failing run shows the stream delivering the tempdir's own create plus
+two priming sentinels, then NOTHING for the remaining 15 s while the test writes a fresh file every second — the events
+never reach the debouncer, so no in-test retry can rescue them. Under a full-suite run the same tests fail earlier
+still, at `prime_watch`'s "arming never completed".
+
+**Suspect the host before the code.** `fseventsd` is a shared, machine-wide service, so a big local file-churn event
+starves every watch on the box: cloning a multi-GB `target/` into a new worktree, a Spotlight reindex, a Time Machine
+pass. Both measurements above followed an APFS clone of a 78 GB build tree. Before digging into a watcher, check what
+else has been writing, and re-measure on a quiet machine.
 
 ❌ So don't read a starvation failure here as a watcher regression, and don't "fix" it by lengthening the budget or
 adding redo attempts: the loop already gets ~14 tries and none of them are seen. A rescue would have to re-arm the
