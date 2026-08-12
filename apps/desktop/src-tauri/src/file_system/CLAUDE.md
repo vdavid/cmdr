@@ -24,7 +24,7 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - **Never call macOS frameworks from rayon or any constrained-stack pool**: NSURL/FileProvider XPC round-trips blow the
   2 MB worker stack and can block forever. Use pooled, hard-capped 8 MB OS threads (`sync_status/pool.rs`); a per-call
   `std::thread::scope` is NOT enough. § "Threading".
-- **Watcher rules**, each with its own `DETAILS.md` § — read those before touching `watcher.rs`:
+- **Watcher rules.** Each has its own section in `DETAILS.md`; read them before touching `watcher.rs`:
   - ❌ Never `tokio::spawn` from a watcher OS thread (no reactor: it panics). Use `tauri::async_runtime::spawn`, and
     `caching::spawn_full_refresh` for FullRefresh dispatch.
   - Arm listing watches with `start_watching_detached`, ❌ never `start_watching` (an inline arm was p90 653 ms of dead

@@ -488,6 +488,10 @@ stays `$bindable`, so `bind:value` keeps working; the semantics match Svelte's o
 caller renders, and a caller that silently rejects a keystroke without changing `value` keeps the typed text, same as a
 raw `value={x}` + `oninput` today).
 
+**Decision: the shared prop types live in `text-field-types.ts`, not a `<script module>`.** Same reason as
+`menu-types.ts` (see § Menu): a type imported from a `.svelte` file resolves to `any` under the plain-TypeScript lint
+service, so every non-Svelte consumer of these props would silently lose its checking.
+
 **Decision: the frame is a flex row, so affixes are real siblings.** The wrapper carries the border, background, radius,
 padding, and the `:focus-within` ring; the leading icon and the trailing snippet are flex children of it. That's what
 replaced the settings sidebar's hand-tuned `left: calc(var(--spacing-2xl) + var(--spacing-xs))` icon offset, which was

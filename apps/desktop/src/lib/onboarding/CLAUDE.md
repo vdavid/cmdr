@@ -1,56 +1,38 @@
 # Onboarding module
 
-Owns first-launch consent: Full Disk Access (macOS only), AI provider, the open-beta analytics disclosure, terms
-acceptance, and a small optional-settings step. Renders the `OnboardingWizard` soft-sheet as the single first-launch
-path.
-
-Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 and resumes at step 2.
+First-launch consent: Full Disk Access (macOS), AI provider, the open-beta analytics disclosure, terms acceptance, and
+a small optional-settings step, all in the `OnboardingWizard` soft sheet. Flow: FDA (1) → AI (2) → Open beta (3) →
+Optional (4); Linux skips step 1 and resumes at step 2.
 
 ## Module map
 
-- `OnboardingWizard.svelte` (shell), `OnboardingStepShell.svelte` (per-step frame), `StepFda` / `StepAi` / `StepBeta` /
-  `StepOptional`, plus `CloudProviderPicker` / `CloudProviderSetup` for the AI step.
-- `onboarding-state.svelte.ts`: the state machine (step cursor, variants, banner mode, `resumeStepFor()`).
+`OnboardingWizard.svelte` (shell), `OnboardingStepShell.svelte` (per-step frame), `StepFda` / `StepAi` / `StepBeta` /
+`StepOptional`, `CloudProviderPicker` / `CloudProviderSetup` (AI step), and `onboarding-state.svelte.ts` (the state
+machine: step cursor, variants, banner mode, `resumeStepFor()`).
 
 ## Must-knows
 
-- **The Open beta page (step 3) is non-skippable, and the AI step has no skip-to-finish.** Every first-launch user must
-  see the anonymous-analytics disclosure once (the opt-out default only reads as fair consent if it was shown), so the
-  AI step's only forward button ("Next") always lands on Beta. Beta itself offers "Start using Cmdr!" (skips the
-  optional step) and "One more optional setup step", so the user can't reach the app without passing through Beta. Don't
-  re-add a skip-to-finish on the AI step (it bypasses the disclosure).
-- **Step 3's terms checkbox gates both footer buttons.** ❌ Never pre-tick or route around it: it's the assent the terms
-  rest on. Unticked, buttons take `blockedReason`, ❌ not `disabled`, so the press still fires and scrolls + focuses the
-  checkbox. Acceptance stores `TERMS_VERSION` (`$lib/legal/terms`) + timestamp; bumping it re-asks everyone.
-  `DETAILS.md` § "Terms acceptance".
-- **The step-2 "Full disk access granted" banner shows ONLY on a fresh first-run grant** (`hasFda && !isOnboarded`).
-  Once onboarded, menu / palette re-entry with FDA on shows no banner (`stepTwoBanner === 'none'`). Gated in both
-  `stepTwoBannerFor()` and `StepAi`'s on-mount probe.
-- **Allow (FDA) requires a restart before advancing past step 1.** After Allow, the footer flips to "Restart Cmdr"
-  (`relaunch()`), it does NOT advance in-session. The FDA gate (`fda_gate::FDA_PENDING`) is set once at boot; clearing
-  it at runtime races the TCC popups the gate suppresses (we hit 5-10 stacked popups once). The resume rule lands the
-  user on step 2 after relaunch. Deny advances normally.
-- **Step 1 polls for a live FDA grant (macOS).** While the Allow/Deny variants are open and FDA isn't granted, a 500 ms
-  `$effect` poller in `StepFda` calls `checkFullDiskAccessQuiet` — the side-effect-free probe, ❌ never
-  `checkFullDiskAccess`, which fires a TCC-registration storm on every denial. On grant it calls `setStep1Granted()` and
-  stops; the interval clears on unmount. The restart still applies (the gate is boot-set). The poller never runs on
-  `already-granted` or Linux.
-- **No Escape handler on the wizard.** Dismissing without choosing leaves no recorded preference; the user must commit
-  to Allow / Deny / Next on each step. (Closing requires committing to a step; MCP close/focus aren't wired.)
-- **The AI step's forward button stays enabled regardless of API-key validity.** ❌ Don't gate advance on connection
-  status: the auto-check is informational, and first AI use surfaces the standard `NotConfigured` path.
+- **The Open beta page (step 3) is non-skippable, and the AI step has no skip-to-finish.** Every first-launch user has
+  to see the anonymous-analytics disclosure once: the opt-out default only reads as fair consent if it was shown. ❌
+  Don't re-add a skip-to-finish on the AI step.
+- **Step 3's terms checkbox gates both footer buttons.** ❌ Never pre-tick or route around it: it's the assent the
+  terms rest on. Unticked, the buttons take `blockedReason`, ❌ not `disabled`, so a press still fires and scrolls to
+  the checkbox. Acceptance stores `TERMS_VERSION` + timestamp; bumping it re-asks everyone.
+- **Allow (FDA) requires a restart before advancing past step 1**: the footer flips to "Restart Cmdr" and does NOT
+  advance in-session, because the gate (`fda_gate::FDA_PENDING`) is set once at boot and clearing it at runtime races
+  the TCC popups it suppresses (we hit 5-10 stacked popups once). Deny advances normally.
+- **Step 1's live-grant poller calls `checkFullDiskAccessQuiet`, ❌ never `checkFullDiskAccess`**, which fires a TCC
+  registration storm on every denial. It runs only while the Allow/Deny variants are open on macOS, and stops on grant.
+- **Two things stay gated on the FDA decision at boot**: the drive indexer and the path-based icon fetches in
+  `volumes::list_locations`, both via `crate::fda_gate::is_fda_pending(...)`. On Deny,
+  `startIndexingAfterFdaDecision()` clears the runtime gate and starts them; on Allow, the relaunch opens the gate.
 - **FDA stays a three-state setting** (`notAskedYet` / `allow` / `deny`), never a boolean: the app must tell "never
   asked" from "granted-then-revoked" from "explicitly declined".
-- **Two things stay gated on the FDA decision at boot:** the drive indexer and the path-based icon fetches in
-  `volumes::list_locations`, both via `crate::fda_gate::is_fda_pending(...)`. On Deny, `startIndexingAfterFdaDecision()`
-  clears the runtime gate and starts the indexer/MTP watcher (one TCC popup per protected folder). On Allow, the
-  relaunch opens the gate at boot. See `src-tauri/src/fda_gate.rs`.
-- **`StepBeta` and `StepOptional` reuse existing Settings wiring** (`UpdatesSection`'s `betaSignup`/email path,
-  `<SettingSwitch>` via `setSetting()`). The email path POSTs only the email, never an install id. ❌ Don't fork it.
+- **`StepBeta` and `StepOptional` reuse existing Settings wiring** (`UpdatesSection`'s `betaSignup` / email path,
+  `<SettingSwitch>` via `setSetting()`), and that email path POSTs only the email, never an install id. ❌ Don't fork
+  it.
 - **Search's coverage note routes INTO step 1** when a walk was refused a folder and Cmdr lacks FDA
   (`coverage-note.ts::offersFullDiskAccess`): ❌ no second FDA prompt, ❌ never over a snapshot folder.
-- **`CMDR_FORCE_ONBOARDING=1`** forces the wizard regardless of persisted state;
-  `CMDR_MOCK_FDA=granted|denied|notgranted` overrides the TCC probe for testing all banner branches.
-
-Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
-reorganizing, or advising.
+DETAILS owns the rest, including what stays fixed for a reason: no Escape handler, the always-enabled AI forward
+button, the step-2 banner branches, and the `CMDR_FORCE_ONBOARDING` / `CMDR_MOCK_FDA` test overrides. Read
+`DETAILS.md` before any non-trivial work here: editing, planning, reorganizing, or advising.

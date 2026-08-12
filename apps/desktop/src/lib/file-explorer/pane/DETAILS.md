@@ -175,6 +175,13 @@ ALSO bound in the registry (`nav.open` / `nav.parent`) for Settings display and 
 grandparent, `⌘↓` → double-open). `⌘Backspace` is deliberately excluded from the parent branch so it falls through to
 `file.delete` (`⌘⌫` = move to trash, alongside `F8`).
 
+**Selection moves the cursor on SELECT only.** `FilePane.applyIndices` reveals the first freshly selected row on an
+`add` and leaves the cursor put on a `remove`: there's nothing new to reveal on a deselect, and yanking the cursor onto
+a just-deselected row reads as wrong. The target comes from `firstSelectedIndex` (`first-selected-index.ts`), never
+`idxs[0]`, because `selection.applyIndices` skips index 0 under `hasParent` (it never selects `..`) and the cursor must
+land on the same first row it actually selected. Both sides apply the identical skip, so an `idxs` still carrying a
+leading `0` can't park the cursor on the synthetic `..` row.
+
 **Snapshot pane (`volumeId === 'search-results'`).** Two integration points that MUST stay coupled: `computeHasParent`
 returns `false` (no `..` row, via the `hasParentRow` capability), and opening a real entry from the result rows leaves
 the snapshot volume. `FilePane.handleNavigate` gates the latter on the `isSearchResultsView` capability (A6 — the
