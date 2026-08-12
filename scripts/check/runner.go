@@ -34,7 +34,10 @@ type CheckState struct {
 	Result     checks.CheckResult
 	Error      error
 	Duration   time.Duration
-	mu         sync.Mutex
+	// Tests is what a test lane recorded about its individual tests, filed on the
+	// red path as well as the green one. Empty for every other check.
+	Tests []checks.TestRecord
+	mu    sync.Mutex
 }
 
 // Runner manages parallel check execution.
@@ -295,12 +298,21 @@ func (r *Runner) canStart(state *CheckState) bool {
 }
 
 // runCheck executes a single check.
+//
+// Each check runs against its own copy of the context, carrying its own test
+// recorder: the lanes run concurrently, so one shared sink couldn't say which
+// lane a per-test record came from. The context is read-only otherwise, so the
+// copy is free.
 func (r *Runner) runCheck(state *CheckState) {
+	ctx := *r.ctx
+	ctx.Tests = &checks.TestRecorder{}
+
 	start := time.Now()
-	result, err := state.Definition.Run(r.ctx)
+	result, err := state.Definition.Run(&ctx)
 	state.Duration = time.Since(start)
 
 	state.mu.Lock()
+	state.Tests = ctx.Tests.Records()
 	if err != nil {
 		state.Status = StatusFailed
 		state.Error = err
@@ -319,6 +331,7 @@ func (r *Runner) runCheck(state *CheckState) {
 	r.printResult(state)
 	if !r.noLog {
 		logCheckStats(state)
+		logTestStats(state)
 	}
 }
 

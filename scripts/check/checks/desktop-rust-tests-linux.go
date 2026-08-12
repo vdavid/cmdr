@@ -175,6 +175,9 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 	testArgs := append([]string{"--locked"}, selection...)
 	testArgs = append(testArgs, "--no-fail-fast")
 	output, err := dockerExec(container, containerNextestScript(testArgs...))
+	// Before the verdict branch, so a red run records WHICH tests went red
+	// (`test-log.go`); the contention re-run below is deliberately not recorded.
+	ctx.RecordTests(ParseNextestResults(output)...)
 	if err != nil {
 		// Same verdict machinery as the host lanes: a failure is re-run alone before it's
 		// believed. This lane needs it MORE, not less. The container's cores are a slice of

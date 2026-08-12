@@ -168,7 +168,10 @@ pnpm check [flags]
 - **`runner.go`**: Parallel executor: CPU-weighted admission gate, dependency graph, fail-fast, live TTY status line
 - **`graph.go`**: `--graph` renderer: dependency forest with CPU weights, size lanes, and median wall-time from the
   stats CSV (tree / mermaid / dot)
-- **`stats.go`**: CSV stats logging (`logCheckStats`): appends one row per check to `~/cmdr-check-log.csv`
+- **`stats.go`**: CSV stats logging: one row per check to `~/cmdr-check-log.csv` (`logCheckStats`), plus one row per
+  individual test to `~/cmdr-test-log.csv` (`logTestStats`, § "The per-test log")
+- **`checks/test-log.go`**: the per-test vocabulary (`TestRecord`, `TestOutcome`, `TestRecorder`) every test lane
+  records through
 - **`plan.go`**: Input-fingerprint cache planning: splits selected checks into cache hits and misses BEFORE pnpm/SMB;
   records passes after the run
 - **`checks/fingerprint.go`**: Git-aware content fingerprint per check (one repo-wide `git ls-files`+`git status` pass,
@@ -261,6 +264,79 @@ result (pass/fail/skip/blocked/cached), and optional counts (total, issues, chan
 `Issues`, `Changes` fields (`-1` = N/A, rendered as `N/A` in CSV). Disabled by `--no-log` or `--ci`. Implementation in
 `stats.go`. A cache hit logs as `cached` (not `pass`) so `--graph`'s median, which counts only `pass` rows, isn't
 dragged down by ~0s hits.
+
+## The per-test log
+
+`~/cmdr-test-log.csv` records INDIVIDUAL tests, one row each, so "which 15 tests cause most of my red runs, and which
+are slowest" is a query rather than an archaeology dig. It's the companion to `~/cmdr-check-log.csv`, which stays
+lane-level: a red lane logs the message `rust tests failed` there and names no test, which is exactly the gap this
+closes.
+
+**Two files, never one.** `~/cmdr-check-log.csv` has ~98 000 rows against a nine-column header, and every reader of it
+(Go's `csv.Reader`, Python's `csv` / pandas) hard-errors on a field-count mismatch, so widening that schema would
+destroy the history in place. One row per test is also the better data model. Don't merge them.
+
+**Schema** (`timestamp,check,test_id,status,duration_s,attempt`):
+
+- `timestamp`: `YYYY-MM-DD HH:MM:SS`, identical for every row of one check run, so rows group into runs by
+  `(check, timestamp)`.
+- `check`: the lane's CLI name (`rust-tests`, `svelte-tests`, `desktop-e2e-playwright`, …).
+- `test_id`: stable identity. Nextest lanes use `<binary>::<test path>`; the Vitest and Playwright lanes use
+  `<spec file>::<describe chain joined with " › ">::<title>`, the same key the E2E duration allowlist uses.
+- `status`: `pass` / `fail` / `flaky` / `timeout` / `leak` / `skip`. `flaky` is a retry-rescued test, which both runners
+  exit 0 on; `timeout` is a kill at the runner's cap; `leak` passed its assertions but outlived itself.
+- `duration_s`: wall clock of the attempt that produced `status`, three decimals, or `N/A` when the reporter gave none.
+  For a retried test it's the worst SINGLE attempt, never the sum of them.
+- `attempt`: 1-based attempt that produced `status`, so a `flaky` row says which try rescued it.
+
+**Not every row is written.** Anything that isn't a clean pass is always logged, so failure counts are exact. A PASSING
+test earns a row only at or over `testLogSlowSeconds` (1.0 s, `stats.go`), and skips are never logged. Without that
+threshold a single Rust run would write ~5 000 rows saying "fast test was fast again", roughly half a gigabyte a month.
+So: absence of a test means "fast, or never ran", never "passed". A slow-test ranking is unaffected — a test under the
+threshold isn't one of the slow ones.
+
+**Covered lanes:** `rust-tests`, `rust-integration-tests`, `rust-tests-linux` (parsed from nextest's captured status
+lines, `checks/rust-test-diagnostics.go`), `svelte-tests` (Vitest's `json` reporter, `checks/vitest-test-log.go`), and
+both E2E lanes (Playwright's JSON report, `checks/e2e-test-log.go`). Every other check writes nothing.
+
+**One mechanism, not six.** A lane's verdict travels as a `CheckResult` on the green path and an `error` on the red one,
+so neither can carry per-test detail. `checks/test-log.go` is the side-channel: the runner hands each check its own
+`TestRecorder` on a private copy of `CheckContext` (the lanes run concurrently, so one shared sink couldn't say which
+lane a record came from), each lane calls `ctx.RecordTests(...)` BEFORE its pass/fail branch, and `logTestStats` in
+`stats.go` drains it. Extend the `TestOutcome` vocabulary rather than growing a per-lane variant.
+
+**Instrumentation never changes a verdict.** A missing or unparsable report records nothing and says nothing: no warn,
+no failure, no note. The contention re-run (`checks/rust-test-contention.go`) is deliberately NOT recorded either, or a
+starved test would look like it ran twice as often as it did.
+
+**Disabled by `--no-log` and `--ci`**, like the check-level log, so CI runners don't write a log nobody reads.
+
+Example queries (the log is plain CSV; `duration_s` can be `N/A`, so cast defensively):
+
+```bash
+# Which tests fail most often, worst first
+python3 -c "
+import csv, collections
+rows = [r for r in csv.DictReader(open('$HOME/cmdr-test-log.csv')) if r['status'] in ('fail', 'timeout')]
+for (check, test), n in collections.Counter((r['check'], r['test_id']) for r in rows).most_common(15):
+    print(f'{n:4}  {check:24}  {test}')
+"
+
+# Which tests are slowest (worst run ever seen per test)
+python3 -c "
+import csv, collections
+worst = collections.defaultdict(float)
+for r in csv.DictReader(open('$HOME/cmdr-test-log.csv')):
+    if r['duration_s'] != 'N/A':
+        key = (r['check'], r['test_id'])
+        worst[key] = max(worst[key], float(r['duration_s']))
+for (check, test), s in sorted(worst.items(), key=lambda kv: -kv[1])[:15]:
+    print(f'{s:8.3f}s  {check:24}  {test}')
+"
+```
+
+A failure RATE needs the run count as its denominator, which lives in the other log: count the rows for that check in
+`~/cmdr-check-log.csv` over the same window.
 
 ## Input fingerprint cache
 

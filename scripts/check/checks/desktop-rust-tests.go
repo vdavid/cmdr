@@ -38,6 +38,11 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	cmd := exec.Command("cargo", append([]string{"nextest", "run"}, baseArgs...)...)
 	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
+	// Before the verdict branch, so a red run records WHICH tests went red. Only the
+	// first run is recorded: the contention re-run below re-executes a named subset
+	// under a different profile, and logging those as extra results would make a
+	// starved test look like it ran twice as often as it did.
+	ctx.RecordTests(ParseNextestResults(output)...)
 	if err != nil {
 		// Trim the per-test PASS/SKIP lines (the Linux lane already does): on a 4 800-test
 		// suite they bury the diagnosis and the actual panics under thousands of lines.

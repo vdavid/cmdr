@@ -36,6 +36,14 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
     execArgv: ['--localstorage-file=.vitest-localstorage'],
+    // The check runner sets VITEST_JSON_REPORT to a private per-invocation path so
+    // it can log which individual tests failed and how long each took (see
+    // scripts/check/DETAILS.md § "The per-test log"). The default reporter stays
+    // first either way: the check parses its `Tests N passed` tally and its
+    // worker-death lines, so replacing it would blind the coverage failure path.
+    reporters: process.env.VITEST_JSON_REPORT
+      ? ['default', ['json', { outputFile: process.env.VITEST_JSON_REPORT }]]
+      : ['default'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],

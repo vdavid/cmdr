@@ -89,6 +89,9 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		"-E", "test(smb_integration_)")...)
 	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
+	// Before the verdict branch, so a red run records WHICH tests went red
+	// (`test-log.go`); the contention re-run below is deliberately not recorded.
+	ctx.RecordTests(ParseNextestResults(output)...)
 	if err != nil {
 		// This lane contends on a SHARED Docker Samba stack as well as on CPU, so a red run
 		// here is even likelier to be starvation than in the default lane. Slowest healthy

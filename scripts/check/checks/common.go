@@ -92,6 +92,20 @@ func Skipped(reason string) CheckResult {
 type CheckContext struct {
 	CI      bool
 	RootDir string
+	// Tests receives one record per individual test a test lane ran, on the red
+	// path as well as the green one (`test-log.go`). The runner hands each check
+	// its own recorder and drains it afterwards; nil everywhere else (unit tests,
+	// any caller that doesn't care), which turns RecordTests into a no-op.
+	Tests *TestRecorder
+}
+
+// RecordTests files per-test outcomes for the check currently running. A no-op
+// when no recorder is attached, so a lane can call it unconditionally.
+func (c *CheckContext) RecordTests(records ...TestRecord) {
+	if c.Tests == nil {
+		return
+	}
+	c.Tests.Record(records...)
 }
 
 // CheckFunc is the function signature for check implementations.

@@ -332,6 +332,14 @@ therefore inherits `retries: 1`. The verdict reads Playwright's structured JSON 
 `unexpected`, not `flaky`, so it stays a failure and isn't double-counted. Mechanics:
 `scripts/check/checks/e2e-flaky.go`.
 
+### Every red or slow test lands in a log you can rank
+
+Both verdicts above are per-run: they tell you this run went red, not which tests go red most weeks. `~/cmdr-test-log.csv`
+answers that. All three Rust lanes, `svelte-tests`, and both E2E lanes append one row per individual test, on the red
+path as well as the green one, carrying its status (including `flaky` and `timeout`), duration, and attempt. Fast clean
+passes are dropped so the file stays small, so absence means "fast, or never ran", never "passed". Schema, covered
+lanes, and ready-made ranking queries: `scripts/check/DETAILS.md` § "The per-test log".
+
 ### Caps are not runtimes
 
 A per-test `slow-timeout` in `.config/nextest.toml` is a hang backstop, typically 20-50x the real runtime. Don't quote

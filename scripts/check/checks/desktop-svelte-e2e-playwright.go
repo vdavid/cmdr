@@ -107,17 +107,24 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	results := runShardsInParallel(desktopDir, shards)
+
+	// The union of the shards' JSON reports covers the whole suite (MTP shard +
+	// the non-MTP shard split).
+	reportPaths := make([]string, len(shards))
+	for i, s := range shards {
+		reportPaths[i] = s.jsonReport
+	}
+	// Before the verdict, so a red run records WHICH specs went red (`test-log.go`).
+	// The check's own error is a shard-level summary; this is the only place the
+	// individual spec names reach the log.
+	recordPlaywrightTests(ctx, reportPaths)
+
 	result, err := aggregateShardResults(results, len(shards))
 	if err != nil {
 		return CheckResult{}, err
 	}
 
-	// Warn-only duration flagging: the union of the shards' JSON reports
-	// covers the whole suite (MTP shard + the non-MTP shard split).
-	reportPaths := make([]string, len(shards))
-	for i, s := range shards {
-		reportPaths[i] = s.jsonReport
-	}
+	// Warn-only duration flagging.
 	result = applyE2EDurationWarnings(ctx, result, reportPaths, "macos")
 	// Retry-passes last so the flake line is the final thing read. Local runs are at
 	// `retries: 0`, so this is normally a no-op here and does its work on CI.

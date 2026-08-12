@@ -97,6 +97,10 @@ type coverageRun struct {
 	cmd        *exec.Cmd
 	reportsDir string
 	summary    string
+	// jsonReport is where vitest's `json` reporter writes this run's per-test
+	// results, which the per-test log reads (`vitest-test-log.go`). Per-invocation
+	// for the same reason the coverage dir is.
+	jsonReport string
 }
 
 // newCoverageRun creates a fresh per-invocation coverage output dir under the
@@ -107,13 +111,17 @@ func newCoverageRun(desktopDir string) (*coverageRun, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create coverage temp dir: %w", err)
 	}
+	jsonReport := filepath.Join(reportsDir, "test-results.json")
 	cmd := exec.Command("pnpm", "test:coverage")
 	cmd.Dir = desktopDir
-	cmd.Env = append(os.Environ(), "VITEST_COVERAGE_DIR="+reportsDir)
+	cmd.Env = append(os.Environ(),
+		"VITEST_COVERAGE_DIR="+reportsDir,
+		"VITEST_JSON_REPORT="+jsonReport)
 	return &coverageRun{
 		cmd:        cmd,
 		reportsDir: reportsDir,
 		summary:    filepath.Join(reportsDir, "coverage-summary.json"),
+		jsonReport: jsonReport,
 	}, nil
 }
 
@@ -128,6 +136,9 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 	}
 	defer os.RemoveAll(run.reportsDir)
 	output, err := RunCommand(run.cmd, true)
+	// Before the verdict branch, so a red run records WHICH tests went red: the
+	// check's own error is the whole vitest transcript, which no query can rank.
+	recordVitestTests(ctx, run.jsonReport, desktopDir)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("svelte tests failed\n%s", indentOutput(output))
 	}

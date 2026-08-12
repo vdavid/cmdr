@@ -17,7 +17,7 @@ diagram, CLI options, freestyle.sh execution, and decisions: `DETAILS.md`.
   cargo workspace's geometry, which every Rust check derives its scope from.
 - `smb_orchestrator.go` + `smblease/` + `smb-lease/`: runner-level SMB Docker lifecycle behind a machine-wide lease.
 - `freestyle.go`: freestyle.sh remote-VM execution. `graph.go` / `docs_graph_render.go` (+ `docs_graph_usage.go`): the
-  `--graph` and `--docs-graph` renderers. `stats.go`: CSV stats logging.
+  `--graph` and `--docs-graph` renderers. `stats.go`: the two CSV logs (per check, and per test).
 
 ## Must-knows
 
@@ -38,18 +38,16 @@ diagram, CLI options, freestyle.sh execution, and decisions: `DETAILS.md`.
 - **A cargo lane that COMPILES declares `Exclusive: ResourceCargoBuildDir`.** Cargo locks its build directory per
   command, so those lanes are serial anyway; declaring it stops a blocked one from sitting on 6-8 CPU weight.
   `DETAILS.md` § "Exclusive resources".
-- **`--only-slow` needs a ~20 min timeout** (1,200,000 ms): slow checks (E2E, `rust-tests-linux`) run far longer than
-  the default suite, so set it accordingly from an agent or CI.
-- **`--fast` is mutually exclusive with `--include-slow` / `--only-slow`:** combining them errors out, since the lanes
-  are intentionally separate. Named checks bypass lane filters (`pnpm check --fast svelte-check` still runs it).
+- **Lane flags:** `--only-slow` needs a ~20 min timeout (1,200,000 ms) from an agent or CI, since E2E and
+  `rust-tests-linux` run far longer than the default suite; `--fast` is mutually exclusive with `--include-slow` /
+  `--only-slow` and errors out when combined. Named checks bypass every lane filter.
 - **Concurrent SMB-touching runs across worktrees coexist** via per-run machine-wide `smblease` leases on the shared
-  `smb-consumer` stack: the stack downs only when the last holder leaves, so a finishing run never kills another's
-  mid-test. Don't reintroduce per-check or per-process teardown. Inspect with
-  `(cd scripts/check && go run ./smb-lease status)`; force down with
-  `rm -rf /tmp/cmdr-smb-leases && apps/desktop/test/smb-servers/stop.sh`.
-- **cmdr's SMB stack binds host ports 11480+, not smb2's default 10480+**, so cmdr's vendored `smb-consumer` compose and
-  smb2's own `consumer` harness coexist instead of fighting over ports. `checks.ApplySmbPortEnv()` sets this before
-  bring-up; don't revert to the default range.
+  `smb-consumer` stack: it downs only when the last holder leaves, so a finishing run never kills another's mid-test.
+  Don't reintroduce per-check or per-process teardown. Inspect and force-down recipes: `DETAILS.md` § Gotchas.
+- **Two CSV logs, never merged.** `~/cmdr-check-log.csv` per check run, `~/cmdr-test-log.csv` per test (`DETAILS.md` §
+  "The per-test log"). A tenth column breaks every reader of the first's ~98 000 nine-column rows.
+- **cmdr's SMB stack binds host ports 11480+, not smb2's default 10480+**, so both harnesses coexist instead of fighting
+  over ports. `checks.ApplySmbPortEnv()` sets this before bring-up; don't revert to the default range.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

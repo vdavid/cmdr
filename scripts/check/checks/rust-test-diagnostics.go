@@ -248,6 +248,88 @@ func FlakySummary(flaky []FlakyTest) string {
 		len(flaky), Pluralize(len(flaky), "test", "tests"), strings.Join(parts, ", "))
 }
 
+// nextestResultRE matches a FINAL per-test status line, sharing the grammar the
+// classifier regexes above are anchored to. Progress-only markers (`SLOW`,
+// `TERMINATING`, `RETRY n/m`) are deliberately absent from the alternation: they
+// describe a test still in flight, and reading them as outcomes would invent
+// results. Anchored at line start, so a panic body quoting a status line stays
+// captured output.
+var nextestResultRE = regexp.MustCompile(
+	`^\s*(PASS|FAIL|SKIP|TIMEOUT|LEAK|FLAKY \d+/\d+|TRY \d+ PASS) \[([^\]]*)\]\s+(?:\([^)]*\)\s+)?(\S+)\s+(\S+)\s*$`,
+)
+
+// nextestDurationRE reads the bracketed wall clock nextest prints per test, in
+// its `[  1m 03.500s]` / `[   0.012s]` forms.
+var nextestDurationRE = regexp.MustCompile(`^(?:(\d+)h\s*)?(?:(\d+)m\s*)?([\d.]+)s$`)
+
+// nextestAttemptRE pulls the winning attempt out of `FLAKY 2/3` and `TRY 2 PASS`.
+var nextestAttemptRE = regexp.MustCompile(`\d+`)
+
+// ParseNextestResults returns one [TestRecord] per test in a nextest run, for the
+// per-test log (`test-log.go`). It reads the same captured output the classifier
+// above does, so it costs one extra scan and no extra reporter: nextest's JSON
+// output is still experimental, and a lane's verdict must never hang on a flag
+// that can change under it.
+//
+// Test IDs are `<binary>::<test path>`, because a test path alone repeats across
+// binaries. Output with no test phase in it (a build break) yields no records,
+// which is the honest answer; the caller still fails on its own evidence.
+func ParseNextestResults(output string) []TestRecord {
+	var records []TestRecord
+	for line := range strings.SplitSeq(output, "\n") {
+		m := nextestResultRE.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		outcome, attempt := nextestOutcome(m[1])
+		records = append(records, TestRecord{
+			ID:      m[3] + "::" + m[4],
+			Outcome: outcome,
+			Seconds: parseNextestDuration(m[2]),
+			Attempt: attempt,
+		})
+	}
+	// nextest reports a test more than once (every failure repeats in the summary
+	// block, a flake shows as both `TRY n PASS` and `FLAKY n/m`), so the merge is
+	// what keeps one test to one row.
+	return MergeTestRecords(records)
+}
+
+// nextestOutcome maps a status token to an outcome plus the attempt that produced
+// it. Only the retry forms carry an attempt; everything else is a first try.
+func nextestOutcome(status string) (TestOutcome, int) {
+	switch {
+	case strings.HasPrefix(status, "FLAKY "), strings.HasPrefix(status, "TRY "):
+		return TestFlaky, atoiOrZero(nextestAttemptRE.FindString(status))
+	case status == "FAIL":
+		return TestFailed, 1
+	case status == "TIMEOUT":
+		return TestTimedOut, 1
+	case status == "LEAK":
+		return TestLeaked, 1
+	case status == "SKIP":
+		return TestSkipped, 1
+	default:
+		return TestPassed, 1
+	}
+}
+
+// parseNextestDuration turns the bracketed wall clock into seconds, returning -1
+// when there's nothing to read (a `[         ]` placeholder, or a format nextest
+// changed under us). A missing duration must read as "unknown", never as zero.
+func parseNextestDuration(bracket string) float64 {
+	trimmed := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(bracket), ">"))
+	m := nextestDurationRE.FindStringSubmatch(strings.ReplaceAll(trimmed, " ", ""))
+	if m == nil {
+		return -1
+	}
+	seconds, err := strconv.ParseFloat(m[3], 64)
+	if err != nil {
+		return -1
+	}
+	return float64(atoiOrZero(m[1]))*3600 + float64(atoiOrZero(m[2]))*60 + seconds
+}
+
 func atoiOrZero(s string) int {
 	n, err := strconv.Atoi(s)
 	if err != nil {

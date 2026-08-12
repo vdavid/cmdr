@@ -44,6 +44,9 @@ func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 	// Save full output for post-mortem debugging
 	appendToLogFile(logFile, output)
 
+	// Before the verdict, so a red run records WHICH specs went red (`test-log.go`).
+	recordPlaywrightTests(ctx, []string{linuxE2EReportPath})
+
 	if err != nil {
 		summary := extractE2ETestOutput(output)
 		return CheckResult{}, fmt.Errorf("linux E2E tests failed (full log: %s)\n%s", logFile, indentOutput(summary))
