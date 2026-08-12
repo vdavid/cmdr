@@ -160,8 +160,14 @@ pub(crate) fn handle_volume_mounted(volume_path: &str) {
     crate::volume_broadcast::emit_volumes_changed();
 }
 
-/// Handle an unmount notification: tear down the SMB session if any,
-/// unregister the volume, emit the per-volume Tauri event, and broadcast.
+/// Handle an unmount notification: drop the gone mount root from the volume that
+/// owned it, emit the per-volume Tauri event, and broadcast.
+///
+/// A volume can be reached through several mounts, so losing one usually means
+/// promoting a survivor rather than saying goodbye; only the LAST root going
+/// away tears the volume down (`on_unmount`, index stop). The
+/// `volume-unmounted` event fires either way, because the PATH really is gone
+/// and a pane sitting under it has to move.
 ///
 /// Public for tests so the handler logic can be exercised without posting
 /// real `NSWorkspace` notifications.
