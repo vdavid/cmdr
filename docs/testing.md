@@ -475,7 +475,8 @@ E2E test hooks split along two axes:
 - **`CMDR_DATA_DIR`**: Isolated data dir for persisted state. Set by `tauri-wrapper.ts` (dev) and every E2E harness;
   mandatory under E2E mode (see above).
 - **`CMDR_E2E_START_PATH`**: Fixture directory; surfaced via `get_e2e_start_path` so FE can pick it up.
-- **`CMDR_E2E_SHARD_KIND`**: "mtp" / "non-mtp" / "all": selects spec subset for parallel sharding.
+- **`CMDR_E2E_SHARD_KIND`**: "mtp" / "non-mtp" / "all" / "i18n-capture" / "marketing-shots": selects spec subset for
+  parallel sharding, and the two capture drivers each get their own kind so a normal suite run never takes screenshots.
 - **`CMDR_E2E_JSON_REPORT`**: Per-shard Playwright JSON report path.
 - **`CMDR_E2E_OUTPUT_DIR`**: Per-shard Playwright artifact dir.
 - **`CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP=1`**: Non-MTP shards opt out of wiping the shared MTP backing dir.
@@ -488,6 +489,10 @@ E2E test hooks split along two axes:
   in `crates/cmdr-index/src/indexing/scanner/mod.rs` (`cover_walk_throttle`) rather than `crate::test_mode`, because the
   index crate can't reach the app; it's cached in a `LazyLock`, so an unset var costs one deref per walk.
 - **`CMDR_PLAYWRIGHT_SOCKET`**: Override the plugin's Unix socket path (one socket per shard).
+- **`CMDR_SHOTS_PID` / `CMDR_SHOTS_OUT_DIR` / `CMDR_SHOTS_BROWSE_ROOT`**: read by the marketing capture's spec, never by
+  the app, so they stay out of `crate::test_mode`. The orchestrator passes its own app pid (nothing exposes it over the
+  socket, and `screencapture -l` needs it to find the window), where masters are written, and which tree the panes
+  browse. See `guides/screenshots.md`.
 
 **Existing soft hooks** (IPC-driven, feature-gated to `playwright-e2e`):
 

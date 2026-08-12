@@ -14,6 +14,9 @@ launch boundary, plus the llama-server fetch and the type-drift check.
 - **`download-llama-server.go`**: build-time llama-server downloader, invoked from `src-tauri/build.rs`
 - **`check-type-drift.ts`**: fast-lane check for hand-written types drifting from `bindings.ts`; runs in
   `pnpm check --fast`
+- **`marketing-shots.ts`** (+ `marketing-shots-thread.ts`): reshoots the brand masters (`pnpm marketing:shots`); guide
+  in `docs/guides/screenshots.md`
+- **`capture-runtime.ts`**: launch primitives shared by the two capture orchestrators
 - **`e2e-linux.sh`**: Linux Docker E2E launcher (`playwright-e2e,virtual-mtp` features, single shard, legacy shared
   fixture path)
 

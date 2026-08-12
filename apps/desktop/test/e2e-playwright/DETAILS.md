@@ -164,7 +164,14 @@ Only the layout facts that none of those carry live here:
   naming a new MTP-touching spec `mtp-<something>.spec.ts` is what keeps it off a parallel lane (and mis-naming a
   non-MTP spec that way needlessly serializes it). `i18n-capture.spec.ts` is excluded from every normal lane (`all` /
   `mtp` / `non-mtp`) and runs only under its own `i18n-capture` shard kind via `pnpm i18n:capture`: it's a screenshot
-  driver, not a pass/fail suite.
+  driver, not a pass/fail suite. `marketing-shots.spec.ts` is the same shape (`marketing-shots` kind,
+  `pnpm marketing:shots`) with two extra reasons for its own lane: it is macOS-only, so it must stay out of `all` (what
+  the Linux Docker lane runs), and it is the only spec that runs with NO fixture tree, photographing the developer's
+  real folders. Both halves of that protection matter: the orchestrator leaves `CMDR_E2E_START_PATH` unset, AND
+  `global-setup.ts` returns early for the shard, because otherwise it would create a tree and SET the variable, arming
+  the guard that deletes anything not in the manifest. It also runs on `captureTest` (`fixtures.ts`), the bare `test`
+  with no auto fixture: the leak guard's fixture diff is meaningless with no fixtures, and its overlay check is wrong
+  for a master that is deliberately a picture of an open dialog.
 - **❗ Before `pnpm i18n:capture`: quit or hide whatever app is frontmost, then leave the computer alone, and tell David
   both halves.** The native screenshot returns the window's last COMPOSITED frame, and macOS stops compositing a window
   that isn't frontmost, so the capture reads a stale, pre-paint frame: a dark rectangle with three traffic lights, while

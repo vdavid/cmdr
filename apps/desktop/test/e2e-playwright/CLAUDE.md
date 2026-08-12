@@ -33,6 +33,8 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, never a hardcoded �
   walk takes the index away first (`search-walk-ground.ts`).
 - **Two fakes**: the clipboard is mocked (a Rust `Mutex`, not `NSPasteboard`), and `tauri-plugin-store` reads your REAL
   store files unless redirected, so a locally flipped setting becomes a failure CI never sees.
+- **The marketing capture (`marketing-shots.spec.ts`) has NO fixture tree: it photographs real folders.** ❌ Never point
+  it at a fixture root, and never set `CMDR_E2E_START_PATH` for it: the guard deletes anything not in the manifest.
 - **❗ A capture run needs the machine left alone AND no other app holding the front position** (an idle machine alone
   isn't enough: this binary can't take the front from an app that has it), so say both before starting one. It
   photographs only through `shoot()` — ❌ never `page.screenshot()`, never a looser pixel check, never a longer sleep

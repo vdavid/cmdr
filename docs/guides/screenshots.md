@@ -1,110 +1,111 @@
 # Updating screenshots everywhere
 
-How to reshoot Cmdr's product screenshots and refresh every place they appear. This is the general process; the website
-hero has extra compositing on top, documented in `apps/website/public/hero/CLAUDE.md`.
+How to reshoot Cmdr's marketing screenshots and refresh every place they appear. One command does the capture; the rest
+of this page is what to do with the results, and what to look at when a run refuses.
 
-## Canonical masters
+Not to be confused with the translator screenshots (`pnpm i18n:capture`), which photograph ~150 UI surfaces for
+`docs/guides/i18n-translation.md`. Different audience, different pipeline, one shared launch layer
+(`apps/desktop/scripts/capture-runtime.ts`).
 
-The pristine full-window screenshots live in `brand/screenshots` and are the single source of truth:
-
-- `app-main-dark.png` / `app-main-light.png`: the two-pane main view, full macOS window with shadow, no background.
-
-One master pair feeds three consumers, so they never drift:
-
-- **README**: referenced directly via a `<picture>` element (dark/light by the viewer's GitHub theme).
-- **Website hero**: the compositing in `hero/CLAUDE.md` reads these masters and splits them into animated frame + pane
-  layers.
-- **App directories** (AlternativeTo, MacUpdate): uploaded as-is on each refresh, one file per site in `brand/listings`.
-
-Settings and Search shots (AlternativeTo-only extras) aren't part of this pass yet. Add `settings-{dark,light}.png` when
-you next refresh AlternativeTo; hold Search until it's presentable.
-
-## Prerequisites
-
-- [CleanShot X](https://cleanshot.com/) for the macOS window shot with shadow.
-- ImageMagick (`magick` CLI), only if you're also regenerating the hero.
-- The app running via `pnpm dev`.
-- The Tauri MCP bridge connected: the `manage_window` and `webview_execute_js` steps below need an active
-  `driver_session` on the app's actual port (a bare `driver_session start` connects to the wrong port). See
-  `../tooling/mcp.md` § "Tauri MCP pitfalls". `set_setting` needs the auth token, so run it via `./scripts/mcp-call.sh`
-  (§ "Authentication" there).
-
-## 1. Size and clean up the window
-
-The window size is dictated by the hero geometry, so use it for every shot even when you only need the
-README/AlternativeTo masters: that keeps one master serving all three. Via the Tauri MCP:
-
-```
-manage_window action: "resize", width: 1142, height: 705, logical: true
-```
-
-This produces a 2284 x 1410 retina window matching the hero frame proportions.
-
-Hide the dev-mode indicators (only needed when shooting the `pnpm dev` build, not a prod build). Via Tauri MCP
-`webview_execute_js` on the main window:
-
-```js
-document.querySelector('.title-bar').classList.remove('dev-mode')
-document.querySelector('.title-text').textContent = 'Cmdr'
-```
-
-## 2. Set up the app so it looks nice
-
-Using the Cmdr MCP tools. This is the state that reads well as a product shot and fits the hero crop:
-
-- Set the accent to Cmdr gold: `set_setting id: "appearance.appColor", value: "cmdr-gold"`.
-- Show file sizes as raw bytes: `set_setting id: "appearance.fileSizeFormat", value: "bytes"`.
-- Left pane: a single tab at `apps/desktop/src/lib`, full mode, cursor on `file-explorer`.
-- Right pane: two tabs — a pinned `lib` tab (at `apps/desktop/src/lib`) plus the active tab at
-  `apps/desktop/src-tauri/src`, full mode, cursor on `indexing`. The pinned tab's lock glyph adds a bit of visual
-  interest.
-- Hidden files visible (toggle if needed).
-- Focus the left pane (`switch_pane` if needed).
-
-The pane contents are aesthetic, not load-bearing: this set reads well and the file lists fill both cutouts. The window
-size is what matters for the hero crop. After the shots, revert the cosmetics: `appearance.appColor` → `system` and
-`appearance.fileSizeFormat` → `binary`.
-
-To build the right pane's two-tab look: pin the `lib` tab, then open a new tab and navigate it to `src-tauri/src`.
-(Navigating a pinned tab also forks a fresh tab, which is how this arrangement first arose.)
-
-If the panes sit in a git repo, the breadcrumb shows a git chip (for example `main · +5 / dirty`). For a clean
-screenshot, get it to a bare `main` with reversible git state, then re-navigate each pane (parent and back) so the chip
-re-reads:
+## Reshoot
 
 ```bash
-git stash push -m "screenshot (pop after)"          # clears "dirty" (untracked files don't count)
-git rev-parse refs/remotes/origin/main > /tmp/real-origin.sha   # save the true ref
-git update-ref refs/remotes/origin/main main        # clears the ahead count (now 0 ahead/behind)
-# … capture …
-git update-ref refs/remotes/origin/main "$(cat /tmp/real-origin.sha)"   # restore
-git stash pop
+pnpm marketing:shots                     # into brand/screenshots/
+pnpm marketing:shots --build             # rebuild the Playwright binary first
+pnpm marketing:shots --out ~/Desktop/qa  # somewhere else, leaving brand/ untouched
 ```
 
-Gotcha: don't bother with `git branch --unset-upstream` to drop the ahead count. The chip caches the repo's upstream
-config at open and won't see the unset without an app restart, whereas it reads the `origin/main` ref fresh on every
-lookup. See the git backend `DETAILS.md` § Gotchas.
+❗ **Leave the machine alone while it runs.** macOS draws the wide window shadow only for the KEY window, so every shot
+takes the front position first; clicking into another app mid-run costs retries. Unlike `pnpm i18n:capture`, this does
+not refuse to start behind another app, because it claims the front through System Events and then proves it in the
+pixels.
 
-## 3. Capture with CleanShot (human step)
+A quiet run takes about 25 seconds and writes nine files. The one exception is the drive index: see § "When it waits".
 
-CleanShot can't be driven by an agent, so this part is yours:
+## What it produces
 
-- Make sure CleanShot is running.
-- Open CleanShot's top menu and click **Capture Window**. Don't use the ⌘⇧4 shortcut: Cmdr's bottom bar looks different
-  with Shift held.
-- After capturing, click **Edit** → switch background to **None**, then **Save**.
+Into `brand/screenshots/` (or `--out`):
 
-Do it once per theme:
+- `app-main-{dark,light}.png` — the two-pane main view. Feeds the README, the website hero, and the directory listings,
+  so all three can never drift apart.
+- `search-{dark,light}.png`, `chat-{dark,light}.png`, `settings-{dark,light}.png` — listings only. The Ask Cmdr rail
+  widens the window, so that pair lands on a wider canvas than the rest.
+- `hero-cutouts.json` — the two pane rectangles, measured off the live DOM in the same test that took the shot, which is
+  what keeps the hero geometry from drifting a redesign behind its own screenshot.
 
-- Dark mode: capture, save as `brand/screenshots/app-main-dark.png` (overwrite).
-- Press ⌘D to switch to light mode.
-- Light mode: capture, save as `brand/screenshots/app-main-light.png` (overwrite).
+Every master is a real macOS window shot: the window plus its focused shadow, on transparency. `app-main` is 2508x1634
+around a 2284x1410 window at `+112+76`.
 
-## 4. Refresh each consumer
+## Then refresh each consumer
 
-- **README**: nothing to edit. It points at `brand/screenshots/app-main-{dark,light}.png`, so replacing the files is
-  enough. Commit the new PNGs.
-- **Website hero**: regenerate the composited WebP layers from the new masters. Follow
-  `apps/website/public/hero/DETAILS.md` § "Regenerate the layers".
-- **AlternativeTo**: re-upload `app-main-{dark,light}.png` manually on the listing. (Add the settings/search shots here
-  when you have them.)
+- **README**: nothing to edit; it points at `brand/screenshots/app-main-{dark,light}.png`. Commit the new PNGs.
+- **Website hero**: `apps/website/scripts/regenerate-hero.sh`, which reads the masters and `hero-cutouts.json`. Details
+  in `apps/website/public/hero/DETAILS.md`.
+- **App directories**: re-upload on each listing, and update the matching file in `brand/listings/` in the same pass.
+
+## How it works, in one paragraph
+
+`apps/desktop/scripts/marketing-shots.ts` launches the Playwright-enabled binary on a persistent data dir of its own
+(`~/Library/Application Support/com.veszelovszki.cmdr-shots`), then runs `marketing-shots.spec.ts` on its own shard. The
+spec stages each shot through the real UI and photographs it with `screencapture -l`, verifying the bytes before it
+keeps them. Design and rationale: `docs/specs/marketing-screenshot-pipeline-plan.md`.
+
+Two deliberate choices worth knowing before you change anything:
+
+- **`CMDR_E2E_MODE` stays unset.** It paints the blue `E2E MODE` title bar and sets `ActivationPolicy::Prohibited`,
+  which makes the window permanently unable to become key, and only a key window gets the wide shadow. So an E2E-mode
+  run could not produce a master even in principle.
+- **`CMDR_E2E_START_PATH` stays unset, and the shard skips the fixture machinery.** That variable arms the suite's
+  post-test guard, which deletes anything not in the fixture manifest — and this is the one run that photographs real
+  folders. ❌ Never set it for this shard.
+
+## When it refuses
+
+The failures are named on purpose; read the message before changing anything.
+
+- **"the window was not focused when it was shot"** — its shadow measured 68/52 instead of 112/76. Something took the
+  front position mid-run. Leave the machine alone and re-run.
+- **"the capture has nothing opaque in it"** — a blank frame, same cause: macOS stops compositing a window that isn't
+  frontmost.
+- **"the photographed window is NxM, but the app reports…"** — something resized the window between staging and the
+  shutter.
+- **"`osascript` failed … not allowed assistive access"** — grant the terminal Accessibility permission. Screen
+  Recording is the matching one for `screencapture`.
+- **"the drive index never settled"** — see below.
+
+## When it waits
+
+Folder sizes come from the drive index. While it reconciles, every size cell shows an hourglass and folder sizes read
+`≥`, which is a whole round of unusable masters, so the spec refuses to shoot until the index has settled.
+
+To make that fast, the orchestrator copies the installed production app's index (`index-root.db`) into the shots
+instance before launching. It uses SQLite's online backup, not `cp`: the index is in WAL mode, so copying it out from
+under a running app is a torn read. 930 MB takes about two seconds.
+
+❗ The copy does **not** always skip the wait. Startup rebuilds when the index's stored FSEvents id is more than ten
+million behind the system's current one, and on a machine that compiles all day that gap is hours rather than days
+(measured at 28 million overnight). So a copy from a production app that last scanned yesterday still reconciles,
+exactly as production itself would on restart. It costs about five minutes, once, and the run says so while it waits.
+Back-to-back runs reuse the settled index and are instant.
+
+❌ Don't answer this by writing the current event id into the copied index. That claims it has seen changes it hasn't,
+and trades one five-minute wait for permanently stale sizes.
+
+No production install, no readable index, or no `sqlite3` all fall through to a normal scan, with a line saying so.
+
+## Changing what the shots show
+
+Everything is staged in `apps/desktop/test/e2e-playwright/marketing-shots.spec.ts`: pane paths, the pinned-tab
+arrangement, the search query, which settings section is open. The traps already encoded there, so you don't rediscover
+them:
+
+- Resize with the Ask Cmdr rail CLOSED. With it open each pane measures ~430 px instead of ~570 px, and the hero cutouts
+  would come from a window nobody ships.
+- Unpin before closing tabs. `close_others` deliberately skips pinned tabs, so a remembered pin leaves a third tab in
+  the shot.
+- The settings window's size is read from the MAIN window. Its own restricted capability rejects
+  `plugin:window|inner_size`, which is production behaving correctly.
+
+The chat master runs off a seeded conversation (`apps/desktop/scripts/marketing-shots-thread.ts`), so it needs no
+provider, no API key, and no spend, and says the same thing every run. Its copy is a draft for David's review like any
+other user-facing string, and it must only describe things Cmdr actually does.
