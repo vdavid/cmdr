@@ -77,6 +77,23 @@ impl Registration {
         }
     }
 
+    /// Put back a root the entry is still anchored to even though its mount is
+    /// gone, marked stale so it can never win the rank again.
+    ///
+    /// Keeps the `roots`-contains-`volume.root()` invariant true for a backend
+    /// that declined to re-root: without this the entry would be anchored to a
+    /// path it no longer claims, so `find_by_root` (and a later unmount or
+    /// re-mount event for that same path) would stop recognizing it.
+    pub(super) fn readd_stale_root(&mut self, root: &Path) {
+        match self.roots.iter_mut().find(|r| r.path == root) {
+            Some(existing) => existing.proven_stale = true,
+            None => self.roots.push(MountRoot {
+                path: root.to_path_buf(),
+                proven_stale: true,
+            }),
+        }
+    }
+
     /// Swap the volume in place (a same-root replacement, like the SMB upgrade),
     /// keeping the fallback roots the entry has collected.
     pub(super) fn replace_volume(&mut self, volume: Arc<dyn Volume>) {
@@ -159,7 +176,13 @@ impl VolumeManager {
         }
         match entry.promote_to_best_root() {
             Promotion::Promoted(new_root) => RootRemoval::Promoted { id, new_root },
-            Promotion::BackendCantReroot => RootRemoval::ActiveRootStranded { id },
+            Promotion::BackendCantReroot => {
+                // The backend stays anchored to a mount that's gone, so the root
+                // goes back into the set marked stale. Dropping it would leave the
+                // entry claiming no root while `volume.root()` still returns one.
+                entry.readd_stale_root(root);
+                RootRemoval::ActiveRootStranded { id }
+            }
             // `AlreadyBest` can't follow removing the active root (it's gone from
             // the set), so both remaining arms mean the entry has no roots left.
             Promotion::AlreadyBest | Promotion::NoRootsLeft => {
@@ -432,6 +455,35 @@ mod tests {
             manager.get("share").expect("still registered").root(),
             Path::new("/Volumes/naspi"),
             "it stays where its transport is anchored"
+        );
+    }
+
+    #[test]
+    fn a_stranded_root_stays_findable_even_though_its_mount_is_gone() {
+        // The entry is still anchored to `/Volumes/naspi` (the backend declined to
+        // re-root), so the set must still contain it, or `find_by_root` stops
+        // recognizing the volume by the very root `volume.root()` reports and a
+        // later event for that path lands nowhere.
+        let manager = VolumeManager::new();
+        manager.register(
+            "share",
+            Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/naspi")),
+        );
+        manager.register(
+            "share",
+            Arc::new(InMemoryVolume::new("Second mount").with_root("/Volumes/naspi-1")),
+        );
+
+        manager.remove_root(Path::new("/Volumes/naspi"));
+
+        assert_eq!(
+            manager.find_by_root(Path::new("/Volumes/naspi")).map(|(id, _)| id),
+            Some("share".to_string()),
+            "the stranded active root is still one of the volume's known roots"
+        );
+        assert!(
+            manager.known_roots("share").contains(&PathBuf::from("/Volumes/naspi")),
+            "and it reports as such"
         );
     }
 
