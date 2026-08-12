@@ -134,10 +134,10 @@ lock on its build directory for a whole command, so two cargo lanes sharing `tar
 Reproduced directly (2026-08-12): a second cargo command started beside a running one prints
 `Blocking waiting for file lock on build directory` and waits.
 
-That made a normal `pnpm check` look hung. `rustdoc` and `clippy` both depend only on `rustfmt`, so on 16 cores the
-gate admitted both (4 + 8 ≤ 16); one then sat on the lock holding weight it wasn't using, and with `-q` printing
-nothing. `rust-tests` (w6) and `integration-tests` (w8) do the same to each other after `clippy`. Four lanes, three
-different feature sets, one lock.
+That made a normal `pnpm check` look hung. `rustdoc` and `clippy` both depend only on `rustfmt`, so on 16 cores the gate
+admitted both (4 + 8 ≤ 16); one then sat on the lock holding weight it wasn't using, and with `-q` printing nothing.
+`rust-tests` (w6) and `integration-tests` (w8) do the same to each other after `clippy`. Four lanes, three different
+feature sets, one lock.
 
 Two fixes, and they answer different halves:
 
