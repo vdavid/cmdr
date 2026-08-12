@@ -41,6 +41,14 @@ mkdir -p "$masters" "$shipped"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
+# ❗ Keep the output byte-reproducible. ImageMagick stamps every PNG it writes with the
+# current time, so without this a regeneration that changed no pixel still rewrites all
+# six masters, and git stores six new ~300 KB blobs forever. Excluding the date chunks
+# (rather than `-strip`, which would also drop the colour profile) makes an unchanged
+# layer come out identical to the committed one, so `git status` stays quiet and the repo
+# only grows when the screenshots actually changed.
+readonly REPRODUCIBLE=(-define png:exclude-chunk=date,time)
+
 # Pane rectangles, relative to the WINDOW's top-left (which is what the spec measures).
 read -r left_x left_y pane_w pane_h right_x right_y < <(
   # `process.stdout.write`, not `console.log`: console adds ANSI color to numbers
@@ -79,10 +87,10 @@ for variant in dark light; do
   # stacks them with no offsets to keep in sync.
   magick -size "$canvas" xc:none \
     \( "$src" -crop "${pane_w}x${pane_h}+${lx}+${ly}" +repage \) -geometry "+${lx}+${ly}" -composite \
-    "$masters/cmdr-hero-left-pane-${variant}.png"
+    "${REPRODUCIBLE[@]}" "$masters/cmdr-hero-left-pane-${variant}.png"
   magick -size "$canvas" xc:none \
     \( "$src" -crop "${pane_w}x${pane_h}+${rx}+${ry}" +repage \) -geometry "+${rx}+${ry}" -composite \
-    "$masters/cmdr-hero-right-pane-${variant}.png"
+    "${REPRODUCIBLE[@]}" "$masters/cmdr-hero-right-pane-${variant}.png"
 
   # The frame: the master with both pane rectangles punched out. Multiplying the master's
   # own alpha by the mask keeps the shadow's soft edge, which a flat `-transparent` would
@@ -94,7 +102,7 @@ for variant in dark light; do
   magick "$src" -alpha extract "$work/src-alpha.png"
   magick "$work/src-alpha.png" "$work/mask.png" -compose Multiply -composite "$work/new-alpha.png"
   magick "$src" "$work/new-alpha.png" -alpha off -compose CopyOpacity -composite \
-    "$masters/cmdr-hero-frame-${variant}.png"
+    "${REPRODUCIBLE[@]}" "$masters/cmdr-hero-frame-${variant}.png"
 done
 
 # Lossless WebP, 2x and 1x. ❌ Not lossy: flat UI chrome compresses BETTER losslessly

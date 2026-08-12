@@ -22,6 +22,12 @@ The script does three things per theme: crops each pane rectangle onto its own t
 punches those same rectangles out of the master's alpha to make the frame, and writes lossless WebPs at 2x and 1x. All
 three layers share one canvas, so the browser stacks them with no offsets to keep in sync.
 
+❗ **The output is byte-reproducible, and must stay that way.** ImageMagick stamps each PNG with the time it was
+written, so the script excludes the date chunks (`png:exclude-chunk=date,time`; not `-strip`, which would also drop the
+colour profile). A layer whose pixels didn't change comes out identical to the committed one, so a regeneration after a
+reshoot that only touched one pane leaves `git status` quiet for the rest, and the repo grows only by what actually
+changed. Rerunning the script twice in a row must produce zero diff.
+
 ### Verify
 
 The six master PNGs are 2508 x 1634, the 1x WebPs 1254 x 817, and the 2x WebPs roughly ~95 KB frame, ~41 KB left pane,
