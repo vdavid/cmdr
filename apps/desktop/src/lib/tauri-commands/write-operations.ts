@@ -18,6 +18,7 @@ import type {
 import type {
   CompressedSizeEstimate,
   ConflictInfo,
+  ConflictResolutionOutcome,
   DryRunResult,
   Initiator,
   OperationStatus,
@@ -56,6 +57,7 @@ export type {
   WriteSettledEvent,
   WriteSourceItemDoneEvent,
   ConflictInfo,
+  ConflictResolutionOutcome,
   DryRunResult,
   Initiator,
   OperationStatus,
@@ -197,13 +199,22 @@ export async function cancelWriteOperation(operationId: string, rollback: boolea
 // backgrounded transfers; pinned by `lib/quit/no-teardown-cancel.test.ts`,
 // which is also why this note doesn't spell the name out.
 
-/** In Stop mode, the operation pauses on conflict and waits for this call to proceed. */
+/**
+ * In Stop mode, the operation pauses on conflict and waits for this call to
+ * proceed.
+ *
+ * `write-conflict` reaches every webview, so more than one surface can be
+ * showing the same prompt. The returned outcome says whether THIS answer is the
+ * one the operation acted on, so a surface that lost the race takes its own
+ * prompt down instead of leaving the user looking at a question that's already
+ * been answered.
+ */
 export async function resolveWriteConflict(
   operationId: string,
   resolution: ConflictResolution,
   applyToAll: boolean,
-): Promise<void> {
-  await commands.resolveWriteConflict(operationId, resolution, applyToAll)
+): Promise<ConflictResolutionOutcome> {
+  return await commands.resolveWriteConflict(operationId, resolution, applyToAll)
 }
 
 // ============================================================================

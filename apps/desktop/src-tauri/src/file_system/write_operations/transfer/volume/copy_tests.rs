@@ -1360,16 +1360,10 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     let state_for_resolver = Arc::clone(&stop_state);
     let resolver = tokio::spawn(async move {
         crate::test_support::wait_until_async(Duration::from_secs(5), "the conflict prompt to install", || {
-            state_for_resolver.conflict_resolution_tx.lock().unwrap().is_some()
+            state_for_resolver.conflict_slot.is_awaiting()
         })
         .await;
-        let tx = state_for_resolver
-            .conflict_resolution_tx
-            .lock()
-            .unwrap()
-            .take()
-            .expect("conflict_resolution_tx installed");
-        let _ = tx.send(
+        let _ = state_for_resolver.conflict_slot.answer(
             crate::file_system::write_operations::state::ConflictResolutionResponse {
                 resolution: ConflictResolution::Skip,
                 apply_to_all: true,
@@ -1559,16 +1553,10 @@ async fn test_stop_mode_does_not_bulk_skip_pre_known_conflicts() {
     let state_for_resolver = Arc::clone(&state);
     let resolver = tokio::spawn(async move {
         crate::test_support::wait_until_async(Duration::from_secs(5), "the conflict prompt to install", || {
-            state_for_resolver.conflict_resolution_tx.lock().unwrap().is_some()
+            state_for_resolver.conflict_slot.is_awaiting()
         })
         .await;
-        let tx = state_for_resolver
-            .conflict_resolution_tx
-            .lock()
-            .unwrap()
-            .take()
-            .expect("conflict_resolution_tx installed");
-        let _ = tx.send(
+        let _ = state_for_resolver.conflict_slot.answer(
             crate::file_system::write_operations::state::ConflictResolutionResponse {
                 resolution: ConflictResolution::Skip,
                 apply_to_all: true,

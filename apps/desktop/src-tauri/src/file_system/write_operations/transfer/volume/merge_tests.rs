@@ -834,7 +834,7 @@ async fn cancel_while_queued_unblocks_both_no_hang() {
         // A sender is installed while task A awaits the prompt (task B is then
         // queued behind it on the dispatch mutex).
         crate::test_support::wait_until_async(Duration::from_secs(5), "the Stop prompt to be installed", || {
-            state_for_cancel.conflict_resolution_tx.lock().unwrap().is_some()
+            state_for_cancel.conflict_slot.is_awaiting()
         })
         .await;
         // Task B parking on the dispatch mutex is not observable from here, and this test's whole

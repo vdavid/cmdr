@@ -24,7 +24,7 @@ vi.mock('$lib/tauri-commands', () => ({
     conflictCb = cb
     return Promise.resolve(noopUnlisten)
   }),
-  resolveWriteConflict: vi.fn(() => Promise.resolve()),
+  resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   pauseOperation: vi.fn(() => Promise.resolve()),
   resumeOperation: vi.fn(() => Promise.resolve()),
@@ -269,7 +269,7 @@ describe('answering', () => {
     const order: string[] = []
     vi.mocked(resolveWriteConflict).mockImplementationOnce(() => {
       order.push('resolve')
-      return Promise.resolve()
+      return Promise.resolve('resolved')
     })
     vi.mocked(resumeOperation).mockImplementation(() => {
       order.push('resume')
@@ -280,6 +280,28 @@ describe('answering', () => {
     await resolveConflictPrompt('overwrite', false)
 
     expect(order).toEqual(['resolve', 'resume'])
+  })
+
+  it('takes the prompt down and resumes when another surface answered first', async () => {
+    // The same event reaches every window, so two surfaces can be showing this
+    // clash. The backend acts on the first answer and says so; this one asked a
+    // question that no longer has an answer to give, so it stops asking it.
+    vi.mocked(resolveWriteConflict).mockImplementationOnce(() => Promise.resolve('already_resolved'))
+    rows = [operationRow('op-1', 'running')]
+    await deliver()
+    await resolveConflictPrompt('overwrite', false)
+
+    expect(getConflictPrompt()).toBeNull()
+    expect(resumeOperation).toHaveBeenCalledWith('op-1')
+  })
+
+  it('takes the prompt down when the operation is not asking anything any more', async () => {
+    // A cancel took the pending conflict away between the event and the click.
+    vi.mocked(resolveWriteConflict).mockImplementationOnce(() => Promise.resolve('no_pending_conflict'))
+    await deliver()
+    await resolveConflictPrompt('skip', false)
+
+    expect(getConflictPrompt()).toBeNull()
   })
 
   it('keeps the prompt up and stays paused when the resolve does not land', async () => {

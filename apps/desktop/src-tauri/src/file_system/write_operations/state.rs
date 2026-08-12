@@ -11,7 +11,16 @@ use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
 use super::eta::EtaEstimator;
-use super::types::{ConflictResolution, OperationEventSink, WriteOperationType, WriteProgressEvent, WriteSettledEvent};
+use super::types::{
+    ConflictResolution, ConflictResolutionOutcome, OperationEventSink, WriteOperationType, WriteProgressEvent,
+    WriteSettledEvent,
+};
+
+// The conflict slot lives in its own module: arbitrating one answer per conflict
+// is a state machine, and it's the whole reason a second surface can be told it
+// lost. Re-exported so the established `state::ConflictResolutionResponse` path
+// keeps resolving for every caller.
+pub use super::conflict_slot::{ConflictResolutionResponse, ConflictSlot};
 
 // The operation-intent / pause-gate state machines and the scan-preview map
 // live in sibling modules. Re-export them here so the established
@@ -36,13 +45,15 @@ pub struct WriteOperationState {
     /// Encodes `OperationIntent` as a `u8`. Use `is_cancelled()` / `load_intent()` to read.
     pub intent: Arc<AtomicU8>,
     pub progress_interval: Duration,
-    /// Sender for conflict resolution. Created on demand when a conflict occurs;
-    /// the receiver is held by the waiting operation. `resolve_write_conflict` takes
-    /// the sender and sends the resolution. Dropping the sender unblocks the receiver
-    /// with an error, which the waiting code interprets as cancellation.
-    pub conflict_resolution_tx: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<ConflictResolutionResponse>>>,
+    /// Where this operation's Stop-mode conflict stands: armed with the sender
+    /// the parked operation is listening on, answered, or neither. Armed on
+    /// demand when a conflict occurs, BEFORE the `write-conflict` event goes
+    /// out. `resolve_write_conflict` answers through it; `abandon()` (what a
+    /// cancel does) drops the sender, unblocking the receiver with an error the
+    /// waiting code reads as cancellation. See [`ConflictSlot`].
+    pub conflict_slot: ConflictSlot,
     /// Serializes Stop-mode conflict dispatch for this operation. There is exactly
-    /// ONE human and ONE `conflict_resolution_tx` slot, so two tasks that both hit
+    /// ONE human and ONE [`conflict_slot`](Self::conflict_slot), so two tasks that both hit
     /// a Stop-mode clash at once (the concurrent volume-copy spawn loop, or two deep
     /// directory merges running in parallel) must not race to emit a `write-conflict`
     /// and clobber each other's oneshot sender. The whole dispatch — re-check the
@@ -50,7 +61,7 @@ pub struct WriteOperationState {
     /// holding this lock, so the prompts queue. The lock is NEVER held across the
     /// subsequent file write: we serialize the human, not the I/O.
     ///
-    /// Lives here next to `conflict_resolution_tx` because they guard the same
+    /// Lives here next to the conflict slot because they guard the same
     /// concern. A `tokio::sync::Mutex` (not std) so a task can `.await` the user's
     /// response — actually the response wait happens on the oneshot; the dispatch
     /// guard is dropped at end of the resolve step — but the guard itself must be
@@ -155,7 +166,7 @@ impl WriteOperationState {
         Self {
             intent: Arc::new(AtomicU8::new(OperationIntent::Running as u8)),
             progress_interval,
-            conflict_resolution_tx: std::sync::Mutex::new(None),
+            conflict_slot: ConflictSlot::new(),
             conflict_dispatch_lock: tokio::sync::Mutex::new(()),
             estimator: std::sync::Mutex::new(EtaEstimator::new()),
             backend_cancel: CancellationToken::new(),
@@ -292,13 +303,6 @@ impl Drop for WriteSettledGuard {
     }
 }
 
-/// Response to a conflict resolution request.
-#[derive(Debug, Clone)]
-pub struct ConflictResolutionResponse {
-    pub resolution: ConflictResolution,
-    pub apply_to_all: bool,
-}
-
 /// The live [`WriteOperationState`] of every registered operation, keyed by
 /// operation id.
 ///
@@ -373,7 +377,7 @@ impl WriteOperationRegistry {
                 state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
                 state.backend_cancel.cancel();
                 // Drop the conflict resolution sender to unblock any waiting receiver
-                let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
+                state.conflict_slot.abandon();
                 // Wake a paused, parked op so teardown's cancel is observed.
                 state.pause_gate.wake();
             }
@@ -466,7 +470,7 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
     // I/O (per-handle MTP loops, etc.) — not just the loop above it.
     state.backend_cancel.cancel();
     // Drop the conflict resolution sender to unblock any waiting receiver
-    let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
+    state.conflict_slot.abandon();
     // Cancellation wins over pause: wake a paused, parked op so it observes
     // the non-Running intent and bails. Leaves the paused flag set (the op
     // is going away regardless).
@@ -550,27 +554,35 @@ pub(super) fn resume_write_operation(operation_id: &str) -> bool {
     false
 }
 
-/// Resolves a pending conflict for an in-progress write operation.
+/// Answers a pending conflict for an in-progress write operation, and REPORTS
+/// what that answer did.
 ///
-/// When an operation encounters a conflict in Stop mode, it emits a WriteConflictEvent
-/// and waits for this function to be called. The operation will then proceed with the
-/// chosen resolution.
+/// When an operation hits a conflict in Stop mode it emits a `WriteConflictEvent`
+/// and parks until this is called; it then carries on with the chosen resolution.
+/// The event broadcasts to every webview, so several surfaces can show the prompt
+/// and each of them can be answered. Only the first answer reaches the operation;
+/// the returned [`ConflictResolutionOutcome`] is how the rest find out, and it
+/// crosses IPC so a losing surface can take its own prompt down.
 ///
 /// # Arguments
 /// * `operation_id` - The operation ID that has a pending conflict
 /// * `resolution` - How to resolve the conflict (Skip, Overwrite, or Rename)
 /// * `apply_to_all` - If true, apply this resolution to all future conflicts in this operation
-pub fn resolve_write_conflict(operation_id: &str, resolution: ConflictResolution, apply_to_all: bool) {
-    if let Some(state) = WRITE_OPERATION_STATE.get(operation_id) {
-        // Take the sender and send the resolution through the oneshot channel
-        let tx = state.conflict_resolution_tx.lock_ignore_poison().take();
-        if let Some(tx) = tx {
-            let _ = tx.send(ConflictResolutionResponse {
-                resolution,
-                apply_to_all,
-            });
-        }
-    }
+pub fn resolve_write_conflict(
+    operation_id: &str,
+    resolution: ConflictResolution,
+    apply_to_all: bool,
+) -> ConflictResolutionOutcome {
+    let Some(state) = WRITE_OPERATION_STATE.get(operation_id) else {
+        log::info!("resolve_write_conflict: op={operation_id}: no such operation, ignoring");
+        return ConflictResolutionOutcome::UnknownOperation;
+    };
+    let outcome = state.conflict_slot.answer(ConflictResolutionResponse {
+        resolution,
+        apply_to_all,
+    });
+    log::info!("resolve_write_conflict: op={operation_id} {resolution:?} apply_to_all={apply_to_all} -> {outcome:?}");
+    outcome
 }
 
 // ============================================================================

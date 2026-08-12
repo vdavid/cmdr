@@ -9,8 +9,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use crate::ignore_poison::IgnorePoison;
-
 use super::durability::lookup_indexed_size;
 use super::overwrite::ResolvedDestination;
 use super::state::WriteOperationState;
@@ -156,17 +154,17 @@ pub(super) fn resolve_conflict(
                 source_size_for_dir,
                 destination_size_for_dir,
             );
-            // Store the oneshot sender BEFORE emitting the event. A responder
-            // (the FE's `resolve_write_conflict`, which takes the stored sender)
-            // can only answer a conflict it has observed; if the event reached it
-            // before the sender slot was filled, its take would miss and the
-            // `blocking_recv` below would hang. Storing first makes the sender
-            // available the instant the event is in the responder's hands. The
-            // lock guard is released as the statement ends — never held across
-            // the emit or the recv. Mirrors the volume-side Stop branch in
-            // `transfer/volume/conflict.rs`.
+            // Arm the conflict slot BEFORE emitting the event. A responder (the
+            // FE's `resolve_write_conflict`, which answers through the slot) can
+            // only answer a conflict it has observed; if the event reached it
+            // before the slot was armed, the answer would land on nothing and
+            // the `blocking_recv` below would hang. Arming first makes the
+            // sender available the instant the event is in the responder's
+            // hands. The slot's lock is released inside `arm` — never held
+            // across the emit or the recv. Mirrors the volume-side Stop branch
+            // in `transfer/volume/conflict.rs`.
             let (tx, rx) = tokio::sync::oneshot::channel();
-            *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
+            state.conflict_slot.arm(tx);
 
             events.emit_conflict(event);
 
@@ -1298,8 +1296,8 @@ mod apply_to_all_tests {
 #[cfg(test)]
 mod stop_branch_store_before_emit_tests {
     //! Pins the store-before-emit ordering of the local-FS Stop branch in
-    //! `resolve_conflict`: the oneshot sender must be stored in
-    //! `state.conflict_resolution_tx` BEFORE the `write-conflict` event is
+    //! `resolve_conflict`: the oneshot sender must be armed in
+    //! `state.conflict_slot` BEFORE the `write-conflict` event is
     //! emitted, so a responder that observes the event and answers it
     //! synchronously (the FE's `resolve_write_conflict`, modeled here by a sink
     //! that answers inside `emit_conflict`) finds the sender already present.
@@ -1311,18 +1309,20 @@ mod stop_branch_store_before_emit_tests {
         WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationConfig,
         WriteProgressEvent, WriteSourceItemDoneEvent,
     };
+    use crate::ignore_poison::IgnorePoison;
     use std::sync::Arc;
     use std::time::Duration;
     use tempfile::TempDir;
 
     /// A sink that answers a Stop-mode `write-conflict` synchronously the moment
-    /// it observes it, by taking the stored oneshot sender — exactly what the
-    /// FE's `resolve_write_conflict` does, but driven from inside `emit_conflict`.
-    /// Forwards every event to an inner `CollectorEventSink` for inspection.
+    /// it observes it, through the same conflict slot the FE's
+    /// `resolve_write_conflict` answers through, but driven from inside
+    /// `emit_conflict`. Forwards every event to an inner `CollectorEventSink`
+    /// for inspection.
     ///
-    /// This only resolves the conflict if the sender is ALREADY stored when the
-    /// event arrives. If the production code emitted before storing, the take
-    /// would miss, nothing would answer, and `resolve_conflict`'s
+    /// This only resolves the conflict if the slot is ALREADY armed when the
+    /// event arrives. If the production code emitted before arming, the answer
+    /// would land on nothing, and `resolve_conflict`'s
     /// `rx.blocking_recv()` would deadlock — turning the ordering bug into a hang
     /// instead of a wrong value. The store-before-emit fix is what keeps this
     /// test from hanging.
@@ -1338,12 +1338,10 @@ mod stop_branch_store_before_emit_tests {
         }
         fn emit_conflict(&self, e: WriteConflictEvent) {
             self.inner.emit_conflict(e);
-            if let Some(tx) = self.state.conflict_resolution_tx.lock_ignore_poison().take() {
-                let _ = tx.send(ConflictResolutionResponse {
-                    resolution: self.resolution,
-                    apply_to_all: false,
-                });
-            }
+            let _ = self.state.conflict_slot.answer(ConflictResolutionResponse {
+                resolution: self.resolution,
+                apply_to_all: false,
+            });
         }
         fn emit_progress(&self, e: WriteProgressEvent) {
             self.inner.emit_progress(e);

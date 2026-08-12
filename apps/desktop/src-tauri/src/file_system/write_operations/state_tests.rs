@@ -10,7 +10,7 @@
 //! entries go through `TestOperationGuard`, which also removes them on unwind.
 use super::*;
 use crate::file_system::write_operations::test_support::TestOperationGuard;
-use crate::file_system::write_operations::types::{ConflictResolution, WriteOperationType};
+use crate::file_system::write_operations::types::{ConflictResolution, ConflictResolutionOutcome, WriteOperationType};
 use std::sync::atomic::Ordering;
 
 fn unique_id(label: &str) -> String {
@@ -80,7 +80,7 @@ fn cancel_drops_the_conflict_resolution_sender() {
     // After cancel, any pending receiver should observe a closed channel.
     let op = install_state("cancel-drops-tx", OperationIntent::Running);
     let (tx, mut rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    *op.state().conflict_resolution_tx.lock().unwrap() = Some(tx);
+    op.state().conflict_slot.arm(tx);
     cancel_write_operation(op.id(), false);
     // The receiver should now be closed (sender dropped).
     match rx.try_recv() {
@@ -203,7 +203,7 @@ fn cancel_all_drops_pending_conflict_senders() {
     let registry = WriteOperationRegistry::new();
     let state = registered_in(&registry, "cancel-all-conflict", OperationIntent::Running);
     let (tx, mut rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
+    state.conflict_slot.arm(tx);
 
     registry.cancel_all();
 
@@ -404,20 +404,79 @@ async fn resolve_write_conflict_delivers_response_to_waiter() {
     let op = install_state("resolve-conflict", OperationIntent::Running);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    *op.state().conflict_resolution_tx.lock().unwrap() = Some(tx);
+    op.state().conflict_slot.arm(tx);
 
-    resolve_write_conflict(op.id(), ConflictResolution::Overwrite, true);
+    assert_eq!(
+        resolve_write_conflict(op.id(), ConflictResolution::Overwrite, true),
+        ConflictResolutionOutcome::Resolved
+    );
 
     let resp = rx.await.expect("sender should have delivered the response");
     assert_eq!(resp.resolution, ConflictResolution::Overwrite);
     assert!(resp.apply_to_all);
 }
 
+/// Two surfaces answer the same prompt. The first answer is the one the
+/// operation acts on; the second is told so, and changes nothing.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_second_answer_to_one_conflict_is_reported_as_already_resolved() {
+    let op = install_state("resolve-conflict-twice", OperationIntent::Running);
+
+    let (tx, rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
+    op.state().conflict_slot.arm(tx);
+
+    assert_eq!(
+        resolve_write_conflict(op.id(), ConflictResolution::Overwrite, false),
+        ConflictResolutionOutcome::Resolved
+    );
+    assert_eq!(
+        resolve_write_conflict(op.id(), ConflictResolution::Skip, true),
+        ConflictResolutionOutcome::AlreadyResolved
+    );
+
+    let resp = rx.await.expect("sender should have delivered the response");
+    assert_eq!(
+        resp.resolution,
+        ConflictResolution::Overwrite,
+        "the operation carries on with the answer that won"
+    );
+    assert!(!resp.apply_to_all);
+    assert!(!op.state().conflict_slot.is_awaiting());
+}
+
 #[test]
-fn resolve_write_conflict_without_pending_sender_is_a_noop() {
-    let op = install_state("resolve-no-tx", OperationIntent::Running);
-    // No sender stashed; must not panic.
-    resolve_write_conflict(op.id(), ConflictResolution::Skip, false);
+fn resolve_write_conflict_on_an_operation_with_no_conflict_says_so() {
+    let op = install_state("resolve-no-conflict", OperationIntent::Running);
+    // The operation is live but has never raised a conflict.
+    assert_eq!(
+        resolve_write_conflict(op.id(), ConflictResolution::Skip, false),
+        ConflictResolutionOutcome::NoPendingConflict
+    );
+}
+
+#[test]
+fn resolve_write_conflict_on_an_unknown_operation_says_so() {
+    // Nothing registered under this id: it settled, or it never existed. Not the
+    // same thing as a live operation that isn't asking anything.
+    assert_eq!(
+        resolve_write_conflict(&unique_id("resolve-gone"), ConflictResolution::Skip, false),
+        ConflictResolutionOutcome::UnknownOperation
+    );
+}
+
+#[test]
+fn cancelling_takes_the_pending_conflict_away() {
+    let op = install_state("resolve-after-cancel", OperationIntent::Running);
+    let (tx, _rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
+    op.state().conflict_slot.arm(tx);
+
+    cancel_write_operation(op.id(), false);
+
+    assert!(!op.state().conflict_slot.is_awaiting());
+    assert_eq!(
+        resolve_write_conflict(op.id(), ConflictResolution::Skip, false),
+        ConflictResolutionOutcome::NoPendingConflict
+    );
 }
 
 // ---- CopyTransaction ----

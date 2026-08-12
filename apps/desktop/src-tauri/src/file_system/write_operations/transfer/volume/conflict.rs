@@ -10,7 +10,6 @@
 //! - Overwrite (cross-type): delete the dest first, then write
 //! - Rename: Find unique name like "file (1).txt"
 
-use crate::ignore_poison::IgnorePoison;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -119,7 +118,7 @@ pub(super) async fn resolve_volume_conflict(
     match resolution {
         ConflictResolution::Stop => {
             // Serialize the whole Stop-mode dispatch. There is exactly one human
-            // and one `conflict_resolution_tx` slot, so two tasks both hitting a
+            // and one `conflict_slot`, so two tasks both hitting a
             // Stop-mode clash at once (the concurrent volume-copy spawn loop, or
             // two parallel deep directory merges) must queue here rather than race
             // to emit a `write-conflict` and clobber each other's oneshot sender.
@@ -210,15 +209,15 @@ pub(super) async fn resolve_volume_conflict(
                 _ => None,
             };
 
-            // Store the oneshot sender BEFORE emitting the event. A responder
-            // (the FE's `resolve_write_conflict`, or a test responder sink that
-            // takes the sender inside its `emit_conflict` callback) can only
-            // answer a conflict it has observed; if the event reached it before
-            // the sender slot was filled, its `take()` would miss and the op's
-            // `rx.await` below would hang. Storing first makes the sender
+            // Arm the conflict slot BEFORE emitting the event. A responder (the
+            // FE's `resolve_write_conflict`, or a test responder sink that
+            // answers inside its `emit_conflict` callback) can only answer a
+            // conflict it has observed; if the event reached it before the slot
+            // was armed, its answer would land on nothing and the op's
+            // `rx.await` below would hang. Arming first makes the sender
             // available the instant the event is in the responder's hands.
             let (tx, rx) = tokio::sync::oneshot::channel();
-            *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
+            state.conflict_slot.arm(tx);
 
             events.emit_conflict(WriteConflictEvent {
                 operation_id: operation_id.to_string(),

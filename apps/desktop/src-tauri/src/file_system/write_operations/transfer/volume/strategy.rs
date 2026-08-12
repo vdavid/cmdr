@@ -115,8 +115,9 @@ pub(super) struct MergeCtx<'a> {
     pub operation_id: &'a str,
     pub config: &'a VolumeCopyConfig,
     /// The operation's shared state — carries the cancel `intent`, the
-    /// `conflict_resolution_tx` oneshot slot, and the `conflict_dispatch_lock`
-    /// the resolver uses to serialize the human across concurrent merges.
+    /// `conflict_slot` a Stop-mode prompt is answered through, and the
+    /// `conflict_dispatch_lock` the resolver uses to serialize the human across
+    /// concurrent merges.
     pub state: &'a Arc<WriteOperationState>,
     /// Op-wide apply-to-all latch, shared between the top-level dispatch and
     /// every deep merge level so a "…all" choice applies everywhere. Held only

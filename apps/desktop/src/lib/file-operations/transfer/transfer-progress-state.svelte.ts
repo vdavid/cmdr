@@ -591,6 +591,14 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     conflictEvent = event
   }
 
+  /**
+   * Answers the clash this dialog is showing.
+   *
+   * The backend reports which answer it acted on. Anything other than
+   * `resolved` means another surface answered this conflict first, so the
+   * question is settled and the prompt comes down either way; only a call that
+   * never landed (a throw) leaves it up.
+   */
   async function handleConflictResolution(resolution: ConflictResolution, applyToAll: boolean) {
     if (!operationId || !conflictEvent) return
 
@@ -598,7 +606,13 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
 
     isResolvingConflict = true
     try {
-      await resolveWriteConflict(operationId, resolution, applyToAll)
+      const outcome = await resolveWriteConflict(operationId, resolution, applyToAll)
+      if (outcome !== 'resolved') {
+        log.info('The conflict on {operationId} was settled without this dialog ({outcome}); taking it down', {
+          operationId,
+          outcome,
+        })
+      }
       conflictEvent = null
     } catch (err) {
       log.error('Failed to resolve conflict: {error}', { error: err })

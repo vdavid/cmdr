@@ -134,13 +134,20 @@ window, and on a conflict nobody owns: pauses, raises the main window, and promp
 - **The asking operation is paused too**, though the backend already has it parked on the oneshot. The pause gate is a
   flag read at the next between-files boundary and the operation isn't at one, so it costs nothing and buys honesty: the
   queue window and the corner chip both read `paused`, instead of one row claiming to run with a frozen bar.
-- **Resolve lands before resume.** A resolve that doesn't land leaves the prompt up and everything paused, which is the
-  honest state for an unanswered question. The resolved operation may park for the moment before its resume arrives;
-  parking between files is what pause is for, and cancel still wins over both.
+- **Resolve lands before resume.** A resolve that doesn't land (the IPC call throws) leaves the prompt up and everything
+  paused, which is the honest state for an unanswered question. The resolved operation may park for the moment before
+  its resume arrives; parking between files is what pause is for, and cancel still wins over both.
+- **Losing the race is not a failure.** `resolveWriteConflict` returns the backend's `ConflictResolutionOutcome`, and
+  anything but `resolved` means this clash is settled without us (another surface answered first, a cancel took it away,
+  the operation is gone). The prompt comes down and the hold releases exactly as if this answer had won, with an info
+  log naming the outcome; the progress dialog's `handleConflictResolution` clears its own prompt the same way. ❌ Never
+  treat a non-`resolved` outcome as an error and leave the question on screen: nobody can answer it any more. Which
+  outcome means what, and why the backend arbitrates rather than a frontend rule naming who may answer:
+  `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § Stop-mode conflict resolution.
 - **One prompt at a time, in arrival order**, resuming only after the last. The backend serializes prompts within one
-  operation (`conflict_dispatch_lock` plus a single sender slot), so the queue holds at most one entry per operation; a
-  second event for one that's already queued replaces it, because `resolve_write_conflict` is keyed by operation id and
-  an answer lands on whatever that operation is parked on now.
+  operation (`conflict_dispatch_lock` plus a single conflict slot), so the queue holds at most one entry per operation;
+  a second event for one that's already queued replaces it, because `resolve_write_conflict` is keyed by operation id
+  and an answer lands on whatever that operation is parked on now.
 - **An operation dying mid-prompt** is covered three ways: the prompt's Cancel, `reconcileConflictPrompts(rows)`
   dropping an entry whose operation left the snapshot (a queue-window cancel, a failure), and either of those releasing
   the hold. An entry is only droppable once its operation has been SEEN live: the rows arrive on their own stream, and

@@ -77,14 +77,12 @@ impl OperationEventSink for ConflictResponderSink {
         // send below races teardown), then answer it.
         self.inner.emit_conflict(e);
 
-        // The sender was stored before this event was emitted, so the `take()`
-        // can't miss. Sending unblocks the op's `rx.await` synchronously.
-        if let Some(tx) = self.state.conflict_resolution_tx.lock_ignore_poison().take() {
-            let _ = tx.send(ConflictResolutionResponse {
-                resolution: self.resolution,
-                apply_to_all: self.apply_to_all,
-            });
-        }
+        // The slot was armed before this event was emitted, so the answer can't
+        // miss. It unblocks the op's `rx.await` synchronously.
+        let _ = self.state.conflict_slot.answer(ConflictResolutionResponse {
+            resolution: self.resolution,
+            apply_to_all: self.apply_to_all,
+        });
     }
     fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
     fn emit_scan_progress(&self, _e: ScanProgressEvent) {}

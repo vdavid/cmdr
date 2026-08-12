@@ -1,10 +1,10 @@
 //! Tauri commands for write operations (create, copy, move, delete, trash) and scan preview.
 
 use crate::file_system::write_operations::{
-    ConflictResolution, ScanPreviewStartResult, cancel_scan_preview as ops_cancel_scan_preview,
-    create_directory_managed as ops_create_directory_managed, create_file_managed as ops_create_file_managed,
-    get_scan_preview_totals as ops_get_scan_preview_totals, resolve_write_conflict as ops_resolve_write_conflict,
-    start_scan_preview as ops_start_scan_preview,
+    ConflictResolution, ConflictResolutionOutcome, ScanPreviewStartResult,
+    cancel_scan_preview as ops_cancel_scan_preview, create_directory_managed as ops_create_directory_managed,
+    create_file_managed as ops_create_file_managed, get_scan_preview_totals as ops_get_scan_preview_totals,
+    resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
 };
 use crate::file_system::{
     OperationEventSink, OperationSnapshot, OperationStatus, OperationSummary, SortColumn, SortOrder, TauriEventSink,
@@ -343,11 +343,19 @@ pub fn check_scan_preview_status(
     ops_get_scan_preview_totals(&preview_id)
 }
 
-/// In Stop mode, the operation pauses on conflict and waits for this call to proceed.
+/// In Stop mode, the operation pauses on conflict and waits for this call to
+/// proceed. The `write-conflict` event reaches every webview, so several
+/// surfaces can be showing the same prompt; the returned outcome tells this
+/// caller whether ITS answer is the one the operation acted on, so a surface
+/// that lost the race takes its prompt down instead of hanging on it.
 #[tauri::command]
 #[specta::specta]
-pub fn resolve_write_conflict(operation_id: String, resolution: ConflictResolution, apply_to_all: bool) {
-    ops_resolve_write_conflict(&operation_id, resolution, apply_to_all);
+pub fn resolve_write_conflict(
+    operation_id: String,
+    resolution: ConflictResolution,
+    apply_to_all: bool,
+) -> ConflictResolutionOutcome {
+    ops_resolve_write_conflict(&operation_id, resolution, apply_to_all)
 }
 
 #[tauri::command]

@@ -16,7 +16,6 @@ use super::super::state::{ConflictResolutionResponse, WriteOperationState};
 use super::super::types::{ConflictResolution, WriteConflictEvent};
 use super::engine::PlanError;
 use crate::file_system::volume::backends::archive::ArchiveIndex;
-use crate::ignore_poison::IgnorePoison;
 
 /// How a copy/move-into resolves collisions with existing archive entries.
 pub(super) enum ConflictMode<'a> {
@@ -115,7 +114,7 @@ fn prompt_archive_conflict(
     // Store the sender BEFORE the emit (see doc comment); released as the
     // statement ends, never held across the emit or the blocking recv.
     let (tx, rx) = tokio::sync::oneshot::channel();
-    *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
+    state.conflict_slot.arm(tx);
 
     events.emit_conflict(WriteConflictEvent {
         operation_id: operation_id.to_string(),

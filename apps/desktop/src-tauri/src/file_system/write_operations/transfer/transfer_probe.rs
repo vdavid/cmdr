@@ -687,12 +687,12 @@ impl OperationProbe {
 
     /// Is a conflict prompt outstanding, i.e. is the app waiting on a person?
     ///
-    /// `conflict_resolution_tx` holds the responder while a `write-conflict` is
-    /// unanswered (stored BEFORE the emit, taken when the answer lands), so it
+    /// The conflict slot holds the responder while a `write-conflict` is
+    /// unanswered (armed BEFORE the emit, spent when the answer lands), so it
     /// is exactly "a human is being asked" for both the top-level dispatch and
     /// deep-merge children.
     fn awaiting_human(&self) -> bool {
-        self.state.conflict_resolution_tx.lock_ignore_poison().is_some()
+        self.state.conflict_slot.is_awaiting()
     }
 
     /// Classify the wait. Order matters: a pause and a conflict prompt are

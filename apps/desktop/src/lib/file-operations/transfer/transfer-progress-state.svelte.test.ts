@@ -72,7 +72,7 @@ vi.mock('$lib/tauri-commands', () => ({
     opsChangedCb = cb
     return Promise.resolve(noopUnlisten)
   }),
-  resolveWriteConflict: vi.fn(() => Promise.resolve()),
+  resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   cancelScanPreview: vi.fn(() => Promise.resolve()),
   pauseOperation: vi.fn(() => Promise.resolve()),
@@ -493,6 +493,19 @@ describe('createTransferProgressState: conflict resolution', () => {
     await state.handleConflictResolution('overwrite', false)
     expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 'overwrite', false)
     expect(state.conflictEvent).toBeNull()
+  })
+
+  it('clears the prompt when another surface answered the same conflict first', async () => {
+    // Two surfaces can render one clash; only the first answer reaches the
+    // operation. Being the second one is not a failure, so the dialog stops
+    // asking rather than leaving the question on screen.
+    const { state } = await startedState()
+    if (!conflictCb) throw new Error('conflict subscriber never registered')
+    conflictCb(conflictEvent())
+    vi.mocked(resolveWriteConflict).mockImplementationOnce(() => Promise.resolve('already_resolved'))
+    await state.handleConflictResolution('overwrite', false)
+    expect(state.conflictEvent).toBeNull()
+    expect(state.isResolvingConflict).toBe(false)
   })
 
   it('keeps the prompt up when resolving the conflict fails', async () => {

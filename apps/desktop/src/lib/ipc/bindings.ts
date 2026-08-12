@@ -563,9 +563,15 @@ export const commands = {
        */
       estimatedCompressedBytes?: CompressedSizeEstimate | null
     } | null>('check_scan_preview_status', { previewId }),
-  // In Stop mode, the operation pauses on conflict and waits for this call to proceed.
+  /**
+   *  In Stop mode, the operation pauses on conflict and waits for this call to
+   *  proceed. The `write-conflict` event reaches every webview, so several
+   *  surfaces can be showing the same prompt; the returned outcome tells this
+   *  caller whether ITS answer is the one the operation acted on, so a surface
+   *  that lost the race takes its prompt down instead of hanging on it.
+   */
   resolveWriteConflict: (operationId: string, resolution: ConflictResolution, applyToAll: boolean) =>
-    __TAURI_INVOKE<void>('resolve_write_conflict', { operationId, resolution, applyToAll }),
+    __TAURI_INVOKE<ConflictResolutionOutcome>('resolve_write_conflict', { operationId, resolution, applyToAll }),
   listActiveOperations: () => __TAURI_INVOKE<OperationSummary[]>('list_active_operations'),
   getOperationStatus: (operationId: string) =>
     __TAURI_INVOKE<{
@@ -3938,6 +3944,35 @@ export type ConflictResolution =
    *  All other conflicts (equal or newer destination, or unknown timestamps) are skipped.
    */
   | 'overwrite_older'
+
+/**
+ *  What the backend did with one answer to a Stop-mode conflict. Produced by
+ *  `conflict_slot::ConflictSlot::answer`.
+ *
+ *  `write-conflict` broadcasts to every webview, so several surfaces can render
+ *  the same prompt and each of them can be answered. Exactly one answer reaches
+ *  the parked operation (the slot hands out its sender once, under its lock);
+ *  this is how the surfaces that lost learn they lost, and can take their own
+ *  prompt down instead of believing they did something.
+ */
+export type ConflictResolutionOutcome =
+  // This answer reached the parked operation, which carried on with it.
+  | 'resolved'
+  /**
+   *  Somebody answered this conflict first. The operation carried on with
+   *  THEIR answer; this one changed nothing.
+   */
+  | 'already_resolved'
+  /**
+   *  The operation is live but isn't waiting on a conflict: it hasn't raised
+   *  one, or a cancel took the pending one away.
+   */
+  | 'no_pending_conflict'
+  /**
+   *  Nothing is registered under this operation id. It settled, it was
+   *  cancelled, or it never existed.
+   */
+  | 'unknown_operation'
 
 // Information about a connected device, including its storages.
 export type ConnectedDeviceInfo = {

@@ -98,6 +98,30 @@ pub enum ConflictResolution {
     OverwriteOlder,
 }
 
+/// What the backend did with one answer to a Stop-mode conflict. Produced by
+/// `conflict_slot::ConflictSlot::answer`.
+///
+/// `write-conflict` broadcasts to every webview, so several surfaces can render
+/// the same prompt and each of them can be answered. Exactly one answer reaches
+/// the parked operation (the slot hands out its sender once, under its lock);
+/// this is how the surfaces that lost learn they lost, and can take their own
+/// prompt down instead of believing they did something.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum ConflictResolutionOutcome {
+    /// This answer reached the parked operation, which carried on with it.
+    Resolved,
+    /// Somebody answered this conflict first. The operation carried on with
+    /// THEIR answer; this one changed nothing.
+    AlreadyResolved,
+    /// The operation is live but isn't waiting on a conflict: it hasn't raised
+    /// one, or a cancel took the pending one away.
+    NoPendingConflict,
+    /// Nothing is registered under this operation id. It settled, it was
+    /// cancelled, or it never existed.
+    UnknownOperation,
+}
+
 // ============================================================================
 // Progress events
 // ============================================================================

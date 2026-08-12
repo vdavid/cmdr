@@ -253,7 +253,7 @@ fn a_transfer_waiting_on_a_conflict_answer_is_not_stalled() {
 
     // The driver stores the responder before emitting `write-conflict`.
     let (tx, _rx) = tokio::sync::oneshot::channel();
-    *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
+    state.conflict_slot.arm(tx);
 
     let activity = probe.activity();
     assert_eq!(activity.waiting_on, TransferWaitReason::You);
@@ -263,7 +263,7 @@ fn a_transfer_waiting_on_a_conflict_answer_is_not_stalled() {
     );
 
     // Answering it hands the transfer back to the device wait.
-    let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
+    state.conflict_slot.abandon();
     assert_ne!(probe.activity().waiting_on, TransferWaitReason::You);
 }
 
@@ -274,7 +274,7 @@ fn the_watchdog_does_not_accrue_stall_time_behind_a_conflict_prompt() {
     let state = guard.state();
     let probe = probe_for(guard.id(), state);
     let (tx, _rx) = tokio::sync::oneshot::channel();
-    *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
+    state.conflict_slot.arm(tx);
 
     let mut watchdog = WatchdogState::new();
     // First step syncs the byte counter; a second one with the SAME bytes is

@@ -40,6 +40,7 @@ import {
   pauseOperation,
   resolveWriteConflict,
   resumeOperation,
+  type ConflictResolutionOutcome,
   type OperationSnapshot,
   type WriteConflictEvent,
 } from '$lib/tauri-commands'
@@ -213,27 +214,38 @@ function dropPrompt(operationId: string): void {
  * Answers the prompt on screen: the same command, with the same arguments, that
  * the progress dialog sends.
  *
- * Resolve first, resume second. If the resolve doesn't land, the prompt stays up
- * and everything stays paused, which is the honest state for a question nobody
- * has answered. The resolved operation may park at its next between-files
+ * Resolve first, resume second. If the call itself doesn't land, the prompt
+ * stays up and everything stays paused, which is the honest state for a question
+ * nobody has answered. The resolved operation may park at its next between-files
  * boundary in the moment before the resume reaches it; that's what pause is
  * built for, and a cancel still wins over both.
+ *
+ * Losing the race is NOT that case. The backend reports which answer it acted
+ * on, and every outcome other than `resolved` means this conflict is settled
+ * without us: the prompt comes down and what it paused resumes, exactly as if
+ * this answer had won. Leaving it up would ask the user a question that no
+ * longer has an answer to give.
  */
 export async function resolveConflictPrompt(resolution: ConflictResolution, applyToAll: boolean): Promise<void> {
   if (promptQueue.length === 0 || resolving) return
   const operationId = promptQueue[0].event.operationId
 
   resolving = true
-  let resolved = false
+  let outcome: ConflictResolutionOutcome | null = null
   try {
-    await resolveWriteConflict(operationId, resolution, applyToAll)
-    resolved = true
+    outcome = await resolveWriteConflict(operationId, resolution, applyToAll)
   } catch (error) {
     log.error('Failed to resolve the conflict on {operationId}: {error}', { operationId, error })
   } finally {
     resolving = false
   }
-  if (!resolved) return
+  if (outcome === null) return
+  if (outcome !== 'resolved') {
+    log.info('The conflict on {operationId} was settled without this prompt ({outcome}); taking it down', {
+      operationId,
+      outcome,
+    })
+  }
 
   dropPrompt(operationId)
   await release()

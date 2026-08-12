@@ -224,16 +224,10 @@ async fn cross_volume_move_conflict_stop_resolves_via_oneshot() {
     let state_for_resolver = Arc::clone(&state);
     let resolver = tokio::spawn(async move {
         crate::test_support::wait_until_async(Duration::from_secs(5), "the conflict prompt to install", || {
-            state_for_resolver.conflict_resolution_tx.lock().unwrap().is_some()
+            state_for_resolver.conflict_slot.is_awaiting()
         })
         .await;
-        let tx = state_for_resolver
-            .conflict_resolution_tx
-            .lock()
-            .unwrap()
-            .take()
-            .expect("conflict_resolution_tx installed");
-        let _ = tx.send(ConflictResolutionResponse {
+        let _ = state_for_resolver.conflict_slot.answer(ConflictResolutionResponse {
             resolution: ConflictResolution::Skip,
             apply_to_all: true,
         });
