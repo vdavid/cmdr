@@ -459,8 +459,8 @@ These modules have invested test infrastructure. New code here must keep that ba
 E2E test hooks split along two axes:
 
 - **Hard hooks** (binary shape) live behind Cargo features:
-  - `playwright-e2e`: feature-gated Tauri commands (`inject_listing_error`, `set_test_throttle`, `flush_file_watcher`)
-    and the tauri-plugin-playwright socket bridge.
+  - `playwright-e2e`: feature-gated Tauri commands (`inject_listing_error`, `set_test_throttle`,
+    `set_test_scan_preview_delay`, `flush_file_watcher`) and the tauri-plugin-playwright socket bridge.
   - `virtual-mtp`: virtual MTP device with deterministic fixtures.
   - `smb-e2e`: virtual SMB hosts injected into mDNS discovery.
 
@@ -492,6 +492,11 @@ E2E test hooks split along two axes:
 - **`CMDR_VIRTUAL_MTP=1` (or `=<dir>`)**: Dev opt-in: `pnpm dev` registers the virtual MTP device. See
   `tooling/virtual-mtp.md`.
 - **`CMDR_E2E_COPY_THROTTLE_MS`**: Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.
+- **`CMDR_E2E_SCAN_PREVIEW_DELAY_MS`**: Holds every scan-preview worker at its starting line before it walks, so a spec
+  can act while a transfer is still counting (`background-while-scanning.spec.ts`). Fixture trees are tiny and
+  `data-scan-state` signals "counting done", the opposite of what such a test needs. `set_test_scan_preview_delay`
+  overrides it per test, which is what the spec uses; the var is the process-wide fallback. Both are inert outside
+  `CMDR_E2E_MODE`.
 - **`CMDR_E2E_WALK_THROTTLE_MS`**: Per-directory sleep before a search's COVER walk reads one, so a spec has a window in
   which to watch a live search still running (`search-walk-handoff.spec.ts`). Background scans are never throttled. Read
   in `crates/cmdr-index/src/indexing/scanner/mod.rs` (`cover_walk_throttle`) rather than `crate::test_mode`, because the

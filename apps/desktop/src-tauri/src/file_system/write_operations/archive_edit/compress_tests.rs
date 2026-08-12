@@ -86,6 +86,7 @@ async fn compress_start_packs_local_files_into_a_new_zip() {
         ConflictResolution::Overwrite,
         0,
         None,
+        None,
         crate::operation_log::types::Initiator::User,
     )
     .await
@@ -146,6 +147,7 @@ async fn compress_journals_subkind_and_net_new_from_the_driver() {
         unique_lane_id(),
         ConflictResolution::Overwrite,
         0,
+        None,
         None,
         Initiator::User,
     )
@@ -215,6 +217,7 @@ async fn compress_start_packs_a_directory_subtree() {
         ConflictResolution::Overwrite,
         0,
         None,
+        None,
         crate::operation_log::types::Initiator::User,
     )
     .await
@@ -276,6 +279,7 @@ async fn compress_payload_at(dir: &Path, tag: &str, level: Option<i64>, payload:
         ConflictResolution::Overwrite,
         0,
         level,
+        None,
         crate::operation_log::types::Initiator::User,
     )
     .await

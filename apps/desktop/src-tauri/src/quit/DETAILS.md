@@ -90,6 +90,10 @@ The 2 s budget is `DRAIN` plus a tier-2 abort (token flips, no I/O), a ledger fl
 `Paused`) and moves bytes (`Copy` / `Move` / `Delete` / `Trash` / `ArchiveEdit`). Notes:
 
 - **A conflict prompt needs no arm of its own**: an operation waiting on an answer is still `Running`.
+- **Nor does a scan-wait**: a transfer confirmed before its scan preview finished is registered from that moment and is
+  `Running` with `phase: 'scanning'`, so ⌘Q during a scan now prompts where it used to walk straight past and let the
+  scan die. Reusing `Running` rather than minting a status of its own is exactly what makes this correct with no edit
+  here (`write_operations/DETAILS.md` § "The scan-wait").
 - **Instant metadata ops never block** (`Rename` / `CreateFolder` / `CreateFile`, the `run_instant` family). They
   finish faster than a human could read a dialog about them, and a `Running` record for one is often already stale.
 - **Retained failures never block**: they're `Failed`, and there's nothing left to lose.

@@ -96,6 +96,7 @@ pub(super) async fn move_within_same_volume(
         // it stops without reversing and reports `rolled_back: false`. The
         // progress dialog disables Rollback for exactly this case.
         supports_rollback: false,
+        preview_id: config.preview_id.clone(),
     };
 
     let events_for_op = Arc::clone(&events);
@@ -113,6 +114,23 @@ pub(super) async fn move_within_same_volume(
                 WriteOperationType::Move,
                 Some(volume_name),
             );
+
+            // Wait out the confirming dialog's scan before journaling or
+            // touching either device; see `write_operations::start_write_operation`.
+            if crate::file_system::write_operations::scan_bridge::await_claimed_preview(
+                &*events,
+                &op_id,
+                WriteOperationType::Move,
+                &state,
+            )
+            .await
+            .stopped()
+            .is_some()
+            {
+                task_guard.disarm();
+                manager::manager().on_settled(&op_id);
+                return;
+            }
 
             // Journal the same-volume move under the REAL volume id. The top-level
             // rename rows + search leaves land inside `_with_progress`.

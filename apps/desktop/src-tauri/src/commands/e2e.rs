@@ -59,6 +59,23 @@ pub fn set_test_throttle(ms: Option<u64>) -> Result<(), String> {
     Ok(())
 }
 
+/// Holds every scan preview at its starting line for `ms` before it walks.
+///
+/// `None` clears the override. E2E fixture trees are deliberately tiny, so a
+/// scan over one finishes before a test can click anything, and
+/// `data-scan-state` signals "counting done" — the opposite of what a test
+/// about the scanning phase needs to hold. This buys such a test a
+/// deterministic window instead of a race against a 40-file fixture.
+/// Feature-gated to `playwright-e2e` so the command isn't available in
+/// production binaries.
+#[cfg(feature = "playwright-e2e")]
+#[tauri::command]
+#[specta::specta]
+pub fn set_test_scan_preview_delay(ms: Option<u64>) -> Result<(), String> {
+    crate::test_mode::set_scan_preview_delay_override(ms);
+    Ok(())
+}
+
 /// Flushes any pending file-watcher events for E2E synchronization.
 ///
 /// The notify-debouncer-full crate buffers events for `DEBOUNCE_MS` (200 ms by

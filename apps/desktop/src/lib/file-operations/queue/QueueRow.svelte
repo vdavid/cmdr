@@ -10,6 +10,7 @@
     import { failureReasonFor } from './failure-reason'
     import { transferReadout } from '../progress-readout'
     import TransferProgressReadout from '../TransferProgressReadout.svelte'
+    import ScanPhaseBody from '../transfer/ScanPhaseBody.svelte'
     import { stallNoticeFor } from '../transfer/transfer-stall'
 
     interface Props {
@@ -57,10 +58,20 @@
      *  lifecycle state), so the live progress phase is the only signal. */
     const isRollingBack = $derived(progress?.phase === 'rolling_back')
 
+    /** The operation is counting, not yet writing: it holds an `operationId`
+     *  and its lanes from the moment the user confirmed, and the backend's own
+     *  task is waiting on the `TransferDialog` preview. `supportsRollback` is a
+     *  promise about the OPERATION, so the phase is what decides which controls
+     *  make sense right now. */
+    const isScanning = $derived(progress?.phase === 'scanning')
+
     /** Rollback is offered on exactly the operations the backend can reverse
      *  (`supportsRollback`), and only while there's still something running to
-     *  reverse. Same affordance the progress dialog shows, same wording. */
-    const canRollback = $derived(snapshot.supportsRollback && (isRunning || isPaused) && !isRollingBack)
+     *  reverse. A scanning operation has written nothing, so it has nothing to
+     *  put back. Same affordance the progress dialog shows, same wording. */
+    const canRollback = $derived(
+        snapshot.supportsRollback && (isRunning || isPaused) && !isRollingBack && !isScanning,
+    )
 
     const label = $derived(tString('queue.row.label', { type: snapshot.operationType }))
     const statusLabel = $derived(
@@ -71,10 +82,20 @@
 
     /** The dual-bar readout shows once there's something to fill either bar.
      *  Instant ops (rename, create folder/file) emit no `write-progress` at all,
-     *  so their rows stay a single line. */
+     *  so their rows stay a single line. A scanning row is excluded on purpose:
+     *  `filesTotal` means "what the scan concluded", and during the scan there
+     *  is no such thing — the counting line below is what it renders instead. */
     const showReadout = $derived(
-        (isRunning || isPaused) && progress !== null && (progress.bytesTotal > 0 || progress.filesTotal > 0),
+        (isRunning || isPaused) && !isScanning && progress !== null && (progress.bytesTotal > 0 || progress.filesTotal > 0),
     )
+
+    /** The scan-phase line, on a `queued` row as well as a running one. An
+     *  operation admitted behind another on the same lane keeps counting while
+     *  it waits, and on a busy lane that's the common case: "Waiting" over a
+     *  bare row reads as a hung queue, where "Waiting" over a moving file count
+     *  is exactly what's happening. Costs no new strings — `ScanPhaseBody`
+     *  resolves the same catalog keys the progress dialog uses. */
+    const showScanLine = $derived(isScanning && (isRunning || isPaused || isQueued))
 
     /** Non-null once the BACKEND reports this transfer has stopped moving for a
      *  reason that isn't deliberate. Same classifier the copy dialog uses, so
@@ -148,7 +169,9 @@
     </span>
 
     <div class="actions-cell">
-        {#if status === 'running' || status === 'paused'}
+        {#if (isRunning || isPaused) && !isScanning}
+            <!-- Pause parks between files, so a still-counting operation has
+                 nothing to park; the backend declines the flip. -->
             <Button variant="secondary" size="mini" onclick={onPauseResume} aria-label={pauseResumeAria}>
                 <span class="btn-inner">
                     <Icon name={isPaused ? 'play' : 'pause'} size={13} />
@@ -196,6 +219,25 @@
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- markup from the typed error via `failureReasonFor`: escaped names/paths plus size tiers, no user input. Same boundary as `FallbackErrorContent`. -->
             <p class="reason-message selectable">{@html reason.message}</p>
             <p class="reason-suggestion selectable">{reason.suggestion}</p>
+        </div>
+    {/if}
+
+    <!-- Second line while the operation is still counting: the same scan-phase
+         line the progress dialog shows, so the two surfaces can't disagree
+         about what a scanning operation looks like. -->
+    {#if showScanLine && progress}
+        <div class="readout-cell">
+            <ScanPhaseBody
+                density="compact"
+                sourceFolderPath={snapshot.source ?? ''}
+                scanFilesFound={progress.filesDone}
+                scanDirsFound={progress.dirsDone ?? 0}
+                scanBytesFound={progress.bytesDone}
+                scanFilesPerSec={null}
+                scanBytesPerSec={null}
+                scanCurrentDir={progress.currentDir ?? null}
+                currentFile={progress.currentFile}
+            />
         </div>
     {/if}
 

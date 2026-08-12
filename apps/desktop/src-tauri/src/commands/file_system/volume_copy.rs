@@ -114,6 +114,7 @@ pub async fn copy_between_volumes(
             config.progress_interval_ms,
             false,
             config.compression_level,
+            config.preview_id.clone(),
         )
         .await;
     }
@@ -199,6 +200,7 @@ pub async fn move_between_volumes(
             config.progress_interval_ms,
             true,
             config.compression_level,
+            config.preview_id.clone(),
         )
         .await;
     }
@@ -269,6 +271,7 @@ pub async fn compress_files(
         config.conflict_resolution,
         config.progress_interval_ms,
         config.compression_level,
+        config.preview_id.clone(),
         initiator.unwrap_or(Initiator::User),
     )
     .await

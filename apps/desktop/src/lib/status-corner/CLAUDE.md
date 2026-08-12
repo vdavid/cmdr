@@ -25,10 +25,11 @@ toast.
   there, not in the markup. The bar is bytes, falling back to the file count when `bytesTotal` is 0 (a same-volume move
   moves no bytes, so a bytes bar would read 0% throughout). Instant ops are excluded by TYPED `operationType`, never a
   substring test.
+- **A scanning operation gets a SPINNER and "Scanning…", never a bar** (both totals are 0). DETAILS § "The chip's
+  states".
 - **A paused-only queue KEEPS the chip**, with a still bar (`animated={false}`) and the word "Paused". Hiding it on
-  pause would re-hide the work, the bug the chip exists to fix. Tooltip and aria-label lead with that same label, ❌
-  never the verb: zh's `正在拷贝` beside "Paused" contradicts itself. So every `queue.chip.tooltip` clause carries its
-  own leading `·` and none may glue to the label, which is also capped at `12em` and ellipsized.
+  pause would re-hide the work, the bug the chip exists to fix. Tooltip and aria-label lead with that label, ❌ never
+  the verb, so every `queue.chip.tooltip` clause carries its own leading `·`. DETAILS § "The chip's label".
 - **Render `row.etaSecondsDisplay`, never `progress.etaSeconds`.** The raw value once had one operation reading "8m 12s"
   in one window and "5m 46s" in the other.
 - **The chip waits `CHIP_SETTLE_MS` before its FIRST appearance.** Work over in a blink never flashes the corner, and

@@ -695,6 +695,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(feature = "playwright-e2e")]
         crate::commands::e2e::set_test_throttle,
         #[cfg(feature = "playwright-e2e")]
+        crate::commands::e2e::set_test_scan_preview_delay,
+        #[cfg(feature = "playwright-e2e")]
         crate::commands::e2e::flush_file_watcher,
         #[cfg(feature = "playwright-e2e")]
         crate::commands::file_system::inject_listing_error,

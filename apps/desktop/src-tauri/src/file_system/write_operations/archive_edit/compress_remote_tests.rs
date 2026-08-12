@@ -73,6 +73,7 @@ async fn compress_onto_a_remote_parent_seeds_and_packs_local_files() {
         ConflictResolution::Overwrite,
         0,
         None,
+        None,
         crate::operation_log::types::Initiator::User,
     )
     .await
@@ -131,6 +132,7 @@ async fn compress_onto_a_remote_parent_overwrites_an_existing_zip_with_a_fresh_a
         ConflictResolution::Overwrite,
         0,
         None,
+        None,
         crate::operation_log::types::Initiator::User,
     )
     .await
@@ -182,6 +184,7 @@ async fn compress_onto_an_mtp_style_remote_parent_seeds_and_packs() {
         parent_id.clone(),
         ConflictResolution::Overwrite,
         0,
+        None,
         None,
         crate::operation_log::types::Initiator::User,
     )

@@ -7,9 +7,16 @@
  * `operationId`-scoped event buffering and replay, the phase machine
  * (scanning → active → flushing, plus rolling_back), the cancel/settle close-out
  * with its slow-label and last-resort fallback timers, the pause/resume and
- * background-to-queue flow (including auto-queue behind a busy lane), the
- * conflict prompt, and the scan-wait path that defers the write until a
- * `TransferDialog` preview finishes.
+ * background-to-queue flow (including auto-queue behind a busy lane), and the
+ * conflict prompt.
+ *
+ * It does NOT wait for a `TransferDialog` preview. The operation is dispatched
+ * the moment the dialog mounts, and the BACKEND's own task awaits the preview
+ * before it writes anything (`write_operations/scan_bridge.rs`). That is what
+ * gives a still-scanning transfer an `operationId` from the first frame, so
+ * Pause, Background, the queue row, the corner chip, and ⌘Q all work while it
+ * counts. The scan-phase readout below is fed by `write-progress` in
+ * `phase: 'scanning'`, forwarded from the preview under this operation's id.
  *
  * The factory takes its static per-operation inputs and the dialog's outcome
  * callbacks as a plain config object (these never change for a given dialog
@@ -47,12 +54,6 @@ import {
   onWriteConflict,
   resolveWriteConflict,
   cancelWriteOperation,
-  cancelScanPreview,
-  checkScanPreviewStatus,
-  onScanPreviewProgress,
-  onScanPreviewComplete,
-  onScanPreviewError,
-  onScanPreviewCancelled,
   pauseOperation,
   resumeOperation,
   onOperationsChanged,
@@ -116,8 +117,6 @@ export interface TransferProgressStateConfig {
   preKnownConflicts?: string[]
   /** Per-item sizes for trash progress (from scan or drive index). */
   itemSizes?: number[]
-  /** Whether the scan preview is still running (this dialog subscribes to scan events). */
-  scanInProgress: boolean
   /** Who triggered this operation. `undefined`/`user` for direct UI actions;
    *  `aiClient` when an MCP tool initiated it (drives the operation-log provenance). */
   initiator?: Initiator
@@ -187,13 +186,13 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  `dismiss()` closes the dialog on their say-so at any moment. */
   const CANCEL_SETTLE_FALLBACK_MS = 20_000
 
-  // Scan waiting state (when scan preview is still running from TransferDialog)
-  let waitingForScan = $state(false)
+  // Scanning-phase readout. Written by `handleProgress`'s scanning branch from
+  // the backend's `write-progress`, which covers both the preview the operation
+  // is waiting on and its own foolproof re-scan.
   let scanFilesFound = $state(0)
   let scanDirsFound = $state(0)
   let scanBytesFound = $state(0)
   let scanCurrentDir = $state<string | null>(null)
-  let scanUnlisteners: UnlistenFn[] = []
   const scanThroughput = new ScanThroughput()
   let scanFilesPerSec = $state<number | null>(null)
   let scanBytesPerSec = $state<number | null>(null)
@@ -308,7 +307,6 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  settled, no conflict prompt up), so the Pause/Resume + Queue controls show
    *  during the active copy/move/delete phases only. */
   const canPauseOrQueue = () =>
-    !waitingForScan &&
     !isCancelling &&
     !cancelEventReceived &&
     !isRollingBack &&
@@ -374,10 +372,10 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     filesPerSecond = event.filesPerSecond ?? null
     etaSecondsDisplay = etaSmoother.push(readout.etaSeconds)
 
-    // Scanning-phase metadata (current dir, dirs tally, index-derived
-    // expected totals, FE-computed throughput). Mirrors the waitingForScan
-    // path so the same scan-phase UI surfaces during the backend's
-    // foolproof re-scan.
+    // Scanning-phase metadata (current dir, dirs tally, index-derived expected
+    // totals, FE-computed throughput). One source for the whole scan phase: the
+    // preview the operation waits on forwards under this id, and so does the
+    // backend's own foolproof re-scan.
     if (event.phase === 'scanning') {
       scanFilesFound = event.filesDone
       scanDirsFound = event.dirsDone ?? 0
@@ -879,16 +877,6 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     // `backgrounded` false (the modal is gone by the time it's set).
     if (backgrounded) return
 
-    // If still waiting for scan preview, cancel the scan and close
-    if (waitingForScan && config.previewId) {
-      log.info('Cancelling scan preview during wait: previewId={previewId}', { previewId: config.previewId })
-      void cancelScanPreview(config.previewId)
-      waitingForScan = false
-      cleanupScanListeners()
-      config.onCancelled(0)
-      return
-    }
-
     if (!operationId) {
       log.warn('Cancel requested but no operationId yet; will cancel after IPC resolves')
       destroyed = true
@@ -1042,155 +1030,32 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     }
   }
 
-  /** Cleans up scan preview event listeners. */
-  function cleanupScanListeners() {
-    for (const unlisten of scanUnlisteners) {
-      unlisten()
-    }
-    scanUnlisteners = []
-  }
-
-  /** Returns true if the event belongs to our scan preview. */
-  function isOurScanEvent(eventPreviewId: string): boolean {
-    return eventPreviewId === config.previewId
-  }
-
-  /**
-   * Waits for the scan preview to complete, then starts the write operation.
+  /** Starts the dialog's work. Called from the component's `onMount`.
    *
-   * Two independent signals can say "scan done": the `scan-preview-complete`
-   * event firing, or the post-subscription `checkScanPreviewStatus` IPC
-   * returning true. Either can win the race. Both converge on `kickOff()`,
-   * which is idempotent via the `started` flag; the operation dispatches
-   * exactly once, even if both signals arrive during the `await`.
-   *
-   * We subscribe to events BEFORE the status check so a fast completion
-   * between subscription and check isn't missed.
-   *
-   * Precondition: previewId must be non-null (guaranteed by TransferDialog,
-   * which awaits startScanPreview IPC before calling onConfirm).
-   */
-  async function waitForScanThenStart() {
-    if (!config.previewId) {
-      log.error('waitForScanThenStart called with null previewId; TransferDialog invariant violated')
-      void startOperation()
-      return
-    }
-
-    let started = false
-    const kickOff = () => {
-      if (started) return
-      started = true
-      cleanupScanListeners()
-      void startOperation()
-    }
-
-    // Subscribe to events FIRST to avoid missing fast completions.
-    // Same pattern as TransferDialog.startScan().
-    scanUnlisteners.push(
-      await onScanPreviewProgress((event) => {
-        if (!isOurScanEvent(event.previewId)) return
-        scanFilesFound = event.filesFound
-        scanDirsFound = event.dirsFound
-        scanBytesFound = event.bytesFound
-        scanCurrentDir = event.currentDir ?? null
-        const r = scanThroughput.push({
-          timestampMs: Date.now(),
-          files: event.filesFound,
-          bytes: event.bytesFound,
-        })
-        scanFilesPerSec = r.filesPerSecond
-        scanBytesPerSec = r.bytesPerSecond
-      }),
-    )
-
-    scanUnlisteners.push(
-      await onScanPreviewComplete((event) => {
-        if (!isOurScanEvent(event.previewId)) return
-        log.info('Scan preview complete: {filesTotal} {filesNoun}, {bytesTotal} {bytesNoun}', {
-          filesTotal: event.filesTotal,
-          filesNoun: pluralize(event.filesTotal, 'file'),
-          bytesTotal: event.bytesTotal,
-          bytesNoun: pluralize(event.bytesTotal, 'byte'),
-        })
-        scanFilesFound = event.filesTotal
-        scanDirsFound = event.dirsTotal
-        scanBytesFound = event.bytesTotal
-        waitingForScan = false
-        kickOff()
-      }),
-    )
-
-    scanUnlisteners.push(
-      await onScanPreviewError((event) => {
-        if (!isOurScanEvent(event.previewId)) return
-        if (started) return // already dispatched or terminated; ignore late errors
-        started = true // terminal; don't let a late scan-complete dispatch an operation
-        log.error('Scan preview error: {message}', { message: event.message })
-        waitingForScan = false
-        cleanupScanListeners()
-        config.onError({
-          type: 'io_error',
-          path: config.sourcePaths[0] ?? '',
-          message: `Scan failed: ${event.message}`,
-        })
-      }),
-    )
-
-    scanUnlisteners.push(
-      await onScanPreviewCancelled((event) => {
-        if (!isOurScanEvent(event.previewId)) return
-        if (started) return // already dispatched or terminated; ignore late cancellations
-        started = true // terminal; don't let a late scan-complete dispatch an operation
-        log.info('Scan preview cancelled')
-        waitingForScan = false
-        cleanupScanListeners()
-        config.onCancelled(0)
-      }),
-    )
-
-    // NOW check if already complete (covers race where scan finished during subscription setup)
-    const alreadyComplete = await checkScanPreviewStatus(config.previewId)
-    if (alreadyComplete) {
-      log.info('Scan preview already complete for previewId={previewId}, starting operation immediately', {
-        previewId: config.previewId,
-      })
-      kickOff()
-      return
-    }
-
-    log.info('Scan preview still running for previewId={previewId}, subscribing to events', {
-      previewId: config.previewId,
-    })
-    waitingForScan = true
-  }
-
-  /** Starts the dialog's work: defers to the scan-wait path when a preview is
-   *  still running, otherwise dispatches the operation immediately. Called from
-   *  the component's `onMount`. */
+   *  Dispatches straight away even when a `TransferDialog` preview is still
+   *  walking: the backend claims that preview at registration and its own task
+   *  waits for it, so the operation has an id, a queue row, and Background from
+   *  the first frame. (Pause stays hidden until the write starts — a scan-wait
+   *  has nothing to park, and the backend declines the flip.) */
   function start() {
-    if (config.scanInProgress) {
-      void waitForScanThenStart()
-    } else {
-      void startOperation()
-    }
+    void startOperation()
   }
 
-  /** Tears the dialog down (the component's `onDestroy`). Cancels an in-flight
-   *  scan preview, drops scan listeners, and fires the safety-net cancel for an
-   *  unexpected teardown — UNLESS the op was deliberately backgrounded (read
-   *  live off the plain `backgrounded` / `destroyed` lets; see the module doc). */
+  /** Tears the dialog down (the component's `onDestroy`). Fires the safety-net
+   *  cancel for an unexpected teardown — UNLESS the op was deliberately
+   *  backgrounded (read live off the plain `backgrounded` / `destroyed` lets;
+   *  see the module doc).
+   *
+   *  ❌ It does NOT cancel the scan preview. The operation owns that preview
+   *  now, so a dialog going away is a viewer detaching, and stopping the walk
+   *  here would pull the result out from under a transfer that is still queued
+   *  or running. */
   function destroy() {
     destroyed = true
     // The catch-all release: completion, cancel, error, and any other unmount
     // all land here. `clearForegroundOperation` no-ops if a later dialog already
     // took the slot.
     if (operationId) clearForegroundOperation(operationId)
-    // Cancel scan preview if still waiting for it
-    if (waitingForScan && config.previewId) {
-      void cancelScanPreview(config.previewId)
-    }
-    cleanupScanListeners()
     if (operationId && !operationSettled && !backgrounded) {
       // Unexpected teardown (hot-reload, navigation, window close): stop the operation
       // but don't roll back; never do silent background work without visual feedback.
@@ -1209,9 +1074,6 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     handleConflictResolution,
     handlePauseResume,
     handleQueue,
-    get waitingForScan() {
-      return waitingForScan
-    },
     get scanFilesFound() {
       return scanFilesFound
     },

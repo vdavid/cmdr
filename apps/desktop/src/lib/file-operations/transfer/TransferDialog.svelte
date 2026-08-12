@@ -69,7 +69,6 @@
             previewId: string | null,
             conflictResolution: ConflictResolution,
             operationType: TransferOperationType,
-            scanInProgress: boolean,
             /** Source filenames known to conflict at dest, for the BE to bulk-skip
              *  under `Skip all`. Empty when no conflicts were found or the pre-flight
              *  scan failed. */
@@ -462,28 +461,28 @@
         }
         // Same-volume move: dispatch IMMEDIATELY. No deep scan ever ran (the
         // backend renames server-side, zero bytes), so there's nothing to wait
-        // for and no cached preview to consume — pass `previewId = null` and
-        // `scanInProgress = false`. The conflict check only gates `skip`.
+        // for and no cached preview to consume — pass `previewId = null`, which
+        // the backend reads as "no preview" rather than a miss. The conflict
+        // check only gates `skip`.
         if (isSameVolumeMove) {
             scan.cancelPreview()
             if (needsConflictNames()) await conflictCheckPromise
-            onConfirm(
-                editedPath,
-                selectedVolumeId,
-                null,
-                conflictPolicy,
-                activeOperationType,
-                false,
-                conflicts.conflictNames,
-            )
+            onConfirm(editedPath, selectedVolumeId, null, conflictPolicy, activeOperationType, conflicts.conflictNames)
             return
         }
-        // Wait for startScanPreview IPC so previewId is set (a fast confirm — MCP,
-        // Playwright, rapid Enter — otherwise strands the progress dialog with a
-        // null previewId). That IPC only mints an id and spawns the walk, so it
-        // returns promptly even on a wedged share. The conflict check does NOT gate
-        // this path: it's a dest listing that can take minutes on a big remote dir,
-        // and only `skip` consumes its names.
+        // Wait for `startScanPreview` so `previewId` is non-null on a fast
+        // confirm (MCP, Playwright, rapid Enter). Dropping this is a three-part
+        // failure, not a missing id: the operation would dispatch with no
+        // preview to claim, fall into the backend's miss case, and re-walk the
+        // tree CONCURRENTLY with the preview this dialog already started — the
+        // exact contention the wait exists to prevent, and worst on MTP and SMB.
+        // The orphan would also have no owner and nothing to cancel it, because
+        // the `confirmed` guard keeps `handleCancel` away from `freeAndCleanup`,
+        // so its result would sit until a TTL sweep. The IPC only mints an id
+        // and spawns the walk, so it returns promptly even on a wedged share.
+        // The conflict check does NOT gate this path: it's a dest listing that
+        // can take minutes on a big remote dir, and only `skip` consumes its
+        // names.
         await scan.scanStarted
         if (needsConflictNames()) await conflictCheckPromise
         onConfirm(
@@ -492,7 +491,6 @@
             scan.previewId,
             conflictPolicy,
             activeOperationType,
-            scan.isScanning,
             conflicts.conflictNames,
         )
     }

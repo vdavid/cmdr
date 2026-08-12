@@ -7,6 +7,7 @@
     // Which operation, and every rule about when to stay quiet: `operation-chip.ts`.
     import Icon from '$lib/ui/Icon.svelte'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { formatInteger } from '$lib/intl/number-format'
@@ -85,6 +86,13 @@
     )
     const percentText = $derived(formatInteger(candidate?.percent ?? 0))
 
+    /** The operation hasn't started writing, so there is no fraction to draw.
+     *  The corner says what it honestly knows: this is happening, and it's
+     *  counting. Same wording the dialog and the delete confirmation use for
+     *  the same moment. */
+    const isScanning = $derived(candidate?.scanning === true)
+    const scanningText = $derived(tString('fileOperations.shared.scanningTooltip'))
+
     /** One sentence for both the tooltip and the spoken label in the failure
      *  state: the count, and the promise that clicking opens the queue. */
     const failedText = $derived(
@@ -110,6 +118,9 @@
     const tooltipText = $derived.by(() => {
         if (chipState?.kind === 'failure') return failedText
         if (candidate === null) return ''
+        // ❌ Not the progress tooltip: its "· 0%" clause would be a percentage
+        // that cannot move, for as long as the walk takes.
+        if (isScanning) return scanningText
         const count = candidate.row.progress?.filesTotal ?? 0
         const destination = destinationName(candidate.row.snapshot.destination)
         // `chipLabel`, never `verb`: hovering a chip that reads "Paused" must
@@ -128,7 +139,11 @@
     })
 
     const ariaLabel = $derived(
-        chipState?.kind === 'failure' ? failedText : tString('queue.chip.ariaLabel', { label: chipLabel, percentText }),
+        chipState?.kind === 'failure'
+            ? failedText
+            : isScanning
+              ? scanningText
+              : tString('queue.chip.ariaLabel', { label: chipLabel, percentText }),
     )
 
     /** The tooltip action ADOPTS this element, and an adopted element keeps its
@@ -155,11 +170,19 @@
         {/if}
         <span class="chip-label">{chipLabel}</span>
         {#if chipState.kind === 'progress'}
-            <!-- The bar repeats what the aria-label already says as a percentage,
-                 so screen readers hear it once. -->
-            <span class="chip-bar" aria-hidden="true">
-                <ProgressBar value={chipState.operation.fraction} size="sm" animated={!chipState.operation.paused} />
-            </span>
+            {#if chipState.operation.scanning}
+                <!-- Indeterminate: the totals are what the scan is looking for,
+                     so a bar would sit at 0% for the whole walk. -->
+                <span class="chip-spinner" aria-hidden="true">
+                    <Spinner size="sm" />
+                </span>
+            {:else}
+                <!-- The bar repeats what the aria-label already says as a percentage,
+                     so screen readers hear it once. -->
+                <span class="chip-bar" aria-hidden="true">
+                    <ProgressBar value={chipState.operation.fraction} size="sm" animated={!chipState.operation.paused} />
+                </span>
+            {/if}
         {/if}
     </button>
 
@@ -183,6 +206,11 @@
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
         transition: background var(--transition-base), color var(--transition-base);
+    }
+
+    .chip-spinner {
+        display: inline-flex;
+        align-items: center;
     }
 
     .operation-chip:hover {

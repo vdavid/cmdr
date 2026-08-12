@@ -30,6 +30,7 @@ async fn copy_into_from_a_remote_source_lands_the_file() {
         0,
         false,
         None,
+        None,
     )
     .await
     .expect("start remote-source copy-into");
@@ -75,6 +76,7 @@ async fn copy_into_from_a_remote_source_lands_a_nested_tree() {
         ConflictResolution::Overwrite,
         0,
         false,
+        None,
         None,
     )
     .await
@@ -127,6 +129,7 @@ async fn copy_into_from_a_remote_source_uses_the_real_bytes_not_the_lying_size()
         0,
         false,
         None,
+        None,
     )
     .await
     .expect("start lying-size copy-into");
@@ -170,6 +173,7 @@ async fn move_into_from_a_remote_source_deletes_the_remote_originals_after_commi
         ConflictResolution::Overwrite,
         0,
         true, // is_move
+        None,
         None,
     )
     .await
@@ -227,6 +231,7 @@ async fn move_into_from_a_remote_source_keeps_originals_when_a_collision_is_skip
         0,
         true, // is_move
         None,
+        None,
     )
     .await
     .expect("start remote-source move-into with a skip");
@@ -268,6 +273,7 @@ async fn copy_into_from_a_remote_source_surfaces_a_pull_failure_and_leaves_the_z
         ConflictResolution::Overwrite,
         0,
         false,
+        None,
         None,
     )
     .await
@@ -314,6 +320,7 @@ async fn copy_into_from_a_remote_source_cancelled_before_the_pull_leaves_the_zip
         ConflictResolution::Overwrite,
         0,
         false,
+        None,
         None,
     )
     .await

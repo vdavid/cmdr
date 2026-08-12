@@ -53,8 +53,6 @@
         preKnownConflicts?: string[]
         /** Per-item sizes for trash progress (from scan or drive index, optional) */
         itemSizes?: number[]
-        /** Whether the scan preview is still running (this dialog should subscribe to scan events) */
-        scanInProgress?: boolean
         /** Who triggered this operation (`aiClient` for MCP-originated writes). */
         initiator?: Initiator
         onComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
@@ -84,7 +82,6 @@
         conflictResolution,
         preKnownConflicts,
         itemSizes,
-        scanInProgress = false,
         initiator,
         onComplete,
         onCancelled,
@@ -166,7 +163,6 @@
         conflictResolution,
         preKnownConflicts,
         itemSizes,
-        scanInProgress,
         initiator,
         onComplete,
         onCancelled,
@@ -178,7 +174,6 @@
     // Local aliases over the factory getters so the markup reads the same names
     // it always has. Each tracks the factory's reactive `$state`, so the template
     // updates exactly as before.
-    const waitingForScan = $derived(progress.waitingForScan)
     const phase = $derived(progress.phase)
     const isRollingBack = $derived(progress.isRollingBack)
     const isCancelling = $derived(progress.isCancelling)
@@ -207,6 +202,11 @@
     /** Non-null only once the BACKEND says the transfer has stopped moving for
      *  a reason that isn't deliberate. Drives the ETA line off the screen. */
     const stall = $derived(stallNoticeFor(progress.activity))
+
+    /** The operation is counting, not yet writing. One flag for the whole scan
+     *  phase: the preview the backend waits on and its own foolproof re-scan
+     *  both arrive as `write-progress` in `phase: 'scanning'`. */
+    const isScanning = $derived(phase === 'scanning')
 
     /** With an empty queue you're not queueing behind anything, you're sending
      *  this out of sight, so the button says "Background" instead. It reads the
@@ -278,9 +278,7 @@
     resizable="horizontal"
 >
     {#snippet title()}
-        {#if waitingForScan}
-            {scanTitle}
-        {:else if isRollingBack}
+        {#if isRollingBack}
             {tString('fileOperations.transferProgress.titleRollingBack')}
         {:else if isCancelling || cancelEventReceived}
             {#if settleSlow}
@@ -290,6 +288,11 @@
             {/if}
         {:else if conflictEvent}
             {tString('fileOperations.transferProgress.titleConflict')}
+        {:else if isScanning}
+            <!-- After cancelling and rolling back, not before: the phase stays
+                 `scanning` while a cancel issued mid-count winds down, and the
+                 title has to name what the dialog is doing NOW. -->
+            {scanTitle}
         {:else if isPaused}
             {tString('fileOperations.transferProgress.titlePaused')}
         {:else if phase === 'flushing'}
@@ -299,40 +302,7 @@
         {/if}
     {/snippet}
 
-    {#if waitingForScan}
-        <!-- Scan preview in progress (picked up from TransferDialog) -->
-        {#if !isDeleteOrTrash && destinationPath && direction}
-            <DirectionIndicator
-                sourcePath={sourceFolderPath}
-                {destinationPath}
-                {direction}
-                {sourceLabel}
-                {destinationLabel}
-            />
-        {/if}
-
-        <div class="scan-wait-section">
-            <ScanPhaseBody
-                {sourceFolderPath}
-                {scanFilesFound}
-                {scanDirsFound}
-                {scanBytesFound}
-                {scanFilesPerSec}
-                {scanBytesPerSec}
-                {scanCurrentDir}
-                {currentFile}
-            />
-        </div>
-
-        <div class="button-row">
-            <Button
-                variant="secondary"
-                onclick={() => {
-                    void progress.handleCancel(false)
-                }}>{tString('fileOperations.button.cancel')}</Button
-            >
-        </div>
-    {:else if !isDeleteOrTrash && conflictEvent}
+    {#if !isDeleteOrTrash && conflictEvent}
         <TransferConflictDialog
             {conflictEvent}
             {isCopy}
@@ -359,7 +329,7 @@
             />
         {/if}
 
-        {#if phase === 'scanning'}
+        {#if isScanning}
             <!-- Scanning phase: what's happening, then tallies, throughput, and
                  the current dir/file. There's no matching banner for the active
                  phase: the bars, their labels, and the dialog title already say
@@ -449,21 +419,28 @@
                  F2 while this dialog is focused). Both show only during the active
                  copy/move/delete phases (`canPauseOrQueue`). -->
             {#if canPauseOrQueue}
-                <Button
-                    variant="secondary"
-                    onclick={progress.handlePauseResume}
-                    disabled={pauseInFlight}
-                    aria-label={isPaused
-                        ? tString('fileOperations.transferProgress.resumeAria')
-                        : tString('fileOperations.transferProgress.pauseAria')}
-                >
-                    <span class="btn-inner">
-                        <Icon name={isPaused ? 'play' : 'pause'} size={14} />
-                        {isPaused
-                            ? tString('fileOperations.transferProgress.resume')
-                            : tString('fileOperations.transferProgress.pause')}
-                    </span>
-                </Button>
+                <!-- Pause parks between files, so there's nothing to park while
+                     the operation is still counting: the backend declines a
+                     pause in its scan-wait, and offering a button that does
+                     nothing is worse than not offering it. Queue stays, and is
+                     the whole point of giving a scanning transfer an id. -->
+                {#if !isScanning}
+                    <Button
+                        variant="secondary"
+                        onclick={progress.handlePauseResume}
+                        disabled={pauseInFlight}
+                        aria-label={isPaused
+                            ? tString('fileOperations.transferProgress.resumeAria')
+                            : tString('fileOperations.transferProgress.pauseAria')}
+                    >
+                        <span class="btn-inner">
+                            <Icon name={isPaused ? 'play' : 'pause'} size={14} />
+                            {isPaused
+                                ? tString('fileOperations.transferProgress.resume')
+                                : tString('fileOperations.transferProgress.pause')}
+                        </span>
+                    </Button>
+                {/if}
                 <!-- One button, two words: "Queue" when there's something to
                      queue behind, "Background" when there isn't. The action, the
                      tooltip, and F2 are the same either way. -->
@@ -512,11 +489,14 @@
                         >
                     </span>
                 {:else}
+                    <!-- Nothing has been written during the scan, so there is
+                         nothing to reverse: disabled rather than hidden, so the
+                         button row doesn't reshuffle when counting ends. -->
                     <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
                         <Button
                             variant="danger"
                             onclick={() => progress.handleCancel(true)}
-                            disabled={isCancelling || operationSettled}
+                            disabled={isCancelling || operationSettled || isScanning}
                             >{tString('fileOperations.transferProgress.conflictRollback')}</Button
                         >
                     </span>

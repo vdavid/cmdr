@@ -113,7 +113,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `apps/desktop/src-tauri/src/file_system/staging.rs`: Where every Cmdr scratch file (`.cmdr-tmp-*`, `.cmdr-temp-*`) is
   named, and whether a listing shows it. Rules and rationale: the module's own docs
 - `file_system/write_operations/`: Copy/move/delete with safety patterns (temp+rename, staging, rollback). Umbrella +
-  shared state machine, the operation manager (queue + lane admission), `OperationEventSink`, Settle contract
+  shared state machine, the operation manager (queue + lane admission), `OperationEventSink`, Settle contract, and the
+  scan preview a confirmed transfer waits on inside its own task (`scan_preview.rs` / `scan_cache.rs` /
+  `scan_bridge.rs`)
 - `file_system/write_operations/transfer/`: Copy + move pipelines: conflict resolution, transfer driver, platform copies
   (`copyfile(3)` / `copy_file_range(2)` / chunked)
 - `file_system/write_operations/transfer/volume/`: The cross-volume (Local ↔ MTP ↔ SMB ↔ archive) copy/move engine

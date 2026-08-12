@@ -70,6 +70,7 @@ pub(crate) async fn route_archive_copy_into(
     progress_interval_ms: u64,
     is_move: bool,
     compression_level: Option<i64>,
+    preview_id: Option<String>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // A copy/move INTO an existing archive is a user-initiated zip-inner edit —
     // journaled but not rollbackable in v1. An MCP-initiated into-archive edit
@@ -85,6 +86,7 @@ pub(crate) async fn route_archive_copy_into(
         progress_interval_ms,
         is_move,
         compression_level,
+        preview_id,
         super::super::journal::ArchiveProvenance::edit(crate::operation_log::types::Initiator::User),
     )
     .await
@@ -107,6 +109,7 @@ pub(crate) async fn route_archive_copy_into_with_provenance(
     progress_interval_ms: u64,
     is_move: bool,
     compression_level: Option<i64>,
+    preview_id: Option<String>,
     prov: super::super::journal::ArchiveProvenance,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // A LOCAL source volume's root — `Some` skips the pull (the changeset walks
@@ -143,6 +146,7 @@ pub(crate) async fn route_archive_copy_into_with_provenance(
         is_move,
         progress_interval_ms,
         compression_level,
+        preview_id,
         prov,
     )
     .await
@@ -555,6 +559,7 @@ async fn archive_copy_into_start(
     is_move: bool,
     progress_interval_ms: u64,
     compression_level: Option<i64>,
+    preview_id: Option<String>,
     prov: super::super::journal::ArchiveProvenance,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let operation_id = Uuid::new_v4().to_string();
@@ -580,6 +585,7 @@ async fn archive_copy_into_start(
         // A zip edit is a whole-archive temp+rename rewrite: it either lands or
         // it doesn't, so there's no half-written state to reverse.
         supports_rollback: false,
+        preview_id,
     };
 
     let events_for_op = Arc::clone(&events);
@@ -600,6 +606,25 @@ async fn archive_copy_into_start(
                 WriteOperationType::ArchiveEdit,
                 settle_volume,
             );
+
+            // Wait out the confirming dialog's scan. The changeset planner
+            // walks the sources itself, so this buys serialization rather than
+            // reuse: without it, ⌥F5's sampling preview and this walk would run
+            // down the same tree at once, which is what costs on MTP and SMB.
+            if crate::file_system::write_operations::scan_bridge::await_claimed_preview(
+                &*events,
+                &op_id,
+                WriteOperationType::ArchiveEdit,
+                &state,
+            )
+            .await
+            .stopped()
+            .is_some()
+            {
+                task_guard.disarm();
+                manager::manager().on_settled(&op_id);
+                return;
+            }
 
             // Open the journal row when the op actually starts. Archive edits
             // spawn directly (not through `start_write_operation`), so this is

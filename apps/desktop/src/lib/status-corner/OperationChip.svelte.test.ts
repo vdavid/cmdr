@@ -289,4 +289,25 @@ describe('OperationChip', () => {
     flushSync()
     expect(openQueueWindow).toHaveBeenCalledTimes(1)
   })
+
+  it('shows an indeterminate scan state rather than a percentage that cannot move', () => {
+    // The bridge gives a scanning operation a chip at all, so without this the
+    // corner would read "Copying · 0%" for as long as the walk takes. Both
+    // totals stay 0 through a scan by design, so the bar has nothing to draw.
+    store?._testApplySnapshot([snapshot()])
+    store?._testApplyProgress(progress({ phase: 'scanning', filesDone: 900, filesTotal: 0, bytesTotal: 0 }))
+    renderChip()
+
+    expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Copying')
+    expect(target.querySelector('[role="progressbar"]'), 'no bar while the totals are unknown').toBeNull()
+    expect(chip()?.getAttribute('aria-label')).toBe('Scanning…')
+  })
+
+  it('goes back to a real bar once the operation starts writing', () => {
+    store?._testApplySnapshot([snapshot()])
+    store?._testApplyProgress(progress())
+    renderChip()
+
+    expect(target.querySelector('[role="progressbar"]')).not.toBeNull()
+  })
 })

@@ -23,17 +23,28 @@ import {
 // Hoisted so the `vi.mock` factory (lifted to the top of the file) can reference
 // these. Plain `const`s declared here would be in the temporal dead zone when the
 // hoisted factory runs.
-const { pauseOperationMock, resumeOperationMock, cancelWriteOperationMock, listOperationsMock, operationsChangedCbs } =
-  vi.hoisted(() => ({
-    pauseOperationMock: vi.fn(() => Promise.resolve()),
-    resumeOperationMock: vi.fn(() => Promise.resolve()),
-    cancelWriteOperationMock: vi.fn(() => Promise.resolve()),
-    listOperationsMock: vi.fn(() => Promise.resolve<OperationSnapshot[]>([])),
-    // EVERY `operations-changed` subscriber, not just the dialog's: the main
-    // window's operations store subscribes to the same stream, and the button's
-    // label reads that store. One emit has to reach both, as it does in the app.
-    operationsChangedCbs: [] as ((event: { operations: OperationSnapshot[] }) => void)[],
-  }))
+const {
+  pauseOperationMock,
+  resumeOperationMock,
+  cancelWriteOperationMock,
+  listOperationsMock,
+  operationsChangedCbs,
+  writeProgressCbs,
+} = vi.hoisted(() => ({
+  pauseOperationMock: vi.fn(() => Promise.resolve()),
+  resumeOperationMock: vi.fn(() => Promise.resolve()),
+  cancelWriteOperationMock: vi.fn(() => Promise.resolve()),
+  listOperationsMock: vi.fn(() => Promise.resolve<OperationSnapshot[]>([])),
+  // EVERY `operations-changed` subscriber, not just the dialog's: the main
+  // window's operations store subscribes to the same stream, and the button's
+  // label reads that store. One emit has to reach both, as it does in the app.
+  operationsChangedCbs: [] as ((event: { operations: OperationSnapshot[] }) => void)[],
+  // The dialog's phase comes from `write-progress`, and it starts in
+  // `scanning` (the operation is registered before its preview finishes). The
+  // manage controls that only make sense once bytes move need a real copying
+  // tick, so the harness drives one.
+  writeProgressCbs: [] as ((event: Record<string, unknown>) => void)[],
+}))
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -43,7 +54,10 @@ vi.mock('$lib/tauri-commands', () => ({
   moveFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
   deleteFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
   trashFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
-  onWriteProgress: vi.fn(() => Promise.resolve(() => {})),
+  onWriteProgress: vi.fn((cb: (event: Record<string, unknown>) => void) => {
+    writeProgressCbs.push(cb)
+    return Promise.resolve(() => {})
+  }),
   onWriteComplete: vi.fn(() => Promise.resolve(() => {})),
   onWriteError: vi.fn(() => Promise.resolve(() => {})),
   onWriteCancelled: vi.fn(() => Promise.resolve(() => {})),
@@ -149,10 +163,63 @@ async function mountDialog(): Promise<{
     },
   })
   await flushPromises()
-  // Drive the dialog into the active (copying) phase so the manage controls show.
+  // Drive the dialog into the active (copying) phase so the manage controls
+  // show. The status snapshot alone isn't enough: an operation is `running`
+  // from the moment it's registered, and the PHASE is what says whether it is
+  // still counting or actually writing.
+  emitCopyingProgress()
   emitSnapshot(snapshot('running'))
   await tick()
   return { component, target, onQueue }
+}
+
+/** Mounts the dialog and leaves it in the scanning phase: registered, named,
+ *  and counting, which is what a confirmed transfer looks like before its
+ *  preview lands. */
+async function mountScanningDialog(): Promise<{ target: HTMLDivElement; onQueue: ReturnType<typeof vi.fn> }> {
+  const onQueue = vi.fn()
+  const target = document.createElement('div')
+  document.body.appendChild(target)
+  mount(TransferProgressDialog, {
+    target,
+    props: {
+      operationType: 'copy',
+      sourcePaths: ['/Users/test/things'],
+      sourceFolderPath: '/Users/test',
+      destinationPath: '/Users/test/dest',
+      direction: 'right',
+      sortColumn: 'name',
+      sortOrder: 'ascending',
+      previewId: 'prev-1',
+      sourceVolumeId: 'root',
+      destVolumeId: 'root',
+      conflictResolution: 'stop',
+      onComplete: () => {},
+      onCancelled: () => {},
+      onError: () => {},
+      onQueue,
+    },
+  })
+  await flushPromises()
+  emitSnapshot(snapshot('running'))
+  await tick()
+  return { target, onQueue }
+}
+
+/** One active-phase progress tick, so the dialog leaves the scanning phase. */
+function emitCopyingProgress(): void {
+  for (const cb of [...writeProgressCbs]) {
+    cb({
+      operationId: 'op-1',
+      operationType: 'copy',
+      phase: 'copying',
+      currentFile: 'a.bin',
+      filesDone: 1,
+      filesTotal: 4,
+      bytesDone: 25,
+      bytesTotal: 100,
+    })
+  }
 }
 
 /** Fires an `operations-changed` snapshot through every captured subscriber. */
@@ -498,5 +565,39 @@ describe('TransferProgressDialog background/queue button label', () => {
     expect(backgroundButtonLabel(target)).toBe('Background')
 
     void unmount(component)
+  })
+})
+
+describe('TransferProgressDialog while the operation is still counting', () => {
+  it('offers Background but not Pause', async () => {
+    // The shipped bug, from the other side: a confirmed transfer had no
+    // `operationId` while its preview walked, so neither control rendered and a
+    // large copy could not be sent to the background. Now it can — and Pause
+    // stays away, because the backend declines a pause in its scan-wait.
+    const { target } = await mountScanningDialog()
+
+    expect(queryButton(target, 'Pause this operation'), 'a scan has nothing to park').toBeNull()
+    expect(
+      queryButton(target, BACKGROUND_ARIA) ?? queryButton(target, QUEUE_ARIA),
+      'backgrounding a scanning transfer is the whole point',
+    ).not.toBeNull()
+  })
+
+  it('backgrounds a scanning operation without cancelling it', async () => {
+    const { target, onQueue } = await mountScanningDialog()
+
+    ;(queryButton(target, BACKGROUND_ARIA) ?? queryButton(target, QUEUE_ARIA))?.click()
+    await tick()
+
+    expect(onQueue).toHaveBeenCalledTimes(1)
+    expect(openQueueWindowMock).toHaveBeenCalledTimes(1)
+    expect(cancelWriteOperationMock, 'a handoff is not a cancel').not.toHaveBeenCalled()
+  })
+
+  it('disables Rollback: nothing has been written to reverse', async () => {
+    const { target } = await mountScanningDialog()
+
+    const rollback = [...target.querySelectorAll('button')].find((b) => b.textContent.includes('Rollback'))
+    expect(rollback?.disabled).toBe(true)
   })
 })

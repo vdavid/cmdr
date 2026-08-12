@@ -76,7 +76,6 @@ function copyProps(): TransferProgressPropsData {
     sourceVolumeId: 'root',
     destVolumeId: 'root',
     conflictResolution: 'stop',
-    scanInProgress: false,
   }
 }
 
@@ -151,7 +150,6 @@ describe('archive-password submit → re-dispatch', () => {
     })
     // The consumed preview is dropped so the retry re-scans the archive index.
     expect(dialogs.transferProgressProps?.previewId).toBeNull()
-    expect(dialogs.transferProgressProps?.scanInProgress).toBe(false)
     // Same operation otherwise.
     expect(dialogs.transferProgressProps?.sourcePaths).toEqual(['/Users/me/secret.zip/inner/report.pdf'])
   })

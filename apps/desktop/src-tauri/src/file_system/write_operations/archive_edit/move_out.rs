@@ -119,6 +119,7 @@ pub(crate) async fn route_archive_move_out(
         // Moving OUT of a zip rewrites the archive to drop the entries: that
         // rewrite is all-or-nothing, so there's nothing partial to reverse.
         supports_rollback: false,
+        preview_id: config.preview_id.clone(),
     };
 
     let events_for_op = Arc::clone(&events);
@@ -139,6 +140,23 @@ pub(crate) async fn route_archive_move_out(
                 WriteOperationType::Move,
                 settle_volume,
             );
+
+            // Wait out the confirming dialog's scan; see
+            // `write_operations::start_write_operation`.
+            if crate::file_system::write_operations::scan_bridge::await_claimed_preview(
+                &*events,
+                &op_id,
+                WriteOperationType::Move,
+                &state,
+            )
+            .await
+            .stopped()
+            .is_some()
+            {
+                task_guard.disarm();
+                manager::manager().on_settled(&op_id);
+                return;
+            }
 
             // Phase 1 — extract. The suppressing sink forwards progress/conflict
             // to the FE but withholds the copy's terminal events (the compound op

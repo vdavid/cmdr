@@ -215,6 +215,8 @@ async fn route_archive_create(
         },
         move_sources_to_delete: Vec::new(),
         skipped_count: 0,
+        // No scan preview: nothing walked a tree to plan this edit.
+        preview_id: None,
     };
     let started = archive_edit::archive_edit_start(events, request, 200)
         .await
@@ -250,6 +252,8 @@ pub(super) fn instant_descriptor(
         // An instant metadata op has no partial state, and no cancel path that
         // could catch it mid-flight.
         supports_rollback: false,
+        // No scan preview: nothing walked a tree to plan this op.
+        preview_id: None,
     }
 }
 

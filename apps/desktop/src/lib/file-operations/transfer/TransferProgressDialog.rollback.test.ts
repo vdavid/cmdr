@@ -22,6 +22,12 @@ const ROLLBACK_TOOLTIP = 'Rollback is not available for same-volume moves'
 
 let conflictCb: ((e: WriteConflictEvent) => void) | null = null
 
+// The dialog's phase comes from `write-progress`, and it opens in `scanning`
+// (the operation is registered before its preview finishes). Rollback is
+// deliberately disabled while nothing has been written, so the harness drives a
+// copying tick to reach the state these tests are about.
+const { progressCbs } = vi.hoisted(() => ({ progressCbs: [] as ((event: Record<string, unknown>) => void)[] }))
+
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
@@ -30,7 +36,10 @@ vi.mock('$lib/tauri-commands', () => ({
   moveFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
   deleteFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
   trashFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
-  onWriteProgress: vi.fn(() => Promise.resolve(() => {})),
+  onWriteProgress: vi.fn((cb: (event: Record<string, unknown>) => void) => {
+    progressCbs.push(cb)
+    return Promise.resolve(() => {})
+  }),
   onWriteComplete: vi.fn(() => Promise.resolve(() => {})),
   onWriteError: vi.fn(() => Promise.resolve(() => {})),
   onWriteCancelled: vi.fn(() => Promise.resolve(() => {})),
@@ -117,6 +126,19 @@ async function mountDialog(opts: MountOptions): Promise<HTMLDivElement> {
       onError: () => {},
     },
   })
+  await flushMicrotasks()
+  for (const cb of [...progressCbs]) {
+    cb({
+      operationId: 'op-1',
+      operationType: opts.operationType,
+      phase: 'copying',
+      currentFile: 'a.bin',
+      filesDone: 1,
+      filesTotal: 4,
+      bytesDone: 25,
+      bytesTotal: 100,
+    })
+  }
   await flushMicrotasks()
   return target
 }

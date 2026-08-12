@@ -34,6 +34,11 @@ use std::sync::atomic::{AtomicI64, Ordering};
 /// can encode the "unset" sentinel without a separate flag.
 static COPY_THROTTLE_OVERRIDE: AtomicI64 = AtomicI64::new(-1);
 
+/// Runtime override for the scan-preview start delay, settable via the
+/// `set_test_scan_preview_delay` IPC command (feature-gated to
+/// `playwright-e2e`). Same `-1`-means-unset shape as the copy throttle above.
+static SCAN_PREVIEW_DELAY_OVERRIDE: AtomicI64 = AtomicI64::new(-1);
+
 /// Sets the IPC-driven copy throttle override.
 ///
 /// `None` clears the override and falls back to `CMDR_E2E_COPY_THROTTLE_MS`.
@@ -122,6 +127,44 @@ pub fn e2e_copy_throttle_ms() -> Option<u64> {
     std::env::var("CMDR_E2E_COPY_THROTTLE_MS")
         .ok()
         .and_then(|s| s.parse().ok())
+}
+
+/// How long every scan-preview worker waits at its starting line before it
+/// walks: the `set_test_scan_preview_delay` IPC override wins, then
+/// `CMDR_E2E_SCAN_PREVIEW_DELAY_MS`, then nothing.
+///
+/// E2E fixture trees are deliberately tiny, so a scan over one finishes faster
+/// than a test can click anything, and `data-scan-state` signals "counting
+/// done" — the opposite of what a test about the scanning phase needs to hold.
+/// This gives such a test a deterministic window instead of a race against a
+/// 40-file fixture. Returns `None` outside `CMDR_E2E_MODE`, so an
+/// accidentally-set var or override can never slow production down.
+pub fn e2e_scan_preview_delay_ms() -> Option<u64> {
+    if !is_e2e_mode() {
+        return None;
+    }
+    let override_val = SCAN_PREVIEW_DELAY_OVERRIDE.load(Ordering::Relaxed);
+    if override_val > 0 {
+        return Some(override_val as u64);
+    }
+    if override_val == 0 {
+        return None;
+    }
+    std::env::var("CMDR_E2E_SCAN_PREVIEW_DELAY_MS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .filter(|ms| *ms > 0)
+}
+
+/// Sets the IPC-driven scan-preview delay override. `None` clears it and falls
+/// back to `CMDR_E2E_SCAN_PREVIEW_DELAY_MS`. Per-test rather than per-process,
+/// so one spec's scanning window doesn't slow down the whole run.
+pub fn set_scan_preview_delay_override(ms: Option<u64>) {
+    let v = match ms {
+        Some(n) => n.min(i64::MAX as u64) as i64,
+        None => -1,
+    };
+    SCAN_PREVIEW_DELAY_OVERRIDE.store(v, Ordering::Relaxed);
 }
 
 #[cfg(test)]

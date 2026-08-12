@@ -22,10 +22,6 @@ import type {
   WriteSettledEvent,
   WriteConflictEvent,
   OperationSnapshot,
-  ScanPreviewProgressEvent,
-  ScanPreviewCompleteEvent,
-  ScanPreviewErrorEvent,
-  ScanPreviewCancelledEvent,
   WriteOperationStartResult,
 } from '$lib/tauri-commands'
 import type { WriteOperationError, WriteOperationType } from '$lib/file-explorer/types'
@@ -38,10 +34,6 @@ let cancelledCb: ((e: WriteCancelledEvent) => void) | null = null
 let settledCb: ((e: WriteSettledEvent) => void) | null = null
 let conflictCb: ((e: WriteConflictEvent) => void) | null = null
 let opsChangedCb: ((e: { operations: OperationSnapshot[] }) => void) | null = null
-let scanProgressCb: ((e: ScanPreviewProgressEvent) => void) | null = null
-let scanCompleteCb: ((e: ScanPreviewCompleteEvent) => void) | null = null
-let scanErrorCb: ((e: ScanPreviewErrorEvent) => void) | null = null
-let scanCancelledCb: ((e: ScanPreviewCancelledEvent) => void) | null = null
 
 const noopUnlisten = () => {}
 
@@ -80,26 +72,9 @@ vi.mock('$lib/tauri-commands', () => ({
     opsChangedCb = cb
     return Promise.resolve(noopUnlisten)
   }),
-  onScanPreviewProgress: vi.fn((cb: (e: ScanPreviewProgressEvent) => void) => {
-    scanProgressCb = cb
-    return Promise.resolve(noopUnlisten)
-  }),
-  onScanPreviewComplete: vi.fn((cb: (e: ScanPreviewCompleteEvent) => void) => {
-    scanCompleteCb = cb
-    return Promise.resolve(noopUnlisten)
-  }),
-  onScanPreviewError: vi.fn((cb: (e: ScanPreviewErrorEvent) => void) => {
-    scanErrorCb = cb
-    return Promise.resolve(noopUnlisten)
-  }),
-  onScanPreviewCancelled: vi.fn((cb: (e: ScanPreviewCancelledEvent) => void) => {
-    scanCancelledCb = cb
-    return Promise.resolve(noopUnlisten)
-  }),
   resolveWriteConflict: vi.fn(() => Promise.resolve()),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   cancelScanPreview: vi.fn(() => Promise.resolve()),
-  checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
   pauseOperation: vi.fn(() => Promise.resolve()),
   resumeOperation: vi.fn(() => Promise.resolve()),
   listOperations: vi.fn(() => Promise.resolve([])),
@@ -144,7 +119,6 @@ import {
   resolveWriteConflict,
   cancelWriteOperation,
   cancelScanPreview,
-  checkScanPreviewStatus,
   pauseOperation,
   resumeOperation,
 } from '$lib/tauri-commands'
@@ -178,7 +152,6 @@ function makeConfig(over: Partial<TransferProgressStateConfig> = {}): TransferPr
     conflictResolution: 'stop',
     preKnownConflicts: [],
     itemSizes: [],
-    scanInProgress: false,
     onComplete: vi.fn(),
     onCancelled: vi.fn(),
     onError: vi.fn(),
@@ -235,10 +208,6 @@ beforeEach(() => {
   settledCb = null
   conflictCb = null
   opsChangedCb = null
-  scanProgressCb = null
-  scanCompleteCb = null
-  scanErrorCb = null
-  scanCancelledCb = null
   vi.clearAllMocks()
   vi.useFakeTimers()
   // The slot is module-scoped, so a test that leaves an owner behind would poison
@@ -819,69 +788,74 @@ describe('createTransferProgressState: disposal', () => {
   })
 })
 
-describe('createTransferProgressState: scan-wait path', () => {
-  it('waits for the scan to complete, then dispatches the operation', async () => {
-    const { state } = await startedState({ scanInProgress: true, previewId: 'prev-1' })
-    expect(state.waitingForScan).toBe(true)
-    expect(copyBetweenVolumes).not.toHaveBeenCalled()
+describe('createTransferProgressState: a still-scanning transfer', () => {
+  // The scan-wait moved into the backend's own operation task, so the dialog
+  // dispatches at once and the operation waits for the preview it claimed. That
+  // is the whole fix: an operation exists from the first frame, so it can be
+  // paused, backgrounded, cancelled, and counted by the quit gate while it
+  // counts. The cases below replace the ones that described the OLD mechanism
+  // (subscribe to `scan-preview-*`, dispatch on complete, cancel the preview on
+  // teardown), each of which asserted machinery that no longer exists.
 
-    if (!scanProgressCb || !scanCompleteCb) throw new Error('scan subscribers never registered')
-    vi.advanceTimersByTime(50)
-    scanProgressCb({
-      previewId: 'prev-1',
-      filesFound: 5,
-      dirsFound: 2,
-      bytesFound: 500,
-      currentPath: 'file',
+  it('dispatches immediately even with a preview still walking, and names the operation', async () => {
+    const { state } = await startedState({ previewId: 'prev-1' })
+
+    expect(copyBetweenVolumes).toHaveBeenCalledTimes(1)
+    expect(state.operationId).toBe('op-1')
+    expect(state.phase).toBe('scanning')
+  })
+
+  it('offers Pause and Background while the operation is still scanning', async () => {
+    // The shipped bug: `canPauseOrQueue` used to require the scan to be over,
+    // so a large transfer could not be backgrounded for as long as it counted.
+    const { state } = await startedState({ previewId: 'prev-1' })
+
+    expect(state.canPauseOrQueue).toBe(true)
+  })
+
+  it('backgrounds a scanning operation to the queue', async () => {
+    const { state, config } = await startedState({ previewId: 'prev-1' })
+
+    state.handleQueue()
+
+    expect(config.onQueue).toHaveBeenCalledTimes(1)
+    expect(cancelWriteOperation).not.toHaveBeenCalled()
+  })
+
+  it("renders the scan-phase counts from the operation's own progress stream", async () => {
+    // The backend forwards the claimed preview's counts as `write-progress` in
+    // `phase: 'scanning'` under the operation's id, so one branch feeds the
+    // readout for both the preview and the backend's own re-scan.
+    const { state } = await startedState({ previewId: 'prev-1' })
+    if (!progressCb) throw new Error('progress subscriber never registered')
+
+    progressCb({
+      ...progressEvent(),
+      phase: 'scanning',
+      filesDone: 5,
+      dirsDone: 2,
+      bytesDone: 500,
+      filesTotal: 0,
+      bytesTotal: 0,
       currentDir: '/src',
     })
+
     expect(state.scanFilesFound).toBe(5)
     expect(state.scanDirsFound).toBe(2)
-
-    scanCompleteCb({ previewId: 'prev-1', filesTotal: 10, dirsTotal: 3, bytesTotal: 1000, dedupBytesTotal: 1000 })
-    await flushMicro()
-    expect(state.waitingForScan).toBe(false)
-    expect(copyBetweenVolumes).toHaveBeenCalledTimes(1)
+    expect(state.scanBytesFound).toBe(500)
+    expect(state.scanCurrentDir).toBe('/src')
   })
 
-  it('starts immediately when the scan already completed (status check wins)', async () => {
-    vi.mocked(checkScanPreviewStatus).mockResolvedValueOnce({
-      filesTotal: 10,
-      dirsTotal: 3,
-      bytesTotal: 1000,
-      dedupBytesTotal: 1000,
-    })
-    const { state } = await startedState({ scanInProgress: true, previewId: 'prev-1' })
-    expect(state.waitingForScan).toBe(false)
-    expect(copyBetweenVolumes).toHaveBeenCalledTimes(1)
-  })
+  it('never cancels the preview itself: the operation owns it now', async () => {
+    // A dialog going away is a viewer detaching. Stopping the walk here would
+    // pull the result out from under a transfer that is still queued or
+    // running, which is exactly the coupling this seam exists to remove.
+    const { state } = await startedState({ previewId: 'prev-1' })
 
-  it('reports a scan error through onError without dispatching', async () => {
-    const { config } = await startedState({ scanInProgress: true, previewId: 'prev-1' })
-    if (!scanErrorCb) throw new Error('scan-error subscriber never registered')
-    scanErrorCb({ previewId: 'prev-1', message: 'disk gone' })
-    expect(config.onError).toHaveBeenCalledWith(expect.objectContaining({ type: 'io_error' }))
-    expect(copyBetweenVolumes).not.toHaveBeenCalled()
-  })
-
-  it('reports a scan cancellation through onCancelled', async () => {
-    const { config } = await startedState({ scanInProgress: true, previewId: 'prev-1' })
-    if (!scanCancelledCb) throw new Error('scan-cancelled subscriber never registered')
-    scanCancelledCb({ previewId: 'prev-1' })
-    expect(config.onCancelled).toHaveBeenCalledWith(0)
-  })
-
-  it('cancels the scan preview when the user cancels during the wait', async () => {
-    const { state, config } = await startedState({ scanInProgress: true, previewId: 'prev-1' })
-    expect(state.waitingForScan).toBe(true)
     await state.handleCancel(false)
-    expect(cancelScanPreview).toHaveBeenCalledWith('prev-1')
-    expect(config.onCancelled).toHaveBeenCalledWith(0)
-  })
-
-  it('cancels the scan preview on disposal during the wait', async () => {
-    const { state } = await startedState({ scanInProgress: true, previewId: 'prev-1' })
     state.destroy()
-    expect(cancelScanPreview).toHaveBeenCalledWith('prev-1')
+
+    expect(cancelScanPreview).not.toHaveBeenCalled()
+    expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', false)
   })
 })

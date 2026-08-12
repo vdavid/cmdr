@@ -69,6 +69,7 @@ use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 use crate::file_system::volume::LaneKey;
 use crate::ignore_poison::IgnorePoison;
 
+use super::scan_cache;
 use super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, forget_operation, register_operation_status,
     unregister_operation_status,
@@ -114,7 +115,16 @@ pub(crate) struct OperationDescriptor {
     /// Short source→dest summary for the queue window. Best-effort.
     pub summary: OperationSummaryText,
     /// Whether cancelling this op can also UNDO what it wrote. DETAILS § "Rollback availability".
+    ///
+    /// A promise about the OPERATION, not about its current phase: it stays
+    /// true through the scan-wait, when there is nothing to undo yet. Whether
+    /// to OFFER Rollback is a view decision keyed on the progress phase.
     pub supports_rollback: bool,
+    /// The scan preview this op intends to consume, from the confirming
+    /// dialog. Claimed at registration so the op can wait on the walk instead
+    /// of racing a second one down the same tree. `None` for an op with no
+    /// preview (MCP, drag-and-drop, an instant op).
+    pub preview_id: Option<String>,
 }
 
 /// Best-effort human-readable source/destination summary for the queue window.
@@ -143,6 +153,21 @@ struct OpRecord {
     /// free). Lets lane-freeing be idempotent across the happy-path
     /// `on_settled` and the `Drop` safety net.
     reserved_lanes: Vec<LaneKey>,
+    /// The scan preview this op claimed, once it holds the claim. `None` when
+    /// it never had one, or once the wait ended.
+    claimed_preview: Option<String>,
+    /// The op is parked on its scan preview and has written nothing. Set at
+    /// registration when the claim lands on a still-walking preview, cleared
+    /// when the wait ends. Deliberately NOT on `OperationSnapshot`: the
+    /// frontend already learns the same fact from `write-progress`'s `phase`,
+    /// and two sources for one truth is how they drift.
+    in_scan_wait: bool,
+    /// A pause the manager refused because the op was in its scan-wait, held
+    /// until the wait ends. Without the latch, `pause_all` would drop the
+    /// request on the floor and that one op would start writing at full speed
+    /// while everything else stayed paused — the exact scenario pause exists
+    /// for.
+    pause_requested: bool,
 }
 
 /// One thin registry snapshot row (membership + lifecycle status, NOT 200 ms
@@ -341,6 +366,22 @@ impl OperationManager {
 
         WRITE_OPERATION_STATE.insert(operation_id.clone(), state);
 
+        // Claim the confirming dialog's preview before the record exists, so a
+        // second op naming the same id is refused rather than racing for one
+        // consumable result. A refusal or an unknown id is a miss: the op keeps
+        // no claim and falls back to its own walk.
+        let (claimed_preview, in_scan_wait) = match &descriptor.preview_id {
+            None => (None, false),
+            Some(preview_id) => match scan_cache::claim_preview(preview_id, &operation_id) {
+                scan_cache::PreviewClaim::Waiting => (Some(preview_id.clone()), true),
+                // Already settled: the claim still holds (it exempts the result
+                // from TTL eviction until this op consumes it), but there is
+                // nothing to wait for, so pause behaves normally from the start.
+                scan_cache::PreviewClaim::AlreadySettled => (Some(preview_id.clone()), false),
+                scan_cache::PreviewClaim::Unknown | scan_cache::PreviewClaim::Refused => (None, false),
+            },
+        };
+
         {
             let mut inner = self.inner.lock_ignore_poison();
             inner.records.insert(
@@ -350,13 +391,22 @@ impl OperationManager {
                     status: LifecycleStatus::Queued,
                     deferred: Some(deferred),
                     reserved_lanes: Vec::new(),
+                    claimed_preview,
+                    in_scan_wait,
+                    pause_requested: false,
                 },
             );
-            inner.order.push(operation_id);
+            inner.order.push(operation_id.clone());
         }
 
         self.run_admission_pass();
         self.emit_changed();
+
+        // AFTER `emit_changed`, on purpose: the frontend store drops progress
+        // for an id it has no snapshot row for yet. See `emit_initial_scan_tick`.
+        if in_scan_wait {
+            super::scan_bridge::emit_initial_scan_tick(&operation_id);
+        }
     }
 
     /// Walks the pending queue oldest-first and admits the first op whose every
@@ -499,6 +549,11 @@ impl OperationManager {
                     status: LifecycleStatus::Running,
                     deferred: None,
                     reserved_lanes: Vec::new(),
+                    // An instant op is a metadata syscall: no preview, nothing
+                    // to wait on, nothing to defer.
+                    claimed_preview: None,
+                    in_scan_wait: false,
+                    pause_requested: false,
                 },
             );
             inner.order.push(operation_id.clone());
@@ -528,18 +583,26 @@ impl OperationManager {
     /// without admitting anything. The shared core of `on_settled` (happy
     /// path) and the `Drop` safety net. Idempotent.
     fn free_and_remove(&self, operation_id: &str) {
-        let removed = {
+        let (removed, claimed_preview) = {
             let mut inner = self.inner.lock_ignore_poison();
             match inner.records.remove(operation_id) {
                 Some(rec) => {
                     inner.release(&rec.reserved_lanes);
                     inner.order.retain(|id| id != operation_id);
-                    true
+                    (true, rec.claimed_preview)
                 }
-                None => false,
+                None => (false, None),
             }
         };
         if removed {
+            // A claim still held here means the op never finished its wait (it
+            // panicked, or the quit deadline dropped its task). Stop the walk
+            // and drop its result rather than leaving tens of thousands of
+            // `FileInfo` for the TTL sweep. A wait that ended normally already
+            // cleared the claim, so this is a no-op on the happy path.
+            if let Some(preview_id) = claimed_preview {
+                scan_cache::abandon_claim(&preview_id);
+            }
             forget_operation(operation_id);
             unregister_operation_status(operation_id);
         }
@@ -550,18 +613,26 @@ impl OperationManager {
     /// `false` if the op was Running/Paused/absent (the caller then routes
     /// through the existing `cancel_write_operation` intent path).
     pub(crate) fn cancel_if_queued(&'static self, operation_id: &str) -> bool {
-        let was_queued = {
+        let (was_queued, claimed_preview) = {
             let mut inner = self.inner.lock_ignore_poison();
             match inner.records.get(operation_id) {
                 Some(rec) if rec.status == LifecycleStatus::Queued => {
-                    inner.records.remove(operation_id);
+                    let claimed_preview = inner.records.remove(operation_id).and_then(|rec| rec.claimed_preview);
                     inner.order.retain(|id| id != operation_id);
-                    true
+                    (true, claimed_preview)
                 }
-                _ => false,
+                _ => (false, None),
             }
         };
         if was_queued {
+            // This path drops the record WITHOUT ever running its
+            // `DeferredStart`, so nothing else will end the op's scan claim:
+            // the walk would keep going for an operation that no longer exists
+            // and its result would sit until a TTL sweep. Cancelling a queued
+            // op on a busy lane is the ordinary case, not an exotic one.
+            if let Some(preview_id) = claimed_preview {
+                scan_cache::abandon_claim(&preview_id);
+            }
             // A queued op never reserved lanes nor registered busy status, so
             // only the `WRITE_OPERATION_STATE` entry needs clearing.
             forget_operation(operation_id);
@@ -582,10 +653,25 @@ impl OperationManager {
     /// terminal) is left untouched and returns `false`. A Queued op can't be
     /// "paused" in v1 — it simply isn't admitted yet (see the IPC layer's
     /// no-op-for-Queued note). Returns `true` if it flipped a record.
+    ///
+    /// **A scan-waiting op refuses the flip and LATCHES the request.** It is
+    /// `Running`, so without a rule the snapshot would say `Paused`, the dialog
+    /// title would say "Paused", and the walk would carry on at full speed —
+    /// while `set_paused` deliberately keeps the lane slots, so a "paused" scan
+    /// would hold its lane indefinitely doing nothing. The refusal is already
+    /// observable everywhere it matters (no surface flips optimistically), and
+    /// the latch is what stops `pause_all` from losing the request.
     pub(crate) fn set_paused(&self, operation_id: &str, paused: bool) -> bool {
         let flipped = {
             let mut inner = self.inner.lock_ignore_poison();
             match inner.records.get_mut(operation_id) {
+                Some(rec) if rec.in_scan_wait => {
+                    // Refused either way: a scan-wait has nothing to park. The
+                    // request (or its withdrawal) is remembered and applied at
+                    // `end_scan_wait`, the moment the write would have begun.
+                    rec.pause_requested = paused;
+                    false
+                }
                 Some(rec) if paused && rec.status == LifecycleStatus::Running => {
                     rec.status = LifecycleStatus::Paused;
                     true
@@ -601,6 +687,62 @@ impl OperationManager {
             self.emit_changed();
         }
         flipped
+    }
+
+    /// Marks the op's scan-wait over and reports whether a pause was latched
+    /// while it waited. Called once, by the wait itself. The caller applies the
+    /// pause OUTSIDE this call so the manager's lock never spans the driver's
+    /// park gate.
+    fn clear_scan_wait(&self, operation_id: &str) -> bool {
+        let mut inner = self.inner.lock_ignore_poison();
+        match inner.records.get_mut(operation_id) {
+            Some(rec) => {
+                rec.in_scan_wait = false;
+                rec.claimed_preview = None;
+                std::mem::take(&mut rec.pause_requested)
+            }
+            None => false,
+        }
+    }
+
+    /// Ends the op's scan-wait and applies a pause latched during it, so a
+    /// `pause_all` issued mid-scan takes effect before the op writes a byte.
+    pub(super) fn end_scan_wait(&'static self, operation_id: &str) {
+        if self.clear_scan_wait(operation_id) {
+            log::info!(target: "op_manager", "applying deferred pause op={operation_id}");
+            pause_operation(operation_id);
+        }
+    }
+
+    /// The preview this op claimed, if it still holds one.
+    pub(super) fn claimed_preview_of(&self, operation_id: &str) -> Option<String> {
+        self.inner
+            .lock_ignore_poison()
+            .records
+            .get(operation_id)?
+            .claimed_preview
+            .clone()
+    }
+
+    /// This op's type, for a surface that has only its id. `None` once the
+    /// record is gone.
+    pub(super) fn operation_type_of(&self, operation_id: &str) -> Option<WriteOperationType> {
+        self.inner
+            .lock_ignore_poison()
+            .records
+            .get(operation_id)
+            .map(|rec| rec.descriptor.operation_type)
+    }
+
+    /// Whether the op is parked on its scan preview. The progress bridge reads
+    /// it so a tick that raced the end of the wait can't land afterwards and
+    /// drag the phase back to `scanning`.
+    pub(crate) fn is_in_scan_wait(&self, operation_id: &str) -> bool {
+        self.inner
+            .lock_ignore_poison()
+            .records
+            .get(operation_id)
+            .is_some_and(|rec| rec.in_scan_wait)
     }
 
     /// Retains a failed operation so its reason outlives the record. Called from
@@ -704,7 +846,7 @@ impl OperationManager {
     }
 
     /// Ids of all currently `Running` (not Paused) ops, for `pause_all`.
-    fn running_ids(&self) -> Vec<String> {
+    pub(super) fn running_ids(&self) -> Vec<String> {
         let inner = self.inner.lock_ignore_poison();
         inner
             .order

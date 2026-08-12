@@ -162,7 +162,6 @@ type ConfirmFn = (
   previewId: string | null,
   conflictResolution: ConflictResolution,
   operationType: string,
-  scanInProgress: boolean,
   preKnownConflicts: string[],
 ) => void
 
@@ -368,7 +367,7 @@ describe('TransferDialog bulk-skip name forwarding', () => {
     ])
 
     const captured: { preKnown: string[] | null } = { preKnown: null }
-    const onConfirm: ConfirmFn = (_d, _v, _p, _r, _o, _s, preKnownConflicts) => {
+    const onConfirm: ConfirmFn = (_d, _v, _p, _r, _o, preKnownConflicts) => {
       captured.preKnown = preKnownConflicts
     }
 
@@ -436,7 +435,7 @@ describe('TransferDialog auto-confirm payload', () => {
       preKnown: null,
       resolution: null,
     }
-    const onConfirm: ConfirmFn = (_d, _v, _p, conflictResolution, _o, _s, preKnownConflicts) => {
+    const onConfirm: ConfirmFn = (_d, _v, _p, conflictResolution, _o, preKnownConflicts) => {
       captured.preKnown = preKnownConflicts
       captured.resolution = conflictResolution
     }
@@ -474,15 +473,13 @@ describe('TransferDialog same-volume move scan gating', () => {
     expect(startScanPreviewMock, 'a copy always needs the byte scan').toHaveBeenCalledTimes(1)
   })
 
-  it('dispatches immediately with previewId=null and scanInProgress=false for a same-volume move', async () => {
-    const captured: { previewId: string | null; scanInProgress: boolean | null; op: string | null } = {
+  it('dispatches immediately with previewId=null for a same-volume move', async () => {
+    const captured: { previewId: string | null; op: string | null } = {
       previewId: 'unset',
-      scanInProgress: null,
       op: null,
     }
-    const onConfirm: ConfirmFn = (_d, _v, previewId, _r, operationType, scanInProgress) => {
+    const onConfirm: ConfirmFn = (_d, _v, previewId, _r, operationType) => {
       captured.previewId = previewId
-      captured.scanInProgress = scanInProgress
       captured.op = operationType
     }
 
@@ -501,7 +498,6 @@ describe('TransferDialog same-volume move scan gating', () => {
 
     expect(captured.op).toBe('move')
     expect(captured.previewId, 'no cached preview to consume on the fast path').toBeNull()
-    expect(captured.scanInProgress, 'dispatch must not gate on a scan').toBe(false)
   })
 
   it('cancels the running preview when flipping a cross-volume copy to a same-volume move', async () => {
@@ -582,14 +578,12 @@ describe('TransferDialog local→local move scan gating', () => {
   })
 
   it('dispatches a local→local move WITH a previewId (the backend consumes the cache)', async () => {
-    const captured: { previewId: string | null; scanInProgress: boolean | null; op: string | null } = {
+    const captured: { previewId: string | null; op: string | null } = {
       previewId: 'unset',
-      scanInProgress: null,
       op: null,
     }
-    const onConfirm: ConfirmFn = (_d, _v, previewId, _r, operationType, scanInProgress) => {
+    const onConfirm: ConfirmFn = (_d, _v, previewId, _r, operationType) => {
       captured.previewId = previewId
-      captured.scanInProgress = scanInProgress
       captured.op = operationType
     }
 
@@ -856,7 +850,7 @@ describe('TransferDialog compress mode', () => {
     await flushMicrotasks()
     expect(onConfirm).toHaveBeenCalledTimes(1)
     // Compress dispatches with an empty conflict list (no multi-file conflicts).
-    expect(onConfirm.mock.calls[0][6]).toEqual([])
+    expect(onConfirm.mock.calls[0][5]).toEqual([])
   })
 })
 
@@ -882,7 +876,7 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     // `stop` asks per clash at runtime, and the backend ignores `pre_known_conflicts`
     // outside `Skip`, so dispatching with an empty list loses information, not safety.
     expect(onConfirm.mock.calls[0][3]).toBe('stop')
-    expect(onConfirm.mock.calls[0][6]).toEqual([])
+    expect(onConfirm.mock.calls[0][5]).toEqual([])
   })
 
   it('dispatches a same-volume move while the conflict check is still pending', async () => {
@@ -902,7 +896,7 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     await flushMicrotasks()
 
     expect(onConfirm, 'the rename fast path must not wait either').toHaveBeenCalledTimes(1)
-    expect(onConfirm.mock.calls[0][6]).toEqual([])
+    expect(onConfirm.mock.calls[0][5]).toEqual([])
   })
 
   it('still waits for the conflict names under the Skip policy (the bulk-skip perf win)', async () => {
@@ -922,7 +916,7 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     await flushMicrotasks()
 
     expect(onConfirm).toHaveBeenCalledTimes(1)
-    expect(onConfirm.mock.calls[0][6]).toEqual(['notes.txt'])
+    expect(onConfirm.mock.calls[0][5]).toEqual(['notes.txt'])
   })
 
   it('disables the confirm button and shows a spinner while a confirm is genuinely pending', async () => {

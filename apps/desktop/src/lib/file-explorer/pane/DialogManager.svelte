@@ -78,7 +78,6 @@
             previewId: string | null,
             conflictResolution: ConflictResolution,
             operationType: TransferOperationType,
-            scanInProgress: boolean,
             preKnownConflicts: string[],
         ) => void
         onTransferCancel: () => void
@@ -185,7 +184,6 @@
             conflictResolution={transferProgressProps.conflictResolution}
             preKnownConflicts={transferProgressProps.preKnownConflicts}
             itemSizes={transferProgressProps.itemSizes}
-            scanInProgress={transferProgressProps.scanInProgress}
             mcpRequestId={transferProgressProps.mcpRequestId}
             initiator={transferProgressProps.initiator}
             onComplete={onTransferComplete}

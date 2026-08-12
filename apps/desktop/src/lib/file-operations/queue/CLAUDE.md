@@ -28,10 +28,12 @@ pause/resume/cancel/dismiss, multi-select + "Cancel selected", global pause/resu
 - **Two streams, never poll.** `operations-changed` is the THIN membership + status snapshot; `write-progress` drives
   the live bars/ETA, keyed by `operationId` and pruned to snapshot membership. ❌ Don't fatten `operations-changed`.
 - **Rows cover copy/move/delete/trash AND the instant ops** (`rename` / `create_folder` / `create_file`), which emit no
-  `write-progress`, so they're a spinner + label with no bars. `QueueRow`'s icon + `queue.row.label` arms take the
-  SNAKE_CASE wire values or fall to the `trash-2` / "Working" fallbacks (`operation-icon.ts`).
+  `write-progress`, so they're a spinner + label with no bars. Icon and label arms take the SNAKE_CASE wire values, with
+  documented fallbacks (`operation-icon.ts`).
 - **A paused op still reports `is_running: true`.** The bar-is-moving truth is the SNAPSHOT `status`, NEVER
   `is_running`.
+- **A running OR queued row can be `phase: 'scanning'`**: compact `ScanPhaseBody`, ❌ no dual bar (totals are 0), no
+  Pause, no Rollback. DETAILS § "A scanning row".
 - **A failed row STAYS until someone dismisses it.** The backend retains failures out-of-band (`write_operations`
   DETAILS § "Retained failures"), the page hides only `done` / `cancelled` (`isHiddenSettledStatus`, ❌ not
   `isTerminalStatus`), and Dismiss / "Dismiss all" (plus closing the error dialog that owns one) are the only ways out:

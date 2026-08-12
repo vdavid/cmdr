@@ -6,7 +6,8 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
 
 - Spine: `manager.rs` (registry, lanes, admission), `state.rs` (op state, `CopyTransaction`, the cancel/abort
   commands), `status_cache.rs` (the status cache, the busy-volume set it drives, and the queries over it; reached
-  through `state::`), `mod.rs` (public API). Subdirs `transfer/`, `delete/`, `archive_edit/`. Full inventory:
+  through `state::`), `mod.rs` (public API). Scan preview: `scan_preview.rs` (workers), `scan_cache.rs` (the map),
+  `scan_bridge.rs` (the op's wait + progress bridge). Subdirs `transfer/`, `delete/`, `archive_edit/`. Full inventory:
   DETAILS § Files. Frontend counterpart: `apps/desktop/src/lib/file-operations/CLAUDE.md`.
 
 ## Must-knows
@@ -41,7 +42,11 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
 - **Every managed mutation journals by `op_id`** through an open/record/finalize bracket, and a VOLUME op passes the
   REAL volume id, never `"root"`. `../../operation_log/DETAILS.md` § Capture.
 - **The busy-volumes set disables Eject mid-op**; `eject_volume`'s server-side guard is the real safety net.
-- **A `preview_id` alone doesn't authorize acting on a path set**: a source mismatch is a cache miss and the caller rescans.
+- **A confirmed transfer is registered BEFORE its preview finishes**; its task awaits the walk
+  (`scan_bridge::await_claimed_preview`, first in every deferred), staying `Running` with `phase: 'scanning'` — ❌ no
+  new `LifecycleStatus`. ONE claiming op per preview; a miss re-walks, ❌ never hangs. `Cancelled` comes from the
+  worker's FLAG, ❌ not the event. `set_paused` refuses a scan-waiting record and LATCHES it. A `preview_id` alone
+  doesn't authorize a path set. DETAILS § "The scan-wait".
 - **A FAILED op is retained out-of-band**, the one exception to removal-on-terminal; lanes and records free as before,
   and ❌ `record_failure` emits only once the record is GONE.
 - **Op state hangs off a struct, not a `static`**: `test_support::TestOperationGuard`,

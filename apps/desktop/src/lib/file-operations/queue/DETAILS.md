@@ -57,8 +57,9 @@ spinner and an animated bar; `'paused'` shows a static bar and the Paused label.
 - `operations: OperationRow[]` — reactive; each `OperationRow` is
   `{ snapshot: OperationSnapshot, progress: WriteProgressEvent | null }`. Ordered as the backend emits them.
 - `supportsRollback` on each snapshot — whether cancelling can also undo what the op wrote, decided per spawn path in
-  the backend (`write_operations/DETAILS.md` § "Rollback availability"). The row shows Rollback on exactly that set, so
-  this window and the progress dialog can't disagree about which operations are reversible.
+  the backend (`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Rollback availability"). The row
+  shows Rollback on exactly that set, so this window and the progress dialog can't disagree about which operations are
+  reversible.
 - `hasRunning: boolean` — any op with `status === 'running'` (gates "Pause all").
 - `hasPaused: boolean` — any op with `status === 'paused'` (gates "Resume all").
 - `init(): Promise<void>` — subscribes to both streams, then seeds from `list_operations`. Subscribe-before-seed so a
@@ -105,11 +106,36 @@ either way; only the word and its `aria-label` change.
 - Pinned by `queue-backlog.test.ts` (every gate) and `../transfer/TransferProgressDialog.queue.test.ts` (the live flip
   through a real store instance fed by the same `operations-changed` stream).
 
+## A scanning row
+
+An operation is registered the moment the user confirms, which is before its `TransferDialog` scan preview has finished
+walking (`apps/desktop/src-tauri/src/file_system/write_operations/scan_bridge.rs`). So a row can be `running`, or
+`queued` behind a busy lane, while its `progress.phase` is still `scanning`.
+
+- **No dual bar.** `filesTotal` and `bytesTotal` mean "what the scan concluded", and during the scan there is no such
+  thing: both stay 0, and the index-derived expectation rides `expectedFilesTotal` / `expectedBytesTotal` as the hint it
+  is. Letting the expectation populate the totals is the tempting shortcut — it turns the bars on — and it is wrong
+  twice: the bar would be measured against a guess, and the number would jump when the real totals landed.
+- **The compact `ScanPhaseBody` instead**, the same component and the same catalog keys the progress dialog uses at
+  comfortable density, so the two surfaces can't drift on what a scanning operation looks like. It drops the "From:"
+  line and the current dir/file boxes, which the row already says or has no height for.
+- **`queued` rows render it too.** `showReadout` requires `isRunning || isPaused`, so without this an operation admitted
+  behind another on the same lane shows "Waiting" over an empty row for its whole scan — on a busy lane the common case,
+  and it reads as a hung queue. "Waiting" over a moving file count is exactly what is happening.
+- **No Pause, no Rollback.** The backend declines a pause in a scan-wait (there is nothing to park, and a "paused" scan
+  would hold its lane doing nothing), and a scanning operation has written nothing to reverse. `supportsRollback` stays
+  true throughout: it is a promise about the OPERATION, so the phase is what decides which controls make sense now.
+- **The status column still says "Running"**, and that is deliberate. `queue.row.status` is a `select` over the
+  LIFECYCLE status, which genuinely is `running`; the readout names the activity, and the scan-phase line already says
+  "Counting…" in the user's language. A "Scanning" arm would mix two axes into one column and would need a `phase` input
+  the row's message doesn't take.
+
 ## Retained failures
 
 The backend keeps a bounded list of failed operations and carries them on the same `operations-changed` snapshot, each
-with its typed `error` (`write_operations/DETAILS.md` § "Retained failures" owns the mechanism). This window is the
-durable surface for them: it survives a dismissed toast, a closed window, and a reopen.
+with its typed `error` (`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Retained failures" owns
+the mechanism). This window is the durable surface for them: it survives a dismissed toast, a closed window, and a
+reopen.
 
 - **The row keeps its place, so the SELECTION has to let go of it.** `routes/queue/+page.svelte` prunes `selectedIds`
   against the rows that are still `!isTerminalStatus(...)`, not against mere membership: a failure stays in the list and

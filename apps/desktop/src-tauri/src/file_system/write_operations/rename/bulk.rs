@@ -113,6 +113,8 @@ pub(crate) fn start_bulk_rename(
         // A rename moves no bytes: cancelling stops before the next name, and
         // the ones already renamed stay renamed.
         supports_rollback: false,
+        // No scan preview: nothing walked a tree to plan this op.
+        preview_id: None,
     };
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
     let events_for_task = Arc::clone(&events);

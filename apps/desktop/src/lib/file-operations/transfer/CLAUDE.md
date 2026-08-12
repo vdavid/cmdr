@@ -10,7 +10,7 @@ and its `transfer/` subdir (copy/move semantics).
 - `TransferDialog.svelte`: shell over `transfer-scan-state.svelte.ts` (deep scan preview),
   `transfer-conflict-check.svelte.ts` (cheap top-level check), and `transfer-dialog-logic.ts` (pure helpers).
 - `TransferProgressDialog.svelte`: execution shell over `transfer-progress-state.svelte.ts` (the headless
-  event/phase/cancel/pause/queue/conflict/scan-wait machine), plus `TransferConflictDialog.svelte`, `transfer-stall.ts`.
+  event/phase/cancel/pause/queue/conflict machine), plus `TransferConflictDialog.svelte`, `transfer-stall.ts`.
 - `TransferErrorDialog.svelte` + `FallbackErrorContent` for the typed `WriteOperationError`, and the rest:
   `ArchivePasswordDialog`, `ScanPhaseBody`, `DirectionIndicator`, the `transfer-*.ts` helpers.
 
@@ -37,6 +37,11 @@ and its `transfer/` subdir (copy/move semantics).
 - **Confirm waits on the conflict check ONLY under `skip`**: elsewhere the backend ignores `pre_known_conflicts`, so
   `conflicts: []` costs information, not safety. ❌ Don't drop `handleCancel`'s `confirmed` guard: it's also `onclose`,
   and would free the preview under a pending dispatch.
+- **The progress dialog does NOT wait for the scan; the BACKEND does**
+  (`apps/desktop/src-tauri/src/file_system/write_operations/scan_bridge.rs`). It dispatches on mount, so a
+  still-counting transfer has an `operationId`, a queue row, and Background from frame one. ❌ Never cancel the preview
+  on teardown — the operation owns it. Confirm ALWAYS awaits `scan.scanStarted` (and `DeleteDialog` its own): a null
+  `previewId` means a concurrent re-walk plus an orphaned preview. DETAILS § Scan.
 - **`data-scan-state` on `.scan-stats`** is E2E's only race-free "counting done" signal; `DeleteDialog` mirrors it.
 - **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its auto-confirm (MCP) path must NEVER
   silently overwrite.

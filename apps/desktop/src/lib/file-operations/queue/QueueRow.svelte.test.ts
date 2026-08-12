@@ -266,3 +266,66 @@ describe('QueueRow', () => {
     expect(target.querySelector('[data-operation-id="op-1"]')).not.toBeNull()
   })
 })
+
+describe('QueueRow while the operation is still counting', () => {
+  /** A scan-phase tick: the preview's counts, forwarded under the operation's
+   *  id. Both totals stay 0 — finding them is what the scan is FOR. */
+  function scanning(over: Partial<WriteProgressEvent> = {}): WriteProgressEvent {
+    return {
+      operationId: 'op-1',
+      operationType: 'copy',
+      phase: 'scanning',
+      currentFile: 'report.pdf',
+      currentDir: '/Users/me/Documents',
+      filesDone: 1_284,
+      filesTotal: 0,
+      bytesDone: 4_096,
+      bytesTotal: 0,
+      dirsDone: 37,
+      ...over,
+    }
+  }
+
+  it('renders live counts instead of a blank row, and no dual bar', () => {
+    // The naive implementation leaves `showReadout` gated on totals that are
+    // still 0, so the row draws nothing at all for the whole walk.
+    render({ row: buildRow('running', 'copy', scanning()) })
+
+    const text = target.textContent
+    expect(text, 'the counts are real even though the totals are not').toContain('1,284')
+    expect(text).toContain('37')
+    expect(target.querySelectorAll('[role="progressbar"]').length, 'a bar measured against 0 is not progress').toBe(0)
+  })
+
+  it('renders those counts for a queued row too', () => {
+    // On a busy lane this is the common case, not the edge: "Waiting" over a
+    // bare row reads as a hung queue.
+    render({ row: buildRow('queued', 'copy', scanning()) })
+
+    expect(target.textContent).toContain('1,284')
+  })
+
+  it('offers no Pause: a scan has nothing to park', () => {
+    render({ row: buildRow('running', 'copy', scanning()) })
+
+    expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
+    expect(
+      target.querySelector('[aria-label="Cancel this operation"]'),
+      'Cancel stays: it is the control that works during a scan',
+    ).not.toBeNull()
+  })
+
+  it('offers no Rollback: nothing has been written to reverse', () => {
+    render({ row: buildRow('running', 'copy', scanning(), true) })
+
+    expect(rollbackButton()).toBeNull()
+  })
+
+  it('offers Rollback again once the write starts', () => {
+    render({
+      row: buildRow('running', 'copy', { ...scanning(), phase: 'copying', filesTotal: 4, bytesTotal: 100 }, true),
+    })
+
+    expect(rollbackButton()).not.toBeNull()
+  })
+})

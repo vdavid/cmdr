@@ -32,6 +32,7 @@ async fn a_successful_edit_rewrites_the_archive_and_emits_complete_then_settled(
         summary: OperationSummaryText::default(),
         move_sources_to_delete: vec![],
         skipped_count: 0,
+        preview_id: None,
     };
 
     let start = archive_edit_start(Arc::clone(&events) as Arc<dyn OperationEventSink>, request, 0)
@@ -86,9 +87,15 @@ async fn route_archive_delete_removes_entries_and_completes() {
     // The FE sends full paths inside the archive.
     let sources = vec![path.join("drop.txt")];
     let parent = unique_lane_id();
-    route_archive_delete(Arc::clone(&events) as Arc<dyn OperationEventSink>, &sources, &parent, 0)
-        .await
-        .expect("start delete");
+    route_archive_delete(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        &sources,
+        &parent,
+        0,
+        None,
+    )
+    .await
+    .expect("start delete");
 
     wait_until_async(Duration::from_secs(5), "the write-complete event", || {
         !events.complete.lock_ignore_poison().is_empty()
@@ -117,6 +124,7 @@ async fn route_archive_delete_reports_the_deleted_count_not_the_retained_count()
         &[path.join("drop.txt")],
         &parent,
         0,
+        None,
     )
     .await
     .expect("start delete");
@@ -149,6 +157,7 @@ async fn a_missing_archive_emits_a_write_error_not_a_panic() {
         summary: OperationSummaryText::default(),
         move_sources_to_delete: vec![],
         skipped_count: 0,
+        preview_id: None,
     };
 
     archive_edit_start(Arc::clone(&events) as Arc<dyn OperationEventSink>, request, 0)

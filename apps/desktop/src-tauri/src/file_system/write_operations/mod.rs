@@ -39,6 +39,7 @@ mod paste_clipboard;
 mod rename;
 pub(crate) mod rollback;
 mod scan;
+mod scan_bridge;
 mod scan_cache;
 mod scan_preview;
 mod scratch_dir;
@@ -250,6 +251,9 @@ async fn start_write_operation<F>(
     volume_ids: Vec<String>,
     lanes: Vec<LaneKey>,
     summary: OperationSummaryText,
+    // The confirming dialog's scan preview, claimed at registration so the op
+    // awaits the walk instead of racing a second one down the same tree.
+    preview_id: Option<String>,
     // The provisional planned total (the top-level source count) journaled at
     // `open`; finalize refines it to the scanned total. Never 0 for a real op, so
     // the alpha dialog never renders "Copy 0 items" (the header-aggregate rider).
@@ -274,6 +278,7 @@ where
         // (`CopyTransaction` / `MoveTransaction`). A delete or trash has nothing
         // to put back, and everything else that reaches here is neither.
         supports_rollback: matches!(operation_type, WriteOperationType::Copy | WriteOperationType::Move),
+        preview_id,
     };
 
     let events_for_op = Arc::clone(&events);
@@ -297,6 +302,19 @@ where
             // gates the "Cancelling…" dialog close on this event so the user
             // can't dispatch a new op against a still-tearing-down volume.
             let _settled_guard = WriteSettledGuard::new(Arc::clone(&events), op_id.clone(), operation_type, None);
+
+            // Wait out the confirming dialog's scan before any journal row or
+            // any I/O: an op that never got past its scan wrote nothing, so
+            // there's nothing to journal and its terminal event is already out.
+            if scan_bridge::await_claimed_preview(&*events, &op_id, operation_type, &state)
+                .await
+                .stopped()
+                .is_some()
+            {
+                task_guard.disarm();
+                manager::manager().on_settled(&op_id);
+                return;
+            }
 
             // Open the journal row when the op actually starts (not at
             // registration), so a queued op that's canceled before admission
@@ -438,6 +456,7 @@ pub async fn copy_files_start(
         volume_ids,
         lanes,
         summary,
+        config.preview_id.clone(),
         sources.len() as u64,
         move |events, op_id, state| {
             validate_sources(&sources)?;
@@ -486,6 +505,7 @@ pub async fn move_files_start(
         volume_ids,
         lanes,
         summary,
+        config.preview_id.clone(),
         sources.len() as u64,
         move |events, op_id, state| {
             validate_sources(&sources)?;
@@ -540,7 +560,14 @@ pub async fn delete_files_start(
         None => false,
     };
     if first_is_archive_inner {
-        return archive_edit::route_archive_delete(events, &sources, &volume_id_str, config.progress_interval_ms).await;
+        return archive_edit::route_archive_delete(
+            events,
+            &sources,
+            &volume_id_str,
+            config.progress_interval_ms,
+            config.preview_id.clone(),
+        )
+        .await;
     }
 
     if volume_id_str != "root" {
@@ -568,6 +595,7 @@ pub async fn delete_files_start(
             summary: path_summary(&sources, None),
             // Deleted is deleted; there's nothing for a rollback to put back.
             supports_rollback: false,
+            preview_id: config.preview_id.clone(),
         };
 
         let events_for_op = Arc::clone(&events);
@@ -590,6 +618,18 @@ pub async fn delete_files_start(
                     WriteOperationType::Delete,
                     Some(volume_id_str.clone()),
                 );
+
+                // Wait out the confirming dialog's scan before journaling or
+                // touching the device; see `start_write_operation`.
+                if scan_bridge::await_claimed_preview(&*events, &op_id, WriteOperationType::Delete, &state)
+                    .await
+                    .stopped()
+                    .is_some()
+                {
+                    task_guard.disarm();
+                    manager::manager().on_settled(&op_id);
+                    return;
+                }
 
                 // Journal the volume delete under its REAL volume id (not the
                 // hardcoded `"root"` the local helpers bake in). The per-leaf rows
@@ -664,6 +704,7 @@ pub async fn delete_files_start(
             vec![],
             vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],
             summary,
+            config.preview_id.clone(),
             sources.len() as u64,
             move |events, op_id, state| {
                 validate_sources(&sources)?;
@@ -698,6 +739,7 @@ pub async fn trash_files_start(
         vec![],
         vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],
         summary,
+        config.preview_id.clone(),
         sources.len() as u64,
         move |events, op_id, state| {
             validate_sources(&sources)?;
@@ -709,6 +751,8 @@ pub async fn trash_files_start(
 
 #[cfg(test)]
 mod journal_capture_tests;
+#[cfg(test)]
+mod scan_bridge_tests;
 #[cfg(test)]
 mod scan_preview_listing_progress_tests;
 #[cfg(test)]

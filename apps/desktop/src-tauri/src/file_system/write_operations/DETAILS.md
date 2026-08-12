@@ -157,7 +157,7 @@ Rates and ETA are computed in the backend (`eta.rs`) and shipped on every `Write
 
 **`cancel_write_operation` does state transitions.** `rollback=true` → `Running → RollingBack`, `rollback=false` → `Running → Stopped` or `RollingBack → Stopped`. First caller's decision wins; subsequent calls with different intent are no-ops (unless transitioning from `RollingBack → Stopped`). `cancel_all_write_operations` always transitions to `Stopped` (teardown should never silently roll back without visual feedback).
 
-**Scan preview caching.** `start_scan_preview` runs a background scan, caches the result in `scan_cache.rs`'s `SCAN_PREVIEW_RESULTS`. The actual `copy_files_start` / `delete_files_start` can consume the cache via `preview_id` in `WriteOperationConfig`, skipping a redundant scan. The cache is freed by three paths: (1) `take_cached_scan_result(preview_id, sources)` at op start (the consume path), (2) `cancel_scan_preview(preview_id)` on dialog teardown — it now evicts the cached result in addition to setting the in-flight cancel flag, so a dialog dismissed AFTER the scan completed (the FE calls it regardless of `isScanning`) doesn't leak the `CachedScanResult`, and (3) a TTL safety net: every insert goes through `insert_scan_result`, which first evicts entries older than `SCAN_RESULT_TTL` (5 min, keyed on `CachedScanResult::inserted_at`). The TTL is a backstop for a future caller that forgets both (1) and (2); the pure `expired_scan_result_ids` helper is unit-tested. A `CachedScanResult` can hold tens of thousands of `FileInfo`, so none of these paths is optional.
+**Scan preview state.** `start_scan_preview` registers one `PREVIEWS` entry in `scan_cache.rs` and spawns a walk. The entry is either in flight or settled, and a settled one carries WHY: complete (with its `CachedScanResult`), errored (with its message), or cancelled. `copy_files_start` / `delete_files_start` consume a completed result via `preview_id` in `WriteOperationConfig`, skipping a redundant scan. An entry is freed by three paths: (1) `take_cached_scan_result(preview_id, sources)` at op start (the consume path), (2) `cancel_scan_preview(preview_id)` on dialog teardown — it sets the in-flight cancel flag AND drops the entry, so a dialog dismissed after the scan completed doesn't leak the result — and (3) a TTL safety net: `settle_preview` first evicts settled, UNCLAIMED entries older than `SCAN_RESULT_TTL` (5 min). The TTL is a backstop for a caller that forgets both (1) and (2); the pure `expired_scan_result_ids` helper is unit-tested. A `CachedScanResult` can hold tens of thousands of `FileInfo`, so none of these paths is optional.
 
 **The cache is bound to its request, and says so when it's incoherent.** A `preview_id` proves the frontend once asked for a scan. It proves nothing about WHICH scan, and three of the six consumers act on the cached file list without ever re-reading their own `sources` again, so an id pointing at a preview of a different selection makes each of them fail differently: the LOCAL delete walker (`delete/walker.rs`) deletes the previewed tree instead of the requested one, with no rollback and no progress line naming it; the LOCAL copy (`transfer/copy/mod.rs`) writes the previewed tree to the destination while its bulk-skip set still reads the requested one; the LOCAL move (`transfer/move_op.rs`) stages the previewed tree and then fails in Phase 3 looking for the requested name in staging, a half-staged move. The VOLUME delete and both `transfer/volume/preflight.rs` sites were already source-bound (they iterate `sources` and fall through per-source on a miss), so they degrade to a rescan rather than acting wrong.
 
@@ -372,6 +372,111 @@ Rename, make-folder, and make-file (`WriteOperationType::Rename` / `CreateFolder
 - **RAII cleanup on drop/panic is mandatory, not happy-path only.** The command wraps `run_instant` in a `tokio::time::timeout`, so a slow op that exceeds it makes the timeout **drop the `run_instant` future mid-`op.await`**; the async volume path can also panic. Either exit MUST still free the record AND unregister the busy status — else the eject guard sticks ON forever (the volume can never be ejected again) and a phantom `Running` row lingers. An `InstantTaskGuard` held across the `op.await` guarantees this: its `Drop` calls `free_and_remove` (record removal + `unregister_operation_status` → `recompute_and_emit_busy_volumes`) and re-emits `operations-changed`. The happy path calls `free_and_remove` + `emit_changed` explicitly, then `guard.disarm()`s so the Drop is a no-op. No admission pass on completion (instant ops reserve no lanes, so nothing waits on them). Pinned by `manager::tests::run_instant_releases_busy_and_record_when_{dropped_midflight,op_panics}`.
 - **No `WriteOperationState`.** Instant ops have no intent/pause/conflict oneshot, so `run_instant` inserts none. Consequence: `cancel_operation` on an instant op is a safe no-op — `cancel_if_queued` is false for a Running op, then `cancel_write_operation` finds no state. Acceptable: instant ops finish before a human can cancel.
 - **Queue surfacing.** They appear as a `Running` snapshot row that goes away almost immediately (the store prunes terminal/removed rows). A ~50 ms local rename may never render before it's pruned; a slow MTP rename shows a label + spinner with no progress bar (`fraction` is null). Local `root` ops cause NO busy-set churn (`root` is excluded), so inline-renaming local files won't flicker the eject menu; only volume ops mark busy.
+
+## The scan-wait
+
+A confirmed transfer is registered with the manager immediately, before its `TransferDialog` preview has finished
+walking. That is what gives it an `operationId`, a queue row, its lanes, a busy-volume entry, and a place in the quit
+gate from the moment the user confirms — the whole point, because before this a user could not background a scanning
+transfer at all and the scan died with its dialog. The wait itself moved into the operation's own task
+(`scan_bridge::await_claimed_preview`), which every deferred start calls first, BEFORE its journal open: an operation
+that never got past its scan wrote nothing, so journaling one would record work that didn't happen.
+
+**Claims, and why exactly one.** An operation claims its `preview_id` inside `spawn_managed`, before the record is even
+inserted. The claim is what lets the progress bridge forward the walk's counts under the operation's id, what exempts a
+settled result from TTL eviction while its owner sits Queued behind a busy lane (with `LANE_BUDGET = 1` that can be
+well past five minutes), and what stops `cancel_scan_preview` from freeing a result an operation is about to read. A
+SECOND operation naming the same id is refused and falls back to its own walk: `take_cached_scan_result` REMOVES what
+it reads, so two claimants would race for one consumable result and the loser would silently get nothing. Not
+hypothetical — the archive-password retry re-dispatches a new operation over the same sources, which is why
+`dialog-state.svelte.ts` clears `previewId` on that path.
+
+**The terminal outcome, not a completion pulse.** Both preview workers used to remove their in-flight state before
+publishing a result, so an operation looking the preview up could find nothing and had four indistinguishable reasons:
+complete-and-consumed, errored, cancelled, and never-existed. With `LANE_BUDGET = 1` "nothing there" is the common
+case, not the rare one. `settle_preview` replaces the entry in one write with a `ScanOutcome`, readable afterwards.
+⚠️ `Cancelled` comes from the worker's own cancel FLAG at its exit, ❌ never from which event fired: a genuinely
+cancelled walk returns an error (the local walk's `on_cancelled` string, the volume path's
+`"Scan failed: {VolumeError::Cancelled}"`), so classifying on the event would reach the operation as a failure whose
+message merely says "cancelled", and recovering the truth from that message would be string-matching on the control
+path. Both workers' arms were reconciled to match.
+
+**Misses are always a re-walk, never a hang.** An unknown `preview_id` (evicted, or stale from a reloaded window) and a
+refused claim both leave the operation with no claim at all, so it proceeds straight to its own foolproof scan.
+
+**The progress bridge.** `scan-preview-progress` is keyed by `previewId` and carries no `operationId`, and nothing else
+emits for an operation that is only waiting, so without a bridge every scan-phase surface would render zeros rather
+than live counts. Each preview tick for a CLAIMED preview is republished as the owner's `write-progress` in
+`phase: 'scanning'` (`scan_bridge::forward_scan_progress`), alongside — never instead of — the preview event, since a
+pre-confirm dialog may still be watching the same preview by id. `files_total` / `bytes_total` stay 0 through the scan;
+the index expectation rides `expected_*`, which every surface already treats as a hint.
+
+⚠️ **The opening tick's ORDERING is load-bearing.** `row.progress` must stop being `null` immediately rather than at
+the next `progress_interval_ms` boundary, which on a preview near its end may never arrive. But `spawn_managed` inserts
+the record, runs admission, and only THEN calls `emit_changed()`, while the frontend store's `applyProgress`
+early-returns for an id with no snapshot row yet. A tick that beats its own `operations-changed` is discarded and the
+row stays blank — exactly the case the tick exists for. So `emit_initial_scan_tick` fires AFTER `emit_changed`, for a
+`Queued` row as much as a `Running` one (the queued row renders the scan line too, and its task may not spawn for
+minutes). `scan_bridge_tests` asserts the ordering against the manager's broadcast counter, not merely the tick's
+existence.
+
+**Pause is refused, and the refusal is LATCHED.** `set_paused` flips any `Running` record, and a scan-waiting operation
+is `Running`, so without a rule the snapshot would say `Paused`, the dialog title would say "Paused", and the walk
+would carry on at full speed — while `set_paused` deliberately keeps the lane slots, so a "paused" scan would hold its
+lane indefinitely doing nothing. The refusal is one match arm on the record's `in_scan_wait` flag, and it is already
+observable everywhere it matters: no surface flips optimistically, so a refused pause shows as "the status stayed
+`running`, the button still says Pause". No return-type change, no `bindings.ts` regeneration, no new agent-facing
+string.
+
+The latch is the part that would otherwise ship as a real defect. `pause_all` walks `running_ids()` calling
+`pause_operation`, which sets the driver's park gate only if `set_paused` returned true — so a bare refusal drops the
+request on the floor, and minutes later that one operation starts writing at full speed while every other operation is
+paused and the user believes the device is free. The refusing arm records the request on the record, and
+`end_scan_wait` applies it the moment the wait ends. Withdrawing (a resume during the scan) clears it the same way.
+Nothing surfaces the PENDING pause: the row keeps saying "Running", then flips to "Paused" on its own when the write
+would have begun. Showing "pause pending" would mean a new snapshot field and a new string, and the harm being fixed is
+the silent full-speed write, not the surprise. Revisit if the delayed flip confuses anyone.
+
+**Real parking was rejected**, and the volume path settles it rather than taste: a local walk could poll a pause flag
+per entry the way it polls `cancelled`, but a volume scan sits inside `scan_for_copy_batch_with_progress` for a whole
+batch, so there is no park point, and on MTP the batch can be the entire scan. Pausing would therefore work on the
+volume kind that needs it least.
+
+**Two leaks the wait creates, and their hooks.** (1) Every exit from the scan-wait has to reach `on_settled` or the row
+leaks and its lane stays reserved; the operation's task owns that, not the detached scan worker, and `free_and_remove`
+also abandons any claim still held (the panic / quit-drop net). (2) `cancel_if_queued` removes a Queued record WITHOUT
+ever running its `DeferredStart`, which is where the wait and its cleanup live — so it calls `abandon_claim` explicitly.
+A `Queued` op cancelled before admission is the ordinary case on a busy lane, and without the hook its walk would keep
+going for an operation that no longer exists while its result sat until a TTL sweep. These are separate leaks and no
+single test catches both.
+
+**The lanes are reserved from confirm**, and this is the one genuinely contested decision here. For: with
+`LANE_BUDGET = 1` a transfer confirmed while another runs on the same lane is admitted as `Queued` and the existing
+auto-queue path backgrounds it with no new code; and admission is oldest-first, so operations run in the order the user
+confirmed them, which they did NOT before (A dispatched only after its scan, so B, confirmed second with a finished
+scan, took the lane first). Against: an operation scanning for three minutes holds a lane it is not writing to, so a
+destination device can sit idle. Matching confirm order is a correctness property and better utilization is an
+optimization, so reserve from confirm. Two-phase reservation (scan without lanes, request them at write start) costs
+the invariant that `Running` means "admitted and holding its lanes" and adds a second admission point that can leak a
+lane: reach for it only if the idle-device cost shows up in practice.
+
+**Two behavior changes worth naming.** Eject is disabled from confirm rather than from first byte (the operation is
+committed, so that is right, but it is new). And an operation confirmed onto a busy lane is `Queued` from registration,
+so the progress dialog's one-shot `listOperations()` seed sees `queued` immediately and the auto-queue path mounts and
+unmounts the modal within a frame or two, with a toast and a queue window. That flash is not new, only more frequent;
+fixing it properly means moving dispatch out of the dialog.
+
+**Archive routes await but do not reuse.** `copy_into.rs` plans its changeset with its own `WalkDir` and never calls
+`take_cached_scan_result`, so `preview_id` is threaded through `route_archive_copy_into`, `compress_start`, and
+`route_archive_delete` for the WAIT alone: it restores the serialization the frontend's scan-wait used to provide.
+Without it, ⌥F5's sampling preview and the planner's walk would run down the same tree at once, which is what costs on
+MTP and SMB. The duplicate walk itself is pre-existing and out of scope; teaching the archive changeset planner to seed
+from a `CachedScanResult` is real work with its own correctness questions.
+
+**Testing the scanning window.** E2E fixture trees are deliberately tiny and `data-scan-state` signals "counting done",
+the opposite of what a scanning-phase test needs to hold, so `set_test_scan_preview_delay` (an IPC override behind the
+`playwright-e2e` feature, falling back to `CMDR_E2E_SCAN_PREVIEW_DELAY_MS`) holds every worker at its starting line for
+a set number of milliseconds. Per-test rather than per-process, so one spec's window doesn't slow the whole run.
 
 ## Archive edits
 

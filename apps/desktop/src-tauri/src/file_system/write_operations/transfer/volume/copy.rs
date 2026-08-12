@@ -221,6 +221,7 @@ pub async fn copy_between_volumes(
         // Every file this writes is a NEW one at the destination, so cancelling
         // with rollback can delete them again (`cleanup.rs`).
         supports_rollback: true,
+        preview_id: config.preview_id.clone(),
     };
 
     // Deferred start: the manager spawns this only once both lanes are free.
@@ -241,6 +242,23 @@ pub async fn copy_between_volumes(
                 WriteOperationType::Copy,
                 Some(source_volume_name),
             );
+
+            // Wait out the confirming dialog's scan before journaling or
+            // touching either device; see `write_operations::start_write_operation`.
+            if crate::file_system::write_operations::scan_bridge::await_claimed_preview(
+                &*events,
+                &op_id,
+                WriteOperationType::Copy,
+                &state,
+            )
+            .await
+            .stopped()
+            .is_some()
+            {
+                task_guard.disarm();
+                manager::manager().on_settled(&op_id);
+                return;
+            }
 
             // Journal the cross-volume copy under the REAL volume ids (the local
             // helpers bake in `"root"`). Per-leaf rows land inside

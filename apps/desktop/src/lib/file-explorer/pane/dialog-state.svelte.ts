@@ -41,8 +41,6 @@ export interface TransferProgressPropsData {
   conflictResolution?: ConflictResolution
   /** Per-item sizes for trash progress (from scan or drive index) */
   itemSizes?: number[]
-  /** Whether the scan preview is still running (TransferProgressDialog should subscribe to scan events) */
-  scanInProgress?: boolean
   /** Source filenames known to conflict at dest (from pre-flight scan).
    *  Forwarded to the BE so it can bulk-skip them upfront under `Skip all`. */
   preKnownConflicts?: string[]
@@ -376,7 +374,6 @@ export function createDialogState(deps: DialogStateDeps) {
       previewId: string | null,
       conflictResolution: ConflictResolution,
       operationType: TransferOperationType,
-      scanInProgress: boolean,
       preKnownConflicts: string[],
     ) {
       if (!transferDialogProps) return
@@ -394,7 +391,6 @@ export function createDialogState(deps: DialogStateDeps) {
         sourceVolumeId: transferDialogProps.sourceVolumeId,
         destVolumeId: volumeId,
         conflictResolution,
-        scanInProgress,
         preKnownConflicts,
         fileCount: transferDialogProps.fileCount,
         folderCount: transferDialogProps.folderCount,
@@ -617,7 +613,9 @@ export function createDialogState(deps: DialogStateDeps) {
 
       // Transfer path: store the password, then re-dispatch the same copy/move so
       // the extract path can decrypt. A fresh scan runs (the previous preview was
-      // consumed), so `previewId` is cleared and `scanInProgress` off. A wrong
+      // consumed), so `previewId` is cleared. ⚠️ It MUST be: the retry is a NEW
+      // operation, and the backend refuses a second claim on one preview, so a
+      // carried-over id would silently fall back to a full re-walk. A wrong
       // password again raises `archive_needs_password` with `wrongAttempt: true`.
       const props = transferProgressProps
       if (!props) return
@@ -633,7 +631,7 @@ export function createDialogState(deps: DialogStateDeps) {
           // never landed); surface nothing beyond the log.
           log.warn('Failed to store archive password: {error}', { error: err })
         }
-        transferProgressProps = { ...props, previewId: null, scanInProgress: false }
+        transferProgressProps = { ...props, previewId: null }
         snapshotSourcePaneSelection()
         showTransferProgressDialog = true
       })()
@@ -855,7 +853,6 @@ export function createDialogState(deps: DialogStateDeps) {
           null, // previewId not available when confirming programmatically
           resolution,
           transferDialogProps.operationType,
-          false, // scanInProgress not tracked when confirming programmatically
           [], // pre-known conflicts not available when confirming programmatically
         )
       } else if (dialogType === 'delete-confirmation' && showDeleteDialog && deleteDialogProps) {

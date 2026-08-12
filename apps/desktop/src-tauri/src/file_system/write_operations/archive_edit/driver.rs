@@ -50,6 +50,11 @@ pub(crate) struct ArchiveEditRequest {
     /// silently surprised, and (for a move) any skip suppresses the source
     /// deletion. Zero for delete / mkdir / mkfile / rename edits.
     pub skipped_count: usize,
+    /// The confirming dialog's scan preview, when one fed this edit (an
+    /// in-archive delete counts its entries first). This changeset is already
+    /// planned, so the wait buys no reuse — it buys the preview an OWNER, so an
+    /// abandoned walk stops instead of finishing for nobody.
+    pub preview_id: Option<String>,
 }
 
 /// Routes an in-archive delete (one or more entries inside the SAME zip) to the
@@ -61,6 +66,7 @@ pub(crate) async fn route_archive_delete(
     sources: &[PathBuf],
     parent_volume_id: &str,
     progress_interval_ms: u64,
+    preview_id: Option<String>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let first = sources.first().ok_or_else(|| WriteOperationError::IoError {
         path: String::new(),
@@ -96,6 +102,7 @@ pub(crate) async fn route_archive_delete(
         },
         move_sources_to_delete: Vec::new(),
         skipped_count: 0,
+        preview_id,
     };
     archive_edit_start(events, request, progress_interval_ms).await
 }
@@ -128,6 +135,7 @@ pub(crate) async fn archive_edit_start(
         // A zip edit is a whole-archive temp+rename rewrite: it either lands or
         // it doesn't, so there's no half-written state to reverse.
         supports_rollback: false,
+        preview_id: request.preview_id.clone(),
     };
 
     let events_for_op = Arc::clone(&events);
@@ -159,6 +167,23 @@ pub(crate) async fn archive_edit_start(
                 WriteOperationType::ArchiveEdit,
                 settle_volume,
             );
+
+            // Wait out the confirming dialog's scan; see
+            // `write_operations::start_write_operation`.
+            if crate::file_system::write_operations::scan_bridge::await_claimed_preview(
+                &*events,
+                &op_id,
+                WriteOperationType::ArchiveEdit,
+                &state,
+            )
+            .await
+            .stopped()
+            .is_some()
+            {
+                task_guard.disarm();
+                manager::manager().on_settled(&op_id);
+                return;
+            }
 
             let hooks = Arc::new(MutatorHooks::new(
                 Arc::clone(&state),

@@ -8,6 +8,13 @@
     import { t, tString } from '$lib/intl/messages.svelte'
 
     interface Props {
+        /** `comfortable` is the progress dialog's centred block; `compact` is
+         *  the queue row's single line. Two densities, one layout — the same
+         *  split `TransferProgressReadout` makes, and for the same reason: a
+         *  scanning operation must look the same wherever it's watched. Compact
+         *  drops the "From:" line and the current dir/file boxes, which the row
+         *  already says or has no height for. */
+        density?: 'comfortable' | 'compact'
         sourceFolderPath: string
         scanFilesFound: number
         scanDirsFound: number
@@ -19,6 +26,7 @@
     }
 
     const {
+        density = 'comfortable',
         sourceFolderPath,
         scanFilesFound,
         scanDirsFound,
@@ -28,16 +36,20 @@
         scanCurrentDir,
         currentFile,
     }: Props = $props()
+
+    const isCompact = $derived(density === 'compact')
 </script>
 
 <!-- Source path -->
-<div class="source-path">
-    <span class="source-path-label">{tString('fileOperations.scanPhase.fromLabel')}</span>
-    <span class="source-path-value" use:useShortenMiddle={{ text: sourceFolderPath, preferBreakAt: '/' }}></span>
-</div>
+{#if !isCompact}
+    <div class="source-path">
+        <span class="source-path-label">{tString('fileOperations.scanPhase.fromLabel')}</span>
+        <span class="source-path-value" use:useShortenMiddle={{ text: sourceFolderPath, preferBreakAt: '/' }}></span>
+    </div>
+{/if}
 
 <!-- Running tallies -->
-<div class="scan-wait-stats">
+<div class="scan-wait-stats" class:compact={isCompact}>
     <div class="scan-stat">
         <span class="scan-value"><Size bytes={scanBytesFound} /></span>
     </div>
@@ -78,10 +90,10 @@
 {/if}
 
 <!-- Current directory + filename -->
-{#if scanCurrentDir}
+{#if scanCurrentDir && !isCompact}
     <div class="scan-current-dir" use:useShortenMiddle={{ text: scanCurrentDir, preferBreakAt: '/' }}></div>
 {/if}
-{#if currentFile}
+{#if currentFile && !isCompact}
     <div class="current-file" use:useShortenMiddle={{ text: currentFile, preferBreakAt: '/' }}></div>
 {/if}
 
@@ -115,6 +127,14 @@
         justify-content: center;
         gap: var(--spacing-sm);
         font-size: var(--font-size-sm);
+    }
+
+    /* The row has one line to spend, so the tallies sit left of the spinner
+       rather than centred under a heading that isn't there. */
+    .scan-wait-stats.compact {
+        justify-content: flex-start;
+        gap: var(--spacing-xs);
+        font-size: var(--font-size-xs);
     }
 
     .scan-status {

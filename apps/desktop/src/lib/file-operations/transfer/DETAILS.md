@@ -84,10 +84,11 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
        type, including folder contents.
 
 2. **TransferProgressDialog** (operation execution)
-   - If `scanInProgress`, subscribes to scan preview events (`scan-preview-progress`, `scan-preview-complete`, etc.) to
-     continue observing the same scan that `TransferDialog` started. Shows scanning progress UI until scan completes,
-     then dispatches the operation (guaranteed cache hit). Handles the race condition where the scan completes between
-     dialogs via `checkScanPreviewStatus()`.
+   - Dispatches the operation on mount, whether or not `TransferDialog`'s preview has finished walking. The operation
+     claims that preview in the backend and its own task waits for it, so the dialog is a view over a named operation
+     from the first frame. While `phase === 'scanning'` it renders the scan-phase body, hides Pause (the backend
+     declines a pause in a scan-wait), and disables Rollback (nothing written yet); Background stays, which is the whole
+     point.
    - Calls `copyFiles()` or `moveFiles()` based on `operationType`.
    - Subscribes via `onWriteProgress`, `onWriteComplete`, `onWriteError`, `onWriteCancelled`, `onWriteSettled`,
      `onWriteConflict` wrappers (which internally listen to Tauri events). Uses a `BufferedEvent` discriminated union
@@ -152,10 +153,12 @@ error dialog.
   (`set_archive_password` accepts the archive file OR any inner path). The prompt names the archive via
   `archiveNameFromPath` (the leftmost archive-boundary segment).
 - **Submit → store then re-dispatch.** `handleArchivePasswordSubmit` calls `setArchivePassword`, then re-shows the
-  progress dialog with the same props but `previewId: null, scanInProgress: false` — the first dispatch consumed the
-  scan preview, so the retry re-scans the archive index (fast; scanning reads the index without decrypting). A wrong
-  password makes the backend raise `archive_needs_password` again with `wrongAttempt: true`, so the interception fires a
-  second time and the dialog re-prompts (its distinct copy, empty field via a fresh mount).
+  progress dialog with the same props but `previewId: null` — the first dispatch consumed the scan preview, so the retry
+  re-scans the archive index (fast; scanning reads the index without decrypting). ⚠️ Clearing the id is now load-bearing
+  rather than tidy: the retry is a NEW operation, and the backend refuses a second claim on one preview, so a
+  carried-over id would silently downgrade to a full re-walk. A wrong password makes the backend raise
+  `archive_needs_password` again with `wrongAttempt: true`, so the interception fires a second time and the dialog
+  re-prompts (its distinct copy, empty field via a fresh mount).
 - **Mid-transfer wrong password.** ZipCrypto's open-time check false-accepts ~1/256, caught later at end-of-stream CRC,
   so a `wrongAttempt: true` error can arrive AFTER progress started. The interception is in the running-op error path,
   so this is handled the same as an up-front rejection — no separate pre-flight branch.
@@ -308,10 +311,9 @@ to the boolean.
   mount: flipping to a same-volume Move **cancels** the in-flight preview (`cancelPreview()` evicts it without touching
   the independent conflict check); flipping away (to Copy, or a cross-volume Move) **(re)starts** it (Copy genuinely
   needs byte totals).
-- `handleConfirm` for a same-volume move dispatches IMMEDIATELY with `previewId = null` and `scanInProgress = false`, so
-  `TransferProgressDialog` never enters `waitForScanThenStart` — it calls `startOperation()` directly (no scan
-  listeners, no gating). Like every other path, it waits for the conflict check only under the `skip` policy (see
-  below).
+- `handleConfirm` for a same-volume move dispatches IMMEDIATELY with `previewId = null`, which the backend reads as
+  "this operation has no preview" rather than as a miss, so nothing waits and nothing re-walks. Like every other path,
+  it waits for the conflict check only under the `skip` policy (see below).
 - The cheap top-level conflict check (decoupled from the deep preview) keeps running independently on mount, so a
   same-volume move still surfaces "N folders will merge" and the file-policy radios. This decoupling is the prerequisite
   that lets us cancel the deep preview without degrading the conflict UX.
@@ -319,7 +321,7 @@ to the boolean.
   with Files-only progress; the complete toast counts top-level items (a moved folder counts as one item).
 - Pinned by `TransferDialog.test.ts` § "same-volume move scan gating" (no scan started for a same-volume move; the
   preview starts for a same-volume copy; toggle both directions cancels/restarts; immediate dispatch with
-  `previewId = null` / `scanInProgress = false`).
+  `previewId = null`).
 
 ### The confirm dispatches without waiting for the conflict check
 
@@ -341,10 +343,14 @@ bar reflects them immediately. A human can't select `skip` while the check is ru
 `{:else if totalConflictCount > 0 || mergeFolderCount > 0}` branch, unreachable while `isCheckingConflicts` — so that
 await belongs to the MCP auto-confirm path (`autoConfirmOnConflict: 'skip_all'`), where nobody is watching a button.
 
-**What still gets awaited on every path:** `scan.scanStarted`. That resolves once `startScanPreview` has returned a
-`previewId`, and the progress dialog's scan-wait path depends on it being non-null. The IPC only mints a UUID, registers
-`ScanPreviewState`, and spawns the walk on a background thread (`write_operations/scan_preview.rs`), so it returns
-promptly even against a wedged share; it is NOT the recursive walk.
+**What still gets awaited on every path:** `scan.scanStarted`. Dropping it is a three-part failure, not a missing id.
+The operation would dispatch with nothing to claim, fall into the backend's miss case, and re-walk the tree CONCURRENTLY
+with the preview this dialog already started — the exact contention the backend's wait exists to prevent, and worst on
+MTP and SMB. The orphaned preview would also have no owner and nothing to cancel it, because the `confirmed` guard keeps
+`handleCancel` away from `freeAndCleanup()`, so its result would sit until a TTL sweep. `DeleteDialog` awaits its own
+`scanStarted` for the same three reasons. The IPC only mints a UUID, registers the preview, and spawns the walk on a
+background thread (`write_operations/scan_preview.rs`), so it returns promptly even against a wedged share; it is NOT
+the recursive walk.
 
 **The honest pending state.** `confirmPending` (a `$state`, unlike the plain `confirmed`) disables BOTH footer buttons
 and renders a decorative `<Spinner size="sm" />` next to the unchanged `confirmLabel` for however long a path does
@@ -449,15 +455,17 @@ When the directory has a parent entry shown at index 0, frontend indices are off
   report `0 files` before the real count lands. Why it matters: the original incident was an MTP delete cancel followed
   by an immediate second F8 — the device was still mid-teardown, the second op queued behind the 17 s tail, hit the 30 s
   op timeout, and wedged the USB session.
-- **Scan preview reuse.** `TransferDialog` starts a scan preview on mount. If the user confirms before the scan
-  finishes, the scan keeps running (`TransferDialog` sets `confirmed = true` and skips cancellation in `onDestroy`).
-  `TransferProgressDialog` picks up listening to the same scan events via the `scanInProgress` prop.
-  `waitForScanThenStart` subscribes to the scan events first, then awaits `checkScanPreviewStatus()`. Both the
-  `scan-preview-complete` listener AND the status check can signal "ready to start", especially for fast scans that
-  complete during the status-check `await`. Both paths converge on a local `kickOff()` helper guarded by a `started`
-  flag, so `startOperation()` dispatches exactly once. The scan-error and scan-cancelled listeners also flip
-  `started = true` as a terminal signal, so a late `scan-preview-complete` event can't dispatch an operation after we've
-  errored or cancelled.
+- **Scan preview reuse, and who waits for it.** `TransferDialog` starts a scan preview on mount. If the user confirms
+  before the scan finishes, the scan keeps running (`TransferDialog` sets `confirmed = true` and skips cancellation in
+  `onDestroy`), and `TransferProgressDialog` dispatches the operation IMMEDIATELY. The wait lives in the backend: the
+  operation claims that `previewId` at registration and its own task parks on it before writing anything
+  (`apps/desktop/src-tauri/src/file_system/write_operations/scan_bridge.rs`). That is what gives a still-scanning
+  transfer an `operationId`, a queue row, Background, and a place in the quit gate from the first frame. The dialog
+  renders the scan phase from ordinary `write-progress` in `phase: 'scanning'`, which the backend forwards from the
+  claimed preview under the operation's id, so one branch feeds both the preview and the backend's own foolproof
+  re-scan. ❌ The dialog must never cancel the preview on teardown: the operation owns it, and a viewer detaching is not
+  a cancel. The scan-error and scan-cancelled listeners also flip `started = true` as a terminal signal, so a late
+  `scan-preview-complete` event can't dispatch an operation after we've errored or cancelled.
 
 ## Pause, Queue, and auto-queue (progress dialog)
 

@@ -47,6 +47,7 @@ async fn copy_into_adds_a_local_directory_tree_and_skips_conflicts() {
         0,
         false,
         None,
+        None,
     )
     .await
     .expect("start copy-into");
@@ -95,6 +96,7 @@ async fn run_policy_copy_into(
         policy,
         0,
         is_move,
+        None,
         None,
     )
     .await
@@ -414,6 +416,7 @@ async fn move_into_a_top_level_symlink_preserves_the_source_and_surfaces_the_ski
         0,
         true, // is_move
         None,
+        None,
     )
     .await
     .expect("start move-into");
@@ -468,6 +471,7 @@ async fn move_into_a_dir_containing_a_symlink_preserves_the_whole_source_tree() 
         ConflictResolution::Overwrite,
         0,
         true, // is_move
+        None,
         None,
     )
     .await
@@ -530,6 +534,7 @@ async fn move_into_a_broken_symlink_preserves_the_source() {
         0,
         true, // is_move
         None,
+        None,
     )
     .await
     .expect("start move-into");
@@ -584,6 +589,7 @@ async fn copy_into_a_remote_archive_lands_the_file_via_the_pulled_local_copy() {
         ConflictResolution::Overwrite,
         0,
         false,
+        None,
         None,
     )
     .await;

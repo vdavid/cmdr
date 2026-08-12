@@ -1,7 +1,33 @@
 //! Scan preview subsystem for the Copy dialog.
 //!
 //! Provides background scanning that feeds live stats to the frontend before
-//! the actual copy starts. Results are cached so the copy can skip a redundant scan.
+//! the actual copy starts. Results are cached so the copy can skip a redundant
+//! scan.
+//!
+//! ## What a worker owes its preview
+//!
+//! Each worker ends by publishing a terminal OUTCOME through [`settle_preview`]
+//! — complete with its result, errored with its message, or cancelled — in the
+//! same write that retires the in-flight state. An operation waiting on the preview may not
+//! spawn for minutes behind a busy lane, so "look it up and find nothing" is
+//! the common case rather than the rare one, and "nothing" would be ambiguous
+//! four ways: complete-and-consumed, errored, cancelled, and never-existed.
+//!
+//! ⚠️ The `Cancelled` outcome comes from the worker's own cancel flag at its
+//! exit, ❌ never from which event fired. A genuinely cancelled walk returns an
+//! error (the local walk's `on_cancelled` string, the volume path's
+//! `VolumeError::Cancelled`), so classifying on the event would reach the
+//! operation as a FAILURE whose message happens to say "cancelled", and
+//! recovering the truth from that message would be string-matching on the
+//! control path.
+//!
+//! ## The progress bridge
+//!
+//! When an operation has claimed a preview, each progress tick is ALSO
+//! republished under that operation's id as a scanning-phase `write-progress`
+//! (`super::scan_bridge`). Both events keep firing: a pre-confirm dialog may
+//! still be watching the same preview by `previewId`, and it has no operation
+//! to watch instead.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -12,10 +38,12 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 use super::scan::{SubtreeTotals, WalkContext, scan_subtree_with_oracle, sort_files, walk_sources_with_per_path};
-use super::scan_cache::cached_scan_totals;
-use super::state::{
-    CachedScanResult, FileInfo, SCAN_PREVIEW_STATE, ScanPreviewState, insert_scan_result, release_scan_result,
+use super::scan_bridge::{ScanCounts, forward_scan_progress};
+use super::scan_cache::{
+    ScanOutcome, cached_scan_totals, claimed_operation, in_flight_state, register_preview, release_preview,
+    settle_preview,
 };
+use super::state::{CachedScanResult, FileInfo, ScanPreviewState};
 use super::types::{
     ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent,
     ScanPreviewStartResult,
@@ -59,10 +87,7 @@ pub fn start_scan_preview(
         progress_interval: Duration::from_millis(progress_interval_ms),
     });
 
-    // Register state
-    if let Ok(mut cache) = SCAN_PREVIEW_STATE.write() {
-        cache.insert(preview_id.clone(), Arc::clone(&state));
-    }
+    register_preview(preview_id.clone(), Arc::clone(&state));
 
     // Spawn background task.
     // Volume scans need a Tokio runtime context (MtpVolume uses Handle::block_on),
@@ -108,13 +133,23 @@ pub fn get_scan_preview_totals(preview_id: &str) -> Option<super::types::ScanPre
 /// `CachedScanResult` (tens of thousands of `FileInfo`) doesn't linger until
 /// quit. Consuming the result for a started op goes through
 /// `take_cached_scan_result` instead, which already removes it.
+///
+/// ⚠️ A preview an OPERATION has claimed is left alone. Its owner decides when
+/// it ends (`cancel_operation` reaches it through the operation's own cancel
+/// token), and freeing it from a dialog teardown would pull the result out from
+/// under a transfer that is waiting on it.
 pub fn cancel_scan_preview(preview_id: &str) {
-    if let Ok(cache) = SCAN_PREVIEW_STATE.read()
-        && let Some(state) = cache.get(preview_id)
-    {
+    if let Some(owner) = claimed_operation(preview_id) {
+        log::debug!(
+            target: "cmdr_lib::write_operations",
+            "scan preview {preview_id} is owned by operation {owner}; leaving it to its operation"
+        );
+        return;
+    }
+    if let Some(state) = in_flight_state(preview_id) {
         state.cancelled.store(true, Ordering::Relaxed);
     }
-    release_scan_result(preview_id);
+    release_preview(preview_id);
 }
 
 /// Internal function that runs the scan preview in a background thread.
@@ -138,6 +173,12 @@ fn run_scan_preview(
     use tauri_specta::Event;
 
     use super::compress_estimate::CompressEstimator;
+
+    // E2E only: a deterministic scanning window for the specs that have to act
+    // while a transfer is still counting. Unset in production.
+    if let Some(ms) = crate::test_mode::e2e_scan_preview_delay_ms() {
+        std::thread::sleep(Duration::from_millis(ms));
+    }
 
     let mut files: Vec<FileInfo> = Vec::new();
     let mut dirs: Vec<PathBuf> = Vec::new();
@@ -210,12 +251,27 @@ fn run_scan_preview(
                     files_found,
                     dirs_found,
                     bytes_found,
-                    current_path,
-                    current_dir,
+                    current_path: current_path.clone(),
+                    current_dir: current_dir.clone(),
                     expected_files_total: expected.map(|e| e.files),
                     expected_bytes_total: expected.map(|e| e.bytes),
                 }
                 .emit(&app);
+                // Same counts under the owning operation's id, so a confirmed
+                // transfer's queue row, chip, and dialog stay live through the
+                // walk instead of sitting at zero.
+                forward_scan_progress(
+                    &preview_id,
+                    ScanCounts {
+                        files_found,
+                        dirs_found,
+                        bytes_found,
+                        current_path,
+                        current_dir,
+                        expected_files_total: expected.map(|e| e.files),
+                        expected_bytes_total: expected.map(|e| e.bytes),
+                    },
+                );
             },
             on_file: sample_for_estimate.then_some(&send_sample as &dyn Fn(&Path, u64)),
         };
@@ -243,52 +299,49 @@ fn run_scan_preview(
     drop(estimate_tx);
     let estimate = estimate_worker.and_then(|handle| handle.join().ok());
 
-    // Clean up state
-    if let Ok(mut cache) = SCAN_PREVIEW_STATE.write() {
-        cache.remove(&preview_id);
-    }
-
+    // The cancel flag, not the shape of `result`, decides whether this was a
+    // cancel: a cancelled walk unwinds through `on_cancelled` into the Err arm,
+    // so reading the error would reach a waiting operation as a failure whose
+    // message merely says "cancelled".
+    let cancelled = state.cancelled.load(Ordering::Relaxed);
     match result {
+        _ if cancelled => {
+            settle_preview(&preview_id, ScanOutcome::Cancelled, None);
+            let _ = ScanPreviewCancelledEvent { preview_id }.emit(&app);
+        }
         Ok(()) => {
-            if state.cancelled.load(Ordering::Relaxed) {
-                // Cancelled
-                let _ = ScanPreviewCancelledEvent {
-                    preview_id: preview_id.clone(),
-                }
-                .emit(&app);
-            } else {
-                // Sort files
-                sort_files(&mut files, sort_column, sort_order);
+            // Sort files
+            sort_files(&mut files, sort_column, sort_order);
 
-                // Cache the results
-                let file_count = files.len();
-                let dirs_count = dirs.len();
-                insert_scan_result(
-                    preview_id.clone(),
-                    CachedScanResult::from_local_walk(
-                        sources,
-                        files,
-                        dirs,
-                        total_bytes,
-                        dedup_bytes,
-                        per_path,
-                        estimate.clone(),
-                    ),
-                );
+            let file_count = files.len();
+            let dirs_count = dirs.len();
+            settle_preview(
+                &preview_id,
+                ScanOutcome::Complete,
+                Some(CachedScanResult::from_local_walk(
+                    sources,
+                    files,
+                    dirs,
+                    total_bytes,
+                    dedup_bytes,
+                    per_path,
+                    estimate.clone(),
+                )),
+            );
 
-                // Emit completion
-                let _ = ScanPreviewCompleteEvent {
-                    preview_id,
-                    files_total: file_count,
-                    dirs_total: dirs_count,
-                    bytes_total: total_bytes,
-                    dedup_bytes_total: dedup_bytes,
-                    estimated_compressed_bytes: estimate,
-                }
-                .emit(&app);
+            // Emit completion
+            let _ = ScanPreviewCompleteEvent {
+                preview_id,
+                files_total: file_count,
+                dirs_total: dirs_count,
+                bytes_total: total_bytes,
+                dedup_bytes_total: dedup_bytes,
+                estimated_compressed_bytes: estimate,
             }
+            .emit(&app);
         }
         Err(message) => {
+            settle_preview(&preview_id, ScanOutcome::Error(message.clone()), None);
             let _ = ScanPreviewErrorEvent { preview_id, message }.emit(&app);
         }
     }
@@ -316,6 +369,11 @@ async fn run_volume_scan_preview(
     state: Arc<ScanPreviewState>,
 ) {
     use tauri_specta::Event;
+
+    // E2E only; see the local walk's matching delay.
+    if let Some(ms) = crate::test_mode::e2e_scan_preview_delay_ms() {
+        tokio::time::sleep(Duration::from_millis(ms)).await;
+    }
 
     // Throttled progress emitter: the underlying MTP listing fires the callback
     // per entry (~60/s for 1047 files at ~17 ms each). We collapse those down to
@@ -349,6 +407,17 @@ async fn run_volume_scan_preview(
             expected_bytes_total: None,
         }
         .emit(&app_for_cb);
+        // Same counts under the owning operation's id; see the local walk's
+        // matching forward.
+        forward_scan_progress(
+            &preview_id_for_cb,
+            ScanCounts {
+                files_found: p.files,
+                dirs_found: p.dirs,
+                bytes_found: p.bytes,
+                ..ScanCounts::default()
+            },
+        );
     };
 
     // Cancellation predicate, captured by reference inside the async helpers.
@@ -383,40 +452,45 @@ async fn run_volume_scan_preview(
         Err(_) => (0, 0, 0, 0),
     };
 
-    // Clean up state
-    if let Ok(mut cache) = SCAN_PREVIEW_STATE.write() {
-        cache.remove(&preview_id);
-    }
-
+    // The cancel flag decides, not the result: a cancelled batch scan comes back
+    // as `VolumeError::Cancelled` stringified into "Scan failed: …", so reading
+    // the error would reach a waiting operation as a failure. Mirrors the local
+    // walk's arms exactly.
+    let cancelled = state.cancelled.load(Ordering::Relaxed);
     match result {
+        _ if cancelled => {
+            settle_preview(&preview_id, ScanOutcome::Cancelled, None);
+            let _ = ScanPreviewCancelledEvent { preview_id }.emit(&app);
+        }
         Ok(batch) => {
-            if state.cancelled.load(Ordering::Relaxed) {
-                let _ = ScanPreviewCancelledEvent {
-                    preview_id: preview_id.clone(),
-                }
-                .emit(&app);
-            } else {
-                // Cache results: volume scans don't produce per-file FileInfo, but
-                // the cache stores aggregate stats AND per-path scan results so
-                // copy_between_volumes can reuse both without re-statting.
-                insert_scan_result(
-                    preview_id.clone(),
-                    CachedScanResult::from_volume_batch(sources, total_files, total_bytes, dedup_bytes, batch.per_path),
-                );
+            // Cache results: volume scans don't produce per-file FileInfo, but
+            // the cache stores aggregate stats AND per-path scan results so
+            // copy_between_volumes can reuse both without re-statting.
+            settle_preview(
+                &preview_id,
+                ScanOutcome::Complete,
+                Some(CachedScanResult::from_volume_batch(
+                    sources,
+                    total_files,
+                    total_bytes,
+                    dedup_bytes,
+                    batch.per_path,
+                )),
+            );
 
-                let _ = ScanPreviewCompleteEvent {
-                    preview_id,
-                    files_total: total_files,
-                    dirs_total: total_dirs,
-                    bytes_total: total_bytes,
-                    dedup_bytes_total: dedup_bytes,
-                    // Remote sources never sample: the estimate is suppressed.
-                    estimated_compressed_bytes: None,
-                }
-                .emit(&app);
+            let _ = ScanPreviewCompleteEvent {
+                preview_id,
+                files_total: total_files,
+                dirs_total: total_dirs,
+                bytes_total: total_bytes,
+                dedup_bytes_total: dedup_bytes,
+                // Remote sources never sample: the estimate is suppressed.
+                estimated_compressed_bytes: None,
             }
+            .emit(&app);
         }
         Err(message) => {
+            settle_preview(&preview_id, ScanOutcome::Error(message.clone()), None);
             let _ = ScanPreviewErrorEvent { preview_id, message }.emit(&app);
         }
     }
@@ -674,7 +748,7 @@ mod tests {
                 is_symlink: false,
             })
             .collect();
-        insert_scan_result(
+        super::super::scan_cache::insert_scan_result(
             preview_id.clone(),
             CachedScanResult::from_local_walk(
                 vec![source.clone()],
@@ -701,7 +775,7 @@ mod tests {
         assert_eq!(totals.dirs_total, 2);
         assert_eq!(totals.bytes_total, 12_345);
 
-        release_scan_result(&preview_id);
+        release_preview(&preview_id);
     }
 
     /// `get_scan_preview_totals` returns `None` while the scan is still

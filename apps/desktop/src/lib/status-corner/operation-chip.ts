@@ -32,6 +32,12 @@ export interface ChipOperation {
    *  operation still reports `is_running: true` from the backend, so this comes
    *  from the snapshot status and nowhere else. */
   paused: boolean
+  /** The operation is counting, not yet writing. Its totals are what the scan
+   *  is FOR, so both stay 0 and `fraction` cannot move: the chip shows an
+   *  indeterminate spinner instead of a bar that would sit at 0% for minutes.
+   *  Comes from the progress phase, the same signal the queue row and the
+   *  progress dialog read. */
+  scanning: boolean
 }
 
 /**
@@ -133,5 +139,11 @@ export function pickChipOperation(rows: OperationRow[], foregroundOperationId: s
   if (!row) return null
 
   const fraction = barFraction(row.progress)
-  return { row, fraction, percent: Math.round(fraction * 100), paused: row.snapshot.status === 'paused' }
+  return {
+    row,
+    fraction,
+    percent: Math.round(fraction * 100),
+    paused: row.snapshot.status === 'paused',
+    scanning: row.progress?.phase === 'scanning',
+  }
 }

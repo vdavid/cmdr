@@ -442,6 +442,12 @@ architecture in `../drag/DETAILS.md` § "Self-drag identity".
 renders the copy on the FE from that typed error (`transfer-error-messages.ts`). The factory pattern keeps the giant
 component testable: pass deps in, get back a struct of state + handlers.
 
+`handleTransferConfirm` takes no scan flag: the progress dialog no longer waits for a `TransferDialog` preview, because
+the backend registers the operation at confirm and its own task waits for the preview it claimed
+(`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "The scan-wait"). What the handler MUST keep
+threading is `previewId`, and the archive-password retry MUST keep clearing it: that retry is a new operation, a preview
+accepts exactly one claimant, so a carried-over id would silently downgrade to a full re-walk.
+
 **A dialog that throws during render must never wedge input.** Every dialog renders inside one `<svelte:boundary>` in
 `DialogManager.svelte`. Opening a dialog sets its `show*` flag BEFORE anything renders, and `isConfirmationDialogOpen()`
 suppresses the pane's keyboard while that flag is true, so a dialog that throws mid-render leaves the user with no keys

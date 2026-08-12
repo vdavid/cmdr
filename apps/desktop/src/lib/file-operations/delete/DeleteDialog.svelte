@@ -97,6 +97,14 @@
 
     // Scan preview state
     let previewId = $state<string | null>(null)
+    /** Resolves once `startScanPreview` has answered and `previewId` is set.
+     *  Confirm awaits it, for the same reason `TransferDialog` awaits
+     *  `scan.scanStarted`: dispatching with a null `previewId` leaves the
+     *  operation nothing to claim, so it re-walks the tree CONCURRENTLY with
+     *  the preview `startScan` already began, and that orphaned walk has no
+     *  owner and nothing to cancel it (teardown's cleanup is gated on
+     *  `!confirmed`, and confirming sets that before the id ever arrives). */
+    let scanStarted: Promise<void> = Promise.resolve()
     // True once the user confirms. On confirm the delete/trash op (or the
     // progress dialog) takes over the same scan and consumes the cached result,
     // so teardown must NOT free it then.
@@ -176,12 +184,12 @@
     }
 
     onMount(async () => {
-        void startScan()
+        scanStarted = startScan()
 
         // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
         if (autoConfirm) {
             await tick()
-            handleConfirm()
+            void handleConfirm()
         }
     })
 
@@ -196,12 +204,15 @@
         cleanup()
     })
 
-    function handleConfirm() {
+    async function handleConfirm() {
         confirmed = true
         log.info('Delete confirmed: isPermanent={isPermanent}, items={count}', {
             isPermanent,
             count: sourceItems.length,
         })
+        // The scan-preview IPC only mints an id and spawns the walk, so it
+        // answers promptly even on a wedged share. See `scanStarted`.
+        await scanStarted
         onConfirm(previewId, isPermanent)
     }
 
@@ -217,7 +228,7 @@
 
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
-            handleConfirm()
+            void handleConfirm()
         }
     }
 

@@ -70,6 +70,18 @@ without a modal in front of it, and clicking it opens (or raises) the queue wind
 - **Nothing else**: no percentage text, no "+N" affix for the operations it isn't showing. Both were considered and cut
   as noise; the queue window is the surface that promises completeness.
 
+### The scanning state
+
+An operation that is still counting reaches the corner like any other running one, but `barFraction` can only ever
+return 0 for it: bytes and files both have `total == 0` through the whole scan, by design (finding the totals is what
+the scan is for). A bar at 0% for minutes is not honest progress, so the chip swaps it for a `<Spinner>`, and the
+tooltip and spoken label become `fileOperations.shared.scanningTooltip` ("Scanning…") rather than `queue.chip.tooltip`,
+whose `· {percentText}%` clause would be the dishonest part. The visible label stays the verb.
+
+⚠️ Reusing an existing key costs one thing worth naming: the scanning aria-label drops `queue.chip.ariaLabel`'s "Open
+the operation queue" tail. The chip is still a `<button>`, so the affordance is announced by role; if that reads thin in
+practice, the fix is a new catalog key, not a percentage.
+
 ### The failure state
 
 `pickChipState` returns one of two things, never both: the progress preview above, or a mark that something stopped

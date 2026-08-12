@@ -1,20 +1,40 @@
-//! Scan-preview caching: the in-flight scan-preview state, the cached scan
-//! results, the per-file `FileInfo` / `ScanResult` carriers, and the TTL
-//! safety-net for the result cache.
+//! Scan-preview state: one map from `preview_id` to everything the app knows
+//! about that preview, the per-file `FileInfo` / `ScanResult` carriers, and the
+//! TTL safety-net over settled entries.
 //!
 //! These types are owned here but re-exported from `lifecycle/state.rs`, so existing
 //! `state::FileInfo` / `state::ScanResult` / `state::CachedScanResult` paths
 //! keep resolving.
 //!
-//! `SCAN_PREVIEW_RESULTS` itself is private to this module: every insert, read,
-//! and take goes through a function here, so the coherence canary and the
-//! request binding can't be bypassed by a new call site writing the map.
+//! `PREVIEWS` itself is private to this module: every insert, read, and take
+//! goes through a function here, so the coherence canary and the request
+//! binding can't be bypassed by a new call site writing the map.
+//!
+//! ## One map, because "the preview is gone" is ambiguous
+//!
+//! A preview is either in flight or settled, and a settled one carries WHY it
+//! settled: complete (with its `CachedScanResult`), errored (with its message),
+//! or cancelled. Splitting in-flight state from results would leave a window
+//! where a worker has dropped its in-flight entry but not yet published its
+//! result, and an operation waiting on that preview cannot tell that window
+//! apart from "evicted", "errored", or "never existed". One entry, replaced in
+//! place, makes the publication atomic.
+//!
+//! ## Claims
+//!
+//! An operation that intends to consume a preview CLAIMS it, exactly one owner
+//! per preview (`claim_preview`). The claim is what lets the progress bridge
+//! forward the walk's counts under the operation's id, what exempts the result
+//! from TTL eviction while its owner waits behind a busy lane, and what stops a
+//! dialog teardown from freeing a result an operation is about to read.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::{Duration, Instant};
+
+use tokio::sync::Notify;
 
 use crate::file_system::volume::CopyScanResult;
 
@@ -27,6 +47,51 @@ pub(super) struct ScanPreviewState {
     pub cancelled: AtomicBool,
     pub progress_interval: Duration,
 }
+
+/// How a scan preview ended. Published atomically with the in-flight state's
+/// removal, and readable afterwards for as long as the entry lives, so an
+/// operation whose task spawns minutes later still learns what happened.
+///
+/// `Cancelled` comes from the worker's own cancel flag at its exit, never from
+/// which event fired: a genuinely cancelled walk returns an error carrying the
+/// word "cancelled", and classifying on that would both misreport a user's
+/// cancel as a failure and put string-matching on the control path.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) enum ScanOutcome {
+    /// The walk finished. A `CachedScanResult` is in the map for its owner.
+    Complete,
+    /// The walk stopped on an I/O or protocol error, with its message.
+    Error(String),
+    /// The walk stopped because someone cancelled the preview.
+    Cancelled,
+}
+
+/// Whether a preview is still walking or has published its outcome.
+enum PreviewPhase {
+    InFlight(Arc<ScanPreviewState>),
+    Settled {
+        outcome: ScanOutcome,
+        /// The walk's result, present for `Complete` until someone takes it.
+        result: Option<Box<CachedScanResult>>,
+        /// Drives the TTL safety net (`prune_expired`). See `SCAN_RESULT_TTL`.
+        settled_at: Instant,
+    },
+}
+
+/// One preview: its phase, plus the operation that claimed it, if any.
+struct PreviewEntry {
+    phase: PreviewPhase,
+    /// The single operation allowed to wait on and consume this preview. A
+    /// second operation naming the same `preview_id` is refused and falls back
+    /// to its own walk, because `take_cached_scan_result` REMOVES what it reads
+    /// and two claimants would race for one consumable result.
+    claim: Option<String>,
+}
+
+/// Woken every time a preview settles. Waiters re-read their own entry rather
+/// than trusting the wakeup, so a spurious or coalesced notification is
+/// harmless.
+pub(super) static PREVIEW_SETTLED: LazyLock<Notify> = LazyLock::new(Notify::new);
 
 /// Cached result from a completed scan preview.
 ///
@@ -61,12 +126,6 @@ pub(super) struct CachedScanResult {
     /// recovery path (`get_scan_preview_totals`) can hand it back when the FE
     /// missed the complete event. `None` for copy/move and remote scans.
     estimated_compressed_bytes: Option<super::types::CompressedSizeEstimate>,
-    /// When this result was inserted into `SCAN_PREVIEW_RESULTS`. Drives the
-    /// TTL safety net (`prune_expired_scan_results`): a forgetful caller that
-    /// never consumes the cache (dialog dismissed, op never started) can't leak
-    /// tens of thousands of `FileInfo` unbounded — entries older than
-    /// `SCAN_RESULT_TTL` are evicted on the next insert.
-    inserted_at: Instant,
 }
 
 impl CachedScanResult {
@@ -74,8 +133,8 @@ impl CachedScanResult {
     /// `FileInfo` list, the directories it found, one `CopyScanResult` per
     /// top-level source, and possibly a compressed-size estimate.
     ///
-    /// `file_count` is derived from `files`, and `inserted_at` is stamped here:
-    /// a caller passing either is one more thing to get wrong.
+    /// `file_count` is derived from `files`: a caller passing it is one more
+    /// thing to get wrong.
     pub(super) fn from_local_walk(
         sources: Vec<PathBuf>,
         files: Vec<FileInfo>,
@@ -102,7 +161,6 @@ impl CachedScanResult {
             dedup_bytes,
             per_path,
             estimated_compressed_bytes,
-            inserted_at: Instant::now(),
         }
     }
 
@@ -126,15 +184,18 @@ impl CachedScanResult {
             dedup_bytes,
             per_path,
             estimated_compressed_bytes: None,
-            inserted_at: Instant::now(),
         }
     }
 }
 
-/// How long a cached scan result lives before the TTL safety net evicts it.
+/// How long a settled preview entry lives before the TTL safety net evicts it.
 /// The normal lifecycle frees results far sooner (`take_cached_scan_result` at
-/// op start, or `release_scan_preview` on dialog teardown); this only catches
-/// the case where neither fires.
+/// op start, or `release_preview` on dialog teardown); this only catches the
+/// case where neither fires.
+///
+/// ⚠️ A CLAIMED entry is exempt (`prune_expired`). With `LANE_BUDGET = 1` an
+/// operation can sit Queued well past five minutes, and evicting the very
+/// result its owner is waiting for would silently downgrade it to a re-walk.
 pub(super) const SCAN_RESULT_TTL: Duration = Duration::from_secs(300);
 
 /// Returns the preview ids in `entries` whose `inserted_at` is older than
@@ -152,11 +213,40 @@ pub(super) fn expired_scan_result_ids<'a>(
         .collect()
 }
 
-/// Evicts cache entries older than `SCAN_RESULT_TTL`, then inserts `result`
-/// under `preview_id`. The single choke point for `SCAN_PREVIEW_RESULTS`
-/// inserts so the TTL sweep can't be forgotten by a new call site, and the one
-/// place the coherence canary below can see every entry.
-pub(super) fn insert_scan_result(preview_id: String, result: CachedScanResult) {
+/// Registers a preview as in flight. Called by `start_scan_preview` before it
+/// spawns the walk, so a cancel or a claim arriving immediately after finds an
+/// entry.
+pub(super) fn register_preview(preview_id: String, state: Arc<ScanPreviewState>) {
+    if let Ok(mut previews) = PREVIEWS.write() {
+        previews.insert(
+            preview_id,
+            PreviewEntry {
+                phase: PreviewPhase::InFlight(state),
+                claim: None,
+            },
+        );
+    }
+}
+
+/// The in-flight state for `preview_id` (its cancel flag and progress
+/// interval), or `None` once the preview has settled.
+pub(super) fn in_flight_state(preview_id: &str) -> Option<Arc<ScanPreviewState>> {
+    let previews = PREVIEWS.read().ok()?;
+    match &previews.get(preview_id)?.phase {
+        PreviewPhase::InFlight(state) => Some(Arc::clone(state)),
+        PreviewPhase::Settled { .. } => None,
+    }
+}
+
+/// Publishes how a preview ended, replacing its in-flight state in one write,
+/// then wakes every waiter. `result` is the walk's output for `Complete` and
+/// `None` otherwise.
+///
+/// The single choke point for a settled entry, so the TTL sweep can't be
+/// forgotten by a new call site and the coherence canary below sees every
+/// completed walk. A preview nobody registered still settles (an entry is
+/// created), which keeps a late worker from silently dropping its result.
+pub(super) fn settle_preview(preview_id: &str, outcome: ScanOutcome, result: Option<CachedScanResult>) {
     // The incoherent shape: a completed walk that counted files but recorded no
     // per-source result. Downstream that reads as "no information", and a copy
     // driver turns "no information" into a confident `is_directory: false` — the
@@ -164,7 +254,10 @@ pub(super) fn insert_scan_result(preview_id: String, result: CachedScanResult) {
     // recursively delete a merged destination. One-directional on purpose: a
     // volume batch legitimately caches an empty `files` list with a populated
     // `per_path`, never the reverse.
-    if result.file_count > 0 && result.per_path.is_empty() {
+    if let Some(result) = &result
+        && result.file_count > 0
+        && result.per_path.is_empty()
+    {
         log::warn!(
             target: "cmdr_lib::write_operations",
             "scan preview {} completed a walk of {} files with no per-source results; downstream hints will be empty",
@@ -176,14 +269,124 @@ pub(super) fn insert_scan_result(preview_id: String, result: CachedScanResult) {
             "a completed walk with file_count > 0 must carry per_path entries (preview {preview_id})"
         );
     }
-    if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
-        let now = Instant::now();
-        let expired = expired_scan_result_ids(cache.iter().map(|(k, v)| (k, v.inserted_at)), now, SCAN_RESULT_TTL);
-        for id in expired {
-            cache.remove(&id);
-        }
-        cache.insert(preview_id, result);
+    if let Ok(mut previews) = PREVIEWS.write() {
+        prune_expired(&mut previews);
+        let claim = previews.remove(preview_id).and_then(|entry| entry.claim);
+        previews.insert(
+            preview_id.to_string(),
+            PreviewEntry {
+                phase: PreviewPhase::Settled {
+                    outcome,
+                    result: result.map(Box::new),
+                    settled_at: Instant::now(),
+                },
+                claim,
+            },
+        );
     }
+    PREVIEW_SETTLED.notify_waiters();
+}
+
+/// Drops every settled, UNCLAIMED entry older than `SCAN_RESULT_TTL`. In-flight
+/// entries have no age to judge and claimed ones belong to an operation that
+/// may still be waiting on a lane, so both stay.
+fn prune_expired(previews: &mut HashMap<String, PreviewEntry>) {
+    let now = Instant::now();
+    let aged = previews.iter().filter_map(|(id, entry)| match &entry.phase {
+        PreviewPhase::Settled { settled_at, .. } if entry.claim.is_none() => Some((id, *settled_at)),
+        _ => None,
+    });
+    for id in expired_scan_result_ids(aged, now, SCAN_RESULT_TTL) {
+        previews.remove(&id);
+    }
+}
+
+/// What a claim attempt found.
+pub(super) enum PreviewClaim {
+    /// Claimed; the preview is still walking. Wait for `poll_claim`.
+    Waiting,
+    /// Claimed; the preview had already settled. The outcome itself is read
+    /// back when the owner's task runs, which may be minutes later.
+    AlreadySettled,
+    /// No such preview (evicted, or a stale id from a reloaded window). The
+    /// caller falls back to its own walk — the foolproof re-scan, never a hang.
+    Unknown,
+    /// Another operation already owns this preview. Same fallback as `Unknown`;
+    /// ❌ never share, since the result is consumable exactly once.
+    Refused,
+}
+
+/// Claims `preview_id` for `operation_id`, at most one owner ever.
+pub(super) fn claim_preview(preview_id: &str, operation_id: &str) -> PreviewClaim {
+    let Ok(mut previews) = PREVIEWS.write() else {
+        return PreviewClaim::Unknown;
+    };
+    let Some(entry) = previews.get_mut(preview_id) else {
+        return PreviewClaim::Unknown;
+    };
+    match &entry.claim {
+        Some(owner) if owner != operation_id => return PreviewClaim::Refused,
+        _ => entry.claim = Some(operation_id.to_string()),
+    }
+    match &entry.phase {
+        PreviewPhase::InFlight(_) => PreviewClaim::Waiting,
+        PreviewPhase::Settled { .. } => PreviewClaim::AlreadySettled,
+    }
+}
+
+/// The settled outcome for a claimed preview, or `None` while it still walks.
+/// An entry that vanished under its owner reads as `Cancelled`: the only ways
+/// to remove one are an explicit release and the TTL sweep, and neither leaves
+/// a result to consume.
+pub(super) fn poll_claim(preview_id: &str) -> Option<ScanOutcome> {
+    let Ok(previews) = PREVIEWS.read() else {
+        return Some(ScanOutcome::Cancelled);
+    };
+    match previews.get(preview_id) {
+        None => Some(ScanOutcome::Cancelled),
+        Some(entry) => match &entry.phase {
+            PreviewPhase::InFlight(_) => None,
+            PreviewPhase::Settled { outcome, .. } => Some(outcome.clone()),
+        },
+    }
+}
+
+/// The operation that owns `preview_id`, if any. The progress bridge reads it
+/// to decide whether a walk's counts also belong under an operation's id.
+pub(super) fn claimed_operation(preview_id: &str) -> Option<String> {
+    PREVIEWS.read().ok()?.get(preview_id)?.claim.clone()
+}
+
+/// Ends a claim without touching the result: the owner is done waiting and is
+/// about to consume it. Re-arms the TTL, which is right — from here the entry
+/// is an ordinary unconsumed result.
+pub(super) fn finish_claim(preview_id: &str) {
+    if let Ok(mut previews) = PREVIEWS.write()
+        && let Some(entry) = previews.get_mut(preview_id)
+    {
+        entry.claim = None;
+    }
+}
+
+/// Ends a claim AND frees the preview: cancels a still-running walk so it stops
+/// working for nobody, and drops any result. For every path where the owner
+/// stops without consuming (cancel, error, a queued op cancelled before
+/// admission, the panic net). Idempotent, and a no-op for a preview nobody
+/// claimed.
+pub(super) fn abandon_claim(preview_id: &str) {
+    let Ok(mut previews) = PREVIEWS.write() else {
+        return;
+    };
+    let Some(entry) = previews.get(preview_id) else {
+        return;
+    };
+    if entry.claim.is_none() {
+        return;
+    }
+    if let PreviewPhase::InFlight(state) = &entry.phase {
+        state.cancelled.store(true, Ordering::Relaxed);
+    }
+    previews.remove(preview_id);
 }
 
 /// Tries to get cached scan results for a preview, removing them from cache.
@@ -197,10 +400,23 @@ pub(super) fn insert_scan_result(preview_id: String, result: CachedScanResult) {
 /// trailing separator, that belongs fixed at the IPC edge, not softened here
 /// into another belief.
 pub(super) fn take_cached_scan_result(preview_id: &str, requested_sources: &[PathBuf]) -> Option<ScanResult> {
-    let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() else {
+    let Ok(mut previews) = PREVIEWS.write() else {
         return None;
     };
-    let cached = cache.remove(preview_id)?;
+    let entry = previews.remove(preview_id)?;
+    let PreviewPhase::Settled {
+        result: Some(cached), ..
+    } = entry.phase
+    else {
+        // Still walking, or settled without a result (error / cancel). Neither
+        // is a cache hit, and putting an in-flight entry back is what keeps a
+        // premature take from cancelling a walk its owner is waiting on.
+        if let PreviewPhase::InFlight(_) = entry.phase {
+            previews.insert(preview_id.to_string(), entry);
+        }
+        return None;
+    };
+    let cached = *cached;
     if !same_path_set(&cached.sources, requested_sources) {
         log::warn!(
             target: "cmdr_lib::write_operations",
@@ -232,8 +448,13 @@ fn same_path_set(a: &[PathBuf], b: &[PathBuf]) -> bool {
 /// the lock and the map behind the module wall for `get_scan_preview_totals`,
 /// the compress dialog's size estimate.
 pub(super) fn cached_scan_totals(preview_id: &str) -> Option<super::types::ScanPreviewTotals> {
-    let cache = SCAN_PREVIEW_RESULTS.read().ok()?;
-    let cached = cache.get(preview_id)?;
+    let previews = PREVIEWS.read().ok()?;
+    let PreviewPhase::Settled {
+        result: Some(cached), ..
+    } = &previews.get(preview_id)?.phase
+    else {
+        return None;
+    };
     Some(super::types::ScanPreviewTotals {
         files_total: cached.file_count,
         dirs_total: cached.dirs.len(),
@@ -243,13 +464,13 @@ pub(super) fn cached_scan_totals(preview_id: &str) -> Option<super::types::ScanP
     })
 }
 
-/// Seeds an entry that deliberately fails `insert_scan_result`'s coherence
-/// canary, for the fixtures that pin what downstream does when a half-empty
-/// preview reaches it anyway. The canary is a `debug_assert!`, so in a release
-/// build an incoherent entry still lands in the cache and the drivers still
-/// have to handle it without lying; these fixtures are that defense's only
-/// proof. ❌ Not a general-purpose seeder: everything else goes through
-/// `insert_scan_result`.
+/// Seeds an entry that deliberately fails `settle_preview`'s coherence canary,
+/// for the fixtures that pin what downstream does when a half-empty preview
+/// reaches it anyway. The canary is a `debug_assert!`, so in a release build an
+/// incoherent entry still lands in the cache and the drivers still have to
+/// handle it without lying; these fixtures are that defense's only proof.
+/// ❌ Not a general-purpose seeder: everything else goes through
+/// `settle_preview`.
 #[cfg(test)]
 pub(crate) fn seed_incoherent_scan_result_for_test(
     preview_id: String,
@@ -266,33 +487,58 @@ pub(crate) fn seed_incoherent_scan_result_for_test(
         dedup_bytes: total_bytes,
         per_path: Vec::new(),
         estimated_compressed_bytes: None,
-        inserted_at: Instant::now(),
     };
-    if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
-        cache.insert(preview_id, result);
+    if let Ok(mut previews) = PREVIEWS.write() {
+        previews.insert(
+            preview_id,
+            PreviewEntry {
+                phase: PreviewPhase::Settled {
+                    outcome: ScanOutcome::Complete,
+                    result: Some(Box::new(result)),
+                    settled_at: Instant::now(),
+                },
+                claim: None,
+            },
+        );
     }
 }
 
-/// Drops the cached scan result for `preview_id`, if any. Called on dialog
-/// teardown (`release_scan_preview`) so a result that finished scanning but was
-/// never consumed by a started op doesn't linger until quit.
-pub(super) fn release_scan_result(preview_id: &str) {
-    if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
-        cache.remove(preview_id);
+/// Test-only: backdates a settled entry so the next sweep sees it as stale.
+/// Lets a test prove the TTL exemption without waiting out five real minutes,
+/// and without making `SCAN_RESULT_TTL` injectable everywhere it's read.
+#[cfg(test)]
+pub(super) fn age_settled_entry_for_test(preview_id: &str, by: Duration) {
+    if let Ok(mut previews) = PREVIEWS.write()
+        && let Some(entry) = previews.get_mut(preview_id)
+        && let PreviewPhase::Settled { settled_at, .. } = &mut entry.phase
+    {
+        *settled_at -= by;
     }
 }
 
-/// Global cache for scan preview states.
-pub(super) static SCAN_PREVIEW_STATE: LazyLock<RwLock<HashMap<String, Arc<ScanPreviewState>>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
+/// Test-only: publish a completed preview in one call, the shape
+/// `run_scan_preview` produces. Keeps the fixtures that seed a consumable
+/// result off the two-step register/settle dance.
+#[cfg(test)]
+pub(super) fn insert_scan_result(preview_id: String, result: CachedScanResult) {
+    settle_preview(&preview_id, ScanOutcome::Complete, Some(result));
+}
 
-/// Global cache for completed scan preview results. ❌ Private on purpose, and
-/// it stays that way: every entry has to pass `insert_scan_result`'s coherence
-/// canary, and every read has to go through `take_cached_scan_result`'s
-/// request binding. A `pub(super)` static is a choke point anyone can walk
-/// around.
-static SCAN_PREVIEW_RESULTS: LazyLock<RwLock<HashMap<String, CachedScanResult>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
+/// Drops everything known about `preview_id`. Called on dialog teardown
+/// (`cancel_scan_preview`) so a result that finished scanning but was never
+/// consumed by a started op doesn't linger until quit.
+pub(super) fn release_preview(preview_id: &str) {
+    if let Ok(mut previews) = PREVIEWS.write() {
+        previews.remove(preview_id);
+    }
+}
+
+/// Everything the app knows about each scan preview, in flight or settled.
+/// ❌ Private on purpose, and it stays that way: every completed walk has to
+/// pass `settle_preview`'s coherence canary, and every read has to go through
+/// `take_cached_scan_result`'s request binding. A `pub(super)` static is a
+/// choke point anyone can walk around.
+static PREVIEWS: LazyLock<RwLock<HashMap<String, PreviewEntry>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
 // ============================================================================
 // FileInfo (used for scanning and sorting)

@@ -240,6 +240,8 @@ async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result
         summary,
         move_sources_to_delete: Vec::new(),
         skipped_count: 0,
+        // No scan preview: nothing walked a tree to plan this edit.
+        preview_id: None,
     };
     archive_edit::archive_edit_start(events, request, 200)
         .await
@@ -279,6 +281,8 @@ fn rename_descriptor(from: &Path, to: &Path, volume_id: &str) -> OperationDescri
         // An instant metadata op has no partial state, and no cancel path that
         // could catch it mid-flight.
         supports_rollback: false,
+        // No scan preview: nothing walked a tree to plan this op.
+        preview_id: None,
     }
 }
 

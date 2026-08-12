@@ -28,6 +28,7 @@ async fn start_interactive_copy_into(
         0,
         false,
         None,
+        None,
     )
     .await
     .expect("start interactive copy-into");
@@ -254,6 +255,7 @@ async fn interactive_move_into_with_a_skipped_collision_keeps_the_source() {
         ConflictResolution::Stop,
         0,
         true, // is_move
+        None,
         None,
     )
     .await

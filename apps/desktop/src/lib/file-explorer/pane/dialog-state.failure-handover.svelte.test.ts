@@ -81,7 +81,6 @@ function copyProps(): TransferProgressPropsData {
     sourceVolumeId: 'root',
     destVolumeId: 'naspolya',
     conflictResolution: 'stop',
-    scanInProgress: false,
   }
 }
 

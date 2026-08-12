@@ -157,6 +157,7 @@ pub(crate) async fn compress_start(
     conflict: ConflictResolution,
     progress_interval_ms: u64,
     compression_level: Option<i64>,
+    preview_id: Option<String>,
     initiator: crate::operation_log::types::Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Seed a valid empty zip at the target so the copy-into has a real archive to
@@ -195,6 +196,7 @@ pub(crate) async fn compress_start(
         progress_interval_ms,
         false,
         compression_level,
+        preview_id,
         super::super::journal::ArchiveProvenance::compress(net_new, initiator),
     )
     .await
