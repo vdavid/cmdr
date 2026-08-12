@@ -19,8 +19,7 @@
 //! ...) is NOT a local external drive; the caller falls through to the SMB gate.
 //! Everything else — every local filesystem, disk images INCLUDED (plan
 //! Decision 1) — indexes here. Classification is by typed facts (smb-session
-//! flag, network-fs flag), never a volume-id or path substring
-//! (`.claude/rules/no-string-matching.md`).
+//! flag, network-fs flag), never a volume-id or path substring.
 
 use std::path::PathBuf;
 

@@ -5,8 +5,7 @@
  * The backend answers every search with two TYPED sibling lists plus the volume it
  * routed to (`src-tauri/src/search/DETAILS.md` § Honesty). Both mean "this returned
  * nothing for a STRUCTURAL reason", and they mean different things, so they carry
- * distinct copy. Callers branch on emptiness, NEVER on message text
- * (`.claude/rules/no-string-matching.md`).
+ * distinct copy. Callers branch on emptiness, NEVER on message text.
  *
  * Pure: no state, no IPC. `SearchDialog.svelte` owns the state and the actions.
  */
@@ -159,7 +158,7 @@ export function isTargetIndexReady(input: {
  *    `declined` (a NAS snapshot tree) gets nothing: no permission on earth opens
  *    a folder Cmdr declines to read on purpose. This is what the typed cause on
  *    the wire buys — the paths alone can't tell the two apart, and matching folder
- *    names to guess is what `.claude/rules/no-string-matching.md` forbids.
+ *    names to guess isn't an option.
  * 2. **macOS.** Full Disk Access doesn't exist anywhere else; a Linux refusal is
  *    ordinary file permissions, which Cmdr can't grant itself either.
  * 3. **Cmdr doesn't already have it.** With Full Disk Access on, a refusal is a

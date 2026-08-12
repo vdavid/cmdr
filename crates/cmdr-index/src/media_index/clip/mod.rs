@@ -87,7 +87,7 @@ pub(crate) fn encode_image_pixels(pixels: Vec<f32>) -> Result<Vec<f32>, ClipErro
     macos::encode_image(pixels)
 }
 
-/// A typed CLIP failure. Never string-matched for classification (`no-string-matching`):
+/// A typed CLIP failure. Never string-matched for classification:
 /// a caller branches on the variant, not the message.
 #[derive(Debug, Clone)]
 pub enum ClipError {

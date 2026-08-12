@@ -422,7 +422,7 @@ at.
 
 **Verify before changing code**: confirm `fileURLWithPath:isDirectory:` actually removes the syscall on this macOS
 version rather than deferring it to the first resource-value read, which would make M2b a no-op. Record with an evidence
-anchor (`(verified on macOS 26.5.2, sample, 2026-08-03)`) per `.claude/rules/docs.md`.
+anchor (`(verified on macOS 26.5.2, sample, 2026-08-03)`) per `AGENTS.md` § Docs.
 
 **Tests**: test-first is awkward for a syscall count, so assert the observable contract (sync status still reported
 correctly for iCloud, Dropbox, and plain-local paths, and a moved file still re-probes) and measure the reduction with
@@ -774,8 +774,8 @@ Targets, to be sharpened once M1 and M2 land and the attribution is re-run:
 - Footprint under a stated ceiling after eight hours, with M5's predicted contribution named separately.
 - Log lines per hour, stated before and after.
 - `pnpm check --include-slow` green.
-- Colocated `CLAUDE.md` and `DETAILS.md` updated per `.claude/rules/docs.md`, with Decision/Why where a design choice
-  was made, including the correction to `idle-memory-profile-2026-07-28.md`.
+- Colocated `CLAUDE.md` and `DETAILS.md` updated per `AGENTS.md` § Docs, with Decision/Why where a design choice was
+  made, including the correction to `idle-memory-profile-2026-07-28.md`.
 
 ## Sequencing
 

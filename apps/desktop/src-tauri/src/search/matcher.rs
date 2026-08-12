@@ -74,7 +74,7 @@ pub(crate) enum Evaluator {
 }
 
 /// Why a query couldn't be compiled. Typed so callers branch on the variant rather
-/// than the sentence (`.claude/rules/no-string-matching.md`); [`std::fmt::Display`]
+/// than the sentence; [`std::fmt::Display`]
 /// is what reaches the user, through the bare-message IPC contract search results
 /// already have.
 #[derive(Debug, Clone, PartialEq, Eq)]

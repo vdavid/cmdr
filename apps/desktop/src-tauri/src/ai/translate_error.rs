@@ -4,7 +4,7 @@
 //! [`crate::ai::client::chat_completion`]. When that fails (provider off, key rejected,
 //! quota / rate limit, timeout, empty answer), the dialogs need to show a SPECIFIC toast,
 //! not a generic "something went wrong". A bare `String` error would force the frontend to
-//! string-match the message (banned by the `no-string-matching` rule), so we cross the IPC
+//! string-match the message, so we cross the IPC
 //! boundary with a typed `kind` plus a human-readable `message`. The frontend branches on
 //! `kind`; `message` is detail for logs, never for control flow.
 
@@ -110,7 +110,7 @@ mod tests {
     fn carries_the_detail_message() {
         // The detail flows through verbatim (the source error's Display), so logs / the
         // toast's secondary line keep the provider's wording. We compare against Display
-        // rather than substring-matching the message (the no-string-matching rule).
+        // rather than substring-matching the message.
         let src = AiError::RateLimited("HTTP 429: out of quota".into());
         let expected = src.to_string();
         let err = AiTranslateError::from(src);

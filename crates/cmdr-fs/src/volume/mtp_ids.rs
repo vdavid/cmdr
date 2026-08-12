@@ -19,7 +19,7 @@
 //!
 //! A volume id is `{device_id}:{storage_id}`, split at several call sites to
 //! recover each half. [`split_volume_id`] is the single funnel every parser must
-//! use (`.claude/rules/no-string-matching.md`: structured parse over substring
+//! use (structured parse over substring
 //! branching), and it splits from the RIGHT, because the storage id is always the
 //! trailing numeric component.
 //!

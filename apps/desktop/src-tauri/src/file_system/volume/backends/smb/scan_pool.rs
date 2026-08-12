@@ -372,7 +372,7 @@ async fn open_slots(params: &SmbConnectionParams, n: usize, volume_id: &str) -> 
 
 /// Whether an smb2 listing error means THIS pool member's session is gone, so the
 /// listing should retry on a sibling and the member should reconnect. Classified
-/// by the TYPED kind, never a message substring (`.claude/rules/no-string-matching.md`).
+/// by the TYPED kind, never a message substring.
 fn is_pool_member_dead(err: &smb2::Error) -> bool {
     matches!(
         err.kind(),

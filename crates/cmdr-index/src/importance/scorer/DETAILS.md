@@ -17,7 +17,7 @@ Full design: `docs/specs/later/importance-subsystem-plan.md`.
 
 - **name denylist** (`name_denylisted`): a set-membership check on the folded folder name against the shared
   `indexing::SYSTEM_DIR_EXCLUDES` list (`node_modules`, `.git`, caches, build output). A FLOOR override, not an additive
-  term. Set-membership, never a substring match (`no-string-matching`).
+  term. Set-membership, never a substring match.
 - **hidden / system** (`hidden_or_system`): also a FLOOR override. A dotfile or system-owned folder scores `0.0`. The
   soft, non-floor side ("being visible is mildly positive") is the separate additive `Visibility` term.
 - **under a floored ancestor** (`under_floored_ancestor`): the third FLOOR override, `true` when a self-flooring

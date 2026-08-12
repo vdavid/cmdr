@@ -131,8 +131,8 @@ pub fn format_search_results(rows: &[SearchResultEntry], total_count: u32, limit
 
 /// Everything the run couldn't answer for, as lines above the results.
 ///
-/// Every one of these comes off a TYPED field, never a message match
-/// (`.claude/rules/no-string-matching.md`). It is the one thing MCP has always
+/// Every one of these comes off a TYPED field, never a message match.
+/// It is the one thing MCP has always
 /// rendered that the dialog didn't, and the reason an agent can't read an empty
 /// list as "there's nothing there": each line says which ground the answer
 /// doesn't speak for, and what would open it.

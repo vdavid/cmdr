@@ -174,7 +174,7 @@ pub(crate) struct IndexInstance {
     /// This volume's scan kind (Local / SMB / MTP). Retained so a consumer of the
     /// registry (the importance scheduler's startup sweep) can branch typed on the
     /// kind — score Local + SMB, exclude MTP — instead of re-deriving it from the
-    /// volume-id string (which the `no-string-matching` rule forbids).
+    /// volume-id string.
     pub(crate) kind: IndexVolumeKind,
     /// The handles this volume shares with its `IndexManager`.
     pub(crate) signals: VolumeSignals,

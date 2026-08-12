@@ -22,7 +22,7 @@ The per-volume SQLite cache: `mod.rs` (schema + reads), `connection.rs` (opening
   isn't re-hammered every completed scan; a real file change re-tries it. CLIP staleness is a separate key (`needs_clip`
   over `clip_stamp`), decoupled on purpose.
 - **`media_kind` and `state` are typed TEXT tokens parsed back to enums** (`sqlite3`-inspectable). ❌ Never branch on
-  the raw string (`no-string-matching`).
+  the raw string.
 - **Embeddings are little-endian `f16` BLOBs.** `decode_embedding` widens to f32 for the query direction;
   `decode_embedding_f16` loads as-is for the resident cache. ❌ Don't widen on load — that forfeits the RAM halving
   (`../vector/CLAUDE.md`).

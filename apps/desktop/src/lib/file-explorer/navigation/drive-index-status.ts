@@ -211,8 +211,7 @@ export function driveIndexCoalescedNote(status: VolumeIndexStatus, nowSeconds: n
 /**
  * The toast message key for a typed SMB index refusal, or `null` for
  * `credentials_needed` (which routes into the reconnect/login flow instead of a
- * toast). Branch on the typed variant, never the message string
- * (`no-string-matching`).
+ * toast). Branch on the typed variant, never the message string.
  *
  * `not_registered` / `not_an_smb_volume` map to the INTERNAL-error copy, not
  * reconnect advice: a drive the user can turn indexing on for can't reach those

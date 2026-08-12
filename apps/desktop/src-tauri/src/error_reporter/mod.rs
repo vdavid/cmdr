@@ -427,7 +427,7 @@ pub async fn upload(zip_bytes: Vec<u8>, manifest: &BundleManifest, server_url: &
             // Include the server's own explanation (`{"error": "..."}`), not just the status
             // code. A bare "server returned 400 Bad Request" hides which validation tripped,
             // which once left a payload bug invisible from the toast. Displayed only, never
-            // branched on (see the `no-string-matching` rule). Capped so a stray HTML error
+            // branched on. Capped so a stray HTML error
             // page can't dump a wall of text into the toast.
             let status = response.status();
             let body = response.text().await.unwrap_or_default();

@@ -207,7 +207,7 @@ fn compile_and_cache(pkg_path: &Path, cache: &Path) -> Result<Retained<NSURL>, C
     // The synchronous compile is deprecated in favor of the async completion-handler
     // variant, but we WANT to block here (the worker thread serializes load anyway), so a
     // completion handler would only add a channel round-trip. `allow(deprecated)` is the
-    // documented exception (no-ignored-warnings): the sync form is correct for this use.
+    // documented exception: the sync form is correct for this use.
     #[allow(
         deprecated,
         reason = "objc2-core-ml deprecates the direct sync form in favor of a heavier async/closure API; the direct form is exactly what the CLIP spike proved and is correct on this serialized worker thread"

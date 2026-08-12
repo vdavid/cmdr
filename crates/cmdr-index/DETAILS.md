@@ -22,12 +22,11 @@ Three reasons, in priority order. When a decision here is ambiguous, resolve it 
    exceptions, both from `cmdr-fs` rather than this crate: `FileEntry::display_size` (written app-side) and `pluralize`,
    which builds log lines. `PhaseRecord.trigger` carries pluralized text that the developer debug panel renders, which
    is acceptable but means "pluralize is purely log-only" isn't a claim to make.
-3. **Typed errors everywhere.** No `Box<dyn Error>`, no stringly-typed failure, so a host never string-matches
-   (`.claude/rules/no-string-matching.md`). Two named exceptions rather than zero: `IndexError::Internal(Diagnostic)` is
-   the log-only residue for causes no caller acts on, and `ReadPool::with_conn` still returns `Result<T, String>`. Both
-   are in `src/indexing/handle/DETAILS.md` § "The three exceptions, named". Typing the causes inside
-   `lifecycle/state.rs` and `read/queries.rs` is still open work. The house error style is in
-   `apps/desktop/src-tauri/CLAUDE.md`.
+3. **Typed errors everywhere.** No `Box<dyn Error>`, no stringly-typed failure, so a host never string-matches. Two
+   named exceptions rather than zero: `IndexError::Internal(Diagnostic)` is the log-only residue for causes no caller
+   acts on, and `ReadPool::with_conn` still returns `Result<T, String>`. Both are in `src/indexing/handle/DETAILS.md` §
+   "The three exceptions, named". Typing the causes inside `lifecycle/state.rs` and `read/queries.rs` is still open
+   work. The house error style is in `apps/desktop/src-tauri/CLAUDE.md`.
 4. **Long-running work is cancelable** through one primitive (`tokio_util::sync::CancellationToken`), with cancellation
    observable from outside: a cancelled operation returns a distinct error variant, never a silent early return. One
    subsystem doesn't meet this yet: an `importance` recompute holds no token and no stop hook, so nothing stops it

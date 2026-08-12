@@ -5,8 +5,7 @@ reorganizing, or advising.
 
 `ImportanceIndex` mirrors `search/`→`indexing/`: a read-only handle that owns a `platform_case`-registered read
 connection over `importance.db` (thread-local, opened lazily, keyed by DB path), so no consumer takes a raw `rusqlite`
-dep on the store. The agent and media-ML plans point here rather than restating (single-source,
-`.claude/rules/docs.md`).
+dep on the store. The agent and media-ML plans point here rather than restating (single-source, `AGENTS.md` § Docs).
 
 `READ_CONNS` is a small per-thread LRU (`sqlite_util::ThreadConnCache`, three slots), not one connection: a thread that
 reads two volumes' weights would otherwise reopen on every alternation and lose the connection's `prepare_cached`

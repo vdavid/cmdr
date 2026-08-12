@@ -15,9 +15,9 @@ cache on next launch (Vision recompute only, no re-download — an accepted disp
   Rust layer stays path-addressed. A rename is a one-row `UPDATE media_file.path` (`MediaWriter::rename_path`).
 - `media_status` — `WITHOUT ROWID`, `file_id INTEGER PRIMARY KEY`; `mtime`, `size` (with the path, the
   `(path, mtime, size)` staleness key); `media_kind` + `state` (typed TEXT tokens, `sqlite3`-inspectable, parsed back to
-  typed enums — `no-string-matching`); `engine_version` (the combined analyze provenance stamp, `../backend/DETAILS.md`,
-  so an OS upgrade to the OCR engine, tag taxonomy, or feature-print model re-runs analysis even on an unchanged file —
-  data-COVERAGE, not data-safety, since the derived data is disposable); `clip_stamp` (the CLIP-side staleness key).
+  typed enums); `engine_version` (the combined analyze provenance stamp, `../backend/DETAILS.md`, so an OS upgrade to
+  the OCR engine, tag taxonomy, or feature-print model re-runs analysis even on an unchanged file — data-COVERAGE, not
+  data-safety, since the derived data is disposable); `clip_stamp` (the CLIP-side staleness key).
 - `media_ocr` — a **standalone** FTS5 table (`file_id UNINDEXED, source UNINDEXED, text`, tokenizer
   `unicode61 remove_diacritics 2`). Not external-content: external content would sync via triggers off another table's
   integer rowid; a standalone table keyed by an UNINDEXED `file_id` keeps enrichment and GC a simple `WHERE file_id = ?`

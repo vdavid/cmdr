@@ -77,17 +77,16 @@ it: the descent rule reads one and refuses to answer without the other.
 `UnreadableCause::Denied` (1) is a walk that tried and was refused, `Declined` (2) is one no walk will read at all (a
 NAS snapshot tree). `0` is the ordinary state, "something may yet read this". A CAUSE rather than a flag because the two
 reach the user as different sentences and only the first is one they can act on; telling them apart from the paths would
-mean matching folder names, which `.claude/rules/no-string-matching.md` forbids. An unknown stored value reads as
-`Denied`, the truthful half of any cause a future schema could add. Deliberately NOT folded into `listed_epoch`: an
-unreadable directory was never listed, so it stays at `0` and keeps absorbing its ancestors' `min_subtree_epoch` to `0`,
-which is what keeps sizes honest. What the marker buys is that the frontier can SKIP it instead of handing it to the
-walk again on every single search — without it, a permission-denied subtree is a permanent repeating slow path with no
-user signal. The local walk stamps it (`MarkDirsUnreadable`, sent after its marks) for a read that failed with
-PERMISSION DENIED only: a stall timeout means a dead mount or a storm, both of which heal, and pinning those would stop
-the retry. `mark_dirs_listed` CLEARS the column in the same `UPDATE` that stamps `listed_epoch` — a directory we just
-listed is by definition readable again — so granting Full Disk Access heals it with no rebuild and no separate pass.
-`mark_dirs_unreadable(conn, ids, None)` is the explicit clear, for a caller that has a reason to reset it without a
-listing.
+mean matching folder names, which isn't an option. An unknown stored value reads as `Denied`, the truthful half of any
+cause a future schema could add. Deliberately NOT folded into `listed_epoch`: an unreadable directory was never listed,
+so it stays at `0` and keeps absorbing its ancestors' `min_subtree_epoch` to `0`, which is what keeps sizes honest. What
+the marker buys is that the frontier can SKIP it instead of handing it to the walk again on every single search —
+without it, a permission-denied subtree is a permanent repeating slow path with no user signal. The local walk stamps it
+(`MarkDirsUnreadable`, sent after its marks) for a read that failed with PERMISSION DENIED only: a stall timeout means a
+dead mount or a storm, both of which heal, and pinning those would stop the retry. `mark_dirs_listed` CLEARS the column
+in the same `UPDATE` that stamps `listed_epoch` — a directory we just listed is by definition readable again — so
+granting Full Disk Access heals it with no rebuild and no separate pass. `mark_dirs_unreadable(conn, ids, None)` is the
+explicit clear, for a caller that has a reason to reset it without a listing.
 
 **`meta.exclusion_policy_built_for`** (`EXCLUSION_POLICY_KEY`) records WHICH scan-exclusion policy the DB's rows were
 written under: an FNV-1a fingerprint of `EXCLUDED_PREFIXES`, `JUNK_BASENAMES`, `PSEUDO_FS_BASENAMES`, and (macOS)

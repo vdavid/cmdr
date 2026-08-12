@@ -71,10 +71,10 @@ mid-pass slider move or a thermal event applies within ~one image with no pass r
 is untouched (parallelize compute, never DB writes), and `gate::should_stop` (watchdog OR master toggle off) still stops
 the pass promptly and skips GC.
 
-**Thermal backoff** (`../thermal.rs`): `NSProcessInfo.thermalState` read as a TYPED enum (never a string —
-`no-string-matching`) caps the EFFECTIVE workers — halved at `serious`, dropped to 1 at `critical` — so N workers
-pounding the ANE can't cook the machine into a system-wide throttle that hurts the foreground app more than it helps
-enrichment. It only ever lowers the user's chosen count.
+**Thermal backoff** (`../thermal.rs`): `NSProcessInfo.thermalState` read as a TYPED enum (never a string) caps the
+EFFECTIVE workers — halved at `serious`, dropped to 1 at `critical` — so N workers pounding the ANE can't cook the
+machine into a system-wide throttle that hurts the foreground app more than it helps enrichment. It only ever lowers the
+user's chosen count.
 
 The network pass's three-stage pipeline (dispatcher + K fetch workers + N compute workers, byte-bounded prefetch) rides
 this same pool: `../network/DETAILS.md` § Network parallelism.

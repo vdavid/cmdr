@@ -185,8 +185,7 @@ impl VolumeScanError {
     /// backstop; false for a timeout / context / writer-send failure (those are
     /// genuine aborts with no honest partial to keep).
     ///
-    /// Classifies by the TYPED variant, never a message substring
-    /// (`.claude/rules/no-string-matching.md`).
+    /// Classifies by the TYPED variant, never a message substring.
     pub(crate) fn is_terminal_disconnect(&self) -> bool {
         use cmdr_fs::volume::VolumeError;
         matches!(
@@ -310,8 +309,7 @@ fn drain_autorelease_pool() {
 }
 
 /// Whether a `VolumeError` means the whole volume went away mid-walk (terminal
-/// disconnect), classified by the TYPED variant — never a message substring
-/// (`.claude/rules/no-string-matching.md`).
+/// disconnect), classified by the TYPED variant — never a message substring.
 ///
 /// `DeviceDisconnected` is the one `VolumeError` variant that means "the volume
 /// is gone": a dropped MTP device AND a broken SMB smb2 session both surface as

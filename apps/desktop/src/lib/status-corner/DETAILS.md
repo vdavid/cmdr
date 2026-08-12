@@ -92,8 +92,7 @@ Each of these is a branch of `pickChipOperation`, each with its own test:
 
 - an empty queue;
 - instant ops (`rename` / `create_folder` / `create_file`), matched on the typed `operationType` via the store's
-  `isInstantOperation`, never a substring test (`no-string-matching`); they emit no progress and are gone before the eye
-  lands on them;
+  `isInstantOperation`, never a substring test; they emit no progress and are gone before the eye lands on them;
 - the operation the foreground progress modal owns (`getForegroundOperationId()`), which the modal is already showing in
   full;
 - a queue that's only `queued`: something else holds the lane it's waiting on, and that row speaks for it.

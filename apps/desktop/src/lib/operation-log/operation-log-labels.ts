@@ -2,7 +2,7 @@
  * Client-side labels for the operation-log dialog.
  *
  * Every label is derived from a TYPED enum field, never a display string the
- * backend rendered (Finding 3 / `no-string-matching`): the per-operation summary
+ * backend rendered: the per-operation summary
  * ("Moved 214 items") is formatted here from `kind` + `itemCount` via an ICU
  * plural key, so it localizes per viewer and shows a thousands separator. Status,
  * kind, initiator, and item-outcome labels map their enum to a catalog key with

@@ -29,7 +29,7 @@ use cmdr_index::importance::scheduler::ImportanceScheduler;
 /// Recorded for any background-scored volume — Local and SMB (plan M4). A volume
 /// that isn't registered, or is MTP (on-demand only, never scored), is silently
 /// ignored: recording a visit no recompute ever reads is dead weight, so the gate
-/// is the volume's TYPED kind, never its id string (`no-string-matching`). The
+/// is the volume's TYPED kind, never its id string. The
 /// write goes through the scheduler's SHARED long-lived writer for the volume (one
 /// writer thread per DB — the subsystem invariant held in spirit, not absorbed by
 /// WAL busy-timeouts), reached through Tauri managed state. If the scheduler isn't

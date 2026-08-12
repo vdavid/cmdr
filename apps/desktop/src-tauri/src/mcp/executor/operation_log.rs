@@ -12,7 +12,7 @@
 //! Every classification param (`kind`, `initiator`, `executionStatus`,
 //! `rollbackState`) and every field of the results crosses the wire as the typed
 //! `operation_log::types` enums in their camelCase serde form, never a hand-parsed
-//! string (`no-string-matching`): the enum params deserialize with serde, so input
+//! string: the enum params deserialize with serde, so input
 //! tokens match the output the results already serialize.
 
 use serde_json::{Value, json};

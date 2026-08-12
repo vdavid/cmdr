@@ -97,8 +97,8 @@ and the diff proves it.
   payloadless `()` (or `{}`) emit becomes a unit struct, which specta generates as `type X = null`: byte-identical to
   the old `listen<null>(...)`, and the FE wrapper takes no payload (`callback: () => void`).
 - **A field that classifies state carries a `specta`-typed enum, never a `String`.** The generated union is what lets a
-  consumer branch exhaustively instead of string-matching (the `no-string-matching` project rule). The enum may be WIDER
-  than any single producer's internal state machine: `volume-connection-changed` ships
+  consumer branch exhaustively instead of string-matching. The enum may be WIDER than any single producer's internal
+  state machine: `volume-connection-changed` ships
   `VolumeConnection = 'connected' | 'disconnected' | 'needs_credentials'` while SMB's own `ConnectionState` is binary,
   because `needs_credentials` is a transient signal that accompanies a failed reconnect rather than a state a backend
   rests in. A consumer that only handles part of the union narrows explicitly (`volume-store.svelte.ts`'s

@@ -27,7 +27,7 @@ decision rationale): `DETAILS.md`.
 - **`ToolId::Unrecognized` is the read-only choke point, not an error.** A raw provider tool name resolves through
   `ToolId::from_wire_name`; an unknown name becomes `Unrecognized(raw)`, which is never in the agent's tool view, so
   dispatch refuses it. The gate is a typed variant/view check, never a string match on the name.
-- **`ToolId` and errors classify by variant/HTTP status, never by message string** (`no-string-matching`). Provider
+- **`ToolId` and errors classify by variant/HTTP status, never by message string**. Provider
   errors are status-classified upstream in `crate::ai` and mapped variant-to-variant here.
 - **Tool declarations are never `strict: true`** (Gap D): OpenAI strict also demands all-required, which genai doesn't
   enforce, so an optional prop 400s. `tool_declaration_to_genai` leaves strict unset.

@@ -105,7 +105,7 @@
     // "Logging and diagnostics" card is one: its verbose-logging switch auto-renders (it's a
     // real `section: ['Advanced']` setting), but the "open log folder" / "copy
     // diagnostics" buttons are actions. A card is matched by a stable MARKER
-    // SETTING ID it contains, never by its translated title (no-string-matching).
+    // SETTING ID it contains, never by its translated title.
     // ------------------------------------------------------------------------
     const LOGGING_CARD_MARKER_ID = 'developer.verboseLogging'
 

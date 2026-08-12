@@ -48,8 +48,7 @@ pub(crate) enum AnswerEnding {
     /// The run couldn't run at all: an unusable query, or an index that won't
     /// open.
     Failed {
-        /// Typed, word-free classification. Branch on this
-        /// (`.claude/rules/no-string-matching.md`).
+        /// Typed, word-free classification. Branch on this.
         error: SearchRunError,
         /// The sentence to show, rendered backend-side like the engine's.
         message: String,

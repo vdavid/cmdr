@@ -84,7 +84,7 @@ pub use differential::{OriginComparison, compare_walks_for_incremental, sample_o
 // ── Volume kind → scoring policy (typed, never string-matched) ────────────
 
 /// How the importance scheduler treats a volume, decided by its typed
-/// [`IndexVolumeKind`] — never by inspecting the volume-id string (`no-string-matching`).
+/// [`IndexVolumeKind`] — never by inspecting the volume-id string.
 ///
 /// - **Local** and **SMB** are background-scored. They differ only in signal
 ///   availability: SMB has no Spotlight, so `last_used` is UNAVAILABLE there and

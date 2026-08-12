@@ -373,9 +373,9 @@ and `indexing/` C+D.md.
   not depend on it (unlike media-ML, where orphan rows cost re-enrichment).
 - **Staleness is first-class, never an error** (agent-spec D7). Every weight carries its as-of scan generation;
   consumers caveat their answers ("as of the May 28 scan"). This is what makes offline-unmounted reads honest.
-- **No string-matching for classification** (`no-string-matching`): signal availability, volume kind, and scorer state
-  cross any boundary as typed enums, never message-substring branches. The name denylist is a set-membership check on
-  folded names, not a substring match on a user-facing string.
+- **No string-matching for classification**: signal availability, volume kind, and scorer state cross any boundary as
+  typed enums, never message-substring branches. The name denylist is a set-membership check on folded names, not a
+  substring match on a user-facing string.
 - **Single-source docs.** The read-API boundary and the lifecycle-bus mechanism each get **one** canonical home
   (`importance/DETAILS.md` and `indexing/DETAILS.md` respectively); the agent and media-ML plans point here rather than
   restating (`docs.md` single-source rule). `docs/architecture.md` gets a map row (what + where + pointer), never the

@@ -6,8 +6,8 @@ use crate::indexing::events::Diagnostic;
 ///
 /// Every variant a caller can act on is its own shape carrying the data needed
 /// to act; [`Internal`](IndexError::Internal) is the residue, and its payload is
-/// a log-only [`Diagnostic`]. ❌ Never branch on that text
-/// (`.claude/rules/no-string-matching.md`): if a cause needs handling, it gets a
+/// a log-only [`Diagnostic`]. ❌ Never branch on that text:
+/// if a cause needs handling, it gets a
 /// variant.
 #[derive(Debug)]
 pub enum IndexError {

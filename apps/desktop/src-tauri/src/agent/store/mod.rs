@@ -100,7 +100,7 @@ impl From<std::io::Error> for AgentStoreError {
 
 /// Is this a file we can never parse as a SQLite DB (garbage bytes, corrupt header)? The
 /// one case where delete-and-recreate is the right move — matched on the typed sqlite
-/// error code, never a message string (`no-string-matching`).
+/// error code, never a message string.
 fn is_unparseable(err: &AgentStoreError) -> bool {
     matches!(
         err,

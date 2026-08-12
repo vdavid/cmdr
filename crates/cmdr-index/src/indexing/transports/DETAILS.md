@@ -19,11 +19,10 @@ a direct one is an `SmbVolume` returning `Some(Direct)`. `ensure_direct_smb` the
 `Disconnected` → refuse (reconnect first); `os_mount` → trigger/await `upgrade_to_smb_volume_inner`, then re-check.
 
 Every refusal is a TYPED `SmbIndexGateReason` (`NotRegistered` / `NotAnSmbVolume` / `UpgradeFailed` /
-`CredentialsNeeded` / `Disconnected`) that crosses IPC as a snake_case tag, never a message substring (per
-`.claude/rules/no-string-matching.md`). FDA-independent: SMB paths aren't TCC-protected, so `start_indexing_for_smb`
-never routes through `should_auto_start_indexing`. Volume access goes through the host seam (`host::volumes::current()`,
-a `LazyLock`, no `AppHandle` needed). `smb_volume_id_for_path` probes the mount (`get_smb_mount_info`) and keys by
-`(server, port, share)`.
+`CredentialsNeeded` / `Disconnected`) that crosses IPC as a snake_case tag, never a message substring. FDA-independent:
+SMB paths aren't TCC-protected, so `start_indexing_for_smb` never routes through `should_auto_start_indexing`. Volume
+access goes through the host seam (`host::volumes::current()`, a `LazyLock`, no `AppHandle` needed).
+`smb_volume_id_for_path` probes the mount (`get_smb_mount_info`) and keys by `(server, port, share)`.
 
 ### Auto-resume on (re)connect (`smb/index.rs`)
 

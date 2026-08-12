@@ -19,7 +19,7 @@
  * signal (not only the transition-only phase event) keeps the checklist honest
  * after a mid-scan reload, when the phase event is gone but the aggregation
  * sub-phase still proves how far we are. Branch on the typed discriminants only,
- * never on message wording (`.claude/rules/no-string-matching.md`).
+ * never on message wording.
  *
  * Kept pure and component-free so the risky state logic is unit-tested without
  * mounting (see `indexing-steps.test.ts`).

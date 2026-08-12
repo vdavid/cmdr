@@ -36,8 +36,8 @@ Top-level leaves this file owns: `classify.rs` (the shared categorical classifie
   `node_modules` stays floored. **A floored folder gets NO row** — every read derives `Floored` from the path
   (`classify::floors_by_path`); ❌ don't reintroduce a `0.0` row.
 - **Categorical signals come from `classify.rs`**, shared by production, fixtures, and evals — ❌ never re-derive them.
-  Classification is typed (`PathClass` / `SignalKind`), never a string branch (`no-string-matching`), and the denylist
-  reuses `indexing::SYSTEM_DIR_EXCLUDES`.
+  Classification is typed (`PathClass` / `SignalKind`), never a string branch, and the denylist reuses
+  `indexing::SYSTEM_DIR_EXCLUDES`.
 - **`importance-{volume_id}.db` is a disposable cache**: a `SCHEMA_VERSION` mismatch delete-and-recreates it, no
   migrations. ONE long-lived `ImportanceWriter` per volume through `writer_registry`; visits AND recomputes both route
   through it. ❌ Never a second writer thread on one DB.

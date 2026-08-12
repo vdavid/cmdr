@@ -1,8 +1,8 @@
 //! Typed errors for the archive reading core.
 //!
 //! Every failure mode the reader can hit is a distinct variant, so callers
-//! classify by pattern-matching, never by inspecting the message string (the
-//! project `no-string-matching` rule). The `String` payloads are for display /
+//! classify by pattern-matching, never by inspecting the message string. The
+//! `String` payloads are for display /
 //! logging only.
 
 use rc_zip::error::{Error as RcZipError, FormatError};

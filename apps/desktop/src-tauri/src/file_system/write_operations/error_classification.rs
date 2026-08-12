@@ -1,7 +1,7 @@
 //! Maps raw `std::io::Error` values into typed `WriteOperationError` variants.
 //!
-//! Only `errno` and `ErrorKind` are consulted, never the formatted message (the
-//! `no-string-matching` rule). The `IoResultExt` extension trait and the
+//! Only `errno` and `ErrorKind` are consulted, never the formatted message. The
+//! `IoResultExt` extension trait and the
 //! `From<std::io::Error>` impl are the two entry points local-FS code uses to
 //! attach a typed variant (and a path) to an IO failure.
 

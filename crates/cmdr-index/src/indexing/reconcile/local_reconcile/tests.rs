@@ -646,7 +646,7 @@ fn reconcile_resolves_mount_rooted_root_via_strip() {
 
     // `root` space walks the absolute mount path from `ROOT_ID` and misses → the
     // pre-fix `root is not in the index` failure. (Typed variant match, no string
-    // match per the `no-string-matching` rule.)
+    // match.)
     let red = run_reconcile_in(
         &h,
         rp,

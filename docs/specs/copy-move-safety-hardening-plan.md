@@ -252,9 +252,9 @@ comment.
 
 **Landmines.**
 
-- **The refusal must be a typed error**, not a message (`.claude/rules/no-string-matching.md`). `MtpConnectionError` has
-  no ENOTEMPTY-shaped variant (`mtp/connection/errors.rs:6-75`), so add one, map it through `map_mtp_error` to
-  `VolumeError::IoError`, and assert with `matches!`.
+- **The refusal must be a typed error**, not a message. `MtpConnectionError` has no ENOTEMPTY-shaped variant
+  (`mtp/connection/errors.rs:6-75`), so add one, map it through `map_mtp_error` to `VolumeError::IoError`, and assert
+  with `matches!`.
 - **That variant crosses IPC.** `MtpConnectionError` is `specta`-exported, so adding a variant regenerates
   `apps/desktop/src/lib/ipc/bindings.ts`, and there's a parallel stub enum at `stubs/mtp.rs:44` for builds without the
   MTP feature. Regenerate the bindings in the same commit and keep the stub's shape consistent with whichever enum feeds
@@ -887,8 +887,8 @@ recursion just moved behind `Volume::delete`.
 6. **Decision 6's word counts are stale for every file it names.** `transfer/volume/CLAUDE.md` was at 574, not 592 —
    Phase 2 had already condensed it. Measure with `wc -w` before budgeting, don't trust the plan's numbers.
 7. **The tier structure is single-sourced in the test module's doc comment, not duplicated into `DETAILS.md`.** The plan
-   asks for both; `.claude/rules/docs.md` forbids restating a load-bearing claim in two places. `DETAILS.md` points at
-   the module comment, which is where an agent adding a cell looks anyway.
+   asks for both; `AGENTS.md` § Docs forbids restating a load-bearing claim in two places. `DETAILS.md` points at the
+   module comment, which is where an agent adding a cell looks anyway.
 8. **The four SMB cells needed three new `#[cfg(test)] pub(crate)` reach-throughs**, which the plan doesn't mention: the
    suite sits outside `write_operations`. `FaultyVolume` / `FaultyOp` and the incoherent-cache seeder go through facade
    re-exports; the delete walker goes through a thin `#[cfg(test)] pub(crate)` WRAPPER rather than a re-export, because

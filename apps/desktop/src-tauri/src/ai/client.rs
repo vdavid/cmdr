@@ -231,7 +231,7 @@ fn response_info_from_chat_response(res: &genai::chat::ChatResponse, started: In
 }
 
 /// The latest user turn's text, for the log slug. Reads our own assembled request, so this is
-/// not error/state classification (no `no-string-matching` concern).
+/// not error/state classification.
 fn latest_user_message(request: &ChatRequest) -> Option<String> {
     request
         .messages
@@ -572,8 +572,7 @@ fn ai_error_for_status(status: u16, detail: String) -> AiError {
 /// The message is the JSON body's `error.message` when present (OpenAI, OpenRouter,
 /// Anthropic, and Gemini all put the human sentence there), else the raw body, capped so
 /// an HTML error page (a proxy, Cloudflare) can't flood the UI or the logs. Display only,
-/// never control flow: classification stays on the numeric status (`ai_error_for_status`),
-/// per `no-string-matching`.
+/// never control flow: classification stays on the numeric status (`ai_error_for_status`).
 fn provider_error_detail(status: impl Display, body: &str) -> String {
     const MAX_CHARS: usize = 400;
     let message = serde_json::from_str::<Value>(body)

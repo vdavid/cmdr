@@ -15,7 +15,7 @@ use crate::indexing::volume::{IndexVolumeKind, VolumeId};
 /// Snapshot the ready-to-score volume ids WITH their typed kind. The importance and
 /// media-index schedulers' startup sweeps use this to branch typed on the kind (score
 /// Local + SMB, exclude MTP) without re-deriving the kind from the volume-id
-/// string (`no-string-matching`). Readiness filter: a registered instance whose
+/// string. Readiness filter: a registered instance whose
 /// freshness is `Fresh` (an authoritative completed scan). `Scanning`/`Stale` volumes
 /// are excluded (a `Scanning` one fires `ScanCompleted` on the bus when it finishes; a
 /// `Stale` one has nothing to score yet).
@@ -55,7 +55,7 @@ pub(crate) fn all_registered_volume_ids() -> Vec<VolumeId> {
 ///
 /// Lets a consumer (the `record_visit` command) branch on the kind — record a
 /// visit for a Local/SMB volume, skip an MTP one — without inspecting the
-/// volume-id string (`no-string-matching`).
+/// volume-id string.
 pub(crate) fn volume_kind(volume_id: &str) -> Option<IndexVolumeKind> {
     INDEX_REGISTRY.lock().ok()?.get(volume_id).map(|i| i.kind)
 }

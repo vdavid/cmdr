@@ -91,7 +91,7 @@ pub enum Access {
 /// Whether `name` is listable/dispatchable by `consumer` — its authored `consumers` set includes
 /// it. The choke point [`execute_tool`] consults before dispatch, and the invariant the
 /// structural tests pin ("no transport dispatches a name outside its consumer view"). The
-/// decision is on the typed [`Consumer`] set, never a string (no-string-matching).
+/// decision is on the typed [`Consumer`] set, never a string.
 pub fn tool_available_to(name: &str, consumer: Consumer) -> bool {
     tool_consumers(name).is_some_and(|cs| cs.contains(&consumer))
 }

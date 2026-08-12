@@ -894,9 +894,8 @@ pub fn connection_manager() -> &'static MtpConnectionManager {
 /// (`cmdr_fs::volume::mtp_ids`), so it can no longer be NUMERICALLY parsed back into a
 /// location_id. Instead we re-enumerate and match the requested id against each
 /// live device's computed id — the same derivation discovery uses — and return
-/// its location_id. This keeps the id OPAQUE (no substring interpretation, per
-/// `.claude/rules/no-string-matching.md`) and works for both serial and
-/// location ids. `None` if no currently-connected device produces this id.
+/// its location_id. This keeps the id OPAQUE (no substring interpretation) and
+/// works for both serial and location ids. `None` if no currently-connected device produces this id.
 fn resolve_device_location_id(device_id: &str) -> Option<u64> {
     crate::mtp::list_mtp_devices()
         .into_iter()

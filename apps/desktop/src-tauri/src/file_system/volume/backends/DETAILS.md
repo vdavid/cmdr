@@ -88,7 +88,7 @@ Only `UpgradeFailure::Unreachable` retries. An auth rejection is final (retrying
 in" flow owns that recovery), and so is anything the server itself answered with.
 
 **The reason crosses IPC typed, never as a sentence.** `UpgradeFailure` (`unreachable` / `tooSlow` / `unexpected`) is
-classified in Rust by io kind and smb2 error kind — never by message text (`no-string-matching`) — and the frontend
+classified in Rust by io kind and smb2 error kind — never by message text — and the frontend
 writes the copy from the catalog (`src/lib/file-explorer/network/upgrade-messages.ts`). The raw error stays in the log
 where it's a diagnostic. Before this, `try_smb_upgrade` built an English sentence in Rust, the toast wrapped it in
 "Direct connection failed: " (the style guide forbids "failed" outright), and the two catch-block call sites pasted a

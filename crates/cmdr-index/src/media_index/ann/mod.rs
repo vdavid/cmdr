@@ -131,7 +131,7 @@ impl AnnSpace {
 }
 
 /// Errors from the ANN layer. Typed so callers and tests classify by variant, never
-/// by message (`no-string-matching`); `Engine` wraps usearch's opaque exception text
+/// by message; `Engine` wraps usearch's opaque exception text
 /// and is never matched on.
 #[derive(Debug)]
 pub(crate) enum AnnError {

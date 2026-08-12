@@ -23,7 +23,7 @@ Navigation primitives are shared one level up in `../file-explorer/navigation/na
 
 - **Switch on the typed `kind`, never on a message string.** The backend returns one `GoToPathResolution` with a `kind`
   discriminator (`directory` / `file` / `nearestAncestor` / `invalid`); `reason` and toast copy are user-facing only.
-  This is the no-string-matching rule and the smart-backend principle.
+  This is the smart-backend principle.
 - **`file` selects, never opens.** `file` → navigate to the parent and move the cursor onto the file. Don't open it.
 - **Recents store the RESOLVED target, populated ONLY by manual jumps in this dialog.** Not by `nav_to_path` MCP calls,
   not by ordinary app-wide navigation (matches the search-history precedent). Deduped by path, move-to-top, cap 10. The

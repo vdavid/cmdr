@@ -195,8 +195,8 @@ pub async fn scan_volume_via_trait(
                 e
             }
             // TERMINAL disconnect: the whole volume went away mid-walk. Matched
-            // by the TYPED variant (never a message substring,
-            // `.claude/rules/no-string-matching.md`). Stop topping up and drop the
+            // by the TYPED variant (never a message substring). Stop topping up
+            // and drop the
             // in-flight listings rather than churning the still-queued dirs into
             // silently-empty rows (the reported prod bug). Write the partial-preserving
             // sequence in ONE place (flush + marks + aggregate, NO scan_completed_at) so

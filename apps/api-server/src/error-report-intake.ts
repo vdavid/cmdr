@@ -62,8 +62,8 @@ export function dailyBytesKey(date: string): string {
 }
 
 /**
- * Why intake turned a request away. Carried as an explicit tag rather than inferred from a message,
- * per the `no-string-matching` rule: the route maps it to a status and the log line reads it.
+ * Why intake turned a request away. Carried as an explicit tag rather than inferred from a message:
+ * the route maps it to a status and the log line reads it.
  */
 export type IntakeRejection = 'paused' | 'daily_budget'
 

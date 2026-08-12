@@ -336,7 +336,7 @@ fn map_usage(usage: GenaiUsage) -> AgentUsage {
 
 /// Maps `crate::ai`'s transport error to the agent seam's typed error. The status
 /// classification (401/403 → auth, 429 → rate-limited) happened upstream by HTTP
-/// status, so this stays a variant-to-variant mapping (`no-string-matching`).
+/// status, so this stays a variant-to-variant mapping.
 impl From<AiError> for AgentLlmError {
     fn from(error: AiError) -> Self {
         match error {

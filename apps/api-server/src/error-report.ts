@@ -48,7 +48,7 @@ const MAX_BODY_BYTES = MAX_BUNDLE_BYTES + 1024 * 1024
  * headers claim.
  *
  * Returning null rather than throwing keeps "too large" distinguishable from "malformed multipart"
- * without matching on a parser message (the `no-string-matching` rule).
+ * without matching on a parser message.
  */
 async function readCappedBody(body: ReadableStream<Uint8Array>, maxBytes: number): Promise<ArrayBuffer | null> {
   const reader = body.getReader()

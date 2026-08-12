@@ -35,7 +35,7 @@ type Pane = 'left' | 'right'
  * return `null`. The single resolve-or-toast used by the ⌘G, search-result, and
  * downloads edges (MCP returns a typed `ok: false` instead of toasting, so it
  * calls `resolveLocation` directly). `ResolveLocationResult` can't tell unmounted
- * from nonexistent, and the no-string-matching rule forbids sniffing, so every
+ * from nonexistent, and sniffing the wording isn't an option, so every
  * failure shows the one generic toast.
  */
 export async function resolveLocationOrToast(dir: string): Promise<Location | null> {

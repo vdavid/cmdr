@@ -20,7 +20,7 @@ const BETA_SIGNUP_URL: &str = "https://api.getcmdr.com/beta-signup";
 const BETA_SIGNUP_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 
 /// The signup outcome, returned across IPC so the frontend reacts on a typed `kind` discriminant
-/// rather than parsing a message (see the `no-string-matching` rule). Serializes as
+/// rather than parsing a message. Serializes as
 /// `{"kind":"subscribed"}` / `{"kind":"invalidEmail"}` / `{"kind":"softFailure"}`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "camelCase")]

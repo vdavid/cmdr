@@ -8,7 +8,7 @@
 //! chosen `mediaIndex.parallelism` (the slider is the ceiling; thermal only ever
 //! lowers it, never raises it).
 //!
-//! The state is read as a TYPED enum, never a string label (`no-string-matching`): the
+//! The state is read as a TYPED enum, never a string label: the
 //! diagnostics snapshot stringifies the same `NSProcessInfo` property for its report,
 //! but a control-flow decision must branch on the typed pressure, not on wording.
 

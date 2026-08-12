@@ -31,7 +31,7 @@ pub enum AgentRole {
 impl AgentRole {
     /// The stable DB token for the `messages.role` column. Snake_case, the
     /// one place the enum ↔ storage mapping lives; renaming a token is a schema
-    /// change, renaming a variant is free (`no-string-matching`).
+    /// change, renaming a variant is free.
     pub fn as_token(self) -> &'static str {
         match self {
             AgentRole::System => "system",
@@ -89,7 +89,7 @@ impl ProviderTag {
 
     /// The stable snake_case DB token for the `cost_meter.provider` column. The one
     /// place enum ↔ storage mapping lives; separate from the camelCase serde wire
-    /// form so neither can drift the other (`no-string-matching`).
+    /// form so neither can drift the other.
     pub fn as_token(self) -> &'static str {
         match self {
             ProviderTag::Anthropic => "anthropic",
@@ -136,7 +136,7 @@ pub struct ReasoningState {
 /// tool resolves here. `Unrecognized` is never a member of `agent_tool_view()` and
 /// carries no dispatch path, so the runtime refuses it before ever reaching
 /// `execute_tool` — the gate is this typed parse step, never a string match on the
-/// name (`no-string-matching`). It is deliberately excluded from [`ToolId::KNOWN`]
+/// name. It is deliberately excluded from [`ToolId::KNOWN`]
 /// and the 1:1 test.
 ///
 /// Serializes transparently as its wire name (a bare string) so the DB token, the
@@ -357,7 +357,7 @@ pub enum AgentDelta {
 
 /// The typed error surface of the `AgentLlm` seam. Provider transport details are
 /// classified by HTTP status upstream (`crate::ai`'s `ai_error_for_status`), never
-/// by message-string matching (`no-string-matching`); the `String` payloads carry the
+/// by message-string matching; the `String` payloads carry the
 /// provider's own wording for display only, never for control flow.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AgentLlmError {

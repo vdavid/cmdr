@@ -297,8 +297,8 @@ and the reconciler each just `log::warn!`-and-continued and retried FOREVER: 12,
 ~190% CPU, a frozen webview, and "Find files" stuck at 0%. The fix makes a dead index DB fail loudly, stop cleanly, and
 show an honest state.
 
-**Classification is typed, never on the message string** (`no-string-matching`). `store::IndexStoreError::sqlite_code()`
-extracts `(rusqlite::ErrorCode, extended_code)`; `is_fatal_storage_error()` is `true` for the storage-death classes
+**Classification is typed, never on the message string**. `store::IndexStoreError::sqlite_code()` extracts
+`(rusqlite::ErrorCode, extended_code)`; `is_fatal_storage_error()` is `true` for the storage-death classes
 (`SQLITE_IOERR*`, `SQLITE_CORRUPT`, `SQLITE_CANTOPEN`, `SQLITE_FULL`, `SQLITE_READONLY`, `SQLITE_NOTADB`). Transient
 contention (`SQLITE_BUSY`/`SQLITE_LOCKED`) is deliberately NOT fatal (the busy handler backs those off). The detector
 lives in the writer (`../writer/CLAUDE.md`); this area owns the LIFECYCLE representation of the trip.

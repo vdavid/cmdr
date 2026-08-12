@@ -374,7 +374,7 @@ where
 /// distinct id, so two transfers to the same local disk serialize. This is a
 /// proxy for `Volume::lane_key()` on the local-only path where no `Volume`
 /// handle is threaded through; it uses each id as an opaque whole (no
-/// substring parsing, so `no-string-matching` holds).
+/// substring parsing).
 fn local_lanes(volume_ids: &[String]) -> Vec<LaneKey> {
     if volume_ids.is_empty() {
         vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)]

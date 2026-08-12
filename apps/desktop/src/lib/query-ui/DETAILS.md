@@ -290,9 +290,9 @@ guard to "empty query" — that breaks filter-only queries in both dialogs.
 `executeQuery`'s catch toasts `queryUi.dialog.runQueryToast` wrapping the reason. The backend refuses some runs with an
 actionable message ("Query too broad. Add a filename pattern, size, date, or type filter"); the old bare `catch {}`
 turned those into an empty list that read as "nothing matched". No typed variant crosses this IPC boundary, so the
-message passes through verbatim rather than being classified by its text (`.claude/rules/no-string-matching.md`); if a
-typed error kind ever lands, switch on it the way the AI path switches on `AiTranslateError.kind`. Both consumers get
-this from the one place, same rule as the AI toast.
+message passes through verbatim rather than being classified by its text; if a typed error kind ever lands, switch on it
+the way the AI path switches on `AiTranslateError.kind`. Both consumers get this from the one place, same rule as the AI
+toast.
 
 ### Lifecycle hooks
 

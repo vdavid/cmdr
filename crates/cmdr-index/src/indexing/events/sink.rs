@@ -25,8 +25,8 @@ use crate::indexing::store::IndexFailure;
 
 use super::payload::{ActivityPhase, MemoryWatchdogAction, RescanReason, ScanRunKind};
 
-/// Why a volume's enrichment pass ended. A typed discriminant, never a string
-/// (`no-string-matching`): the frontend clears the indicator row on `Completed` /
+/// Why a volume's enrichment pass ended. A typed discriminant, never a string:
+/// the frontend clears the indicator row on `Completed` /
 /// `Cancelled` / `Failed` and re-voices it paused on the two pause reasons.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "kind")]

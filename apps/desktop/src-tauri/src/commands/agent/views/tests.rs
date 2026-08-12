@@ -79,7 +79,7 @@ fn a_tool_result_block_carries_only_its_status_never_the_content() {
 // ── `tool_result_ok`: our own typed keys, never wording ────────────────────────
 
 /// Reads OUR OWN result keys, so a copy edit to any tool's message can't flip a row's
-/// status (`no-string-matching`).
+/// status.
 #[test]
 fn a_refusal_and_a_handler_problem_both_read_as_not_ok() {
     assert!(tool_result_ok(&json!({ "files": [] })), "a plain answer is ok");

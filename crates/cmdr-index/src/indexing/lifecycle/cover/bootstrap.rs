@@ -118,8 +118,7 @@ pub(super) struct WalkableVolume {
 /// The boot disk is known without asking anyone. Everything else is the same
 /// question the enable command answers, decided by the same typed facts (a phone's
 /// volume-id vocabulary, a live smb2 session, a network filesystem) through the
-/// same predicates — never a path substring
-/// (`.claude/rules/no-string-matching.md`).
+/// same predicates — never a path substring.
 ///
 /// ⚠️ The kind names the SCAN PATH, not the protocol: everything that isn't the
 /// boot disk, a phone, or a plain local mount is `Smb`, which is what every

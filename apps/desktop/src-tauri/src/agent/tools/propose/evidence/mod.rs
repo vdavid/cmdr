@@ -57,7 +57,7 @@ const CONTEXT_CHARS: usize = 60;
 // ── The typed evidence an item carries ────────────────────────────────────────
 
 /// Where a proposed name came from. Typed, so the UI and the validator branch on a
-/// variant rather than sniffing wording (`no-string-matching`).
+/// variant rather than sniffing wording.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum EvidenceSource {

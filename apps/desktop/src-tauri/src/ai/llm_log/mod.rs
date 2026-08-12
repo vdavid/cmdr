@@ -96,7 +96,7 @@ pub fn is_enabled() -> bool {
 
 /// Which AI feature made the call. Drives the session directory (for the one-shot helpers)
 /// and the slug prefix + `gen_ai.operation`-style metadata. A typed enum, never a matched
-/// string (`no-string-matching`).
+/// string.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JobKind {
     /// An Ask Cmdr chat turn (grouped per conversation).

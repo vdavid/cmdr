@@ -202,7 +202,7 @@ ground another walk already holds. Three notes on the copy:
   (`coverage-note.ts::offersFullDiskAccess`), the note offers the setup and `SearchDialog` routes into the onboarding
   wizard's FDA step — the same page first launch shows, never a second one. ❌ Never offer it over `declined`: no
   permission opens a snapshot tree, so it would send someone to System Settings to fix nothing. ❌ Don't infer the cause
-  from a path's basename either; that's what the typed cause on the wire is for (`.claude/rules/no-string-matching.md`).
+  from a path's basename either; that's what the typed cause on the wire is for.
 - **The probe is `checkFullDiskAccessQuiet`, and only when a refusal is on screen.** The loud `checkFullDiskAccess`
   fires a TCC-registration storm per denial, and this runs per search. `hasFullDiskAccess` starts at `true`, so nothing
   is offered before the probe answers: an offer that appears and then vanishes is worse than one a moment late.

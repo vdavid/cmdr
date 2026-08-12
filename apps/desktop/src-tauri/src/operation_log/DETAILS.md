@@ -468,7 +468,7 @@ frontend (`apps/desktop/src/lib/operation-log/`) over the existing read API; no 
     `isModalDialogOpen()` guard). One collapsible row per operation; expanding lazily fetches its items via
     `getOperationLogDetail` (cached per `opId` for the dialog's lifetime).
   - `operation-log-labels.ts` — PURE label mapping. **Every label derives from a TYPED enum, never a backend-rendered
-    string** (`no-string-matching`): the per-operation summary ("Moved 214 items") is formatted client-side from
+    string**: the per-operation summary ("Moved 214 items") is formatted client-side from
     `kind` + `archiveSubkind` + `itemCount` via an ICU plural key, so it localizes per viewer and shows a thousands
     separator (Finding 3 — the backend ships no rendered English summary for the dialog). Status, kind, initiator, and
     item-outcome labels each map their enum to a catalog key with an exhaustive switch (a new variant is a compile error

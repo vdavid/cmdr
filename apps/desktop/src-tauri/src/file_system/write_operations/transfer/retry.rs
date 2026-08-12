@@ -61,8 +61,7 @@ const MAX_BACKOFF: Duration = Duration::from_secs(2);
 ///
 /// Matched exhaustively on purpose: a new [`VolumeError`] variant should not
 /// inherit a retry policy by falling into a wildcard. Classification is by TYPE
-/// (and, for the one `IoError` case, by errno), never by message text — the
-/// `no-string-matching` rule.
+/// (and, for the one `IoError` case, by errno), never by message text.
 pub(super) fn is_retryable(err: &VolumeError) -> bool {
     match err {
         // The M2 typed errors. `smb2`'s send deadline (`SendTimeout`), its

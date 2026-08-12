@@ -9,29 +9,29 @@ func TestIsPathShapedLinkText(t *testing.T) {
 	}{
 		{"`docs/architecture.md`", true},
 		{"`DETAILS.md`", true},
-		{"DETAILS.md", true},                   // unbackticked path is just as redundant
-		{"`../reconcile/DETAILS.md`", true},    // relative paths count
-		{"`apps/desktop/src-tauri/`", true},    // directory reference
-		{"`Cargo.toml`", true},                 // known extension, no slash
-		{"`scripts/check`", true},              // slash, no extension
-		{"the subsystem map", false},           // prose
-		{"`serde`", false},                     // crate name: no slash, no extension
-		{"`--fast`", false},                    // flag
-		{"`pnpm check`", false},                // space means prose, not a path
-		{"docs", false},                        // bare word
-		{"`cargo deny check`", false},          // command
-		{".", false},                           // not a reference
-		{"..", false},                          // not a reference
-		{"", false},                            // empty
-		{"`a` and `b`", false},                 // multiple spans, not one path
-		{"v1.2.3", false},                      // version, unknown extension
-		{"`getcmdr.com`", false},               // domain, unknown extension
-		{"`routes/(main)/+page.svelte`", true}, // SvelteKit group dir + plus-prefixed file
-		{"`@AGENTS.md`", true},                 // import marker
-		{"`docs/style-guide.md`", true},        // hyphenated filename
-		{"`.claude/rules/docs.md`", true},      // hidden dir
-		{"`file-explorer/CLAUDE.md`", true},    // hyphenated dir
-		{"read `docs/architecture.md`", false}, // prose wrapping a path
+		{"DETAILS.md", true},                               // unbackticked path is just as redundant
+		{"`../reconcile/DETAILS.md`", true},                // relative paths count
+		{"`apps/desktop/src-tauri/`", true},                // directory reference
+		{"`Cargo.toml`", true},                             // known extension, no slash
+		{"`scripts/check`", true},                          // slash, no extension
+		{"the subsystem map", false},                       // prose
+		{"`serde`", false},                                 // crate name: no slash, no extension
+		{"`--fast`", false},                                // flag
+		{"`pnpm check`", false},                            // space means prose, not a path
+		{"docs", false},                                    // bare word
+		{"`cargo deny check`", false},                      // command
+		{".", false},                                       // not a reference
+		{"..", false},                                      // not a reference
+		{"", false},                                        // empty
+		{"`a` and `b`", false},                             // multiple spans, not one path
+		{"v1.2.3", false},                                  // version, unknown extension
+		{"`getcmdr.com`", false},                           // domain, unknown extension
+		{"`routes/(main)/+page.svelte`", true},             // SvelteKit group dir + plus-prefixed file
+		{"`@AGENTS.md`", true},                             // import marker
+		{"`docs/style-guide.md`", true},                    // hyphenated filename
+		{"`.claude/rules/file-length-allowlist.md`", true}, // hidden dir
+		{"`file-explorer/CLAUDE.md`", true},                // hyphenated dir
+		{"read `docs/architecture.md`", false},             // prose wrapping a path
 	}
 	for _, tt := range tests {
 		if got := isPathShapedLinkText(tt.text); got != tt.want {

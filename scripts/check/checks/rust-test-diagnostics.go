@@ -21,8 +21,8 @@ import (
 //     opposite (raise the cap vs. raise/scale the in-test wait), so a reader who can't
 //     tell them apart guesses, and guesses wrong.
 //
-// Parsing tool stdout is textual by nature, so the `no-string-matching` rule's typed
-// alternative doesn't apply here. The one string we own rather than observe is
+// Parsing tool stdout is textual by nature, so the ban on message-string
+// classification doesn't apply here. The one string we own rather than observe is
 // `wait_until`'s panic format; `TestWaitUntilPanicFormatStillMatchesTheClassifier`
 // pins it so a reword can't silently degrade classification.
 

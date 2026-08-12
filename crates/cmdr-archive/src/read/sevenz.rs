@@ -264,8 +264,8 @@ fn map_sevenz_err_pw(err: sevenz_rust2::Error, had_password: bool) -> ArchiveErr
 /// wraps `sevenz-rust2`'s typed error (`io::Error::other(Error::…)`); recover the
 /// wrapped value and route it through [`map_sevenz_err_pw`], so a wrong-password
 /// integrity failure mid-stream is typed `WrongPassword` instead of a generic
-/// `Io`. Classifies by the recovered ENUM variant, never message text (within
-/// `no-string-matching`); a non-sevenz io error keeps the plain io classification.
+/// `Io`. Classifies by the recovered ENUM variant, never message text; a
+/// non-sevenz io error keeps the plain io classification.
 fn map_stream_err(err: std::io::Error, had_password: bool) -> ArchiveError {
     match err.downcast::<sevenz_rust2::Error>() {
         Ok(sevenz_err) => map_sevenz_err_pw(sevenz_err, had_password),
@@ -274,7 +274,7 @@ fn map_stream_err(err: std::io::Error, had_password: bool) -> ArchiveError {
 }
 
 /// Maps a `sevenz-rust2` error to a typed [`ArchiveError`], classifying by enum
-/// variant (never message text, per `no-string-matching`).
+/// variant (never message text).
 ///
 /// The load-bearing case is encryption (`aes256` ON). A password-protected 7z
 /// surfaces two typed password signals:

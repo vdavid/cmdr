@@ -81,7 +81,7 @@ impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
 
 /// True when a dispatch result is a real answer rather than a refusal or a handler
 /// problem. Reads OUR OWN typed result keys (`available` / `problem`), never external
-/// wording — so no `no-string-matching` conflict.
+/// wording.
 pub(super) fn dispatch_ok(result: &AgentToolResult) -> bool {
     let refused = result.content.get("available") == Some(&Value::Bool(false));
     let problem = result.content.get("problem").is_some();

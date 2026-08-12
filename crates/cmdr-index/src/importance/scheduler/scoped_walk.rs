@@ -79,8 +79,8 @@ pub(super) enum ScopedWalkOutcome {
     FullWalkNeeded(FullWalkReason),
 }
 
-/// Why a pass fell back to the full walk. Typed, never a message match
-/// (`no-string-matching`); the `Display` is for the debug log only.
+/// Why a pass fell back to the full walk. Typed, never a message match;
+/// the `Display` is for the debug log only.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum FullWalkReason {
     /// The batch carried more than [`SCOPED_WALK_MAX_ORIGINS`] distinct subtrees.

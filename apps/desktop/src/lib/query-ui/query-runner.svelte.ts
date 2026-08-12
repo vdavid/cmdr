@@ -443,8 +443,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       // message ("Query too broad. Add a filename pattern, size, date, or type filter");
       // swallowing it left the user staring at an empty list that reads as "nothing
       // matched". No typed variant crosses this IPC boundary, so we pass the message
-      // through verbatim instead of classifying it by its text
-      // (`.claude/rules/no-string-matching.md`).
+      // through verbatim instead of classifying it by its text.
       toastRunFailure(describeRunFailure(err))
     } finally {
       config.state.setIsSearching(false)

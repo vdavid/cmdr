@@ -196,7 +196,7 @@ change at the volume root, a batch spanning unrelated subtrees, and an origin de
 - The clear and the insert stay on the SAME (deduped) `changed_paths` slice.
 - A floored folder gets no row; floor beats marker.
 - The full walk stays as both the fallback path and the oracle; `walk_memory_tests.rs` keeps guarding its memory shape.
-- Typed classification only (`no-string-matching`): the fallback reason is an enum, never a message.
+- Typed classification only: the fallback reason is an enum, never a message.
 
 ## The throttle
 

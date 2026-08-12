@@ -53,7 +53,7 @@ pub enum UpgradeFailure {
 
 impl UpgradeFailure {
     /// Classifies a connect failure by io kind and smb2 error kind, never by
-    /// message text (`no-string-matching`).
+    /// message text.
     pub(crate) fn from_smb_error(err: &smb2::Error) -> Self {
         use std::io::ErrorKind as Io;
         if let smb2::Error::Io(io_err) = err {

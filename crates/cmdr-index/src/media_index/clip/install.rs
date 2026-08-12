@@ -169,7 +169,7 @@ pub fn remove(data_dir: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-/// A typed install failure. Never string-matched (`no-string-matching`).
+/// A typed install failure. Never string-matched.
 #[derive(Debug)]
 pub enum InstallError {
     /// The downloaded bytes' SHA-256 didn't match the pinned hash — refuse to install

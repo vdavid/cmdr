@@ -1891,7 +1891,7 @@ export const commands = {
    *  Recorded for any background-scored volume — Local and SMB (plan M4). A volume
    *  that isn't registered, or is MTP (on-demand only, never scored), is silently
    *  ignored: recording a visit no recompute ever reads is dead weight, so the gate
-   *  is the volume's TYPED kind, never its id string (`no-string-matching`). The
+   *  is the volume's TYPED kind, never its id string. The
    *  write goes through the scheduler's SHARED long-lived writer for the volume (one
    *  writer thread per DB — the subsystem invariant held in spirit, not absorbed by
    *  WAL busy-timeouts), reached through Tauri managed state. If the scheduler isn't
@@ -1979,7 +1979,7 @@ export const commands = {
     __TAURI_INVOKE<void>('media_index_set_always_index_folder', { folder, always }),
   /**
    *  Set the indexing SCOPE: index only the folders the user chose, or index
-   *  automatically by folder importance. The typed token (`no-string-matching`: an
+   *  automatically by folder importance. The typed token (an
    *  unknown one falls back to the narrow default rather than branching on wording).
    *  Live-applied; the frontend persists `mediaIndex.scope` and calls this on change.
    *
@@ -2013,7 +2013,7 @@ export const commands = {
     typedError<null, string>(__TAURI_INVOKE('media_index_set_excluded_folder', { folder, excluded })),
   /**
    *  Set the folder-importance threshold the scheduler enriches by — the importance settings
-   *  slider's typed value (`0.0..=1.0`, clamped), never a string (`no-string-matching`).
+   *  slider's typed value (`0.0..=1.0`, clamped), never a string.
    *  Below-threshold folders are deferred; an override still forces enrichment. Live-
    *  applied; the frontend persists `mediaIndex.importanceThreshold` and calls this.
    *
@@ -3687,7 +3687,7 @@ export type BackendType = 'fullLoad' | 'byteSeek' | 'lineIndex'
 
 /**
  *  The signup outcome, returned across IPC so the frontend reacts on a typed `kind` discriminant
- *  rather than parsing a message (see the `no-string-matching` rule). Serializes as
+ *  rather than parsing a message. Serializes as
  *  `{"kind":"subscribed"}` / `{"kind":"invalidEmail"}` / `{"kind":"softFailure"}`.
  */
 export type BetaSignupResult =
@@ -3747,7 +3747,7 @@ export type BriefColumnsErrorKind =
  *  The wire form of a failed `get_brief_column_text_widths`.
  *
  *  `kind` is the classifier; `message` is diagnostic text for logs and error
- *  reports. ❌ Nothing may branch on `message` (`.claude/rules/no-string-matching.md`):
+ *  reports. ❌ Nothing may branch on `message`:
  *  it carries listing IDs and OS text that change without notice.
  */
 export type BriefColumnsIpcError = {
@@ -4399,7 +4399,7 @@ export type DryRunResult = {
  *
  *  The typed REFUSAL (an SMB volume that needs a direct-smb2 upgrade which can't
  *  complete) rides the `Ok` channel as a variant the FE classifies by tag, never
- *  by message substring (`.claude/rules/no-string-matching.md`) — mirroring
+ *  by message substring — mirroring
  *  `upgrade_to_smb_volume`'s `UpgradeResult`. A genuine internal failure (DB
  *  open, manager spawn) is the command's `Err(String)` instead.
  */
@@ -4553,7 +4553,7 @@ export type EvidenceCoverage = {
 
 /**
  *  Where a proposed name came from. Typed, so the UI and the validator branch on a
- *  variant rather than sniffing wording (`no-string-matching`).
+ *  variant rather than sniffing wording.
  */
 export type EvidenceSource =
   // Text recognized inside the image, as `image_facts` delivered it.
@@ -6114,8 +6114,8 @@ export type MediaEnrichTerminalEvent = {
 }
 
 /**
- *  Why a volume's enrichment pass ended. A typed discriminant, never a string
- *  (`no-string-matching`): the frontend clears the indicator row on `Completed` /
+ *  Why a volume's enrichment pass ended. A typed discriminant, never a string:
+ *  the frontend clears the indicator row on `Completed` /
  *  `Cancelled` / `Failed` and re-voices it paused on the two pause reasons.
  */
 export type MediaEnrichTerminalReason =
@@ -6246,7 +6246,7 @@ export type MediaIndexVolumeState = {
 
 /**
  *  What the memory watchdog did, as a typed variant rather than a string the
- *  frontend would have to match on (`no-string-matching`).
+ *  frontend would have to match on.
  */
 export type MemoryWatchdogAction =
   // The safety limit was crossed and every volume's index was stopped.
@@ -7449,7 +7449,7 @@ export type RestrictedWindowSettings = {
 
 /**
  *  Why a rollback request is refused at the operation level (before any item
- *  runs). Typed across IPC/MCP — never a message string (`no-string-matching`).
+ *  runs). Typed across IPC/MCP — never a message string.
  */
 export type RollbackRefusal =
   // No operation with this id in the journal.
@@ -8333,7 +8333,7 @@ export type SmbDiagnosticsDto = {
 /**
  *  Why an SMB volume couldn't be indexed. Typed (and serialized as a
  *  snake_case tag) so callers and the per-drive UX classify by variant on BOTH sides
- *  of the IPC boundary, never by message substring (`.claude/rules/no-string-matching.md`).
+ *  of the IPC boundary, never by message substring.
  */
 export type SmbIndexGateReason =
   // No volume is registered for this id (unmounted, or never seen).
@@ -9094,8 +9094,7 @@ export type VolumesChanged = {
 
 /**
  *  How a live search's walk ended. Typed, because three of the four leave the
- *  result list INCOMPLETE and the copy differs
- *  (`.claude/rules/no-string-matching.md`).
+ *  result list INCOMPLETE and the copy differs.
  */
 export type WalkEnding =
   // The index already covered the whole scope, so nothing had to be walked.

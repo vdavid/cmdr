@@ -141,7 +141,7 @@ pub enum SmbConnectionState {
 /// differently and must never be cross-assigned.
 ///
 /// Derived from [`Volume::lane_key`](super::Volume::lane_key), NOT from parsing
-/// a `volume_id` string (that would violate the `no-string-matching` rule).
+/// a `volume_id` string.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LaneKey(String);
 

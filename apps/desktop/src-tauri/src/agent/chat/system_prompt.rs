@@ -4,9 +4,7 @@
 //! full `system` from this plus `~/.cmdr/CMDR.md` if present), so it must not vary
 //! per call. It is our OWN authored asset, not provider output, so the tests that
 //! assert it contains the read-only self-description and the coverage-honesty rule
-//! are guarding our prompt text, NOT classifying an error or provider state — there
-//! is no `no-string-matching` conflict (that rule is about branching on other
-//! systems' wording).
+//! are guarding our prompt text, NOT classifying an error or provider state.
 //!
 //! Five labelled sections, in the order the model reads them: identity, what you can
 //! do, coverage, renaming, evidence, style. The labels are there so a rule can be
@@ -111,8 +109,7 @@ mod tests {
     use super::*;
 
     // These assert our OWN prompt asset carries its load-bearing rules. This is a
-    // guard on authored text, not error/state classification, so it does not conflict
-    // with `no-string-matching` (that rule is about branching on other systems' words).
+    // guard on authored text, not error/state classification.
 
     #[test]
     fn prompt_states_the_read_only_self_description() {

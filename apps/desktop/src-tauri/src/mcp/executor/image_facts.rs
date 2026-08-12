@@ -49,7 +49,7 @@ const OFF_NOTE: &str = "Image indexing is off, so there's nothing stored about t
 // ── Result DTOs ─────────────────────────────────────────────────────────────
 
 /// Whether the index has anything for a path. Typed, so a caller branches on a variant
-/// rather than sniffing for an absent field (`no-string-matching`).
+/// rather than sniffing for an absent field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FactsState {

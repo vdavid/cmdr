@@ -43,7 +43,7 @@ async fn connect_virtual_volume(
 /// error and destroys nothing.
 ///
 /// The typed part matters as much as the refusal: callers classify on the
-/// variant, never on the wording (`.claude/rules/no-string-matching.md`), and a
+/// variant, never on the wording, and a
 /// backend-neutral `IoError` carrying `ENOTEMPTY` is what makes MTP answer the
 /// same question the same way LocalPosix and SMB do.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

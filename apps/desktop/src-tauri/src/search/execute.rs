@@ -59,8 +59,7 @@ struct Target {
 }
 
 /// Why a query's scope can't be reduced to the one volume a search may cover. Typed
-/// so callers branch on the variant, never on the message
-/// (`.claude/rules/no-string-matching.md`).
+/// so callers branch on the variant, never on the message.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ScopeError {
     /// The include paths live on more than one volume. Carries the volume ids in

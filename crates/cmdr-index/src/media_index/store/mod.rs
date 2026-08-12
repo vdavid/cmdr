@@ -149,7 +149,7 @@ const CREATE_TABLES_SQL: &str = "
 
 /// The typed enrichment state of a `media_status` row. Persisted as a stable TEXT
 /// token (`sqlite3`-inspectable) and parsed back to this enum — classification is
-/// typed, never a substring branch (`no-string-matching`).
+/// typed, never a substring branch.
 ///
 /// Note: state does NOT drive staleness (that's `(path, mtime, size)` + engine); it
 /// records coverage (done vs failed) for the progress surface.

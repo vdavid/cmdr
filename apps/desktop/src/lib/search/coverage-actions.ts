@@ -14,8 +14,8 @@ import { addToast } from '$lib/ui/toast'
 /**
  * Turn on indexing for `volumeId` and report the outcome as a toast.
  *
- * Branches on the TYPED `EnableIndexingOutcome`, never a message
- * (`.claude/rules/no-string-matching.md`). The master switch outranks every
+ * Branches on the TYPED `EnableIndexingOutcome`, never a message.
+ * The master switch outranks every
  * per-drive gate, so "indexing is off globally" needs its own answer or the user
  * presses a button that quietly does nothing. Anything else (an SMB share that needs
  * reconnecting or credentials) points at the drive menu, which offers the same action

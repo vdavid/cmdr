@@ -2,8 +2,7 @@
 //! fatal-storage classification the lifecycle fails a volume on, and the cause
 //! recorded on a directory nothing is going to read into.
 //!
-//! Classify on the typed values here, never on a `Display` string
-//! (`.claude/rules/no-string-matching.md`).
+//! Classify on the typed values here, never on a `Display` string.
 
 /// Why nothing is going to read into a directory: the domain of
 /// `entries.unreadable_cause`.
@@ -15,8 +14,7 @@
 /// It's a CAUSE rather than a flag because the two reach the user as different
 /// sentences: one is a permission they can grant, the other is a decision Cmdr
 /// made for them. Telling them apart from the paths alone would mean matching
-/// folder names, which `.claude/rules/no-string-matching.md` forbids and which
-/// would break the moment a NAS vendor renamed a directory.
+/// folder names, which would break the moment a NAS vendor renamed a directory.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnreadableCause {
     /// A walk tried to read it and the OS refused (permission denied). The
@@ -122,7 +120,7 @@ impl IndexStoreError {
     /// `SqliteFailure`. `None` for non-SQLite errors and for `rusqlite` errors that
     /// carry no ffi code (for example `QueryReturnedNoRows`).
     ///
-    /// Classify on THIS, never on the `Display` string (`no-string-matching`):
+    /// Classify on THIS, never on the `Display` string:
     /// `Display` writes only `SQLite error: {e}` and drops the numeric extended
     /// code that distinguishes a transient lock from a dead disk.
     pub fn sqlite_code(&self) -> Option<(rusqlite::ErrorCode, i32)> {

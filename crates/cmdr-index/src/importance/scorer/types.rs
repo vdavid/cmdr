@@ -37,8 +37,8 @@ impl Score {
 
 /// Which path class a folder sits in, as a typed prior.
 ///
-/// Kept as a typed enum rather than a path-substring branch (the
-/// `no-string-matching` rule): the caller classifies the path once, up front,
+/// Kept as a typed enum rather than a path-substring branch: the caller
+/// classifies the path once, up front,
 /// and the scorer reads the resulting variant. `Neutral` is the default when no
 /// class applies.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, specta::Type)]

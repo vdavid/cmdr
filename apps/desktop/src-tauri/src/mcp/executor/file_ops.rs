@@ -228,7 +228,7 @@ pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
 /// Omitted, the FE applies its per-volume default (trash where supported, forced
 /// permanent on volumes without a trash and inside archives). `permanent` only
 /// rides the event when `mode` is given, so the FE default stays the single
-/// source of the volume clamp (`no-string-matching`: a typed bool crosses IPC).
+/// source of the volume clamp (a typed bool crosses IPC).
 ///
 /// Ack contract:
 /// - `autoConfirm: true` → round-trip returning the spawned `operationId`; the FE

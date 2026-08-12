@@ -31,8 +31,7 @@ pub enum SearchPhase {
 }
 
 /// How a live search's walk ended. Typed, because three of the four leave the
-/// result list INCOMPLETE and the copy differs
-/// (`.claude/rules/no-string-matching.md`).
+/// result list INCOMPLETE and the copy differs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum WalkEnding {

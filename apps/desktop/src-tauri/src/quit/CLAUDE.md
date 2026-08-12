@@ -25,7 +25,7 @@ stops everything and exits inside a hard budget.
   `ExitRequested`; without the phase the gate would prompt again over the operations it just aborted, forever.
 - **A restart (`RESTART_EXIT_CODE`) never reaches the gate**: Tauri ignores `prevent_exit` there, so asking would show
   a dialog nobody could answer.
-- **Classify by TYPED variant, never a string** (`.claude/rules/no-string-matching.md`). Both matches in `blocks_quit`
+- **Classify by TYPED variant, never a string**. Both matches in `blocks_quit`
   are exhaustive so a new operation type or lifecycle status has to declare its side.
 - **"Don't quit" deletes the countdown, it doesn't defer it.** A snooze would still kill the transfer seconds later,
   which is worse than not having asked.

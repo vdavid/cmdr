@@ -25,7 +25,7 @@ use crate::indexing::writer::WriteMessage;
 /// applies it when `SearchQuery::exclude_system_dirs` isn't `Some(false)`, the
 /// importance scorer treats a match as known-unimportant, and the folder-size
 /// tooltip command skips a match when it sums a directory. ❌ Match on NAME
-/// EQUALITY, never a substring (`no-string-matching`): a folder called
+/// EQUALITY, never a substring: a folder called
 /// `my-build-notes` is not build output.
 ///
 /// ❌ The SCANNER is not one of them, and never should be (Decision 6 of

@@ -2,7 +2,7 @@
 //! columns of `main.db`, and the `token_enum!` macro that declares them.
 //!
 //! Every classification field the store persists or crosses a boundary with is a typed
-//! enum here, never a substring branch (`no-string-matching`). Each carries a compact,
+//! enum here, never a substring branch. Each carries a compact,
 //! stable, human-readable snake_case **token** stored as TEXT, so the DB stays
 //! `sqlite3`-inspectable and the enum ↔ storage mapping lives in exactly one place.
 //! Renaming a token is a schema change; renaming a variant is free.
@@ -18,8 +18,8 @@
 /// Declare a token-backed enum once: the variants, their stable DB tokens, `as_token`,
 /// and `from_token`. Keeps the two directions in lockstep so they can't drift. The
 /// serde/specta wire form (camelCase, for IPC + `bindings.ts`) is SEPARATE from the DB
-/// `as_token` (stable snake_case): callers cross IPC as this typed enum, never a string
-/// (`no-string-matching`); the store reads/writes via the tokens.
+/// `as_token` (stable snake_case): callers cross IPC as this typed enum, never a string;
+/// the store reads/writes via the tokens.
 macro_rules! token_enum {
     (
         $(#[$meta:meta])*

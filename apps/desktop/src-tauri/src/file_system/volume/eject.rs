@@ -101,7 +101,7 @@ pub fn decide_eject_action(ctx: &EjectContext) -> Result<EjectAction, EjectDecis
 
 /// Errors from the eject pipeline. Typed variants so the command layer maps each
 /// to `IpcError` — and distinguishes a genuine subprocess timeout — without
-/// string-matching (`no-string-matching` rule).
+/// string-matching.
 #[derive(Debug)]
 pub enum EjectError {
     /// A write op is reading from or writing to this volume; refuse to tear it

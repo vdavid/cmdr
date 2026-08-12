@@ -478,7 +478,7 @@ someone rebuilding the treadmill by tuning one constant.
 
 The scheduler scores **any** background-scored volume, not just the local `root`. The typed volume kind
 (`indexing::IndexVolumeKind`, retained on the registry instance) decides the policy at a single seam
-(`ScoringPolicy::for_kind`), never by inspecting the volume-id string (`no-string-matching`):
+(`ScoringPolicy::for_kind`), never by inspecting the volume-id string:
 
 - **Local** — background-scored; both optional signals available (visits plus Spotlight where the OS has it).
 - **SMB** — background-scored, but **Spotlight is unavailable** (no `kMDItemLastUsedDate` over a share), so

@@ -70,8 +70,7 @@ spinner and an animated bar; `'paused'` shows a static bar and the Paused label.
 - `failureCount: number` — how many rows are retained failures. Gates the toolbar's "Dismiss all" (offered only past
   one) and feeds the corner chip's failure state.
 
-Three typed set tests sit beside the factory, all module exports, all sets rather than substring tests
-(`no-string-matching`):
+Three typed set tests sit beside the factory, all module exports, all sets rather than substring tests:
 
 - `isTerminalStatus(status)` — `done` / `cancelled` / `failed`: the op has stopped, whatever the outcome.
 - `isHiddenSettledStatus(status)` — `done` / `cancelled`, the settled statuses the window drops. Separate from

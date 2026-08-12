@@ -230,7 +230,7 @@ func TestIsRepoPathToken(t *testing.T) {
 	}{
 		{"docs/architecture.md", true},
 		{"crates/cmdr-index/src/indexing/DETAILS.md", true},
-		{".claude/rules/docs.md", true},
+		{".claude/rules/file-length-allowlist.md", true},
 		{"DETAILS.md", false},                           // single segment: too close to prose like `C.md`
 		{"C.md", false},                                 // an abbreviation, not a path
 		{"and/or", false},                               // prose pair, no extension

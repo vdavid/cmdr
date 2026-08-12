@@ -58,8 +58,8 @@ actual jump (one source of truth, no drift).
   `DialogManager` hosts pane-scoped file-operation dialogs; Go-to-path is a window-level modal that reads the focused
   pane and acts on it, exactly like Search/Selection.
 - **The backend owns resolution; the frontend switches on the typed `kind`** and never on a message string
-  (smart-backend / thin-frontend, plus the no-string-matching rule). `GoToPathResolution`'s discriminator is the
-  contract; the wording (`reason`, the toast copy) is for the user.
+  (smart-backend / thin-frontend). `GoToPathResolution`'s discriminator is the contract; the wording (`reason`, the
+  toast copy) is for the user.
 - **The digit→recent jump is guarded by the empty box, not by a modifier.** No valid path starts with a digit (paths
   start with `/`, `~`, or `.`), so once any character is in the box, digits are ordinary input. Confirmed with David.
 - **The ancestor toast's back-shortcut is snapshotted at toast-creation**, never hardcoded and never live-subscribed,

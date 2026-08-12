@@ -876,7 +876,7 @@ fn node_to_entry(archive_path: &Path, volume_name: &str, node: &ArchiveNode) -> 
 }
 
 /// Maps the reading core's [`ArchiveError`] onto [`VolumeError`], typed only (no
-/// message-string classification, per `no-string-matching`).
+/// message-string classification).
 ///
 /// The path-shaped errors map to their native `VolumeError` twins so
 /// path-aware callers keep working. Encryption maps to the typed

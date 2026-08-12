@@ -53,7 +53,7 @@ use super::writer::{FinalizeOperation, ItemOutcomeUpdate, JournalItem, OpenOpera
 const ROLLBACK_PAGE: u32 = 512;
 
 /// Why a rollback request is refused at the operation level (before any item
-/// runs). Typed across IPC/MCP — never a message string (`no-string-matching`).
+/// runs). Typed across IPC/MCP — never a message string.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(
     rename_all = "camelCase",

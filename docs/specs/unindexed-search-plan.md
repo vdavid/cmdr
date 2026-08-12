@@ -712,9 +712,9 @@ runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled insi
   know about.
 - **`unreadable`'s two causes had one list and no discriminator, and M8 gave them a typed cause end to end.** The wire
   carried bare paths, so permission-denied and NAS snapshot trees were indistinguishable frontend-side (short of
-  matching `@eaDir` by name, which the no-string-matching rule forbids) and M6 could only state the fact and name both
-  possibilities. M8 needed to ACT on one, so `entries.known_unreadable` became `entries.unreadable_cause` (schema v16,
-  free: v15 never shipped) with an internal `UnreadableCause::{Denied, Declined}`; the local walker stamps `Denied` on a
+  matching `@eaDir` by name, which isn't an option) and M6 could only state the fact and name both possibilities. M8
+  needed to ACT on one, so `entries.known_unreadable` became `entries.unreadable_cause` (schema v16, free: v15 never
+  shipped) with an internal `UnreadableCause::{Denied, Declined}`; the local walker stamps `Denied` on a
   permission-denied read and the trait walk stamps `Declined` on a NAS system dir; `CoverageMap` and `SearchRunCoverage`
   carry `permission_denied` / `declined` as two lists, and the note renders two sentences. ❌ The enum itself does NOT
   cross into `lib.rs`: two `Vec<String>` fields on an existing struct cost no root promise, and the ceiling is David's
@@ -939,8 +939,7 @@ away), `search/DETAILS.md` § Merge, `query-ui/CLAUDE.md` (the scope shortcuts m
   (`query-ui/QueryResults.svelte:391-394`), reached only from the `catch` of `prepareSearchIndex()`
   (`SearchDialog.svelte:496-498`), and `prepare_search_index` returns `Ok(ready: false)` during a first scan
   (`commands/search.rs:78-82`). It is a backend-unavailable state. Do not "fix" it here.
-- Render `uncoveredScopes` and `unresolvedScopes` with distinct copy. Branch on emptiness, never on message text
-  (`.claude/rules/no-string-matching.md`).
+- Render `uncoveredScopes` and `unresolvedScopes` with distinct copy. Branch on emptiness, never on message text.
 - **`unresolvedScopes` copy is provisional and says so.** `search/DETAILS.md:203-204` defines it as "the volume IS
   indexed but the specific path isn't in it", rendered as "couldn't find that path". On a partially indexed volume, a
   real folder someone is standing in lands in exactly that bucket (`execute.rs:172-175`), so M1 would say a folder they

@@ -573,9 +573,8 @@ Vision OCR and adds no new models, so it proves the transport without model-down
   - **Make it feel nice** (design-principles § delightful): a smooth slider with the covered counts updating live, the
     floor made legible ("junk like `node_modules` is always skipped"), and `prefers-reduced-motion` respected. The
     slider only refines the master toggle — it's disabled/hidden when image indexing is off.
-  - Threshold semantics are typed across IPC (a bounded level or a `0.0..=1.0` value), never a string
-    (`no-string-matching`); the scheduler reads it via the same importance read API, so a below-threshold folder is
-    deferred/skipped, not enriched.
+  - Threshold semantics are typed across IPC (a bounded level or a `0.0..=1.0` value), never a string; the scheduler
+    reads it via the same importance read API, so a below-threshold folder is deferred/skipped, not enriched.
 - **Full enrichment progress surface** (§ Honest progress + coverage): the per-volume progress/coverage indicator with
   honest counts, ETA, and state ("12,000 of 38,900 images indexed on naspi, about 15 min left") lands here, sharing the
   slider's count machinery. M1 shipped only the minimal per-volume state.
@@ -776,8 +775,8 @@ looking, not a blocker for M1–M5; a short milestone or a future note.
 - **Dependencies.** `objc2-vision`, `objc2-core-ml`, maybe a clustering crate / `ort` fallback / `sqlite-vec` binding:
   each needs `cargo deny check` + a verified ≥14-day-old version (`use-latest-dep-versions`, project `dependencies`
   rule).
-- **No string-matching for classification** (`no-string-matching`): typed enums for model/provider/consent/identity-
-  state across IPC; the frontend never branches on message substrings.
+- **No string-matching for classification**: typed enums for model/provider/consent/identity- state across IPC; the
+  frontend never branches on message substrings.
 
 ## Parallelization (only where extremely safe; sequential is default)
 

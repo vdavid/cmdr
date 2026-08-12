@@ -26,7 +26,7 @@ pub enum TokenGate {
 impl TokenGate {
     /// Whether a call with these `arguments` (the JSON-RPC `params.arguments` object) requires
     /// the bearer token. `IfConfirmAction` reads the tool's own typed `action` enum, not a
-    /// message substring, so it's not a `no-string-matching` violation.
+    /// message substring.
     pub fn requires_token(self, arguments: Option<&Value>) -> bool {
         match self {
             TokenGate::Open => false,

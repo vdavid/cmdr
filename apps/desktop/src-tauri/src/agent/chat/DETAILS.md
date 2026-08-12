@@ -336,7 +336,7 @@ alongside the typed `kind`.** Why: the typed kinds alone left the user blind on 
 catch-all `Provider` case (a retired model slug's "use this slug instead" hint died in the
 logs while the UI said only "something went wrong"), so the provider-authored sentence
 rides the event and the rail shows it under the friendly headline. It is display only:
-the frontend branches on `kind`, never on `detail` (`no-string-matching`), and the string
+the frontend branches on `kind`, never on `detail`, and the string
 is rendered as escaped plain text, never `{@html}`. `AgentLlmError::detail()` says which
 variants carry wording; `crate::ai`'s `provider_error_detail` extracts the JSON body's
 `error.message` (capped) so the UI gets the sentence, not a JSON blob.

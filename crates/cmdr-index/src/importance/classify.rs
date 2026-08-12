@@ -24,8 +24,8 @@ pub fn leaf_name(path: &str) -> String {
 
 /// Whether a folder name is on the known-unimportant denylist: a set-membership
 /// check on the folded name against the project-wide system-dir exclude list
-/// (`node_modules`, `.git`, caches, build output), never a substring match (the
-/// `no-string-matching` rule). Reusing the indexer's `SYSTEM_DIR_EXCLUDES` keeps
+/// (`node_modules`, `.git`, caches, build output), never a substring match.
+/// Reusing the indexer's `SYSTEM_DIR_EXCLUDES` keeps
 /// importance and search agreeing on what counts as machine output.
 pub fn is_denylisted(name: &str) -> bool {
     // Every entry is ASCII, so for an ASCII name the ASCII fold IS the Unicode fold and

@@ -17,7 +17,7 @@ use cmdr_index::{
 ///
 /// The typed REFUSAL (an SMB volume that needs a direct-smb2 upgrade which can't
 /// complete) rides the `Ok` channel as a variant the FE classifies by tag, never
-/// by message substring (`.claude/rules/no-string-matching.md`) — mirroring
+/// by message substring — mirroring
 /// `upgrade_to_smb_volume`'s `UpgradeResult`. A genuine internal failure (DB
 /// open, manager spawn) is the command's `Err(String)` instead.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]

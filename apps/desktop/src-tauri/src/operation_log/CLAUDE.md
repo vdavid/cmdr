@@ -26,7 +26,7 @@ MCP tools live in `mcp/executor/operation_log.rs`; UI surfaces are frontend-only
   (lossless), never dropping; a DB error on one row drops THAT row without failing the op. So the capture completeness
   check degrades a `rollback_unit` gap to `not_rollbackable` and a `search_only` gap to `top_level_only` — never a
   silent under-reverse.
-- **Classification is typed end to end** (`no-string-matching`): every `kind`, `initiator`, status, `row_role`,
+- **Classification is typed end to end**: every `kind`, `initiator`, status, `row_role`,
   `outcome`, and `rollback_skip_reason` is a `types.rs` enum with a stable token, mapped ONLY there. Renaming a token is
   a schema change; renaming a variant is free.
 - **The writer stores terminal state; it does NOT compute eligibility.** That reasoning lives in `capture.rs` — keep

@@ -61,8 +61,8 @@ checks (they mutate shared allowlists mid-run), and review every diff yourself. 
   fits). The low bar ("any non-trivial work") plus the named activities are deliberate: the trigger calls out
   planning/reorganizing/advising, not just editing, because the old "before structural changes" wording let reorg and
   advice tasks skip the doc. `DETAILS.md` headers mirror it with "Read this before ...".
-- **Describe current state, not history** (`.claude/rules/docs.md`): git holds the history. Drop "we originally / used
-  to / no longer applicable" narration; keep the non-obvious why and constraint-encoding pain.
+- **Describe current state, not history** (`AGENTS.md` § Docs): git holds the history. Drop "we originally / used to /
+  no longer applicable" narration; keep the non-obvious why and constraint-encoding pain.
 - **Single-source**: a mechanism lives in ONE canonical doc; everywhere else points to it by path. `architecture.md` is
   a map (what + where + a pointer), never how.
 - **Evidence-anchor volatile claims**: OS, version, and empirical claims carry `(verified on <env>, <method>, <date>)`.

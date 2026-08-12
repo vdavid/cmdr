@@ -126,9 +126,9 @@ pinned for this phase. Raise it later if a real workload wants parallel extract.
 
 ### Decision: typed `ArchiveError → VolumeError` mapping, no message strings
 
-**Why** (`no-string-matching`): `to_volume_error` maps the path-shaped errors to their `VolumeError` twins
-(`NotFound → NotFound`, `IsADirectory → IsADirectory`) so path-aware callers keep working, the I/O family (`Corrupt` /
-`Io → IoError`), the encryption pair (`Encrypted → NeedsPassword { wrong_attempt: false }`,
+**Why**: `to_volume_error` maps the path-shaped errors to their `VolumeError` twins (`NotFound → NotFound`,
+`IsADirectory → IsADirectory`) so path-aware callers keep working, the I/O family (`Corrupt` / `Io → IoError`), the
+encryption pair (`Encrypted → NeedsPassword { wrong_attempt: false }`,
 `WrongPassword → NeedsPassword { wrong_attempt: true }` — the typed signal the frontend prompts on, see below), and the
 rejection family (`NotAnArchive` / `Unsupported` / the `TooLarge` DoS cap `→ NotSupported`). This is a **mid-browse
 backstop** (the archive was swapped or corrupted after navigation). The user-facing "damaged archive" copy is NOT
@@ -234,7 +234,7 @@ password to read its metadata; zip and content-encrypted 7z ignore it at parse).
   listing-loader intercepts that reason and raises the SAME `ArchivePasswordDialog` at browse time; on unlock it
   re-lists the directory.
 
-Both are machine-readable (`no-string-matching`).
+Both are machine-readable.
 
 ## Routing and lifecycle (`src/boundary.rs` + `VolumeManager::resolve`)
 

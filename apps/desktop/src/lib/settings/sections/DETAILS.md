@@ -187,10 +187,9 @@ sections compose).
   sidebar entry and shows its row in its card. Advanced is a normal registry section now (in `buildSectionTree`), not a
   hardcoded special section. **One bespoke exception — per-card "extra content":** after a card's auto-rendered rows,
   the section can append non-setting UI, keyed by a stable MARKER SETTING ID the card contains (never the translated
-  title — `no-string-matching`). Today only the "Logging" card uses it: `developer.verboseLogging` auto-renders the
-  switch, and `hasLoggingExtras(group)` (marker `developer.verboseLogging`) appends the open-log-folder /
-  copy-diagnostics action buttons (they're actions, not settings, so they have no auto-render home). See the
-  Decision/Why below
+  title). Today only the "Logging" card uses it: `developer.verboseLogging` auto-renders the switch, and
+  `hasLoggingExtras(group)` (marker `developer.verboseLogging`) appends the open-log-folder / copy-diagnostics action
+  buttons (they're actions, not settings, so they have no auto-render home). See the Decision/Why below
 - **`advanced-grouping.ts`**: Pure card-grouping logic for `AdvancedSection` (group `section: ['Advanced']` settings by
   resolved `card` title, registry order; trailing untitled "Other" bucket for any with no `cardKey`). Tested by a
   set-equality regression guard (union of grouped === all Advanced settings)
@@ -475,11 +474,11 @@ auto-renders. But its companions — "Open log folder" and "Copy diagnostics" �
 registry entry and no auto-render home. Rather than turn the whole Logging card back into a hand-written section (and
 lose the generated pipeline), `AdvancedSection` grew a minimal, well-bounded seam: after a card's auto-rendered rows, it
 may append a fixed snippet of non-setting UI. The card is matched by a stable MARKER SETTING ID it contains
-(`developer.verboseLogging`), via `hasLoggingExtras(group)`, **never by its translated title** (`no-string-matching`:
-titles are for users and would break on a copy edit or in another locale). This is the FIRST and only bespoke element in
-the generated Advanced section; keep it that way — a new card that needs extra content adds another marker-id check and
-an inline block, not a general plugin system. The two buttons reuse the same handlers and `settings.logging.*` catalog
-copy the old standalone `LoggingSection` carried.
+(`developer.verboseLogging`), via `hasLoggingExtras(group)`, **never by its translated title** ( titles are for users
+and would break on a copy edit or in another locale). This is the FIRST and only bespoke element in the generated
+Advanced section; keep it that way — a new card that needs extra content adds another marker-id check and an inline
+block, not a general plugin system. The two buttons reuse the same handlers and `settings.logging.*` catalog copy the
+old standalone `LoggingSection` carried.
 
 ## Ask Cmdr section (`AskCmdrSection.svelte`)
 

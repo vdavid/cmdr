@@ -160,9 +160,9 @@ log cadence is structural, not rate-limited.
 **Only 1555 heals, never 2067.** `IndexStoreError::is_primary_key_conflict()` (`../store/`) matches the EXTENDED code
 `SQLITE_CONSTRAINT_PRIMARYKEY`; both it and the `(parent_id, name_folded)` conflict `SQLITE_CONSTRAINT_UNIQUE` (2067)
 share the primary `ErrorCode::ConstraintViolation`, so the extended code is the only discriminator (never the message
-string — `no-string-matching`). A UNIQUE conflict means the NAME is already in the table (a real duplicate, a
-case-folding twin, a writer that raced between `resolve_component` and the insert); retrying under a fresh id would
-insert exactly the duplicate row the constraint exists to block (the 1.83 TB ghost size on `..` of a 994 GB volume).
+string). A UNIQUE conflict means the NAME is already in the table (a real duplicate, a case-folding twin, a writer that
+raced between `resolve_component` and the insert); retrying under a fresh id would insert exactly the duplicate row the
+constraint exists to block (the 1.83 TB ghost size on `..` of a 994 GB volume).
 
 ## Fatal storage failure — the writer is the detector
 
@@ -171,7 +171,7 @@ and the reconciler each `log::warn!`-and-continued and retried FOREVER: 12,700+ 
 CPU, a frozen webview, "Find files" stuck at 0%. The fix makes a dead DB fail loudly, stop cleanly, and show an honest
 state.
 
-**Classification (typed, never the message string — `no-string-matching`).** `IndexStoreError::sqlite_code()` extracts
+**Classification (typed, never the message string).** `IndexStoreError::sqlite_code()` extracts
 `(rusqlite::ErrorCode, extended_code)`; `is_fatal_storage_error()` is `true` for the storage-death classes
 (`SQLITE_IOERR*`, `SQLITE_CORRUPT`, `SQLITE_CANTOPEN`, `SQLITE_FULL`, `SQLITE_READONLY`, `SQLITE_NOTADB`) where every
 later op fails identically. Transient contention (`SQLITE_BUSY` / `SQLITE_LOCKED`) is deliberately NOT fatal (the busy

@@ -223,8 +223,7 @@ fn run_decrypt_producer(source: Arc<dyn ArchiveByteSource>, ordinal: usize, pass
 /// An `InvalidData` I/O error at end of stream is an integrity check failing —
 /// ZipCrypto's ~1/256 wrong password that slipped its 1-byte open check, or a
 /// WinZip AES HMAC mismatch — so it maps to [`ArchiveError::WrongPassword`].
-/// Classifying by the io ERROR KIND (not its message) keeps this within the
-/// `no-string-matching` rule.
+/// Classifies by the io ERROR KIND, not its message.
 fn pump_decrypt(mut reader: impl Read, tx: &ChunkTx) {
     let mut buf = vec![0u8; CHUNK_SIZE];
     loop {
@@ -247,7 +246,7 @@ fn pump_decrypt(mut reader: impl Read, tx: &ChunkTx) {
 /// [`ArchiveError`]. A wrong password is the headline case; the rest are
 /// structural. The "password required" sentinel can't occur here (we only call
 /// `by_index_decrypt` WITH a password), so it isn't matched — avoiding a
-/// message-string comparison the `no-string-matching` rule forbids.
+/// message-string comparison.
 fn map_zip_err(err: ZipError) -> ArchiveError {
     match err {
         ZipError::InvalidPassword => ArchiveError::WrongPassword,

@@ -131,11 +131,11 @@ makes no progress; that yields a typed `Corrupt` error rather than a spin on rep
 
 ## Typed errors (`ArchiveError`)
 
-Every failure is a distinct variant so callers classify by `matches!`, never by message substring (the
-`no-string-matching` rule); `String` payloads are display-only. `From<rc_zip::Error>` maps:
-`DirectoryEndSignatureNotFound → NotAnArchive` (a non-zip / RAR / 7z / plain file — magic-byte format detection is the
-routing layer's job, not ours), other `Format → Corrupt`, `Unsupported → Unsupported` (a method this build can't decode,
-or an LZMA variant), `Decompression → Corrupt`, `IO(UnexpectedEof) → Corrupt` (truncated) else `Io`.
+Every failure is a distinct variant so callers classify by `matches!`, never by message substring; `String` payloads are
+display-only. `From<rc_zip::Error>` maps: `DirectoryEndSignatureNotFound → NotAnArchive` (a non-zip / RAR / 7z / plain
+file — magic-byte format detection is the routing layer's job, not ours), other `Format → Corrupt`,
+`Unsupported → Unsupported` (a method this build can't decode, or an LZMA variant), `Decompression → Corrupt`,
+`IO(UnexpectedEof) → Corrupt` (truncated) else `Io`.
 
 **Encryption** isn't in `rc_zip::Error` — we detect it ourselves from general-purpose flag bit 0 or the AE-x marker
 method. Browsing an encrypted archive always works (names live in the central directory). Extraction is covered below.
@@ -163,10 +163,10 @@ is the per-entry decrypt engine. (7z decryption is threaded through `sevenz-rust
 - **Wrong-password detection differs by cipher.** WinZip AES carries a 2-byte password-verification value, so a wrong
   password fails at open (`by_index_decrypt` → `ZipError::InvalidPassword` → `WrongPassword`, deterministic). ZipCrypto
   checks a single byte at open, so ~1/256 of wrong passwords slip through and surface LATE as an end-of-stream CRC
-  mismatch: `io::ErrorKind::InvalidData`, which `pump_decrypt` maps to `WrongPassword` by the io KIND (not the message —
-  `no-string-matching`); the same late path also catches an AES HMAC failure. No password on an encrypted entry ⇒
-  `Encrypted` (the needs-password signal). The `ArchiveError → VolumeError` mapping (both to typed
-  `NeedsPassword { wrong_attempt }`) lives in `../../DETAILS.md`.
+  mismatch: `io::ErrorKind::InvalidData`, which `pump_decrypt` maps to `WrongPassword` by the io KIND (not the message);
+  the same late path also catches an AES HMAC failure. No password on an encrypted entry ⇒ `Encrypted` (the
+  needs-password signal). The `ArchiveError → VolumeError` mapping (both to typed `NeedsPassword { wrong_attempt }`)
+  lives in `../../DETAILS.md`.
 
 ## Filename encoding
 

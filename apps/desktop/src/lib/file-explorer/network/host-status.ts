@@ -18,7 +18,7 @@ import { getShareState, getCredentialStatus, isHostResolving, isShareDataStale }
  * locale-independent token. `stale` adds a refresh glyph on a loaded-but-stale row;
  * `hasInfo` adds an info glyph when a tooltip explains an error state. Keeping status typed
  * is what lets one source feed both the icon-bearing UI and the plain-text MCP feed without
- * an emoji lowest-common-denominator (AGENTS.md § no-string-matching).
+ * an emoji lowest-common-denominator.
  */
 export type HostStatusKind =
   | 'resolving'

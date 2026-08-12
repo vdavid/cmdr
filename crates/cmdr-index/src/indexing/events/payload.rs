@@ -90,7 +90,7 @@ pub enum RescanReason {
 }
 
 /// What the memory watchdog did, as a typed variant rather than a string the
-/// frontend would have to match on (`no-string-matching`).
+/// frontend would have to match on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum MemoryWatchdogAction {

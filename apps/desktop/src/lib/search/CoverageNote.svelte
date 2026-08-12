@@ -9,8 +9,7 @@
      * per-drive indexing flow when there's a drive to act on.
      *
      * Presentational: `SearchDialog.svelte` owns the state, the volume lookup, and the
-     * IPC. Copy branches on the TYPED fields, never on message text
-     * (`.claude/rules/no-string-matching.md`).
+     * IPC. Copy branches on the TYPED fields, never on message text.
      *
      * The wrapper stays mounted with `role="status"` even when there's nothing to say,
      * collapsing to zero height. A live region has to exist BEFORE its content changes

@@ -477,8 +477,8 @@ fn a_known_unreadable_dir_is_reported_rather_than_walked_again() {
 ///
 /// The two are the same shape in the index and different sentences on screen: one
 /// is a permission the user can grant, the other is a NAS snapshot tree nobody
-/// walks on purpose. Telling them apart by folder name is what
-/// `.claude/rules/no-string-matching.md` forbids, so the cause is stored.
+/// walks on purpose. Telling them apart by folder name isn't an option, so the
+/// cause is stored.
 #[test]
 fn a_declined_dir_is_reported_apart_from_a_refused_one() {
     let (conn, _dir) = open_temp_index();

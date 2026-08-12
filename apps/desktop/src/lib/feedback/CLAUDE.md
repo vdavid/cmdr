@@ -18,8 +18,8 @@ behavior detail: `DETAILS.md`.
   `createAttachEmail()` for the state (+ `persist()` on send) and `<AttachEmailCheckbox>` for the control, which hides
   itself when no `analytics.email` is on file. Don't hand-roll it or give feedback its own setting key or label; the
   sticky `updates.attachEmailToReports` choice and the `common.attachEmail` copy are shared across all three.
-- **Branch on the typed `SendFeedbackResult.kind`** (`sent` / `invalid` / `softFailure`), never on message substrings
-  (`no-string-matching` rule). `sendFeedback` in `tauri-commands/feedback.ts` returns it.
+- **Branch on the typed `SendFeedbackResult.kind`** (`sent` / `invalid` / `softFailure`), never on message substrings.
+  `sendFeedback` in `tauri-commands/feedback.ts` returns it.
 - **External links go through `openExternalUrl`** (opener plugin), never a raw `<a>` navigation, which Tauri blocks.
   Link URLs live in `$lib/beta-links.ts`, shared with other open-beta surfaces.
 

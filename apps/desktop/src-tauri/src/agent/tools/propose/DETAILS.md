@@ -10,7 +10,7 @@ Each row's `evidence` is a required `{ source, detail }` pair. `EvidenceSource` 
 - **Content claims** (`imageText`, `imageTags`): checked against `ImageFactsLedger`. The path needs a live delivery, and
   `detail` must be a real quote from the delivered text (normalized on both sides: NFD-lowercased, whitespace runs
   collapsed, surrounding quote characters stripped) or name one of the delivered tags. Every refusal is a typed
-  `EvidenceProblem`, so nothing classifies on wording (`no-string-matching`).
+  `EvidenceProblem`, so nothing classifies on wording.
 - **No claim** (`filename`, `metadata`, `userInstruction`): always accepted, because there's nothing to verify. They
   still cross to the review dialog verbatim, where the UI labels them as reading nothing inside the file. That's the
   other half of the guardrail: a fabricated slug filed under `metadata` is visible as a name with no content behind it,

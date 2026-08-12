@@ -479,8 +479,7 @@ fn elide_tool_results(message: &AgentMessage, calls: &HashMap<&str, ElidedCall<'
 }
 
 /// The stub's own payload keys. Named because the assembly reads two of them back to report
-/// what it elided; they are OUR OWN keys, not another system's wording (no
-/// `no-string-matching` conflict).
+/// what it elided; they are OUR OWN keys, not another system's wording.
 const ELIDED_MARKER_KEY: &str = "elided_tool_result";
 const APPROX_TOKENS_KEY: &str = "approx_tokens";
 const CALL_KEY: &str = "call";

@@ -83,7 +83,7 @@ pub(super) fn folder_override_should_kick(always: bool, enabled: bool) -> bool {
 }
 
 /// Set the indexing SCOPE: index only the folders the user chose, or index
-/// automatically by folder importance. The typed token (`no-string-matching`: an
+/// automatically by folder importance. The typed token (an
 /// unknown one falls back to the narrow default rather than branching on wording).
 /// Live-applied; the frontend persists `mediaIndex.scope` and calls this on change.
 ///
@@ -186,7 +186,7 @@ pub fn media_index_set_semantic_search_enabled(app: AppHandle, enabled: bool) {
 }
 
 /// Set the folder-importance threshold the scheduler enriches by — the importance settings
-/// slider's typed value (`0.0..=1.0`, clamped), never a string (`no-string-matching`).
+/// slider's typed value (`0.0..=1.0`, clamped), never a string.
 /// Below-threshold folders are deferred; an override still forces enrichment. Live-
 /// applied; the frontend persists `mediaIndex.importanceThreshold` and calls this.
 ///

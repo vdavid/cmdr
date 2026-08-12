@@ -286,7 +286,7 @@ pub enum StaleRootOutcome {
 /// Whether `errno` proves the MOUNT behind a path is gone or wedged, rather than
 /// saying something about the file.
 ///
-/// Typed errno matching, never message text (`.claude/rules/no-string-matching.md`):
+/// Typed errno matching, never message text:
 /// these reach us through `VolumeError::IoError { raw_os_error }`. The set matches
 /// what the transfer layer already treats as a lost connection
 /// (`write_operations/error_classification.rs`), plus `ESTALE`, which is precisely

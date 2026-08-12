@@ -52,8 +52,7 @@ subscribe to. Retention belongs there. See "Part D design" for the alternatives 
 **F3. `write-error` fires for things that are not failures.** `WriteOperationError::Cancelled` reaches `emit_error` on
 some volume paths (the `write_operations/CLAUDE.md` guardrail "Volume-aware ops must not emit `write-error` on
 `Cancelled`" exists because they did), and `archive_needs_password` is a deliberate recoverable prompt intercepted
-upstream by `handleTransferError`. Both must be excluded from retention by TYPED variant match, never by message text
-(`no-string-matching`).
+upstream by `handleTransferError`. Both must be excluded from retention by TYPED variant match, never by message text.
 
 **F4. `write-error` can fire twice for one operation.** An inner handler emits (for example `transfer/copy/mod.rs:571`)
 and returns `Err`, and `mod.rs:317`'s safety net emits again for the same op. Retention is therefore
@@ -441,7 +440,7 @@ The zero-bytes case is real, not theoretical: a same-volume move renames server-
 
 - Never when there are no rows.
 - Never for an instant op: exclude `'rename' | 'create_folder' | 'create_file'` by comparing the typed
-  `snapshot.operationType`. ❌ No substring test (`no-string-matching`). Prefer a typed
+  `snapshot.operationType`. ❌ No substring test. Prefer a typed
   `const INSTANT_OPERATION_TYPES = new Set<OperationSnapshot['operationType']>([...])` next to the store's
   `TERMINAL_STATUSES`, so the two typed sets sit together.
 - Hidden while `getForegroundOperationId() === row.snapshot.operationId` (M6). The modal already shows that operation in

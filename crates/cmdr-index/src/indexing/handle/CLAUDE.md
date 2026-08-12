@@ -25,8 +25,7 @@ front door.
   `todo!()` here — the crate root denies it. The types reserve three things that are painful to retrofit; `ingest.rs`
   says which and why, and changing those shapes is the expensive kind of change.
 - **Errors are typed.** `IndexError::Internal(Diagnostic)` is the residue for causes no caller acts on yet, and its
-  payload is log-only. ❌ Never branch on it (`.claude/rules/no-string-matching.md`); a cause worth handling gets a
-  variant.
+  payload is log-only. ❌ Never branch on it; a cause worth handling gets a variant.
 
 ## Module map
 

@@ -5,7 +5,7 @@
 //! (`kind`, `initiator`, `execution_status`, `rollback_state`,
 //! `not_rollbackable_reason`, per-item `outcome`, `entry_type`, `row_role`,
 //! `search_coverage`, `search_coverage_reason`, the `archive_edit` subkind) is a
-//! typed enum here, never a substring branch (`no-string-matching` rule). Each
+//! typed enum here, never a substring branch. Each
 //! carries a compact, stable, human-readable **token** stored as TEXT in the DB.
 //!
 //! The tokens are a serialization contract, not a display string: they stay
@@ -30,7 +30,7 @@ macro_rules! token_enum {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, specta::Type)]
         // The serde/specta wire form (camelCase, for IPC + `bindings.ts`) is
         // SEPARATE from the DB `as_token` (stable snake_case). Callers cross IPC
-        // as this typed enum, never a string (`no-string-matching`); the store
+        // as this typed enum, never a string; the store
         // reads/writes via the tokens below.
         #[serde(rename_all = "camelCase")]
         $vis enum $name { $( $(#[$vmeta])* $variant ),+ }

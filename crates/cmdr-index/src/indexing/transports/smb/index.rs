@@ -8,7 +8,7 @@
 //! (registered as a `LocalPosixVolume` on an `smbfs` mount, no smb2 session) is
 //! upgraded first via the existing `upgrade_to_smb_volume` path, and if that
 //! upgrade can't complete, indexing stays disabled with a TYPED reason (no
-//! string-matching, per `.claude/rules/no-string-matching.md`).
+//! string-matching).
 //!
 //! The FDA gate does NOT apply here (rabbit hole #12): network paths aren't
 //! TCC-protected, so per-volume SMB enable is FDA-independent and never routes
@@ -24,7 +24,7 @@ use cmdr_fs::volume::SmbConnectionState;
 
 /// Why an SMB volume couldn't be indexed. Typed (and serialized as a
 /// snake_case tag) so callers and the per-drive UX classify by variant on BOTH sides
-/// of the IPC boundary, never by message substring (`.claude/rules/no-string-matching.md`).
+/// of the IPC boundary, never by message substring.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SmbIndexGateReason {

@@ -106,8 +106,8 @@ pub struct MediaAnalysis {
     pub clip: Option<Vec<f32>>,
 }
 
-/// A typed backend failure. Never string-matched for classification
-/// (`no-string-matching`): a caller branches on the variant, not the message.
+/// A typed backend failure. Never string-matched for classification:
+/// a caller branches on the variant, not the message.
 #[derive(Debug, Clone)]
 pub enum VisionError {
     /// The source file was gone at read time (an ENOENT-class read failure) — a file

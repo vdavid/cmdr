@@ -110,7 +110,7 @@ fn operation_id_is_required_and_non_empty() {
 fn refusal_serializes_as_a_typed_tagged_shape() {
     // The rollback handler returns `{ status: "refused", refusal: <this> }`; the
     // refusal is a typed, tagged enum so an agent branches on `kind`/`detail`, not
-    // a message substring (`no-string-matching`).
+    // a message substring.
     let refusal = RollbackRefusal::NotRollbackable(NotRollbackableReason::PermanentDelete);
     let value = serde_json::to_value(&refusal).expect("serialize");
     assert_eq!(value["kind"], "notRollbackable");

@@ -76,7 +76,7 @@ pub enum BriefColumnsErrorKind {
 /// The wire form of a failed `get_brief_column_text_widths`.
 ///
 /// `kind` is the classifier; `message` is diagnostic text for logs and error
-/// reports. ❌ Nothing may branch on `message` (`.claude/rules/no-string-matching.md`):
+/// reports. ❌ Nothing may branch on `message`:
 /// it carries listing IDs and OS text that change without notice.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

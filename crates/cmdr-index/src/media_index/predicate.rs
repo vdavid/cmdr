@@ -15,7 +15,7 @@
 //! - **Videos are out of scope (images only)** and skipped (this also covers a Live Photo's
 //!   motion `.mov`, whether or not it pairs a still).
 //!
-//! Classification is TYPED, never a message/substring branch (`no-string-matching`):
+//! Classification is TYPED, never a message/substring branch:
 //! the decision is a [`Qualification`] enum carrying a [`MediaKind`] or a typed
 //! [`SkipReason`].
 
