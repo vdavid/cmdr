@@ -17,24 +17,30 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       chunk's 30-second deadline can't hold the quit, with the cooperative cancel path that lets backends clean their
       own partials still the default. Prerequisite (M0) of `operation-session-plan.md`, now satisfied. Ready to wipe
       once someone confirms the colocated docs carry everything.
-- [ ] 2026-08-09 `operation-session-plan.md` - Make the progress dialogs looking glasses instead of the process, so a
-      "Foreground" button (click a running row in the operation queue, get the rich progress dialog back) becomes
-      buildable. `createTransferProgressState` (1,294 lines) OWNS its operation: it scans, dispatches, and only then
-      learns its `operationId`, so "attach to operation X" doesn't exist. The fix is an **operation session** keyed by
-      `operationId` plus **views** that bind to one, with zero views a legal state. Three findings reshape the work.
-      **M0 comes first and is now its own spec** (`quit-and-operation-lifetime.md`): every later milestone's "the
-      operation outlives the view" reasoning is false until it lands. The registry earns its place not because two
-      smoothers disagree (the EMA is deterministic; the shipped ETA bug was smoothed-versus-raw) but because smoothers
-      **started at different times** diverge, which is exactly what a late-attaching view creates, so M2 must DELETE
-      `operations-store`'s per-id smoother map rather than stack a second layer. And M5's hardest problem is birth
-      context: `OperationSnapshot` carries no `sourcePaths`, counts, or `sourcePaneSide`, yet `handleTransferComplete`
-      purges search snapshots, composes the toast, and clears selection against a pane captured at dispatch, so an
-      adopted view must degrade honestly (no pane mutation, a toast saying only what the snapshot knows). Also settles
-      the two in-dialog guards (`destroy()` and `handleCancel`'s `if (backgrounded) return`, both retiring because "the
-      modal closed" must stop meaning "cancel"), cross-window conflict ownership (a single stored oneshot sender makes
-      two windows resolving a real lost-take race), the event fan-out as a NEW module both the store and sessions
-      consume, and M6 option (b)'s false payoff (a pre-identity session does NOT remove the buffer; the fan-out does).
-      SPECCED, not started.
+- [ ] 2026-08-09 `operation-session-plan.md` (refreshed 2026-08-12, re-pinned to `5d75512ab`) - Make the progress
+      dialogs looking glasses instead of the process, so a "Foreground" button (click a running row in the operation
+      queue, get the rich progress dialog back) becomes buildable. `createTransferProgressState` (1,299 lines) OWNS its
+      operation: it scans, dispatches, and only then learns its `operationId`, so "attach to operation X" doesn't exist.
+      The fix is an **operation session** keyed by `operationId` plus **views** that bind to one, with zero views a
+      legal state. **M0 is done** (its own spec, `quit-and-operation-lifetime.md`): the backend owns operation lifetime
+      and the quit decision, so "the operation outlives the view" is finally true. **M1 is now a shipped-bug fix and
+      goes first:** a confirmed-but-still-scanning transfer has NO operation record (`scan_preview.rs` never touches
+      `manager.rs`), so `canPauseOrQueue` hides Pause and Queue, and `destroy()` kills the scan with the dialog — you
+      cannot background a transfer while it scans, and ⌘Q walks past it. Registering the operation at CONFIRM (not at
+      dialog-open) and moving the scan-wait into the operation's own task fixes all of it with no new IPC, no new
+      `LifecycleStatus` (reuse `Running`; `phase: 'scanning'` already exists and already renders), and ~150 lines
+      DELETED from the module M5 has to rewrite. The registry earns its place not because two smoothers disagree (the
+      EMA is deterministic; the shipped ETA bug was smoothed-versus-raw) but because smoothers **started at different
+      times** diverge, which is exactly what a late-attaching view creates, so M3 must DELETE `operations-store`'s
+      per-id smoother map rather than stack a second layer. M6's hardest problem is birth context: `OperationSnapshot`
+      carries no `sourcePaths`, counts, or `sourcePaneSide`, yet `handleTransferComplete` purges search snapshots,
+      composes the toast, and clears selection against a pane captured at dispatch, so an adopted view must degrade
+      honestly (no pane mutation, a toast saying only what the snapshot knows). Also settles the two in-dialog guards
+      (`destroy()` and `handleCancel`'s `if (backgrounded) return`, both retiring because "the modal closed" must stop
+      meaning "cancel"), cross-window conflict ownership (a single stored oneshot sender makes two windows resolving a
+      real lost-take race), the event fan-out as a NEW module both the store and sessions consume, and the pre-identity
+      frontend session, now DECLINED with reasons (it mints identity in the wrong place, its payoff is M1's, and it
+      does NOT remove the buffer; the fan-out does). SPECCED, not started.
 - [x] 2026-08-09 `background-conflict-prompt.md` (built) - A backgrounded transfer that hits a name clash deep inside a
       merging folder used to wedge invisibly: the upfront check is top-level only, folders always merge, and the app's
       only `write-conflict` listener is the progress dialog the Queue button just unmounted, so the operation parked on
