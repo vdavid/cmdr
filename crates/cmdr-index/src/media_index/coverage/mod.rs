@@ -17,8 +17,12 @@
 //! be back in one import cycle (which is what one shared file cost last time).
 //!
 //! The threshold is applied cheaply on top: intersect the importance `above_threshold`
-//! folder set with the cached counts. The importance read itself is a single indexed
-//! query, so a debounced slider drag stays cheap.
+//! folder set with the cached counts. The importance read behind it is NOT cheap — it
+//! reads and sorts every scored folder — so it goes through the cache in [`scores`],
+//! which is what keeps a debounced slider drag (and the per-visible-range badge query)
+//! from re-reading the table each time. ❌ Never call `ImportanceIndex::above_threshold`
+//! straight from a UI-driven path; take [`importance_scores`] or
+//! [`importance_scores_above`].
 
 // Visible to the rest of the subsystem (not to a host) because the ONE writer thread
 // per volume mutates it directly: routing its ±1 deltas through this facade would put
@@ -26,6 +30,7 @@
 pub(super) mod accounted;
 mod eligible;
 mod rollup;
+mod scores;
 
 #[cfg(test)]
 mod tests;
@@ -37,6 +42,9 @@ use super::gate::IndexScope;
 use super::paths::parent_dir;
 
 pub use eligible::{FolderImageCounts, cached, get_or_build, invalidate};
+pub use scores::{importance_scores, importance_scores_above};
+#[cfg(any(test, feature = "testing"))]
+pub use scores::clear_cache_for_test as clear_score_cache_for_test;
 pub(crate) use eligible::{patch_touched_dirs, replace_from_entries};
 // The walk-parity tests in `scheduler/enrich_tests.rs` are the only callers outside the
 // eligible cache itself; production reaches them through `get_or_build`.
@@ -224,19 +232,3 @@ pub fn covered_in_scope(
     }
 }
 
-/// Convenience: read a volume's importance folder scores as a `folder → score` map, or
-/// `None` when importance never scored it (offline / fresh). Mirrors the scheduler's
-/// `folder_scores`, but returns EVERY scored folder (threshold applied by
-/// [`covered_for_volume`] so one read serves any slider position during a debounced
-/// drag).
-pub fn importance_scores(data_dir: &Path, volume_id: &str) -> Option<HashMap<String, f64>> {
-    use crate::importance::{ImportanceIndex, SignalSet};
-    let index = ImportanceIndex::open(data_dir, volume_id, SignalSet::all());
-    if !index.is_scored() {
-        return None;
-    }
-    match index.above_threshold(0.0) {
-        Ok(weights) => Some(weights.into_iter().map(|w| (w.path, w.score.value())).collect()),
-        Err(_) => None,
-    }
-}

@@ -15,6 +15,7 @@
 
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use crate::media_index::gate::IndexScope;
 use crate::media_index::{coverage, network, store, vector};
@@ -79,9 +80,9 @@ impl MediaScheduler {
     /// partitions safely against an EMPTY score map — a reclaim offer (and the kept-rows
     /// line) stays available on a volume importance has never touched, which is exactly
     /// the volume a user narrowing their scope is most likely to be looking at.
-    fn partition_scores(&self, volume_id: &str, scope: IndexScope) -> Option<HashMap<String, f64>> {
+    fn partition_scores(&self, volume_id: &str, scope: IndexScope) -> Option<Arc<HashMap<String, f64>>> {
         if !scope.consults_importance() {
-            return Some(HashMap::new());
+            return Some(Arc::new(HashMap::new()));
         }
         coverage::importance_scores(&self.data_dir, volume_id)
     }

@@ -225,7 +225,7 @@ pub async fn media_index_covered_count(
             // folders alone, so an unscored volume is answerable there.
             let scores = match coverage::importance_scores(&data_dir, vid) {
                 Some(scores) => scores,
-                None if !scope.consults_importance() => std::collections::HashMap::new(),
+                None if !scope.consults_importance() => std::sync::Arc::new(std::collections::HashMap::new()),
                 None => {
                     pending = true;
                     continue;

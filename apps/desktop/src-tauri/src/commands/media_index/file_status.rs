@@ -114,17 +114,20 @@ pub async fn media_index_file_status(
 /// `threshold` (what `local_should_enrich` checks membership against); the narrow scope
 /// reads no importance at all (override-only, so `None`). An unscored volume in the
 /// automatic scope is `None` too, matching the pass's defer-to-override-only behavior.
+///
+/// The filtered map is cached per volume, so this stays cheap however often the badge
+/// query runs; ❌ don't re-derive it from `coverage::importance_scores` here, which is
+/// a copy of every scored folder per call.
 fn coverage_scores(
     data_dir: &std::path::Path,
     volume_id: &str,
     scope: gate::IndexScope,
     threshold: f64,
-) -> Option<std::collections::HashMap<String, f64>> {
+) -> Option<Arc<std::collections::HashMap<String, f64>>> {
     if !scope.consults_importance() {
         return None;
     }
-    coverage::importance_scores(data_dir, volume_id)
-        .map(|scores| scores.into_iter().filter(|(_, score)| *score >= threshold).collect())
+    coverage::importance_scores_above(data_dir, volume_id, threshold)
 }
 
 /// Resolve the inputs (qualifying-image walk + stored rows + coverage scores) and hand
@@ -155,7 +158,7 @@ fn classify_file_statuses(
         &qualifying,
         &stored,
         stamp,
-        scores.as_ref(),
+        scores.as_deref(),
         &config,
         volume_id,
         is_enriching,
