@@ -627,21 +627,21 @@ nothing" and passes). Anything narrower than every first-party member carries a 
 
 Checks by app and tech:
 
-- **Desktop / Rust**: rustfmt, clippy, rustdoc (`cargo doc --all-features` with `broken_intra_doc_links` denied over
-  every first-party member; the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms
-  there, and `private_intra_doc_links` stays a warning since a public module doc naming the internal it delegates to is
-  good writing), cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro,
-  sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide shared page cache
-  is always installed before SQLite initializes), error-string-match, lock-poison, test-sleep (flags a fixed
-  `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a genuine
-  sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on
-  `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's live
-  fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing
-  opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
-  `CachedScanResult` / `SourceHint` / `VolumePreflight` in test code, so a fixture can only be one of the shapes a named
-  constructor actually builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder —
-  the shapes are already clean, and the point is that the next test author can't undo that by copy-pasting an old
-  literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
+- **Desktop / Rust**: rustfmt, clippy, rustdoc (`cargo doc --all-features --document-private-items` over every
+  first-party member, with every doc lint in `rustdocDeniedLints` denied and any leftover warning failing the check too;
+  the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
+  cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, sqlite-open-direct (every SQLite connection
+  opens through `crate::sqlite_util`, so the process-wide shared page cache is always installed before SQLite
+  initializes), error-string-match, lock-poison, test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in
+  test code, where a condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
+  `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on `std::env::temp_dir()`, where every
+  process on the machine shares the path and two suite runs delete each other's live fixtures; the sanctioned fixture is
+  `crate::test_support::TestDir`, and a site where the temp root is load bearing opts out with
+  `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of `CachedScanResult` /
+  `SourceHint` / `VolumePreflight` in test code, so a fixture can only be one of the shapes a named constructor actually
+  builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder — the shapes are already
+  clean, and the point is that the next test author can't undo that by copy-pasting an old literal),
+  derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
   `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information", it's a claim about
   the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in production
   `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the branch that
@@ -939,17 +939,38 @@ phrases). `trimRustTestProgress` in `desktop-rust-tests-linux.go` runs after `tr
 (`running N tests` header, FAIL/FAILED/LEAK/TIMEOUT verdicts, the `failures:` block, the `test result:` / `Summary`
 tally, `error:` lines, bench results) passes through unchanged.
 
+**Decision**: every rustdoc lint the project holds itself to is DENIED, and a warning that survives anyway fails the
+check. **Why**: a warn-level doc lint is a defect nobody sees. `cargo doc`'s output is buffered and thrown away on a
+green run, so ~90 of them (redundant explicit link targets, `<usage>` angle brackets read as HTML, a mislabeled
+` ```ignore ` block) sat unnoticed for months and only surfaced when an interrupted run dumped the raw stream. The
+contract is now binary: `rustdocDeniedLints` is the list, anything on it is an `error`, and anything else that warns is
+unowned (a new lint class, or a doc problem outside the list) and fails with the warning shown, so it either joins the
+list or gets fixed.
+
+**Decision**: `--document-private-items`, with `private_intra_doc_links` explicitly ALLOWED. **Why**: none of these
+crates are published, so rustdoc here is an internal artifact and a public item's doc naming the internal it delegates
+to (`ArchiveIndex` explaining that its read handles live behind `EntryStore`) should RESOLVE rather than render as plain
+text. The lint doesn't disappear under the flag, it changes meaning ("resolves only because you passed
+`--document-private-items`"), which is a warning about a build nobody runs — hence `-A`, stated next to the denials
+instead of filtered out of the output. The flag also puts private items' own docs under the link gate, which is where
+~70 genuinely broken links were hiding.
+
 **Decision**: rustdoc output is filtered per LINE-anchored diagnostic header, never per blank-line-separated paragraph.
-**Why**: `private_intra_doc_links` stays a warning on purpose (a public doc naming the internal it delegates to is good
-writing), so ~70 of them plus ~30 KB of chatter surround the one broken link a failure is about. Paragraphs look like
-the right unit and aren't: cargo runs its `Documenting <crate>` progress line straight into the first diagnostic with no
-blank line, and rustdoc glues `error: could not document <crate>` to the warning count above it. A paragraph split
-therefore hands a diagnostic whatever preceded it, so an error that opens or closes the stream reads as a warning block
-and gets dropped; with nothing kept, the "never swallow it" fallback dumps the whole 30 KB. `rustdocErrorDiagnostics` in
-`desktop-rust-rustdoc.go` instead starts a new diagnostic at every column-zero `error…:` / `warning…:` and keeps every
-following line (the `-->` locator, source excerpt, `= note`, `= help`, and any trailing `help:` suggestion) with it. The
-fixture in `desktop-rust-rustdoc_test.go` is shaped like real cargo output for exactly this reason; a tidy
-blank-line-separated one passes while the real thing fails.
+**Why**: cargo runs its `Documenting <crate>` progress line straight into the first diagnostic with no blank line, and
+rustdoc glues `error: could not document <crate>` to the warning count above it. A paragraph split therefore hands a
+diagnostic whatever preceded it, so a diagnostic that opens or closes the stream gets swallowed. `rustdocDiagnostics` in
+`desktop-rust-rustdoc.go` starts a new block at every column-zero `error…:` / `warning…:`, keeps every following line
+(the `-->` locator, source excerpt, `= note`, `= help`, and any trailing `help:` suggestion) with it, and ends a block
+at cargo's own progress lines. Both severities survive, since both fail the check. `rustdocFailureOutput` falls back to
+the raw stream when nothing parsed, so a toolchain failure or a killed process still reports a reason. The fixture in
+`desktop-rust-rustdoc_test.go` is shaped like real cargo output for exactly this reason; a tidy blank-line-separated one
+passes while the real thing fails.
+
+**Gotcha**: a module documented TWICE (an outer `///` on the `mod x;` declaration plus the file's own `//!` header)
+makes rustdoc resolve BOTH fragments in the PARENT's scope, so every link the module writes about its own items breaks
+and the diagnostics come back with no source span (only "the link appears in this line"). Ten `Index::*` links in
+`cmdr-index` failed this way. Document a module in its own header; the parent's module list shows that first line
+anyway.
 
 **Decision**: nextest binary is arch-aware. **Why**: `https://get.nexte.st/latest/linux` serves the x86_64-musl build by
 default; on an arm64 container (e.g. Apple Silicon under OrbStack) cargo's rustup-shim happily syncs the aarch64
