@@ -213,6 +213,61 @@ func TestCollectFailsOutsideGitRepo(t *testing.T) {
 	}
 }
 
+// TestExcludedPathsDontMoveTheFingerprint pins the exclusion contract: a
+// `!`-prefixed pattern takes a path back OUT of an input set, so editing it is
+// invisible to the check. This is what lets the compiling Rust lanes keep
+// `crates/**` while ignoring the agent docs colocated with the sources.
+func TestExcludedPathsDontMoveTheFingerprint(t *testing.T) {
+	dir := initFpGitRepo(t, map[string]string{
+		"crates/a/src/lib.rs":  "fn main() {}",
+		"crates/a/CLAUDE.md":   "docs",
+		"crates/a/DETAILS.md":  "more docs",
+		"crates/a/README.md":   "a human doc",
+		"crates/a/Cargo.toml":  "[package]",
+		"crates/a/src/util.rs": "fn util() {}",
+	})
+	set := []string{"crates/**", "!**/CLAUDE.md", "!**/DETAILS.md"}
+
+	before := fingerprint(t, dir, set)
+	writeFiles(t, dir, map[string]string{
+		"crates/a/CLAUDE.md":  "docs, rewritten",
+		"crates/a/DETAILS.md": "more docs, rewritten",
+	})
+	if after := fingerprint(t, dir, set); after != before {
+		t.Error("editing an excluded doc moved the fingerprint; the exclusion did nothing")
+	}
+
+	// An exclusion must not swallow the tree it sits in.
+	writeFiles(t, dir, map[string]string{"crates/a/src/lib.rs": "fn main() { changed() }"})
+	if after := fingerprint(t, dir, set); after == before {
+		t.Error("editing a source file did NOT move the fingerprint; the exclusion is too wide")
+	}
+
+	// A doc the exclusion doesn't name stays in the set.
+	before = fingerprint(t, dir, set)
+	writeFiles(t, dir, map[string]string{"crates/a/README.md": "rewritten"})
+	if after := fingerprint(t, dir, set); after == before {
+		t.Error("README.md is not excluded, so editing it must move the fingerprint")
+	}
+}
+
+// TestExclusionWinsRegardlessOfOrder keeps the semantics order-independent: a
+// reader adding a pattern to the end of an Inputs list must not silently change
+// what an earlier exclusion covers.
+func TestExclusionWinsRegardlessOfOrder(t *testing.T) {
+	for _, set := range [][]string{
+		{"crates/**", "!**/CLAUDE.md"},
+		{"!**/CLAUDE.md", "crates/**"},
+	} {
+		if matchesAny("crates/a/CLAUDE.md", set) {
+			t.Errorf("%v: excluded path matched", set)
+		}
+		if !matchesAny("crates/a/src/lib.rs", set) {
+			t.Errorf("%v: included path didn't match", set)
+		}
+	}
+}
+
 func mustGit(t *testing.T, dir string, args ...string) {
 	t.Helper()
 	cmd := exec.Command("git", args...)

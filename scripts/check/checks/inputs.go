@@ -10,6 +10,12 @@ package checks
 //
 // Build sets by concatenation at the call site (`inputs(rustInputs, ...)`) so a
 // path added to a base set propagates to every check that uses it.
+//
+// A `!`-prefixed entry is an EXCLUSION: it takes matching paths back out of the
+// set, whatever else matched, including out of the GlobalInputs the check carries
+// implicitly. It's the one construct here that can make a set too NARROW, so each
+// one names files nothing in the check's pipeline reads and carries the reasoning
+// at its declaration site.
 
 // rustInputs mirrors ci.yml's `rust` filter: everything the desktop Rust checks
 // compile or read. The smb-servers dir is in here because the SMB integration
@@ -29,6 +35,23 @@ var rustInputs = []string{
 	"clippy.toml",
 	"deny.toml",
 	"pnpm-lock.yaml", // bindings-fresh and some Rust tooling resolve node deps
+	// `whats_new` pulls the changelog into the binary with `include_str!`, and a
+	// test parses the real thing, so it's a compile-time source like any `.rs`.
+	// `TestRustInputsCoverEveryEmbeddedFile` finds the next file that becomes one.
+	"CHANGELOG.md",
+	// The agent docs colocated with the Rust trees (206 files, edited on nearly
+	// every session by house rule). Nothing in a Rust lane reads them: no
+	// `include_str!` reaches one (same test), nextest doesn't run doctests, and
+	// the scanners parse `.rs`. Leaving them in made a docs-only pass re-run the
+	// whole ~5,400-test suite. Measured over 24 days of commits: 62% of commits
+	// touched this set before, 54% after.
+	//
+	// The veto spans the union with GlobalInputs, so this also drops
+	// `scripts/check/**`'s own `CLAUDE.md` / `DETAILS.md` from every Rust lane's
+	// fingerprint. That's the same reasoning: the runner's docs don't change what
+	// a Rust lane enforces.
+	"!**/CLAUDE.md",
+	"!**/DETAILS.md",
 }
 
 // svelteInputs mirrors ci.yml's `svelte` filter: the desktop frontend plus the

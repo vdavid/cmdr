@@ -202,14 +202,31 @@ func (data *RepoFingerprintData) FingerprintFor(def *CheckDefinition) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-// matchesAny reports whether path matches at least one glob pattern.
+// matchesAny reports whether path is inside the pattern set.
+//
+// A `!`-prefixed pattern is an EXCLUSION: it takes the path back out of the set
+// no matter what else matched, so `crates/**` plus `!**/CLAUDE.md` reads as "the
+// crates tree, minus the agent docs living in it". A veto always wins, so the
+// answer can't change by reordering the list — appending a pattern to an Inputs
+// slice must never quietly re-include something an exclusion took out.
+//
+// Exclusions are the sharp tool in the cache: too wide and a check stops seeing
+// its own sources. Every one of them names files nothing in the check's pipeline
+// reads, and says so at the declaration site.
 func matchesAny(path string, patterns []string) bool {
+	included := false
 	for _, pat := range patterns {
-		if matchGlob(pat, path) {
-			return true
+		if excluded, isExclusion := strings.CutPrefix(pat, "!"); isExclusion {
+			if matchGlob(excluded, path) {
+				return false
+			}
+			continue
+		}
+		if !included && matchGlob(pat, path) {
+			included = true
 		}
 	}
-	return false
+	return included
 }
 
 // matchGlob matches a repo-relative path against a git-pathspec-style glob.

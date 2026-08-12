@@ -180,6 +180,9 @@ func validateCheckInputsExist(rootDir string) []string {
 	var violations []string
 	check := func(patterns []string, owner string) {
 		for _, p := range patterns {
+			// A `!`-prefixed exclusion points at real paths too, so a stale one
+			// (an excluded dir that got renamed) is worth the same complaint.
+			p = strings.TrimPrefix(p, "!")
 			probe := staticPathPrefix(p)
 			if probe == "" {
 				continue

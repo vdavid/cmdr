@@ -365,6 +365,16 @@ touched.
 path list is hashed too, so adds/removes shift it). A formatter's auto-fix changes file contents, which changes OTHER
 checks' fingerprints — correct and free, since fingerprinting is per-check at planning time.
 
+**Exclusions (`!pattern`):** an Inputs entry starting with `!` takes matching paths back OUT of the set, whatever else
+matched — including out of the GlobalInputs the check carries implicitly. `matchesAny` gives a veto priority over every
+include, so appending a pattern can never quietly re-include something an exclusion took out. This is the one construct
+that can make an input set too NARROW, which is the failure mode that ships a regression, so each one names files
+nothing in the check's pipeline reads and carries the reasoning where it's declared. The exclusions today are
+`rustInputs`' `!**/CLAUDE.md` / `!**/DETAILS.md`: 206 agent docs sit inside the Rust trees and get edited on nearly
+every session by house rule, and no Rust lane reads one (`TestRustInputsCoverEveryEmbeddedFile` proves no `include_str!`
+does, and nextest runs no doctests). Over 24 days of commits that took the Rust lanes from 62% of commits to 54%.
+`ci-coverage` rule 4 validates an exclusion's static prefix the same as an include's, so a stale one still fails.
+
 **What's cached:** only `StatusOK` (not warn) results. Failures, warns, and skips always re-run AND drop any stale cache
 entry. Warns aren't cached because warn-only checks are cheap and their messages are the product, not a verdict.
 
