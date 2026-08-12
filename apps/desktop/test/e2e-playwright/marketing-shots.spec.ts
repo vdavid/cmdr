@@ -273,6 +273,14 @@ async function stageCosmetics(page: TauriPage): Promise<void> {
   // Rainbow size tiers: the color is most of what makes a file list read as a product
   // shot rather than a directory dump.
   await setSetting(page, 'appearance.sizeColors', 'rainbow')
+
+  // The Size column, whose two settings are independent: `listing.sizeUnit` decides
+  // whether a row reads `1.2 MB` or a raw byte count, `appearance.fileSizeFormat` only
+  // picks the scale. Both are staged here rather than seeded because a data dir cloned
+  // from the production app arrives carrying its owner's choices, which is how a round
+  // once shipped with SI sizes.
+  await setSetting(page, 'listing.sizeUnit', 'dynamic')
+  await setSetting(page, 'appearance.fileSizeFormat', 'binary')
 }
 
 /**

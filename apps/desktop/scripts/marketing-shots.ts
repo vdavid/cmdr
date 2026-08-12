@@ -142,9 +142,10 @@ function build(): void {
  * Not written after the first run, so David can adjust the instance by hand (pane
  * paths, favorites, tabs) and keep it.
  *
- * ❗ Which is why anything a master is JUDGED on (view modes, size colors, theme) is
- * staged by the spec instead, on every run: a look seeded here can't be changed later
- * without deleting the instance.
+ * ❗ Which is why anything a master is JUDGED on (view modes, size colors and units,
+ * theme) is staged by the spec instead, on every run: a look seeded here can't be
+ * changed later without deleting the instance, and a data dir cloned from the
+ * production app arrives with its owner's choices already in it.
  */
 function seedSettingsIfNew(): void {
   const settingsPath = join(dataDir, 'settings.json')
@@ -160,7 +161,6 @@ function seedSettingsIfNew(): void {
         'whatsNew.showOnUpdate': false,
         'onboarding.upgradeNudgeShown': true,
         'appearance.appColor': 'cmdr-gold',
-        'appearance.fileSizeFormat': 'binary',
         'appearance.showFunctionKeyBar': true,
         'mediaIndex.enabled': false,
       },
