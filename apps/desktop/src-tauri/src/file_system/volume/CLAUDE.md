@@ -19,6 +19,14 @@ through a `Volume`, with **paths relative to the volume root**.
   `SmbVolume` with a `LocalPosixVolume`. Plain `register` is for explicit replacement only, and it replaces ONLY at the
   same root: two roots claiming one ID (a doubly-mounted filesystem) keeps the incumbent and logs, so registration
   order can't decide where a volume is rooted. `DETAILS.md` § "Key decisions".
+- **A registry entry owns a SET of mount roots, one active.** An unmount drops a root via
+  `VolumeManager::remove_root`, which promotes a survivor and unregisters ONLY on the last one; ❌ never `unregister` a
+  volume just because one of its mounts went away, or a share mounted twice disappears on the first eject.
+  `find_by_root` matches any known root, so compare `volume.root()` when you mean the ACTIVE one. `DETAILS.md` § "A
+  volume ID owns a set of mount roots".
+- **❌ Never probe a mount root for liveness.** Promotion is driven by evidence that arrives on its own: an unmount
+  event, or `volume::note_root_failure` seeing a mount-is-gone errno. A `statfs`/NSURL probe on a wedged mount blocks
+  30–120 s and once froze the app at launch (`volumes/DETAILS.md` § "Hung mounts").
 - **Cross-volume copy flows only through `open_read_stream` / `write_from_stream`, chunk by chunk.** ❌ Never drain a
   `VolumeReadStream` or collect a remote file into a `Vec<u8>`; ❌ don't reintroduce `export_to_local` /
   `import_from_local`. `DETAILS.md` § "Streaming patterns".

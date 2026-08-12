@@ -52,6 +52,11 @@ path, favorite, and index row already refers to. The choice is pure and order-in
 decide identity. Registration keeps the incumbent on a conflict too (`file_system/volume/DETAILS.md` § "Key
 decisions"), so no single source has to get this right alone.
 
+**Publishing one location is not the same as forgetting the others.** The registry keeps every mount root that carries
+an ID and promotes a survivor when the active one dies, so the shortest-path rule here is the tie-break among live
+roots rather than a permanent binding: `file_system/volume/DETAILS.md` § "A volume ID owns a set of mount roots". This
+collapse stays purely about what the switcher SHOWS, and it still runs without touching any mount.
+
 ## Hung mounts
 
 **The problem.** A network mount (SMB, NFS, …) can wedge so that every metadata syscall on it blocks in the kernel for
@@ -163,8 +168,8 @@ which is the whole point of § "Hung mounts"). A volume without a UUID (tmpfs, m
 quietly fell back to a path ID, so `nsurl::tests::the_boot_volume_reports_a_uuid` pins that the key still resolves
 (verified on macOS 26.5.2, `getResourceValue:forKey:`, 2026-08-10).
 
-The unmount path can't use any of this: it looks up by `VolumeManager::find_by_root`, because neither statfs nor NSURL
-recovers a gone mount's identity.
+The unmount path can't use any of this: it goes through `VolumeManager::remove_root` (root-keyed, like
+`find_by_root`), because neither statfs nor NSURL recovers a gone mount's identity.
 
 **Decision**: Index databases keyed by an ID from the retired scheme are deleted at launch (the reclaim half of
 `Index::start_root_at_launch`, driven by `is_legacy_volume_id`), rather than migrated.

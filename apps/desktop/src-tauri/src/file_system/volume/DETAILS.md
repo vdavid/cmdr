@@ -20,8 +20,9 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 - **`ids.rs`** (in `cmdr-fs`): the funnel every volume ID is built through (`local_volume_id`, `path_volume_id`,
   `smb_volume_id`, `mtp_device_id`, `is_legacy_volume_id`). Which constructor a macOS mount goes through is
   `crate::volumes::ids`; the Linux twin is `volumes_linux::volume_id_for_mount`
-- **`manager.rs`**: `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default volume. Also holds the
-  process-wide instance and its `get_volume_manager()` accessor
+- **`manager.rs`** (+ `manager/roots.rs`): `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default
+  volume. Also holds the process-wide instance and its `get_volume_manager()` accessor. `roots.rs` holds the mount-root
+  set each entry owns and the promotion rules over it
 - **`backends/`**: Per-backend `Volume` impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See `backends/CLAUDE.md`.
 - **`friendly_error/`**: User-facing error messages + provider detection. See `friendly_error/CLAUDE.md`.
 
@@ -72,6 +73,11 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
   is invisible to the scanner, which keeps calling `list_directory_for_scan`. MTP keeps the default (its single USB pipe
   can't parallelize), and local volumes never reach this path.
 - `connection_liveness()`: has this volume's connection been PROVEN dead, as opposed to merely slow to answer? Three-valued (`None` = no evidence either way, which is what **every backend answers today**). It exists to gate the one aggressive thing the transfer watchdog does — ending the wait on a task that has stopped moving — and a wrong `Dead` kills healthy slow transfers, so the bar is proof rather than suspicion. ❌ Never answer it from elapsed silence: a large write to a loaded spinning-disk NAS is legitimately slow and looks identical on the wire to a dead server. Telling the two apart needs a keepalive (an ECHO answered inside a window), and the pinned `smb2` has one but deliberately never reads a missed probe as death — a busy NAS drops probes — while its one sound verdict (`Error::ServerUnresponsive`) reaches the caller only after tearing the connection down, which the per-file retry already covers. What `smb2` would have to expose for `SmbVolume` to answer, and everything the answer gates: `write_operations/transfer/DETAILS.md` § "The watchdog ACTS".
+- `rerooted(new_root)`: build an equivalent volume rooted somewhere else, or `None` (the default) for "leave me where
+  I am". This is how the registry carries out a promotion when a volume's active mount root dies and another mount
+  reaches the same filesystem; see § "A volume ID owns a set of mount roots" below. Implement it wherever the root is
+  pure addressing — `LocalPosixVolume` does, in one line. Declining is not a failure mode: a backend whose transport is
+  anchored to the old root keeps its registration instead of being handed a root it can't serve.
 - `space_poll_interval()`: recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
 - `create_directory_errors_on_existing_dir()`: whether `create_directory` reliably returns `VolumeError::AlreadyExists` for an existing same-name dir. Default `true` (LocalPosix, SMB, InMemory all do). `MtpVolume` overrides to `false` — the MTP protocol allows same-name sibling objects and `create_folder` silently makes a duplicate, so the folder-merge walker (`write_operations/transfer/volume/strategy.rs`) pre-checks existence on MTP instead of trusting the create to error. A blindly-created duplicate would make a merge target the wrong directory.
 - `listing_watch_coverage(path)`: what a live watch on this volume's cached listing for `path` actually observes, as a three-state `WatchCoverage` (`None` / `ThisMachineOnly` / `EveryWriter`). Three consumers today:
@@ -198,6 +204,7 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | `notify_mutation`           | default (std::fs)    | ✅ MTP `get_metadata`   | ✅ smb2 `get_metadata`    | ✅ in-memory       | n/a (read-only)          |
 | `create_directory_errors_on_existing_dir` | ✅ (default) | ❌ (protocol allows dup names) | ✅ (default) | ✅ (default) | n/a (read-only)  |
 | `scanner` / `watcher` (indexing) | ✅ / ✅          | ❌                      | ❌                        | ❌                 | ❌                       |
+| `rerooted`                  | ✅ new instance      | `None` (default)        | `None` (device-anchored)  | `None` (default)   | `None` (inner paths)     |
 | `on_unmount`                | default              | default                 | ✅ drops smb2 session     | default            | default                  |
 | `on_superseded`             | default              | default                 | ✅ retires id, keeps session | default         | default                  |
 | `smb_connection_state`      | `None`               | `None`                  | ✅                        | `None`             | `None`                   |
@@ -321,6 +328,47 @@ lifecycle for a LocalExternal index (the wedge-safe ordering)" for the full inci
 
 **Decision**: `VolumeManager::register_if_absent` for watcher registrations
 **Why**: When the mount flow pre-registers an `SmbVolume`, the FSEvents watcher would overwrite it with a `LocalPosixVolume` via `register`. `register_if_absent` is a no-op if a volume is already registered, preserving the `SmbVolume`. The existing `register` (overwrite) is kept for explicit replacement (like SmbVolume replacing itself on reconnect).
+
+### A volume ID owns a set of mount roots
+
+**Decision**: a registry entry (`manager/roots.rs::Registration`) is the volume plus the SET of mount roots known to
+carry its ID, exactly one of them ACTIVE (the one `volume.root()` returns). `remove_root` and `mark_root_stale` move the
+ID between them; `unregister` drops the whole entry.
+
+**Why**: one filesystem can be reached through several mount points and they all derive one volume ID (an SMB share keys
+on `(server, port, share)`, a local disk on its filesystem UUID). Binding the ID to one root chosen purely by path shape
+meant nothing re-resolved when that root went away: ejecting `/Volumes/naspi` while the same share was still mounted at
+`/Volumes/naspi-1` unregistered the volume outright (the unmount path looks a gone mount up by root), so the share was
+gone from Cmdr until a restart — discovery only runs at launch. The nastier shape is a NAS dropping off the network:
+macOS leaves the original mount wedged and lands the reconnect at the suffixed path, both enumerate, and the
+shortest-path rule picks the corpse on every launch while Finder works fine.
+
+The rules over the set:
+
+- **Ranking** (`MountRoot::rank`): liveness first, then shortest path, then lexicographic. The path half is the original
+  dedupe rule and still decides between equally-live roots, which is what keeps a saved `/Volumes/naspi/…` path
+  restoring correctly. What changed is its RANK: path shape is a guess about identity, an errno is evidence about
+  health, so a proven-stale short root loses to a live long one.
+- **Recording**: a mount event for an already-registered ID at a new root keeps the incumbent ACTIVE (see the next
+  decision) and records the new root as a fallback. `find_by_root` therefore matches ANY known root, not just the
+  active one — a sibling the lookup can't see is a sibling nothing can promote to. Callers that need "is this the
+  active root?" compare `volume.root()`; `handle_volume_will_unmount` does, so losing a spare mount doesn't stop a
+  healthy volume's index.
+- **Promotion**: carried out through `Volume::rerooted`. On a backend that declines, the entry stays where it is
+  (`RootRemoval::ActiveRootStranded`) rather than being unregistered, because for the one backend that declines today
+  (a direct `SmbVolume`) the transport doesn't ride the OS mount and the volume keeps serving.
+- **Two triggers, no probe.** The unmount watcher calls `remove_root`; a failed operation calls
+  `volume::note_root_failure`, which marks the root stale on a mount-is-gone errno (`ENOTCONN`, `ETIMEDOUT`,
+  `EHOSTDOWN`, `EHOSTUNREACH`, `ENETDOWN`, `ENETUNREACH`, `ESTALE`; typed errno, never message text) and promotes. ❌
+  Nothing may PROBE a root for liveness: an NSURL/`statfs` round trip on a wedged network mount blocks 30–120 s and
+  froze the app at launch (`volumes/DETAILS.md` § "Hung mounts"). Evidence arrives as a failure, so a sibling that turns
+  out to be dead too simply proves it on its own next failure. Promotion emits `volumes-changed` so the switcher and the
+  panes stop pointing at a root that's no longer active.
+
+**What a promotion does NOT do**: it never calls `on_unmount` and never stops an index — the filesystem is still there,
+just addressed differently. An index instance keeps the mount root it captured at start, which is correct for the case
+this exists for (double mounts are network shares, and their indexes are `IndexVolumeKind::Smb`, torn down through
+their own path) and would need re-pointing if a `LocalExternal` disk ever showed up at two mount points.
 
 **Decision**: `register` replaces only at the SAME root; an identity conflict keeps the incumbent
 **Why**: replacing the volume at one root is routine (that's the SMB upgrade: an OS-mounted `LocalPosixVolume` becomes a direct `SmbVolume` at `/Volumes/naspi`, and a live transfer holding an `Arc` keeps working through it). Two DIFFERENT roots claiming one ID is not routine, and letting the last writer win made registration ORDER decide where the volume was rooted. A share mounted at both `/Volumes/naspi` and `/Volumes/naspi-1` derives one ID from both mounts, so the registry ended up rooted at `/Volumes/naspi-1` and a pane restoring a saved `/Volumes/naspi/…` path failed its listing. Keeping the incumbent makes the outcome deterministic without pretending the ambiguity is resolved: `report_identity_conflict` still logs it, because the honest answers (a cloned volume, a double mount) both deserve a human's attention. Discovery collapses double mounts before they reach here (`volumes/DETAILS.md` § "One volume ID publishes one mount root"); this is defense in depth, not the only guard. `is_identity_conflict` (root inequality) is what tells the two cases apart. Restoring a remembered registration in a test goes through `force_register`, which skips the guard, since putting back the previous value has to be unconditional.
