@@ -107,12 +107,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunCargoUdeps,
 	},
 	{
-		ID:                "desktop-rust-jscpd",
-		CpuWeight:         2,
-		Nickname:          "jscpd-rust",
-		DisplayName:       "jscpd",
-		App:               AppDesktop,
-		Tech:              "🦀 Rust",
+		ID:          "desktop-rust-jscpd",
+		CpuWeight:   2,
+		Nickname:    "jscpd-rust",
+		DisplayName: "jscpd",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		// Copy-paste detection is a periodic sweep, not a per-milestone gate: it's the
+		// worst cost-per-catch in the suite by a wide margin (24 days of local runs,
+		// 837 of them, 20 122 CPU-seconds, one real finding). CI keeps running it on
+		// every push, so nothing stops being enforced; it just stops taxing the local
+		// loop. Name it (`pnpm check jscpd-rust`) to run it here.
+		CIOnly:            true,
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		Inputs:            rustInputs,
@@ -538,9 +544,14 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "Groq smoke (real API)",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
-		// Network call to a real provider: keep it out of the fast/default lane. Runs in the slow
-		// lane (`--include-slow`), in CI's slow-checks workflow, or when explicitly named
-		// (`pnpm check groq-smoke`). Self-skips when no GROQ_API_KEY is available.
+		// A live network call validating a third-party provider's contract, not our code:
+		// it can only ever go red on Groq's schedule, so it has no business gating local
+		// work (24 days: 106 runs, 9 211 CPU-seconds, 70 s median, four catches). CIOnly
+		// keeps it out of every local lane including `--include-slow`; IsSlow keeps it out
+		// of CI's default lane, so its one dedicated step in the nightly slow-checks
+		// workflow stays the only place it runs. Self-skips without a GROQ_API_KEY, and
+		// `pnpm check groq-smoke` still runs it on demand.
+		CIOnly: true,
 		IsSlow: true,
 		// Needs a GROQ_API_KEY (sops `secret` helper locally, GitHub secret in CI). Freestyle VMs have
 		// neither, so mark incompat (it would only ever self-skip there).

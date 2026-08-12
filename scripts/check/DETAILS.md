@@ -230,7 +230,8 @@ decisions below). Named check invocations bypass the filter so `pnpm check --fas
 Mutually exclusive with `--include-slow` / `--only-slow` — combining them errors out, since the lanes are intentionally
 separate.
 
-**CI-only checks:** `CIOnly: true` marks checks that run only in `--ci` mode (currently: `cargo-udeps`). They're
+**CI-only checks:** `CIOnly: true` marks checks that run only in `--ci` mode (currently `cargo-udeps`, `jscpd-rust`,
+and `groq-smoke`). They're
 silently dropped from local runs (no SKIPPED line) and are not pulled in by `--include-slow` or `--only-slow`. Escape
 hatch: an explicit `pnpm check cargo-udeps` always runs, so you can verify locally before pushing.
 

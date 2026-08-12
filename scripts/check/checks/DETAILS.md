@@ -57,8 +57,9 @@ CheckDefinition{
 - **`IsFast: true`** opts the check into the curated `--fast` pre-commit lane. The lane is editorially picked, not
   derived from timings — only check this if the check is genuinely cheap on a warm cache _and_ unlikely to spike on a
   cold one.
-- **`CIOnly: true`** runs the check only under `--ci` (or when named explicitly). Useful for the slow-but-authoritative
-  variant of a check whose fast local variant lives elsewhere (e.g. `cargo-udeps` paired with `cargo-machete`).
+- **`CIOnly: true`** runs the check only under `--ci` (or when named explicitly). Two uses: the slow-but-authoritative
+  variant of a check whose fast local variant lives elsewhere (`cargo-udeps` paired with `cargo-machete`), and a check
+  whose cost per catch doesn't justify a place in the local loop (`jscpd-rust`, `groq-smoke`).
 - **`FreestyleIncompat: true`** opts out of freestyle.sh remote VM runs. Set for any Rust-compiling check or anything
   that needs Docker. Negative-sense default (`false` = compatible) keeps the field absent in the common case.
 - **`DependsOn`** is a flat slice of IDs. Formatters before linters, linters before tests, type checkers before tests.
@@ -630,7 +631,7 @@ Checks by app and tech:
 - **Desktop / Rust**: rustfmt, clippy, rustdoc (`cargo doc --all-features --document-private-items` over every
   first-party member, with every doc lint in `rustdocDeniedLints` denied and any leftover warning failing the check too;
   the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
-  cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, sqlite-open-direct (every SQLite connection
+  cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (CI-only), log-error-macro, sqlite-open-direct (every SQLite connection
   opens through `crate::sqlite_util`, so the process-wide shared page cache is always installed before SQLite
   initializes), error-string-match, lock-poison, test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in
   test code, where a condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
@@ -912,6 +913,15 @@ the last `use` but forgot to drop the dep) plus a class udeps misses ("transitiv
 lists serde but only a transitive dep actually uses it). machete's blind spot is deps used only inside macro expansions
 or build.rs codegen; opt those out via `[package.metadata.cargo-machete] ignored = ["foo"]` in the relevant Cargo.toml.
 Local dev gets instant feedback from machete; CI runs udeps for the long-tail check.
+
+**Decision**: `jscpd-rust` and `groq-smoke` are CI-only. **Why**: Cost per catch. Measured over 24 days of
+`~/cmdr-check-log.csv`, jscpd burned 20 122 CPU-seconds across 837 local runs for one real finding, by a wide margin the
+worst ratio in the suite; copy-paste detection is a periodic sweep, and a duplicate that lands on Monday is just as
+findable on Friday. groq-smoke burned 9 211 CPU-seconds across 106 runs (70 s median) for four, and what it validates is
+a third-party provider's live contract rather than our code, so it can only ever go red on Groq's schedule. Both keep
+their existing CI steps, so neither stops being enforced. groq-smoke keeps `IsSlow` alongside `CIOnly`: that's what
+holds it out of CI's default lane, leaving its one dedicated step in the nightly slow-checks workflow as the only place
+it runs.
 
 **Decision**: E2E failure output uses section-aware filtering, not a pattern denylist. **Why**: The checker's contract
 with agents is that output is concise enough to read in full: no `head`/`tail`/`grep` needed. Raw Playwright + Tauri +
