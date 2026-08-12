@@ -40,7 +40,13 @@ const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main windo
  * placeholder for an evicted snapshot). There's no Path column header on the
  * snapshot pane — the Name column shows the full path instead.
  */
-const SNAPSHOT_PANE_PATH_HEADER = '[aria-label="Right file pane"] .full-list .header-row'
+/*
+ * Deliberately NOT scoped to `.full-list`: the column header renders as a SIBLING of the
+ * scroller (so the pane's scrollbar starts below the labels, `FullList.svelte`), and pinning
+ * that nesting here is what made this test fail when the header moved. What it asserts is
+ * "the pane rendered a column header", which holds wherever inside the pane it lives.
+ */
+const SNAPSHOT_PANE_PATH_HEADER = '[aria-label="Right file pane"] .header-row'
 
 /**
  * Reads one pane's active-tab path from the MCP `cmdr://state` resource. Both
