@@ -17,9 +17,9 @@ entry points; this is the playbook they assume.
 3. **Characterize-then-convert** for risky rewrites. Regression tests that pin CURRENT behavior land as their own
    milestone BEFORE the rewrite. Pin reality, not the plan's expectations, and verify timing-sensitive pins actually
    bite (red first). This makes a byte-identical refactor provable instead of hoped-for.
-4. **Gates.** `--fast` continuously; the full suite + `desktop-e2e-linux` per milestone; `--include-slow` at phase end;
-   watch CI after a push. Flake policy: isolated-green twice via `e2e-linux.sh --grep` counts as green; a failure in the
-   change's own surface is real.
+4. **Gates.** The cadence in `AGENTS.md` § "Checker script", plus `desktop-e2e-linux` on a milestone that touches its
+   surface, plus watching CI after a push. Flake policy: isolated-green twice via `e2e-linux.sh --grep` counts as green;
+   a failure in the change's own surface is real.
 5. **Close out.** An end-of-phase adversarial conformance review agent (against the invariants register) plus a
    docs-audit agent that reads ALL commit bodies and verifies every touched `CLAUDE.md`.
 

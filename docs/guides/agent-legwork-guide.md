@@ -16,10 +16,10 @@ When doing legwork: help your team deliver on the plan provided.
 - Cover new features with tests, using real red→green TDD wherever reasonable.
 - Confirm your stuff looks and feels right before wrapping.
 - Make sure all docs are updated so future agents can maintain your code.
-- Run `pnpm check` after each milestone, before wrapping. You may also run the slow suite (`--include-slow`) if you need
-  it to feel confident about your stuff. Alternatively, run only the set specific to the feature you're working on. Our
-  E2E tests are designed to run well under a second each; a focused run is fast. Include in your final report what
-  checks you ran and the final result.
+- Follow the cadence in `AGENTS.md` § "Checker script": `--fast` while iterating, plain `pnpm check` per milestone,
+  `--include-slow` after roughly every second milestone. Scoping to the feature's own checks (by name, tech, or app)
+  beats a broad run; our E2E tests are designed to run well under a second each, so a focused run is fast. Include in
+  your final report what checks you ran and the final result.
 - If you did benchmarking, return interesting results in your response.
 - If you get a warning about a file you touched having grown over its allowed size, and you feel it could genuinely
   improve the architecture if you split it, split it. Otherwise, leave it.
