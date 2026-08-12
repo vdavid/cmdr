@@ -35,10 +35,10 @@ long as the window's registry is still being created (a view renders what it can
 tick, never a missing row).
 
 It derives the id as a VALUE before acquiring, and that is load-bearing rather than tidy. A caller reads its id off an
-object that `operations-changed` rebuilds on every tick, so a binding that re-ran per object would release and re-acquire
-mid-transfer, handing the operation a fresh smoother whenever some unrelated operation started or finished. The
-divergence would then be self-inflicted, in the one place built to prevent it. `queue-row-session.svelte.test.ts` pins
-it by counting `createEtaSmoother` calls across a snapshot rebuild.
+object that `operations-changed` rebuilds on every tick, so a binding that re-ran per object would release and
+re-acquire mid-transfer, handing the operation a fresh smoother whenever some unrelated operation started or finished.
+The divergence would then be self-inflicted, in the one place built to prevent it. `queue-row-session.svelte.test.ts`
+pins it by counting `createEtaSmoother` calls across a snapshot rebuild.
 
 The runes in the binder belong to the VIEW's scope, which is why it is a separate module from the session and not a
 method on one: a session may hold no `$derived` at all (see below), and the binder is nothing but view-scoped

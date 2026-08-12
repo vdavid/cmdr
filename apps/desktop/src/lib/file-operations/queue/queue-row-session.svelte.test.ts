@@ -203,8 +203,8 @@ describe('the queue window smooths an ETA exactly once per operation', () => {
 
 describe('a scanning row', () => {
   // The backend emits no rate while it counts, so this number exists only
-  // because the session measures the walk from the ticks it is already
-  // receiving. The row showed a bare tally before it had a session to ask.
+  // because the session measures the walk from the ticks the row is already
+  // rendering.
   it('shows how fast the walk is going', () => {
     vi.useFakeTimers()
     try {

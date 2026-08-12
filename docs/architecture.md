@@ -39,8 +39,7 @@ All under `apps/desktop/src/lib/`.
 - `file-operations/operation-session/`: The window's event fan-out (seven broadcast write streams demultiplexed per
   `operationId`, with a bounded holding area for operations no session has claimed yet) and the refcounted session
   registry that gives every view of one operation the same derived read state (the queue rows and the corner chip bind
-  to it for the smoothed ETA and the scan rates). See
-  `apps/desktop/src/lib/file-operations/operation-session/CLAUDE.md`
+  to it for the smoothed ETA and the scan rates). See `apps/desktop/src/lib/file-operations/operation-session/CLAUDE.md`
 - `file-operations/queue/`: Standalone operation-queue window (per-row pause/resume/cancel, multi-select, global
   pause/resume), rendered from an ops store merging `operations-changed` + `write-progress`; route at `routes/queue/`.
   See `apps/desktop/src/lib/file-operations/queue/CLAUDE.md`

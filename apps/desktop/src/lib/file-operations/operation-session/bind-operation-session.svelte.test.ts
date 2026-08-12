@@ -23,7 +23,11 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 import { bindOperationSession, type BoundOperationSession } from './bind-operation-session.svelte'
-import { destroyOperationSessions, getOperationSessions, initOperationSessions } from './window-operation-sessions.svelte'
+import {
+  destroyOperationSessions,
+  getOperationSessions,
+  initOperationSessions,
+} from './window-operation-sessions.svelte'
 
 /** A view, as far as this module is concerned: a reactive scope that binds and
  *  can be torn down. */
