@@ -168,3 +168,7 @@ alone cannot tell you.
 event takes, following `operations-store.svelte.ts`'s `_testApplySnapshot` / `_testApplyProgress`. The two ordering
 rules are driven with explicit interleavings (a `deferred<T>()` for the seed, an attach-then-emit pair in one
 synchronous block for the flush), never incidental microtask order.
+
+`bind-operation-session.svelte.test.ts` stands in for a view with an `$effect.root`, and asks the REGISTRY whether a
+release happened rather than asking the view: a binding that never releases leaves a session listening for an operation
+that ended, which nothing on screen would show, so the test acquires again and checks it got a fresh session.
