@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck, handleDailyEvictionSweep } from './index'
+import {
+  handleCrashNotifications,
+  handleDailyAggregation,
+  handleDbSizeCheck,
+  handleDailyEvictionSweep,
+  handleRetentionSweep,
+} from './index'
 import { ERROR_REPORT_PREFIX, EVICTION_MIN_AGE_DAYS, TOTAL_BYTES_KEY } from './error-report-eviction'
 import { INTAKE_PAUSED_KEY } from './error-report-intake'
 
@@ -361,6 +367,91 @@ describe('handleDailyAggregation', () => {
     expect(sqlStatements.some((s) => s.includes('SELECT 1 FROM daily_active_users'))).toBe(true)
     expect(sqlStatements.some((s) => s.includes('INSERT OR IGNORE INTO daily_active_users'))).toBe(false)
     expect(sqlStatements.some((s) => s.includes('DELETE FROM update_checks'))).toBe(false)
+  })
+})
+
+describe('handleRetentionSweep', () => {
+  /** The SQL the sweep ran, joined, so a test can assert on statement shape without ordering noise. */
+  async function runSweep(): Promise<{ sql: string[]; bindings: unknown[][] }> {
+    const { db, calls } = createMockD1()
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+    await handleRetentionSweep(env as never)
+    return { sql: calls.map((c) => c.sql), bindings: calls.map((c) => c.bindings) }
+  }
+
+  it('captures per-day unique downloaders before the hashes that produce them are cleared', async () => {
+    const { sql } = await runSweep()
+
+    const rollupIndex = sql.findIndex((s) => s.includes('INSERT OR IGNORE INTO downloads_daily_unique'))
+    const clearIndex = sql.findIndex((s) => s.includes('UPDATE downloads') && s.includes('hashed_ip = NULL'))
+
+    expect(rollupIndex).toBeGreaterThanOrEqual(0)
+    expect(clearIndex).toBeGreaterThanOrEqual(0)
+    // Order is the whole point: clearing first would silently zero every historical unique count.
+    expect(rollupIndex).toBeLessThan(clearIndex)
+  })
+
+  it('clears the identifying download columns, keeping the countable ones', async () => {
+    const { sql } = await runSweep()
+
+    const clear = sql.find((s) => s.includes('UPDATE downloads'))
+    expect(clear).toContain('hashed_ip = NULL')
+    expect(clear).toContain('user_agent = NULL')
+    // The row itself survives: version, arch, country, source, ref, and the UA family stay countable.
+    expect(clear).not.toContain('DELETE')
+    expect(clear).not.toContain('ua_family')
+  })
+
+  it('drops the reply-to email and diagnostics id from crash reports, keeping the technical row', async () => {
+    const { sql } = await runSweep()
+
+    const clear = sql.find((s) => s.includes('UPDATE crash_reports'))
+    expect(clear).toContain('email = NULL')
+    expect(clear).toContain('diag_id = NULL')
+    expect(clear).not.toContain('backtrace')
+    expect(clear).not.toContain('top_function')
+  })
+
+  it('deletes heartbeats past their retention window (the one table with a stable install id)', async () => {
+    const { sql } = await runSweep()
+
+    expect(sql.some((s) => s.includes('DELETE FROM heartbeat'))).toBe(true)
+  })
+
+  it('drops the reply-to email from old feedback', async () => {
+    const { sql } = await runSweep()
+
+    const clear = sql.find((s) => s.includes('UPDATE feedback'))
+    expect(clear).toContain('email = NULL')
+    expect(clear).not.toContain('feedback = NULL')
+  })
+
+  it('bounds every statement by a cutoff rather than sweeping the whole table', async () => {
+    const { sql, bindings } = await runSweep()
+
+    const sweepIndexes = sql
+      .map((statement, index) => ({ statement, index }))
+      .filter(
+        ({ statement }) =>
+          statement.includes('UPDATE downloads') ||
+          statement.includes('UPDATE crash_reports') ||
+          statement.includes('UPDATE feedback') ||
+          statement.includes('DELETE FROM heartbeat'),
+      )
+
+    expect(sweepIndexes.length).toBe(4)
+    for (const { statement, index } of sweepIndexes) {
+      expect(statement).toContain('created_at < ?1')
+      expect(bindings[index]).toHaveLength(1)
+    }
+  })
+
+  it('snaps every cutoff to midnight, so a day is never half-swept', async () => {
+    const { bindings } = await runSweep()
+
+    for (const bound of bindings.flat()) {
+      expect(bound).toMatch(/^\d{4}-\d{2}-\d{2} 00:00:00$/)
+    }
   })
 })
 

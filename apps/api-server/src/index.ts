@@ -14,6 +14,7 @@ import {
   handleDailyAggregation,
   handleDbSizeCheck,
   handleDailyEvictionSweep,
+  handleRetentionSweep,
 } from './scheduled'
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -65,9 +66,21 @@ export default {
       } catch (e) {
         console.error('Daily eviction sweep failed:', e)
       }
+
+      try {
+        await handleRetentionSweep(env)
+      } catch (e) {
+        console.error('Retention sweep failed:', e)
+      }
     }
   },
 }
 
 // Export handler functions for testing
-export { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck, handleDailyEvictionSweep }
+export {
+  handleCrashNotifications,
+  handleDailyAggregation,
+  handleDbSizeCheck,
+  handleDailyEvictionSweep,
+  handleRetentionSweep,
+}

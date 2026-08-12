@@ -112,15 +112,28 @@ admin.get('/admin/downloads', async (c) => {
   const whereClause = interval ? `WHERE created_at >= datetime('now', '${interval}')` : ''
 
   // `count` is the raw request count; `uniqueCount` deduplicates same-day downloaders via the
-  // daily-salted `hashed_ip` (rows written before migration 0008 have NULL, which COUNT DISTINCT
+  // peppered `hashed_ip` (rows written before migration 0008 have NULL, which COUNT DISTINCT
   // skips). `source` is NULL for those old rows too, surfaced as 'other'.
+  //
+  // The retention sweep clears `hashed_ip` past 90 days, so the live count alone would read as 0 for
+  // older days. `downloads_daily_unique` holds the count captured before that clear, and the LEFT
+  // JOIN prefers it: rollup for swept days, live count for days still inside the window. Same
+  // retention-proof union as `/admin/update-activity`, one grouping so a distinct count is never
+  // summed across groups.
   const { results } = await c.env.TELEMETRY_DB.prepare(
-    `SELECT date(created_at) AS date, app_version AS version, arch, country,
-                COALESCE(source, 'other') AS source,
-                COUNT(*) AS count, COUNT(DISTINCT hashed_ip) AS uniqueCount
-         FROM downloads ${whereClause}
-         GROUP BY date, version, arch, country, source
-         ORDER BY date ASC`,
+    `SELECT live.date, live.version, live.arch, live.country, live.source, live.count,
+                COALESCE(rollup.unique_downloaders, live.uniqueCount) AS uniqueCount
+         FROM (
+             SELECT date(created_at) AS date, app_version AS version, arch, country,
+                    COALESCE(source, 'other') AS source,
+                    COUNT(*) AS count, COUNT(DISTINCT hashed_ip) AS uniqueCount
+             FROM downloads ${whereClause}
+             GROUP BY date, version, arch, country, source
+         ) AS live
+         LEFT JOIN downloads_daily_unique AS rollup
+             ON rollup.date = live.date AND rollup.app_version = live.version
+             AND rollup.arch = live.arch AND rollup.country = live.country AND rollup.source = live.source
+         ORDER BY live.date ASC`,
   ).all<{
     date: string
     version: string

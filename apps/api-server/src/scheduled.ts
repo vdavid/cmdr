@@ -92,6 +92,104 @@ async function handleDailyAggregation(env: Bindings): Promise<void> {
   await env.TELEMETRY_DB.prepare(`DELETE FROM update_checks WHERE date < date('now', '-7 days')`).run()
 }
 
+/**
+ * How long a `downloads` row keeps the two columns that could identify the person behind it: the
+ * peppered `hashed_ip` (same-day dedup) and the raw `user_agent` (lets us re-tune `classifyUaFamily`
+ * against real strings). A quarter is long enough for both jobs and short enough to be a real limit.
+ */
+const downloadIdentifierRetentionDays = 90
+
+/**
+ * How long a crash report keeps the two fields tied to a person: the `email` a beta tester attached
+ * for a reply, and the `diag_id` grouping their sequential reports. The technical row (version,
+ * signal, `top_function`, redacted backtrace, redacted panic message) is kept indefinitely; it's what
+ * long-standing stability work runs on and it names nobody.
+ */
+const crashIdentifierRetentionDays = 90
+
+/** How long an in-app feedback row keeps its optional reply-to address. The message text stays. */
+const feedbackEmailRetentionDays = 730
+
+/**
+ * How long raw heartbeat rows live. This is the one table keyed by a stable per-install id
+ * (`anal_id`), so it's the one that needs an actual delete rather than a column clear: the id IS the
+ * data. Two years covers every window the dashboard computes (DAU, new installs, D7 retention) with
+ * room to spare.
+ */
+const heartbeatRetentionDays = 730
+
+/**
+ * The `created_at` cutoff `days` back, snapped to MIDNIGHT UTC so a day is always swept whole.
+ * That matters for `downloads`: the rollup captures a day's distinct-downloader count and the clear
+ * then erases the hashes it came from, so a cutoff mid-day would roll up half a day, clear that half,
+ * and leave `/admin/downloads` preferring the partial number over the live one for that date.
+ *
+ * Returned as `YYYY-MM-DD 00:00:00`, which compares correctly against both `created_at` formats in
+ * these tables (`datetime('now')` writes a space, `strftime(...)` writes `T`/`Z`): the differing
+ * separator only ever decides a comparison WITHIN one second of the boundary, and midnight belongs to
+ * the day we're keeping either way. Plain `<` on the column also keeps the `created_at` indexes usable,
+ * which wrapping it in `date()` would not.
+ */
+function cutoff(days: number): string {
+  const boundary = new Date(Date.now() - days * 86_400_000)
+  return `${boundary.toISOString().slice(0, 10)} 00:00:00`
+}
+
+/**
+ * Daily data-retention sweep: enforces the retention promises in the privacy policy
+ * (`apps/website/src/pages/privacy-policy.astro` § "How long we keep your data") in code, so they
+ * can't drift back into "kept forever" by default.
+ *
+ * The shape is deliberate: for `downloads`, `crash_reports`, and `feedback` we clear the identifying
+ * COLUMNS and keep the row, because the counts and the engineering value live in the other columns
+ * and there's no reason to lose them. Only `heartbeat` gets rows deleted, because its identity IS
+ * the row.
+ *
+ * Every statement is idempotent (each `WHERE` excludes what it already cleared) and bounded by
+ * `created_at`, so re-running the sweep, or running it after an outage, is free and safe.
+ */
+async function handleRetentionSweep(env: Bindings): Promise<void> {
+  const db = env.TELEMETRY_DB
+
+  // Capture the per-day distinct-downloader counts BEFORE clearing the hashes they're derived from.
+  // `/admin/downloads` reads this rollup for any day whose hashes are gone (same union pattern as
+  // `daily_active_users`). Doing this in the other order would silently zero every historical unique
+  // count, and there'd be no way back.
+  await db
+    .prepare(
+      `INSERT OR IGNORE INTO downloads_daily_unique (date, app_version, arch, country, source, unique_downloaders)
+           SELECT date(created_at), app_version, arch, country, COALESCE(source, 'other'), COUNT(DISTINCT hashed_ip)
+           FROM downloads
+           WHERE created_at < ?1 AND hashed_ip IS NOT NULL
+           GROUP BY date(created_at), app_version, arch, country, COALESCE(source, 'other')`,
+    )
+    .bind(cutoff(downloadIdentifierRetentionDays))
+    .run()
+
+  await db
+    .prepare(
+      `UPDATE downloads SET hashed_ip = NULL, user_agent = NULL
+           WHERE created_at < ?1 AND (hashed_ip IS NOT NULL OR user_agent IS NOT NULL)`,
+    )
+    .bind(cutoff(downloadIdentifierRetentionDays))
+    .run()
+
+  await db
+    .prepare(
+      `UPDATE crash_reports SET email = NULL, diag_id = NULL
+           WHERE created_at < ?1 AND (email IS NOT NULL OR diag_id IS NOT NULL)`,
+    )
+    .bind(cutoff(crashIdentifierRetentionDays))
+    .run()
+
+  await db
+    .prepare(`UPDATE feedback SET email = NULL WHERE created_at < ?1 AND email IS NOT NULL`)
+    .bind(cutoff(feedbackEmailRetentionDays))
+    .run()
+
+  await db.prepare(`DELETE FROM heartbeat WHERE created_at < ?1`).bind(cutoff(heartbeatRetentionDays)).run()
+}
+
 async function handleDbSizeCheck(env: Bindings): Promise<void> {
   if (!env.CRASH_NOTIFICATION_EMAIL || !env.RESEND_API_KEY) return
 
@@ -151,4 +249,14 @@ async function handleDailyEvictionSweep(env: Bindings): Promise<void> {
   }
 }
 
-export { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck, handleDailyEvictionSweep }
+export {
+  handleCrashNotifications,
+  handleDailyAggregation,
+  handleDbSizeCheck,
+  handleDailyEvictionSweep,
+  handleRetentionSweep,
+  downloadIdentifierRetentionDays,
+  crashIdentifierRetentionDays,
+  feedbackEmailRetentionDays,
+  heartbeatRetentionDays,
+}

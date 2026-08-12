@@ -55,10 +55,19 @@ snapshot-tested corpus.
 
 The redactor is also used by the crash reporter, so the same rules apply to crash payloads.
 
-### Anonymous reports
+### What identifies a report
 
-No license key, no email, no device ID is attached. The short ID `ERR-XXXXX` (5 chars from the same unambiguous alphabet
-as license short codes) is the only correlation handle. Users include it in their bug report when they reach out.
+No license key and no analytics id is ever attached. Two handles can be:
+
+- **`ERR-XXXXX`** (5 chars from the same unambiguous alphabet as license short codes), the correlation handle users
+  quote when they reach out.
+- **`diag_<uuid>`**, the diagnostics install id, which groups sequential reports from one install. Deliberately a
+  different id from the `anal_` analytics one, so a report can never be joined to the analytics stream.
+- **An email address**, present ONLY when the user ticks the attach-email box in the send dialog (Flow A). The
+  auto-dispatcher (Flow B) always leaves it empty, enforced structurally by `bundle_builder::email_for_kind`.
+
+Crash reports carry the same two optional fields. Both are cleared server-side after 90 days by `handleRetentionSweep`
+(`apps/api-server/DETAILS.md` § Data retention), leaving the technical row.
 
 ### Server retention
 
@@ -70,7 +79,8 @@ retention layers, in order of aggressiveness:
    evictors.
 2. **Daily cron sweep.** `handleDailyEvictionSweep` recomputes total from R2 ground truth and re-runs eviction. Catches
    KV drift.
-3. **R2 lifecycle rule.** 90-day expiration at the bucket level (third safety net if both layers above fail).
+3. **R2 lifecycle rule.** 90-day expiration at the bucket level (third safety net if both layers above fail). This is
+   also the retention the privacy policy states for error reports, so it's a promise now, not only a safety net.
 
 ### Discord deep links
 

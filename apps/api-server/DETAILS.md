@@ -289,13 +289,55 @@ try-catch so one failure doesn't block the others:
 
 3. **DB size check** (00:00 UTC only): queries D1 pragma for total database size. Sends an alert email if over 100 MB.
 
-4. **Daily eviction sweep** (00:00 UTC only): `handleDailyEvictionSweep` recomputes `total_bytes` from R2 ground truth
+4. **Retention sweep** (00:00 UTC only): `handleRetentionSweep` enforces the per-table retention promises. See § Data
+   retention below for the windows and the reasoning.
+
+5. **Daily eviction sweep** (00:00 UTC only): `handleDailyEvictionSweep` recomputes `total_bytes` from R2 ground truth
    (the per-upload KV counter is racy and drifts), clears `intake_paused` if the bucket is back under the LOW watermark,
    then triggers `tryEvict` if still over 8 GB. Idempotent. Catches drift from concurrent uploads or a Worker dying
    mid-eviction.
 
 The default export uses the object form (`{ fetch, scheduled }`) required for cron support. The Hono `app` is also
 exported as a named export so tests can use `app.request()`.
+
+## Data retention
+
+Every window below is enforced in code by `handleRetentionSweep` (`scheduled.ts`, daily at 00:00 UTC) and stated to
+users in `apps/website/src/pages/privacy-policy.astro` § "How long we keep your data". The two have to move together:
+the policy is a promise about these tables, so changing a window, a column, or a table here means editing that page in
+the same commit.
+
+The sweep's default shape is **clear the identifying columns, keep the row**. Counts, version breakdowns, and crash
+triage value live in the other columns, and there's no privacy reason to lose them. Only `heartbeat` deletes rows,
+because its stable `anal_id` IS the identifying data.
+
+- **`downloads`**: `hashed_ip` and `user_agent` cleared after 90 days; the row (version, arch, country, continent,
+  source, ref, referer, `ua_family`) is kept indefinitely. 90 days is what the two columns are FOR: same-day dedup needs
+  one day, and re-tuning `classifyUaFamily` against real UA strings needs a recent sample.
+- **`update_checks`**: raw rows deleted after seven days by `handleDailyAggregation`, after rolling into
+  `daily_active_users`. Unchanged, and already the model the rest of this follows.
+- **`crash_reports`**: `email` (the reply-to a beta tester attached) and `diag_id` cleared after 90 days; the technical
+  row is kept indefinitely for long-standing stability work. `hashed_ip` is no longer written at all (migration `0013`
+  erased the historical values) because nothing ever read it.
+- **`feedback`**: the optional reply-to `email` cleared after two years; the message text stays.
+- **`heartbeat`**: rows DELETED after two years. Two years covers every window the dashboard computes (DAU, new
+  installs, D7 retention) with room to spare.
+- **Error report bundles**: 90-day R2 lifecycle, plus capacity-driven eviction that never touches anything under 60 days
+  (`error-report-eviction.ts`). Not part of this sweep.
+
+Two invariants the sweep must keep, both pinned by tests in `scheduled.test.ts`:
+
+- **Roll up before clearing.** `downloads_daily_unique` (migration `0014`) captures each day's
+  `COUNT(DISTINCT hashed_ip)` per `/admin/downloads` grouping BEFORE the clear erases the hashes. Reverse the order and
+  every historical unique count silently becomes zero, with no way back. `/admin/downloads` then prefers the rollup and
+  falls back to the live count for days still inside the window, the same union pattern `/admin/update-activity` uses
+  over `daily_active_users`.
+- **Cutoffs snap to midnight UTC**, so a day is always swept whole. A mid-day cutoff would roll up half a day's distinct
+  count, clear that half, and leave the admin query preferring the partial number for that date. `created_at` is
+  compared directly (never wrapped in `date()`) so the indexes stay usable; the two `created_at` formats in these tables
+  (`T`/`Z` versus a space) only differ within a second of the boundary, which midnight-snapping puts out of reach.
+
+Every statement is idempotent: each `WHERE` excludes what it already cleared, so re-running after an outage is free.
 
 ## Key patterns
 
@@ -369,7 +411,9 @@ Read by `/admin/stats`. The counter starts from zero when deployed; initialize v
 needed.
 
 **D1 for telemetry:** Crash reports, downloads, update checks, and heartbeats are stored in D1 (binding: `TELEMETRY_DB`,
-database: `cmdr-telemetry`). Migrations live in `migrations/` (latest: `0012_license_issuance.sql`, the fulfillment
+database: `cmdr-telemetry`). Migrations live in `migrations/` (latest: `0014_downloads_daily_unique.sql`, the
+distinct-downloader rollup the retention sweep writes; `0013_minimize_stored_identifiers.sql` adds `downloads.ua_family`
+and erases the crash-table IP hashes; `0012_license_issuance.sql` is the fulfillment
 record above; `0011_crash_panic_message.sql` adds the nullable `panic_message` column to `crash_reports`;
 `0007_feedback.sql` adds the `feedback` table; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email`
 columns; `0005_heartbeat.sql` adds the `heartbeat` table). Apply with `wrangler d1 migrations apply cmdr-telemetry`
@@ -402,9 +446,14 @@ fire-and-forget via `waitUntil` + `.catch(() => {})`. Three things make the coun
 - **Bot/unfurler hits are dropped:** link-preview bots (Discord, Slack, etc.) and crawlers fetch the URL and would
   inflate the count, so a User-Agent denylist skips the D1 write (the 302 is still served). A missing UA is treated as a
   bot too. Homebrew downloads via curl, which would match the `curl` rule, so Homebrew is explicitly exempted.
-- **`hashed_ip` enables same-day dedup:** SHA-256(IP + daily salt), the same per-day-pseudonymous scheme as
+- **`hashed_ip` enables same-day dedup:** `SHA-256(IP_HASH_PEPPER + IP + daily salt)`, the same scheme as
   `update_checks`. We keep one row per request (raw count is `COUNT(*)`); the dashboard derives distinct same-day
-  downloaders with `COUNT(DISTINCT hashed_ip)`. The salt rotates daily, so it's not linkable across days.
+  downloaders with `COUNT(DISTINCT hashed_ip)`. The two ingredients do different jobs and both are load-bearing: the
+  daily salt stops the value linking a visitor across days, and the pepper (a Cloudflare secret) is what makes it
+  one-way at all. A date-only salt is public and predictable, so the 2^32 IPv4 candidates brute-force on a GPU in
+  seconds; such a hash IS the address, and storing one would contradict the privacy policy. A missing pepper still
+  hashes (losing download counts is worse) and logs a warning. Rotating the pepper re-anonymizes every older row and
+  costs only one day of dedup accuracy.
 - **`source` tags origin:** `homebrew` (Homebrew cask, by User-Agent), `website` (getcmdr.com button, which sends
   `?src=website`), or `other` (links shared elsewhere). In-app auto-updates never appear here: they fetch the tarball
   straight from GitHub, not this endpoint.
@@ -428,12 +477,11 @@ fire-and-forget via `waitUntil` + `.catch(() => {})`. Three things make the coun
   daily-rotating `hashed_ip`, so neither adds a cross-day identifier. The dashboard rolls `referer` up into the
   "Download referrers" breakdown (`funnel.ts` `downloadsByReferer`), parallel to the `ref`-based "Channels".
 
-- **User-Agent family classification + `humanInstalls` (read side only, no migration):** the raw download count
-  over-reads as an install signal because a large share of `/download` hits are scrapers and non-macOS clients. Cmdr is
-  macOS-only, which is the whole basis: a Windows/Android/Linux/X11 client fetching the `.dmg` literally cannot install
-  it. So at query time `/admin/funnel` classifies each stored `user_agent` with the pure, unit-tested `classifyUaFamily`
-  (`funnel.ts`) into one of three families and returns a per-day `downloadsByUaFamily { human, bot, unknown }` plus a
-  `humanInstalls` count:
+- **User-Agent family classification + `humanInstalls`:** the raw download count over-reads as an install signal because
+  a large share of `/download` hits are scrapers and non-macOS clients. Cmdr is macOS-only, which is the whole basis: a
+  Windows/Android/Linux/X11 client fetching the `.dmg` literally cannot install it. So at query time `/admin/funnel`
+  classifies each stored `user_agent` with the pure, unit-tested `classifyUaFamily` (`funnel.ts`) into one of three
+  families and returns a per-day `downloadsByUaFamily { human, bot, unknown }` plus a `humanInstalls` count:
   - **`human`** (a possible install, checked first so a Mac-claiming UA is never excluded): UA contains `Macintosh` or
     `Mac OS` (a Mac browser), `Homebrew`, or `curl`/`wget` (cask and manual CLI installs).
   - **`bot` / impossible install** (the one high-confidence exclusion): UA contains `Windows`, `Android`, `Linux`, or
@@ -446,12 +494,19 @@ fire-and-forget via `waitUntil` + `.catch(() => {})`. Three things make the coun
     land in `human` and `human` is NOT a clean count — only the `bot` exclusion is high-confidence. We do not exclude by
     country. The dashboard surfaces this as the "Downloads by client" panel and the "Human installs" headline next to
     the raw download count (`funnel.ts` `aggregateUaFamilies`).
+  - **Where the family is computed:** at WRITE time into `downloads.ua_family` (migration `0013`), so the signal
+    outlives the raw `user_agent` that the retention sweep clears after 90 days. The read side calls `resolveUaFamily`,
+    which prefers the stored value and falls back to `classifyUaFamily` on the raw UA for pre-`0013` rows. A row with
+    neither (a pre-`0013` row whose UA the sweep cleared) lands in `unknown`, which is never excluded.
+    `classifyUaFamily` stays the single pure definition of the rules; the sweep's 90-day window is what still lets us
+    re-tune it against real UAs.
 
 **Update check tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `update_checks`). Counts active users (free +
 licensed) by proxying update checks through `GET /update-check/:version`. Each unique (date, hashed_ip, app_version,
-arch) combo gets one row (`INSERT OR IGNORE` with a UNIQUE constraint handles deduplication for free). IP is hashed with
-SHA-256 + daily salt for deduplication without storing PII. D1 write is fire-and-forget via `waitUntil` +
-`.catch(() => {})`. The cron handler aggregates raw data into the `daily_active_users` summary table daily.
+arch) combo gets one row (`INSERT OR IGNORE` with a UNIQUE constraint handles deduplication for free). The IP goes
+through the same peppered `hashCallerIp` as `/download`, so nothing recoverable is stored. D1 write is fire-and-forget
+via `waitUntil` + `.catch(() => {})`. The cron handler aggregates raw data into the `daily_active_users` summary table
+daily and prunes the raw rows at seven days.
 
 **`top_function` derivation (`extractTopFunction`, `telemetry.ts`):** the grouping key is the topmost backtrace frame
 that is real application code. Frames belonging to the panic machinery are skipped first (`crash_reporter`,
@@ -735,9 +790,15 @@ default payment link in the sandbox dashboard. This is an interactive, human-dri
 
 ```bash
 cd apps/api-server
-npx wrangler d1 migrations apply cmdr-telemetry  # apply any new D1 migrations first
+npx wrangler secret put IP_HASH_PEPPER            # one-time, before the first deploy of the peppered hashing
+npx wrangler d1 migrations apply cmdr-telemetry   # apply any new D1 migrations first
 npx wrangler deploy
 ```
+
+`IP_HASH_PEPPER` is a one-time setup step (`openssl rand -hex 32`), not a per-deploy one, but until it exists every
+stored IP hash is brute-forceable. The Worker warns in the log rather than failing, so check for
+`IP_HASH_PEPPER is not set` after the first deploy. Once it's set, the next retention sweep clears the weakly-hashed
+rows written before it (90 days for `downloads`, seven days for `update_checks`).
 
 Deployed to `api.getcmdr.com` via Cloudflare custom domain (declared in `wrangler.toml` `[[routes]]`).
 `license.getcmdr.com` is a permanent alias for existing app versions. Fallback URL:
