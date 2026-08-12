@@ -379,7 +379,7 @@ This prevents overwhelming agents with data they can't see in the UI.
 
 ### Directory sizes say how much they're worth
 
-A directory's recursive size is a claim of varying strength, and `cmdr://state` renders the same distinctions the file list does (`resources/mod.rs`: `recursive_size_text`, `on_disk_marker`; the model itself is `crates/cmdr-index/src/indexing/DETAILS.md` § "Honest sizes"):
+A directory's recursive size is a claim of varying strength, and `cmdr://state` renders the same distinctions the file list does (`resources/mod.rs`: `recursive_size_text`, `on_disk_marker`; the model itself is `crates/cmdr-index/src/indexing/writer/DETAILS.md` § "Honest sizes"):
 
 - **`≥4 GB`** — the indexer hasn't finished covering the subtree, so this is a LOWER BOUND, not a total. Same `≥` glyph as the UI's `LOWER_BOUND_GLYPH`.
 - **no size at all** — incomplete AND nothing known below yet. `≥0 B` would read as a measurement; the UI shows its `<dir>` placeholder for the same reason.
