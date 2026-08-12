@@ -118,7 +118,7 @@ function writeMaster(stagePath: string, path: string): void {
   })
   if (res.error !== undefined || res.status !== 0) {
     throw new Error(
-      `Converting the shot to WebP failed (\`magick\` from ImageMagick). ${res.stderr ?? String(res.error)}`,
+      `Converting the shot to WebP failed (\`magick\` from ImageMagick). ${res.stderr || String(res.error)}`,
     )
   }
 }
