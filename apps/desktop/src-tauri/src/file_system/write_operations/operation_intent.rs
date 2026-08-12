@@ -165,7 +165,7 @@ impl PauseGate {
         }
     }
 
-    /// Async sibling of [`wait_while_paused_sync`]: parks the calling task
+    /// Async sibling of [`wait_while_paused_sync`](Self::wait_while_paused_sync): parks the calling task
     /// (without blocking an executor thread) while paused, returning as soon as
     /// the op resumes OR cancellation is observed. Call from the async volume
     /// drivers, AFTER their `is_cancelled` loop-top check.

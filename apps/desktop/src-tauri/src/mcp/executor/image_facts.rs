@@ -15,7 +15,7 @@
 //! The Ask Cmdr consent gate (`agent/consent.rs`, enforced on every send) covers the
 //! egress and its copy names it: "the text Cmdr recognized inside … photos and their tags".
 //! What NEVER crosses is image bytes: [`FileFacts`] is text-only by construction, pinned by
-//! [`tests::file_facts_is_text_only_no_byte_fields`].
+//! `tests::file_facts_is_text_only_no_byte_fields`.
 
 use std::path::Path;
 

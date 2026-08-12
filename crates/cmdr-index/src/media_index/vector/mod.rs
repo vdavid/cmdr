@@ -74,7 +74,7 @@ pub(crate) fn cosine(a: &[f32], b: &[f32]) -> f32 {
 
 /// Cosine similarity between an `f32` query and an `f16` stored vector (plan M3), widening
 /// each stored element to `f32` inline — no temporary `Vec`, so scoring a whole resident
-/// cache allocates nothing. Same degenerate-input guards as [`cosine`]. The scan is
+/// cache allocates nothing. Same degenerate-input guards as `cosine`. The scan is
 /// memory-bandwidth-bound, and `f16` entries are half the bytes, so this keeps (or improves)
 /// query latency while halving the resident cache's RAM.
 pub(crate) fn cosine_f16(query: &[f32], stored: &[f16]) -> f32 {

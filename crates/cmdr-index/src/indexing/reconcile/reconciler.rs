@@ -115,8 +115,8 @@ const MAX_BUFFER_CAPACITY: usize = 500_000;
 /// is at TRACE (off by default; file chain captures Debug+ only); this aggregator emits
 /// a single DEBUG summary every ~60 s, so error report bundles still carry the
 /// existence-of-drift signal without the per-event noise. Two instances cover the two
-/// classes that dominate normal log volume: [`UNKNOWN_PATH_SKIPS`] (removal for a path
-/// not in the DB) and [`ESCALATED_MISSING_PARENTS`] (create/modify whose parent dir
+/// classes that dominate normal log volume: [`UNKNOWN_PATH_SKIPS`](skip_aggregator::UNKNOWN_PATH_SKIPS) (removal for a path
+/// not in the DB) and [`ESCALATED_MISSING_PARENTS`](skip_aggregator::ESCALATED_MISSING_PARENTS) (create/modify whose parent dir
 /// isn't in the DB — now escalated to a subtree rescan rather than dropped).
 ///
 /// Most are harmless build-output churn, but a sustained rate (or a sample path in an

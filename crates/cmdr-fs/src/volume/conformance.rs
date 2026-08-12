@@ -29,7 +29,7 @@ async fn size_of(volume: &dyn Volume, path: &Path, what: &str) -> Option<u64> {
         .size
 }
 
-/// [`Volume::delete`](crate::volume::Volume::delete) handles ONE node, so a directory
+/// [`Volume::delete`] handles ONE node, so a directory
 /// that still holds anything is refused and left completely intact.
 ///
 /// `dir` must already exist on `volume` and hold `child_name` directly inside
@@ -75,7 +75,7 @@ pub async fn assert_delete_leaves_a_non_empty_dir_intact(volume: &dyn Volume, di
     );
 }
 
-/// [`Volume::rename`](crate::volume::Volume::rename) with `force == false` refuses
+/// [`Volume::rename`] with `force == false` refuses
 /// a destination that already exists, and takes nothing away in the process.
 ///
 /// `from` and `to` must both already exist on `volume` and must differ in size,
@@ -124,7 +124,7 @@ pub async fn assert_rename_refuses_an_existing_destination(volume: &dyn Volume, 
     );
 }
 
-/// [`Volume::create_file`](crate::volume::Volume::create_file) refuses a path that
+/// [`Volume::create_file`] refuses a path that
 /// already exists, rather than truncating what's there.
 ///
 /// `path` must already exist on `volume` and hold a different number of bytes
@@ -162,7 +162,7 @@ pub async fn assert_create_file_refuses_to_clobber(volume: &dyn Volume, path: &P
     );
 }
 
-/// [`Volume::create_directory_all`](crate::volume::Volume::create_directory_all)
+/// [`Volume::create_directory_all`]
 /// reports a directory that was ALREADY there as
 /// [`DirectoryCreation::AlreadyExisted`], never as `Created`.
 ///

@@ -14,7 +14,7 @@
 //! its copy names it (`askCmdr.consent.*`, `agent/consent.rs`). What NEVER crosses is
 //! image bytes: [`PhotoHit`] is text-only by construction (string/number fields), so the
 //! tool structurally can't hand a provider a thumbnail or pixel buffer — pinned by
-//! [`tests::photo_hit_is_text_only_no_byte_fields`].
+//! `tests::photo_hit_is_text_only_no_byte_fields`.
 
 use std::path::Path;
 

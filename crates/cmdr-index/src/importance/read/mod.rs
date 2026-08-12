@@ -31,7 +31,7 @@
 //! ## `explain` recomputes, never re-derives
 //!
 //! [`explain`] reads the STORED [`FolderSignals`] and runs the pure scorer's
-//! [`explain`](crate::importance::explain) over them — the SAME formula the score
+//! [`explain`] over them — the SAME formula the score
 //! was written from. There is no second scoring path; a consumer's breakdown and
 //! the stored scalar can't drift.
 

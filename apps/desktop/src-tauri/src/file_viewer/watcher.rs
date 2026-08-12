@@ -131,7 +131,7 @@ pub struct ViewerWatcherManager {
 struct ManagerInner {
     states: HashMap<PathBuf, Arc<Mutex<PathState>>>,
     debouncers: HashMap<PathBuf, Debouncer<RecommendedWatcher, RecommendedCache>>,
-    /// Monotonic counter to give each subscriber a stable id (Vec<SyncSender>
+    /// Monotonic counter to give each subscriber a stable id (`Vec<SyncSender>`
     /// alone can't be compared by identity).
     next_sender_id: usize,
     /// Per-path: list of (sender_id, sender) pairs. Indirection avoids

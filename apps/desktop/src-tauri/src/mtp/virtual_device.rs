@@ -143,7 +143,7 @@ pub fn setup_virtual_mtp_device_at(root: &Path) -> u64 {
 }
 
 /// The shared body of [`setup_virtual_mtp_device_at`] and (test-only)
-/// [`setup_virtual_mtp_device`]. `watch_backing_dirs` arms the device's
+/// `setup_virtual_mtp_device`. `watch_backing_dirs` arms the device's
 /// filesystem watcher, which turns out-of-band disk writes into PTP events.
 fn register_virtual_mtp_device_at(root: &Path, watch_backing_dirs: bool) -> u64 {
     let internal = root.join("internal");

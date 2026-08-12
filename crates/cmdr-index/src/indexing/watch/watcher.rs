@@ -1,9 +1,9 @@
 //! Drive-level filesystem watcher for the indexing system.
 //!
-//! **macOS:** Uses FSEvents via [`cmdr-fsevent-stream`] for file-level granularity
+//! **macOS:** Uses FSEvents via `cmdr-fsevent-stream` for file-level granularity
 //! with event IDs for scan/watch reconciliation and `sinceWhen` cold-start replay.
 //!
-//! **Linux:** Uses the [`notify`] crate (inotify backend) for recursive directory
+//! **Linux:** Uses the `notify` crate (inotify backend) for recursive directory
 //! watching. No event IDs -- on startup the indexer always does a full rescan
 //! comparing filesystem state against SQLite. Live events flow through the same
 //! `FsChangeEvent` type with `event_id` set to a monotonic counter.

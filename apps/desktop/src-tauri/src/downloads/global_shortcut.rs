@@ -16,8 +16,8 @@
 //! The hotkey is registered iff
 //! `settings.globalGoToLatestShortcut.enabled == true` AND
 //! `fda_gate::is_fda_pending_runtime() == false`. The lifecycle wiring in
-//! `lib.rs` calls [`refresh_runtime`] at startup, on main-window focus, and
-//! when the FE flips the setting via [`set_global_go_to_latest_shortcut`]; this
+//! `lib.rs` calls [`refresh_runtime`](super::runtime::refresh_runtime) at startup, on main-window focus, and
+//! when the FE flips the setting via [`set_global_go_to_latest_shortcut`](super::commands::set_global_go_to_latest_shortcut); this
 //! module only owns the typed register/unregister/status surface.
 //!
 //! ## macOS permission scope

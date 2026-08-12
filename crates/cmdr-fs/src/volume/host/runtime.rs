@@ -13,7 +13,7 @@
 //! `notify` watcher's OS thread, an SMB watcher thread, the app's synchronous
 //! startup hook — and `tokio::spawn` panics there. Spawn through the seam:
 //!
-//! ```ignore
+//! ```text
 //! let task = self.host.runtime().spawn(async move { … });
 //! ```
 //!

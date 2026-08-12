@@ -84,7 +84,7 @@ pub(crate) fn forget_volume_for_test(volume_id: &str) {
 /// A loaded volume's search state: the in-memory arena plus everything a search
 /// needs against it — a read pool over its DB (include-path resolution + dir-size
 /// enrichment) and its mount root (path prefixing/stripping). Importance weights
-/// live in the separate [`WEIGHTS`] map so the root recompute subscriber can swap
+/// live in the separate `WEIGHTS` map so the root recompute subscriber can swap
 /// them live without rebuilding this.
 pub(crate) struct LoadedVolume {
     pub(crate) index: Arc<SearchIndex>,
@@ -302,7 +302,7 @@ fn usable_mount_root(root: String) -> Option<String> {
 /// Load one volume's index synchronously (call inside `spawn_blocking`). Opens the
 /// read pool (root's from the live registry; a non-root volume's read-only straight
 /// from `index-{volume_id}.db` on disk), loads the arena, reads the mount root, and
-/// loads the volume's importance weights into [`WEIGHTS`].
+/// loads the volume's importance weights into `WEIGHTS`.
 fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -> VolumeLoad {
     // Taken BEFORE the rows, so a write racing this load makes the arena look
     // older than it is rather than newer. Under-claiming costs a reload; the

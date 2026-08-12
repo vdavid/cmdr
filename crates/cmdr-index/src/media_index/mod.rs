@@ -3,7 +3,7 @@
 //! per-volume disposable `media.db`, a scheduler driven by the indexing lifecycle
 //! bus, an OCR pipeline behind the [`VisionBackend`](backend::VisionBackend) seam
 //! (real macOS Vision OCR in production, a fake for tests), deletion-driven GC, and
-//! the [`MediaIndex`](read::MediaIndex) read API surfaced over the
+//! the [`MediaIndex`] read API surfaced over the
 //! `media_index_search_ocr` command.
 //!
 //! A deliberate port of `importance/` (store, scheduler, read API); see

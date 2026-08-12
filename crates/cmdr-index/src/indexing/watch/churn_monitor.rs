@@ -272,7 +272,7 @@ impl ChurnMonitor {
 /// `process_live_batch` takes one by `&mut`, and there is more than one live
 /// loop (`live.rs` and `replay.rs` Phase 3 both drive live batches). Passing an
 /// observer is therefore compiler-enforced at every live batch, present and
-/// future; opting out has to be spelled out as [`ChurnObserver::disabled`].
+/// future; opting out has to be spelled out as `ChurnObserver::disabled`.
 pub(in crate::indexing) struct ChurnObserver {
     monitor: Option<ChurnMonitor>,
     volume_id: String,

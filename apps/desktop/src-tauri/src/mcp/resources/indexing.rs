@@ -377,7 +377,7 @@ pub(crate) fn build_volume_debug_text(snap: &VolumeIndexingSnapshot, now_unix_s:
     lines.join("\n")
 }
 
-/// Map an [`IndexVolumeKind`] to its resource token.
+/// Map an [`IndexVolumeKind`](cmdr_index::IndexVolumeKind) to its resource token.
 fn kind_token(kind: cmdr_index::IndexVolumeKind) -> &'static str {
     use cmdr_index::IndexVolumeKind;
     match kind {

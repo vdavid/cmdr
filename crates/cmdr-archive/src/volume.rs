@@ -97,7 +97,7 @@ pub struct ArchiveVolume {
     /// — and it's gone when the LRU evicts (a re-minted instance starts empty, so
     /// the frontend re-prompts). `Zeroizing` wipes the bytes on drop. A wrong
     /// password never persists: `set_password` overwrites, and a detected wrong
-    /// attempt clears it (see [`clear_password_if_wrong`](Self::clear_password_if_wrong)).
+    /// attempt clears it (see [`clear_password`](Self::clear_password)).
     password: Mutex<Option<Zeroizing<String>>>,
     /// Everything this backend needs from the app around it. Only the content
     /// watch uses it today (the runtime it spawns on, and the listing seam its

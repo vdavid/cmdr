@@ -10,8 +10,10 @@
 //! Opens the index READ-ONLY (WAL gives a consistent snapshot) and writes nothing.
 //! Reports counts and timings only — never a folder name.
 //!
-//!   cargo run --release -p index-query --bin importance-diff -- \
-//!     <index.db> <home-or-mount-root> [origin-count | comma-separated origin paths]
+//! ```text
+//! cargo run --release -p index-query --bin importance-diff -- \
+//!   <index.db> <home-or-mount-root> [origin-count | comma-separated origin paths]
+//! ```
 
 use std::path::PathBuf;
 

@@ -24,7 +24,7 @@ use super::set_data_dir;
 use crate::search::ranking::ImportanceWeights;
 
 /// Per-volume importance weight snapshots (folder path → weight), blended into
-/// ranking. Kept separate from [`SEARCH_INDICES`] so the root recompute subscriber
+/// ranking. Kept separate from [`SEARCH_INDICES`](super::SEARCH_INDICES) so the root recompute subscriber
 /// can refresh root's map live (subscribe-don't-poll) without touching the arena.
 /// A missing/empty entry degrades ranking to match-quality + recency — today's
 /// behavior. Held as `Arc` so a search clones a cheap handle and ranks against a

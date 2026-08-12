@@ -1,6 +1,6 @@
 //! The read side of the operation log (the query API): filtered/paged search, a paged
 //! operation detail, and the recent-operations feed. Every function takes a
-//! short-lived read-only [`Connection`](rusqlite::Connection) (the writer thread
+//! short-lived read-only [`Connection`] (the writer thread
 //! owns the single write connection; reads never contend under WAL).
 //!
 //! ## Search is index-served and spans every `row_role`

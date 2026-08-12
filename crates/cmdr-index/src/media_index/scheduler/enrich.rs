@@ -124,7 +124,7 @@ impl QualifyingImage<'_> {
 /// the passes re-sort via [`prioritized`]).
 ///
 /// On top of that floor, resident memory is whatever the SINK keeps: `O(folders)` for
-/// [`count_qualifying_images`](crate::media_index::coverage::count_qualifying_images),
+/// `count_qualifying_images`,
 /// `O(images)` for the collecting [`walk_image_entries`]. Reach for the counting sink
 /// whenever only counts are needed; a multi-million-entry NAS index turns the collecting
 /// one into gigabytes (11.3M entries, measured 2026-07-25 —
@@ -180,7 +180,7 @@ pub(crate) fn for_each_qualifying_image(
 ///
 /// This holds one heap `String` path per qualifying image, so it's for the passes that
 /// genuinely need the list (enrich, GC, the cache refill). ❌ Never use it to derive counts:
-/// see [`count_qualifying_images`](crate::media_index::coverage::count_qualifying_images).
+/// see `count_qualifying_images`.
 pub(crate) fn walk_image_entries(conn: &rusqlite::Connection) -> Result<Vec<ImageEntry>, String> {
     let mut out = Vec::new();
     for_each_qualifying_image(conn, &mut |image| {
@@ -299,7 +299,7 @@ pub(crate) struct EnrichGates<'a> {
     pub(crate) gc_scope: GcScope<'a>,
     /// The currently-installed CLIP model's provenance stamp, or `None` when no CLIP model
     /// is installed. Drives the INDEPENDENT CLIP half of two-part staleness
-    /// ([`needs_clip`]): an image whose stored `clip_stamp` differs gets CLIP-embedded even
+    /// ([`needs_clip`](crate::media_index::store::needs_clip)): an image whose stored `clip_stamp` differs gets CLIP-embedded even
     /// when its Vision analysis is current, so installing/upgrading CLIP re-embeds without
     /// re-running OCR/tags. `None` ⇒ CLIP is never attempted.
     pub(crate) clip_stamp: Option<&'a str>,
@@ -374,7 +374,7 @@ pub(crate) fn enrich_and_gc(
 /// The shared enrich + GC core, over a set of already-loaded `statuses` (path → row).
 /// Parameterized by `gates.gc_scope` so the whole-store full pass and the touched-dirs live
 /// tick share ONE per-image loop (never a fork). Callers usually reach it via
-/// [`enrich_and_gc`] (whole store); the live tick calls it directly with
+/// `enrich_and_gc` (whole store); the live tick calls it directly with
 /// [`GcScope::TouchedDirs`]. Returns what the pass did.
 ///
 /// - `images` is the caller's priority-ordered list ([`prioritized`]); enrichment
@@ -390,8 +390,8 @@ pub(crate) fn enrich_and_gc(
 ///   folder never gets a row persisted (which a later pass wouldn't collect, since the
 ///   file is still present in the GC `current` set). An excluded image is deferred, so
 ///   like any deferred image it stays in `current` and isn't GC'd.
-/// - Enriches only images the staleness predicate marks stale ([`needs_enrichment`]).
-/// - A VANISHED source (a typed [`VisionError::Missing`], an ENOENT-class read
+/// - Enriches only images the staleness predicate marks stale ([`needs_enrichment`](crate::media_index::store::needs_enrichment)).
+/// - A VANISHED source (a typed [`VisionError::Missing`](crate::media_index::backend::VisionError::Missing), an ENOENT-class read
 ///   failure) is skipped QUIETLY (DEBUG, no row) but still counts toward `done` —
 ///   the vanished/phantom-file handling.
 /// - Checks `hooks.cancel` BETWEEN images so an emergency stop (the memory watchdog)

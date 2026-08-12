@@ -19,8 +19,10 @@
 //! app might be writing it (this tool opens read-only, but a copy avoids reading a
 //! half-written page). Usage:
 //!
-//!   cargo run -p index-query --bin importance-snapshot -- \
-//!     <index.db> <home-or-mount-root> <local|listing-only> <scenario-name> <out-dir>
+//! ```text
+//! cargo run -p index-query --bin importance-snapshot -- \
+//!   <index.db> <home-or-mount-root> <local|listing-only> <scenario-name> <out-dir>
+//! ```
 //!
 //! Example (David's local root):
 //!   cargo run -p index-query --bin importance-snapshot -- \

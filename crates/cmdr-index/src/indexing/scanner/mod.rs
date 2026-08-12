@@ -29,8 +29,6 @@ use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 mod exclusions;
 pub use exclusions::SYSTEM_DIR_EXCLUDES;
-/// Recognizing macOS File Provider domain roots, the one probe `exclusions` needs
-/// that isn't pure string work. macOS-only: no other platform has File Provider.
 #[cfg(target_os = "macos")]
 mod file_provider;
 pub(in crate::indexing) use exclusions::*;
@@ -383,7 +381,7 @@ impl ScanHandle {
 
 /// What a walk covered. Reaching a caller as `Ok` means the walk ran to the END:
 /// a cancelled walk's partial totals arrive inside
-/// [`ScanError::Cancelled`](ScanError::Cancelled) instead, so no caller can treat
+/// [`ScanError::Cancelled`] instead, so no caller can treat
 /// a partial as a completion by forgetting to check a flag.
 #[derive(Debug, Clone)]
 pub struct ScanSummary {
@@ -521,7 +519,7 @@ fn cover_walk_throttle() -> Option<Duration> {
 /// Start a full-volume scan on a background thread.
 ///
 /// Spawns a `std::thread` that walks the directory tree via the guarded [`walker`],
-/// sends batches of [`EntryRow`] to the writer, and triggers `ComputeAllAggregates`
+/// sends batches of [`EntryRow`](crate::indexing::store::EntryRow) to the writer, and triggers `ComputeAllAggregates`
 /// on completion.
 ///
 /// Returns a [`ScanHandle`] for progress/cancellation and a [`std::thread::JoinHandle`]

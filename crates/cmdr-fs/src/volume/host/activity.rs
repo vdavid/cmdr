@@ -61,7 +61,7 @@ mod scripted {
     use super::UserActivity;
     use crate::ignore_poison::IgnorePoison;
 
-    /// A [`UserActivity`](super::UserActivity) driven by a test rather than by a
+    /// A [`UserActivity`] driven by a test rather than by a
     /// clock: the volumes in the set are busy, everything else is idle.
     ///
     /// Waiting out a real threshold is what makes yield tests slow and flaky, so

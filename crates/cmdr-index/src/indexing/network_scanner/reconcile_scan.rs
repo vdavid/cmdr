@@ -32,7 +32,7 @@ use crate::indexing::writer::{IndexWriter, WriteMessage};
 /// Non-destructively RECONCILE a network volume against an already-populated
 /// index, instead of truncating and rebuilding.
 ///
-/// Walks the same BFS over `Volume::list_directory` as [`scan_volume_via_trait`],
+/// Walks the same BFS over `Volume::list_directory` as [`scan_volume_via_trait`](super::full_scan::scan_volume_via_trait),
 /// with the same round-trip disciplines (cancel, timeout, autoreleasepool,
 /// terminal-disconnect + consecutive-failure backstop). But per listed dir it
 /// DIFFS the live listing against the DB rows ([`reconciler::diff_dir_against_db`],

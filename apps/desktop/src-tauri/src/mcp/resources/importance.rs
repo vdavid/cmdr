@@ -13,7 +13,7 @@
 //! - no query — a usage summary plus a per-volume overview, so an agent's first
 //!   blind read teaches it the syntax.
 //!
-//! Every read goes through [`ImportanceIndex`](cmdr_index::importance::ImportanceIndex)
+//! Every read goes through [`ImportanceIndex`]
 //! (never raw SQLite — the subsystem's consumer-entry-point invariant). The snapshot
 //! functions do the reads (the seam where the data dir and the clock enter); the
 //! `build_*` functions are pure over the snapshot + an injected `now_secs`, so the

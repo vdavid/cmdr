@@ -34,7 +34,7 @@
 //!
 //! ## Where the set lives
 //!
-//! In memory per volume ([`for_volume`]), and on the volume's own index database
+//! In memory per volume (`for_volume`), and on the volume's own index database
 //! as [`COVERED_BRANCHES_KEY`] — index-relative, so a drive that comes back at a
 //! different mount point still finds its branches. "Clear index" deletes the
 //! database, so the branch set goes with the coverage it describes, and a full

@@ -6,8 +6,10 @@
 //! fresh scratch `importance.db`, and prints the row count + file size. Reports
 //! sizes only — never a folder name.
 //!
-//!   cargo run -p index-query --bin importance-measure -- \
-//!     <index.db> <home-or-mount-root> <local|listing-only> <out-importance.db>
+//! ```text
+//! cargo run -p index-query --bin importance-measure -- \
+//!   <index.db> <home-or-mount-root> <local|listing-only> <out-importance.db>
+//! ```
 
 use std::path::PathBuf;
 

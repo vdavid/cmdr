@@ -19,7 +19,7 @@
 //!
 //! ## Lanes
 //!
-//! Each op touches the [`LaneKey`](crate::file_system::volume::LaneKey)s of its
+//! Each op touches the [`LaneKey`]s of its
 //! source and destination volumes (same-volume ops touch one). A lane has
 //! budget 1 in v1: an op runs only when EVERY lane it touches is free, and
 //! reserves all of them atomically. So two MTP ops (same device lane)

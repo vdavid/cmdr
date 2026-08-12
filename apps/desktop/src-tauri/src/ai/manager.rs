@@ -151,7 +151,7 @@ fn current_unix_seconds() -> u64 {
         .as_secs()
 }
 
-/// Resolves the configured AI provider into either a ready-to-use [`AiBackend`] or
+/// Resolves the configured AI provider into either a ready-to-use [`AiBackend`](super::client::AiBackend) or
 /// a reason why one couldn't be built.
 ///
 /// Centralizes the provider-routing logic so callers (`suggestions.rs`,

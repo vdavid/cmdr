@@ -2,7 +2,7 @@
 //! find-similar, and near-duplicate clustering.
 //!
 //! Every one is thin (see [`super`]): resolve the data dir, open the
-//! [`MediaIndex`](cmdr_index::media_index::read::MediaIndex) read API for the volume, and hand
+//! [`MediaIndex`] read API for the volume, and hand
 //! off the query on a blocking worker. They answer from `media.db`, so an offline volume
 //! (a NAS unplugged) still returns results.
 

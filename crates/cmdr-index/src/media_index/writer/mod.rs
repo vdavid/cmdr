@@ -171,7 +171,7 @@ impl MediaWriter {
     /// Spawn the writer thread with its own write connection to `db_path`, serving
     /// `volume_id`'s `media.db`. The DB file and schema must already exist (open the
     /// [`MediaStore`] first). The thread carries `volume_id` so it can maintain the
-    /// per-volume `accounted` aggregate ([`coverage`]) as rows are inserted/deleted.
+    /// per-volume `accounted` aggregate ([`coverage`](super::coverage)) as rows are inserted/deleted.
     ///
     /// [`MediaStore`]: super::store::MediaStore
     pub fn spawn(db_path: &Path, volume_id: &str) -> Result<Self, MediaStoreError> {

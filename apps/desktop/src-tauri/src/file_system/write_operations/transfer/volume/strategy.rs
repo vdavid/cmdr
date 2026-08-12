@@ -78,7 +78,7 @@ const DEST_FOREGROUND_YIELD_HARD_CAP: Duration = Duration::from_secs(1);
 /// The (debounce, min-progress-floor, dest-yield-hard-cap) tuple a freshly-built
 /// `CheckpointStream` uses. Production always returns the named constants. Tests
 /// override all three (debounce ≈ 0, a tiny floor, a short cap) via
-/// [`AutoYieldTuningGuard`] so both the source and destination auto-yield arms are
+/// `AutoYieldTuningGuard` so both the source and destination auto-yield arms are
 /// deterministic without real device latency or megabytes of synthetic data. The
 /// stream construction lives behind `copy_single_path`, so a thread-local override
 /// is how a test reaches it without widening the public copy API.

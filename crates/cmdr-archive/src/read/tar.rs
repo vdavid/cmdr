@@ -14,7 +14,7 @@
 //! - A **compressed tar** (`.tar.gz`/`.xz`/`.bz2`/`.zst`) wraps the whole tar in
 //!   one sequential codec stream with no random access. A single-entry extract
 //!   prefix-decodes from the start to the target member (honest O(prefix) cost);
-//!   a whole-subtree extract uses [`extract_subtree`](TarStore::extract_subtree)
+//!   a whole-subtree extract uses [`stream_subtree`]
 //!   for ONE pass (the O(n²) trap — see [`super::index`]).
 
 use std::collections::HashMap;

@@ -11,7 +11,7 @@
 //! It adapts the runtime's [`AgentChatEvent`] seam: an `unbounded_channel` of runtime
 //! events is forwarded onto the `Channel`, mapped to the wire enum. **No reasoning blob or
 //! provider state ever crosses** — the runtime events already exclude them, and
-//! [`MessageView`](super::MessageView) carries display parts only.
+//! [`MessageView`] carries display parts only.
 //!
 //! ## LLM resolution
 //!

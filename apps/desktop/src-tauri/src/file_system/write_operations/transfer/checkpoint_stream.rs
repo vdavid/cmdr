@@ -7,7 +7,7 @@
 //! callback can't `.await`, so this is what makes a paused copy stop advancing
 //! MID-FILE and keeps a long single-file transfer from starving foreground work.
 //! Full design (pause, foreground auto-yield, byte exactness, cancel-awareness):
-//! [`super::DETAILS.md`] §§ "Pause … chunks", "Foreground auto-yield".
+//! `transfer/DETAILS.md` §§ "Pause … chunks", "Foreground auto-yield".
 
 use std::future::Future;
 use std::pin::Pin;

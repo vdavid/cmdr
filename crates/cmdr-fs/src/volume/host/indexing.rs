@@ -81,7 +81,7 @@ mod recording {
     use super::{IndexNotifier, WatchGap};
     use crate::ignore_poison::IgnorePoison;
 
-    /// An [`IndexNotifier`](super::IndexNotifier) that remembers what it was
+    /// An [`IndexNotifier`] that remembers what it was
     /// told, so a watcher test can prove every exit path reports its gap.
     #[derive(Default)]
     pub struct RecordingIndexNotifier {

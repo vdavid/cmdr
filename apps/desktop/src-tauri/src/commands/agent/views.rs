@@ -327,7 +327,7 @@ pub enum AttachmentKindView {
 /// A file/folder the user attached by reference for a turn (dragged onto the composer,
 /// or "ask about selection"). Structurally path + kind only — the read-only privacy
 /// line means no tool ever reads its contents. Both directions: an input to
-/// [`ask_cmdr_send_message`], and the output of the two attachment-resolving commands.
+/// [`ask_cmdr_send_message`](super::chat::ask_cmdr_send_message), and the output of the two attachment-resolving commands.
 #[derive(Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AttachmentRef {

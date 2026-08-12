@@ -53,7 +53,7 @@ mod recording {
     /// One recorded event: its name, and the properties that rode along.
     pub type RecordedEvent = (String, Vec<(String, String)>);
 
-    /// An [`AnalyticsSink`](super::AnalyticsSink) that remembers what it was
+    /// An [`AnalyticsSink`] that remembers what it was
     /// handed, so a test can assert both that a counter fired and that nothing
     /// identifying rode along with it.
     #[derive(Default)]

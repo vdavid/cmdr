@@ -64,15 +64,15 @@ pub(super) struct PassCoverage {
     pub(super) deferred_on_importance: bool,
 }
 
-/// Resolve a pass's coverage inputs from the user's [`IndexScope`], loading the folder
+/// Resolve a pass's coverage inputs from the user's [`IndexScope`](crate::media_index::gate::IndexScope), loading the folder
 /// scores through `load_scores` only when the scope actually needs them.
 ///
-/// - [`ChosenFolders`](IndexScope::ChosenFolders): override-only coverage (`scores:
+/// - [`ChosenFolders`](crate::media_index::gate::IndexScope::ChosenFolders): override-only coverage (`scores:
 ///   None`), and importance is never READ — it isn't an input to this scope, so a pass
 ///   must not pay for the query, and must NOT mark the volume deferred-on-importance
 ///   (there's no remainder waiting on a recompute; the user asked for exactly their
 ///   folders, and a bridge re-kick would be a pass with nothing new to do).
-/// - [`ByImportance`](IndexScope::ByImportance): the scores, and an unavailable
+/// - [`ByImportance`](crate::media_index::gate::IndexScope::ByImportance): the scores, and an unavailable
 ///   importance store (`None`) means this pass DID defer its gated remainder.
 ///
 /// Both scopes land on the SAME override-only gate when `scores` is `None`, so the
@@ -100,7 +100,7 @@ pub(super) fn pass_coverage(
 /// nothing here needs a host handle. Iterates
 /// [`crate::indexing::lifecycle::state::ready_volumes_with_kind`] and spawns the kind-mapped pass
 /// (Local → local, SMB → network which self-checks opt-in, MTP → never). The
-/// [`PassCoordinator`] folds a kick that races a running pass into one re-run, and
+/// [`PassCoordinator`](super::coordinator::PassCoordinator) folds a kick that races a running pass into one re-run, and
 /// each pass self-gates on the master toggle, so an errant kick while disabled is a
 /// cheap no-op. Unconditional by design: staleness makes a redundant pass a fast
 /// no-op, so there's no need to gate per volume (contrast importance, which gates on

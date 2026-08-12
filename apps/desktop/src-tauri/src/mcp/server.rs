@@ -1,7 +1,7 @@
 //! MCP HTTP server implementation (spec version 2025-11-25).
 //!
 //! Implements the Streamable HTTP transport as defined in:
-//! https://modelcontextprotocol.io/specification/2025-11-25/basic/transports
+//! <https://modelcontextprotocol.io/specification/2025-11-25/basic/transports>
 
 use axum::{
     Json, Router,

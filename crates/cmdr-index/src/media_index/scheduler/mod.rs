@@ -108,12 +108,12 @@ pub struct MediaScheduler {
     backend_factory: BackendFactory,
     /// Where a pass reports progress and its terminal. A no-op sink in unit tests
     /// (constructed via [`MediaScheduler::new`]), so a pass reports nothing;
-    /// production wires the real one in [`start`].
+    /// production wires the real one in [`start`](MediaScheduler::start).
     events: Arc<dyn EventSink>,
     /// Volume ids whose last pass DEFERRED its importance-gated remainder because
     /// importance hadn't scored the volume yet (`folder_scores` was `None`). The
     /// unscored → scored bridge reads and clears this: when importance first
-    /// completes a recompute, [`wire_volume`]'s subscriber re-kicks exactly these
+    /// completes a recompute, [`wire_volume`](lifecycle::wire_volume)'s subscriber re-kicks exactly these
     /// volumes so the deferred images enrich, then clears the flag. Scoped to the
     /// bridge so a normal volume (scored from the start) never re-kicks, and a later
     /// incremental bump doesn't re-walk the index for nothing.
@@ -161,7 +161,7 @@ impl MediaScheduler {
     /// Construct a scheduler wired to `events` (progress + terminal reports) with an
     /// explicit extra-worker `factory` — production's constructor, so parallel workers get
     /// INDEPENDENT real backends (each its own Vision thread), not clones of one. Used by
-    /// [`start`].
+    /// [`start`](MediaScheduler::start).
     fn new_with_events(
         data_dir: PathBuf,
         backend: Arc<dyn VisionBackend>,

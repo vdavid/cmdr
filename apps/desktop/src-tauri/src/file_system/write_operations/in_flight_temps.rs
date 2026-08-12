@@ -7,7 +7,7 @@
 //! - **A process-wide file in the app data dir**, so the answer survives the
 //!   process. An in-memory list dies with a force-quit or a crash — exactly the
 //!   two endings that leave partials — and the directory scan that would
-//!   otherwise find them ([`transfer::volume::cleanup::reap_stale_transfer_temps`])
+//!   otherwise find them (`reap_stale_transfer_temps`)
 //!   only runs when something copies into that same directory, and only for
 //!   leftovers over an hour old. So a quit-orphaned temp could sit there for
 //!   days. [`sweep_persisted_orphans`] clears the recorded ones at the next

@@ -56,8 +56,6 @@ use crate::IndexVolumeKind;
 use crate::importance::read::WeightsChanged;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
-/// Comparing two walks of the same index, for the measurement tools. Nothing in
-/// the app reaches it: the scheduler's own incremental path is `recompute`.
 #[cfg(any(test, feature = "tooling"))]
 mod differential;
 mod recompute;

@@ -149,9 +149,9 @@ fn band_of(exact: bool, prefix: bool) -> MatchQuality {
 /// Root's map is permanently resident and real volumes are big (a measured 158,457
 /// scored folders on a home, 368,043 on a NAS, absolute paths averaging 113 bytes), so
 /// every byte per folder is steady-state cost. Nothing ever ENUMERATES this map —
-/// [`weight_for`](Self::weight_for) does exact lookups and nothing else — so the paths
+/// `weight_for` does exact lookups and nothing else — so the paths
 /// themselves are dead weight once they've been hashed. Storing
-/// [`hash_path`](self::hash_path) in their place leaves a 17-byte table slot (a
+/// [`hash_path`] in their place leaves a 17-byte table slot (a
 /// `(u64, f64)` entry plus its control byte) as the entire per-folder cost:
 /// 58 MB → 8.9 MB on that NAS, 27 MB → 4.5 MB on that home. Guarded by
 /// `memory_tests.rs`.

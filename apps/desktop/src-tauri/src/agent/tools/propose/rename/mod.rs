@@ -13,7 +13,7 @@
 //!   before a single row is staged (scope, validation, the evidence check).
 //! - [`store`]: what a staged proposal IS and how long it lives — the rows, the display
 //!   snapshot, the accepted-preflight handoff, and the TTL'd store.
-//! - [`preflight`]: user-action-time revalidation of the subset the user allows, and the
+//! - [`preflight`](mod@preflight): user-action-time revalidation of the subset the user allows, and the
 //!   fingerprints apply later checks the sources against.
 //! - [`revise`]: the user's own name for one row, replacing the model's without re-running the
 //!   plan boundary's whole-plan gates.

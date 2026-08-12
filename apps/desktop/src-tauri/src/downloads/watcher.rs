@@ -10,7 +10,7 @@
 //!
 //! Tied to the FDA gate (`crate::fda_gate::is_fda_pending_runtime`). At
 //! startup and on every main-window focus transition, `lib.rs` calls
-//! [`refresh_runtime`] which starts the watcher when the gate is open and
+//! [`refresh_runtime`](super::runtime::refresh_runtime) which starts the watcher when the gate is open and
 //! stops it when the gate closes. The watcher holds no FDA-protected state
 //! beyond its `notify` handle; dropping the handle releases the OS watch.
 //!

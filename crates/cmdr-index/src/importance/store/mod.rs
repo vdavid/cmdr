@@ -23,7 +23,7 @@
 //!
 //! Keyed by the folded path, and beyond the scalar `score` each row persists the
 //! verbatim `path` plus the serialized
-//! [`FolderSignals`] it was computed from, so a future consumer can re-weight the
+//! [`FolderSignals`](crate::importance::FolderSignals) it was computed from, so a future consumer can re-weight the
 //! same signals under its own profile without a rescan. Every row carries the
 //! **as-of scan generation** it was computed at, so a consumer can tell how stale
 //! a weight is (what makes an offline-unmounted read possible). The
@@ -56,7 +56,7 @@ pub(crate) use connection::open_write_connection;
 /// DB (full of floored rows and verbose JSON) recreates fresh on the next scan.
 ///
 /// `3`: folded-key primary key — the row identity is now the precomputed
-/// [`normalize_for_comparison`](crate::indexing::store::normalize_for_comparison)
+/// [`normalize_for_comparison`]
 /// fold of the path (`path_folded`, a BINARY PK), with the verbatim `path` kept as a
 /// plain column for return values. The `platform_case`-collated PK made the
 /// incremental subtree-clear DELETE full-scan the table (a custom collation defeats

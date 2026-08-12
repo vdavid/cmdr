@@ -1,7 +1,7 @@
 //! Compress: create a NEW zip at a target and pack the sources into it.
 //!
 //! Mechanically this IS an archive edit — seed a valid empty zip at the
-//! destination, then reuse [`route_archive_copy_into`] (`is_move = false`) to add
+//! destination, then reuse [`route_archive_copy_into`](super::copy_into::route_archive_copy_into) (`is_move = false`) to add
 //! the sources as one changeset. So compress inherits everything the copy-into
 //! flow already earns: the scan, plan-inside-the-op, the mutator's temp+rename
 //! durability, progress/ETA, cancel, and lane admission.
@@ -141,7 +141,7 @@ impl Drop for SeedTempGuard {
 
 /// Compresses `source_paths` (relative to `source_volume`'s root) into a NEW zip
 /// at `dest_zip_full_path`: seed a valid empty archive, then delegate to
-/// [`route_archive_copy_into`] to add the sources as one changeset. Reuses
+/// [`route_archive_copy_into`](super::copy_into::route_archive_copy_into) to add the sources as one changeset. Reuses
 /// `WriteOperationType::ArchiveEdit` — compress has no distinct backend op type;
 /// its identity lives in the frontend.
 #[allow(

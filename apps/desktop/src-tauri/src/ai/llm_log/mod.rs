@@ -19,7 +19,7 @@
 //!
 //! ## Capture fidelity
 //!
-//! v1 logs the serialized genai [`ChatRequest`] as the request body, marked
+//! v1 logs the serialized genai [`ChatRequest`](genai::chat::ChatRequest) as the request body, marked
 //! `fidelity: "request_struct"`. The byte-identical per-adapter wire payload lives behind
 //! genai's `AdapterDispatcher::to_web_request_data`, whose types
 //! (`AdapterDispatcher`/`WebRequestData`/`ServiceType`/`ChatOptionsSet`) are re-exported

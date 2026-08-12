@@ -9,8 +9,6 @@ use std::collections::{HashMap, VecDeque};
 use std::path::Path;
 use std::sync::{Arc, LazyLock, Mutex, RwLock};
 
-/// Archive routing (`resolve`, `.zip`-boundary predicates, the archive LRU, and
-/// [`ResolvedVolume`]) lives in a second `impl VolumeManager` block here.
 mod archive_routing;
 
 /// The mount-root set an ID owns, and the promotion rules over it.

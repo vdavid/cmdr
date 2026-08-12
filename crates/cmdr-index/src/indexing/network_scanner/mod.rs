@@ -31,7 +31,7 @@
 //! TERMINAL: the walk stops immediately rather than churning the still-queued
 //! dirs into silently-empty rows (the reported prod bug). Before returning the
 //! typed error, it runs the partial-preserving write sequence
-//! ([`finish_partial_scan`]: flush + `MarkDirsListed` + `ComputeAllAggregates`)
+//! (`finish_partial_scan`: flush + `MarkDirsListed` + `ComputeAllAggregates`)
 //! so the kept partial is self-describing — scanned subtrees roll up to
 //! `min_subtree_epoch > 0` (exact, stale once the epoch is bumped), unscanned
 //! ones stay `0` (`—`/`≥`). The completion handler (`lifecycle/manager.rs`) then keeps the
@@ -55,7 +55,6 @@ mod system_dirs;
 
 /// The scoped, add-only walk a search drives.
 mod cover_scan;
-/// The destructive rebuild.
 mod full_scan;
 /// The non-destructive diff-and-patch.
 mod reconcile_scan;

@@ -318,7 +318,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
 ///
 /// Grouped because that is exactly the repeatable part: no row has gone out, so a
 /// run that finds it has nothing to say can do all of it again a moment later
-/// without saying anything twice ([`another_walk_owns_the_whole_answer`]).
+/// without saying anything twice (`another_walk_owns_the_whole_answer`).
 struct Groundwork {
     /// What the index can't answer for, and which state of it that describes.
     question: CoverageQuestion,

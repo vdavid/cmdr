@@ -5,7 +5,7 @@
 //! - [`vision::VisionOcrBackend`] (macOS): real OCR via `VNRecognizeTextRequest` over
 //!   a downscaled in-memory ImageIO decode, on a dedicated 8 MB-stack OS thread inside
 //!   `objc2::rc::autoreleasepool` — production selects it in `scheduler::start`.
-//! - [`fake::FakeVisionBackend`]: deterministic, zero-FFI, injected by every test (and
+//! - `fake::FakeVisionBackend`: deterministic, zero-FFI, injected by every test (and
 //!   the production fallback off-macOS, where Vision doesn't exist).
 //!
 //! Nothing above the seam knows which backend it holds.
@@ -24,9 +24,6 @@
 #[cfg(any(test, not(target_os = "macos")))]
 pub(crate) mod fake;
 
-/// The real macOS Vision OCR backend. Only compiled on macOS (Vision/ImageIO are
-/// Apple frameworks); other platforms fall back to [`fake::FakeVisionBackend`] in the
-/// scheduler.
 #[cfg(target_os = "macos")]
 pub mod vision;
 
@@ -153,7 +150,7 @@ pub trait VisionBackend: Send + Sync {
     /// `media_status` row (in the `engine_version` column): the OCR engine, the tag
     /// taxonomy, and the feature-print revision folded together. When ANY component
     /// changes (an OS upgrade bumps the OCR engine, the tag taxonomy, or the
-    /// feature-print model) a stored row goes stale and re-runs [`analyze`], even
+    /// feature-print model) a stored row goes stale and re-runs [`analyze`](VisionBackend::analyze), even
     /// though `(path, mtime, size)` is unchanged (data-COVERAGE; the derived data is
     /// disposable). One decode produces all three outputs, so re-running the whole
     /// analysis on any component change costs nothing extra. Default folds the two

@@ -102,7 +102,7 @@ mod in_memory {
     use super::{CredentialStore, CredentialsNotStored, StoredCredentials};
     use crate::ignore_poison::IgnorePoison;
 
-    /// A [`CredentialStore`](super::CredentialStore) in a `HashMap`, so a
+    /// A [`CredentialStore`] in a `HashMap`, so a
     /// reconnect test can prove that a fresh session re-read the store rather
     /// than reusing the password it started with.
     #[derive(Default)]

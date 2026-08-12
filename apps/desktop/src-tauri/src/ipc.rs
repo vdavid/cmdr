@@ -20,7 +20,7 @@
 //! - [`builder()`] returns a [`tauri_specta::Builder`] holding every command and event the app
 //!   exposes; [`run`](crate::run) attaches it to `tauri::Builder::default()` via
 //!   `.invoke_handler(builder.invoke_handler())` and `builder.mount_events(app)` in setup.
-//! - In debug builds we call [`builder().export(...)`] to regenerate
+//! - In debug builds we call `builder().export(...)` to regenerate
 //!   `apps/desktop/src/lib/ipc/bindings.ts` on each launch (that's the only place the bindings are
 //!   written to disk; everything else just imports them).
 //!

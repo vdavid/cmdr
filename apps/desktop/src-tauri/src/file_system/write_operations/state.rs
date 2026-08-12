@@ -79,7 +79,7 @@ pub struct WriteOperationState {
     /// call.
     pub backend_cancel: CancellationToken,
     /// TIER 2: stop WAITING for in-flight backend I/O, rather than asking it to
-    /// stop. Fired only by [`abort_write_operation`] / [`abort_all_write_operations`],
+    /// stop. Fired only by `abort_write_operation` / [`abort_all_write_operations`],
     /// which today means the quit deadline and nothing else.
     ///
     /// [`backend_cancel`](Self::backend_cancel) above is tier 1 and stays the

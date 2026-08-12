@@ -132,7 +132,7 @@ pub(crate) fn exclusion_scope_for_volume(volume_id: &str) -> ExclusionScope {
 ///   `None`). Firmlink normalization is local-only and must not touch virtual
 ///   SMB/MTP paths.
 /// - A non-root volume with a known `mount_root` (SMB): strip the mount root to a
-///   mount-relative path via the shared [`smb_watch::index_relative_path`]. A
+///   mount-relative path via the shared [`index_relative_path`](crate::indexing::transports::smb::watch::index_relative_path). A
 ///   path that isn't under the mount root yields `None` (drop it rather than
 ///   mis-root it at `ROOT_ID`).
 fn index_read_path_pure(volume_id: &str, normalized_abs: &str, mount_root: Option<&str>) -> Option<String> {

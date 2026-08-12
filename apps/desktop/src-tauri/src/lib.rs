@@ -139,8 +139,6 @@ mod permissions_linux;
 mod platform;
 pub mod priority;
 mod quick_look;
-/// The quit gate: the backend owns the decision to exit, and the countdown that
-/// backs it. See `quit/CLAUDE.md`.
 mod quit;
 mod redact;
 #[cfg(target_os = "macos")]

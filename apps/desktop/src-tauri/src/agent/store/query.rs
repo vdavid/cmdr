@@ -1,7 +1,7 @@
 //! The read/write query layer over `main.db`: conversations, messages, the FTS5
 //! cross-thread search (with its input sanitizer), and the cost meter.
 //!
-//! Functions take a [`Connection`](rusqlite::Connection); the caller owns its lifetime
+//! Functions take a [`Connection`]; the caller owns its lifetime
 //! (the chat runtime holds a write connection; reads can use a short-lived read-only
 //! one). Writes that must stay consistent (a message insert bumps its conversation's
 //! `updated_at`, and the per-conversation `seq` is derived) run inside a transaction.

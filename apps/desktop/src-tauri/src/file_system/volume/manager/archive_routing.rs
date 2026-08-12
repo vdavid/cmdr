@@ -1,4 +1,4 @@
-//! Archive routing for the [`VolumeManager`](super::VolumeManager).
+//! Archive routing for the [`VolumeManager`].
 //!
 //! The plain registry (hold volumes by ID) lives in the parent `manager` module.
 //! This module is the other half: routing a path that crosses a `.zip` boundary

@@ -1,7 +1,7 @@
 //! MCP protocol message types and handling (spec version 2025-11-25).
 //!
 //! Implements JSON-RPC 2.0 message format as required by MCP.
-//! See: https://modelcontextprotocol.io/specification/2025-11-25
+//! See: <https://modelcontextprotocol.io/specification/2025-11-25>
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

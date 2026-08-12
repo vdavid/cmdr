@@ -59,7 +59,7 @@ mod recording {
     use super::{VolumeConnection, VolumeEventSink};
     use crate::ignore_poison::IgnorePoison;
 
-    /// A [`VolumeEventSink`](super::VolumeEventSink) that remembers every
+    /// A [`VolumeEventSink`] that remembers every
     /// transition, so a reconnect test can assert on the sequence a user would
     /// have seen.
     #[derive(Default)]

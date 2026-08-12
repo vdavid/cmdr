@@ -26,7 +26,7 @@
 //! - [`breadcrumbs`]: bounded ring buffer of recent triage events.
 //!
 //! `mod.rs` keeps the public types ([`BundleKind`], [`BundleScope`], [`BundleManifest`],
-//! [`ResolvedSettings`], [`BuiltBundle`], [`UploadResult`]), the [`log_error!`] macro,
+//! [`ResolvedSettings`], [`BuiltBundle`], [`UploadResult`]), the [`log_error!`](crate::log_error) macro,
 //! [`upload`], [`generate_short_id`], [`save_bundle_to_disk`], plus the cached-settings
 //! and log-level-snapshot helpers shared between the two pipelines.
 
@@ -488,7 +488,7 @@ pub(crate) fn build_log_level_snapshot() -> LogLevelSnapshot {
 }
 
 /// Process-global capture of the stdout chain's startup default + per-module overrides.
-/// Populated by [`logging::dispatch::init`] via [`record`]; read by the bundle builder.
+/// Populated by [`logging::dispatch::init`] via [`record`](log_level_overrides::record); read by the bundle builder.
 pub mod log_level_overrides {
     use std::sync::OnceLock;
 

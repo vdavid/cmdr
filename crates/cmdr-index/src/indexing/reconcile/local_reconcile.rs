@@ -37,7 +37,7 @@
 //! ## Integration shape
 //!
 //! [`start_local_reconcile`] returns the SAME `(ScanHandle, JoinHandle<Result<
-//! ScanSummary, ScanError>>)` shape as [`scanner::scan_volume`] and runs the
+//! ScanSummary, ScanError>>)` shape as [`scan_volume`](crate::indexing::scanner::scan_volume) and runs the
 //! synchronous walk on a `std::thread` (NOT a tokio task). `manager::start_scan`
 //! swaps it in for the `scanner::scan_volume` call on the reconcile branch, so the
 //! existing completion handler — FSEvents drain → replay → `run_live_event_loop` —
@@ -218,7 +218,7 @@ struct WalkTools {
 
 /// Start a LOCAL full-tree reconcile on a background `std::thread`.
 ///
-/// Mirrors [`scanner::scan_volume`]'s return shape so `manager::start_scan`'s
+/// Mirrors [`scan_volume`](crate::indexing::scanner::scan_volume)'s return shape so `manager::start_scan`'s
 /// completion handler is reused unchanged: a [`ScanHandle`] for progress +
 /// cancellation, and a `JoinHandle` the handler joins for the [`ScanSummary`].
 pub(crate) fn start_local_reconcile(

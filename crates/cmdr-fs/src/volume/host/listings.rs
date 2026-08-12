@@ -106,7 +106,7 @@ mod recording {
     use super::{DirectoryChange, FileEntry, Future, ListingHost, Path, Pin};
     use crate::ignore_poison::IgnorePoison;
 
-    /// A [`ListingHost`](super::ListingHost) that remembers what it was told, so
+    /// A [`ListingHost`] that remembers what it was told, so
     /// a backend's test can assert on the pane updates it produced.
     ///
     /// The call COUNT is the point as much as the contents: it's the instrument

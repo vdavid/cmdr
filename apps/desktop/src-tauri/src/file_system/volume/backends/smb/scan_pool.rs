@@ -17,7 +17,7 @@
 //! # Shape
 //!
 //! - Opened LAZILY by [`SmbVolume::open_scan_pool`] when a scan starts
-//!   ([`Volume::begin_scan_session`](crate::file_system::volume::Volume::begin_scan_session)),
+//!   ([`Volume::begin_scan_session`]),
 //!   closed by [`SmbVolume::close_scan_pool`] when it ends. Steady-state
 //!   footprint between scans is unchanged.
 //! - The scanner is unchanged and transport-agnostic: it keeps calling

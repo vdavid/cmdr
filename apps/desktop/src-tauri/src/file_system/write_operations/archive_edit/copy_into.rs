@@ -90,7 +90,7 @@ pub(crate) async fn route_archive_copy_into(
     .await
 }
 
-/// Like [`route_archive_copy_into`] but with an explicit [`ArchiveProvenance`], so
+/// Like [`route_archive_copy_into`] but with an explicit [`ArchiveProvenance`](super::super::journal::ArchiveProvenance), so
 /// the compress driver can supply `subkind = compress` + the net-new flag the
 /// journal can't derive (Finding 3).
 #[allow(

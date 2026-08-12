@@ -881,7 +881,7 @@ pub(super) fn volume_read_stream_to_chunk_stream<'a>(
 
 /// Bytes-per-window for a [`MtpReadStream`]. Production uses
 /// [`crate::mtp::connection::MTP_READ_WINDOW`]; tests shrink it via
-/// [`test_window`] so a small fixture spans multiple windows.
+/// `test_window` so a small fixture spans multiple windows.
 fn mtp_read_window() -> u32 {
     #[cfg(test)]
     {

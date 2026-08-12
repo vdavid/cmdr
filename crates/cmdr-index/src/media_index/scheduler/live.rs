@@ -4,7 +4,7 @@
 //! bridge — so a NEW or MODIFIED image waits for the next completed scan, and a DELETED
 //! image's rows linger until a later pass GCs them. This module closes that gap by
 //! subscribing to the SAME live dir-changed signal importance's incremental rescore
-//! consumes ([`subscribe_dirs_changed`]) and running a SCOPED tick over just the touched
+//! consumes ([`subscribe_dirs_changed`](crate::indexing::lifecycle::lifecycle_bus::subscribe_dirs_changed)) and running a SCOPED tick over just the touched
 //! directories, mirroring importance's proven `start_incremental` pattern (throttled,
 //! coalesced, subtree-scoped) rather than inventing a new one.
 //!
@@ -13,7 +13,7 @@
 //! - **Walks only the touched dirs** ([`walk_image_entries_in_dirs`]), sibling-aware per
 //!   directory, never the whole index.
 //! - **Enriches the stale, covered images** through the SAME per-image loop as the full
-//!   pass ([`enrich_and_gc`]), honoring the coverage gates, the live exclusion veto, and
+//!   pass (`enrich_and_gc`), honoring the coverage gates, the live exclusion veto, and
 //!   the `(path, mtime, size)` + stamp staleness key — so a modified image re-enriches
 //!   and an untouched one is a no-op.
 //! - **GCs deletions SCOPED to the touched dirs** ([`GcScope::TouchedDirs`]). An index
@@ -24,7 +24,7 @@
 //!
 //! ## The guardrails
 //!
-//! - **Local only.** Wired from [`super::wire_volume`] after its kind early-returns, for
+//! - **Local only.** Wired from [`wire_volume`](super::lifecycle::wire_volume) after its kind early-returns, for
 //!   `PassKind::Local` only: the tick treats stored paths as OS paths (no mount mapping),
 //!   and SMB never publishes dir-changed batches (its live path only enqueues index
 //!   writes), so wiring it for network would be dead. MTP is never background-swept.

@@ -127,7 +127,7 @@ impl EventDebouncer {
     /// can't swallow another folder's. [`clear`](Self::clear) drops every key
     /// belonging to a device.
     ///
-    /// Returns `true` for the first caller after each [`release_trailing`], and
+    /// Returns `true` for the first caller after each [`release_trailing`](Self::release_trailing), and
     /// `false` while a trailing emit is already pending.
     ///
     /// **Without the claim this is a livelock, not just waste.** Each suppressed

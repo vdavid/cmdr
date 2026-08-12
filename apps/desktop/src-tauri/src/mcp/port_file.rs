@@ -28,7 +28,7 @@ use std::process;
 ///
 /// Production ships only the writer: the FE reads the live port via the `get_mcp_port`
 /// IPC, and external readers (`scripts/mcp-call.sh`, E2E fixtures) parse the file in
-/// shell. The Rust reader ([`read_port_file`]) and its `InvalidContent` variant are
+/// shell. The Rust reader (`read_port_file`) and its `InvalidContent` variant are
 /// `#[cfg(test)]` — they verify the write path in unit tests, not in the shipping binary.
 #[derive(Debug)]
 pub enum PortDiscoveryError {

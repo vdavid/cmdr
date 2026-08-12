@@ -13,7 +13,7 @@
 //! ❌ Don't make this an unconditional tick, and ❌ don't shrink the batch to the
 //! interval's worth of rows: the channel behind it is bounded on purpose
 //! (Decision 3), and a per-entry crossing is what that bound exists to prevent.
-//! The 100 ms matches the rate the search's own [`ResultStream`] emits at
+//! The 100 ms matches the rate the search's own `ResultStream` emits at
 //! (`apps/desktop/src-tauri/src/search/live.rs`: 100 rows or 100 ms), so the whole
 //! pipe has one cadence rather than two that beat against each other.
 

@@ -15,7 +15,7 @@
 //! This module has NO AppKit and no Tauri dependency — it's plain data folding,
 //! unit-tested in isolation. The delegate (in [`super::promises`]) owns the
 //! `Send` storage that collects [`ItemOutcome`]s across the queue threads; this
-//! module just summarizes them. [`super::promises::SessionCompleteEvent`] maps a
+//! module just summarizes them. [`SessionCompleteEvent`](crate::system_events::SessionCompleteEvent) maps a
 //! [`SessionSummary`] onto the camelCase wire payload the FE toast bridge reads.
 
 /// The outcome of fulfilling one top-level dragged item.
@@ -32,7 +32,7 @@ pub enum ItemOutcome {
 
 /// Aggregate outcome of a whole drag session. Folded from per-item outcomes at
 /// the session-drain point, then mapped onto
-/// [`super::promises::SessionCompleteEvent`] (the camelCase wire payload).
+/// [`SessionCompleteEvent`](crate::system_events::SessionCompleteEvent) (the camelCase wire payload).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionSummary {
     /// Top-level files that landed successfully.

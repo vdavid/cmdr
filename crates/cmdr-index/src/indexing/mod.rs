@@ -18,7 +18,6 @@
 // the curated public item surface below, never a module alias that would hide where code lives.
 pub(crate) mod aggregator;
 pub(crate) mod events;
-/// The public API: the [`Index`] handle and everything you can ask it.
 pub mod handle;
 /// What the index asks its host for, as traits and values a host implements.
 pub mod host;

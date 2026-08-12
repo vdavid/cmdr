@@ -3,7 +3,7 @@
 //! Takes an `&SearchIndex` + `&SearchQuery`, scans in-memory with rayon, and returns results.
 //!
 //! The per-entry predicates (name pattern, type, size, date) are NOT here: they're a
-//! [`CompiledQuery`](super::matcher::CompiledQuery), so a live walk over unindexed
+//! [`CompiledQuery`], so a live walk over unindexed
 //! ground evaluates the same rules this scan does. What stays here is arena-shaped:
 //! the scope filter's ancestor walk, ranking, and path reconstruction.
 
@@ -519,7 +519,7 @@ pub(crate) fn reconstruct_path_from_index(index: &SearchIndex, entry_id: i64) ->
 /// The ranking blend needs a folder's importance weight, and a weight lookup is a
 /// hash lookup — the path `String` [`reconstruct_path_from_index`] would build exists
 /// only to be hashed and dropped. A broad query ranks millions of candidates, so this
-/// walks the same parent chain and streams the bytes into a [`PathHasher`] instead.
+/// walks the same parent chain and streams the bytes into a [`PathHasher`](super::ranking::PathHasher) instead.
 /// Byte-identical to hashing the reconstructed path (pinned by
 /// `streamed_hash_matches_whole_path_hash`).
 pub(crate) fn hash_path_from_index(index: &SearchIndex, entry_id: i64) -> u64 {

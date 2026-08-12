@@ -13,7 +13,7 @@
 //!   watcher can drop its own events. Bounded with FIFO eviction at 1000
 //!   entries.
 //! - [`LatestRing`] keeps the last ~10 observed downloads in insertion
-//!   order so [`go_to_latest_download`] returns the latest without a
+//!   order so [`go_to_latest_download`](commands::go_to_latest_download) returns the latest without a
 //!   directory scan.
 //! - [`DownloadsWatcher`] glues these to a `notify-debouncer-full` handle
 //!   and an `EventSink` (production: `AppHandle::emit`; tests: mpsc).
