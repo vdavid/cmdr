@@ -25,8 +25,7 @@ Runner architecture: `../CLAUDE.md`.
   from `inputs.go` and be conservative: too-wide costs cache speed, too-narrow costs correctness. Don't list the
   auto-added globals (`.mise.toml`, `scripts/check/**`).
 - **Wire every check into CI** (a step in `.github/workflows/ci.yml` / `slow-checks.yml`, or a `NotInCI` reason).
-  `ci-coverage` enforces it both ways: neither invoked nor excused fails, and a stale excuse on an invoked check fails
-  too. No "registered but runs nowhere" state.
+  `ci-coverage` enforces it both ways, so there's no "registered but runs nowhere" state.
 - **Length-based truncation is forbidden.** If 200 tests fail, all 200 panic bodies pass through. Filter by structure
   (section delimiters, line-anchored regexes), never by line count. DETAILS.md §§ "E2E failure output", "cargo test
   output".
@@ -47,8 +46,8 @@ Runner architecture: `../CLAUDE.md`.
 - **Wire allowlist staleness from day one.** Dead entries auto-remove or fail; orphaned opt-out comments fail. Reuse
   `directiveTracker` / `writeJSONAllowlist`. Never add or raise an entry without David's OK.
 - **Error output uses `indentOutput()`**: `fmt.Errorf("check failed\n%s", indentOutput(output))`. Success messages carry
-  stats ("12 tests passed"), not a generic "OK". Return `Skipped(reason)` when a check can't run, `SuccessWithChanges`
-  when it made local fixes (CI must still error on the same drift).
+  stats ("12 tests passed"), not "OK". Return `Skipped(reason)` when a check can't run, `SuccessWithChanges` when it
+  made local fixes (CI must still error on the same drift).
 - **`svelte-tests` coverage runs in a per-invocation temp `reportsDirectory`** (via `VITEST_COVERAGE_DIR`): a fixed path
   lets concurrent runs clobber each other's in-flight v8 worker files (`ENOENT`). DETAILS.md § "svelte-tests coverage
   isolation".
