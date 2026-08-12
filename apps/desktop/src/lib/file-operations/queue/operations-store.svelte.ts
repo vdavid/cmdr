@@ -6,8 +6,8 @@
  *    status). This decides which rows exist and each row's status. It does NOT
  *    carry 200 ms progress, so it stays cheap.
  *  - `write-progress`: the existing per-file progress stream, keyed by
- *    `operationId`. This drives the live per-row bars / ETA. Progress for an op
- *    no longer in the snapshot is dropped.
+ *    `operationId`. This drives the live per-row bars. Progress for an op no
+ *    longer in the snapshot is dropped.
  *
  * A row is `OperationSnapshot` (the membership/status fact) plus the latest
  * `WriteProgressEvent` for that op (or `null` before the first tick). The window
@@ -48,8 +48,8 @@ const log = getAppLogger('queue')
  *  the latest live progress (null until the first `write-progress` tick).
  *
  *  The smoothed ETA and the scan rates are NOT here: a view reads those from the
- *  operation's session (`useOperationSession`), which owns the one estimator per
- *  operation per window. */
+ *  operation's session (`bindOperationSession`), which owns the one estimator
+ *  per operation per window. */
 export interface OperationRow {
   snapshot: OperationSnapshot
   progress: WriteProgressEvent | null
