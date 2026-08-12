@@ -32,6 +32,9 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 - `cargo-lane-feature-thrash.md` — what it cost when the cargo check lanes asked cargo different questions about one
   `target/` (20-100 s of rebuild per flip), the before/after of aligning them, and the two measurements that ruled out
   splitting the Rust test lane per package.
+- `frontend-lane-cache-partitioning.md` — what the 21 checks on `svelteInputs` cost (59.6 h of a 24-day window), what
+  excluding the colocated agent docs bought (41.3% → 35.0% of commits), the isolated Vitest timings behind it, and the
+  three independent reasons a per-area split of `svelte-tests` was rejected.
 
 **Load-bearing as the input to a job that hasn't been done yet:**
 

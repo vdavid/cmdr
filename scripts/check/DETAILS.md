@@ -369,11 +369,18 @@ checks' fingerprints — correct and free, since fingerprinting is per-check at 
 matched — including out of the GlobalInputs the check carries implicitly. `matchesAny` gives a veto priority over every
 include, so appending a pattern can never quietly re-include something an exclusion took out. This is the one construct
 that can make an input set too NARROW, which is the failure mode that ships a regression, so each one names files
-nothing in the check's pipeline reads and carries the reasoning where it's declared. The exclusions today are
-`rustInputs`' `!**/CLAUDE.md` / `!**/DETAILS.md`: 206 agent docs sit inside the Rust trees and get edited on nearly
-every session by house rule, and no Rust lane reads one (`TestRustInputsCoverEveryEmbeddedFile` proves no `include_str!`
-does, and nextest runs no doctests). Over 24 days of commits that took the Rust lanes from 62% of commits to 54%.
-`ci-coverage` rule 4 validates an exclusion's static prefix the same as an include's, so a stale one still fails.
+nothing in the check's pipeline reads and carries the reasoning where it's declared.
+
+The only exclusion is `agentDocExclusions` (`!**/CLAUDE.md` / `!**/DETAILS.md`), carried by `rustInputs` and
+`svelteInputs`. Roughly 400 agent docs sit inside those trees and get edited on nearly every session by house rule, and
+no code lane reads one: `TestRustInputsCoverEveryEmbeddedFile` proves no `include_str!` reaches a `.md`, nextest runs no
+doctests, and `TestNoFrontendSourceLoadsAgentDocs` proves no frontend module imports one (Vite's `./X.md?raw` is the
+form that would). The doc-scanning lanes take `wholeRepoInputs` and still see every edit.
+`TestInputSetsExcludeOnlyAgentDocs` fails on any other `!` entry, in any shared set. Over the 1,439 commits of
+2026-07-19..2026-08-12 the veto took the Rust lanes from 62% of commits to 54% and the 21 frontend lanes from 41.3% to
+35.0%; `docs/notes/frontend-lane-cache-partitioning.md` has the frontend measurements and why a per-area split of
+`svelte-tests` is not the next step. `ci-coverage` rule 4 validates an exclusion's static prefix the same as an
+include's, so a stale one still fails.
 
 **What's cached:** only `StatusOK` (not warn) results. Failures, warns, and skips always re-run AND drop any stale cache
 entry. Warns aren't cached because warn-only checks are cheap and their messages are the product, not a verdict.

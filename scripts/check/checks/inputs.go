@@ -17,10 +17,33 @@ package checks
 // one names files nothing in the check's pipeline reads and carries the reasoning
 // at its declaration site.
 
+// agentDocExclusions blinds a CODE lane to the colocated agent docs living in its
+// tree. House rule puts a `CLAUDE.md` + `DETAILS.md` pair beside every code area
+// and has them updated on nearly every session, so without this veto a docs-only
+// commit re-runs whole test suites against unchanged code. No lane that uses it
+// reads one: no `include_str!` reaches a `.md` (`TestRustInputsCoverEveryEmbeddedFile`),
+// nextest runs no doctests, no frontend module imports one
+// (`TestNoFrontendSourceLoadsAgentDocs`), and every scanner parses source files.
+//
+// The veto spans the union with GlobalInputs, so it also drops
+// `scripts/check/**`'s own `CLAUDE.md` / `DETAILS.md` from those lanes'
+// fingerprints. Same reasoning: the runner's docs don't change what a lane
+// enforces. The doc-scanning lanes (`claude-md-length`, `docs-reachable`, …) take
+// `wholeRepoInputs` and are unaffected, which is the whole point of scoping the
+// veto to code lanes.
+//
+// Measured over the 1,439 commits of 2026-07-19..2026-08-12: the Rust lanes went
+// from 62% of commits to 54%, the frontend lanes from 41.3% to 35.0% (a 15.3%
+// relative cut across 21 checks that cost 59.6 h of the 24-day window).
+var agentDocExclusions = []string{
+	"!**/CLAUDE.md",
+	"!**/DETAILS.md",
+}
+
 // rustInputs mirrors ci.yml's `rust` filter: everything the desktop Rust checks
 // compile or read. The smb-servers dir is in here because the SMB integration
 // tests run against those container configs.
-var rustInputs = []string{
+var rustInputs = inputs([]string{
 	"apps/desktop/src-tauri/**",
 	"apps/desktop/test/smb-servers/**",
 	"crates/**",
@@ -39,24 +62,11 @@ var rustInputs = []string{
 	// test parses the real thing, so it's a compile-time source like any `.rs`.
 	// `TestRustInputsCoverEveryEmbeddedFile` finds the next file that becomes one.
 	"CHANGELOG.md",
-	// The agent docs colocated with the Rust trees (206 files, edited on nearly
-	// every session by house rule). Nothing in a Rust lane reads them: no
-	// `include_str!` reaches one (same test), nextest doesn't run doctests, and
-	// the scanners parse `.rs`. Leaving them in made a docs-only pass re-run the
-	// whole ~5,400-test suite. Measured over 24 days of commits: 62% of commits
-	// touched this set before, 54% after.
-	//
-	// The veto spans the union with GlobalInputs, so this also drops
-	// `scripts/check/**`'s own `CLAUDE.md` / `DETAILS.md` from every Rust lane's
-	// fingerprint. That's the same reasoning: the runner's docs don't change what
-	// a Rust lane enforces.
-	"!**/CLAUDE.md",
-	"!**/DETAILS.md",
-}
+}, agentDocExclusions)
 
 // svelteInputs mirrors ci.yml's `svelte` filter: the desktop frontend plus the
 // configs and shared test/plugin dirs ESLint, Vitest, and svelte-check read.
-var svelteInputs = []string{
+var svelteInputs = inputs([]string{
 	"apps/desktop/src/**",
 	"apps/desktop/static/**",
 	"apps/desktop/test/**",
@@ -72,7 +82,7 @@ var svelteInputs = []string{
 	"apps/desktop/knip.json",
 	"apps/desktop/.stylelintrc.mjs",
 	"pnpm-lock.yaml",
-}
+}, agentDocExclusions)
 
 // desktopAppInputs covers the whole desktop app (frontend + Rust workspace),
 // used by the E2E checks that build the entire binary. Mirrors ci.yml's

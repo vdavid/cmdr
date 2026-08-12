@@ -36,8 +36,10 @@ diagram, CLI options, freestyle.sh execution, and decisions: `DETAILS.md`.
   command, so those lanes are serial anyway; declaring it stops a blocked one from sitting on 6-8 CPU weight.
   `DETAILS.md` § "Exclusive resources".
 - **Every host cargo lane asks cargo the SAME question** (`HostCargoLaneArgs`); own flags cost 20-100 s of rebuild per
-  flip. An `!`-prefixed `Inputs` entry EXCLUDES paths, the only way to blind a check to its own sources.
-  `checks/DETAILS.md` § "One feature set across the cargo lanes"; `DETAILS.md` § "Exclusions".
+  flip. `checks/DETAILS.md` § "One feature set across the cargo lanes".
+- **The Rust and frontend lanes are blind to `CLAUDE.md` / `DETAILS.md`** (`agentDocExclusions`), so a docs-only edit is
+  a cache hit, not a suite re-run. An `!`-prefixed `Inputs` entry is the only way to narrow a set, and the only one
+  allowed; `TestInputSetsExcludeOnlyAgentDocs` rejects any other. `DETAILS.md` § "Exclusions".
 - **Lane flags:** `--only-slow` needs a ~20 min timeout (1,200,000 ms), since E2E and `rust-tests-linux` far outrun the
   default suite; `--fast` errors out combined with `--include-slow` / `--only-slow`. Named checks bypass lane filters.
 - **Concurrent SMB-touching runs across worktrees coexist** via per-run machine-wide `smblease` leases on the shared
