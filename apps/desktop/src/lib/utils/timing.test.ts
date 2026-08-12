@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { withTimeout, createDebounce, createThrottle, waitForNextPaint } from './timing'
+import { withTimeout, createCoalesced, createDebounce, createThrottle, waitForNextPaint } from './timing'
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -203,5 +203,100 @@ describe('createThrottle', () => {
     // Should fire at most ~3-4 times (immediate + trailing calls), not 10
     expect(fn.mock.calls.length).toBeGreaterThanOrEqual(2)
     expect(fn.mock.calls.length).toBeLessThanOrEqual(5)
+  })
+})
+
+describe('createCoalesced', () => {
+  /** A run whose completion the test controls, so "in flight" is a real state. */
+  function deferredRunner() {
+    const calls: string[][] = []
+    const resolvers: (() => void)[] = []
+    const runner = createCoalesced(async (paths: string[]) => {
+      calls.push(paths)
+      await new Promise<void>((resolve) => resolvers.push(resolve))
+    })
+    return {
+      runner,
+      calls,
+      /** Let the oldest still-running call finish, then drain the microtask queue. */
+      finishOne: async () => {
+        resolvers.shift()?.()
+        await Promise.resolve()
+        await Promise.resolve()
+      },
+    }
+  }
+
+  it('keeps only one run in flight while requests pile up', async () => {
+    const { runner, calls } = deferredRunner()
+
+    void runner.call(['a'])
+    void runner.call(['b'])
+    void runner.call(['c'])
+    await Promise.resolve()
+
+    expect(calls).toEqual([['a']])
+  })
+
+  it('runs the newest queued request once the in-flight one settles, and drops the rest', async () => {
+    const { runner, calls, finishOne } = deferredRunner()
+
+    void runner.call(['a'])
+    void runner.call(['b'])
+    void runner.call(['c'])
+    await finishOne()
+
+    // 'b' described a screen that had already moved on before it could run.
+    expect(calls).toEqual([['a'], ['c']])
+  })
+
+  it('starts a fresh run for a request that arrives after everything settled', async () => {
+    const { runner, calls, finishOne } = deferredRunner()
+
+    void runner.call(['a'])
+    await finishOne()
+    void runner.call(['b'])
+    await Promise.resolve()
+
+    expect(calls).toEqual([['a'], ['b']])
+  })
+
+  it('does not stack runs however long one takes', async () => {
+    // The failure mode this exists to prevent: 200 triggers during one slow call used
+    // to mean 200 concurrent backend queries.
+    const { runner, calls, finishOne } = deferredRunner()
+
+    for (let i = 0; i < 200; i++) void runner.call([`p${i}`])
+    await Promise.resolve()
+    expect(calls).toHaveLength(1)
+
+    await finishOne()
+    expect(calls).toEqual([['p0'], ['p199']])
+  })
+
+  it('cancel drops a queued request', async () => {
+    const { runner, calls, finishOne } = deferredRunner()
+
+    void runner.call(['a'])
+    void runner.call(['b'])
+    runner.cancel()
+    await finishOne()
+
+    expect(calls).toEqual([['a']])
+  })
+
+  it('a throwing run still lets the next request through', async () => {
+    const calls: string[][] = []
+    const runner = createCoalesced(async (paths: string[]) => {
+      calls.push(paths)
+      await Promise.resolve()
+      throw new Error('boom')
+    })
+
+    await expect(runner.call(['a'])).rejects.toThrow('boom')
+    await runner.call(['b']).catch(() => {})
+
+    // A failure must not wedge the gate shut.
+    expect(calls).toEqual([['a'], ['b']])
   })
 })

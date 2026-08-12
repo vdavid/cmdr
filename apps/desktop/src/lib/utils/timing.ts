@@ -66,6 +66,56 @@ export function createDebounce(fn: () => void, delayMs: number) {
 }
 
 /**
+ * Coalesce: keeps at most ONE run of `run` in flight, and remembers only the newest
+ * request that arrived while it was busy. Good for "fetch the state of what's on screen
+ * now", where a superseded request has nothing left to contribute.
+ *
+ * **Why this and not a debounce.** A debounce bounds how often you START work; it does
+ * nothing about work that takes longer than the delay. When each call outlasts the
+ * debounce window, calls simply stack, every one of them holding whatever the far side
+ * holds. That's how the image-index badge fetch put hundreds of concurrent queries on
+ * the backend's blocking pool and froze the app. The two compose: debounce the trigger,
+ * coalesce the call.
+ *
+ * `call` resolves once the work it stands for has settled. A caller that gets
+ * superseded resolves immediately (its request is now the queued one, which the
+ * in-flight caller's promise covers), so ❌ don't read a resolved `call` as "the newest
+ * request finished" — only the run that owns the drain can say that.
+ */
+export function createCoalesced<A>(run: (arg: A) => Promise<void>) {
+  let inFlight = false
+  let queued: { arg: A } | null = null
+
+  async function call(arg: A): Promise<void> {
+    if (inFlight) {
+      // Latest wins: an older pending request describes a screen that has moved on.
+      queued = { arg }
+      return
+    }
+    inFlight = true
+    try {
+      await run(arg)
+      // Drain inside the same in-flight window, so a burst can't open a second run.
+      while (queued !== null) {
+        const next = queued
+        queued = null
+        await run(next.arg)
+      }
+    } finally {
+      inFlight = false
+      queued = null
+    }
+  }
+
+  /** Drop a queued request (for teardown, so a destroyed owner fires no more work). */
+  function cancel() {
+    queued = null
+  }
+
+  return { call, cancel }
+}
+
+/**
  * Throttle: fires immediately on first call, then at most once per `delayMs`.
  * Trailing call guaranteed (last call always fires). Good for "show live progress at a steady cadence."
  */

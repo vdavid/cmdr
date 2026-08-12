@@ -226,6 +226,66 @@ describe('createRowOverlays', () => {
     })
   })
 
+  describe('coalescing the image-index fetches', () => {
+    /** Holds the IPC open so a burst lands while one call is genuinely in flight. */
+    function pending<T>(): { resolve: (value: T) => void; promise: Promise<T> } {
+      let resolve!: (value: T) => void
+      const promise = new Promise<T>((r) => {
+        resolve = r
+      })
+      return { resolve, promise }
+    }
+
+    it('keeps one file-status query in flight and re-asks with the newest paths', async () => {
+      // A storm of visible-range renders and enrich ticks used to mean one backend
+      // query each, which is how the blocking pool ran out and the app froze.
+      const first = pending<{ path: string; state: string }[]>()
+      ipc.mediaIndexFileStatus.mockReturnValueOnce(first.promise).mockResolvedValue([])
+      const { overlays } = create()
+
+      void overlays.fetchIndexStatusForPaths(['/a.jpg'])
+      void overlays.fetchIndexStatusForPaths(['/b.jpg'])
+      void overlays.fetchIndexStatusForPaths(['/c.jpg'])
+      await vi.advanceTimersByTimeAsync(0)
+      expect(ipc.mediaIndexFileStatus).toHaveBeenCalledTimes(1)
+
+      first.resolve([{ path: '/a.jpg', state: 'indexed' }])
+      await vi.advanceTimersByTimeAsync(0)
+      expect(ipc.mediaIndexFileStatus).toHaveBeenCalledTimes(2)
+      expect(ipc.mediaIndexFileStatus).toHaveBeenLastCalledWith('root', ['/c.jpg'])
+    })
+
+    it('keeps one folder-coverage query in flight too', async () => {
+      const first = pending<{ path: string; indexed: number; total: number }[]>()
+      ipc.mediaIndexFolderCoverage.mockReturnValueOnce(first.promise).mockResolvedValue([])
+      const { overlays } = create()
+
+      void overlays.fetchFolderCoverageForPaths(['/one'])
+      void overlays.fetchFolderCoverageForPaths(['/two'])
+      await vi.advanceTimersByTimeAsync(0)
+      expect(ipc.mediaIndexFolderCoverage).toHaveBeenCalledTimes(1)
+
+      first.resolve([])
+      await vi.advanceTimersByTimeAsync(0)
+      expect(ipc.mediaIndexFolderCoverage).toHaveBeenLastCalledWith('root', ['/two'])
+    })
+
+    it('cleanup drops a queued fetch so a destroyed pane asks for nothing more', async () => {
+      const first = pending<{ path: string; state: string }[]>()
+      ipc.mediaIndexFileStatus.mockReturnValueOnce(first.promise).mockResolvedValue([])
+      const { overlays } = create()
+      overlays.start()
+
+      void overlays.fetchIndexStatusForPaths(['/a.jpg'])
+      void overlays.fetchIndexStatusForPaths(['/b.jpg'])
+      overlays.cleanup()
+
+      first.resolve([])
+      await vi.advanceTimersByTimeAsync(0)
+      expect(ipc.mediaIndexFileStatus).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('clearing on gate flips', () => {
     it('drops the file-badge map when the badge setting goes off, keeping coverage', async () => {
       ipc.mediaIndexFileStatus.mockResolvedValue([{ path: '/a.jpg', state: 'indexed' }])

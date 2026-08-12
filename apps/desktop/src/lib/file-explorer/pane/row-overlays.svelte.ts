@@ -20,6 +20,19 @@
  * When a gate goes off, the matching map is cleared right away so stale badges
  * can't linger; turning it back on repopulates on the next visible-range fetch,
  * navigation, or enrich tick.
+ *
+ * **Both image-index fetches are COALESCED, and that's load-bearing.** They're driven
+ * by things that arrive in storms: every visible-range render, every listing swap, and
+ * every enrichment tick. Uncoalesced, and with each call outlasting the enrich
+ * debounce, they stacked one backend query per trigger; a burst of watcher-driven
+ * refreshes during a large transfer then took the backend's whole blocking pool and
+ * froze the panes and the volume picker until restart. One in flight per pane, newest
+ * request wins. ❌ Don't call `mediaIndexFileStatus` / `mediaIndexFolderCoverage`
+ * around these.
+ *
+ * The sync-status fetch deliberately isn't coalesced: the backend batches it, joins
+ * concurrent requests for overlapping paths, and applies its own deadline, so the
+ * coalescing already happens where it has the most information.
  */
 
 import {
@@ -34,7 +47,7 @@ import {
 } from '$lib/tauri-commands'
 import type { SyncStatus } from '../types'
 import { getMediaIndexEnabled, getMediaIndexShowFileStatusIcons } from '$lib/settings/reactive-settings.svelte'
-import { createDebounce } from '$lib/utils/timing'
+import { createCoalesced, createDebounce } from '$lib/utils/timing'
 
 /** How often the idle poll re-reads the sync status of the visible paths. */
 const SYNC_POLL_INTERVAL_MS = 3000
@@ -140,8 +153,7 @@ export function createRowOverlays(deps: RowOverlaysDeps): RowOverlays {
   }
 
   // The backend returns one entry per path in request order.
-  async function fetchIndexStatusForPaths(paths: string[]): Promise<void> {
-    if (!fileStatusEnabled || paths.length === 0) return
+  const indexStatusFetch = createCoalesced(async (paths: string[]) => {
     try {
       const statuses = await mediaIndexFileStatus(deps.getVolumeId(), paths)
       const next: Record<string, FileIndexState> = { ...indexStatusMap }
@@ -152,11 +164,10 @@ export function createRowOverlays(deps: RowOverlaysDeps): RowOverlays {
     } catch {
       // Silently ignore - the image-index overlay is optional.
     }
-  }
+  })
 
   // The backend returns one entry per folder in request order.
-  async function fetchFolderCoverageForPaths(folderPaths: string[]): Promise<void> {
-    if (!folderCoverageEnabled || folderPaths.length === 0) return
+  const folderCoverageFetch = createCoalesced(async (folderPaths: string[]) => {
     try {
       const coverages = await mediaIndexFolderCoverage(deps.getVolumeId(), folderPaths)
       const next: Record<string, FolderCoverage> = { ...folderCoverageMap }
@@ -167,6 +178,16 @@ export function createRowOverlays(deps: RowOverlaysDeps): RowOverlays {
     } catch {
       // Silently ignore - the folder-coverage overlay is optional.
     }
+  })
+
+  function fetchIndexStatusForPaths(paths: string[]): Promise<void> {
+    if (!fileStatusEnabled || paths.length === 0) return Promise.resolve()
+    return indexStatusFetch.call(paths)
+  }
+
+  function fetchFolderCoverageForPaths(folderPaths: string[]): Promise<void> {
+    if (!folderCoverageEnabled || folderPaths.length === 0) return Promise.resolve()
+    return folderCoverageFetch.call(folderPaths)
   }
 
   /** Re-query the paths already in the maps (the visible set), like the sync poll does. */
@@ -250,6 +271,10 @@ export function createRowOverlays(deps: RowOverlaysDeps): RowOverlays {
       for (const unlisten of enrichUnlisten) unlisten()
       enrichUnlisten.length = 0
       debouncedRefreshIndexStatus.cancel()
+      // A request queued behind an in-flight fetch would otherwise still fire for a
+      // pane that no longer exists.
+      indexStatusFetch.cancel()
+      folderCoverageFetch.cancel()
     },
   }
 }

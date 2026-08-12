@@ -6,7 +6,7 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 
 - **`filename-validation.ts`**: pure client-side filename validation for instant keystroke feedback.
 - **`confirm-dialog.ts`**: wrapper around Tauri's native dialog `ask()`.
-- **`timing.ts`**: `withTimeout`, `createDebounce`, `createThrottle`, `waitForNextPaint`.
+- **`timing.ts`**: `withTimeout`, `createDebounce`, `createThrottle`, `createCoalesced`, `waitForNextPaint`.
 - **`shorten-middle.ts`**: `shortenMiddle` mid-truncation + `createPretextMeasure` factory.
 - **`shorten-middle-action.ts`**: Svelte action wrapping `shortenMiddle` with ResizeObserver, async pretext, tooltip.
 - **`pluralize.ts`**: count + noun formatting ("1 user" / "3 users").
@@ -52,6 +52,11 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 - **`'ask'` extension setting returns `ok` at validation time**; the save dialog handles the confirmation separately.
 - **`createDebounce` exposes `flush()`** (for `beforeunload` cleanup) and `createThrottle` guarantees a trailing call.
   Both are hand-rolled deliberately, not lodash.
+- **A debounce does NOT bound concurrency; reach for `createCoalesced` when a repeated async call can outlast its own
+  delay.** A debounce only bounds how often work STARTS, so calls slower than the window stack up, each holding whatever
+  the far side holds. That's how the image-index badge fetch took the backend's entire blocking pool and froze the app.
+  `createCoalesced` keeps one run in flight and remembers only the newest request; the two compose (debounce the
+  trigger, coalesce the call). `cancel()` on teardown, or a queued request fires for a destroyed owner.
 - **`useShortenMiddle` reveals the full text through the HOUSE tooltip, never a native `title`** (whose delay and chrome
   are the OS's, and this action feeds pane rows, dialogs, and result lists alike). `tooltipWhenTruncated?` narrows it to
   a string truncation actually trimmed. `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the old-WebKit fallback path (see
