@@ -194,9 +194,23 @@ The drop shadow is `--shadow-dialog`, three stacked layers (wide soft cast, mid 
 offset down only. It's separate from `--shadow-lg`, which is tuned for popovers and menus, and it goes much deeper in
 dark mode where a light-mode-strength shadow would be invisible against the canvas.
 
-The overlay element receives `tabindex="-1"` and is focused on mount so Escape/keydown events are captured without a
-visible focus ring on the scrim. The overlay also carries `use:trapFocus={{ onEscape: onclose }}` (see § "Focus
-trapping" below), so every `ModalDialog` consumer gets Tab containment and the Escape fallback for free.
+The overlay element receives `tabindex="-1"` and is focused on mount so Escape/keydown events are captured. It also
+carries `use:trapFocus={{ onEscape: onclose }}` (see § "Focus trapping" below), so every `ModalDialog` consumer gets Tab
+containment and the Escape fallback for free. `trapFocus` deliberately doesn't move focus on mount, so the scrim KEEPS
+focus for the dialog's whole life unless a control takes it.
+
+**Gotcha: `.modal-overlay:focus` must keep `outline: none`.** The scrim is `inset: var(--titlebar-height) 0 0 0`, so
+three of its four edges sit outside the viewport and only the TOP ring edge is visible: the UA focus ring reads as a
+mystery 3px line spanning the whole window, tucked under the title bar (~2px above the content, the ring's offset). It
+shows up whenever `:focus-visible` matches the programmatic focus, which WebKit decides from the last input modality: a
+dialog raised right after load with no click yet (the post-update "What's new" popup) gets it, while the same dialog
+reopened from a menu click doesn't. That intermittence is what makes it look like a rendering artifact.
+
+**Why: a UA focus ring uses `-webkit-focus-ring-color`, which follows the macOS SYSTEM accent, never `--color-accent`.**
+So on a machine whose OS accent is Green while `appearance.appColor` is `cmdr-gold`, the ring paints `#61bb46`
+(`--color-apple-green`, the exact `NSColor.controlAccentColor()` green) in an otherwise gold UI, and the color is no
+help in tracing it back to a focus ring. Any element we focus programmatically and don't style owes itself the same
+`outline: none` (verified on macOS 15 / WKWebView, from a user screenshot of 0.38.1, 2026-08-12).
 
 ## AlertDialog
 

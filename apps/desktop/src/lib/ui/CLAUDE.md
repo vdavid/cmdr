@@ -24,7 +24,8 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
 - **`ModalDialog`'s overlay starts at `inset: var(--titlebar-height) 0 0 0`**, keeping the macOS window-drag region
   live; any full-window backdrop must too. ❌ Keep the drag offset and dragged size OFF the `style` attribute
   (`containerStyle` owns it), and ❌ never restore `overflow: hidden` on `.modal-dialog` (the resize bands hang over its
-  edge).
+  edge). ❌ Never drop `.modal-overlay:focus { outline: none }`: the scrim holds focus, and a UA ring on it paints one
+  full-width line under the title bar, in the macOS SYSTEM accent (not `--color-accent`). DETAILS § ModalDialog.
 - **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle`; one-offs need
   `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY `cursor: pointer` opt-in.
 - **Per-component traps.** Each has its own section in `DETAILS.md`:

@@ -517,6 +517,18 @@
         z-index: var(--z-modal);
     }
 
+    /* The scrim takes focus on mount so Escape and the key handlers have somewhere to
+       land. It's a focus-management container, never a keyboard target the user aims
+       at, so the UA ring on it says nothing, and it paints as a full-width line under
+       the title bar: the scrim is pinned to the viewport on three sides, so its TOP
+       edge is the only ring edge that falls inside the window. WebKit draws that
+       ring in `-webkit-focus-ring-color`, the macOS SYSTEM accent, so it also ignores
+       the user's "App color" choice: a green line in a gold app. `aria-modal` plus
+       `use:trapFocus` carry the a11y here. */
+    .modal-overlay:focus {
+        outline: none;
+    }
+
     /* One rung above every other modal, so the panel AND its scrim cover a
        dialog that's already open. See the `topmost` prop. */
     .modal-overlay.topmost {
