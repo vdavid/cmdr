@@ -34,6 +34,49 @@ pub use backends::{MtpVolume, SmbVolume};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use backends::smb;
 
+/// Observe a failed volume operation and, when its errno PROVES the active mount
+/// root is gone, hand the volume's ID to a live sibling mount.
+///
+/// The lazy half of "liveness outranks path shape". A volume ID can be reached
+/// through several mount points and the registry keeps the canonical-looking one
+/// active, which is right until that mount wedges: macOS leaves a dead
+/// `/Volumes/naspi` in place and lands the reconnect at `/Volumes/naspi-1`, and
+/// the shortest-path rule then picks the corpse on every launch. Nothing may
+/// PROBE a mount to find out (a `statfs` on a wedged one blocks 30–120 s, see
+/// `volumes/DETAILS.md` § "Hung mounts"), so the evidence has to arrive as a
+/// failed operation. Call this wherever one is observed with its volume ID in
+/// hand; it does no I/O, and an errno that says something about the FILE rather
+/// than the mount changes nothing.
+pub fn note_root_failure(volume_id: &str, error: &VolumeError) {
+    let VolumeError::IoError {
+        raw_os_error: Some(errno),
+        ..
+    } = error
+    else {
+        return;
+    };
+    if !manager::is_stale_mount_errno(*errno) {
+        return;
+    }
+
+    let registry = manager::get_volume_manager();
+    let Some(volume) = registry.get(volume_id) else {
+        return;
+    };
+    let failed_root = volume.root().to_path_buf();
+
+    if let manager::StaleRootOutcome::Promoted { new_root } = registry.mark_root_stale(volume_id, &failed_root) {
+        log::info!(
+            target: "cmdr_lib::file_system::volume",
+            "Volume {volume_id}'s mount at {} is gone (errno {errno}); promoted it to {}, which is still live.",
+            failed_root.display(),
+            new_root.display(),
+        );
+        // The switcher and every pane still point at the old root, so tell them.
+        crate::volume_broadcast::emit_volumes_changed();
+    }
+}
+
 #[cfg(test)]
 mod inmemory_test;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]

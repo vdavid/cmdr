@@ -85,10 +85,13 @@ pub async fn list_directory_start_with_volume(
     })?;
 
     // Use the Volume trait to list the directory
-    let all_entries = volume
-        .list_directory(path, None)
-        .await
-        .map_err(|e| std::io::Error::other(e.to_string()))?;
+    let all_entries = volume.list_directory(path, None).await.map_err(|e| {
+        // A stale-mount errno is the only evidence we get that this volume's
+        // active mount died; if the filesystem is reachable through another
+        // mount, this moves the volume there. See `volume::note_root_failure`.
+        crate::file_system::volume::note_root_failure(volume_id, &e);
+        std::io::Error::other(e.to_string())
+    })?;
     benchmark::log_event_value("volume.list_directory COMPLETE, entries", all_entries.len());
 
     // Generate listing ID

@@ -358,6 +358,11 @@ pub async fn list_directory_start_streaming(
                 if matches!(&e, VolumeError::PermissionDenied(_)) {
                     crate::restricted_paths::record_denial(&path_for_error);
                 }
+                // A stale-mount errno here is the only evidence we ever get that
+                // the volume's active mount died: probing for it would block on
+                // the wedged mount itself. If the same filesystem is reachable
+                // through another mount, this moves the volume there.
+                crate::file_system::volume::note_root_failure(&volume_id_owned, &e);
                 let message = e.to_string();
                 // Record into the MCP recent-errors ring buffer so `cmdr://state`
                 // surfaces what just failed, without callers grepping the log file.

@@ -718,6 +718,52 @@ mod tests {
     }
 
     #[test]
+    fn a_failed_operation_promotes_only_on_an_errno_that_proves_the_mount_is_gone() {
+        use crate::file_system::LocalPosixVolume;
+        use crate::file_system::volume::{VolumeError, note_root_failure};
+
+        // Drives the global registry (that's what `note_root_failure` reads), so
+        // it uses ids no other test touches.
+        let id = "cmdr-test-stale-errno-share";
+        let manager = get_volume_manager();
+        manager.unregister(id);
+        manager.register(id, Arc::new(LocalPosixVolume::new("naspi", "/Volumes/cmdr-test-stale")));
+        manager.register(
+            id,
+            Arc::new(LocalPosixVolume::new("naspi", "/Volumes/cmdr-test-stale-1")),
+        );
+
+        // A missing file says nothing about the mount.
+        note_root_failure(
+            id,
+            &VolumeError::IoError {
+                message: "no such file".to_string(),
+                raw_os_error: Some(libc::ENOENT),
+            },
+        );
+        assert_eq!(
+            manager.get(id).expect("registered").root(),
+            Path::new("/Volumes/cmdr-test-stale"),
+            "an ordinary file error must not rotate a healthy volume's root"
+        );
+
+        note_root_failure(
+            id,
+            &VolumeError::IoError {
+                message: "socket is not connected".to_string(),
+                raw_os_error: Some(libc::ENOTCONN),
+            },
+        );
+        assert_eq!(
+            manager.get(id).expect("still registered").root(),
+            Path::new("/Volumes/cmdr-test-stale-1"),
+            "a stale-mount errno moves the volume to the mount that still answers"
+        );
+
+        manager.unregister(id);
+    }
+
+    #[test]
     fn test_multiple_volumes() {
         let manager = VolumeManager::new();
 
