@@ -26,7 +26,10 @@ wiring), or in `crates/cmdr-archive/DETAILS.md` for `ArchiveVolume`. Only the la
   internal state machine onto the wire enum.
 - **`smb/volume_impl.rs` holds the ENTIRE `impl Volume for SmbVolume`** because a trait impl can't be split across
   files. The heavy bodies live as inherent `*_impl` methods in `scan.rs` / `streams.rs`, with `volume_impl.rs` reduced
-  to one-line delegators. A new trait method goes here and delegates; don't try to move a trait method out.
+  to one-line delegators. A new trait method goes here and delegates; don't try to move a trait method out. It sits on
+  the `file-length` allowlist at its full size on purpose: the trait is wide, so the file is long, and the seams worth
+  having (`session`, `reconnect`, `streams`, `scan_pool`) are already taken. See `e5ea10d02`, which reverted four splits
+  invented to satisfy the line counter and named this module's split as the model of a real one.
 - **`smb/foreground_yield.rs` answers "should a background transfer stand aside?" WITHOUT a per-device gate.** MTP has
   an explicit holder for its single scarce USB pipe; SMB frames just interleave over one connection, so the signal here
   is time-based instead: the share counts as busy for `TRANSFER_FOREGROUND_IDLE_THRESHOLD` after the last navigation on

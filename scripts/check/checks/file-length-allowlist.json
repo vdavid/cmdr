@@ -14,7 +14,7 @@
     "apps/desktop/src-tauri/src/file_system/listing/caching.rs": 926,
     "apps/desktop/src-tauri/src/file_system/listing/caching_test.rs": 896,
     "apps/desktop/src-tauri/src/file_system/volume/backends/local_posix.rs": 837,
-    "apps/desktop/src-tauri/src/file_system/volume/backends/smb/volume_impl.rs": 840,
+    "apps/desktop/src-tauri/src/file_system/volume/backends/smb/volume_impl.rs": 963,
     "apps/desktop/src-tauri/src/file_system/write_operations/conflict.rs": 1391,
     "apps/desktop/src-tauri/src/file_system/write_operations/delete/walker.rs": 942,
     "apps/desktop/src-tauri/src/file_system/write_operations/eta.rs": 820,
