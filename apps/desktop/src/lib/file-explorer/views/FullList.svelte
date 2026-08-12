@@ -416,6 +416,17 @@
 
     const visibleFiles = $derived.by(() => cache.windowRows(virtualWindow.startIndex, virtualWindow.endIndex))
 
+    /**
+     * `aria-activedescendant` may only name a row that's actually in the DOM.
+     * The cursor can point at nothing rendered: an empty folder, or a row
+     * scrolled outside the virtual window. A dangling reference isn't harmless
+     * there, it's a critical a11y violation (axe `aria-valid-attr-value`) and
+     * leaves screen readers announcing a stale row.
+     */
+    const activeDescendantId = $derived(
+        visibleFiles.some((entry) => entry.globalIndex === cursorIndex) ? `file-${String(cursorIndex)}` : undefined,
+    )
+
     function handleScroll(e: Event) {
         cancelClickToRename()
         const target = e.target as HTMLDivElement
@@ -601,7 +612,7 @@
             class="listbox-region"
             role="listbox"
             aria-label={tString('fileExplorer.list.fileListAriaLabel')}
-            aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
+            aria-activedescendant={activeDescendantId}
             tabindex="-1"
         >
         <!-- Spacer div provides accurate scrollbar for full list size -->
@@ -804,10 +815,13 @@
                 {/each}
             </div>
         </div>
+        </div>
+        <!-- Sibling of the listbox, not a child: the empty-state text is not an
+             option, and a listbox holding a non-option child is an
+             aria-required-children violation. An EMPTY listbox is fine. -->
         {#if (hasParent ? totalCount - 1 : totalCount) === 0}
             <div class="empty-folder-message">{tString('fileExplorer.list.empty')}</div>
         {/if}
-        </div>
     </div>
 </div>
 

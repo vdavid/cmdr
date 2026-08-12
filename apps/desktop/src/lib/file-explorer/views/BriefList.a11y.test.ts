@@ -58,13 +58,9 @@ vi.mock('$lib/settings/settings-store', () => ({
 }))
 
 describe('BriefList a11y', () => {
-  // TODO: When `cursorIndex >= 0` but no matching file row exists (empty
-  // folder, or cursor past the end of the virtualized window), the
-  // listbox sets `aria-activedescendant="file-<index>"` to a non-existent
-  // ID. axe flags `aria-valid-attr-value`. Fix: make the binding
-  // `cursorIndex >= 0 && cursorIndex < totalCount ? ... : undefined` in
-  // `BriefList.svelte` (around the .brief-list element).
-  it.skip('empty folder overlay has no a11y violations (BLOCKED: aria-valid-attr-value)', async () => {
+  // Pins the `aria-activedescendant` gate: the cursor exists but no row is
+  // rendered, so the attribute must be absent rather than name a missing id.
+  it('empty folder with a cursor has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(BriefList, {

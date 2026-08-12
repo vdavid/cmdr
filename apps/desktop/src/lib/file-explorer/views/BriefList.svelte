@@ -373,6 +373,19 @@
         return columns
     })
 
+    /**
+     * `aria-activedescendant` may only name a row that's actually in the DOM.
+     * The cursor can point at nothing rendered: an empty folder, or a row
+     * scrolled outside the virtual window. A dangling reference isn't harmless
+     * there, it's a critical a11y violation (axe `aria-valid-attr-value`) and
+     * leaves screen readers announcing a stale row.
+     */
+    const activeDescendantId = $derived(
+        visibleColumns.some((column) => column.files.some((entry) => entry.globalIndex === cursorIndex))
+            ? `file-${String(cursorIndex)}`
+            : undefined,
+    )
+
     // ==== Per-column widths (backend-driven) ====
     //
     // The store owns the raw text widths and the fetch policy; `columnWidths` above
@@ -844,7 +857,7 @@
         tabindex="-1"
         role="listbox"
         aria-label={tString('fileExplorer.list.fileListAriaLabel')}
-        aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
+        aria-activedescendant={activeDescendantId}
     >
         <!-- Spacer div provides accurate scrollbar for full list width -->
         <div class="virtual-spacer" style="width: {virtualWindow.totalSize}px; height: 100%;">

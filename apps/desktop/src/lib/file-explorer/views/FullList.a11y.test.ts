@@ -75,11 +75,9 @@ vi.mock('$lib/settings/settings-store', () => ({
 }))
 
 describe('FullList a11y', () => {
-  // TODO: Same `aria-activedescendant="file-<index>"` issue as BriefList
-  // when the listbox has no matching row (empty folder with cursorIndex
-  // at 0). Fix in both `FullList.svelte` and `BriefList.svelte` by
-  // gating the attribute on `cursorIndex < totalCount`.
-  it.skip('empty folder with cursor at 0 has no a11y violations (BLOCKED: aria-valid-attr-value)', async () => {
+  // Pins the `aria-activedescendant` gate: the cursor exists but no row is
+  // rendered, so the attribute must be absent rather than name a missing id.
+  it('empty folder with cursor at 0 has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(FullList, {
@@ -104,12 +102,9 @@ describe('FullList a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  // TODO: `.full-list` is `role="listbox"` but when the virtual window has
-  // no rendered rows, axe flags `aria-required-children` (listbox must
-  // contain group/option children). Fix: render at least one empty-state
-  // option, or remove the `role="listbox"` when the list is empty and
-  // show the "Empty folder" message with a plain div role.
-  it.skip('empty folder with no cursor has no a11y violations (BLOCKED: aria-required-children)', async () => {
+  // Pins the empty-state text staying OUTSIDE the listbox: an empty listbox
+  // passes `aria-required-children`, one holding a non-option child does not.
+  it('empty folder with no cursor has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(FullList, {
@@ -179,7 +174,7 @@ describe('FullList a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it.skip('unfocused pane has no a11y violations (BLOCKED: aria-required-children)', async () => {
+  it('unfocused pane has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(FullList, {
