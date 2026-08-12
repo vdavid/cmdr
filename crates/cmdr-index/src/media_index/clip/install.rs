@@ -321,7 +321,8 @@ pub(crate) fn compiled_path(model_dir: &Path, tower: &ClipTowerSpec) -> PathBuf 
 /// `.mlpackage` sources are deleted, leaving only the compiled models, and the feature must
 /// still read as installed. If a compiled model later fails to load (an OS upgrade can
 /// invalidate it) and no `.mlpackage` remains to recompile from, the load path deletes the
-/// stale `.mlmodelc` (see [`drop_compiled`]), flipping this back to `false` so the standard
+/// stale `.mlmodelc` (see `drop_compiled`, which is `cfg(any(test, macOS))` and so can't be
+/// an intra-doc link here), flipping this back to `false` so the standard
 /// download flow refetches the pinned zip.
 pub(crate) fn is_installed(data_dir: &Path) -> bool {
     let dir = clip_model_dir(data_dir);

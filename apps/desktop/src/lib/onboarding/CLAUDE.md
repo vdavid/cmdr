@@ -13,8 +13,8 @@ machine: step cursor, variants, banner mode, `resumeStepFor()`).
 ## Must-knows
 
 - **The Open beta page (step 3) is non-skippable, and the AI step has no skip-to-finish.** Every first-launch user has
-  to see the usage-stats disclosure once: the opt-out default only reads as fair consent if it was shown. ❌
-  Don't re-add a skip-to-finish on the AI step.
+  to see the usage-stats disclosure once: the opt-out default only reads as fair consent if it was shown. ❌ Don't
+  re-add a skip-to-finish on the AI step.
 - **Step 3's terms checkbox gates both footer buttons.** ❌ Never pre-tick or route around it: it's the assent the terms
   rest on. Unticked, the buttons take `blockedReason`, ❌ not `disabled`, so a press still fires and scrolls to the
   checkbox. Acceptance stores `TERMS_VERSION` + timestamp; bumping it re-asks everyone.

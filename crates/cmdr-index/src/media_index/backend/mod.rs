@@ -2,7 +2,7 @@
 //! sit behind, so all of that logic is testable with NO GPU/ANE/FFI.
 //!
 //! Two implementations sit behind the trait:
-//! - [`vision::VisionOcrBackend`] (macOS): real OCR via `VNRecognizeTextRequest` over
+//! - `vision::VisionOcrBackend` (macOS): real OCR via `VNRecognizeTextRequest` over
 //!   a downscaled in-memory ImageIO decode, on a dedicated 8 MB-stack OS thread inside
 //!   `objc2::rc::autoreleasepool` — production selects it in `scheduler::start`.
 //! - `fake::FakeVisionBackend`: deterministic, zero-FFI, injected by every test (and

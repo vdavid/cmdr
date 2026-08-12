@@ -22,10 +22,13 @@ pub const FAKE_EMBEDDING_DIMS: usize = 8;
 /// - By default, `ocr`/`analyze` derive stable text, one tag, and a deterministic
 ///   embedding from the image's file stem, so an unscripted image still gets
 ///   predictable, searchable words and a reproducible vector.
-/// - [`with_text`](FakeVisionBackend::with_text) / [`with_tags`] /
-///   [`with_embedding`] script an exact result for a path (precise cosine/tag tests).
-/// - [`failing_for`](FakeVisionBackend::failing_for) scripts a decode failure for a
-///   path (to exercise the scheduler's failure branch).
+/// - `with_text` / `with_tags` / `with_embedding` script an exact result for a path
+///   (precise cosine/tag tests).
+/// - `failing_for` scripts a decode failure for a path (to exercise the scheduler's
+///   failure branch).
+///
+/// Those four live in the `cfg(test)` scripting impl below, so they're deliberately
+/// named in plain backticks: an intra-doc link to them breaks `cargo doc`.
 #[derive(Debug, Clone, Default)]
 pub struct FakeVisionBackend {
     scripted: HashMap<String, String>,

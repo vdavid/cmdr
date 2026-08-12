@@ -157,8 +157,8 @@ impl RootProbes {
 /// `false` off macOS, which has no File Provider.
 ///
 /// It's an OPTIMIZATION, never a guarantee: the xattr is a private Apple detail, so
-/// a `false` here means "not recognized", not "proven ordinary". See
-/// [`file_provider`](super::file_provider).
+/// a `false` here means "not recognized", not "proven ordinary". See the private
+/// `super::file_provider` module (private, so not linkable from rustdoc).
 fn is_file_provider_domain_root(path: &str) -> bool {
     #[cfg(target_os = "macos")]
     {

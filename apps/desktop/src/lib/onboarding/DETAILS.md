@@ -26,10 +26,9 @@ finishes onboarding.
   auto-check + model combobox. Providers with editable OpenAI-compatible endpoints, including Custom, still require a
   stored API key before the endpoint check runs.
 - **`StepBeta.svelte`**: Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels: in-app, GitHub,
-  Discord, book-a-call) + usage-stats disclosure + `analytics.enabled` opt-out switch + optional
-  `analytics.email` contact field + the required terms checkbox. Footer = "Start using Cmdr!" (finish here) + "One more
-  optional setup step" (continue), both gated on the terms. Reuses the Settings `UpdatesSection` email/`betaSignup`
-  wiring.
+  Discord, book-a-call) + usage-stats disclosure + `analytics.enabled` opt-out switch + optional `analytics.email`
+  contact field + the required terms checkbox. Footer = "Start using Cmdr!" (finish here) + "One more optional setup
+  step" (continue), both gated on the terms. Reuses the Settings `UpdatesSection` email/`betaSignup` wiring.
 - **`StepOptional.svelte`**: Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry
   settings.
 - **`onboarding-state.svelte.ts`**: Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner
@@ -407,11 +406,11 @@ it at runtime races background threads that resolve icons / scan paths into the 
 "FDA gate clear-on-Allow".
 
 **Decision**: The Open beta page (step 3) is non-skippable; the AI step has no skip-to-finish. **Why**: Every
-first-launch user must see the usage-stats disclosure once (the opt-out default only reads as fair consent if it
-was actually shown). So the AI step's only forward button ("Next") always `nextStep()`s to Beta. The Beta page itself
-offers "Start using Cmdr!" (finish) and "One more optional setup step" (continue), so both forward paths start from Beta
-and the user can't reach the app without seeing it. Don't re-add a skip-to-finish button on the AI step (it would bypass
-the disclosure). The user can still opt out and skip the email on the Beta page, they just can't skip seeing it.
+first-launch user must see the usage-stats disclosure once (the opt-out default only reads as fair consent if it was
+actually shown). So the AI step's only forward button ("Next") always `nextStep()`s to Beta. The Beta page itself offers
+"Start using Cmdr!" (finish) and "One more optional setup step" (continue), so both forward paths start from Beta and
+the user can't reach the app without seeing it. Don't re-add a skip-to-finish button on the AI step (it would bypass the
+disclosure). The user can still opt out and skip the email on the Beta page, they just can't skip seeing it.
 
 **Decision**: Step 1 footer button hidden in `decide` mode (body owns Allow / Deny). **Why**: The Allow / Deny choice is
 the meat of step 1; placing the buttons inside the body groups them with the explanatory copy they belong to. The

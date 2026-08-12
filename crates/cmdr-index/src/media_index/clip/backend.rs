@@ -3,9 +3,9 @@
 //! Image encoding is folded into the Vision backend's
 //! [`analyze_media`](crate::media_index::backend::VisionBackend::analyze_media) — one
 //! decode feeds both Vision and CLIP on the same worker thread. Text encoding is a
-//! query-time concern behind [`ClipTextEncoder`], kept warm by the command layer.
+//! query-time concern behind `ClipTextEncoder`, kept warm by the command layer.
 //!
-//! Both fakes ([`FakeClipTextEncoder`] and the fake image path via
+//! Both fakes (`FakeClipTextEncoder` and the fake image path via
 //! [`fake_clip_embedding`]) project into ONE shared bag-of-words space, so a fake
 //! text→image search actually aligns (a query and an image that mention the same word
 //! get a high cosine) — that's what makes the query pipeline testable end-to-end without
