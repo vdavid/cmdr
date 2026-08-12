@@ -39,15 +39,20 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       (`route_archive_copy_into`, `compress_start`), which never receive it today, or Compress would dispatch into a
       task with nothing to await and walk concurrently with its own preview. Pause is refused in `set_paused` during
       the scan-wait, plus three frontend phase gates; a refused pause is already observable because nothing flips
-      optimistically, so no IPC change. Totals stay 0 through a scan, so neither the dual bar nor the chip's percentage
-      may render: the chip gets an indeterminate state. The registry earns its place not because two smoothers disagree
-      (the
+      optimistically, so no IPC change, but it MUST be latched on the record and applied when the scan-wait ends, or
+      "Pause all" loses it and that one operation writes at full speed while the user believes the device is free.
+      Totals stay 0 through a scan, so neither the dual bar nor the chip's percentage may render: the chip gets an
+      indeterminate state. The registry earns its place not because two smoothers disagree (the
       EMA is deterministic; the shipped ETA bug was smoothed-versus-raw) but because smoothers **started at different
       times** diverge, which is exactly what a late-attaching view creates, so M3 must DELETE `operations-store`'s
       per-id smoother map rather than stack a second layer. M6's hardest problem is birth context: `OperationSnapshot`
       carries no `sourcePaths`, counts, or `sourcePaneSide`, yet `handleTransferComplete` purges search snapshots,
       composes the toast, and clears selection against a pane captured at dispatch, so an adopted view must degrade
-      honestly (no pane mutation, a toast saying only what the snapshot knows). Also settles the two in-dialog guards
+      honestly (no pane mutation, a toast saying only what the snapshot knows) — except the snapshot purge, which is
+      operation-scoped truth and already misses cancel and error entirely. And M6's occupancy test is
+      `transferProgressProps !== null`, NEVER `showTransferProgressDialog`: the archive-password prompt deliberately
+      splits them, so testing the shown flag lets Foreground overwrite live props and re-dispatch the adopted
+      operation's sources to the adopted operation's destination. Also settles the two in-dialog guards
       (`destroy()` and `handleCancel`'s `if (backgrounded) return`, both retiring because "the modal closed" must stop
       meaning "cancel"), cross-window conflict ownership (a single stored oneshot sender makes two windows resolving a
       real lost-take race), the event fan-out as a NEW module both the store and sessions consume, and the pre-identity
