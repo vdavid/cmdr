@@ -384,8 +384,8 @@ and actionable error experience.
 ### `ErrorPane.svelte`
 
 Receives a typed `ListingError` from Rust and words it here: Rust classifies (reason, category, provider, action kind,
-retry hint) and ships zero prose, `renderListingError` picks the message factory and applies the provider override.
-The pipeline and both sides' recipes: `docs/guides/error-handling.md`.
+retry hint) and ships zero prose, `renderListingError` picks the message factory and applies the provider override. The
+pipeline and both sides' recipes: `docs/guides/error-handling.md`.
 
 - **Title**: large text, always in accent color. A glyph via `<Icon>` signals severity: ⚠ `triangle-alert` in warning
   color for transient, ⊘ `circle-alert` in error color for serious, no icon for needs-action

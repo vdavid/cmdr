@@ -183,9 +183,9 @@ hard-coded TCC gate (Downloads/Documents/Desktop/Pictures/Movies/Music, `~/Libra
 `~/Library/CloudStorage` domains, Containers, network volumes) AND that gate must itself be shut. It re-probes every
 entry whenever the app regains focus (NSApplicationDidBecomeActive observer), which is how the styling clears without
 polling after the user grants permission in System Settings. The same predicate drives the dedicated "This folder is
-restricted by macOS" `ListingError` shown in `ErrorPane`, so the indicator and the error pane always agree. A folder
-the user simply lacks rights to (a root-owned `lost+found` on a share) is deliberately NOT in the set: no System
-Settings grant would free it, so an indicator promising one would mislead.
+restricted by macOS" `ListingError` shown in `ErrorPane`, so the indicator and the error pane always agree. A folder the
+user simply lacks rights to (a root-owned `lost+found` on a share) is deliberately NOT in the set: no System Settings
+grant would free it, so an indicator promising one would mislead.
 
 ### SMB connection indicator
 

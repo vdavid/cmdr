@@ -203,7 +203,16 @@ the viewport once any scroll has happened, so the effective row area is `contain
 `getVisibleItemsCountUtil`. `scrollToIndex` writes `getScrollToPosition`'s result straight to
 `scrollContainer.scrollTop`. A11y: the listbox role moves off `.full-list` (now a generic scroll container) onto a
 `.listbox-region` inner wrapper around `.virtual-spacer` so the sticky header isn't a direct child of the listbox (would
-violate `aria-required-children`).
+violate `aria-required-children`). The **"Empty folder" text is a sibling of that region, not a child**, for the same
+rule: an empty listbox passes, a listbox holding a non-option child doesn't. `BriefList` keeps its overlay outside
+`.brief-list` for the identical reason. ❌ Don't move either back inside to simplify the layout.
+
+**`aria-activedescendant` names a row only when that row is RENDERED.** Both views derive the id from the rows in the
+virtual window (`visibleColumns` / `visibleFiles`), not from `cursorIndex >= 0`: the cursor legitimately points at
+nothing rendered in an empty folder, or when the user scrolls the cursor out of the window. Naming a missing id is a
+critical axe violation (`aria-valid-attr-value`) and leaves a screen reader announcing a stale row. ❌ Don't "simplify"
+it back to a `cursorIndex` bound like `cursorIndex < totalCount`, which still lies in the scrolled-away case. Pinned by
+the empty-folder cases in `BriefList.a11y.test.ts` / `FullList.a11y.test.ts`.
 
 **Don't reintroduce a `scrollTop - headerHeight` shift with a `Math.max(0, …)` clamp**: `scrollTop ∈ [0, headerHeight]`
 then collapses to the same spacer state. PageDown × 2 → PageUp × 2 lands at `scrollTop === headerHeight`, hiding row 0

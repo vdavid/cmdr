@@ -96,9 +96,8 @@ Both sides change together, in one commit. The per-side recipes are canonical in
 1. **Rust**: add the `ListingErrorReason` variant with its typed params, map it in `errno.rs` / `volume_error.rs` /
    `kinds.rs` picking category, retry hint, and action kind, and add a typed-mapping test.
 2. **Frontend**: add the `errors.<reason>.{title,explanation,suggestion}` keys to `errors.json` with `@key`
-   descriptions, run `pnpm intl:keys`, translate into every locale
-   ([guide](i18n-translation.md)), extend the factory union, and add the reason to the STYLE
-   matrix.
+   descriptions, run `pnpm intl:keys`, translate into every locale ([guide](i18n-translation.md)), extend the factory
+   union, and add the reason to the STYLE matrix.
 
 A new provider additionally needs its detection arm in `detect_provider`, its suggestions in
 `provider-error-messages.ts`, and a row in the `volumes/CLAUDE.md` provider table.

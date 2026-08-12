@@ -1130,10 +1130,15 @@ mod tests {
             |e| e.file_name.starts_with("ring-"),
         );
 
-        let latest = watcher.latest_download().expect("an observed download lands in the ring");
+        let latest = watcher
+            .latest_download()
+            .expect("an observed download lands in the ring");
         assert_eq!(latest.parent(), Some(canon_root.as_path()));
         assert!(
-            latest.file_name().and_then(|n| n.to_str()).is_some_and(|n| n.starts_with("ring-")),
+            latest
+                .file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with("ring-")),
             "expected a ring-* download, got {latest:?} (observed {})",
             ev.file_name,
         );
