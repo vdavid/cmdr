@@ -15,7 +15,10 @@ live in `CLAUDE.md`.
 - **`src/funnel.ts`**: Route `/admin/funnel`: per-UTC-day acquisition funnel (downloads, new installs, DAU, D7
   retention, Listmonk signups). Pure `buildDateList`/`assembleFunnel` helpers are unit-tested
 - **`src/telemetry.ts`**: Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`
-- **`src/likes.ts`**: Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)
+- **`src/likes.ts`**: Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS). Blog-post hearts, keyed by a per-post IP
+  pseudonym; see § Blog likes
+- **`src/likes.test.ts`**: Tests for the slug gate, the rate limit, the salt requirement, and the pseudonym's
+  per-salt/per-slug/per-IP separation
 - **`src/error-report.ts`**: Route: `POST /error-report` (multipart upload to R2, Discord notify)
 - **`src/beta-signup.ts`**: Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)
 - **`src/feedback.ts`**: Route: `POST /feedback` (in-app feedback → D1 + Discord notify)
@@ -79,6 +82,10 @@ live in `CLAUDE.md`.
 | POST    | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                                |
 | POST    | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                       |
 | GET     | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                                |
+| GET     | `/likes/:slug`             | none          | Blog-post like count + whether this caller already liked it                                        |
+| POST    | `/likes/:slug`             | IP rate-limit | Like a blog post (idempotent per caller pseudonym)                                                 |
+| DELETE  | `/likes/:slug`             | IP rate-limit | Unlike a blog post                                                                                 |
+| OPTIONS | `/likes/:slug`             | none          | CORS preflight (204), getcmdr.com origins only                                                     |
 | GET     | `/r-codes.json`            | none          | Public `?r=<code>` → UTM map (note stripped), edge-cached 5 min, `Access-Control-Allow-Origin: *`  |
 | OPTIONS | `/r-codes.json`            | none          | CORS preflight (204)                                                                               |
 | GET     | `/admin/r-codes`           | Bearer token  | Full code map including admin `note`                                                               |
@@ -117,6 +124,7 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 | `LISTMONK_API_USER`                | Listmonk API user                | Same (least-privilege at deploy)  |
 | `LISTMONK_API_TOKEN`               | Listmonk API token               | Same (least-privilege at deploy)  |
 | `LISTMONK_BETA_LIST_ID`            | Beta-list numeric id             | Same id                           |
+| `IP_HASH_PEPPER`                   | Any random string                | Makes every stored IP hash one-way |
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
 
@@ -130,6 +138,8 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 | `FEEDBACK_LIMITER`     | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)      |
 | `ERROR_REPORT_LIMITER` | Rate limit   | Gates `POST /error-report` at 3 req/min/IP (tightest: each request stores up to 10 MB) |
 | `CRASH_REPORT_LIMITER` | Rate limit   | Gates `POST /crash-report` at 10 req/min/IP (a crashing app flushes a small burst)     |
+| `LIKES_LIMITER`        | Rate limit   | Gates `POST`/`DELETE /likes/:slug` at 20 req/min/IP (bounds unauthenticated KV growth) |
+| `BLOG_LIKES`           | KV namespace | One key per post (`likes:<slug>`) holding the count and the caller pseudonyms          |
 
 **Rate limits are per data center, not global.** Cloudflare's rate-limit bindings count per colo
 ([docs](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)), so each one bounds a single
@@ -800,6 +810,10 @@ stored IP hash is brute-forceable. The Worker warns in the log rather than faili
 `IP_HASH_PEPPER is not set` after the first deploy. Once it's set, the next retention sweep clears the weakly-hashed
 rows written before it (90 days for `downloads`, seven days for `update_checks`).
 
+The blog-like pseudonyms are the exception to that self-healing: KV has no retention sweep, so `likes:<slug>` values
+written while the pepper was missing stay weak until the keys are deleted. If the warning ever shows up in production,
+clear the namespace (`wrangler kv key list --binding BLOG_LIKES`, then delete) and let the counts rebuild.
+
 Deployed to `api.getcmdr.com` via Cloudflare custom domain (declared in `wrangler.toml` `[[routes]]`).
 `license.getcmdr.com` is a permanent alias for existing app versions. Fallback URL:
 `cmdr-license-server.veszelovszki.workers.dev`. The cron trigger (`0 */3 * * *`) is declared in `wrangler.toml` under
@@ -847,6 +861,23 @@ handling VAT in 27+ EU countries is impractical (Stripe is a payment processor, 
 model felt pushy for hobbyists (trial countdown, nagware). BSL gives friction-free personal use (no nags), clear
 commercial terms (businesses know they must pay), and simpler enforcement (title bar shows license type, honor system
 beats trial timers). Source converts to AGPL-3.0 after 3 years per release.
+
+**Decision**: Blog-like pseudonyms go through the shared `hashCallerIp`, salted with the post SLUG rather than the UTC
+day. **Why**: The stored value has to be stable per reader for years (that's what "you already liked this" means) yet
+never recoverable to an IP. The daily salt telemetry uses would forget every like overnight, so likes pass the slug
+instead: still public, still no secrecy of its own, and it buys the same unlinkability in the dimension that matters
+here (one reader gets an unrelated pseudonym on every post, so a KV dump can't be pivoted into a per-person reading
+history). The pepper does the one-way work in both. Writing a second hashing scheme for this would have meant two
+places to get the pepper rule right; there's one.
+
+**Decision**: The likes pseudonym is truncated to 16 hex chars, unlike the full digest telemetry stores. **Why**: it's
+stored once per liker per post, so the full 64 chars would quadruple every KV value. Collisions at these counts would
+cost at most one reader a heart that was already filled.
+
+**Decision**: `/likes/:slug` validates the slug against the blog's own charset before touching KV. **Why**: `POST`
+creates the key it writes and takes no auth, so an unvalidated slug is an unbounded KV-growth primitive (and a way to
+run up the bill). The route can't check the slug against the real post list (the worker doesn't know it), so the
+charset plus an 80-char cap plus `LIKES_LIMITER` is the bound.
 
 ## Gotchas
 

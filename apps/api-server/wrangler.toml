@@ -116,6 +116,19 @@ namespace_id = "1005"
 limit = 10
 period = 60
 
+# Rate limit for POST and DELETE /likes/:slug, keyed by the caller IP (transient, never stored).
+# Both are unauthenticated writes that create the KV key they touch, so this is the ceiling on how
+# fast one client can grow the namespace. A reader toggles a heart a handful of times at most, so
+# 20/min/IP is invisible to real use. `period` must be 10 or 60. `namespace_id` is a per-account
+# integer id.
+[[ratelimits]]
+name = "LIKES_LIMITER"
+namespace_id = "1006"
+
+[ratelimits.simple]
+limit = 20
+period = 60
+
 [triggers]
 crons = ["0 */3 * * *"]
 

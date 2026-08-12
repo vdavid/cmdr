@@ -1,41 +1,12 @@
 import { Hono, type Context } from 'hono'
-import { callerIp, enforceIpRateLimit, type Bindings } from './types'
+import { callerIp, enforceIpRateLimit, hashCallerIp, type Bindings } from './types'
 import { classifyUaFamily } from './funnel'
 
 const telemetry = new Hono<{ Bindings: Bindings }>()
 
-/** The current UTC day as `YYYY-MM-DD`. Also the salt half of {@link hashCallerIp}. */
+/** The current UTC day as `YYYY-MM-DD`. This is the salt telemetry passes to `hashCallerIp`. */
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10)
-}
-
-/** Warn at most once per isolate, so a misconfigured deploy is visible without flooding the log. */
-let warnedMissingPepper = false
-
-/**
- * Hash a caller IP for storage: `SHA-256(pepper + ip + YYYY-MM-DD)`.
- *
- * Two independent ingredients, and BOTH are load-bearing:
- *
- * - The **daily salt** stops the value linking one visitor across days. It is public and predictable
- *   by design (it's the date), so it provides no secrecy at all.
- * - The **pepper** (`IP_HASH_PEPPER`, a Cloudflare secret) is what makes the hash one-way. Without
- *   it, anyone holding the database recovers the address: IPv4 is 2^32 candidates, which a GPU walks
- *   in seconds, so an unpeppered hash IS the IP in a thin costume, and our privacy policy's "we don't
- *   store your IP address" would be false. ❌ Never drop the pepper to "simplify" the scheme.
- *
- * Rotating the pepper is safe and re-anonymizes every stored row against the old value; it only costs
- * one day of same-day dedup accuracy across the rotation. A missing secret still hashes (losing the
- * count would be worse than a weak hash) but logs loudly: `hashed_ip` is then brute-forceable until
- * the secret is set and the retention sweep clears the affected rows.
- */
-async function hashCallerIp(ip: string, day: string, pepper: string | undefined): Promise<string> {
-  if (!pepper && !warnedMissingPepper) {
-    warnedMissingPepper = true
-    console.warn('IP_HASH_PEPPER is not set: stored IP hashes are brute-forceable until it is')
-  }
-  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode((pepper ?? '') + ip + day))
-  return [...new Uint8Array(hashBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 // Crash report ingestion: writes to D1 for crash analysis

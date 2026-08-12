@@ -25,6 +25,9 @@ export type Bindings = {
   // Workers rate-limit binding gating POST /crash-report, keyed by the caller IP (never stored).
   // Optional; the route skips the gate when absent.
   CRASH_REPORT_LIMITER?: RateLimit
+  // Workers rate-limit binding gating POST and DELETE /likes/:slug, keyed by the caller IP (never
+  // stored). Optional; the route skips the gate when absent.
+  LIKES_LIMITER?: RateLimit
   // Paddle webhook secrets (both optional to support gradual rollout)
   PADDLE_WEBHOOK_SECRET_LIVE?: string
   PADDLE_WEBHOOK_SECRET_SANDBOX?: string
@@ -33,10 +36,11 @@ export type Bindings = {
   PADDLE_API_KEY_SANDBOX?: string
   // Crypto keys
   ED25519_PRIVATE_KEY: string
-  // Secret pepper mixed into every stored IP hash (`/download`, `/update-check`). The daily salt
-  // beside it is public by design, so this secret is the ONLY thing making those hashes one-way:
-  // without it, the IPv4 space brute-forces in seconds. Optional so tests and incomplete envs can
-  // omit it (the handler warns and still counts); required in any deployed environment.
+  // Secret pepper mixed into every stored IP hash (`/download`, `/update-check`, `/likes/:slug`).
+  // The salt beside it is public by design (a date, or a post slug), so this secret is the ONLY
+  // thing making those hashes one-way: without it, the IPv4 space brute-forces in seconds. Optional
+  // so tests and incomplete envs can omit it (the handler warns and still counts); required in any
+  // deployed environment.
   IP_HASH_PEPPER?: string
   // Email
   RESEND_API_KEY: string
@@ -170,6 +174,41 @@ export async function enforceIpRateLimit(limiter: RateLimit | undefined, req: He
   if (!limiter) return null
   const { success } = await limiter.limit({ key: callerIp(req) })
   return success ? null : Response.json({ error: 'Too many requests' }, { status: 429 })
+}
+
+/** Warn at most once per isolate, so a misconfigured deploy is visible without flooding the log. */
+let warnedMissingPepper = false
+
+/**
+ * Hash a caller IP for storage: `SHA-256(pepper + ip + salt)`. The one place an IP becomes a stored
+ * value, so every route that keeps one comes through here.
+ *
+ * Two independent ingredients, and BOTH are load-bearing:
+ *
+ * - The **salt** scopes the value so it can't be linked across whatever it separates. Telemetry
+ *   passes the UTC day, so a visitor is unlinkable across days; `/likes/:slug` passes the post slug
+ *   (a like has to stay recognizable for years, so a rotating salt would forget it), so a reader is
+ *   unlinkable across posts. It's public and predictable by design, and provides no secrecy at all.
+ * - The **pepper** (`IP_HASH_PEPPER`, a Cloudflare secret) is what makes the hash one-way. Without
+ *   it, anyone holding the data recovers the address: IPv4 is 2^32 candidates, which a GPU walks in
+ *   seconds, so an unpeppered hash IS the IP in a thin costume, and our privacy policy's "we don't
+ *   store your IP address" would be false. ❌ Never drop the pepper to "simplify" the scheme.
+ *
+ * Rotating the pepper is safe and re-anonymizes every stored row against the old value. It costs one
+ * day of same-day dedup accuracy in telemetry, and in likes it costs readers the filled heart on
+ * posts they had liked (counts are untouched).
+ *
+ * A missing secret still hashes (losing the count would be worse than a weak hash) but logs loudly.
+ * D1 rows age out of the retention sweep on their own; a likes pseudonym in KV never does, so a
+ * pepper set late leaves weak values there until the `likes:` keys are deleted.
+ */
+export async function hashCallerIp(ip: string, salt: string, pepper: string | undefined): Promise<string> {
+  if (!pepper && !warnedMissingPepper) {
+    warnedMissingPepper = true
+    console.warn('IP_HASH_PEPPER is not set: stored IP hashes are brute-forceable until it is')
+  }
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode((pepper ?? '') + ip + salt))
+  return [...new Uint8Array(hashBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 /** Verify admin auth and return error response if unauthorized, or null if authorized. */
