@@ -859,6 +859,29 @@ mod tests {
     // ── FDA-gate helper ──────────────────────────────────────────────
 
     #[test]
+    fn starvation_message_separates_a_dead_stream_from_a_dropped_event() {
+        // Arming ate the budget: the stream never came up, so the redo loop never
+        // really got to run. Blaming delivery here sends the reader the wrong way.
+        let never_armed = starvation_message(Duration::from_millis(13_900), 1);
+        assert!(never_armed.contains("arming alone ate"), "{never_armed}");
+        assert!(never_armed.contains("1 redo attempt(s)"), "{never_armed}");
+
+        // The opposite shape: a live stream that swallowed every event.
+        let armed_then_dropped = starvation_message(Duration::from_millis(300), 14);
+        assert!(armed_then_dropped.contains("armed in"), "{armed_then_dropped}");
+        assert!(
+            armed_then_dropped.contains("14 redo attempt(s)"),
+            "{armed_then_dropped}"
+        );
+
+        // Both name the host-wide suspect, which is what stops the next reader
+        // from bisecting Cmdr for a sick daemon.
+        for message in [&never_armed, &armed_then_dropped] {
+            assert!(message.contains("fseventsd"), "{message}");
+        }
+    }
+
+    #[test]
     fn desired_running_mirrors_fda_gate() {
         assert!(desired_running(false), "open gate -> should run");
         assert!(!desired_running(true), "closed gate -> should not run");
@@ -895,6 +918,39 @@ mod tests {
     /// SIGTERM-ing the whole process at the tight global 8 s cap.
     const EVENT_TIMEOUT: Duration = Duration::from_secs(15);
 
+    /// What a starved run reports, split so the reader knows WHICH half of the
+    /// budget went missing.
+    ///
+    /// Arming and the redo loop share one `EVENT_TIMEOUT`, so a single "starved"
+    /// line can't tell "the stream never came up" from "it came up and then
+    /// every event was dropped" — two very different causes. Naming the arming
+    /// cost and the attempts it left is what turns the next failure into a read
+    /// rather than an instrumentation session.
+    ///
+    /// The fseventsd pointer is here because the daemon is host-wide and its bad
+    /// state looks exactly like a Cmdr bug from inside the test: on a healthy Mac
+    /// arming is well under a second, and a wedged fseventsd (pinned CPU,
+    /// multi-GB RSS) stretched it past 10 s on a fully idle machine.
+    fn starvation_message(arming: Duration, attempts: u32) -> String {
+        let cause = if arming >= EVENT_TIMEOUT / 2 {
+            format!("arming alone ate {arming:.1?} of it, leaving {attempts} redo attempt(s)")
+        } else {
+            format!("the watch armed in {arming:.1?}, then {attempts} redo attempt(s) all went undelivered")
+        };
+        format!("no download-detected within {EVENT_TIMEOUT:?} (FSEvents watch starved): {cause}. {FSEVENTSD_HINT}")
+    }
+
+    /// Names every file [`prime_watch`] writes. Shared with the ring assertions
+    /// so "is this one of MY files?" can't drift from what priming actually
+    /// creates.
+    const PRIME_SENTINEL_PREFIX: &str = "cmdr-prime-sentinel-";
+
+    /// Where to look before suspecting this code. Shared by both starvation
+    /// sites, because the daemon is host-wide and either one can be its victim.
+    const FSEVENTSD_HINT: &str = "Arming is well under a second on a healthy Mac; if it wasn't here, check fseventsd \
+         (`ps aux | grep fseventsd`) before suspecting this code — a daemon pinned at 100% CPU with multi-GB RSS \
+         starves every FSEvents delivery on the host, and `sudo killall fseventsd` restarts it.";
+
     /// Drive a real FSEvents-observed mutation to a reliable emit, defeating
     /// both the just-registered-watch arming window and FSEvents' habit of
     /// coalescing or dropping a lone event under host saturation.
@@ -929,15 +985,14 @@ mod tests {
         mut mutate: impl FnMut(u32),
         matches: impl Fn(&DownloadDetectedEvent) -> bool,
     ) -> DownloadDetectedEvent {
-        let deadline = Instant::now() + EVENT_TIMEOUT;
+        let started = Instant::now();
+        let deadline = started + EVENT_TIMEOUT;
         prime_watch(dir, rx, deadline);
+        let arming = started.elapsed();
         let mut attempt = 0u32;
         loop {
             let remaining = deadline.saturating_duration_since(Instant::now());
-            assert!(
-                !remaining.is_zero(),
-                "no download-detected within {EVENT_TIMEOUT:?} (FSEvents watch starved)"
-            );
+            assert!(!remaining.is_zero(), "{}", starvation_message(arming, attempt));
             mutate(attempt);
             attempt += 1;
             // A live stream delivers within the 200 ms debounce plus slack, so a
@@ -965,18 +1020,25 @@ mod tests {
     /// Repeatedly creates a throwaway eligible file (a fresh name each time, so
     /// each is a distinct `Create` the sink emits) until one is observed. A
     /// rewrite of the same name is a `Modify`, which never emits, so the name
-    /// must change each iteration. Sentinels pass through the `LatestRing`, but
-    /// the caller mutates its real file last, so ordered FSEvents delivery lands
-    /// it at the back and it wins.
+    /// must change each iteration.
+    ///
+    /// **Sentinels pass through the `LatestRing` and the drain below can't
+    /// promise they're gone.** It clears what has ARRIVED; a sentinel written
+    /// before the caller's real file can still be DELIVERED after it, which puts
+    /// a sentinel at the back of the ring. So a caller reading the ring's back
+    /// treats [`PRIME_SENTINEL_PREFIX`] as one of its own files rather than
+    /// assuming write order survives as delivery order — an assumption that only
+    /// holds while delivery is prompt, and that failed for real once the host's
+    /// fseventsd went bad.
     fn prime_watch(dir: &Path, rx: &mpsc::Receiver<DownloadDetectedEvent>, deadline: Instant) {
         let mut n = 0u32;
         loop {
             let remaining = deadline.saturating_duration_since(Instant::now());
             assert!(
                 !remaining.is_zero(),
-                "FSEvents watch never began delivering before the deadline (arming never completed)"
+                "FSEvents watch never began delivering before the deadline (arming never completed). {FSEVENTSD_HINT}"
             );
-            let _ = fs::write(dir.join(format!("cmdr-prime-sentinel-{n}.dat")), b"x");
+            let _ = fs::write(dir.join(format!("{PRIME_SENTINEL_PREFIX}{n}.dat")), b"x");
             n += 1;
             if rx.recv_timeout(remaining.min(Duration::from_millis(500))).is_ok() {
                 break;
@@ -1116,11 +1178,16 @@ mod tests {
         let watcher = DownloadsWatcher::start_at(td.path().to_path_buf(), sink).unwrap();
 
         // What this proves: an event the REAL watcher observed reaches the ring,
-        // and `latest_download` reads it back canonicalized. Ring ORDER is not
-        // asserted here — a redo attempt's file can be delivered right after the
-        // one we matched, so the back of the ring isn't pinned down. Order is
-        // `LatestRing`'s own contract (`re_push_moves_to_back`), tested there
-        // with no FSEvents in the way.
+        // and `latest_download` reads it back CANONICALIZED (`/private/var/…`,
+        // not the `/var/…` spelling the test wrote) — the half that can actually
+        // regress in production code.
+        //
+        // Ring ORDER is not asserted, and the assertion below is written so it
+        // can't accidentally depend on it: any file this test caused may sit at
+        // the back, because a redo attempt or a priming sentinel can be
+        // DELIVERED after the event we matched even though it was WRITTEN
+        // before. Order is `LatestRing`'s own contract (`re_push_moves_to_back`),
+        // tested there with no FSEvents in the way.
         let ev = observe_mutation(
             td.path(),
             &rx,
@@ -1138,8 +1205,8 @@ mod tests {
             latest
                 .file_name()
                 .and_then(|n| n.to_str())
-                .is_some_and(|n| n.starts_with("ring-")),
-            "expected a ring-* download, got {latest:?} (observed {})",
+                .is_some_and(|n| n.starts_with("ring-") || n.starts_with(PRIME_SENTINEL_PREFIX)),
+            "the ring's back is a file this test never wrote: {latest:?} (observed {})",
             ev.file_name,
         );
         drop(watcher);

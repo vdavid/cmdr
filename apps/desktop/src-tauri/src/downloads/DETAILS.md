@@ -143,6 +143,17 @@ starves every watch on the box: cloning a multi-GB `target/` into a new worktree
 pass. Both measurements above followed an APFS clone of a 78 GB build tree. Before digging into a watcher, check what
 else has been writing, and re-measure on a quiet machine.
 
+**And the daemon's bad state can be PERSISTENT, not just a passing storm.** Measured 2026-08-12 on the M3 Max, machine
+fully idle: `fseventsd` at 100% CPU, **26.6 GB RSS on a 64 GB box**, 154 CPU-hours accumulated over 15 days of uptime.
+Arming took 4.2 s, then 7.8 s, then 11.0 s across three consecutive runs of the same lone test — climbing, against a 15 s
+budget, on a machine doing nothing else. That's the difference between "wait for the Time Machine pass to finish" and
+"the daemon needs restarting": `sudo killall fseventsd` (launchd respawns it), or a reboot.
+
+So the check is two questions, in order: is something churning the disk right now, and is `ps aux | grep fseventsd`
+showing a daemon that has gone bad? `starvation_message` in `watcher.rs` prints the second one into the failure itself,
+along with whether the budget went on ARMING (the stream never came up) or on the redo loop (it came up, then swallowed
+everything) — the two have different causes and the old single line couldn't tell them apart.
+
 ❌ So don't read a starvation failure here as a watcher regression, and don't "fix" it by lengthening the budget or
 adding redo attempts: the loop already gets ~14 tries and none of them are seen. A rescue would have to re-arm the
 watch, and whether that belongs in the test or in `DownloadsWatcher` itself is an open question, not a cleanup.
