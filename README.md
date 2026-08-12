@@ -21,8 +21,8 @@ one of those for now.
 lets it into its main tap.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="brand/screenshots/app-main-dark.png" />
-  <img alt="Cmdr showing two folders side by side in its two-pane layout on macOS" src="brand/screenshots/app-main-light.png" />
+  <source media="(prefers-color-scheme: dark)" srcset="brand/screenshots/app-main-dark.webp" />
+  <img alt="Cmdr showing two folders side by side in its two-pane layout on macOS" src="brand/screenshots/app-main-light.webp" />
 </picture>
 
 ## Overview

@@ -225,10 +225,11 @@ macOS 12 Monterey or later, both Apple Silicon and Intel
 
 - **Icon**: `brand/logos/cmdr-512.png` (512x512, transparent)
 - **Screenshots** (up to five, in this order):
-  1. `brand/screenshots/app-main-light.png`
-  2. `brand/screenshots/app-main-dark.png`
-  - Only the main-view pair exists today. Search shots come once the search UI is presentable; settings and the file
-    viewer are the other candidates. Reshoot per `docs/guides/screenshots.md`.
+  1. `brand/screenshots/app-main-light.webp`
+  2. `brand/screenshots/app-main-dark.webp`
+  3. `brand/screenshots/search-light.webp`, `chat-light.webp`, `settings-light.webp` if the listing takes more.
+  - The masters are lossless WebP. MacUpdate's uploader may want PNG: `magick app-main-light.webp app-main-light.png`.
+    Reshoot per `docs/guides/screenshots.md`.
 
 ## Comments for the review team
 

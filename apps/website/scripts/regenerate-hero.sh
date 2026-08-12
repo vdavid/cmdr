@@ -61,7 +61,7 @@ read -r left_x left_y pane_w pane_h right_x right_y < <(
 )
 
 for variant in dark light; do
-  src="$screenshots/app-main-${variant}.png"
+  src="$screenshots/app-main-${variant}.webp"
   [[ -f $src ]] || {
     echo "regenerate-hero: no $src" >&2
     exit 1

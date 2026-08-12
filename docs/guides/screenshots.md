@@ -26,9 +26,9 @@ A quiet run takes about 25 seconds and writes nine files. The one exception is t
 
 Into `brand/screenshots/` (or `--out`):
 
-- `app-main-{dark,light}.png` — the two-pane main view. Feeds the README, the website hero, and the directory listings,
+- `app-main-{dark,light}.webp` — the two-pane main view. Feeds the README, the website hero, and the directory listings,
   so all three can never drift apart.
-- `search-{dark,light}.png`, `chat-{dark,light}.png`, `settings-{dark,light}.png` — listings only. The Ask Cmdr rail
+- `search-{dark,light}.webp`, `chat-{dark,light}.webp`, `settings-{dark,light}.webp` — listings only. The Ask Cmdr rail
   widens the window, so that pair lands on a wider canvas than the rest.
 - `hero-cutouts.json` — the two pane rectangles, measured off the live DOM in the same test that took the shot, which is
   what keeps the hero geometry from drifting a redesign behind its own screenshot.
@@ -36,9 +36,16 @@ Into `brand/screenshots/` (or `--out`):
 Every master is a real macOS window shot: the window plus its focused shadow, on transparency. `app-main` is 2508x1634
 around a 2284x1410 window at `+112+76`.
 
+**Lossless WebP**, so a master is pixel-identical to the PNG the shutter takes (`magick compare -metric AE` reads 0) at
+about a fifth of the bytes. That is what keeps a reshoot from adding ~8 MB of undeltifiable blobs to git every time,
+which is also why ❗ the conversion must never become lossy: these are the originals every other surface is cut from.
+The shutter and every pixel gate still work on the PNG; only the file that lands in `brand/` is WebP, which is why the
+run needs ImageMagick and refuses to start without it. Need a PNG for an uploader that rejects WebP:
+`magick app-main-dark.webp app-main-dark.png`.
+
 ## Then refresh each consumer
 
-- **README**: nothing to edit; it points at `brand/screenshots/app-main-{dark,light}.png`. Commit the new PNGs.
+- **README**: nothing to edit; it points at `brand/screenshots/app-main-{dark,light}.webp`. Commit the new masters.
 - **Website hero**: `apps/website/scripts/regenerate-hero.sh`, which reads the masters and `hero-cutouts.json`. Details
   in `apps/website/public/hero/DETAILS.md`.
 - **App directories**: re-upload on each listing, and update the matching file in `brand/listings/` in the same pass.

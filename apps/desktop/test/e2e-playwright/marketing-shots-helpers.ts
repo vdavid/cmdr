@@ -12,6 +12,7 @@
  * catch that.
  */
 
+import { spawnSync } from 'node:child_process'
 import { readFileSync, renameSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { assessImageContent } from './i18n-capture-png.js'
@@ -97,6 +98,31 @@ export async function setWindowSize(
   )
 }
 
+/**
+ * Moves an accepted shot into place, converting to WebP when that's what was asked for.
+ *
+ * ❗ The shutter and every pixel gate stay on the PNG `screencapture` writes; only the
+ * FILE that lands in `brand/` is WebP. Lossless, so the masters are pixel-identical to
+ * the PNG (verified: `magick compare -metric AE` reads 0) at about a fifth of the bytes,
+ * which is what keeps a reshoot from adding ~8 MB of undeltifiable blobs to git.
+ *
+ * ❌ Never lossy here. These are the pristine originals every other surface is cut from.
+ */
+function writeMaster(stagePath: string, path: string): void {
+  if (!path.endsWith('.webp')) {
+    renameSync(stagePath, path)
+    return
+  }
+  const res = spawnSync('magick', [stagePath, '-define', 'webp:lossless=true', '-define', 'webp:method=6', path], {
+    encoding: 'utf8',
+  })
+  if (res.error !== undefined || res.status !== 0) {
+    throw new Error(
+      `Converting the shot to WebP failed (\`magick\` from ImageMagick). ${res.stderr ?? String(res.error)}`,
+    )
+  }
+}
+
 /** Thrown when the shutter cannot produce a usable master, carrying every attempt's reason. */
 export class ShotRejectedError extends Error {
   constructor(message: string) {
@@ -146,7 +172,7 @@ export async function shootWithShadow(
         continue
       }
 
-      renameSync(stagePath, path)
+      writeMaster(stagePath, path)
       if (attempt > 1) console.log(`[marketing-shots] ${filename}: usable on attempt ${String(attempt)}`)
       return framing.rect
     } finally {

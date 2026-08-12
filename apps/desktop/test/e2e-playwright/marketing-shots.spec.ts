@@ -77,7 +77,7 @@ test.describe('marketing masters', () => {
     const metrics = await stageMainWindow(page)
 
     await setTheme(page, 'dark')
-    await shootWithShadow(page, 'main', 'app-main-dark.png', metrics)
+    await shootWithShadow(page, 'main', 'app-main-dark.webp', metrics)
 
     // Measure the hero cutouts from the SAME staged window that was just photographed.
     // Measuring separately is exactly how the committed rectangles drifted a redesign
@@ -85,7 +85,7 @@ test.describe('marketing masters', () => {
     const [left, right] = await measurePaneCutouts(page, metrics.scale)
 
     await setTheme(page, 'light')
-    await shootWithShadow(page, 'main', 'app-main-light.png', metrics)
+    await shootWithShadow(page, 'main', 'app-main-light.webp', metrics)
 
     writeFileSync(
       join(outputDir(), 'hero-cutouts.json'),
@@ -114,7 +114,7 @@ test.describe('marketing masters', () => {
 
     for (const mode of ['dark', 'light'] as const) {
       await setTheme(page, mode)
-      await shootWithShadow(page, 'main', `search-${mode}.png`, metrics)
+      await shootWithShadow(page, 'main', `search-${mode}.webp`, metrics)
     }
 
     await dismissSearch()
@@ -135,7 +135,7 @@ test.describe('marketing masters', () => {
 
     for (const mode of ['dark', 'light'] as const) {
       await setTheme(page, mode)
-      await shootWithShadow(page, 'main', `chat-${mode}.png`, metrics)
+      await shootWithShadow(page, 'main', `chat-${mode}.webp`, metrics)
     }
 
     await closeRail(page)
@@ -159,7 +159,7 @@ test.describe('marketing masters', () => {
 
     for (const mode of ['dark', 'light'] as const) {
       await setTheme(page, mode)
-      await shootWithShadow(settings, 'settings', `settings-${mode}.png`, metrics)
+      await shootWithShadow(settings, 'settings', `settings-${mode}.webp`, metrics)
     }
 
     await page.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|close', { label: 'settings' })`)

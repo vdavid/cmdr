@@ -294,6 +294,21 @@ async function seedChatThread(): Promise<void> {
   }
 }
 
+/**
+ * Fails before the app launches if ImageMagick is missing.
+ *
+ * The masters are written as lossless WebP (a fifth of the PNG's bytes, pixel-identical),
+ * and the conversion happens per shot inside the spec. Discovering the tool is missing
+ * there would mean a launched app, a staged window, and a failure 30 seconds in that
+ * reads like a capture bug.
+ */
+function requireImageMagick(): void {
+  const res = spawnSync('magick', ['-version'], { encoding: 'utf8' })
+  if (res.error !== undefined || res.status !== 0) {
+    throw new Error('The masters are written as WebP, which needs ImageMagick. Install it: `brew install imagemagick`.')
+  }
+}
+
 async function main(): Promise<void> {
   if (process.platform !== 'darwin') {
     throw new Error('The marketing masters are macOS window shots (traffic lights, a real system shadow), macOS only.')
@@ -313,6 +328,8 @@ async function main(): Promise<void> {
   if (front !== null && front !== 'Cmdr') {
     console.warn(`${LOG} '${front}' holds the front position. Leave the machine alone; each shot takes it back.`)
   }
+
+  requireImageMagick()
 
   if (wantBuild) build()
   const binary = binaryPath()

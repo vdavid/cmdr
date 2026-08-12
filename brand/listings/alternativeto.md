@@ -95,9 +95,9 @@ Concrete replacement values, ready to paste on the next edit pass.
 - **Supported languages**: add German, Spanish, French, Hungarian, Dutch, Portuguese, Swedish, Vietnamese, and Chinese.
   The app ships all 10 (`apps/desktop/src/lib/intl/messages`).
 - **Screenshots**: replace all three. The v0.24 pair predates the 0.36 facelift (rounder dialogs, capsule buttons, inset
-  panes), so the listing shows an app that no longer exists. Upload `brand/screenshots/app-main-light.png` and
-  `app-main-dark.png`, and reshoot Settings. Caption them without a version number ("Two-pane main view (light)"), so
-  they don't advertise their own age.
+  panes), so the listing shows an app that no longer exists. Upload `brand/screenshots/app-main-light.webp`,
+  `app-main-dark.webp`, and `settings-light.webp` (all current). Caption them without a version number ("Two-pane main
+  view (light)"), so they don't advertise their own age. If the uploader rejects WebP: `magick x.webp x.png`.
 - **Full description**: "Smart renaming and auto-organization are on the way" is half stale, natural-language bulk
   rename shipped in 0.35. Also missing, all shipped and all headline-worthy: the full-disk index that makes search
   instant, browsing zip/tar/7z archives as folders (zip is writable), and photo search by content.

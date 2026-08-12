@@ -6,7 +6,7 @@ Reshoot and regeneration procedure for the composited hero illustration. `CLAUDE
 
 The capture is shared with the README and the app directories, so it lives in one place:
 [`docs/guides/screenshots.md`](../../../../docs/guides/screenshots.md). `pnpm marketing:shots` writes
-`brand/screenshots/app-main-{dark,light}.png` plus `brand/screenshots/hero-cutouts.json`. Then regenerate the layers.
+`brand/screenshots/app-main-{dark,light}.webp` plus `brand/screenshots/hero-cutouts.json`. Then regenerate the layers.
 
 ### Regenerate the layers
 
@@ -14,9 +14,10 @@ The capture is shared with the README and the app directories, so it lives in on
 apps/website/scripts/regenerate-hero.sh
 ```
 
-Writes the six intermediate master PNGs (into `brand/hero-masters/`, regeneration inputs, never shipped) and the twelve
-shipped WebPs (into this directory). Only the WebPs reach `dist/`; the PNGs stay under `brand/` so the bundle ships only
-the WebPs. Needs ImageMagick (`magick`) and Node.
+Writes the six intermediate master PNGs (into `brand/hero-masters/`, regeneration inputs, never shipped, and untracked)
+and the twelve shipped WebPs (into this directory). Only the WebPs reach `dist/`, and only they are committed; the PNGs
+stay under `brand/` so the bundle ships only the WebPs. Needs ImageMagick (`magick`) and Node. A fresh clone has no
+masters at all: run the script and they appear.
 
 The script does three things per theme: crops each pane rectangle onto its own transparent canvas of the master's size,
 punches those same rectangles out of the master's alpha to make the frame, and writes lossless WebPs at 2x and 1x. All
