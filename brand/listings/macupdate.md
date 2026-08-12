@@ -228,6 +228,8 @@ macOS 12 Monterey or later, both Apple Silicon and Intel
   1. `brand/screenshots/app-main-light.webp`
   2. `brand/screenshots/app-main-dark.webp`
   3. `brand/screenshots/search-light.webp`, `chat-light.webp`, `settings-light.webp` if the listing takes more.
+  - Five slots for eight masters, so the dark twins of search, chat, and Settings sit out: the main-view pair already
+    shows both themes. The submitted listing still carries only that pair, from before the rest existed.
   - The masters are lossless WebP. MacUpdate's uploader may want PNG: `magick app-main-light.webp app-main-light.png`.
     Reshoot per `docs/guides/screenshots.md`.
 
