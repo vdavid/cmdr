@@ -124,10 +124,10 @@ Rules for writing them:
 ## Checker script
 
 Always use **`pnpm check`** at the repo root (never raw `cargo` / `vitest` / etc.); it's cache-aware. Cadence: `--fast`
-while iterating, plain `pnpm check` per milestone, `--include-slow` before wrapping; prefer **`-q`** (`--quiet`), it
-collapses passes to one line. You can also scope by name (`pnpm check clippy`), tech (`rust` / `svelte` / `go`), or app
-(`desktop` / `website` / ...). Full docs in `scripts/check/CLAUDE.md`. **Finish every unit of work by running the right
-checks.** Don't even try to tail the checker script.
+while iterating, plain `pnpm check` per milestone, `--include-slow` before wrapping. Passing checks collapse to one line
+by default; `-v` prints a line per check. You can also scope by name (`pnpm check clippy`), tech (`rust` / `svelte` /
+`go`), or app (`desktop` / `website` / ...). Full docs in `scripts/check/CLAUDE.md`. **Finish every unit of work by
+running the right checks.** Don't even try to tail the checker script.
 
 ## Testing
 

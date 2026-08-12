@@ -91,7 +91,6 @@ func Skipped(reason string) CheckResult {
 // CheckContext holds the context for running checks.
 type CheckContext struct {
 	CI      bool
-	Verbose bool
 	RootDir string
 }
 

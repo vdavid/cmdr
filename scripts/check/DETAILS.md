@@ -52,7 +52,7 @@ nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main
 - **`--svelte`, `--svelte-only`**: Run only Svelte checks (desktop)
 - **`--check ID`**: Run specific checks by ID or nickname (same as naming them positionally)
 - **`--ci`**: Disable auto-fixing (for CI)
-- **`--verbose`**: Show detailed output
+- **`-v`, `--verbose`**: Print a line per check instead of the collapsed summary (details below); `--ci` implies it
 - **`--include-slow`**: Include slow checks (excluded by default)
 - **`--only-slow`**: Run only slow checks
 - **`--fast`**: Run only the curated fast pre-commit check set
@@ -61,7 +61,7 @@ nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main
 - **`--prefer-freestyle`**: Run compat checks on VM + the rest locally in parallel
 - **`--fail-fast`**: Stop on first failure
 - **`--no-log`**: Disable CSV stats logging
-- **`-q`, `--quiet`**: Collapse passing checks into a one-line count, for low-token agent runs (details below)
+- **`-q`, `--quiet`**: Accepted and ignored; quiet output is the default
 - **`--graph`**: Render the check dependency graph (weights + lanes + median wall-time) and exit
 - **`--graph-format`**: Graph output: `tree` (default, colored terminal), `mermaid`, `dot`
 - **`--docs-graph`**: Render the doc-discoverability tree (rooted at the repo-root `CLAUDE.md`) with per-doc usage, and
@@ -111,14 +111,20 @@ distribution.
 The scan costs a few seconds (streaming JSONL, prefiltering to lines containing `"tool_use"`); it always runs, since
 `--docs-graph` is an on-demand diagnostic, not part of `pnpm check`.
 
-**Quiet mode (`-q` / `--quiet`)** trims the output for agents, which only ever see the final captured stdout anyway (the
-live "Waiting for:" status line is already TTY-only). It drops the `📦 pnpm` and `🔍 Running N checks` headers and
-collapses every silent pass (clean OK results and cache hits) into one summary line: `✅ 41 checks OK, 1 warn (4.4s)`.
-What still streams verbatim, because the agent must act on it: warns, failures, skips (a skip didn't verify anything),
-and passes that changed files (a formatter rewriting the tree, flagged by `MadeChanges`). The warn/skip counts ride into
-the summary so a collapsed warn is never silently lost. Implementation: `Runner.suppressedInQuiet` (which per-check
-lines to hide) and `printSuccess` / `summarizeRun` in `main.go` (the summary line). Caching, logging, and exit codes are
-unchanged. Suppression is output-only.
+**Quiet mode is the default**, because ~50 check lines drown the signal for the reader who matters most: an agent that
+only ever sees the final captured stdout (the live "Waiting for:" status line is already TTY-only). It drops the
+`📦 pnpm` and `🔍 Running N checks` headers and collapses every silent pass (clean OK results and cache hits) into one
+summary line: `✅ 41 checks OK, 1 warn (4.4s)`. What still streams verbatim, because the agent must act on it: warns,
+failures, skips (a skip didn't verify anything), and passes that changed files (a formatter rewriting the tree, flagged
+by `MadeChanges`). The warn/skip counts ride into the summary so a collapsed warn is never silently lost.
+
+`-v` / `--verbose` opts back into the per-check lines, and `--ci` implies it: log volume is free in a job log, and a
+collapsed run is far harder to debug after the fact. `-q` / `--quiet` still parse and do nothing, so the invocations
+baked into docs, specs, and habits keep working.
+
+Implementation: `parseFlags` derives `cliFlags.quiet` as `!(verbose || ci)`, `Runner.suppressedInQuiet` picks which
+per-check lines to hide, and `printSuccess` / `summarizeRun` in `main.go` build the summary line. Caching, logging, and
+exit codes are unchanged. Suppression is output-only.
 
 ## Architecture
 

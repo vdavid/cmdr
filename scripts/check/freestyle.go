@@ -69,7 +69,6 @@ func preferFreestyleRun(rootDir string, args []string, flags *cliFlags) int {
 	// Run local-only (freestyle-incompat) checks
 	ctx := &checks.CheckContext{
 		CI:      flags.ciMode,
-		Verbose: flags.verbose,
 		RootDir: rootDir,
 	}
 
@@ -96,7 +95,7 @@ func preferFreestyleRun(rootDir string, args []string, flags *cliFlags) int {
 		fmt.Printf("\n🏠 Running %d local-only checks (freestyle-incompatible)...\n\n", len(localChecks))
 
 		if needsPnpmInstall(localChecks) {
-			if err := ensurePnpmDependencies(ctx, false); err != nil {
+			if err := ensurePnpmDependencies(ctx, flags.quiet); err != nil {
 				printError("Error: %v", err)
 				localFailed = true
 			}
@@ -106,7 +105,7 @@ func preferFreestyleRun(rootDir string, args []string, flags *cliFlags) int {
 			startTime := time.Now()
 			// Freestyle's parallel "run everything" mode is intentionally
 			// cache-unaware: no cached hits passed.
-			runner := NewRunner(ctx, localChecks, nil, flags.failFast, flags.noLog, false)
+			runner := NewRunner(ctx, localChecks, nil, flags.failFast, flags.noLog, flags.quiet)
 			failed, failedChecks := runner.Run()
 
 			totalDuration := time.Since(startTime)

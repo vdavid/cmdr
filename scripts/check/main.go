@@ -42,13 +42,12 @@ type cliFlags struct {
 	appNames        []string
 	checkNames      []string
 	ciMode          bool
-	verbose         bool
 	includeSlow     bool
 	onlySlow        bool
 	fast            bool
 	failFast        bool
 	noLog           bool
-	quiet           bool // collapse passing checks into a one-line count; stream only warns, failures, skips, and changes
+	quiet           bool // the default: collapse passing checks into a one-line count; stream only warns, failures, skips, and changes. `-v` turns it off
 	allowMain       bool // permit running in the main clone instead of a worktree (checks mutate the tree)
 	fresh           bool // bypass the input-fingerprint cache: run everything selected, then refresh its entries
 	onlyFreestyle   bool
@@ -131,7 +130,6 @@ func main() {
 
 	ctx := &checks.CheckContext{
 		CI:      flags.ciMode,
-		Verbose: flags.verbose,
 		RootDir: rootDir,
 	}
 
@@ -302,14 +300,12 @@ func parseFlags(args []string) (*cliFlags, error) {
 		appNames        stringSlice
 		checkNames      stringSlice
 		ciMode          = fs.Bool("ci", false, "Disable auto-fixing (for CI)")
-		verbose         = fs.Bool("verbose", false, "Show detailed output")
+		verbose         = fs.Bool("verbose", false, "Print a line per check instead of the collapsed summary")
 		includeSlow     = fs.Bool("include-slow", false, "Include slow checks (excluded by default)")
 		onlySlow        = fs.Bool("only-slow", false, "Run only slow checks")
 		fast            = fs.Bool("fast", false, "Run only the curated fast pre-commit check set")
 		failFast        = fs.Bool("fail-fast", false, "Stop on first failure")
 		noLog           = fs.Bool("no-log", false, "Disable CSV stats logging")
-		quiet           = fs.Bool("quiet", false, "Collapse passing checks into a one-line count; stream only warns, failures, skips, and changes")
-		q               = fs.Bool("q", false, "Collapse passing checks into a one-line count; stream only warns, failures, skips, and changes")
 		allowMain       = fs.Bool("allow-main", false, "Allow running in the main clone instead of a worktree")
 		fresh           = fs.Bool("fresh", false, "Bypass the input-fingerprint cache: run everything selected, then refresh the cache")
 		onlyFreestyle   = fs.Bool("only-freestyle", false, "Run only freestyle-compatible checks on a VM (skip the rest)")
@@ -324,10 +320,16 @@ func parseFlags(args []string) (*cliFlags, error) {
 	)
 	fs.Var(&appNames, "app", "Run checks for specific apps (repeatable or comma-separated)")
 	fs.Var(&checkNames, "check", "Run specific checks by ID (same as naming them positionally)")
-	// `-m` is the short alias for --allow-main; bind it to the same target so
-	// either form sets it (avoids an extra `|| ` in the struct, keeping parseFlags
+	// `-q` / `--quiet` are accepted and ignored: quiet output is the default now,
+	// and the flag is still baked into docs, specs, and muscle memory. `-v` is the
+	// way out of it.
+	fs.Bool("quiet", false, "Accepted and ignored: quiet output is the default")
+	fs.Bool("q", false, "Accepted and ignored: quiet output is the default")
+	// Short aliases bind to the same target as their long form, so either spelling
+	// sets it (this avoids an extra `||` in the struct literal, keeping parseFlags
 	// under the cyclomatic-complexity threshold).
 	fs.BoolVar(allowMain, "m", false, "Allow running in the main clone (short for --allow-main)")
+	fs.BoolVar(verbose, "v", false, "Print a line per check (short for --verbose)")
 
 	positionals, err := parseInterspersed(fs, args)
 	if err != nil {
@@ -341,18 +343,20 @@ func parseFlags(args []string) (*cliFlags, error) {
 	}
 
 	flags := &cliFlags{
-		rustOnly:        *rustOnly || *rustOnly2,
-		svelteOnly:      *svelteOnly || *svelteOnly2,
-		goOnly:          *goOnly || *goOnly2,
-		appNames:        appNames,
-		checkNames:      checkNames,
-		ciMode:          *ciMode,
-		verbose:         *verbose,
-		onlySlow:        *onlySlow,
-		fast:            *fast,
-		failFast:        *failFast,
-		noLog:           *noLog || *ciMode,
-		quiet:           *quiet || *q,
+		rustOnly:   *rustOnly || *rustOnly2,
+		svelteOnly: *svelteOnly || *svelteOnly2,
+		goOnly:     *goOnly || *goOnly2,
+		appNames:   appNames,
+		checkNames: checkNames,
+		ciMode:     *ciMode,
+		onlySlow:   *onlySlow,
+		fast:       *fast,
+		failFast:   *failFast,
+		noLog:      *noLog || *ciMode,
+		// Quiet is the default; `-v` / `--verbose` opts into the per-check lines.
+		// CI is verbose unconditionally: log volume is free there, and a collapsed
+		// run is much harder to debug after the fact from a job log.
+		quiet:           !(*verbose || *ciMode),
 		allowMain:       *allowMain,
 		fresh:           *fresh,
 		onlyFreestyle:   *onlyFreestyle,
@@ -692,7 +696,7 @@ func showUsage() {
 	fmt.Println("    --check ID               Run specific checks by ID (same as naming them positionally)")
 	fmt.Println("    --ci                     Disable auto-fixing (for CI)")
 	fmt.Println("    --allow-main, -m         Allow running in the main clone instead of a worktree")
-	fmt.Println("    --verbose                Show detailed output")
+	fmt.Println("    -v, --verbose            Print a line per check instead of the collapsed summary (--ci implies it)")
 	fmt.Println("    --include-slow           Include slow checks (excluded by default)")
 	fmt.Println("    --only-slow              Run only slow checks")
 	fmt.Println("    --fast                   Run only the curated fast pre-commit check set")
@@ -701,7 +705,7 @@ func showUsage() {
 	fmt.Println("    --fresh                  Bypass the input-fingerprint cache: run everything selected, then refresh it")
 	fmt.Println("    --fail-fast              Stop on first failure")
 	fmt.Println("    --no-log                 Disable CSV stats logging (~/cmdr-check-log.csv)")
-	fmt.Println("    -q, --quiet              Collapse passing checks into a one-line count; stream only warns, failures, skips, and changes")
+	fmt.Println("    -q, --quiet              Accepted and ignored: quiet output is the default")
 	fmt.Println("    --graph                  Render the check dependency graph (weights + lanes) and exit")
 	fmt.Println("    --graph-format FORMAT    Graph output format: tree (default) | mermaid | dot")
 	fmt.Println("    --docs-graph             Render the doc-discoverability tree (rooted at AGENTS.md) and exit")
@@ -709,13 +713,14 @@ func showUsage() {
 	fmt.Println("    -h, --help               Show this help message")
 	fmt.Println()
 	fmt.Println("If nothing is named, runs all non-slow checks for all apps.")
+	fmt.Println("Passing checks collapse into one summary line; warns, failures, skips, and changes always print.")
 	fmt.Println()
 	fmt.Println("EXAMPLES:")
 	fmt.Println("    pnpm check                       # Run all checks")
 	fmt.Println("    pnpm check oxfmt                 # Run one check")
 	fmt.Println("    pnpm check clippy rustfmt        # Run several checks")
 	fmt.Println("    pnpm check rust                  # Run the Rust group")
-	fmt.Println("    pnpm check website --verbose     # Run website checks with detailed output")
+	fmt.Println("    pnpm check website -v            # Run website checks, one line per check")
 	fmt.Println("    pnpm check --include-slow        # Include slow checks")
 	fmt.Println("    pnpm check --fast                # Pre-commit lane (fastest)")
 	fmt.Println("    pnpm check --ci --fail-fast      # CI mode, stop on first failure")

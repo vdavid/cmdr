@@ -60,8 +60,8 @@ func TestParseFlags_FlagsAfterPositionals(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parseFlags() returned error: %v", err)
 	}
-	if !flags.verbose || !flags.failFast {
-		t.Errorf("flags after positionals should parse: verbose=%v failFast=%v", flags.verbose, flags.failFast)
+	if flags.quiet || !flags.failFast {
+		t.Errorf("flags after positionals should parse: quiet=%v failFast=%v", flags.quiet, flags.failFast)
 	}
 	want := []string{"clippy", "oxfmt"}
 	if !slices.Equal(flags.checkNames, want) {
@@ -69,23 +69,27 @@ func TestParseFlags_FlagsAfterPositionals(t *testing.T) {
 	}
 }
 
-func TestParseFlags_Quiet(t *testing.T) {
-	for _, arg := range []string{"--quiet", "-q"} {
-		flags, err := parseFlags([]string{arg, "clippy"})
+func TestParseFlags_QuietIsTheDefault(t *testing.T) {
+	// `-q` / `--quiet` survive as accepted no-ops, so every doc, spec, and habit
+	// that still passes them keeps working.
+	for _, args := range [][]string{{"clippy"}, {"--quiet", "clippy"}, {"-q", "clippy"}} {
+		flags, err := parseFlags(args)
 		if err != nil {
-			t.Fatalf("parseFlags(%q) returned error: %v", arg, err)
+			t.Fatalf("parseFlags(%q) returned error: %v", args, err)
 		}
 		if !flags.quiet {
-			t.Errorf("parseFlags(%q): quiet = false, want true", arg)
+			t.Errorf("parseFlags(%q): quiet = false, want true", args)
 		}
 	}
 
-	flags, err := parseFlags([]string{"clippy"})
-	if err != nil {
-		t.Fatalf("parseFlags() returned error: %v", err)
-	}
-	if flags.quiet {
-		t.Error("quiet should default to false without --quiet/-q")
+	for _, args := range [][]string{{"-v", "clippy"}, {"--verbose", "clippy"}, {"--ci", "clippy"}} {
+		flags, err := parseFlags(args)
+		if err != nil {
+			t.Fatalf("parseFlags(%q) returned error: %v", args, err)
+		}
+		if flags.quiet {
+			t.Errorf("parseFlags(%q): quiet = true, want false", args)
+		}
 	}
 }
 
