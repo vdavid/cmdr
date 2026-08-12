@@ -33,8 +33,9 @@ binary launches (fixture creation, port-file reads, MCP client setup) lives here
 - **Bulk `.dat` files are zero-fill ASCII, hardlinked, and treated as read-only.** Tests needing real binary patterns
   must add their own fixtures or write to text files; the cache check is size-based + content-hash sampled at a few
   offsets, so arbitrary content wouldn't survive the deterministic-cache contract.
-- **❌ Never write to a bulk `.dat` IN PLACE.** They're hardlinks into the cache, so one `truncateSync` corrupts it for
-  every run on the machine and `ensureCacheBuilt` won't notice. Remove and rewrite, as `restoreBulkFile` does.
+- **❌ Never write to a bulk `.dat` IN PLACE.** They're hardlinks into the cache, so one `truncateSync` shortens it in
+  every live fixture tree on the machine at once. The cache self-heals on the next build; those trees do NOT, and the
+  leak guard then blames a random innocent spec. Remove and rewrite, as `restoreBulkFile` does.
 - **Text files are full copies, recreated per test; bulk files are NOT.** `recreateFixtures()` (called in `beforeEach`
   of mutating specs) restores the text files and re-copies the committed `media-fixtures/` (`sample.png` 2×2 RGBA,
   `sample.pdf` 1 page) into `left/`; bulk files survive across tests since they're read-only.

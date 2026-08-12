@@ -164,8 +164,18 @@ export function ensureCacheBuilt(): void {
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code
       if (code === 'ENOTEMPTY' || code === 'EEXIST' || code === 'EISDIR') {
-        // Another concurrent builder won. Their cache is authoritative.
-        fs.rmSync(tmpDir, { recursive: true, force: true })
+        if (cacheIsValid(CACHE_ROOT)) {
+          // Another concurrent builder won. Their cache is authoritative.
+          fs.rmSync(tmpDir, { recursive: true, force: true })
+        } else {
+          // Present but still short: a crashed builder, or a process that wrote
+          // a bulk file in place. No rename lands on a non-empty directory, so
+          // without this swap we'd fall through and hardlink from the corrupt
+          // cache — forever, since nothing else on the machine wipes it, and a
+          // short `large-1.dat` fails the E2E leak guard in whichever spec
+          // happens to be finishing.
+          swapInCache(tmpDir)
+        }
       } else if (code === 'EXDEV') {
         console.warn(`Cache rename hit EXDEV; falling back to copy into ${CACHE_ROOT}`)
         copyDirRecursive(tmpDir, CACHE_ROOT)
@@ -178,6 +188,33 @@ export function ensureCacheBuilt(): void {
     fs.rmSync(tmpDir, { recursive: true, force: true })
     throw err
   }
+}
+
+/**
+ * Moves a freshly built cache into place over an invalid one, in two renames.
+ *
+ * The corrupt cache is renamed aside first (a directory rename can't clobber a
+ * non-empty target), then the new one takes the name, then the old one goes.
+ * Two builders racing here both write byte-identical zero-fill, so whichever
+ * lands last is still correct; a builder that finds the corrupt cache already
+ * gone just takes the name directly.
+ */
+function swapInCache(tmpDir: string): void {
+  const aside = `${CACHE_TMP_PREFIX}stale-${String(process.pid)}-${String(Date.now())}`
+  try {
+    fs.renameSync(CACHE_ROOT, aside)
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+  }
+  try {
+    fs.renameSync(tmpDir, CACHE_ROOT)
+  } catch (err: unknown) {
+    // Someone else got there between our two renames: theirs is as good as ours.
+    const code = (err as NodeJS.ErrnoException).code
+    if (code !== 'ENOTEMPTY' && code !== 'EEXIST' && code !== 'EISDIR') throw err
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+  }
+  fs.rmSync(aside, { recursive: true, force: true })
 }
 
 function copyDirRecursive(src: string, dest: string): void {

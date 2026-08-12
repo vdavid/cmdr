@@ -22,10 +22,17 @@ their own `/tmp/cmdr-e2e-fixtures-cache-tmp-<pid>/`, populate the deterministic 
   existence means "populated and verified", so torn writes are structurally impossible. On `EXDEV` (cross-filesystem
   hardlink) it falls back to copy with a warning. Source of truth: `ensureCacheBuilt()` in `fixtures.ts`.
 
-Its one soft spot is a cache that gets corrupted IN PLACE through a fixture hardlink: `ensureCacheBuilt` sees an invalid
-cache, builds a replacement, and then loses its `renameSync` onto the populated directory to the "another builder won"
-branch — so the corruption survives. Hence the never-write-in-place rule in `CLAUDE.md`; recovering means removing
-`/tmp/cmdr-e2e-fixtures-cache/` by hand.
+A cache that got corrupted IN PLACE through a fixture hardlink self-heals: the rename onto a populated directory can't
+land, so `ensureCacheBuilt` re-reads `cacheIsValid(CACHE_ROOT)` on that failure. Valid means another builder genuinely
+won, and the tmp dir goes; invalid means the sitting cache is short, and `swapInCache` renames it aside, renames the new
+one into place, and deletes the old. Two builders racing there both write byte-identical zero-fill, so either order is
+correct.
+
+**Gotcha**: self-healing repairs the CACHE, never the fixture trees already hardlinked to the old inode. A live E2E run
+keeps its short `left/bulk/large-1.dat` and fails the leak guard in whichever spec is finishing, blaming a spec that
+never touched `bulk/`. That signature (`size 52428800 → 1024`, a random innocent spec) means something wrote a bulk
+`.dat` in place, so hunt the writer instead of the blamed spec. Hence the never-write-in-place rule in `CLAUDE.md`,
+which `fixtures.test.ts` § "cache torn-write recovery" now pins with a bystander fixture tree.
 
 ## The fixture manifest
 

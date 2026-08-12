@@ -127,14 +127,24 @@ describe('cleanupFixtures safety guard', () => {
 })
 
 describe('cache torn-write recovery', () => {
-  it('rebuilds when a bulk file is shorter than expected', () => {
+  it('rebuilds when a bulk file is shorter than expected, without touching a live fixture tree', () => {
     ensureCacheBuilt()
     const cacheRoot = getCacheRoot()
     const torn = path.join(cacheRoot, 'left/bulk/large-1.dat')
 
-    // Truncate one cache file to simulate a torn write.
-    fs.truncateSync(torn, 1024)
+    // A bystander tree that hardlinked the cache BEFORE the tear, standing in
+    // for the E2E shards running on this machine right now.
+    const bystander = path.join(track(createFixtures('test-torn-bystander')), 'left/bulk/large-1.dat')
+
+    // Simulate a torn write. REPLACE the cache entry, never `truncateSync` it:
+    // every live fixture tree hardlinks this inode, so an in-place write
+    // shortens `left/bulk/large-1.dat` under every E2E run on the machine at
+    // once, and the leak guard then blames whichever spec happened to be
+    // finishing.
+    fs.rmSync(torn)
+    fs.writeFileSync(torn, Buffer.alloc(1024))
     expect(fs.statSync(torn).size).toBe(1024)
+    expect(fs.statSync(bystander).size).toBe(50 * 1024 * 1024)
 
     // Force the cache to rebuild by removing it (ensureCacheBuilt won't
     // rebuild on partial corruption alone in the happy hot path: we treat
@@ -144,5 +154,23 @@ describe('cache torn-write recovery', () => {
     execSync(`rm -rf "${cacheRoot}"`)
     ensureCacheBuilt()
     expect(fs.statSync(torn).size).toBe(50 * 1024 * 1024)
+    expect(fs.statSync(bystander).size).toBe(50 * 1024 * 1024)
+  })
+
+  it('replaces a cache that is present but short, rather than hardlinking from it', () => {
+    // The tear a crashed builder leaves behind: the directory is there, so no
+    // `renameSync` can land on top of it, but a bulk file is short. Nothing
+    // else on the machine ever wipes this, so a cache that can't recover here
+    // hands every later E2E run a fixture tree the leak guard fails.
+    ensureCacheBuilt()
+    const short = path.join(getCacheRoot(), 'left/bulk/large-1.dat')
+    fs.rmSync(short)
+    fs.writeFileSync(short, Buffer.alloc(1024))
+
+    ensureCacheBuilt()
+
+    expect(fs.statSync(short).size).toBe(50 * 1024 * 1024)
+    const fresh = path.join(track(createFixtures('test-cache-repaired')), 'left/bulk/large-1.dat')
+    expect(fs.statSync(fresh).size).toBe(50 * 1024 * 1024)
   })
 })
