@@ -5,7 +5,7 @@
 //! - Main volume (root `/`)
 //! - Mounted volumes (real filesystems from /proc/mounts)
 //! - Cloud drives (Dropbox, Google Drive, Nextcloud, OneDrive)
-//! - Network mounts (GVFS SMB shares under /run/user/<uid>/gvfs/)
+//! - Network mounts (GVFS SMB shares under `/run/user/<uid>/gvfs/`)
 //! - Removable media under /run/media/ or /media/
 
 pub mod watcher;

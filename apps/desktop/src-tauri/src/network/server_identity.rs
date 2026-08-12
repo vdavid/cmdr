@@ -28,7 +28,8 @@ pub fn same_server_live(a: &str, b: &str) -> bool {
     same_server(a, b, &super::get_discovered_hosts())
 }
 
-/// Pure core of [`same_server_live`]: equivalence against an explicit host list.
+/// Pure core of `same_server_live` (macOS-only, so not an intra-doc link here): equivalence
+/// against an explicit host list.
 pub fn same_server(a: &str, b: &str, hosts: &[NetworkHost]) -> bool {
     !identifiers(a, hosts).is_disjoint(&identifiers(b, hosts))
 }
