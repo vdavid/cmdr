@@ -67,11 +67,11 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
    - **Folders always merge; the upfront check classifies collisions.** The conflict check (`conflicts.check()`, from
      `transfer-conflict-check.svelte.ts`) runs on mount **in parallel with the scan preview** (it's one cheap dest
      listing, not the recursive byte scan — `conflictCheckPromise` is assigned synchronously in `onMount` BEFORE the
-     auto-confirm branch so the MCP `Skip all` fast path dispatches with `conflictNames` populated). "Cheap" is relative:
-     on a big remote directory that one listing still runs for minutes, which is why the confirm doesn't wait for it
-     (§ "The confirm dispatches without waiting for the conflict check"). Each collision is classified
-     by the backend-resolved `sourceIsDirectory` / `destIsDirectory` flags (the BE resolves real per-item types + sizes
-     from the source volume via one batched stat when the check passes `sourceVolumeId` + `sourcePaths`):
+     auto-confirm branch so the MCP `Skip all` fast path dispatches with `conflictNames` populated). "Cheap" is
+     relative: on a big remote directory that one listing still runs for minutes, which is why the confirm doesn't wait
+     for it (§ "The confirm dispatches without waiting for the conflict check"). Each collision is classified by the
+     backend-resolved `sourceIsDirectory` / `destIsDirectory` flags (the BE resolves real per-item types + sizes from
+     the source volume via one batched stat when the check passes `sourceVolumeId` + `sourcePaths`):
      - **dir + dir** → a silent merge, NOT a conflict. Surfaced as an informational line ("N folders will merge with
        existing folders"); never counted in `totalConflictCount`; never forwarded as a bulk-skip name (a merging folder
        must not be skipped wholesale).
@@ -323,17 +323,17 @@ to the boolean.
 
 ### The confirm dispatches without waiting for the conflict check
 
-`handleConfirm` awaits `conflictCheckPromise` **only when `conflictPolicy === 'skip'`**. Every other policy dispatches as
-soon as the preview id is in hand, even with the check still running.
+`handleConfirm` awaits `conflictCheckPromise` **only when `conflictPolicy === 'skip'`**. Every other policy dispatches
+as soon as the preview id is in hand, even with the check still running.
 
 **Why it's safe.** The upfront conflict list is not a correctness input, it's a bulk-skip perf optimization:
 `build_pre_skip_set` (`src-tauri/src/file_system/write_operations/transfer/transfer_driver/mod.rs`) returns an empty set
-unless `config_resolution == Skip`, and the copy pipeline has a second independent `Skip` gate
-(`transfer/copy/mod.rs`). `VolumeCopyConfig::pre_known_conflicts` says so in its own doc comment: "Ignored for other
-resolution modes (Stop still prompts; Overwrite still proceeds normally)." Under the default `stop` the backend prompts
-per clash at runtime with apply-to-all latching (`write_operations/conflict.rs`), and a backgrounded operation's
-conflict still reaches the user through `../operation-conflict.svelte.ts`. So dispatching with `conflicts: []` costs
-pre-flight *information*, never safety.
+unless `config_resolution == Skip`, and the copy pipeline has a second independent `Skip` gate (`transfer/copy/mod.rs`).
+`VolumeCopyConfig::pre_known_conflicts` says so in its own doc comment: "Ignored for other resolution modes (Stop still
+prompts; Overwrite still proceeds normally)." Under the default `stop` the backend prompts per clash at runtime with
+apply-to-all latching (`write_operations/conflict.rs`), and a backgrounded operation's conflict still reaches the user
+through `../operation-conflict.svelte.ts`. So dispatching with `conflicts: []` costs pre-flight _information_, never
+safety.
 
 **Why `skip` is the exception, and why no human waits for it.** Under `Skip all` the names let the backend drop the
 clashing sources upfront instead of discovering each one serially through per-file `get_metadata` stats, so the progress
@@ -354,8 +354,8 @@ deliberately, so the pending state costs no new catalog key, no nine-locale tran
 **`handleCancel` returns early when `confirmed`.** Disabling the footer's Cancel is cosmetic, not the protection: the
 `×` in the dialog chrome and the Escape key both reach `ModalDialog`'s `onclose` (= `handleCancel`) whatever the footer
 looks like. Without the guard, closing during an in-flight confirm runs `scan.freeAndCleanup()` and cancels the preview
-out from under the pending `onConfirm` — the progress dialog then opens onto a dead preview. The test drives the `×`
-for exactly that reason; asserting through the disabled Cancel would cover nothing.
+out from under the pending `onConfirm` — the progress dialog then opens onto a dead preview. The test drives the `×` for
+exactly that reason; asserting through the disabled Cancel would cover nothing.
 
 Pinned by `TransferDialog.test.ts` § "confirm without waiting for the conflict check": a pending check doesn't block a
 `stop`-policy confirm or a same-volume move, `skip` still waits and still forwards the names, the button disables and
