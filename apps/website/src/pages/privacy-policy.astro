@@ -5,7 +5,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 <LegalLayout
     title="Privacy policy"
     description="How Cmdr collects, uses, and protects your personal data. GDPR compliant."
-    lastUpdated="2026-06-09"
+    lastUpdated="2026-08-12"
 >
     <p>
         Your privacy matters to us a lot. This policy explains what data we collect, why, and how we protect it. We've
@@ -16,9 +16,10 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <p>
             <strong>The short version:</strong> We collect minimal data. The website uses privacy-friendly analytics and collects
             your email if you subscribe. The desktop app validates your license periodically and checks for updates.
-            You can optionally send crash reports. During the open beta, the desktop app also sends anonymous usage stats
-            (which features you use), with an easy off switch. It never includes anything from your files. We don't sell
-            your data.
+            You can optionally send crash and error reports. During the open beta, the desktop app also sends usage stats
+            (which features you use), tied to a random id and never to your name, with an easy off switch. Nothing we
+            collect includes your file contents, and file names are replaced with placeholders before anything leaves
+            your Mac. We don't sell your data.
         </p>
     </div>
 
@@ -57,8 +58,13 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             you across other websites.
         </li>
         <li>
-            <strong>Download counts</strong>: when you download Cmdr, we record which version and architecture you
-            chose, along with your country, for stats. We don't store your IP address or any other identifying info.
+            <strong>Downloads</strong>: when you download Cmdr, we record the version and architecture you chose, your
+            country, and where the download came from (the site that linked you, and the campaign tag if you arrived
+            through one). Two more things ride along for 90 days, then we delete them: your browser's user agent, so we
+            can tell real downloads from bots and scrapers, and a one-way hash of your IP address, so we can count
+            distinct downloaders in a day. That hash mixes in the date and a secret only we hold, so it can't be turned
+            back into your IP address or followed from one day to the next. The file itself comes from GitHub Releases,
+            so GitHub sees your IP address the way any web server would.
         </li>
         <li>
             <strong>Payment info</strong>: if you buy a license, payment is handled by Paddle. We see your email address
@@ -80,15 +86,33 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         </li>
         <li>
             <strong>Crash reports</strong> (opt-in): if you choose to send crash reports, Cmdr sends the app version, macOS
-            version, and the location in our code where the crash happened. It doesn't include file names or anything
-            from your file system. If you've added a beta contact email, you can tick a box to attach it to a crash or
-            error report so we can reply, and we include it only when you do. You can enable or disable crash reports
-            anytime in Settings &gt; Updates &amp; privacy.
+            version, the location in our code where the crash happened, and the crash message, which is cleaned of
+            personal data on your Mac first, the same way error report logs are. It doesn't include your file names or
+            file contents. If you've added a beta contact email, you can tick a box to attach it to a crash or error
+            report so we can reply, and we include it only when you do; we delete it after 90 days. You can enable or
+            disable crash reports anytime in Settings &gt; Updates &amp; privacy.
         </li>
         <li>
-            <strong>Anonymous usage stats</strong> (open beta): which features you use and basic preferences (like light
-            or dark mode), tied to a random id, never to you. No file names, contents, paths, search terms, or prompts.
-            On by default during the beta, off anytime in Settings &gt; Updates &amp; privacy.
+            <strong>Error reports</strong> (opt-in): when something goes wrong, you can send a report from Help &gt; Send
+            error report. It's a zip of recent app logs plus your app and macOS version, and the app shows you what's in
+            it before it goes anywhere. Every log line is cleaned first: file and folder names are replaced with
+            placeholders on your Mac, so a path arrives as something like <code>$HOME/Documents/&lt;file&gt;.pdf</code>.
+            We keep these for 90 days.
+        </li>
+        <li>
+            <strong>Feedback you send</strong>: the message you write in the app's feedback box, plus your app and macOS
+            version, and your email address if you add one so we can reply. No install id travels with it, so your
+            feedback can't be connected to your usage stats.
+        </li>
+        <li>
+            <strong>Usage stats</strong> (open beta): which features you use and basic preferences (like light or dark
+            mode), plus your app version, macOS version, and Mac architecture. The app sends these when it starts and
+            about once an hour while it's open. They're tied to a random id created on your Mac, never to your name,
+            email, or license. That id stays the same between launches, which is how we can tell 100 people opening the
+            app once from one person opening it 100 times. So these stats are pseudonymous rather than truly anonymous:
+            we can't work out who you are from them, but the records aren't isolated from each other either. No file
+            names, contents, paths, search terms, or prompts. On by default during the beta, off anytime in Settings
+            &gt; Updates &amp; privacy.
         </li>
         <li>
             <strong>Beta contact email</strong> (optional): if you share it, it's stored on your Mac and sent only to our
@@ -97,25 +121,33 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     </ul>
 
     <p>
-        During the open beta, the desktop app sends anonymous usage stats so we can see which features matter and what's
-        working. This covers which features you use and basic preferences, tied to a random id, with an easy off switch
-        in Settings &gt; Updates &amp; privacy. We <strong>never</strong> collect your file names, file contents, paths,
-        search queries, AI prompts, keystrokes, or screenshots. Aside from these stats, the desktop app's network calls
-        are license validation (including the device identifier mentioned above), checking for updates, and sending crash
-        reports if you've opted in.
+        During the open beta, the desktop app sends usage stats so we can see which features matter and what's working.
+        This covers which features you use and basic preferences, tied to a random id, with an easy off switch in
+        Settings &gt; Updates &amp; privacy. We <strong>never</strong> collect your file contents, search queries, AI
+        prompts, keystrokes, or screenshots, and file names reach us only as placeholders, in the redacted logs of an
+        error report you chose to send. Aside from these stats, the desktop app's network calls are license validation
+        (including the device identifier mentioned above), checking for updates, and sending crash or error reports if
+        you've opted in.
     </p>
 
     <h3>What we DON'T collect</h3>
     <ul>
-        <li>Your file names, contents, or any data from your file system, ever. We don't want to know your files.</li>
         <li>
-            Your prompts, the AI's answers, tool calls, etc. The communication is all private between you and your AI,
-            unless you use a provider (OpenAI, Anthropic, etc.) that have different terms. But with Cmdr, you always
-            have the option to keep ALL communications private with a local model.
+            The contents of your files, ever. We don't want to know your files. Your file and folder names don't reach
+            us either: if you send an error report, they're replaced with placeholders on your Mac before the report is
+            built, keeping only the file extension and everyday folder names like Documents or Downloads. We see the
+            shape of what happened, not what you were working on.
         </li>
         <li>
-            Crash reports, if you opt in, contain only technical diagnostics (code locations, app and system
-            version). Never file names, file contents, or anything from your file system.
+            Your prompts, the AI's answers, tool calls, etc. When you use a cloud AI provider, the app talks to that
+            provider directly with your own API key: the conversation never passes through our servers, and we never see
+            it. What you send is then between you and that provider, under their terms (OpenAI, Anthropic, and the rest
+            each have their own). With Cmdr you always have the option to keep everything on your Mac with a local
+            model.
+        </li>
+        <li>
+            Crash reports, if you opt in, contain only technical diagnostics (code locations, app and system version,
+            and a crash message we clean of personal data on your Mac first). Never file contents.
         </li>
         <li>
             Your keystrokes or screenshots. During the open beta we do see which features are used, never their content.
@@ -134,11 +166,12 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             who has a valid license and who doesn't.
         </li>
         <li>
-            <strong>Legitimate interest</strong>: Website analytics, download counts, and the anonymous usage stats from
-            the desktop app during the open beta help us understand how people find and use Cmdr, which directly shapes
-            the product roadmap. This is strictly <em>not</em> about tracking any particular user. We actively avoid that.
-            We only look at aggregate data that can't be traced back to a single person, and the desktop usage stats come
-            with an easy opt-out in Settings &gt; Updates &amp; privacy.
+            <strong>Legitimate interest</strong>: Website analytics, download records, and the usage stats from the
+            desktop app during the open beta help us understand how people find and use Cmdr, which directly shapes the
+            product roadmap. This is strictly <em>not</em> about tracking any particular user. We actively avoid that.
+            We read these numbers in aggregate; the random id lets us count people without knowing who they are, and we
+            never use it to look up an individual. The desktop usage stats come with an easy opt-out in Settings &gt;
+            Updates &amp; privacy.
         </li>
         <li>
             <strong>Consent</strong>: Email addresses to send you news that hopefully interest you, including the optional
@@ -146,7 +179,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <em>need</em> to send like updates to this very policy.)
         </li>
         <li>
-            <strong>Consent</strong>: Crash reports, if you choose to send them. You can opt out anytime in Settings.
+            <strong>Consent</strong>: Crash reports, error reports, and feedback, each sent only when you choose to send
+            it. You can opt out of crash reports anytime in Settings.
         </li>
     </ul>
 
@@ -171,16 +205,33 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         </li>
         <li>
             <strong>PostHog</strong> (website behavior and desktop usage stats): session recordings and heatmaps to help
-            us improve the website experience, and the anonymous, PII-free feature stats the desktop app sends during the
-            open beta. Cloud-hosted in the EU.
+            us improve the website experience, and the PII-free feature stats the desktop app sends during the open
+            beta, tied to the random id described above. Cloud-hosted in the EU.
             <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer">PostHog's privacy policy</a>
         </li>
         <li>
-            <strong>Cloudflare</strong> (hosting): hosts our API server for license validation, download tracking, and crash
-            report ingestion on its global CDN. Download events (version, architecture, country) and crash reports are stored
-            in Cloudflare D1 (SQLite).
+            <strong>Cloudflare</strong> (hosting): hosts our API server for license validation, download tracking, and
+            crash, error report, and feedback intake on its global CDN. Download records, crash reports, feedback, and
+            the beta usage stats are stored in Cloudflare D1 (SQLite); error report bundles are stored in Cloudflare R2.
             <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer"
                 >Cloudflare's privacy policy</a
+            >
+        </li>
+        <li>
+            <strong>Discord</strong> (how we hear about problems): crash reports, error reports, feedback, and beta
+            signups trigger a notification in a private channel only we can read, so we notice things fast instead of
+            days later. If you attached your email address to feedback or a signup, it's in that notification. Discord
+            is a US company.
+            <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">Discord's privacy policy</a>
+        </li>
+        <li>
+            <strong>GitHub</strong> (download hosting): the app and its updates are downloaded from GitHub Releases, so
+            GitHub sees your IP address when you download or update Cmdr, as any web server would. We don't send GitHub
+            anything about you.
+            <a
+                href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+                target="_blank"
+                rel="noopener noreferrer">GitHub's privacy statement</a
             >
         </li>
         <li>
@@ -202,32 +253,52 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <h2>6. Where we store your data</h2>
     <p>
         Page-level website analytics (Umami) and our newsletter system (Listmonk) are self-hosted on our own server in
-        Europe. Our license and download tracking server runs on Cloudflare Workers on a global CDN. PostHog and Paddle
-        are GDPR-compliant and have appropriate data processing agreements in place.
+        Europe. Our license, telemetry, and report server runs on Cloudflare Workers on a global CDN, with its database
+        and file storage in Cloudflare's network. PostHog and Paddle are GDPR-compliant and have appropriate data
+        processing agreements in place.
+    </p>
+    <p>
+        Discord and GitHub are US companies, so the notifications we receive through Discord, and the download requests
+        GitHub serves, involve a transfer outside the EU under those companies' own data protection terms.
     </p>
 
     <h2>7. How long we keep your data</h2>
+    <p>A daily job on our server enforces these, so they hold whether or not anyone remembers to check.</p>
     <ul>
         <li>
-            <strong>Purchase records</strong>: kept for 7 years (Swedish accounting law requirement)
+            <strong>Purchase records</strong>: kept for seven years (Swedish accounting law requirement)
         </li>
         <li>
             <strong>Email subscriptions</strong>: kept until you unsubscribe, then we have no use for it.
         </li>
         <li>
-            <strong>Analytics data</strong>: typically 2 years, then aggregated further, or deleted. Old data is less helpful.
+            <strong>Website analytics</strong>: typically two years, then aggregated further, or deleted. Old data is less
+            helpful.
         </li>
         <li>
-            <strong>Crash reports</strong>: kept permanently until manually pruned, to help us track down long-standing stability
-            issues
+            <strong>Downloads</strong>: the hashed IP address and the user agent are deleted after 90 days. What's left
+            (version, architecture, country, and where the download came from) points to no one, and we keep it as long
+            as it's useful.
         </li>
         <li>
-            <strong>Download counts and active user data</strong>: kept permanently in aggregated form (version, architecture,
-            country). No personal information is stored.
+            <strong>Update checks</strong>: the individual records are deleted after seven days. Only the daily totals
+            per version stay.
         </li>
         <li>
-            <strong>Desktop usage stats</strong>: the anonymous beta usage stats are tied to a random id, never to you,
-            and we keep them during the beta to track how the product is used. No personal information is stored.
+            <strong>Desktop usage stats</strong>: kept for two years, then deleted. They're tied to a random id, never
+            to your name, email, or license.
+        </li>
+        <li>
+            <strong>Crash reports</strong>: your email address, if you attached one, and the id that groups your reports
+            are deleted after 90 days. The technical part (version, signal, and where in our code it happened) has no
+            time limit, because it's how we chase down long-standing stability issues, and it names nobody.
+        </li>
+        <li>
+            <strong>Error reports</strong>: deleted after 90 days.
+        </li>
+        <li>
+            <strong>Feedback</strong>: we keep the message itself so we can act on it. If you gave an email address for
+            a reply, we delete that after two years.
         </li>
     </ul>
 
