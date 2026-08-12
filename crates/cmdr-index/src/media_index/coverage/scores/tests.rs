@@ -145,8 +145,8 @@ fn a_quiet_store_is_read_once_however_often_it_is_asked() {
     clear_cache_for_test();
     let dir = store_with(volume, 1, &[("/photos", 0.9), ("/docs", 0.2)]);
 
-    let first = importance_scores(dir.path(), volume).expect("scored");
-    let second = importance_scores(dir.path(), volume).expect("scored");
+    let first = importance_scores(dir.path(), volume, None).expect("scored");
+    let second = importance_scores(dir.path(), volume, None).expect("scored");
     assert!(Arc::ptr_eq(&first, &second), "a quiet store is not re-read");
     assert_eq!(first.get("/photos"), Some(&0.9));
 }
@@ -158,10 +158,10 @@ fn a_delta_lands_without_going_back_to_the_store() {
     let volume = "cache-delta";
     clear_cache_for_test();
     let dir = store_with(volume, 1, &[("/photos", 0.9)]);
-    importance_scores(dir.path(), volume).expect("scored");
+    importance_scores(dir.path(), volume, None).expect("scored");
 
     notify_recompute_completed_for_test(volume, delta(&[("/only-in-the-delta", 0.7)], &["/photos"]));
-    let patched = importance_scores(dir.path(), volume).expect("scored");
+    let patched = importance_scores(dir.path(), volume, None).expect("scored");
     assert_eq!(patched.get("/only-in-the-delta"), Some(&0.7), "the upsert landed");
     assert_eq!(patched.get("/photos"), None, "the removal landed");
 }
@@ -171,12 +171,15 @@ fn a_full_pass_makes_the_next_read_see_the_new_table() {
     let volume = "cache-reload";
     clear_cache_for_test();
     let dir = store_with(volume, 1, &[("/old", 0.9)]);
-    assert_eq!(importance_scores(dir.path(), volume).expect("scored").get("/old"), Some(&0.9));
+    assert_eq!(
+        importance_scores(dir.path(), volume, None).expect("scored").get("/old"),
+        Some(&0.9)
+    );
 
     write_into(dir.path(), volume, 2, &[("/new", 0.4)]);
     notify_recompute_completed_for_test(volume, WeightsChanged::ReloadAll { generation: 2 });
 
-    let reloaded = importance_scores(dir.path(), volume).expect("scored");
+    let reloaded = importance_scores(dir.path(), volume, None).expect("scored");
     assert_eq!(reloaded.get("/new"), Some(&0.4), "the new table is read");
     assert_eq!(reloaded.get("/old"), None, "a full pass replaces, it doesn't merge");
 }
@@ -187,7 +190,7 @@ fn an_unscored_volume_reads_none_so_the_gate_falls_back_to_overrides() {
     // an unscored volume would silently widen coverage instead.
     clear_cache_for_test();
     let dir = tempfile::tempdir().expect("temp dir");
-    assert!(importance_scores(dir.path(), "never-scored").is_none());
+    assert!(importance_scores(dir.path(), "never-scored", None).is_none());
 }
 
 #[test]
@@ -196,21 +199,37 @@ fn the_threshold_projection_is_memoized_and_follows_the_scores() {
     clear_cache_for_test();
     let dir = store_with(volume, 1, &[("/high", 0.9), ("/low", 0.2)]);
 
-    let first = importance_scores_above(dir.path(), volume, 0.5).expect("scored");
+    let first = importance_scores(dir.path(), volume, Some(0.5)).expect("scored");
     assert_eq!(first.len(), 1, "only the folders at or above the threshold");
     assert_eq!(first.get("/high"), Some(&0.9));
 
-    let again = importance_scores_above(dir.path(), volume, 0.5).expect("scored");
+    let again = importance_scores(dir.path(), volume, Some(0.5)).expect("scored");
     assert!(Arc::ptr_eq(&first, &again), "the same threshold reuses the projection");
 
-    let wider = importance_scores_above(dir.path(), volume, 0.1).expect("scored");
+    let wider = importance_scores(dir.path(), volume, Some(0.1)).expect("scored");
     assert_eq!(wider.len(), 2, "a different threshold projects again");
 
     // A patch invalidates the projection, so a stale one can't outlive the scores it
     // was derived from.
     notify_recompute_completed_for_test(volume, delta(&[("/low", 0.8)], &[]));
-    let after = importance_scores_above(dir.path(), volume, 0.5).expect("scored");
+    let after = importance_scores(dir.path(), volume, Some(0.5)).expect("scored");
     assert_eq!(after.len(), 2, "the rescored folder is above the threshold now");
+}
+
+#[test]
+fn a_threshold_read_answers_from_a_cold_cache_too() {
+    // The threshold view must never DEPEND on an entry already being there. `None` means
+    // "importance never scored this volume" and sends the coverage gates to override-only,
+    // so any path that reports it for a merely-absent cache entry silently narrows what
+    // gets enriched. (The same reason the projection step never `?`s on the entry, which
+    // it re-looks-up after releasing the lock.)
+    let volume = "cache-cold-threshold";
+    clear_cache_for_test();
+    let dir = store_with(volume, 1, &[("/high", 0.9), ("/low", 0.1)]);
+
+    let projected = importance_scores(dir.path(), volume, Some(0.5)).expect("a scored volume is never 'unscored'");
+    assert_eq!(projected.len(), 1);
+    assert_eq!(projected.get("/high"), Some(&0.9));
 }
 
 #[test]

@@ -155,22 +155,49 @@ only guard.
 
 ## Covered-count preview + honest progress (`coverage/`, `apps/desktop/src-tauri/src/commands/media_index/state.rs`)
 
-`coverage/` is four files: `mod.rs` (the coverage RULE — `covered_in_scope`, `partition_stored`, `stored_row_survives`,
-`importance_scores` — plus `folder_coverage`, the one read that joins both halves), `eligible.rs` (the denominator
-cache, described here), `accounted.rs` (the numerator cache, § The per-folder accounted aggregate), and `rollup.rs` (the
-subtree arithmetic both caches share). Everything a host may name is re-exported from `mod.rs`; `eligible` and `rollup`
-are private, and `accounted` is visible only inside `media_index` because the writer thread mutates it directly.
+`coverage/` is five files: `mod.rs` (the coverage RULE — `covered_in_scope`, `partition_stored`, `stored_row_survives` —
+plus `folder_coverage`, the one read that joins both halves), `scores.rs` (the importance score cache, § The importance
+score cache), `eligible.rs` (the denominator cache, described here), `accounted.rs` (the numerator cache, § The
+per-folder accounted aggregate), and `rollup.rs` (the subtree arithmetic both caches share). Everything a host may name
+is re-exported from `mod.rs`; `eligible`, `rollup`, and `scores`' internals are private, and `accounted` is visible only
+inside `media_index` because the writer thread mutates it directly.
+
+### The importance score cache
+
+`ImportanceIndex::above_threshold(0.0)` is an ordered read of EVERY scored folder, which SQLite runs as an external
+merge sort (a measured 368,043 scored folders on one root). That's fine once per enrichment pass and ruinous per UI
+query, and the per-file badge asks per visible range, per pane, on every listing swap and enrichment tick. Uncached,
+those queries piled up on the tokio blocking pool until it hit its 512-thread cap, at which point every other
+`spawn_blocking` in the app starved: directory listings never completed and the volume list timed out into an empty
+picker.
+
+`coverage::importance_scores(data_dir, volume_id, at_least)` therefore serves a per-volume cached `Arc<HashMap>`.
+`at_least: None` is every scored folder, so a slider drag gets one read serving every position; `Some(threshold)`
+memoizes the projection the enrichment gate checks MEMBERSHIP against (`local_should_enrich`), so the gate stops copying
+the whole map per call. ONE function taking the threshold rather than two functions, because the crate's public surface
+is capped (`index-crate-isolation`). ❌ Never call `above_threshold` straight from a UI-driven path.
+
+**Freshness rides the recompute subscription, ❌ not the generation stamp.** An INCREMENTAL rescore writes rows at the
+CURRENT generation without bumping it (`importance/writer.rs` § `apply_incremental`), so a generation-keyed cache would
+serve stale scores until the next full pass. The cache drains its `importance::read::subscribe` receiver at each read: a
+`Delta` patches in `O(changed)`, a `ReloadAll` re-reads, and a LAGGED receiver re-reads (a lag is never "nothing
+happened" — see `importance/read/DETAILS.md` § The reload contract). Draining is pull-based rather than a background
+task because every read already goes through one function, which is the same freshness without spawning a per-volume
+task from inside a blocking closure.
+
+`MediaScheduler::folder_scores` deliberately keeps its own uncached read: it runs once per enrichment pass, not per UI
+event, and a pass wants the store as of its own start.
 
 `media_index_covered_count(threshold, volume_ids)` powers the slider's live preview: across the ENABLED volumes (master
 on AND (local, or SMB opted-in); MTP never), how many folders score `≥ threshold` and how many images they hold —
 exactly `(importance ≥ threshold) AND opted-in`, never a non-opted-in SMB/MTP volume. The qualifying-image count per
 folder is an O(entries) index walk, so it's cached per volume (`coverage::get_or_build`, a `folder → count` map) and the
-threshold is applied cheaply by intersecting with `above_threshold` — a debounced drag only re-runs the cheap importance
-read + `covered_in_scope` (pure, unit-tested; it dispatches on the scope, so the count follows the same rule the
-enrichment gate does — § The indexing scope). `pending` is `true` when any enabled requested volume isn't ready (still
-scanning / not yet scored), so the UI voices "naspi still scanning" rather than a confident wrong number.
-`media_index_volume_state` carries `qualifying_count: Option<u64>` (the honest denominator for "12,000 of 38,900
-images"); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
+threshold is applied cheaply by intersecting the scores with it — a debounced drag only re-runs the CACHED importance
+read (§ The importance score cache) + `covered_in_scope` (pure, unit-tested; it dispatches on the scope, so the count
+follows the same rule the enrichment gate does — § The indexing scope). `pending` is `true` when any enabled requested
+volume isn't ready (still scanning / not yet scored), so the UI voices "naspi still scanning" rather than a confident
+wrong number. `media_index_volume_state` carries `qualifying_count: Option<u64>` (the honest denominator for "12,000 of
+38,900 images"); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
 
 **Counting is a SINK over the walk, never a materialized list.** `enrich::for_each_qualifying_image` is the one walk
 shape (`scheduler/DETAILS.md` § The walk); `coverage::count_qualifying_images` aggregates straight into

@@ -21,8 +21,7 @@
 //! reads and sorts every scored folder — so it goes through the cache in [`scores`],
 //! which is what keeps a debounced slider drag (and the per-visible-range badge query)
 //! from re-reading the table each time. ❌ Never call `ImportanceIndex::above_threshold`
-//! straight from a UI-driven path; take [`importance_scores`] or
-//! [`importance_scores_above`].
+//! straight from a UI-driven path; take [`importance_scores`].
 
 // Visible to the rest of the subsystem (not to a host) because the ONE writer thread
 // per volume mutates it directly: routing its ±1 deltas through this facade would put
@@ -42,10 +41,8 @@ use super::gate::IndexScope;
 use super::paths::parent_dir;
 
 pub use eligible::{FolderImageCounts, cached, get_or_build, invalidate};
-pub use scores::{importance_scores, importance_scores_above};
-#[cfg(any(test, feature = "testing"))]
-pub use scores::clear_cache_for_test as clear_score_cache_for_test;
 pub(crate) use eligible::{patch_touched_dirs, replace_from_entries};
+pub use scores::importance_scores;
 // The walk-parity tests in `scheduler/enrich_tests.rs` are the only callers outside the
 // eligible cache itself; production reaches them through `get_or_build`.
 #[cfg(test)]
@@ -231,4 +228,3 @@ pub fn covered_in_scope(
         }
     }
 }
-

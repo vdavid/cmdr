@@ -266,7 +266,7 @@ describe('createCoalesced', () => {
     // to mean 200 concurrent backend queries.
     const { runner, calls, finishOne } = deferredRunner()
 
-    for (let i = 0; i < 200; i++) void runner.call([`p${i}`])
+    for (let i = 0; i < 200; i++) void runner.call([`p${String(i)}`])
     await Promise.resolve()
     expect(calls).toHaveLength(1)
 

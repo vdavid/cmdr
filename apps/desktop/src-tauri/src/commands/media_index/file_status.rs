@@ -128,7 +128,7 @@ fn coverage_scores(
     if !scope.consults_importance() {
         return None;
     }
-    coverage::importance_scores_above(data_dir, volume_id, threshold)
+    coverage::importance_scores(data_dir, volume_id, Some(threshold))
 }
 
 /// Resolve the inputs (qualifying-image walk + stored rows + coverage scores) and hand

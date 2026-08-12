@@ -58,6 +58,13 @@ suite:
     every pane re-asked the provider about every visible row every three seconds forever: measured at two batches of 267
     and 377 paths every 3 s on an idle prod session, each path costing two `stat`s plus a synchronous XPC round trip
     into `fileproviderd`. One cloud file keeps the whole folder polled, since its neighbours ride the same batch.
+  - **Both image-index fetches are COALESCED (`createCoalesced`), one in flight per pane, newest request wins.** They're
+    driven by things that arrive in storms: every visible-range render, every listing swap, every enrichment tick. The
+    400 ms enrich debounce bounds how often work STARTS and nothing else, so once a call outlasted that window the calls
+    simply stacked — a burst of watcher-driven refreshes during a large transfer reached hundreds of concurrent backend
+    queries, took the whole blocking pool, and froze the panes and the volume picker until restart. `cleanup()` cancels,
+    or a queued fetch fires for a destroyed pane. The sync fetch stays UNcoalesced on purpose: the backend already
+    batches it and joins concurrent requests for overlapping paths, where it has more information than a pane does.
 - `selection-info-feed.svelte.ts`: the entry under the cursor and the listing stats, with their debounce/throttle and
   the search-results snapshot mirror. `parent-entry.ts` builds the synthetic `..` row it and `entries-snapshot.ts`
   share.

@@ -46,6 +46,8 @@ parallelism atomics), `paths.rs` (`parent_dir`), `writer/` + `writer_registry.rs
   `coverage::cached`; only user-initiated settings reads call `get_or_build`. `None` means "no number yet", ❌ never
   `0`. `accounted` is INCREMENTAL (writer ±1) in `coverage::accounted`, ❌ never rebuilt from a walk nor merged into
   walk-driven `eligible` (one shared file welds walk and writer into an import cycle).
+- **Scores reach a UI path ONLY via `coverage::importance_scores`** (cached off the recompute subscription). ❌ Never
+  `above_threshold` direct: it sorts every scored folder, and per badge query that froze the app.
 - **Cancellation hooks the EXISTING indexing watchdog** (❌ no second one; one shared memory ceiling). The
   between-images hook is `gate::should_stop` (watchdog OR toggle OFF); ❌ don't narrow it to `is_cancelled`.
 - **CLIP is a SEPARATE vector space from the Vision feature print**; ❌ never cosine-compare the two.

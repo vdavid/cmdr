@@ -143,8 +143,8 @@ where
 ///
 /// ```ignore
 /// static BADGE_QUERIES: BlockingBudget = BlockingBudget::new(4);
-/// // …
-/// BADGE_QUERIES.run(move || classify(…)).await
+///
+/// BADGE_QUERIES.run(move || classify(&paths)).await
 /// ```
 pub struct BlockingBudget {
     permits: tokio::sync::Semaphore,

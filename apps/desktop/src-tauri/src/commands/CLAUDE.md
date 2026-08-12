@@ -24,6 +24,9 @@ subsystems are the reverse, since they can't carry `tauri::`. Inventory and rati
     phone. `DETAILS.md` § "IPC deadlines detach, never drop".
   - ❌ Don't wrap `sync_status`: it applies its own deadline, keeping partial results and the still-running batch.
     `../file_system/sync_status/DETAILS.md`.
+- **A command the FRONTEND can re-issue faster than it completes needs a `BlockingBudget` (`util.rs`).** The pool caps
+  at 512 threads; one unbounded command took all of it and froze the panes and volume picker until restart. One
+  `static` per family, SHARED across the commands contending for the same resource (`media_index/mod.rs`).
   - Matching TS types live in `$lib/tauri-commands/ipc-types.ts`. `path_exists` is SMB-aware: a disconnected SMB volume
     returns immediate `false`, so it re-checks `smb_connection_state()` and reports `timedOut: true` — a transient blip
     won't evict the user from a network folder.

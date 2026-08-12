@@ -89,10 +89,19 @@ flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
    paths inside `list_locations` — `get_favorites` and `get_cloud_drives`, which still `statfs`/icon per item and would
    hang on a favorite or cloud folder that lives on a wedged mount — degrade to a bounded 2s partial result instead of an
    infinite stall. `get_main_volume` no longer enumerates: it builds root directly from `/`.
+4. **A timed-out listing publishes the LAST GOOD one.** `volume_broadcast` keeps the most recent successful
+   `list_locations` and re-emits it (still flagged `timed_out`) when a later one misses the deadline. Publishing the
+   empty list beside that flag told the frontend "you have no volumes", and since the picker's refresh button re-ran the
+   same listing into the same timeout, nothing the user could do brought them back. Rationale and the staleness bound:
+   `volume_broadcast.rs` § `LAST_GOOD_LOCAL`.
+
+Note that the 2s deadline fires for reasons other than a hung mount: `list_locations` runs on the shared blocking pool,
+so a subsystem that saturates the pool starves it just as effectively (`commands/CLAUDE.md` § `BlockingBudget`).
 
 **Follow-up.** `get_favorites` and `get_cloud_drives` still do unguarded per-item `statfs`/icon; a favorite pointing at a
-hung mount makes `list_locations` time out (2s) and drop the healthy volumes with it. Fully fixing "one dead mount never
-hides the others" here needs per-item timeouts for those two, tracked separately.
+hung mount makes `list_locations` time out (2s), so that listing carries no fresh volumes at all and the broadcast falls
+back to the last good set. Fully fixing "one dead mount never hides the others" here needs per-item timeouts for those
+two, tracked separately.
 
 ## Global state in `watcher.rs`
 

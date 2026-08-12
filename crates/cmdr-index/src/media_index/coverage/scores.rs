@@ -147,19 +147,11 @@ fn read_all(data_dir: &Path, volume_id: &str) -> Option<HashMap<String, f64>> {
     }
 }
 
-/// A volume's importance folder scores as a `folder → score` map, or `None` when
-/// importance never scored it (fresh / offline / disabled).
-///
-/// Returns EVERY scored folder, with no threshold applied, so ONE read serves any
-/// slider position during a debounced drag. A gate that only wants the folders at or
-/// above one threshold takes [`importance_scores_above`] instead of filtering this
-/// itself — the filter copies the whole map, which is the cost the cache exists to
-/// avoid.
-///
-/// Cheap after the first call per volume: a fresh read happens only when the store
-/// says its weights moved. See this module's header for why that signal is the
-/// recompute subscription rather than the generation stamp.
-pub fn importance_scores(data_dir: &Path, volume_id: &str) -> Option<Arc<HashMap<String, f64>>> {
+/// Every scored folder for `volume_id`, refreshing the cached map first. Private
+/// because a host reaches this through [`importance_scores`], whose `at_least`
+/// argument also covers the gate's threshold-filtered view: two public functions would
+/// spend one of the crate's capped public items on a projection this one can serve.
+fn all_scores(data_dir: &Path, volume_id: &str) -> Option<Arc<HashMap<String, f64>>> {
     let mut cache = CACHE.lock_ignore_poison();
     // Taking the entry OUT hands us its receiver to carry into the rebuild below. ❌
     // Don't `resubscribe()` there instead: a fresh receiver starts at the channel's
@@ -174,16 +166,10 @@ pub fn importance_scores(data_dir: &Path, volume_id: &str) -> Option<Arc<HashMap
                 // during the read waits in the channel rather than falling into the
                 // gap. The cost is re-applying a notice the read already reflects,
                 // which is idempotent.
-                match read_all(data_dir, volume_id) {
-                    Some(all) => {
-                        entry.all = Arc::new(all);
-                        entry.projection = None;
-                    }
-                    // The store went unreadable (purged, or the volume unmounted
-                    // mid-rebuild). Dropping the entry here is deliberate: serving a
-                    // map the store no longer backs would outlive the data, and the
-                    // next call re-reads (and re-subscribes) from scratch.
-                    None => return None,
+                {
+                    let all = read_all(data_dir, volume_id)?;
+                    entry.all = Arc::new(all);
+                    entry.projection = None;
                 }
             }
         }
@@ -205,24 +191,42 @@ pub fn importance_scores(data_dir: &Path, volume_id: &str) -> Option<Arc<HashMap
     Some(all)
 }
 
-/// The folders scoring at or above `threshold`, as the enrichment coverage gate reads
-/// them: [`local_should_enrich`](crate::media_index::scheduler::local_should_enrich)
-/// keys on score-map MEMBERSHIP, so the threshold has to be baked into the map rather
-/// than checked at lookup. `None` for an unscored volume, exactly as
-/// [`importance_scores`].
+/// A volume's importance folder scores as a `folder → score` map, or `None` when
+/// importance never scored it (fresh / offline / disabled) — the load-bearing signal
+/// that sends the coverage gates to override-only rather than to "cover everything".
 ///
-/// Memoized per volume for the LAST threshold asked, which is all a gate needs: it
-/// reads the one live setting, so it hits the memo on every call, while a slider drag
-/// (which walks thresholds) goes through [`importance_scores`] and never builds these
-/// at all.
-pub fn importance_scores_above(data_dir: &Path, volume_id: &str, threshold: f64) -> Option<Arc<HashMap<String, f64>>> {
-    // Refresh (and cache) the full map first, so the projection below is built from
+/// `at_least` picks the view:
+///
+/// - `None`: EVERY scored folder, no threshold applied, so ONE read serves any slider
+///   position during a debounced drag.
+/// - `Some(threshold)`: only the folders at or above it, because the enrichment gate
+///   ([`local_should_enrich`](crate::media_index::scheduler::local_should_enrich)) keys
+///   on score-map MEMBERSHIP — the threshold has to be baked into the map rather than
+///   checked at lookup. ❌ Don't filter the `None` view yourself: that copies the whole
+///   map per call, which is the cost this cache exists to avoid.
+///
+/// Cheap after the first call per volume: a fresh read happens only when the store says
+/// its weights moved, and the threshold view is memoized for the LAST threshold asked
+/// (all a gate needs, since it reads one live setting). See this module's header for
+/// why that freshness signal is the recompute subscription and not the generation
+/// stamp.
+pub fn importance_scores(data_dir: &Path, volume_id: &str, at_least: Option<f64>) -> Option<Arc<HashMap<String, f64>>> {
+    // Refresh (and cache) the full map first, so any projection below is built from
     // scores that are current, and the drained notices can't be lost.
-    let all = importance_scores(data_dir, volume_id)?;
+    let all = all_scores(data_dir, volume_id)?;
+    let Some(threshold) = at_least else {
+        return Some(all);
+    };
 
     let mut cache = CACHE.lock_ignore_poison();
-    let entry = cache.get_mut(volume_id)?;
-    if let Some((cached_threshold, projection)) = &entry.projection
+    // The lock was released between `all_scores` and here, so the entry may have moved
+    // on (or gone). The memo is an OPTIMIZATION: everything below still answers from
+    // `all`, and the cache is only where the answer gets kept. ❌ Never `?` on the entry
+    // here — `None` is the "importance never scored this volume" signal that sends the
+    // coverage gates to override-only, and a lost race must not forge it.
+    let entry = cache.get_mut(volume_id);
+    if let Some(entry) = &entry
+        && let Some((cached_threshold, projection)) = &entry.projection
         && cached_threshold.to_bits() == threshold.to_bits()
     {
         return Some(Arc::clone(projection));
@@ -233,15 +237,22 @@ pub fn importance_scores_above(data_dir: &Path, volume_id: &str, threshold: f64)
             .map(|(path, score)| (path.clone(), *score))
             .collect(),
     );
-    entry.projection = Some((threshold, Arc::clone(&projection)));
+    // Keep it only if the entry still holds the very map we projected. If another
+    // thread rebuilt it meanwhile, storing this would leave a projection that disagrees
+    // with its own `all`, and the next caller at this threshold would read it as fresh.
+    if let Some(entry) = entry
+        && Arc::ptr_eq(&entry.all, &all)
+    {
+        entry.projection = Some((threshold, Arc::clone(&projection)));
+    }
     Some(projection)
 }
 
-/// Drop every cached entry. Test-only: the cache is keyed by volume id, and a test
-/// that reuses one across two different data dirs would otherwise read the first
-/// one's scores.
-#[cfg(any(test, feature = "testing"))]
-pub fn clear_cache_for_test() {
+/// Drop every cached entry. Test-only, and deliberately NOT re-exported from
+/// `coverage`: every caller is inside this crate, so widening it would spend one of
+/// the crate's capped public items (`index-crate-isolation`) on nothing.
+#[cfg(test)]
+fn clear_cache_for_test() {
     CACHE.lock_ignore_poison().clear();
 }
 

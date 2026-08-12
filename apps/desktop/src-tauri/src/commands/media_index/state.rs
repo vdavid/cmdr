@@ -224,7 +224,7 @@ pub async fn media_index_covered_count(
                 };
                 // The automatic scope needs importance; the narrow one counts the chosen
                 // folders alone, so an unscored volume is answerable there.
-                let scores = match coverage::importance_scores(&data_dir, vid) {
+                let scores = match coverage::importance_scores(&data_dir, vid, None) {
                     Some(scores) => scores,
                     None if !scope.consults_importance() => Arc::new(std::collections::HashMap::new()),
                     None => {

@@ -84,7 +84,7 @@ impl MediaScheduler {
         if !scope.consults_importance() {
             return Some(Arc::new(HashMap::new()));
         }
-        coverage::importance_scores(&self.data_dir, volume_id)
+        coverage::importance_scores(&self.data_dir, volume_id, None)
     }
 
     /// The single-source stored-coverage split for `volume_id` at `threshold`:

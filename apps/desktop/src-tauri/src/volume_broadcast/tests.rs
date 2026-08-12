@@ -72,7 +72,10 @@ fn a_panic_carries_the_last_good_set_but_isnt_flagged_as_slow() {
     let (published, timed_out) = publishable(ListingOutcome::Panicked, &mut last_good);
 
     assert_eq!(ids(&published), ["Macintosh HD"]);
-    assert!(!timed_out, "a panic isn't a slow listing; the retry affordance is for slow");
+    assert!(
+        !timed_out,
+        "a panic isn't a slow listing; the retry affordance is for slow"
+    );
 }
 
 #[test]

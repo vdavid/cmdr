@@ -38,7 +38,8 @@ async fn a_burst_never_exceeds_the_budget_and_everyone_still_finishes() {
         let seen = Arc::clone(&seen);
         calls.spawn(TWO_AT_A_TIME.run(move || {
             seen.enter();
-            // Long enough that a genuinely unbounded pool would overlap far past 2.
+            // allowed-test-sleep: the occupancy IS the subject — the task has to hold its
+            // pool thread long enough for the other 31 callers to pile up behind it.
             std::thread::sleep(std::time::Duration::from_millis(5));
             seen.leave();
             i
