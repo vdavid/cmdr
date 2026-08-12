@@ -28,8 +28,14 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       `manager.rs`), so `canPauseOrQueue` hides Pause and Queue, and `destroy()` kills the scan with the dialog — you
       cannot background a transfer while it scans, and ⌘Q walks past it. Registering the operation at CONFIRM (not at
       dialog-open) and moving the scan-wait into the operation's own task fixes all of it with no new IPC, no new
-      `LifecycleStatus` (reuse `Running`; `phase: 'scanning'` already exists and already renders), and ~150 lines
-      DELETED from the module M5 has to rewrite. The registry earns its place not because two smoothers disagree (the
+      `LifecycleStatus` (reuse `Running`; `phase: 'scanning'` already exists), and ~120 lines DELETED from the module M5
+      has to rewrite. Three backend pieces, and the middle one is what makes it a fix rather than a regression: the
+      waiting task must FORWARD preview progress as `write-progress { phase: 'scanning' }` under its own `operationId`
+      (a `previewId → operationId` bridge), or every scan surface goes blank instead of live; and the preview must
+      publish a terminal OUTCOME readable after the fact, since both workers drop their in-flight state BEFORE caching
+      the result, so a completion pulse can't work. Pause is refused in the BACKEND during the scan-wait (hiding the
+      button leaves MCP and Pause-all flipping a `Running` record to `Paused` while the scan walks on, holding its
+      lane). The registry earns its place not because two smoothers disagree (the
       EMA is deterministic; the shipped ETA bug was smoothed-versus-raw) but because smoothers **started at different
       times** diverge, which is exactly what a late-attaching view creates, so M3 must DELETE `operations-store`'s
       per-id smoother map rather than stack a second layer. M6's hardest problem is birth context: `OperationSnapshot`

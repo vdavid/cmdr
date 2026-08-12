@@ -86,7 +86,7 @@ minimal one. Zero views is a legal, ordinary state, and it is precisely what "ba
 One session per `operationId` per window, held in a registry. Two views of the same operation MUST share one session.
 
 The reason is a real shipped bug, though not quite the one it looks like. `progress-readout.ts`'s own header records it
-(`:20-24`): the copy dialog put `etaSeconds` through `createEtaSmoother()` while the queue window rendered
+(`:19-22`): the copy dialog put `etaSeconds` through `createEtaSmoother()` while the queue window rendered
 `progress.etaSeconds` raw, so one operation read "8m 12s remaining" in one window and "5m 46s" in the other. That was
 smoothed versus raw, and it is already fixed by both surfaces rendering the same smoothed value.
 
@@ -151,8 +151,9 @@ exactly the coupling this spec exists to remove, arriving before the operation i
 Two things make it worse than a corner case:
 
 - **The confirm button now acts immediately.** `TransferDialog`'s confirm no longer awaits the pre-flight conflict check
-  (`pre_known_conflicts` is consumed only under a `Skip` resolution, `transfer_driver/mod.rs:256-262`, and the policy
-  radios only render after the check completes, so nobody can have chosen `Skip` while it is pending). The MCP
+  (`pre_known_conflicts` is consumed only under a `Skip` resolution, at both independent gates:
+  `transfer_driver/mod.rs:256-262` and `transfer/copy/mod.rs:244-245`, and the policy radios only render after the check
+  completes, so nobody can have chosen `Skip` while it is pending). The MCP
   auto-confirm path with `conflictPolicy === 'skip'` still awaits. So for any large transfer, landing in the progress
   dialog on a scan you cannot background goes from a corner case to the normal opening experience.
 - **The quit gate cannot see it.** `blocks_quit` (`src-tauri/src/quit/mod.rs:108-126`) reads
@@ -195,7 +196,7 @@ Keeping it would also invert the model: "the view went away, so stop the operati
 exists to remove.
 
 One claim the earlier framing overstated and this spec should not repeat: silent background work is not impossible
-today. `pickChipOperation` (`status-corner/operation-chip.ts:127-140`) shows the first `running` row, else the first
+today. `pickChipOperation` (`status-corner/operation-chip.ts:127-137`) shows the first `running` row, else the first
 `paused` one, so an operation sitting in `queued` shows nothing at all (its own test pins this), and `CHIP_SETTLE_MS`
 (`:21`) holds the chip back 500 ms before it first appears. Both are small, both predate this work, and neither blocks
 anything here. Decide them separately.
@@ -211,8 +212,12 @@ synchronously has the same hazard. Keep that reasoning attached to whatever tear
 ## Milestones
 
 Sequential. M2 through M6 each move state out of a module the next one edits, so none of them are safe to parallelize.
-M1 is the one milestone that could in principle run beside M2 (it is backend work plus deletions, and the fan-out
-neither reads nor writes what it touches), but it lands first anyway, for the reasons argued under it.
+
+The plan now spans two layers, which the old all-frontend framing did not, and that adds one cross-layer constraint
+worth stating up front: **M1 is backend-plus-deletions and must land before M5.** M5 restructures
+`transfer-progress-state.svelte.ts`, M1 deletes a chunk of it, and doing them in the other order means carefully
+re-expressing code that is about to disappear. M1 could in principle run beside M2 (the fan-out neither reads nor
+writes what M1 touches), but it lands first anyway, for the reasons argued under it.
 
 ### M0: an operation survives a reload
 
@@ -242,14 +247,59 @@ writing. `take_cached_scan_result` (`scan_cache.rs:199`) already returns `None` 
 preflight already falls back to its own walk, so today an early dispatch would silently duplicate the scan. Waiting
 inside the task is what makes the early dispatch correct.
 
-- **No new IPC and no changed signatures.** `copy_between_volumes`, `move_between_volumes`, `move_files`,
-  `delete_files`, `trash_files`, and `compress_files` all keep their current shape (`commands/file_system/write_ops.rs`).
-  Only the behavior behind `previewId` changes.
-- **Don't poll for the preview.** `check_scan_preview_status` (`write_ops.rs:339-345`) is a poll because IPC has no
-  other shape; inside the process there is no such excuse, and "subscribe, don't poll" is a house principle. Give
-  `ScanPreviewState` (`scan_cache.rs:26-29`) a completion signal the task can await. The two worker exits that remove
-  their own `SCAN_PREVIEW_STATE` entry (`scan_preview.rs:247-249` local, `:387-389` volume) are where it fires, and both
-  must fire it on the error and cancelled paths too, or a waiting operation hangs forever.
+There are three backend pieces, and the second one is easy to miss and would ship a worse UI than today if it were.
+
+**1. No new IPC and no changed signatures.** `copy_between_volumes`, `move_between_volumes`, `move_files`,
+`delete_files`, `trash_files`, and `compress_files` all keep their current shape
+(`commands/file_system/write_ops.rs`). Only the behavior behind `previewId` changes. Six commands, five
+`spawn_managed` call sites, and every one of them needs the settle audit under Risks:
+`transfer/volume/copy.rs:306`, `transfer/volume/move.rs:232`, `transfer/volume/move_same.rs:171`,
+`write_operations/mod.rs:363` (local copy/move/trash and local delete), and `write_operations/mod.rs:650`
+(volume-aware delete). The other `spawn_managed` sites (rollback, the three archive-edit paths, bulk rename) take no
+`previewId` and are out of scope.
+
+**2. The waiting task MUST forward preview progress as its own `write-progress`.** Awaiting a signal emits nothing, and
+nothing else will emit for this operation: `scan-preview-progress` is keyed by `previewId` and carries no
+`operationId`, and `operations-store.svelte.ts` subscribes to `operations-changed` and `write-progress` only
+(`:159-164`). Skip this and every scan-phase surface goes blank rather than live:
+
+- `TransferProgressDialog`'s `{#if phase === 'scanning'}` body (`:362`) would render `ScanPhaseBody` with every count
+  frozen at its initial zero for the whole scan, where today it shows live counts.
+- `QueueRow.svelte:76` gates the readout on `progress !== null && (progress.bytesTotal > 0 || progress.filesTotal > 0)`,
+  so the row would draw nothing at all.
+- `barFraction` returns 0 for a null progress (`status-corner/operation-chip.ts:47`), so the chip would sit at 0% with
+  an empty tooltip.
+
+So M1 owns a `previewId → operationId` bridge, claimed when the operation registers and released when the wait ends,
+consulted at the preview's progress emit sites (`scan_preview.rs:208-218` local, `:341-351` volume) so a claimed
+preview emits `write-progress { operationId, phase: 'scanning', … }` alongside its existing `scan-preview-progress`.
+Both events keep firing: a pre-confirm `TransferDialog` may still be watching the same preview by `previewId`.
+**Emit one synthetic tick at registration** so `row.progress` stops being `null` immediately rather than at the first
+`progress_interval_ms` boundary, which on a preview near its end may never arrive. This bridge is the reason `QueueRow`
+and the chip need no new gating: they already handle a running operation whose progress happens to say `scanning`.
+
+`filesTotal` and `bytesTotal` stay 0 during a scan (finding the totals is what the scan is for), except where the index
+supplies an expectation, which is why the dual-bar readout must NOT be what a scanning row shows. Render the same
+scan-phase line the dialog does. **This costs no new strings:** `ScanPhaseBody.svelte` already resolves
+`fileOperations.scanPhase.*` and `fileOperations.shared.scanningTooltip` from the catalog, and the queue row reuses
+them. Nor does the rate: the backend emits none during scanning (`progress-readout.ts:12-15`), so `ScanThroughput`
+stays the frontend's job, computed from the forwarded event exactly as it is computed from a preview event today.
+
+**3. Publish a terminal OUTCOME, not a completion pulse.** A signal hung on `ScanPreviewState` (`scan_cache.rs:26-29`)
+cannot work, because both workers remove their own `SCAN_PREVIEW_STATE` entry (`scan_preview.rs:246-249` local,
+`:387-389` volume) **before** `insert_scan_result` (`:266-277`) and before the terminal event. With `LANE_BUDGET = 1` a
+queued operation's task may not spawn for minutes, so "look up the preview and find nothing" is the common case, not
+the rare one, and "nothing" is ambiguous four ways: complete-and-consumed, errored, cancelled, and never-existed. This
+is exactly what `checkScanPreviewStatus`'s race resolution (`:1152-1160`) handles today by reading the results cache
+rather than the state map, and M1 deletes that frontend path, so the backend has to carry the property.
+
+Spec it as a terminal outcome (complete with its `CachedScanResult`, error with its message, or cancelled), published
+atomically with the in-flight state's removal and readable after the fact, with the same TTL eviction
+`SCAN_PREVIEW_RESULTS` already applies (`scan_cache.rs:138`). Collapsing `SCAN_PREVIEW_STATE` and
+`SCAN_PREVIEW_RESULTS` into one map whose value is either in-flight or settled is the shape that makes the atomicity
+free; take it unless something argues otherwise. **Define the miss case:** a `previewId` naming nothing at all (evicted,
+or a stale id from a reloaded window) must fall back to the operation's own walk, which is today's foolproof re-scan,
+never a hang. Same discipline as M2's `list_operations` miss case, and for the same reason.
 
 **Why the id is minted at confirm, not at dialog open.** David's model says the operation begins when the TransferDialog
 appears. This milestone deliberately starts it one step later, and the reason is what a queue row promises. A row says
@@ -287,9 +337,18 @@ and the pre-confirm scan has no operation at all.)
 will need, not the scan's:
 
 - `lanes`: the same source and destination lanes the write takes (`transfer/volume/copy.rs:206`, `local_lanes` at
-  `write_operations/mod.rs:378-383`). With `LANE_BUDGET = 1` (`manager.rs:254`), a transfer confirmed while another runs
-  on the same lane is admitted as `Queued` and the existing auto-queue path backgrounds it, which is correct and needs
-  no new code. The preview is already walking independently, so waiting for the lane costs nothing.
+  `write_operations/mod.rs:378-383`), reserved from confirm. This is the milestone's one genuinely contested decision,
+  so both directions are on the record. **For:** with `LANE_BUDGET = 1` (`manager.rs:254`), a transfer confirmed while
+  another runs on the same lane is admitted as `Queued` and the existing auto-queue path backgrounds it, needing no new
+  code; and admission is oldest-first (`manager.rs:379`), so operations run in the order the user confirmed them. Today
+  they do not: A dispatches only after its scan, so B, confirmed second with a finished scan, takes the lane first.
+  **Against:** an operation scanning for three minutes holds a lane it is not writing to, so a destination device can
+  sit idle where today it would be receiving B's bytes. That is a real utilization cost under "respect the user's
+  resources", and it is bounded by the scan's duration rather than the transfer's. **Decision: reserve from confirm.**
+  Matching confirm order is a correctness property; better lane utilization is an optimization. The alternative is
+  two-phase reservation (scan without lanes, request them at write start), which costs the invariant that `Running`
+  means "admitted and holding its lanes" (`manager.rs:90`) and adds a second admission point that can leak a lane.
+  Reach for it only if the idle-device cost shows up in practice, and pay that invariant knowingly.
 - `volume_ids`: as the write needs them. **This is a behavior change worth stating:** Eject becomes disabled from
   confirm rather than from first byte. That is the right answer (the operation is committed), but it is new.
 - `supports_rollback`: the value the write will have (`matches!(type, Copy | Move)` and the per-site values at
@@ -298,6 +357,22 @@ will need, not the scan's:
   view decision keyed on `phase`, never on `supportsRollback`. Getting this backwards means a row that offers Rollback
   and then can't, or one that never offers it at all.
 - `summary`: source and destination, both known at confirm.
+
+**Pause is refused during the scan-wait, in the backend, not just hidden.** `set_paused` (`manager.rs:574-604`) flips
+any `Running` record to `Paused`, and a scan-waiting operation is `Running`, so without a rule the snapshot would say
+`Paused`, the dialog title would say "Paused", and the scan would walk on at full speed. That is the same class of lie
+as "a paused op reports `is_running: true`", which this codebase already documents and works around. Two amplifiers
+make it worse than cosmetic: `set_paused` deliberately keeps the lane slots (`manager.rs:576-578`), so a "paused" scan
+would hold its lane indefinitely while doing nothing; and the UI is not the only caller, since MCP's `queue` tool
+accepts anything whose status is not `Failed` (`mcp/executor/queue.rs:132-135`) and the queue window has a global Pause
+all. So `pause_operation` (`manager.rs:914-922`) must return a refusal for an operation still in its scan-wait,
+`pause_all` must tolerate that refusal, and the Pause button hides on `phase === 'scanning'` for the same reason
+Rollback does. Hiding the button alone is the wrong fix: it leaves MCP and Pause-all holding the lie.
+
+The alternative, real parking semantics, would mean a `paused` flag on the preview alongside its `cancelled` one.
+Rejected: pause exists so a user can free a busy device or CPU mid-write, a read-only walk is short next to the write it
+precedes, the useful controls during a scan are Background (which M1 delivers) and Cancel (which already works), and
+parking would still hold the lane. Revisit only if someone wants to pause a multi-minute MTP scan specifically.
 
 **`OperationSnapshot` needs no new fields.** It carries `operationId`, `operationType`, `status`, `source`,
 `destination`, `supportsRollback`, and `error` (`manager.rs:153-166`, `lib/ipc/bindings.ts:6834-6851`), and byte counts
@@ -314,61 +389,118 @@ already issues `cancelWriteOperation` and waits for both terminal events. The sp
 
 **The quit gate needs no edit.** A scanning transfer is `status: Running` with `operation_type: Copy` (or Move / Delete /
 Trash / ArchiveEdit), so `blocks_quit` (`quit/mod.rs:108-126`) already returns true. ⌘Q during a scan starts prompting,
-which today it does not. A scanning operation has written nothing, so it cancels instantly and the gate's 2-second
-budget is never at risk.
+which today it does not.
+
+Don't lean on "and it cancels instantly" as the reassurance, because it is only measured for local walks. A local scan
+polls its cancellation flag per entry and stops promptly. A volume scan drives `Volume::scan_for_copy`
+(`scan_preview.rs:511`) and `scan_for_copy_batch_with_progress` (`:627`) over MTP or SMB, and can sit inside one remote
+call for as long as that call takes, exactly like the chunk awaits M0's hard-abort tier was built for. **Verify at
+implementation time whether the volume scan path is covered by that tier**, and if it is not, decide whether M1 extends
+it or whether the quit gate's cooperative-then-abort budget (`DRAIN` 1.5 s of a documented 2 s whole
+decision-to-process-gone budget, `quit/mod.rs:38-39`) absorbs it. Measure before claiming.
+
+**Two more behavior changes worth naming before someone hits them.**
+
+- **Auto-queue now fires at confirm.** An operation confirmed onto a busy lane is `Queued` from registration, so the
+  dialog's one-shot `listOperations()` seed (`:837`) sees `queued` immediately and `handleAutoQueued` runs. The progress
+  dialog would mount and unmount inside a frame, with a toast and a queue window, and `MIN_DISPLAY_MS` does not cover
+  the queue route (`maybeFinishCancelClose` and `handleComplete` apply it; `handleAutoQueued` does not). Handle it by
+  not mounting at all when the dispatch response plus the seed already say `queued`: go straight to the queue window
+  and the toast. Cheaper than a flicker fix and more honest.
+- **A scanning operation counts as backlog.** `hasOtherQueuedWork` (`queue-backlog.ts:28-35`) excludes only terminal and
+  instant operations, so a second transfer's button reads "Queue" instead of "Background" while the first is merely
+  scanning. That is arguably correct (there is other work) and needs no code change, but it is a visible wording flip
+  with no obvious cause, so it belongs in the milestone rather than in a bug report.
+
+**The queue row keeps saying "Running" during a scan, and that is deliberate.** `queue.row.status`
+(`intl/messages/en/queue.json:35`) is a `select` over the lifecycle status, and the lifecycle status genuinely is
+`running`. The status column names the lifecycle (Waiting / Running / Paused / Couldn't finish); the readout names the
+activity, and the scan-phase line says "Counting…" in the user's language already. Adding a "Scanning" arm would mix two
+axes into one column and would need a `phase` input the row does not take. Zero new strings in M1, which is also what
+keeps this milestone off the nine-locale critical path. Revisit if the row reads as stuck to real users.
 
 **Frontend deletions.** This milestone removes code rather than adding it, which is most of why it is worth doing before
 the restructuring:
 
-- `waitForScanThenStart` (`:1073-1166`), `isOurScanEvent` (`:1053-1056`), `cleanupScanListeners` (`:1045-1051`), the four
-  `onScanPreview*` subscriptions, and the `checkScanPreviewStatus` race resolution (`:1152-1160`).
+- `waitForScanThenStart` (`:1073-1166`) whole, including `isOurScanEvent` (`:1053-1056`), `cleanupScanListeners`
+  (`:1045-1051`), the four `onScanPreview*` subscriptions, and the `checkScanPreviewStatus` race resolution
+  (`:1152-1160`).
 - `config.scanInProgress` (`:120`) and the branch in `start()` (`:1171-1177`), which collapses to `void startOperation()`.
-- The seven scan `$state` fields and their getters (`:191-199`, `:1212-1232`), and the `ScanThroughput` instance
-  (`:197`): scan-phase throughput now arrives through `handleProgress`'s scanning branch (`:381-393`), which already
-  computes it.
+- `waitingForScan` (`:191`), its getter (`:1212-1214`), and its two reads in `canPauseOrQueue` (`:311`) and `destroy()`
+  (`:1190`).
 - The scan branch in `handleCancel` (`:882-890`) and the preview cancel in `destroy()` (`:1189-1192`).
 - **One of the two duplicate scan bodies in `TransferProgressDialog.svelte`.** It renders `ScanPhaseBody` twice, once
   under `{#if waitingForScan}` (`:302`) and once under `{#if phase === 'scanning'}` (`:362`), because the same UI had to
   be fed from two different state sources. One source means one body. This duplication is a real defect in its own
   right, and collapsing it is how you know the milestone actually unified the two paths.
 
+**What must NOT be deleted, and why the distinction is easy to get wrong.** The six scan count and rate fields
+(`scanFilesFound` / `scanDirsFound` / `scanBytesFound` / `scanCurrentDir` `:192-195`, `scanFilesPerSec` /
+`scanBytesPerSec` `:198-199`), their getters (`:1215-1232`), and the `ScanThroughput` instance (`:197`) all **stay**.
+They are not the scan-wait path's state; they are the surviving `handleProgress` scanning branch's state
+(`:381-393`), which is what writes them and what calls `scanThroughput.push`. Deleting them would break the very body
+this milestone keeps. `scanUnlisteners` (`:196`) goes with `waitForScanThenStart`.
+
+That is roughly 120 lines net out of `transfer-progress-state.svelte.ts`, plus one duplicated block in the component,
+and the number matters only because it is an argument about ordering.
+
 **Why it lands first.** Three reasons, in order of weight:
 
 1. **It is a bug fix, not a refactor.** A user cannot background a scanning transfer today, and the scan dies with the
    dialog. Everything else in this spec is invisible until M6. Shipping a fix behind four milestones of restructuring is
    the wrong order.
-2. **It shrinks the module M5 has to rewrite,** by roughly 150 lines and by one of the three members of the "Birth"
+2. **It shrinks the module M5 has to rewrite,** by roughly 120 lines and by one of the three members of the "Birth"
    concern. M5 is the riskiest edit in the app's most stateful frontend module; every line M1 deletes is a line M5 does
-   not have to re-express.
+   not have to re-express. This is also a hard ordering constraint, not just a saving: run M5 first and it painstakingly
+   re-expresses a scan-wait path M1 then deletes.
 3. **It nearly closes the `!operationId` window,** from "the whole scan" to "one IPC round trip". The
    destroyed-during-dispatch rule and the guard retirements above are much easier to argue against a millisecond gap
    than a multi-minute one.
 
 The cost of going first is one double-touch: the queue row learns to render a scanning operation against today's store,
-and M3 then re-points it at a session. That is small (the row reads `progress.phase`, which the store already carries
-verbatim) and it is the right trade against shipping the fix late.
+and M3 then re-points it at a session. It is a genuine double-touch (the row gains a phase-aware branch reading
+`progress.phase`, which only becomes non-null once M1's bridge exists), and it is still the right trade against shipping
+a user-visible fix behind four milestones of restructuring.
 
-- **Tests, TDD (red first).** This is a bug fix in a data-writing path, so it earns real red:
+**Land the two halves in one commit.** The frontend deletions alone make the named red Vitest go green, at which point
+the app dispatches early and the backend silently re-walks the whole tree, which is a performance regression that no
+test would catch. Write the Rust cache-consumption test first, and do not split M1 across commits by layer.
+
+- **Tests, TDD (red first).** This is a bug fix in a data-writing path, so it earns real red. Rust first, per the
+  landing note above:
   - Rust unit: a write command dispatched with an in-flight `previewId` registers its operation immediately and reports
     `Running` on `list_operations()` before the preview completes.
   - Rust unit: the same operation, once the preview lands, consumes the cached result rather than re-walking (assert on
-    the scan-cache take, not on timing).
-  - Rust unit: `cancel_operation` during the scan-wait cancels the underlying preview and emits `write-cancelled` +
-    `write-settled`. Pair it with the reverse: a preview that errors settles the operation as a failure rather than
-    hanging.
+    the scan-cache take, not on timing). **Write this one first**; it is the only guard against the frontend half
+    shipping alone.
+  - Rust unit, the outcome contract, one case per terminal shape: complete, error, cancelled, and a `previewId` naming
+    nothing (which must fall back to its own walk, not hang). The error case is unimplementable against a bare
+    completion pulse, which is how you know piece 3 landed.
+  - Rust unit: the progress bridge emits `write-progress { phase: 'scanning' }` under the operation's id while the
+    preview runs, including the synthetic tick at registration, and stops emitting once the wait ends.
+  - Rust unit: `pause_operation` refuses an operation in its scan-wait, the record stays `Running`, and `pause_all`
+    tolerates the refusal.
   - Rust unit: `blocks_quit` is true for a scanning operation (`quit/tests.rs` has the pattern at `:154-195`).
   - Vitest: the progress dialog exposes a non-null `operationId` and `canPauseOrQueue` while `phase === 'scanning'`,
     and Queue backgrounds it. This is the user-visible bug; write it first and watch it fail.
+  - Vitest: a queue row bound to a scanning operation renders live counts, not a blank row, and no dual bar. This is the
+    regression finding 2 above describes; it is worth a test precisely because the naive implementation passes every
+    other test.
   - Vitest, written after: the deletions keep the existing `transfer-progress-state.svelte.test.ts` scan cases passing
     where they describe outcomes, and the ones that describe the scan-wait *mechanism* are replaced by cases against the
     new path, each with a written reason.
   - E2E: confirm a large copy, background it from the queue button while the scan-phase readout is still up, and see the
-    row in the queue window. This is the regression that matters and it cannot be proven at the unit level.
+    row in the queue window. This is the regression that matters and it cannot be proven at the unit level. **It needs a
+    harness affordance and will not otherwise get written:** E2E fixture trees are deliberately small and
+    `data-scan-state` signals "counting done", which is the opposite of what this test has to hold. Add an
+    E2E-mode-gated preview delay (the `CMDR_E2E_MODE`-gated env-var pattern in `src-tauri/src/lib.rs`), so the scan
+    window is deterministic rather than a race against a 40-file fixture.
 - **Docs:** `write_operations/CLAUDE.md` and `DETAILS.md` (the scan preview gains an operation record; state the
-  identity rule: one `operationId` from confirm, `previewId` still names the preview), `scan_preview.rs`'s module doc
-  (it now has a completion signal an operation awaits), `transfer/CLAUDE.md` (the scan-wait must-know is now wrong),
-  `queue/CLAUDE.md` and `DETAILS.md` (a running row may be in `phase: 'scanning'`; Rollback is phase-gated),
-  `quit/`'s docs if they enumerate what holds a quit, and a line in `docs/architecture.md`.
+  identity rule: one `operationId` from confirm, `previewId` still names the preview; and the terminal-outcome
+  contract), `scan_preview.rs`'s module doc (the outcome publication and the progress bridge), `transfer/CLAUDE.md`
+  (the scan-wait must-know is now wrong), `queue/CLAUDE.md` and `DETAILS.md` (a running row may be in
+  `phase: 'scanning'`; Pause and Rollback are phase-gated), `quit/`'s docs if they enumerate what holds a quit, and a
+  line in `docs/architecture.md`.
 - **Checks:** `pnpm check rust -q` and `pnpm check svelte -q` while iterating, full `pnpm check -q` before wrapping,
   plus the transfer E2E specs.
 
@@ -388,6 +520,10 @@ smoothed ETA, status, settled). No commands yet, no dispatch, no view concerns. 
   than hang empty.
 - **Settle detection comes from the terminal events, not the snapshot.** Same reason: disappearing from
   `operations-changed` means "removed", which a completed, cancelled, and never-existed operation all look like.
+- **Seeding will immediately hit a scanning operation.** After M1, `list_operations()` can hand back a `Running` record
+  whose progress is `null` and whose first tick says `phase: 'scanning'` with zero totals. A session seeded that way
+  must present as live-and-scanning, never as stuck at 0%. Cover it in the seeding tests rather than discovering it
+  when a reload lands mid-scan.
 - **Test seam:** `_testEmit(event)` on the demultiplexer, following `operations-store.svelte.ts`'s `_testApplySnapshot`
   / `_testApplyProgress` (`:213-214`).
 - **Tests, TDD (red first):** registry identity (same id gives the same instance, release drops it), the fan-out routing
@@ -413,8 +549,11 @@ teardown semantics.
 - **Carries M1's scanning row.** The scan-phase rendering M1 added to the queue row moves onto the session with
   everything else. Keep the phase gating on Rollback; it is a rule, not an accident.
 - **Tests:** written after, because this is a substitution behind an unchanged surface and the existing chip and row
-  suites are the contract. They must pass unchanged, which is the point. Add one new test: a chip and a row bound to the
-  same operation report the identical ETA.
+  suites are the contract. They must pass unchanged, which is the point. Add one new test, and make it the right one:
+  "a chip and a row report the identical ETA" cannot fail, because both already render `row.etaSecondsDisplay` from the
+  one store smoother. The property this milestone actually risks is stacking a second smoothing layer, so pin the
+  count: exactly one `createEtaSmoother` is constructed per operation per window (spy on the factory), and it lives on
+  the session rather than the store. That one can go red, and it goes red for exactly the mistake M3 invites.
 - **Docs:** `status-corner/DETAILS.md` and `queue/DETAILS.md` updated to point at the session as the source.
 - **Checks:** `pnpm check svelte -q`, plus the queue E2E.
 
@@ -438,10 +577,14 @@ Pause, resume, cancel, rollback, and resolve-conflict become session methods. Vi
 - **Tests, TDD (red first):** each command's in-flight guard, that a paused operation is read from the snapshot status
   and never from `is_running`, and that a command issued from one view is observed by another view of the same session.
   That last one is the "commands don't care where they come from" property, which is also the MCP story.
+  **A single-window unit test cannot prove "only one window may resolve",** so this milestone also runs the four
+  conflict E2E specs (`conflict-copy.spec.ts`, `conflict-move.spec.ts`, `conflict-dialog-matrix.spec.ts`,
+  `conflict-edge-cases.spec.ts`), which exercise the lost-take race across the real two-window setup. They are the only
+  evidence the ownership rule holds.
 - **Docs:** this milestone invalidates a `transfer/CLAUDE.md` must-know verbatim (`:52-54`: Queue and F2 are
   frontend-only, set `backgrounded`, and that flag makes `onDestroy` skip its safety-net cancel). Rewrite it rather than
   patch it. `queue/CLAUDE.md`'s command story moves too, since per-row pause/resume/cancel becomes a session call.
-- **Checks:** `pnpm check svelte -q`.
+- **Checks:** `pnpm check svelte -q`, plus the four conflict E2E specs above.
 
 ### M5: the progress dialog becomes a view
 
@@ -525,8 +668,9 @@ and what Rollback offers (the snapshot's `supportsRollback` answers it, phase-ga
   operation twice does not create a second session; foregrounding then backgrounding leaves the operation running; and
   an adopted view's completion mutates no pane.
 - **Docs:** `queue/CLAUDE.md` and `DETAILS.md`, plus the birth-context rule in the session module's `DETAILS.md`.
-- **Checks:** full `pnpm check -q`, plus a real-app run: start a copy, background it, foreground it from the queue,
-  confirm live progress and that backgrounding again keeps it alive.
+- **Checks:** full `pnpm check -q`, and specifically the i18n parity checks plus the screenshot capture run for the new
+  string this milestone budgets (a new key is not done until both are green). Then a real-app run: start a copy,
+  background it, foreground it from the queue, confirm live progress and that backgrounding again keeps it alive.
 
 ## What we decided not to do: a pre-identity session
 
@@ -567,18 +711,26 @@ If this comes back, it needs a new argument, not this one.
    nothing, and every exit from the scan-wait (complete, error, cancelled, quit) has to reach `on_settled`
    (`manager.rs:450-454`) or the row leaks and its lane stays reserved. The current scan workers are detached
    `std::thread` / `tokio::spawn` with no `JoinHandle` and no RAII guard (`scan_preview.rs:72-87`), which is the
-   structural gap to close: the operation's task, not the scan worker, must own the settle.
-2. **M5 is a large edit to the most stateful frontend module in the app**, and its test suite encodes the current
+   structural gap to close: the operation's task, not the scan worker, must own the settle. Audit all five
+   `spawn_managed` sites listed in M1, not just the copy path.
+2. **A cancelled-while-queued operation leaks its cached scan result.** `cancel_if_queued` (`manager.rs:552-572`)
+   removes the record without ever running its `DeferredStart`, and that `FnOnce` is where M1's cleanup would live, so
+   nothing calls `cancel_scan_preview` / `release_scan_result`. The orphaned `CachedScanResult` holds tens of thousands
+   of `FileInfo` entries and only goes away when a later `insert_scan_result` TTL-evicts it
+   (`scan_cache.rs:155-181`) or the process exits. A `Queued` op cancelled before admission is the ordinary case on a
+   busy lane, not an exotic one. M1 needs an explicit cleanup hook on that path; this is a separate leak from risk 1's
+   settle-and-lane leak, and it will not be caught by the same test.
+3. **M5 is a large edit to the most stateful frontend module in the app**, and its test suite encodes the current
    ownership model in places. Expect to change tests, and expect each such change to need a written reason: a test
    changed without one is how a real regression gets waved through.
-3. **The guard retirements are behavior changes**, not refactors. They are argued above, and they should be argued again
+4. **The guard retirements are behavior changes**, not refactors. They are argued above, and they should be argued again
    at implementation time against whatever the code looks like then.
-4. **Refcount leaks.** A session that is never released holds listeners for an operation that ended, so the registry
+5. **Refcount leaks.** A session that is never released holds listeners for an operation that ended, so the registry
    needs a settle-driven sweep and not just view-driven release. The sweep must be driven by the terminal events, and it
    must not sweep a retained `failed` row: those persist on the snapshot by design until someone dismisses them
    (`manager.rs:619-674`), and a sweep that treats "settled" as "gone" would delete the session behind a failure the
    user has not read yet.
-5. **Efforts kept landing in this area while the spec was written** (the queue bar labels plus the Queue/Background
+6. **Efforts kept landing in this area while the spec was written** (the queue bar labels plus the Queue/Background
    button, the main-window conflict prompt, the whole of `quit-and-operation-lifetime.md`, and the immediate-confirm
    change). All have landed. Read what actually shipped rather than this spec's description of it, and re-verify these
    line numbers before trusting one.
