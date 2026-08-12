@@ -17,7 +17,7 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       chunk's 30-second deadline can't hold the quit, with the cooperative cancel path that lets backends clean their
       own partials still the default. Prerequisite (M0) of `operation-session-plan.md`, now satisfied. Ready to wipe
       once someone confirms the colocated docs carry everything.
-- [ ] 2026-08-09 `operation-session-plan.md` (refreshed 2026-08-12, re-pinned to `e045bc8eb`) - Make the progress
+- [ ] 2026-08-09 `operation-session-plan.md` (refreshed 2026-08-12, re-pinned to `cce94565d`) - Make the progress
       dialogs looking glasses instead of the process, so a "Foreground" button (click a running row in the operation
       queue, get the rich progress dialog back) becomes buildable. `createTransferProgressState` (1,299 lines) OWNS its
       operation: it scans, dispatches, and only then learns its `operationId`, so "attach to operation X" doesn't exist.
@@ -42,7 +42,9 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       optimistically, so no IPC change, but it MUST be latched on the record and applied when the scan-wait ends, or
       "Pause all" loses it and that one operation writes at full speed while the user believes the device is free.
       Totals stay 0 through a scan, so neither the dual bar nor the chip's percentage may render: the chip gets an
-      indeterminate state. The registry earns its place not because two smoothers disagree (the
+      indeterminate state, and a `Queued` row still renders the scan line. M1 also absorbs `DeleteDialog`'s null-
+      `previewId` race, because the guard it needs would otherwise be written against the scan-wait M1 deletes. The
+      registry earns its place not because two smoothers disagree (the
       EMA is deterministic; the shipped ETA bug was smoothed-versus-raw) but because smoothers **started at different
       times** diverge, which is exactly what a late-attaching view creates, so M3 must DELETE `operations-store`'s
       per-id smoother map rather than stack a second layer. M6's hardest problem is birth context: `OperationSnapshot`

@@ -1,6 +1,6 @@
 # Operation sessions: the dialogs become looking glasses
 
-Status: proposed. Spec only; nothing implemented. Line numbers are as of `e045bc8eb`.
+Status: proposed. Spec only; nothing implemented. Line numbers are as of `cce94565d`.
 
 ## The intent
 
@@ -152,24 +152,37 @@ exactly the coupling this spec exists to remove, arriving before the operation i
 
 Two things make it worse than a corner case:
 
-- **The confirm button acts immediately as of `fc46c09ab`.** `TransferDialog`'s confirm awaits the pre-flight conflict
+- **The confirm button acts immediately as of `cce94565d`.** `TransferDialog`'s confirm awaits the pre-flight conflict
   check only under a `needsConflictNames()` gate, because `pre_known_conflicts` is consumed only under a `Skip`
   resolution, at both independent gates (`transfer_driver/mod.rs:256-262` and `transfer/copy/mod.rs:244-245`), and the
   policy radios only render after the check completes, so nobody can have chosen `Skip` while it is pending. The MCP
   auto-confirm path with `conflictPolicy === 'skip'` still awaits. So for any large transfer, landing in the progress
   dialog on a scan you cannot background goes from a corner case to the normal opening experience.
-  ⚠️ At the time of writing, `fc46c09ab` lives on `david/confirm-no-wait` and has not been fast-forwarded into `main`,
-  so its line numbers are branch-local and deliberately not cited here. Re-read the commit rather than this paragraph
-  if the two ever disagree.
+  It is on `main`, so its line numbers are as trustworthy as the rest of this document's.
 - **`await scan.scanStarted` outlives the reason it was written for, and the new reason is stronger.** That commit
   keeps it on every confirm path to guarantee the non-null `previewId` the progress dialog's scan-wait needs. M1
   deletes that scan-wait and the await must stay anyway, because dropping it is a three-part failure, not a missing
   id. A fast confirm would fire `onConfirm` with `previewId = null` while the preview `TransferDialog` already started
   keeps walking. The operation then falls into M1's own miss case and re-walks, so the two walks run **concurrently**,
   which is the exact regression `preview_id` gets threaded through the archive routes to prevent. And the orphaned
-  preview has no owner and nothing cancels it, because `fc46c09ab`'s `confirmed` guard means `handleCancel` never
+  preview has no owner and nothing cancels it, because `cce94565d`'s `confirmed` guard means `handleCancel` never
   reaches `freeAndCleanup()`, so its result sits until a TTL sweep. M1 owns rewriting that comment; a rationale that
   no longer matches the code is how the next person deletes the line.
+- **The delete path has the same race and no guard, so M1 fixes it here.** `DeleteDialog.handleConfirm` (`:199`) is
+  fully synchronous and passes whatever `previewId` it holds (`:205`), but that field (`:99`) is only assigned at
+  `:168`, after the `await startScanPreview(...)` at `:167`. Confirm before that IPC returns and the operation
+  dispatches with `previewId = null`. The transfer side guards this with `await scan.scanStarted`; the delete side has
+  no equivalent.
+
+  Today the progress dialog's scan-wait absorbs it, and **M1 deletes that scan-wait**, so afterwards a null `previewId`
+  on the delete path lands in M1's own miss case: the operation re-walks, concurrently with the preview that
+  `startScanPreview` already started, and the orphan is never cancelled, because `onDestroy`'s cleanup is gated on
+  `previewId && !confirmed` (`:193-195`) and confirming sets `confirmed` before the id ever arrives. That is finding
+  7's failure, verbatim, on a second path.
+
+  It folds into M1 rather than shipping as a standalone guard for a plain reason: a guard written against today's code
+  would be written against the scan-wait, and M1 would then delete it. Give the delete path the same treatment the
+  transfer path gets, and write the comment to match.
 - **The quit gate cannot see it.** `blocks_quit` (`src-tauri/src/quit/mod.rs:108-126`) reads
   `list_operations()`, so a scan-waiting transfer holds nothing back: ⌘Q proceeds silently and the scan dies. Confirmed
   work that a user is watching should hold a quit.
@@ -547,12 +560,11 @@ new ambient surface reading "Copying · 0%" for minutes where today nothing appe
 not honest progress. Give the chip a scan-phase state (indeterminate, with the counting tooltip), keyed on the same
 `phase` the row and the dialog read.
 
-**A `Queued` row shows no counting line, and on a busy lane that is the common case.** `showReadout` requires
-`isRunning || isPaused` (`QueueRow.svelte:75-77`), so an operation admitted behind another on the same lane renders
-"Waiting" with nothing underneath for its whole scan. Two honest options: render the scan-phase line for `queued` rows
-too (the counts are real and the operation is genuinely doing something), or keep the row bare and make sure nothing
-elsewhere promises a live row. Prefer the first: "Waiting" plus a moving file count is exactly what is happening, and
-the alternative reads as a hung queue. Either way, decide it in M1 rather than shipping the gap.
+**A `Queued` row renders the scan-phase line too.** `showReadout` requires `isRunning || isPaused`
+(`QueueRow.svelte:75-77`), so without this an operation admitted behind another on the same lane would render "Waiting"
+with nothing underneath for its whole scan, which on a busy lane is the common case rather than the edge. Clear that
+gate for the scanning case: "Waiting" plus a moving file count is exactly what is happening, the counts are real, and a
+bare row reads as a hung queue. Decided, and it is why the tally carries the row's scan-phase branch as work.
 
 **Frontend deletions.** The scan-wait machinery goes, and what replaces it lives in the backend:
 
@@ -582,8 +594,9 @@ terminal-outcome contract plus reconciling the workers' cancel arms, a record-le
 `set_paused` refusal and its latched deferred pause, `preview_id` threaded through two archive entry points, a cleanup
 hook on `cancel_if_queued`, a TTL exemption, the chip's indeterminate state, phase gates on three controls, the queue
 row's scan-phase rendering branch (including rendering it for `Queued` rows, against `showReadout`'s
-`isRunning || isPaused` gate at `QueueRow.svelte:75-77`), and the E2E preview-delay affordance in
-`src-tauri/src/lib.rs` without which the regression test does not get written. An earlier draft sold M1 as "removes
+`isRunning || isPaused` gate at `QueueRow.svelte:75-77`), the E2E preview-delay affordance in `src-tauri/src/lib.rs`
+without which the regression test does not get written, and the delete path's missing `previewId` guard. An earlier
+draft sold M1 as "removes
 code rather than adding it"; that stopped being true as the milestone was pinned down, and the claim is retired rather
 than defended. The ordering rests on the other two reasons, which never depended on it.
 
@@ -643,9 +656,12 @@ test would catch. Write the Rust cache-consumption test first, and do not split 
   - Rust unit: `blocks_quit` is true for a scanning operation (`quit/tests.rs` has the pattern at `:154-195`).
   - Vitest: the progress dialog exposes a non-null `operationId` and `canPauseOrQueue` while `phase === 'scanning'`,
     and Queue backgrounds it. This is the user-visible bug; write it first and watch it fail.
-  - Vitest: a queue row bound to a scanning operation renders live counts, not a blank row, and no dual bar. This is the
-    regression finding 2 above describes; it is worth a test precisely because the naive implementation passes every
-    other test.
+  - Vitest: a queue row bound to a scanning operation renders live counts, not a blank row, and no dual bar, for a
+    `queued` row as well as a `running` one. Worth a test precisely because the naive implementation passes every other
+    test.
+  - Vitest, red first: confirming `DeleteDialog` before `startScanPreview` resolves dispatches with a non-null
+    `previewId`. Drive the IPC with an explicit deferred rather than incidental microtask order, the way
+    `TransferDialog.test.ts` does, and watch it fail first: today it dispatches `null` and the failure is real.
   - Vitest, written after: the deletions keep the existing `transfer-progress-state.svelte.test.ts` scan cases passing
     where they describe outcomes, and the ones that describe the scan-wait *mechanism* are replaced by cases against the
     new path, each with a written reason.
@@ -659,9 +675,9 @@ test would catch. Write the Rust cache-consumption test first, and do not split 
   identity rule: one `operationId` from confirm, `previewId` still names the preview; and the terminal-outcome
   contract), `scan_preview.rs`'s module doc (the outcome publication and the progress bridge), `transfer/CLAUDE.md`
   (the scan-wait must-know is now wrong), **`transfer/DETAILS.md`** (two `waitForScanThenStart` references at `:310`
-  and `:409` name a function M1 deletes; and once `fc46c09ab` merges, its § "The confirm dispatches without waiting for
-  the conflict check" justifies `await scan.scanStarted` as something "the progress dialog's scan-wait path depends
-  on", which is the sentence M1 invalidates and replaces with the reasoning above), `queue/CLAUDE.md` and `DETAILS.md`
+  and `:452` name a function M1 deletes, and `:345` justifies `await scan.scanStarted` because "the progress dialog's
+  scan-wait path depends on it being non-null", which is the sentence M1 invalidates and replaces with the reasoning
+  above), `queue/CLAUDE.md` and `DETAILS.md`
   (a running row may be in
   `phase: 'scanning'`; Pause and Rollback are phase-gated), `quit/`'s docs if they enumerate what holds a quit, and a
   line in `docs/architecture.md`.
@@ -796,10 +812,9 @@ Pause, resume, cancel, rollback, and resolve-conflict become session methods. Vi
   (`conflict-copy.spec.ts`, `conflict-move.spec.ts`, `conflict-dialog-matrix.spec.ts`, `conflict-edge-cases.spec.ts`,
   `conflict-overwrite-conditional.spec.ts`, and `mtp-conflicts.spec.ts` where MTP is available) as regression cover for
   the single-window arbitration M4 moves, not as evidence about two windows, which they cannot give.
-- **Docs:** this milestone invalidates a `transfer/CLAUDE.md` must-know verbatim (`:52-55`: Queue and F2 are
+- **Docs:** this milestone invalidates a `transfer/CLAUDE.md` must-know verbatim (`:56-59`: Queue and F2 are
   frontend-only, set `backgrounded`, and that flag makes `onDestroy` skip its safety-net cancel). Rewrite it rather than
-  patch it. Find it by its opening words rather than by line: `fc46c09ab` inserts a four-line bullet above it, so it
-  becomes `:56-59` the moment that branch merges. `queue/CLAUDE.md`'s command story moves too, since per-row pause/resume/cancel becomes a session call.
+  patch it, and find it by its opening words rather than by line: it has already moved once. `queue/CLAUDE.md`'s command story moves too, since per-row pause/resume/cancel becomes a session call.
 - **Checks:** `pnpm check svelte -q`, plus the conflict E2E specs above.
 
 ### M5: the progress dialog becomes a view
