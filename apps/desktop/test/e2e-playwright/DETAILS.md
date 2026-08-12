@@ -172,6 +172,14 @@ Only the layout facts that none of those carry live here:
   the guard that deletes anything not in the manifest. It also runs on `captureTest` (`fixtures.ts`), the bare `test`
   with no auto fixture: the leak guard's fixture diff is meaningless with no fixtures, and its overlay check is wrong
   for a master that is deliberately a picture of an open dialog.
+- **The frame anchor reaches the master through `magick`, and splits so CI still asserts something.**
+  `marketing-shots-frame.test.ts` checks the focused-margin constants against a REAL capture, but the committed master
+  is lossless WebP and nothing here decodes those pixels in JavaScript (`i18n-capture-png.ts` is PNG-only, and a VP8L
+  decoder is not worth hand-rolling). So the pixel assertions render the master with `magick … png32:-`, the same tool
+  that wrote it and that `regenerate-hero.sh` measures it with, and they `skipIf` ImageMagick is missing. The size
+  assertion instead reads the container header (`webp-size.ts`), so it runs on a CI runner with no ImageMagick and
+  still catches the likeliest drift: a reshoot at a different size while `FOCUSED_*` stays put. ❌ Don't collapse them
+  back into one magick-gated test; that leaves CI asserting nothing about the masters.
 - **❗ Before `pnpm i18n:capture`: quit or hide whatever app is frontmost, then leave the computer alone, and tell David
   both halves.** The native screenshot returns the window's last COMPOSITED frame, and macOS stops compositing a window
   that isn't frontmost, so the capture reads a stale, pre-paint frame: a dark rectangle with three traffic lights, while

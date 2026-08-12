@@ -1,7 +1,9 @@
+import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { decodePng, encodePng } from './i18n-capture-png.js'
+import { webpCanvasSize } from './webp-size.js'
 import {
   FOCUSED_CANVAS_GROWTH,
   FOCUSED_SHADOW_BOTTOM,
@@ -50,20 +52,54 @@ function focusedShotOf(window: { width: number; height: number }): Buffer {
   )
 }
 
+/** The window inside the master, which every margin here is measured against. */
+const MASTER_WINDOW = { width: 2284, height: 1410 }
+
+/** The lossless master. The shutter gates on PNG; only the committed FILE is WebP. */
+const MASTER = join(REPO_ROOT, 'brand', 'screenshots', 'app-main-dark.webp')
+
+/**
+ * Renders the master to PNG bytes through ImageMagick, the same tool that wrote it and
+ * that `regenerate-hero.sh` measures it with. Lossless in, lossless out, so the pixels
+ * the gates see are the pixels `screencapture` produced.
+ */
+function masterAsPng(): Buffer {
+  const res = spawnSync('magick', [MASTER, 'png32:-'], { maxBuffer: 256 * 1024 * 1024 })
+  if (res.error !== undefined || res.status !== 0) {
+    throw new Error(`Rendering the master to PNG failed (\`magick\`). ${String(res.stderr)}`)
+  }
+  return res.stdout
+}
+
+/** ImageMagick isn't an npm dep, so a machine without it runs the header assertions only. */
+const hasMagick = spawnSync('magick', ['-version']).status === 0
+
 describe('the committed masters', () => {
   // Anchoring on a real capture rather than only on painted fixtures: these numbers
   // come from macOS, and a model of them that drifts from the pixels would let every
   // synthetic test pass while the pipeline rejected every good shot.
-  it('measure exactly the focused margins the pipeline gates on', () => {
-    const bytes = readFileSync(join(REPO_ROOT, 'brand', 'screenshots', 'app-main-dark.png'))
+  //
+  // Split in two because the master is WebP and nothing here decodes those pixels in
+  // JavaScript. The size assertion reads the container header, so it runs everywhere
+  // (including CI, which has no ImageMagick) and still catches the likeliest drift: a
+  // reshoot at a different size while the constants stay put.
+  it('are sized exactly as the focused-frame model predicts', () => {
+    expect(webpCanvasSize(readFileSync(MASTER))).toEqual({
+      width: MASTER_WINDOW.width + FOCUSED_CANVAS_GROWTH,
+      height: MASTER_WINDOW.height + FOCUSED_CANVAS_GROWTH,
+    })
+  })
+
+  it.skipIf(!hasMagick)('measure exactly the focused margins the pipeline gates on', () => {
+    const bytes = masterAsPng()
     const decoded = decodePng(bytes)
 
     const rect = opaqueBoundingBox(bytes)
 
-    expect(rect).toEqual({ x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, width: 2284, height: 1410 })
-    expect(decoded.width).toBe(2284 + FOCUSED_CANVAS_GROWTH)
-    expect(decoded.height).toBe(1410 + FOCUSED_CANVAS_GROWTH)
-    expect(verifyShadowFrame(bytes, { width: 2284, height: 1410 })).toEqual({ ok: true, rect })
+    expect(rect).toEqual({ x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, ...MASTER_WINDOW })
+    expect(decoded.width).toBe(MASTER_WINDOW.width + FOCUSED_CANVAS_GROWTH)
+    expect(decoded.height).toBe(MASTER_WINDOW.height + FOCUSED_CANVAS_GROWTH)
+    expect(verifyShadowFrame(bytes, MASTER_WINDOW)).toEqual({ ok: true, rect })
   })
 
   it('grow by the same amount on both axes, which is what one constant assumes', () => {
