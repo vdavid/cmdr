@@ -141,6 +141,10 @@ function build(): void {
  *
  * Not written after the first run, so David can adjust the instance by hand (pane
  * paths, favorites, tabs) and keep it.
+ *
+ * ❗ Which is why anything a master is JUDGED on (view modes, size colors, theme) is
+ * staged by the spec instead, on every run: a look seeded here can't be changed later
+ * without deleting the instance.
  */
 function seedSettingsIfNew(): void {
   const settingsPath = join(dataDir, 'settings.json')

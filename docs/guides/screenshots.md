@@ -96,9 +96,25 @@ No production install, no readable index, or no `sqlite3` all fall through to a 
 ## Changing what the shots show
 
 Everything is staged in `apps/desktop/test/e2e-playwright/marketing-shots.spec.ts`: pane paths, the pinned-tab
-arrangement, the search query, which settings section is open. The traps already encoded there, so you don't rediscover
-them:
+arrangement, the view mode per pane (full on the left, brief on the right), the search query, which settings section is
+open. Anything VISIBLE in a shot is set there, on every run, not in the orchestrator's `seedSettingsIfNew` — that one
+writes only on a fresh data dir, and the shots instance is persistent, so a look seeded once can't be changed without
+deleting the instance.
 
+Two bits of chrome are pinned rather than staged, because they photograph whatever the machine happens to be doing:
+
+- **The window title** shows `Cmdr`, not the `Cmdr – Personal use only` the unlicensed shots instance computes.
+- **The repo chip** shows a clean `main`, not the working copy's real `+14` / dirty state, which changes between runs.
+
+`pinVolatileChrome` rewrites the rendered values and keeps them rewritten through a `MutationObserver` (both are
+reactive: the chip repaints on any repo watcher event, the title on any license event). ❗ It paints over the RENDER
+only, and must stay that way: no license is written, no app state changes. A master may show a chosen state, never a
+fake one the app itself would act on.
+
+The traps already encoded there, so you don't rediscover them:
+
+- The hero cutouts measure BOTH list shapes (`.full-list-container` + `.listbox-region` in full mode,
+  `.brief-list-container` + `.brief-list` in brief). A full-mode-only query throws on the brief pane.
 - Resize with the Ask Cmdr rail CLOSED. With it open each pane measures ~430 px instead of ~570 px, and the hero cutouts
   would come from a window nobody ships.
 - Unpin before closing tabs. `close_others` deliberately skips pinned tabs, so a remembered pin leaves a third tab in

@@ -21,7 +21,7 @@ import { captureTest as test, expect } from './fixtures.js'
 import { dispatchMenuCommand, openSettingsWindowViaProd } from './helpers.js'
 import { SEARCH_OVERLAY } from './search-helpers.js'
 import { insetRect } from './marketing-shots-frame.js'
-import { indexIsSettled, parsePaneTabs } from './marketing-shots-state.js'
+import { indexIsSettled, parsePaneTabs, parsePaneView } from './marketing-shots-state.js'
 import type { Rect } from './marketing-shots-frame.js'
 import { outputDir, setWindowSize, shootWithShadow, windowMetrics } from './marketing-shots-helpers.js'
 
@@ -41,6 +41,16 @@ const CUTOUT_INSET = 2
 
 /** What the search master searches for. A word that hits plenty of real files in the repo. */
 const SEARCH_QUERY = 'watcher'
+
+/**
+ * The window title the masters carry.
+ *
+ * The shots instance holds no license, so the app computes `Cmdr – Personal use only`
+ * (`licensing/app_status.rs::get_window_title`). The masters show the plain brand name
+ * instead, which is a deliberate marketing choice, applied to the rendered title only:
+ * the instance stays unlicensed, and nothing here mints or stores a license.
+ */
+const MASTER_TITLE = 'Cmdr'
 
 /** The repository the panes browse. Aesthetic, but a real tree with real sizes. */
 const REPO = process.env.CMDR_SHOTS_BROWSE_ROOT ?? join(process.env.HOME ?? '', 'projects-git', 'vdavid', 'cmdr')
@@ -174,7 +184,9 @@ async function stageMainWindow(page: TauriPage): Promise<Awaited<ReturnType<type
     .toBe(MAIN_WINDOW.width)
 
   await waitForIndexedSizes(page)
+  await stageCosmetics(page)
   await stagePanes(page)
+  await pinVolatileChrome(page)
 
   const metrics = await windowMetrics(page, 'main')
   // Every margin this pipeline gates on is a device-pixel number, so a 1x display has
@@ -190,6 +202,11 @@ async function stageMainWindow(page: TauriPage): Promise<Awaited<ReturnType<type
  * and every folder size reads `≥`, which is what a whole round of unusable masters looks
  * like — it has happened. The orchestrator clones a warm index in to make this instant;
  * this is the gate that proves it worked.
+ *
+ * Two conditions, because `indexStatus` alone isn't the whole truth: a volume reads
+ * `fresh` while a replay or an aggregation pass is still running, and that pass paints
+ * the status corner's hourglass into the top-right of every master. So the pixels get a
+ * vote — the corner must be empty too (`$lib/indexing/IndexingStatusIndicator.svelte`).
  */
 async function waitForIndexedSizes(page: TauriPage): Promise<void> {
   await ensureMcpClient(page)
@@ -197,7 +214,9 @@ async function waitForIndexedSizes(page: TauriPage): Promise<void> {
   await expect
     .poll(
       async () => {
-        const settled = indexIsSettled(await mcpReadResource('cmdr://state?include=volumes'))
+        const settled =
+          indexIsSettled(await mcpReadResource('cmdr://state?include=volumes')) &&
+          !(await page.evaluate<boolean>(`document.querySelector('.indexing-status') !== null`))
         if (!settled && !announced) {
           announced = true
           console.log(
@@ -242,9 +261,42 @@ async function resetTabs(pane: 'left' | 'right'): Promise<void> {
   })
 }
 
+/**
+ * The look of the file lists, set every run rather than seeded once.
+ *
+ * The shots data dir is persistent, so a setting written at creation time can't be
+ * changed later without deleting the instance — and these are exactly the ones a master
+ * is judged on. The orchestrator's `seedSettingsIfNew` covers suppressions (analytics,
+ * update toasts); anything VISIBLE in a shot belongs here, where every run re-applies it.
+ */
+async function stageCosmetics(page: TauriPage): Promise<void> {
+  // Rainbow size tiers: the color is most of what makes a file list read as a product
+  // shot rather than a directory dump.
+  await setSetting(page, 'appearance.sizeColors', 'rainbow')
+}
+
+/**
+ * Puts a pane in a view mode, skipping the call when it's already there.
+ *
+ * ❗ The skip is required, not an optimization. `set_view_mode` acks on the pane's state
+ * generation advancing, so setting brief on an already-brief pane never acks and fails
+ * the whole run 1.5 s later with a message about a stalled frontend.
+ */
+async function setViewMode(pane: 'left' | 'right', mode: 'full' | 'brief'): Promise<void> {
+  const current = parsePaneView(await mcpReadResource('cmdr://state?include=panes'), pane)
+  if (current === mode) return
+  await mcpCall('set_view_mode', { pane, mode })
+}
+
 async function stagePanes(page: TauriPage): Promise<void> {
   await resetTabs('left')
   await resetTabs('right')
+
+  // Full on the left, brief on the right: the asymmetry is the point, it shows both view
+  // modes in one frame. Set explicitly on BOTH panes rather than left to the data dir,
+  // which remembers whatever the last run (or a hand-driven session) left behind.
+  await setViewMode('left', 'full')
+  await setViewMode('right', 'brief')
 
   await mcpCall('nav_to_path', { pane: 'left', path: LEFT_PANE_PATH })
   await mcpCall('nav_to_path', { pane: 'right', path: LEFT_PANE_PATH })
@@ -296,6 +348,54 @@ async function setTheme(page: TauriPage, mode: 'dark' | 'light'): Promise<void> 
     .toBe(mode === 'dark')
 }
 
+/**
+ * Pins the two bits of window chrome that photograph whatever the machine happens to be
+ * doing: the title's license suffix, and the repo chip's ahead/behind/dirty state.
+ *
+ * Both are honest app output that makes a poor master. The title suffix depends on a
+ * license the shots instance doesn't have, and the chip reports the working copy's real
+ * unpushed-commit count, so the same shot says `main` one day and `main · +14` the next.
+ *
+ * ❗ This paints over the RENDERED value only. It writes no license, and it must never
+ * grow into anything that changes what the app believes: a master is allowed to show a
+ * chosen state, never a fake one the app would act on.
+ *
+ * A `MutationObserver` rather than a one-shot rewrite, because both are reactive: the
+ * chip repaints whenever the repo's watcher fires (an agent committing in a sibling
+ * worktree is enough), and the title refetches on every license event. Each pass writes
+ * only what differs, so the observer settles instead of feeding itself.
+ */
+async function pinVolatileChrome(page: TauriPage): Promise<void> {
+  await page.evaluate(`(() => {
+    if (window.__cmdrShotsChromePinned) return
+    window.__cmdrShotsChromePinned = true
+    const apply = () => {
+      const title = document.querySelector('.title-text')
+      if (title && title.textContent.trim() !== ${JSON.stringify(MASTER_TITLE)}) {
+        title.textContent = ${JSON.stringify(MASTER_TITLE)}
+      }
+      for (const chip of document.querySelectorAll('.repo-chip')) {
+        for (const state of ['dirty', 'ahead', 'behind', 'detached', 'unborn']) {
+          if (chip.classList.contains(state)) chip.classList.remove(state)
+        }
+        if (chip.dataset.state !== 'clean') chip.dataset.state = 'clean'
+        // The '·' separator and the '+14 / dirty' suffix are separate spans; dropping
+        // them leaves the icon and the branch name, which is the clean-state chip.
+        chip.querySelector('.sep')?.remove()
+        chip.querySelector('.sub')?.remove()
+      }
+    }
+    new MutationObserver(apply).observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['class', 'data-state'],
+    })
+    apply()
+  })()`)
+}
+
 async function railOpen(page: TauriPage): Promise<boolean> {
   return page.evaluate<boolean>(`document.querySelector('.ask-cmdr-rail') !== null`)
 }
@@ -337,18 +437,26 @@ async function dismissSearch(): Promise<void> {
 /**
  * The two pane rectangles, in device pixels relative to the window's top-left.
  *
- * Each pane's `.full-list-container` gives the left edge and width; its
- * `.listbox-region` gives the top, which is below the column headers; the container's
- * bottom ends it, above the status bar. So the hero's holes frame the file lists and
- * nothing else, and they follow the layout instead of a constant that outlives it.
+ * Each pane's list container gives the left edge and width; the row area inside it gives
+ * the top, which is below the column headers; the container's bottom ends it, above the
+ * status bar. So the hero's holes frame the file lists and nothing else, and they follow
+ * the layout instead of a constant that outlives it.
+ *
+ * ❗ Both view modes, because the masters show one of each: full mode paints
+ * `.full-list-container` + `.listbox-region`, brief mode `.brief-list-container` +
+ * `.brief-list`. A full-mode-only query throws on the brief pane and takes the hero
+ * cutouts down with it.
  */
 async function measurePaneCutouts(page: TauriPage, scale: number): Promise<[Rect, Rect]> {
   const measured = await page.evaluate<Rect[]>(
     `(() => {
        const dpr = ${String(scale)}
        return [...document.querySelectorAll('.file-pane')].map((pane) => {
-         const box = pane.querySelector('.full-list-container').getBoundingClientRect()
-         const rows = pane.querySelector('.listbox-region').getBoundingClientRect()
+         const container = pane.querySelector('.full-list-container, .brief-list-container')
+         const rowArea = pane.querySelector('.listbox-region, .brief-list')
+         if (!container || !rowArea) return null
+         const box = container.getBoundingClientRect()
+         const rows = rowArea.getBoundingClientRect()
          return {
            x: Math.round(box.x * dpr),
            y: Math.round(rows.y * dpr),
@@ -359,6 +467,9 @@ async function measurePaneCutouts(page: TauriPage, scale: number): Promise<[Rect
      })()`,
   )
   expect(measured, 'the hero needs exactly two panes to cut from').toHaveLength(2)
+  // A `null` here means a pane rendered neither list shape, so the hero would silently
+  // get a rectangle built from `undefined`. Say which pane, and stop.
+  expect(measured.filter(Boolean), 'both panes must show a file list to measure').toHaveLength(2)
   const [left, right] = measured.map((rect) => insetRect(rect, CUTOUT_INSET))
   return [left, right]
 }

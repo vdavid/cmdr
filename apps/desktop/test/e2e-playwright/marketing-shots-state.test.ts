@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { indexIsSettled, parsePaneTabs } from './marketing-shots-state.js'
+import { indexIsSettled, parsePaneTabs, parsePaneView } from './marketing-shots-state.js'
 
 const STATE = `generation: 41
 focused: left
@@ -9,6 +9,7 @@ left:
     - i:0 id:t-1 [active] lib (/Users/d/repo/apps/desktop/src/lib)
   volume: Macintosh HD
   path: /Users/d/repo/apps/desktop/src/lib
+  view: full
 right:
   tabs:
     - i:0 id:t-7 [pinned] lib (/Users/d/repo/apps/desktop/src/lib)
@@ -16,6 +17,7 @@ right:
     - i:2 id:t-9 [pinned] brand (/Users/d/repo/brand)
   volume: Macintosh HD
   path: /Users/d/repo/apps/desktop/src-tauri/src
+  view: brief
 volumes:
   - name: Macintosh HD
     indexStatus: fresh
@@ -37,6 +39,21 @@ describe('parsePaneTabs', () => {
 
   it('returns nothing for a pane with no synced tabs', () => {
     expect(parsePaneTabs('generation: 1\nfocused: left\nleft:\n  path: /\nright:\n  path: /\n', 'left')).toEqual([])
+  })
+})
+
+describe('parsePaneView', () => {
+  it('reads each pane’s view mode from its own block', () => {
+    // Scoped like `parsePaneTabs`: both panes print an identical `view:` line, so a
+    // document-wide scan reads the left pane's mode and skips the right pane's switch.
+    expect(parsePaneView(STATE, 'left')).toBe('full')
+    expect(parsePaneView(STATE, 'right')).toBe('brief')
+  })
+
+  it('returns null when the pane has no view line', () => {
+    // A null must mean "don't know", never a guess: the caller skips a no-op
+    // `set_view_mode`, and the backend only acks a call that actually changes something.
+    expect(parsePaneView('generation: 1\nleft:\n  path: /\nright:\n  path: /\n', 'left')).toBeNull()
   })
 })
 
