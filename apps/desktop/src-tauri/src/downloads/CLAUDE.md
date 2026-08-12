@@ -11,7 +11,8 @@ file). FDA-gated.
   events for paths Cmdr just wrote
 - **`latest_ring.rs`**: `LatestRing`, a capacity-10 ring of `(PathBuf, Instant)`; re-pushing moves to the back
 - **`watcher.rs`**: `DownloadsWatcher`, the debouncer handle + ignore set + ring; pure `classify_event()` /
-  `translate_debounced()`; `AppHandleSink` (prod) vs `ChannelSink` (tests)
+  `translate_debounced()`; `AppHandleSink` (prod) vs `ChannelSink` (tests). Its tests live in the sibling
+  `watcher_test.rs`, wired as `#[cfg(test)] mod watcher_test;` from `mod.rs`
 - **`runtime.rs`**: `Mutex<Option<DownloadsWatcher>>`; `refresh_runtime(&app)` aligns the handle with the FDA gate;
   owns the `note_pending_write_for_cmdr` hook API
 - **`commands.rs`**: IPC (`go_to_latest_download`, `downloads_watcher_status`, `recheck_downloads_watcher_gate`,

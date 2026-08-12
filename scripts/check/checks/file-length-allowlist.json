@@ -9,7 +9,6 @@
   "files": {
     "apps/desktop/src-tauri/src/agent/chat/runtime/tests.rs": 1292,
     "apps/desktop/src-tauri/src/commands/network.rs": 901,
-    "apps/desktop/src-tauri/src/downloads/watcher.rs": 1083,
     "apps/desktop/src-tauri/src/error_reporter/tests.rs": 998,
     "apps/desktop/src-tauri/src/file_system/listing/caching.rs": 926,
     "apps/desktop/src-tauri/src/file_system/listing/caching_test.rs": 896,

@@ -69,6 +69,8 @@ mod ignore_set;
 mod latest_ring;
 pub mod runtime;
 pub mod watcher;
+#[cfg(test)]
+mod watcher_test;
 
 pub use filter::is_eligible;
 pub use ignore_set::IgnoreSet;

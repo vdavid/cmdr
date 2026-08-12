@@ -108,7 +108,7 @@ one accepted), so an event-detected "latest" and a scanned "latest" can't disagr
 
 ## Real-FSEvents test determinism
 
-`watcher.rs`'s five integration tests drive a real `notify` watch on a temp dir, so they inherit FSEvents' two
+`watcher_test.rs`'s five integration tests drive a real `notify` watch on a temp dir, so they inherit FSEvents' two
 under-load failure modes: a mutation landing in the just-registered-watch arming window is dropped outright (not
 delayed), and even a live watch can coalesce or drop a lone create/rename. Both are unrecoverable by waiting, so the
 tests **self-heal** rather than wait-and-hope:
