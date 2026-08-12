@@ -879,7 +879,7 @@ Run sequentially. Ordering that matters:
 
 ## Milestones
 
-`pnpm check -q --fast` while iterating, the scoped checks named per milestone at each milestone's end,
+`pnpm check --fast` while iterating, the scoped checks named per milestone at each milestone's end,
 `pnpm check --include-slow` before wrapping.
 
 **Copy rule for every milestone**: write the user-facing strings in the house voice and move on. David waived the review

@@ -61,7 +61,6 @@ nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main
 - **`--prefer-freestyle`**: Run compat checks on VM + the rest locally in parallel
 - **`--fail-fast`**: Stop on first failure
 - **`--no-log`**: Disable CSV stats logging
-- **`-q`, `--quiet`**: Accepted and ignored; quiet output is the default
 - **`--graph`**: Render the check dependency graph (weights + lanes + median wall-time) and exit
 - **`--graph-format`**: Graph output: `tree` (default, colored terminal), `mermaid`, `dot`
 - **`--docs-graph`**: Render the doc-discoverability tree (rooted at the repo-root `CLAUDE.md`) with per-doc usage, and
@@ -119,8 +118,7 @@ failures, skips (a skip didn't verify anything), and passes that changed files (
 by `MadeChanges`). The warn/skip counts ride into the summary so a collapsed warn is never silently lost.
 
 `-v` / `--verbose` opts back into the per-check lines, and `--ci` implies it: log volume is free in a job log, and a
-collapsed run is far harder to debug after the fact. `-q` / `--quiet` still parse and do nothing, so the invocations
-baked into docs, specs, and habits keep working.
+collapsed run is far harder to debug after the fact.
 
 Implementation: `parseFlags` derives `cliFlags.quiet` as `!(verbose || ci)`, `Runner.suppressedInQuiet` picks which
 per-check lines to hide, and `printSuccess` / `summarizeRun` in `main.go` build the summary line. Caching, logging, and

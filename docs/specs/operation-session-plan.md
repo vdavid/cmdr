@@ -677,7 +677,7 @@ test would catch. Write the Rust cache-consumption test first, and do not split 
   scan-wait path depends on it being non-null", which is the sentence M1 invalidates and replaces with the reasoning
   above), `queue/CLAUDE.md` and `DETAILS.md` (a running row may be in `phase: 'scanning'`; Pause and Rollback are
   phase-gated), `quit/`'s docs if they enumerate what holds a quit, and a line in `docs/architecture.md`.
-- **Checks:** `pnpm check rust -q` and `pnpm check svelte -q` while iterating, full `pnpm check -q` before wrapping,
+- **Checks:** `pnpm check rust` and `pnpm check svelte` while iterating, full `pnpm check` before wrapping,
   plus the transfer E2E specs.
 
 ### M2: the fan-out and the session module, read-only
@@ -753,7 +753,7 @@ smoothed ETA, status, settled). No commands yet, no dispatch, no view concerns. 
 - **Docs:** colocated `CLAUDE.md` + `DETAILS.md` for the new module, a module-map entry in `file-operations/CLAUDE.md`,
   and a line in `docs/architecture.md`. The `DETAILS.md` carries the registry rationale and the divergent-smoother
   argument.
-- **Checks:** `pnpm check svelte -q`.
+- **Checks:** `pnpm check svelte`.
 
 ### M3: the corner chip and the queue rows read sessions
 
@@ -778,7 +778,7 @@ teardown semantics.
   through M4. M5 inherits the main-window half, and its milestone says so.
 - **Docs:** `src/lib/status-corner/DETAILS.md` and `src/lib/file-operations/queue/DETAILS.md` updated to point at the
   session as the source. (They are not siblings; the chip lives outside `file-operations/`.)
-- **Checks:** `pnpm check svelte -q`, plus the queue E2E.
+- **Checks:** `pnpm check svelte`, plus the queue E2E.
 
 ### M4: commands move to the session
 
@@ -813,7 +813,7 @@ Pause, resume, cancel, rollback, and resolve-conflict become session methods. Vi
   frontend-only, set `backgrounded`, and that flag makes `onDestroy` skip its safety-net cancel). Rewrite it rather than
   patch it, and find it by its opening words rather than by line: it has already moved once. `queue/CLAUDE.md`'s command
   story moves too, since per-row pause/resume/cancel becomes a session call.
-- **Checks:** `pnpm check svelte -q`, plus the conflict E2E specs above.
+- **Checks:** `pnpm check svelte`, plus the conflict E2E specs above.
 
 ### M5: the progress dialog becomes a view
 
@@ -844,7 +844,7 @@ module, so dispatch is a single path rather than two.
   one `createEtaSmoother` exists per operation per window there too. M3 could only prove it for the queue window,
   because the dialog still built its own until this milestone.
 - **Docs:** the module doc rewritten around the split; the `backgrounded` explanation survives wherever the flag does.
-- **Checks:** full `pnpm check -q`, plus the transfer E2E specs run in isolation.
+- **Checks:** full `pnpm check`, plus the transfer E2E specs run in isolation.
 
 ### M6: Foreground (the payoff)
 
@@ -940,7 +940,7 @@ and what Rollback offers (the snapshot's `supportsRollback` answers it, phase-ga
   operation twice does not create a second session; foregrounding then backgrounding leaves the operation running; and
   an adopted view's completion mutates no pane.
 - **Docs:** `queue/CLAUDE.md` and `DETAILS.md`, plus the birth-context rule in the session module's `DETAILS.md`.
-- **Checks:** full `pnpm check -q`, and specifically the i18n parity checks plus the screenshot capture run for the new
+- **Checks:** full `pnpm check`, and specifically the i18n parity checks plus the screenshot capture run for the new
   string this milestone budgets (a new key is not done until both are green). Then a real-app run: start a copy,
   background it, foreground it from the queue, confirm live progress and that backgrounding again keeps it alive.
 

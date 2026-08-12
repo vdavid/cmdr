@@ -320,11 +320,11 @@ func parseFlags(args []string) (*cliFlags, error) {
 	)
 	fs.Var(&appNames, "app", "Run checks for specific apps (repeatable or comma-separated)")
 	fs.Var(&checkNames, "check", "Run specific checks by ID (same as naming them positionally)")
-	// `-q` / `--quiet` are accepted and ignored: quiet output is the default now,
-	// and the flag is still baked into docs, specs, and muscle memory. `-v` is the
-	// way out of it.
-	fs.Bool("quiet", false, "Accepted and ignored: quiet output is the default")
-	fs.Bool("q", false, "Accepted and ignored: quiet output is the default")
+	// `-q` / `--quiet` still parse and do nothing, undocumented, so a typed-from-
+	// memory invocation doesn't error out. Quiet is the default; `-v` is the way
+	// out of it.
+	fs.Bool("quiet", false, "")
+	fs.Bool("q", false, "")
 	// Short aliases bind to the same target as their long form, so either spelling
 	// sets it (this avoids an extra `||` in the struct literal, keeping parseFlags
 	// under the cyclomatic-complexity threshold).
@@ -705,7 +705,6 @@ func showUsage() {
 	fmt.Println("    --fresh                  Bypass the input-fingerprint cache: run everything selected, then refresh it")
 	fmt.Println("    --fail-fast              Stop on first failure")
 	fmt.Println("    --no-log                 Disable CSV stats logging (~/cmdr-check-log.csv)")
-	fmt.Println("    -q, --quiet              Accepted and ignored: quiet output is the default")
 	fmt.Println("    --graph                  Render the check dependency graph (weights + lanes) and exit")
 	fmt.Println("    --graph-format FORMAT    Graph output format: tree (default) | mermaid | dot")
 	fmt.Println("    --docs-graph             Render the doc-discoverability tree (rooted at AGENTS.md) and exit")

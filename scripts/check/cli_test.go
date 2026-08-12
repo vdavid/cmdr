@@ -70,8 +70,8 @@ func TestParseFlags_FlagsAfterPositionals(t *testing.T) {
 }
 
 func TestParseFlags_QuietIsTheDefault(t *testing.T) {
-	// `-q` / `--quiet` survive as accepted no-ops, so every doc, spec, and habit
-	// that still passes them keeps working.
+	// `-q` / `--quiet` survive as undocumented no-ops, so an invocation typed from
+	// memory doesn't error out.
 	for _, args := range [][]string{{"clippy"}, {"--quiet", "clippy"}, {"-q", "clippy"}} {
 		flags, err := parseFlags(args)
 		if err != nil {

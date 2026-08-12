@@ -221,7 +221,7 @@ pipeline's contract is that no prose crosses IPC).
 
 ## Milestones
 
-Each milestone is independently committable and independently testable. Run `pnpm check -q` scoped to what the milestone
+Each milestone is independently committable and independently testable. Run `pnpm check` scoped to what the milestone
 touched (`pnpm check desktop` / `rust` / a named check), and the full `pnpm check` before wrapping.
 
 ### M1 — `queue.show` moves to View, with ⌥⌘Q

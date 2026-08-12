@@ -376,7 +376,7 @@ the fix is wrong. M1b, being correctness-sensitive, gets a real TDD cycle agains
 **Docs**: a one-line guardrail in `store/CLAUDE.md` (hot write paths use `prepare_cached`; `execute` with a literal
 re-parses per call), plus a Decision/Why in the nearest `DETAILS.md` for M1b's batching semantics.
 
-**Checks**: `pnpm check rust`, then `pnpm check -q`.
+**Checks**: `pnpm check rust`, then `pnpm check`.
 
 ---
 
@@ -569,7 +569,7 @@ subtree means the index is knowingly behind: folder sizes go stale and search mi
   anchor is never starved; `record_held_back` increments.
 - **Regression anchor** named for this bug's shape, so a future tuning pass cannot reintroduce cardinality blindness.
 
-**Checks**: `pnpm check rust`, `pnpm check -q`, `pnpm check --include-slow`.
+**Checks**: `pnpm check rust`, `pnpm check`, `pnpm check --include-slow`.
 
 ---
 

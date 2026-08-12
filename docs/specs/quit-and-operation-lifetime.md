@@ -168,7 +168,7 @@ instance doesn't apply.
   of age. The existing `copy_crashsafe_tests.rs` is the natural home.
 - **Docs:** `transfer/CLAUDE.md`'s safe-overwrite must-know (it currently scopes staging to overwrites),
   `transfer/DETAILS.md` § "Finding the litter", and the local-engine notes in `write_operations/DETAILS.md`.
-- **Checks:** `pnpm check rust -q`, then `pnpm check rust-tests`.
+- **Checks:** `pnpm check rust`, then `pnpm check rust-tests`.
 
 ## Q2: the hard-abort tier
 
@@ -193,7 +193,7 @@ original plan; three things went beyond it, all deliberate:
   documented reason).
 - **Docs:** `transfer/DETAILS.md:392-397` currently states racing writes against cancel is "deliberately not done" —
   that passage must be rewritten to describe the two tiers and why tier 1 stays the default, not deleted.
-- **Checks:** `pnpm check rust -q`, `pnpm check rust-tests`.
+- **Checks:** `pnpm check rust`, `pnpm check rust-tests`.
 
 ## Q3: the quit gate, with the countdown owned by Rust
 
@@ -246,7 +246,7 @@ neither the old net nor the new gate exists.
 - **Tests:** a quit with no active operations doesn't prompt; a quit with one does and blocks; `quit_cancel` releases
   the gate and stops the timer; the timer fires with no frontend answer at all (the wedged-UI case, the reason the
   design exists); a reload leaves backgrounded operations running (the original defect, red first).
-- **Checks:** `pnpm check rust -q`, `pnpm check svelte -q`, then the full `pnpm check`, plus an E2E for the prompt.
+- **Checks:** `pnpm check rust`, `pnpm check svelte`, then the full `pnpm check`, plus an E2E for the prompt.
 
 ## Sequencing
 

@@ -31,8 +31,8 @@ remains untouched.
 - Added a focused prompt test for that rule.
 - Removed the obsolete `#[allow(dead_code)]` from `Access::Propose`.
 - Linked this handoff from `docs/specs/index.md`.
-- Validation after these changes: `pnpm check --fast -q` passed 51 checks with the existing file-length warning;
-  `pnpm check svelte-tests --fresh -q` passed the full Svelte lane, including all 6,815 tests.
+- Validation after these changes: `pnpm check --fast` passed 51 checks with the existing file-length warning;
+  `pnpm check svelte-tests --fresh` passed the full Svelte lane, including all 6,815 tests.
 
 ## Data-safety follow-up completed
 
@@ -204,7 +204,7 @@ Tests added:
 
 Reported validation:
 
-- `pnpm check -m --fast -q`: 51 passed with the existing file-length warning.
+- `pnpm check -m --fast`: 51 passed with the existing file-length warning.
 - Rust: 4,359 of 4,360 passed; the new source test passed. The reported failure was
   `file_system::write_operations::manager::tests::panicking_op_releases_its_lane_without_spawning_next`.
 - The full Svelte suite was not rerun after the final source badge implementation.
@@ -261,7 +261,7 @@ The stale allowance and its no-longer-true explanatory comment were removed from
 6. Audit the dependency planner and failure recovery for data loss before running any manual rename test.
 7. If manual testing is needed, use only a newly created directory under `_ignored`.
 8. Run binding generation/checks and all i18n checks.
-9. Run `pnpm check --fast -q`, then the normal relevant lanes. Do not rerun broad slow/E2E suites unless the user asks.
+9. Run `pnpm check --fast`, then the normal relevant lanes. Do not rerun broad slow/E2E suites unless the user asks.
 10. Update this handoff, the implementation spec, DETAILS docs, README submission text, and
     `docs/hackathon-submission.md` to reflect final commits and validation.
 11. Commit and push to `codex/natural-language-bulk-rename`, then update PR #39. Do not modify main.

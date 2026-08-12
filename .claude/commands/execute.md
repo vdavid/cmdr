@@ -31,7 +31,7 @@ follow-up tweaks.
   eyes on it.
 - Rebase the worktree onto CURRENT local `main` before the FF-merge (it can advance mid-session).
 - Ask +1 agent to thoroughly review the execution and flag anything skipped, broken, or incomplete, and run
-  `pnpm check -q --include-slow`, and confirm it's green (even if unrelated checks fail, surface those).
+  `pnpm check --include-slow`, and confirm it's green (even if unrelated checks fail, surface those).
 - Strip milestone tags from the touched code and docs. Plan-specific names like "M1", "M2a", "Milestone 3", "Phase 2"
   leak into inline comments, dead-code `reason` strings, test helper prefixes, doc strings, and `CLAUDE.md` text during
   execution. Grep the touched files (`rg -n '\b(M[0-9][a-z]?|Milestone\s*[0-9]|Phase\s*[0-9])\b' <paths>`) and replace

@@ -163,7 +163,7 @@ reimplemented; the orchestrator lives beside `i18n-capture.ts` for the same reas
 ## Milestones
 
 Each milestone ends green and committed. Run the narrow check the change touches (`check-scope-matches-change`), not the
-full suite; `pnpm check -q` per milestone, `--include-slow` only at the end.
+full suite; `pnpm check` per milestone, `--include-slow` only at the end.
 
 ### M1 — `shootWithShadow()`, proven on a live window
 
@@ -205,7 +205,7 @@ fails rather than agreeing with itself. The impure half is proven by a real run,
 → `screencapture -l` → verdict `ok` at `+112+76`. Screen Recording and Accessibility both work from a terminal session
 here (2026-08-12).
 
-**Checks**: `pnpm check -q desktop-svelte-tests oxfmt desktop-svelte-eslint`.
+**Checks**: `pnpm check desktop-svelte-tests oxfmt desktop-svelte-eslint`.
 
 ### M2 — the orchestrator and the shots data dir
 
@@ -262,7 +262,7 @@ this from M3 keeps "can we drive it at all" separate from "does it look right".
 **Tests**: the shard-kind wiring is proven by the run itself. Add a Vitest for the "is this binary stale" comparison if
 it grows past a one-liner; otherwise skip.
 
-**Checks**: `pnpm check -q desktop` (typescript + lint), and one real launch that reaches
+**Checks**: `pnpm check desktop` (typescript + lint), and one real launch that reaches
 `waitForSelector('.file-pane')` and exits 0.
 
 ### M3 — the spec: staging, the eight shots, and the hero geometry
@@ -318,7 +318,7 @@ the hero cutouts wrong was exactly a hand-measured constant outliving the layout
 **Tests**: the shots are the test. The pure geometry helper (rect → inset rect, and the "does this JSON match this
 master" guard) gets a Vitest, written test-first.
 
-**Checks**: `pnpm check -q desktop`, plus a real run of the spec, plus `apps/website/scripts/regenerate-hero.sh` when
+**Checks**: `pnpm check desktop`, plus a real run of the spec, plus `apps/website/scripts/regenerate-hero.sh` when
 that script is present (it lands with the `david-alternativeto-refresh` branch, see § Coordination).
 
 ### M4 — seeding the shots data dir
@@ -356,7 +356,7 @@ draft for David's review like every other human-facing string.
 starting at 0, valid `content_blocks` JSON, and `role` values from the allowed set), written test-first. The seed is
 then proven end-to-end by M3's `chat-*` shots.
 
-**Checks**: `pnpm check -q desktop-svelte-tests`, plus the real chat shots.
+**Checks**: `pnpm check desktop-svelte-tests`, plus the real chat shots.
 
 ### M5 — docs, and retiring the manual path
 
@@ -377,7 +377,7 @@ then proven end-to-end by M3's `chat-*` shots.
 - Check the `claude-md-length` and `docs-reachable` results; ❌ never add or raise an allowlist entry without David's
   explicit consent, surface a warn instead.
 
-**Checks**: `pnpm check -q docs-reachable dead-links link-text claude-md-length`, then a full `pnpm check -q` once.
+**Checks**: `pnpm check docs-reachable dead-links link-text claude-md-length`, then a full `pnpm check` once.
 
 ## Seeding the shots data dir (reference)
 

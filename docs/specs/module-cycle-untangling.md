@@ -143,7 +143,7 @@ idiomatic test pattern and it doesn't affect the production graph.
 **Verify:** re-run the SCC analysis and confirm the `smb::*` (10), `indexing::store::*` (4), and `reconciler::rescan*`
 (3) groups disappear, and that `volumes` drops from 8 to 2. If any survives, it was real, and it belongs on this list.
 
-**Checks:** `pnpm check rust -q`. **Docs:** none.
+**Checks:** `pnpm check rust`. **Docs:** none.
 
 ### M1 — Move the volume-manager singleton out of the facade (`17 → 3`)
 
@@ -197,7 +197,7 @@ tokens under `write_operations/` are four doc comments (`scan_preview.rs:68,674`
    (`reconciler.rs:1588`), `collect_ancestor_paths`, and `compute_parent_path` (pure path arithmetic) →
    `paths/path_prefix.rs`. Nine call sites. Bonus: shrinks `reconciler.rs` (1,634 lines, allowlisted).
 
-**Docs:** `indexing/CLAUDE.md` module map, `search/DETAILS.md`. **Checks:** `pnpm check -q` per item, full at the end.
+**Docs:** `indexing/CLAUDE.md` module map, `search/DETAILS.md`. **Checks:** `pnpm check` per item, full at the end.
 
 ### M3 — The `EventSink` residue (`indexing::events ↔ sink ↔ media_index::events`)
 
@@ -216,7 +216,7 @@ Both are `pub use`-preserving, so consumer paths and `bindings.ts` stay identica
 (`progress_reporter.rs:26-28`). It's a scan-progress pump misfiled in `events/`, and it's why `events` isn't the leaf it
 should be. Move it to `scanner/` or `lifecycle/`.
 
-**Docs:** `indexing/events/CLAUDE.md` + `DETAILS.md`. **Checks:** `pnpm check -q`, `bindings-fresh`.
+**Docs:** `indexing/events/CLAUDE.md` + `DETAILS.md`. **Checks:** `pnpm check`, `bindings-fresh`.
 
 ### M4 — Split media coverage into a read/write pair (`5 → 0`)
 
@@ -318,7 +318,7 @@ The ratchet numbers to seed it with, measured after M6: `cmdr` 10, `cmdr-index` 
 declared non-goals (a cohesive feature cluster, `IndexPhase::Running(Box<IndexManager>)` plus the manager ↔ event-loop
 pair, and a parent ↔ child hub), so the check can go straight to error rather than warning first.
 
-**Docs:** `scripts/check/checks/DETAILS.md`. **Checks:** `pnpm check go`, `pnpm check -q`.
+**Docs:** `scripts/check/checks/DETAILS.md`. **Checks:** `pnpm check go`, `pnpm check`.
 
 ## Parallelization
 
