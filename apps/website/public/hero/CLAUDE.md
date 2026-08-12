@@ -5,8 +5,8 @@ into a frame + two pane cutouts so they animate independently in `Hero.astro`. R
 verify, cutout geometry): [DETAILS.md](DETAILS.md).
 
 This directory ships ONLY WebP. The intermediate master PNGs live in
-[`brand/hero-masters/`](../../../../brand/hero-masters) (regeneration inputs, never shipped); the regeneration script
-writes the WebPs here from them.
+[`brand/hero-masters/`](../../../../brand/hero-masters) (regeneration inputs, never shipped, and untracked: the script
+rebuilds them from `brand/screenshots/` in seconds); the regeneration script writes the WebPs here from them.
 
 ## Files (all shipped, all WebP)
 
@@ -23,7 +23,8 @@ The 2x WebPs are 2508 x 1634 px (2x retina, the master canvas size); the 1x WebP
 
 - **This directory ships verbatim into `dist/`, so keep ONLY WebP here.** The master PNGs live in `brand/hero-masters/`
   on purpose, so the bundle never ships the ~3 MB of intermediate PNGs. Don't move masters back here.
-- **Only the WebPs are referenced by the site**; the masters in `brand/hero-masters/` exist solely for regeneration.
+- **Only the WebPs are referenced by the site**; the masters in `brand/hero-masters/` exist solely for regeneration, and
+  are untracked. ❌ Don't commit them back: a fresh clone has none, and `regenerate-hero.sh` makes them on demand.
 - **Don't switch the WebPs to lossy without measuring.** Lossless WebP beats lossy q90 here (flat UI chrome compresses
   better losslessly) and is pixel-perfect.
 - **Don't convert the layers back to `<img>` tags.** `Hero.astro` loads them as CSS `background-image` with

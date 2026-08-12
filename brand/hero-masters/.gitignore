@@ -1,0 +1,9 @@
+# The six composited hero layers are INTERMEDIATES, not deliverables: pure output of
+# `apps/website/scripts/regenerate-hero.sh` from `brand/screenshots/`, ~2 MB a set, and
+# binaries git can't delta. Committing them meant every reshoot added that much pack
+# forever. The shipped WebPs in `apps/website/public/hero/` are tracked; these are not.
+#
+# This file is tracked so the directory exists in a fresh clone and the docs that point
+# here resolve.
+*.png
+!.gitignore
