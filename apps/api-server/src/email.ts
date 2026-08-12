@@ -1,5 +1,19 @@
-import { Resend } from 'resend'
+import { Resend, type CreateEmailOptions } from 'resend'
 import type { LicenseType } from './license'
+
+/**
+ * Send through Resend, turning a rejected send into a thrown error.
+ *
+ * The SDK reports failures in its RESPONSE (`{ data, error }`) rather than throwing, network
+ * failures included, so a bare `await resend.emails.send(...)` reads every failure as a success.
+ * That is how a license email can vanish while the purchase looks fulfilled.
+ */
+async function sendViaResend(resend: Resend, payload: CreateEmailOptions, label: string): Promise<void> {
+  const { error } = await resend.emails.send(payload)
+  if (error) {
+    throw new Error(`Resend rejected the ${label} email: ${error.message}`)
+  }
+}
 
 /**
  * One row in the crash notification email. The email lists every crash report (no
@@ -61,11 +75,13 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
     )
     .join('\n')
 
-  await resend.emails.send({
-    from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
-    to: params.to,
-    subject,
-    html: `
+  await sendViaResend(
+    resend,
+    {
+      from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
+      to: params.to,
+      subject,
+      html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -97,7 +113,9 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
 </body>
 </html>
         `.trim(),
-  })
+    },
+    'crash notification',
+  )
 }
 
 interface DbSizeAlertParams {
@@ -121,11 +139,13 @@ export async function sendDbSizeAlert(params: DbSizeAlertParams): Promise<void> 
     )
     .join('\n')
 
-  await resend.emails.send({
-    from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
-    to: params.to,
-    subject,
-    html: `
+  await sendViaResend(
+    resend,
+    {
+      from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
+      to: params.to,
+      subject,
+      html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -154,7 +174,9 @@ export async function sendDbSizeAlert(params: DbSizeAlertParams): Promise<void> 
 </body>
 </html>
         `.trim(),
-  })
+    },
+    'database size alert',
+  )
 }
 
 interface DeviceCountAlertParams {
@@ -171,11 +193,13 @@ export async function sendDeviceCountAlert(params: DeviceCountAlertParams): Prom
   const paddleDomain = params.paddleEnvironment === 'sandbox' ? 'sandbox-vendors.paddle.com' : 'vendors.paddle.com'
   const paddleUrl = `https://${paddleDomain}/transactions-v2/${params.baseTransactionId}`
 
-  await resend.emails.send({
-    from: 'Cmdr License Alerts <noreply@getcmdr.com>',
-    to: 'legal@getcmdr.com',
-    subject: `Device count alert: ${params.seatTransactionId} (${String(params.deviceCount)} devices)`,
-    html: `
+  await sendViaResend(
+    resend,
+    {
+      from: 'Cmdr License Alerts <noreply@getcmdr.com>',
+      to: 'legal@getcmdr.com',
+      subject: `Device count alert: ${params.seatTransactionId} (${String(params.deviceCount)} devices)`,
+      html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -219,7 +243,9 @@ export async function sendDeviceCountAlert(params: DeviceCountAlertParams): Prom
 </body>
 </html>
         `.trim(),
-  })
+    },
+    'device count alert',
+  )
 }
 
 const htmlEscapeMap: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
@@ -290,11 +316,13 @@ export async function sendLicenseEmail(params: EmailParams): Promise<void> {
     ? `Thanks for purchasing ${String(count)} licenses for ${params.productName}! Here are your license keys:`
     : `Thanks for purchasing ${params.productName}! Here's your license key:`
 
-  await resend.emails.send({
-    from: `${params.productName} <noreply@getcmdr.com>`,
-    to: params.to,
-    subject,
-    html: `
+  await sendViaResend(
+    resend,
+    {
+      from: `${params.productName} <noreply@getcmdr.com>`,
+      to: params.to,
+      subject,
+      html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -338,7 +366,7 @@ export async function sendLicenseEmail(params: EmailParams): Promise<void> {
 </body>
 </html>
         `.trim(),
-    text: `
+      text: `
 Welcome to ${params.productName}!
 
 Hey ${params.customerName},
@@ -361,5 +389,7 @@ Questions? Contact ${params.supportEmail}
 
 Happy file managing! ⌘
         `.trim(),
-  })
+    },
+    'license',
+  )
 }
