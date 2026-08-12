@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Per-test records for the two Playwright lanes (macOS shards and the Linux
@@ -88,9 +89,20 @@ func collectSuiteRecords(s e2eJSONSuite, file string, describe []string, out *[]
 // shards' reports down to its worst outcome. An unreadable report contributes
 // nothing and says nothing: the lane's own verdict already stands on the run's
 // exit status, and instrumentation must never colour it.
-func recordPlaywrightTests(ctx *CheckContext, reportPaths []string) {
+//
+// `runStart` is when this run's Playwright processes were launched, and a report
+// older than that is the PREVIOUS run's. The paths are fixed (`/tmp/cmdr-e2e-report-<shard>.json`),
+// so a run that dies before writing one leaves yesterday's file sitting there,
+// and recording it would invent a green result under today's timestamp. The
+// duration flagger needs no such guard: it only runs on the success path, where
+// the report was definitely just written.
+func recordPlaywrightTests(ctx *CheckContext, reportPaths []string, runStart time.Time) {
 	var records []TestRecord
 	for _, path := range reportPaths {
+		info, err := os.Stat(path)
+		if err != nil || info.ModTime().Before(runStart) {
+			continue
+		}
 		parsed, err := parsePlaywrightRecords(path)
 		if err != nil {
 			continue

@@ -106,6 +106,7 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
+	runStart := time.Now()
 	results := runShardsInParallel(desktopDir, shards)
 
 	// The union of the shards' JSON reports covers the whole suite (MTP shard +
@@ -117,7 +118,7 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 	// Before the verdict, so a red run records WHICH specs went red (`test-log.go`).
 	// The check's own error is a shard-level summary; this is the only place the
 	// individual spec names reach the log.
-	recordPlaywrightTests(ctx, reportPaths)
+	recordPlaywrightTests(ctx, reportPaths, runStart)
 
 	result, err := aggregateShardResults(results, len(shards))
 	if err != nil {

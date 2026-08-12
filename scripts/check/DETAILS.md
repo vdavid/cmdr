@@ -309,6 +309,11 @@ lane a record came from), each lane calls `ctx.RecordTests(...)` BEFORE its pass
 no failure, no note. The contention re-run (`checks/rust-test-contention.go`) is deliberately NOT recorded either, or a
 starved test would look like it ran twice as often as it did.
 
+**And it never invents a result.** The Playwright report paths are fixed (`/tmp/cmdr-e2e-report-<shard>.json`), so a run
+that dies before writing one leaves the previous run's file sitting there; `recordPlaywrightTests` skips any report
+older than the moment this run's Playwright started. The duration flagger needs no such guard, since it only runs on the
+success path.
+
 **Disabled by `--no-log` and `--ci`**, like the check-level log, so CI runners don't write a log nobody reads.
 
 Example queries (the log is plain CSV; `duration_s` can be `N/A`, so cast defensively):

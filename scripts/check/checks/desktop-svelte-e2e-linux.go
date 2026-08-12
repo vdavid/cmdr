@@ -39,13 +39,14 @@ func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 
 	cmd := exec.Command("pnpm", "test:e2e:linux")
 	cmd.Dir = filepath.Join(ctx.RootDir, "apps", "desktop")
+	runStart := time.Now()
 	output, err := RunCommand(cmd, true)
 
 	// Save full output for post-mortem debugging
 	appendToLogFile(logFile, output)
 
 	// Before the verdict, so a red run records WHICH specs went red (`test-log.go`).
-	recordPlaywrightTests(ctx, []string{linuxE2EReportPath})
+	recordPlaywrightTests(ctx, []string{linuxE2EReportPath}, runStart)
 
 	if err != nil {
 		summary := extractE2ETestOutput(output)

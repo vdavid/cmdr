@@ -3,6 +3,7 @@ package checks
 import (
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // Fixtures (`flakyReport`, `cleanReport`, `failingReport`) and the
@@ -53,11 +54,12 @@ func TestParsePlaywrightRecordsMarksAnUnexpectedSpecFailed(t *testing.T) {
 func TestRecordPlaywrightTestsMergesTheShardReports(t *testing.T) {
 	recorder := &TestRecorder{}
 	ctx := &CheckContext{RootDir: t.TempDir(), Tests: recorder}
+	runStart := time.Now().Add(-time.Minute)
 
 	recordPlaywrightTests(ctx, []string{
 		writeE2EReport(t, cleanReport),
 		writeE2EReport(t, failingReport),
-	})
+	}, runStart)
 
 	// Both shards report `moves the cursor`; the failure has to win, or a red spec
 	// hides behind another shard's green copy of it.
@@ -76,9 +78,24 @@ func TestRecordPlaywrightTestsStaysSilentWhenAReportIsMissing(t *testing.T) {
 	recorder := &TestRecorder{}
 	ctx := &CheckContext{RootDir: t.TempDir(), Tests: recorder}
 
-	recordPlaywrightTests(ctx, []string{filepath.Join(t.TempDir(), "gone.json")})
+	recordPlaywrightTests(ctx, []string{filepath.Join(t.TempDir(), "gone.json")}, time.Now())
 
 	if records := recorder.Records(); len(records) != 0 {
 		t.Fatalf("expected no records, got %+v", records)
+	}
+}
+
+func TestRecordPlaywrightTestsIgnoresThePreviousRunsReport(t *testing.T) {
+	// The report paths are fixed, so a run that dies before writing one leaves the
+	// last run's file in place. Recording it would invent a green result under
+	// today's timestamp, which is worse than recording nothing.
+	recorder := &TestRecorder{}
+	ctx := &CheckContext{RootDir: t.TempDir(), Tests: recorder}
+	stale := writeE2EReport(t, cleanReport)
+
+	recordPlaywrightTests(ctx, []string{stale}, time.Now().Add(time.Minute))
+
+	if records := recorder.Records(); len(records) != 0 {
+		t.Fatalf("expected the stale report ignored, got %+v", records)
 	}
 }
