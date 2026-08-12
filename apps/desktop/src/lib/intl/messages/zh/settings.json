@@ -1111,13 +1111,13 @@
   "@settings.whatsNew.lastSeenVersion.description": {
     "sourceHash": "d4f7a52"
   },
-  "settings.analytics.enabled.label": "发送匿名使用统计",
+  "settings.analytics.enabled.label": "发送使用统计",
   "@settings.analytics.enabled.label": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "帮助我们在公开测试期间了解哪些功能更重要。绝不包含文件名、路径、搜索词或提示词。关闭它，Cmdr 就会停止发送任何内容。",
+  "settings.analytics.enabled.description": "请打开这一项，帮助我们在公开测试期间了解哪些功能更重要。统计不会关联到你的姓名或邮箱，而是关联到一个随机标识符。Cmdr 绝不会发送文件名、路径、搜索词或提示词。关闭后，Cmdr 不会发送任何统计。",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "be45383"
+    "sourceHash": "7c67750"
   },
   "settings.analytics.email.label": "测试联系邮箱",
   "@settings.analytics.email.label": {
@@ -2035,9 +2035,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "仅存储在你的 Mac 上。我们绝不会把它和你的匿名使用数据一起发送，因此你的统计无法被关联到你本人。它只用于联系你，以及在你发送报告时可选地附上。要停止接收邮件，请使用我们任意一封邮件中的退订链接。",
+  "settings.updates.emailPrivacyNote": "仅存储在你的 Mac 上。我们绝不会把它和你的使用统计一起发送，因此这些统计无法被关联到你本人。它只用于联系你，以及在你发送报告时可选地附上。要停止接收邮件，请使用我们任意一封邮件中的退订链接。",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "5dd1e94"
+    "sourceHash": "f22c213"
   },
   "settings.logging.openLogFile": "打开日志文件",
   "@settings.logging.openLogFile": {

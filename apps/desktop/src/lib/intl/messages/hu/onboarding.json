@@ -327,13 +327,13 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "Hogy megtudjuk, mi működik és mi nem, a Cmdr a nyílt béta alatt névtelen használati statisztikát küld: mely funkciókat használják és milyen gyakran, soha semmit a fájljaidból. Most be van kapcsolva, és bármikor kikapcsolhatod.",
+  "onboarding.stepBeta.analyticsLede": "Hogy megtudjuk, mi működik és mi nem, a Cmdr a nyílt béta alatt használati statisztikát küld: mely funkciókat használják és milyen gyakran, soha semmit a fájljaidból. Ez egy véletlenszerű azonosítóhoz kötődik, nem a nevedhez vagy az e-mail-címedhez. Most be van kapcsolva, és bármikor kikapcsolhatod.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "2f5b897"
+    "sourceHash": "0c76239"
   },
-  "onboarding.stepBeta.analyticsTitle": "Névtelen használati statisztika küldése",
+  "onboarding.stepBeta.analyticsTitle": "Használati statisztika küldése",
   "@onboarding.stepBeta.analyticsTitle": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
   "onboarding.stepBeta.analyticsCaption": "Vedd figyelembe, hogy alapból BE van kapcsolva, hogy a béta alatt ösztönözzem az adatküldést. Ezt bármikor módosíthatod a Beállításokban.",
   "@onboarding.stepBeta.analyticsCaption": {

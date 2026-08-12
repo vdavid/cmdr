@@ -1319,3 +1319,21 @@ settled in the operation-queue rename block above; these keys only reuse them.
   bound by WCAG 2.5.3**: it names a countdown REGION, not a control with a visible label, so there is no label to
   contain (the visible text is the countdown sentence itself).
 - No `sameAsSourceJustification` needed: all seven values differ from English.
+
+### Usage stats: "névtelen" dropped, "egy véletlenszerű azonosító" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, 2026-08-12)
+
+English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
+plainly what they're tied to. The English stays deliberately everyday, so ❌ never `álnevesített` / `pszeudonim` — that
+jargon is exactly what the copy avoids.
+
+- **usage stats → `használati statisztika`** · already the catalog's term (`onboarding.stepBeta.emailNote`); only the
+  `névtelen` adjective was cut. MS terminology's `használati adatok` is the data sense; the statistics reading fits the
+  UI · high
+- **a random id → `egy véletlenszerű azonosító`** · MS terminology (random → `véletlenszerű`, identifier → `azonosító`)
+  · high. `azonosító` is ordinary Hungarian, not jargon.
+- **tied to → `-hoz/-hez/-höz kötődik`** · takes the harmonized case suffix on the noun it attaches to
+  (`az azonosítóhoz kötődik`, `a nevedhez kötődik`); no placeholder is involved, so the suffix is safe here · high
+- **`Mac` + case suffix takes a hyphen: `Mac-eden`** · the written final `c` doesn't spell the pronounced /k/, so AkH's
+  hyphen rule applies. Already what `onboarding.stepBeta.emailNote` ships; `settings.updates.emailPrivacyNote` now
+  matches it (its old `a Macedre tárolva` was both unhyphenated and in the wrong case for `tárol`) · high
+- No `sameAsSourceJustification` needed: every value differs from English.

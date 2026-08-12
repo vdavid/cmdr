@@ -946,3 +946,19 @@ already-shipped `queue.*` strings, since the dialog reuses `queue.row.label` ver
   "ficheiro"; the gerunds **Encerrando** / **sendo gravado**, never "a encerrar" / "está a gravar"; no "consoante", no
   "Rever", no proclitic pronoun before an infinitive).
 - No `sameAsSourceJustification` needed: all seven values differ from English.
+
+### Usage stats: "anônimas" dropped, "um identificador aleatório" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, 2026-08-12)
+
+English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
+plainly what they're tied to. The English stays deliberately everyday, so ❌ never `pseudônimo` / `pseudonimizado` —
+that jargon is exactly what the copy avoids.
+
+- **usage stats → `estatísticas de uso`** · already the catalog's term (`onboarding.stepBeta.emailNote`); only the
+  `anônimas` adjective was cut. MS terminology pt-BR agrees (usage data → `dados de uso`) · high
+- **a random id → `um identificador aleatório`** · MS terminology pt-BR (random → `aleatório`, identifier →
+  `identificador`) · high. Ordinary Portuguese, not jargon.
+- **tied to → `ligado a`** · the catalog's own verb (`onboarding.stepBeta.emailNote` "nunca é ligado às suas
+  estatísticas de uso") · high
+- `emailPrivacyNote` now writes `e-mails` (hyphenated), matching the rest of the pt catalog; the old value had a bare
+  `emails`.
+- No `sameAsSourceJustification` needed: every value differs from English.

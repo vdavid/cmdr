@@ -1119,3 +1119,20 @@ buttons. Reuses the settled `åtgärd` head noun (§ Operation queue), `Pågår`
   time-remaining word (`etaRemaining` "{duration} kvar"). `high`.
 
 No `sameAsSourceJustification` needed: all seven values differ from English.
+
+## Usage stats: "anonym" dropped, "ett slumpmässigt id" named (2026-08-12; `settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)
+
+English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
+plainly what they're tied to. The English stays deliberately everyday, so ❌ never `pseudonym` / `pseudonymiserad` —
+that jargon is exactly what the copy avoids.
+
+- **usage stats → `användningsstatistik`** · already the catalog's term (`onboarding.stepBeta.emailNote`); only the
+  `anonym` adjective was cut. MS terminology's `användningsdata` is the data sense; the statistics reading is what the
+  UI says · high
+- **a random id → `ett slumpmässigt id`** · MS terminology (random → `slumpmässig`) · high. ❌ Not `identifierare` (MS
+  for "identifier"): clunky and technical; `id` is what a Mac user reads daily (Apple-ID).
+- **tied to → `kopplad till`** · the catalog's own verb (`onboarding.stepBeta.emailNote` "kopplas aldrig till din
+  användningsstatistik") · high
+- `analyticsLede` drops the comma before `och` in "Det är på nu och du kan stänga av det när som helst" per the style
+  guide's short-clause rule.
+- No `sameAsSourceJustification` needed: every value differs from English.

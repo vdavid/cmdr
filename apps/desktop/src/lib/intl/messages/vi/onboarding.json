@@ -327,13 +327,13 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "Để biết điều gì hiệu quả và điều gì không, trong giai đoạn open beta Cmdr gửi số liệu sử dụng ẩn danh: tính năng nào được dùng và dùng bao nhiêu lần, không bao giờ gửi bất cứ thứ gì từ các tệp của bạn. Nó đang bật, và bạn có thể tắt bất cứ lúc nào.",
+  "onboarding.stepBeta.analyticsLede": "Để biết điều gì hiệu quả và điều gì không, trong giai đoạn open beta Cmdr gửi thống kê sử dụng: tính năng nào được dùng và dùng bao nhiêu lần, không bao giờ gửi bất cứ thứ gì từ các tệp của bạn. Thống kê gắn với một mã định danh ngẫu nhiên, không gắn với tên hay email của bạn. Nó đang bật, và bạn có thể tắt bất cứ lúc nào.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "2f5b897"
+    "sourceHash": "0c76239"
   },
-  "onboarding.stepBeta.analyticsTitle": "Gửi số liệu sử dụng ẩn danh",
+  "onboarding.stepBeta.analyticsTitle": "Gửi thống kê sử dụng",
   "@onboarding.stepBeta.analyticsTitle": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
   "onboarding.stepBeta.analyticsCaption": "Lưu ý rằng nó được BẬT theo mặc định để khuyến khích mọi người gửi dữ liệu cho mình trong giai đoạn Beta. Bạn có thể thay đổi điều này bất cứ lúc nào trong Cài đặt.",
   "@onboarding.stepBeta.analyticsCaption": {

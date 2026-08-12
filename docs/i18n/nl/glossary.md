@@ -1366,3 +1366,21 @@ REVIEW FLAGS (quit-gate pass):
   `Stoppen terwijl er nog 3 bewerkingen lopen?` (43, using `queue.empty.body`'s own "terwijl ze lopen") is the fallback.
 - **Body length**: 174 characters against English's 138, the longest of the seven. It is a wrapping body paragraph, so
   this should be fine, but it is the first place to look if the dialog grows taller than expected.
+
+## Usage stats: "anonieme" dropped, "een willekeurige id" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, 2026-08-12)
+
+English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
+plainly what they're tied to. The English stays deliberately everyday, so ❌ never `pseudoniem` / `gepseudonimiseerd` —
+that jargon is exactly what the copy avoids.
+
+- **usage stats → `gebruiksstatistieken`** · already settled above and in `onboarding.stepBeta.emailNote`; only the
+  `anonieme` adjective was cut · high
+- **a random id → `een willekeurige id`** · MS terminology gives BOTH sides here (random → `willekeurig`, identifier →
+  `id`) · high. Lowercase `id` mid-sentence, as MS has it.
+- **tied to → `gekoppeld aan`** · the catalog's own verb (`onboarding.stepBeta.emailNote` "nooit gekoppeld aan je
+  gebruiksstatistieken") · high
+- **The toggle label and the onboarding title are ONE English string**, so both now read `Gebruiksstatistieken sturen`.
+  They had drifted apart (`Anonieme gebruiksstatistieken sturen` vs the imperative
+  `Stuur anonieme gebruiksstatistieken`); a toggle label describes a setting, not a button, so the infinitive wins over
+  the bare-stem imperative the button rule prescribes.
+- No `sameAsSourceJustification` needed: every value differs from English.

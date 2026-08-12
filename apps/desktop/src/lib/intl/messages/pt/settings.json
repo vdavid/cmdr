@@ -1113,13 +1113,13 @@
   "@settings.whatsNew.lastSeenVersion.description": {
     "sourceHash": "d4f7a52"
   },
-  "settings.analytics.enabled.label": "Enviar estatísticas de uso anônimas",
+  "settings.analytics.enabled.label": "Enviar estatísticas de uso",
   "@settings.analytics.enabled.label": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Nos ajuda a ver quais recursos importam durante o beta aberto. Nunca inclui nomes de arquivo, caminhos, termos de busca nem prompts. Desative e o Cmdr para de enviar qualquer coisa.",
+  "settings.analytics.enabled.description": "Ative isto para nos ajudar a ver quais recursos importam durante o beta aberto. As estatísticas não são ligadas ao seu nome nem ao seu e-mail, e sim a um identificador aleatório. O Cmdr nunca envia nomes de arquivo, caminhos, termos de busca nem prompts. Com isto desativado, o Cmdr não envia nenhuma estatística.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "be45383"
+    "sourceHash": "7c67750"
   },
   "settings.analytics.email.label": "Email de contato do beta",
   "@settings.analytics.email.label": {
@@ -2036,9 +2036,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "Guardado só no seu Mac. Nunca o enviamos junto com seus dados de uso anônimos, então suas estatísticas não podem ser ligadas a você. Usado só para entrar em contato e, opcionalmente, anexar a um relatório que você enviar. Para parar de receber emails, use o link de cancelamento em qualquer mensagem que enviarmos.",
+  "settings.updates.emailPrivacyNote": "Guardado só no seu Mac. Nunca o enviamos junto com suas estatísticas de uso, então elas não podem ser ligadas a você. Usado só para entrar em contato e, opcionalmente, anexar a um relatório que você enviar. Para parar de receber e-mails, use o link de cancelamento em qualquer mensagem que enviarmos.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "5dd1e94"
+    "sourceHash": "f22c213"
   },
   "settings.logging.openLogFile": "Abrir arquivo de registro",
   "@settings.logging.openLogFile": {

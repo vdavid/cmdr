@@ -1117,13 +1117,13 @@
   "@settings.whatsNew.lastSeenVersion.description": {
     "sourceHash": "d4f7a52"
   },
-  "settings.analytics.enabled.label": "Envoyer des stats d''usage anonymes",
+  "settings.analytics.enabled.label": "Envoyer des statistiques d''usage",
   "@settings.analytics.enabled.label": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Nous aide à voir quelles fonctionnalités comptent pendant la bêta ouverte. N''inclut jamais les noms de fichiers, les chemins, les termes de recherche, ou les prompts. Désactivez-le et Cmdr cesse de tout envoyer.",
+  "settings.analytics.enabled.description": "Activez ceci pour nous aider à voir quelles fonctionnalités comptent pendant la bêta ouverte. Les statistiques ne sont pas reliées à votre nom ni à votre e-mail, mais à un identifiant aléatoire. Cmdr n''envoie jamais les noms de fichiers, les chemins, les termes de recherche ou les prompts. Quand c''est désactivé, Cmdr n''envoie aucune statistique.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "be45383"
+    "sourceHash": "7c67750"
   },
   "settings.analytics.email.label": "E-mail de contact bêta",
   "@settings.analytics.email.label": {
@@ -2047,9 +2047,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "Stocké uniquement sur votre Mac. Nous ne l''envoyons jamais avec vos données d''usage anonymes, donc vos stats ne peuvent pas être reliées à vous. Utilisé uniquement pour vous contacter et, en option, pour joindre à un rapport que vous envoyez. Pour cesser de recevoir des e-mails, utilisez le lien de désabonnement dans tout message que nous envoyons.",
+  "settings.updates.emailPrivacyNote": "Stocké uniquement sur votre Mac. Nous ne l''envoyons jamais avec vos statistiques d''usage, donc celles-ci ne peuvent pas être reliées à vous. Utilisé uniquement pour vous contacter et, en option, pour joindre à un rapport que vous envoyez. Pour cesser de recevoir des e-mails, utilisez le lien de désabonnement dans tout message que nous envoyons.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "5dd1e94"
+    "sourceHash": "f22c213"
   },
   "settings.logging.openLogFile": "Ouvrir le fichier journal",
   "@settings.logging.openLogFile": {

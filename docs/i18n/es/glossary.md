@@ -1127,3 +1127,18 @@ delete, trash, or archive edit is still running. Title + body + live countdown +
   cierre solo") · high
 - None of the seven values contains an apostrophe, so there is nothing to double for ICU.
 - No `sameAsSourceJustification` needed: all seven values differ from English.
+
+## Usage stats: fuera "anónimas", dentro "un identificador aleatorio" (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, 2026-08-12)
+
+English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
+plainly what they're tied to. The English stays deliberately everyday, so ❌ never `seudónimo` / `seudonimizado` — that
+jargon is exactly what the copy avoids.
+
+- **usage stats → `estadísticas de uso`** · already the catalog's term (`onboarding.stepBeta.emailNote`); only the
+  `anónimas` adjective was cut. MS terminology agrees (usage data → `datos de uso`) · high
+- **a random id → `un identificador aleatorio`** · MS terminology (random → `aleatorio`, identifier → `identificador`) ·
+  high. `identificador` is the ordinary Spanish word, not jargon; a bare `un id aleatorio` reads clipped in running
+  prose.
+- **tied to → `vincularse a` / `se vinculan a`** · the catalog's own verb for this relation
+  (`onboarding.stepBeta.emailNote` "nunca se vincula a tus estadísticas de uso") · high
+- No `sameAsSourceJustification` needed: every value differs from English.

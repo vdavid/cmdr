@@ -329,13 +329,13 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "Om te leren wat wel en niet werkt, stuurt Cmdr tijdens de open bèta anonieme gebruiksstatistieken: welke functies worden gebruikt en hoe vaak, nooit iets uit je bestanden. Het staat nu aan en je kunt het op elk moment uitzetten.",
+  "onboarding.stepBeta.analyticsLede": "Om te leren wat wel en niet werkt, stuurt Cmdr tijdens de open bèta gebruiksstatistieken: welke functies worden gebruikt en hoe vaak, nooit iets uit je bestanden. Ze zijn gekoppeld aan een willekeurige id, niet aan je naam of e-mailadres. Het staat nu aan en je kunt het op elk moment uitzetten.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "2f5b897"
+    "sourceHash": "0c76239"
   },
-  "onboarding.stepBeta.analyticsTitle": "Stuur anonieme gebruiksstatistieken",
+  "onboarding.stepBeta.analyticsTitle": "Gebruiksstatistieken sturen",
   "@onboarding.stepBeta.analyticsTitle": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
   "onboarding.stepBeta.analyticsCaption": "Let op: dit staat standaard AAN om mensen aan te moedigen me gegevens te sturen tijdens de bèta. Je kunt dit op elk moment wijzigen in Instellingen.",
   "@onboarding.stepBeta.analyticsCaption": {

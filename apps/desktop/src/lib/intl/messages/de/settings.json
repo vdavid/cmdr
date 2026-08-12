@@ -1115,13 +1115,13 @@
   "@settings.whatsNew.lastSeenVersion.description": {
     "sourceHash": "d4f7a52"
   },
-  "settings.analytics.enabled.label": "Anonyme Nutzungsstatistik senden",
+  "settings.analytics.enabled.label": "Nutzungsstatistiken senden",
   "@settings.analytics.enabled.label": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Hilft uns zu sehen, welche Funktionen während der offenen Beta wichtig sind. Enthält nie Dateinamen, Pfade, Suchbegriffe oder Prompts. Schalte es aus, und Cmdr sendet nichts mehr.",
+  "settings.analytics.enabled.description": "Bitte aktiviere das, damit wir sehen, welche Funktionen während der offenen Beta wichtig sind. Die Statistiken sind nicht mit deinem Namen oder deiner E-Mail-Adresse verknüpft, sondern mit einer zufälligen ID. Cmdr sendet nie Dateinamen, Pfade, Suchbegriffe oder Prompts. Wenn es aus ist, sendet Cmdr gar keine Statistiken.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "be45383"
+    "sourceHash": "7c67750"
   },
   "settings.analytics.email.label": "Beta-Kontakt-E-Mail",
   "@settings.analytics.email.label": {
@@ -2044,9 +2044,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "Wird nur auf deinem Mac gespeichert. Wir senden sie nie zusammen mit deinen anonymen Nutzungsdaten, damit deine Statistik nicht mit dir verknüpft werden kann. Wird nur genutzt, um dich zu erreichen und wahlweise an einen von dir gesendeten Bericht anzuhängen. Um keine E-Mails mehr zu bekommen, nutze den Abmeldelink in jeder Nachricht, die wir senden.",
+  "settings.updates.emailPrivacyNote": "Wird nur auf deinem Mac gespeichert. Wir senden sie nie zusammen mit deinen Nutzungsstatistiken, damit diese nicht mit dir verknüpft werden können. Wird nur genutzt, um dich zu erreichen und wahlweise an einen von dir gesendeten Bericht anzuhängen. Um keine E-Mails mehr zu bekommen, nutze den Abmeldelink in jeder Nachricht, die wir senden.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "5dd1e94"
+    "sourceHash": "f22c213"
   },
   "settings.logging.openLogFile": "Protokolldatei öffnen",
   "@settings.logging.openLogFile": {

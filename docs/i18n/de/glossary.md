@@ -1022,3 +1022,17 @@ still running. Head noun `Vorgang` and the running status `Läuft` are unchanged
   `stoppen` is macOS Finder's verb for halting a running job (`CP5` "Kopieren stoppen", `NE111.1` "den Vorgang
   stoppen"), kept distinct from the button verb `abbrechen`.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Usage stats: "anonymous" dropped, "a random id" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, 2026-08-12)
+
+English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
+plainly what they're tied to. The English stays deliberately everyday, so ❌ never `pseudonym` / `pseudonymisiert` —
+that jargon is exactly what the copy avoids.
+
+- **usage stats → `Nutzungsstatistiken`** · already the catalog's term (`onboarding.stepBeta.emailNote`); only the
+  `anonyme` adjective was cut. Both keys now use the plural, matching English's one shared value · high
+- **a random id → `eine zufällige ID`** · MS terminology (random → `zufällig`) · high. ❌ Not `Bezeichner` (MS for
+  "identifier"): technical and rare in everyday German; `ID` is what a Mac user already knows (Apple-ID).
+- **tied to → `verknüpft mit`** · the catalog's own verb for this exact relation (`onboarding.stepBeta.emailNote` "nie
+  mit deinen Nutzungsstatistiken verknüpft") · high
+- No `sameAsSourceJustification` needed: every value differs from English.

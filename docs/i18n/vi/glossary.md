@@ -1162,3 +1162,18 @@ buttons. Reuses the settled head terms (operation → `thao tác`, item → `m�
   actually measures (time remaining), which the visible countdown doesn't spell out. This key has NO visible label to
   contain, so WCAG 2.5.3 doesn't bind it; it may be reworded independently of `main.quit.countdown`. `high`.
 - No `sameAsSourceJustification` needed: all seven values differ from English.
+
+## Usage stats: bỏ "ẩn danh", nêu rõ "một mã định danh ngẫu nhiên" (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, 2026-08-12)
+
+English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
+plainly what they're tied to. The English stays deliberately everyday, so ❌ never `bút danh` / `giả danh` — that jargon
+is exactly what the copy avoids.
+
+- **usage stats → `thống kê sử dụng`** · the settings label's existing term; only the `ẩn danh` adjective was cut ·
+  high. The five keys touched here are now uniform on it. ⚠️ `onboarding.stepBeta.emailNote` (untouched, its English
+  didn't change) still says `số liệu sử dụng` — fold it in on the next pass over that key.
+- **a random id → `một mã định danh ngẫu nhiên`** · MS terminology (random → `ngẫu nhiên`, identifier → `mã định danh`)
+  · high. ❌ Not a bare `mã ngẫu nhiên`: `mã` alone reads as a code (a coupon, a PIN), which loses the identifier sense.
+- **tied to → `gắn với`** · plain everyday Vietnamese for the relation; `liên kết với` (used in
+  `onboarding.stepBeta.emailNote`) is the heavier, more technical register and is kept for the linking sense · high
+- No `sameAsSourceJustification` needed: every value differs from English.

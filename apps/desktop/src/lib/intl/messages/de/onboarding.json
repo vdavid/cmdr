@@ -327,13 +327,13 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "Um zu erfahren, was funktioniert und was nicht, sendet Cmdr während der offenen Beta anonyme Nutzungsstatistiken: welche Funktionen wie oft genutzt werden, nie etwas aus deinen Dateien. Es ist jetzt aktiv, und du kannst es jederzeit ausschalten.",
+  "onboarding.stepBeta.analyticsLede": "Um zu erfahren, was funktioniert und was nicht, sendet Cmdr während der offenen Beta Nutzungsstatistiken: welche Funktionen wie oft genutzt werden, nie etwas aus deinen Dateien. Sie sind mit einer zufälligen ID verknüpft, nicht mit deinem Namen oder deiner E-Mail-Adresse. Es ist jetzt aktiv, und du kannst es jederzeit ausschalten.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "2f5b897"
+    "sourceHash": "0c76239"
   },
-  "onboarding.stepBeta.analyticsTitle": "Anonyme Nutzungsstatistiken senden",
+  "onboarding.stepBeta.analyticsTitle": "Nutzungsstatistiken senden",
   "@onboarding.stepBeta.analyticsTitle": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
   "onboarding.stepBeta.analyticsCaption": "Beachte, dass es während der Beta standardmäßig AN ist, um Leute zu ermutigen, mir Daten zu senden. Du kannst das jederzeit in den Einstellungen ändern.",
   "@onboarding.stepBeta.analyticsCaption": {

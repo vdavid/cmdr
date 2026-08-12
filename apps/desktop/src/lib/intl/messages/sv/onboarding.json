@@ -327,13 +327,13 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "För att lära mig vad som fungerar och inte skickar Cmdr anonym användningsstatistik under den öppna betan: vilka funktioner som används och hur ofta, aldrig något från dina filer. Det är på nu, och du kan stänga av det när som helst.",
+  "onboarding.stepBeta.analyticsLede": "För att lära mig vad som fungerar och inte skickar Cmdr användningsstatistik under den öppna betan: vilka funktioner som används och hur ofta, aldrig något från dina filer. Statistiken är kopplad till ett slumpmässigt id, inte till ditt namn eller din e-post. Det är på nu och du kan stänga av det när som helst.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "2f5b897"
+    "sourceHash": "0c76239"
   },
-  "onboarding.stepBeta.analyticsTitle": "Skicka anonym användningsstatistik",
+  "onboarding.stepBeta.analyticsTitle": "Skicka användningsstatistik",
   "@onboarding.stepBeta.analyticsTitle": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
   "onboarding.stepBeta.analyticsCaption": "Observera att det är PÅ som standard för att uppmuntra folk att skicka mig data under betan. Du kan ändra det här när som helst i Inställningar.",
   "@onboarding.stepBeta.analyticsCaption": {

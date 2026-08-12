@@ -1393,14 +1393,14 @@
     "description": "Internal help text for the last-seen-version flag (not user-facing). \"What’s new\" is the Cmdr popup name; translate consistently with the what's-new copy elsewhere. The apostrophe is curly (U+2019)."
   },
 
-  "settings.analytics.enabled.label": "Send anonymous usage stats",
+  "settings.analytics.enabled.label": "Send usage stats",
   "@settings.analytics.enabled.label": {
-    "description": "Label for the anonymous-analytics opt-in toggle. In Settings > Updates & privacy. \"stats\" = statistics.",
+    "description": "Label for the usage-stats opt-in toggle. In Settings > Updates & privacy. \"stats\" = statistics.",
     "screenshot": "settings-updates.png"
   },
-  "settings.analytics.enabled.description": "Helps us see which features matter during the open beta. Never includes file names, paths, search terms, or prompts. Turn it off and Cmdr stops sending anything.",
+  "settings.analytics.enabled.description": "Please enable this to help us see which features matter during the open beta. It''s not tied to your name or email but a random id. Cmdr never sends file names, paths, search terms, or prompts. When off, Cmdr doesn''t send any stats.",
   "@settings.analytics.enabled.description": {
-    "description": "Help text for the usage-stats toggle, written in a reassuring privacy-first voice. \"open beta\" = the public testing phase. \"Cmdr\" is the product name; keep it. \"prompts\" = AI prompts.",
+    "description": "Help text for the usage-stats toggle, written in a reassuring privacy-first voice. It asks the user to leave the toggle on, then says what the stats are tied to and what is never sent. \"open beta\" = the public testing phase. \"random id\" = a randomly generated identifier stored on the user's Mac, not linked to their identity; keep it plain rather than reaching for a technical term like \"pseudonymous\". \"Cmdr\" is the product name; keep it. \"prompts\" = AI prompts.",
     "screenshot": "settings-updates.png"
   },
 
@@ -2527,7 +2527,7 @@
   "@settings.updates.emailSignupError": {
     "description": "Apologetic message shown when the beta-email signup fails. Conversational and reassuring; do not use the words \"error\" or \"failed\"."
   },
-  "settings.updates.emailPrivacyNote": "Stored only on your Mac. We never send it together with your anonymous usage data, so your stats can''t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.",
+  "settings.updates.emailPrivacyNote": "Stored only on your Mac. We never send it together with your usage stats, so those can''t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.",
   "@settings.updates.emailPrivacyNote": {
     "description": "Privacy note under the beta-email field, reassuring the user about how the email is stored and used. \"Mac\" is the Apple computer brand name; keep it. \"stats\" = statistics.",
     "screenshot": "settings-updates.png"

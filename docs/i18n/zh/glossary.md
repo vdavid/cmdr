@@ -1083,3 +1083,17 @@ operation-queue section above.
   on BOTH sides (`有 {countText} 项操作`, `将在 {secondsText} 秒后`), per style.md and the `{duration}` precedent ·
   `high`
 - No `sameAsSourceJustification` needed: all seven values differ from English.
+
+### 使用统计：去掉“匿名”，写明“一个随机标识符” (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, 2026-08-12)
+
+English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
+plainly what they're tied to. The English stays deliberately everyday, so ❌ never `假名化` / `匿名化` — that jargon is
+exactly what the copy avoids.
+
+- **usage stats → `使用统计`** · already the catalog's term (`onboarding.stepBeta.emailNote`); only the `匿名` modifier
+  was cut · high
+- **a random id → `一个随机标识符`** · MS terminology zh-Hans (random → `随机`, identifier → `标识符`) · `high`.
+  `标识符` is the established native term the style guide prefers over an English `ID` loan, and it is plain enough for
+  consumer copy (Apple's Chinese privacy wording uses the same word).
+- **tied to → `关联到`** · the catalog's own verb (`onboarding.stepBeta.emailNote` “绝不会和你的使用统计关联”) · `high`
+- No `sameAsSourceJustification` needed: every value differs from English.

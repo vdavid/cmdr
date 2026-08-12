@@ -1112,13 +1112,13 @@
   "@settings.whatsNew.lastSeenVersion.description": {
     "sourceHash": "d4f7a52"
   },
-  "settings.analytics.enabled.label": "Névtelen használati statisztika küldése",
+  "settings.analytics.enabled.label": "Használati statisztika küldése",
   "@settings.analytics.enabled.label": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Segít látnunk, mely funkciók számítanak a nyílt béta alatt. Sosem tartalmaz fájlneveket, útvonalakat, keresési kifejezéseket vagy promptokat. Kapcsold ki, és a Cmdr abbahagy minden küldést.",
+  "settings.analytics.enabled.description": "Kérlek, kapcsold be, hogy lássuk, mely funkciók számítanak a nyílt béta alatt. A statisztika nem a nevedhez vagy az e-mail-címedhez kötődik, hanem egy véletlenszerű azonosítóhoz. A Cmdr sosem küld fájlneveket, útvonalakat, keresési kifejezéseket vagy promptokat. Kikapcsolva a Cmdr semmilyen statisztikát nem küld.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "be45383"
+    "sourceHash": "7c67750"
   },
   "settings.analytics.email.label": "Bétakapcsolattartási e-mail",
   "@settings.analytics.email.label": {
@@ -2036,9 +2036,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "Csak a Macedre tárolva. Sosem küldjük el a névtelen használati adataiddal együtt, így a statisztikáid nem köthetők vissza hozzád. Csak kapcsolatfelvételre és egy általad küldött jelentéshez való opcionális csatolásra használjuk. Hogy ne kapj több e-mailt, használd a leiratkozási linket bármelyik üzenetünkben.",
+  "settings.updates.emailPrivacyNote": "Csak a Mac-eden tárolódik. Sosem küldjük el a használati statisztikáddal együtt, így az nem köthető vissza hozzád. Csak kapcsolatfelvételre és egy általad küldött jelentéshez való opcionális csatolásra használjuk. Hogy ne kapj több e-mailt, használd a leiratkozási linket bármelyik üzenetünkben.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "5dd1e94"
+    "sourceHash": "f22c213"
   },
   "settings.logging.openLogFile": "Naplófájl megnyitása",
   "@settings.logging.openLogFile": {

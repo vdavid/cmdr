@@ -513,15 +513,15 @@
     "screenshot": "onboarding-beta.png"
   },
 
-  "onboarding.stepBeta.analyticsLede": "To learn what''s working and what isn''t, during the open beta Cmdr sends anonymous usage stats: which features get used and how often, never anything from your files. It''s on now, and you can turn it off anytime.",
+  "onboarding.stepBeta.analyticsLede": "To learn what''s working and what isn''t, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files. They''re tied to a random id, not to your name or email. It''s on now, and you can turn it off anytime.",
   "@onboarding.stepBeta.analyticsLede": {
-    "description": "Discloses that the app sends anonymous usage statistics during the beta and never reads file contents. Transparent, reassuring tone. \"Cmdr\" is the product name; \"open beta\" is the release stage.",
+    "description": "Discloses that the app sends usage statistics during the beta, says what they're tied to, and promises it never reads file contents. Transparent, reassuring tone. \"random id\" = a randomly generated identifier stored on the user's Mac, not linked to their identity; keep it plain rather than reaching for a technical term like \"pseudonymous\". \"Cmdr\" is the product name; \"open beta\" is the release stage.",
     "screenshot": "onboarding-beta.png"
   },
 
-  "onboarding.stepBeta.analyticsTitle": "Send anonymous usage stats",
+  "onboarding.stepBeta.analyticsTitle": "Send usage stats",
   "@onboarding.stepBeta.analyticsTitle": {
-    "description": "Title next to the toggle switch that controls anonymous usage statistics. The switch defaults on.",
+    "description": "Title next to the toggle switch that controls usage statistics. The switch defaults on.",
     "screenshot": "onboarding-beta.png"
   },
 

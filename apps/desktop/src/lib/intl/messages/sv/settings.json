@@ -1114,13 +1114,13 @@
   "@settings.whatsNew.lastSeenVersion.description": {
     "sourceHash": "d4f7a52"
   },
-  "settings.analytics.enabled.label": "Skicka anonym användningsstatistik",
+  "settings.analytics.enabled.label": "Skicka användningsstatistik",
   "@settings.analytics.enabled.label": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Hjälper oss att se vilka funktioner som spelar roll under den öppna betan. Innehåller aldrig filnamn, sökvägar, sökord eller prompter. Stäng av det så slutar Cmdr skicka något.",
+  "settings.analytics.enabled.description": "Slå på det här så hjälper du oss se vilka funktioner som spelar roll under den öppna betan. Statistiken är inte kopplad till ditt namn eller din e-post utan till ett slumpmässigt id. Cmdr skickar aldrig filnamn, sökvägar, sökord eller prompter. När det är avstängt skickar Cmdr ingen statistik alls.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "be45383"
+    "sourceHash": "7c67750"
   },
   "settings.analytics.email.label": "Kontakt-e-post för beta",
   "@settings.analytics.email.label": {
@@ -2041,9 +2041,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "Lagras endast på din Mac. Vi skickar den aldrig tillsammans med dina anonyma användningsdata, så din statistik kan inte kopplas tillbaka till dig. Används endast för att höra av oss och för att frivilligt bifoga till en rapport du skickar. För att sluta få e-post, använd avregistreringslänken i ett valfritt meddelande vi skickar.",
+  "settings.updates.emailPrivacyNote": "Lagras endast på din Mac. Vi skickar den aldrig tillsammans med din användningsstatistik, så statistiken kan inte kopplas tillbaka till dig. Används endast för att höra av oss och för att frivilligt bifoga till en rapport du skickar. För att sluta få e-post, använd avregistreringslänken i ett valfritt meddelande vi skickar.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "5dd1e94"
+    "sourceHash": "f22c213"
   },
   "settings.logging.openLogFile": "Öppna loggfil",
   "@settings.logging.openLogFile": {

@@ -327,13 +327,13 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "为了了解哪些有效、哪些无效，在公开测试期间 Cmdr 会发送匿名使用统计：哪些功能被用到、用得多频繁，绝不包含你文件里的任何内容。它现在是开启的，你随时可以关掉。",
+  "onboarding.stepBeta.analyticsLede": "为了了解哪些有效、哪些无效，在公开测试期间 Cmdr 会发送使用统计：哪些功能被用到、用得多频繁，绝不包含你文件里的任何内容。这些统计关联的是一个随机标识符，不是你的姓名或邮箱。它现在是开启的，你随时可以关掉。",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "2f5b897"
+    "sourceHash": "0c76239"
   },
-  "onboarding.stepBeta.analyticsTitle": "发送匿名使用统计",
+  "onboarding.stepBeta.analyticsTitle": "发送使用统计",
   "@onboarding.stepBeta.analyticsTitle": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
   "onboarding.stepBeta.analyticsCaption": "请注意，它默认是开启的，以鼓励大家在测试期间给我发送数据。你随时可以在“设置”中更改这一项。",
   "@onboarding.stepBeta.analyticsCaption": {

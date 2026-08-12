@@ -327,13 +327,13 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "Pour savoir ce qui fonctionne et ce qui ne fonctionne pas, pendant la bêta ouverte Cmdr envoie des statistiques d''usage anonymes : quelles fonctionnalités sont utilisées et à quelle fréquence, jamais rien provenant de vos fichiers. C''est activé pour le moment, et vous pouvez le désactiver à tout moment.",
+  "onboarding.stepBeta.analyticsLede": "Pour savoir ce qui fonctionne et ce qui ne fonctionne pas, pendant la bêta ouverte Cmdr envoie des statistiques d''usage : quelles fonctionnalités sont utilisées et à quelle fréquence, jamais rien provenant de vos fichiers. Elles sont reliées à un identifiant aléatoire, pas à votre nom ni à votre e-mail. C''est activé pour le moment, et vous pouvez le désactiver à tout moment.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "2f5b897"
+    "sourceHash": "0c76239"
   },
-  "onboarding.stepBeta.analyticsTitle": "Envoyer des statistiques d''usage anonymes",
+  "onboarding.stepBeta.analyticsTitle": "Envoyer des statistiques d''usage",
   "@onboarding.stepBeta.analyticsTitle": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
   "onboarding.stepBeta.analyticsCaption": "Notez que c''est ACTIVÉ par défaut pour encourager les gens à m''envoyer des données pendant la bêta. Vous pouvez modifier ceci à tout moment dans les Réglages.",
   "@onboarding.stepBeta.analyticsCaption": {

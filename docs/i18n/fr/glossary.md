@@ -1386,3 +1386,21 @@ Phrasing notes for this pass:
   Every apostrophe is ASCII (U+0027) and doubled: `qu''une`, `d''écriture`, `s''arrête`, `qu''il`.
 - Neither "erreur" nor "échec" appears, per style.md; the body stays matter-of-fact rather than warning-shaped.
 - No `sameAsSourceJustification` needed: all seven values differ from English.
+
+## Usage stats: "anonymes" dropped, "un identifiant aléatoire" named (2026-08-12, 5 keys in `settings.analytics.enabled`, `settings.updates`, `onboarding.stepBeta`)
+
+English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
+plainly what they're tied to. The English stays deliberately everyday, so ❌ never `pseudonyme` / `pseudonymisé` — that
+jargon is exactly what the copy avoids.
+
+- **usage stats → `statistiques d'usage`** · already the catalog's term (`onboarding.stepBeta.emailNote`); only the
+  `anonymes` adjective was cut. `settings.analytics.enabled.label` used the shorter `stats d'usage`; both keys now carry
+  the same value because the English label and the onboarding title are one identical string · high
+- **a random id → `un identifiant aléatoire`** · MS terminology (random → `aléatoire`; `identifiant` is the everyday
+  entry, and the one Apple uses in "identifiant Apple") · high. ❌ Not `identificateur`, MS's other entry: that's the
+  technical/computing sense.
+- **tied to → `relié à`** · the catalog's own verb (`onboarding.stepBeta.emailNote` "n'est jamais reliée à vos
+  statistiques d'usage") · high
+- The list "noms de fichiers, chemins, termes de recherche ou prompts" drops the Oxford comma the old value carried over
+  from English: French doesn't use it.
+- No `sameAsSourceJustification` needed: every value differs from English.

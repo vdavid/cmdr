@@ -1109,13 +1109,13 @@
   "@settings.whatsNew.lastSeenVersion.description": {
     "sourceHash": "d4f7a52"
   },
-  "settings.analytics.enabled.label": "Gửi thống kê sử dụng ẩn danh",
+  "settings.analytics.enabled.label": "Gửi thống kê sử dụng",
   "@settings.analytics.enabled.label": {
-    "sourceHash": "4620960"
+    "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Giúp chúng tôi thấy tính năng nào quan trọng trong giai đoạn beta mở. Không bao giờ gồm tên tệp, đường dẫn, từ khóa tìm kiếm, hay câu lệnh. Tắt đi là Cmdr ngừng gửi mọi thứ.",
+  "settings.analytics.enabled.description": "Hãy bật mục này để giúp chúng tôi thấy tính năng nào quan trọng trong giai đoạn beta mở. Thống kê không gắn với tên hay email của bạn, mà gắn với một mã định danh ngẫu nhiên. Cmdr không bao giờ gửi tên tệp, đường dẫn, từ khóa tìm kiếm hay câu lệnh. Khi tắt, Cmdr không gửi bất kỳ thống kê nào.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "be45383"
+    "sourceHash": "7c67750"
   },
   "settings.analytics.email.label": "Email liên hệ beta",
   "@settings.analytics.email.label": {
@@ -2033,9 +2033,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "Chỉ lưu trên máy Mac của bạn. Chúng tôi không bao giờ gửi nó cùng dữ liệu sử dụng ẩn danh của bạn, nên thống kê của bạn không thể bị truy ngược về bạn. Chỉ dùng để liên hệ và để tùy chọn đính kèm vào báo cáo bạn gửi. Để ngừng nhận email, dùng liên kết hủy đăng ký trong bất kỳ thư nào chúng tôi gửi.",
+  "settings.updates.emailPrivacyNote": "Chỉ lưu trên máy Mac của bạn. Chúng tôi không bao giờ gửi nó cùng thống kê sử dụng của bạn, nên thống kê không thể bị truy ngược về bạn. Chỉ dùng để liên hệ và để tùy chọn đính kèm vào báo cáo bạn gửi. Để ngừng nhận email, dùng liên kết hủy đăng ký trong bất kỳ thư nào chúng tôi gửi.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "5dd1e94"
+    "sourceHash": "f22c213"
   },
   "settings.logging.openLogFile": "Mở tệp nhật ký",
   "@settings.logging.openLogFile": {
