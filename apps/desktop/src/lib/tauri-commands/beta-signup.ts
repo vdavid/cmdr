@@ -7,7 +7,7 @@ export type { BetaSignupResult }
 
 /**
  * Subscribes a beta contact email to the mailing list. The backend sends ONLY the email (never an
- * install id), so the email and the anonymous usage data never co-occur on our servers.
+ * install id), so the email and the usage stats never co-occur on our servers.
  *
  * Returns a typed result the caller branches on (`result.kind`), never a message string. On any
  * unexpected throw (which shouldn't happen, the command catches its own errors) we degrade to

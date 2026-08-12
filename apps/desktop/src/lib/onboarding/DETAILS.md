@@ -26,7 +26,7 @@ finishes onboarding.
   auto-check + model combobox. Providers with editable OpenAI-compatible endpoints, including Custom, still require a
   stored API key before the endpoint check runs.
 - **`StepBeta.svelte`**: Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels: in-app, GitHub,
-  Discord, book-a-call) + anonymous-analytics disclosure + `analytics.enabled` opt-out switch + optional
+  Discord, book-a-call) + usage-stats disclosure + `analytics.enabled` opt-out switch + optional
   `analytics.email` contact field + the required terms checkbox. Footer = "Start using Cmdr!" (finish here) + "One more
   optional setup step" (continue), both gated on the terms. Reuses the Settings `UpdatesSection` email/`betaSignup`
   wiring.
@@ -407,7 +407,7 @@ it at runtime races background threads that resolve icons / scan paths into the 
 "FDA gate clear-on-Allow".
 
 **Decision**: The Open beta page (step 3) is non-skippable; the AI step has no skip-to-finish. **Why**: Every
-first-launch user must see the anonymous-analytics disclosure once (the opt-out default only reads as fair consent if it
+first-launch user must see the usage-stats disclosure once (the opt-out default only reads as fair consent if it
 was actually shown). So the AI step's only forward button ("Next") always `nextStep()`s to Beta. The Beta page itself
 offers "Start using Cmdr!" (finish) and "One more optional setup step" (continue), so both forward paths start from Beta
 and the user can't reach the app without seeing it. Don't re-add a skip-to-finish button on the AI step (it would bypass

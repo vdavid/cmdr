@@ -206,7 +206,7 @@ describe('StepBeta', () => {
     setSetting.mockClear()
 
     // The switch's aria-label mirrors the registry label.
-    const control = mounted.target.querySelector<HTMLElement>('[aria-label="Send anonymous usage stats"]')
+    const control = mounted.target.querySelector<HTMLElement>('[aria-label="Send usage stats"]')
     expect(control).not.toBeNull()
     control?.click()
     await waitForAsync()

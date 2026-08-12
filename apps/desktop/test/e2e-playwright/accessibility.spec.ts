@@ -481,7 +481,7 @@ for (const mode of ['light', 'dark'] as const) {
 
       // Advance step 2 → step 3 (Open beta) via the "Go to open beta" forward button (primary slot, last).
       await advanceTo(3)
-      // The Open beta step renders the anonymous-analytics opt-out toggle.
+      // The Open beta step renders the usage-stats opt-out toggle.
       const hasAnalyticsToggle = await tauriPage.evaluate<boolean>(
         `!!document.querySelector('${WIZARD_SELECTOR} [aria-labelledby="toggle-analytics-title"]')`,
       )

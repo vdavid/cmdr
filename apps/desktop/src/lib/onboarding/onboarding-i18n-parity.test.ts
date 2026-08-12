@@ -280,9 +280,9 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
 
   it('resolves the analytics and email blocks', () => {
     expect(tString('onboarding.stepBeta.analyticsLede')).toBe(
-      "To learn what's working and what isn't, during the open beta Cmdr sends anonymous usage stats: which features get used and how often, never anything from your files. It's on now, and you can turn it off anytime.",
+      "To learn what's working and what isn't, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files. They're tied to a random id, not to your name or email. It's on now, and you can turn it off anytime.",
     )
-    expect(tString('onboarding.stepBeta.analyticsTitle')).toBe('Send anonymous usage stats')
+    expect(tString('onboarding.stepBeta.analyticsTitle')).toBe('Send usage stats')
     expect(tString('onboarding.stepBeta.analyticsCaption')).toBe(
       "Note that it's ON by default to encourage people to send me data during the Beta. You can change this any time in Settings.",
     )
