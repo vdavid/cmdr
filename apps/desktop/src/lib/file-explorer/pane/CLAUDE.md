@@ -22,8 +22,8 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   classifier `volumeKindFor` separate, and never feed the `local` default into tinting.
 - **Archive panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone** — a
   pane inside an archive keeps the parent DRIVE's `volumeId`. Zip is WRITABLE, tar/7z READ-ONLY.
-- **Keydown handlers match the WHOLE combo via `eventMatchesCommand`, never `e.key` + a modifier flag** (⌥⌘A is not
-  ⌘A; `cmdr/no-raw-key-match`); the two class-of-key matchers are the exception.
+- **Keydown handlers match the WHOLE combo via `eventMatchesCommand`, never `e.key` + a modifier flag** (⌥⌘A is not ⌘A;
+  `cmdr/no-raw-key-match`); the two class-of-key matchers are the exception.
 - **The snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false`, AND
   opening a real entry must LEAVE the snapshot volume. Skip either and selection goes off-by-one, or `search-results`
   sticks on a real path.
@@ -32,17 +32,17 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **The focus guard (`key-dispatch.ts`) must keep its `[role="dialog"], [role="alertdialog"]` exemption**: rename
   dialogs mount inside FilePane, and without it the guard and `use:trapFocus` ping-pong focus and freeze the webview
   (E2E-pinned).
-- **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, A5): mutate the store and
-  let it react, ❌ don't scatter `saveAppStatus` / `saveTabsForPaneSide` across nav paths.
-- **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }`
-  always switches. Resolve bare paths to a `Location` at the edge, never feed one in. Refusal `message` strings are
+- **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, A5): mutate the store and let
+  it react, ❌ don't scatter `saveAppStatus` / `saveTabsForPaneSide` across nav paths.
+- **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }` always
+  switches. Resolve bare paths to a `Location` at the edge, never feed one in. Refusal `message` strings are
   byte-pinned.
-- **The walk-up fallback picks its volume from the TARGET** (`listing-loader.ts::navigateToFallback`): it can climb
-  out of a vanished volume, and reusing the pane's dead id strands it on `Volume not found` for good.
+- **The walk-up fallback picks its volume from the TARGET** (`listing-loader.ts::navigateToFallback`): it can climb out
+  of a vanished volume, and reusing the pane's dead id strands it on `Volume not found` for good.
 - **`DualPaneExplorer.svelte` and `FilePane.svelte` are `file-length`-flagged**: don't add to them, and ❌ don't carve
   child components either. Cross-cutting state → a `*.svelte.ts` factory, pure logic → a `*.ts` helper.
 
-DETAILS also owns the narrower contracts an edit here can trip over: `getTabMgr`'s live `$state` holder, the
-select-only cursor jump, the `caps.kind === 'mtp'` clipboard gate, self-drag identity, the volume tint's `hasColorMix`
-fallback, `ErrorPane`'s ways out, and the A6 residue inventory. Read `DETAILS.md` before any non-trivial work here:
-editing, planning, reorganizing, or advising.
+DETAILS also owns the narrower contracts an edit here can trip over: `getTabMgr`'s live `$state` holder, the select-only
+cursor jump, the `caps.kind === 'mtp'` clipboard gate, self-drag identity, the volume tint's `hasColorMix` fallback,
+`ErrorPane`'s ways out, and the A6 residue inventory. Read `DETAILS.md` before any non-trivial work here: editing,
+planning, reorganizing, or advising.

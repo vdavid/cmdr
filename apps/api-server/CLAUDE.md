@@ -7,8 +7,8 @@ Cloudflare Worker (Hono): licensing (Paddle, Ed25519 keys, KV activation codes),
 
 - `index.ts` (Hono assembly + cron wiring), `types.ts` (`Bindings`, auth, `enforceIpRateLimit`).
 - Route modules are named after their path. Non-obvious: `telemetry.ts` (crash/heartbeat/download/update-check),
-  `link-codes.ts` (`?r=` codes), `scheduled.ts` (cron). Crypto and notify: `license.ts`, `paddle{,-api}.ts`,
-  `email.ts`, `discord.ts`, `device-tracking.ts`.
+  `link-codes.ts` (`?r=` codes), `scheduled.ts` (cron). Crypto and notify: `license.ts`, `paddle{,-api}.ts`, `email.ts`,
+  `discord.ts`, `device-tracking.ts`.
 
 ## Must-knows
 
@@ -22,15 +22,15 @@ Cloudflare Worker (Hono): licensing (Paddle, Ed25519 keys, KV activation codes),
   `POST /api/subscribers/{id}/optin`. Every outcome returns an identical empty 204, blocking enumeration.
 - **Optional Rust-client fields arrive as `null` OR `undefined`** (serde `Option::None` → JSON `null`); a
   `!== undefined`-only validator silently drops reports.
-- **`top_function` is the only crash-grouping key and must skip the panic machinery** (`extractTopFunction`), else
-  every panic groups under `install_panic_hook`. `panic_message` is client-redacted; truncate at 2,000 chars rather
-  than 400ing.
+- **`top_function` is the only crash-grouping key and must skip the panic machinery** (`extractTopFunction`), else every
+  panic groups under `install_panic_hook`. `panic_message` is client-redacted; truncate at 2,000 chars rather than
+  400ing.
 - **Only `/feedback`'s D1 write is AWAITED** (soft 502, so the app retries); crash-report, heartbeat, download, and
   update-check are fire-and-forget `waitUntil`. Don't flip either.
 - **Eviction spares bundles under `EVICTION_MIN_AGE_DAYS` (60) and is all-or-nothing** (pauses intake, resumes at the
   LOW watermark). Drop either and unauthenticated `/error-report` becomes a delete primitive.
-- **`/error-report` bodies go through `readCappedBody`, ❌ never `c.req.parseBody()`**: `content-length` is advisory,
-  so the parser buffers up to 100 MB in a 128 MB isolate.
+- **`/error-report` bodies go through `readCappedBody`, ❌ never `c.req.parseBody()`**: `content-length` is advisory, so
+  the parser buffers up to 100 MB in a 128 MB isolate.
 - **`/download` skips the D1 write for bot User-Agents** but still 302s. Keep Homebrew exempt (it uses curl) and
   `?src=website` on the site button. DETAILS § Download tracking.
 - **Deploy rails**: apply D1 migrations first (`wrangler d1 migrations apply cmdr-telemetry`); the heartbeat
@@ -40,5 +40,5 @@ Cloudflare Worker (Hono): licensing (Paddle, Ed25519 keys, KV activation codes),
   colon, and the website and blog sanitizers MUST match. `docs/architecture.md` § Acquisition analytics.
 - **In `/admin/funnel` output, `null` = unknown and `0` = a real zero.** DETAILS § funnel.
 
-Routes, data flows, runbooks, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Routes, data flows, runbooks, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.
