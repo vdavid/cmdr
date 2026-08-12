@@ -573,8 +573,11 @@ test.describe('Transfer dialogs', () => {
 
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} input.text-field-control`)).toBe(true)
 
+    // Trimmed: the confirm button wraps its label in a span alongside a conditional pending
+    // spinner, so `textContent` carries the markup whitespace between them even when no
+    // spinner renders. The label is what this asserts.
     const copyBtnText = await tauriPage.textContent(`${TRANSFER_DIALOG} .btn-primary`)
-    expect(copyBtnText).toBe('Copy')
+    expect(copyBtnText?.trim()).toBe('Copy')
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .btn-secondary`)).toBe(true)
 
     await dismissOverlay(tauriPage)
@@ -596,7 +599,7 @@ test.describe('Transfer dialogs', () => {
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} input.text-field-control`)).toBe(true)
 
     const moveBtnText = await tauriPage.textContent(`${TRANSFER_DIALOG} .btn-primary`)
-    expect(moveBtnText).toBe('Move')
+    expect(moveBtnText?.trim()).toBe('Move')
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .btn-secondary`)).toBe(true)
 
     await dismissOverlay(tauriPage)
