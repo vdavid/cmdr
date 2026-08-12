@@ -19,7 +19,7 @@ pub struct TabInfo {
 }
 
 /// Represents a file entry in a pane (simplified subset of the main FileEntry).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PaneFileEntry {
     pub name: String,
@@ -34,6 +34,26 @@ pub struct PaneFileEntry {
     /// observe the "size updating" hourglass without DOM access. `None`/`false`
     /// once the writer drains. Only meaningful for directories.
     pub recursive_size_pending: Option<bool>,
+    /// Whether `recursive_size` is an exact total (`Some(true)`) or a LOWER
+    /// BOUND over a subtree the indexer hasn't finished covering
+    /// (`Some(false)`). `cmdr://state` renders the same `≥` prefix the UI shows,
+    /// so an agent can't mistake a partial total for a settled one. `None` when
+    /// the directory isn't indexed. See the "Honest sizes" model in
+    /// `crates/cmdr-index/src/indexing/DETAILS.md`.
+    #[serde(default)]
+    pub recursive_size_complete: Option<bool>,
+    /// Whether the (exact) `recursive_size` was computed at an older volume
+    /// epoch than the current one. Only meaningful when
+    /// `recursive_size_complete` is `Some(true)`; surfaced as `[size-stale]`.
+    #[serde(default)]
+    pub recursive_size_stale: Option<bool>,
+    /// Recursive size in ALLOCATED BLOCKS (`st_blocks * 512`), against
+    /// `recursive_size`'s sum of logical file sizes. Surfaced only when the two
+    /// diverge enough to matter (compression, sparse files, cloud placeholders);
+    /// see `on_disk_marker`. Counts each hard link and each APFS clone in full,
+    /// so it is NOT a "what would deleting this free" number.
+    #[serde(default)]
+    pub recursive_physical_size: Option<u64>,
     /// macOS Finder tags on the entry, mirrored from the FE listing (filled
     /// visible-range-first by the deferred `enrich_tags` pass). Surfaced in
     /// `cmdr://state` as a `[tags:red,blue]` marker only when non-empty, so an
@@ -253,6 +273,7 @@ mod tests {
                 modified: None,
                 recursive_size_pending: None,
                 tags: vec![],
+                ..Default::default()
             }],
             cursor_index: 0,
             view_mode: "brief".to_string(),

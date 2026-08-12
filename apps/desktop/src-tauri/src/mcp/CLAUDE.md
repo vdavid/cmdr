@@ -24,6 +24,10 @@ stores.
   guessed-wrong call.
 - **Action tools wait for a typed ack before returning `OK`.** `OK` means the FE accepted the action, not that it
   finished; poll `await` for that.
+- **A directory size in `cmdr://state` is never a bare number.** `≥` means lower bound (subtree not fully covered),
+  `[size-pending]`/`[size-stale]` qualify it, and `(N on disk)` counts hard links and APFS clones in FULL, so it isn't
+  "what deleting frees". ❌ Don't strip a qualifier to save tokens: an agent acts on the number. DETAILS § Directory
+  sizes.
 - **Volume capacity/free comes from the space poller's CACHE, ❌ never a `statfs` here**: that syscall blocks 30–120 s
   on a hung mount and `cmdr://state` is read constantly. Unwatched volume ⇒ absent, ❌ never a guessed zero.
 - **`cmdr://state` and `cmdr://logs` redact through `crate::redact::redact_line`** — the only thing keeping home paths,

@@ -185,12 +185,8 @@ mod tests {
         PaneFileEntry {
             name: format!("shot-{index}.png"),
             path: format!("/shots/shot-{index}.png"),
-            is_directory: false,
             size: Some(index as u64),
-            recursive_size: None,
-            modified: None,
-            recursive_size_pending: None,
-            tags: vec![],
+            ..Default::default()
         }
     }
 

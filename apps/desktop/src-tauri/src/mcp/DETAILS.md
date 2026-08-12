@@ -377,6 +377,20 @@ Frontend calls `update_left_pane_state()` after loading files, but there's no gu
 
 This prevents overwhelming agents with data they can't see in the UI.
 
+### Directory sizes say how much they're worth
+
+A directory's recursive size is a claim of varying strength, and `cmdr://state` renders the same distinctions the file list does (`resources/mod.rs`: `recursive_size_text`, `on_disk_marker`; the model itself is `crates/cmdr-index/src/indexing/DETAILS.md` § "Honest sizes"):
+
+- **`≥4 GB`** — the indexer hasn't finished covering the subtree, so this is a LOWER BOUND, not a total. Same `≥` glyph as the UI's `LOWER_BOUND_GLYPH`.
+- **no size at all** — incomplete AND nothing known below yet. `≥0 B` would read as a measurement; the UI shows its `<dir>` placeholder for the same reason.
+- **`[size-pending]`** — writes in flight for this dir or a descendant (the "size updating" hourglass). A status, so it shows with or without details.
+- **`[size-stale]`** — exact, but computed at an older volume epoch.
+- **`(1 GB on disk)`** — the allocated-blocks total (`recursivePhysicalSize`), included only when it diverges from the logical total by BOTH ≥50% relative and ≥200 MB absolute. Same threshold as the UI's `hasSizeMismatch` (`full-list-utils.ts`), so the two surfaces never disagree about which folders are worth a second look; below it the second number is pure tokens.
+
+**Gotcha**: on-disk counts every hard link and every APFS clone in full, so it is NOT "what deleting this would free". A `target/` dir with rustc's hard-linked codegen objects, or an APFS-cloned worktree, reports the same bytes twice over. Deduplicating needs `DISTINCT inode` over the subtree, which doesn't roll up into `dir_stats` the way a sum does.
+
+**Why this is sharper for agents than for people**: someone watching a folder mid-scan sees the hourglass and waits. An agent reads the number and acts on it, so an uncounted total presented as settled becomes a confident wrong answer (a 129 GB tree reported as 28.8 GB).
+
 ### Pane state includes pagination
 
 Large directories (50k+ files) are paginated. The `totalFiles`, `loadedStart`, `loadedEnd` fields indicate what's currently loaded. Agents must use `scroll_to(index)` to load different regions.

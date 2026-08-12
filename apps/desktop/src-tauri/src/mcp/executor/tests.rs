@@ -65,6 +65,7 @@ fn pane_state_with(files: Vec<(&str, bool)>, cursor_index: usize, selected: Vec<
                 recursive_size_pending: None,
                 modified: None,
                 tags: vec![],
+                ..Default::default()
             })
             .collect(),
         cursor_index,

@@ -29,6 +29,7 @@ fn test_pane_state_store_update_left() {
             modified: Some("2024-01-01T00:00:00Z".to_string()),
             recursive_size_pending: None,
             tags: vec![],
+            ..Default::default()
         }],
         cursor_index: 0,
         view_mode: "brief".to_string(),
@@ -93,6 +94,7 @@ fn test_pane_state_cursor_index_bounds() {
             modified: None,
             recursive_size_pending: None,
             tags: vec![],
+            ..Default::default()
         }],
         cursor_index: 999, // Out of bounds
         view_mode: "brief".to_string(),
@@ -129,6 +131,7 @@ fn test_file_entry_serialization() {
         modified: Some("2024-01-01T00:00:00Z".to_string()),
         recursive_size_pending: None,
         tags: vec![],
+        ..Default::default()
     };
 
     let json = serde_json::to_value(&entry).unwrap();
@@ -148,6 +151,7 @@ fn test_file_entry_optional_fields_serialize_as_null() {
         modified: None,
         recursive_size_pending: None,
         tags: vec![],
+        ..Default::default()
     };
 
     let json = serde_json::to_value(&entry).unwrap();
@@ -184,6 +188,7 @@ fn test_unicode_in_file_entries() {
         modified: None,
         recursive_size_pending: None,
         tags: vec![],
+        ..Default::default()
     };
 
     let json = serde_json::to_value(&entry).unwrap();
@@ -203,6 +208,7 @@ fn test_special_chars_in_file_paths() {
             modified: None,
             recursive_size_pending: None,
             tags: vec![],
+            ..Default::default()
         },
         PaneFileEntry {
             name: "file'with'quotes.txt".to_string(),
@@ -213,6 +219,7 @@ fn test_special_chars_in_file_paths() {
             modified: None,
             recursive_size_pending: None,
             tags: vec![],
+            ..Default::default()
         },
         PaneFileEntry {
             name: "file\"doublequotes\".txt".to_string(),
@@ -223,6 +230,7 @@ fn test_special_chars_in_file_paths() {
             modified: None,
             recursive_size_pending: None,
             tags: vec![],
+            ..Default::default()
         },
     ];
 
@@ -270,6 +278,7 @@ fn test_large_file_count() {
             modified: None,
             recursive_size_pending: None,
             tags: vec![],
+            ..Default::default()
         })
         .collect();
 

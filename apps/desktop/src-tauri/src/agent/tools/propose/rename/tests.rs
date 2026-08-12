@@ -183,6 +183,7 @@ fn current_folder_entries_are_a_valid_rename_scope_while_listing_updates() {
             modified: None,
             recursive_size_pending: None,
             tags: vec![],
+            ..Default::default()
         }],
         ..Default::default()
     };
@@ -204,6 +205,7 @@ fn a_scrolled_pane_scopes_the_plan_to_the_rows_the_user_picked() {
         modified: None,
         recursive_size_pending: None,
         tags: vec![],
+        ..Default::default()
     };
     let state = PaneState {
         path: "/shots".into(),
@@ -239,6 +241,7 @@ fn a_selected_row_outside_the_loaded_window_refuses_the_scope() {
             modified: None,
             recursive_size_pending: None,
             tags: vec![],
+            ..Default::default()
         }],
         loaded_start: 100,
         loaded_end: 101,

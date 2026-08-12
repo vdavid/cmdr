@@ -71,6 +71,36 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
     return !deps.getSyncsToMcp() || !deps.getListingId() || deps.getTotalCount() === 0
   }
 
+  /**
+   * Map one listing entry onto its MCP mirror. Extracted from `buildMcpFileList`
+   * for the same reason as `skipMcpFileSync`: every `?? null` coercion counts
+   * toward that function's cyclomatic complexity cap.
+   *
+   * `PaneFileEntry` uses `null` for absent fields (post-Group-A wire format)
+   * while `FileEntry` uses `undefined`, so `?? null` coerces across both.
+   */
+  function toMcpFileEntry(entry: Awaited<ReturnType<typeof getFileAt>> & {}): PaneFileEntry {
+    return {
+      name: entry.name,
+      path: entry.path,
+      isDirectory: entry.isDirectory,
+      size: entry.size ?? null,
+      recursiveSize: entry.recursiveSize ?? null,
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state, just formatting a timestamp
+      modified: entry.modifiedAt != null ? new Date(entry.modifiedAt * 1000).toISOString() : null,
+      recursiveSizePending: entry.recursiveSizePending ?? null,
+      // The honest-sizes trio, so `cmdr://state` renders the same `≥` lower
+      // bound and staleness the file list shows instead of passing a partial
+      // total off as a settled one.
+      recursiveSizeComplete: entry.recursiveSizeComplete ?? null,
+      recursiveSizeStale: entry.recursiveSizeStale ?? null,
+      recursivePhysicalSize: entry.recursivePhysicalSize ?? null,
+      // Finder tags (filled visible-range-first by enrich_tags). Surface the
+      // same dots the UI shows as a `[tags:…]` marker in cmdr://state.
+      tags: entry.tags ?? [],
+    }
+  }
+
   /** Build file list for MCP state sync */
   async function buildMcpFileList(): Promise<PaneFileEntry[]> {
     const files: PaneFileEntry[] = []
@@ -99,6 +129,9 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
         recursiveSize: null,
         modified: null,
         recursiveSizePending: null,
+        recursiveSizeComplete: null,
+        recursiveSizeStale: null,
+        recursivePhysicalSize: null,
       })
     }
 
@@ -113,21 +146,7 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
       // partial MCP state consistent and avoids trailing out-of-bounds calls
       // for the rest of the visible range.
       if (!entry) break
-      files.push({
-        name: entry.name,
-        path: entry.path,
-        isDirectory: entry.isDirectory,
-        // PaneFileEntry uses `null` for absent fields (post-Group-A wire format).
-        // FileEntry uses `undefined`, so coerce. `?? null` handles both.
-        size: entry.size ?? null,
-        recursiveSize: entry.recursiveSize ?? null,
-        // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state, just formatting a timestamp
-        modified: entry.modifiedAt != null ? new Date(entry.modifiedAt * 1000).toISOString() : null,
-        recursiveSizePending: entry.recursiveSizePending ?? null,
-        // Finder tags (filled visible-range-first by enrich_tags). Surface the
-        // same dots the UI shows as a `[tags:…]` marker in cmdr://state.
-        tags: entry.tags ?? [],
-      })
+      files.push(toMcpFileEntry(entry))
     }
     return files
   }

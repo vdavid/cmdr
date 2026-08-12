@@ -3657,7 +3657,7 @@ export type AttachmentKindView = 'file' | 'folder'
  *  A file/folder the user attached by reference for a turn (dragged onto the composer,
  *  or "ask about selection"). Structurally path + kind only — the read-only privacy
  *  line means no tool ever reads its contents. Both directions: an input to
- *  [`ask_cmdr_send_message`], and the output of the two attachment-resolving commands.
+ *  [`ask_cmdr_send_message`](super::chat::ask_cmdr_send_message), and the output of the two attachment-resolving commands.
  */
 export type AttachmentRef = {
   path: string
@@ -6939,6 +6939,29 @@ export type PaneFileEntry = {
    *  once the writer drains. Only meaningful for directories.
    */
   recursiveSizePending: boolean | null
+  /**
+   *  Whether `recursive_size` is an exact total (`Some(true)`) or a LOWER
+   *  BOUND over a subtree the indexer hasn't finished covering
+   *  (`Some(false)`). `cmdr://state` renders the same `≥` prefix the UI shows,
+   *  so an agent can't mistake a partial total for a settled one. `None` when
+   *  the directory isn't indexed. See the "Honest sizes" model in
+   *  `crates/cmdr-index/src/indexing/DETAILS.md`.
+   */
+  recursiveSizeComplete?: boolean | null
+  /**
+   *  Whether the (exact) `recursive_size` was computed at an older volume
+   *  epoch than the current one. Only meaningful when
+   *  `recursive_size_complete` is `Some(true)`; surfaced as `[size-stale]`.
+   */
+  recursiveSizeStale?: boolean | null
+  /**
+   *  Recursive size in ALLOCATED BLOCKS (`st_blocks * 512`), against
+   *  `recursive_size`'s sum of logical file sizes. Surfaced only when the two
+   *  diverge enough to matter (compression, sparse files, cloud placeholders);
+   *  see `on_disk_marker`. Counts each hard link and each APFS clone in full,
+   *  so it is NOT a "what would deleting this free" number.
+   */
+  recursivePhysicalSize?: number | null
   /**
    *  macOS Finder tags on the entry, mirrored from the FE listing (filled
    *  visible-range-first by the deferred `enrich_tags` pass). Surfaced in

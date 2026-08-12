@@ -185,11 +185,7 @@ mod tests {
             name: name.to_string(),
             path: format!("/x/{name}"),
             is_directory: true,
-            size: None,
-            recursive_size: None,
-            modified: None,
-            recursive_size_pending: None,
-            tags: vec![],
+            ..Default::default()
         }
     }
 

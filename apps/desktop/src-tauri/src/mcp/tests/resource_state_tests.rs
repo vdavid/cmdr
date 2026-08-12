@@ -70,6 +70,7 @@ fn test_format_file_compact() {
         modified: Some("2024-01-15".to_string()),
         recursive_size_pending: None,
         tags: vec![],
+        ..Default::default()
     };
 
     // Without details
@@ -98,6 +99,7 @@ fn test_format_file_compact() {
         modified: None,
         recursive_size_pending: None,
         tags: vec![],
+        ..Default::default()
     };
     let formatted = format_file_compact(&dir, 1, false, false, false);
     assert_eq!(formatted, "i:1 d docs");
@@ -112,6 +114,7 @@ fn test_format_file_compact() {
         modified: Some("2026-03-19T17:33:53.000Z".to_string()),
         recursive_size_pending: None,
         tags: vec![],
+        ..Default::default()
     };
     let formatted = format_file_compact(&dir_with_size, 5, false, false, true);
     assert_eq!(formatted, "i:5 d src 169 B 2026-03-19T17:33:53.000Z");
@@ -127,6 +130,7 @@ fn test_format_file_compact() {
         modified: None,
         recursive_size_pending: Some(true),
         tags: vec![],
+        ..Default::default()
     };
     let formatted = format_file_compact(&pending_dir, 2, false, false, true);
     assert_eq!(formatted, "i:2 d target 4 KB [size-pending]");
@@ -177,6 +181,7 @@ fn test_format_file_compact_appends_tags_marker() {
             name: "Green".to_string(),
             color: 2,
         }],
+        ..Default::default()
     };
     // The tags marker trails the cursor/selected markers.
     let formatted = format_file_compact(&file, 3, true, false, false);
@@ -199,6 +204,7 @@ fn test_build_pane_yaml() {
                 modified: Some("2024-01-15".to_string()),
                 recursive_size_pending: None,
                 tags: vec![],
+                ..Default::default()
             },
             PaneFileEntry {
                 name: "folder".to_string(),
@@ -209,6 +215,7 @@ fn test_build_pane_yaml() {
                 modified: None,
                 recursive_size_pending: None,
                 tags: vec![],
+                ..Default::default()
             },
         ],
         cursor_index: 0,
@@ -273,6 +280,7 @@ fn test_brief_cursor_detail_respects_loaded_window() {
                 modified: None,
                 recursive_size_pending: None,
                 tags: vec![],
+                ..Default::default()
             },
             PaneFileEntry {
                 name: "under-cursor.txt".to_string(),
@@ -283,6 +291,7 @@ fn test_brief_cursor_detail_respects_loaded_window() {
                 modified: None,
                 recursive_size_pending: None,
                 tags: vec![],
+                ..Default::default()
             },
         ],
         cursor_index: 101, // global; window-relative index 1
@@ -393,4 +402,132 @@ fn test_pane_yaml_no_tabs_when_empty() {
     };
     let yaml = build_pane_yaml_with_options(&state, "  ", false);
     assert!(!yaml.contains("tabs:"));
+}
+
+/// A directory whose subtree the indexer hasn't finished covering carries a
+/// LOWER BOUND, not a total. `cmdr://state` must say so with the same `≥` the
+/// UI shows: an agent that reads a bare number acts on it, and a partial sum
+/// presented as settled is how you conclude a 129 GB tree is 28.8 GB.
+#[test]
+fn incomplete_recursive_size_renders_as_a_lower_bound() {
+    let partial = PaneFileEntry {
+        name: "deps".to_string(),
+        path: "/tmp/deps".to_string(),
+        is_directory: true,
+        recursive_size: Some(4096),
+        recursive_size_complete: Some(false),
+        ..Default::default()
+    };
+    assert_eq!(format_file_compact(&partial, 2, false, false, true), "i:2 d deps ≥4 KB");
+
+    // A covered subtree is an exact total, so it renders bare.
+    let complete = PaneFileEntry {
+        recursive_size_complete: Some(true),
+        ..partial.clone()
+    };
+    assert_eq!(format_file_compact(&complete, 2, false, false, true), "i:2 d deps 4 KB");
+
+    // Absent flag ⇒ treat as exact (fixtures, and volumes with no index).
+    let unknown = PaneFileEntry {
+        recursive_size_complete: None,
+        ..partial.clone()
+    };
+    assert_eq!(format_file_compact(&unknown, 2, false, false, true), "i:2 d deps 4 KB");
+}
+
+/// Incomplete AND nothing known below yet: `≥0 B` would be worse than silence,
+/// so drop the size entirely. Mirrors the UI's `<dir>` placeholder.
+#[test]
+fn an_incomplete_dir_with_nothing_known_yet_shows_no_size() {
+    let nothing_yet = PaneFileEntry {
+        name: "scanning".to_string(),
+        path: "/tmp/scanning".to_string(),
+        is_directory: true,
+        recursive_size: Some(0),
+        recursive_size_complete: Some(false),
+        ..Default::default()
+    };
+    assert_eq!(
+        format_file_compact(&nothing_yet, 3, false, false, true),
+        "i:3 d scanning"
+    );
+}
+
+/// An exact size computed at an older volume epoch is still exact, just old.
+/// It's a status, so it shows with or without details.
+#[test]
+fn a_stale_recursive_size_is_marked() {
+    let stale = PaneFileEntry {
+        name: "old".to_string(),
+        path: "/tmp/old".to_string(),
+        is_directory: true,
+        recursive_size: Some(2048),
+        recursive_size_complete: Some(true),
+        recursive_size_stale: Some(true),
+        ..Default::default()
+    };
+    assert_eq!(
+        format_file_compact(&stale, 4, false, false, true),
+        "i:4 d old 2 KB [size-stale]"
+    );
+    assert_eq!(
+        format_file_compact(&stale, 4, false, false, false),
+        "i:4 d old [size-stale]"
+    );
+}
+
+/// On-disk size rides along ONLY when it diverges enough to change a decision
+/// (compression, sparse files, cloud placeholders). Same threshold as the UI's
+/// `hasSizeMismatch`, so the two surfaces never disagree about what's worth
+/// mentioning; below it, the second number is pure tokens.
+#[test]
+fn on_disk_size_shows_only_when_it_diverges_enough_to_matter() {
+    let sparse = PaneFileEntry {
+        name: "sparse".to_string(),
+        path: "/tmp/sparse".to_string(),
+        is_directory: true,
+        recursive_size: Some(4 * 1024 * 1024 * 1024),
+        recursive_size_complete: Some(true),
+        recursive_physical_size: Some(1024 * 1024 * 1024),
+        ..Default::default()
+    };
+    assert_eq!(
+        format_file_compact(&sparse, 5, false, false, true),
+        "i:5 d sparse 4 GB (1 GB on disk)"
+    );
+
+    // Same relative gap, but too small in absolute terms to be worth a word.
+    let tiny_gap = PaneFileEntry {
+        recursive_size: Some(1000),
+        recursive_physical_size: Some(200),
+        ..sparse.clone()
+    };
+    assert_eq!(
+        format_file_compact(&tiny_gap, 5, false, false, true),
+        "i:5 d sparse 1000 B"
+    );
+
+    // Big absolute gap, but under half: ordinary block rounding, not news.
+    let small_relative_gap = PaneFileEntry {
+        recursive_size: Some(10 * 1024 * 1024 * 1024),
+        recursive_physical_size: Some(9 * 1024 * 1024 * 1024),
+        ..sparse.clone()
+    };
+    assert_eq!(
+        format_file_compact(&small_relative_gap, 5, false, false, true),
+        "i:5 d sparse 10 GB"
+    );
+
+    // A lower-bound total keeps its `≥`, and the on-disk figure follows it.
+    let partial_sparse = PaneFileEntry {
+        recursive_size_complete: Some(false),
+        ..sparse.clone()
+    };
+    assert_eq!(
+        format_file_compact(&partial_sparse, 5, false, false, true),
+        "i:5 d sparse ≥4 GB (1 GB on disk)"
+    );
+
+    // Details off ⇒ no sizes at all, on-disk included.
+    assert_eq!(format_file_compact(&sparse, 5, false, false, false), "i:5 d sparse");
 }

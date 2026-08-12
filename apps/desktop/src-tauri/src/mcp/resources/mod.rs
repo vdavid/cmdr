@@ -195,8 +195,11 @@ pub(crate) fn format_file_compact(
     if include_details {
         if let Some(size) = file.size {
             parts.push(format_size(size));
-        } else if let Some(recursive_size) = file.recursive_size {
-            parts.push(format_size(recursive_size));
+        } else if let Some(recursive_size) = recursive_size_text(file) {
+            parts.push(recursive_size);
+            if let Some(marker) = on_disk_marker(file.recursive_size, file.recursive_physical_size) {
+                parts.push(marker);
+            }
         }
         if let Some(ref modified) = file.modified {
             parts.push(modified.clone());
@@ -214,11 +217,63 @@ pub(crate) fn format_file_compact(
     if file.recursive_size_pending == Some(true) {
         parts.push("[size-pending]".to_string());
     }
+    // Exact, but computed at an older volume epoch. A status like the hourglass
+    // above, so it shows with or without details.
+    if file.recursive_size_stale == Some(true) {
+        parts.push("[size-stale]".to_string());
+    }
     if let Some(marker) = tags_marker(&file.tags) {
         parts.push(marker);
     }
 
     parts.join(" ")
+}
+
+/// Prefix for a directory total the indexer hasn't finished covering. Same
+/// glyph as the UI's `LOWER_BOUND_GLYPH` (`full-list-utils.ts`).
+const LOWER_BOUND_GLYPH: &str = "≥";
+
+/// The size cell for a directory's recursive total, or `None` when there's
+/// nothing honest to print.
+///
+/// Mirrors the UI's `getDirSizeDisplayState`: an incomplete subtree is a LOWER
+/// BOUND and says so, and an incomplete subtree with no bytes known yet prints
+/// nothing at all (the UI's `<dir>` placeholder) because `≥0 B` reads as a
+/// measurement. An absent `recursive_size_complete` means exact, which covers
+/// fixtures and volumes with no index.
+///
+/// Why this matters more here than on screen: a person sees a folder mid-scan
+/// and waits, while an agent reads the number and acts on it.
+pub(crate) fn recursive_size_text(file: &PaneFileEntry) -> Option<String> {
+    let size = file.recursive_size?;
+    let complete = file.recursive_size_complete.unwrap_or(true);
+    match (complete, size) {
+        (false, 0) => None,
+        (false, size) => Some(format!("{LOWER_BOUND_GLYPH}{}", format_size(size))),
+        (true, size) => Some(format_size(size)),
+    }
+}
+
+/// `(1 GB on disk)` when the allocated-blocks total diverges from the logical
+/// total enough to change a decision (compression, sparse files, cloud
+/// placeholders), else `None` so the common case costs nothing.
+///
+/// Thresholds mirror the UI's `hasSizeMismatch` (`full-list-utils.ts`): BOTH a
+/// ≥50% relative gap AND a ≥200 MB absolute one. Keeping the two surfaces on
+/// one rule is what stops `cmdr://state` and the file list from disagreeing
+/// about which folders are worth a second look.
+pub(crate) fn on_disk_marker(logical: Option<u64>, physical: Option<u64>) -> Option<String> {
+    let (logical, physical) = (logical?, physical?);
+    // A zero on either side is "unknown", not "empty": cloud placeholders read
+    // physical 0 with a real logical size, and both are noise here.
+    if logical == 0 || physical == 0 {
+        return None;
+    }
+    let diff = logical.abs_diff(physical);
+    let smaller = logical.min(physical);
+    // `diff * 2 >= smaller` rather than `diff >= smaller / 2`: integer division
+    // would round the threshold down on odd byte counts.
+    (diff.saturating_mul(2) >= smaller && diff >= 200_000_000).then(|| format!("({} on disk)", format_size(physical)))
 }
 
 /// The `[tags:...]` marker for a file's Finder tags, or `None` when it has none
