@@ -127,5 +127,37 @@ be the `Test Files … | N skipped` count (N above the usual handful = files did
 `Worker terminated` / `reached heap limit` line. Until then: a below-threshold file that has a dedicated test means
 re-run `--check svelte-tests` standalone; don't allowlist it.
 
+## Cargo's build-directory lock
+
+CPU isn't the only contended resource, and the weights above are blind to the other one. Cargo takes an **exclusive**
+lock on its build directory for a whole command, so two cargo lanes sharing `target/` can never build at the same time.
+Reproduced directly (2026-08-12): a second cargo command started beside a running one prints
+`Blocking waiting for file lock on build directory` and waits.
+
+That made a normal `pnpm check` look hung. `rustdoc` and `clippy` both depend only on `rustfmt`, so on 16 cores the
+gate admitted both (4 + 8 ≤ 16); one then sat on the lock holding weight it wasn't using, and with `-q` printing
+nothing. `rust-tests` (w6) and `integration-tests` (w8) do the same to each other after `clippy`. Four lanes, three
+different feature sets, one lock.
+
+Two fixes, and they answer different halves:
+
+- `Exclusive: ResourceCargoBuildDir` makes the serialization explicit. **Zero wall-clock cost** (the lanes were serial
+  anyway) and it returns the blocked lane's weight to the pool.
+- `rustdoc` gets a private `target/rustdoc`, which is the only way to actually recover its wall clock.
+
+Measured for `pnpm check rustdoc` on an M3 Max, one sample each, `/usr/bin/time -l`:
+
+- shared `target/`, warm: **27.5 s** wall, 47.6 CPU-s → ~1.7 cores
+- private dir, cold: **75.0 s** wall, 439 CPU-s → ~5.9 cores, building to **2.0 GB**
+- private dir, warm: **17.0 s** wall, 23.3 CPU-s → ~1.4 cores
+
+Two things to take from it. The lane is nearly serial (~1.7 cores), so it fits beside a cold `clippy` once it stops
+queueing. And the warm 27.5 s → 17.0 s drop is not the lock: sharing `target/` meant the other lanes' fingerprint churn
+kept invalidating doc units this lane had already built. The 2.0 GB price against an 82 GB `target/` is small because
+`cargo doc` builds dependencies metadata-only, with no codegen.
+
+CI keeps the shared directory: its steps are sequential, so there's no lock to dodge, and the runner is disk- and
+cache-tight (it has hit "No space left on device" before). See `desktop-rust-rustdoc.go`.
+
 Render the graph with weights + lanes + median wall-time: `pnpm check --graph` (also `--graph-format mermaid|dot`). The
 wall-time comes from recent passing runs in `~/cmdr-check-log.csv`, so the graph doubles as a perf dashboard.

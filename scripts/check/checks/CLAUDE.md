@@ -41,6 +41,9 @@ walkthrough: `DETAILS.md`. Runner architecture (parallel executor, dependency gr
   (or `CargoSelectionArgs(members, "linux")` when cargo runs in a container); source scanners take their roots from
   `ScannerRoots` / `ScannerMemberKinds`. `workspace-member-coverage` fails on an unclassified Rust check or a member
   nothing reaches. DETAILS.md §§ "Workspace geometry", "Workspace member coverage".
+- **A new cargo check that COMPILES declares `Exclusive: ResourceCargoBuildDir`** (see `common.go`). Without it, it
+  fights every other cargo lane for cargo's build-directory lock while holding CPU weight it can't use. Metadata-only
+  cargo commands (`metadata`, `about`, `deny`, `machete`) don't take that lock and stay undeclared.
 - **Wire allowlist staleness from day one.** Dead entries auto-remove or fail; orphaned opt-out comments fail. Reuse
   `directiveTracker` / `writeJSONAllowlist`. Agents never add or raise an allowlist entry without David's OK.
 - **Error output uses `indentOutput()`**: `fmt.Errorf("check failed\n%s", indentOutput(output))`. Success messages carry

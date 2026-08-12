@@ -123,6 +123,17 @@ type CheckDefinition struct {
 	// CPU too (`rust-tests-linux` / `e2e-linux` burn cores in the VM that the host
 	// process never shows).
 	CpuWeight int
+	// Exclusive names a resource this check needs to itself: two checks naming
+	// the same one never run at the same time, whatever the CPU budget allows.
+	// CpuWeight can't express this, because the constraint isn't cores. Cargo
+	// takes an EXCLUSIVE lock on its build directory for a whole command, so two
+	// cargo lanes sharing `target/` serialize no matter what the runner does; the
+	// only question is whether they do it visibly. Undeclared, the loser sits on
+	// "Blocking waiting for file lock on build directory" while still holding its
+	// weight, so the budget it reserved goes unused and a quiet run looks hung.
+	// Declaring it costs no wall clock (they were serial already) and hands that
+	// weight back to the lanes that can actually use it.
+	Exclusive string
 	// NotInCI documents WHY this check intentionally has no step in any GitHub
 	// workflow. The ci-coverage check enforces the invariant both ways: a check
 	// that's neither referenced by a workflow nor carrying a NotInCI reason
@@ -146,6 +157,18 @@ type CheckDefinition struct {
 	DependsOn []string
 	Run       CheckFunc
 }
+
+// ResourceCargoBuildDir is the `Exclusive` resource for the shared cargo build
+// directory. Declare it on every check whose cargo command COMPILES against
+// `target/` (`clippy`, `nextest`, `udeps`, anything regenerating through a test
+// run). Commands that only read metadata (`cargo metadata`, `cargo about`,
+// `cargo deny`, `cargo machete`) take the package-cache lock, never the build
+// one, so they stay undeclared and keep running alongside everything.
+//
+// Two lanes deliberately don't hold it: `rust-tests-linux` builds inside its
+// container's own `CARGO_TARGET_DIR`, and `rustdoc` owns a private directory
+// (see `desktop-rust-rustdoc.go`).
+const ResourceCargoBuildDir = "cargo-build-dir"
 
 // GlobalInputs are paths that affect every check's fingerprint regardless of its
 // own Inputs: a toolchain bump (.mise.toml), an edit to the runner's own source

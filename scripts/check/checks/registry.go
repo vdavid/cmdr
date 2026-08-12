@@ -34,6 +34,7 @@ var AllChecks = []CheckDefinition{
 	{
 		ID:                "desktop-rust-clippy",
 		CpuWeight:         8,
+		Exclusive:         ResourceCargoBuildDir,
 		Nickname:          "clippy",
 		DisplayName:       "clippy",
 		App:               AppDesktop,
@@ -94,6 +95,7 @@ var AllChecks = []CheckDefinition{
 	{
 		ID:                "desktop-rust-cargo-udeps",
 		CpuWeight:         8,
+		Exclusive:         ResourceCargoBuildDir,
 		Nickname:          "cargo-udeps",
 		DisplayName:       "cargo-udeps",
 		App:               AppDesktop,
@@ -279,6 +281,7 @@ var AllChecks = []CheckDefinition{
 	{
 		ID:                "desktop-bindings-fresh",
 		CpuWeight:         8,
+		Exclusive:         ResourceCargoBuildDir, // `pnpm bindings:regen` shells out to `cargo nextest`
 		Nickname:          "bindings-fresh",
 		DisplayName:       "bindings-fresh",
 		App:               AppDesktop,
@@ -489,6 +492,7 @@ var AllChecks = []CheckDefinition{
 	{
 		ID:                "desktop-rust-tests",
 		CpuWeight:         6,
+		Exclusive:         ResourceCargoBuildDir,
 		Nickname:          "rust-tests",
 		DisplayName:       "tests",
 		App:               AppDesktop,
@@ -501,6 +505,7 @@ var AllChecks = []CheckDefinition{
 	{
 		ID:                "desktop-rust-integration-tests",
 		CpuWeight:         8,
+		Exclusive:         ResourceCargoBuildDir,
 		Nickname:          "rust-integration-tests",
 		DisplayName:       "integration tests (SMB)",
 		App:               AppDesktop,
@@ -528,6 +533,7 @@ var AllChecks = []CheckDefinition{
 	{
 		ID:          "desktop-rust-groq-smoke",
 		CpuWeight:   2,
+		Exclusive:   ResourceCargoBuildDir,
 		Nickname:    "groq-smoke",
 		DisplayName: "Groq smoke (real API)",
 		App:         AppDesktop,

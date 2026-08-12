@@ -202,6 +202,21 @@ checks (e.g. `svelte-tests` w11 + `clippy`-cold w8) from piling up and oversubsc
 (the `eslint-typecheck-{svelte,typescript}` passes w2, the Docker checks) overlap freely. See the Key decision below and
 `docs/notes/check-cpu-contention.md`.
 
+**Exclusive resources:** `CheckDefinition.Exclusive` names a resource a check needs to itself; two checks naming the
+same one never overlap, whatever the weight budget allows. It sits between the dependency gate and the weight gate in
+`tryStartPending`, and the holder releases it on every exit path (deferred), so a red or panicking check can't strand
+every other lane. It can't deadlock: a check takes at most one resource and holds it only between its own start and
+finish.
+
+The one resource today is `ResourceCargoBuildDir`, held by every lane that COMPILES against the shared `target/`
+(`clippy`, `rust-tests`, `integration-tests`, `bindings-fresh`, `cargo-udeps`, `groq-smoke`). Cargo takes an exclusive
+lock on its build directory for a whole command, so those lanes were always serial; undeclared, the loser sat on
+`Blocking waiting for file lock on build directory` while still holding 6-8 weight, so a quiet run looked hung and the
+reserved cores went unused. Declaring it costs no wall clock and hands that weight back. Metadata-only commands
+(`cargo metadata`, `about`, `deny`, `machete`) take the package-cache lock instead and stay undeclared;
+`rust-tests-linux` builds in its container's own `CARGO_TARGET_DIR`, and `rustdoc` owns a private one. Measurements:
+`docs/notes/check-cpu-contention.md` § "Cargo's build-directory lock".
+
 **Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`, `desktop-e2e-linux`,
 `desktop-e2e-playwright`). Naming a check (positionally or via `--check`) implicitly includes slow checks
 (`includeSlow = len(checkNames) > 0`); group/app selectors don't.

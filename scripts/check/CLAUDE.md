@@ -35,6 +35,10 @@ For check authoring (how to add a check, `CheckDefinition` shape, naming rules, 
   cache, so a too-narrow `Inputs` can mask a regression locally but never ship one. Named checks (positional or
   `--check`) and `--fresh` / `CMDR_CHECK_NO_CACHE=1` also bypass the cache. Only `StatusOK` results are cached; warns,
   failures, and skips always re-run and drop any stale entry.
+- **A cargo lane that COMPILES declares `Exclusive: ResourceCargoBuildDir`.** Cargo's build-directory lock is exclusive
+  for a whole command, so lanes sharing `target/` are serial whether or not the runner knows it; declaring it stops the
+  loser from holding 6-8 CPU weight while blocked. Metadata-only cargo commands stay undeclared. `DETAILS.md` §
+  "Exclusive resources".
 - **`--only-slow` needs a ~20 min timeout** (1,200,000 ms). Slow checks (E2E, `rust-tests-linux`) take far longer than
   the default suite; when running via an agent or CI, set the timeout accordingly.
 - **`--fast` is mutually exclusive with `--include-slow` / `--only-slow`:** combining them errors out, since the lanes

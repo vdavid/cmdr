@@ -50,8 +50,9 @@ type Runner struct {
 	mu          sync.Mutex
 	outputMu    sync.Mutex
 	statusLine  string
-	capacity    int // CPU-core budget for concurrent checks (= NumCPU)
-	usedWeight  int // sum of EffectiveCpuWeight of currently-running checks (guarded by mu)
+	capacity    int             // CPU-core budget for concurrent checks (= NumCPU)
+	usedWeight  int             // sum of EffectiveCpuWeight of currently-running checks (guarded by mu)
+	heldRes     map[string]bool // Exclusive resources currently held by a running check (guarded by mu)
 	completedCh chan *CheckState
 	isTTY       bool // true if stdout is a terminal (supports status line)
 	prefixWidth int  // max width of "App: Tech / Name" prefix for alignment
@@ -69,6 +70,7 @@ func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, cached [
 		noLog:       noLog,
 		quiet:       quiet,
 		capacity:    runtime.NumCPU(),
+		heldRes:     map[string]bool{},
 		completedCh: make(chan *CheckState, len(defs)),
 		isTTY:       term.IsTerminal(int(os.Stdout.Fd())),
 	}
@@ -202,13 +204,17 @@ func (r *Runner) RunStates() []*CheckState {
 //     must keep iterating.
 //   - started: a goroutine was launched this call (so the loop made progress).
 //
-// Admission is two-stage: dependencies first (canStart also marks the check
-// Blocked if a dep failed), then CPU weight — a check starts only when the sum
-// of running weights stays within the core budget, so two CPU-heavy checks
-// don't oversubscribe the machine. The usedWeight==0 clause guarantees an
-// over-budget check still runs (alone) rather than deadlocking the gate. When
-// deps are ready but the budget is full, the check stays Pending and is retried
-// once a running check frees its weight.
+// Admission is three-stage: dependencies first (canStart also marks the check
+// Blocked if a dep failed), then the check's Exclusive resource if it names one,
+// then CPU weight — a check starts only when the sum of running weights stays
+// within the core budget, so two CPU-heavy checks don't oversubscribe the
+// machine. The usedWeight==0 clause guarantees an over-budget check still runs
+// (alone) rather than deadlocking the gate. When deps are ready but the resource
+// is taken or the budget is full, the check stays Pending and is retried once a
+// running check frees what it holds.
+//
+// The resource gate can't deadlock: a check takes at most one, and holds it only
+// between its own start and finish, so nothing waits on a holder that's waiting.
 func (r *Runner) tryStartPending(state *CheckState, wg *sync.WaitGroup) (active, started bool) {
 	state.mu.Lock()
 	defer state.mu.Unlock()
@@ -225,6 +231,10 @@ func (r *Runner) tryStartPending(state *CheckState, wg *sync.WaitGroup) (active,
 	if !r.canStart(state) {
 		return true, false
 	}
+	res := state.Definition.Exclusive
+	if res != "" && r.heldRes[res] {
+		return true, false // resource taken; retry once its holder finishes
+	}
 	w := state.Definition.EffectiveCpuWeight(r.capacity)
 	if r.usedWeight != 0 && r.usedWeight+w > r.capacity {
 		return true, false // budget full; retry once a running check frees weight
@@ -232,14 +242,23 @@ func (r *Runner) tryStartPending(state *CheckState, wg *sync.WaitGroup) (active,
 
 	state.Status = StatusRunning
 	r.usedWeight += w
+	if res != "" {
+		r.heldRes[res] = true
+	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		// Released on every exit path, including a red or panicking check: a
+		// stranded resource would block every other lane naming it for the rest
+		// of the run.
+		defer func() {
+			r.mu.Lock()
+			r.usedWeight -= w
+			delete(r.heldRes, res)
+			r.mu.Unlock()
+			r.completedCh <- state
+		}()
 		r.runCheck(state)
-		r.mu.Lock()
-		r.usedWeight -= w
-		r.mu.Unlock()
-		r.completedCh <- state
 	}()
 	return true, true
 }
