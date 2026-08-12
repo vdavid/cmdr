@@ -124,6 +124,12 @@ pub trait Volume: Send + Sync {
     /// path-addressed backend). The conservative default `None` means "leave me
     /// where I am": a backend whose session is anchored to the old root would
     /// otherwise be handed a root its transport can't serve.
+    ///
+    /// ❌ Never call this speculatively, to ask whether a backend CAN re-root.
+    /// An implementation is allowed to commit share-scoped state to `new_root` as
+    /// it builds the answer, and `SmbVolume` does exactly that: it re-points the
+    /// watcher that the whole share (not any one mount) owns. Call it once, at the
+    /// moment of promotion, and install what it returns.
     fn rerooted(&self, _new_root: &Path) -> Option<Arc<dyn Volume>> {
         None
     }
