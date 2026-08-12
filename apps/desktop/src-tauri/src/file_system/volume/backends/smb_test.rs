@@ -466,6 +466,52 @@ fn os_mounted_share_is_os_visible_even_though_cmdr_avoids_std_fs() {
     );
 }
 
+/// …and the answer stops being `true` the moment the registry proves this
+/// instance's mount is gone with no live sibling to move to.
+///
+/// Cmdr keeps browsing the share (its I/O rides smb2, which never touched the
+/// mount), so nothing looks broken — but a `file://` URL under a mount that isn't
+/// there opens nowhere, and a drag into Mail or a browser upload widget silently
+/// does nothing. The volume can't find this out on its own: probing a wedged mount
+/// blocks 30–120 s, so the registry pushes what it knows.
+#[test]
+fn a_share_whose_mount_is_gone_stops_claiming_its_paths_are_os_visible() {
+    let vol = make_test_volume();
+    assert!(vol.paths_are_os_visible(), "the mount is there to begin with");
+
+    vol.note_root_mount_gone();
+
+    assert!(
+        !vol.paths_are_os_visible(),
+        "no mount, no `file://` URL another app can open"
+    );
+    assert!(
+        !vol.supports_local_fs_access(),
+        "still the separate question it always was: Cmdr's own reads go over smb2"
+    );
+}
+
+/// The flag belongs to ONE mount root, so a promotion onto a live mount answers
+/// honestly again: the whole point of re-rooting is that the share's paths work.
+#[test]
+fn a_reroot_onto_a_live_mount_is_os_visible_again() {
+    let vol = make_test_volume();
+    vol.note_root_mount_gone();
+
+    let promoted = vol
+        .rerooted(Path::new("/Volumes/TestShare-1"))
+        .expect("a direct SMB share re-roots");
+
+    assert!(
+        promoted.paths_are_os_visible(),
+        "the new root is a live mount until something proves otherwise"
+    );
+    assert!(
+        !vol.paths_are_os_visible(),
+        "the instance still anchored to the dead mount keeps its answer"
+    );
+}
+
 /// The UPLOAD counterpart: an SMB share also opts into the DESTINATION-side yield,
 /// so writing to it stands aside for navigation on the same share. SMB writes are
 /// discrete WRITE chunks with no lease, so a bounded park between them is safe.

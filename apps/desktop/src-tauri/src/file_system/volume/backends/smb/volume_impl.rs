@@ -329,15 +329,32 @@ impl Volume for SmbVolume {
     }
 
     fn paths_are_os_visible(&self) -> bool {
-        // The share stays OS-mounted at `mount_path` alongside the smb2 session
-        // (the "sneaky mount"), and every path this volume hands out is an
-        // absolute path under it. So a `file://` URL built from one opens in any
-        // other app, which is what a drag-out drop target needs.
+        // The share is normally OS-mounted at `mount_path` alongside the smb2
+        // session (the "sneaky mount"), and every path this instance hands out is
+        // an absolute path under it. So a `file://` URL built from one opens in
+        // any other app, which is what a drag-out drop target needs.
+        //
+        // Until the mount goes away. Cmdr's own I/O never touched it, so browsing
+        // carries on and nothing looks broken — which is exactly why answering a
+        // hardcoded `true` here was dangerous: a drag would publish a URL under a
+        // mount that isn't there, and the drop would silently do nothing. The
+        // registry is what knows (nothing may probe a mount), so it tells us.
         //
         // ❌ Don't fold this into `supports_local_fs_access` (which is `false`
         // here on purpose): five write/caching call sites read that one as "is
         // this remote?", and the honest answer there stays yes.
-        true
+        !self.mount_root_gone.load(Ordering::Relaxed)
+    }
+
+    /// The registry proved this instance's mount root is gone and had no live
+    /// sibling to promote to. Latch it: the session is fine, the paths aren't.
+    fn note_root_mount_gone(&self) {
+        self.mount_root_gone.store(true, Ordering::Relaxed);
+        debug!(
+            "SmbVolume for {}: the mount at {} is gone; still browsing over smb2, but its paths are no longer OS-openable",
+            self.inner.share_name,
+            self.mount_path.display()
+        );
     }
 
     fn supports_foreground_yield(&self) -> bool {

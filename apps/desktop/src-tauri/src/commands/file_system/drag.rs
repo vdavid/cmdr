@@ -16,9 +16,10 @@ use tauri::Manager;
 /// Keyed on `Volume::paths_are_os_visible()`: the question a drop target asks is
 /// whether a `file://` URL built from the path opens in ANOTHER app, not whether
 /// Cmdr reads it through `std::fs`. Local disks and OS-mounted shares (direct
-/// SMB included, since the share stays mounted alongside the smb2 session) keep
-/// the file-url layout; protocol-only volumes (MTP, search-results) advertise
-/// nothing materializable and drag as promises. An unknown or absent id (the
+/// SMB included, for as long as the share stays mounted alongside the smb2
+/// session) keep the file-url layout; protocol-only volumes (MTP,
+/// search-results), and a direct SMB share whose mount has gone away under it,
+/// advertise nothing materializable and drag as promises. An unknown or absent id (the
 /// back-compatible default for callers that don't know their volume) resolves to
 /// `Local` — the conservative choice that preserves today's layout.
 ///

@@ -211,8 +211,8 @@ listings, and media enrichment's parallel prefetch reads.
 **Decision**: `map_smb_error` maps `ErrorKind::InvalidName` to its own `VolumeError::InvalidName`, never the `IoError` catch-all
 **Why**: `STATUS_OBJECT_NAME_INVALID` means the server refused the NAME, so it never looked for the file and the identical request can only fail the identical way. As an `IoError` it inherited the wrong behavior twice over: `retry.rs::is_retryable` would have burned the full backoff re-sending a hopeless write, and the dialog would have offered "couldn't copy the file" plus a Retry button instead of the one thing that works (rename it). The typed variant carries end to end: `friendly_error::kinds::invalid_name` on the listing path (`NeedsAction`, ❌ no retry hint) and `WriteOperationError::InvalidName` on the write path, which names the failing file so a 5,000-item transfer says WHICH one to rename. smb2 ≥ 0.18 maps the characters SMB2 forbids outright (`"`, `*`, `:`, `<`, `>`, `?`, `\`, `|`, control characters, trailing space or period) into the Unicode private-use area, so those copy through fine; what still reaches this arm is a reserved Windows device name (`CON`, `NUL`, `LPT1`), a name past the server's own length limit, or a character its filesystem can't store. The status is also in smb2's table now, so the technical-details line reads `STATUS_OBJECT_NAME_INVALID` rather than bare `0xC0000033`.
 
-**Decision**: `SmbVolume::supports_local_fs_access()` returns `false`, but `paths_are_os_visible()` returns `true`
-**Why**: `SmbVolume` handles listing updates via `notify_mutation` using its own smb2 `get_metadata`. A `std::fs`-based synthetic diff path (`emit_synthetic_entry_diff`) would be redundant and would go through the slow OS mount. Returning `false` skips it. But "Cmdr shouldn't use `std::fs` here" is a different claim from "no other app can open these paths": the sneaky mount keeps the share at `mount_path` and every path this volume hands out is an absolute path under it. The macOS drag-out path needs the second answer, so it reads `paths_are_os_visible()`. While it read the first one, a drag out of an SMB pane published `NSFilePromiseProvider` items with an empty pasteboard, which Finder accepts and every other drop target (browser upload widget, mail composer, editor) rejects — so dragging NAS files into an email did nothing while the same drag from Finder's mount worked. ❌ Don't collapse the two flags: five write/caching call sites read `supports_local_fs_access()` as "is this remote?", where `false` stays the honest answer.
+**Decision**: `SmbVolume::supports_local_fs_access()` returns `false`, but `paths_are_os_visible()` answers for the mount
+**Why**: `SmbVolume` handles listing updates via `notify_mutation` using its own smb2 `get_metadata`. A `std::fs`-based synthetic diff path (`emit_synthetic_entry_diff`) would be redundant and would go through the slow OS mount. Returning `false` skips it. But "Cmdr shouldn't use `std::fs` here" is a different claim from "no other app can open these paths": the sneaky mount keeps the share at `mount_path` and every path this volume hands out is an absolute path under it. The macOS drag-out path needs the second answer, so it reads `paths_are_os_visible()`. While it read the first one, a drag out of an SMB pane published `NSFilePromiseProvider` items with an empty pasteboard, which Finder accepts and every other drop target (browser upload widget, mail composer, editor) rejects — so dragging NAS files into an email did nothing while the same drag from Finder's mount worked. ❌ Don't collapse the two flags: five write/caching call sites read `supports_local_fs_access()` as "is this remote?", where `false` stays the honest answer. `paths_are_os_visible()` is `true` only while the mount is actually there — see § "Re-rooting a share" for how the registry tells the volume otherwise.
 
 **Decision**: `SmbVolume` splits session storage: `Arc<Mutex<Option<SmbClient>>>` + `Arc<RwLock<Option<Arc<Tree>>>>`
 **Why**: Keeping the session in one `Mutex<Option<(SmbClient, Tree)>>` would force the streaming-read producer and the compound read/write fast-paths to hold the mutex for the entire transfer, serializing every concurrent copy through it. `smb2::Connection` is `Clone` (cheap `Arc::clone`, all clones multiplex frames over one SMB session), so splitting the Tree out lets us briefly lock the client, clone its `Connection`, and release the lock, then drive `Tree::download` / `Tree::read_file_compound` / `Tree::write_file_compound` on the cloned `Connection` with no lock held. N concurrent copies on one `SmbVolume` pipeline N operations over the single session instead of queuing on the mutex. Tree lives in a `RwLock` because we only take read locks in the hot path (cloning an `Arc<Tree>`) and only write on disconnect. The streaming-write path uses the same clone-and-release shape (see the `write_from_stream` Decision below), so the client mutex is never held across I/O.
@@ -325,7 +325,7 @@ ID owns a set of mount roots"). `SmbVolume` implements `Volume::rerooted`, becau
 prefix here: Cmdr's own I/O rides the smb2 session.
 
 **Shape**: `SmbVolume` is a thin instance over an `Arc<SmbVolumeInner>`. The instance holds what belongs to ONE mount
-root (`name`, `mount_path`); the inner holds the session and everything scoped to the SHARE (client,
+root (`name`, `mount_path`, `mount_root_gone`); the inner holds the session and everything scoped to the SHARE (client,
 tree, params, connection state, watcher handle, scan pool, `instance_id`, refcounts). `rerooted` is therefore one
 allocation over the same inner: no re-auth, no transport rebuild, no session churn.
 
@@ -340,6 +340,20 @@ an open viewer stream) keeps using it at the root it was handed, which is correc
 inner: `on_superseded` stops the watcher and quiets the id, `on_unmount` drops the session outright — the teardown that
 once killed a live NAS copy (§ "Supersede vs. unmount"). `manager/roots.rs::promote_to_best_root` swaps the volume
 without either hook, which is what makes this safe.
+
+**Honesty about the mount** (`mount_root_gone`): when the registry proves an instance's root is gone and has no live
+sibling to promote to, it calls `Volume::note_root_mount_gone` (`manager/roots.rs::tell_volume_if_its_root_is_dead`, run
+after every move of the active seat), and `paths_are_os_visible()` answers `false` from then on. Cmdr keeps browsing the
+share over smb2 — which is why the bug was invisible — but a `file://` URL under a dead mount opens nowhere, so the
+drag-out and Quick Look paths have to stop being told it does. A PUSH rather than a pull: the volume can't ask (nothing
+may probe a mount), and a backend reaching into the registry from a capability flag would invert the dependency and risk
+the registry's own lock. The flag lives on the INSTANCE, since it's a fact about one mount root, so a promotion onto a
+live root starts honest again. ❌ Still not the same question as `supports_local_fs_access()`; see the Decision below.
+
+**Known gap**: nothing detects a mount that dies WITHOUT an unmount event, and a NAS dropping off the network is exactly
+that (macOS leaves the mount wedged). Probing is banned, and a direct `SmbVolume`'s own errors carry no errno
+(`map_smb_error` sets `raw_os_error: None`), so `volume::note_root_failure` can't fire for one either. Until some
+evidence arrives on its own, an SMB volume on a wedged mount still claims OS visibility.
 
 **The watcher follows the active root.** It belongs to the session, not to one mount, and the absolute paths its
 notifications carry decide which cached listing they patch. So `SmbVolumeInner::active_mount_path` (a std `RwLock<PathBuf>`,

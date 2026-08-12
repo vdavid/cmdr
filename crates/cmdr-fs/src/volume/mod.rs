@@ -128,6 +128,25 @@ pub trait Volume: Send + Sync {
         None
     }
 
+    /// Tells this volume that the mount root it is anchored to is PROVEN gone and
+    /// the registry had nothing live to promote it to.
+    ///
+    /// The counterpart to [`rerooted`](Self::rerooted): when a survivor exists the
+    /// registry moves the ID there, and when none does it says so here. A backend
+    /// whose transport doesn't ride the mount keeps serving either way (a direct
+    /// SMB volume browses over smb2), but everything it publishes as a real
+    /// filesystem path stops being openable, which is what
+    /// [`paths_are_os_visible`](Self::paths_are_os_visible) answers.
+    ///
+    /// One-way, and the volume can't work it out for itself: nothing may PROBE a
+    /// mount for liveness (a `statfs` on a wedged network mount blocks 30–120 s),
+    /// so the evidence lands in the registry and is pushed from there. A mount
+    /// that comes back re-registers the volume from scratch.
+    ///
+    /// Default no-op: a backend that reaches its storage THROUGH the mount has
+    /// nothing left to answer for anyway.
+    fn note_root_mount_gone(&self) {}
+
     /// Returns this volume as `&dyn Any` for downcasting to a concrete
     /// backend type. Used by debug/IPC paths (for example, the SMB
     /// diagnostics dashboard) that need backend-specific state. Most
@@ -573,9 +592,15 @@ pub trait Volume: Send + Sync {
     /// made a drag out of an SMB pane offer file promises only, which every
     /// drop target except Finder rejects.
     ///
-    /// Consumed by the macOS drag-out path (`commands::file_system::drag`) to
-    /// pick the pasteboard layout. Default: whatever `supports_local_fs_access`
-    /// says, which is right for every backend where the two questions coincide.
+    /// Consumed by the macOS drag-out path (`commands::file_system::drag`) and
+    /// Quick Look to pick what they can offer. Default: whatever
+    /// `supports_local_fs_access` says, which is right for every backend where the
+    /// two questions coincide.
+    ///
+    /// An overriding backend owes an answer that tracks the MOUNT, not just the
+    /// backend kind: a direct SMB volume answers `true` while its share is mounted
+    /// and `false` once [`note_root_mount_gone`](Self::note_root_mount_gone) says
+    /// otherwise, because a `file://` URL under a mount that's gone opens nowhere.
     fn paths_are_os_visible(&self) -> bool {
         self.supports_local_fs_access()
     }

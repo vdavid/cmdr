@@ -139,8 +139,9 @@ pub async fn quick_look_close(_app: AppHandle) -> Result<(), String> {
 }
 
 /// Helper: returns true if the named volume's paths are OS-visible (local
-/// POSIX, OS-mounted shares, direct SMB). False for MTP and other protocol-only
-/// volumes — those have no NSURL the Quick Look panel can preview.
+/// POSIX, OS-mounted shares, direct SMB while its share is mounted). False for
+/// MTP and other protocol-only volumes, and for a direct SMB share whose mount
+/// has gone away — those have no NSURL the Quick Look panel can preview.
 ///
 /// ❌ Not `supports_local_fs_access()`: that asks whether CMDR reads through
 /// `std::fs`, and direct SMB answers `false` while its `/Volumes/…` paths are

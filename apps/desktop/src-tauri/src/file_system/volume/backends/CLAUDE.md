@@ -21,6 +21,9 @@ checklist: `../CLAUDE.md` + `../DETAILS.md`.
 - **`SmbVolume` is a per-mount-root instance over a shared `Arc<SmbVolumeInner>`**, so `rerooted` moves a share to
   another of its mounts for one allocation. ❌ A promotion must never call `on_superseded` / `on_unmount` on the
   instance it replaces: they act on the SHARED session. `DETAILS.md` § "Re-rooting a share".
+- **`paths_are_os_visible()` tracks the MOUNT, not the backend kind**: the registry latches it off through
+  `note_root_mount_gone` when no live root survives. ❌ Never hardcode it back to `true` — smb2 keeps browsing a share
+  whose mount is gone, so the drag it breaks fails silently.
 - **A replaced volume is SUPERSEDED, never unmounted**: `on_superseded` retires the id-scoped parts and leaves
   `state` / `tree` / `client` alone for the transfers still holding an `Arc`. Tearing the session down here once killed
   a live NAS copy. ❌ Don't reinstate it.
