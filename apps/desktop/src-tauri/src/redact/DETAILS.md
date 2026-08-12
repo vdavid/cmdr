@@ -8,6 +8,12 @@ The tradeoff is debuggability ("I can see this is a Documents path") against PII
 project codenames"). The allowlist captures the dirs that are near-universal across users; anything custom collapses.
 Net result: triagers can usually guess the failure context without seeing the user's secrets.
 
+## Decision: an extensionless leaf reads as `<dir>`
+
+`has_extension_like_suffix` decides whether a path's last segment becomes `<file>` or `<dir>`, so an extensionless file
+(`id_rsa`, `README`, `Makefile`) is mislabeled `<dir>`. Accepted: Cmdr's logs are dominated by directory listings, so
+guessing `<dir>` is right far more often on real triage data than the reverse.
+
 ## Decision: MTP owner names redacted, model names kept
 
 `mtp_owner` catches the common `<Owner>'s <Model>` shape (`John's Pixel 8 Pro`). The owner becomes `<mtp-owner>`; the

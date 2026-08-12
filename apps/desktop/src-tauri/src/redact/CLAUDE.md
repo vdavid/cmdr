@@ -2,11 +2,11 @@
 
 Path-shape-preserving redactor shared by the crash reporter and the error reporter.
 
-The hot path is `redact_line`, called once per log line: one composed regex with named capture groups, single pass,
-dispatch closure inspects the matched group and calls its rewriter. `Cow::Borrowed` for no-match lines (zero alloc).
-`redact_line_salted(line, &salt)` is the same pipeline with a per-bundle salt: segments that would collapse to `<dir>` /
-`<file>` instead emit `<dir:HHHHHH>` / `<file:HHHHHH>` (`sha256(salt || segment)[..3]`), so equal segments correlate
-within one bundle but not across bundles. The builder mints a fresh 16-byte random salt per build; the salt never ships.
+The hot path is `redact_line`, called once per log line: one composed regex with named capture groups, single pass, a
+dispatch closure calling the matched group's rewriter. `Cow::Borrowed` for no-match lines (zero alloc).
+`redact_line_salted(line, &salt)` is the same pipeline with a per-bundle salt: `<dir>` / `<file>` become
+`<dir:HHHHHH>` / `<file:HHHHHH>` (`sha256(salt || segment)[..3]`), so equal segments correlate within one bundle only.
+The builder mints a fresh 16-byte random salt per build; the salt never ships.
 
 ## Pattern table
 
@@ -22,7 +22,7 @@ within one bundle but not across bundles. The builder mints a fresh 16-byte rand
 | `url_userinfo` | `scheme://user[:pass]@host/...` | `scheme://<userinfo>@host/...` (host kept) |
 | `bare_userinfo` | `//user[:pass]@host/...` (no scheme) | `//<userinfo>@host/...` (host kept) |
 | `email` | `local@domain.tld` | `<email>` |
-| `account` | `user=`/`username=`/`username: ` fields | `user=<user>` (wrapper kept, `None` untouched) |
+| `account` | `user=`/`username:` fields | `user=<user>`, `None` untouched |
 | `mdns` | `<label>.local` | `<host>.local` |
 | `ipv4` | dotted-quad, valid octet ranges | `<ipv4>` |
 | `ipv6` | full + compact forms (`::1`, `fe80::1`) | `<ipv6>` |
@@ -36,15 +36,11 @@ within one bundle but not across bundles. The builder mints a fresh 16-byte rand
   extension if ≤ 8 ASCII alnum chars. So `/Users/john/Documents/budget.pdf` → `$HOME/Documents/<file>.pdf`, but
   `/Users/john/SecretProject/budget.pdf` → `$HOME/<dir>/<file>.pdf`.
 - **Leaf `<dir>` vs `<file>` is decided by `has_extension_like_suffix`** (`.X`, 1-8 alnum, dot not at position 0). So
-  `notes.md` → `<file>.md` but `Application Support` → `<dir>`. Trade-off: an extensionless file (`id_rsa`, `README`,
-  `Makefile`) is mislabeled `<dir>`. Accepted: Cmdr logs are dominated by directory listings, so `<dir>` reads more
-  accurately on real triage data.
-- **Account names go, the field shape stays.** `account` matches a key of exactly `user` / `username` (so
-  `max_users=12`, `parent_user=1`, and `user_count=7` are untouched) followed by `=` or `: ` plus a space (which keeps
-  `foo::user::bar` out). The rewriter keeps the `Some("…")` / `"…"` wrapper and passes `None` through verbatim: "was
-  there a username at all, and where did it come from" is the question these SMB lines exist to answer. Share names are
-  deliberately NOT redacted (low sensitivity, high triage value); hosts are covered by `mdns` / `ipv4` / `ipv6`, so a
-  bare NetBIOS name like `server=NASPOLYA` still ships.
+  `notes.md` → `<file>.md` but `Application Support` → `<dir>`. An extensionless file (`id_rsa`, `README`) is
+  mislabeled `<dir>`; that trade-off is deliberate, see `DETAILS.md`.
+- **Account names go, the field shape stays.** The key must be exactly `user` / `username` (`max_users=`,
+  `parent_user=` don't match); the `Some("…")` / quote wrapper is re-emitted and `None` passes through. Share names and
+  bare NetBIOS hosts stay readable by decision: `DETAILS.md`.
 - **MTP owner redacted, model kept.** `mtp_owner` requires a capitalized possessive AND a known model word
   (`iPhone | iPad | Pixel | Galaxy | OnePlus | ...`) right after `'s `, leaving contractions (`it's a Pixel`) and module
   paths untouched. Bare model names (`Pixel 8 Pro`) are NOT redacted (not identifying, useful diagnostics).

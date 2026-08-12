@@ -38,16 +38,14 @@ Cloudflare Worker (Hono): licensing (Paddle, Ed25519 keys, KV activation codes),
   the parser buffers up to 100 MB in a 128 MB isolate.
 - **`/download` skips the D1 write for bot User-Agents** but still 302s. Keep Homebrew exempt (it uses curl) and
   `?src=website` on the site button. DETAILS § Download tracking.
-- **Every stored IP hash goes through `types.ts::hashCallerIp` and needs the `IP_HASH_PEPPER` secret.** The salt beside
-  it is public (the UTC day for telemetry, the post slug for likes), so the pepper is the only thing making the hash
-  one-way (IPv4 brute-forces in seconds without it) and the only thing making the privacy policy's "we don't store your
-  IP address" true. ❌ Never hash an IP without it, ❌ never write a second hashing scheme, and ❌ never store an
-  IP-derived value no query reads (that's why `/crash-report` writes `hashed_ip` as `''`).
+- **Every stored IP hash goes through `types.ts::hashCallerIp` and needs the `IP_HASH_PEPPER` secret.** Its salt is
+  public (a UTC day for telemetry, a post slug for likes), so the pepper alone makes the hash one-way (IPv4 brute-forces
+  in seconds) and the privacy policy's "we don't store your IP address" true. ❌ Never hash an IP without it, ❌ never
+  add a second scheme, ❌ never store an IP-derived value no query reads (hence `/crash-report`'s empty `hashed_ip`).
 - **What we store is a promise, not a detail**: `apps/website/src/pages/privacy-policy.astro` states the columns and
   retention of every table here. Change either side and the other has to follow. DETAILS § Data retention.
-- **`/likes/:slug` validates the slug BEFORE it touches KV**, and rate-limits `POST`/`DELETE` through `LIKES_LIMITER`:
-  the route is unauthenticated and creates the key it writes, so those two are the whole bound on what a stranger can
-  add to the namespace. DETAILS § Key decisions.
+- **`/likes/:slug` validates the slug BEFORE any KV touch**, and rate-limits its writes (`LIKES_LIMITER`): it's
+  unauthenticated and creates the key it writes, so those two bound the namespace.
 - **Deploy rails**: apply D1 migrations first (`wrangler d1 migrations apply cmdr-telemetry`); the heartbeat
   `config_json` blob absorbs new settings without one. The default export must stay the object form
   (`{ fetch, scheduled }`) or cron breaks; `app` is also a named export for tests.

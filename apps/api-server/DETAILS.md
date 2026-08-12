@@ -103,27 +103,27 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 
 ### Configuration
 
-| Secret / var                       | `.dev.vars` (local dev)          | Wrangler secret (deployed worker) |
-| ---------------------------------- | -------------------------------- | --------------------------------- |
-| `PADDLE_ENVIRONMENT`               | `"sandbox"` (from wrangler.toml) | `"live"`                          |
-| `PADDLE_WEBHOOK_SECRET_SANDBOX`    | Sandbox secret                   | Sandbox secret (for safety)       |
-| `PADDLE_WEBHOOK_SECRET_LIVE`       | n/a                              | Live secret                       |
-| `PADDLE_API_KEY_SANDBOX`           | Sandbox API key                  | n/a                               |
-| `PADDLE_API_KEY_LIVE`              | n/a                              | Live API key                      |
-| `PRICE_ID_COMMERCIAL_SUBSCRIPTION` | Sandbox price ID                 | Live price ID                     |
-| `PRICE_ID_COMMERCIAL_PERPETUAL`    | Sandbox price ID                 | Live price ID                     |
-| `ED25519_PRIVATE_KEY`              | Private key hex                  | Same private key hex              |
-| `RESEND_API_KEY`                   | Resend key                       | Same Resend key                   |
-| `CRASH_NOTIFICATION_EMAIL`         | `david@getcmdr.com`              | Recipient email for crash alerts  |
-| `DISCORD_WEBHOOK_URL`              | Same webhook URL                 | Discord webhook for error reports |
-| `DISCORD_BETA_SIGNUP_WEBHOOK_URL`  | Optional (falls back)            | Optional `#beta-signups` webhook  |
-| `R2_ACCOUNT_ID`                    | Same account ID                  | For minting presigned R2 URLs     |
-| `R2_ACCESS_KEY_ID`                 | Same access key                  | R2 S3-compat access key (read OK) |
-| `R2_SECRET_ACCESS_KEY`             | Same secret                      | Paired secret for R2 access key   |
-| `LISTMONK_API_URL`                 | `https://mail.getcmdr.com`       | Same base URL                     |
-| `LISTMONK_API_USER`                | Listmonk API user                | Same (least-privilege at deploy)  |
-| `LISTMONK_API_TOKEN`               | Listmonk API token               | Same (least-privilege at deploy)  |
-| `LISTMONK_BETA_LIST_ID`            | Beta-list numeric id             | Same id                           |
+| Secret / var                       | `.dev.vars` (local dev)          | Wrangler secret (deployed worker)  |
+| ---------------------------------- | -------------------------------- | ---------------------------------- |
+| `PADDLE_ENVIRONMENT`               | `"sandbox"` (from wrangler.toml) | `"live"`                           |
+| `PADDLE_WEBHOOK_SECRET_SANDBOX`    | Sandbox secret                   | Sandbox secret (for safety)        |
+| `PADDLE_WEBHOOK_SECRET_LIVE`       | n/a                              | Live secret                        |
+| `PADDLE_API_KEY_SANDBOX`           | Sandbox API key                  | n/a                                |
+| `PADDLE_API_KEY_LIVE`              | n/a                              | Live API key                       |
+| `PRICE_ID_COMMERCIAL_SUBSCRIPTION` | Sandbox price ID                 | Live price ID                      |
+| `PRICE_ID_COMMERCIAL_PERPETUAL`    | Sandbox price ID                 | Live price ID                      |
+| `ED25519_PRIVATE_KEY`              | Private key hex                  | Same private key hex               |
+| `RESEND_API_KEY`                   | Resend key                       | Same Resend key                    |
+| `CRASH_NOTIFICATION_EMAIL`         | `david@getcmdr.com`              | Recipient email for crash alerts   |
+| `DISCORD_WEBHOOK_URL`              | Same webhook URL                 | Discord webhook for error reports  |
+| `DISCORD_BETA_SIGNUP_WEBHOOK_URL`  | Optional (falls back)            | Optional `#beta-signups` webhook   |
+| `R2_ACCOUNT_ID`                    | Same account ID                  | For minting presigned R2 URLs      |
+| `R2_ACCESS_KEY_ID`                 | Same access key                  | R2 S3-compat access key (read OK)  |
+| `R2_SECRET_ACCESS_KEY`             | Same secret                      | Paired secret for R2 access key    |
+| `LISTMONK_API_URL`                 | `https://mail.getcmdr.com`       | Same base URL                      |
+| `LISTMONK_API_USER`                | Listmonk API user                | Same (least-privilege at deploy)   |
+| `LISTMONK_API_TOKEN`               | Listmonk API token               | Same (least-privilege at deploy)   |
+| `LISTMONK_BETA_LIST_ID`            | Beta-list numeric id             | Same id                            |
 | `IP_HASH_PEPPER`                   | Any random string                | Makes every stored IP hash one-way |
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
@@ -423,16 +423,15 @@ needed.
 **D1 for telemetry:** Crash reports, downloads, update checks, and heartbeats are stored in D1 (binding: `TELEMETRY_DB`,
 database: `cmdr-telemetry`). Migrations live in `migrations/` (latest: `0014_downloads_daily_unique.sql`, the
 distinct-downloader rollup the retention sweep writes; `0013_minimize_stored_identifiers.sql` adds `downloads.ua_family`
-and erases the crash-table IP hashes; `0012_license_issuance.sql` is the fulfillment
-record above; `0011_crash_panic_message.sql` adds the nullable `panic_message` column to `crash_reports`;
-`0007_feedback.sql` adds the `feedback` table; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email`
-columns; `0005_heartbeat.sql` adds the `heartbeat` table). Apply with `wrangler d1 migrations apply cmdr-telemetry`
-before deploying changes that add new tables or columns. `license_issuance` is the one money-critical table in an
-otherwise telemetry-shaped database: it shares the binding because a second D1 buys nothing at a few hundred rows a
-year, and nothing prunes it (the daily aggregation job only touches `update_checks`). The only remaining Analytics
-Engine dataset is `DEVICE_COUNTS` for fair-use monitoring. All other state (license codes, activation counter, device
-sets) lives in Cloudflare KV. Short codes never expire (perpetual licenses last forever); subscription validity is
-checked live via Paddle API.
+and erases the crash-table IP hashes; `0012_license_issuance.sql` is the fulfillment record above;
+`0011_crash_panic_message.sql` adds the nullable `panic_message` column to `crash_reports`; `0007_feedback.sql` adds the
+`feedback` table; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email` columns; `0005_heartbeat.sql` adds
+the `heartbeat` table). Apply with `wrangler d1 migrations apply cmdr-telemetry` before deploying changes that add new
+tables or columns. `license_issuance` is the one money-critical table in an otherwise telemetry-shaped database: it
+shares the binding because a second D1 buys nothing at a few hundred rows a year, and nothing prunes it (the daily
+aggregation job only touches `update_checks`). The only remaining Analytics Engine dataset is `DEVICE_COUNTS` for
+fair-use monitoring. All other state (license codes, activation counter, device sets) lives in Cloudflare KV. Short
+codes never expire (perpetual licenses last forever); subscription validity is checked live via Paddle API.
 
 **Validation error granularity:** `/validate` distinguishes "Paddle says invalid" (HTTP 200 + `status: "invalid"`) from
 "Paddle is unreachable" (HTTP 502 + `{ error: "upstream_error" }`). `paddle-api.ts` throws `PaddleApiError` on
@@ -867,8 +866,8 @@ day. **Why**: The stored value has to be stable per reader for years (that's wha
 never recoverable to an IP. The daily salt telemetry uses would forget every like overnight, so likes pass the slug
 instead: still public, still no secrecy of its own, and it buys the same unlinkability in the dimension that matters
 here (one reader gets an unrelated pseudonym on every post, so a KV dump can't be pivoted into a per-person reading
-history). The pepper does the one-way work in both. Writing a second hashing scheme for this would have meant two
-places to get the pepper rule right; there's one.
+history). The pepper does the one-way work in both. Writing a second hashing scheme for this would have meant two places
+to get the pepper rule right; there's one.
 
 **Decision**: The likes pseudonym is truncated to 16 hex chars, unlike the full digest telemetry stores. **Why**: it's
 stored once per liker per post, so the full 64 chars would quadruple every KV value. Collisions at these counts would
@@ -876,8 +875,8 @@ cost at most one reader a heart that was already filled.
 
 **Decision**: `/likes/:slug` validates the slug against the blog's own charset before touching KV. **Why**: `POST`
 creates the key it writes and takes no auth, so an unvalidated slug is an unbounded KV-growth primitive (and a way to
-run up the bill). The route can't check the slug against the real post list (the worker doesn't know it), so the
-charset plus an 80-char cap plus `LIKES_LIMITER` is the bound.
+run up the bill). The route can't check the slug against the real post list (the worker doesn't know it), so the charset
+plus an 80-char cap plus `LIKES_LIMITER` is the bound.
 
 ## Gotchas
 
