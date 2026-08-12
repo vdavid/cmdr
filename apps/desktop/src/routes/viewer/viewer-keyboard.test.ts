@@ -4,9 +4,9 @@
  * through to another handler.
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { handleSearchToggleKey, handleTailToggleKey, handleToggleKey } from './viewer-keyboard'
+import { createViewerKeyboard, handleSearchToggleKey, handleTailToggleKey, handleToggleKey } from './viewer-keyboard'
 
 function makeKey(props: Partial<KeyboardEventInit & { key: string }>): KeyboardEvent {
   return new KeyboardEvent('keydown', { key: 'a', ...props })
@@ -89,5 +89,79 @@ describe('handleSearchToggleKey', () => {
       toggleCaseSensitive,
     })
     expect(handled).toBe(false)
+  })
+})
+
+describe('createViewerKeyboard: ⌘C with the search bar open', () => {
+  /** Wires the router against a focused search input holding `query`. */
+  function wireWithFocusedSearchInput(query: string) {
+    const input = document.createElement('input')
+    input.type = 'search'
+    input.value = query
+    document.body.append(input)
+    input.focus()
+
+    const runCopy = vi.fn()
+    const noop = vi.fn()
+    const keyboard = createViewerKeyboard({
+      getTotalLines: () => 10,
+      getTotalBytes: () => 100,
+      getLineText: () => 'line',
+      selection: { selectAll: noop },
+      scroll: { scrollByLines: noop, scrollByPages: noop, scrollToStart: noop, scrollToEnd: noop },
+      search: {
+        searchVisible: true,
+        searchStatus: 'idle',
+        searchInputRef: input,
+        openSearch: noop,
+        closeSearch: noop,
+        stopSearch: noop,
+        findNext: noop,
+        findPrev: noop,
+        toggleUseRegex: noop,
+        toggleCaseSensitive: noop,
+      },
+      copy: { busy: false, cancelInFlight: () => Promise.resolve() },
+      isCopyConfirmOpen: () => false,
+      isCopyRefuseOpen: () => false,
+      isContextMenuOpen: () => false,
+      cancelCopyConfirm: noop,
+      dismissCopyRefuse: noop,
+      closeContextMenu: noop,
+      logEscape: noop,
+      runCopy,
+      toggleTailMode: noop,
+      toggleWordWrap: noop,
+      closeWindow: noop,
+    })
+    return { keyboard, input, runCopy }
+  }
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('copies the file selection when the input holds a bare caret', () => {
+    const { keyboard, input, runCopy } = wireWithFocusedSearchInput('needle')
+    input.setSelectionRange(6, 6)
+
+    const e = makeKey({ key: 'c', metaKey: true, cancelable: true })
+    keyboard.handleKeyDown(e)
+
+    // The query is typed but nothing in the input is selected, so the only thing the
+    // user can mean is the selection they made in the file.
+    expect(runCopy).toHaveBeenCalledOnce()
+    expect(e.defaultPrevented).toBe(true)
+  })
+
+  it('leaves ⌘C to the input when its own text is selected', () => {
+    const { keyboard, input, runCopy } = wireWithFocusedSearchInput('needle')
+    input.setSelectionRange(0, 6)
+
+    const e = makeKey({ key: 'c', metaKey: true, cancelable: true })
+    keyboard.handleKeyDown(e)
+
+    expect(runCopy).not.toHaveBeenCalled()
+    expect(e.defaultPrevented).toBe(false)
   })
 })

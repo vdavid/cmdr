@@ -198,16 +198,34 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
   }
 
   /**
+   * Whether the focused search input has a range of its own text selected. Only then
+   * does ⌘C mean "copy the query"; with a bare caret there's nothing in the input to
+   * copy, so the gesture belongs to the file selection instead.
+   */
+  function searchInputHasSelection(): boolean {
+    const input = deps.search.searchInputRef
+    if (!input) return false
+    const { selectionStart, selectionEnd } = input
+    return selectionStart !== null && selectionEnd !== null && selectionStart !== selectionEnd
+  }
+
+  /**
    * Handles ⌘/Ctrl-prefixed shortcuts inside the viewer. Returns `true` if the key
    * was consumed; the caller falls through to other handlers when it returns `false`.
    * Defers to the browser's native ⌘A / ⌘C when the search input is focused.
    */
   function handleModifierShortcut(e: KeyboardEvent, searchInputFocused: boolean): boolean {
     if (searchInputFocused) {
-      // Only ⌘F here; ⌘A / ⌘C go to the input's native handler.
+      // ⌘F, plus ⌘C when the input holds a bare caret; ⌘A and a ⌘C over selected query
+      // text go to the input's native handler.
       if (e.key === 'f') {
         e.preventDefault()
         deps.search.openSearch()
+        return true
+      }
+      if (e.key === 'c' && !searchInputHasSelection()) {
+        e.preventDefault()
+        deps.runCopy()
         return true
       }
       return false

@@ -353,6 +353,7 @@
         hasSelection: () => selection.selection !== null,
         setAnchor: selection.setAnchor,
         setFocus: selection.setFocus,
+        takeFocus: () => scroll.containerRef?.focus({ preventScroll: true }),
     })
 
     // Every effect below drives the text / virtual-scroll pipeline. In media mode the

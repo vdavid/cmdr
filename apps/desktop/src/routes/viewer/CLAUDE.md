@@ -9,10 +9,9 @@ search). Reusable FE primitives: `apps/desktop/src/lib/file-viewer/CLAUDE.md`.
 
 `+page.svelte` is the top-level component (lifecycle, window management, UI); it wires `createViewer*` composables for
 scroll, search, line-heights, text-width, tail, media, copy, and autoscroll, plus selection/caret/segment helpers and
-the `createViewerKeyboard` keydown router. Media renders inline via `MediaImageView` / `MediaPdfView`; presentational
-parts are `ViewerToolbar`, `ViewerStatusBar`, `ViewerContextMenu`, `ViewModePicker`, `EncodingPicker`,
-`ViewerCopyDialogs`, and `ViewerReloadToast`. Full per-file inventory and the media flow: `DETAILS.md` § "Module map".
-Locate symbols via `codegraph_search`, not this list.
+the `createViewerKeyboard` keydown router. Media renders inline via `MediaImageView` / `MediaPdfView`; the toolbar,
+status bar, context menu, pickers, and dialogs are presentational siblings. Full per-file inventory and the media flow:
+`DETAILS.md` § "Module map". Locate symbols via `codegraph_search`, not this list.
 
 ## Must-knows
 
@@ -24,14 +23,14 @@ Each line is a break-if-ignored invariant; the named `DETAILS.md` section carrie
   keep the early-returns in line effects / `openViewerSession` / the keydown router, else the empty-line code runs and
   can throw. (§ "Media rendering")
 - **Media↔text two-way switch resets media state BEFORE reopening, and `reset()` PRESERVES `lastMediaKind`.** Both
-  handlers route through `reopenSession({ asText })`. Don't reorder the reset-then-reopen or clear `lastMediaKind`. (§
-  "Media rendering")
+  handlers route through `reopenSession({ asText })`. (§ "Media rendering")
 - **`cmdr-media://` URLs are built ONLY via `mediaUrl(token)` in `media-view.ts`**, and the `cmdr-media:` scheme is in
   the `img-src` + `object-src` CSP (`tauri.conf.json`). A src bypassing `mediaUrl`, or a CSP edit dropping the scheme,
   trips `viewer-media.spec.ts`. (§ "Media rendering")
 - **`user-select: none` on `.file-content` is deliberate**: the viewer owns its selection model; native selection
   competes and loses its anchor on scroll-out. `.status-bar` opts back in with `user-select: text`. Has a webkit2gtk
   `caretRangeFromPoint` trap (pinned Docker image). (§ Gotchas)
+- **A content pointer gesture claims DOM focus** (`takeFocus`); without it ⌘C copies the search query. (§ Gotchas)
 - **Selection / IPC offsets are UTF-16 code units, not bytes or graphemes.** Caret math (`viewer-pointer.ts`) and
   anything crossing `viewer_read_range` must preserve this; the backend converts to UTF-8 and clamps lone surrogates. (§
   "Selection model")
@@ -41,7 +40,7 @@ Each line is a break-if-ignored invariant; the named `DETAILS.md` section carrie
   `docs/testing.md` § "`requestAnimationFrame` in unfocused windows")
 - **Escape handling depends on listener order: the page's window keydown runs BEFORE `ViewerContextMenu`'s.** The page
   gates on `contextMenuPos !== null` before falling through to `closeWindow()`, else an open menu's Escape shuts the
-  window. The menu's `stopImmediatePropagation()` is defense-in-depth. (§ Gotchas)
+  window. (§ Gotchas)
 - **The height map's wrap width comes from row geometry, never a `.line-text` span** (`.line-text` shrink-wraps;
   measuring it once inflated the map ~7x). `heightMap.ready` gates every height-map path (uniform-height fallback
   otherwise). (§ "Variable-height word wrap", § Gotchas)

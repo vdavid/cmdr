@@ -393,6 +393,71 @@ test.describe('File viewer selection and copy', () => {
     expect(clip.length).toBeGreaterThan(0)
     expect(/^A+$/.test(clip)).toBe(true)
   })
+
+  test('⌘C copies the dragged selection while the search bar is open', async () => {
+    // Open search: `openSearch()` focuses AND selects the input, so without the
+    // gesture handing focus back to the viewer, ⌘C would land on the query text.
+    await viewer.evaluate(`
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', metaKey: true }))
+        `)
+    await viewer.waitForSelector('.search-bar input.text-field-control', 5000)
+    await expect
+      .poll(
+        async () =>
+          await viewer.evaluate<boolean>(
+            `document.activeElement === document.querySelector('.search-bar input.text-field-control')`,
+          ),
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
+
+    await viewer.evaluate(`
+            (function() {
+                const line = document.querySelector('[data-line="0"] .line-text')
+                if (!line) throw new Error('line 0 not found')
+                const rect = line.getBoundingClientRect()
+                const y = rect.top + rect.height / 2
+                const target = document.querySelector('.file-content')
+                if (!target) throw new Error('file-content not found')
+                function fire(type, x) {
+                    target.dispatchEvent(new PointerEvent(type, {
+                        bubbles: true, cancelable: true,
+                        clientX: x, clientY: y,
+                        button: 0, pointerId: 2, pointerType: 'mouse',
+                    }))
+                }
+                fire('pointerdown', rect.left + 10)
+                fire('pointermove', rect.left + 50)
+                fire('pointerup', rect.left + 50)
+            })()
+        `)
+
+    // The drag owns the focus now, so the copy gesture belongs to the file selection.
+    const inputStillFocused = await viewer.evaluate<boolean>(
+      `document.activeElement === document.querySelector('.search-bar input.text-field-control')`,
+    )
+    expect(inputStillFocused).toBe(false)
+
+    await viewer.evaluate(`
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', metaKey: true }))
+        `)
+
+    await expect
+      .poll(
+        async () => {
+          const text = (await viewer.textContent('.toast')) ?? ''
+          return text.includes('on your clipboard')
+        },
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
+
+    const clip = await viewer.evaluate<string>(
+      `(async () => { try { return await navigator.clipboard.readText() } catch { return '' } })()`,
+    )
+    expect(clip.length).toBeGreaterThan(0)
+    expect(/^A+$/.test(clip)).toBe(true)
+  })
 })
 
 test.describe('File viewer keyboard binding', () => {

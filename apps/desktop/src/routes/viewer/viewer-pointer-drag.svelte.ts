@@ -31,6 +31,12 @@ interface PointerDragDeps {
   setAnchor: (offset: LineOffset) => void
   /** Moves the selection focus (extend the active selection). */
   setFocus: (offset: LineOffset) => void
+  /**
+   * Gives DOM focus back to the viewer surface (the page focuses its container, the
+   * same element it focuses after a session opens). Called when a selection gesture
+   * starts, because the handler's `preventDefault()` blocks the native focus move.
+   */
+  takeFocus: () => void
 }
 
 export function createViewerPointerDrag(deps: PointerDragDeps) {
@@ -70,6 +76,14 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
   function handlePointerDown(e: PointerEvent): void {
     // Left mouse button only (button 0). Right-click goes to the context menu.
     if (e.button !== 0) return
+
+    // Claim DOM focus for the viewer before anything else. The `preventDefault()`
+    // below suppresses the native focus move, so without this the search input keeps
+    // focus through the whole drag and ⌘C lands on its text rather than the selection
+    // the user just made. Focus follows the surface the pointer works on, exactly as a
+    // click in the document takes focus off any editor's find field.
+    deps.takeFocus()
+
     const caret = caretFromPoint(document, e.clientX, e.clientY)
     if (caret === null) return
     e.preventDefault()

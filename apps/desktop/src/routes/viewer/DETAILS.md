@@ -236,6 +236,15 @@ glyphs (the a11y labels and tooltips carry the real copy). The runtime works in 
   offsets from a click position (caret math in `viewer-pointer.ts`) or accept them across the IPC boundary
   (`viewer_read_range`), preserve the UTF-16 convention. The backend handles the conversion to UTF-8 bytes, clamping
   lone surrogates to the nearest codepoint boundary.
+- **A pointer gesture in the content claims DOM focus, and ⌘C follows focus.** `handlePointerDown` calls
+  `preventDefault()` to keep the native selection out of the way, which also suppresses the native focus move: focus
+  stays wherever it was, and the search bar is where it usually was (`openSearch()` focuses AND selects the input). So
+  the handler calls the `takeFocus` dep first, which the page wires to `scroll.containerRef.focus()` — the same element
+  it focuses after a session opens, so the viewer has one focus home. The keyboard router has the matching second half:
+  with the search input focused it hands ⌘A and ⌘C to the input's native handler, EXCEPT when the input holds a bare
+  caret, where nothing in it can be copied and the gesture belongs to the file selection (`searchInputHasSelection()` in
+  `viewer-keyboard.ts`). Both halves are pinned: `viewer-pointer-drag.svelte.test.ts`, `viewer-keyboard.test.ts`, and
+  the "⌘C copies the dragged selection while the search bar is open" case in `viewer.spec.ts`.
 - **Drag autoscroll uses `setPointerCapture` + window `blur` fallback** because the Tauri webview can lose `pointerup`
   events to other macOS windows. Without capture, dragging past the webview's edge leaves the RAF loop running forever
   with no way to stop. Capture is wrapped in try/catch because some webviews refuse it on non-focusable targets; the
