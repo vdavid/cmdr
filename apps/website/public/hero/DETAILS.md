@@ -4,69 +4,28 @@ Reshoot and regeneration procedure for the composited hero illustration. `CLAUDE
 
 ## How to reshoot
 
-The capture itself (sizing the window, setting up a nice app state, and the CleanShot steps) is shared with the README
-and AlternativeTo, so it lives in one place: [`docs/guides/screenshots.md`](../../../../docs/guides/screenshots.md).
-Shoot the masters per that guide, which saves them to `brand/screenshots/app-main-{dark,light}.png`. Then come back here
-and run the compositing below to regenerate the hero layers.
+The capture is shared with the README and the app directories, so it lives in one place:
+[`docs/guides/screenshots.md`](../../../../docs/guides/screenshots.md). `pnpm marketing:shots` writes
+`brand/screenshots/app-main-{dark,light}.png` plus `brand/screenshots/hero-cutouts.json`. Then regenerate the layers.
 
 ### Regenerate the layers
 
-Generates the 6 intermediate master PNGs (into `brand/hero-masters/`, kept as regeneration inputs, never shipped) and
-the 12 shipped WebPs (into this directory, `apps/website/public/hero/`) from the `brand/screenshots/` masters. Only the
-WebPs reach `dist/`; the PNGs stay under `brand/` so the bundle ships only the WebPs.
-
-Prerequisite: ImageMagick (`magick` CLI). From the repo root:
-
 ```bash
-masters=brand/hero-masters         # intermediate master PNGs (not shipped)
-shipped=apps/website/public/hero   # shipped WebPs
-mkdir -p "$masters"
-
-# Create pane mask (white = keep, black = make transparent)
-magick -size 2508x1634 xc:white \
-  -fill black -draw "rectangle 114,281 1246,1387" \
-  -fill black -draw "rectangle 1261,281 2393,1387" \
-  /tmp/hero-mask.png
-
-for variant in dark light; do
-  src=brand/screenshots/app-main-${variant}.png
-
-  # Left pane cutout (paste onto transparent canvas)
-  magick -size 2508x1634 xc:none \
-    \( "$src" -crop 1133x1107+114+281 +repage \) \
-    -geometry +114+281 -composite \
-    "$masters"/cmdr-hero-left-pane-${variant}.png
-
-  # Right pane cutout (paste onto transparent canvas)
-  magick -size 2508x1634 xc:none \
-    \( "$src" -crop 1133x1107+1261+281 +repage \) \
-    -geometry +1261+281 -composite \
-    "$masters"/cmdr-hero-right-pane-${variant}.png
-
-  # Frame: multiply source alpha with mask to punch transparent holes in pane areas
-  magick "$src" -alpha extract /tmp/src-alpha.png
-  magick /tmp/src-alpha.png /tmp/hero-mask.png -compose Multiply -composite /tmp/new-alpha.png
-  magick "$src" /tmp/new-alpha.png -alpha off -compose CopyOpacity -composite \
-    "$masters"/cmdr-hero-frame-${variant}.png
-done
-
-# Shipped WebPs: lossless 2x + 1x from each master PNG
-for variant in dark light; do
-  for layer in frame left-pane right-pane; do
-    base=cmdr-hero-${layer}-${variant}
-    magick "$masters/$base.png" -define webp:lossless=true -define webp:method=6 "$shipped/$base.webp"
-    magick "$masters/$base.png" -resize 50% -define webp:lossless=true -define webp:method=6 "$shipped/$base-1x.webp"
-  done
-done
-
-rm -f /tmp/hero-mask.png /tmp/src-alpha.png /tmp/new-alpha.png
+apps/website/scripts/regenerate-hero.sh
 ```
+
+Writes the six intermediate master PNGs (into `brand/hero-masters/`, regeneration inputs, never shipped) and the twelve
+shipped WebPs (into this directory). Only the WebPs reach `dist/`; the PNGs stay under `brand/` so the bundle ships only
+the WebPs. Needs ImageMagick (`magick`) and Node.
+
+The script does three things per theme: crops each pane rectangle onto its own transparent canvas of the master's size,
+punches those same rectangles out of the master's alpha to make the frame, and writes lossless WebPs at 2x and 1x. All
+three layers share one canvas, so the browser stacks them with no offsets to keep in sync.
 
 ### Verify
 
-Check that the six master PNGs (`brand/hero-masters/`) are 2508 x 1634, the 1x WebPs are 1254 x 817, and the 2x WebP
-file sizes are roughly: ~85 KB frame, ~50 KB left pane, ~20 KB right pane. To verify the frame transparency, composite
-on a red background (from the repo root):
+The six master PNGs are 2508 x 1634, the 1x WebPs 1254 x 817, and the 2x WebPs roughly ~95 KB frame, ~41 KB left pane,
+~39 KB right pane. To check the frame's transparency, composite on red (from the repo root):
 
 ```bash
 magick -size 2508x1634 xc:red \
@@ -76,17 +35,20 @@ magick -size 2508x1634 xc:red \
   /tmp/hero-composite-test.png
 ```
 
-Red should only show through the shadow, not in the content area.
+Red should show only through the shadow, never inside the window.
 
-## Cutout geometry reference
+## Cutout geometry
 
-All coordinates are in 2x retina pixels on the 2508 x 1634 canvas (which includes ~112 px macOS shadow on each side).
+❗ Nothing here hardcodes a rectangle, and nothing should.
 
-| Region                    | Origin (x, y)               | Size (w x h) | Notes                                              |
-| ------------------------- | --------------------------- | ------------ | -------------------------------------------------- |
-| Window (excl. shadow)     | (112, 76)                   | 2284 x 1410  | The actual window chrome boundary                  |
-| Left pane cutout          | (114, 281)                  | 1133 x 1107  | Starts below column headers, ends above status bar |
-| Right pane cutout         | (1261, 281)                 | 1133 x 1107  | Same size as left pane                             |
-| Pane divider gap          | (1247, 281)                 | 14 px wide   | Between the two cutouts (includes resize bar)      |
-| Left pane mask rectangle  | (114, 281) to (1246, 1387)  |              | Used in the `-draw` command                        |
-| Right pane mask rectangle | (1261, 281) to (2393, 1387) |              | Used in the `-draw` command                        |
+- **The pane rectangles come from `brand/screenshots/hero-cutouts.json`**, measured off the live DOM during the same run
+  that took the masters (`apps/desktop/test/e2e-playwright/marketing-shots.spec.ts`). They are relative to the WINDOW's
+  top-left, and each names the file-list area: below the column headers, above the status bar, inset 2 px so the window
+  border and the pane divider stay in the FRAME layer instead of riding along with an animating pane.
+- **The window's position on the canvas is read from the master itself**, as the bounding box of everything opaque
+  (`magick … -alpha extract -threshold 99% -format '%@'`). Every master carries the focused window's shadow as
+  transparent margin, currently 112 px left and right, 76 top, 148 bottom, so the window lands at `+112+76` on a 2508 x
+  1634 canvas. Reading it beats restating it: the same threshold is what the capture's own frame check uses, so the two
+  agree to the pixel.
+
+A hardcoded copy of either is how the shipped hero ended up a redesign behind its own screenshot.
