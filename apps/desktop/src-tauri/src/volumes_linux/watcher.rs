@@ -338,21 +338,40 @@ fn register_volume_with_manager(volume_path: &str) {
     debug!("Registered mounted volume: {} -> {}", volume_id, volume_path);
 }
 
-/// Unregister a volume from the global VolumeManager.
+/// Drop a gone mount root from the volume that owned it.
 ///
-/// Looks up the volume by `root()` first (works even after the mount is gone,
-/// when `volume_id_for_mount`'s SMB branch can no longer recover the right ID).
-/// Falls back to deriving the ID from the path if no entry matches.
+/// Keyed by root (which works even after the mount is gone, when
+/// `volume_id_for_mount`'s SMB branch can no longer recover the right ID), and
+/// it unregisters only when that was the volume's LAST mount: one CIFS share can
+/// be mounted at two paths and both derive one ID. Falls back to deriving the ID
+/// from the path if no entry claims the root.
 fn unregister_volume_from_manager(volume_path: &str) {
-    use crate::file_system::volume::manager::get_volume_manager;
+    use crate::file_system::volume::manager::{RootRemoval, get_volume_manager};
 
     let manager = get_volume_manager();
-    let volume_id = manager
-        .find_by_root(Path::new(volume_path))
-        .map(|(id, _)| id)
-        .unwrap_or_else(|| super::volume_id_for_mount(volume_path));
-    manager.unregister(&volume_id);
-    debug!("Unregistered volume: {} ({})", volume_id, volume_path);
+    match manager.remove_root(Path::new(volume_path)) {
+        RootRemoval::Unregistered { id, volume } => {
+            volume.on_unmount();
+            debug!("Unregistered volume: {} ({})", id, volume_path);
+        }
+        RootRemoval::Promoted { id, new_root } => {
+            info!(
+                "{volume_path} unmounted, but volume {id} is still mounted at {}; promoted it to that root.",
+                new_root.display()
+            );
+        }
+        RootRemoval::ActiveRootStranded { id } => {
+            warn!("{volume_path} unmounted and volume {id} can't move to one of its other mounts, so it stays there.");
+        }
+        RootRemoval::SiblingDropped { id } => {
+            debug!("{volume_path} unmounted; volume {id} keeps serving from its active root");
+        }
+        RootRemoval::Unknown => {
+            let volume_id = super::volume_id_for_mount(volume_path);
+            manager.unregister(&volume_id);
+            debug!("Unregistered volume: {} ({})", volume_id, volume_path);
+        }
+    }
 }
 
 #[cfg(test)]

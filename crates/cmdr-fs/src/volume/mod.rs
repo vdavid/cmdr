@@ -15,6 +15,7 @@ use crate::entry::FileEntry;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
 /// Default volume ID for the root filesystem.
@@ -104,8 +105,28 @@ pub trait Volume: Send + Sync {
     /// Returns the display name for this volume (like "Macintosh HD", "Dropbox").
     fn name(&self) -> &str;
 
-    /// Returns the root path of this volume.
+    /// Returns the root path of this volume: the ACTIVE mount root of the
+    /// registry entry it sits in, when it sits in one.
     fn root(&self) -> &Path;
+
+    /// Builds an equivalent volume rooted at `new_root`, or `None` when this
+    /// backend can't change root without rebuilding its transport.
+    ///
+    /// One filesystem can be reached through several mount points (macOS mounts
+    /// the same SMB share at `/Volumes/naspi` AND `/Volumes/naspi-1`), and they
+    /// all derive one volume ID. The registry therefore tracks the SET of roots
+    /// carrying an ID and keeps one of them active; when the active one dies it
+    /// promotes a survivor, and this is how the promotion is carried out. See
+    /// `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "A volume ID
+    /// owns a set of mount roots".
+    ///
+    /// Implement it wherever the root is just an addressing prefix (that's every
+    /// path-addressed backend). The conservative default `None` means "leave me
+    /// where I am": a backend whose session is anchored to the old root would
+    /// otherwise be handed a root its transport can't serve.
+    fn rerooted(&self, _new_root: &Path) -> Option<Arc<dyn Volume>> {
+        None
+    }
 
     /// Returns this volume as `&dyn Any` for downcasting to a concrete
     /// backend type. Used by debug/IPC paths (for example, the SMB

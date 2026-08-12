@@ -150,6 +150,14 @@ impl Volume for LocalPosixVolume {
         &self.root
     }
 
+    /// The root is pure addressing here (every method `resolve`s against it and
+    /// calls `std::fs`), so a re-root is a new instance at the new prefix. That
+    /// is what lets the registry hand a doubly-mounted share's ID to the mount
+    /// that's still live when the active one goes away.
+    fn rerooted(&self, new_root: &Path) -> Option<Arc<dyn Volume>> {
+        Some(Arc::new(LocalPosixVolume::new(self.name.clone(), new_root)))
+    }
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }

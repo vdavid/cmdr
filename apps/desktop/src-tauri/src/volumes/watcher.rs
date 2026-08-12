@@ -22,6 +22,7 @@ use std::sync::OnceLock;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
+use crate::file_system::volume::manager::RootRemoval;
 use crate::volume_broadcast::{VolumeMounted, VolumeUnmounted};
 
 /// Global app handle for emitting events from the observer.
@@ -167,34 +168,53 @@ pub(crate) fn handle_volume_mounted(volume_path: &str) {
 pub(crate) fn handle_volume_unmounted(volume_path: &str) {
     debug!("Volume unmounted: {}", volume_path);
 
-    // Call `on_unmount` before unregistering so an `SmbVolume` can disconnect
-    // its smb2 session cleanly. Look up by root rather than by path-derived ID:
-    // by the time the unmount notification fires, `statfs(volume_path)` no longer
-    // returns the SMB mount info, so a path-derived ID would miss the SMB volume
-    // we actually need to clean up. See `VolumeManager::find_by_root`.
-    let registered_id = {
-        let manager = crate::file_system::volume::manager::get_volume_manager();
-        let lookup = manager.find_by_root(std::path::Path::new(volume_path));
-        if let Some((id, volume)) = &lookup {
+    // Drop the gone mount from the volume that owned it. Look up by root rather
+    // than by path-derived ID: by the time the unmount notification fires,
+    // `statfs(volume_path)` no longer returns the SMB mount info, so a
+    // path-derived ID would miss the SMB volume we care about. See
+    // `VolumeManager::remove_root`.
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    match manager.remove_root(std::path::Path::new(volume_path)) {
+        RootRemoval::Unregistered { id, volume } => {
+            // The last mount of this filesystem is gone, so the volume really is
+            // leaving. `on_unmount` lets an `SmbVolume` disconnect its session.
             volume.on_unmount();
-            Some(id.clone())
-        } else {
-            None
+            // Cleanup (the volume is ALREADY gone — not wedge-prevention): a
+            // LocalExternal drive that unmounts leaves a dangling index instance
+            // holding an FSEvents watcher and open SQLite handles on a path that no
+            // longer exists. Stop it so those resources are released. The wedge-safe
+            // point is BEFORE the unmount (Cmdr's own eject-stop, and the best-effort
+            // `WillUnmount` handler); by here the unmount has already happened.
+            // SMB/MTP tear their indexes down through their own paths, so this acts
+            // only for a `LocalExternal`.
+            stop_local_external_index_off_main(id.clone());
+            debug!("Unregistered volume: {} ({})", id, volume_path);
         }
-    };
-
-    // Cleanup (the volume is ALREADY gone — not wedge-prevention): a LocalExternal
-    // drive that unmounts leaves a dangling index instance holding an FSEvents
-    // watcher and open SQLite handles on a path that no longer exists. Stop it so
-    // those resources are released. The wedge-safe point is BEFORE the unmount
-    // (Cmdr's own eject-stop, and the best-effort `WillUnmount` handler); by here the
-    // unmount has already happened. SMB/MTP tear their indexes down through their own
-    // paths, so this acts only for a `LocalExternal`.
-    if let Some(id) = registered_id.as_deref() {
-        stop_local_external_index_off_main(id.to_string());
+        RootRemoval::Promoted { id, new_root } => {
+            // ❌ No `on_unmount` and no index stop here: the filesystem is still
+            // reachable, just through another mount point.
+            log::info!(
+                target: "cmdr_lib::volumes",
+                "{volume_path} unmounted, but volume {id} is still mounted at {}; promoted it to that root.",
+                new_root.display(),
+            );
+        }
+        RootRemoval::ActiveRootStranded { id } => {
+            log::warn!(
+                target: "cmdr_lib::volumes",
+                "{volume_path} unmounted and volume {id} can't move to one of its other mounts, so it stays there. Its own transport decides whether it keeps working.",
+            );
+        }
+        RootRemoval::SiblingDropped { id } => {
+            debug!("{volume_path} unmounted; volume {id} keeps serving from its active root");
+        }
+        RootRemoval::Unknown => {
+            // Nothing knew this root. Fall back to a path-derived ID, which is
+            // only unambiguous for a local volume, and is what registration
+            // would have used for one.
+            unregister_volume_from_manager(volume_path);
+        }
     }
-
-    unregister_volume_from_manager(volume_path, registered_id.as_deref());
 
     if let Some(app) = APP_HANDLE.get() {
         let payload = VolumeUnmounted {
@@ -224,9 +244,13 @@ pub(crate) fn handle_volume_unmounted(volume_path: &str) {
 pub(crate) fn handle_volume_will_unmount(volume_path: &str) {
     debug!("Volume will unmount: {}", volume_path);
     // The volume is still mounted here, so look it up by root the same way the
-    // post-unmount path does (robust to SMB/case-folded ids).
-    if let Some((id, _volume)) =
+    // post-unmount path does (robust to SMB/case-folded ids). `find_by_root`
+    // also matches a FALLBACK root, and a volume losing one of its spare mounts
+    // keeps working — stopping its index then would be a wedge risk traded for a
+    // needless rescan — so act only when the ACTIVE root is the one going away.
+    if let Some((id, volume)) =
         crate::file_system::volume::manager::get_volume_manager().find_by_root(std::path::Path::new(volume_path))
+        && volume.root() == std::path::Path::new(volume_path)
     {
         stop_local_external_index_off_main(id);
     }
@@ -289,19 +313,17 @@ fn register_volume_with_manager(volume_path: &str) {
     }
 }
 
-/// Unregister a volume from the `VolumeManager`.
+/// Unregister a volume no registration claimed by root, by deriving its ID from
+/// the path.
 ///
-/// If `registered_id` is `Some`, unregister that exact entry. Use this when the
-/// caller has already looked up the volume via `find_by_root` (the unmount path
-/// must do this because `statfs` no longer recovers SMB info after the mount is
-/// gone). Otherwise, fall back to deriving the ID from the path, which is only
-/// safe for local volumes where `path_to_id` is unambiguous.
-fn unregister_volume_from_manager(volume_path: &str, registered_id: Option<&str>) {
+/// The last-resort arm of the unmount path. Only safe for a local volume, where
+/// `volume_id_for_mount` is unambiguous; for a gone SMB mount it derives the
+/// WRONG id (`statfs` can no longer recover the share), which is exactly why the
+/// root-keyed lookup runs first.
+fn unregister_volume_from_manager(volume_path: &str) {
     use crate::file_system::volume::manager::get_volume_manager;
 
-    let volume_id = registered_id
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| super::volume_id_for_mount(volume_path));
+    let volume_id = super::volume_id_for_mount(volume_path);
     get_volume_manager().unregister(&volume_id);
     debug!("Unregistered volume: {} ({})", volume_id, volume_path);
 }
@@ -477,6 +499,43 @@ mod tests {
             get_volume_manager().get(&volume_id).is_none(),
             "expected volume unregistered after unmount handler"
         );
+    }
+
+    #[test]
+    fn unmounting_the_active_root_promotes_a_surviving_sibling() {
+        use crate::file_system::volume::LocalPosixVolume;
+        use crate::file_system::volume::manager::get_volume_manager;
+        use std::sync::Arc;
+
+        // One share, two mount points: macOS suffixes the later mount. Both
+        // derive the same volume ID, so ejecting the first must hand the ID to
+        // the mount that's still live rather than dropping the share until the
+        // app restarts (discovery only runs at launch).
+        let first = "/Volumes/cmdr-test-promote";
+        let second = "/Volumes/cmdr-test-promote-1";
+        let volume_id = "cmdr-test-promote-share";
+        let manager = get_volume_manager();
+        manager.unregister(volume_id);
+
+        manager.register(volume_id, Arc::new(LocalPosixVolume::new("share", first)));
+        // The second mount event: the incumbent keeps the ID, the new root is
+        // recorded as a fallback.
+        manager.register_if_absent(volume_id, Arc::new(LocalPosixVolume::new("share", second)));
+
+        handle_volume_unmounted(first);
+
+        let promoted = manager
+            .get(volume_id)
+            .expect("a live sibling mount keeps the volume registered");
+        assert_eq!(
+            promoted.root(),
+            std::path::Path::new(second),
+            "the surviving mount becomes the active root"
+        );
+
+        // The last root going away still unregisters.
+        handle_volume_unmounted(second);
+        assert!(manager.get(volume_id).is_none(), "the last root gone means gone");
     }
 
     #[test]
