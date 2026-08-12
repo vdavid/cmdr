@@ -52,7 +52,14 @@ struct State {
 pub struct IgnoreSet {
     state: Mutex<State>,
     max_entries: usize,
-    downloads_root: PathBuf,
+    /// The Downloads root with symlinks resolved. Every stored key is spelled
+    /// against this root, because that's the spelling the watcher's events
+    /// carry.
+    canonical_root: PathBuf,
+    /// The root as the caller declared it. Call sites build their write paths
+    /// from this spelling, so registrations arrive under it and get rewritten
+    /// onto `canonical_root` before they're stored.
+    declared_root: PathBuf,
 }
 
 impl IgnoreSet {
@@ -65,14 +72,41 @@ impl IgnoreSet {
     /// Like `new` but with a custom cap. Useful for tests that want to
     /// exercise the eviction path without inserting 1000 entries.
     pub fn with_capacity(downloads_root: PathBuf, max_entries: usize) -> Self {
+        let canonical_root = std::fs::canonicalize(&downloads_root).unwrap_or_else(|_| downloads_root.clone());
         Self {
             state: Mutex::new(State {
                 map: HashMap::new(),
                 order: VecDeque::new(),
             }),
             max_entries,
-            downloads_root,
+            canonical_root,
+            declared_root: downloads_root,
         }
+    }
+
+    /// The watched root with symlinks resolved. The watcher reuses it so the
+    /// resolution happens in exactly one place.
+    pub fn canonical_root(&self) -> &Path {
+        &self.canonical_root
+    }
+
+    /// Spell `path` the way stored keys are spelled, or `None` when it isn't
+    /// under the watched Downloads folder at all.
+    ///
+    /// Two spellings reach us for the same file: the watcher's events name the
+    /// canonical path, while a call site names the path it's about to write.
+    /// Those differ whenever the root itself is reached through a symlink (a
+    /// relocated Downloads folder, or macOS's `/var` → `/private/var`), and
+    /// treating them as different files means Cmdr toasts its own writes. A
+    /// prefix swap settles it without a `realpath` syscall per registration,
+    /// which matters because a large copy registers every file it writes.
+    fn key_for(&self, path: &Path) -> Option<PathBuf> {
+        if path.starts_with(&self.canonical_root) {
+            return Some(path.to_path_buf());
+        }
+        path.strip_prefix(&self.declared_root)
+            .ok()
+            .map(|rest| self.canonical_root.join(rest))
     }
 
     /// Register `path` as a pending Cmdr-own write that should suppress its
@@ -82,9 +116,9 @@ impl IgnoreSet {
     /// On a re-insert for an already-pending path, the deadline is bumped
     /// to `now + ttl` but the entry keeps its FIFO position.
     pub fn note_pending(&self, path: PathBuf, ttl: Duration) {
-        if !path.starts_with(&self.downloads_root) {
+        let Some(path) = self.key_for(&path) else {
             return;
-        }
+        };
         let deadline = Instant::now() + ttl;
         let mut s = self.state.lock().expect("IgnoreSet poisoned");
         let inserting_new = !s.map.contains_key(&path);
@@ -105,10 +139,13 @@ impl IgnoreSet {
     /// Also performs lazy expiry: any entries already past their deadline
     /// are dropped during this check.
     pub fn is_pending(&self, path: &Path) -> bool {
+        let Some(path) = self.key_for(path) else {
+            return false;
+        };
         let now = Instant::now();
         let mut s = self.state.lock().expect("IgnoreSet poisoned");
         expire(&mut s, now);
-        s.map.contains_key(path)
+        s.map.contains_key(&path)
     }
 
     /// Current entry count. Performs lazy expiry first. Test-only: no
@@ -135,6 +172,8 @@ fn expire(s: &mut State, now: Instant) {
 mod tests {
     use super::*;
 
+    use std::fs;
+    use std::os::unix::fs::symlink;
     use std::sync::Arc;
     use std::thread;
 
@@ -175,6 +214,26 @@ mod tests {
         set.note_pending(outside.clone(), Duration::from_secs(1));
         assert!(!set.is_pending(&outside));
         assert_eq!(set.len(), 0);
+    }
+
+    #[test]
+    fn a_write_registered_through_a_symlinked_root_matches_the_canonical_event_path() {
+        // The watcher's events always name canonical paths, while call sites
+        // register the path they're about to write. When the Downloads folder
+        // is reached through a symlink (a relocated Downloads, or macOS's
+        // `/var` → `/private/var`), those two spellings differ, and a set that
+        // only understood one of them would let Cmdr toast its own writes.
+        let base = TempDir::new().unwrap();
+        let real = base.path().join("real-downloads");
+        fs::create_dir(&real).unwrap();
+        let via_link = base.path().join("downloads-link");
+        symlink(&real, &via_link).unwrap();
+
+        let set = make(&via_link);
+        set.note_pending(via_link.join("foo.zip"), Duration::from_secs(1));
+
+        let canonical = fs::canonicalize(&real).unwrap().join("foo.zip");
+        assert!(set.is_pending(&canonical), "expected {canonical:?} to be suppressed");
     }
 
     #[test]

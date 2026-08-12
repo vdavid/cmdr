@@ -21,8 +21,16 @@ the OS watch; the watcher holds no FDA-protected state beyond that, so the close
 
 Write operations call `crate::downloads::note_pending_write_for_cmdr(&dest_path)` immediately before each filesystem
 syscall. `note_pending_write_for_cmdr` resolves the watcher via `runtime::with_watcher` and calls
-`IgnoreSet::note_pending`, whose prefix check silently no-ops for paths outside the watched Downloads root, so call
-sites invoke unconditionally; don't move the filter to the call sites. The end-to-end safety net is
+`IgnoreSet::note_pending`, whose root check silently no-ops for paths outside the watched Downloads root, so call
+sites invoke unconditionally; don't move the filter to the call sites.
+
+That check accepts BOTH spellings of the root, the declared one and the symlink-resolved one, and stores every key
+against the resolved spelling. It has to: the watcher's events always name canonical paths while a call site names the
+path it's about to write, and those differ whenever the root is reached through a symlink (a relocated Downloads
+folder, or macOS's `/var` → `/private/var` under `$TMPDIR`). Matching only one spelling means no registration ever
+matches an event and Cmdr toasts its own writes. A prefix swap settles it without a `realpath` per registration, which
+matters because a large copy registers every file it writes; a symlink DEEPER than the root is not covered, and paying
+a syscall per write to cover it isn't worth it. The end-to-end safety net is
 `downloads::runtime::tests::note_pending_write_for_cmdr_suppresses_watcher_event_end_to_end`. Call sites live across
 `file_system/write_operations/` (copy, move, delete walker, trash, volume strategy); renames register BOTH halves. See
 `file_system/write_operations/DETAILS.md` for the write-side contract.
@@ -55,6 +63,25 @@ successful register so the Settings row can surface "Couldn't register: in use b
 `global_shortcut.rs` carries typed `RegistrationError` (`Conflict | InvalidBinding | PluginError`) and
 `RegistrationStatus` (`Registered | NotRegistered | Conflict`); production uses `TauriRegistrar` (owned `AppHandle`),
 tests use an in-memory `FakeRegistrar`.
+
+## Reading a rename on macOS
+
+FSEvents cannot associate a rename's two halves (`fsevent.rs` in `notify` says so outright), so it reports each half as
+`Modify(Name(RenameMode::Any))` naming one path. `notify-debouncer-full` tries to pair them by tracker or cached file
+ID, and when it succeeds we get the tidy `RenameMode::Both`. When it misses we get the two halves separately, and the
+miss is common, not exotic: it happens for a move IN from outside the watched tree (there is no `from` half to pair
+with), and whenever the kernel coalesced the partial file's create into its rename, which leaves the old path's file ID
+never cached. Measured on macOS 15 (raw-event dump from the partial→final rename test, 2026-08-12): the pairing missed
+on every observed run.
+
+So `translate_debounced` maps `RenameMode::Any` to its own `EventSummary::RenameAny`, and `classify_event` treats it
+exactly like a `To` half. Nothing probes which half it is, because eligibility already does: `is_eligible` stats the
+path, so the vanished `from` side of a move-out drops on its own while the surviving `to` side emits. **Don't "fix" that
+by adding an `exists()` check** — it would duplicate the stat and give the two halves two different answers to the same
+question.
+
+Dropping `Any` (which is what the code did before) means a download whose rename the debouncer failed to pair produces
+no toast at all.
 
 ## Browser-style rename scope
 

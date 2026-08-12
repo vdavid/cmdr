@@ -146,6 +146,12 @@ pub(crate) enum EventSummary {
     /// systems where it doesn't, the `To` half still carries the final-form
     /// path.
     RenameTo(PathBuf),
+    /// A rename half whose direction the platform didn't state
+    /// (`RenameMode::Any`), which is every half macOS FSEvents reports.
+    /// Either endpoint can arrive this way, so eligibility decides: the
+    /// vanished `from` path fails its `fs::metadata` stat and drops, while the
+    /// surviving `to` path carries the final-form name.
+    RenameAny(PathBuf),
     /// Anything we deliberately drop: modify-content, attribute changes,
     /// access, removes, `RenameFrom` alone, etc. Carried for tests but never
     /// emits.
@@ -199,7 +205,11 @@ pub(crate) fn classify_event(
                 Classification::Dropped
             }
         }
-        EventSummary::RenameTo(path) => {
+        // `RenameAny` gets the same treatment as `RenameTo` on purpose:
+        // eligibility stats the path, so a direction-less half naming a file
+        // that no longer exists (the `from` side) drops without a separate
+        // existence probe.
+        EventSummary::RenameTo(path) | EventSummary::RenameAny(path) => {
             if ignore_set.is_pending(path) {
                 return Classification::Suppressed;
             }
@@ -230,8 +240,13 @@ pub(crate) fn translate_debounced(event: &DebouncedEvent) -> Vec<EventSummary> {
                 }]
             }
             RenameMode::To => event.paths.iter().cloned().map(EventSummary::RenameTo).collect(),
-            // RenameFrom alone, or RenameAny / Other — drop. We act on the
-            // `To` (or the paired `Both`) for the final-form path.
+            // macOS FSEvents cannot associate a rename's two halves, so it
+            // reports both as `Any` and the debouncer pairs them by file ID.
+            // When that pairing misses (a move IN from outside the watch, or a
+            // create the kernel coalesced into the rename so the old path's ID
+            // was never cached), the final-form path arrives only here.
+            RenameMode::Any => event.paths.iter().cloned().map(EventSummary::RenameAny).collect(),
+            // `From` alone names a path that's gone, and `Other` is unusable.
             _ => vec![EventSummary::Other],
         },
         // Modify-content, attribute changes, access, removes, etc.
@@ -268,8 +283,11 @@ impl DownloadsWatcher {
     /// and `parent_dir == downloads_root` checks would compare a
     /// user-facing path against a canonical one and silently miss.
     pub fn start_at(downloads_root: PathBuf, sink: Arc<dyn EventSink>) -> Result<Self, WatcherError> {
-        let downloads_root = std::fs::canonicalize(&downloads_root).unwrap_or(downloads_root);
-        let ignore_set = Arc::new(IgnoreSet::new(downloads_root.clone()));
+        // The ignore set resolves the root (it has to know both spellings to
+        // match a registration against an event), so take its answer rather
+        // than resolving a second time.
+        let ignore_set = Arc::new(IgnoreSet::new(downloads_root));
+        let downloads_root = ignore_set.canonical_root().to_path_buf();
         let latest_ring = Arc::new(LatestRing::new());
 
         let ignore_for_cb = Arc::clone(&ignore_set);
@@ -671,6 +689,38 @@ mod tests {
     }
 
     #[test]
+    fn rename_any_emits_for_the_surviving_endpoint() {
+        // Real `is_eligible`, not a stub: `fs::metadata` IS the direction
+        // oracle for a `RenameAny`, so stubbing it would test nothing.
+        let root = unhidden_tempdir();
+        let set = IgnoreSet::new(root.path().to_path_buf());
+        let landed = touch(root.path(), "landed.zip");
+        let result = classify_event(&EventSummary::RenameAny(landed.clone()), &set, &is_eligible);
+        assert_eq!(result, Classification::Emit(landed));
+    }
+
+    #[test]
+    fn rename_any_drops_the_vanished_endpoint() {
+        // The `from` half of a move-out arrives with the same direction-less
+        // kind as the `to` half. It no longer exists, so eligibility drops it.
+        let root = unhidden_tempdir();
+        let set = IgnoreSet::new(root.path().to_path_buf());
+        let gone = root.path().join("moved-away.zip");
+        let result = classify_event(&EventSummary::RenameAny(gone), &set, &is_eligible);
+        assert_eq!(result, Classification::Dropped);
+    }
+
+    #[test]
+    fn rename_any_in_ignore_set_is_suppressed() {
+        let root = unhidden_tempdir();
+        let set = IgnoreSet::new(root.path().to_path_buf());
+        let p = touch(root.path(), "cmdr-own.zip");
+        set.note_pending(p.clone(), Duration::from_secs(5));
+        let result = classify_event(&EventSummary::RenameAny(p), &set, &is_eligible);
+        assert_eq!(result, Classification::Suppressed);
+    }
+
+    #[test]
     fn other_event_kinds_are_dropped() {
         let root = unhidden_tempdir();
         let set = IgnoreSet::new(root.path().to_path_buf());
@@ -703,6 +753,16 @@ mod tests {
         let p = PathBuf::from("/tmp/foo.zip");
         let ev = make_event(EventKind::Modify(ModifyKind::Name(RenameMode::To)), vec![p.clone()]);
         assert_eq!(translate_debounced(&ev), vec![EventSummary::RenameTo(p)]);
+    }
+
+    #[test]
+    fn translates_rename_any_event() {
+        // macOS FSEvents cannot associate a rename's two halves, so every half
+        // reaches us as `RenameMode::Any`. Dropping it loses the final path
+        // whenever the debouncer fails to pair the halves.
+        let p = PathBuf::from("/tmp/foo.zip");
+        let ev = make_event(EventKind::Modify(ModifyKind::Name(RenameMode::Any)), vec![p.clone()]);
+        assert_eq!(translate_debounced(&ev), vec![EventSummary::RenameAny(p)]);
     }
 
     #[test]
@@ -1021,7 +1081,11 @@ mod tests {
             );
             let own = td.path().join(format!("cmdr-own-{n}.txt"));
             let control = td.path().join(format!("control-{n}.txt"));
-            watcher.note_pending_write(own.clone(), Duration::from_secs(5));
+            // TTL covers the WHOLE budget, not production's 5 s: FSEvents can
+            // take seconds to deliver under load, and an entry that expired
+            // while the test was still waiting would surface the own-write for
+            // a reason that has nothing to do with suppression.
+            watcher.note_pending_write(own.clone(), EVENT_TIMEOUT + Duration::from_secs(5));
             fs::write(&own, b"hi").unwrap();
             // Written after `own` so its event can't precede the suppressed one
             // in FSEvents' ordered stream.
@@ -1051,20 +1115,28 @@ mod tests {
         let (sink, rx) = ChannelSink::new();
         let watcher = DownloadsWatcher::start_at(td.path().to_path_buf(), sink).unwrap();
 
-        // This test asserts ring ORDER (the LAST observed download wins), so it
-        // can't use `observe_mutation`'s redo-on-fresh-name shape. Prime the
-        // watch to prove it's live (defeating the arming window), then create
-        // `ring.txt` last so ordered FSEvents delivery lands it at the ring's
-        // back. Priming and the real wait share one deadline so they can't stack
-        // past the 20 s nextest cap.
-        let deadline = Instant::now() + EVENT_TIMEOUT;
-        prime_watch(td.path(), &rx, deadline);
+        // What this proves: an event the REAL watcher observed reaches the ring,
+        // and `latest_download` reads it back canonicalized. Ring ORDER is not
+        // asserted here — a redo attempt's file can be delivered right after the
+        // one we matched, so the back of the ring isn't pinned down. Order is
+        // `LatestRing`'s own contract (`re_push_moves_to_back`), tested there
+        // with no FSEvents in the way.
+        let ev = observe_mutation(
+            td.path(),
+            &rx,
+            |n| {
+                touch(td.path(), &format!("ring-{n}.txt"));
+            },
+            |e| e.file_name.starts_with("ring-"),
+        );
 
-        touch(td.path(), "ring.txt");
-        let remaining = deadline.saturating_duration_since(Instant::now());
-        wait_for(&rx, remaining, |e| e.file_name == "ring.txt").expect("expected event before checking ring");
-
-        assert_eq!(watcher.latest_download(), Some(canon_root.join("ring.txt")));
+        let latest = watcher.latest_download().expect("an observed download lands in the ring");
+        assert_eq!(latest.parent(), Some(canon_root.as_path()));
+        assert!(
+            latest.file_name().and_then(|n| n.to_str()).is_some_and(|n| n.starts_with("ring-")),
+            "expected a ring-* download, got {latest:?} (observed {})",
+            ev.file_name,
+        );
         drop(watcher);
     }
 
