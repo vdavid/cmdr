@@ -91,7 +91,7 @@ impl SmbVolume {
 
             debug!(
                 "SmbVolume::scan_for_copy: share={}, path={:?}",
-                self.share_name, smb_path
+                self.inner.share_name, smb_path
             );
 
             self.scan_recursive(&smb_path).await
@@ -150,7 +150,7 @@ impl SmbVolume {
                     let original_parent = path.parent().unwrap_or(Path::new("")).to_path_buf();
                     let entries = parent_cache
                         .entry(original_parent.clone())
-                        .or_insert_with(|| try_get_authoritative_listing(&self.volume_id, &original_parent));
+                        .or_insert_with(|| try_get_authoritative_listing(&self.inner.volume_id, &original_parent));
 
                     let Some(cached_entries) = entries.as_ref() else {
                         leftover_indices.push(idx);
@@ -191,7 +191,7 @@ impl SmbVolume {
                 if !leftover_indices.is_empty() {
                     debug!(
                         "SmbVolume::scan_for_copy_batch: share={}, oracle resolved {}/{} paths; pipelining stats for {}",
-                        self.share_name,
+                        self.inner.share_name,
                         paths.len() - leftover_indices.len(),
                         paths.len(),
                         leftover_indices.len()
@@ -232,7 +232,7 @@ impl SmbVolume {
 
             debug!(
                 "SmbVolume::scan_for_copy_batch: share={}, {} paths leftover for pipelined stats (oracle handled {})",
-                self.share_name,
+                self.inner.share_name,
                 smb_paths.len(),
                 paths.len() - smb_paths.len()
             );
@@ -267,7 +267,7 @@ impl SmbVolume {
                 // Briefly lock client to clone a Connection per path, then
                 // release. All clones multiplex over the single SMB session.
                 let conn = {
-                    let mut guard = self.client.lock().await;
+                    let mut guard = self.inner.client.lock().await;
                     let client = guard
                         .as_mut()
                         .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?;
@@ -314,11 +314,11 @@ impl SmbVolume {
                         if matches!(kind, smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired) {
                             warn!(
                                 "SmbVolume::scan_for_copy_batch(share={}): connection lost ({}), transitioning to Disconnected",
-                                self.share_name, e
+                                self.inner.share_name, e
                             );
                             self.transition_to_disconnected();
                         } else {
-                            warn!("SmbVolume::scan_for_copy_batch(share={}): {}", self.share_name, e);
+                            warn!("SmbVolume::scan_for_copy_batch(share={}): {}", self.inner.share_name, e);
                         }
                         return Err(map_smb_error(e));
                     }

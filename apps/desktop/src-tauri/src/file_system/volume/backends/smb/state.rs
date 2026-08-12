@@ -48,7 +48,7 @@ impl From<ConnectionState> for VolumeConnection {
 impl SmbVolume {
     /// Returns the current connection state.
     pub fn connection_state(&self) -> ConnectionState {
-        ConnectionState::from_u8(self.state.load(Ordering::Relaxed))
+        ConnectionState::from_u8(self.inner.state.load(Ordering::Relaxed))
     }
 
     /// Whether a newer instance owns this volume's id (see `on_superseded`).
@@ -59,7 +59,7 @@ impl SmbVolume {
     /// `volume-connection-changed` from here would tell the app a healthy volume
     /// just disconnected.
     pub(super) fn is_superseded(&self) -> bool {
-        self.superseded.load(Ordering::Relaxed)
+        self.inner.superseded.load(Ordering::Relaxed)
     }
 
     /// `emit_state_change` for this volume, suppressed once superseded.
@@ -67,7 +67,7 @@ impl SmbVolume {
         if self.is_superseded() {
             return;
         }
-        emit_state_change(&self.volume_id, state);
+        emit_state_change(&self.inner.volume_id, state);
     }
 
     /// Snapshot the smb2 client's diagnostics tree.
@@ -81,7 +81,7 @@ impl SmbVolume {
     /// Used by the debug-window SMB diagnostics dashboard. Safe to call
     /// at 1 Hz; cheap even at higher rates.
     pub async fn diagnostics(&self) -> Option<smb2::Diagnostics> {
-        let guard = self.client.lock().await;
+        let guard = self.inner.client.lock().await;
         guard.as_ref().map(|c| c.diagnostics())
     }
 
@@ -90,7 +90,10 @@ impl SmbVolume {
     /// to avoid event spam when several in-flight ops all see the same broken
     /// session).
     pub(super) fn transition_to_disconnected(&self) {
-        let prev = self.state.swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+        let prev = self
+            .inner
+            .state
+            .swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
         if prev != ConnectionState::Disconnected as u8 {
             self.emit_state_change_for_id(ConnectionState::Disconnected.into());
         }
@@ -100,7 +103,7 @@ impl SmbVolume {
     /// state was something else. Called by `attempt_reconnect` after a successful
     /// session rebuild.
     pub(super) fn transition_to_direct(&self) {
-        let prev = self.state.swap(ConnectionState::Direct as u8, Ordering::Relaxed);
+        let prev = self.inner.state.swap(ConnectionState::Direct as u8, Ordering::Relaxed);
         if prev != ConnectionState::Direct as u8 {
             self.emit_state_change_for_id(ConnectionState::Direct.into());
         }

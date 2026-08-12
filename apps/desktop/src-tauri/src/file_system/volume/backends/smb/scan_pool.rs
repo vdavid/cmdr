@@ -389,17 +389,17 @@ impl SmbVolume {
         // A superseded volume no longer owns its id: the index and enrichment
         // passes that the pool exists for now run against the successor, so
         // opening extra connections here would be pure waste.
-        if self.unmounted.load(Ordering::Relaxed)
+        if self.inner.unmounted.load(Ordering::Relaxed)
             || self.is_superseded()
             || self.connection_state() != ConnectionState::Direct
         {
             return;
         }
-        if self.scan_pool.read().await.is_some() {
+        if self.inner.scan_pool.read().await.is_some() {
             return;
         }
-        let params = self.params.read().await.clone();
-        let volume_id = self.volume_id.clone();
+        let params = self.inner.params.read().await.clone();
+        let volume_id = self.inner.volume_id.clone();
         let slots = open_slots(&params, SCAN_POOL_SIZE, &volume_id).await;
         let live = slots.iter().filter(|s| s.is_some()).count();
         if live == 0 {
@@ -409,21 +409,21 @@ impl SmbVolume {
             return;
         }
         // Re-check: a slow set of logins gives on_unmount / on_superseded a window to run.
-        if self.unmounted.load(Ordering::Relaxed) || self.is_superseded() {
+        if self.inner.unmounted.load(Ordering::Relaxed) || self.is_superseded() {
             return; // drop `slots` → closes the freshly-opened sessions
         }
         let pool = ScanPool::from_slots(slots, params, volume_id.clone());
-        *self.scan_pool.write().await = Some(pool);
+        *self.inner.scan_pool.write().await = Some(pool);
         log::info!("smb scan pool: opened {live}/{SCAN_POOL_SIZE} extra connections for '{volume_id}'");
     }
 
     /// Close the scan-connection pool (idempotent). Called when a scan ends and
     /// from `on_unmount`.
     pub(super) async fn close_scan_pool(&self) {
-        let pool = { self.scan_pool.write().await.take() };
+        let pool = { self.inner.scan_pool.write().await.take() };
         if let Some(pool) = pool {
             pool.close().await;
-            log::debug!("smb scan pool: closed for '{}'", self.volume_id);
+            log::debug!("smb scan pool: closed for '{}'", self.inner.volume_id);
         }
     }
 
@@ -432,7 +432,7 @@ impl SmbVolume {
     /// the last `Arc` (this plus any sleeping reconnect task) drops, within one
     /// backoff step.
     pub(super) fn close_scan_pool_sync(&self) {
-        if let Some(pool) = self.scan_pool.blocking_write().take() {
+        if let Some(pool) = self.inner.scan_pool.blocking_write().take() {
             pool.mark_closed();
         }
     }
@@ -441,7 +441,7 @@ impl SmbVolume {
     /// active, else the main session. Retries a connection-lost listing on a
     /// sibling member; surfaces a genuine per-directory error unchanged.
     pub(super) async fn list_directory_for_scan_impl(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
-        let pool = { self.scan_pool.read().await.clone() };
+        let pool = { self.inner.scan_pool.read().await.clone() };
         if let Some(pool) = pool {
             let smb_path = self.to_smb_path(path)?;
             let display_path = self.to_display_path(&smb_path);
@@ -502,7 +502,7 @@ impl SmbVolume {
         if let Some(size) = size_hint
             && size > 0
         {
-            let pool = { self.scan_pool.read().await.clone() };
+            let pool = { self.inner.scan_pool.read().await.clone() };
             if let Some(pool) = pool {
                 let smb_path = self.to_smb_path(path)?;
                 for _ in 0..pool.member_count() {

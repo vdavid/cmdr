@@ -110,7 +110,7 @@ async fn smb_integration_media_fetch_parallel_reads_over_the_scan_pool() {
     vol.begin_scan_session().await;
     vol.begin_scan_session().await;
     assert!(
-        vol.scan_pool.read().await.is_some(),
+        vol.inner.scan_pool.read().await.is_some(),
         "the pooled connections come up with the scan session"
     );
 
@@ -148,13 +148,13 @@ async fn smb_integration_media_fetch_parallel_reads_over_the_scan_pool() {
     // Refcount: the FIRST end must leave the pool up for the sibling session…
     vol.end_scan_session().await;
     assert!(
-        vol.scan_pool.read().await.is_some(),
+        vol.inner.scan_pool.read().await.is_some(),
         "ending one of two scan sessions must not tear the pool down"
     );
     // …and the LAST end closes it.
     vol.end_scan_session().await;
     assert!(
-        vol.scan_pool.read().await.is_none(),
+        vol.inner.scan_pool.read().await.is_none(),
         "the last scan session's end closes the pool"
     );
 

@@ -317,6 +317,35 @@ successor) — silently, without respawning a watcher.
 and re-resolves the manager entry against it on every backoff step. A watcher dying in the window around a swap would
 otherwise resolve the id to the SUCCESSOR and mark a perfectly healthy volume `Disconnected`.
 
+## Re-rooting a share
+
+macOS mounts one share at several roots (`/Volumes/naspi` AND `/Volumes/naspi-1`) and they all derive one volume ID, so
+the registry tracks the SET of roots and promotes a survivor when the active one dies (`volume/DETAILS.md` § "A volume
+ID owns a set of mount roots"). `SmbVolume` implements `Volume::rerooted`, because the OS mount is only an addressing
+prefix here: Cmdr's own I/O rides the smb2 session.
+
+**Shape**: `SmbVolume` is a thin instance over an `Arc<SmbVolumeInner>`. The instance holds what belongs to ONE mount
+root (`name`, `mount_path`); the inner holds the session and everything scoped to the SHARE (client,
+tree, params, connection state, watcher handle, scan pool, `instance_id`, refcounts). `rerooted` is therefore one
+allocation over the same inner: no re-auth, no transport rebuild, no session churn.
+
+**Why the instance's root is immutable**: `Volume::root()` hands out a `&Path`, with ~115 call sites. Making the root
+interior-mutable to reroot in place would either change that signature across the codebase or hand out a borrow that can
+change under the caller. A new instance moves the root without either.
+
+**The two instances overlap, briefly and by design.** For the moment between `rerooted` returning and the registry
+dropping the old one, both address the same live session — and whoever grabbed the old one earlier (a running transfer,
+an open viewer stream) keeps using it at the root it was handed, which is correct: its paths were built there.
+❌ A promotion must therefore NEVER call `on_superseded` or `on_unmount` on the old instance. Both act on the SHARED
+inner: `on_superseded` stops the watcher and quiets the id, `on_unmount` drops the session outright — the teardown that
+once killed a live NAS copy (§ "Supersede vs. unmount"). `manager/roots.rs::promote_to_best_root` swaps the volume
+without either hook, which is what makes this safe.
+
+**The watcher follows the active root.** It belongs to the session, not to one mount, and the absolute paths its
+notifications carry decide which cached listing they patch. So `SmbVolumeInner::active_mount_path` (a std `RwLock<PathBuf>`,
+shared with the watcher task and re-read once per event batch) is updated by a reroot; a watcher pinned to the old root
+would keep feeding paths that no longer name anything.
+
 ## Gotchas
 
 **Gotcha**: `MtpReadStream` holds nothing scarce between windows, so dropping it mid-read is safe and needs no `Drop` impl

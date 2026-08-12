@@ -17,7 +17,7 @@ impl SmbVolume {
     /// next `select!` iteration. Best-effort: if the watcher already exited on
     /// a connection error, the send is a no-op.
     pub(super) fn stop_watcher(&self) {
-        if let Some(tx) = self.watcher_cancel.lock().ok().and_then(|mut g| g.take()) {
+        if let Some(tx) = self.inner.watcher_cancel.lock().ok().and_then(|mut g| g.take()) {
             let _ = tx.send(());
         }
     }
@@ -56,16 +56,20 @@ impl SmbVolume {
         let username = params.username.clone();
         let password = params.password.clone();
         let volume = super::super::smb_watcher::WatchedVolume {
-            volume_id: self.volume_id.clone(),
-            instance_id: self.instance_id,
-            mount_path: self.mount_path.clone(),
+            volume_id: self.inner.volume_id.clone(),
+            instance_id: self.inner.instance_id,
+            // The share's CURRENT mount root, shared rather than copied: the
+            // watcher outlives a promotion (it belongs to the session, not to one
+            // mount), and the paths it builds have to follow the root the registry
+            // moved the ID to.
+            mount_path: Arc::clone(&self.inner.active_mount_path),
         };
 
         tokio::spawn(super::super::smb_watcher::run_smb_watcher(
             addr, share, username, password, volume, cancel_rx,
         ));
 
-        if let Ok(mut guard) = self.watcher_cancel.lock() {
+        if let Ok(mut guard) = self.inner.watcher_cancel.lock() {
             *guard = Some(cancel_tx);
         }
     }
@@ -84,7 +88,7 @@ impl SmbVolume {
         // Bail early if `on_unmount` already ran. Doing this before taking the
         // lock means a queued caller doesn't pay the lock-acquisition cost for
         // a volume that's about to be (or already is) gone.
-        if self.unmounted.load(Ordering::Relaxed) {
+        if self.inner.unmounted.load(Ordering::Relaxed) {
             return Err(VolumeError::DeviceDisconnected(
                 "SMB volume has been unmounted".to_string(),
             ));
@@ -92,11 +96,11 @@ impl SmbVolume {
 
         // Single-flight: concurrent callers (FE cycle tick + lazy nav-time
         // retry) all wait here, and the second arrival sees state==Direct.
-        let _guard = self.reconnect_lock.lock().await;
+        let _guard = self.inner.reconnect_lock.lock().await;
 
         // Re-check `unmounted`: between releasing the early check and acquiring
         // the lock, `on_unmount` may have run on another thread.
-        if self.unmounted.load(Ordering::Relaxed) {
+        if self.inner.unmounted.load(Ordering::Relaxed) {
             return Err(VolumeError::DeviceDisconnected(
                 "SMB volume has been unmounted".to_string(),
             ));
@@ -105,16 +109,16 @@ impl SmbVolume {
         if self.connection_state() == ConnectionState::Direct {
             debug!(
                 "SmbVolume::attempt_reconnect(share={}): already Direct, skipping",
-                self.share_name
+                self.inner.share_name
             );
             return Ok(());
         }
 
         // First try: stored credentials (the ones that worked at original connect).
-        let params_snapshot = { self.params.read().await.clone() };
+        let params_snapshot = { self.inner.params.read().await.clone() };
         info!(
             "SmbVolume::attempt_reconnect(share={}): trying with cached credentials",
-            self.share_name
+            self.inner.share_name
         );
 
         let first_attempt = build_session(&params_snapshot).await;
@@ -124,7 +128,7 @@ impl SmbVolume {
                 // Cached creds may be stale. Re-pull from the secret store and retry once.
                 info!(
                     "SmbVolume::attempt_reconnect(share={}): cached credentials rejected, re-pulling from secret store",
-                    self.share_name
+                    self.inner.share_name
                 );
                 match refresh_credentials_from_store(&params_snapshot).await {
                     Some(refreshed)
@@ -134,7 +138,7 @@ impl SmbVolume {
                         match build_session(&refreshed).await {
                             Ok(pair) => {
                                 // Refreshed creds worked; persist them on the volume.
-                                let mut params_w = self.params.write().await;
+                                let mut params_w = self.inner.params.write().await;
                                 params_w.username = refreshed.username.clone();
                                 params_w.password = refreshed.password.clone();
                                 pair
@@ -142,7 +146,7 @@ impl SmbVolume {
                             Err(e2) => {
                                 warn!(
                                     "SmbVolume::attempt_reconnect(share={}): refreshed credentials also failed: {}",
-                                    self.share_name, e2
+                                    self.inner.share_name, e2
                                 );
                                 // The password on the server changed and what we have
                                 // saved no longer works. Tell the FE so it shows a
@@ -156,7 +160,7 @@ impl SmbVolume {
                         // No fresh creds available, or they're identical to the cached ones.
                         warn!(
                             "SmbVolume::attempt_reconnect(share={}): no fresh credentials available; giving up on this attempt",
-                            self.share_name
+                            self.inner.share_name
                         );
                         self.emit_state_change_for_id(VolumeConnection::NeedsCredentials);
                         return Err(map_smb_error(err));
@@ -166,7 +170,7 @@ impl SmbVolume {
             Err(e) => {
                 warn!(
                     "SmbVolume::attempt_reconnect(share={}): connect failed: {}",
-                    self.share_name, e
+                    self.inner.share_name, e
                 );
                 return Err(map_smb_error(e));
             }
@@ -176,7 +180,7 @@ impl SmbVolume {
         // have unmounted the volume in the meantime. Discard the freshly-built
         // session and bail rather than installing it into an orphaned volume
         // (which would leak the watcher task and the smb2 connection).
-        if self.unmounted.load(Ordering::Relaxed) {
+        if self.inner.unmounted.load(Ordering::Relaxed) {
             drop(client);
             drop(tree);
             return Err(VolumeError::DeviceDisconnected(
@@ -186,17 +190,17 @@ impl SmbVolume {
 
         // Install the new session.
         {
-            let mut tree_guard = self.tree.write().await;
+            let mut tree_guard = self.inner.tree.write().await;
             *tree_guard = Some(Arc::new(tree));
         }
         {
-            let mut client_guard = self.client.lock().await;
+            let mut client_guard = self.inner.client.lock().await;
             *client_guard = Some(client);
         }
 
         // Restart the watcher with current params (which may include refreshed creds).
         self.stop_watcher();
-        let params_now = self.params.read().await.clone();
+        let params_now = self.inner.params.read().await.clone();
         self.spawn_watcher(&params_now);
 
         // Flip state and emit. Doing this last means an observer that wakes
@@ -213,10 +217,10 @@ impl SmbVolume {
         // ran the same hook when it registered.
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         if !self.is_superseded() {
-            crate::index_host::index().resume_after_reconnect(self.volume_id.clone());
+            crate::index_host::index().resume_after_reconnect(self.inner.volume_id.clone());
         }
 
-        info!("SmbVolume::attempt_reconnect(share={}): success", self.share_name);
+        info!("SmbVolume::attempt_reconnect(share={}): success", self.inner.share_name);
         Ok(())
     }
 
@@ -231,17 +235,17 @@ impl SmbVolume {
         username: String,
         password: String,
     ) -> Result<(), VolumeError> {
-        let server = { self.params.read().await.server.clone() };
+        let server = { self.inner.params.read().await.server.clone() };
         if let Err(e) = crate::network::keychain::save_credentials(&server, None, &username, &password) {
             // Non-fatal: the in-memory params below still carry the creds for this
             // reconnect; only the "silent next time" guarantee is lost.
             warn!(
                 "SmbVolume::reconnect_with_credentials(share={}): saving credentials failed: {}",
-                self.share_name, e
+                self.inner.share_name, e
             );
         }
         {
-            let mut params_w = self.params.write().await;
+            let mut params_w = self.inner.params.write().await;
             params_w.username = username;
             params_w.password = password;
         }
@@ -301,7 +305,7 @@ pub(crate) fn spawn_watcher_death_reconnect(volume_id: String, instance_id: u64)
     fn still_the_same_volume(volume_id: &str, instance_id: u64) -> Option<Arc<dyn Volume>> {
         let volume = crate::file_system::volume::manager::get_volume_manager().get(volume_id)?;
         let smb = volume.as_any().downcast_ref::<SmbVolume>()?;
-        if smb.instance_id != instance_id || smb.unmounted.load(Ordering::Relaxed) {
+        if smb.inner.instance_id != instance_id || smb.inner.unmounted.load(Ordering::Relaxed) {
             return None;
         }
         Some(Arc::clone(&volume))

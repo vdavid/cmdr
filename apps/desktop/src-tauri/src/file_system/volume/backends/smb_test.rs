@@ -350,6 +350,79 @@ fn root_returns_mount_path() {
     assert_eq!(vol.root(), Path::new("/Volumes/TestShare"));
 }
 
+/// macOS mounts one share at several roots (`/Volumes/naspi` AND
+/// `/Volumes/naspi-1`), which all derive one volume ID, so the registry has to be
+/// able to move the ID to whichever mount is still alive. A direct `SmbVolume`
+/// re-roots because its transport doesn't ride the mount at all: the new instance
+/// addresses the new root over the SAME smb2 session, with no re-auth and nothing
+/// to rebuild.
+#[test]
+fn rerooting_addresses_the_new_mount_over_the_same_session() {
+    let vol = make_test_volume();
+
+    let promoted = vol
+        .rerooted(Path::new("/Volumes/TestShare-1"))
+        .expect("a direct SMB share re-roots: its session doesn't ride the OS mount");
+
+    assert_eq!(promoted.root(), Path::new("/Volumes/TestShare-1"));
+    assert_eq!(promoted.name(), "TestShare", "the display name survives a promotion");
+    assert_eq!(
+        vol.root(),
+        Path::new("/Volumes/TestShare"),
+        "the replaced instance keeps serving in-flight work at the root it was handed"
+    );
+
+    let promoted_smb = promoted
+        .as_any()
+        .downcast_ref::<SmbVolume>()
+        .expect("a rerooted SMB volume is still an SmbVolume");
+    assert_eq!(promoted_smb.volume_id(), vol.volume_id(), "same share, same ID");
+
+    // The same session, not a copy of it: a connection-state change on one
+    // instance is visible through the other. That's what "no session churn"
+    // means, and it's why a running copy survives a promotion.
+    vol.transition_to_direct();
+    assert_eq!(
+        promoted_smb.connection_state(),
+        ConnectionState::Direct,
+        "both instances read one live session's state"
+    );
+}
+
+/// Every path a rerooted instance translates or hands out is anchored to its NEW
+/// mount, and the old mount is no longer one of its paths: the whole point of the
+/// promotion is that Cmdr stops publishing `/Volumes/naspi/…` once that mount is
+/// gone.
+#[test]
+fn a_rerooted_share_translates_paths_under_its_new_mount() {
+    let vol = make_test_volume();
+    let promoted = vol
+        .rerooted(Path::new("/Volumes/TestShare-1"))
+        .expect("a direct SMB share re-roots");
+    let promoted_smb = promoted
+        .as_any()
+        .downcast_ref::<SmbVolume>()
+        .expect("a rerooted SMB volume is still an SmbVolume");
+
+    assert_eq!(
+        promoted_smb
+            .to_smb_path(Path::new("/Volumes/TestShare-1/Documents/report.pdf"))
+            .expect("a path inside the new mount"),
+        "Documents/report.pdf"
+    );
+    assert!(
+        matches!(
+            promoted_smb.to_smb_path(Path::new("/Volumes/TestShare/Documents/report.pdf")),
+            Err(VolumeError::NotFound(_))
+        ),
+        "the old mount isn't this instance's root any more"
+    );
+    assert_eq!(
+        promoted_smb.to_display_path("Documents/report.pdf"),
+        "/Volumes/TestShare-1/Documents/report.pdf"
+    );
+}
+
 #[test]
 fn local_path_returns_none() {
     let vol = make_test_volume();
@@ -447,7 +520,7 @@ async fn foreground_pending_tracks_navigation_on_this_share_only() {
 /// "already connected" no-op path without needing a real session.
 fn make_test_volume_direct() -> SmbVolume {
     let vol = make_test_volume();
-    vol.state.store(ConnectionState::Direct as u8, Ordering::Relaxed);
+    vol.inner.state.store(ConnectionState::Direct as u8, Ordering::Relaxed);
     vol
 }
 
@@ -466,7 +539,7 @@ async fn attempt_reconnect_bails_when_unmounted() {
     // After `on_unmount` runs, reconnect must not try to build a new session
     // (otherwise we'd leak a watcher + smb2 session into an orphaned volume).
     let vol = make_test_volume();
-    vol.unmounted.store(true, Ordering::Relaxed);
+    vol.inner.unmounted.store(true, Ordering::Relaxed);
     let result = vol.do_attempt_reconnect().await;
     assert!(
         matches!(result, Err(VolumeError::DeviceDisconnected(_))),
@@ -537,7 +610,7 @@ fn listing_watch_coverage_is_none_when_watcher_set_but_disconnected() {
     // `watcher_cancel` populated but state Disconnected: `None`.
     let vol = make_test_volume();
     let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
-    *vol.watcher_cancel.lock().unwrap() = Some(tx);
+    *vol.inner.watcher_cancel.lock().unwrap() = Some(tx);
     assert_eq!(vol.listing_watch_coverage(Path::new("/")), WatchCoverage::None);
 }
 
@@ -547,7 +620,7 @@ fn listing_watch_coverage_is_every_writer_when_direct_and_watcher_set() {
     // every client's writes, not only ours.
     let vol = make_test_volume_direct();
     let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
-    *vol.watcher_cancel.lock().unwrap() = Some(tx);
+    *vol.inner.watcher_cancel.lock().unwrap() = Some(tx);
     assert_eq!(vol.listing_watch_coverage(Path::new("/")), WatchCoverage::EveryWriter);
 }
 
@@ -557,9 +630,9 @@ fn on_unmount_marks_volume_dead() {
     // `blocking_lock`, so this must be a `#[test]`, not a `#[tokio::test]`
     // (the latter panics inside a runtime when calling `blocking_lock`).
     let vol = make_test_volume_direct();
-    assert!(!vol.unmounted.load(Ordering::Relaxed));
+    assert!(!vol.inner.unmounted.load(Ordering::Relaxed));
     vol.on_unmount();
-    assert!(vol.unmounted.load(Ordering::Relaxed));
+    assert!(vol.inner.unmounted.load(Ordering::Relaxed));
     assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
 }
 
@@ -570,13 +643,16 @@ fn on_unmount_marks_volume_dead() {
 fn on_superseded_retires_the_id_but_keeps_the_session() {
     let vol = make_test_volume_direct();
     let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
-    *vol.watcher_cancel.lock().unwrap() = Some(tx);
+    *vol.inner.watcher_cancel.lock().unwrap() = Some(tx);
 
     vol.on_superseded();
 
-    assert!(vol.superseded.load(Ordering::Relaxed), "the volume knows it's retired");
     assert!(
-        !vol.unmounted.load(Ordering::Relaxed),
+        vol.inner.superseded.load(Ordering::Relaxed),
+        "the volume knows it's retired"
+    );
+    assert!(
+        !vol.inner.unmounted.load(Ordering::Relaxed),
         "supersede must not mark the volume dead: holders still use it"
     );
     assert_eq!(
@@ -585,7 +661,7 @@ fn on_superseded_retires_the_id_but_keeps_the_session() {
         "the session is still up, so ops on a held reference must not be gated off"
     );
     assert!(
-        vol.watcher_cancel.lock().unwrap().is_none(),
+        vol.inner.watcher_cancel.lock().unwrap().is_none(),
         "the watcher belongs to the volume id, which the successor now owns"
     );
 }
@@ -596,10 +672,10 @@ fn on_superseded_retires_the_id_but_keeps_the_session() {
 #[tokio::test]
 async fn open_scan_pool_noops_when_superseded() {
     let vol = make_test_volume_direct();
-    vol.superseded.store(true, Ordering::Relaxed);
+    vol.inner.superseded.store(true, Ordering::Relaxed);
     vol.open_scan_pool().await;
     assert!(
-        vol.scan_pool.read().await.is_none(),
+        vol.inner.scan_pool.read().await.is_none(),
         "a retired volume opens no new pool connections"
     );
 }
@@ -613,7 +689,7 @@ async fn open_scan_pool_noops_when_disconnected() {
     let vol = make_test_volume(); // Disconnected, no session
     vol.open_scan_pool().await;
     assert!(
-        vol.scan_pool.read().await.is_none(),
+        vol.inner.scan_pool.read().await.is_none(),
         "a disconnected volume opens no scan pool"
     );
 }
@@ -625,7 +701,7 @@ async fn close_scan_pool_is_idempotent_noop() {
     let vol = make_test_volume();
     vol.close_scan_pool().await;
     vol.close_scan_pool().await;
-    assert!(vol.scan_pool.read().await.is_none());
+    assert!(vol.inner.scan_pool.read().await.is_none());
 }
 
 /// Creates a test SmbVolume in disconnected state (no real connection).
@@ -637,22 +713,27 @@ fn make_test_volume() -> SmbVolume {
         username: "Guest".to_string(),
         password: String::new(),
     };
+    let mount_path = PathBuf::from("/Volumes/TestShare");
     SmbVolume {
         name: "TestShare".to_string(),
-        mount_path: PathBuf::from("/Volumes/TestShare"),
-        share_name: "TestShare".to_string(),
-        volume_id: "volumestestshare".to_string(),
-        params: Arc::new(tokio::sync::RwLock::new(params)),
-        client: Arc::new(tokio::sync::Mutex::new(None)),
-        tree: Arc::new(tokio::sync::RwLock::new(None)),
-        state: Arc::new(AtomicU8::new(ConnectionState::Disconnected as u8)),
-        watcher_cancel: std::sync::Mutex::new(None),
-        reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
-        unmounted: Arc::new(AtomicBool::new(false)),
-        superseded: Arc::new(AtomicBool::new(false)),
-        instance_id: 0,
-        scan_pool: tokio::sync::RwLock::new(None),
-        scan_session_refs: AtomicUsize::new(0),
+        mount_path: mount_path.clone(),
+        mount_root_gone: AtomicBool::new(false),
+        inner: Arc::new(SmbVolumeInner {
+            share_name: "TestShare".to_string(),
+            volume_id: "volumestestshare".to_string(),
+            params: Arc::new(tokio::sync::RwLock::new(params)),
+            client: Arc::new(tokio::sync::Mutex::new(None)),
+            tree: Arc::new(tokio::sync::RwLock::new(None)),
+            state: Arc::new(AtomicU8::new(ConnectionState::Disconnected as u8)),
+            watcher_cancel: std::sync::Mutex::new(None),
+            reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
+            unmounted: Arc::new(AtomicBool::new(false)),
+            superseded: Arc::new(AtomicBool::new(false)),
+            instance_id: 0,
+            scan_pool: tokio::sync::RwLock::new(None),
+            scan_session_refs: AtomicUsize::new(0),
+            active_mount_path: Arc::new(StdRwLock::new(mount_path)),
+        }),
     }
 }
 

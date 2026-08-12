@@ -97,11 +97,11 @@ async fn smb_integration_attempt_reconnect_rebuilds_session() {
     // We don't need to actually break the network; `attempt_reconnect`'s
     // job is to rebuild the session regardless of why state went down.
     {
-        let mut client_guard = vol.client.lock().await;
+        let mut client_guard = vol.inner.client.lock().await;
         *client_guard = None;
     }
     {
-        let mut tree_guard = vol.tree.write().await;
+        let mut tree_guard = vol.inner.tree.write().await;
         *tree_guard = None;
     }
     vol.transition_to_disconnected();
@@ -644,10 +644,10 @@ async fn smb_integration_scan_pool_opens_lists_and_closes() {
         entries.into_iter().map(|e| e.name).collect::<Vec<_>>()
     };
 
-    assert!(vol.scan_pool.read().await.is_none(), "no pool before a scan");
+    assert!(vol.inner.scan_pool.read().await.is_none(), "no pool before a scan");
     vol.open_scan_pool().await;
     assert!(
-        vol.scan_pool.read().await.is_some(),
+        vol.inner.scan_pool.read().await.is_some(),
         "open_scan_pool installs a pool on a connected volume"
     );
 
@@ -671,7 +671,7 @@ async fn smb_integration_scan_pool_opens_lists_and_closes() {
 
     vol.close_scan_pool().await;
     assert!(
-        vol.scan_pool.read().await.is_none(),
+        vol.inner.scan_pool.read().await.is_none(),
         "close_scan_pool tears the pool back down"
     );
 
@@ -725,7 +725,10 @@ async fn smb_integration_superseded_volume_still_serves_its_holders() {
         ConnectionState::Direct,
         "supersede must not flip the connection state"
     );
-    assert!(!held.unmounted.load(Ordering::Relaxed), "supersede is not an unmount");
+    assert!(
+        !held.inner.unmounted.load(Ordering::Relaxed),
+        "supersede is not an unmount"
+    );
 
     // The watcher IS retired, though: the successor spawns its own on its own
     // session, and two watchers on one volume id double-feed the index and let
@@ -762,17 +765,17 @@ async fn smb_integration_superseded_volume_reconnects_without_reclaiming_the_id(
     let vol = make_docker_volume().await;
     vol.on_superseded();
     assert!(
-        vol.watcher_cancel.lock().unwrap().is_none(),
+        vol.inner.watcher_cancel.lock().unwrap().is_none(),
         "supersede cancelled the watcher"
     );
 
     // "The server hung up mid-copy": drop the session under the holder.
     {
-        let mut client_guard = vol.client.lock().await;
+        let mut client_guard = vol.inner.client.lock().await;
         *client_guard = None;
     }
     {
-        let mut tree_guard = vol.tree.write().await;
+        let mut tree_guard = vol.inner.tree.write().await;
         *tree_guard = None;
     }
     vol.transition_to_disconnected();
@@ -786,7 +789,7 @@ async fn smb_integration_superseded_volume_reconnects_without_reclaiming_the_id(
         "the holder's work continues on the rebuilt session"
     );
     assert!(
-        vol.watcher_cancel.lock().unwrap().is_none(),
+        vol.inner.watcher_cancel.lock().unwrap().is_none(),
         "no watcher may be respawned for an id this volume no longer owns"
     );
 }

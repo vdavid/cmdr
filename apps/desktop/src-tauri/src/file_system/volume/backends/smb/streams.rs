@@ -157,10 +157,10 @@ impl SmbVolume {
             tokio::sync::mpsc::channel::<Result<Vec<u8>, VolumeError>>(SMB_STREAM_CHANNEL_CAPACITY);
         let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
 
-        let state_arc = Arc::clone(&self.state);
-        let superseded_arc = Arc::clone(&self.superseded);
-        let volume_id = self.volume_id.clone();
-        let share_name = self.share_name.clone();
+        let state_arc = Arc::clone(&self.inner.state);
+        let superseded_arc = Arc::clone(&self.inner.superseded);
+        let volume_id = self.inner.volume_id.clone();
+        let share_name = self.inner.share_name.clone();
         let smb_path_owned = smb_path.to_string();
 
         tokio::spawn(async move {
@@ -252,7 +252,7 @@ impl SmbVolume {
     /// params, so this is the same number the upload will see, for the price of
     /// a brief uncontended mutex and no wire traffic.
     pub(super) async fn negotiated_max_write(&self) -> Option<u64> {
-        let guard = self.client.lock().await;
+        let guard = self.inner.client.lock().await;
         guard.as_ref().and_then(|c| c.params()).map(|p| p.max_write_size as u64)
     }
 
@@ -298,7 +298,7 @@ impl SmbVolume {
 
             debug!(
                 "SmbVolume::write_from_stream: share={}, path={:?}, size={}",
-                self.share_name, smb_path, size
+                self.inner.share_name, smb_path, size
             );
 
             // Acquire a cloned session once, up front. Both the compound
@@ -485,7 +485,7 @@ impl SmbVolume {
                 && let Some(parent_display) = self.display_path_for(parent)
             {
                 self.notify_mutation(
-                    &self.volume_id,
+                    &self.inner.volume_id,
                     &parent_display,
                     MutationEvent::Created(name.to_string_lossy().to_string()),
                 )

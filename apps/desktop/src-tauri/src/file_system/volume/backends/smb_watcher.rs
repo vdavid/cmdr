@@ -16,11 +16,13 @@
 
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed, refresh_archive_listings};
+use crate::ignore_poison::RwLockIgnorePoison;
 use cmdr_index::{WatchGap, WatchScope};
 use log::{debug, info, warn};
 use smb2::{ClientConfig, FileNotifyAction, SmbClient};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use unicode_normalization::UnicodeNormalization;
 
@@ -188,7 +190,11 @@ async fn process_event_batch(
 pub(super) struct WatchedVolume {
     pub(super) volume_id: String,
     pub(super) instance_id: u64,
-    pub(super) mount_path: PathBuf,
+    /// Where the share is mounted right now. Shared with the `SmbVolume` instances
+    /// of this share (`smb::SmbVolumeInner::active_mount_path`) and re-read once
+    /// per event batch, so a promotion to another mount root re-points the paths
+    /// this watcher's notifications carry instead of feeding a mount that's gone.
+    pub(super) mount_path: Arc<RwLock<PathBuf>>,
 }
 
 /// Exits on cancel (`cancel_rx`), on `next_events` error, or on a clean
@@ -206,7 +212,7 @@ pub(super) async fn run_smb_watcher(
     let WatchedVolume {
         volume_id,
         instance_id,
-        mount_path,
+        mount_path: active_mount_path,
     } = volume;
     // ── Main watcher loop ──────────────────────────────────────────
 
@@ -279,6 +285,10 @@ pub(super) async fn run_smb_watcher(
                 return;
             }
         };
+
+        // One snapshot per batch: a promotion between batches moves the share's
+        // active root, and every path built below has to come from the same one.
+        let mount_path = active_mount_path.read_ignore_poison().clone();
 
         match events_result {
             Ok(events) => {

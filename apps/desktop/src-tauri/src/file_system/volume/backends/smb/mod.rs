@@ -22,6 +22,7 @@ use super::{
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
+use crate::ignore_poison::RwLockIgnorePoison;
 use log::{debug, info, trace, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
@@ -30,7 +31,7 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
-use std::sync::{Mutex as StdMutex, OnceLock};
+use std::sync::{Mutex as StdMutex, OnceLock, RwLock as StdRwLock};
 use std::time::Duration;
 use tauri::AppHandle;
 
@@ -101,11 +102,37 @@ pub(crate) struct SmbConnectionParams {
 /// Hands out a fresh `SmbVolume::instance_id` per constructed volume.
 static NEXT_INSTANCE_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+/// A `Volume` instance addressing one mount root of a share, over the shared
+/// [`SmbVolumeInner`] every instance of that share rides.
+///
+/// The split is what makes [`Volume::rerooted`] free: a share reached through two
+/// mount points is ONE session, and moving the registry's ID from a dead mount to
+/// a live one only has to hand out another instance over the same
+/// `Arc<SmbVolumeInner>`. Nothing re-authenticates, no transport is rebuilt, and
+/// whoever still holds the old instance (a running copy, an open viewer stream)
+/// keeps working at the root it was handed. See `../DETAILS.md` § "Re-rooting a
+/// share".
 pub struct SmbVolume {
     /// Display name (share name).
     name: String,
-    /// OS mount point (for example, "/Volumes/Documents").
+    /// The OS mount point THIS instance addresses (for example,
+    /// "/Volumes/Documents"). Immutable: a different root means a different
+    /// instance, so `root()` stays a plain `&Path` borrow.
     mount_path: PathBuf,
+    /// Set once the registry has proven this instance's `mount_path` is gone and
+    /// had no live sibling mount to move the ID to. The smb2 session is unaffected
+    /// (Cmdr's own I/O never touches the mount), but a `file://` URL under a dead
+    /// mount opens nowhere, so `paths_are_os_visible` has to stop claiming it can.
+    /// One-way: a mount that comes back re-registers the volume from scratch.
+    mount_root_gone: AtomicBool,
+    /// The live transport and everything scoped to the SHARE rather than to one
+    /// mount root, shared with every other instance of this share.
+    inner: Arc<SmbVolumeInner>,
+}
+
+/// The share-scoped half of an [`SmbVolume`]: the smb2 session and the state that
+/// must stay single across every mount root the share is reachable through.
+pub(super) struct SmbVolumeInner {
     /// SMB share name. Mirrors `params.share_name`, kept here for cheap reads
     /// in log lines and hot paths without locking `params`.
     share_name: String,
@@ -172,6 +199,12 @@ pub struct SmbVolume {
     /// pool out from under the other mid-flight. Saturating at 0 so an unmatched
     /// end (unmount teardown raced a pass) can't underflow.
     scan_session_refs: AtomicUsize,
+    /// Where the share is mounted RIGHT NOW, as the registry last decided. The
+    /// share-scoped watcher reads it per event batch to build the absolute paths
+    /// its listing-cache notifications key on, so a promotion re-points it instead
+    /// of leaving the watcher feeding a mount that's gone. ❌ Not a second source
+    /// of truth for `root()`: an instance's own `mount_path` is what it addresses.
+    active_mount_path: Arc<StdRwLock<PathBuf>>,
 }
 
 impl SmbVolume {
@@ -194,28 +227,49 @@ impl SmbVolume {
         tree: Tree,
     ) -> Self {
         let share_name = params.share_name.clone();
+        let mount_path = mount_path.into();
         Self {
             name: name.into(),
-            mount_path: mount_path.into(),
-            share_name,
-            volume_id: volume_id.into(),
-            params: Arc::new(tokio::sync::RwLock::new(params)),
-            client: Arc::new(tokio::sync::Mutex::new(Some(client))),
-            tree: Arc::new(tokio::sync::RwLock::new(Some(Arc::new(tree)))),
-            state: Arc::new(AtomicU8::new(ConnectionState::Direct as u8)),
-            watcher_cancel: std::sync::Mutex::new(None),
-            reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
-            unmounted: Arc::new(AtomicBool::new(false)),
-            superseded: Arc::new(AtomicBool::new(false)),
-            instance_id: NEXT_INSTANCE_ID.fetch_add(1, Ordering::Relaxed),
-            scan_pool: tokio::sync::RwLock::new(None),
-            scan_session_refs: AtomicUsize::new(0),
+            mount_path: mount_path.clone(),
+            mount_root_gone: AtomicBool::new(false),
+            inner: Arc::new(SmbVolumeInner {
+                share_name,
+                volume_id: volume_id.into(),
+                params: Arc::new(tokio::sync::RwLock::new(params)),
+                client: Arc::new(tokio::sync::Mutex::new(Some(client))),
+                tree: Arc::new(tokio::sync::RwLock::new(Some(Arc::new(tree)))),
+                state: Arc::new(AtomicU8::new(ConnectionState::Direct as u8)),
+                watcher_cancel: std::sync::Mutex::new(None),
+                reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
+                unmounted: Arc::new(AtomicBool::new(false)),
+                superseded: Arc::new(AtomicBool::new(false)),
+                instance_id: NEXT_INSTANCE_ID.fetch_add(1, Ordering::Relaxed),
+                scan_pool: tokio::sync::RwLock::new(None),
+                scan_session_refs: AtomicUsize::new(0),
+                active_mount_path: Arc::new(StdRwLock::new(mount_path)),
+            }),
+        }
+    }
+
+    /// Another instance of this SAME share, addressing `new_root`.
+    ///
+    /// The registry's promotion path (`manager/roots.rs`), through
+    /// [`Volume::rerooted`]. Everything live is shared, so this is one allocation
+    /// and no I/O; the share-scoped watcher is re-pointed at the new root so its
+    /// listing-cache notifications keep landing where the panes are.
+    fn instance_at_root(&self, new_root: &Path) -> Self {
+        *self.inner.active_mount_path.write_ignore_poison() = new_root.to_path_buf();
+        Self {
+            name: self.name.clone(),
+            mount_path: new_root.to_path_buf(),
+            mount_root_gone: AtomicBool::new(false),
+            inner: Arc::clone(&self.inner),
         }
     }
 
     /// Returns the volume ID (mirrors `smb_volume_id(server, port, share)`).
     pub(crate) fn volume_id(&self) -> &str {
-        &self.volume_id
+        &self.inner.volume_id
     }
 
     /// Test-only: drops the smb2 client session. After calling this, any code
@@ -226,7 +280,7 @@ impl SmbVolume {
     /// did, the scan would fail with DeviceDisconnected after this call.
     #[cfg(test)]
     pub(in crate::file_system::volume) async fn detach_session_for_test(&self) {
-        let mut client_guard = self.client.lock().await;
+        let mut client_guard = self.inner.client.lock().await;
         *client_guard = None;
     }
 }

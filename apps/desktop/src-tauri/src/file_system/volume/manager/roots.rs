@@ -266,9 +266,10 @@ pub enum RootRemoval {
     /// The active root went away and a surviving sibling took over.
     Promoted { id: String, new_root: PathBuf },
     /// The active root went away, a sibling survives, but the backend can't be
-    /// re-rooted, so the registration stays where it is. The volume keeps
-    /// serving whoever holds it (a direct `SmbVolume` rides smb2, not the mount),
-    /// which beats unregistering a share that's still reachable.
+    /// re-rooted, so the registration stays where it is. The volume keeps serving
+    /// whoever holds it, which beats unregistering a filesystem that's still
+    /// reachable. No shipping backend declines today (`LocalPosixVolume` and
+    /// `SmbVolume` both re-root), so this is the safety net for the next one.
     ActiveRootStranded { id: String },
     /// The LAST root went away, so the registration is gone. The caller owns the
     /// teardown (`on_unmount`, index stop).
@@ -436,9 +437,9 @@ mod tests {
     fn a_backend_that_cant_reroot_keeps_its_registration() {
         // `InMemoryVolume` takes the conservative `rerooted` default, standing in
         // for a backend whose transport is anchored to its root. Losing the
-        // active mount must not unregister it while another mount reaches the
-        // same filesystem: a direct `SmbVolume` rides smb2, not the mount, so
-        // dropping it would kill a session that still works.
+        // active mount must not unregister such a volume while another mount
+        // reaches the same filesystem: its transport may not ride the mount at
+        // all, so dropping it would kill something that still works.
         let manager = VolumeManager::new();
         manager.register(
             "share",

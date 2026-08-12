@@ -31,7 +31,7 @@ impl SmbVolume {
     /// Reads out a clone of `Arc<Tree>`. Cheap (`Arc::clone`).
     pub(super) async fn tree_arc(&self) -> Result<Arc<Tree>, VolumeError> {
         self.check_connection()?;
-        let guard = self.tree.read().await;
+        let guard = self.inner.tree.read().await;
         guard
             .as_ref()
             .cloned()
@@ -57,14 +57,14 @@ impl SmbVolume {
         log::trace!(
             "client-mutex: waiting ticket={} caller=clone_session share={}",
             ticket,
-            self.share_name
+            self.inner.share_name
         );
         let conn = {
-            let mut guard = self.client.lock().await;
+            let mut guard = self.inner.client.lock().await;
             log::trace!(
                 "client-mutex: acquired ticket={} caller=clone_session share={} waited={:?}",
                 ticket,
-                self.share_name,
+                self.inner.share_name,
                 start.elapsed()
             );
             let acquired_at = std::time::Instant::now();
@@ -98,7 +98,7 @@ impl SmbVolume {
                 if matches!(kind, smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired) {
                     warn!(
                         "SmbVolume::{}(share={}): connection lost ({}), transitioning to Disconnected",
-                        op_name, self.share_name, e
+                        op_name, self.inner.share_name, e
                     );
                     self.transition_to_disconnected();
                 } else if matches!(
@@ -112,9 +112,9 @@ impl SmbVolume {
                     //   fast-path
                     // - `AlreadyExists` for `copy_directory_streaming`'s "create_directory is idempotent for merge"
                     //   path
-                    debug!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
+                    debug!("SmbVolume::{}(share={}): {}", op_name, self.inner.share_name, e);
                 } else {
-                    warn!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
+                    warn!("SmbVolume::{}(share={}): {}", op_name, self.inner.share_name, e);
                 }
 
                 Err(map_smb_error(e))
@@ -137,14 +137,14 @@ impl SmbVolume {
         }
 
         let tree_arc = {
-            let guard = self.tree.blocking_read();
+            let guard = self.inner.tree.blocking_read();
             guard
                 .as_ref()
                 .cloned()
                 .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?
         };
 
-        let mut guard = self.client.blocking_lock();
+        let mut guard = self.inner.client.blocking_lock();
 
         let client = guard
             .as_mut()
@@ -158,13 +158,13 @@ impl SmbVolume {
                 if matches!(kind, smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired) {
                     warn!(
                         "SmbVolume::{}(share={}): connection lost ({}), transitioning to Disconnected",
-                        op_name, self.share_name, e
+                        op_name, self.inner.share_name, e
                     );
                     self.transition_to_disconnected();
                 } else if matches!(kind, smb2::ErrorKind::NotFound) {
-                    debug!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
+                    debug!("SmbVolume::{}(share={}): {}", op_name, self.inner.share_name, e);
                 } else {
-                    warn!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
+                    warn!("SmbVolume::{}(share={}): {}", op_name, self.inner.share_name, e);
                 }
 
                 Err(map_smb_error(e))

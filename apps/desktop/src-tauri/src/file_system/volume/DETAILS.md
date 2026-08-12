@@ -76,7 +76,8 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `rerooted(new_root)`: build an equivalent volume rooted somewhere else, or `None` (the default) for "leave me where
   I am". This is how the registry carries out a promotion when a volume's active mount root dies and another mount
   reaches the same filesystem; see § "A volume ID owns a set of mount roots" below. Implement it wherever the root is
-  pure addressing — `LocalPosixVolume` does, in one line. Declining is not a failure mode: a backend whose transport is
+  pure addressing: `LocalPosixVolume` does it in one line, and `SmbVolume` hands out another instance over its shared
+  session (`backends/DETAILS.md` § "Re-rooting a share"). Declining is not a failure mode: a backend whose transport is
   anchored to the old root keeps its registration instead of being handed a root it can't serve.
 - `space_poll_interval()`: recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
 - `create_directory_errors_on_existing_dir()`: whether `create_directory` reliably returns `VolumeError::AlreadyExists` for an existing same-name dir. Default `true` (LocalPosix, SMB, InMemory all do). `MtpVolume` overrides to `false` — the MTP protocol allows same-name sibling objects and `create_folder` silently makes a duplicate, so the folder-merge walker (`write_operations/transfer/volume/strategy.rs`) pre-checks existence on MTP instead of trusting the create to error. A blindly-created duplicate would make a merge target the wrong directory.
@@ -355,8 +356,9 @@ The rules over the set:
   active root?" compare `volume.root()`; `handle_volume_will_unmount` does, so losing a spare mount doesn't stop a
   healthy volume's index.
 - **Promotion**: carried out through `Volume::rerooted`. On a backend that declines, the entry stays where it is
-  (`RootRemoval::ActiveRootStranded`) rather than being unregistered, because for the one backend that declines today
-  (a direct `SmbVolume`) the transport doesn't ride the OS mount and the volume keeps serving.
+  (`RootRemoval::ActiveRootStranded`) rather than being unregistered, because a backend can decline precisely when its
+  transport doesn't ride the OS mount, and then it keeps serving. The two backends that can be doubly mounted
+  (`LocalPosixVolume`, `SmbVolume`) both re-root, so nothing takes that arm today.
 - **Two triggers, no probe.** The unmount watcher calls `remove_root`; a failed operation calls
   `volume::note_root_failure`, which marks the root stale on a mount-is-gone errno (`ENOTCONN`, `ETIMEDOUT`,
   `EHOSTDOWN`, `EHOSTUNREACH`, `ENETDOWN`, `ENETUNREACH`, `ESTALE`; typed errno, never message text) and promotes. ❌

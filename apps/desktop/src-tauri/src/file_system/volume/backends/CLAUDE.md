@@ -18,6 +18,9 @@ checklist: `../CLAUDE.md` + `../DETAILS.md`.
   `on_unmount` / `do_attempt_reconnect`, never by a pane close.
 - **Background bulk work uses the refcounted pool of extra sessions** (`smb/scan_pool.rs`; ksmbd serializes per
   connection, 4 ≈ 3.8×). Dead members retry on siblings, never the MAIN session.
+- **`SmbVolume` is a per-mount-root instance over a shared `Arc<SmbVolumeInner>`**, so `rerooted` moves a share to
+  another of its mounts for one allocation. ❌ A promotion must never call `on_superseded` / `on_unmount` on the
+  instance it replaces: they act on the SHARED session. `DETAILS.md` § "Re-rooting a share".
 - **A replaced volume is SUPERSEDED, never unmounted**: `on_superseded` retires the id-scoped parts and leaves
   `state` / `tree` / `client` alone for the transfers still holding an `Arc`. Tearing the session down here once killed
   a live NAS copy. ❌ Don't reinstate it.

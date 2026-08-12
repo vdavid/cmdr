@@ -92,7 +92,7 @@ impl SmbVolume {
         // `RUST_LOG=cmdr_lib::file_system::volume::backends::smb=trace` when chasing a listing bug.
         trace!(
             "SmbVolume::list_directory: share={}, input={:?}, smb_path={:?}",
-            self.share_name, path, smb_path
+            self.inner.share_name, path, smb_path
         );
 
         let start = std::time::Instant::now();
@@ -128,6 +128,24 @@ impl Volume for SmbVolume {
         &self.mount_path
     }
 
+    /// Move this share's registry ID to another of its mount roots, keeping the
+    /// live smb2 session.
+    ///
+    /// A direct SMB share is exactly the case `rerooted` exists for: the mount is
+    /// only an addressing prefix here (Cmdr's own I/O rides smb2), so a new
+    /// instance over the same `Arc<SmbVolumeInner>` serves the new root with no
+    /// re-auth and no transport rebuild.
+    ///
+    /// ❌ Never route a promotion through `on_superseded` / `on_unmount`: for the
+    /// moment either instance is alive, they SHARE one session, and retiring the
+    /// old one would stop the watcher and the scan pool the new one is about to
+    /// serve from. The registry drops the old instance right after swapping it in,
+    /// so the overlap is transient by construction. `../DETAILS.md` § "Re-rooting
+    /// a share".
+    fn rerooted(&self, new_root: &Path) -> Option<std::sync::Arc<dyn Volume>> {
+        Some(std::sync::Arc::new(self.instance_at_root(new_root)))
+    }
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -136,7 +154,7 @@ impl Volume for SmbVolume {
         // Serialize transfers that hit the same share over one session.
         // `volume_id` already encodes `server+port+share` (via
         // `smb_volume_id`), exactly the server+share granularity we want.
-        LaneKey::new(self.volume_id.clone())
+        LaneKey::new(self.inner.volume_id.clone())
     }
 
     fn list_directory<'a>(
@@ -183,7 +201,7 @@ impl Volume for SmbVolume {
         Box::pin(async move {
             // Refcounted: concurrent background users (an index rescan overlapping a
             // media enrichment pass) share ONE pool; `open_scan_pool` is idempotent.
-            self.scan_session_refs.fetch_add(1, Ordering::AcqRel);
+            self.inner.scan_session_refs.fetch_add(1, Ordering::AcqRel);
             self.open_scan_pool().await
         })
     }
@@ -193,6 +211,7 @@ impl Volume for SmbVolume {
             // Saturating decrement: an unmatched end (a pass racing unmount
             // teardown) must not underflow into a never-closing pool.
             let prev = self
+                .inner
                 .scan_session_refs
                 .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| Some(n.saturating_sub(1)))
                 .unwrap_or(0);
@@ -213,7 +232,7 @@ impl Volume for SmbVolume {
 
             debug!(
                 "SmbVolume::get_metadata: share={}, input={:?}, smb_path={:?}",
-                self.share_name, path, smb_path
+                self.inner.share_name, path, smb_path
             );
 
             // For root, synthesize a directory entry
@@ -343,11 +362,11 @@ impl Volume for SmbVolume {
     }
 
     fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(async move { foreground_yield::foreground_pending(&self.volume_id) })
+        Box::pin(async move { foreground_yield::foreground_pending(&self.inner.volume_id) })
     }
 
     fn wait_until_foreground_idle<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        Box::pin(async move { foreground_yield::wait_until_foreground_idle(&self.volume_id).await })
+        Box::pin(async move { foreground_yield::wait_until_foreground_idle(&self.inner.volume_id).await })
     }
 
     fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {
@@ -361,7 +380,7 @@ impl Volume for SmbVolume {
         // The oracle will simply fall through to a real read; that's the safe
         // direction. Don't hold the lock across awaits (we never `.await` here
         // anyway: this is a sync method).
-        let has_watcher = match self.watcher_cancel.try_lock() {
+        let has_watcher = match self.inner.watcher_cancel.try_lock() {
             Ok(guard) => guard.is_some(),
             Err(_) => return WatchCoverage::None,
         };
@@ -391,7 +410,7 @@ impl Volume for SmbVolume {
                             } else {
                                 DirectoryChange::Modified(entry)
                             };
-                            notify_directory_changed(&self.volume_id, parent_path, change);
+                            notify_directory_changed(&self.inner.volume_id, parent_path, change);
                         }
                         Err(e) => {
                             warn!(
@@ -403,14 +422,14 @@ impl Volume for SmbVolume {
                     }
                 }
                 MutationEvent::Deleted(name) => {
-                    notify_directory_changed(&self.volume_id, parent_path, DirectoryChange::Removed(name));
+                    notify_directory_changed(&self.inner.volume_id, parent_path, DirectoryChange::Removed(name));
                 }
                 MutationEvent::Renamed { from, to } => {
                     let new_path = parent_path.join(&to);
                     match self.get_metadata(&new_path).await {
                         Ok(entry) => {
                             notify_directory_changed(
-                                &self.volume_id,
+                                &self.inner.volume_id,
                                 parent_path,
                                 DirectoryChange::Renamed {
                                     old_name: from,
@@ -438,16 +457,16 @@ impl Volume for SmbVolume {
             // so the bundle still shows the polls flowing, and at what rate, without
             // one line per round trip. A failure is never rolled up: it goes through
             // `handle_smb_result` below.
-            if let Some(batch) = SPACE_INFO_LOG.record(&self.share_name) {
+            if let Some(batch) = SPACE_INFO_LOG.record(&self.inner.share_name) {
                 if batch.is_rolled_up() {
                     debug!(
                         "SmbVolume::get_space_info: share={} ×{} in {}s",
-                        self.share_name,
+                        self.inner.share_name,
                         batch.count,
                         batch.elapsed.as_secs()
                     );
                 } else {
-                    debug!("SmbVolume::get_space_info: share={}", self.share_name);
+                    debug!("SmbVolume::get_space_info: share={}", self.inner.share_name);
                 }
             }
 
@@ -474,7 +493,10 @@ impl Volume for SmbVolume {
             let smb_path = self.to_smb_path(path)?;
             let data = content.to_vec();
 
-            debug!("SmbVolume::create_file: share={}, path={:?}", self.share_name, smb_path);
+            debug!(
+                "SmbVolume::create_file: share={}, path={:?}",
+                self.inner.share_name, smb_path
+            );
 
             {
                 let (tree, conn) = self.clone_session().await?;
@@ -498,7 +520,7 @@ impl Volume for SmbVolume {
                 && let Some(parent_display) = self.display_path_for(parent)
             {
                 self.notify_mutation(
-                    &self.volume_id,
+                    &self.inner.volume_id,
                     &parent_display,
                     MutationEvent::Created(name.to_string_lossy().to_string()),
                 )
@@ -517,7 +539,7 @@ impl Volume for SmbVolume {
 
             debug!(
                 "SmbVolume::create_directory: share={}, path={:?}",
-                self.share_name, smb_path
+                self.inner.share_name, smb_path
             );
 
             {
@@ -530,7 +552,7 @@ impl Volume for SmbVolume {
                 && let Some(parent_display) = self.display_path_for(parent)
             {
                 self.notify_mutation(
-                    &self.volume_id,
+                    &self.inner.volume_id,
                     &parent_display,
                     MutationEvent::Created(name.to_string_lossy().to_string()),
                 )
@@ -544,7 +566,10 @@ impl Volume for SmbVolume {
         Box::pin(async move {
             let smb_path = self.to_smb_path(path)?;
 
-            debug!("SmbVolume::delete: share={}, path={:?}", self.share_name, smb_path);
+            debug!(
+                "SmbVolume::delete: share={}, path={:?}",
+                self.inner.share_name, smb_path
+            );
 
             // Try delete_file first (one round-trip). If the path is a directory,
             // the server returns STATUS_FILE_IS_A_DIRECTORY; then try delete_directory.
@@ -570,7 +595,7 @@ impl Volume for SmbVolume {
                 && let Some(parent_display) = self.display_path_for(parent)
             {
                 self.notify_mutation(
-                    &self.volume_id,
+                    &self.inner.volume_id,
                     &parent_display,
                     MutationEvent::Deleted(name.to_string_lossy().to_string()),
                 )
@@ -592,7 +617,7 @@ impl Volume for SmbVolume {
 
             debug!(
                 "SmbVolume::rename: share={}, from={:?}, to={:?}, force={}",
-                self.share_name, smb_from, smb_to, force
+                self.inner.share_name, smb_from, smb_to, force
             );
 
             if force {
@@ -654,7 +679,7 @@ impl Volume for SmbVolume {
                 if from.parent() == to.parent() {
                     // Same-directory rename
                     self.notify_mutation(
-                        &self.volume_id,
+                        &self.inner.volume_id,
                         &from_parent_display,
                         MutationEvent::Renamed {
                             from: from_name.to_string_lossy().to_string(),
@@ -665,14 +690,18 @@ impl Volume for SmbVolume {
                 } else {
                     // Cross-directory move: remove from source, add in dest
                     self.notify_mutation(
-                        &self.volume_id,
+                        &self.inner.volume_id,
                         &from_parent_display,
                         MutationEvent::Deleted(from_name.to_string_lossy().to_string()),
                     )
                     .await;
                     if let Some(to_parent_display) = to.parent().and_then(|p| self.display_path_for(p)) {
-                        self.notify_mutation(&self.volume_id, &to_parent_display, MutationEvent::Created(to_name))
-                            .await;
+                        self.notify_mutation(
+                            &self.inner.volume_id,
+                            &to_parent_display,
+                            MutationEvent::Created(to_name),
+                        )
+                        .await;
                     }
                 }
             }
@@ -729,7 +758,7 @@ impl Volume for SmbVolume {
 
             debug!(
                 "SmbVolume::open_read_stream: share={}, path={:?}",
-                self.share_name, smb_path
+                self.inner.share_name, smb_path
             );
 
             let stream = self.open_smb_download_stream(&smb_path).await?;
@@ -761,7 +790,7 @@ impl Volume for SmbVolume {
                 if size > 0 && size <= max_read {
                     debug!(
                         "SmbVolume::open_read_stream_with_hint: share={}, path={:?}, size={}; using compound fast-path",
-                        self.share_name, smb_path, size
+                        self.inner.share_name, smb_path, size
                     );
                     match tree.read_file_compound(&mut conn, &smb_path).await {
                         Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => {
@@ -787,7 +816,7 @@ impl Volume for SmbVolume {
 
             debug!(
                 "SmbVolume::open_read_stream_with_hint: share={}, path={:?}; using streaming path",
-                self.share_name, smb_path
+                self.inner.share_name, smb_path
             );
             let stream = self.open_smb_download_stream(&smb_path).await?;
             Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
@@ -817,7 +846,7 @@ impl Volume for SmbVolume {
             let smb_path = self.to_smb_path(path)?;
             debug!(
                 "SmbVolume::read_range: share={}, path={:?}, offset={}, len={}",
-                self.share_name, smb_path, offset, len
+                self.inner.share_name, smb_path, offset, len
             );
 
             // One open -> one positioned read -> close per call. `smb2::FileReader`
@@ -906,32 +935,34 @@ impl Volume for SmbVolume {
     /// (`spawn_watcher_death_reconnect`) resolves the id through the manager and
     /// would mark the SUCCESSOR disconnected.
     fn on_superseded(&self) {
-        self.superseded.store(true, Ordering::Relaxed);
+        self.inner.superseded.store(true, Ordering::Relaxed);
         self.stop_watcher();
         debug!(
             "SmbVolume for {}: superseded by a newer instance; session left up for in-flight work",
-            self.share_name
+            self.inner.share_name
         );
     }
 
     fn on_unmount(&self) {
         // Mark the volume permanently dead so any in-flight reconnect bails
         // out before installing a session into an orphaned volume.
-        self.unmounted.store(true, Ordering::Relaxed);
+        self.inner.unmounted.store(true, Ordering::Relaxed);
 
         // Transition to Disconnected. We deliberately set the atomic directly
         // instead of going through `transition_to_disconnected()`, because the
         // volume is being unregistered: the FE will learn via `volumes-changed`
         // and an extra `volume-connection-changed` event would race with that.
-        self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+        self.inner
+            .state
+            .store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
 
         // Cancel the background watcher task. The task will call watcher.close()
         // to release the SMB directory handle before exiting.
-        if let Ok(mut guard) = self.watcher_cancel.lock()
+        if let Ok(mut guard) = self.inner.watcher_cancel.lock()
             && let Some(cancel_tx) = guard.take()
         {
             let _ = cancel_tx.send(());
-            debug!("SmbVolume cleanup for {}: watcher cancel sent", self.share_name);
+            debug!("SmbVolume cleanup for {}: watcher cancel sent", self.inner.share_name);
         }
 
         // Tear down any live scan pool: a member session must not keep walking an
@@ -950,14 +981,14 @@ impl Volume for SmbVolume {
         // practice all three just drop their Arc refcounts; the order is
         // defensive.
         {
-            let mut tree_guard = self.tree.blocking_write();
+            let mut tree_guard = self.inner.tree.blocking_write();
             *tree_guard = None;
         }
         {
-            let mut client_guard = self.client.blocking_lock();
+            let mut client_guard = self.inner.client.blocking_lock();
             *client_guard = None;
         }
 
-        debug!("SmbVolume cleanup for {}: smb2 session dropped", self.share_name);
+        debug!("SmbVolume cleanup for {}: smb2 session dropped", self.inner.share_name);
     }
 }
