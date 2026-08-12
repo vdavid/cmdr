@@ -23,7 +23,8 @@ Runner architecture: `../CLAUDE.md`.
 - **Every check MUST declare `Inputs`** (the path globs it reads), or `TestEveryCheckDeclaresInputs` fails the suite. An
   empty list fingerprints on the globals alone, so the check is cache-skipped when its own files change. Reuse a set
   from `inputs.go` and be conservative: too-wide costs cache speed, too-narrow costs correctness. Don't list the
-  auto-added globals (`.mise.toml`, `scripts/check/**`).
+  auto-added globals (`.mise.toml`, `scripts/check/**`). Code lanes inherit `agentDocExclusions`, so they never see a
+  `CLAUDE.md` / `DETAILS.md` edit; a check that reads one needs `wholeRepoInputs`.
 - **Wire every check into CI** (a step in `.github/workflows/ci.yml` / `slow-checks.yml`, or a `NotInCI` reason).
   `ci-coverage` enforces it both ways, so there's no "registered but runs nowhere" state.
 - **Length-based truncation is forbidden.** If 200 tests fail, all 200 panic bodies pass through. Filter by structure
@@ -51,6 +52,9 @@ Runner architecture: `../CLAUDE.md`.
 - **`svelte-tests` coverage runs in a per-invocation temp `reportsDirectory`** (via `VITEST_COVERAGE_DIR`): a fixed path
   lets concurrent runs clobber each other's in-flight v8 worker files (`ENOENT`). DETAILS.md § "svelte-tests coverage
   isolation".
+- **The Playwright lane's release build is NOT incremental** (a no-op rebuild costs 172 s), so `e2e-build-cache.go`
+  stamps the binary with what it was compiled from and skips the build when that matches. The set drops
+  `apps/desktop/test/**`; every uncertainty rebuilds. DETAILS.md § "The Playwright lane's binary is fingerprinted".
 - **A red Rust lane goes through `resolveRustFailure`**, which re-runs failures alone before believing them. Lanes
   inject only WHERE: the Docker lane execs into its still-live container, so don't collapse that into one `docker run`.
   DETAILS.md § "The contention re-run".

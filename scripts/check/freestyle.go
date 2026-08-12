@@ -68,8 +68,9 @@ func preferFreestyleRun(rootDir string, args []string, flags *cliFlags) int {
 
 	// Run local-only (freestyle-incompat) checks
 	ctx := &checks.CheckContext{
-		CI:      flags.ciMode,
-		RootDir: rootDir,
+		CI:             flags.ciMode,
+		RootDir:        rootDir,
+		ReuseArtifacts: !cacheBypassed(flags),
 	}
 
 	localChecks, err := selectChecks(flags)

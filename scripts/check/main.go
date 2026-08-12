@@ -129,8 +129,9 @@ func main() {
 	enforceMainCloneGuard(flags, rootDir)
 
 	ctx := &checks.CheckContext{
-		CI:      flags.ciMode,
-		RootDir: rootDir,
+		CI:             flags.ciMode,
+		RootDir:        rootDir,
+		ReuseArtifacts: !cacheBypassed(flags),
 	}
 
 	checksToRun, err := selectChecks(flags)

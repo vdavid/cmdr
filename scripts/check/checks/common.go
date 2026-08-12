@@ -92,6 +92,16 @@ func Skipped(reason string) CheckResult {
 type CheckContext struct {
 	CI      bool
 	RootDir string
+	// ReuseArtifacts says whether this run may reuse an expensive artifact a
+	// previous run produced (today: the Playwright lane's release binary, see
+	// `e2e-build-cache.go`). False under `--ci`, `--fresh`, and
+	// `CMDR_CHECK_NO_CACHE`, so those rebuild from scratch. Deliberately NOT
+	// false for a named check: `pnpm check desktop-e2e-playwright` means "run the
+	// suite for real", and running it against an up-to-date binary does exactly
+	// that — this is the ONE place the "named ⇒ fresh" rule doesn't apply, since
+	// naming the slow lane is how you run it at all. The zero value is the safe
+	// direction: a context nobody configured rebuilds.
+	ReuseArtifacts bool
 	// Tests receives one record per individual test a test lane ran, on the red
 	// path as well as the green one (`test-log.go`). The runner hands each check
 	// its own recorder and drains it afterwards; nil everywhere else (unit tests,

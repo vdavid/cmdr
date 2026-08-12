@@ -42,13 +42,22 @@ type cachePlan struct {
 	cache         *checks.CheckCache // always non-nil; recordRun honors writeDisabled
 }
 
+// cacheBypassed reports whether this run refuses to trust anything a previous run
+// recorded: `--fresh` and `CMDR_CHECK_NO_CACHE` are the debug escape hatches,
+// `--ci` runs fresh by contract. Naming checks is a separate, narrower rule that
+// only the check-level cache applies (see `planCache`), because "I named this
+// check" means "actually run it", not "rebuild its inputs from scratch".
+func cacheBypassed(flags *cliFlags) bool {
+	return flags.fresh || flags.ciMode || os.Getenv("CMDR_CHECK_NO_CACHE") != ""
+}
+
 // planCache splits the selected checks into cache hits and checks that must run.
 // It never errors out the run: any failure to read git or the cache degrades to
 // "run everything fresh" (active=false on the read side, but we still try to
 // write fresh passes unless writing is disabled).
 func planCache(ctx *checks.CheckContext, flags *cliFlags, selected []checks.CheckDefinition) *cachePlan {
 	writeDisabled := flags.ciMode // CI never writes the cache
-	cacheReads := !flags.fresh && !flags.ciMode && os.Getenv("CMDR_CHECK_NO_CACHE") == "" && len(flags.checkNames) == 0
+	cacheReads := !cacheBypassed(flags) && len(flags.checkNames) == 0
 
 	plan := &cachePlan{
 		toRun:         selected,

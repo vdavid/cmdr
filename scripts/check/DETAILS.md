@@ -232,8 +232,11 @@ separate.
 `groq-smoke`). They're silently dropped from local runs (no SKIPPED line) and are not pulled in by `--include-slow` or
 `--only-slow`. Escape hatch: an explicit `pnpm check cargo-udeps` always runs, so you can verify locally before pushing.
 
-**Self-contained E2E checks:** `desktop-e2e-playwright` manages the full lifecycle (build binary once, create per-shard
-fixtures, start N Tauri instances, run N Playwright processes in parallel, cleanup). Each shard runs in its own isolated
+**Self-contained E2E checks:** `desktop-e2e-playwright` manages the full lifecycle (build the binary, create per-shard
+fixtures, start N Tauri instances, run N Playwright processes in parallel, cleanup). The build is fingerprinted and
+skipped when the binary on disk already matches the tree it would be built from, which is worth 172 s per run because
+the build isn't incremental (`checks/DETAILS.md` § "The Playwright lane's binary is fingerprinted"). Each shard runs in
+its own isolated
 `CMDR_DATA_DIR` with its own Unix socket and MCP port (9429 + shard offset), plus a per-shard `CMDR_INSTANCE_ID` of the
 form `e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`). The instance ID drives the macOS Keychain
 `SERVICE_NAME` suffix (`Cmdr-e2e-<short>-<pid>`) so two parallel shards can never collide on credentials, and reshapes

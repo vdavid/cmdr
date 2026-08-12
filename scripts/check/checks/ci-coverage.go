@@ -199,6 +199,10 @@ func validateCheckInputsExist(rootDir string) []string {
 		}
 	}
 	check(GlobalInputs, "GlobalInputs")
+	// Not a registry check's Inputs, but the same kind of hole: a dead prefix here
+	// shrinks the Playwright lane's build fingerprint, so a rename would leave the
+	// suite running against a binary built from the old tree.
+	check(e2eBinaryInputs(), "e2eBinaryInputs")
 	for i := range ciCoverageRegistry {
 		c := &ciCoverageRegistry[i]
 		check(c.Inputs, "check `"+c.ID+"`")

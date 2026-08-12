@@ -395,6 +395,37 @@ depends on the canonical path persisting — no CI artifact upload, and threshol
 config — so isolation applies everywhere, with no CI split. Manual `pnpm test:coverage` (no env var set) still writes
 `./coverage`.
 
+## The Playwright lane's binary is fingerprinted, because its build isn't incremental
+
+**Decision**: `buildTauriBinary` stamps the release binary with a fingerprint of everything it was compiled from
+(`e2eBinaryInputs`, in `e2e-build-cache.go`) and skips the compile when the binary on disk already carries that stamp.
+
+**Why**: `pnpm test:e2e:playwright:build` does not get cheaper when nothing changed. Measured back-to-back on a warm
+`target/` with an untouched tree (macOS, rustc 1.97.1, 2026-08-12): the second build took **172 s**, of which cargo
+spent **2 m 42 s** recompiling `cmdr` alone. The `beforeBuildCommand` runs `vite build` unconditionally (6.6 s) and
+rewrites `apps/desktop/build/`, which the app crate embeds, so cargo's fingerprint for `cmdr` invalidates on every
+invocation no matter what changed. "Cargo is incremental, so a no-op build is free" is simply false here. An
+instrumented session paid this three times.
+
+The stamped set is narrower than the lane's `Inputs` on purpose: it drops `apps/desktop/test/**`. Playwright reads its
+specs, its config, and the shared fixture helpers from disk when the suite runs, so editing one changes what the suite
+asserts, never what it asserts against — and an E2E debugging loop edits exactly those files.
+`TestE2EBinaryInputsCoverTheBuildAndNothingElse` pins both directions of that boundary.
+
+Every uncertainty rebuilds: a missing binary, a missing or unreadable stamp, or a fingerprint pass that failed (which
+hands over an empty string, and `recordE2EBuild` refuses to write one). That bias matters more here than elsewhere,
+because this lane carries `NotInCI` — nothing downstream would catch a suite that passed against a stale binary.
+
+The stamp carries the binary's size and mtime alongside the fingerprint, so it vouches for one specific file rather than
+for whatever sits at that path. `target/<triple>/release/Cmdr` isn't ours exclusively: a plain `pnpm tauri build` in the
+same worktree writes the same path without the `playwright-e2e` feature, and an unbound stamp would hand that binary to
+a harness that can't drive it.
+
+`ctx.ReuseArtifacts` is the escape hatch, false under `--ci`, `--fresh`, and `CMDR_CHECK_NO_CACHE`. It deliberately
+stays true for a NAMED check, unlike the check-level cache's "named ⇒ run fresh" rule: naming the slow lane is how you
+run it at all, and running the suite against an up-to-date binary is running it for real. `cacheBypassed` in `plan.go`
+is the one predicate both consumers read.
+
 ## One feature set across the cargo lanes
 
 Cargo keys its artifacts by the exact question you asked it: which packages, which features. Two lanes sharing one
