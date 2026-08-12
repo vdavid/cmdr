@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
-import { app } from './index'
+import { app } from '../index'
 
 function createMockKv(): KVNamespace {
   return {

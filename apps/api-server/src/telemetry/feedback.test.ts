@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { app } from './index'
+import { app } from '../index'
 
 /** In-memory D1 stub that records every prepare/bind so tests can assert the written row. */
 function createRecordingD1(): { db: D1Database; calls: { sql: string; args: unknown[] }[] } {

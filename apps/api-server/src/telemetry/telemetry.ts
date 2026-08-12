@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono'
-import { callerIp, enforceIpRateLimit, hashCallerIp, type Bindings } from './types'
-import { classifyUaFamily } from './funnel'
+import { callerIp, enforceIpRateLimit, hashCallerIp, type Bindings } from '../types'
+import { classifyUaFamily } from '../user-agent'
 
 const telemetry = new Hono<{ Bindings: Bindings }>()
 

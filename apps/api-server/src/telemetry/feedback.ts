@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono'
-import { enforceIpRateLimit, type Bindings } from './types'
-import { postFeedbackNotification } from './discord'
+import { enforceIpRateLimit, type Bindings } from '../types'
+import { postFeedbackNotification } from '../discord'
 
 const feedback = new Hono<{ Bindings: Bindings }>()
 

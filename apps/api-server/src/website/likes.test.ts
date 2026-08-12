@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { app } from './index'
+import { app } from '../index'
 
 /** In-memory KV stub over a plain Map, enough for the read-modify-write the likes routes do. */
 function createKv(seed: Record<string, string> = {}) {

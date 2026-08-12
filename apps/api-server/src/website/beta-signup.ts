@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono'
-import { type Bindings, enforceIpRateLimit, isValidEmail, redactEmail } from './types'
-import { postBetaSignupNotification, type BetaSignupNotification } from './discord'
+import { type Bindings, enforceIpRateLimit, isValidEmail, redactEmail } from '../types'
+import { postBetaSignupNotification, type BetaSignupNotification } from '../discord'
 
 const betaSignup = new Hono<{ Bindings: Bindings }>()
 

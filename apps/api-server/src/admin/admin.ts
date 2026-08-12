@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import { constantTimeEqual } from './paddle'
-import { type Bindings, activationCountKey, verifyAdminAuth } from './types'
-import { extractDateSegment } from './error-report-eviction'
+import { constantTimeEqual } from '../licensing/paddle'
+import { type Bindings, activationCountKey, verifyAdminAuth } from '../types'
+import { extractDateSegment } from '../telemetry/error-report-eviction'
 
 const admin = new Hono<{ Bindings: Bindings }>()
 

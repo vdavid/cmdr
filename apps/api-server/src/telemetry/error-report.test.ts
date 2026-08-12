@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from 'vitest'
-import { app } from './index'
+import { app } from '../index'
 import { DAILY_INTAKE_BUDGET_BYTES, DAILY_NOTIFICATION_CAP, dailyBytesKey, pauseIntake } from './error-report-intake'
 
 /** The UTC day the route charges an upload against. */

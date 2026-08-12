@@ -1,14 +1,14 @@
 import { Hono } from 'hono'
 import type { Bindings } from './types'
-import { licensing } from './licensing'
-import { admin } from './admin'
-import { funnel } from './funnel'
-import { telemetry } from './telemetry'
-import { likes } from './likes'
-import { errorReport } from './error-report'
-import { betaSignup } from './beta-signup'
-import { feedback } from './feedback'
-import { linkCodes } from './link-codes'
+import { licensing } from './licensing/licensing'
+import { admin } from './admin/admin'
+import { funnel } from './admin/funnel'
+import { telemetry } from './telemetry/telemetry'
+import { errorReport } from './telemetry/error-report'
+import { feedback } from './telemetry/feedback'
+import { likes } from './website/likes'
+import { betaSignup } from './website/beta-signup'
+import { linkCodes } from './website/link-codes'
 import {
   handleCrashNotifications,
   handleDailyAggregation,

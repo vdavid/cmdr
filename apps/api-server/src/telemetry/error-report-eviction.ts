@@ -1,4 +1,4 @@
-import type { Bindings } from './types'
+import type { Bindings } from '../types'
 import { pauseIntake } from './error-report-intake'
 
 /**

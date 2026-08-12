@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { callerIp, enforceIpRateLimit, hashCallerIp, type Bindings } from './types'
+import { callerIp, enforceIpRateLimit, hashCallerIp, type Bindings } from '../types'
 
 const likes = new Hono<{ Bindings: Bindings }>()
 

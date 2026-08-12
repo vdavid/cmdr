@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { app } from './index'
-import { assembleFunnel, buildDateList, classifyUaFamily, resolveUaFamily } from './funnel'
+import { app } from '../index'
+import { assembleFunnel, buildDateList } from './funnel'
+import { classifyUaFamily, resolveUaFamily } from '../user-agent'
 
 function createMockKv(): KVNamespace {
   return { get: vi.fn(() => null), put: vi.fn() } as unknown as KVNamespace

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { app } from './index'
+import { app } from '../index'
 import { sanitizeUtmValue, isValidCode, type LinkCodeMap } from './link-codes'
 
 /** Minimal KV mock backed by an in-memory store, supporting get/put/delete. */

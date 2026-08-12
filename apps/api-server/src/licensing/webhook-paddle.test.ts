@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { app } from './index'
+import { app } from '../index'
 import { issuanceStaleAfterMs } from './license-issuance'
 
 // Mock Resend so no email leaves the test. The result shape matters here: the SDK reports a

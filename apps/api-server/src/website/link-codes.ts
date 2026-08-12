@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { type Bindings, verifyAdminAuth } from './types'
+import { type Bindings, verifyAdminAuth } from '../types'
 
 // Tracking-link short codes. A `?r=<code>` on getcmdr.com or the personal blog expands to UTM
 // params client-side; the blogs fetch the code -> meaning map from GET /r-codes.json (edge-cached).

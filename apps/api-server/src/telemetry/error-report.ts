@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono'
 import { AwsClient } from 'aws4fetch'
-import { enforceIpRateLimit, type Bindings } from './types'
+import { enforceIpRateLimit, type Bindings } from '../types'
 import {
   ERROR_REPORT_PREFIX,
   incrementTotalBytes,
@@ -23,7 +23,7 @@ import {
   postEvictionNotification,
   postIntakeRejectedNotification,
   postNotificationsSuppressedNotification,
-} from './discord'
+} from '../discord'
 
 const errorReport = new Hono<{ Bindings: Bindings }>()
 

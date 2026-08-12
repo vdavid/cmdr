@@ -1,5 +1,5 @@
 import { Resend, type CreateEmailOptions } from 'resend'
-import type { LicenseType } from './license'
+import type { LicenseType } from './licensing/license'
 
 /**
  * Send through Resend, turning a rejected send into a thrown error.

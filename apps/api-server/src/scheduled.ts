@@ -1,7 +1,7 @@
 import { sendCrashNotificationEmail, sendDbSizeAlert, type CrashEmailRow } from './email'
 import type { Bindings } from './types'
-import { recomputeTotal, tryEvict, EVICTION_HIGH_WATERMARK, EVICTION_LOW_WATERMARK } from './error-report-eviction'
-import { isIntakePaused, resumeIntake } from './error-report-intake'
+import { recomputeTotal, tryEvict, EVICTION_HIGH_WATERMARK, EVICTION_LOW_WATERMARK } from './telemetry/error-report-eviction'
+import { isIntakePaused, resumeIntake } from './telemetry/error-report-intake'
 import { postEvictionBlockedNotification, postEvictionNotification } from './discord'
 
 const dbSizeThresholdBytes = 100 * 1024 * 1024 // 100 MB

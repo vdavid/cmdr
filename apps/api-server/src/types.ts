@@ -227,5 +227,5 @@ export function verifyAdminAuth(c: {
   return null
 }
 
-import { licenseTypes, type LicenseType } from './license'
-import { constantTimeEqual } from './paddle'
+import { licenseTypes, type LicenseType } from './licensing/license'
+import { constantTimeEqual } from './licensing/paddle'

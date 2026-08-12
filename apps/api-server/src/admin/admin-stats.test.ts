@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { app } from './index'
+import { app } from '../index'
 
 /** Minimal KV mock that supports get/put. Handles the `'json'` format used by Hono. */
 function createMockKv(store: Record<string, string> = {}): KVNamespace {

@@ -6,8 +6,8 @@ import {
   handleDailyEvictionSweep,
   handleRetentionSweep,
 } from './index'
-import { ERROR_REPORT_PREFIX, EVICTION_MIN_AGE_DAYS, TOTAL_BYTES_KEY } from './error-report-eviction'
-import { INTAKE_PAUSED_KEY } from './error-report-intake'
+import { ERROR_REPORT_PREFIX, EVICTION_MIN_AGE_DAYS, TOTAL_BYTES_KEY } from './telemetry/error-report-eviction'
+import { INTAKE_PAUSED_KEY } from './telemetry/error-report-intake'
 
 /** Fixtures age relative to now, so eviction eligibility never depends on the calendar. */
 function daysAgo(days: number): Date {
