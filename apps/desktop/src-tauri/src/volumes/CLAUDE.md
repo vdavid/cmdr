@@ -16,7 +16,8 @@ Everything re-exports from `mod.rs` (`LocationInfo` / `LocationCategory`, consts
   ID keys the index DB, `lastUsedPaths`, tab state, and routing, so a lossy one sends reads and deletes to the wrong
   disk. DETAILS § "A volume ID is derived from the volume's IDENTITY".
 - **One volume ID publishes ONE location, at ONE canonical root**: a filesystem mounted twice collapses to the
-  shortest path, and `list_locations` dedupes on ID, ❌ never on path alone. Publishing one location doesn't forget
+  shortest path (`cmdr_fs::volume::canonical_root::collapse_by_volume_id`, shared with `volumes_linux/`: ❌ never
+  re-copy it here), and `list_locations` dedupes on ID, ❌ never on path alone. Publishing one location doesn't forget
   the others; the registry keeps them. DETAILS § "One volume ID publishes one mount root".
 - **The unmount path can't use `volume_id_for_mount`** — neither `statfs` nor NSURL can identify a gone mount, so it
   falls back to the wrong id. Use `VolumeManager::remove_root(volume_path)`: it promotes a sibling mount and

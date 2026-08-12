@@ -90,6 +90,20 @@ pub struct LocationInfo {
     pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
 }
 
+/// Lets discovery collapse a doubly-mounted filesystem down to one published
+/// location (`cmdr_fs::volume::canonical_root`). The Linux twin implements the
+/// same trait on its own `LocationInfo`, which is what keeps the rule shared
+/// without merging the two types.
+impl cmdr_fs::volume::canonical_root::MountRootCandidate for LocationInfo {
+    fn volume_id(&self) -> &str {
+        &self.id
+    }
+
+    fn mount_root(&self) -> &str {
+        &self.path
+    }
+}
+
 /// Default volume ID for the root filesystem.
 pub const DEFAULT_VOLUME_ID: &str = "root";
 

@@ -7,8 +7,9 @@ crate.
 
 ## Module map
 
-- `volume/`: the `Volume` trait and the types it exchanges, `InMemoryVolume`, `ids` (the volume-ID funnel),
-  `friendly_error/` (typed, word-free classification), and `host/` — what a backend needs from the app, as named traits.
+- `volume/`: the `Volume` trait, its types, `InMemoryVolume`, `ids` + `canonical_root` (the ID funnel, plus
+  double-mount collapse), `friendly_error/` (typed, word-free classification), and `host/` — what a backend needs from
+  the app, as named traits.
   Read `src/volume/host/CLAUDE.md` before writing a backend or moving one out of the app.
 - `entry.rs` + `icons/`: `FileEntry` and the two disk-free classifiers `get_icon_id` calls. What every listing yields.
 - `sqlite_util.rs`: the ONE process-wide page-cache slab plus the connection factories all five stores open through.

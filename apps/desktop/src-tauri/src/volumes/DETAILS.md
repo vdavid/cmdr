@@ -33,8 +33,15 @@ currently unconstructed.
 
 ### One volume ID publishes one mount root
 
-**Decision**: `get_attached_volumes` collapses mounts that share a volume ID (`mounts.rs::collapse_by_volume_id`),
-keeping the SHORTEST path and breaking ties lexicographically. `list_locations` then dedupes on ID as well as path.
+**Decision**: `get_attached_volumes` collapses mounts that share a volume ID
+(`cmdr_fs::volume::canonical_root::collapse_by_volume_id`), keeping the SHORTEST path and breaking ties
+lexicographically. `list_locations` then dedupes on ID as well as path.
+
+The collapse lives in `cmdr-fs` rather than here because it's a pure list transform over `(volume id, mount root)`
+pairs, and Linux needs the identical rule (`volumes_linux/DETAILS.md`): bind mounts and container mounts make "one ID,
+several roots" routine there. Each platform implements `MountRootCandidate` on its own `LocationInfo` and keeps its own
+platform-specific ID derivation. A second copy would rot independently, which is the whole reason the two enumerations
+share this one.
 
 **Why**: a volume ID is identity, and one filesystem can legitimately be mounted twice: macOS mounts the same SMB share
 at `/Volumes/naspi` and `/Volumes/naspi-1`, and both derive the same ID (a share keys on `(server, port, share)`; a

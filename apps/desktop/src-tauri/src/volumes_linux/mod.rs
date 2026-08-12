@@ -17,6 +17,7 @@ pub mod watcher;
 pub use crate::file_system::volume::SmbConnectionState;
 
 use crate::file_system::linux_mounts::{self, MountEntry};
+use cmdr_fs::volume::canonical_root::collapse_by_volume_id;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::Path;
@@ -115,6 +116,20 @@ pub struct LocationInfo {
     pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
 }
 
+/// Lets discovery collapse a filesystem mounted at several paths down to one
+/// published location (`cmdr_fs::volume::canonical_root`). The macOS twin
+/// implements the same trait on its own `LocationInfo`, which is what keeps the
+/// rule shared without merging the two types.
+impl cmdr_fs::volume::canonical_root::MountRootCandidate for LocationInfo {
+    fn volume_id(&self) -> &str {
+        &self.id
+    }
+
+    fn mount_root(&self) -> &str {
+        &self.path
+    }
+}
+
 /// Information about volume space.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -178,45 +193,52 @@ pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
     }
 }
 
-/// Get all locations organized by category, deduplicated.
+/// Get all locations organized by category, deduplicated by path AND by volume
+/// ID.
+///
+/// The ID half matters because a volume ID is identity: one filesystem reachable
+/// through two categories (a CIFS mount that's also GVFS-mounted) derives one ID
+/// at two paths, and everything downstream keys on the ID. `get_mounted_volumes`
+/// already collapses double mounts within its own category; this catches the
+/// cross-category case.
 pub fn list_locations() -> Vec<LocationInfo> {
     let mounts = linux_mounts::parse_proc_mounts();
     let mut locations = Vec::new();
     let mut seen_paths: HashSet<String> = HashSet::new();
+    let mut seen_ids: HashSet<String> = HashSet::new();
+
+    let mut push_unique = |locations: &mut Vec<LocationInfo>, loc: LocationInfo| {
+        // Both inserts must run, so the sets can't drift apart on a partial hit.
+        let new_path = seen_paths.insert(loc.path.clone());
+        let new_id = seen_ids.insert(loc.id.clone());
+        if new_path && new_id {
+            locations.push(loc);
+        }
+    };
 
     // 1. Favorites
     for loc in get_favorites(&mounts) {
-        if seen_paths.insert(loc.path.clone()) {
-            locations.push(loc);
-        }
+        push_unique(&mut locations, loc);
     }
 
     // 2. Main volume
-    if let Some(loc) = get_main_volume(&mounts)
-        && seen_paths.insert(loc.path.clone())
-    {
-        locations.push(loc);
+    if let Some(loc) = get_main_volume(&mounts) {
+        push_unique(&mut locations, loc);
     }
 
     // 3. Mounted volumes (real filesystems, excluding root and virtual)
     for loc in get_mounted_volumes(&mounts) {
-        if seen_paths.insert(loc.path.clone()) {
-            locations.push(loc);
-        }
+        push_unique(&mut locations, loc);
     }
 
     // 4. Cloud drives
     for loc in get_cloud_drives(&mounts) {
-        if seen_paths.insert(loc.path.clone()) {
-            locations.push(loc);
-        }
+        push_unique(&mut locations, loc);
     }
 
     // 5. Network mounts (GVFS SMB shares)
     for loc in get_network_mounts() {
-        if seen_paths.insert(loc.path.clone()) {
-            locations.push(loc);
-        }
+        push_unique(&mut locations, loc);
     }
 
     locations
@@ -279,6 +301,16 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
 
 /// Get mounted real filesystems, filtering out virtual ones and root.
 pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
+    get_mounted_volumes_with(mounts, volume_id_for_mount)
+}
+
+/// The body of [`get_mounted_volumes`], with ID derivation injected.
+///
+/// `volume_id` is a parameter purely for testability: [`volume_id_for_mount`]
+/// reads the LIVE `/proc/mounts` and `/dev/disk/by-uuid`, which no `mounts`
+/// fixture can stand in for, so a test that needs two mounts to share an ID has
+/// to say so directly.
+fn get_mounted_volumes_with(mounts: &[MountEntry], volume_id: impl Fn(&str) -> String) -> Vec<LocationInfo> {
     let username = get_username();
 
     // Collect candidate mount points (real, non-hidden, non-root).
@@ -311,7 +343,7 @@ pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
         let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
 
         volumes.push(LocationInfo {
-            id: volume_id_for_mount(&entry.mountpoint),
+            id: volume_id(&entry.mountpoint),
             name,
             path: entry.mountpoint.clone(),
             category: LocationCategory::AttachedVolume,
@@ -325,6 +357,13 @@ pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
             usb_speed: None,
         });
     }
+
+    // One volume ID publishes ONE mount root. A CIFS share mounted twice, or a
+    // bind mount that `is_submount` can't see (it only filters mounts nested
+    // under another volume), is several `/proc/mounts` rows for one filesystem,
+    // all deriving one ID. Display-only: the registry still keeps every root it
+    // learns about, and no pane sitting on a dropped root is moved.
+    let mut volumes = collapse_by_volume_id(volumes);
 
     volumes.sort_by_key(|v| v.name.to_lowercase());
     volumes
@@ -799,6 +838,41 @@ share /mnt/cmdr virtiofs rw,relatime 0 0
         assert!(
             paths.iter().any(|p| p.contains("Ubuntu")),
             "Should keep independent mounts"
+        );
+    }
+
+    #[test]
+    fn one_volume_id_publishes_one_mount_root() {
+        // Two mounts of one CIFS share (and, below, a bind mount that isn't
+        // nested under its twin, so `is_submount` can't see it) are separate
+        // `/proc/mounts` rows deriving ONE volume ID. Publishing both would list
+        // the volume twice while the registry roots that ID at exactly one path,
+        // so the two rows couldn't both be honest about where they navigate.
+        let content = "\
+/dev/vda1 / ext4 rw,relatime 0 0
+//192.168.1.111/naspi /mnt/naspi-second cifs rw,relatime 0 0
+//192.168.1.111/naspi /mnt/naspi cifs rw,relatime 0 0
+/dev/sdb1 /srv/exported-data xfs rw,relatime 0 0
+/dev/sdb1 /mnt/data xfs rw,relatime 0 0
+";
+        let mounts = linux_mounts::parse_proc_mounts_from_content(content);
+        // Stands in for `volume_id_for_mount`, reading the fixture instead of the
+        // live mount table: same ladder (CIFS keys on `(server, port, share)`,
+        // everything else on the device behind it).
+        let volume_id = |path: &str| {
+            let entry = mounts.iter().find(|e| e.mountpoint == path);
+            match entry.and_then(|e| parse_smb_mount_source(&e.device)) {
+                Some(info) => smb_volume_id(&info.server, info.port, &info.share),
+                None => path_volume_id(entry.map_or(path, |e| e.device.as_str())),
+            }
+        };
+
+        let volumes = get_mounted_volumes_with(&mounts, volume_id);
+        let paths: Vec<&str> = volumes.iter().map(|v| v.path.as_str()).collect();
+        assert_eq!(
+            paths,
+            ["/mnt/data", "/mnt/naspi"],
+            "each filesystem publishes once, at its shortest mount root"
         );
     }
 

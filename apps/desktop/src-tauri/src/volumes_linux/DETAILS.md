@@ -35,3 +35,31 @@ unmounts via `gio mount -u`).
 **Decision**: `is_submount()` filters bind mounts nested under another real mount.
 **Why**: dev setups commonly bind-mount `node_modules` or build dirs as separate partitions for performance. Without the
 filter, every bind mount shows as a separate "volume" in the sidebar, cluttering it with build-system internals.
+
+## One volume ID publishes one mount root
+
+**Decision**: `get_mounted_volumes` collapses mounts that share a volume ID through
+`cmdr_fs::volume::canonical_root::collapse_by_volume_id`, and `list_locations` dedupes on ID as well as path. macOS
+calls the same function from `get_attached_volumes`; the rationale for the rule (and for the shortest-path tie-break)
+lives once, in `volumes/DETAILS.md` § "One volume ID publishes one mount root".
+
+**Why here too**: `is_submount()` only catches a bind mount NESTED under another volume, so a share mounted twice at
+unrelated paths (`/mnt/data` and `/srv/data`), a CIFS share mounted twice, or a container mount all reach the list as
+separate rows deriving one ID. The frontend's `dedupeById` net then drops one of them by arrival order, which is
+alphabetical by display name and says nothing about which root is canonical.
+
+**Why a shared function instead of a Linux copy**: the rule is a pure list transform over `(volume id, mount root)`
+pairs, not platform knowledge. What IS platform-specific is deriving the ID from a mount (`/proc/mounts` plus
+`/dev/disk/by-uuid` here, `getfsstat` plus the filesystem UUID on macOS), and that stays in each platform's module. The
+two `LocationInfo` structs stay separate; each implements `MountRootCandidate` so the collapse asks for the two fields
+it needs.
+
+**What it does NOT do**: it never moves a pane and never makes a root unfindable. Collapsing only decides what the
+switcher lists; the registry keeps every mount root it learns about (`file_system/volume/DETAILS.md` § "A volume ID owns
+a set of mount roots"), and the mount watcher's `register` records a second mount as a fallback root when it arrives at
+runtime. The gap it leaves, same as macOS: mounts that already existed at launch are collapsed BEFORE
+`register_discovered_volumes` sees them, so only the canonical root is registered at startup.
+
+**Testability seam**: `get_mounted_volumes_with` takes the ID derivation as a parameter because `volume_id_for_mount`
+reads the LIVE `/proc/mounts` and `/dev/disk/by-uuid`, which a `mounts` fixture can't stand in for. A test that needs
+two mounts to share an ID has to say so directly.

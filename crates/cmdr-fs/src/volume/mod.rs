@@ -1182,6 +1182,10 @@ mod in_memory;
 pub mod mtp_ids;
 mod types;
 
+/// Which mount root a volume ID publishes when one filesystem is mounted at
+/// several paths. Platform-neutral: both discovery modules funnel through it.
+pub mod canonical_root;
+
 /// Typed, word-free classification of why a volume operation failed.
 pub mod friendly_error;
 

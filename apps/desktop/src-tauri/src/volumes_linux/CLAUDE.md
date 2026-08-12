@@ -23,6 +23,11 @@ Location categories: `Favorite` (user-editable, from the `favorites/` store, exi
   DB, `lastUsedPaths`, tab state, and operation routing, so one that loses information sends reads and deletes to the
   wrong disk. Mint IDs only through `cmdr_fs::volume::ids`; the rationale lives in macOS `volumes/DETAILS.md` § "A
   volume ID is derived from the volume's IDENTITY".
+- **One volume ID publishes ONE location, at ONE canonical root.** `get_mounted_volumes` collapses double mounts
+  (`cmdr_fs::volume::canonical_root::collapse_by_volume_id`, shared with macOS: ❌ never copy the rule back in here),
+  and `list_locations` dedupes on ID, ❌ never on path alone. `is_submount` doesn't cover this: it only catches a bind
+  mount nested UNDER another volume. Collapsing is display-only, so it moves no pane and drops no root the registry
+  knows. DETAILS § "One volume ID publishes one mount root".
 - **Two separate inotify watchers: `/proc/mounts` AND `/run/user/<uid>/gvfs/`.** GVFS SMB shares never appear in
   `/proc/mounts` (the whole `gvfs/` dir is one FUSE mount; each share is a subdirectory), so a share mount/unmount is a
   directory create/remove invisible to `/proc/mounts`. Watching both is the only way to catch all volume changes.
