@@ -8,7 +8,7 @@ invariants and gotchas live in `CLAUDE.md`.
 ### Components
 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
-map. Column shrink-wrapping, the sticky header, prefetch, cache invalidation, icon and tag-dot passes, the date column,
+map. Column shrink-wrapping, the column header, prefetch, cache invalidation, icon and tag-dot passes, the date column,
 and `showExtensionInName` are all in § "Key decisions" below; the Git status column is in `../git/DETAILS.md`, and
 `formatSizeForDisplay`'s bytes / dynamic / forced-unit modes in `../selection/DETAILS.md`. Three things live here
 because nothing else carries them:
@@ -63,9 +63,9 @@ refs, and the row template). Four siblings hold the rest, each with its own suit
   teardown, so the host's `$effect` cancels an in-flight load when the directory changes.
 - **`full-list-mouse.ts`** — the pure mousedown plan (ignore / select / drag) and the drag payload, including the
   paths-by-value flavour a static-entries pane needs.
-- **`FullListHeader.svelte`** — the sticky column header. It owns `.header-row` / `.header-icon` / `.header-name-ext` /
-  `.header-git` (all self-contained: no rule reaches outside the header's own sub-tree), and reports its measured height
-  back through `bind:height` because the virtual-scroll math subtracts it from the container.
+- **`FullListHeader.svelte`** — the column header, rendered above the scroll container. It owns `.header-row` /
+  `.header-icon` / `.header-name-ext` / `.header-git` (all self-contained: no rule reaches outside the header's own
+  sub-tree), and takes a `scrollbarWidth` prop it spends on its right padding (see § Key decisions).
 
 ### Where the row styles live
 
@@ -189,23 +189,30 @@ non-configurable, so wrapping them from a spec silently does nothing.
 
 ## Key decisions
 
-**Decision**: `FullList`'s column header lives **inside** the scroll container as a `position: sticky; top: 0;` child,
-not as a sibling above. **Why**: when the user has "Always show scrollbars" set (System Settings → Appearance),
-non-overlay scrollbars steal a ~15 px gutter from the scroll container. A sibling header rendering at the wrapper's full
-width then misaligned with the data rows below. Moving the header inside makes it share the row content width
-automatically (and therefore the scrollbar gutter), so columns line up at every scrollbar mode without JS measurement.
-Virtual-scroll math: the spacer follows the header in natural flow, so the spacer's content origin (row 0) sits
-`headerHeight` pixels into the unscrolled document. The sticky header always covers the first `headerHeight` pixels of
-the viewport once any scroll has happened, so the effective row area is `containerHeight - headerHeight`. Critically,
-`scrollTop` and the spacer's scroll offset are the same number — no translation needed. `FullList` therefore derives
-`spacerScrollTop = scrollTop` and `rowAreaHeight = containerHeight - headerHeight` and feeds those into
+**Decision**: `FullList`'s column header is a **sibling above** the scroll container, and pays the scrollbar's width
+itself. **Why**: a native scrollbar spans its scroll container's full height, so a header inside the scroller puts the
+pane's scrollbar right next to the column labels, which no native macOS list does. The cost of moving it out is that it
+no longer shares the scroller's content box: with "Always show scrollbars" set (System Settings → Appearance),
+non-overlay scrollbars take ~15 px from the rows but not from a full-width header, and every column drifts.
+
+`FullList` closes that gap by measuring: `scrollbarWidth = max(0, listOffsetWidth - listClientWidth)`, from
+`bind:offsetWidth` / `bind:clientWidth` on `.full-list`. Those bindings are ResizeObserver-backed, so a window resize, a
+font-scale change, a listing that stops overflowing, and the user flipping that System Setting all re-measure without a
+manual trigger. The number reaches CSS as `--spacing-scrollbar-width` (declared `0px` in `app.css`, overridden inline on
+`.header-row`), and `FullListHeader` spends it as
+`padding-right: calc(var(--spacing-md) + var(--spacing-scrollbar-width))`. The header's background still runs edge to
+edge, over the scrollbar's column, as a native list header does. It travels as a custom property rather than a
+ready-made `padding-right` so the `calc` stays in the stylesheet, and because jsdom drops an inline `calc()` containing
+a `var()` (which is why `FullListHeader.test.ts` asserts on the property).
+
+Virtual-scroll math: `.full-list`'s own `clientHeight` IS the row area, bound straight to `rowAreaHeight` and fed to
 `calculateVirtualWindow` / `getScrollToPosition` / `firstVisibleGlobalIndex` / `lastVisibleGlobalIndex` /
-`getVisibleItemsCountUtil`. `scrollToIndex` writes `getScrollToPosition`'s result straight to
-`scrollContainer.scrollTop`. A11y: the listbox role moves off `.full-list` (now a generic scroll container) onto a
-`.listbox-region` inner wrapper around `.virtual-spacer` so the sticky header isn't a direct child of the listbox (would
-violate `aria-required-children`). The **"Empty folder" text is a sibling of that region, not a child**, for the same
-rule: an empty listbox passes, a listbox holding a non-option child doesn't. `BriefList` keeps its overlay outside
-`.brief-list` for the identical reason. ❌ Don't move either back inside to simplify the layout.
+`getVisibleItemsCountUtil`. `scrollTop` and the spacer's offset differ only by `.listbox-region`'s gutter (see the
+gutter gotcha below), which `spacerScrollTop` and `scrollToIndex` convert between. A11y: the listbox role sits on a
+`.listbox-region` wrapper around `.virtual-spacer` rather than on `.full-list`, because the **"Empty folder" text is a
+sibling of that region, not a child** — an empty listbox passes `aria-required-children`, a listbox holding a non-option
+child doesn't. `BriefList` keeps its overlay outside `.brief-list` for the identical reason. ❌ Don't move either inside
+to simplify the layout.
 
 **`aria-activedescendant` names a row only when that row is RENDERED.** Both views derive the id from the rows in the
 virtual window (`visibleColumns` / `visibleFiles`), not from `cursorIndex >= 0`: the cursor legitimately points at
@@ -214,10 +221,10 @@ critical axe violation (`aria-valid-attr-value`) and leaves a screen reader anno
 it back to a `cursorIndex` bound like `cursorIndex < totalCount`, which still lies in the scrolled-away case. Pinned by
 the empty-folder cases in `BriefList.a11y.test.ts` / `FullList.a11y.test.ts`.
 
-**Don't reintroduce a `scrollTop - headerHeight` shift with a `Math.max(0, …)` clamp**: `scrollTop ∈ [0, headerHeight]`
-then collapses to the same spacer state. PageDown × 2 → PageUp × 2 lands at `scrollTop === headerHeight`, hiding row 0
-(including the `..` cursor) under the sticky header. The pinned regression is
-`test/e2e-playwright/full-cursor-page-nav.spec.ts`.
+**Don't reintroduce a header-height shift with a `Math.max(0, …)` clamp** between `scrollTop` and the spacer offset: a
+band of `scrollTop` values then collapses to the same spacer state, and PageDown × 2 → PageUp × 2 lands inside it,
+hiding row 0 (including the `..` cursor). The only legitimate translation between the two is `.listbox-region`'s gutter.
+The pinned regression is `test/e2e-playwright/full-cursor-page-nav.spec.ts`.
 
 **Decision**: Virtual scroll in frontend, data in backend **Why**: Sending 50k entries over IPC = 17.4MB, ~4s transfer.
 Virtual scroll fetches only visible ~50 items on demand. Backend-driven caching eliminates serialization overhead.
@@ -330,12 +337,12 @@ mode (`.col-rename.no-ext-col`) so it doesn't bleed into the Size column now tha
 ## Gotchas
 
 **Gotcha**: The gutter that keeps the cursor and selection fills off the pane edges lives at a DIFFERENT level in each
-view, and can't be hoisted to `FilePane`'s `.content`. **Why**: the column header has to keep spanning edge to edge. In
-Full view the header is a `position: sticky` child of the scroll container, so the gutter sits on the inner
-`.listbox-region` (rows only) and `.header-row` carries double horizontal padding instead, keeping its grid aligned with
-the rows while its background stays full-bleed. In Brief view the header is a sibling ABOVE the scroll container, so the
-gutter can sit on `.brief-list` itself. Padding it any further out (`.content`, `.full-list`) insets the header
-background and leaves bare strips at both ends.
+view, and can't be hoisted to `FilePane`'s `.content` (that insets the column header's background and leaves bare strips
+at both ends). In Brief view it sits on `.brief-list`, the scroll surface itself, which is why the column math subtracts
+it (`usableWidth` / `usableHeight`). In Full view it sits one level deeper, on `.listbox-region` (rows only), because
+`.full-list`'s `clientHeight` is bound straight to `rowAreaHeight` and padding there would silently inflate the row-area
+height the virtual-scroll math runs on. `.header-row` carries double horizontal padding to match, keeping its grid
+aligned with the rows while its background stays full-bleed.
 
 **Gotcha**: BOTH views measure their scroll surface with `bind:clientWidth` / `clientHeight`, which report the content
 box PLUS the element's own padding — so any layout math that asks "how much fits" must subtract the gutter, or the

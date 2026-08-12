@@ -18,13 +18,16 @@
         gitColumnVisible: boolean
         /** Suppresses the column-width transition for one paint after a nav. */
         skipTransition: boolean
+        /**
+         * Width the rows' scroll container loses to its vertical scrollbar (0 with
+         * macOS overlay scrollbars). The header lives outside that container, so it
+         * adds this to its own right padding to stay column-aligned with the rows.
+         */
+        scrollbarWidth: number
         onSortChange?: (column: SortColumn) => void
-        /** Measured height, read back by the virtual-scroll math in `FullList`. */
-        height?: number
     }
 
-    /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
-    let {
+    const {
         gridTemplate,
         isFocused,
         sortBy,
@@ -32,22 +35,20 @@
         showExtensionInName,
         gitColumnVisible,
         skipTransition,
+        scrollbarWidth,
         onSortChange,
-        height = $bindable(0),
     }: Props = $props()
-    /* eslint-enable prefer-const */
 
     const sort = $derived(onSortChange ?? (() => {}))
 </script>
 
-<!-- Role/aria intentionally omitted: the header sits inside the listbox, and
-     `role="toolbar"` would violate aria-required-children. The sort buttons
-     inside remain individually focusable. -->
+<!-- Role/aria intentionally omitted: `role="toolbar"` here would be a lie about a
+     row of column labels. The sort buttons inside remain individually focusable. -->
 <div
     class="header-row"
     class:no-transition={skipTransition}
-    style="grid-template-columns: {gridTemplate};"
-    bind:clientHeight={height}
+    style:grid-template-columns={gridTemplate}
+    style:--spacing-scrollbar-width="{scrollbarWidth}px"
 >
     <span class="header-icon"></span>
     {#if showExtensionInName}
@@ -131,16 +132,20 @@
            grows by the same amount so they keep their position instead of shifting up
            inside an unchanged band. */
         padding: var(--spacing-xxs) var(--spacing-md) var(--spacing-xs);
+        /* This row renders OUTSIDE the rows' scroll container, so a classic scrollbar
+           narrows the rows but not the header. `--spacing-scrollbar-width` carries the
+           live measurement (see the `scrollbarWidth` prop) and is 0 for macOS overlay
+           scrollbars; without it every column drifts right under "Always show scroll
+           bars". The background still runs edge to edge, over the scrollbar's column,
+           the way a native list header does. */
+        padding-right: calc(var(--spacing-md) + var(--spacing-scrollbar-width));
         background: var(--color-bg-secondary);
         height: calc(22px * var(--font-scale) + var(--spacing-xs));
         flex-shrink: 0;
-        /* Sticky inside the scroll container: the header always shares the row
-           content width (auto-shrinking when a vertical scrollbar appears) so
-           columns line up with the data rows beneath. The `top: 0` pin keeps
-           the header in view during vertical scroll. */
-        position: sticky;
-        top: 0;
-        z-index: 1;
+        /* The rows get their clipping from the scroll container's `overflow-x: hidden`;
+           this row is outside it, so it clips itself. Without this, dragging the splitter
+           narrower than the fixed column tracks spills the labels past the pane edge. */
+        overflow-x: hidden;
         transition: grid-template-columns 300ms ease;
     }
 

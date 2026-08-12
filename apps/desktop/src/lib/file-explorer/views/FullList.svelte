@@ -303,19 +303,27 @@
 
     // ==== Virtual scrolling state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
-    let containerHeight = $state(0)
-    let scrollTop = $state(0)
-    // The header is `position: sticky; top: 0` and always covers the first
-    // `headerHeight` pixels of the viewport once any scroll has happened, so
-    // the effective row area is shorter than the container by that much. The
-    // spacer is the header's next-sibling in natural flow, so `scrollTop` maps
-    // to the spacer's offset with NO `- headerHeight` shift (only the gutter
-    // correction below). ❌ Don't reintroduce a shift-then-clamp-at-0 model:
-    // it collapses `scrollTop ∈ [0, headerHeight]` to one spacer state and
-    // hides row 0 (the `..` cursor) under the header. Pinned by
+    // The header is a sibling ABOVE the scroll container, so the scroller's own
+    // height already IS the row area, and `scrollTop` maps to the spacer's offset
+    // with no header translation (only the gutter correction below). ❌ Don't
+    // reintroduce a shift-then-clamp-at-0 model: it collapses a band of `scrollTop`
+    // values to one spacer state and hides row 0 (the `..` cursor). Pinned by
     // `test/e2e-playwright/full-cursor-page-nav.spec.ts`.
-    let headerHeight = $state(0)
-    const rowAreaHeight = $derived(Math.max(0, containerHeight - headerHeight))
+    let rowAreaHeight = $state(0)
+    let scrollTop = $state(0)
+    /**
+     * How much width the vertical scrollbar takes from the scroller's content box:
+     * 0 for macOS overlay scrollbars, ~15px under "Always show scroll bars", and 0
+     * again whenever the listing is short enough not to overflow. The header sits
+     * outside the scroll container, so it has to re-add exactly this to its right
+     * padding to keep its columns over the rows'. Both bindings are
+     * ResizeObserver-backed, so a window resize, a font-scale change, a listing that
+     * stops overflowing, or the user flipping that System Setting all re-measure on
+     * their own — nothing here needs a manual trigger.
+     */
+    let listClientWidth = $state(0)
+    let listOffsetWidth = $state(0)
+    const scrollbarWidth = $derived(Math.max(0, listOffsetWidth - listClientWidth))
     /**
      * `.listbox-region`'s gutter sits ABOVE the spacer in the scroll content, so the
      * container's `scrollTop` runs `GUTTER_PX` ahead of the spacer's own offset. Every
@@ -493,7 +501,7 @@
         if (!scrollContainer) return
         // `getScrollToPosition` returns the spacer's required scroll offset in
         // row-area coords; the container's scrollTop is that plus the gutter (see
-        // the sticky-header model note above).
+        // `spacerScrollTop` above).
         const spacerPos = getScrollToPosition(index, rowHeight, spacerScrollTop, rowAreaHeight)
         if (spacerPos !== undefined) {
             // Back to container coords. `0` stays `0` so scrolling to the first row shows
@@ -540,7 +548,7 @@
     // for the first paint after a dir switch, else the header (which persists
     // across navs) slides from the previous dir's widths to the new ones.
     $effect(() => {
-        const sync = cache.syncToProps(containerHeight > 0)
+        const sync = cache.syncToProps(rowAreaHeight > 0)
         if (sync === 'idle') return
         if (sync === 'reset') {
             skipTransition = true
@@ -582,32 +590,36 @@
 </script>
 
 <div class="full-list-container" class:is-focused={isFocused} class:is-compact={isCompact}>
-    <!-- Scrollable file list. The header row is a `position: sticky` child so it
-         shares the row content width (and therefore the scrollbar gutter) with
-         the data rows — no manual scrollbar-width compensation needed. The
-         `role="listbox"` lives on the inner rows wrapper because a listbox's
-         children must be options/groups; the sortable header sits outside that
-         sub-tree to keep that contract while staying visually sticky inside
-         the same scroll container. -->
+    <!-- The column header sits ABOVE the scroll container, so the pane's vertical
+         scrollbar starts below it the way a native macOS list does. The price is that
+         the header no longer shares the scroller's content box, so it pays the
+         scrollbar's width itself via `scrollbarWidth` (see above) to keep its columns
+         over the rows'. ❌ Don't move it back inside to "simplify": that's what put
+         the scrollbar alongside the column labels. -->
+    <FullListHeader
+        {gridTemplate}
+        {isFocused}
+        {sortBy}
+        {sortOrder}
+        {showExtensionInName}
+        {gitColumnVisible}
+        {skipTransition}
+        {scrollbarWidth}
+        {onSortChange}
+    />
+    <!-- Scrollable file list. `role="listbox"` lives on the inner rows wrapper
+         because a listbox's children must be options/groups, and the scroller also
+         holds the "empty folder" message. -->
     <div
         class="full-list"
         data-file-list-surface
         bind:this={scrollContainer}
-        bind:clientHeight={containerHeight}
+        bind:clientHeight={rowAreaHeight}
+        bind:clientWidth={listClientWidth}
+        bind:offsetWidth={listOffsetWidth}
         onscroll={handleScroll}
         tabindex="-1"
     >
-        <FullListHeader
-            {gridTemplate}
-            {isFocused}
-            {sortBy}
-            {sortOrder}
-            {showExtensionInName}
-            {gitColumnVisible}
-            {skipTransition}
-            {onSortChange}
-            bind:height={headerHeight}
-        />
         <div
             class="listbox-region"
             role="listbox"
@@ -850,17 +862,17 @@
 
     /* Semantic wrapper for the listbox role: no background, no stacking context. It
        exists so the role + aria-activedescendant can sit on a child of the scroll
-       container without violating aria-required-children (the sticky header is a
-       sibling, not a child of this region). The pane bg lives on
+       container without violating aria-required-children (the "empty folder" message
+       is a sibling, not a child, for the same reason). The pane bg lives on
        `.file-pane > .content` (see FilePane.svelte).
 
        The gutter runs on all four sides, keeping the cursor and selection fills off the
-       pane edges. It sits on the ROWS region, not on `.full-list` or the pane: the header
-       row is a sticky child of the same scroll container, and padding further out would
-       inset its background too, leaving bare strips at both ends. `.header-row` doubles
-       its own horizontal padding instead, so its content still lines up with the rows
-       while its background runs edge to edge. The block padding shifts the spacer inside
-       the scroll content, which `spacerScrollTop` / `scrollToIndex` correct for. */
+       pane edges. It sits on the ROWS region rather than on `.full-list` itself, whose
+       `clientHeight` IS the row-area height the virtual-scroll math runs on: padding
+       there would silently inflate it. `.header-row` doubles its own horizontal padding
+       to match this gutter, so its labels line up with the rows while its background
+       runs edge to edge. The block padding shifts the spacer inside the scroll content,
+       which `spacerScrollTop` / `scrollToIndex` correct for. */
     .listbox-region {
         outline: none;
         padding: var(--spacing-xs);

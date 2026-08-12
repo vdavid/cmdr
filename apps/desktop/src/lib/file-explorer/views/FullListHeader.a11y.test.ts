@@ -1,7 +1,7 @@
 /**
  * Tier 3 a11y tests for `FullListHeader.svelte`.
  *
- * The Full view's sticky column header. It mounts with no Tauri, settings, or
+ * The Full view's column header. It mounts with no Tauri, settings, or
  * icon-cache dependency, so unlike its `FullList` host it needs no stubs.
  *
  * Every branch that changes the DOM gets a case, because each one adds or moves a
@@ -29,6 +29,7 @@ interface HeaderProps {
   showExtensionInName: boolean
   gitColumnVisible: boolean
   skipTransition: boolean
+  scrollbarWidth: number
   onSortChange?: (column: SortColumn) => void
 }
 
@@ -45,6 +46,7 @@ async function mountHeader(overrides: Partial<HeaderProps> = {}): Promise<HTMLEl
       showExtensionInName: false,
       gitColumnVisible: false,
       skipTransition: false,
+      scrollbarWidth: 0,
       onSortChange: vi.fn(),
       ...overrides,
     } satisfies HeaderProps,

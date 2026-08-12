@@ -1,6 +1,6 @@
 # File explorer views
 
-Virtual-scrolling file list components for rendering 100k+ file directories without DOM performance issues.
+Virtual-scrolling file list components rendering 100k+ directories without DOM performance issues.
 
 ## Module map
 
@@ -17,10 +17,10 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
 - **Data lives in Rust `LISTING_CACHE`, never in Svelte `$state`.** The frontend fetches visible ranges on demand via
   `getFileRange(listingId, start, count, includeHidden)`; only the visible window enters reactivity. Loading 20k+
   entries into it causes 9+ second freezes (Svelte tracks the full array even with virtual scrolling).
-- **`$state()` cannot live in `.ts` files.** `virtual-scroll.ts` is pure functions returning plain objects; reactive
-  state stays in `.svelte` / `.svelte.ts`.
+- **`$state()` cannot live in `.ts` files**: `virtual-scroll.ts` is pure functions; reactive state stays in `.svelte` /
+  `.svelte.ts`.
 - **Scroll position via `transform: translateY`, never absolute positioning** (absolute forces a full layout recalc;
-  transform composites on the GPU at 60fps).
+  transform composites on the GPU).
 - **`hasParent = true` makes UI indices 1-based**: index 0 is the `..` entry (not in backend cache). Real files start at
   1, so `cache_index = ui_index - 1`. Forgetting it lands the cursor one row off.
 - **`FullList`'s cache deps are one getter per prop, not one bag.** A bag read whole subscribes every host `$effect` to
@@ -28,19 +28,20 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
 - **Row chrome shared by both views lives in `src/app-file-list.css`.** Every selector there keeps a
   `.full-list-container` / `.brief-list-container` prefix, or it loses specificity ties to
   `:global(.file-entry.folder-drop-target)`.
-- **Don't reintroduce a `scrollTop - headerHeight` shift with a `Math.max(0, …)` clamp** in `FullList`: the sticky
-  header lives inside the scroll container, so `scrollTop` and the spacer offset are the same number, and a clamp hides
-  row 0 (the `..` cursor) under the header. Pinned by `test/e2e-playwright/full-cursor-page-nav.spec.ts`.
+- **`FullList`'s column header sits OUTSIDE the scroll container**, so the scrollbar starts below the labels, and pays
+  the scrollbar's measured width back as right padding (`--spacing-scrollbar-width`). ❌ Don't move it back inside for
+  free width sharing (that's the bug), and ❌ don't reintroduce a header-height shift between `scrollTop` and the spacer
+  offset: the clamp hides row 0 (the `..` cursor). Pinned by `FullListHeader.test.ts` +
+  `test/e2e-playwright/full-cursor-page-nav.spec.ts`; why in `DETAILS.md`.
 - **`getDirSizeDisplayState()` (`full-list-utils.ts`) is the single source of truth for a directory's size-column
   state**, consumed by both `FullList.svelte`'s size cell and `measure-column-widths.ts`. Re-inline the
   dir/scanning/stale decision in either and the rendered text and pre-measured width drift.
-- **The Size and Modified columns render with `font-variant-numeric: tabular-nums`, which canvas/pretext can't
-  measure.** `measure-column-widths.ts` models it by substituting the widest digit (`tabularize`) before measuring, so
-  the two must move together: drop tabular figures from a numeric column and drop its `tabularize` call too, or the
-  column over-reserves. Why: `DETAILS.md` § Gotchas.
+- **Size and Modified render with `font-variant-numeric: tabular-nums`, which canvas/pretext can't measure.**
+  `measure-column-widths.ts` substitutes the widest digit (`tabularize`) instead, so the two move together: drop tabular
+  figures from a numeric column and drop its `tabularize` call too, or it over-reserves. Why: `DETAILS.md` § Gotchas.
 - **Paired-constant gotcha in `measure-column-widths.ts`**: `HEADER_CHROME_ACTIVE/INACTIVE` mirror `SortableHeader`'s
-  gap + caret (12px active / 0 inactive). Change the CSS and you must change the constant, or header column widths drift
-  (pretext measures without a reference element, so nothing is derived from the live DOM).
+  gap + caret (12px active / 0 inactive). Change that CSS and change the constant too, or header column widths drift
+  (pretext measures with no reference element, so nothing derives from the live DOM).
 - **Nothing visible in Brief mode may wait on the width IPC** (how the cursor went invisible in prod). ❌ Don't gate
   `is-under-cursor` on widths, fall back to `capPx` (use `provisionalColumnWidth`), infer readiness from
   `rawWidths.length`, make `capPx` a fetch trigger, or bail silently. Failure modes: `DETAILS.md` § Cursor visibility.

@@ -1,15 +1,14 @@
 /**
- * E2E regression test for Full view sticky-header cursor visibility.
+ * E2E regression test for Full view cursor visibility at the top of the list.
  *
  * Repro: in Full view of a folder with enough entries to scroll past two pages,
- * press PageDown twice then PageUp twice. The cursor lands back on ".." (index
- * 0). Before the fix, scrollTop ended at exactly `headerHeight`, which placed
- * row 0 fully under the sticky column header — invisible, cursor included.
+ * press PageDown twice then PageUp twice. The cursor lands back on ".." (index 0),
+ * and `scrollTop` must be exactly 0 with the row fully visible.
  *
- * The fix removes a spurious `+ headerHeight` translation in `FullList.svelte`:
- * the spacer's scroll offset is `scrollTop` directly, not `scrollTop -
- * headerHeight` clamped at 0. This test pins both the visual behavior and the
- * underlying scrollTop so the regression can't sneak back in.
+ * The failure this pins is a header-height translation between `scrollTop` and the
+ * spacer's offset in `FullList.svelte`: shifted-then-clamped-at-0, a band of scroll
+ * positions collapses to one spacer state, this key sequence lands inside it, and
+ * row 0 goes off the top of the row area — invisible, cursor included.
  */
 
 import fs from 'fs'
@@ -203,10 +202,10 @@ test.describe('Full view sticky-header cursor visibility', () => {
     expect(state.cursorName, 'cursor should be back on ".."').toBe('..')
 
     // Primary assertion: the cursor row top sits at or below the header's bottom.
-    // Before the fix, cursor.top was ~0 px above the viewport (under the sticky header).
+    // Pre-fix, cursor.top was ~0 px above the viewport — scrolled off the row area.
     expect(
       state.cursor.top,
-      `cursor.top (${String(state.cursor.top)}) must be >= header.bottom (${String(state.header.bottom)}) — row is hidden under the sticky header`,
+      `cursor.top (${String(state.cursor.top)}) must be >= header.bottom (${String(state.header.bottom)}) — row is hidden behind the header`,
     ).toBeGreaterThanOrEqual(state.header.bottom - PIXEL_TOLERANCE)
 
     // The cursor row must also be inside the scroll container's viewport.
@@ -216,9 +215,9 @@ test.describe('Full view sticky-header cursor visibility', () => {
     ).toBeLessThanOrEqual(state.scrollContainer.bottom + PIXEL_TOLERANCE)
 
     // Underlying invariant: at the top of the list, scrollTop is exactly 0.
-    // Before the fix this was `headerHeight` (~22 px at scale 1), which is what
-    // covered row 0. Pinning it at 0 documents the canonical state and gives
-    // a clean failure message if the math regresses.
+    // Pre-fix this was the header's height (~22 px at scale 1), which is what
+    // pushed row 0 out of view. Pinning it at 0 documents the canonical state and
+    // gives a clean failure message if the math regresses.
     expect(state.scrollTop, `scrollTop must be 0 at top of list, got ${String(state.scrollTop)}`).toBe(0)
   })
 })

@@ -359,6 +359,13 @@
   --spacing-tab-bar-height: calc(28px * var(--font-scale));
   --spacing-icon-size: calc(16px * var(--font-scale));
 
+  /* Width a scroll container loses to its vertical scrollbar: 0 for macOS overlay
+     scrollbars, ~15px under "Always show scroll bars". The default is the only
+     honest static answer; the one place that needs the real number measures it and
+     overrides this inline on the element (`FullList` → `FullListHeader`, so the
+     column labels stay over the row columns from outside the scroller). */
+  --spacing-scrollbar-width: 0px;
+
   /* === Typography ===
    * Sizes are in rem so they scale with `html` font-size, which itself follows
    * `--font-scale` (system Accessibility × user setting). At scale 1, the

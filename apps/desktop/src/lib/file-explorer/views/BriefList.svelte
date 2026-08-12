@@ -986,11 +986,10 @@
     }
 
     /* Gutter on all four sides, keeping the cursor and selection fills off the pane
-       edges. Safe on the scroll surface here (unlike `FullList`, whose header is sticky
-       INSIDE its scroll container): this view's header row is a sibling above
-       `.brief-list`, so it still runs edge to edge. `clientWidth`/`clientHeight` INCLUDE
-       this padding, so the column math subtracts it — see `usableWidth` /
-       `usableHeight`. */
+       edges. Safe on the scroll surface here (unlike `FullList`, which keeps it one
+       level deeper so the padding stays out of its row-area height).
+       `clientWidth`/`clientHeight` INCLUDE this padding, so the column math subtracts
+       it — see `usableWidth` / `usableHeight`. */
     .brief-list {
         padding: var(--spacing-xs);
         overflow-x: auto;

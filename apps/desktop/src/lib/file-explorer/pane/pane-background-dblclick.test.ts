@@ -2,11 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { isFileListBackgroundClick } from './pane-background-dblclick'
 
 /**
- * Builds a Full-view-shaped DOM: a scroll surface holding a sticky header, a
- * short rows region (the `[role="listbox"]`), and the empty space below it that
- * a few-file directory leaves bare.
+ * Builds a Full-view-shaped DOM: the column header ABOVE the scroll surface (that's
+ * where `FullList` puts it, so the scrollbar starts below the labels), and the
+ * surface holding a short rows region (the `[role="listbox"]`) plus the empty space
+ * below it that a few-file directory leaves bare.
  */
 function buildFullView() {
+  const container = document.createElement('div')
   const surface = document.createElement('div')
   surface.setAttribute('data-file-list-surface', '')
 
@@ -23,8 +25,9 @@ function buildFullView() {
   row.appendChild(cell)
   listbox.appendChild(row)
 
-  surface.appendChild(header)
   surface.appendChild(listbox)
+  container.appendChild(header)
+  container.appendChild(surface)
   // `emptyBelow` is the surface's own background, BELOW the (short) listbox — the
   // Full-mode case that the old `[role="listbox"]` gate missed.
   return { surface, header, headerCell, listbox, row, cell }
@@ -51,7 +54,7 @@ describe('isFileListBackgroundClick', () => {
     expect(isFileListBackgroundClick(cell)).toBe(false)
   })
 
-  it('is false on the Full view sticky column header (it sorts)', () => {
+  it('is false on the Full view column header above the surface (it sorts)', () => {
     const { header, headerCell } = buildFullView()
     expect(isFileListBackgroundClick(header)).toBe(false)
     expect(isFileListBackgroundClick(headerCell)).toBe(false)
