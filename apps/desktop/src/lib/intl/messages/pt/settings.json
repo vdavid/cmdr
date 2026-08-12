@@ -282,6 +282,14 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
+  "settings.listing.showHiddenFiles.label": "Mostrar arquivos ocultos",
+  "@settings.listing.showHiddenFiles.label": {
+    "sourceHash": "b5ede7f"
+  },
+  "settings.listing.showHiddenFiles.description": "Mostra os arquivos que começam com ponto (como .zshrc) e os itens que o sistema marca como ocultos. Vale para os dois painéis.",
+  "@settings.listing.showHiddenFiles.description": {
+    "sourceHash": "8e77c67"
+  },
   "settings.listing.showExtensionInName.label": "Mostrar extensões de arquivo na coluna de nome",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"

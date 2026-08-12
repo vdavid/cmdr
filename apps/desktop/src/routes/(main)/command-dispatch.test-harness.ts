@@ -73,7 +73,6 @@ export function makeCtx(explorer: Partial<ExplorerAPI>): CommandDispatchContext 
 /** A fully-stubbed ExplorerAPI: every method a `vi.fn()`, so an unexpected call surfaces. */
 export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
   const methods = [
-    'toggleHiddenFiles',
     'setViewMode',
     'setViewModeFromMenu',
     'switchPane',

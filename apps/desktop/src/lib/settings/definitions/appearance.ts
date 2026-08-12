@@ -397,6 +397,20 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    // The single source of truth for dotfile visibility: both panes read it, the
+    // View menu's CheckMenuItem mirrors it (`settings-applier.ts`), and Rust reads
+    // the persisted key at startup to build that menu item checked.
+    id: 'listing.showHiddenFiles',
+    section: ['Appearance', 'Listing'],
+    labelKey: 'settings.listing.showHiddenFiles.label',
+    descriptionKey: 'settings.listing.showHiddenFiles.description',
+    cardKey: 'settings.appearance.card.namesAndIcons',
+    keywords: ['hidden', 'dotfile', 'dotfiles', 'invisible', 'system', 'ds_store', 'show'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
     id: 'listing.directorySortMode',
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.directorySortMode.label',

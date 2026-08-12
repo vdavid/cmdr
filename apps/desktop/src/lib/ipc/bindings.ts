@@ -8198,9 +8198,10 @@ export type SettingValue = boolean | number | string
 /**
  *  `settings-changed`: a CheckMenuItem toggle (currently only "Show hidden
  *  files") flipped a setting from the native menu. The menu click is the
- *  authoritative state change (see `menu/CLAUDE.md`), so the FE applies the new
- *  value rather than re-toggling. Also emitted from `commands/ui.rs` when the
- *  `toggle_hidden_files` IPC flips the same setting.
+ *  authoritative state change (see `menu/CLAUDE.md`), so the FE writes the new
+ *  value into `listing.showHiddenFiles` rather than re-toggling. Also emitted
+ *  from `commands/menu.rs` when the `toggle_hidden_files` IPC (the MCP
+ *  `toggle_hidden` tool) flips the same item.
  */
 export type SettingsChanged = {
   showHiddenFiles: boolean

@@ -292,27 +292,26 @@ capability table is the "differently complicated" failure mode the refactor expl
 (`clipboard-operations`, `file-operation-commands`, `pane-commands`) that take a `PaneAccess` (live-reference read API)
 plus the dialog state. The component keeps one-line `export function` delegates so the `ExplorerAPI` surface is
 unchanged. Read-only / delegating bodies move; functions that WRITE component navigation state (`switchPane`,
-`swapPanes`, `toggleHiddenFiles`, `setViewMode`, `navigate`, `setSort*`, `moveCursor`, `selectVolumeBy*`,
-`copyPathBetweenPanes`, the `mirror*`/`restoreFocus` helpers) stay in the component — un-trapping that state is the
-explorer-store phase, not this factoring. The `navigate(intent)` transaction itself lives in `navigate.ts` (the
-component builds its `NavigateDeps` and wraps it as the `navigate` export). The MTP capability check lives in
-`navigate.ts` (`validateMtpNavigation`, the synchronous refusal gate for the in-place path arm); its refusal strings are
-byte-pinned by `navigate.test.ts`. `moveCursorByName*` moved into `pane-commands` even though it's called from
-component-resident writers (`moveCursor`, `restoreCursorByFilename`); those callers reach back via `paneCommands.*`.
+`swapPanes`, `setViewMode`, `navigate`, `setSort*`, `moveCursor`, `selectVolumeBy*`, `copyPathBetweenPanes`, the
+`mirror*`/`restoreFocus` helpers) stay in the component — un-trapping that state is the explorer-store phase, not this
+factoring. The `navigate(intent)` transaction itself lives in `navigate.ts` (the component builds its `NavigateDeps` and
+wraps it as the `navigate` export). The MTP capability check lives in `navigate.ts` (`validateMtpNavigation`, the
+synchronous refusal gate for the in-place path arm); its refusal strings are byte-pinned by `navigate.test.ts`.
+`moveCursorByName*` moved into `pane-commands` even though it's called from component-resident writers (`moveCursor`,
+`restoreCursorByFilename`); those callers reach back via `paneCommands.*`.
 
 **Explorer store (`explorer-state.svelte.ts`).** Module store owning the dual-pane navigation + UI-chrome state that
-`DualPaneExplorer` used to trap in component closures: `focusedPane`, `showHiddenFiles`, `leftPaneWidthPercent`, and the
-two tab-manager holders. State is module-private (A1): `createExplorerState()` closes over `$state` locals and exposes
-only getters + one named mutator per field. There's no exported writable surface — callers can't assign a field, only
-call a mutator (A2; the `cmdr/no-explorer-state-writes` lint rule makes this a hard wall — assigning to any property of
-the store object outside `explorer-state.svelte.ts` is a lint error). `createExplorerState()` is factory-first for
+`DualPaneExplorer` used to trap in component closures: `focusedPane`, `leftPaneWidthPercent`, `railFocused`, and the two
+tab-manager holders. State is module-private (A1): `createExplorerState()` closes over `$state` locals and exposes only
+getters + one named mutator per field. There's no exported writable surface — callers can't assign a field, only call a
+mutator (A2; the `cmdr/no-explorer-state-writes` lint rule makes this a hard wall — assigning to any property of the
+store object outside `explorer-state.svelte.ts` is a lint error). `createExplorerState()` is factory-first for
 testability; the module-level `explorerState` singleton is what the component binds, with `_resetForTesting()` for tests
 that touch it.
 
 The **writers** (A2 — exactly one mutator per field, all inside the store module):
 
 - **`focusedPane`**: `setFocusedPane`
-- **`showHiddenFiles`**: `setShowHiddenFiles`, `toggleHiddenFiles`
 - **`leftPaneWidthPercent`**: `setLeftPaneWidthPercent`
 - **`leftTabMgr`**: `setTabMgr('left', …)`
 - **`rightTabMgr`**: `setTabMgr('right', …)`
@@ -577,8 +576,9 @@ single module — A5 is per concern, not per call shape):
   close_others / set_pinned), which keep their own `saveTabsForPaneSide`.
 - **The MCP backend mirror** (`syncTabsToBackend` / `updatePaneTabs` / `updateFocusedPane`, L8): the Rust state store
   for MCP, a different target and debounce (100 ms), NOT disk persistence. Untouched.
-- **`showHiddenFiles`**: a SETTING, persisted via the settings store (`saveSettings`), not `app-status`. Stays in
-  `toggleHiddenFiles` / the settings-change listener.
+- **Dotfile visibility**: the `listing.showHiddenFiles` SETTING, not pane state and not `app-status`. Both panes read
+  the one reactive value (`getShowHiddenFiles()` from `$lib/settings/reactive-settings.svelte`), the settings store
+  persists it, and `settings-applier.ts` mirrors it onto the View menu's CheckMenuItem.
 
 **The five edge-flow handlers fold onto `navigate()`.** `handleCancelLoading`, `handleMtpFatalError`,
 `handleRetryUnreachable`, `handleOpenHome`, and `handleVolumeUnmount` are thin shims: they do their flow-specific async

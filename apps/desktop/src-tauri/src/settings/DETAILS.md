@@ -47,7 +47,7 @@ shortcut string) for the downloads global shortcut, read before the `AppHandle` 
 `settings.json` is flat JSON with literal dot-notation string keys, written by `tauri-plugin-store`:
 
 ```json
-{ "showHiddenFiles": true, "developer.mcpEnabled": true, "developer.mcpPort": 0 }
+{ "listing.showHiddenFiles": true, "developer.mcpEnabled": true, "developer.mcpPort": 0 }
 ```
 
 These are top-level keys; the dot is part of the key name, not a nesting separator. `parse_settings` reads them manually

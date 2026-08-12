@@ -282,6 +282,14 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
+  "settings.listing.showHiddenFiles.label": "Afficher les fichiers cachés",
+  "@settings.listing.showHiddenFiles.label": {
+    "sourceHash": "b5ede7f"
+  },
+  "settings.listing.showHiddenFiles.description": "Affiche les fichiers commençant par un point (comme .zshrc) et les éléments que le système marque comme cachés. S''applique aux deux panneaux.",
+  "@settings.listing.showHiddenFiles.description": {
+    "sourceHash": "8e77c67"
+  },
   "settings.listing.showExtensionInName.label": "Afficher les extensions de fichier dans la colonne du nom",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"

@@ -156,11 +156,12 @@ emits a single `"execute-command"` Tauri event; the frontend listens and calls `
 Exception: `CheckMenuItem`s (show hidden files, view modes) keep separate handling to avoid double-toggle. Close tab
 (⌘W) has special logic to close focused non-main windows.
 
-`view.showHidden` uses a local-first path inside `handleCommandExecute`: it flips the explorer's `showHiddenFiles` state
-synchronously via `explorerRef.toggleHiddenFiles()`, then fire-and-forgets `syncMenuShowHidden(newState)` to update the
-macOS/Linux `CheckMenuItem` checked state. This avoids an IPC + Tauri-event + Svelte-effect hop between keystroke and
-DOM (the `toggles hidden file visibility` e2e spec flaked under slow-lane CPU contention on the awaited path). The
-native menu accelerator / palette-click paths still travel through `on_menu_event` → `settings-changed` → FE listener.
+`view.showHidden` flips the `listing.showHiddenFiles` setting and stops there. That's still the local-first path the
+`toggles hidden file visibility` e2e spec needs: `setSetting` writes its in-memory cache synchronously, so both panes'
+re-fetch effects land in the next Svelte tick, while the disk save is debounced and the native `CheckMenuItem` follows
+from `settings-applier.ts`. Routing the toggle through Rust instead (an IPC + Tauri-event + Svelte-effect hop between
+keystroke and DOM) is what flaked that spec under slow-lane CPU contention. The native menu accelerator path travels the
+other way, `on_menu_event` → `settings-changed` → the `listener-setup.ts` listener, which writes the same setting.
 
 ## Decisions and rationale
 

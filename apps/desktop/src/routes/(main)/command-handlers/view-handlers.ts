@@ -6,7 +6,6 @@
 import { addToast } from '$lib/ui/toast'
 import { getEffectiveShortcuts, toDisplayShortcut } from '$lib/shortcuts'
 import { getSetting, setSetting } from '$lib/settings'
-import { syncMenuShowHidden } from '$lib/tauri-commands'
 import { tString } from '$lib/intl/messages.svelte'
 import type { CommandArgs } from '$lib/commands'
 import type { CommandHandlerRecord } from './types'
@@ -44,17 +43,14 @@ function applyZoomPreset(preset: number): void {
 }
 
 export const viewHandlers = {
-  'view.showHidden': ({ explorerRef }) => {
-    // Local-first toggle: flip FE state synchronously so the listing
-    // re-fetch effects land in the next Svelte tick, then push the new
-    // check state to the native menu fire-and-forget. The previous
-    // implementation routed through `toggle_hidden_files` (Rust toggle +
-    // `settings-changed` emit + FE listener), which added an IPC + event
-    // hop and caused the `toggles hidden file visibility` e2e test to
-    // flake ~1/25 runs under slow-lane load.
-    if (!explorerRef) return
-    const newState = explorerRef.toggleHiddenFiles()
-    void syncMenuShowHidden(newState)
+  'view.showHidden': () => {
+    // Local-first toggle: `setSetting` writes its in-memory cache synchronously,
+    // so both panes' listing re-fetch effects land in the next Svelte tick. The
+    // native menu's check state follows from `settings-applier.ts`, and the save
+    // is debounced behind it. ❌ Don't route this through Rust's
+    // `toggle_hidden_files` instead: that IPC → event → effect → DOM chain is
+    // what flaked the `toggles hidden file visibility` e2e test ~1/25 runs.
+    setSetting('listing.showHiddenFiles', !getSetting('listing.showHiddenFiles'))
   },
 
   'view.briefMode': ({ explorerRef }) => {

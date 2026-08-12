@@ -3,9 +3,8 @@
  * out of `DualPaneExplorer`'s component closures into one module so consumers
  * read state directly instead of through `explorerRef` getters.
  *
- * Owns four of the component's fields:
+ * Owns three of the component's fields:
  * - `focusedPane` — which pane has focus (`'left' | 'right'`),
- * - `showHiddenFiles` — the dotfile-visibility toggle,
  * - `leftPaneWidthPercent` — the layout split (the right pane is the remainder),
  * - the two **tab-manager holders** `leftTabMgr` / `rightTabMgr`, each a
  *   `$state<TabManager>` reference.
@@ -70,13 +69,6 @@ export interface ExplorerState {
   /** Sets the focused pane. The single writer of `focusedPane`. */
   setFocusedPane: (pane: 'left' | 'right') => void
 
-  /** Returns whether hidden (dot) files are shown. Reactive. */
-  getShowHiddenFiles: () => boolean
-  /** Sets the hidden-files flag to an explicit value. */
-  setShowHiddenFiles: (value: boolean) => void
-  /** Flips the hidden-files flag. */
-  toggleHiddenFiles: () => void
-
   /** Returns the left pane's width as a percentage; the right pane is the remainder. Reactive. */
   getLeftPaneWidthPercent: () => number
   /** Sets the left pane's width percentage. */
@@ -104,7 +96,6 @@ export interface ExplorerState {
  */
 export function createExplorerState(): ExplorerState {
   let focusedPane = $state<'left' | 'right'>('left')
-  let showHiddenFiles = $state(true)
   let leftPaneWidthPercent = $state(DEFAULT_PANE_WIDTH_PERCENT)
   let leftTabMgr = $state<TabManager>(createDefaultTabMgr())
   let rightTabMgr = $state<TabManager>(createDefaultTabMgr())
@@ -114,14 +105,6 @@ export function createExplorerState(): ExplorerState {
     getFocusedPane: () => focusedPane,
     setFocusedPane: (pane) => {
       focusedPane = pane
-    },
-
-    getShowHiddenFiles: () => showHiddenFiles,
-    setShowHiddenFiles: (value) => {
-      showHiddenFiles = value
-    },
-    toggleHiddenFiles: () => {
-      showHiddenFiles = !showHiddenFiles
     },
 
     getLeftPaneWidthPercent: () => leftPaneWidthPercent,
@@ -150,14 +133,13 @@ export const explorerState = createExplorerState()
 
 /**
  * Test-only reset of the `explorerState` singleton back to defaults: left-focused,
- * hidden files shown, an even split, and a fresh home-folder tab manager per pane.
+ * an even split, and a fresh home-folder tab manager per pane.
  * Tests that touch the singleton call this in `beforeEach`. Not for production use;
  * tests import it via the file path. Keep it in sync with the factory's defaults
  * whenever a new field is added.
  */
 export function _resetForTesting(): void {
   explorerState.setFocusedPane('left')
-  explorerState.setShowHiddenFiles(true)
   explorerState.setLeftPaneWidthPercent(DEFAULT_PANE_WIDTH_PERCENT)
   explorerState.setTabMgr('left', createDefaultTabMgr())
   explorerState.setTabMgr('right', createDefaultTabMgr())

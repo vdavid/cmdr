@@ -2319,6 +2319,8 @@ export type MessageKey =
   | 'settings.listing.directorySortMode.opt.likeFiles'
   | 'settings.listing.showExtensionInName.description'
   | 'settings.listing.showExtensionInName.label'
+  | 'settings.listing.showHiddenFiles.description'
+  | 'settings.listing.showHiddenFiles.label'
   | 'settings.listing.showTags.description'
   | 'settings.listing.showTags.label'
   | 'settings.listing.sizeDisplay.description'

@@ -33,6 +33,7 @@ import {
   setErrorReportsEnabled,
   setShowVirtualGitPortal,
   setNetworkEnabled,
+  syncMenuShowHidden,
   applyRecentSearchesMaxCount,
   applyRecentSelectionsMaxCount,
 } from '$lib/tauri-commands'
@@ -196,6 +197,12 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   // below), so the mode and threshold always travel together.
   'behavior.fileSystemWatching.lowDiskSpaceNotifications': () => void pushLowDiskSpaceConfigToBackend(),
   'behavior.fileSystemWatching.lowDiskSpaceThresholdPercent': () => void pushLowDiskSpaceConfigToBackend(),
+  // The native View menu's "Show hidden files" CheckMenuItem mirrors this setting
+  // no matter who changed it: the shortcut, the command palette, the Settings
+  // window (cross-window event), or the menu item itself. `sync_menu_show_hidden`
+  // is idempotent and emits nothing back, so the menu-click round trip ends here.
+  // No startup push: Rust builds that item checked from the same persisted key.
+  'listing.showHiddenFiles': (v) => void syncMenuShowHidden(v as boolean),
   'network.directSmbConnection': (v) => void setDirectSmbConnection(v as boolean),
   'advanced.showSafeSaveFiles': (v) => void setShowSafeSaveFiles(v as boolean),
   'advanced.showStagingTempFiles': (v) => void setShowStagingTempFiles(v as boolean),

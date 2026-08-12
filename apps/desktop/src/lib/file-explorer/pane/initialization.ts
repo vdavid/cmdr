@@ -1,6 +1,5 @@
 import { loadAppStatus, loadPaneTabs } from '$lib/app-status-store'
 import { hydrateRail } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
-import { loadSettings } from '$lib/settings-store'
 import { pathExists, getDefaultVolumeId, resolvePathVolume, getE2eStartPath } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { createTabManagerFromPersisted } from './tab-operations'
@@ -18,7 +17,6 @@ export interface InitializedState {
   leftTabMgr: TabManager
   rightTabMgr: TabManager
   focusedPane: 'left' | 'right'
-  showHiddenFiles: boolean
   leftPaneWidthPercent: number
 }
 
@@ -27,12 +25,11 @@ export interface InitializedState {
  * Returns fully initialized tab managers and app state, ready to use.
  */
 export async function loadPersistedState(): Promise<InitializedState> {
-  // Load persisted state (tabs + app status + settings) in parallel
-  const [leftPaneTabs, rightPaneTabs, status, settings] = await Promise.all([
+  // Load persisted state (tabs + app status) in parallel
+  const [leftPaneTabs, rightPaneTabs, status] = await Promise.all([
     loadPaneTabs('left', pathExists),
     loadPaneTabs('right', pathExists),
     loadAppStatus(pathExists),
-    loadSettings(),
   ])
 
   // Restore the Ask Cmdr rail's persisted open/width (reopening loads its active thread).
@@ -139,7 +136,6 @@ export async function loadPersistedState(): Promise<InitializedState> {
     leftTabMgr,
     rightTabMgr,
     focusedPane: status.focusedPane,
-    showHiddenFiles: settings.showHiddenFiles,
     leftPaneWidthPercent: status.leftPaneWidthPercent,
   }
 }

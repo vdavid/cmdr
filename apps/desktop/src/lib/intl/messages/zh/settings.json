@@ -281,6 +281,14 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
+  "settings.listing.showHiddenFiles.label": "显示隐藏文件",
+  "@settings.listing.showHiddenFiles.label": {
+    "sourceHash": "b5ede7f"
+  },
+  "settings.listing.showHiddenFiles.description": "显示以点开头的文件（如 .zshrc）以及系统标记为隐藏的项目。对两个窗格都生效。",
+  "@settings.listing.showHiddenFiles.description": {
+    "sourceHash": "8e77c67"
+  },
   "settings.listing.showExtensionInName.label": "在名称列中显示文件扩展名",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"

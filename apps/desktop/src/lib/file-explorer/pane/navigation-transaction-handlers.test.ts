@@ -162,9 +162,8 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
 })
 
 vi.mock('$lib/settings-store', () => ({
-  loadSettings: vi.fn().mockResolvedValue({ showHiddenFiles: true }),
+  loadSettings: vi.fn().mockResolvedValue({}),
   saveSettings: vi.fn().mockResolvedValue(undefined),
-  subscribeToSettingsChanges: vi.fn().mockResolvedValue(() => {}),
 }))
 
 vi.mock('$lib/settings', () => ({

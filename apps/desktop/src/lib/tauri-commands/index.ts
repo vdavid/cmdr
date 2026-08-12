@@ -129,7 +129,6 @@ export {
   registerKnownDialogs,
   updateMenuContext,
   activateWindowMenu,
-  toggleHiddenFiles,
   syncMenuShowHidden,
   updateViewModeMenu,
   showMainWindow,

@@ -283,6 +283,14 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
+  "settings.listing.showHiddenFiles.label": "Verborgen bestanden tonen",
+  "@settings.listing.showHiddenFiles.label": {
+    "sourceHash": "b5ede7f"
+  },
+  "settings.listing.showHiddenFiles.description": "Toon bestanden die met een punt beginnen (zoals .zshrc) en items die het systeem als verborgen markeert. Geldt voor beide panelen.",
+  "@settings.listing.showHiddenFiles.description": {
+    "sourceHash": "8e77c67"
+  },
   "settings.listing.showExtensionInName.label": "Bestandsextensies in de naamkolom tonen",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"

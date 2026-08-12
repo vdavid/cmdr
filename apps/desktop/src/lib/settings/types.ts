@@ -238,6 +238,7 @@ export interface SettingsValues {
   'appearance.tintMtp': VolumeTintColor
 
   // Listing
+  'listing.showHiddenFiles': boolean
   'listing.directorySortMode': DirectorySortMode
   'listing.sizeDisplay': SizeDisplayMode
   'listing.sizeUnit': FileSizeUnit

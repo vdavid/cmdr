@@ -1,9 +1,9 @@
 // Native-menu event listeners. Typed `on*` wrappers over the `tauri-specta`
 // `events.viewModeChanged` / `events.menuSort` helpers. These are emitted
 // directly from menu clicks (not via `execute-command`) so the FE applies the
-// state change without double-toggling. `settings-changed` is wrapped in
-// `lib/settings-store.ts` (`subscribeToSettingsChanges`) because it's typed
-// against the settings shape there.
+// state change without double-toggling. `settings-changed` (the "Show hidden
+// files" CheckMenuItem) is wrapped in `settings.ts` as `onSettingsChanged`,
+// alongside the rest of the settings IPC.
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import {

@@ -357,6 +357,17 @@
     "screenshot": "settings-appearance-listing.png"
   },
 
+  "settings.listing.showHiddenFiles.label": "Show hidden files",
+  "@settings.listing.showHiddenFiles.label": {
+    "description": "Label for the toggle that shows dotfiles and system-hidden items in both file panes. In Settings > Appearance > Listing.",
+    "screenshot": "settings-appearance-listing.png"
+  },
+  "settings.listing.showHiddenFiles.description": "Show dotfiles (like .zshrc) and items the system marks as hidden. Applies to both panes.",
+  "@settings.listing.showHiddenFiles.description": {
+    "description": "Help text for the show-hidden-files toggle. \".zshrc\" is a literal example filename; keep it. \"panes\" are Cmdr's two side-by-side file lists; translate consistently with the pane wording elsewhere.",
+    "screenshot": "settings-appearance-listing.png"
+  },
+
   "settings.listing.showExtensionInName.label": "Show file extensions in the name column",
   "@settings.listing.showExtensionInName.label": {
     "description": "Label for the toggle that keeps the file extension in the Name column instead of a separate Ext column. In Settings > Appearance > Listing.",

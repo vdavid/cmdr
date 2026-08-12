@@ -295,7 +295,11 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
   the onboarding wizard's step 2 just call `setSetting(...)` and have the backend reconfigure automatically. The same
   table also wires `updates.autoCheck` to `updater.svelte::applyAutoCheckEnabled()`, which starts / stops the background
   poll loop in place. The onboarding wizard's "auto-update" toggle, the Settings UI switch, and any future MCP/IPC
-  writer all go through this one handler.
+  writer all go through this one handler. Same shape for `listing.showHiddenFiles` → `syncMenuShowHidden`: it's the ONE
+  place that pushes dotfile visibility onto the View menu's `CheckMenuItem`, so the Settings row, `⌘⇧.`, the palette,
+  and the menu item itself all converge here and can't disagree. Startup is deliberately not a push (Rust builds the
+  item checked from the same persisted key), and the reverse direction, a menu click arriving as `settings-changed`,
+  writes the setting from `routes/(main)/listener-setup.ts`. Pinned by `settings-applier-show-hidden.test.ts`.
 - **ai-config.ts**: AI configuration plumbing shared by Settings, the onboarding wizard, and the applier listener.
   Exports `pushConfigToBackend()` (read-fresh push of the current AI config to Rust) and `migrateApiKeysFromSettings()`
   (one-time lift of pre-launch `apiKey` strings from `settings.json` into the OS secret store). Lives here rather than

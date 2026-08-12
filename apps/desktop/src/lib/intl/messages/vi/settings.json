@@ -279,6 +279,14 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
+  "settings.listing.showHiddenFiles.label": "Hiện tệp ẩn",
+  "@settings.listing.showHiddenFiles.label": {
+    "sourceHash": "b5ede7f"
+  },
+  "settings.listing.showHiddenFiles.description": "Hiển thị các tệp bắt đầu bằng dấu chấm (như .zshrc) và những mục hệ thống đánh dấu là ẩn. Áp dụng cho cả hai khung.",
+  "@settings.listing.showHiddenFiles.description": {
+    "sourceHash": "8e77c67"
+  },
   "settings.listing.showExtensionInName.label": "Hiện đuôi tệp trong cột tên",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"

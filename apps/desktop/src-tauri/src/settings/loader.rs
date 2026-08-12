@@ -26,7 +26,7 @@ pub enum FullDiskAccessChoice {
 /// Note: Uses serde aliases to support both camelCase (settings.json) and snake_case
 #[derive(Debug, Deserialize)]
 pub struct Settings {
-    #[serde(alias = "showHiddenFiles", default = "default_show_hidden")]
+    #[serde(alias = "listing.showHiddenFiles", default = "default_show_hidden")]
     pub show_hidden_files: bool,
     #[serde(alias = "fullDiskAccessChoice", default)]
     pub full_disk_access_choice: FullDiskAccessChoice,
@@ -229,7 +229,10 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     // tauri-plugin-store uses flat JSON with dot notation keys
     let json: serde_json::Value = serde_json::from_str(contents)?;
 
-    let show_hidden_files = json.get("showHiddenFiles").and_then(|v| v.as_bool()).unwrap_or(true);
+    let show_hidden_files = json
+        .get("listing.showHiddenFiles")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
 
     let full_disk_access_choice = json
         .get("fullDiskAccessChoice")

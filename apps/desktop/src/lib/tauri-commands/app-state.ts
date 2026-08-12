@@ -112,26 +112,14 @@ export async function activateWindowMenu(kind: 'main' | 'viewer' | 'other'): Pro
 }
 
 /**
- * Toggle hidden files visibility and sync menu checkbox state.
+ * Mirrors the `listing.showHiddenFiles` setting onto the native View menu's
+ * CheckMenuItem. Called from `settings-applier.ts` on every change, whoever made
+ * it. Does not emit `settings-changed` (that would bounce a menu click straight
+ * back at the FE). Safe before the menu is built (no-op if uninitialized).
  *
- * **Use sparingly.** The explorer's `view.showHidden` keyboard / palette path
- * does NOT use this: it flips FE state directly via `explorerRef.toggleHiddenFiles()`
- * and then calls {@link syncMenuShowHidden} to update the native menu, avoiding
- * an IPC → event → effect round-trip that caused a 1/25 e2e flake on `⌘⇧.`.
- * Reach for this from external trigger paths only (MCP tool calls, etc.).
- *
- * @returns The new state of showHiddenFiles.
- */
-export async function toggleHiddenFiles(): Promise<boolean> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
-  return invoke<boolean>('toggle_hidden_files')
-}
-
-/**
- * Push the new "show hidden files" check state to the native menu, after the
- * frontend has already flipped its own state. Does not emit `settings-changed`
- * (the FE is the caller, the FE listener would just bounce its own state). Safe
- * to call even before the menu is built (no-op if uninitialized).
+ * The reverse direction (a menu click, or the MCP `toggle_hidden` tool, which
+ * Rust routes through `toggle_hidden_files`) arrives as `settings-changed` and
+ * is handled in `routes/(main)/listener-setup.ts`.
  */
 export async function syncMenuShowHidden(checked: boolean): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)

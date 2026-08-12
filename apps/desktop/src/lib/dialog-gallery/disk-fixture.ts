@@ -22,6 +22,7 @@ import { getFilesAtIndices } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { navigateToDirInPane, resolveLocationOrToast } from '$lib/file-explorer/navigation/navigate-and-select'
 import { explorerState } from '$lib/file-explorer/pane/explorer-state.svelte'
+import { getShowHiddenFiles } from '$lib/settings/reactive-settings.svelte'
 import { getActiveTab } from '$lib/file-explorer/tabs/tab-state-manager.svelte'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 import type { GalleryDiskFixture } from './gallery-state.svelte'
@@ -76,7 +77,7 @@ export async function resolveDiskFixture(
     return null
   }
 
-  const showHiddenFiles = explorerState.getShowHiddenFiles()
+  const showHiddenFiles = getShowHiddenFiles()
   const tab = getActiveTab(explorerState.getTabMgr(paneSide))
 
   // Backend indices: 0 is the first real entry, so the synthetic `..` row never

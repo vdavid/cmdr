@@ -4,7 +4,7 @@
  * Pins the EXACT behavior of the dispatch core — every dispatchable id's call
  * pattern + args, the bespoke branches (zoom/tab toasts, activeElement input
  * branches, the quickLook guard, the cloud try/catch toast, the about URLs,
- * `view.showHidden`'s early return), the per-arm await/void semantics (the two
+ * `view.showHidden`'s setting flip), the per-arm await/void semantics (the two
  * MCP round-trip ids pinned with deferred promises), the preamble order, and the
  * 20 exempt ids' preamble-then-silent-no-op path.
  *
@@ -32,7 +32,8 @@ const m = vi.hoisted(() => ({
   getVolumeId: vi.fn<() => string>(() => 'local'),
   getPanePath: vi.fn<() => string>(() => '/Users/test'),
   addToast: vi.fn<(...a: unknown[]) => void>(),
-  getSetting: vi.fn<(key: string) => number>(() => 100),
+  // Zoom arms read a number (`appearance.textSize`), `view.showHidden` a boolean.
+  getSetting: vi.fn<(key: string) => number | boolean>(() => 100),
   setSetting: vi.fn<(...a: unknown[]) => void>(),
   getEffectiveShortcuts: vi.fn<(id: string) => string[]>(() => []),
   openSettingsWindow: vi.fn(() => Promise.resolve()),
@@ -350,20 +351,29 @@ describe('characterization — entry-under-cursor arms', () => {
 })
 
 // ===========================================================================
-// view.showHidden: toggle + syncMenuShowHidden, and the no-explorer early return.
+// view.showHidden: flips the setting, which is the whole job — both panes read
+// it and `settings-applier.ts` mirrors it onto the native menu.
 // ===========================================================================
 describe('characterization — view.showHidden', () => {
-  it('toggles hidden files and pushes the new state to the native menu', async () => {
-    const explorer = makeExplorerSpy()
-    explorer.toggleHiddenFiles.mockReturnValue(true)
-    await handleCommandExecute('view.showHidden', makeCtx(explorer))
-    expect(explorer.toggleHiddenFiles).toHaveBeenCalledOnce()
-    expect(syncMenuShowHidden).toHaveBeenCalledExactlyOnceWith(true)
+  it('flips `listing.showHiddenFiles` on', async () => {
+    getSetting.mockReturnValue(false)
+    await handleCommandExecute('view.showHidden', makeCtx(makeExplorerSpy()))
+    expect(setSetting).toHaveBeenCalledExactlyOnceWith('listing.showHiddenFiles', true)
   })
 
-  it('early-returns before the toggle when there is no explorer', async () => {
+  it('flips `listing.showHiddenFiles` off', async () => {
+    getSetting.mockReturnValue(true)
+    await handleCommandExecute('view.showHidden', makeCtx(makeExplorerSpy()))
+    expect(setSetting).toHaveBeenCalledExactlyOnceWith('listing.showHiddenFiles', false)
+  })
+
+  it('works with no explorer mounted: the setting is the source of truth, not pane state', async () => {
+    getSetting.mockReturnValue(true)
     const ctx: CommandDispatchContext = { getExplorer: () => undefined, dialogs: makeCtx({}).dialogs }
     await handleCommandExecute('view.showHidden', ctx)
+    expect(setSetting).toHaveBeenCalledExactlyOnceWith('listing.showHiddenFiles', false)
+    // The menu push is the applier's job now, never the handler's (one owner, so
+    // a Settings-window toggle syncs the menu exactly like the shortcut does).
     expect(syncMenuShowHidden).not.toHaveBeenCalled()
   })
 })

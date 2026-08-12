@@ -88,12 +88,12 @@ mod tests {
     #[test]
     fn includes_bools_and_numbers() {
         let settings = json!({
-            "showHiddenFiles": true,
+            "listing.showHiddenFiles": true,
             "listing.briefColumnWidthMaxPx": 320,
             "appearance.textSize": 125.0,
         });
         let shape = build_config_shape(&settings, false);
-        assert_eq!(shape["showHiddenFiles"], json!(true));
+        assert_eq!(shape["listing.showHiddenFiles"], json!(true));
         assert_eq!(shape["listing.briefColumnWidthMaxPx"], json!(320));
         assert_eq!(shape["appearance.textSize"], json!(125.0));
     }

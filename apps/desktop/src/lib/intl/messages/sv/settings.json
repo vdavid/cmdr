@@ -283,6 +283,14 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
+  "settings.listing.showHiddenFiles.label": "Visa dolda filer",
+  "@settings.listing.showHiddenFiles.label": {
+    "sourceHash": "b5ede7f"
+  },
+  "settings.listing.showHiddenFiles.description": "Visa filer som börjar med punkt (som .zshrc) och objekt som systemet markerar som dolda. Gäller båda panelerna.",
+  "@settings.listing.showHiddenFiles.description": {
+    "sourceHash": "8e77c67"
+  },
   "settings.listing.showExtensionInName.label": "Visa filtillägg i namnkolumnen",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"

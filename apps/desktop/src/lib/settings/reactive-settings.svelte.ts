@@ -31,6 +31,7 @@ let customDateTimeFormat = $state<string>('YYYY-MM-DD HH:mm')
 let fileSizeFormat = $state<FileSizeFormat>('binary')
 let useAppIconsForDocuments = $state<boolean>(true)
 let showFunctionKeyBar = $state<boolean>(true)
+let showHiddenFiles = $state<boolean>(true)
 let directorySortMode = $state<DirectorySortMode>('likeFiles')
 let appColor = $state<AppColor>('cmdr-gold')
 let sizeDisplay = $state<SizeDisplayMode>('smart')
@@ -85,6 +86,7 @@ async function runInit(options?: { restrictedWindow?: boolean }): Promise<void> 
     fileSizeFormat = getSetting('appearance.fileSizeFormat')
     useAppIconsForDocuments = getSetting('appearance.useAppIconsForDocuments')
     showFunctionKeyBar = getSetting('appearance.showFunctionKeyBar')
+    showHiddenFiles = getSetting('listing.showHiddenFiles')
     directorySortMode = getSetting('listing.directorySortMode')
     appColor = getSetting('appearance.appColor')
     sizeDisplay = getSetting('listing.sizeDisplay')
@@ -144,6 +146,9 @@ function applySettingChange(id: string, value: unknown): void {
       break
     case 'appearance.showFunctionKeyBar':
       showFunctionKeyBar = value as boolean
+      break
+    case 'listing.showHiddenFiles':
+      showHiddenFiles = value as boolean
       break
     case 'listing.directorySortMode':
       directorySortMode = value as DirectorySortMode
@@ -246,6 +251,15 @@ export function getUseAppIconsForDocuments(): boolean {
 /** Get whether the bottom function key bar (F-key command buttons) is shown. */
 export function getShowFunctionKeyBar(): boolean {
   return showFunctionKeyBar
+}
+
+/**
+ * Whether dotfiles and system-hidden items are listed. Both panes read this one
+ * value, so they can never disagree; the View menu's CheckMenuItem mirrors it
+ * from `settings-applier.ts`.
+ */
+export function getShowHiddenFiles(): boolean {
+  return showHiddenFiles
 }
 
 /** Get current directory sort mode */

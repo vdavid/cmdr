@@ -2,8 +2,6 @@
 
 import { load } from '@tauri-apps/plugin-store'
 import type { Store } from '@tauri-apps/plugin-store'
-import { type UnlistenFn } from '@tauri-apps/api/event'
-import { onSettingsChanged } from '$lib/tauri-commands'
 import { resolveStorePath } from './settings/store-path'
 import { getAppLogger } from './logging/logger'
 
@@ -12,7 +10,6 @@ const log = getAppLogger('settings-store')
 export type FullDiskAccessChoice = 'allow' | 'deny' | 'notAskedYet'
 
 export interface Settings {
-  showHiddenFiles: boolean
   fullDiskAccessChoice: FullDiskAccessChoice
   isOnboarded: boolean
   /**
@@ -27,7 +24,6 @@ export interface Settings {
 }
 
 const DEFAULT_SETTINGS: Settings = {
-  showHiddenFiles: true,
   fullDiskAccessChoice: 'notAskedYet',
   isOnboarded: false,
   termsAcceptedVersion: null,
@@ -53,7 +49,6 @@ async function getStore(): Promise<Store> {
 export async function loadSettings(): Promise<Settings> {
   try {
     const store = await getStore()
-    const showHiddenFiles = await store.get('showHiddenFiles')
     const fullDiskAccessChoice = await store.get('fullDiskAccessChoice')
     const isOnboarded = await store.get('isOnboarded')
     const termsAcceptedVersion = await store.get('termsAcceptedVersion')
@@ -61,7 +56,6 @@ export async function loadSettings(): Promise<Settings> {
 
     const validChoices: FullDiskAccessChoice[] = ['allow', 'deny', 'notAskedYet']
     return {
-      showHiddenFiles: typeof showHiddenFiles === 'boolean' ? showHiddenFiles : DEFAULT_SETTINGS.showHiddenFiles,
       fullDiskAccessChoice: validChoices.includes(fullDiskAccessChoice as FullDiskAccessChoice)
         ? (fullDiskAccessChoice as FullDiskAccessChoice)
         : DEFAULT_SETTINGS.fullDiskAccessChoice,
@@ -90,9 +84,6 @@ export async function loadSettings(): Promise<Settings> {
 export async function saveSettings(settings: Partial<Settings>): Promise<boolean> {
   try {
     const store = await getStore()
-    if (settings.showHiddenFiles !== undefined) {
-      await store.set('showHiddenFiles', settings.showHiddenFiles)
-    }
     if (settings.fullDiskAccessChoice !== undefined) {
       await store.set('fullDiskAccessChoice', settings.fullDiskAccessChoice)
     }
@@ -111,12 +102,4 @@ export async function saveSettings(settings: Partial<Settings>): Promise<boolean
     log.error('Failed to persist settings {keys}: {error}', { keys: Object.keys(settings), error })
     return false
   }
-}
-
-/**
- * Subscribes to settings changes emitted from the backend menu.
- * Returns an unlisten function to clean up the subscription.
- */
-export async function subscribeToSettingsChanges(callback: (settings: Partial<Settings>) => void): Promise<UnlistenFn> {
-  return onSettingsChanged(callback)
 }

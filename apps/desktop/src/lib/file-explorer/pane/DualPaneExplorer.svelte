@@ -10,7 +10,6 @@
     import { type ViewMode } from '$lib/app-status-store'
     import type { CommandId, McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
     import type { SelectionAction } from '../../../routes/(main)/explorer-api'
-    import { saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
     import {
         listen,
         type Location,
@@ -99,7 +98,7 @@
     import { initIndexEvents } from '$lib/indexing/index'
     import { createIndexEventHandler } from './index-events'
     import { loadPersistedState } from './initialization'
-    import { getDirectorySortMode } from '$lib/settings/reactive-settings.svelte'
+    import { getDirectorySortMode, getShowHiddenFiles } from '$lib/settings/reactive-settings.svelte'
     import { getSetting, onSettingChange } from '$lib/settings'
     import { setReopenClosedTabEnabled } from '$lib/tauri-commands'
     import DragOverlay from '../drag/DragOverlay.svelte'
@@ -154,19 +153,20 @@
 
     const { onCommand }: Props = $props()
 
-    // Focus, hidden-files, and the layout split live in the explorer store now.
-    // These `$derived` aliases read them reactively; writes go through the store's
-    // named mutators (`setFocusedPane` / `setShowHiddenFiles` / `setLeftPaneWidthPercent`).
+    // Focus and the layout split live in the explorer store. These `$derived`
+    // aliases read them reactively; writes go through the store's named mutators
+    // (`setFocusedPane` / `setLeftPaneWidthPercent`).
     const focusedPane = $derived(explorerState.getFocusedPane())
-    const showHiddenFiles = $derived(explorerState.getShowHiddenFiles())
     const leftPaneWidthPercent = $derived(explorerState.getLeftPaneWidthPercent())
+    // Dotfile visibility is the `listing.showHiddenFiles` SETTING, not pane state:
+    // one value both panes read, shared with the Settings window and the View menu.
+    const showHiddenFiles = $derived(getShowHiddenFiles())
     // Volumes come from the shared store (pushed by backend via `volumes-changed` event)
     const volumes = $derived(getStoreVolumes())
     let initialized = $state(false)
 
     let containerElement: HTMLDivElement | undefined = $state()
     const paneRefs = $state<Record<'left' | 'right', FilePaneAPI | undefined>>({ left: undefined, right: undefined })
-    let unlistenSettings: UnlistenFn | undefined
     let unlistenVolumeUnmount: UnlistenFn | undefined
     let unlistenVolumeContextAction: UnlistenFn | undefined
     let unlistenIndexEvents: UnlistenFn | undefined
@@ -619,7 +619,6 @@
         explorerState.setTabMgr('right', persistedState.rightTabMgr)
         explorerState.setFocusedPane(persistedState.focusedPane)
         await updateFocusedPane(persistedState.focusedPane)
-        explorerState.setShowHiddenFiles(persistedState.showHiddenFiles)
         explorerState.setLeftPaneWidthPercent(persistedState.leftPaneWidthPercent)
 
         initialized = true
@@ -635,15 +634,6 @@
             void recalculateWebviewOffset()
             window.addEventListener('resize', handleResizeForDevTools)
         }
-
-        // Subscribe to settings changes from the backend menu
-        unlistenSettings = await subscribeToSettingsChanges((newSettings) => {
-            if (newSettings.showHiddenFiles !== undefined) {
-                explorerState.setShowHiddenFiles(newSettings.showHiddenFiles)
-                // Persist to settings store
-                void saveSettings({ showHiddenFiles: newSettings.showHiddenFiles })
-            }
-        })
 
         // Subscribe to volume unmount events (redirect panes off ejected volumes)
         unlistenVolumeUnmount = await onVolumeUnmounted((payload) => {
@@ -690,7 +680,6 @@
     })
 
     onDestroy(() => {
-        unlistenSettings?.()
         unlistenVolumeUnmount?.()
         unlistenVolumeContextAction?.()
         unlistenIndexEvents?.()
@@ -899,22 +888,6 @@
 
     export function closeVolumeChooser() {
         paneCommands.closeVolumeChooser()
-    }
-
-    /**
-     * Toggle show hidden files. Synchronous FE state flip so the listing
-     * re-fetch effects (FilePane includeHidden $effect → FullList cache reset)
-     * land in the next Svelte tick, not after an IPC + event round-trip via
-     * Rust. The caller is responsible for syncing the native menu's
-     * `CheckMenuItem` checked state separately (`syncMenuShowHidden`).
-     *
-     * @returns The new `showHiddenFiles` state.
-     */
-    export function toggleHiddenFiles(): boolean {
-        explorerState.toggleHiddenFiles()
-        const next = showHiddenFiles
-        void saveSettings({ showHiddenFiles: next })
-        return next
     }
 
     /**

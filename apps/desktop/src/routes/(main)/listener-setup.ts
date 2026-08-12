@@ -31,6 +31,7 @@ import {
   onCloseAllFileViewers,
   onCloseAbout,
   onCloseConfirmation,
+  onSettingsChanged,
 } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { markDispatchSource } from './dispatch-dedup'
@@ -40,7 +41,7 @@ import { isCommandId, type CommandId, type CommandDispatchArgs } from '$lib/comm
 import type { ViewMode } from '$lib/app-status-store'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { saveSettings } from '$lib/settings-store'
-import { seedSettingForE2E } from '$lib/settings'
+import { seedSettingForE2E, setSetting } from '$lib/settings'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { closeDialogById } from '$lib/ui/dialog-close-registry'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
@@ -280,6 +281,17 @@ export async function setupMenuListeners(ctx: ListenerSetupContext): Promise<voi
       // stays satisfied (A3). `fromMenu: true` → the handler skips
       // `pushViewMenuState` (the menu already toggled its CheckMenuItem).
       void dispatch(viewSetModeCommand, { pane, mode, fromMenu: true })
+    }),
+  )
+
+  // "Show hidden files" flipped outside the frontend: a native View-menu click
+  // (Rust toggled its own CheckMenuItem first) or the MCP `toggle_hidden` tool.
+  // Both land as `settings-changed`, and writing the setting is all that's left
+  // to do: both panes read it, and the applier's echo back to the menu is a
+  // no-op set to the value the item already carries.
+  unlistenFns.push(
+    await onSettingsChanged((payload) => {
+      setSetting('listing.showHiddenFiles', payload.showHiddenFiles)
     }),
   )
 

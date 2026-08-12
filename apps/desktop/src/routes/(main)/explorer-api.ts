@@ -31,7 +31,6 @@ export interface ExplorerAPI {
   toggleVolumeChooser: (pane: 'left' | 'right') => void
   openVolumeChooser: () => void
   closeVolumeChooser: () => void
-  toggleHiddenFiles: () => boolean
   setViewMode: (mode: ViewMode, pane?: 'left' | 'right') => void
   /**
    * Sets a specific pane's view mode in response to a native-menu click

@@ -2,7 +2,7 @@
  * Tests for the explorer store (`explorer-state.svelte.ts`).
  *
  * The store un-traps `DualPaneExplorer`'s navigation + UI-chrome state into one
- * module: `focusedPane`, `showHiddenFiles`, `leftPaneWidthPercent`, and the two
+ * module: `focusedPane`, `leftPaneWidthPercent`, `railFocused`, and the two
  * tab-manager holders. State is module-private; only getters and named mutators
  * cross the boundary (A1/A2).
  *
@@ -30,10 +30,9 @@ function mgrAt(path: string): TabManager {
 }
 
 describe('createExplorerState: defaults', () => {
-  it('starts left-focused, hidden files shown, panes split 50/50', () => {
+  it('starts left-focused, panes split 50/50', () => {
     const s = createExplorerState()
     expect(s.getFocusedPane()).toBe('left')
-    expect(s.getShowHiddenFiles()).toBe(true)
     expect(s.getLeftPaneWidthPercent()).toBe(50)
   })
 
@@ -52,23 +51,6 @@ describe('createExplorerState: getter/mutator round-trips', () => {
     expect(s.getFocusedPane()).toBe('right')
     s.setFocusedPane('left')
     expect(s.getFocusedPane()).toBe('left')
-  })
-
-  it('setShowHiddenFiles stores the flag', () => {
-    const s = createExplorerState()
-    s.setShowHiddenFiles(false)
-    expect(s.getShowHiddenFiles()).toBe(false)
-    s.setShowHiddenFiles(true)
-    expect(s.getShowHiddenFiles()).toBe(true)
-  })
-
-  it('toggleHiddenFiles flips the flag', () => {
-    const s = createExplorerState()
-    expect(s.getShowHiddenFiles()).toBe(true)
-    s.toggleHiddenFiles()
-    expect(s.getShowHiddenFiles()).toBe(false)
-    s.toggleHiddenFiles()
-    expect(s.getShowHiddenFiles()).toBe(true)
   })
 
   it('setLeftPaneWidthPercent stores the layout split', () => {
@@ -95,10 +77,8 @@ describe('createExplorerState: factory isolation', () => {
     const a = createExplorerState()
     const b = createExplorerState()
     a.setFocusedPane('right')
-    a.setShowHiddenFiles(false)
     a.setLeftPaneWidthPercent(20)
     expect(b.getFocusedPane()).toBe('left')
-    expect(b.getShowHiddenFiles()).toBe(true)
     expect(b.getLeftPaneWidthPercent()).toBe(50)
   })
 
@@ -118,14 +98,12 @@ describe('explorerState default instance: _resetForTesting', () => {
 
   it('clears every field back to defaults', () => {
     explorerState.setFocusedPane('right')
-    explorerState.setShowHiddenFiles(false)
     explorerState.setLeftPaneWidthPercent(70)
     explorerState.setTabMgr('left', mgrAt('/scratch'))
 
     _resetForTesting()
 
     expect(explorerState.getFocusedPane()).toBe('left')
-    expect(explorerState.getShowHiddenFiles()).toBe(true)
     expect(explorerState.getLeftPaneWidthPercent()).toBe(50)
     expect(getActiveTab(explorerState.getTabMgr('left')).path).toBe('~')
     expect(getActiveTab(explorerState.getTabMgr('right')).path).toBe('~')

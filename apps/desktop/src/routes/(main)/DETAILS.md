@@ -250,9 +250,9 @@ dispatch path can't rely on the keydown bail.
   must be impossible is latching the WRONG entry.) `edit.pasteAsMove` behaves identically here (move semantics are
   meaningless for clipboard bytes). Backend flavor precedence + the write:
   `apps/desktop/src-tauri/src/clipboard/DETAILS.md` § Paste clipboard content as a file.
-- **`view.showHidden` is local-first.** Flips frontend state via `explorerRef.toggleHiddenFiles()` synchronously, then
-  pushes the check state to the native menu fire-and-forget. Routing the toggle through Rust adds an IPC + event hop and
-  flaked the hidden-file E2E under slow-lane load.
+- **`view.showHidden` is local-first.** Flips the `listing.showHiddenFiles` setting, whose in-memory write is
+  synchronous; the native menu's check state follows from `settings-applier.ts` and the save is debounced behind it.
+  Routing the toggle through Rust adds an IPC + event hop and flaked the hidden-file E2E under slow-lane load.
 
 ## Off-bus test and debug hooks
 

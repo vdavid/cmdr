@@ -9,6 +9,7 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
+    if (key === 'listing.showHiddenFiles') return true
     if (key === 'appearance.useAppIconsForDocuments') return true
     if (key === 'appearance.showFunctionKeyBar') return true
     if (key === 'listing.directorySortMode') return 'likeFiles'

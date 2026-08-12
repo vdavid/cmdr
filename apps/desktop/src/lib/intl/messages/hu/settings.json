@@ -281,6 +281,14 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
+  "settings.listing.showHiddenFiles.label": "Rejtett fájlok megjelenítése",
+  "@settings.listing.showHiddenFiles.label": {
+    "sourceHash": "b5ede7f"
+  },
+  "settings.listing.showHiddenFiles.description": "Megmutatja a ponttal kezdődő fájlokat (például .zshrc) és azokat az elemeket, amelyeket a rendszer rejtettként jelöl. Mindkét panelre vonatkozik.",
+  "@settings.listing.showHiddenFiles.description": {
+    "sourceHash": "8e77c67"
+  },
   "settings.listing.showExtensionInName.label": "Fájlkiterjesztések megjelenítése a név oszlopban",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"

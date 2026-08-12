@@ -25,7 +25,7 @@ satisfies the live-apply rule below.
   window's write path (`persist_restricted_window_setting`) forwards to the main window's store rather than writing from
   Rust, keeping this invariant intact.
 - **Dot-notation keys are literal, parsed manually.** `tauri-plugin-store` writes flat JSON with literal dot-notation
-  string keys (`{ "showHiddenFiles": true, "developer.mcpEnabled": true }`): the dot is part of the key name, not a
+  string keys (`{ "listing.showHiddenFiles": true, "developer.mcpEnabled": true }`): the dot is part of the key name, not a
   nesting separator. `parse_settings` reads them manually because serde can't express dot-notation field names as struct
   fields. Don't switch to serde auto-derivation.
 - **Direct file reading is intentional.** Multiple backend systems (MCP server, hidden-files filter, indexing, crash

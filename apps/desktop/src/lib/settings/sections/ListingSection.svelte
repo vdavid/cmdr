@@ -19,6 +19,7 @@
 
     const shouldShow = $derived(createShouldShow(searchQuery))
 
+    const showHiddenDef = getSettingDefinition('listing.showHiddenFiles') ?? { label: '', description: '' }
     const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments') ?? { label: '', description: '' }
     const fnKeyBarDef = getSettingDefinition('appearance.showFunctionKeyBar') ?? { label: '', description: '' }
     const dirSortDef = getSettingDefinition('listing.directorySortMode') ?? { label: '', description: '' }
@@ -39,8 +40,18 @@
 </script>
 
 <SettingsSection title={tString('settings.section.listing')}>
-    {#if anyVisible(shouldShow, 'appearance.useAppIconsForDocuments', 'appearance.showFunctionKeyBar', 'listing.directorySortMode', 'listing.showExtensionInName', 'listing.showTags')}
+    {#if anyVisible(shouldShow, 'listing.showHiddenFiles', 'appearance.useAppIconsForDocuments', 'appearance.showFunctionKeyBar', 'listing.directorySortMode', 'listing.showExtensionInName', 'listing.showTags')}
         <SectionCard label={tString('settings.appearance.card.namesAndIcons')}>
+            {#if shouldShow('listing.showHiddenFiles')}
+                <SettingRow
+                    id="listing.showHiddenFiles"
+                    label={showHiddenDef.label}
+                    description={showHiddenDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="listing.showHiddenFiles" />
+                </SettingRow>
+            {/if}
             {#if shouldShow('appearance.useAppIconsForDocuments')}
                 <SettingRow
                     id="appearance.useAppIconsForDocuments"
