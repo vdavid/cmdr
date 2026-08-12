@@ -729,6 +729,19 @@ pub async fn trash_files_start(
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!("trash_files_start: sources={:?}", sources);
 
+    // ❌ Trash does NOT wait for the confirming dialog's scan preview, and this
+    // is the one operation that doesn't. `trashItemAtURL` is atomic per
+    // top-level item: trash walks nothing, so there is no second walk to
+    // serialize against and no cached result to consume — waiting would be pure
+    // delay, and on a big tree a long one. Nothing downstream will consume the
+    // preview either, so free it here rather than leaving an ownerless walk to
+    // finish for nobody and its result to sit until a TTL sweep. (The dialog
+    // can't free it: it sets `confirmed` and deliberately skips its own
+    // cleanup, because on the DELETE path the operation does consume it.)
+    if let Some(preview_id) = &config.preview_id {
+        cancel_scan_preview(preview_id);
+    }
+
     // Trash always targets the local macOS Trash; no ejectable volume involved.
     let summary = path_summary(&sources, None);
     start_write_operation(
@@ -739,7 +752,7 @@ pub async fn trash_files_start(
         vec![],
         vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],
         summary,
-        config.preview_id.clone(),
+        None,
         sources.len() as u64,
         move |events, op_id, state| {
             validate_sources(&sources)?;

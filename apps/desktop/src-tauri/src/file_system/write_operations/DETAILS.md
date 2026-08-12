@@ -401,6 +401,12 @@ cancelled walk returns an error (the local walk's `on_cancelled` string, the vol
 message merely says "cancelled", and recovering the truth from that message would be string-matching on the control
 path. Both workers' arms were reconciled to match.
 
+**Trash is the one operation that doesn't wait.** `trashItemAtURL` is atomic per top-level item, so a trash walks
+nothing: there is no second walk to serialize against and no cached result to consume, and waiting would be pure delay
+— a long one on a big tree. `trash_files_start` therefore passes no `preview_id` and frees the preview outright,
+because nothing downstream will read it and the dialog deliberately skips its own cleanup after a confirm (on the
+DELETE path the operation DOES consume it). Pinned by `a_trash_frees_its_preview_instead_of_waiting_on_it`.
+
 **Misses are always a re-walk, never a hang.** An unknown `preview_id` (evicted, or stale from a reloaded window) and a
 refused claim both leave the operation with no claim at all, so it proceeds straight to its own foolproof scan.
 

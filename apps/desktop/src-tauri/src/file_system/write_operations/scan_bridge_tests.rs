@@ -547,6 +547,59 @@ async fn a_pause_during_a_scan_wait_latches_and_lands_before_the_first_write() {
     .await;
 }
 
+/// Trash is the ONE operation that doesn't wait, and it frees the preview
+/// instead. `trashItemAtURL` is atomic per top-level item, so a trash walks
+/// nothing: there is no second walk to serialize against and no cached result
+/// to consume, and waiting would be pure delay — a long one on a big tree.
+/// Leaving the preview alone isn't an option either, because the dialog
+/// deliberately skips its own cleanup after a confirm (on the DELETE path the
+/// operation does consume it), so an ownerless walk would run for nobody.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_trash_frees_its_preview_instead_of_waiting_on_it() {
+    use super::trash_files_start;
+
+    let dir = TestDir::new("scanwait-trash");
+    let src = dir.join("src");
+    std::fs::create_dir_all(&src).expect("create src");
+    let file = src.join("a.bin");
+    std::fs::write(&file, b"a").expect("write a");
+
+    let preview_id = unique("preview");
+    register_in_flight(&preview_id);
+
+    let events = Arc::new(CollectorEventSink::new());
+    let start = trash_files_start(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        vec![file.clone()],
+        None,
+        WriteOperationConfig {
+            preview_id: Some(preview_id.clone()),
+            ..WriteOperationConfig::default()
+        },
+        Initiator::User,
+    )
+    .await
+    .expect("trash starts");
+
+    assert!(
+        !manager().is_in_scan_wait(&start.operation_id),
+        "a trash must not park on a scan it will never read"
+    );
+    assert!(
+        matches!(
+            claim_preview(&preview_id, &unique("anyone")),
+            super::scan_cache::PreviewClaim::Unknown
+        ),
+        "the preview must be freed, not left walking for an operation that ignores it"
+    );
+
+    wait_until_async(WAIT, "the trash to settle", || {
+        !events.complete.lock().expect("collector mutex").is_empty()
+            || !events.errors.lock().expect("collector mutex").is_empty()
+    })
+    .await;
+}
+
 // ============================================================================
 // The archive routes
 // ============================================================================
