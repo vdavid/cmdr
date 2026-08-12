@@ -35,9 +35,9 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
   immediately for any high-severity advisory.
 - **Two Rust advisory scanners, on purpose different scopes**: `cargo-deny` (every `pnpm check`) reads the macOS-only
   graph `deny.toml` pins, so it fails fast on a vulnerability that reaches a shipped binary and stays quiet about the
-  Linux GTK3 stack. `cargo-audit` (`slow-checks.yml`, every 6 days) sweeps the FULL graph, so it's the one that
-  surfaces Linux-only and dev-only advisories. A finding in audit but not deny means "real, but nothing we ship links
-  it" — triage it, don't panic. Losing either loses half the picture.
+  Linux GTK3 stack. `cargo-audit` (`slow-checks.yml`, every 6 days) sweeps the FULL graph, so it's the one that surfaces
+  Linux-only and dev-only advisories. A finding in audit but not deny means "real, but nothing we ship links it" —
+  triage it, don't panic. Losing either loses half the picture.
 - **Review `cargo-audit` ignores**: `apps/desktop/src-tauri/.cargo/audit.toml` carries ignored advisories that
   cargo-audit can't verify as still-needed (currently `RUSTSEC-2023-0071`, waiting on `sspi` updating its `rsa` dep).
   For each entry, check whether the upstream fix landed; if it did, remove the ignore. Frequency: quarterly, batched

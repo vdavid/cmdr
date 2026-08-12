@@ -177,9 +177,9 @@ Only the layout facts that none of those carry live here:
   is lossless WebP and nothing here decodes those pixels in JavaScript (`i18n-capture-png.ts` is PNG-only, and a VP8L
   decoder is not worth hand-rolling). So the pixel assertions render the master with `magick … png32:-`, the same tool
   that wrote it and that `regenerate-hero.sh` measures it with, and they `skipIf` ImageMagick is missing. The size
-  assertion instead reads the container header (`webp-size.ts`), so it runs on a CI runner with no ImageMagick and
-  still catches the likeliest drift: a reshoot at a different size while `FOCUSED_*` stays put. ❌ Don't collapse them
-  back into one magick-gated test; that leaves CI asserting nothing about the masters.
+  assertion instead reads the container header (`webp-size.ts`), so it runs on a CI runner with no ImageMagick and still
+  catches the likeliest drift: a reshoot at a different size while `FOCUSED_*` stays put. ❌ Don't collapse them back
+  into one magick-gated test; that leaves CI asserting nothing about the masters.
 - **❗ Before `pnpm i18n:capture`: quit or hide whatever app is frontmost, then leave the computer alone, and tell David
   both halves.** The native screenshot returns the window's last COMPOSITED frame, and macOS stops compositing a window
   that isn't frontmost, so the capture reads a stale, pre-paint frame: a dark rectangle with three traffic lights, while

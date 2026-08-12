@@ -9,11 +9,10 @@ D1 fulfillment record), `paddle.ts` (HMAC verify, `constantTimeEqual`), `paddle-
 
 - **Sandbox and live never mix** (accounts, keys, price IDs, webhook secrets, notification targets):
   `PADDLE_ENVIRONMENT` routes. ❌ Never infer the environment from a transaction id, both use `txn_`.
-- **`ED25519_PRIVATE_KEY` is per-environment for the same reason.** `.dev.vars` holds the DEV signer; production's
-  lives only as a wrangler secret. ❌ Never copy the production key into `.dev.vars`: it mints licenses every shipped
-  build accepts offline, and there's no revocation short of shipping a new binary. The desktop app picks the matching
-  public key by build mode; rationale and rotation caveat in
-  `apps/desktop/src-tauri/src/licensing/DETAILS.md` § Signing keys.
+- **`ED25519_PRIVATE_KEY` is per-environment for the same reason.** `.dev.vars` holds the DEV signer; production's lives
+  only as a wrangler secret. ❌ Never copy the production key into `.dev.vars`: it mints licenses every shipped build
+  accepts offline, and there's no revocation short of shipping a new binary. The desktop app picks the matching public
+  key by build mode; rationale and rotation caveat in `apps/desktop/src-tauri/src/licensing/DETAILS.md` § Signing keys.
 - **One purchase yields ONE set of license codes, but the email may repeat.** `/webhook/paddle` claims the transaction
   in D1 (`license_issuance`) BEFORE any side effect, stores the codes before emailing, and marks `emailed_at` after. A
   delivery that loses the claim classifies the row (`classifyIssuance`) instead of issuing beside it. DETAILS §
