@@ -23,11 +23,11 @@ diagram, CLI options, freestyle.sh execution, and decisions: `DETAILS.md`.
 
 - **Run from repo root via `pnpm check`.** Positional args select checks/apps/groups in any mix; named checks run even
   if slow/CI-only, app/group selectors keep the default lanes. `ValidateCheckNames` fails startup if a check ID or
-  nickname would shadow a reserved group/app keyword (`desktop`, `website`, `api-server`, `dashboard`, `scripts`,
-  `rust`, `svelte`, `go`), so resolution order (check → app → group) can't silently change meaning.
+  nickname would shadow a reserved group/app keyword, so resolution order (check → app → group) can't silently change
+  meaning.
 - **Checks refuse to run in the main clone** (the auto-fixers reformat tracked files; that only happens in a worktree).
-  Detection: `--git-dir` == `--git-common-dir` (`isMainWorkingTree`). CI is exempt via `--ci`; override a deliberate
-  local main run with `--allow-main` / `-m`. `tauri-wrapper.ts` carries the same guard for `pnpm dev` (not `build`).
+  CI is exempt via `--ci`; override a deliberate local main run with `--allow-main` / `-m`. `tauri-wrapper.ts` carries
+  the same guard for `pnpm dev` (not `build`).
 - **Cache ordering is load-bearing.** Planning runs BEFORE `pnpm install` and SMB/Docker bring-up, so a run whose
   node/SMB checks are all cache hits installs no deps and starts no container. Don't move planning after them. A corrupt
   cache or non-git tree degrades to "run everything", never an error.
@@ -38,6 +38,9 @@ diagram, CLI options, freestyle.sh execution, and decisions: `DETAILS.md`.
 - **A cargo lane that COMPILES declares `Exclusive: ResourceCargoBuildDir`.** Cargo locks its build directory per
   command, so those lanes are serial anyway; declaring it stops a blocked one from sitting on 6-8 CPU weight.
   `DETAILS.md` § "Exclusive resources".
+- **Every host cargo lane asks cargo the SAME question** (`HostCargoLaneArgs`); own flags cost 20-100 s of rebuild per
+  flip. An `!`-prefixed `Inputs` entry EXCLUDES paths, the only way to blind a check to its own sources.
+  `checks/DETAILS.md` § "One feature set across the cargo lanes"; `DETAILS.md` § "Exclusions".
 - **Lane flags:** `--only-slow` needs a ~20 min timeout (1,200,000 ms) from an agent or CI, since E2E and
   `rust-tests-linux` run far longer than the default suite; `--fast` is mutually exclusive with `--include-slow` /
   `--only-slow` and errors out when combined. Named checks bypass every lane filter.

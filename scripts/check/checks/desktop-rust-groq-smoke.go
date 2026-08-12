@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 // RunGroqSmoke runs the real-API Groq smoke test (`ai::client_real_groq_test`), which exercises
@@ -19,7 +18,15 @@ func RunGroqSmoke(ctx *CheckContext) (CheckResult, error) {
 		return Skipped("GROQ_API_KEY not set (env or sops)"), nil
 	}
 
-	rustDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
+	// One named test in the app crate, but selected the way every other lane
+	// selects: a `cmd.Dir`-scoped run asks cargo about one package, which resolves
+	// dependency features differently from `--workspace` and rebuilds the four
+	// first-party crates to answer it (measured at 100 s on a warm tree). The
+	// positional filter is what narrows the run to one test.
+	laneArgs, err := HostCargoLaneArgs(ctx.RootDir)
+	if err != nil {
+		return CheckResult{}, err
+	}
 
 	if !CommandExists("cargo-nextest") {
 		installCmd := exec.Command("cargo", "install", "cargo-nextest", "--version", "0.9.136", "--locked")
@@ -28,9 +35,9 @@ func RunGroqSmoke(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
-	cmd := exec.Command("cargo", "nextest", "run", "--locked", "--lib", "--run-ignored", "only",
-		"ai::client_real_groq_test")
-	cmd.Dir = rustDir
+	args := append([]string{"nextest", "run", "--locked", "--lib", "--run-ignored", "only"}, laneArgs...)
+	cmd := exec.Command("cargo", append(args, "ai::client_real_groq_test")...)
+	cmd.Dir = ctx.RootDir
 	cmd.Env = append(os.Environ(), "GROQ_API_KEY="+key)
 	output, err := RunCommand(cmd, true)
 	if err != nil {

@@ -1,7 +1,10 @@
 package checks
 
 import (
+	"encoding/json"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -94,5 +97,50 @@ func TestBindingsHashFailsLoudlyOnAMissingRequiredInput(t *testing.T) {
 
 	if _, err := hashBindingsInputs(root, members); err == nil {
 		t.Fatal("a missing Cargo.lock must fail the hash rather than silently drop the input")
+	}
+}
+
+// TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes is the guardrail for
+// the one cargo invocation that lives outside Go. `bindings-fresh` shells out to
+// `pnpm bindings:regen`, so the alignment every other lane gets from
+// `HostCargoLaneArgs` has to be spelled out by hand in `package.json` — and the
+// day it drifts, nothing goes red. It just gets slow again: the regen would ask
+// cargo a different question, rebuild `cmdr` to answer it (measured at 100 s on a
+// warm tree), and leave the next `desktop-rust-tests` a 20 s bill to rebuild it
+// back.
+func TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes(t *testing.T) {
+	root := repoRootForTest(t)
+	manifest, err := os.ReadFile(filepath.Join(root, "apps", "desktop", "package.json"))
+	if err != nil {
+		t.Fatalf("reading the desktop package.json: %v", err)
+	}
+	var pkg struct {
+		Scripts map[string]string `json:"scripts"`
+	}
+	if err := json.Unmarshal(manifest, &pkg); err != nil {
+		t.Fatalf("parsing the desktop package.json: %v", err)
+	}
+	script, ok := pkg.Scripts["bindings:regen"]
+	if !ok {
+		t.Fatal("the desktop package.json has no `bindings:regen` script; `bindings-fresh` shells out to it")
+	}
+
+	members, err := WorkspaceMembers(root)
+	if err != nil {
+		t.Fatalf("WorkspaceMembers: %v", err)
+	}
+	// macOS is the canonical platform for the bindings: the committed file is the
+	// macOS command surface, which is why the check carries a `NotInCI` reason.
+	want := append(CargoSelectionArgs(members, "macos"), SharedTargetFeatureArgs()...)
+	for _, arg := range want {
+		if !strings.Contains(script, arg) {
+			t.Errorf("`bindings:regen` is missing %q, so it compiles against a different set of `target/` artifacts than the cargo lanes do\n  script: %s",
+				arg, script)
+		}
+	}
+	// A `cd` into the package dir is what made the regen a package-scoped run in
+	// the first place, which is a different question again.
+	if strings.Contains(script, "cd src-tauri") {
+		t.Error("`bindings:regen` cds into the package dir, which scopes cargo to one package and re-resolves dependency features")
 	}
 }

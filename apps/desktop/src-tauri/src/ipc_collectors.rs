@@ -385,6 +385,23 @@ pub(super) fn collect_mtp_types(types: &mut Types) -> Vec<Function> {
 // Virtual MTP commands (feature-gated)
 #[cfg(all(feature = "virtual-mtp", any(target_os = "macos", target_os = "linux")))]
 pub(super) fn collect_virtual_mtp_types(types: &mut Types) -> Vec<Function> {
+    // The committed `bindings.ts` describes the app a user runs, and these three
+    // exist only under a test-only feature; the E2E specs reach them through a raw
+    // `__TAURI_INTERNALS__.invoke`, never through the typed bindings. Holding them
+    // back while the crate compiles its own tests — which is where
+    // `ipc::tests::export_bindings_test` writes the file — makes the export
+    // independent of the features the regenerating lane happens to pass. That's
+    // what lets every cargo lane share one feature set, and so one set of
+    // `target/` artifacts, instead of rebuilding `cmdr` for each other every run
+    // (`scripts/check/checks/DETAILS.md` § "One feature set across the cargo
+    // lanes"). Without it, regenerating with `--features cmdr/virtual-mtp`
+    // commits three commands a real build doesn't answer.
+    //
+    // Runtime dispatch is unaffected: the invoke handler is a separate
+    // `tauri::generate_handler![]` list in `ipc.rs`.
+    if cfg!(test) {
+        return vec![];
+    }
     use specta::function::collect_functions;
     collect_functions![
         crate::commands::mtp::rescan_virtual_mtp,
@@ -635,4 +652,24 @@ pub(super) fn collect_all_types(types: &mut Types) -> Vec<Function> {
     #[cfg(debug_assertions)]
     all.extend(collect_debug_types(types));
     all
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The exported bindings must not move when a lane turns on `virtual-mtp`, or
+    /// the whole point of every cargo lane sharing one feature set collapses: the
+    /// regen would produce a file that disagrees with the committed one, and
+    /// `bindings-fresh` would "fix" it by committing three commands a real build
+    /// doesn't answer. This test runs in exactly the build where the export runs.
+    #[test]
+    fn the_exported_surface_leaves_out_the_test_only_virtual_mtp_commands() {
+        let mut types = Types::default();
+        assert!(
+            collect_virtual_mtp_types(&mut types).is_empty(),
+            "the virtual-MTP commands reached the specta collector in a test build, so \
+             `pnpm bindings:regen` would write them into bindings.ts"
+        );
+    }
 }

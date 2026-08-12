@@ -42,8 +42,10 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 
 	// Workspace-wide, so an `smb_integration_*` test keeps being found after it
 	// moves into a crate. The filter expression is what narrows the run, not the
-	// package selection.
-	selection, err := HostCargoSelectionArgs(ctx.RootDir)
+	// package selection. The features come along for the ride even though no SMB
+	// test needs them: asking cargo a different question than `desktop-rust-tests`
+	// does would make the two lanes rebuild `cmdr` for each other, every run.
+	laneArgs, err := HostCargoLaneArgs(ctx.RootDir)
 	if err != nil {
 		return CheckResult{}, err
 	}
@@ -84,7 +86,7 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// `--run-ignored only` rides in baseArgs so the contention re-run inherits it: these
 	// tests are all `#[ignore]`-gated, so a re-run without it would select nothing and
 	// read as "everything passed alone".
-	baseArgs := append([]string{"--locked", "--run-ignored", "only"}, selection...)
+	baseArgs := append([]string{"--locked", "--run-ignored", "only"}, laneArgs...)
 	cmd := exec.Command("cargo", append(append([]string{"nextest", "run"}, baseArgs...),
 		"-E", "test(smb_integration_)")...)
 	cmd.Dir = ctx.RootDir

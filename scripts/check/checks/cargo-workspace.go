@@ -271,6 +271,40 @@ func HostCargoSelectionArgs(rootDir string) ([]string, error) {
 	return CargoSelectionArgs(members, cargoOSName(runtime.GOOS)), nil
 }
 
+// SharedTargetFeatureArgs is the feature set every lane compiling into the shared
+// `target/` passes. It is ONE value on purpose, because cargo keys its artifacts
+// by feature set: two lanes that disagree take turns rebuilding `cmdr` and
+// everything above it, over and over, for no other reason than that they asked
+// differently.
+//
+// Measured on a warm `target/` (macOS, rustc 1.97.1, 2026-08-12): re-running an
+// identical `cargo build --workspace --tests` costs 0.6-1.3 s, while the same
+// build after one that dropped `cmdr/virtual-mtp` costs 20 s, and the dropping
+// build itself costs 92 s. `docs/notes/cargo-lane-feature-thrash.md` has the runs.
+//
+// `virtual-mtp` is the set because `desktop-rust-tests` genuinely needs it (~29
+// MTP tests only COMPILE under it) and nothing else needs it absent: it's
+// test-only, never enters a production build, and no longer changes the exported
+// IPC surface (`ipc_collectors.rs` keeps its commands out of the bindings).
+// It MUST stay package-qualified: a bare `--features virtual-mtp` changes meaning
+// once more than one package is selected.
+func SharedTargetFeatureArgs() []string {
+	return []string{"--features", "cmdr/virtual-mtp"}
+}
+
+// HostCargoLaneArgs is the whole "which packages, which features" prefix for a
+// cargo lane running on this machine against the shared `target/`: the workspace
+// selection plus SharedTargetFeatureArgs. A lane builds its command line from
+// this rather than assembling its own, so a new lane inherits the alignment
+// instead of rediscovering it.
+func HostCargoLaneArgs(rootDir string) ([]string, error) {
+	selection, err := HostCargoSelectionArgs(rootDir)
+	if err != nil {
+		return nil, err
+	}
+	return append(selection, SharedTargetFeatureArgs()...), nil
+}
+
 // cargoOSName maps a Go `GOOS` onto cargo's `target_os` spelling. They agree
 // everywhere Cmdr builds except macOS, which Go calls "darwin".
 func cargoOSName(goos string) string {

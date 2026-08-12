@@ -13,7 +13,11 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	// Every workspace member, not just the app: a member the test lane doesn't
 	// select still compiles and still looks green, so its tests silently stop
 	// running the moment they move into a crate. `member-coverage` guards this.
-	selection, err := HostCargoSelectionArgs(ctx.RootDir)
+	//
+	// The features come from the same helper for the same reason the selection
+	// does: every lane sharing `target/` has to ask cargo the same question, or
+	// they take turns invalidating each other's artifacts.
+	laneArgs, err := HostCargoLaneArgs(ctx.RootDir)
 	if err != nil {
 		return CheckResult{}, err
 	}
@@ -26,15 +30,12 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
-	// `cmdr/virtual-mtp` compiles in the virtual MTP device, which is the only way
-	// ~29 MTP tests (backends/mtp_test, mtp_archive_test, mtp_read_range_test,
-	// mtp_scan_oracle_tests, connection/path_cache_sync_test) can run at all.
-	// Without it they're silently filtered out and protect nothing. The feature is
-	// test-only and never enters a production build; it costs ~2-4 s on a ~27 s
-	// suite. It MUST stay package-qualified: a bare `--features virtual-mtp`
-	// changes meaning once more than one package is selected.
-	baseArgs := append([]string{"--locked"}, selection...)
-	baseArgs = append(baseArgs, "--features", "cmdr/virtual-mtp")
+	// `HostCargoLaneArgs` carries `--features cmdr/virtual-mtp`, which compiles in
+	// the virtual MTP device: the only way ~29 MTP tests (backends/mtp_test,
+	// mtp_archive_test, mtp_read_range_test, mtp_scan_oracle_tests,
+	// connection/path_cache_sync_test) can run at all. Without it they're silently
+	// filtered out and protect nothing. It costs ~2-4 s on a ~27 s suite.
+	baseArgs := append([]string{"--locked"}, laneArgs...)
 	cmd := exec.Command("cargo", append([]string{"nextest", "run"}, baseArgs...)...)
 	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)

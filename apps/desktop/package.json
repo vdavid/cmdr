@@ -30,7 +30,7 @@
     "test:e2e:playwright:build": "CMDR_E2E_BUILD=1 node scripts/tauri-wrapper.ts build --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features playwright-e2e,virtual-mtp",
     "knip": "knip",
     "check:type-drift": "node scripts/check-type-drift.ts",
-    "bindings:regen": "cd src-tauri && cargo nextest run --no-fail-fast --run-ignored=ignored-only ipc::tests::export_bindings_test && cd .. && pnpm exec oxfmt src/lib/ipc/bindings.ts",
+    "bindings:regen": "cargo nextest run --locked --workspace --features cmdr/virtual-mtp --no-fail-fast --run-ignored=ignored-only ipc::tests::export_bindings_test && pnpm exec oxfmt src/lib/ipc/bindings.ts",
     "intl:keys": "node scripts/gen-message-keys.ts && pnpm exec oxfmt src/lib/intl/keys.gen.ts",
     "i18n:pseudo": "node scripts/gen-pseudolocale.ts",
     "i18n:check-stale": "node scripts/i18n-check-stale.ts",

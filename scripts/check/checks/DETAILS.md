@@ -83,7 +83,9 @@ CheckDefinition{
   `desktopAppInputs()`), or `wholeRepoInputs` (`**`) for a whole-tree scanner. **Be conservative: when unsure whether
   the check reads a path, include it.** A too-wide list only costs cache speed; a too-narrow one costs correctness. The
   global inputs (`.mise.toml`, `scripts/check/**`) are added automatically — don't list them. `ci-coverage` rule 4 fails
-  if any static path prefix in your Inputs doesn't exist on disk.
+  if any static path prefix in your Inputs doesn't exist on disk. A `!`-prefixed entry EXCLUDES matching paths from the
+  set (including from the globals); it's the only way to make a set too narrow, so read `../DETAILS.md` § "Exclusions"
+  before adding one, and give it a test.
 
 ## Adding a new check
 
@@ -393,19 +395,63 @@ depends on the canonical path persisting — no CI artifact upload, and threshol
 config — so isolation applies everywhere, with no CI split. Manual `pnpm test:coverage` (no env var set) still writes
 `./coverage`.
 
-## `desktop-rust-tests` runs with `--features virtual-mtp`
+## One feature set across the cargo lanes
+
+Cargo keys its artifacts by the exact question you asked it: which packages, which features. Two lanes sharing one
+`target/` that ask differently don't share anything; they take turns rebuilding `cmdr` and everything above it. Measured
+on a warm tree: re-running an identical `cargo build --workspace --tests` costs 1.3 s, the same build with
+`cmdr/virtual-mtp` dropped costs 92 s, and going back costs 20 s. A package-scoped run (`cd src-tauri && cargo …`)
+resolves dependency features for one package instead of the workspace and rebuilds the four first-party crates for 99.6
+s. Full runs: `docs/notes/cargo-lane-feature-thrash.md`.
+
+So **`HostCargoLaneArgs` (`cargo-workspace.go`) is the one answer**, and every host lane that compiles builds its
+command line from it: `desktop-rust-tests`, `desktop-rust-integration-tests`, `desktop-rust-groq-smoke`, and (spelled
+out by hand, see below) `pnpm bindings:regen`. It returns the workspace selection plus `SharedTargetFeatureArgs()` =
+`--features cmdr/virtual-mtp`. A lane that needs a genuinely different feature set needs its own `CARGO_TARGET_DIR`, not
+its own flags.
+
+Who stays out, and why it's not an oversight:
+
+- **`desktop-rust-clippy`** needs no alignment: its workspace units go through `clippy-driver` and land in their own
+  fingerprints, so running it either way left the test build at 0.7 s / 0 crates. (It also means the `virtual-mtp` code
+  is compiled by the test lane and linted by nothing.
+  `cargo clippy --workspace --all-targets --features cmdr/virtual-mtp` passes clean today, so closing that is available
+  whenever someone wants it.)
+- **`desktop-rust-tests-linux`** builds in its container's own `CARGO_TARGET_DIR`, and deliberately omits the feature:
+  that lane is already tight against the 8 s per-test cap on a slower VM, and MTP's virtual-device coverage doesn't
+  differ by platform.
+- **`desktop-rust-rustdoc`** owns a private target dir. **`desktop-rust-cargo-udeps`** runs on the pinned nightly, whose
+  artifacts can't be shared with stable anyway.
+
+### Why the feature set is `virtual-mtp`
 
 The MTP tests that drive a virtual device (`backends/mtp_test`, `mtp_archive_test`, `mtp_read_range_test`,
-`mtp_scan_oracle_tests`, `connection/path_cache_sync_test` — ~29 tests) only COMPILE under the `virtual-mtp` feature.
-Without it `cargo nextest` silently filters them out, so they protected nothing while looking like coverage. The check
-passes the feature so they run in the default lane.
-
-The feature is test-only (it never enters a production build) and costs ~2-4 s on a ~27 s suite. `rust-tests-linux`
-deliberately does NOT pass it: that lane is already tight against the 8 s per-test cap on a slower VM, and MTP's
-virtual-device coverage doesn't differ by platform. Revisit if Linux-specific MTP behavior ever needs pinning.
+`mtp_scan_oracle_tests`, `connection/path_cache_sync_test` — ~29 tests) only COMPILE under it. Without it
+`cargo nextest` silently filters them out, so they protected nothing while looking like coverage. It's test-only (never
+enters a production build) and costs ~2-4 s on a ~27 s suite, so it's the cheapest set that keeps the test lane honest.
+It MUST stay package-qualified (`cmdr/virtual-mtp`): a bare `--features virtual-mtp` changes meaning once more than one
+package is selected.
 
 Prerequisites these tests rely on (per-test temp backing root, watcher off, `virtual_device_test_lock()`):
 `apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Rust tests that drive the device".
+
+### The bindings regen is the one invocation outside Go
+
+`desktop-bindings-fresh` shells out to `pnpm bindings:regen`, so `package.json` repeats the lane args by hand. Two
+things hold that together:
+
+- `TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes` compares the script against
+  `CargoSelectionArgs(members, "macos")` + `SharedTargetFeatureArgs()`, and fails on a re-introduced `cd src-tauri`.
+  macOS is the right target to compare against because the committed `bindings.ts` is the macOS surface (that's the
+  check's `NotInCI` reason).
+- The regen only survives the shared feature set because the exported surface no longer moves with it:
+  `ipc_collectors.rs::collect_virtual_mtp_types` holds the three virtual-MTP commands back while the crate compiles its
+  own tests, which is where `ipc::tests::export_bindings_test` writes the file. Without that, regenerating with the
+  feature would commit three commands a real build doesn't answer. Pinned by
+  `ipc_collectors::tests::the_exported_surface_leaves_out_the_test_only_virtual_mtp_commands`.
+
+Net effect on the two lanes, same sequence measured before and after: `bindings-fresh` on a marker miss went 28.8 s →
+2.3 s, and the `rust-tests` run right after it went 70 s → 27.7 s.
 
 ## Rust test diagnostics: retry-passes and deadline classes
 

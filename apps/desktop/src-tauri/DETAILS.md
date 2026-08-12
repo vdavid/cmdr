@@ -51,5 +51,14 @@ re-evaluate on the next rc and bump all three together or not at all.
 `bindings.ts` is generated: change this behavior at the `builder()` call site and regenerate with
 `pnpm bindings:regen`, never by hand-editing the output.
 
+**A test-only cargo feature must not move the exported surface.** The regen compiles under the feature set every cargo
+check lane shares (`cmdr/virtual-mtp`), so it reuses their `target/` artifacts instead of rebuilding `cmdr` to answer a
+different question. A command registered only under such a feature therefore has to be held back from its specta
+collector while the crate compiles its own tests, which is where `export_bindings_test` writes the file —
+`ipc_collectors.rs::collect_virtual_mtp_types` shows the shape, and E2E reaches those commands by raw
+`__TAURI_INTERNALS__.invoke` rather than through the typed bindings. Runtime dispatch is untouched: that's a separate
+`tauri::generate_handler![]` list. Why the lanes share one feature set: `scripts/check/checks/DETAILS.md` § "One feature
+set across the cargo lanes".
+
 The Ask Cmdr bulk-rename review commands register in the same builder and type collector as every other typed command.
 Their authority and filesystem behavior live with the agent and write-operation modules, not at this registration edge.

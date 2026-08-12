@@ -90,13 +90,13 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-cargo-audit":       "reads the workspace `Cargo.lock`",
 	"desktop-rust-cargo-machete":     "handed each member's directory (it walks dirs, not the cargo graph)",
 	"desktop-rust-cargo-udeps":       "`--workspace` via CargoSelectionArgs",
-	"desktop-rust-tests":             "`--workspace` via CargoSelectionArgs",
-	"desktop-rust-integration-tests": "`--workspace` via CargoSelectionArgs, narrowed by a filter expression",
+	"desktop-rust-tests":             "`--workspace` via HostCargoLaneArgs",
+	"desktop-rust-integration-tests": "`--workspace` via HostCargoLaneArgs, narrowed by a filter expression",
 	"desktop-rust-tests-linux":       "`--workspace` computed for `linux`, since cargo runs in a container",
-	"desktop-bindings-fresh":         "hashes every member's sources and manifest to decide whether to regenerate",
+	"desktop-bindings-fresh":         "hashes every member's sources and manifest to decide whether to regenerate; the regen itself is `--workspace` via `pnpm bindings:regen`",
 	// Not a coverage lane: one named test against a live endpoint, self-skipping
 	// without a key. It reaches the app crate on purpose and nothing else.
-	"desktop-rust-groq-smoke": "one `--lib` test in the app crate; a targeted smoke, not a sweep",
+	"desktop-rust-groq-smoke": "one `--lib` test in the app crate; a targeted smoke, not a sweep (selected via HostCargoLaneArgs so it shares the other lanes' artifacts)",
 }
 
 // memberCoverageRegistry is assigned in init() rather than read from AllChecks
