@@ -10,6 +10,9 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 - `delete/CLAUDE.md`: F8 / Shift+F8 delete + trash confirmation dialog and pure utilities.
 - `mkdir/CLAUDE.md`: F7 new-folder dialog with AI suggestions.
 - `mkfile/CLAUDE.md`: Shift+F4 new-file dialog.
+- `operation-session/CLAUDE.md`: the window's event fan-out (seven broadcast write streams demultiplexed per
+  `operationId`, buffered for ids no session has claimed) and the refcounted session registry, so every view of one
+  operation reads one derived state.
 - `queue/CLAUDE.md`: the standalone operation-queue window (lists every running/waiting operation with per-row
   pause/resume/cancel, multi-select + Cancel selected, global pause/resume). Renders from the operations store that
   merges the thin `operations-changed` snapshot with the live `write-progress` stream.

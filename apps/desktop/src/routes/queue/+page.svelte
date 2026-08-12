@@ -31,6 +31,10 @@
         isHiddenSettledStatus,
         isTerminalStatus,
     } from '$lib/file-operations/queue/operations-store.svelte'
+    import {
+        initOperationSessions,
+        destroyOperationSessions,
+    } from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
 
     const log = getAppLogger('queue')
 
@@ -198,6 +202,10 @@
             await initReduceTransparency()
             await initTextSize()
             await store.init()
+            // This window's session registry. Subscribed here, before any row
+            // can ask for a session: the fan-out's listeners are async, and
+            // events that arrive while they're being set up would be lost.
+            await initOperationSessions()
             initialized = true
 
             // Already-open window self-focuses on a re-open (cross-window setFocus()
@@ -220,6 +228,7 @@
         unlistenRectTracking?.()
         unsubscribeLanguage?.()
         store.dispose()
+        destroyOperationSessions()
         cleanupAccentColor()
         cleanupReduceTransparency()
         cleanupTextSize()

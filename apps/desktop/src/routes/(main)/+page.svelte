@@ -36,6 +36,10 @@
         destroyMainWindowOperations,
     } from '$lib/file-operations/queue/main-window-operations.svelte'
     import {
+        initOperationSessions,
+        destroyOperationSessions,
+    } from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
+    import {
         startOperationFailureWatch,
         stopOperationFailureWatch,
     } from '$lib/status-corner/operation-failure-watch.svelte'
@@ -405,6 +409,11 @@
         // and the same two app-wide streams the queue window subscribes to, so
         // corner status can read live operations with no new event or IPC.
         await initMainWindowOperations()
+        // This window's session registry: one session per operation, shared by
+        // every view of it. Subscribed here, before anything can ask for a
+        // session, because its listeners are async and an operation dispatched
+        // while they're being set up would go unheard.
+        await initOperationSessions()
         // Watches that store for operations that stopped before they were done,
         // and says so. After the store, so the first snapshot has somewhere to
         // land before anything reads it.
@@ -450,6 +459,7 @@
         stopOperationFailureWatch()
         stopOperationConflictHost()
         destroyMainWindowOperations()
+        destroyOperationSessions()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)
         }
