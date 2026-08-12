@@ -40,9 +40,13 @@ through a `Volume`, with **paths relative to the volume root**.
   `Volume`s share one physical resource.
 - **On macOS, never size disk space from `statvfs` alone** (it ignores purgeable space). Use `get_space_info_for_path`,
   which falls back to `statvfs` on Linux.
-- **`LocalPosixVolume` has two fixed-order path hooks**, each silently serving the wrong directory when wrong: a
-  three-way `resolve` branch for absolute paths (the frontend sends those), then `.git` read delegation to the git
-  module. `DETAILS.md` §§ "Path handling gotchas", "Git delegation hooks".
+- **A path from the UI is anchored by its CALLER (`cmdr_fs::volume::root_anchored`), ❌ never guessed at by the
+  backend.** Panes send absolute paths, the transfer dialog's dest box volume-relative ones, and a leading `/` doesn't
+  tell them apart. It's idempotent, so anchor without checking; skip it and `SmbVolume` fails a write into a subfolder
+  before any I/O. `DETAILS.md` § "Path handling gotchas".
+- **`LocalPosixVolume` has two fixed-order path hooks**, each silently serving the wrong directory when wrong:
+  `resolve` (= `root_anchored`), then `.git` read delegation to the git module.
+  `DETAILS.md` § "Git delegation hooks".
 - **`eject.rs` stops a `LocalExternal` index BEFORE `diskutil` runs**: an open watcher or handle at unmount can wedge
   macOS FSKit (kernel-panic risk). `DETAILS.md` § "Eject".
 

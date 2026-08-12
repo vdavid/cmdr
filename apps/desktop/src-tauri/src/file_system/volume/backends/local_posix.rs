@@ -103,11 +103,11 @@ impl LocalPosixVolume {
         }
     }
 
-    /// Resolves a path relative to this volume's root to an absolute path.
+    /// Resolves a caller's path to an absolute one under this volume's root.
     ///
-    /// Empty paths or "." resolve to the root itself.
-    /// Absolute paths are always treated as relative to the volume root
-    /// (the leading "/" is stripped).
+    /// The rule (root itself, already-under-root as-is, otherwise anchored) is
+    /// `cmdr_fs::volume::root_anchored`, shared with the IPC boundary so a
+    /// destination resolves the same way here and on a remote backend.
     #[cfg(test)]
     pub(super) fn resolve(&self, path: &Path) -> PathBuf {
         self.resolve_internal(path)
@@ -119,25 +119,7 @@ impl LocalPosixVolume {
     }
 
     fn resolve_internal(&self, path: &Path) -> PathBuf {
-        if path.as_os_str().is_empty() || path == Path::new(".") {
-            self.root.clone()
-        } else if path.is_absolute() {
-            // If path already starts with our root, use it directly
-            // This handles the case where frontend sends full absolute paths
-            if path.starts_with(&self.root) {
-                path.to_path_buf()
-            } else if self.root == Path::new("/") {
-                // For root volume, absolute paths are valid as-is
-                path.to_path_buf()
-            } else {
-                // Treat absolute paths as relative to volume root
-                // Strip the leading "/" and join with root
-                let relative = path.strip_prefix("/").unwrap_or(path);
-                self.root.join(relative)
-            }
-        } else {
-            self.root.join(path)
-        }
+        cmdr_fs::volume::root_anchored(&self.root, path)
     }
 }
 

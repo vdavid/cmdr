@@ -227,6 +227,26 @@ The API contract says this crate emits no user-facing strings. Two things look l
 
 Anyone grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first.
 
+## `root_anchored`: the one rule for turning a caller's path into a backend's
+
+Cmdr's UI speaks two path dialects — a pane sends the absolute path it displays, the transfer dialog's destination box
+sends a volume-relative one — and a leading `/` doesn't tell them apart. `volume::root_anchored(root, path)` is the
+single rule that folds both into the absolute, root-anchored form: root spellings (empty, `.`, `/`) are the root; a path
+already under the root passes through, matched by whole COMPONENTS so a sibling mount (`/Volumes/naspi-1`) can't pass as
+being under `/Volumes/naspi`; anything else hangs off the root, minus its leading `/`.
+
+It lives here rather than in the app because the ambiguity is a property of the TRAIT's path contract, and because four
+app-side sites plus `LocalPosixVolume::resolve` have to agree on the answer byte for byte (an O_EXCL reservation and the
+write that later lands on it; a pending-write registration and the writer it's meant to match). It's idempotent, so a
+caller anchors without knowing which dialect it holds, and it never asks `is_absolute`, so a scheme-shaped MTP root
+works the same.
+
+**Anchoring is the CALLER's job, and that's deliberate.** A backend that guesses at the dialect addresses real files at
+the wrong place: `SmbVolume::to_smb_path` answers `NotFound` for an out-of-mount absolute path instead, which is correct
+and is exactly why the anchoring has to happen upstream. Consumers:
+`commands/file_system/volume_copy.rs::resolve_dest_path` (every copy / move / compress / scan destination),
+`path_exists`, and the transfer engine's local shortcuts.
+
 ## `InMemoryVolume` honors the contracts data safety leans on
 
 The double is the oracle: these `Volume` contracts have to hold in it, not just on the happy path.

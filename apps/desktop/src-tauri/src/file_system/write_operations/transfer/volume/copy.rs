@@ -144,9 +144,12 @@ pub async fn copy_between_volumes(
             dest_root.display()
         );
 
-        // Convert relative paths to absolute paths
+        // Convert relative paths to absolute paths. The dest is ANCHORED, not
+        // joined: the IPC boundary already anchors what the transfer dialog
+        // sends, and a raw join would re-root an absolute dest under itself
+        // (`/Volumes/USB/sub` → `/Volumes/USB/Volumes/USB/sub`).
         let absolute_sources: Vec<PathBuf> = source_paths.iter().map(|p| src_root.join(p)).collect();
-        let absolute_dest = dest_root.join(dest_path.strip_prefix("/").unwrap_or(&dest_path));
+        let absolute_dest = cmdr_fs::volume::root_anchored(&dest_root, &dest_path);
 
         // Convert VolumeCopyConfig to WriteOperationConfig, preserving preview_id
         // and the pre-flight conflict list so local↔local copies get the same

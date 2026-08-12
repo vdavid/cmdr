@@ -122,8 +122,13 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bo
         // Snapshot whether this is an SMB volume by whether it reports an SMB connection state.
         let is_smb = volume.smb_connection_state().is_some();
 
-        let path_for_check = expanded_path.clone();
-        match tokio::time::timeout(PATH_EXISTS_TIMEOUT, volume.exists(Path::new(&path_for_check))).await {
+        // The transfer dialog asks about its VOLUME-RELATIVE destination box
+        // (`/photos`), the panes about absolute paths. Anchoring folds both into
+        // what the volume accepts; without it a share answers "doesn't exist"
+        // for every subfolder, and the dialog promises to create one that's
+        // already there.
+        let path_for_check = cmdr_fs::volume::root_anchored(volume.root(), Path::new(&expanded_path));
+        match tokio::time::timeout(PATH_EXISTS_TIMEOUT, volume.exists(&path_for_check)).await {
             Ok(exists) => {
                 // SMB volume just transitioned to `Disconnected`? The `false` we got back
                 // is meaningless. Surface it as a timeout-equivalent so callers know.

@@ -88,6 +88,16 @@ thing (no symlinks, no inodes), and adding them would assert the double rather t
 
 ## Volume copy + move
 
+**Destination paths arrive ANCHORED, and every re-anchoring here is idempotent.** The engine's callers (the Tauri
+commands in `commands/file_system/volume_copy.rs`) pass the destination through `resolve_dest_path`, which anchors the
+transfer dialog's volume-relative box at the dest volume's root; `file_system/volume/DETAILS.md` § "Path handling
+gotchas" is the canonical account. Inside this directory the same `cmdr_fs::volume::root_anchored` re-derives the local
+absolute path in four places that must agree on it: the both-local shortcuts in `copy.rs` / `move.rs`, the O_EXCL
+reservation in `conflict.rs`, and the `note_pending_write_for_cmdr` registrations in `strategy.rs` / `move_same.rs`
+(register a different path than the writer hits, and the downloads watcher treats Cmdr's own write as somebody else's).
+❌ Don't replace one with a raw `root.join(path.strip_prefix("/"))`: that re-roots an already-absolute destination under
+itself.
+
 **The engine is reached through the facade.** `mod.rs` re-exports `copy_between_volumes` and `move_between_volumes` for the Tauri commands of the same name; every module under `volume/` is private to it. Both copy and move support conflict detection and resolution (Stop/Skip/Overwrite/Rename/OverwriteSmaller/OverwriteOlder) for all volume combinations (Local↔MTP, MTP↔MTP). Volume copy supports rollback (delete all copied files in reverse order with progress events, matching the local copy's `rollback_with_progress` pattern) and cancel cleanup (delete only the last partial file).
 
 **Decision**: Cross-volume rollback records per-file destinations for a directory source, never the directory root.

@@ -264,8 +264,34 @@ The same rule applies to write paths: `write_from_stream` must drive the backend
 
 ## Path handling gotchas
 
-- **`LocalPosixVolume::resolve`**: accepts empty, `.`, relative, or absolute paths. Three-way branch for absolute paths: (1) already starts with volume root, used as-is; (2) volume root is `/`, absolute path passed through unchanged; (3) otherwise, leading `/` stripped and joined to root. This handles frontend sending full absolute paths.
-- **`MtpVolume::to_mtp_path`**: strips the `mtp://{device}/{storage}/` URL prefix and leading slashes, returning the bare relative path the MTP library expects.
+### The two dialects, and who reconciles them
+
+The UI speaks two path dialects, and a leading `/` doesn't tell them apart:
+
+- A **pane** sends the absolute path it displays (`/Volumes/naspi/photos`).
+- The **transfer dialog's destination box** is VOLUME-RELATIVE (`/photos`), because the volume is a separate dropdown
+  beside it. Same for the conflict scan and the exists-probe that feed that box.
+
+`cmdr_fs::volume::root_anchored(root, path)` folds both into the absolute, root-anchored form: every spelling of the
+root (empty, `.`, `/`) is the root itself; a path already under the root (matched by whole COMPONENTS, so
+`/Volumes/naspi-1` is not under `/Volumes/naspi`) passes through; anything else is volume-relative and hangs off the
+root. It's idempotent, so a call site anchors without knowing which dialect it holds, and a scheme-shaped root
+(`mtp://device/storage`) works the same.
+
+**The CALLER anchors; the backend stays strict.** `SmbVolume::to_smb_path` answers `NotFound` for an absolute path
+outside its mount rather than guessing at the dialect, because guessing addressed real files at the wrong place. That
+strictness is why the anchoring has to happen: an unanchored `/photos` reached the SMB backend as an out-of-mount
+absolute path and failed a move into a share subfolder in 2 ms, before any I/O, reporting the DESTINATION as a missing
+source (`SourceNotFound`, since `map_volume_error` maps every `VolumeError::NotFound` to it). Anchoring at the IPC
+boundary is `commands/file_system/volume_copy.rs::resolve_dest_path`, which every copy / move / compress / scan
+destination goes through, plus `path_exists`.
+
+- **`LocalPosixVolume::resolve`** is `root_anchored` (that shared rule is what makes an O_EXCL reservation in
+  `transfer/volume/conflict.rs` land where `write_from_stream` will later write, and a `note_pending_write_for_cmdr`
+  registration match the path the writer hits).
+- **`MtpVolume::to_mtp_path`**: strips the `mtp://{device}/{storage}/` URL prefix and leading slashes, returning the
+  bare relative path the MTP library expects. Lenient about a bare `/DCIM`, which is why MTP never showed the failure
+  SMB did.
 - **`InMemoryVolume::normalize`**: always resolves to an absolute path anchored at `/`.
 
 ## Integration status

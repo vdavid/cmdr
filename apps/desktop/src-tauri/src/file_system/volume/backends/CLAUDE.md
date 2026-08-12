@@ -6,9 +6,9 @@ checklist: `../CLAUDE.md` + `../DETAILS.md`.
 ## Module map
 
 - `local_posix.rs`, `archive.rs` (re-export of `crates/cmdr-archive`: zip/tar/7z), `mtp/` (macOS and Linux only),
-  `smb/` + `smb_watcher.rs`. Both remote backends are split by concern, with the whole `impl Volume` in `volume_impl`
-  (a trait impl can't span files), byte movement in `streams`, and error classification in `mapping`.
-  `InMemoryVolume` rides with the trait in `cmdr-fs`.
+  `smb/` + `smb_watcher.rs`. Both remote backends split by concern: the whole `impl Volume` in `volume_impl` (a trait
+  impl can't span files), bytes in `streams`, error classification in `mapping`. `InMemoryVolume` rides with the trait
+  in `cmdr-fs`.
 
 ## SMB must-knows
 
@@ -32,13 +32,14 @@ checklist: `../CLAUDE.md` + `../DETAILS.md`.
   mutex across the upload (the QNAP deadlock). Error paths must `abort()` then delete the partial, or the handle leaks
   and corrupt bytes linger at the user's destination name.
 - **An unreachable request fails instead of hanging** (20 s to the socket, then 30 s of server silence; the watcher's
-  session is probed too). ❌ Never read a missed keepalive as death.
+  session too). ❌ Never read a missed keepalive as death.
 - **`to_smb_path` matches the root by COMPONENT and `NotFound`s anything outside it**; guessing sent real requests to
-  the wrong place. Post-mutation cache patches take `display_path_for`.
+  the wrong place. A volume-relative path is the CALLER's to `root_anchored` (`../CLAUDE.md`). Post-mutation patches
+  take `display_path_for`.
 - **Watcher filenames need NFC→NFD normalizing and ❌ nothing else**: smb2 ≥ 0.18 already decodes separators, so a `\`
   in a filename is part of its NAME, and re-normalizing loses that entry forever.
 - **Auto-upgrade is gated on `network.directSmbConnection`** and no-ops with no SMB mounts (no macOS Local Network
-  prompt). Drive INDEXING lives in `src/indexing/`, not here.
+  prompt). Drive INDEXING lives in `src/indexing/`.
 
 ## Local and MTP must-knows
 

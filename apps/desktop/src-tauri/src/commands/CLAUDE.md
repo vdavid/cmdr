@@ -26,6 +26,9 @@ subsystems are the reverse, since they can't carry `tauri::`. Inventory and rati
   threads; one unbounded command took all of it and froze the panes and volume picker until restart.
 - **`expand_tilde` is conditional**: for listing it's gated on `volume_id == "root"`, for writes always applied. ❌
   Never tilde-expand an MTP or network path.
+- **A path from the transfer dialog is VOLUME-RELATIVE and must be anchored here**, at the boundary that still knows
+  its volume: `volume_copy.rs::resolve_dest_path` (every copy / move / compress / scan dest) and `path_exists`. Handing
+  `/photos` to a share unanchored fails the write before any I/O. `../file_system/volume/CLAUDE.md`.
 - **Write commands stay thin over `file_system::write_operations`**, whose mutations run via `manager::run_instant`
   (busy-marks the volume, still inline). `check_rename_validity` / `check_rename_permission` stay UNMANAGED, the snappy
   read-only path.

@@ -16,16 +16,27 @@ use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
-/// Expands a leading `~` in the destination path when the destination is a local
-/// volume. The transfer dialog accepts the home shortcut (`~`, `~/…`) in its
-/// destination box; MTP and network volumes never use `~`, so their paths pass
-/// through untouched (per the "never tilde-expand MTP/network paths" rule).
-fn expand_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: String) -> PathBuf {
-    if dest_volume.local_path().is_some() {
-        PathBuf::from(super::expand_tilde(&dest_path))
+/// Turns the destination the transfer dialog sent into the path the destination
+/// volume accepts: home shortcut expanded (local only), then anchored at the
+/// volume's root.
+///
+/// The dialog's destination box is VOLUME-RELATIVE (`/photos`) because the
+/// volume is a separate dropdown next to it, while a pane sends the absolute
+/// path it displays. `cmdr_fs::volume::root_anchored` folds both into the
+/// absolute form, and it's idempotent, so neither caller has to know which one
+/// it holds. Skipping it is what made a move into an SMB subfolder fail
+/// instantly (ERR-XCP5Q): `SmbVolume` reads `/photos` as an absolute path
+/// outside its mount and answers `NotFound` rather than guessing.
+///
+/// `~` expands for local volumes only, per the "never tilde-expand MTP/network
+/// paths" rule: on a share, `~` is an ordinary folder name.
+fn resolve_dest_path(dest_volume: &Arc<dyn Volume>, dest_path: String) -> PathBuf {
+    let expanded = if dest_volume.local_path().is_some() {
+        super::expand_tilde(&dest_path)
     } else {
-        PathBuf::from(dest_path)
-    }
+        dest_path
+    };
+    cmdr_fs::volume::root_anchored(dest_volume.root(), Path::new(&expanded))
 }
 
 /// Resolves a batch's source volume, routing a source INSIDE an archive to its
@@ -107,7 +118,7 @@ pub async fn copy_between_volumes(
         .await;
     }
 
-    let dest_path = expand_local_dest(&dest_volume, dest_path);
+    let dest_path = resolve_dest_path(&dest_volume, dest_path);
     ops_copy_between_volumes(
         events,
         source_volume_id,
@@ -161,7 +172,7 @@ pub async fn move_between_volumes(
     // zip→zip move extracts out first (the dest-archive case degrades to a copy
     // failure inside the extract, never data loss).
     if source_is_archive {
-        let dest_path = expand_local_dest(&dest_volume, dest_path);
+        let dest_path = resolve_dest_path(&dest_volume, dest_path);
         return crate::file_system::route_archive_move_out(
             events,
             source_volume_id,
@@ -192,7 +203,7 @@ pub async fn move_between_volumes(
         .await;
     }
 
-    let dest_path = expand_local_dest(&dest_volume, dest_path);
+    let dest_path = resolve_dest_path(&dest_volume, dest_path);
     ops_move_between_volumes(
         events,
         source_volume_id,
@@ -246,7 +257,7 @@ pub async fn compress_files(
         })?;
 
     let config = config.unwrap_or_default();
-    let dest_zip_path = expand_local_dest(&dest_volume, dest_zip_path);
+    let dest_zip_path = resolve_dest_path(&dest_volume, dest_zip_path);
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
 
     ops_compress_start(
@@ -289,6 +300,9 @@ pub async fn scan_volume_for_copy(
         .ok_or_else(|| IpcError::from_err(format!("Destination volume '{}' not found", dest_volume_id)))?;
 
     let max_conflicts = max_conflicts.unwrap_or(100);
+    // Same anchoring the copy op applies, so the scan sizes and counts conflicts
+    // at the folder the copy will actually write to.
+    let dest_path = resolve_dest_path(&dest_volume, dest_path.to_string_lossy().into_owned());
 
     // Run scan (now async). Detached: a copy scan of an MTP source is a recursive
     // listing that outlives 30 s on any photo-heavy folder, and dropping it
@@ -328,6 +342,11 @@ pub async fn scan_volume_for_conflicts(
         .await
         .volume
         .ok_or_else(|| IpcError::from_err(format!("Volume '{}' not found", volume_id)))?;
+
+    // Same anchoring the copy op applies: the dialog's box is volume-relative,
+    // so without it the scan asks a share for a path outside its mount and
+    // reports "no conflicts" for a folder full of them.
+    let dest_path = resolve_dest_path(&volume, dest_path.to_string_lossy().into_owned());
 
     let mut source_items: Vec<crate::file_system::SourceItemInfo> = source_items
         .into_iter()
@@ -422,9 +441,57 @@ pub struct SourceItemInput {
 
 #[cfg(test)]
 mod tests {
-    use super::{merge_source_types_from_batch, resolve_source};
+    use super::{merge_source_types_from_batch, resolve_dest_path, resolve_source};
     use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo};
-    use std::path::PathBuf;
+    use cmdr_fs::volume::{InMemoryVolume, Volume};
+    use std::path::{Path, PathBuf};
+    use std::sync::Arc;
+
+    /// A non-local volume (no `local_path`) rooted where a mounted share is:
+    /// stands in for `SmbVolume` without a network.
+    fn share_at(root: &str) -> Arc<dyn Volume> {
+        Arc::new(InMemoryVolume::new("TestShare").with_root(root))
+    }
+
+    #[test]
+    fn a_remote_destination_is_anchored_at_its_mount_root() {
+        // The dialog's box is volume-relative. Unanchored, `/_todo_pics` reaches
+        // `SmbVolume` as an absolute path outside the mount and comes back
+        // `NotFound` before any I/O, which is what killed a 360 GB move
+        // (ERR-XCP5Q) and reported the DESTINATION as a missing source.
+        let volume = share_at("/Volumes/naspi");
+        assert_eq!(
+            resolve_dest_path(&volume, "/_todo_pics/Fiumei footage".to_string()),
+            Path::new("/Volumes/naspi/_todo_pics/Fiumei footage")
+        );
+    }
+
+    #[test]
+    fn a_remote_destination_already_under_its_root_is_untouched() {
+        let volume = share_at("/Volumes/naspi");
+        assert_eq!(
+            resolve_dest_path(&volume, "/Volumes/naspi/_todo_pics".to_string()),
+            Path::new("/Volumes/naspi/_todo_pics")
+        );
+    }
+
+    #[test]
+    fn a_remote_destination_at_the_share_root_stays_the_root() {
+        // The one shape that worked before anchoring existed; it must keep
+        // working, and must not become `/Volumes/naspi/`.
+        let volume = share_at("/Volumes/naspi");
+        assert_eq!(resolve_dest_path(&volume, "/".to_string()), Path::new("/Volumes/naspi"));
+    }
+
+    #[test]
+    fn a_local_destination_still_expands_the_home_shortcut() {
+        let volume: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new("Root", "/"));
+        let home = std::env::var("HOME").expect("HOME");
+        assert_eq!(
+            resolve_dest_path(&volume, "~/Downloads".to_string()),
+            Path::new(&home).join("Downloads")
+        );
+    }
 
     #[tokio::test]
     async fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {

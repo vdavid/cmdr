@@ -13,7 +13,8 @@
 //!
 //! The data-SAFETY cells (a failed merge that must not sweep the user's share, a
 //! delete bound to its preview, an unanswerable source probe) are
-//! `smb_transfer_safety_test.rs`.
+//! `smb_transfer_safety_test.rs`; the shared `Volume` contract assertions are
+//! `smb_conformance_test.rs`.
 
 use super::smb_test_support::*;
 use super::*;
@@ -403,6 +404,90 @@ async fn smb_integration_copy_creates_missing_nested_dest() {
     ensure_clean(&smb_vol, &base).await;
 }
 
+/// MOVE into a share SUBFOLDER addressed the way the transfer dialog addresses
+/// it: a VOLUME-RELATIVE destination (`/<base>/photos`, leading slash and no
+/// mount root, because the volume is a separate dropdown), anchored the way the
+/// IPC boundary anchors it.
+///
+/// Every other test here spells its destination share-relative, which is why
+/// none of them caught the shipped failure: unanchored, `to_smb_path` reads that
+/// leading slash as absolute, finds the path outside the mount, and answers
+/// `NotFound` before a single packet leaves the machine, so a 360 GB move died
+/// in 2 ms reporting the DESTINATION as a missing source (ERR-XCP5Q). Anchoring
+/// at the boundary is what makes the two dialects one path.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_move_into_a_subfolder_addressed_the_way_the_dialog_addresses_it() {
+    use crate::file_system::write_operations::{
+        CollectorEventSink, VolumeCopyConfig, WriteOperationState, move_volumes_with_progress,
+    };
+    use std::time::Duration;
+
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+    let dest_vol: Arc<dyn Volume> = smb_vol.clone();
+
+    // The destination subfolder exists already, as `_todo_pics/…` did.
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    smb_vol
+        .create_directory(Path::new(&format!("{base}/photos")))
+        .await
+        .unwrap();
+
+    let local_dir = tempfile::TempDir::new().expect("create TempDir");
+    std::fs::write(local_dir.path().join("clip.mp4"), b"footage").unwrap();
+    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+        "src",
+        local_dir.path().to_path_buf(),
+    ));
+
+    // What the dialog puts on the wire, and what the boundary makes of it.
+    let dialog_dest = format!("/{base}/photos");
+    let dest_path = cmdr_fs::volume::root_anchored(smb_vol.root(), Path::new(&dialog_dest));
+    assert_eq!(
+        dest_path,
+        Path::new(&share_path(&format!("{base}/photos"))),
+        "anchoring puts the mount root in front of the dialog's volume-relative path"
+    );
+
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
+    let events = Arc::new(CollectorEventSink::new());
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "test-op-smb-dialog-dest",
+        &state,
+        Arc::clone(&source_vol),
+        &[PathBuf::from("clip.mp4")],
+        Arc::clone(&dest_vol),
+        &dest_path,
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+    assert!(
+        result.is_ok(),
+        "a move into an existing share subfolder should succeed: {result:?}"
+    );
+
+    // The file is on the share, under the subfolder the dialog named, and the
+    // move took the source with it.
+    let mut stream = dest_vol
+        .open_read_stream(Path::new(&format!("{base}/photos/clip.mp4")))
+        .await
+        .expect("the moved file is readable at the destination");
+    let mut landed = Vec::new();
+    while let Some(Ok(chunk)) = stream.next_chunk().await {
+        landed.extend_from_slice(&chunk);
+    }
+    assert_eq!(landed, b"footage");
+    assert!(
+        !local_dir.path().join("clip.mp4").exists(),
+        "a completed move leaves no source behind"
+    );
+
+    ensure_clean(&smb_vol, &base).await;
+}
+
 /// COMPRESS onto a real SMB share: local files packed into a NEW zip that lands on
 /// the server. This is the end-to-end proof of the remote seed-through-volume path
 /// — the 22-byte empty zip is written THROUGH the SMB volume (upload temp → swap),
@@ -642,114 +727,5 @@ async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
     }
 
     manager.unregister(&volume_id);
-    ensure_clean(&smb_vol, &base).await;
-}
-
-/// The shared `Volume::delete` non-recursion assertion, against a real SMB
-/// server. Docker-gated like the rest of this file, because SMB has no
-/// in-process double: the answer we need is the server's
-/// (`STATUS_DIRECTORY_NOT_EMPTY`), not smb2's.
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-async fn smb_integration_delete_honors_the_shared_non_recursion_contract() {
-    let smb_vol = Arc::new(make_docker_volume().await);
-    let base = test_dir_name();
-    ensure_clean(&smb_vol, &base).await;
-
-    let album = format!("{base}/album");
-    smb_vol.create_directory(Path::new(&base)).await.unwrap();
-    smb_vol.create_directory(Path::new(&album)).await.unwrap();
-    smb_vol
-        .create_file(Path::new(&format!("{album}/keep.txt")), b"content")
-        .await
-        .unwrap();
-
-    cmdr_fs::volume::conformance::assert_delete_leaves_a_non_empty_dir_intact(
-        smb_vol.as_ref(),
-        Path::new(&album),
-        "keep.txt",
-    )
-    .await;
-
-    ensure_clean(&smb_vol, &base).await;
-}
-
-/// The shared `Volume::rename` no-clobber assertion, against a real SMB server.
-///
-/// Two mechanisms have to line up for SMB to keep this promise: the `stat`
-/// pre-check in `SmbVolume::rename`, and smb2's `ReplaceIfExists == false` on
-/// the wire behind it. The pre-check alone is a belief (a `stat` that fails for
-/// any reason reads as "nothing there"), so what's really being asserted here is
-/// that the server still refuses when the belief is wrong.
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-async fn smb_integration_rename_honors_the_shared_no_clobber_contract() {
-    let smb_vol = Arc::new(make_docker_volume().await);
-    let base = test_dir_name();
-    ensure_clean(&smb_vol, &base).await;
-
-    smb_vol.create_directory(Path::new(&base)).await.unwrap();
-    let source = format!("{base}/source.txt");
-    let target = format!("{base}/target.txt");
-    smb_vol.create_file(Path::new(&source), b"source").await.unwrap();
-    smb_vol
-        .create_file(Path::new(&target), b"the user's target file")
-        .await
-        .unwrap();
-
-    cmdr_fs::volume::conformance::assert_rename_refuses_an_existing_destination(
-        smb_vol.as_ref(),
-        Path::new(&source),
-        Path::new(&target),
-    )
-    .await;
-
-    ensure_clean(&smb_vol, &base).await;
-}
-
-/// The shared `Volume::create_file` no-clobber assertion, against a real SMB
-/// server. The refusal is the server's `STATUS_OBJECT_NAME_COLLISION` on the
-/// `FileCreate` disposition, so this is the assertion that would notice
-/// `create_file_writer_exclusive` being swapped back for a plain writer.
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-async fn smb_integration_create_file_honors_the_shared_no_clobber_contract() {
-    let smb_vol = Arc::new(make_docker_volume().await);
-    let base = test_dir_name();
-    ensure_clean(&smb_vol, &base).await;
-
-    smb_vol.create_directory(Path::new(&base)).await.unwrap();
-    let notes = format!("{base}/notes.txt");
-    smb_vol
-        .create_file(Path::new(&notes), b"the user's notes")
-        .await
-        .unwrap();
-
-    cmdr_fs::volume::conformance::assert_create_file_refuses_to_clobber(smb_vol.as_ref(), Path::new(&notes), b"new")
-        .await;
-
-    ensure_clean(&smb_vol, &base).await;
-}
-
-/// The shared `Volume::create_directory_all` honesty assertion, against a real
-/// SMB server: the trait's default walk composed from SMB's own `exists` +
-/// `create_directory`, over the wire.
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-async fn smb_integration_create_directory_all_honors_the_shared_honesty_contract() {
-    let smb_vol = Arc::new(make_docker_volume().await);
-    let base = test_dir_name();
-    ensure_clean(&smb_vol, &base).await;
-
-    let album = format!("{base}/album");
-    smb_vol.create_directory(Path::new(&base)).await.unwrap();
-    smb_vol.create_directory(Path::new(&album)).await.unwrap();
-
-    cmdr_fs::volume::conformance::assert_create_directory_all_reports_an_existing_dir_honestly(
-        smb_vol.as_ref(),
-        Path::new(&album),
-    )
-    .await;
-
     ensure_clean(&smb_vol, &base).await;
 }

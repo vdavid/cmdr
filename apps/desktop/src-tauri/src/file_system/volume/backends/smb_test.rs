@@ -304,6 +304,21 @@ fn to_smb_path_rejects_a_sibling_mount_that_merely_shares_a_name_prefix() {
 }
 
 #[test]
+fn a_root_anchored_dialog_destination_reaches_the_share() {
+    // The transfer dialog's destination box is volume-relative (`/_todo_pics`),
+    // and this backend answers `NotFound` for an absolute path outside the
+    // mount, on purpose. Anchoring at the IPC boundary is what closes that gap:
+    // a move into an SMB subfolder died in 2 ms without it (ERR-XCP5Q).
+    let vol = make_test_volume();
+    let anchored = cmdr_fs::volume::root_anchored(vol.root(), Path::new("/_todo_pics/Fiumei footage"));
+    assert_eq!(
+        vol.to_smb_path(&anchored).unwrap(),
+        "_todo_pics/Fiumei footage",
+        "an anchored destination converts to the share-relative wire path"
+    );
+}
+
+#[test]
 fn to_smb_path_rejects_a_path_outside_the_mount() {
     // Falling back to "strip the leading slash" turned `/Volumes/Other/x` into
     // the share-relative `Volumes/Other/x` and asked the server for it. A path

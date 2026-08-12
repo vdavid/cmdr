@@ -1173,6 +1173,45 @@ pub trait Volume: Send + Sync {
     }
 }
 
+/// Anchors a caller-supplied path at `root`, giving the absolute, root-anchored
+/// form every backend accepts.
+///
+/// Cmdr's UI speaks two path dialects: a pane sends the absolute path it
+/// displays (`/Volumes/naspi/photos`), while the transfer dialog's destination
+/// box is volume-relative (`/photos`, because the volume is a separate
+/// dropdown). Both are legitimate, and the difference is invisible to the
+/// receiving backend: a leading `/` says nothing about which dialect this is.
+///
+/// So the CALLER anchors, once, at the point where it still knows which volume
+/// the path belongs to, and the backends stay strict about what they accept.
+/// `SmbVolume::to_smb_path` is the one that made the difference load-bearing: it
+/// answers `NotFound` for an absolute path outside its mount rather than
+/// guessing (a guess used to address a real file at the wrong place), so an
+/// unanchored `/photos` failed a move into an SMB subfolder before any I/O.
+///
+/// The rules, in order:
+///
+/// - Every spelling of "the volume root" (empty, `.`, `/`) is `root` itself.
+/// - A path already under `root` is returned untouched, matched by whole
+///   COMPONENTS so the sibling mount `/Volumes/naspi-1` can't pass as being
+///   under `/Volumes/naspi`.
+/// - Anything else is volume-relative: its leading `/` (if any) goes, and the
+///   rest hangs off `root`.
+///
+/// Idempotent by construction, which is what lets a call site anchor without
+/// first asking which dialect it holds. A scheme-shaped root
+/// (`mtp://device/storage`, which `Path::is_absolute` calls relative) anchors
+/// the same way, because the rules never ask that question.
+pub fn root_anchored(root: &Path, path: &Path) -> PathBuf {
+    if path.as_os_str().is_empty() || path == Path::new(".") || path == Path::new("/") {
+        return root.to_path_buf();
+    }
+    if path.starts_with(root) {
+        return path.to_path_buf();
+    }
+    root.join(path.strip_prefix("/").unwrap_or(path))
+}
+
 // Shared data types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `MutationEvent`,
 // …) live in `types`; the volume ID funnel (`local_volume_id`, `smb_volume_id`,
 // …) lives in `ids`. Both are re-exported below so callers import
@@ -1209,3 +1248,5 @@ mod in_memory_scan_test;
 mod in_memory_stream_test;
 #[cfg(test)]
 mod in_memory_test;
+#[cfg(test)]
+mod root_anchored_path_test;

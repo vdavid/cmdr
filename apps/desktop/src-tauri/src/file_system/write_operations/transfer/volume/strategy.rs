@@ -724,19 +724,9 @@ pub(super) fn note_pending_for_local_dest(dest_volume: &Arc<dyn Volume>, dest_pa
     let Some(root) = dest_volume.local_path() else {
         return;
     };
-    // Mirror `LocalPosixVolume::resolve`'s absolute-path handling so the
-    // path we register matches the one `write_from_stream` will hit.
-    let absolute = if dest_path.as_os_str().is_empty() || dest_path == Path::new(".") {
-        root
-    } else if dest_path.is_absolute() {
-        if dest_path.starts_with(&root) || root == Path::new("/") {
-            dest_path.to_path_buf()
-        } else {
-            root.join(dest_path.strip_prefix("/").unwrap_or(dest_path))
-        }
-    } else {
-        root.join(dest_path)
-    };
+    // The same anchoring `LocalPosixVolume::resolve` applies, so the path we
+    // register matches the one `write_from_stream` will hit.
+    let absolute = cmdr_fs::volume::root_anchored(&root, dest_path);
     crate::downloads::note_pending_write_for_cmdr(&absolute);
 }
 

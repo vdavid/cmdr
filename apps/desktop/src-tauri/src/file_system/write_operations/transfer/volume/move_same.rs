@@ -42,17 +42,7 @@ fn note_pending_for_local_volume(volume: &Arc<dyn Volume>, path: &Path) {
     let Some(root) = volume.local_path() else {
         return;
     };
-    let absolute = if path.as_os_str().is_empty() || path == Path::new(".") {
-        root
-    } else if path.is_absolute() {
-        if path.starts_with(&root) || root == Path::new("/") {
-            path.to_path_buf()
-        } else {
-            root.join(path.strip_prefix("/").unwrap_or(path))
-        }
-    } else {
-        root.join(path)
-    };
+    let absolute = cmdr_fs::volume::root_anchored(&root, path);
     crate::downloads::note_pending_write_for_cmdr(&absolute);
 }
 

@@ -97,7 +97,10 @@ pub async fn move_between_volumes(
         );
 
         let absolute_sources: Vec<PathBuf> = source_paths.iter().map(|p| src_root.join(p)).collect();
-        let absolute_dest = dest_root.join(dest_path.strip_prefix("/").unwrap_or(&dest_path));
+        // Anchored, not joined: the IPC boundary already anchors what the
+        // transfer dialog sends, and a raw join would re-root an absolute dest
+        // under itself (`/Volumes/USB/sub` → `/Volumes/USB/Volumes/USB/sub`).
+        let absolute_dest = cmdr_fs::volume::root_anchored(&dest_root, &dest_path);
 
         let write_config = WriteOperationConfig {
             progress_interval_ms: config.progress_interval_ms,

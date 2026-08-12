@@ -662,25 +662,13 @@ async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> 
     }
 }
 
-/// Resolves a destination-volume path against a local-FS volume root, mirroring
-/// `LocalPosixVolume::resolve`: an absolute path already under the root is used
-/// as-is; under a `/` root it passes through; otherwise the leading `/` is
-/// stripped and the remainder is joined onto the root. Relative paths join
-/// directly. This lets the O_EXCL reservation land at the same local path the
-/// volume's streaming writer will later resolve `new_path` to.
+/// Resolves a destination-volume path against a local-FS volume root, so the
+/// O_EXCL reservation lands at the same local path the volume's streaming
+/// writer will later resolve `new_path` to. The rule itself is
+/// `cmdr_fs::volume::root_anchored`, which `LocalPosixVolume::resolve` uses too:
+/// that shared rule IS the guarantee the two paths agree.
 fn resolve_local_path(root: &Path, path: &Path) -> PathBuf {
-    if path.as_os_str().is_empty() || path == Path::new(".") {
-        root.to_path_buf()
-    } else if path.is_absolute() {
-        if path.starts_with(root) || root == Path::new("/") {
-            path.to_path_buf()
-        } else {
-            let relative = path.strip_prefix("/").unwrap_or(path);
-            root.join(relative)
-        }
-    } else {
-        root.join(path)
-    }
+    cmdr_fs::volume::root_anchored(root, path)
 }
 
 #[cfg(test)]
