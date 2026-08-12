@@ -234,8 +234,10 @@ jobs:
       - name: Run clippy
         run: ./scripts/check/check --check desktop-rust-clippy --ci
 
-      # After clippy: it shares the same compile, and a broken intra-doc link is
-      # invisible to every other lane because only `cargo doc` resolves one.
+      # A broken intra-doc link is invisible to every other lane, because only
+      # `cargo doc` resolves one. These steps are sequential, so this lane keeps
+      # the shared, cached `target/` here; locally it gets a private one to stay
+      # off cargo's build-directory lock (see `desktop-rust-rustdoc.go`).
       - name: Check rustdoc links
         run: ./scripts/check/check --check desktop-rust-rustdoc --ci
 

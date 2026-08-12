@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"slices"
 	"strings"
 	"testing"
 )
@@ -95,6 +96,68 @@ func TestRustdocFailureOutputPassesThroughWhenNothingLooksLikeADiagnostic(t *tes
 	}
 	if got := rustdocFailureOutput("error[E0124]: field is already declared\n"); !strings.Contains(got, "E0124") {
 		t.Fatalf("a compile error is still an error block, got %q", got)
+	}
+}
+
+// An unresolved link with NO `-->` locator is rustdoc's signature for the
+// merged-doc-fragment trap, and it's the one failure a reader can't act on: no
+// file, no line, and the item it says is missing is usually right there in the
+// same file. The check explains it rather than leaving each reader to rediscover
+// it (`canonical_root.rs` hit it 12 days after the last one).
+const spanlessRustdocOutput = ` Documenting cmdr-fs v0.0.0 (/repo/crates/cmdr-fs)
+error: unresolved link to ` + "`collapse_by_volume_id`" + `
+   |
+   = note: the link appears in this line:
+           [` + "`collapse_by_volume_id`" + `] here, because the rule is a pure list transform
+            ^^^^^^^^^^^^^^^^^^^^^^
+   = note: no item named ` + "`collapse_by_volume_id`" + ` in scope
+`
+
+func TestRustdocSpanlessUnresolvedLinkExplainsTheMergedDocTrap(t *testing.T) {
+	got := rustdocFailureOutput(spanlessRustdocOutput)
+	if !strings.Contains(got, "collapse_by_volume_id") {
+		t.Fatalf("the diagnostic itself must survive:\n%s", got)
+	}
+	if !strings.Contains(got, "hint:") {
+		t.Fatalf("a spanless unresolved link must carry a hint:\n%s", got)
+	}
+	// Naming both halves is what makes it actionable: the reader has to know to
+	// look at the `mod` declaration, not at the file the link is written in.
+	for _, want := range []string{"mod ", "outer"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the hint should name the %q half of the trap:\n%s", want, got)
+		}
+	}
+}
+
+func TestRustdocHintStaysOffDiagnosticsThatCarryALocator(t *testing.T) {
+	// A located error tells the reader where to look, so the hint would be noise
+	// on every ordinary broken link.
+	if got := rustdocFailureOutput(realRustdocOutput); strings.Contains(got, "hint:") {
+		t.Errorf("a located diagnostic must not carry the merged-fragment hint:\n%s", got)
+	}
+}
+
+func TestRustdocRunsInItsOwnBuildDirLocallyAndTheSharedOneInCI(t *testing.T) {
+	const wantDir = "CARGO_TARGET_DIR=/repo/target/rustdoc"
+
+	local := rustdocEnv([]string{"PATH=/bin"}, "/repo", "-D rustdoc::bare_urls", false)
+	if !slices.Contains(local, wantDir) {
+		t.Errorf("a local run needs its own build dir to stay off the shared lock, got %v", local)
+	}
+
+	ci := rustdocEnv([]string{"PATH=/bin"}, "/repo", "-D rustdoc::bare_urls", true)
+	for _, entry := range ci {
+		if strings.HasPrefix(entry, "CARGO_TARGET_DIR=") {
+			t.Errorf("CI must keep the shared, cached build dir; the runner is disk-tight. Got %q", entry)
+		}
+	}
+
+	// The lint contract rides along either way; it IS the check.
+	for _, env := range [][]string{local, ci} {
+		if !slices.Contains(env, "RUSTDOCFLAGS=-D rustdoc::bare_urls") {
+			t.Errorf("the lint flags went missing from %v", env)
+		}
 	}
 }
 

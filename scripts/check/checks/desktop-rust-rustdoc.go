@@ -3,6 +3,7 @@ package checks
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -59,6 +60,42 @@ var rustdocDeniedLints = []string{
 // leaving a warning for every reader to re-litigate.
 var rustdocAllowedLints = []string{"private_intra_doc_links"}
 
+// rustdocTargetDir is this lane's OWN cargo build directory, nested inside the
+// shared one so `cargo clean` and `rm -rf target` still take it with them.
+func rustdocTargetDir(rootDir string) string {
+	return filepath.Join(cargoTargetDir(rootDir), "rustdoc")
+}
+
+// rustdocEnv is the environment the doc build runs under: the lint contract,
+// plus a private build directory when running locally.
+//
+// Locally the private directory wins twice, measured on an M3 Max (2026-08-12,
+// one sample each, `/usr/bin/time -l` around `pnpm check rustdoc`):
+//
+//  1. Cargo's build-directory lock is exclusive for a whole command, so sharing
+//     `target/` serialized this lane against `clippy` and the test lanes. It
+//     burns only ~1.7 cores, so it fits beside them once it stops queueing.
+//  2. Warm runs dropped 27.5 s → 17.0 s. Living beside the other lanes meant
+//     their fingerprint churn kept invalidating doc units already built here.
+//
+// It's affordable because `cargo doc` builds dependencies metadata-only, with no
+// codegen: 2.0 GB against an 82 GB `target/`, and a 75 s cold build after a
+// `Cargo.lock` bump.
+//
+// ❌ Never extend it to CI. There it's all cost and no benefit: the workflow runs
+// each check as its own sequential step, so no two cargo commands overlap and
+// there's no lock to dodge. Meanwhile the runner ships ~14 GB free and has
+// already hit "No space left on device" linking `libcmdr_lib.a` (see ci.yml's
+// "Free disk space" step), and a second directory would push `rust-cache` toward
+// GitHub's 10 GB ceiling for artifacts a fresh runner can't reuse anyway.
+func rustdocEnv(base []string, rootDir, rustdocFlags string, ci bool) []string {
+	env := append(base, "RUSTDOCFLAGS="+rustdocFlags)
+	if ci {
+		return env
+	}
+	return append(env, "CARGO_TARGET_DIR="+rustdocTargetDir(rootDir))
+}
+
 // RunRustdoc builds the workspace's documentation with every doc lint denied.
 func RunRustdoc(ctx *CheckContext) (CheckResult, error) {
 	members, err := WorkspaceMembers(ctx.RootDir)
@@ -93,7 +130,7 @@ func RunRustdoc(ctx *CheckContext) (CheckResult, error) {
 
 	cmd := exec.Command("cargo", args...)
 	cmd.Dir = ctx.RootDir
-	cmd.Env = append(cmd.Environ(), "RUSTDOCFLAGS="+strings.Join(lintFlags, " "))
+	cmd.Env = rustdocEnv(cmd.Environ(), ctx.RootDir, strings.Join(lintFlags, " "), ctx.CI)
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("cargo doc found doc-lint violations\n%s",
@@ -167,8 +204,52 @@ func rustdocDiagnostics(output string) string {
 // diagnostic header, or an interrupt has nothing diagnostic-shaped in it, and
 // swallowing that would report an empty reason for a red check.
 func rustdocFailureOutput(output string) string {
-	if diagnostics := rustdocDiagnostics(output); diagnostics != "" {
-		return diagnostics
+	diagnostics := rustdocDiagnostics(output)
+	if diagnostics == "" {
+		return output
 	}
-	return output
+	if hint := mergedFragmentHint(diagnostics); hint != "" {
+		return diagnostics + "\n\n" + hint
+	}
+	return diagnostics
+}
+
+// unresolvedLinkHeader matches the opening line of the one diagnostic this hint
+// is about.
+var unresolvedLinkHeader = regexp.MustCompile(`^error: unresolved link to `)
+
+// mergedFragmentHint explains a spanless unresolved link, and stays quiet
+// otherwise.
+//
+// A missing `-->` locator is rustdoc's signature for merged doc fragments: an
+// outer `///` on a `mod foo;` declaration concatenates with `foo`'s own `//!`
+// header, and rustdoc then resolves the WHOLE merged doc in the parent's scope.
+// Every link the child file wrote against its own items stops resolving, and
+// because the fragments came from two files rustdoc can't point at either one.
+// So the reader gets "no item named X in scope" naming an item sitting a few
+// lines below the link, with nothing to go on.
+//
+// Left unexplained it costs a real debugging session, which is why the hint
+// lives here rather than in a doc: the check is where someone meets the problem.
+func mergedFragmentHint(diagnostics string) string {
+	located := true
+	for _, line := range strings.Split(diagnostics, "\n") {
+		switch {
+		case unresolvedLinkHeader.MatchString(line):
+			located = false
+		case diagnosticHeader.MatchString(line):
+			located = true
+		case !located && strings.HasPrefix(strings.TrimSpace(line), "-->"):
+			located = true
+		}
+		if !located && strings.Contains(line, "no item named") {
+			return "hint: an unresolved link with no `-->` location usually means merged doc fragments.\n" +
+				"      An outer `///` on a `mod foo;` declaration concatenates with `foo`'s own `//!`\n" +
+				"      header, and the merged doc resolves in the PARENT's scope, so links the child\n" +
+				"      wrote against its own items stop resolving. Drop the outer comment (the file's\n" +
+				"      `//!` header already documents the module), or make the link absolute\n" +
+				"      (`[`crate::a::b::thing`]`), which is immune either way."
+		}
+	}
+	return ""
 }
