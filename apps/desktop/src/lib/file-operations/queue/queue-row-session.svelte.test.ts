@@ -82,11 +82,16 @@ function progress(operationId: string, over: Partial<WriteProgressEvent> = {}): 
 }
 
 let store: ReturnType<typeof createOperationsStore>
-let mounted: ReturnType<typeof mount>[] = []
-/** Each mounted row's props, so a tick re-feeds them the way the page's
- *  `{#each}` hands a row its new object. */
-let bound: { operationId: string; props: { row: OperationRow } }[] = []
+/** The mounted rows, each with the props object it re-reads its row from. */
+let views: { operationId: string; props: { row: OperationRow }; instance: ReturnType<typeof mount> }[] = []
 let target: HTMLElement
+
+/** Hands every mounted row its current row object, the way the page's `{#each}`
+ *  does on any store change. */
+function refreshRows(): void {
+  for (const view of views) view.props.row = rowFor(view.operationId)
+  flushSync()
+}
 
 /** One tick, delivered the way the backend delivers it: to every listener in
  *  the window. The store keeps the latest one, the session smooths it. */
@@ -94,8 +99,7 @@ function emitProgress(event: WriteProgressEvent): void {
   store._testApplyProgress(event)
   getOperationSessions()?._testEmit({ kind: 'progress', event })
   flushSync()
-  for (const view of bound) view.props.row = rowFor(view.operationId)
-  flushSync()
+  refreshRows()
 }
 
 /** Mounts the queue window's row for an operation, which is what claims the
@@ -110,8 +114,7 @@ function mountRow(operationId: string): void {
     onRollback: () => {},
     onDismiss: () => {},
   })
-  mounted.push(mount(QueueRow, { target, props }))
-  bound.push({ operationId, props })
+  views.push({ operationId, props, instance: mount(QueueRow, { target, props }) })
   flushSync()
 }
 
@@ -125,17 +128,15 @@ beforeEach(async () => {
   document.body.innerHTML = ''
   target = document.createElement('ul')
   document.body.appendChild(target)
-  mounted = []
-  bound = []
+  views = []
   store = createOperationsStore()
   await initOperationSessions()
   vi.mocked(createEtaSmoother).mockClear()
 })
 
 afterEach(() => {
-  for (const instance of mounted) void unmount(instance)
-  mounted = []
-  bound = []
+  for (const view of views) void unmount(view.instance)
+  views = []
   store.dispose()
   destroyOperationSessions()
 })
@@ -168,8 +169,7 @@ describe('the queue window smooths an ETA exactly once per operation', () => {
 
     store._testApplySnapshot([snapshot('op-a'), snapshot('op-b')])
     flushSync()
-    for (const view of bound) view.props.row = rowFor(view.operationId)
-    flushSync()
+    refreshRows()
     emitProgress(progress('op-a', { bytesDone: 500 }))
 
     expect(vi.mocked(createEtaSmoother)).toHaveBeenCalledTimes(1)
