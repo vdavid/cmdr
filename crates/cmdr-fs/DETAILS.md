@@ -204,7 +204,9 @@ about an "unexpected `cfg` condition value" and takes the false branch forever.
   defaulting to `supports_local_fs_access`), because "can another app open a `file://` URL for this?" is portable
   vocabulary. Which backends split the two isn't: only the app knows an SMB share stays OS-mounted beside its own smb2
   session, so `SmbVolume` is where the override lives and `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` is
-  where the per-backend answers are listed. Same shape as `listing_watch_coverage` above.
+  where the per-backend answers are listed. `Volume::note_root_mount_gone` splits the same way: the trait names the
+  fact ("the mount you're anchored to is gone"), and only the app's registry can establish it, since a mount is
+  something you may never probe. Same shape as `listing_watch_coverage` above.
 - **`icons/per_path.rs`'s custom-folder-icon half**, the NSWorkspace fetch, and the icon disk cache.
 - **The scratch-visibility settings** (`advanced.showStagingTempFiles`, `advanced.showSafeSaveFiles`) and the listing
   read-path filter over them. "Is this ours, and does a live operation own it?" is vocabulary; "does the user see it?"
