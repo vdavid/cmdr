@@ -1,63 +1,35 @@
 # Utils
 
-Small stateless utility functions. Pure, no Svelte state, safe to import from plain `.ts` files.
+Small stateless helpers. Pure, no Svelte state, safe to import from plain `.ts` files.
 
 ## Files
 
-- **`filename-validation.ts`**: pure client-side filename validation for instant keystroke feedback.
-- **`confirm-dialog.ts`**: wrapper around Tauri's native dialog `ask()`.
-- **`timing.ts`**: `withTimeout`, `createDebounce`, `createThrottle`, `createCoalesced`, `waitForNextPaint`.
-- **`shorten-middle.ts`**: `shortenMiddle` mid-truncation + `createPretextMeasure` factory.
-- **`shorten-middle-action.ts`**: Svelte action wrapping `shortenMiddle` with ResizeObserver, async pretext, tooltip.
-- **`pluralize.ts`**: count + noun formatting ("1 user" / "3 users").
-- **`srgb-mix.ts`**: sRGB color helpers (`mixSrgb`, `withAlpha`, `readableFgOn`, …).
-- **`webkit-compat.ts`**: one-shot `color-mix()` feature detection + boot-time telemetry log.
-- **`text-input-focus.ts`**: two "is this a text field?" predicates. `isTextInputFocused()` for keyboard events,
-  `isTextInputTarget(target)` for mouse (a right-click can land on an unfocused field). ❌ Don't re-roll either.
+`filename-validation.ts` (client-side name and path validation), `timing.ts` (`withTimeout`, `createDebounce`,
+`createThrottle`, `createCoalesced`, `waitForNextPaint`), `shorten-middle.ts` + `shorten-middle-action.ts`
+(mid-truncation and its Svelte action), `srgb-mix.ts` + `webkit-compat.ts` (sRGB color math, `color-mix()` detection),
+`confirm-dialog.ts`, `pluralize.ts`, `text-input-focus.ts`. Per-file export catalogs: `DETAILS.md`.
 
 ## Must-knows
 
-- **Validation runs on the frontend (pure TS), not via Rust round-trips.** Keystroke feedback needs sub-millisecond
-  latency; an IPC hop per keystroke would stutter. Every rule (length, chars, conflicts) is deterministic given the
-  sibling list. Don't move it to the backend.
-- **Length limits are `>= 255` bytes (name) and `>= 1024` bytes (path), strictly**, not `> 255`: the filesystem reserves
-  the last byte. Byte length comes from `TextEncoder`, not `.length` (multi-byte characters).
-- **`validateConflict` is case-insensitive (APFS).** A case-only rename (`foo` → `Foo`) passes without warning. Pass
-  `originalName` correctly or you get false positives.
-- **`getExtension(filename)` returns the extension WITH the dot** (`.txt`), or `''` for dotfiles without an extension
-  (`.gitignore` → `''`), via `lastIndexOf('.') <= 0`.
-- **`extensionsDifferMeaningfully(oldName, newName)` decides whether an extension change needs confirmation.** False for
-  case-only changes (`.JPG` → `.jpg`) and known equivalents (`.jpeg` → `.jpg`, `.md` → `.txt`); extend
-  `EQUIVALENT_EXTENSION_GROUPS` in the same file to add aliases. Used by `validateExtensionChange` and the rename save
-  flow's "ask" gate.
-- **Use `confirmDialog` everywhere instead of `window.confirm()`** (unreliable in Tauri). It wraps Tauri's `ask()` with
-  an explicit `cancelLabel: 'Cancel'`: macOS `NSAlert` only assigns Escape to a button labeled "Cancel", so without it
-  Escape does nothing.
-- **The CSS ships `color-mix()` heavily, which Safari < 16.2 (still on macOS 12 Monterey) doesn't parse.** Two safety
-  nets must both stay: `app.css` static fallbacks inside `@supports not (color: color-mix(...))` blocks, and
-  `accent-color.ts` / `volume-tint.svelte.ts` computing runtime-derived colors in JS via `mixSrgb` / `withAlpha` (the
-  tokens that depend on the live macOS accent color). Don't introduce `color-mix()` for accent-derived tokens.
-- **`readableFgOn(accentHex)` (returns `#000000` / `#ffffff` by WCAG contrast) is mirrored in
-  `scripts/check-a11y-contrast/accent_matrix.go`.** Keep the JS and Go logic in sync, or the design-time contrast
-  checker tests a different fg than the app renders.
+- **Filename validation stays frontend-pure.** Keystroke feedback needs sub-millisecond latency; an IPC hop per
+  keystroke stutters. Don't move it to Rust.
+- **Limits are `>= 255` bytes (name) and `>= 1024` bytes (path)**, strictly, measured with `TextEncoder`, ❌ never
+  `.length` (multi-byte characters).
+- **`validateConflict` is case-insensitive (APFS)**: pass `originalName` correctly, or a case-only rename false-flags.
+- **`validateFilename` returns the FIRST error or warning**, never a list: inline rename UI has room for one message.
+- **`getExtension` includes the dot** (`.txt`) and returns `''` for dotfiles (`.gitignore`).
+- **Use `confirmDialog`, ❌ never `window.confirm()`** (unreliable in Tauri); it also labels Cancel so Escape works.
+- **Two `color-mix()` safety nets must both stay**: the `@supports not` fallbacks in `app.css`, and the runtime JS mixes
+  (`mixSrgb` / `withAlpha`) in `accent-color.ts` / `volume-tint.svelte.ts`. Safari < 16.2 (still on macOS 12) can't
+  parse `color-mix()`, so ❌ never use it for accent-derived tokens.
+- **`readableFgOn` is mirrored in `scripts/check-a11y-contrast/accent_matrix.go`.** Keep both in sync, or the
+  design-time contrast checker tests a different fg than the app renders.
+- **A debounce does NOT bound concurrency: use `createCoalesced`** when a repeated async call can outlast its own delay.
+  Stacked calls once took the backend's whole blocking pool (image-index badge fetch) and froze the app. `cancel()` on
+  teardown.
+- **`useShortenMiddle` reveals the full text through the HOUSE tooltip**, ❌ never a native `title`.
+- **Two focus predicates, ❌ don't re-roll either**: `isTextInputFocused()` for keyboard events,
+  `isTextInputTarget(target)` for mouse (a right-click can land on an unfocused field).
 
-## Gotchas
-
-- **`validateFilename` returns the FIRST error or warning, not a list.** Checks run in priority order (errors before
-  warnings): `validateNotEmpty` → `validateDisallowedChars` (`/` or `\0`) → `validateNameLength` → `validatePathLength`
-  → `validateExtensionChange` → `validateConflict`. Inline rename UI has space for one message.
-- **`validateDirectoryPath(path)` validates full paths, not filenames** (empty, must-be-absolute, null byte, total
-  length, per-component length). "Absolute" accepts a leading `/` or the home shortcut (`~`, `~/…`); a bare `~foo` stays
-  rejected. Used by TransferDialog; composable in NewFolderDialog.
-- **`'ask'` extension setting returns `ok` at validation time**; the save dialog handles the confirmation separately.
-- **`createDebounce` exposes `flush()`** (for `beforeunload` cleanup) and `createThrottle` guarantees a trailing call.
-  Both are hand-rolled deliberately, not lodash.
-- **A debounce does NOT bound concurrency: use `createCoalesced` when a repeated async call can outlast its own delay.**
-  A debounce bounds only how often work STARTS, so slower calls stack up — that's how the image-index badge fetch took
-  the backend's whole blocking pool and froze the app. The two compose. `cancel()` on teardown.
-- **`useShortenMiddle` reveals the full text through the HOUSE tooltip, never a native `title`** (whose delay and chrome
-  are the OS's, and this action feeds pane rows, dialogs, and result lists alike). `tooltipWhenTruncated?` narrows it to
-  a string truncation actually trimmed. `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the old-WebKit fallback path (see
-  DETAILS.md and `docs/guides/releasing.md` § "Pre-release smoke test on old macOS").
-
-Full details (export catalogs, validator rationale, the old-WebKit dev override): `DETAILS.md`.
+Export catalogs, validator chains, decisions, and the old-WebKit dev override: `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

@@ -6,10 +6,21 @@ argument, the coverage/scope model) plus the top-level files no area subdir owns
 
 Read this before any non-trivial work here: editing, planning, reorganizing, or advising.
 
-**Where the area depth lives:** `scheduler/DETAILS.md` (passes, the pool, importance ordering, live enrichment,
-reclaim), `network/DETAILS.md` (byte-fetch, the conservative policy, the network UI), `backend/DETAILS.md` (the Vision
-seam and the real macOS impl), `clip/DETAILS.md` (CLIP semantic search), `ann/DETAILS.md` (the HNSW index),
-`store/DETAILS.md` (schema), `read/DETAILS.md` (the consumer API), `vector/DETAILS.md` (cosine + the resident caches).
+## Area map
+
+What each area subdir owns, and where its depth lives:
+
+- **`scheduler/`** — the pass machinery: full, network, and live-tick passes, bus wiring, the parallel worker pool,
+  importance ordering, the reclaim prune. Depth: `scheduler/DETAILS.md`.
+- **`network/`** — SMB byte-fetch, the conservative fetch policy, the opt-in / override / exclusion config, and the
+  network UI. Depth: `network/DETAILS.md`.
+- **`backend/`** — the fakeable `VisionBackend` inference seam and the real macOS Vision impl. Depth:
+  `backend/DETAILS.md`.
+- **`clip/`** — CLIP semantic search: model install, Core ML towers, the query encode. Depth: `clip/DETAILS.md`.
+- **`ann/`** — the per-volume usearch HNSW index serving CLIP search at scale. Depth: `ann/DETAILS.md`.
+- **`store/`** — `media.db` schema, connections, staleness. Depth: `store/DETAILS.md`.
+- **`read/`** — `MediaIndex`, the ONLY consumer entry, `search/` included. Depth: `read/DETAILS.md`.
+- **`vector/`** — brute-force cosine plus the resident vector caches. Depth: `vector/DETAILS.md`.
 
 ## Why a port of `importance/`, not a re-derivation
 

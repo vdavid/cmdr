@@ -23,8 +23,11 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   drag-and-drop transfer path (`Some(true)` = dir, `Some(false)` = file, `None` = unknown / non-local / vanished). One
   `spawn_blocking` under the read timeout, never a subtree walk; per-item failures map to `None` so a virtual MTP/SMB
   path on the pasteboard can't poison the batch. The pure `stat_paths_kinds_blocking` helper is reused by
-  `clipboard.rs::read_clipboard_files`. `drag.rs`: native drag, self-drag overlay. `e2e_support.rs`: feature-gated
-  E2E/debug commands.
+  `clipboard.rs::read_clipboard_files`. `drag.rs`: native drag, self-drag overlay (see "Drag session locality" below).
+  `e2e_support.rs`: feature-gated E2E/debug commands. `listing.rs::path_exists` is SMB-aware: a disconnected SMB volume
+  returns an immediate `false`, so it re-checks `smb_connection_state()` and reports `timedOut: true` instead, and a
+  transient blip can't evict the user from a network folder. The TS types matching every `TimedOut<T>` / `IpcError`
+  return live in `$lib/tauri-commands/ipc-types.ts`.
 - **`volumes.rs`** (macOS): `list_volumes`, `get_default_volume_id`, `get_volume_space`, `resolve_path_volume`
   (statfs-based, no volume enumeration), `resolve_location`. The latter two share one `resolve_path_to_volume` body
   (protocol dispatch for `mtp://` / `smb://` plus the local `statfs` branch), so a virtual path resolves the same way
@@ -49,6 +52,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   absent/denied). User-initiated only. Lazy-startup hooks: `ensure_network_discovery_started` (idempotent: kicks off
   mDNS + manual-server load + smb-mount upgrade on first user network action) and `set_network_enabled` (live-applies
   the `network.enabled` toggle). Upgrade business logic lives in `network::smb_upgrade`; commands here are thin wrappers.
+  `list_shares_with_credentials` carries `#[allow(clippy::too_many_arguments)]`: Tauri params must be top-level args.
 - **`smb_diagnostics.rs`** (debug window only): `list_smb_volumes` (the dashboard's volume picker) and
   `get_smb_diagnostics(volume_id)` (a snapshot of one volume's `smb2::SmbClient`). The snapshot DTOs mirror
   `smb2::Diagnostics` & friends with `specta::Type` derives (so `smb2` needn't depend on specta), one `impl From` per
@@ -68,6 +72,12 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`rename.rs`**: `move_to_trash` (delegates to `write_operations::trash::move_to_trash_sync`),
   `check_rename_permission`, `check_rename_validity`, `rename_file`. `rename_file` calls `notify_mutation` after success
   to update the listing cache (both local and volume-aware paths).
+- **`volume_id` on the write commands.** `create_directory` / `create_file` / `rename_file` only expand tilde (root),
+  resolve the `volume_id`, apply the 5 s write timeout, and map to `IpcError`; the logic and the managed instant op live
+  in `file_system::write_operations::{create,rename}`. For a non-root `volume_id`, `delete_files` uses the volume-aware
+  delete and skips local `validate_sources` (MTP virtual paths fail `symlink_metadata`), and `rename_file` passes the id
+  through and skips permission checks. The local rename notifies the listing cache via `notify_rename_in_listing`, the
+  volume one via its own `notify_mutation`.
 - **`restricted_paths.rs`**: `get_restricted_paths`: read-only snapshot for the frontend store bootstrap. See
   `crate::restricted_paths` for the state machine and the `restricted-paths-changed` event payload.
 - **`file_viewer.rs`**: session lifecycle, regex/literal search with mode flags, word wrap, menu state, encoding pickers
@@ -191,6 +201,24 @@ loading / suggestion pipelines / secret-store keys; poller init/start/watch). A 
 forwarding, so they register directly from their own modules, keeping the command surface co-located with the
 frequently-changing implementation. Space-poller commands: `watch_volume_space`, `unwatch_volume_space`,
 `set_disk_space_threshold`.
+
+## Drag session locality
+
+`start_selection_drag` and `start_drag_paths` both run on the main thread (`run_drag_on_main_thread`) and pick a
+`DragSessionLocality` through `locality_for_volume`, keyed on `Volume::paths_are_os_visible()`. The question a drop
+target asks is whether a `file://` URL built from the path opens in ANOTHER app, not whether Cmdr can read it through
+`std::fs`:
+
+- **Local** (local disks, OS-mounted shares, direct SMB while its mount is alive): each item gets a file URL plus the
+  legacy filenames representation, matching Finder. No path text, which once broke browser uploads.
+- **Virtual** (MTP, search-results, archive-inner paths, a direct SMB share whose mount vanished): each item gets an
+  `NSFilePromiseProvider`, which only Finder can read. Archive-inner paths force Virtual even though the source volume
+  is the local parent drive; the `.zip` itself stays Local.
+- An unknown or absent `volume_id` resolves to Local, the back-compatible default.
+
+❌ Don't key this on `supports_local_fs_access()`: direct SMB answers `false` there while handing out perfectly openable
+`/Volumes/…` paths, and promise-only drags are rejected by every target except Finder. The mistake looks like "drag to
+Mail or a browser silently does nothing" while a Finder drop keeps working.
 
 ## IPC deadlines detach, never drop
 

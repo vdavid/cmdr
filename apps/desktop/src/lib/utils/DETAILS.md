@@ -23,7 +23,8 @@ validators in NewFolderDialog):
 ```
 validateDirectoryPath(path)
   ├── empty check                 : error if blank after trim
-  ├── absolute check              : error if doesn't start with /
+  ├── absolute check              : error unless it starts with / or is the home shortcut (`~` or `~/…`);
+  │                                 a bare `~foo` stays rejected (the backend expands `~`)
   ├── null byte check             : error if contains \0
   ├── total path length           : error if >= 1024 bytes (UTF-8)
   └── per-component length         : error if any segment >= 255 bytes (splits on /, filters empty)
@@ -39,15 +40,32 @@ interface ValidationResult {
 }
 ```
 
+`validateDirectoryPath` is used by TransferDialog and composes with the individual validators in NewFolderDialog.
+
 Extension-change behavior is controlled by the `allowExtensionChanges` user setting (`yes`/`no`/`ask`). `'ask'` returns
-`ok` at validation time; the save dialog handles it separately. `extensionsDifferMeaningfully` (with
-`EQUIVALENT_EXTENSION_GROUPS`) gates the "ask" confirmation so users aren't pestered over case-only or known-equivalent
-changes.
+`ok` at validation time; the save dialog handles it separately. `extensionsDifferMeaningfully(oldName, newName)` gates
+that confirmation so users aren't pestered over case-only changes (`.JPG` → `.jpg`) or known equivalents (`.jpeg` →
+`.jpg`, `.md` → `.txt`); add an alias by extending `EQUIVALENT_EXTENSION_GROUPS` in the same file. It backs both
+`validateExtensionChange` and the rename save flow's "ask" gate.
 
 ## confirm-dialog.ts
 
 Thin wrapper around `@tauri-apps/plugin-dialog`'s `ask()`. `confirmDialog(message, title?): Promise<boolean>` shows a
 native warning dialog with OK/Cancel and resolves `true` on confirm.
+
+## timing.ts
+
+`withTimeout(promise, ms, fallback)` races an IPC call and returns the fallback. `waitForNextPaint(timeoutMs)` resolves
+`'painted' | 'timeout'`. `createDebounce(fn, delayMs)` exposes `flush()` (for `beforeunload` cleanup) and `cancel()`;
+`createThrottle(fn, delayMs)` guarantees a trailing call. `createCoalesced(run)` bounds CONCURRENCY: at most one call in
+flight, with the latest argument queued behind it. A debounce bounds only how often work STARTS, so slower calls stack
+up. The two compose.
+
+## pluralize.ts / text-input-focus.ts
+
+`pluralize(count, singular, plural?)` formats a count with its noun ("1 user" / "3 users"). `text-input-focus.ts`
+carries two predicates: `isTextInputFocused()` reads `document.activeElement` (keyboard events), and
+`isTextInputTarget(target)` inspects an event target (mouse, where a right-click can land on an unfocused field).
 
 ## shorten-middle.ts
 
@@ -55,6 +73,14 @@ native warning dialog with OK/Cancel and resolves `true` on confirm.
 `measureWidth` function. Supports `preferBreakAt` (snap cuts to a delimiter like `/` or `.`), `startRatio` (bias budget
 toward start or end), and custom ellipsis strings. `createPretextMeasure()` creates a `measureWidth` backed by
 `@chenglou/pretext`'s `prepareWithSegments` + `measureNaturalWidth`, caching prepared texts for repeated measurements.
+
+## shorten-middle-action.ts
+
+`useShortenMiddle(node, params)` wraps `shortenMiddle` in a Svelte action: a ResizeObserver re-fits on width changes,
+`@chenglou/pretext` loads async (CSS `text-overflow: ellipsis` covers the gap), and the full text is reachable on hover
+through the HOUSE tooltip. Never a native `title`: its delay and chrome are the OS's, and this action feeds pane rows,
+dialogs, and result lists alike, which would otherwise hover three different ways. `tooltipWhenTruncated?: boolean`
+narrows the tooltip to strings truncation actually trimmed (default `false`: hover always shows the full text).
 
 ## srgb-mix.ts / webkit-compat.ts
 

@@ -443,9 +443,12 @@ When the directory has a parent entry shown at index 0, frontend indices are off
   transfers)". The BE-side contract — settle fires after a fully-torn-down spawn task, even on panic — lives in the BE
   doc § "Settle contract". Race protection: if `write-settled` arrives before `write-cancelled` (shouldn't happen, but
   is defensive), the dialog buffers it and closes only after `write-cancelled` has been processed. Complete / error
-  paths are unchanged: they still close on the existing `MIN_DISPLAY_MS` gate without waiting for settle. Why it
-  matters: the original incident was an MTP delete cancel followed by an immediate second F8 — the device was still
-  mid-teardown, the second op queued behind the 17 s tail, hit the 30 s op timeout, and wedged the USB session.
+  paths are unchanged: they still close on the existing `MIN_DISPLAY_MS` gate without waiting for settle. The wait is
+  never the only exit: `progress.dismiss()` backs a Close button that leaves at once, and the last-resort
+  `CANCEL_SETTLE_FALLBACK_MS` (20 s) sits above the backend's 15 s `CANCEL_DRAIN_DEADLINE`, so the automatic path can't
+  report `0 files` before the real count lands. Why it matters: the original incident was an MTP delete cancel followed
+  by an immediate second F8 — the device was still mid-teardown, the second op queued behind the 17 s tail, hit the 30 s
+  op timeout, and wedged the USB session.
 - **Scan preview reuse.** `TransferDialog` starts a scan preview on mount. If the user confirms before the scan
   finishes, the scan keeps running (`TransferDialog` sets `confirmed = true` and skips cancellation in `onDestroy`).
   `TransferProgressDialog` picks up listening to the same scan events via the `scanInProgress` prop.
@@ -473,7 +476,8 @@ rolling-back/settled, no conflict prompt up).
 - **Queue (send to background)** is FRONTEND-ONLY state, no backend command. `handleQueue` sets the local `backgrounded`
   flag, opens the queue window (`openQueueWindow`), shows a quiet `info` toast (group `transfer-queue`), and calls the
   `onQueue` prop so the parent (`dialog-state.svelte.ts` → `handleTransferQueue`) unmounts the modal **without
-  cancelling** the op. The op runs on, now managed in the queue window.
+  cancelling** the op. The op runs on, now managed in the queue window. The button reads "Background" with an empty
+  queue and "Queue" otherwise (`../queue/queue-backlog.ts`); the action is the same either way.
 - **`backgrounded` suppresses the onDestroy safety-net cancel.** Normally `onDestroy` cancels a non-settled op (hot-
   reload / window close must not leak silent background work). Backgrounding is the deliberate exception: the user chose
   to keep it running, so the cancel is gated on `!backgrounded`. This is the one path where the modal unmounts and the
