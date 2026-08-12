@@ -631,8 +631,8 @@ Checks by app and tech:
 - **Desktop / Rust**: rustfmt, clippy, rustdoc (`cargo doc --all-features --document-private-items` over every
   first-party member, with every doc lint in `rustdocDeniedLints` denied and any leftover warning failing the check too;
   the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
-  cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (CI-only), log-error-macro, sqlite-open-direct (every SQLite connection
-  opens through `crate::sqlite_util`, so the process-wide shared page cache is always installed before SQLite
+  cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (CI-only), log-error-macro, sqlite-open-direct (every SQLite
+  connection opens through `crate::sqlite_util`, so the process-wide shared page cache is always installed before SQLite
   initializes), error-string-match, lock-poison, test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in
   test code, where a condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
   `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on `std::env::temp_dir()`, where every
