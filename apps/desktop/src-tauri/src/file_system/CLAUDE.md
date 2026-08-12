@@ -4,55 +4,40 @@ Directory listing, file writing, sync status, volume management, and file watchi
 
 ## Module map
 
-- Submodules: `listing/`, `write_operations/`, `volume/`, `sync_status/` (cloud badges) — each has its own `CLAUDE.md`.
-- `watcher.rs` (FSEvents incremental listing updates), `staging.rs` (the two scratch-visibility settings and the
-  predicate listings filter on; the `StagingTemp` mint itself is `cmdr_fs::staging`, re-exported here),
-  `index_provider.rs` (the app's `VolumeProvider`, so the index never imports `VolumeManager`).
-- `backend_settings.rs` (the live per-backend knobs a storage backend reads, resolved through a table keyed by settings
-  namespace), `cloud_actions.rs` (iCloud offline/remove-download), `open_with.rs` (candidate apps + launch), `tags.rs` (macOS
-  Finder tags via `_kMDItemUserTags`).
+- Submodules with their own docs: `listing/`, `write_operations/`, `volume/`, `sync_status/` (cloud badges).
+- `watcher.rs` (FSEvents listing updates), `staging.rs` (scratch visibility; the `StagingTemp` mint itself is
+  `cmdr_fs::staging`), `index_provider.rs` (the app's `VolumeProvider`, so the index never imports `VolumeManager`),
+  `backend_settings.rs` (live per-backend knobs), `cloud_actions.rs`, `open_with.rs`, `tags.rs` (Finder tags).
 - `mod.rs` is a facade: it re-exports downward and bootstraps the volume registry (`init_volume_manager`), which is why
   it may know every backend.
 
 ## Gotchas
 
-- **The volume-manager singleton is `volume::manager::get_volume_manager()`, and ❌ never re-exported from here.** A
-  facade that both re-exports downward and hands out the accessor everything reaches for welds the whole subtree into
-  one cycle, and a per-backend crate can't import a facade at all. `volume/DETAILS.md` § "Key decisions".
-
-- **Transient scratch hides on the listing READ path, never in a watcher** (`staging.rs`): a watcher-side skip strands
-  an entry in the pane forever. ❌ Filter nowhere but `listing/operations.rs::visible_entries`. Cmdr's own
-  (`.cmdr-tmp-*`, minted via `StagingTemp`) hides by OWNERSHIP so a wedge's leftovers stay visible; other apps' (`.sb-`)
-  hides by NAME, having no ownership signal. `DETAILS.md` § "Hiding transient scratch".
-- **Tag writes (`tags.rs`) touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo`.** That blob carries
-  `kHasCustomIcon`; zeroing it destroys custom folder icons. Encode the **binary** plist (`to_writer_binary` — `plist`
-  defaults to XML). Pinned by `tags::write_tests::tagging_preserves_finder_info_custom_icon_flag`.
-- **Never use rayon (or any constrained-stack pool) for calls into macOS frameworks.** NSURL/FileProvider XPC
-  round-trips blow rayon's 2 MB worker stack and can block forever. Use pooled, hard-capped OS threads with 8 MB stacks
-  (`sync_status/pool.rs` is the reference); a per-call `std::thread::scope` is NOT enough. `DETAILS.md` § "Threading".
-- **Never `tokio::spawn` from a watcher OS thread** (notify-rs, git, SMB, MTP, archive): no reactor is running, so it
-  panics. Use `tauri::async_runtime::spawn`; FullRefresh dispatch funnels through `caching::spawn_full_refresh` for
-  exactly this reason. `DETAILS.md` § "Watcher threading".
-- **Arm a listing watch with `start_watching_detached`, ❌ never `start_watching`.** Arming waits on `fseventsd` and on
-  the previous listing's teardown, and the pane shows nothing until `listing-complete`, so an inline arm was p90 653 ms
-  of dead time. Keep all four rules that made it cheap: arm detached, drop the watch outside the manager lock, use
-  `NoCache`, and let a detached arm tear itself down if the listing ended. `DETAILS.md` § "Arming a listing watch is
-  detached".
-- **Watcher event paths must be rebased into the listing's path space** (`watcher.rs::rebase_event_path`). Raw
-  `path.parent() == dir_path` drops every event under `/tmp`, `/var`, `/etc` (firmlinks) and under a symlinked watch
-  root (Google Drive's `My Drive`). `DETAILS.md` § "Watcher path rebasing".
-- **A watch root that is itself created, removed, or renamed forces a full re-read** (`watcher.rs`), because macOS
-  reports a wholesale replacement (`git checkout`, `rsync --delete`, a build regenerating an output dir) as
-  Remove+Create on the ROOT plus one Create per NEW child, and never a remove for the old ones. ❌ Don't add
-  `Modify(Metadata(_))` to that trigger: every ordinary child change bumps the dir's mtime, so it would re-read on
-  everything. `DETAILS.md` § "Replacing a watch root".
-- **A watch on an OS-mounted network share is `WatchCoverage::ThisMachineOnly`, never `EveryWriter`** (`watcher.rs`
-  decides it once at arm time, so the oracle stays a pure in-memory read). FSEvents on `smbfs` is a local-VFS notifier:
-  it delivers this machine's writes through the mount and NOTHING another client does to the share. The pane still
-  updates from the user's own work, so ❌ don't "fix" it by refusing to arm the watch; what it must not do is let a
+- **Reach the volume-manager singleton at `volume::manager::get_volume_manager()`; ❌ never re-export it from here**: a
+  facade that also hands out the accessor welds the subtree into one cycle. `volume/DETAILS.md` § "Key decisions".
+- **Transient scratch hides on the listing READ path, nowhere but `listing/operations.rs::visible_entries`**: a
+  watcher-side skip strands an entry in the pane forever. Cmdr's own (`.cmdr-tmp-*`) hides by OWNERSHIP, other apps'
+  (`.sb-`) by NAME. § "Hiding transient scratch".
+- **Tag writes (`tags.rs`) touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo`** (that blob carries
+  `kHasCustomIcon`, so zeroing it destroys custom folder icons), and encode a **binary** plist (`plist` defaults to
+  XML).
+- **Never call macOS frameworks from rayon or any constrained-stack pool**: NSURL/FileProvider XPC round-trips blow the
+  2 MB worker stack and can block forever. Use pooled, hard-capped 8 MB OS threads (`sync_status/pool.rs`); a per-call
+  `std::thread::scope` is NOT enough. § "Threading".
+- **Watcher rules**, each with its own `DETAILS.md` § — read those before touching `watcher.rs`:
+  - ❌ Never `tokio::spawn` from a watcher OS thread (no reactor: it panics). Use `tauri::async_runtime::spawn`, and
+    `caching::spawn_full_refresh` for FullRefresh dispatch.
+  - Arm listing watches with `start_watching_detached`, ❌ never `start_watching` (an inline arm was p90 653 ms of dead
+    time), keeping all four rules that made it cheap.
+  - Rebase event paths (`rebase_event_path`), or firmlinks (`/tmp`, `/var`, `/etc`) and a symlinked watch root drop
+    every event.
+  - A created, removed, or renamed watch ROOT forces a full re-read; ❌ don't add `Modify(Metadata(_))` to that
+    trigger, since every child change bumps the dir's mtime.
+- **A watch on an OS-mounted network share is `WatchCoverage::ThisMachineOnly`, never `EveryWriter`**: FSEvents on
+  `smbfs` sees this machine's writes only. ❌ Don't refuse to arm the watch over that; what it must not do is let a
   delete walker or copy scan skip a read. `volume/DETAILS.md` § "Trait capability model".
-- **`cloud_actions.rs` is iCloud Drive only**, gated by `is_in_icloud_drive`. The cross-provider-looking
-  `NSFileProviderManager` methods are reserved for the app bundling the extension. Don't widen it.
+- **`cloud_actions.rs` is iCloud Drive only**, gated by `is_in_icloud_drive`; the cross-provider-looking
+  `NSFileProviderManager` methods need the bundled extension. Don't widen it.
 
-Open-with internals, cloud-actions rationale, and the full threading/watcher story: `DETAILS.md`. Read it
-before any non-trivial work here: editing, planning, reorganizing, or advising.
+Open-with internals, cloud-actions rationale, and the full threading/watcher story: `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

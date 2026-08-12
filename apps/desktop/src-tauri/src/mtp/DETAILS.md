@@ -167,6 +167,12 @@ Event loop (event_loop.rs)
 `MtpDisconnectReason` distinguishes explicit toggle-off from hotplug-loss in logs and UI. Re-enabling MTP triggers
 auto-connect, which re-suppresses ptpcamerad if devices are found.
 
+**The write-capability probe.** `probe_write_capability()` (`connection/mod.rs`) creates a hidden `.cmdr_write_probe`
+folder on each storage at connect time and deletes it again. Some cameras advertise write support in their device info
+and then reject every write with `StoreReadOnly`, so the declared capability can't be trusted; an actual create is the
+only reliable answer. Timeouts and non-fatal errors count as WRITABLE: a probe is a cheap hint, and refusing writes on
+a device that's merely slow would be the worse failure.
+
 **ptpcamerad suppression mechanics (macOS).** `macos_workaround.rs` suppresses with `launchctl disable` plus
 `pkill -9`, and restores with the matching enable. `restore_ptpcamerad_unconditionally()` is the disable-MTP path (it
 doesn't wait for a device to leave), and `ensure_ptpcamerad_enabled()` runs at startup so a crash mid-suppression
