@@ -72,11 +72,13 @@ test.beforeEach(async ({ tauriPage }) => {
   )
 })
 
-test.afterEach(() => {
-  restoreFixtureTree(getFixtureRoot())
-})
-
+// ⚠️ ONE hook, drain THEN restore. The tree restore deletes this spec's own
+// source dir, so a copy still reading it dies with `SourceNotFound` and RETAINS
+// that failure: a leaked toast plus a queue row that outlives the test. Two
+// hooks hide the order (Playwright runs same-suite `afterEach`s in declaration
+// order). `DETAILS.md` § "The fixture-tree leak guard".
 test.afterEach(async ({ tauriPage }) => {
+  // The dismiss sits inside the loop: an op can die while it's already spinning.
   await tauriPage.evaluate(`(async function() {
     try { await window.__TAURI_INTERNALS__.invoke('set_test_scan_preview_delay', { ms: null }); } catch (e) {}
     try {
@@ -84,13 +86,15 @@ test.afterEach(async ({ tauriPage }) => {
       var ids = ops.map(function(o) { return o.operationId; });
       if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
     } catch (e) {}
-    try { await window.__TAURI_INTERNALS__.invoke('dismiss_all_failed_operations'); } catch (e) {}
     for (var i = 0; i < 60; i++) {
+      try { await window.__TAURI_INTERNALS__.invoke('dismiss_all_failed_operations'); } catch (e) {}
       var remaining = await window.__TAURI_INTERNALS__.invoke('list_operations');
       if (!remaining || remaining.length === 0) break;
       await new Promise(function(r) { setTimeout(r, 100); });
     }
   })()`)
+
+  restoreFixtureTree(getFixtureRoot())
 })
 
 test.describe('Backgrounding a transfer that is still counting', () => {

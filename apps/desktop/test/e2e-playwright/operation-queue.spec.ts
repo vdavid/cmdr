@@ -164,13 +164,17 @@ test.beforeEach(async ({ tauriPage }) => {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: ${String(THROTTLE_MS)} })`)
 })
 
-// Putting the shared `left/` + `right/` tree back is this spec's job: the
-// post-test leak guard fails whoever leaves it dirty, and the restore is
-// surgical, so it only rewrites what actually drifted.
-test.afterEach(() => {
-  restoreFixtureTree(getFixtureRoot())
-})
-
+// ⚠️ ONE hook, and the order inside it is load-bearing: drain the operations
+// FIRST, put the fixture tree back SECOND. Every test here leaves a copy in
+// flight (24 files at 250 ms each is ~6 s of work the test never waits out), and
+// the tree restore DELETES `left/queue-src-a` + `left/queue-src-b` — they aren't
+// in the pristine manifest. Restore an op out from under its own source and the
+// copy dies with `SourceNotFound`, which is a RETAINED failure: it raises the
+// "no longer exists" toast the leak guard then reports, and its queue row
+// outlives the test and fails the NEXT one's "exactly one running row" poll.
+// Split across two `test.afterEach` hooks this ordering is invisible (Playwright
+// runs same-suite hooks in DECLARATION order), and the spec silently depended on
+// the cancel beating the copy's next per-file read by ~30 ms.
 test.afterEach(async ({ tauriPage }) => {
   // Clear the throttle FIRST so any in-flight op winds down fast, cancel
   // everything, then WAIT for the operation-manager lane to actually empty.
@@ -181,8 +185,11 @@ test.afterEach(async ({ tauriPage }) => {
   // faster macOS lane). The drain loop runs in the webview so it doesn't depend
   // on `evaluate` returning an async value; Node awaits the IIFE either way.
   // A retained failure never leaves the snapshot on its own (that's the point),
-  // so it's dismissed explicitly here — otherwise the drain loop below would
-  // spin out its whole budget waiting for a row that is designed to stay.
+  // so it's dismissed explicitly here — otherwise the drain loop would spin out
+  // its whole budget waiting for a row that is designed to stay. The dismiss
+  // sits INSIDE the loop, not once before it: an op that dies while the loop is
+  // already spinning retains a fresh failure, and a one-shot dismiss ahead of it
+  // would miss exactly that one.
   await tauriPage.evaluate(`(async function() {
     try { await window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null }); } catch (e) {}
     try {
@@ -190,13 +197,18 @@ test.afterEach(async ({ tauriPage }) => {
       var ids = ops.map(function(o) { return o.operationId; });
       if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
     } catch (e) {}
-    try { await window.__TAURI_INTERNALS__.invoke('dismiss_all_failed_operations'); } catch (e) {}
     for (var i = 0; i < 60; i++) {
+      try { await window.__TAURI_INTERNALS__.invoke('dismiss_all_failed_operations'); } catch (e) {}
       var remaining = await window.__TAURI_INTERNALS__.invoke('list_operations');
       if (!remaining || remaining.length === 0) break;
       await new Promise(function(r) { setTimeout(r, 100); });
     }
   })()`)
+
+  // Only now, with nothing reading `left/` any more, put the shared tree back:
+  // the post-test leak guard fails whoever leaves it dirty, and the restore is
+  // surgical, so it only rewrites what actually drifted.
+  restoreFixtureTree(getFixtureRoot())
 })
 
 test.describe('Operation queue window', () => {

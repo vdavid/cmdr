@@ -507,6 +507,16 @@ test.afterEach(() => {
 `restoreFixtureTree` is surgical: it rewrites only the entries that drifted, so an untouched `sample.zip` keeps its
 inode and an archive spec's watch on it survives. On a clean tree it changes nothing at all.
 
+**Ordering, when the spec also leaves an operation in flight.** The restore DELETES a spec-made source dir (it isn't in
+the pristine manifest), so a copy still reading that dir dies with `SourceNotFound`. That's not a quiet death: the
+backend RETAINS the failure, the main window raises the "no longer exists" toast the leak guard reports, and the
+retained queue row outlives the test and fails the next one's row assertions. So drain first, restore second, in a
+SINGLE `afterEach` — Playwright runs same-suite `afterEach` hooks in DECLARATION order (`_runEachHooksForSuites`
+reverses only across nesting levels), so two hooks make the order invisible to a reader and easy to flip by accident.
+`operation-queue.spec.ts` is the worked example: clear the test throttle, `cancel_operations` everything,
+`dismiss_all_failed_operations` inside the drain loop (an op can die while the loop is already spinning), poll
+`list_operations` empty, and only then `restoreFixtureTree`.
+
 **What the guard checks.** `e2e-shared/fixture-manifest.ts` compares the tree on disk against the layout `fixtures.ts`
 declares: path, kind, size, and a content hash for everything under 512 KB. That catches copies, moves, renames,
 deletes, same-length overwrites, and in-place archive edits. Bulk `.dat` files are checked by size only, which is what

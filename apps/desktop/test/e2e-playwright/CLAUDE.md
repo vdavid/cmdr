@@ -25,10 +25,11 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, never a hardcoded �
   `pane.switch` TOGGLE at it, and never steer by `cmdr://state`'s `focused:` — that's a backend mirror the harness's own
   `mcp-*` emits desync, so a toggle on a stale read lands the action in the wrong pane. `DETAILS.md` § "Claiming a
   pane's focus inside a spec".
-- **One global `afterEach` guards TWO leaks: UI artifacts, and a dirty `left/` + `right/`.** A spec that mutates the
-  shared tree restores it (`restoreFixtureTree(getFixtureRoot())` in its own `afterEach`), or the guard fails it by name
-  with a path-level diff. ❌ Don't relax it: it's the only thing standing between a mutating spec and a downstream
-  victim dying inside `ensureAppReady`.
+- **One global `afterEach` guards TWO leaks: UI artifacts, and a dirty `left/` + `right/`.** A mutating spec restores
+  the tree (`restoreFixtureTree(getFixtureRoot())`), or the guard names it with a path-level diff. ❌ Don't relax it:
+  it's all that stands between a mutating spec and a victim dying inside `ensureAppReady`. **Still holding an op? Drain
+  it BEFORE the restore, in ONE hook** (`afterEach`s run in DECLARATION order): a restore under a live op deletes its
+  source, and the retained `SourceNotFound` poisons the next test.
 - **"Rows appeared" doesn't prove a WALK**: the instance indexes its fixture tree at launch, so a spec needing a real
   walk takes the index away first (`search-walk-ground.ts`).
 - **Two fakes**: the clipboard is mocked (a Rust `Mutex`, not `NSPasteboard`), and `tauri-plugin-store` reads your REAL

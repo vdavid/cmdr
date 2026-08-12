@@ -60,17 +60,16 @@ test.beforeEach(async ({ tauriPage }) => {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: ${String(THROTTLE_MS)} })`)
 })
 
-// Putting the shared `left/` + `right/` tree back is this spec's job: the
-// post-test leak guard fails whoever leaves it dirty, and the restore is
-// surgical, so it only rewrites what actually drifted.
-test.afterEach(() => {
-  restoreFixtureTree(getFixtureRoot())
-})
-
+// ⚠️ ONE hook, drain THEN restore. The tree restore deletes this spec's own
+// source dir, so a copy still reading it dies with `SourceNotFound` and RETAINS
+// that failure: a leaked toast plus a queue row that outlives the test. Two
+// hooks hide the order (Playwright runs same-suite `afterEach`s in declaration
+// order). `../e2e-playwright/DETAILS.md` § "The fixture-tree leak guard".
 test.afterEach(async ({ tauriPage }) => {
   // Clear the throttle FIRST so any in-flight op winds down fast, cancel
   // everything, then WAIT for the lane to empty (cancel returns on REQUEST, not
   // on wind-down; a still-cancelling op leaves the lane busy for the next test).
+  // The dismiss sits inside the loop: an op can die while it's already spinning.
   await tauriPage.evaluate(`(async function() {
     try { await window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null }); } catch (e) {}
     try {
@@ -79,11 +78,17 @@ test.afterEach(async ({ tauriPage }) => {
       if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
     } catch (e) {}
     for (var i = 0; i < 60; i++) {
+      try { await window.__TAURI_INTERNALS__.invoke('dismiss_all_failed_operations'); } catch (e) {}
       var remaining = await window.__TAURI_INTERNALS__.invoke('list_operations');
       if (!remaining || remaining.length === 0) break;
       await new Promise(function(r) { setTimeout(r, 100); });
     }
   })()`)
+
+  // Only now, with nothing reading `left/` any more: the post-test leak guard
+  // fails whoever leaves the tree dirty, and the restore is surgical, so it only
+  // rewrites what actually drifted.
+  restoreFixtureTree(getFixtureRoot())
 })
 
 test.describe('MCP operation queue', () => {
