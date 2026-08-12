@@ -1,210 +1,120 @@
 # Error handling
 
-How Cmdr turns raw OS errors into warm, actionable messages. Read this before adding new error states, providers, or
-modifying error UI.
+How Cmdr turns a raw OS failure into a warm, actionable message. Read this before adding an error state, a provider, or
+error UI. It's the map: each layer's mechanics live in the `C+D.md` next to its code, linked below.
 
-## Architecture
+## The split: Rust classifies, the frontend words
 
-Two-layer pipeline in Rust, thin render layer in Svelte:
-
-```
-VolumeError (with errno)
-  → friendly_error_from_volume_error()  → FriendlyError { category, title, explanation, suggestion, rawDetail }
-  → enrich_with_provider()              → overwrites suggestion with provider-specific advice
-  → Tauri emit("listing-error")         → frontend receives ready-to-render struct
-  → ErrorPane.svelte                    → renders markdown, category icon, retry button
-```
-
-All classification and message authoring happens in Rust (`crates/cmdr-fs/src/volume/friendly_error/`). The frontend
-renders what it receives and never does OS-specific logic.
-
-## Data model
-
-```rust
-pub struct FriendlyError {
-    pub category: ErrorCategory,  // Transient, NeedsAction, or Serious
-    pub title: String,            // Short heading, sentence case
-    pub explanation: String,      // Markdown: what happened
-    pub suggestion: String,       // Markdown: what to do
-    pub raw_detail: String,       // For "Technical details" disclosure (for example, "ETIMEDOUT (os error 60)")
-    pub retry_hint: bool,         // Shows "Try again" button when true
-}
-```
-
-**Categories** pick the icon; they do NOT gate the buttons:
-
-| Category      | Icon                      | Meaning                                              |
-| ------------- | ------------------------- | ---------------------------------------------------- |
-| `Transient`   | Warning triangle (yellow) | Retry might work (timeouts, temp glitches)           |
-| `NeedsAction` | None                      | User must do something (permissions, full disk)      |
-| `Serious`     | Alert circle (red)        | Something is genuinely broken (hardware, corruption) |
-
-`retry_hint` alone decides the "Try again" button, and it's deliberately set under all three categories. The full action
-row (which buttons render, and why each gate exists) is documented once, in
-`apps/desktop/src/lib/file-explorer/pane/DETAILS.md` § The error screen's ways out.
-
-## Error sources
-
-### Layer 1: `VolumeError` variants
-
-Each `VolumeError` variant maps to a `FriendlyError` in `friendly_error_from_volume_error()`:
-
-| Variant                | Category    | Title                       | Retry hint |
-| ---------------------- | ----------- | --------------------------- | ---------- |
-| `NotFound`             | NeedsAction | "Path not found"            | No         |
-| `PermissionDenied`     | NeedsAction | "No permission"             | No         |
-| `AlreadyExists`        | NeedsAction | "Already exists"            | No         |
-| `NotSupported`         | NeedsAction | "Not supported"             | No         |
-| `DeviceDisconnected`   | NeedsAction | "Device disconnected"       | No         |
-| `ReadOnly`             | NeedsAction | "Read-only"                 | No         |
-| `StorageFull`          | NeedsAction | "Disk is full"              | No         |
-| `ConnectionTimeout`    | Transient   | "Connection timed out"      | Yes        |
-| `Cancelled`            | Transient   | "Cancelled"                 | Yes        |
-| `IoError` (with errno) | Varies      | Varies                      | Varies     |
-| `IoError` (no errno)   | Serious     | "Couldn't read this folder" | Yes        |
-
-### Layer 2: macOS errno codes
-
-`IoError` variants with a `raw_os_error` are matched against 37+ macOS errno codes in `friendly_error_from_errno()`.
-Examples:
-
-| Errno | Name         | Category    | Title                     |
-| ----- | ------------ | ----------- | ------------------------- |
-| 1     | EPERM        | NeedsAction | "Not permitted"           |
-| 2     | ENOENT       | NeedsAction | "Path not found"          |
-| 4     | EINTR        | Transient   | "Interrupted"             |
-| 12    | ENOMEM       | Transient   | "Not enough memory"       |
-| 13    | EACCES       | NeedsAction | "No permission"           |
-| 16    | EBUSY        | Transient   | "Resource busy"           |
-| 17    | EEXIST       | NeedsAction | "Already exists"          |
-| 28    | ENOSPC       | NeedsAction | "Disk is full"            |
-| 30    | EROFS        | NeedsAction | "Read-only volume"        |
-| 35    | EAGAIN       | Transient   | "Temporarily unavailable" |
-| 50    | ENETDOWN     | Transient   | "Network is down"         |
-| 54    | ECONNRESET   | Transient   | "Connection reset"        |
-| 60    | ETIMEDOUT    | Transient   | "Connection timed out"    |
-| 61    | ECONNREFUSED | NeedsAction | "Connection refused"      |
-| 62    | ELOOP        | NeedsAction | "Symlink loop"            |
-| 63    | ENAMETOOLONG | NeedsAction | "Name too long"           |
-| 69    | EDQUOT       | NeedsAction | "Quota exceeded"          |
-| 80    | EAUTH        | NeedsAction | "Authentication required" |
-
-Unrecognized errno codes fall through to a generic "Couldn't read this folder" message (Serious category, retry
-enabled).
-
-See the full list in `friendly_error/errno.rs` (search for `fn listing_error_from_errno`).
-
-### Layer 3: provider enrichment
-
-After the base error is built, `enrich_with_provider()` detects which cloud/mount provider manages the path and
-overwrites the `suggestion` field with provider-specific advice.
-
-**Detection strategies:**
-
-- **`~/Library/CloudStorage/<Prefix>*`**: Dropbox, GoogleDrive, OneDrive, Box, pCloud, Nextcloud, SynologyDrive,
-  Tresorit, ProtonDrive, Sync, Egnyte, MacDroid, plus generic fallback
-- **`~/Library/Mobile Documents/`**: iCloud Drive
-- **`/Volumes/pCloudDrive`**: pCloud (FUSE)
-- **`/Volumes/veracrypt*`**: VeraCrypt
-- **`~/.CMVolumes/`**: CloudMounter
-- **`statfs` `f_fstypename`**: macFUSE, SSHFS, Cryptomator, rclone (`macfuse`/`osxfuse`), pCloud (`pcloudfs`)
-
-The `statfs` check runs only at error time, so the syscall cost is negligible.
-
-Each provider has suggestions per category. For example, MacDroid:
-
-- **Transient**: "Unlock your phone and make sure file transfer is enabled in MacDroid"
-- **NeedsAction**: "Open **MacDroid** and check that your phone is connected"
-- **Serious**: "There's a problem with **MacDroid** or your device"
-
-## Frontend flow
-
-1. Backend emits `listing-error` Tauri event with `{ listingId, message, friendly? }`
-2. `FilePane.svelte` checks `listingId` matches current load generation (discards stale events)
-3. MTP volume? Short-circuit to `MtpConnectionView` (MTP has its own error UX)
-4. Path gone? Auto-navigate to nearest valid parent (not an error)
-5. Path exists but listing failed? Set `friendlyError` state, render `ErrorPane`
-
-`ErrorPane.svelte` renders the pre-baked `FriendlyError` struct:
-
-- Title with category-based icon
-- Folder path in secondary text
-- Explanation and suggestion as markdown (via `snarkdown`)
-- The action row: "Try again" whenever `retry_hint` is set (tracks retry count and timestamps), "Open System Settings"
-  for permission-denied on macOS, "Go back" when the tab can, and "Go to home folder" always
-- Collapsible "Technical details" with raw errno
-
-## How to add a new error message
-
-1. Add the match arm in `friendly_error_from_volume_error` (for `VolumeError` variants) or `friendly_error_from_errno`
-   (for new errno codes)
-2. Pick the right `ErrorCategory` (see the category table above)
-3. Write the message following the [writing rules](#writing-rules)
-4. Add a unit test asserting the category and that the text follows the style rules
-5. Run the existing `error_messages_never_contain_error_or_failed` test to catch violations
-
-## How to add a new provider
-
-1. Add a variant to the `Provider` enum with `display_name()` and `app_name()`
-2. Add path detection in `detect_provider` (CloudStorage prefix, specific path, or `statfs` type)
-3. Write provider-specific suggestions in `provider_suggestion` for each `ErrorCategory`
-4. Add a unit test for path detection and suggestion content
-5. Update `volume/CLAUDE.md` provider table to keep the two lists in sync
-
-## Writing rules
-
-These are enforced by tests and code review.
-
-- **Never use "error" or "failed"** in titles, explanations, or suggestions. Say "Couldn't read" not "Read error". The
-  `error_messages_never_contain_error_or_failed` test catches this automatically.
-- **Active voice, contractions**: "Cmdr couldn't..." not "The operation was unable to..."
-- **No trivializing**: no "just", "simply", "easy", "all you have to do"
-- **No permissive language**: "Check your connection" not "You might want to check..."
-- **Direct and warm**: "Here's what to try:" not "Please attempt the following remediation steps:"
-- **No em dashes**: use parentheses, commas, or new sentences
-- **Sentence case in titles**: "Connection timed out" not "Connection Timed Out"
-- **Bold key terms** with `**` only when it helps scanning (provider names, app names)
-- **Platform-native terms**: "System Settings" on macOS, "Finder", "Trash"
-- **Keep it short**: max two sentences for explanation, bullets for suggestions
-
-**Good:**
+One idea carries the whole design. **The backend ships a typed, word-free classification; the frontend owns 100% of the
+prose.**
 
 ```
-title: "Connection timed out"
+raw failure (VolumeError, errno, git, empty root)
+  → Rust: listing_error_from_volume_error()   → a semantic reason + typed params
+  → Rust: enrich_with_provider()              → sets the detected provider (never prose)
+  → emit("listing-error")                     → ListingError { category, reason, provider, actionKind, retryHint, rawDetail }
+  → FE: renderListingError()                  → picks the message factory, applies the provider override
+  → ErrorPane.svelte                          → icon, markdown, action row, technical details
+```
+
+Why the split: the words have to be translated (ten locales), and translation belongs to the catalog pipeline, not to
+Rust string literals. It also keeps classification testable without asserting on prose.
+
+The consequence that bites: **reason, provider, and git-kind names are an IPC contract.** Rename a `ListingErrorReason`
+variant, a `Provider` variant, or a `FriendlyGitErrorKind` on one side only and the parity test fails (or, worse, it
+mis-renders at runtime). Change both sides in the same commit.
+
+## Two error paths
+
+- **Listing errors** (a pane can't show a folder): the pipeline above, ending in `ErrorPane`.
+- **Write errors** (a copy, move, delete, or compress failed): the backend emits `write-error` carrying a typed
+  `WriteOperationError`, and the frontend renders it through `file-operations/transfer/transfer-error-messages.ts` into
+  `TransferErrorDialog` / `FallbackErrorContent`. Same principle, separate factories; they share the
+  `FriendlyErrorMessage` shape so the two can converge later.
+
+## Where each piece lives
+
+- **Rust classification** (errno → reason, provider detection, category / retry / action):
+  `crates/cmdr-fs/src/volume/friendly_error/CLAUDE.md`. Its `DETAILS.md` holds the provider-detection strategies, the
+  permission-denied three-way, and the recipe for a new reason.
+- **Frontend copy** (the factories, the catalog, the escaping boundary):
+  `apps/desktop/src/lib/error-messages/CLAUDE.md`.
+- **The English strings themselves**: `apps/desktop/src/lib/intl/messages/en/errors.json`. Editing copy means editing
+  the catalog and running `pnpm intl:keys`, never touching the `.ts` factories.
+- **The error screen's buttons** (which way out renders, and why each gate exists):
+  `apps/desktop/src/lib/file-explorer/pane/DETAILS.md` § The error screen's ways out.
+- **Emitting the event**: `apps/desktop/src-tauri/src/file_system/listing/streaming.rs`.
+
+## Cross-cutting rules
+
+These sit between the layers, so neither side's doc owns them alone.
+
+- **Never classify by string-matching a message.** Switch on the typed reason, the errno, or `actionKind`. This is a
+  project hard rule (`AGENTS.md` § Hard rules), enforced by `error-string-match` and `cmdr/no-error-string-match`.
+- **`category` picks the icon and severity color; it does NOT gate the buttons.** `retryHint` alone decides "Try again",
+  and it's deliberately set under all three categories. `actionKind` alone decides "Open System Settings".
+- **Every interpolated runtime value passes through `esc(...)`.** The composed explanation and suggestion are
+  `{@html}`-injected through snarkdown, so a path, an OS message, or a device name that skips escaping is an XSS hole.
+  Template literals are the only trusted markdown.
+- **`rawDetail` is plain text, never markdown**: it renders verbatim in the technical-details disclosure.
+
+## Writing rules for error copy
+
+Enforced by `friendly-error-style.test.ts` over every reason, every provider × category, and every git kind. General
+voice rules live in `docs/style-guide.md`; these are the error-specific ones.
+
+- **Never the words "error" or "failed"** in a title, explanation, or suggestion. "Couldn't read this folder", not "Read
+  error".
+- **Active voice with contractions**: "Cmdr couldn't reach the server", not "The operation was unable to complete".
+- **No trivializing**: no "just", "simply", "easy", "all you have to do".
+- **No permissive hedging**: "Check your connection", not "You might want to check your connection".
+- **Sentence case titles**: "Connection timed out", not "Connection Timed Out".
+- **Platform-native terms**: "System Settings", "Finder", "Trash".
+- **Bold key terms** with `**` only where it helps scanning (provider and app names).
+- **Short**: at most two sentences of explanation; suggestions as bullets.
+
+Good:
+
+```
+title:       "Connection timed out"
 explanation: "Cmdr tried to read this folder but the connection didn't respond in time."
-suggestion: "Here's what to try:\n- Check that the device or server is reachable\n- ..."
+suggestion:  "Here's what to try:\n- Check that the device or server is reachable\n- ..."
 ```
 
-**Bad** (every rule violated):
+Bad, every rule broken:
 
 ```
-title: "I/O Error: Operation Timed Out"       ← "Error", Title Case
-explanation: "An error occurred while the system attempted to access the directory."  ← passive, "error"
-suggestion: "You may want to try simply reconnecting the device."  ← permissive, trivializing
+title:       "I/O Error: Operation Timed Out"                                        ← "Error", Title Case
+explanation: "An error occurred while the system attempted to access the directory." ← passive, "error"
+suggestion:  "You may want to try simply reconnecting the device."                   ← hedging, trivializing
 ```
+
+## Adding an error message or a provider
+
+Both sides change together, in one commit. The per-side recipes are canonical in the two `CLAUDE.md`s:
+
+1. **Rust**: add the `ListingErrorReason` variant with its typed params, map it in `errno.rs` / `volume_error.rs` /
+   `kinds.rs` picking category, retry hint, and action kind, and add a typed-mapping test.
+2. **Frontend**: add the `errors.<reason>.{title,explanation,suggestion}` keys to `errors.json` with `@key`
+   descriptions, run `pnpm intl:keys`, translate into every locale
+   ([guide](i18n-translation.md)), extend the factory union, and add the reason to the STYLE
+   matrix.
+
+A new provider additionally needs its detection arm in `detect_provider`, its suggestions in
+`provider-error-messages.ts`, and a row in the `volumes/CLAUDE.md` provider table.
+
+Note for a new reason: it gets **no** golden-fixture entry. The frozen fixture pins pre-existing output, so there's
+nothing for a new reason to be pinned against.
 
 ## Testing
 
-- **Unit tests**: `friendly_error/` has tests for category assignment, writing rule enforcement, and provider detection
-- **E2E tests**: `test/e2e-playwright/error-pane.spec.ts` injects errno codes via `inject_listing_error` (feature-gated
-  behind `playwright-e2e`) and verifies the full render pipeline:
-  - ETIMEDOUT: title, markdown rendering, "Try again" on both platforms (both classifications set `retry_hint`), and a
-    retry that clears the error
-  - EACCES: title, plus the way out each platform has earned. macOS knows it's a permission problem
-    (`retry_hint: false` + `open_privacy_settings`), so it offers System Settings and no retry; Linux has no errno
-    mapping yet and falls back to `CouldntReadUnknown` (`retry_hint: true`), so it offers the retry
-  - Accessibility: `role="alert"`, `<h2>` heading
-- **Debug preview**: In dev builds, the debug window has an "Error pane preview" that calls `preview_friendly_error` to
-  render any errno or VolumeError variant on either pane. Use this to visually verify new messages.
-
-## Key files
-
-- **`crates/cmdr-fs/src/volume/friendly_error/`**: All error classification, messages, and provider detection
-- **`crates/cmdr-fs/src/volume/types.rs`**: `VolumeError` enum definition
-- **`src-tauri/src/file_system/listing/streaming.rs`**: Emits `listing-error` events
-- **`src-tauri/src/commands/file_system/e2e_support.rs`**: `inject_listing_error` (E2E) and `preview_friendly_error`
-  (debug)
-- **`src/lib/file-explorer/pane/ErrorPane.svelte`**: Renders the error pane UI
-- **`src/lib/file-explorer/pane/error-pane-utils.ts`**: Markdown rendering helper
-- **`src/lib/file-explorer/types.ts`**: `FriendlyError` and `ListingErrorEvent` TypeScript types
-- **`test/e2e-playwright/error-pane.spec.ts`**: E2E tests for error pane
+- **Rust**: typed-mapping tests in `friendly_error/tests.rs` drive the public entry points, so they cover every sibling
+  module at once.
+- **Frontend parity**: `friendly-error-parity.test.ts` asserts the factories reproduce
+  `__fixtures__/friendly_error_golden.json` byte-for-byte. If it fails, the copy drifted: fix the factory, don't
+  regenerate the fixture.
+- **Frontend style**: `friendly-error-style.test.ts` enforces the writing rules above.
+- **E2E**: `apps/desktop/test/e2e-playwright/error-pane.spec.ts` injects errno codes through `inject_listing_error`
+  (feature-gated behind `playwright-e2e`) and checks the rendered pane, including the per-platform action row.
+- **Debug preview**: dev builds carry an "Error pane preview" panel that calls `preview_friendly_error` to render any
+  errno or `VolumeError` variant on either pane. Use it to eyeball new copy.

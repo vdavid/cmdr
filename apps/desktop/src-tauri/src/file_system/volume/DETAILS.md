@@ -181,7 +181,7 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 
 - [ ] **Call every `cmdr_fs::volume::conformance` assertion your backend can run.** These are the promises that only a comment would otherwise hold, each one load-bearing for data safety: `delete` never recurses, `rename(force = false)` refuses an existing destination, `create_file` refuses rather than truncates, `create_directory_all` reports a pre-existing leaf as `AlreadyExisted`. Every existing backend calls the ones it implements, and skipping yours is how a backend claims a contract by implementing the trait and breaks it where nobody looks (MTP's `delete` did exactly that, for years). What each one is for: `crates/cmdr-fs/DETAILS.md` § "The shared assertions in `volume::conformance`".
 - [ ] Add integration tests (real fixtures if possible; see the Docker SMB containers for inspiration).
-- [ ] Verify that `FriendlyError` messages come out well for your backend's common failure modes. Test the `error_messages_never_contain_error_or_failed` rule: it's enforced by existing unit tests.
+- [ ] Verify your backend's common failure modes classify well: each one should reach a `ListingErrorReason` that words up usefully, not the generic I/O fallback. The Rust side ships no prose, so check the reason in `friendly_error/tests.rs` and the rendered copy through the debug window's error-pane preview. `docs/guides/error-handling.md`.
 - [ ] Stress-test concurrent reads and writes (the `stress_tests_*` modules in indexing are the reference pattern).
 
 ## Capability matrix
