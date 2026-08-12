@@ -22,6 +22,7 @@ within one bundle but not across bundles. The builder mints a fresh 16-byte rand
 | `url_userinfo` | `scheme://user[:pass]@host/...` | `scheme://<userinfo>@host/...` (host kept) |
 | `bare_userinfo` | `//user[:pass]@host/...` (no scheme) | `//<userinfo>@host/...` (host kept) |
 | `email` | `local@domain.tld` | `<email>` |
+| `account` | `user=`/`username=`/`username: ` fields | `user=<user>` (wrapper kept, `None` untouched) |
 | `mdns` | `<label>.local` | `<host>.local` |
 | `ipv4` | dotted-quad, valid octet ranges | `<ipv4>` |
 | `ipv6` | full + compact forms (`::1`, `fe80::1`) | `<ipv6>` |
@@ -38,6 +39,12 @@ within one bundle but not across bundles. The builder mints a fresh 16-byte rand
   `notes.md` → `<file>.md` but `Application Support` → `<dir>`. Trade-off: an extensionless file (`id_rsa`, `README`,
   `Makefile`) is mislabeled `<dir>`. Accepted: Cmdr logs are dominated by directory listings, so `<dir>` reads more
   accurately on real triage data.
+- **Account names go, the field shape stays.** `account` matches a key of exactly `user` / `username` (so
+  `max_users=12`, `parent_user=1`, and `user_count=7` are untouched) followed by `=` or `: ` plus a space (which keeps
+  `foo::user::bar` out). The rewriter keeps the `Some("…")` / `"…"` wrapper and passes `None` through verbatim: "was
+  there a username at all, and where did it come from" is the question these SMB lines exist to answer. Share names are
+  deliberately NOT redacted (low sensitivity, high triage value); hosts are covered by `mdns` / `ipv4` / `ipv6`, so a
+  bare NetBIOS name like `server=NASPOLYA` still ships.
 - **MTP owner redacted, model kept.** `mtp_owner` requires a capitalized possessive AND a known model word
   (`iPhone | iPad | Pixel | Galaxy | OnePlus | ...`) right after `'s `, leaving contractions (`it's a Pixel`) and module
   paths untouched. Bare model names (`Pixel 8 Pro`) are NOT redacted (not identifying, useful diagnostics).

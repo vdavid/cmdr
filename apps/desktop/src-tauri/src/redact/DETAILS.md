@@ -17,6 +17,20 @@ diagnostic context. The pattern requires both a capitalized possessive AND a mod
 English contractions (`it's a Pixel`) and module paths (`cmdr_lib::mtp::device`) untouched. `That's Pixel 8 Pro` does
 match, accepted as an over-redaction (rare phrasing without an article between `'s` and the model word).
 
+## Decision: account names redacted, share names kept
+
+An SMB login has three parts in our logs, and they don't carry the same weight. The **account name** is a real
+identifier, as personal as the email pattern, and it appeared verbatim in three places (`commands/network.rs` twice,
+`network/smb_connection.rs` once), so `account` collapses it to `<user>`. The **share name** appears in ~40 debug lines
+and is what makes a bundle readable ("which share was this?"); a share is usually a generic label (`media`, `public`,
+`backups`), so it ships as-is. **Hosts** were already handled for the shapes that identify a person or a network
+(`mdns`, `ipv4`, `ipv6`, `smb_uri`); a bare NetBIOS name (`server=NASPOLYA`) still ships, which is the known remaining
+gap here.
+
+`None` passes through because it isn't a name, and the difference between "no username in the mount info" and "a
+username we then looked up in the Keychain" is exactly what a triager reads these lines for. That's why this can't be a
+blanket `user=\S+` rewrite.
+
 ## How to add a new pattern
 
 1. Add a new alternative inside `redactor_regex()` with a unique `(?P<group_name>...)` and write a corresponding

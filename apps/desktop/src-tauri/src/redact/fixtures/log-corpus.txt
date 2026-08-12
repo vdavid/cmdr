@@ -131,6 +131,11 @@
 23:00:00.023 INFO  mtp::device  Found Charlie's iPad Pro
 23:00:00.024 INFO  mtp::device  Eric's OnePlus 12 ready
 23:00:00.025 INFO  mtp::device  bare model name Pixel 8 Pro is generic, keep as-is
+23:00:00.026 INFO  commands::network  Upgrading volume smb-2 to SmbVolume: server=homer.local, share=media, user=Some("david")
+23:00:00.027 INFO  commands::network  Found Keychain credentials for user=david
+23:00:00.028 INFO  network::smb_connection  try_list_shares_authenticated: addr=192.168.1.10:445, user=admin
+23:00:00.029 INFO  commands::network  Upgrading volume smb-3 to SmbVolume: server=homer.local, share=public, user=None
+23:00:00.030 INFO  network::smb_connection  SmbCredentials { username: "david", share: "media" } with max_users=12
 00:00:00.000 INFO  empty
 00:00:00.001 INFO  punct  Path: /Users/foo/Documents/x.pdf, then more text
 00:00:00.002 INFO  punct  Path: /Users/foo/Documents/x.pdf; then more text

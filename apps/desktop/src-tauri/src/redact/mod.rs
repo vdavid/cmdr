@@ -144,6 +144,24 @@ fn redactor_regex() -> &'static Regex {
                                   (?P<bare_host_rest>[^\s"'<>|`]*)
             )
             | (?P<email>          [A-Za-z0-9][A-Za-z0-9._%+-]* @ [A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,} )
+            # Account name in a `key=value` / `key: value` log field. Our SMB paths log the
+            # account someone signs in to a share with (`user=david`, `user=Some("david")`,
+            # `username: "david"` in a debug struct); nothing else redacts it, and an account
+            # name is as identifying as the email pattern above.
+            #
+            # The key must be exactly `user` / `username`, so `max_users=12` and `user_count=7`
+            # don't match (`\b` can't split `parent_user` either: `_` is a word char). The `:`
+            # form requires a real space after the colon, which is what keeps a module path
+            # (`foo::user::bar`) out.
+            | (?P<account>
+                \b (?P<account_key> [Uu]ser (?: [Nn]ame )? )
+                (?P<account_sep> = | : \x20+ )
+                (?P<account_value>
+                    Some\( " [^"]* " \)
+                  | " [^"]* "
+                  | [^\s,;"'()}]+
+                )
+            )
             | (?P<mdns>           [A-Za-z0-9][A-Za-z0-9-]{0,62} \. local\b )
             | (?P<ipv6>
                 (?:
@@ -235,6 +253,14 @@ fn dispatch(caps: &Captures<'_>, salt: Option<&[u8]>) -> String {
     if caps.name("email").is_some() {
         return "<email>".to_string();
     }
+    if let Some(m) = caps.name("account") {
+        return redact_account(
+            caps.name("account_key").map(|k| k.as_str()).unwrap_or("user"),
+            caps.name("account_sep").map(|s| s.as_str()).unwrap_or("="),
+            caps.name("account_value").map(|v| v.as_str()).unwrap_or(""),
+            m.as_str(),
+        );
+    }
     if caps.name("mdns").is_some() {
         return "<host>.local".to_string();
     }
@@ -249,6 +275,25 @@ fn dispatch(caps: &Captures<'_>, salt: Option<&[u8]>) -> String {
     }
     // Shouldn't happen: regex matched but no named group. Return verbatim to be safe.
     caps.get(0).map(|m| m.as_str().to_string()).unwrap_or_default()
+}
+
+/// Replace an account name with `<user>`, keeping the field's shape so the line still reads.
+///
+/// `Some(...)` and the quotes stay because they carry the answer to the question a triager
+/// asks of these lines ("did we have a username at all, and did it come from the mount info
+/// or the Keychain?"). `None` is not a name and passes through verbatim, which is the whole
+/// reason this can't be a blanket `user=\S+` → `<user>` rewrite.
+fn redact_account(key: &str, separator: &str, value: &str, whole: &str) -> String {
+    if value == "None" {
+        return whole.to_string();
+    }
+    if value.starts_with("Some(\"") && value.ends_with("\")") {
+        return format!("{key}{separator}Some(\"<user>\")");
+    }
+    if value.starts_with('"') && value.ends_with('"') && value.len() >= 2 {
+        return format!("{key}{separator}\"<user>\"");
+    }
+    format!("{key}{separator}<user>")
 }
 
 /// Replace the possessive owner prefix with `<mtp-owner>`, keep the model words intact.

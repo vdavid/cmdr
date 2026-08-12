@@ -341,6 +341,64 @@ fn mtp_owner_known_overmatches() {
     assert_eq!(r("That's Pixel 8 Pro"), "<mtp-owner>'s Pixel 8 Pro");
 }
 
+/// The `user=` / `username=` shape our SMB logs use for the account someone signs in to a
+/// share with. The value goes; the `Some(...)` / `None` wrapper stays, because "was there a
+/// username at all" is the part a triager actually reads.
+#[test]
+fn account_names() {
+    let cases = [
+        (
+            "Upgrading volume smb-1 to SmbVolume: server=nas, share=media, user=Some(\"david\")",
+            "Upgrading volume smb-1 to SmbVolume: server=nas, share=media, user=Some(\"<user>\")",
+        ),
+        (
+            "Found Keychain credentials for user=david",
+            "Found Keychain credentials for user=<user>",
+        ),
+        (
+            "try_list_shares_authenticated: addr=nas:445, user=admin",
+            "try_list_shares_authenticated: addr=nas:445, user=<user>",
+        ),
+        ("username=dvesz connected", "username=<user> connected"),
+        // Windows-style domain accounts and dotted names go whole.
+        ("user=WORKGROUP\\david", "user=<user>"),
+        ("user=david.veszelovszki", "user=<user>"),
+        // Quoted, and inside a Rust debug struct.
+        (
+            "SmbCredentials { username: \"david\", .. }",
+            "SmbCredentials { username: \"<user>\", .. }",
+        ),
+        // Two on one line.
+        (
+            "user=alice fell back to user=bob",
+            "user=<user> fell back to user=<user>",
+        ),
+        // An absent username is not a secret and stays readable.
+        ("Upgrading volume smb-1: user=None", "Upgrading volume smb-1: user=None"),
+    ];
+    for (input, expected) in cases {
+        assert_eq!(r(input), expected, "input: {input:?}");
+    }
+}
+
+/// The account pattern must not eat identifiers that merely end in `user`, nor the many
+/// `<key>=<value>` pairs our logs are full of.
+#[test]
+fn account_name_negatives() {
+    let must_be_unchanged = [
+        "cmdr_lib::network::smb_client",
+        "max_users=12",
+        "parent_user=1",
+        "browser=safari",
+        "users=3",
+        "user_count=7",
+        "the user pressed Escape",
+    ];
+    for input in must_be_unchanged {
+        assert_eq!(r(input), input, "should be unchanged: {input:?}");
+    }
+}
+
 #[test]
 fn unix_system_paths() {
     let cases = [
@@ -518,6 +576,7 @@ fn replacement_count_histogram() {
         ("<file>", redacted.matches("<file>").count()),
         ("<dir>", redacted.matches("<dir>").count()),
         ("<mtp-owner>", redacted.matches("<mtp-owner>").count()),
+        ("<user>", redacted.matches("<user>").count()),
     ];
 
     eprintln!("\n=== Redaction histogram ===");
