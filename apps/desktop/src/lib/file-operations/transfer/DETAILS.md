@@ -67,7 +67,9 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
    - **Folders always merge; the upfront check classifies collisions.** The conflict check (`conflicts.check()`, from
      `transfer-conflict-check.svelte.ts`) runs on mount **in parallel with the scan preview** (it's one cheap dest
      listing, not the recursive byte scan — `conflictCheckPromise` is assigned synchronously in `onMount` BEFORE the
-     auto-confirm branch so the MCP fast path dispatches with `conflictNames` populated). Each collision is classified
+     auto-confirm branch so the MCP `Skip all` fast path dispatches with `conflictNames` populated). "Cheap" is relative:
+     on a big remote directory that one listing still runs for minutes, which is why the confirm doesn't wait for it
+     (§ "The confirm dispatches without waiting for the conflict check"). Each collision is classified
      by the backend-resolved `sourceIsDirectory` / `destIsDirectory` flags (the BE resolves real per-item types + sizes
      from the source volume via one batched stat when the check passes `sourceVolumeId` + `sourcePaths`):
      - **dir + dir** → a silent merge, NOT a conflict. Surfaced as an informational line ("N folders will merge with
@@ -308,7 +310,8 @@ to the boolean.
   needs byte totals).
 - `handleConfirm` for a same-volume move dispatches IMMEDIATELY with `previewId = null` and `scanInProgress = false`, so
   `TransferProgressDialog` never enters `waitForScanThenStart` — it calls `startOperation()` directly (no scan
-  listeners, no gating). It still awaits the cheap conflict check for `conflictNames`.
+  listeners, no gating). Like every other path, it waits for the conflict check only under the `skip` policy (see
+  below).
 - The cheap top-level conflict check (decoupled from the deep preview) keeps running independently on mount, so a
   same-volume move still surfaces "N folders will merge" and the file-policy radios. This decoupling is the prerequisite
   that lets us cancel the deep preview without degrading the conflict UX.
@@ -317,6 +320,46 @@ to the boolean.
 - Pinned by `TransferDialog.test.ts` § "same-volume move scan gating" (no scan started for a same-volume move; the
   preview starts for a same-volume copy; toggle both directions cancels/restarts; immediate dispatch with
   `previewId = null` / `scanInProgress = false`).
+
+### The confirm dispatches without waiting for the conflict check
+
+`handleConfirm` awaits `conflictCheckPromise` **only when `conflictPolicy === 'skip'`**. Every other policy dispatches as
+soon as the preview id is in hand, even with the check still running.
+
+**Why it's safe.** The upfront conflict list is not a correctness input, it's a bulk-skip perf optimization:
+`build_pre_skip_set` (`src-tauri/src/file_system/write_operations/transfer/transfer_driver/mod.rs`) returns an empty set
+unless `config_resolution == Skip`, and the copy pipeline has a second independent `Skip` gate
+(`transfer/copy/mod.rs`). `VolumeCopyConfig::pre_known_conflicts` says so in its own doc comment: "Ignored for other
+resolution modes (Stop still prompts; Overwrite still proceeds normally)." Under the default `stop` the backend prompts
+per clash at runtime with apply-to-all latching (`write_operations/conflict.rs`), and a backgrounded operation's
+conflict still reaches the user through `../operation-conflict.svelte.ts`. So dispatching with `conflicts: []` costs
+pre-flight *information*, never safety.
+
+**Why `skip` is the exception, and why no human waits for it.** Under `Skip all` the names let the backend drop the
+clashing sources upfront instead of discovering each one serially through per-file `get_metadata` stats, so the progress
+bar reflects them immediately. A human can't select `skip` while the check is running — the policy radios live in the
+`{:else if totalConflictCount > 0 || mergeFolderCount > 0}` branch, unreachable while `isCheckingConflicts` — so that
+await belongs to the MCP auto-confirm path (`autoConfirmOnConflict: 'skip_all'`), where nobody is watching a button.
+
+**What still gets awaited on every path:** `scan.scanStarted`. That resolves once `startScanPreview` has returned a
+`previewId`, and the progress dialog's scan-wait path depends on it being non-null. The IPC only mints a UUID, registers
+`ScanPreviewState`, and spawns the walk on a background thread (`write_operations/scan_preview.rs`), so it returns
+promptly even against a wedged share; it is NOT the recursive walk.
+
+**The honest pending state.** `confirmPending` (a `$state`, unlike the plain `confirmed`) disables BOTH footer buttons
+and renders a decorative `<Spinner size="sm" />` next to the unchanged `confirmLabel` for however long a path does
+await. The spinner carries no `label`, so it's `aria-hidden` and the button's accessible name stays exactly the label —
+deliberately, so the pending state costs no new catalog key, no nine-locale translation, and no a11y assertion.
+
+**`handleCancel` returns early when `confirmed`.** Disabling the footer's Cancel is cosmetic, not the protection: the
+`×` in the dialog chrome and the Escape key both reach `ModalDialog`'s `onclose` (= `handleCancel`) whatever the footer
+looks like. Without the guard, closing during an in-flight confirm runs `scan.freeAndCleanup()` and cancels the preview
+out from under the pending `onConfirm` — the progress dialog then opens onto a dead preview. The test drives the `×`
+for exactly that reason; asserting through the disabled Cancel would cover nothing.
+
+Pinned by `TransferDialog.test.ts` § "confirm without waiting for the conflict check": a pending check doesn't block a
+`stop`-policy confirm or a same-volume move, `skip` still waits and still forwards the names, the button disables and
+shows a spinner while genuinely pending, and Cancel during a pending confirm frees nothing.
 
 ### `data-scan-state` marker on the tallies element
 

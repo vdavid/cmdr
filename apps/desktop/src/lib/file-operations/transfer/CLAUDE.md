@@ -45,6 +45,10 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUD
 - **Move refreshes BOTH panes** (source files gone); copy only the destination.
 - **Flushing phase** (`phase: 'flushing'`) shows "Writing the last piece..." for the backend's closing `fdatasync`, a
   real multi-second pause on slow media; the bar mustn't sit frozen at 100%.
+- **Confirm waits on the conflict check ONLY under `skip`** (MCP-only; the radios don't render while it runs): outside
+  `Skip` the backend ignores `pre_known_conflicts`, so `conflicts: []` costs information, not safety. Awaiting paths
+  disable the button and spin. ❌ Don't drop `handleCancel`'s `confirmed` guard: it's also `onclose`, and would free the
+  preview under a pending dispatch.
 - **`data-scan-state` on `.scan-stats`** is E2E's only race-free "counting done" signal; `DeleteDialog` mirrors it.
 - **Compress swaps the conflict-policy UI for a dest-exists overwrite check**, and its auto-confirm (MCP) path must
   NEVER silently overwrite.

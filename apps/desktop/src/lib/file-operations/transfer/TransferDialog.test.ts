@@ -147,6 +147,7 @@ interface MountOpts {
   autoConfirm?: boolean
   autoConfirmOnConflict?: string
   onConfirm?: ConfirmFn
+  onCancel?: () => void
   operationType?: 'copy' | 'move' | 'compress'
   sourceVolumeId?: string
   /** The destination volume the dialog starts on (= `selectedVolumeId`). */
@@ -185,7 +186,7 @@ function mountDialog(opts: MountOpts = {}): HTMLDivElement {
       autoConfirm: opts.autoConfirm ?? false,
       autoConfirmOnConflict: opts.autoConfirmOnConflict,
       onConfirm: opts.onConfirm ?? (() => {}),
-      onCancel: () => {},
+      onCancel: opts.onCancel ?? (() => {}),
     },
   })
   return target
@@ -211,6 +212,39 @@ beforeEach(() => {
   cancelScanPreviewMock.mockClear()
   document.body.innerHTML = ''
 })
+
+/** A promise plus its resolver, so a test decides exactly when an async
+ *  dependency settles (and can leave it pending indefinitely). */
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((r) => {
+    resolve = r
+  })
+  return { promise, resolve }
+}
+
+function confirmButton(target: HTMLElement): HTMLButtonElement {
+  const btn = target.querySelector<HTMLButtonElement>('.btn-primary')
+  if (!btn) throw new Error('confirm button not rendered')
+  return btn
+}
+
+function cancelButton(target: HTMLElement): HTMLButtonElement {
+  const btn = Array.from(target.querySelectorAll<HTMLButtonElement>('button')).find(
+    (b) => b.textContent.trim() === 'Cancel',
+  )
+  if (!btn) throw new Error('cancel button not rendered')
+  return btn
+}
+
+/** The `×` in the dialog chrome. It calls `ModalDialog`'s `onclose` (= `handleCancel`)
+ *  directly and is never disabled, so it's the honest way to drive the close path in a
+ *  test — unlike the Cancel button, whose `disabled` would swallow the click. */
+function closeButton(target: HTMLElement): HTMLButtonElement {
+  const btn = target.querySelector<HTMLButtonElement>('.modal-close-button')
+  if (!btn) throw new Error('modal close button not rendered')
+  return btn
+}
 
 /** Clicks the Copy/Move segmented toggle option by its label. */
 function clickToggle(target: HTMLElement, label: 'Copy' | 'Move'): void {
@@ -389,11 +423,11 @@ describe('TransferDialog cross-type overwrite guardrail', () => {
 })
 
 /* ------------------------------------------------------------------------- */
-/* Auto-confirm (MCP) dispatches with conflictNames populated                */
+/* Auto-confirm (MCP) payload wiring                                         */
 /* ------------------------------------------------------------------------- */
 
 describe('TransferDialog auto-confirm payload', () => {
-  it('dispatches with conflictNames populated on the MCP fast path', async () => {
+  it('maps the MCP onConflict string onto the dispatched resolution', async () => {
     scanVolumeForConflictsMock.mockResolvedValue([
       makeConflict({ sourcePath: 'notes.txt', sourceIsDirectory: false, destIsDirectory: false }),
     ])
@@ -410,6 +444,12 @@ describe('TransferDialog auto-confirm payload', () => {
     mountDialog({ autoConfirm: true, autoConfirmOnConflict: 'overwrite_all', onConfirm })
     await flushMicrotasks()
 
+    // `overwrite` does NOT wait for the conflict check (only `skip` does — see
+    // "confirm without waiting for the conflict check" below). The names ride along
+    // here because the check has already resolved by dispatch time, and this pins
+    // that we don't blank them just because the policy isn't `skip`. What is NOT
+    // asserted, because it isn't guaranteed: that a still-pending check delays this
+    // dispatch. Under a slow dest listing it dispatches with `[]`, by design.
     expect(captured.preKnown).toEqual(['notes.txt'])
     expect(captured.resolution).toBe('overwrite')
   })
@@ -817,5 +857,133 @@ describe('TransferDialog compress mode', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1)
     // Compress dispatches with an empty conflict list (no multi-file conflicts).
     expect(onConfirm.mock.calls[0][6]).toEqual([])
+  })
+})
+
+/* ------------------------------------------------------------------------- */
+/* Confirm acts at once: no silent wait on the conflict check                */
+/* ------------------------------------------------------------------------- */
+
+describe('TransferDialog confirm without waiting for the conflict check', () => {
+  it('dispatches while the conflict check is still pending, under the default stop policy', async () => {
+    // The dest listing never comes back (the slow-SMB case): the click must still
+    // reach `onConfirm` instead of sitting on the promise with a live-looking button.
+    const pendingCheck = deferred<VolumeConflictInfo[]>()
+    scanVolumeForConflictsMock.mockReturnValue(pendingCheck.promise)
+
+    const onConfirm = vi.fn()
+    const target = mountDialog({ onConfirm })
+    await flushMicrotasks()
+
+    confirmButton(target).click()
+    await flushMicrotasks()
+
+    expect(onConfirm, 'the confirm must not wait on the dest listing').toHaveBeenCalledTimes(1)
+    // `stop` asks per clash at runtime, and the backend ignores `pre_known_conflicts`
+    // outside `Skip`, so dispatching with an empty list loses information, not safety.
+    expect(onConfirm.mock.calls[0][3]).toBe('stop')
+    expect(onConfirm.mock.calls[0][6]).toEqual([])
+  })
+
+  it('dispatches a same-volume move while the conflict check is still pending', async () => {
+    const pendingCheck = deferred<VolumeConflictInfo[]>()
+    scanVolumeForConflictsMock.mockReturnValue(pendingCheck.promise)
+
+    const onConfirm = vi.fn()
+    const target = mountDialog({
+      operationType: 'move',
+      sourceVolumeId: 'ext',
+      currentVolumeId: 'ext',
+      onConfirm,
+    })
+    await flushMicrotasks()
+
+    confirmButton(target).click()
+    await flushMicrotasks()
+
+    expect(onConfirm, 'the rename fast path must not wait either').toHaveBeenCalledTimes(1)
+    expect(onConfirm.mock.calls[0][6]).toEqual([])
+  })
+
+  it('still waits for the conflict names under the Skip policy (the bulk-skip perf win)', async () => {
+    // `Skip` is the ONE resolution the backend reads `pre_known_conflicts` for, and
+    // only the MCP path can select it before the check lands (the radios don't
+    // render while it runs), so no human is waiting on this await.
+    const pendingCheck = deferred<VolumeConflictInfo[]>()
+    scanVolumeForConflictsMock.mockReturnValue(pendingCheck.promise)
+
+    const onConfirm = vi.fn()
+    mountDialog({ autoConfirm: true, autoConfirmOnConflict: 'skip_all', onConfirm })
+    await flushMicrotasks()
+
+    expect(onConfirm, 'Skip needs the names upfront, so it waits').not.toHaveBeenCalled()
+
+    pendingCheck.resolve([makeConflict({ sourcePath: 'notes.txt' })])
+    await flushMicrotasks()
+
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+    expect(onConfirm.mock.calls[0][6]).toEqual(['notes.txt'])
+  })
+
+  it('disables the confirm button and shows a spinner while a confirm is genuinely pending', async () => {
+    // Hold `startScanPreview` open. The confirm path still awaits it (the progress
+    // dialog needs a non-null `previewId`), so this is the window where the button
+    // must read as busy rather than inviting a second click.
+    const pendingScan = deferred<{ previewId: string }>()
+    startScanPreviewMock.mockReturnValue(pendingScan.promise)
+
+    const onConfirm = vi.fn()
+    const target = mountDialog({ onConfirm })
+    await flushMicrotasks()
+
+    confirmButton(target).click()
+    await flushMicrotasks()
+
+    expect(onConfirm, 'still waiting on the preview id').not.toHaveBeenCalled()
+    expect(confirmButton(target).disabled, 'a pending confirm must not look clickable').toBe(true)
+    expect(confirmButton(target).querySelector('.spinner'), 'a pending confirm shows a spinner').not.toBeNull()
+
+    pendingScan.resolve({ previewId: 'preview-1' })
+    await flushMicrotasks()
+
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('Cancel during a pending confirm leaves the scan preview alone', async () => {
+    // Skip is the policy that still waits, so it gives us a real in-flight confirm
+    // to fire Cancel against.
+    const pendingCheck = deferred<VolumeConflictInfo[]>()
+    scanVolumeForConflictsMock.mockReturnValue(pendingCheck.promise)
+
+    const onConfirm = vi.fn()
+    const onCancel = vi.fn()
+    const target = mountDialog({
+      autoConfirm: true,
+      autoConfirmOnConflict: 'skip_all',
+      onConfirm,
+      onCancel,
+    })
+    await flushMicrotasks()
+    expect(onConfirm).not.toHaveBeenCalled()
+
+    // The footer's Cancel goes inert alongside the confirm button, so its click alone
+    // would prove nothing.
+    expect(cancelButton(target).disabled, 'Cancel reads as unavailable while a confirm is pending').toBe(true)
+    cancelButton(target).click()
+
+    // The × stays live whatever the footer does (Escape lands on the same handler), so
+    // it's the route the `confirmed` guard in `handleCancel` actually has to hold.
+    closeButton(target).click()
+    await flushMicrotasks()
+
+    // Freeing here pulls the preview out from under the pending dispatch, and the
+    // progress dialog then opens onto a cancelled preview.
+    expect(cancelScanPreviewMock, 'a confirmed dialog must not free its preview').not.toHaveBeenCalled()
+    expect(onCancel, 'the confirm already committed; Cancel is a no-op').not.toHaveBeenCalled()
+
+    pendingCheck.resolve([makeConflict({ sourcePath: 'notes.txt' })])
+    await flushMicrotasks()
+
+    expect(onConfirm).toHaveBeenCalledTimes(1)
   })
 })

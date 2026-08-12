@@ -160,6 +160,11 @@
     // Whether the user confirmed (so we don't cancel the scan on destroy)
     let confirmed = false
     let destroyed = false
+    // Whether a confirm is mid-flight, still awaiting something before it can
+    // dispatch. Reactive (unlike `confirmed`) because the confirm button reads it
+    // to disable itself and show a spinner: a button that looks live while the
+    // handler silently awaits is how a click reads as "nothing happened".
+    let confirmPending = $state(false)
 
     // Map MCP onConflict string to ConflictResolution, or default to "ask for each"
     const autoConfirmConflictMap: Record<string, ConflictResolution> = {
@@ -343,18 +348,14 @@
     })
 
     /**
-     * Pending conflict check, captured so `handleConfirm` can await it. Without this,
-     * a fast confirm (Enter pressed before the check finishes) sends the operation
-     * with `conflicts: []` even when conflicts exist. The FE never displays the count
-     * + radio policy section, and the backend can't help if the user picked
-     * `overwrite_all` blindly. We resolve this by gating Confirm on the check
-     * completing. See `handleConfirm`.
+     * Pending conflict check, captured so `handleConfirm` can await it under the
+     * one policy that needs its result (see `needsConflictNames`).
      *
      * The check runs on mount, in parallel with the (potentially slow) scan
      * preview — it's just one cheap dest listing and doesn't need the recursive
      * byte scan. It's assigned synchronously in `onMount` BEFORE the auto-confirm
-     * branch, so the MCP fast path's `handleConfirm` await guard sees a real
-     * promise (not `undefined`) and dispatches with `conflictNames` populated.
+     * branch, so the MCP fast path's `handleConfirm` await sees a real promise
+     * (not `undefined`) and dispatches with `conflictNames` populated.
      */
     let conflictCheckPromise: Promise<void> | null = $state(null)
 
@@ -425,13 +426,32 @@
         }
     })
 
+    /**
+     * Whether this confirm needs the upfront conflict NAMES before it dispatches.
+     *
+     * Only `skip` does: `pre_known_conflicts` is a bulk-skip perf optimization the
+     * backend reads under that one resolution and ignores under every other
+     * (`build_pre_skip_set` in `transfer_driver/mod.rs` returns an empty set unless
+     * `config_resolution == Skip`). Under `stop` the backend prompts per clash at
+     * runtime, so dispatching with `conflicts: []` costs information, never safety.
+     *
+     * A human can't reach `skip` while the check is running — the policy radios only
+     * render once it's done — so this await belongs to the MCP auto-confirm path,
+     * where the names are a real win and nobody is watching the button.
+     */
+    function needsConflictNames(): boolean {
+        return conflictPolicy === 'skip'
+    }
+
     async function handleConfirm(isAuto = false) {
         if (pathError || confirmed) return
         confirmed = true
+        confirmPending = true
         // Compress auto-confirm must not silently overwrite an existing archive:
         // proceed unattended only when the target doesn't exist; else stay open.
         if (activeOperationType === 'compress' && isAuto && (await destExists.probeExists())) {
             confirmed = false
+            confirmPending = false
             // Ack the MCP round-trip WITHOUT an operationId: no op spawned, the
             // dialog stays open for the user to confirm the overwrite.
             if (mcpRequestId) {
@@ -443,10 +463,10 @@
         // Same-volume move: dispatch IMMEDIATELY. No deep scan ever ran (the
         // backend renames server-side, zero bytes), so there's nothing to wait
         // for and no cached preview to consume — pass `previewId = null` and
-        // `scanInProgress = false`. Await the conflict check for `conflictNames`.
+        // `scanInProgress = false`. The conflict check only gates `skip`.
         if (isSameVolumeMove) {
             scan.cancelPreview()
-            await conflictCheckPromise
+            if (needsConflictNames()) await conflictCheckPromise
             onConfirm(
                 editedPath,
                 selectedVolumeId,
@@ -460,10 +480,12 @@
         }
         // Wait for startScanPreview IPC so previewId is set (a fast confirm — MCP,
         // Playwright, rapid Enter — otherwise strands the progress dialog with a
-        // null previewId), then for the conflict scan (`await null` is a no-op, so
-        // compress falls straight through) so we never dispatch `conflicts: []`.
+        // null previewId). That IPC only mints an id and spawns the walk, so it
+        // returns promptly even on a wedged share. The conflict check does NOT gate
+        // this path: it's a dest listing that can take minutes on a big remote dir,
+        // and only `skip` consumes its names.
         await scan.scanStarted
-        await conflictCheckPromise
+        if (needsConflictNames()) await conflictCheckPromise
         onConfirm(
             editedPath,
             selectedVolumeId,
@@ -476,6 +498,11 @@
     }
 
     function handleCancel() {
+        // A confirm already committed and is only waiting to dispatch: the pending
+        // `onConfirm` owns the preview now. Freeing it here (Cancel, Escape, or the
+        // dialog's own close path) would cancel the scan out from under that
+        // dispatch, and the progress dialog would open onto a dead preview.
+        if (confirmed) return
         // Free the scan preview (cancels an in-flight scan and evicts any cached
         // result). Regardless of `isScanning`, so a dismiss after the scan
         // completed doesn't leak the cache.
@@ -687,8 +714,24 @@
     </div>
 
     {#snippet footer()}
-        <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
-        <Button variant="primary" onclick={() => handleConfirm()} disabled={!!pathError}>{confirmLabel}</Button>
+        <!-- Cancel goes inert for the same window: the confirm has committed, so a
+             press could only look like it did something (`handleCancel` refuses to
+             free a preview the pending dispatch is about to consume). -->
+        <Button variant="secondary" onclick={handleCancel} disabled={confirmPending}
+            >{tString('fileOperations.button.cancel')}</Button
+        >
+        <!-- A pending confirm disables and grows a spinner beside the SAME label: the
+             button has to look busy rather than inviting a second click. The spinner
+             is decorative (no `label`, so `aria-hidden`), which keeps the button's
+             accessible name exactly `confirmLabel` and needs no new catalog string. -->
+        <Button variant="primary" onclick={() => handleConfirm()} disabled={!!pathError || confirmPending}>
+            <span class="confirm-content">
+                {#if confirmPending}
+                    <Spinner size="sm" />
+                {/if}
+                {confirmLabel}
+            </span>
+        </Button>
     {/snippet}
 </ModalDialog>
 
@@ -834,6 +877,14 @@
 
     .conflicts-checking-text {
         color: var(--color-text-tertiary);
+    }
+
+    /* Keeps the pending spinner on the label's baseline row inside the confirm
+       button. `inline-flex` so the button still sizes to its content. */
+    .confirm-content {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-sm);
     }
 
     /* The question the card asks. Plain text color: the card's warning tint already
