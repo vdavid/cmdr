@@ -8,13 +8,10 @@ users.
 
 This is a monorepo of four apps:
 
-- **`apps/desktop/`**: the app itself (Rust + Tauri 2 backend, Svelte 5 + TypeScript frontend). Read
-  `apps/desktop/CLAUDE.md` before working here.
-- **`apps/website/`**: getcmdr.com marketing site (Astro + Tailwind v4). See `apps/website/CLAUDE.md`.
-- **`apps/api-server/`**: Cloudflare Worker + Hono (licensing, telemetry, crash/error reports, downloads, admin). See
-  `apps/api-server/CLAUDE.md`.
-- **`apps/analytics-dashboard/`**: private SvelteKit metrics dashboard on CF Pages. See
-  `apps/analytics-dashboard/CLAUDE.md`.
+- **`apps/desktop/`**: the app itself (Rust + Tauri 2 backend, Svelte 5 + TypeScript frontend).
+- **`apps/website/`**: getcmdr.com marketing site (Astro + Tailwind v4).
+- **`apps/api-server/`**: Cloudflare Worker + Hono (licensing, telemetry, crash/error reports, downloads, admin).
+- **`apps/analytics-dashboard/`**: private SvelteKit metrics dashboard on CF Pages.
 
 Shared tooling: the Go check runner (`scripts/check/CLAUDE.md`) and dev docs (`docs/architecture.md`).
 
@@ -115,10 +112,10 @@ inventory). Desktop-specific test, MCP, and E2E mechanics live in `apps/desktop/
 
 ## Hard rules
 
-Project hard rules are focused, autoloaded files in `.claude/rules` (always in context; non-Claude agents should read
-them manually). Two facts worth stating directly: tool versions are mise-managed (`.mise.toml`; if `go` / `node` isn't
-found, check that `~/.local/share/mise/shims` is on `$PATH`), and icons come from `unplugin-icons` +
-`@iconify-json/lucide` (see `docs/guides/icons.md`).
+- Project hard rules are focused, autoloaded files in `.claude/rules` (non-Claude agents: read them manually!).
+- Tool versions are mise-managed (`.mise.toml`; if `go` / `node` isn't found, check that `~/.local/share/mise/shims` is
+  on `$PATH`),
+- Icons come from `unplugin-icons` + `@iconify-json/lucide` (see `docs/guides/icons.md`).
 
 ## Workflow
 
