@@ -236,15 +236,14 @@ separate.
 fixtures, start N Tauri instances, run N Playwright processes in parallel, cleanup). The build is fingerprinted and
 skipped when the binary on disk already matches the tree it would be built from, which is worth 172 s per run because
 the build isn't incremental (`checks/DETAILS.md` § "The Playwright lane's binary is fingerprinted"). Each shard runs in
-its own isolated
-`CMDR_DATA_DIR` with its own Unix socket and MCP port (9429 + shard offset), plus a per-shard `CMDR_INSTANCE_ID` of the
-form `e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`). The instance ID drives the macOS Keychain
-`SERVICE_NAME` suffix (`Cmdr-e2e-<short>-<pid>`) so two parallel shards can never collide on credentials, and reshapes
-the Dock label into `Cmdr (E2E <short>)` so cleanup scripts can target with `pgrep -f 'Cmdr (E2E '`. One shard is
-dedicated to MTP specs (serialized; the virtual MTP backing dir at `/tmp/cmdr-mtp-e2e-fixtures` is shared by every Tauri
-instance). Stale processes on each port are killed before starting. Per-shard logs go to
-`/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`. See `docs/tooling/instance-isolation.md` § "How E2E gets isolated
-per shard".
+its own isolated `CMDR_DATA_DIR` with its own Unix socket and MCP port (9429 + shard offset), plus a per-shard
+`CMDR_INSTANCE_ID` of the form `e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`). The instance ID
+drives the macOS Keychain `SERVICE_NAME` suffix (`Cmdr-e2e-<short>-<pid>`) so two parallel shards can never collide on
+credentials, and reshapes the Dock label into `Cmdr (E2E <short>)` so cleanup scripts can target with
+`pgrep -f 'Cmdr (E2E '`. One shard is dedicated to MTP specs (serialized; the virtual MTP backing dir at
+`/tmp/cmdr-mtp-e2e-fixtures` is shared by every Tauri instance). Stale processes on each port are killed before
+starting. Per-shard logs go to `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`. See
+`docs/tooling/instance-isolation.md` § "How E2E gets isolated per shard".
 
 `RUST_LOG` is forwarded to the app (via inherited `os.Environ()`), so trace-level output is one shell-prefix away:
 

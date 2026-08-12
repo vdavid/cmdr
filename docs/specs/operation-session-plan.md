@@ -677,8 +677,8 @@ test would catch. Write the Rust cache-consumption test first, and do not split 
   scan-wait path depends on it being non-null", which is the sentence M1 invalidates and replaces with the reasoning
   above), `queue/CLAUDE.md` and `DETAILS.md` (a running row may be in `phase: 'scanning'`; Pause and Rollback are
   phase-gated), `quit/`'s docs if they enumerate what holds a quit, and a line in `docs/architecture.md`.
-- **Checks:** `pnpm check rust` and `pnpm check svelte` while iterating, full `pnpm check` before wrapping,
-  plus the transfer E2E specs.
+- **Checks:** `pnpm check rust` and `pnpm check svelte` while iterating, full `pnpm check` before wrapping, plus the
+  transfer E2E specs.
 
 ### M2: the fan-out and the session module, read-only
 

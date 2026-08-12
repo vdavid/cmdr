@@ -1,7 +1,7 @@
 # Partitioning the frontend lane's cache inputs
 
-Measured 2026-08-12 on the 24-day window 2026-07-19..2026-08-12 (1,439 commits, 99,763 rows of
-`~/cmdr-check-log.csv`), plus direct Vitest runs on an isolated 16-core macOS machine (Node 26.4.0, Vitest 4.1.10).
+Measured 2026-08-12 on the 24-day window 2026-07-19..2026-08-12 (1,439 commits, 99,763 rows of `~/cmdr-check-log.csv`),
+plus direct Vitest runs on an isolated 16-core macOS machine (Node 26.4.0, Vitest 4.1.10).
 
 The question: 21 frontend checks share one `Inputs` set (`svelteInputs`), so any edit under `apps/desktop/src/**` or
 `apps/desktop/test/**` re-runs all of them, including the ~8,600-test Vitest suite. Is a narrower or partitioned input
@@ -28,8 +28,8 @@ below come out the way it does.
 
 ## Isolated Vitest timings
 
-| Run                                        | Wall  | Tests |
-| ------------------------------------------ | ----- | ----- |
+| Run                                         | Wall  | Tests |
+| ------------------------------------------- | ----- | ----- |
 | Full suite, with coverage (`test:coverage`) | 62.3s | 8,635 |
 | Full suite, no coverage                     | 47.1s | 8,635 |
 | One area (`src/lib/utils`), with coverage   | 6.1s  | 147   |
@@ -75,8 +75,8 @@ Rejected on three independent grounds, any one of which is decisive.
    bypasses the fingerprint cache entirely and still can't produce a coverage verdict.
 3. **The arithmetic is thin even ignoring 1 and 2.** A shard costs ~6 s of fixed coverage-run overhead. Splitting into
    eight areas turns a 62 s suite into 8 × (6 s + ~7 s marginal) ≈ 104 s when everything is dirty, and ~13 s when one
-   area is. Against the measured edit distribution that is a real but modest win, bought with a coverage-merge
-   mechanism and a structurally unsound input set.
+   area is. Against the measured edit distribution that is a real but modest win, bought with a coverage-merge mechanism
+   and a structurally unsound input set.
 
 ### Narrowing `svelte-tests` past the shared set
 

@@ -262,8 +262,8 @@ this from M3 keeps "can we drive it at all" separate from "does it look right".
 **Tests**: the shard-kind wiring is proven by the run itself. Add a Vitest for the "is this binary stale" comparison if
 it grows past a one-liner; otherwise skip.
 
-**Checks**: `pnpm check desktop` (typescript + lint), and one real launch that reaches
-`waitForSelector('.file-pane')` and exits 0.
+**Checks**: `pnpm check desktop` (typescript + lint), and one real launch that reaches `waitForSelector('.file-pane')`
+and exits 0.
 
 ### M3 — the spec: staging, the eight shots, and the hero geometry
 
@@ -318,8 +318,8 @@ the hero cutouts wrong was exactly a hand-measured constant outliving the layout
 **Tests**: the shots are the test. The pure geometry helper (rect → inset rect, and the "does this JSON match this
 master" guard) gets a Vitest, written test-first.
 
-**Checks**: `pnpm check desktop`, plus a real run of the spec, plus `apps/website/scripts/regenerate-hero.sh` when
-that script is present (it lands with the `david-alternativeto-refresh` branch, see § Coordination).
+**Checks**: `pnpm check desktop`, plus a real run of the spec, plus `apps/website/scripts/regenerate-hero.sh` when that
+script is present (it lands with the `david-alternativeto-refresh` branch, see § Coordination).
 
 ### M4 — seeding the shots data dir
 
