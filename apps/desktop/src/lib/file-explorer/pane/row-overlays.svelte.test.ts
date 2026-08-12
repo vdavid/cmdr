@@ -270,6 +270,26 @@ describe('createRowOverlays', () => {
       expect(ipc.mediaIndexFolderCoverage).toHaveBeenLastCalledWith('root', ['/two'])
     })
 
+    it('a queued fetch that outlives the setting never reaches the backend', async () => {
+      // Coalescing runs a queued request later than it was made, so the gate is
+      // re-checked at run time. The map would end up empty either way (the gate-off
+      // `$effect` re-clears it), but the query and the badge flicker are pure waste.
+      const first = pending<{ path: string; state: string }[]>()
+      ipc.mediaIndexFileStatus.mockReturnValueOnce(first.promise).mockResolvedValue([])
+      const { overlays } = create()
+
+      void overlays.fetchIndexStatusForPaths(['/a.jpg'])
+      void overlays.fetchIndexStatusForPaths(['/b.jpg'])
+      setMediaIndexShowFileStatusIcons(false)
+      flushSync()
+
+      first.resolve([{ path: '/a.jpg', state: 'indexed' }])
+      await vi.advanceTimersByTimeAsync(0)
+      flushSync()
+      expect(ipc.mediaIndexFileStatus).toHaveBeenCalledTimes(1)
+      expect(overlays.indexStatusMap).toEqual({})
+    })
+
     it('cleanup drops a queued fetch so a destroyed pane asks for nothing more', async () => {
       const first = pending<{ path: string; state: string }[]>()
       ipc.mediaIndexFileStatus.mockReturnValueOnce(first.promise).mockResolvedValue([])

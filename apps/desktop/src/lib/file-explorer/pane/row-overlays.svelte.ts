@@ -154,6 +154,11 @@ export function createRowOverlays(deps: RowOverlaysDeps): RowOverlays {
 
   // The backend returns one entry per path in request order.
   const indexStatusFetch = createCoalesced(async (paths: string[]) => {
+    // Re-check the gate: coalescing runs a queued request LATER than it was made, so the
+    // setting may have gone off in between. The gate-off `$effect` below is what
+    // GUARANTEES the map ends up empty (it re-clears after a late refill); this only
+    // saves the pointless query and the badge flicker on the way.
+    if (!fileStatusEnabled) return
     try {
       const statuses = await mediaIndexFileStatus(deps.getVolumeId(), paths)
       const next: Record<string, FileIndexState> = { ...indexStatusMap }
@@ -168,6 +173,7 @@ export function createRowOverlays(deps: RowOverlaysDeps): RowOverlays {
 
   // The backend returns one entry per folder in request order.
   const folderCoverageFetch = createCoalesced(async (folderPaths: string[]) => {
+    if (!folderCoverageEnabled) return // same re-check as above
     try {
       const coverages = await mediaIndexFolderCoverage(deps.getVolumeId(), folderPaths)
       const next: Record<string, FolderCoverage> = { ...folderCoverageMap }

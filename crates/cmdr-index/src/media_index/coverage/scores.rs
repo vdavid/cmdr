@@ -24,6 +24,13 @@
 //! draining the receiver at the top of a read is the same freshness with no task, no
 //! lifecycle, and no per-volume spawn from inside a blocking closure. A notice that
 //! arrives while nobody is asking simply waits in the channel.
+//!
+//! **A store read happens while the cache lock is held**, so first reads for different
+//! volumes serialize rather than overlapping. That's deliberate: it costs a little
+//! multi-volume startup latency (a handful of reads, once each) and in exchange a
+//! thundering herd for the SAME volume collapses into one read instead of N identical
+//! ones, which is the case that actually hurt. Keep it that way unless a profile says
+//! otherwise; per-volume locks buy little once the cache is warm.
 
 use std::collections::HashMap;
 use std::path::Path;
