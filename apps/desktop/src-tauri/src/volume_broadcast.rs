@@ -8,9 +8,10 @@
 //! A 150ms debounce coalesces rapid events (e.g. multiple mounts in quick
 //! succession, or MTP connect immediately after USB hotplug).
 
+use crate::ignore_poison::IgnorePoison;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use tauri::AppHandle;
 use tauri_specta::Event;
@@ -26,9 +27,26 @@ static GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::
 /// Debounce window: events within this window are coalesced into one emission.
 const DEBOUNCE_MS: u64 = 150;
 
-/// Timeout for listing local volumes. If `list_locations()` takes longer
-/// (for example, a hung NFS mount), we emit whatever we have with `timed_out: true`.
+/// Timeout for listing local volumes. If `list_locations()` takes longer (for example,
+/// a hung mount, or a saturated blocking pool the listing can't get a thread from), we
+/// emit the LAST GOOD list with `timed_out: true` — see [`LAST_GOOD_LOCAL`].
 const LIST_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// The most recent SUCCESSFUL local volume listing, re-emitted when a later one times
+/// out.
+///
+/// **Why a timeout must not publish an empty list.** `timed_out: true` means "this list
+/// may be missing volumes", and the frontend voices exactly that. Pairing it with an
+/// empty list said "you have no volumes" instead: the picker went blank, and its
+/// refresh button re-ran the same listing into the same timeout, so nothing the user
+/// could do brought the volumes back. A transient 2 s stall on one hung mount left the
+/// app looking like it had lost every drive, permanently.
+///
+/// A stale entry is the right trade against a blank picker: it's flagged stale, an
+/// unmount arrives on its own `volume-unmounted` event regardless, and picking a volume
+/// that has since gone reports a normal missing-path error. ❌ Don't "simplify" this
+/// back to emitting `vec![]` on timeout.
+static LAST_GOOD_LOCAL: Mutex<Vec<LocationInfo>> = Mutex::new(Vec::new());
 
 /// Stores the app handle for later use. Call once during app setup.
 pub fn init(app: &AppHandle) {
@@ -166,6 +184,35 @@ use crate::stubs::volumes::LocationCategory;
 // Emission
 // ============================================================================
 
+/// How one attempt at listing local volumes ended.
+enum ListingOutcome {
+    /// The listing returned. This becomes the new last-good set.
+    Listed(Vec<LocationInfo>),
+    /// The listing didn't finish inside [`LIST_TIMEOUT`].
+    TimedOut,
+    /// The blocking task panicked, so no list is coming.
+    Panicked,
+}
+
+/// The local volumes to publish for one `outcome`, and whether the result is flagged
+/// incomplete — folding [`LAST_GOOD_LOCAL`] in. Split out of [`do_emit`] so the rule
+/// that a failed listing never publishes an empty list is directly testable, without an
+/// `AppHandle` or a hung mount.
+///
+/// A panic reports `timed_out: false`: the frontend's flag drives a retry affordance
+/// for a slow listing, and a panicked one isn't slow. The last-good set still carries,
+/// for the same reason it does on a timeout.
+fn publishable(outcome: ListingOutcome, last_good: &mut Vec<LocationInfo>) -> (Vec<LocationInfo>, bool) {
+    match outcome {
+        ListingOutcome::Listed(volumes) => {
+            last_good.clone_from(&volumes);
+            (volumes, false)
+        }
+        ListingOutcome::TimedOut => (last_good.clone(), true),
+        ListingOutcome::Panicked => (last_good.clone(), false),
+    }
+}
+
 /// Computes the full volume list and emits the event.
 async fn do_emit() {
     let app = match APP_HANDLE.get() {
@@ -176,19 +223,20 @@ async fn do_emit() {
         }
     };
 
-    // Compute local volumes with a timeout (list_locations may block on hung mounts)
-    let (local_volumes, timed_out) =
-        match tokio::time::timeout(LIST_TIMEOUT, tokio::task::spawn_blocking(list_locations)).await {
-            Ok(Ok(vols)) => (vols, false),
-            Ok(Err(e)) => {
-                error!("volumes-changed: spawn_blocking panicked: {}", e);
-                (vec![], false)
-            }
-            Err(_) => {
-                warn!("volumes-changed: list_locations timed out after {:?}", LIST_TIMEOUT);
-                (vec![], true)
-            }
-        };
+    // Compute local volumes with a timeout (`list_locations` can block on a hung mount,
+    // or wait for a blocking-pool thread another subsystem is hogging).
+    let outcome = match tokio::time::timeout(LIST_TIMEOUT, tokio::task::spawn_blocking(list_locations)).await {
+        Ok(Ok(vols)) => ListingOutcome::Listed(vols),
+        Ok(Err(e)) => {
+            error!("volumes-changed: spawn_blocking panicked: {}", e);
+            ListingOutcome::Panicked
+        }
+        Err(_) => {
+            warn!("volumes-changed: list_locations timed out after {:?}", LIST_TIMEOUT);
+            ListingOutcome::TimedOut
+        }
+    };
+    let (local_volumes, timed_out) = publishable(outcome, &mut LAST_GOOD_LOCAL.lock_ignore_poison());
 
     // Append MTP volumes
     let mut volumes = local_volumes;
@@ -248,3 +296,6 @@ async fn append_mtp_volumes(volumes: &mut Vec<LocationInfo>) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
