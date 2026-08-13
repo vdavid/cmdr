@@ -20,6 +20,9 @@ map: `DETAILS.md` § Files.
   opt-ins, ❌ don't merge them: SOURCE read-yield (MTP + SMB) is unbounded, DESTINATION write-yield (SMB only) is capped.
 - **Every phase announces itself to `transfer_probe.rs`, on BOTH drivers**: ❌ no `.await` on a transfer path without a
   phase, ❌ never derive a stall from FE timing.
+- **The stall watchdog judges movement by the byte total the UI is showing** (`state.last_progress_bytes()`); ❌ the
+  probe never gets a byte counter of its own. One the drivers must remember to feed is one a driver forgets, and the
+  serial path forgetting it called every 1–2-source (and every MTP) transfer stalled. `DETAILS.md` § "The stall signal".
 - **Cancel has TWO tiers, and ❌ nothing a user clicks reaches tier 2.** Tier 1 (`state.backend_cancel`) travels via
   `on_progress` so the BACKEND deletes its own partial; ❌ never race a write against it. Tier 2
   (`state.backend_abort`, fired only by `abort_*_write_operation`, i.e. the quit deadline) races the source open and

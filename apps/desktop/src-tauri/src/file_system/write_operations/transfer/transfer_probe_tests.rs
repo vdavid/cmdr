@@ -6,6 +6,9 @@
 //! directory uses. `watchdog_step` is a pure function of (probe, carry-over,
 //! now), so every case here drives synthetic ticks instead of sleeping.
 
+use std::sync::atomic::AtomicUsize;
+
+use super::super::transfer_driver::SerialLeafProgress;
 use super::*;
 use crate::file_system::volume::Volume;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
@@ -42,7 +45,6 @@ fn probe_with(id: &str, state: &Arc<WriteOperationState>, volumes: Vec<Arc<dyn V
         driver_phase: AtomicU8::new(DriverPhase::AwaitingTasks as u8),
         driver_detail: Mutex::new("sms-20260724020237.xml".to_owned()),
         tasks: Mutex::new(Vec::new()),
-        bytes_done: Arc::new(AtomicU64::new(83_650_000)),
         sink: Mutex::new(None),
         still_for_seconds: AtomicU64::new(0),
         stall_abort_after: stall_abort_after(),
@@ -183,6 +185,72 @@ fn a_wedged_transfer_keeps_telling_the_ui_it_is_wedged() {
     assert_eq!(last.bytes_done, 83_650_000);
 }
 
+/// THE FALSE POSITIVE, and the reason the watchdog reads the operation's own
+/// published byte total rather than a counter of its own.
+///
+/// A directory copy on the serial path streams leaf after leaf through ONE
+/// `SerialLeafProgress`, and every leaf restarts its own byte count at zero. The
+/// number the watchdog judges has to be the operation-wide one the dialog is
+/// showing, so a copy whose bar is visibly climbing is never called stalled —
+/// however many file boundaries it crosses.
+///
+/// ❌ Don't relax this to "the probe was told about some bytes". Any counter a
+/// single driver has to remember to feed is one a second driver forgets, which
+/// is exactly how a healthy 333 GB SMB copy came to display "the transfer has
+/// stopped moving" for its whole run.
+#[test]
+fn a_transfer_publishing_progress_across_file_boundaries_is_never_called_still() {
+    let guard = TestOperationGuard::register("probe-leaf-progress");
+    let state = guard.state();
+    let sink = Arc::new(CollectorEventSink::new());
+    let probe = probe_for(guard.id(), state);
+    probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
+
+    // One operation-wide leaf counter and one throttle cell, shared across every
+    // leaf, exactly as the serial copy driver wires them.
+    let leaf_files_done = Arc::new(AtomicUsize::new(0));
+    let last_emit = Arc::new(Mutex::new(Instant::now() - Duration::from_secs(1)));
+    let leaf_bytes = 2_800_000_u64;
+
+    let mut watchdog = WatchdogState::new();
+    let mut tick = 0_u64;
+    let mut base = 0_u64;
+    for _leaf in 0..3 {
+        let leaf = SerialLeafProgress::new(
+            Arc::clone(&sink) as Arc<dyn OperationEventSink>,
+            Arc::clone(state),
+            guard.id().to_owned(),
+            WriteOperationType::Copy,
+            None,
+            base,
+            Arc::clone(&leaf_files_done),
+            119_204,
+            333_000_000_000,
+            Arc::clone(&last_emit),
+            // No throttle: every chunk has to be observable.
+            Duration::ZERO,
+        );
+        for chunk in [leaf_bytes / 2, leaf_bytes] {
+            let _ = leaf.on_chunk(chunk);
+            tick += 1;
+            probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+            assert_eq!(
+                probe.still_for_seconds.load(Ordering::Relaxed),
+                0,
+                "a transfer that just reported {chunk} more bytes is moving, not still"
+            );
+        }
+        leaf.on_leaf_complete(leaf_bytes);
+        base += leaf_bytes;
+    }
+
+    assert_eq!(
+        probe.activity().waiting_on,
+        TransferWaitReason::Moving,
+        "the dialog must never be handed a stall reason for a copy that is streaming"
+    );
+}
+
 /// The heartbeat must stay quiet while bytes flow: a moving transfer already
 /// emits plenty, and duplicating those would double the FE's event rate.
 #[test]
@@ -192,22 +260,21 @@ fn a_moving_transfer_gets_no_heartbeat() {
     let sink = Arc::new(CollectorEventSink::new());
     let probe = probe_for(guard.id(), state);
     probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
-    let mut event = WriteProgressEvent::new(
-        guard.id().to_owned(),
-        WriteOperationType::Copy,
-        WriteOperationPhase::Copying,
-        None,
-        5,
-        764,
-        83_650_000,
-        900_000_000,
-    );
-    state.enrich_progress(&mut event);
-
     let mut watchdog = WatchdogState::new();
-    // Bytes keep moving on every tick.
+    // Bytes keep moving on every tick, published the way a driver publishes
+    // them: one more progress event carrying a higher total.
     for tick in 1..=(HEARTBEAT_AFTER_SECS + 5) {
-        probe.bytes_done.fetch_add(1_000, Ordering::Relaxed);
+        let mut event = WriteProgressEvent::new(
+            guard.id().to_owned(),
+            WriteOperationType::Copy,
+            WriteOperationPhase::Copying,
+            None,
+            5,
+            764,
+            83_650_000 + tick * 1_000,
+            900_000_000,
+        );
+        state.enrich_progress(&mut event);
         probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
     }
 

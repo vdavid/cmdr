@@ -11,7 +11,8 @@
 //! **Cost.** A phase transition is one relaxed atomic store, and per-chunk byte
 //! progress is one more; nothing on the hot path takes a lock. The per-operation
 //! registry lock is touched only when a task starts or finishes, and by the
-//! watchdog tick.
+//! watchdog tick, which also reads the operation's newest published byte total
+//! once a second.
 //!
 //! **Reaching the probe.** A copy task's body runs inside
 //! [`CURRENT_TASK_PROBE`]`.scope(...)`, so code arbitrarily deep inside it
@@ -40,7 +41,7 @@ use super::super::types::{TransferActivity, TransferWaitReason, WriteOperationPh
 /// The tick also sets the granularity of `TransferActivity::still_for_seconds`,
 /// which the UI reads to decide when to stop showing a confident ETA — hence
 /// 1 s rather than something coarser. It's one wakeup per second per running
-/// transfer, comparing one atomic.
+/// transfer, reading one already-published number.
 ///
 /// 20 s for the log sits well clear of a slow-but-alive SMB write window. The
 /// UI speaks sooner (see `STALL_NOTICE_SECONDS` in
@@ -392,9 +393,6 @@ pub(super) struct OperationProbe {
     /// pre-checking, typically). Written only at phase transitions.
     driver_detail: Mutex<String>,
     tasks: Mutex<Vec<Arc<TaskProbe>>>,
-    /// The operation's aggregate byte counter, shared with the driver, so the
-    /// watchdog measures the same number the user sees.
-    bytes_done: Arc<AtomicU64>,
     /// Where to send a heartbeat. Set once at registration; `None` in the unit
     /// tests that don't exercise emission.
     sink: Mutex<Option<Arc<dyn OperationEventSink>>>,
@@ -417,6 +415,26 @@ pub(super) struct OperationProbe {
 }
 
 impl OperationProbe {
+    /// The operation's aggregate byte total, read straight off the newest
+    /// progress event it published — the number in the dialog, whichever driver
+    /// produced it.
+    ///
+    /// ❌ Never give the probe a byte counter of its own again. It had one: an
+    /// `Arc<AtomicU64>` the CONCURRENT copy path fed and the serial path did
+    /// not, so every transfer of one or two top-level sources (and every MTP
+    /// transfer, which is always serial) read a counter frozen at zero and was
+    /// declared stalled within 20 s while its bar climbed normally. A counter
+    /// each driver has to remember to feed is a counter the next driver
+    /// forgets; this reads the one thing every emit site is already required to
+    /// go through (`WriteOperationState::enrich_progress`).
+    ///
+    /// Zero before the first progress event, which no registered operation can
+    /// observe: `copy_volumes_with_progress` emits its opening `Copying` tick
+    /// before it registers here.
+    fn bytes_done(&self) -> u64 {
+        self.state.last_progress_bytes().unwrap_or(0)
+    }
+
     pub(super) fn set_driver_phase(&self, phase: DriverPhase, detail: &str) {
         self.driver_phase.store(phase as u8, Ordering::Relaxed);
         detail.clone_into(&mut self.driver_detail.lock_ignore_poison());
@@ -473,7 +491,7 @@ impl OperationProbe {
             return;
         }
         self.track_and_abort_wedged_tasks(now);
-        let bytes = self.bytes_done.load(Ordering::Relaxed);
+        let bytes = self.bytes_done();
         if bytes != watchdog.last_bytes {
             watchdog.last_bytes = bytes;
             watchdog.still_since = now;
@@ -742,7 +760,7 @@ impl OperationProbe {
              driver={driver}({detail}) intent={intent} paused={paused} in_flight={in_flight}/{concurrency}",
             op = self.operation_id,
             elapsed = self.started.elapsed().as_secs(),
-            bytes = self.bytes_done.load(Ordering::Relaxed),
+            bytes = self.bytes_done(),
             files = self.total_files,
             driver = driver.label(),
             detail = self.driver_detail.lock_ignore_poison(),
@@ -825,15 +843,10 @@ static REGISTRY: LazyLock<Mutex<HashMap<String, Arc<OperationProbe>>>> = LazyLoc
 ///
 /// The returned guard deregisters on drop, which also stops the watchdog on its
 /// next tick.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "one operation's whole identity for the dump: ids, sizes, the shared counter, both volumes, state, and the heartbeat sink"
-)]
 pub(super) fn register_operation(
     operation_id: &str,
     concurrency: usize,
     total_files: usize,
-    bytes_done: Arc<AtomicU64>,
     // Source and destination, held only so the watchdog can ask them whether
     // their connection is proven dead before it acts on a stall.
     volumes: Vec<Arc<dyn Volume>>,
@@ -847,7 +860,6 @@ pub(super) fn register_operation(
         driver_phase: AtomicU8::new(DriverPhase::Starting as u8),
         driver_detail: Mutex::new(String::new()),
         tasks: Mutex::new(Vec::new()),
-        bytes_done,
         sink: Mutex::new(Some(sink)),
         still_for_seconds: AtomicU64::new(0),
         stall_abort_after: stall_abort_after(),

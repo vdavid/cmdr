@@ -624,9 +624,12 @@ pub(crate) async fn copy_volumes_with_progress(
     }
 
     // Phase 3: Copy files with progress
-    // Shared atomics, updated by in-flight tasks (under concurrency) or
-    // the sequential closure below. The driver reads them after each file to
-    // keep `files_done` / `bytes_done` in sync for post-loop bookkeeping.
+    // The CONCURRENT path's shared ledger: in-flight tasks roll their per-file
+    // deltas into these and the post-loop reads them back. ❌ Nothing outside
+    // that path may read them — the SERIAL path leaves them at zero and keeps
+    // its running totals in `SerialOutcome` instead. (The stall watchdog used to
+    // read `atomic_bytes_done` and so called every serial transfer stalled;
+    // `transfer_probe.rs::OperationProbe::bytes_done` says what it reads now.)
     // The `*_skipped` atomics are a subset, counting only bulk-skip + per-iter
     // Skip resolutions; we use them to annotate the completion log.
     let files_done_atomic = Arc::new(AtomicUsize::new(0));
@@ -807,7 +810,6 @@ pub(crate) async fn copy_volumes_with_progress(
         // The serial path runs exactly one source at a time.
         if use_concurrent_path { concurrency } else { 1 },
         total_files,
-        Arc::clone(&atomic_bytes_done),
         // Both ends, so the watchdog can ask whether either connection has been
         // PROVEN dead before it acts on a stall (no backend can answer that yet
         // — see `Volume::connection_liveness`).

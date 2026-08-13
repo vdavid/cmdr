@@ -318,6 +318,19 @@ impl WriteOperationState {
         self.last_progress.lock_ignore_poison().clone()
     }
 
+    /// The aggregate byte count of the newest progress event this operation
+    /// published, without cloning the event: the number on the user's screen.
+    ///
+    /// `None` before the first emit. This is what the stall watchdog judges
+    /// movement by (`transfer/transfer_probe.rs`), so the log, the dialog's
+    /// stall notice, and the progress bar can't disagree about whether a
+    /// transfer is moving. Every emit site funnels through
+    /// [`enrich_progress`](Self::enrich_progress), so no driver has to remember
+    /// to feed a second counter.
+    pub(super) fn last_progress_bytes(&self) -> Option<u64> {
+        self.last_progress.lock_ignore_poison().as_ref().map(|e| e.bytes_done)
+    }
+
     /// Tell every window that this operation has just parked on a person, or
     /// just stopped being parked. Call it on BOTH edges of a wait.
     ///
