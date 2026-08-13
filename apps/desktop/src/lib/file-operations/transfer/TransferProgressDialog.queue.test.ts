@@ -11,7 +11,7 @@
  * background → window handoff without a live Tauri runtime.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 import type { OperationSnapshot } from '$lib/ipc/bindings'
 import TransferProgressDialog from './TransferProgressDialog.svelte'
@@ -19,6 +19,10 @@ import {
   initMainWindowOperations,
   destroyMainWindowOperations,
 } from '$lib/file-operations/queue/main-window-operations.svelte'
+import {
+  destroyOperationSessions,
+  initOperationSessions,
+} from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
 
 // Hoisted so the `vi.mock` factory (lifted to the top of the file) can reference
 // these. Plain `const`s declared here would be in the temporal dead zone when the
@@ -26,6 +30,7 @@ import {
 const {
   pauseOperationMock,
   resumeOperationMock,
+  cancelOperationMock,
   cancelWriteOperationMock,
   listOperationsMock,
   operationsChangedCbs,
@@ -33,6 +38,7 @@ const {
 } = vi.hoisted(() => ({
   pauseOperationMock: vi.fn(() => Promise.resolve()),
   resumeOperationMock: vi.fn(() => Promise.resolve()),
+  cancelOperationMock: vi.fn(() => Promise.resolve()),
   cancelWriteOperationMock: vi.fn(() => Promise.resolve()),
   listOperationsMock: vi.fn(() => Promise.resolve<OperationSnapshot[]>([])),
   // EVERY `operations-changed` subscriber, not just the dialog's: the main
@@ -64,6 +70,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onWriteSettled: vi.fn(() => Promise.resolve(() => {})),
   onWriteConflict: vi.fn(() => Promise.resolve(() => {})),
   resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
+  cancelOperation: cancelOperationMock,
   cancelWriteOperation: cancelWriteOperationMock,
   cancelScanPreview: vi.fn(() => Promise.resolve()),
   checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
@@ -134,6 +141,25 @@ async function flushPromises(): Promise<void> {
   }
 }
 
+/** Every dialog this file mounts, torn down between tests. A dialog is a view
+ *  now, so one left mounted keeps holding the session for `op-1` and the next
+ *  test's dialog would find that session already seeded. */
+const mounted: ReturnType<typeof mount>[] = []
+
+function track(instance: ReturnType<typeof mount>): ReturnType<typeof mount> {
+  mounted.push(instance)
+  return instance
+}
+
+/** Unmounts a dialog and forgets it, so the between-tests sweep doesn't try
+ *  again. Several cases unmount mid-test, because what happens on teardown is
+ *  the thing they're asserting. */
+function dropView(instance: ReturnType<typeof mount>): void {
+  const at = mounted.indexOf(instance)
+  if (at >= 0) mounted.splice(at, 1)
+  void unmount(instance)
+}
+
 async function mountDialog(): Promise<{
   component: ReturnType<typeof mount>
   target: HTMLDivElement
@@ -142,26 +168,28 @@ async function mountDialog(): Promise<{
   const onQueue = vi.fn()
   const target = document.createElement('div')
   document.body.appendChild(target)
-  const component = mount(TransferProgressDialog, {
-    target,
-    props: {
-      operationType: 'copy',
-      sourcePaths: ['/Users/test/things'],
-      sourceFolderPath: '/Users/test',
-      destinationPath: '/Users/test/dest',
-      direction: 'right',
-      sortColumn: 'name',
-      sortOrder: 'ascending',
-      previewId: null,
-      sourceVolumeId: 'root',
-      destVolumeId: 'root',
-      conflictResolution: 'stop',
-      onComplete: () => {},
-      onCancelled: () => {},
-      onError: () => {},
-      onQueue,
-    },
-  })
+  const component = track(
+    mount(TransferProgressDialog, {
+      target,
+      props: {
+        operationType: 'copy',
+        sourcePaths: ['/Users/test/things'],
+        sourceFolderPath: '/Users/test',
+        destinationPath: '/Users/test/dest',
+        direction: 'right',
+        sortColumn: 'name',
+        sortOrder: 'ascending',
+        previewId: null,
+        sourceVolumeId: 'root',
+        destVolumeId: 'root',
+        conflictResolution: 'stop',
+        onComplete: () => {},
+        onCancelled: () => {},
+        onError: () => {},
+        onQueue,
+      },
+    }),
+  )
   await flushPromises()
   // Drive the dialog into the active (copying) phase so the manage controls
   // show. The status snapshot alone isn't enough: an operation is `running`
@@ -180,26 +208,28 @@ async function mountScanningDialog(): Promise<{ target: HTMLDivElement; onQueue:
   const onQueue = vi.fn()
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(TransferProgressDialog, {
-    target,
-    props: {
-      operationType: 'copy',
-      sourcePaths: ['/Users/test/things'],
-      sourceFolderPath: '/Users/test',
-      destinationPath: '/Users/test/dest',
-      direction: 'right',
-      sortColumn: 'name',
-      sortOrder: 'ascending',
-      previewId: 'prev-1',
-      sourceVolumeId: 'root',
-      destVolumeId: 'root',
-      conflictResolution: 'stop',
-      onComplete: () => {},
-      onCancelled: () => {},
-      onError: () => {},
-      onQueue,
-    },
-  })
+  track(
+    mount(TransferProgressDialog, {
+      target,
+      props: {
+        operationType: 'copy',
+        sourcePaths: ['/Users/test/things'],
+        sourceFolderPath: '/Users/test',
+        destinationPath: '/Users/test/dest',
+        direction: 'right',
+        sortColumn: 'name',
+        sortOrder: 'ascending',
+        previewId: 'prev-1',
+        sourceVolumeId: 'root',
+        destVolumeId: 'root',
+        conflictResolution: 'stop',
+        onComplete: () => {},
+        onCancelled: () => {},
+        onError: () => {},
+        onQueue,
+      },
+    }),
+  )
   await flushPromises()
   emitSnapshot(snapshot('running'))
   await tick()
@@ -262,16 +292,34 @@ function otherOp(
   }
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  while (mounted.length > 0) {
+    const instance = mounted.pop()
+    if (instance) void unmount(instance)
+  }
   destroyMainWindowOperations()
+  destroyOperationSessions()
   operationsChangedCbs.length = 0
+  writeProgressCbs.length = 0
   pauseOperationMock.mockClear()
   resumeOperationMock.mockClear()
+  cancelOperationMock.mockClear()
   cancelWriteOperationMock.mockClear()
   listOperationsMock.mockClear()
-  listOperationsMock.mockResolvedValue([])
+  // The backend registers the operation before the start command returns, so a
+  // session that seeds itself finds it. An empty list would tell the session the
+  // transfer was already over.
+  listOperationsMock.mockResolvedValue(snapshot('running'))
   openQueueWindowMock.mockClear()
   addToastMock.mockClear()
+  // The registry subscribes the event fan-out, so it has to be up before a
+  // dialog mounts: a view binds to a session rather than listening for itself.
+  await initOperationSessions()
+})
+
+afterEach(() => {
+  destroyOperationSessions()
+  destroyMainWindowOperations()
 })
 
 describe('TransferProgressDialog Pause/Resume', () => {
@@ -299,7 +347,7 @@ describe('TransferProgressDialog Pause/Resume', () => {
     await tick()
     expect(resumeOperationMock).toHaveBeenCalledWith('op-1')
 
-    void unmount(component)
+    dropView(component)
   })
 })
 
@@ -317,7 +365,7 @@ describe('TransferProgressDialog Queue button', () => {
     expect(onQueue, 'asks the parent to unmount the modal').toHaveBeenCalledOnce()
 
     // Unmounting a backgrounded dialog must NOT cancel the still-running op.
-    void unmount(component)
+    dropView(component)
     await flushPromises()
     expect(cancelWriteOperationMock, 'backgrounded op keeps running on unmount').not.toHaveBeenCalled()
   })
@@ -363,13 +411,13 @@ describe('TransferProgressDialog dialog-scoped F2', () => {
     expect(onQueue, 'F2 backgrounds the op').toHaveBeenCalledOnce()
     expect(openQueueWindowMock).toHaveBeenCalledOnce()
 
-    void unmount(component)
+    dropView(component)
   })
 
   it('NEGATIVE: F2 with the dialog closed reaches the global file.rename handler (no leaked binding)', async () => {
     const { component } = await mountDialog()
     // Close the dialog. Its keydown handler unmounts with it.
-    void unmount(component)
+    dropView(component)
     await flushPromises()
 
     // Stand-in for the app's global key handler that maps F2 → file.rename. With
@@ -412,26 +460,28 @@ describe('TransferProgressDialog auto-queue surfacing', () => {
     const onQueue = vi.fn()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(TransferProgressDialog, {
-      target,
-      props: {
-        operationType: 'copy',
-        sourcePaths: ['/Users/test/things'],
-        sourceFolderPath: '/Users/test',
-        destinationPath: '/Users/test/dest',
-        direction: 'right',
-        sortColumn: 'name',
-        sortOrder: 'ascending',
-        previewId: null,
-        sourceVolumeId: 'root',
-        destVolumeId: 'root',
-        conflictResolution: 'stop',
-        onComplete: () => {},
-        onCancelled: () => {},
-        onError: () => {},
-        onQueue,
-      },
-    })
+    const component = track(
+      mount(TransferProgressDialog, {
+        target,
+        props: {
+          operationType: 'copy',
+          sourcePaths: ['/Users/test/things'],
+          sourceFolderPath: '/Users/test',
+          destinationPath: '/Users/test/dest',
+          direction: 'right',
+          sortColumn: 'name',
+          sortOrder: 'ascending',
+          previewId: null,
+          sourceVolumeId: 'root',
+          destVolumeId: 'root',
+          conflictResolution: 'stop',
+          onComplete: () => {},
+          onCancelled: () => {},
+          onError: () => {},
+          onQueue,
+        },
+      }),
+    )
     await flushPromises()
 
     expect(onQueue, 'a queued op surfaces the queue window instead of a modal').toHaveBeenCalledOnce()
@@ -439,61 +489,66 @@ describe('TransferProgressDialog auto-queue surfacing', () => {
     expect(addToastMock, 'a quiet queued toast').toHaveBeenCalledOnce()
 
     // Backgrounding must not cancel the queued op.
-    void unmount(component)
+    dropView(component)
     await flushPromises()
     expect(cancelWriteOperationMock).not.toHaveBeenCalled()
   })
 })
 
-describe('TransferProgressDialog backgrounded onDestroy stale-read regression', () => {
-  it('Queue does NOT cancel when onQueue synchronously unmounts the modal (the real teardown)', async () => {
+describe('TransferProgressDialog backgrounding under the real synchronous teardown', () => {
+  it('hands the operation over intact when onQueue synchronously unmounts the modal', async () => {
     // The real parent (dialog-state) reacts to `onQueue` by synchronously
     // unmounting the modal (`showTransferProgressDialog = false`), so `onDestroy`
-    // runs in the SAME synchronous turn `handleQueue` set `backgrounded = true`.
-    // When `backgrounded` was a `$state` rune, that onDestroy read came back STALE
-    // (`false`) during the reactive-scope disposal, the safety-net guard wrongly
-    // passed, and the op was cancelled — the transfer died and the queue window
-    // opened empty. The earlier Queue tests used a no-op `onQueue` + a separate
-    // `unmount()`, so onDestroy ran in a LATER turn where the rune read fine, and
-    // they missed this. Here `onQueue` unmounts inline, reproducing the timing.
+    // runs in the SAME turn `handleQueue` set `backgrounded = true`. That timing
+    // is what once cost a transfer: `backgrounded` was a `$state` rune, the read
+    // during reactive-scope disposal came back STALE, and the op was cancelled —
+    // the transfer died and the queue window opened empty. The other Queue tests
+    // use a no-op `onQueue` plus a separate `unmount()`, so their teardown lands
+    // in a LATER turn and they can't see this; here `onQueue` unmounts inline.
     const target = document.createElement('div')
     document.body.appendChild(target)
     let comp: ReturnType<typeof mount> | null = null
     const onQueue = (): void => {
-      if (comp) void unmount(comp)
+      if (comp) dropView(comp)
     }
-    comp = mount(TransferProgressDialog, {
-      target,
-      props: {
-        operationType: 'copy',
-        sourcePaths: ['/Users/test/things'],
-        sourceFolderPath: '/Users/test',
-        destinationPath: '/Users/test/dest',
-        direction: 'right',
-        sortColumn: 'name',
-        sortOrder: 'ascending',
-        previewId: null,
-        sourceVolumeId: 'root',
-        destVolumeId: 'root',
-        conflictResolution: 'stop',
-        onComplete: () => {},
-        onCancelled: () => {},
-        onError: () => {},
-        onQueue,
-      },
-    })
+    comp = track(
+      mount(TransferProgressDialog, {
+        target,
+        props: {
+          operationType: 'copy',
+          sourcePaths: ['/Users/test/things'],
+          sourceFolderPath: '/Users/test',
+          destinationPath: '/Users/test/dest',
+          direction: 'right',
+          sortColumn: 'name',
+          sortOrder: 'ascending',
+          previewId: null,
+          sourceVolumeId: 'root',
+          destVolumeId: 'root',
+          conflictResolution: 'stop',
+          onComplete: () => {},
+          onCancelled: () => {},
+          onError: () => {},
+          onQueue,
+        },
+      }),
+    )
     await flushPromises()
     emitSnapshot(snapshot('running'))
     await tick()
     cancelWriteOperationMock.mockClear()
+    cancelOperationMock.mockClear()
+    openQueueWindowMock.mockClear()
 
     queryButton(target, BACKGROUND_ARIA)?.click()
     await flushPromises()
 
+    expect(openQueueWindowMock, 'the handoff completes: the queue window opens').toHaveBeenCalledOnce()
     expect(
       cancelWriteOperationMock,
       'a backgrounded op must survive the synchronous modal teardown',
     ).not.toHaveBeenCalled()
+    expect(cancelOperationMock, 'and nothing cancels it through the manager either').not.toHaveBeenCalled()
   })
 })
 
@@ -516,7 +571,7 @@ describe('TransferProgressDialog background/queue button label', () => {
     expect(queryButton(target, BACKGROUND_ARIA), 'the accessible name follows the word').not.toBeNull()
     expect(queryButton(target, QUEUE_ARIA)).toBeNull()
 
-    void unmount(component)
+    dropView(component)
   })
 
   it('reads "Queue" once another operation is in flight', async () => {
@@ -527,7 +582,7 @@ describe('TransferProgressDialog background/queue button label', () => {
     expect(backgroundButtonLabel(target)).toBe('Queue')
     expect(queryButton(target, QUEUE_ARIA)).not.toBeNull()
 
-    void unmount(component)
+    dropView(component)
   })
 
   it('tracks the queue LIVE: the word flips when another operation joins and leaves', async () => {
@@ -544,7 +599,7 @@ describe('TransferProgressDialog background/queue button label', () => {
     await tick()
     expect(backgroundButtonLabel(target), 'and it goes back when the newcomer finishes').toBe('Background')
 
-    void unmount(component)
+    dropView(component)
   })
 
   it('an instant operation never flips the word: a rename is gone before the eye lands on it', async () => {
@@ -554,7 +609,7 @@ describe('TransferProgressDialog background/queue button label', () => {
 
     expect(backgroundButtonLabel(target)).toBe('Background')
 
-    void unmount(component)
+    dropView(component)
   })
 
   it('a retained failure never flips the word: it is a notice, not work to wait behind', async () => {
@@ -564,7 +619,7 @@ describe('TransferProgressDialog background/queue button label', () => {
 
     expect(backgroundButtonLabel(target)).toBe('Background')
 
-    void unmount(component)
+    dropView(component)
   })
 })
 

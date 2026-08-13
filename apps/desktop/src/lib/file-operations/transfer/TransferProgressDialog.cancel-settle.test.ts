@@ -4,15 +4,21 @@
  * or closing on either alone, is wrong. See `lib/file-operations/CLAUDE.md`
  * § "Cancel close" for the contract.
  *
- * We mount the dialog with mocked event helpers that capture the registered
- * callbacks. The test then drives the dialog by invoking those callbacks
- * directly with synthesised events, asserting which `onCancelled` /
- * `onComplete` / `onError` prop callback fires and when.
+ * The dialog is a VIEW of its operation, so each test inits the window's
+ * session registry: that is what subscribes the event fan-out (through the
+ * mocked helpers below) and what a mounted dialog binds to. The test then drives
+ * the dialog by invoking the captured callbacks with synthesised events,
+ * asserting which `onCancelled` / `onComplete` / `onError` prop callback fires
+ * and when.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
-import type { WriteCancelledEvent, WriteSettledEvent, WriteCompleteEvent } from '$lib/tauri-commands'
+import type { OperationSnapshot, WriteCancelledEvent, WriteSettledEvent, WriteCompleteEvent } from '$lib/tauri-commands'
+import {
+  destroyOperationSessions,
+  initOperationSessions,
+} from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
 // Import the SUT statically so the linter sees a real source dependency.
 // The dynamic import inside `mountDialog` is kept for the per-test reset
 // pattern that vitest's module mocking expects.
@@ -55,6 +61,7 @@ vi.mock('$lib/tauri-commands', () => ({
   }),
   onWriteConflict: vi.fn(() => Promise.resolve(() => {})),
   resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
+  cancelOperation: vi.fn(() => Promise.resolve()),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   cancelScanPreview: vi.fn(() => Promise.resolve()),
   checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
@@ -65,7 +72,22 @@ vi.mock('$lib/tauri-commands', () => ({
   pauseOperation: vi.fn(() => Promise.resolve()),
   resumeOperation: vi.fn(() => Promise.resolve()),
   onOperationsChanged: vi.fn(() => Promise.resolve(() => {})),
-  listOperations: vi.fn(() => Promise.resolve([])),
+  // The backend registers the operation before the start command returns, so a
+  // session that seeds itself finds it. Answering with an empty list would tell
+  // the session the transfer was already over.
+  listOperations: vi.fn(() =>
+    Promise.resolve<OperationSnapshot[]>([
+      {
+        operationId: 'op-1',
+        operationType: 'delete',
+        status: 'running',
+        source: '/Users/test',
+        destination: null,
+        supportsRollback: false,
+        error: null,
+      },
+    ]),
+  ),
   DEFAULT_VOLUME_ID: 'root',
 }))
 
@@ -97,6 +119,20 @@ async function flushPromises(): Promise<void> {
   }
 }
 
+beforeEach(async () => {
+  // Reset the captured callbacks BEFORE the fan-out subscribes: the registry is
+  // what subscribes it, and it has to be up before the dialog mounts, because a
+  // view binds to a session rather than listening for itself.
+  completeCb = null
+  cancelledCb = null
+  settledCb = null
+  await initOperationSessions()
+})
+
+afterEach(() => {
+  destroyOperationSessions()
+})
+
 async function mountDialog(): Promise<{
   component: ReturnType<typeof mount>
   onComplete: ReturnType<typeof vi.fn>
@@ -104,11 +140,6 @@ async function mountDialog(): Promise<{
   onError: ReturnType<typeof vi.fn>
   target: HTMLDivElement
 }> {
-  // Reset captured callbacks so a previous test's state doesn't leak through.
-  completeCb = null
-  cancelledCb = null
-  settledCb = null
-
   // The static `TransferProgressDialogStatic` import is what we mount.
   const TransferProgressDialog = TransferProgressDialogStatic
   const onComplete = vi.fn()

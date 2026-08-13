@@ -12,10 +12,14 @@
  * Both must apply the disable+tooltip consistently. These tests drive both.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, tick } from 'svelte'
-import type { WriteConflictEvent } from '$lib/tauri-commands'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mount, tick, unmount } from 'svelte'
+import type { OperationSnapshot, WriteConflictEvent } from '$lib/tauri-commands'
 import { expectNoA11yViolations } from '$lib/test-a11y'
+import {
+  destroyOperationSessions,
+  initOperationSessions,
+} from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
 import TransferProgressDialog from './TransferProgressDialog.svelte'
 
 const ROLLBACK_TOOLTIP = 'Rollback is not available for same-volume moves'
@@ -51,6 +55,7 @@ vi.mock('$lib/tauri-commands', () => ({
     })
   }),
   resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
+  cancelOperation: vi.fn(() => Promise.resolve()),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   cancelScanPreview: vi.fn(() => Promise.resolve()),
   checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
@@ -61,7 +66,22 @@ vi.mock('$lib/tauri-commands', () => ({
   pauseOperation: vi.fn(() => Promise.resolve()),
   resumeOperation: vi.fn(() => Promise.resolve()),
   onOperationsChanged: vi.fn(() => Promise.resolve(() => {})),
-  listOperations: vi.fn(() => Promise.resolve([])),
+  // The backend registers the operation before the start command returns, so a
+  // session that seeds itself finds it. An empty list would tell the session the
+  // transfer was already over.
+  listOperations: vi.fn(() =>
+    Promise.resolve<OperationSnapshot[]>([
+      {
+        operationId: 'op-1',
+        operationType: 'copy',
+        status: 'running',
+        source: '/Users/test',
+        destination: '/Users/test/dest',
+        supportsRollback: true,
+        error: null,
+      },
+    ]),
+  ),
   DEFAULT_VOLUME_ID: 'root',
 }))
 
@@ -97,17 +117,17 @@ async function flushMicrotasks(): Promise<void> {
   }
 }
 
-/** Mounted targets, removed individually in `beforeEach` so the tooltip
+/** Mounted dialogs, torn down individually in `beforeEach` so the tooltip
  *  module's shared `<body>` container (created lazily on first hover) survives
- *  between tests instead of being orphaned by a blanket `innerHTML = ''`. */
-const mountedTargets: HTMLElement[] = []
+ *  between tests instead of being orphaned by a blanket `innerHTML = ''`.
+ *  Unmounted rather than merely detached: a dialog is a view now, and one left
+ *  mounted would keep holding a session for `op-1` into the next test. */
+const mounted: { target: HTMLElement; instance: ReturnType<typeof mount> }[] = []
 
 async function mountDialog(opts: MountOptions): Promise<HTMLDivElement> {
-  conflictCb = null
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mountedTargets.push(target)
-  mount(TransferProgressDialog, {
+  const instance = mount(TransferProgressDialog, {
     target,
     props: {
       operationType: opts.operationType,
@@ -126,6 +146,7 @@ async function mountDialog(opts: MountOptions): Promise<HTMLDivElement> {
       onError: () => {},
     },
   })
+  mounted.push({ target, instance })
   await flushMicrotasks()
   for (const cb of [...progressCbs]) {
     cb({
@@ -187,14 +208,25 @@ function readTooltipOnHover(host: Element): string {
   }
 }
 
-beforeEach(() => {
-  conflictCb = null
+beforeEach(async () => {
   // Remove only mounted dialog targets, not the tooltip module's shared
   // <body> container — wiping it orphans the module's cached reference and the
   // next hover appends the tooltip to a detached node (queryable as null).
-  while (mountedTargets.length > 0) {
-    mountedTargets.pop()?.remove()
+  while (mounted.length > 0) {
+    const view = mounted.pop()
+    if (!view) continue
+    void unmount(view.instance)
+    view.target.remove()
   }
+  // Reset the captured callbacks BEFORE the fan-out subscribes: it is the
+  // registry that listens now, and it has to be up before a dialog binds.
+  conflictCb = null
+  progressCbs.length = 0
+  await initOperationSessions()
+})
+
+afterEach(() => {
+  destroyOperationSessions()
 })
 
 /* ------------------------------------------------------------------------- */

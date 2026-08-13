@@ -147,10 +147,12 @@
         tString('fileOperations.transferProgress.rollbackUnavailableTooltip'),
     )
 
-    // Execution state machine (event coordination, phases, cancel/settle,
-    // pause/queue, conflict prompt, scan-wait). Lives in a factory so it's
-    // testable without rendering; the markup reads its `$state` through the
-    // aliases below, exactly as it did when the state was inline.
+    // This dialog as a VIEW of one operation: the factory dispatches it, binds
+    // its session, and owns what belongs to a piece of UI (the anti-flicker
+    // floor, dismissal, the Queue handoff). Everything the operation itself
+    // knows comes through the session it shares with the queue rows and the
+    // corner chip. Lives in a factory so it's testable without rendering; the
+    // markup reads it through the aliases below.
     const progress = createTransferProgressState({
         operationType,
         sourcePaths,
@@ -172,25 +174,22 @@
     })
 
     // Local aliases over the factory getters so the markup reads the same names
-    // it always has. Each tracks the factory's reactive `$state`, so the template
-    // updates exactly as before.
+    // it always has. Each tracks reactive state (the view's own, or the
+    // session's through it), so the template updates exactly as before.
     const phase = $derived(progress.phase)
     const isRollingBack = $derived(progress.isRollingBack)
     const isCancelling = $derived(progress.isCancelling)
     const cancelEventReceived = $derived(progress.cancelEventReceived)
     const settleSlow = $derived(progress.settleSlow)
-    const conflictEvent = $derived(progress.conflictEvent)
+    const conflictEvent = $derived(progress.conflict)
     const isPaused = $derived(progress.isPaused)
     const pauseInFlight = $derived(progress.pauseInFlight)
     const canPauseOrQueue = $derived(progress.canPauseOrQueue)
     const operationSettled = $derived(progress.operationSettled)
     const isResolvingConflict = $derived(progress.isResolvingConflict)
-    const scanFilesFound = $derived(progress.scanFilesFound)
-    const scanDirsFound = $derived(progress.scanDirsFound)
-    const scanBytesFound = $derived(progress.scanBytesFound)
-    const scanCurrentDir = $derived(progress.scanCurrentDir)
-    const scanFilesPerSec = $derived(progress.scanFilesPerSec)
-    const scanBytesPerSec = $derived(progress.scanBytesPerSec)
+    /** The scan-phase readout, computed by the operation's session so this
+     *  dialog and a queue row watching the same walk can't disagree. */
+    const scan = $derived(progress.scan)
     const currentFile = $derived(progress.currentFile)
     const filesDone = $derived(progress.filesDone)
     const filesTotal = $derived(progress.filesTotal)
@@ -272,7 +271,9 @@
     onkeydown={handleKeydown}
     dialogId="transfer-progress"
     onclose={() => {
-        void progress.handleCancel(false)
+        // ❌ Never a cancel. Closing this dialog detaches it from the operation;
+        // only the Cancel button asks the operation to stop.
+        progress.detach()
     }}
     containerStyle={DIALOG_WIDTH_STYLE}
     resizable="horizontal"
@@ -343,12 +344,12 @@
             <div class="scan-wait-section">
                 <ScanPhaseBody
                     {sourceFolderPath}
-                    {scanFilesFound}
-                    {scanDirsFound}
-                    {scanBytesFound}
-                    {scanFilesPerSec}
-                    {scanBytesPerSec}
-                    {scanCurrentDir}
+                    scanFilesFound={scan.filesFound}
+                    scanDirsFound={scan.dirsFound}
+                    scanBytesFound={scan.bytesFound}
+                    scanFilesPerSec={scan.filesPerSecond}
+                    scanBytesPerSec={scan.bytesPerSecond}
+                    scanCurrentDir={scan.currentDir}
                     {currentFile}
                 />
             </div>

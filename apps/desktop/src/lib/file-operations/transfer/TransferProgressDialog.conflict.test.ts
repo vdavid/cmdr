@@ -16,10 +16,14 @@
  * dialog component directly and asserts on the DOM.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, tick } from 'svelte'
-import type { WriteConflictEvent } from '$lib/tauri-commands'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mount, tick, unmount } from 'svelte'
+import type { OperationSnapshot, WriteConflictEvent } from '$lib/tauri-commands'
 import { expectNoA11yViolations } from '$lib/test-a11y'
+import {
+  destroyOperationSessions,
+  initOperationSessions,
+} from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
 import TransferProgressDialog from './TransferProgressDialog.svelte'
 
 let conflictCb: ((e: WriteConflictEvent) => void) | null = null
@@ -44,6 +48,7 @@ vi.mock('$lib/tauri-commands', () => ({
     })
   }),
   resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
+  cancelOperation: vi.fn(() => Promise.resolve()),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   cancelScanPreview: vi.fn(() => Promise.resolve()),
   checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
@@ -54,7 +59,22 @@ vi.mock('$lib/tauri-commands', () => ({
   pauseOperation: vi.fn(() => Promise.resolve()),
   resumeOperation: vi.fn(() => Promise.resolve()),
   onOperationsChanged: vi.fn(() => Promise.resolve(() => {})),
-  listOperations: vi.fn(() => Promise.resolve([])),
+  // The backend registers the operation before the start command returns, so a
+  // session that seeds itself finds it. An empty list would tell the session the
+  // transfer was already over.
+  listOperations: vi.fn(() =>
+    Promise.resolve<OperationSnapshot[]>([
+      {
+        operationId: 'op-1',
+        operationType: 'copy',
+        status: 'running',
+        source: '/Users/test/things',
+        destination: '/Users/test/dest',
+        supportsRollback: true,
+        error: null,
+      },
+    ]),
+  ),
   DEFAULT_VOLUME_ID: 'root',
 }))
 
@@ -73,11 +93,10 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
 }))
 
 async function flushMicrotasks(): Promise<void> {
-  // The dialog's onMount runs ~6 `await onWriteX(...)` subscribers before it
-  // reaches `await dispatchOperation()` and the conflict callback gets wired
-  // up. We need enough microtask turns to walk the entire chain. Each round
-  // here yields exactly one macrotask + one microtask flush + a Svelte tick;
-  // 10 rounds is heavy overkill but still under 10 ms in jsdom.
+  // The dialog's onMount dispatches, learns its `operationId`, binds a session,
+  // and lets that session seed itself. We need enough turns to walk the whole
+  // chain. Each round here yields exactly one macrotask + one microtask flush +
+  // a Svelte tick; 10 rounds is heavy overkill but still under 10 ms in jsdom.
   for (let i = 0; i < 10; i++) {
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 0)
@@ -86,34 +105,39 @@ async function flushMicrotasks(): Promise<void> {
   }
 }
 
+/** Mounted dialogs, unmounted between tests: a dialog is a view now, and one
+ *  left mounted would hold a session for `op-1` into the next test. */
+const mounted: ReturnType<typeof mount>[] = []
+
 async function mountDialogWithConflict(event: WriteConflictEvent): Promise<HTMLDivElement> {
-  conflictCb = null
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(TransferProgressDialog, {
-    target,
-    props: {
-      operationType: 'copy',
-      sourcePaths: ['/Users/test/things'],
-      sourceFolderPath: '/Users/test',
-      destinationPath: '/Users/test/dest',
-      direction: 'right',
-      sortColumn: 'name',
-      sortOrder: 'ascending',
-      previewId: null,
-      sourceVolumeId: 'root',
-      destVolumeId: 'root',
-      conflictResolution: 'stop',
-      onComplete: () => {},
-      onCancelled: () => {},
-      onError: () => {},
-    },
-  })
+  mounted.push(
+    mount(TransferProgressDialog, {
+      target,
+      props: {
+        operationType: 'copy',
+        sourcePaths: ['/Users/test/things'],
+        sourceFolderPath: '/Users/test',
+        destinationPath: '/Users/test/dest',
+        direction: 'right',
+        sortColumn: 'name',
+        sortOrder: 'ascending',
+        previewId: null,
+        sourceVolumeId: 'root',
+        destVolumeId: 'root',
+        conflictResolution: 'stop',
+        onComplete: () => {},
+        onCancelled: () => {},
+        onError: () => {},
+      },
+    }),
+  )
   await flushMicrotasks()
-  // Cast into a const so TS narrowing doesn't get widened back to nullable
-  // across any future await further down (another await could in theory
-  // reassign `conflictCb`, even though we control the mock here).
-  const cb = conflictCb as ((e: WriteConflictEvent) => void) | null
+  // Into a const so TS narrowing doesn't get widened back to nullable across any
+  // future await further down (another await could in theory reassign
+  // `conflictCb`, even though we control the mock here).
+  const cb = conflictCb
   if (cb === null) throw new Error('conflict subscriber never registered')
   cb(event)
   await tick()
@@ -142,9 +166,20 @@ function makeEvent(overrides: Partial<WriteConflictEvent> = {}): WriteConflictEv
   }
 }
 
-beforeEach(() => {
-  conflictCb = null
+beforeEach(async () => {
+  while (mounted.length > 0) {
+    const instance = mounted.pop()
+    if (instance) void unmount(instance)
+  }
   document.body.innerHTML = ''
+  // Reset the captured callback BEFORE the fan-out subscribes: it is the
+  // registry that listens now, and it has to be up before a dialog binds.
+  conflictCb = null
+  await initOperationSessions()
+})
+
+afterEach(() => {
+  destroyOperationSessions()
 })
 
 /* ------------------------------------------------------------------------- */

@@ -1,19 +1,27 @@
 /**
- * Headless tests for `createTransferProgressState`, the transfer execution
- * state machine extracted from `TransferProgressDialog.svelte`. The whole point
- * of the extraction is to drive the machine without rendering a component, so
- * these tests instantiate the factory directly and exercise its branches by
- * invoking the captured Tauri-event callbacks with synthesised payloads.
+ * Headless tests for `createTransferProgressState`: the progress dialog as a
+ * VIEW of one operation, driven without rendering a component.
  *
- * Mocking approach (mirrors `TransferProgressDialog.cancel-settle.test.ts` and
- * `operations-store.svelte.test.ts`): `$lib/tauri-commands` is fully mocked. The
- * `on<Event>` subscriber mocks capture the registered callback into a
- * module-level `let`; the test then calls that callback to deliver an event at a
- * deterministic moment. The dispatch commands resolve with a fixed
+ * The view holds runes (its session binding, and the effects that watch for an
+ * outcome), so each case builds it inside an `$effect.root` and disposes that
+ * root afterwards — standing in for the component scope it lives in.
+ *
+ * Mocking approach (mirrors `queue-row-session.svelte.test.ts`):
+ * `$lib/tauri-commands` is fully mocked, and the window's session registry is
+ * inited per test so the event fan-out subscribes through those mocks. The
+ * `on<Event>` subscriber mocks capture the fan-out's callback into a
+ * module-level `let`; calling it delivers an event down exactly the path a live
+ * one takes — fan-out, session, view. The dispatch commands resolve with a fixed
  * `operationId`; per-test overrides cover the deferred-IPC and error paths.
+ *
+ * `listOperations` answers with this operation's row because that is what the
+ * backend does: it registers the operation before the start command returns, so
+ * a session seeding itself finds it. A mock that answered "no such operation"
+ * would be telling the session the transfer was already over.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { flushSync } from 'svelte'
 import type {
   WriteProgressEvent,
   WriteCompleteEvent,
@@ -26,7 +34,8 @@ import type {
 } from '$lib/tauri-commands'
 import type { WriteOperationError, WriteOperationType } from '$lib/file-explorer/types'
 
-// Callbacks the machine registers, captured so the test can deliver events.
+// Callbacks the window's fan-out registers, captured so the test can deliver
+// events at a deterministic moment.
 let progressCb: ((e: WriteProgressEvent) => void) | null = null
 let completeCb: ((e: WriteCompleteEvent) => void) | null = null
 let errorCb: ((e: WriteErrorEvent) => void) | null = null
@@ -73,11 +82,12 @@ vi.mock('$lib/tauri-commands', () => ({
     return Promise.resolve(noopUnlisten)
   }),
   resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
+  cancelOperation: vi.fn(() => Promise.resolve()),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   cancelScanPreview: vi.fn(() => Promise.resolve()),
   pauseOperation: vi.fn(() => Promise.resolve()),
   resumeOperation: vi.fn(() => Promise.resolve()),
-  listOperations: vi.fn(() => Promise.resolve([])),
+  listOperations: vi.fn(() => Promise.resolve<OperationSnapshot[]>([])),
   DEFAULT_VOLUME_ID: 'root',
 }))
 
@@ -99,6 +109,13 @@ vi.mock('$lib/intl/messages.svelte', () => ({
   tString: vi.fn((key: string) => key),
 }))
 
+// The real smoother, watched. The session resolves this same module, so the
+// count covers the whole main window.
+vi.mock('../progress-readout', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../progress-readout')>()
+  return { ...actual, createEtaSmoother: vi.fn(actual.createEtaSmoother) }
+})
+
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({
     debug: vi.fn(),
@@ -111,19 +128,22 @@ vi.mock('$lib/logging/logger', () => ({
 import { createTransferProgressState, type TransferProgressStateConfig } from './transfer-progress-state.svelte'
 import {
   copyBetweenVolumes,
-  moveBetweenVolumes,
-  compressFiles,
-  moveFiles,
-  deleteFiles,
-  trashFiles,
   resolveWriteConflict,
+  cancelOperation,
   cancelWriteOperation,
   cancelScanPreview,
   pauseOperation,
   resumeOperation,
+  listOperations,
 } from '$lib/tauri-commands'
 import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
 import { addToast } from '$lib/ui/toast'
+import { createEtaSmoother } from '../progress-readout'
+import {
+  destroyOperationSessions,
+  getOperationSessions,
+  initOperationSessions,
+} from '../operation-session/window-operation-sessions.svelte'
 import {
   getForegroundOperationId,
   setForegroundOperationId,
@@ -131,11 +151,13 @@ import {
   endForegroundClaim,
 } from '../foreground-operation.svelte'
 
-/** Drains the microtask queue so the machine's `await` chains settle. Fake
- *  timers don't fake microtasks, so this works with timers active. */
-async function flushMicro(): Promise<void> {
-  for (let i = 0; i < 25; i++) {
-    await Promise.resolve()
+/** Drains the machine's `await` chains and then runs whatever effects they
+ *  scheduled. Fake timers don't fake microtasks, so this works with timers
+ *  active. */
+async function settle(): Promise<void> {
+  for (let round = 0; round < 2; round++) {
+    for (let i = 0; i < 25; i++) await Promise.resolve()
+    flushSync()
   }
 }
 
@@ -190,17 +212,29 @@ function snapshot(
   }
 }
 
-/** Builds the machine, runs `start()`, and drains the async startup so the
- *  operationId is seeded and listeners are registered. */
+/** The reactive scope the view lives in. A component owns one in the app; a
+ *  test owns one here, and disposing it is what releases the session. */
+let disposeScope: (() => void) | null = null
+
+function makeState(config: TransferProgressStateConfig): ReturnType<typeof createTransferProgressState> {
+  let created!: ReturnType<typeof createTransferProgressState>
+  disposeScope = $effect.root(() => {
+    created = createTransferProgressState(config)
+  })
+  return created
+}
+
+/** Builds the view, runs `start()`, and drains the async startup so the
+ *  operation is named and its session bound. */
 async function startedState(over: Partial<TransferProgressStateConfig> = {}) {
   const config = makeConfig(over)
-  const state = createTransferProgressState(config)
+  const state = makeState(config)
   state.start()
-  await flushMicro()
+  await settle()
   return { state, config }
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   progressCb = null
   completeCb = null
   errorCb = null
@@ -209,113 +243,21 @@ beforeEach(() => {
   conflictCb = null
   opsChangedCb = null
   vi.clearAllMocks()
+  vi.mocked(listOperations).mockResolvedValue([snapshot('op-1', 'running')])
   vi.useFakeTimers()
   // The slot is module-scoped, so a test that leaves an owner behind would poison
   // the next one.
   setForegroundOperationId(null)
   while (isForegroundClaimPending()) endForegroundClaim()
+  await initOperationSessions()
+  vi.mocked(createEtaSmoother).mockClear()
 })
 
 afterEach(() => {
+  disposeScope?.()
+  disposeScope = null
+  destroyOperationSessions()
   vi.useRealTimers()
-})
-
-describe('createTransferProgressState: dispatch routing', () => {
-  it('dispatches a local copy through copyBetweenVolumes', async () => {
-    await startedState({ operationType: 'copy' })
-    expect(copyBetweenVolumes).toHaveBeenCalledTimes(1)
-  })
-
-  it('dispatches a local move through moveFiles', async () => {
-    await startedState({ operationType: 'move', sourceVolumeId: 'root', destVolumeId: 'root' })
-    expect(moveFiles).toHaveBeenCalledTimes(1)
-    expect(moveBetweenVolumes).not.toHaveBeenCalled()
-  })
-
-  it('dispatches a cross-volume move through moveBetweenVolumes', async () => {
-    await startedState({ operationType: 'move', sourceVolumeId: 'mtp-1', destVolumeId: 'root' })
-    expect(moveBetweenVolumes).toHaveBeenCalledTimes(1)
-    expect(moveFiles).not.toHaveBeenCalled()
-  })
-
-  it('routes a move INTO a zip through moveBetweenVolumes, not the local fast-path', async () => {
-    // Source and dest share the parent drive's `root` id (the zip lives on it), so
-    // the volume-id comparison alone would pick `moveFiles`. The dest PATH inside a
-    // `.zip` forces the cross-volume route (backend runs the archive-edit flow).
-    await startedState({
-      operationType: 'move',
-      sourceVolumeId: 'root',
-      destVolumeId: 'root',
-      sourcePaths: ['/left/file.txt'],
-      destinationPath: '/left/foo.zip/inner',
-    })
-    expect(moveBetweenVolumes).toHaveBeenCalledTimes(1)
-    expect(moveFiles).not.toHaveBeenCalled()
-  })
-
-  it('routes a move OUT of a zip through moveBetweenVolumes, not the local fast-path', async () => {
-    // Extract-out move: the SOURCE path is inside a `.zip` while both ids are `root`.
-    await startedState({
-      operationType: 'move',
-      sourceVolumeId: 'root',
-      destVolumeId: 'root',
-      sourcePaths: ['/left/foo.zip/inner.txt'],
-      destinationPath: '/right',
-    })
-    expect(moveBetweenVolumes).toHaveBeenCalledTimes(1)
-    expect(moveFiles).not.toHaveBeenCalled()
-  })
-
-  it('dispatches delete through deleteFiles', async () => {
-    await startedState({ operationType: 'delete' })
-    expect(deleteFiles).toHaveBeenCalledTimes(1)
-  })
-
-  it('dispatches trash through trashFiles', async () => {
-    await startedState({ operationType: 'trash' })
-    expect(trashFiles).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('createTransferProgressState: compression-level threading', () => {
-  // The FE reads `behavior.archiveCompressionLevel` once at dispatch (mocked to 6)
-  // and passes it in the operation config for every zip-writing path, so the
-  // backend applies the chosen deflate level. Non-archive copies simply ignore it.
-  it('passes the compression level to compressFiles', async () => {
-    await startedState({ operationType: 'compress' })
-    expect(compressFiles).toHaveBeenCalledWith(
-      'root',
-      ['/src/file.txt'],
-      'root',
-      '/dst',
-      expect.objectContaining({ compressionLevel: 6 }),
-      undefined,
-    )
-  })
-
-  it('passes the compression level to copyBetweenVolumes (copy INTO an archive uses the same level)', async () => {
-    await startedState({ operationType: 'copy' })
-    expect(copyBetweenVolumes).toHaveBeenCalledWith(
-      'root',
-      ['/src/file.txt'],
-      'root',
-      '/dst',
-      expect.objectContaining({ compressionLevel: 6 }),
-      undefined,
-    )
-  })
-
-  it('passes the compression level to moveBetweenVolumes (move INTO an archive uses the same level)', async () => {
-    await startedState({ operationType: 'move', sourceVolumeId: 'mtp-1', destVolumeId: 'root' })
-    expect(moveBetweenVolumes).toHaveBeenCalledWith(
-      'mtp-1',
-      ['/src/file.txt'],
-      'root',
-      '/dst',
-      expect.objectContaining({ compressionLevel: 6 }),
-      undefined,
-    )
-  })
 })
 
 describe('createTransferProgressState: progress + complete', () => {
@@ -327,6 +269,13 @@ describe('createTransferProgressState: progress + complete', () => {
     expect(state.filesDone).toBe(2)
     expect(state.bytesDone).toBe(200)
     expect(state.etaSecondsDisplay).toBe(12)
+  })
+
+  it('opens in the scan phase, before the operation has said anything', async () => {
+    // A confirmed transfer starts by counting, so the dialog shows the scan
+    // readout rather than a meaningless 0% while it waits for the first tick.
+    const { state } = await startedState({ previewId: 'prev-1' })
+    expect(state.phase).toBe('scanning')
   })
 
   it('handles a scanning → copying phase transition and smooths the displayed ETA', async () => {
@@ -344,9 +293,9 @@ describe('createTransferProgressState: progress + complete', () => {
       }),
     )
     expect(state.phase).toBe('scanning')
-    expect(state.scanFilesFound).toBe(3)
-    expect(state.scanDirsFound).toBe(2)
-    expect(state.scanCurrentDir).toBe('/src/sub')
+    expect(state.scan.filesFound).toBe(3)
+    expect(state.scan.dirsFound).toBe(2)
+    expect(state.scan.currentDir).toBe('/src/sub')
 
     // Transition to copying: resets the smoothed ETA, then re-warms from raw.
     progressCb(progressEvent({ phase: 'copying', etaSeconds: 10 }))
@@ -369,6 +318,7 @@ describe('createTransferProgressState: progress + complete', () => {
     if (!completeCb) throw new Error('complete subscriber never registered')
     completeCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 5, filesSkipped: 1, bytesProcessed: 999 })
     expect(state.operationSettled).toBe(true)
+    flushSync()
     // Min-display floor: not yet called, then called after advancing past it.
     expect(config.onComplete).not.toHaveBeenCalled()
     vi.advanceTimersByTime(450)
@@ -381,6 +331,7 @@ describe('createTransferProgressState: progress + complete', () => {
     const error: WriteOperationError = { type: 'io_error', path: '/src/file.txt', message: 'boom' }
     errorCb({ operationId: 'op-1', operationType: 'copy', error })
     expect(state.operationSettled).toBe(true)
+    flushSync()
     expect(config.onError).toHaveBeenCalledWith(error)
   })
 
@@ -392,45 +343,78 @@ describe('createTransferProgressState: progress + complete', () => {
   })
 })
 
-describe('createTransferProgressState: event buffering and IPC races', () => {
-  it('buffers events that arrive before the operationId, then replays them', async () => {
+describe('createTransferProgressState: birth', () => {
+  it('loses no event that arrives before the operation is named', async () => {
+    // The window's fan-out holds events for an id nobody has claimed yet and
+    // flushes them when a session claims it, so the view no longer buffers
+    // anything of its own.
     let resolveDispatch: (r: WriteOperationStartResult) => void = () => {}
     vi.mocked(copyBetweenVolumes).mockImplementationOnce(
       () => new Promise<WriteOperationStartResult>((res) => (resolveDispatch = res)),
     )
-    const { state } = { state: createTransferProgressState(makeConfig()) }
+    const state = makeState(makeConfig())
     state.start()
-    await flushMicro()
-    // Parked on the dispatch await: operationId is still null, so a progress
-    // event is buffered rather than applied.
+    await settle()
+    // Parked on the dispatch await: no session exists yet, so the fan-out holds
+    // the tick.
     if (!progressCb) throw new Error('progress subscriber never registered')
     progressCb(progressEvent({ filesDone: 7 }))
     expect(state.filesDone).toBe(0)
 
     resolveDispatch({ operationId: 'op-1', operationType: 'copy' })
-    await flushMicro()
-    // Replay applied the buffered event.
+    await settle()
+    // The claim flushed it.
     expect(state.filesDone).toBe(7)
   })
 
-  it('cancels and reports the op when the dialog is torn down mid-dispatch', async () => {
+  it('cancels through the manager when Cancel is pressed before the id arrives', async () => {
+    // Was: "cancels and reports the op when the dialog is torn down mid-dispatch",
+    // asserting `cancelWriteOperation(id, true)`. Two things changed. A TEARDOWN
+    // no longer implies a cancel (see the disposal suite); only an explicit
+    // Cancel does, and that is what this drives. And the cancel goes through the
+    // MANAGER, because an operation admitted behind a busy lane hasn't spawned a
+    // write op yet, so `cancelWriteOperation` could not drop it and the transfer
+    // would have run on regardless of the press.
     let resolveDispatch: (r: WriteOperationStartResult) => void = () => {}
     vi.mocked(copyBetweenVolumes).mockImplementationOnce(
       () => new Promise<WriteOperationStartResult>((res) => (resolveDispatch = res)),
     )
     const config = makeConfig()
-    const state = createTransferProgressState(config)
+    const state = makeState(config)
     state.start()
-    await flushMicro()
-    // Cancel before the operationId arrives: marks destroyed and defers.
+    await settle()
+    // Cancel before the operationId arrives: records the command and defers.
     void state.handleCancel(false)
-    await flushMicro()
-    expect(cancelWriteOperation).not.toHaveBeenCalled()
+    await settle()
+    expect(cancelOperation).not.toHaveBeenCalled()
 
     resolveDispatch({ operationId: 'op-1', operationType: 'copy' })
-    await flushMicro()
-    expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', true)
+    await settle()
+    expect(cancelOperation).toHaveBeenCalledWith('op-1')
+    vi.advanceTimersByTime(450)
     expect(config.onCancelled).toHaveBeenCalledWith(0)
+  })
+
+  it('backgrounds instead when the modal is CLOSED before the id arrives', async () => {
+    // Closing the dialog is a detach, so the press that could not be honoured
+    // yet becomes a handoff, not a cancel.
+    let resolveDispatch: (r: WriteOperationStartResult) => void = () => {}
+    vi.mocked(copyBetweenVolumes).mockImplementationOnce(
+      () => new Promise<WriteOperationStartResult>((res) => (resolveDispatch = res)),
+    )
+    const config = makeConfig()
+    const state = makeState(config)
+    state.start()
+    await settle()
+    state.detach()
+
+    resolveDispatch({ operationId: 'op-1', operationType: 'copy' })
+    await settle()
+
+    expect(cancelOperation).not.toHaveBeenCalled()
+    expect(cancelWriteOperation).not.toHaveBeenCalled()
+    expect(openQueueWindow).toHaveBeenCalledTimes(1)
+    expect(config.onQueue).toHaveBeenCalledTimes(1)
   })
 
   it('routes a structured backend error through onError', async () => {
@@ -444,18 +428,18 @@ describe('createTransferProgressState: event buffering and IPC races', () => {
     } satisfies WriteOperationError)
     vi.mocked(copyBetweenVolumes).mockImplementationOnce(() => Promise.reject(structured))
     const config = makeConfig()
-    const state = createTransferProgressState(config)
+    const state = makeState(config)
     state.start()
-    await flushMicro()
+    await settle()
     expect(config.onError).toHaveBeenCalledWith(expect.objectContaining({ type: 'permission_denied' }))
   })
 
   it('wraps a non-structured dispatch failure as an io_error', async () => {
     vi.mocked(copyBetweenVolumes).mockImplementationOnce(() => Promise.reject(new Error('kaboom')))
     const config = makeConfig()
-    const state = createTransferProgressState(config)
+    const state = makeState(config)
     state.start()
-    await flushMicro()
+    await settle()
     expect(config.onError).toHaveBeenCalledWith(expect.objectContaining({ type: 'io_error' }))
   })
 })
@@ -479,11 +463,11 @@ describe('createTransferProgressState: conflict resolution', () => {
     const { state } = await startedState()
     if (!conflictCb) throw new Error('conflict subscriber never registered')
     conflictCb(conflictEvent())
-    expect(state.conflictEvent).not.toBeNull()
+    expect(state.conflict).not.toBeNull()
 
     await state.handleConflictResolution('skip', true)
     expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 'skip', true)
-    expect(state.conflictEvent).toBeNull()
+    expect(state.conflict).toBeNull()
   })
 
   it('resolves a single conflict with overwrite (proceed)', async () => {
@@ -492,30 +476,30 @@ describe('createTransferProgressState: conflict resolution', () => {
     conflictCb(conflictEvent())
     await state.handleConflictResolution('overwrite', false)
     expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 'overwrite', false)
-    expect(state.conflictEvent).toBeNull()
+    expect(state.conflict).toBeNull()
   })
 
   it('clears the prompt when another surface answered the same conflict first', async () => {
-    // Two surfaces can render one clash; only the first answer reaches the
-    // operation. Being the second one is not a failure, so the dialog stops
-    // asking rather than leaving the question on screen.
+    // Two surfaces can render one clash; the backend arbitrates and reports its
+    // verdict. Being the second one is not a failure, so the dialog stops asking
+    // rather than leaving the question on screen.
     const { state } = await startedState()
     if (!conflictCb) throw new Error('conflict subscriber never registered')
     conflictCb(conflictEvent())
     vi.mocked(resolveWriteConflict).mockImplementationOnce(() => Promise.resolve('already_resolved'))
     await state.handleConflictResolution('overwrite', false)
-    expect(state.conflictEvent).toBeNull()
+    expect(state.conflict).toBeNull()
     expect(state.isResolvingConflict).toBe(false)
   })
 
-  it('keeps the prompt up when resolving the conflict fails', async () => {
+  it('keeps the prompt up when the answer never lands', async () => {
     const { state } = await startedState()
     if (!conflictCb) throw new Error('conflict subscriber never registered')
     conflictCb(conflictEvent())
     vi.mocked(resolveWriteConflict).mockImplementationOnce(() => Promise.reject(new Error('ipc down')))
     await state.handleConflictResolution('skip', false)
-    // The catch path leaves the conflict unresolved and resets the in-flight flag.
-    expect(state.conflictEvent).not.toBeNull()
+    // Nothing reached the backend, so the question is still open.
+    expect(state.conflict).not.toBeNull()
     expect(state.isResolvingConflict).toBe(false)
   })
 
@@ -530,9 +514,9 @@ describe('createTransferProgressState: cancel + settle close-out', () => {
   it('closes only after both write-cancelled and write-settled arrive', async () => {
     const { state, config } = await startedState()
     void state.handleCancel(false)
-    await flushMicro()
+    await settle()
     expect(state.isCancelling).toBe(true)
-    expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', false)
+    expect(cancelOperation).toHaveBeenCalledWith('op-1')
 
     // Slow-settle label tail appears after 200 ms.
     vi.advanceTimersByTime(200)
@@ -540,10 +524,12 @@ describe('createTransferProgressState: cancel + settle close-out', () => {
 
     if (!cancelledCb || !settledCb) throw new Error('cancel/settle subscribers never registered')
     cancelledCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 4, rolledBack: false })
+    flushSync()
     expect(state.operationSettled).toBe(true)
     expect(config.onCancelled).not.toHaveBeenCalled()
 
     settledCb({ operationId: 'op-1', operationType: 'copy' })
+    flushSync()
     expect(state.settleSlow).toBe(false)
     vi.advanceTimersByTime(450)
     expect(config.onCancelled).toHaveBeenCalledWith(4)
@@ -552,23 +538,36 @@ describe('createTransferProgressState: cancel + settle close-out', () => {
   it('is idempotent against a repeated cancel click', async () => {
     const { state } = await startedState()
     void state.handleCancel(false)
-    await flushMicro()
+    await settle()
     void state.handleCancel(false)
-    await flushMicro()
-    expect(cancelWriteOperation).toHaveBeenCalledTimes(1)
+    await settle()
+    expect(cancelOperation).toHaveBeenCalledTimes(1)
   })
 
   it('falls back to closing if neither terminal event arrives', async () => {
     const { state, config } = await startedState()
     void state.handleCancel(false)
-    await flushMicro()
+    await settle()
     // Last-resort fallback fires at CANCEL_SETTLE_FALLBACK_MS, which sits ABOVE
     // the backend's 15 s `CANCEL_DRAIN_DEADLINE` so it can't report `0 files`
-    // moments before the backend reports the real number. The user never waits
+    // moments before the backend reported the real number. The user never waits
     // this out in practice: the dialog's Close button dismisses immediately.
     vi.advanceTimersByTime(20_000)
     expect(config.onCancelled).toHaveBeenCalledWith(0)
     void state // keep reference
+  })
+
+  it('lets the user out at once while the backend is still winding down', async () => {
+    const { state, config } = await startedState()
+    if (!progressCb) throw new Error('progress subscriber never registered')
+    progressCb(progressEvent({ filesDone: 3 }))
+    void state.handleCancel(false)
+    await settle()
+
+    state.dismiss()
+    vi.advanceTimersByTime(450)
+    // Reports what the backend did tell us, rather than pretending zero.
+    expect(config.onCancelled).toHaveBeenCalledWith(3)
   })
 })
 
@@ -579,14 +578,14 @@ describe('createTransferProgressState: rollback', () => {
     progressCb(progressEvent())
 
     void state.handleCancel(true)
-    await flushMicro()
+    await settle()
     expect(state.isRollingBack).toBe(true)
-    expect(state.operationSettled).toBe(true)
     expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', true)
 
     if (!cancelledCb || !settledCb) throw new Error('cancel/settle subscribers never registered')
     cancelledCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 2, rolledBack: true })
     settledCb({ operationId: 'op-1', operationType: 'copy' })
+    flushSync()
     vi.advanceTimersByTime(450)
     expect(config.onCancelled).toHaveBeenCalledWith(2)
   })
@@ -594,13 +593,13 @@ describe('createTransferProgressState: rollback', () => {
   it('cancels an in-progress rollback (keep remaining files)', async () => {
     const { state } = await startedState()
     void state.handleCancel(true)
-    await flushMicro()
+    await settle()
     expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', true)
 
     // A plain Cancel while rolling back stops the rollback without reversing.
     void state.handleCancel(false)
-    await flushMicro()
-    expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', false)
+    await settle()
+    expect(cancelOperation).toHaveBeenCalledWith('op-1')
     expect(state.isCancelling).toBe(true)
   })
 })
@@ -635,8 +634,8 @@ describe('createTransferProgressState: pause, queue, and auto-queue', () => {
     expect(addToast).toHaveBeenCalledTimes(1)
     expect(config.onQueue).toHaveBeenCalledTimes(1)
 
-    // A backgrounded op must survive disposal: no safety-net cancel.
     state.destroy()
+    expect(cancelOperation).not.toHaveBeenCalled()
     expect(cancelWriteOperation).not.toHaveBeenCalled()
   })
 
@@ -644,12 +643,57 @@ describe('createTransferProgressState: pause, queue, and auto-queue', () => {
     const { state, config } = await startedState()
     if (!opsChangedCb) throw new Error('operations-changed subscriber never registered')
     opsChangedCb({ operations: [snapshot('busy', 'running'), snapshot('op-1', 'queued')] })
+    flushSync()
     expect(openQueueWindow).toHaveBeenCalledTimes(1)
     expect(config.onQueue).toHaveBeenCalledTimes(1)
 
-    // Already backgrounded: disposal leaves the op running.
     state.destroy()
-    expect(cancelWriteOperation).not.toHaveBeenCalled()
+    expect(cancelOperation).not.toHaveBeenCalled()
+  })
+
+  it('auto-queues an operation seeded as queued, with no live snapshot at all', async () => {
+    // A cold main window learns the status from `list_operations()` rather than
+    // from a tick: the manager emits `operations-changed` at registration, which
+    // can fire before anything is watching for it.
+    vi.mocked(listOperations).mockResolvedValue([snapshot('op-1', 'queued')])
+    const { config } = await startedState()
+    expect(config.onQueue).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the main window smooths an ETA exactly once per operation', () => {
+  // The queue window already proves this for its rows
+  // (`queue/queue-row-session.svelte.test.ts`); it could not prove it here while
+  // the progress dialog still built a smoother of its own. Two smoothers fed
+  // identical samples from identical starting points agree, so the hazard only
+  // bites when one starts later — which is exactly what a second surface
+  // attaching to a transfer already in flight would do.
+  it('builds one smoother however many ticks arrive', async () => {
+    await startedState()
+    if (!progressCb) throw new Error('progress subscriber never registered')
+    progressCb(progressEvent({ etaSeconds: 80 }))
+    progressCb(progressEvent({ bytesDone: 200, etaSeconds: 70 }))
+    progressCb(progressEvent({ bytesDone: 300, etaSeconds: 60 }))
+
+    expect(vi.mocked(createEtaSmoother)).toHaveBeenCalledTimes(1)
+  })
+
+  it('adds none of its own when another surface is already watching', async () => {
+    // The corner chip, standing in: it holds the session for this operation
+    // before the dialog ever binds, and the dialog must join that one rather
+    // than start a second estimate beside it.
+    const registry = getOperationSessions()
+    if (!registry) throw new Error('the window has no session registry')
+    registry.acquire('op-1')
+    expect(vi.mocked(createEtaSmoother)).toHaveBeenCalledTimes(1)
+
+    const { state } = await startedState()
+    if (!progressCb) throw new Error('progress subscriber never registered')
+    progressCb(progressEvent({ etaSeconds: 80 }))
+
+    expect(vi.mocked(createEtaSmoother)).toHaveBeenCalledTimes(1)
+    expect(state.etaSecondsDisplay).toBe(80)
+    registry.release('op-1')
   })
 })
 
@@ -668,12 +712,12 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
     vi.mocked(copyBetweenVolumes).mockImplementationOnce(
       () => new Promise<WriteOperationStartResult>((res) => (resolveDispatch = res)),
     )
-    const state = createTransferProgressState(makeConfig())
+    const state = makeState(makeConfig())
     state.start()
-    await flushMicro()
+    await settle()
     state.destroy()
     resolveDispatch({ operationId: 'op-1', operationType: 'copy' })
-    await flushMicro()
+    await settle()
     expect(getForegroundOperationId()).toBeNull()
   })
 
@@ -687,6 +731,7 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
     await startedState()
     if (!opsChangedCb) throw new Error('operations-changed subscriber never registered')
     opsChangedCb({ operations: [snapshot('busy', 'running'), snapshot('op-1', 'queued')] })
+    flushSync()
     expect(getForegroundOperationId()).toBeNull()
   })
 
@@ -694,6 +739,7 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
     const { state } = await startedState()
     if (!completeCb) throw new Error('complete subscriber never registered')
     completeCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 1, filesSkipped: 0, bytesProcessed: 1 })
+    flushSync()
     vi.advanceTimersByTime(450)
     state.destroy()
     expect(getForegroundOperationId()).toBeNull()
@@ -702,7 +748,7 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
   it('releases the slot when the dialog unmounts after a cancel', async () => {
     const { state } = await startedState()
     void state.handleCancel(false)
-    await flushMicro()
+    await settle()
     if (!cancelledCb || !settledCb) throw new Error('cancel subscribers never registered')
     cancelledCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 0, rolledBack: false })
     settledCb({ operationId: 'op-1', operationType: 'copy' })
@@ -718,6 +764,7 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
       operationType: 'copy',
       error: { type: 'io_error', path: '/src/file.txt', message: 'boom' },
     })
+    flushSync()
     state.destroy()
     expect(getForegroundOperationId()).toBeNull()
   })
@@ -730,15 +777,15 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
     vi.mocked(copyBetweenVolumes).mockImplementationOnce(
       () => new Promise<WriteOperationStartResult>((res) => (resolveDispatch = res)),
     )
-    const state = createTransferProgressState(makeConfig())
+    const state = makeState(makeConfig())
     state.start()
-    await flushMicro()
+    await settle()
 
     expect(isForegroundClaimPending()).toBe(true)
     expect(getForegroundOperationId()).toBeNull()
 
     resolveDispatch({ operationId: 'op-1', operationType: 'copy' })
-    await flushMicro()
+    await settle()
 
     expect(isForegroundClaimPending()).toBe(false)
     expect(getForegroundOperationId()).toBe('op-1')
@@ -749,9 +796,9 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
     // Nothing is ever going to own this operation, so a deferred conflict must
     // stop waiting on it rather than sit there forever.
     vi.mocked(copyBetweenVolumes).mockImplementationOnce(() => Promise.reject(new Error('ipc down')))
-    const state = createTransferProgressState(makeConfig())
+    const state = makeState(makeConfig())
     state.start()
-    await flushMicro()
+    await settle()
 
     expect(isForegroundClaimPending()).toBe(false)
     state.destroy()
@@ -762,12 +809,12 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
     vi.mocked(copyBetweenVolumes).mockImplementationOnce(
       () => new Promise<WriteOperationStartResult>((res) => (resolveDispatch = res)),
     )
-    const state = createTransferProgressState(makeConfig())
+    const state = makeState(makeConfig())
     state.start()
-    await flushMicro()
+    await settle()
     state.destroy()
     resolveDispatch({ operationId: 'op-1', operationType: 'copy' })
-    await flushMicro()
+    await settle()
 
     expect(isForegroundClaimPending()).toBe(false)
   })
@@ -783,32 +830,64 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
 })
 
 describe('createTransferProgressState: disposal', () => {
-  it('fires the safety-net cancel for an unexpected teardown', async () => {
+  it('an unexpected teardown leaves the operation running', async () => {
+    // Replaces "fires the safety-net cancel for an unexpected teardown". A view
+    // going away is a DETACH now, not a command: the operation lives in the
+    // backend registry, the corner chip and the queue window keep showing it,
+    // and only the Cancel button asks for a cancel. Stopping a transfer because
+    // the thing rendering it unmounted is the coupling this seam removes.
     const { state } = await startedState()
     if (!progressCb) throw new Error('progress subscriber never registered')
     progressCb(progressEvent())
     state.destroy()
-    expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', false)
+    expect(cancelWriteOperation).not.toHaveBeenCalled()
+    expect(cancelOperation).not.toHaveBeenCalled()
   })
 
   it('does not cancel a settled op on teardown', async () => {
     const { state } = await startedState()
     if (!completeCb) throw new Error('complete subscriber never registered')
     completeCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 1, filesSkipped: 0, bytesProcessed: 1 })
+    flushSync()
     vi.advanceTimersByTime(450)
     state.destroy()
     expect(cancelWriteOperation).not.toHaveBeenCalled()
+    expect(cancelOperation).not.toHaveBeenCalled()
+  })
+
+  it('closing the modal hands a running operation to the queue instead of stopping it', async () => {
+    const { state, config } = await startedState()
+    if (!progressCb) throw new Error('progress subscriber never registered')
+    progressCb(progressEvent())
+
+    state.detach()
+
+    expect(openQueueWindow).toHaveBeenCalledTimes(1)
+    expect(config.onQueue).toHaveBeenCalledTimes(1)
+    expect(cancelOperation).not.toHaveBeenCalled()
+    expect(cancelWriteOperation).not.toHaveBeenCalled()
+  })
+
+  it('closing the modal while a cancel winds down just stops watching', async () => {
+    const { state, config } = await startedState()
+    if (!progressCb) throw new Error('progress subscriber never registered')
+    progressCb(progressEvent({ filesDone: 2 }))
+    void state.handleCancel(false)
+    await settle()
+
+    state.detach()
+    vi.advanceTimersByTime(450)
+
+    expect(openQueueWindow).not.toHaveBeenCalled()
+    expect(config.onCancelled).toHaveBeenCalledWith(2)
   })
 })
 
 describe('createTransferProgressState: a still-scanning transfer', () => {
-  // The scan-wait moved into the backend's own operation task, so the dialog
-  // dispatches at once and the operation waits for the preview it claimed. That
-  // is the whole fix: an operation exists from the first frame, so it can be
-  // paused, backgrounded, cancelled, and counted by the quit gate while it
-  // counts. The cases below replace the ones that described the OLD mechanism
-  // (subscribe to `scan-preview-*`, dispatch on complete, cancel the preview on
-  // teardown), each of which asserted machinery that no longer exists.
+  // The scan-wait lives in the backend's own operation task, so the dialog
+  // dispatches at once and the operation waits for the preview it claimed. An
+  // operation exists from the first frame, so it can be paused, backgrounded,
+  // cancelled, and counted by the quit gate while it counts.
 
   it('dispatches immediately even with a preview still walking, and names the operation', async () => {
     const { state } = await startedState({ previewId: 'prev-1' })
@@ -832,7 +911,7 @@ describe('createTransferProgressState: a still-scanning transfer', () => {
     state.handleQueue()
 
     expect(config.onQueue).toHaveBeenCalledTimes(1)
-    expect(cancelWriteOperation).not.toHaveBeenCalled()
+    expect(cancelOperation).not.toHaveBeenCalled()
   })
 
   it("renders the scan-phase counts from the operation's own progress stream", async () => {
@@ -853,10 +932,10 @@ describe('createTransferProgressState: a still-scanning transfer', () => {
       currentDir: '/src',
     })
 
-    expect(state.scanFilesFound).toBe(5)
-    expect(state.scanDirsFound).toBe(2)
-    expect(state.scanBytesFound).toBe(500)
-    expect(state.scanCurrentDir).toBe('/src')
+    expect(state.scan.filesFound).toBe(5)
+    expect(state.scan.dirsFound).toBe(2)
+    expect(state.scan.bytesFound).toBe(500)
+    expect(state.scan.currentDir).toBe('/src')
   })
 
   it('never cancels the preview itself: the operation owns it now', async () => {
@@ -869,6 +948,6 @@ describe('createTransferProgressState: a still-scanning transfer', () => {
     state.destroy()
 
     expect(cancelScanPreview).not.toHaveBeenCalled()
-    expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', false)
+    expect(cancelOperation).toHaveBeenCalledWith('op-1')
   })
 })

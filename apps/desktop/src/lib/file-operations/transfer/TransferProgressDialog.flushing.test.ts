@@ -5,14 +5,20 @@
  * both copy and move. See `lib/file-operations/transfer/CLAUDE.md`
  * § "Durability" and the BE doc § "Flushing phase".
  *
- * We mount the dialog with mocked event helpers that capture the registered
- * `onWriteProgress` callback, then drive it with a synthesised `flushing`
- * progress event and assert the rendered title.
+ * The window's session registry is inited per test: it is what subscribes the
+ * event fan-out (through the mocked helpers below), and the mounted dialog binds
+ * to the session for its operation. The test then drives a synthesised
+ * `flushing` progress event through the captured callback and asserts the
+ * rendered title.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
-import type { WriteProgressEvent } from '$lib/tauri-commands'
+import type { OperationSnapshot, WriteProgressEvent } from '$lib/tauri-commands'
+import {
+  destroyOperationSessions,
+  initOperationSessions,
+} from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
 import TransferProgressDialogStatic from './TransferProgressDialog.svelte'
 
 let progressCb: ((e: WriteProgressEvent) => void) | null = null
@@ -38,6 +44,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onWriteSettled: vi.fn(() => Promise.resolve(() => {})),
   onWriteConflict: vi.fn(() => Promise.resolve(() => {})),
   resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
+  cancelOperation: vi.fn(() => Promise.resolve()),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   cancelScanPreview: vi.fn(() => Promise.resolve()),
   checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
@@ -48,7 +55,22 @@ vi.mock('$lib/tauri-commands', () => ({
   pauseOperation: vi.fn(() => Promise.resolve()),
   resumeOperation: vi.fn(() => Promise.resolve()),
   onOperationsChanged: vi.fn(() => Promise.resolve(() => {})),
-  listOperations: vi.fn(() => Promise.resolve([])),
+  // The backend registers the operation before the start command returns, so a
+  // session that seeds itself finds it. An empty list would tell the session the
+  // transfer was already over.
+  listOperations: vi.fn(() =>
+    Promise.resolve<OperationSnapshot[]>([
+      {
+        operationId: 'op-1',
+        operationType: 'copy',
+        status: 'running',
+        source: '/Users/test',
+        destination: '/Users/test/dest',
+        supportsRollback: true,
+        error: null,
+      },
+    ]),
+  ),
   DEFAULT_VOLUME_ID: 'root',
 }))
 
@@ -92,11 +114,21 @@ function flushingEvent(operationType: 'copy' | 'move'): WriteProgressEvent {
   }
 }
 
+beforeEach(async () => {
+  // Reset before the fan-out subscribes: the registry is what listens now, and
+  // it has to be up before a dialog binds to a session.
+  progressCb = null
+  await initOperationSessions()
+})
+
+afterEach(() => {
+  destroyOperationSessions()
+})
+
 async function mountDialog(operationType: 'copy' | 'move'): Promise<{
   component: ReturnType<typeof mount>
   target: HTMLDivElement
 }> {
-  progressCb = null
   const target = document.createElement('div')
   document.body.appendChild(target)
   const component = mount(TransferProgressDialogStatic, {

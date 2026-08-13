@@ -1,74 +1,48 @@
 /**
- * Reactive execution state machine lifted out of `TransferProgressDialog.svelte`.
+ * The progress dialog, as a view of one operation.
  *
- * Owns everything the progress dialog coordinates while an operation runs: the
- * write-event subscriptions (progress / complete / error / cancelled / settled /
- * conflict) plus the `operations-changed` lifecycle stream, the
- * `operationId`-scoped event buffering and replay, the phase machine
- * (scanning → active → flushing, plus rolling_back), the cancel/settle close-out
- * with its slow-label and last-resort fallback timers, the pause/resume and
- * background-to-queue flow (including auto-queue behind a busy lane), and the
- * conflict prompt.
+ * Two things live here, and keeping them apart is the point:
  *
- * It does NOT wait for a `TransferDialog` preview. The operation is dispatched
- * the moment the dialog mounts, and the BACKEND's own task awaits the preview
- * before it writes anything (`write_operations/scan_bridge.rs`). That is what
- * gives a still-scanning transfer an `operationId` from the first frame, so
- * Pause, Background, the queue row, the corner chip, and ⌘Q all work while it
- * counts. The scan-phase readout below is fed by `write-progress` in
- * `phase: 'scanning'`, forwarded from the preview under this operation's id.
+ * **Birth** (`beginOperation`) runs once. It claims the foreground slot,
+ * dispatches through `transfer-dispatch.ts`, answers the MCP round-trip, and
+ * names the operation. It ends the moment an `operationId` exists.
  *
- * The factory takes its static per-operation inputs and the dialog's outcome
- * callbacks as a plain config object (these never change for a given dialog
- * instance — a new operation mounts a fresh dialog), matching the codebase's
- * factory pattern (`createTransferScanState`, `createTransferConflictCheck`).
- * State is exposed through getters; the component aliases them via `$derived`
- * and reads them in its markup. The component drives the lifecycle: `start()`
- * from `onMount`, `destroy()` from `onDestroy`.
+ * **The view** is everything after that, and it owns only what belongs to a
+ * piece of UI rather than to the operation: the anti-flicker floor, the
+ * dismissal, the "(finishing USB transfers)" label, the last-resort close
+ * timer, the Queue handoff, and the four outcome callbacks that tell the pane
+ * what to do next. What the operation IS — phase, counts, rates, smoothed ETA,
+ * clash, outcome — and what can be DONE to it — pause, resume, cancel, roll
+ * back, answer the clash — come from its session
+ * (`../operation-session/CLAUDE.md`), shared with every other surface watching
+ * the same transfer.
  *
- * ## Why `backgrounded` is a plain `let`, not `$state`
+ * Nothing subscribes to an event stream here. The window's fan-out subscribes
+ * once at init and holds what arrives for an id nobody has claimed yet, which is
+ * what makes the gap between "the backend named the operation" and "the binder
+ * acquired its session" harmless.
+ *
+ * ## A close is a detach, never a cancel
+ *
+ * Unmounting stops nothing. The operation lives in the backend registry; the
+ * corner chip and the queue window keep showing it; only the Cancel button asks
+ * for a cancel. The one place a teardown still means "stop" is an explicit
+ * Cancel pressed before the backend had named the operation, which
+ * `cancelRequestedBeforeId` records and birth acts on.
+ *
+ * ## Why `backgrounded` and `destroyed` are plain `let`s, not `$state`
  *
  * `handleQueue` sets `backgrounded = true` and then synchronously unmounts the
- * modal (via `onQueue` → the parent flips its show flag). `destroy()` (the
- * component's `onDestroy`) reads `backgrounded` to decide whether to fire the
- * safety-net cancel — but a `$state` rune read during that synchronous
- * reactive-scope disposal returns a STALE `false`, so the guard would wrongly
- * pass and cancel the just-backgrounded op (the transfer dies, the queue window
- * opens empty). A plain variable reads its live value in `destroy()` regardless
- * of disposal. It's never read reactively, so it needs no reactivity. Don't
- * convert it to `$state`. The same live-read reasoning applies to `destroyed`.
+ * modal (via `onQueue` → the parent flips its show flag), so `destroy()` (the
+ * component's `onDestroy`) runs inside that same reactive-scope disposal. A
+ * `$state` rune read during synchronous disposal returns a STALE value: that is
+ * how a just-backgrounded transfer once got cancelled and the queue window
+ * opened empty. Any flag a teardown path reads has the same hazard, so these
+ * stay plain variables that read live. They're never read reactively, so they
+ * need no reactivity. Don't convert them to `$state`.
  */
 
-import {
-  copyBetweenVolumes,
-  moveBetweenVolumes,
-  compressFiles,
-  moveFiles,
-  deleteFiles,
-  trashFiles,
-  onWriteProgress,
-  onWriteComplete,
-  onWriteError,
-  onWriteCancelled,
-  onWriteSettled,
-  onWriteConflict,
-  resolveWriteConflict,
-  cancelWriteOperation,
-  pauseOperation,
-  resumeOperation,
-  onOperationsChanged,
-  listOperations,
-  DEFAULT_VOLUME_ID,
-  type Initiator,
-  type WriteProgressEvent,
-  type WriteCompleteEvent,
-  type WriteErrorEvent,
-  type WriteCancelledEvent,
-  type WriteSettledEvent,
-  type WriteConflictEvent,
-  type OperationSnapshot,
-  type UnlistenFn,
-} from '$lib/tauri-commands'
+import { cancelOperation, type TransferActivity, type WriteCancelledEvent } from '$lib/tauri-commands'
 import { emit } from '@tauri-apps/api/event'
 import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
 import {
@@ -77,49 +51,23 @@ import {
   endForegroundClaim,
   setForegroundOperationId,
 } from '../foreground-operation.svelte'
+import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
 import { addToast } from '$lib/ui/toast'
 import type {
   TransferOperationType,
+  ConflictResolution,
   WriteOperationPhase,
   WriteOperationError,
-  SortColumn,
-  SortOrder,
-  ConflictResolution,
 } from '$lib/file-explorer/types'
 import { pluralize } from '$lib/utils/pluralize'
-import { getSetting } from '$lib/settings'
 import { getAppLogger } from '$lib/logging/logger'
-import { ScanThroughput } from '../scan-throughput'
-import { createEtaSmoother, transferReadout } from '../progress-readout'
 import { tString } from '$lib/intl/messages.svelte'
-import { pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
 import type { BytesPerSecond, Seconds } from '$lib/units'
-import type { TransferActivity } from '$lib/tauri-commands'
+import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
+import type { OperationOutcome, ScanReadout } from '../operation-session/operation-session.svelte'
+import { dispatchTransferOperation, type TransferDispatchConfig } from './transfer-dispatch'
 
-export interface TransferProgressStateConfig {
-  operationType: TransferOperationType
-  sourcePaths: string[]
-  /** Destination path (not applicable for delete/trash). */
-  destinationPath?: string
-  /** Current sort column on the source pane (files processed in this order). */
-  sortColumn: SortColumn
-  /** Current sort order on the source pane. */
-  sortOrder: SortOrder
-  /** Preview scan ID from `TransferDialog` (for reusing scan results), or null. */
-  previewId: string | null
-  /** Source volume ID (like "root", "mtp-336592896:65537"). */
-  sourceVolumeId: string
-  /** Destination volume ID (not applicable for delete/trash). */
-  destVolumeId?: string
-  /** Conflict resolution policy from `TransferDialog` (not applicable for delete/trash). */
-  conflictResolution?: ConflictResolution
-  /** Source filenames known to conflict at dest (forwarded so the BE bulk-skips them under `Skip all`). */
-  preKnownConflicts?: string[]
-  /** Per-item sizes for trash progress (from scan or drive index). */
-  itemSizes?: number[]
-  /** Who triggered this operation. `undefined`/`user` for direct UI actions;
-   *  `aiClient` when an MCP tool initiated it (drives the operation-log provenance). */
-  initiator?: Initiator
+export interface TransferProgressStateConfig extends TransferDispatchConfig {
   onComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
   onCancelled: (filesProcessed: number) => void
   onError: (error: WriteOperationError) => void
@@ -130,6 +78,20 @@ export interface TransferProgressStateConfig {
    *  replies `mcp-response` with the spawned `operationId` (or an error) so the
    *  waiting tool can return the id — see `mcp/executor/file_ops.rs`. */
   mcpRequestId?: string
+}
+
+/** What a view shows before its operation has said anything. A confirmed
+ *  transfer starts by counting, so the dialog opens in the scan phase rather
+ *  than at a meaningless 0%. */
+const OPENING_PHASE: WriteOperationPhase = 'scanning'
+
+const EMPTY_SCAN: ScanReadout = {
+  filesFound: 0,
+  dirsFound: 0,
+  bytesFound: 0,
+  currentDir: null,
+  filesPerSecond: null,
+  bytesPerSecond: null,
 }
 
 export function createTransferProgressState(config: TransferProgressStateConfig) {
@@ -147,36 +109,26 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   }
   const operationLabel = operationLabelMap[config.operationType]
 
-  // A move whose source OR destination is inside a zip must NOT take the local
-  // `moveFiles` fast-path: an archive-inner path isn't a real folder, and the
-  // backend fast-path rejects it. Route it through `moveBetweenVolumes`, which
-  // resolves the archive boundary and runs the managed archive-edit flow (move
-  // into = `{ add }`, move out = extract + `{ delete }`). Source and dest can
-  // share the parent drive's `volumeId` (a zip lives on the same drive), so the
-  // volume-id comparison alone misses this — the path check is what catches it.
-  const touchesArchive =
-    pathInsideArchive(config.destinationPath ?? '') || config.sourcePaths.some((p) => pathInsideArchive(p))
-
-  /** Whether this move involves a non-local volume (MTP, an archive, etc.); backend handles all strategy. */
-  const isVolumeMove =
-    config.operationType === 'move' &&
-    (config.sourceVolumeId !== DEFAULT_VOLUME_ID ||
-      (config.destVolumeId ?? DEFAULT_VOLUME_ID) !== DEFAULT_VOLUME_ID ||
-      touchesArchive)
-
-  /** Minimum display time (ms) to prevent jarring one-frame flash. */
+  /** Minimum time this VIEW stays on screen, to prevent a jarring one-frame
+   *  flash. It is the view's clock, not the operation's: the floor exists
+   *  because something appeared and vanished too fast to read, which is a fact
+   *  about the thing on screen. They coincide for a dialog that started its own
+   *  transfer, and they don't for one that adopts a transfer already running —
+   *  where the operation's clock would say "twenty minutes, no flash possible"
+   *  about a dialog that had been up for 50 ms. */
   const MIN_DISPLAY_MS = 400
   /** After this many ms of waiting for the backend to settle, the
    *  "Cancelling…" label gets a clarifying tail ("(finishing USB transfers)").
    *  Picked at 200 ms so a fast settle (the common case once cancel
    *  propagation lands on the backend) clears before the label ever changes. */
   const SLOW_SETTLE_LABEL_MS = 200
-  /** Last-resort cap on how long we'll keep the dialog open after the user
-   *  clicks Cancel. The settle gate is supposed to fire `write-cancelled`
+  /** Last-resort cap on how long we'll keep the dialog open once the operation
+   *  starts winding down. The settle gate is supposed to fire `write-cancelled`
    *  + `write-settled` quickly, but if the BE op state was already gone when
-   *  we issued the cancel (e.g. it was cleaned up by `cancel_all_write_operations`
-   *  during a hot-reload or by a previous teardown), no events ever fire and
-   *  the dialog would otherwise stay at "Cancelling…" forever.
+   *  the cancel was issued (e.g. it was cleaned up by
+   *  `cancel_all_write_operations` during a hot-reload or by a previous
+   *  teardown), no events ever fire and the dialog would otherwise stay at
+   *  "Cancelling…" forever.
    *
    *  Sits deliberately ABOVE the backend's `CANCEL_DRAIN_DEADLINE` (15 s, in
    *  `transfer/volume/copy.rs`), which is the point by which a cancelled
@@ -186,351 +138,141 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  `dismiss()` closes the dialog on their say-so at any moment. */
   const CANCEL_SETTLE_FALLBACK_MS = 20_000
 
-  // Scanning-phase readout. Written by `handleProgress`'s scanning branch from
-  // the backend's `write-progress`, which covers both the preview the operation
-  // is waiting on and its own foolproof re-scan.
-  let scanFilesFound = $state(0)
-  let scanDirsFound = $state(0)
-  let scanBytesFound = $state(0)
-  let scanCurrentDir = $state<string | null>(null)
-  const scanThroughput = new ScanThroughput()
-  let scanFilesPerSec = $state<number | null>(null)
-  let scanBytesPerSec = $state<number | null>(null)
+  /** When this view appeared, for {@link MIN_DISPLAY_MS}. */
+  const viewOpenedAtMs = Date.now()
 
-  // Operation state
+  /** This operation's backend id, `null` until the start command answers. */
   let operationId = $state<string | null>(null)
-  let phase = $state<WriteOperationPhase>('scanning')
-  let currentFile = $state<string | null>(null)
-  let filesDone = $state(0)
-  let filesTotal = $state(0)
-  let bytesDone = $state(0)
-  let bytesTotal = $state(0)
-  let startTime = $state(0)
-  let isCancelling = $state(false)
-  let isRollingBack = $state(false)
+
+  /** The session for the operation this view is watching. `null` for the first
+   *  frame after the id lands, which no click can reach and nothing here needs:
+   *  birth commands the operation directly, because there is no session yet. */
+  const bound = bindOperationSession(() => operationId)
+
+  /** True once this view has handed the operation to the queue window (the
+   *  Queue button, the dialog-scoped F2, or the auto-queue path). A plain `let`
+   *  — see the module doc. */
+  let backgrounded = false
+  /** True once the view has been torn down. A plain `let` — see the module doc. */
   let destroyed = false
-  /** Set when `write-cancelled` arrives for this op. The dialog stays in
-   *  "Cancelling…" until BOTH this AND `settleEventReceived` are true,
-   *  giving the BE time to tear down in-flight USB / network ops. */
-  let cancelEventReceived = $state(false)
-  /** Set when `write-settled` arrives for this op. See § "Settle contract"
-   *  in `src-tauri/src/file_system/write_operations/CLAUDE.md`. */
-  let settleEventReceived = $state(false)
-  /** Cached `WriteCancelledEvent` payload — held until settle arrives so we
-   *  can pass `filesProcessed` to `onCancelled` at close time. */
-  let cancelEventPayload: WriteCancelledEvent | null = null
+  /** True once the user pressed Cancel while the dispatch was still in flight.
+   *  The one teardown-adjacent flag that still means "stop the operation": it
+   *  records a COMMAND, not a detach, and birth acts on it as soon as the
+   *  backend names the operation. */
+  let cancelRequestedBeforeId = false
+  /** True once the modal was closed while the dispatch was still in flight.
+   *  Same idea one notch gentler: hand the operation over as soon as it has a
+   *  name, so an Escape in that sliver isn't silently dropped. */
+  let backgroundRequestedBeforeId = false
+  /** True once an outcome has been reported to the parent. Single-shot: a
+   *  dismissal racing a terminal event must not close the dialog twice. */
+  let closed = false
+
   /** Flips true once the settle wait has exceeded `SLOW_SETTLE_LABEL_MS`.
    *  Drives the "(finishing USB transfers)" tail on the dialog label. */
   let settleSlow = $state(false)
   let slowSettleTimer: ReturnType<typeof setTimeout> | null = null
-  /** Last-resort fallback that closes the dialog if neither `write-cancelled`
-   *  nor `write-settled` arrives after the user clicks Cancel. See the
-   *  doc comment on `CANCEL_SETTLE_FALLBACK_MS`. */
+  /** Last-resort fallback that closes the dialog if the operation never
+   *  finishes winding down. See the doc comment on `CANCEL_SETTLE_FALLBACK_MS`. */
   let cancelSettleFallbackTimer: ReturnType<typeof setTimeout> | null = null
-  /** True once the user has explicitly closed the dialog while the backend was
-   *  still winding down. The op keeps tearing down in the background; we just
-   *  stop making the user watch. See `dismiss()`. */
-  let dismissed = false
-  /** Set when the operation reaches a terminal state (complete, error, cancel, rollback).
-   *  Prevents destroy()'s safety-net cancel from interfering with an already-handled outcome.
-   *  Reactive ($state) so the Cancel/Rollback buttons can disable themselves during the
-   *  MIN_DISPLAY_MS hold-open window after write-complete; clicking them then would be a
-   *  no-op since the backend state is already gone. */
-  let operationSettled = $state(false)
+  /** Latches the wind-down timers so the effect that arms them can re-run
+   *  freely. A plain `let`: reading it reactively would re-trigger that effect. */
+  let windDownTimersArmed = false
 
-  // Pause + background (Queue) state. The lifecycle status (running/paused/
-  // queued/...) comes from the manager's `operations-changed` snapshot, NOT
-  // from `write-progress` (a paused op still reports `is_running: true`; the
-  // bar-is-moving truth is the snapshot status). See queue/CLAUDE.md.
-  let opStatus = $state<OperationSnapshot['status'] | null>(null)
-  let opsUnlisten: UnlistenFn | null = null
-  /** True once this op is being managed in the queue window instead of the
-   *  modal. Suppresses destroy()'s safety-net cancel. MUST be a plain `let`,
-   *  NOT `$state` — see the module-level doc comment for why. */
-  let backgrounded = false
-  const isPaused = () => opStatus === 'paused'
-  let pauseInFlight = $state(false)
+  /* ----------------------------------------------------------------------- */
+  /* Reading the operation                                                    */
+  /* ----------------------------------------------------------------------- */
 
-  // Events that arrived before we know our operationId (from the command response).
-  // Without buffering, a stale event from a previous operation could claim the ID slot first.
-  type BufferedEvent =
-    | { type: 'progress'; event: WriteProgressEvent }
-    | { type: 'complete'; event: WriteCompleteEvent }
-    | { type: 'error'; event: WriteErrorEvent }
-    | { type: 'cancelled'; event: WriteCancelledEvent }
-    | { type: 'settled'; event: WriteSettledEvent }
-    | { type: 'conflict'; event: WriteConflictEvent }
-  let pendingEvents: BufferedEvent[] = []
-
-  /** Returns true if the event belongs to this operation and should be processed. */
-  function filterEvent(entry: BufferedEvent): boolean {
-    if (operationId === null) {
-      pendingEvents.push(entry)
-      return false
-    }
-    return entry.event.operationId === operationId
+  const session = () => bound.current
+  const outcome = (): OperationOutcome | null => bound.current?.outcome ?? null
+  const cancelledEvent = (): WriteCancelledEvent | null => {
+    const settled = outcome()
+    return settled?.kind === 'cancelled' ? settled.event : null
   }
 
-  function replayBufferedEvents() {
-    const events = pendingEvents
-    pendingEvents = []
-    for (const entry of events) {
-      if (entry.event.operationId !== operationId) continue
-      switch (entry.type) {
-        case 'progress':
-          handleProgress(entry.event)
-          break
-        case 'complete':
-          handleComplete(entry.event)
-          break
-        case 'error':
-          handleError(entry.event)
-          break
-        case 'cancelled':
-          handleCancelled(entry.event)
-          break
-        case 'settled':
-          handleSettled(entry.event)
-          break
-        case 'conflict':
-          handleConflict(entry.event)
-          break
-      }
-    }
+  /** The operation's phase, or the opening one until it says. */
+  const phase = (): WriteOperationPhase => bound.current?.phase ?? OPENING_PHASE
+
+  /** A rollback is under way whichever surface asked for it: this view's own
+   *  in-flight command, or the backend reporting the phase. */
+  const isRollingBack = (): boolean => (bound.current?.rollingBack ?? false) || bound.current?.phase === 'rolling_back'
+
+  /** How many files the backend has told us about, for a close-out that has to
+   *  report a number before the operation finished saying. */
+  function reportedFilesProcessed(): number {
+    return cancelledEvent()?.filesProcessed ?? bound.current?.progress?.filesDone ?? 0
   }
 
-  // Conflict state
-  let conflictEvent = $state<WriteConflictEvent | null>(null)
-  let isResolvingConflict = $state(false)
-
-  /** A paused op is still mid-transfer (not scanning, not cancelling, not
-   *  settled, no conflict prompt up), so the Pause/Resume + Queue controls show
-   *  during the active copy/move/delete phases only. */
-  const canPauseOrQueue = () =>
-    !isCancelling &&
-    !cancelEventReceived &&
-    !isRollingBack &&
-    !operationSettled &&
-    !conflictEvent &&
-    operationId !== null
-
-  // Rates + ETA come from the backend (`EtaEstimator` in
-  // `write_operations/eta.rs`). The FE just renders them. Null until the
-  // backend's warm-up window is over (≈800 ms after a phase change).
-  let bytesPerSecond = $state<BytesPerSecond | null>(null)
-  let filesPerSecond = $state<number | null>(null)
-  /** Display ETA: the backend value through the SHARED smoother, so this
-   *  dialog and the operation queue can't show two different numbers for the
-   *  same operation. See `file-operations/progress-readout.ts`. */
-  let etaSecondsDisplay = $state<Seconds | null>(null)
-  const etaSmoother = createEtaSmoother()
-  /** The backend's live stall classification, straight through to the UI. The
-   *  frontend never infers a stall from event timing; see `transfer-stall.ts`. */
-  let activity = $state<TransferActivity | null>(null)
-
-  function handleProgress(event: WriteProgressEvent) {
-    if (!filterEvent({ type: 'progress', event })) return
-
-    log.debug('Progress event: {phase} {filesDone}/{filesTotal} {filesNoun}, {bytesDone}/{bytesTotal} {bytesNoun}', {
-      phase: event.phase,
-      filesDone: event.filesDone,
-      filesTotal: event.filesTotal,
-      filesNoun: pluralize(event.filesTotal, 'file'),
-      bytesDone: event.bytesDone,
-      bytesTotal: event.bytesTotal,
-      bytesNoun: pluralize(event.bytesTotal, 'byte'),
-    })
-
-    // Drop the smoothed ETA on phase transitions; the backend estimator
-    // resets, so the FE display number should re-warm with it.
-    if (event.phase !== phase) {
-      etaSmoother.reset()
-      etaSecondsDisplay = null
-      // Drop the scan throughput history when leaving the scanning phase
-      // so a stale sample can't leak into the active phase readout.
-      if (phase === 'scanning' && event.phase !== 'scanning') {
-        scanThroughput.reset()
-        scanFilesPerSec = null
-        scanBytesPerSec = null
-      }
-    }
-
-    // When entering rolling_back phase, set isRollingBack from the backend event
-    if (event.phase === 'rolling_back' && !isRollingBack) {
-      isRollingBack = true
-    }
-
-    phase = event.phase
-    currentFile = event.currentFile
-    filesDone = event.filesDone
-    filesTotal = event.filesTotal
-    bytesDone = event.bytesDone
-    bytesTotal = event.bytesTotal
-    const readout = transferReadout(event)
-    activity = event.activity ?? null
-    bytesPerSecond = readout.bytesPerSecond
-    filesPerSecond = event.filesPerSecond ?? null
-    etaSecondsDisplay = etaSmoother.push(readout.etaSeconds)
-
-    // Scanning-phase metadata (current dir, dirs tally, index-derived expected
-    // totals, FE-computed throughput). One source for the whole scan phase: the
-    // preview the operation waits on forwards under this id, and so does the
-    // backend's own foolproof re-scan.
-    if (event.phase === 'scanning') {
-      scanFilesFound = event.filesDone
-      scanDirsFound = event.dirsDone ?? 0
-      scanBytesFound = event.bytesDone
-      scanCurrentDir = event.currentDir ?? null
-      const r = scanThroughput.push({
-        timestampMs: Date.now(),
-        files: event.filesDone,
-        bytes: event.bytesDone,
-      })
-      scanFilesPerSec = r.filesPerSecond
-      scanBytesPerSec = r.bytesPerSecond
-    }
+  /** Whether handing this operation to the queue window still makes sense: it
+   *  is running rather than winding down or over. A clash counts as running —
+   *  the main window's conflict host takes the prompt over the moment no dialog
+   *  owns the operation (`../operation-conflict.svelte.ts`). */
+  const canHandOff = (): boolean => {
+    const op = bound.current
+    return op !== null && !op.settled && !op.cancelling && !isRollingBack()
   }
 
-  function handleComplete(event: WriteCompleteEvent) {
-    if (!filterEvent({ type: 'complete', event })) return
+  /** A paused op is still mid-transfer (not cancelling, not settled, no
+   *  conflict prompt up), so the Pause/Resume + Queue controls show during the
+   *  active copy/move/delete phases only. */
+  const canPauseOrQueue = (): boolean => canHandOff() && bound.current?.conflict === null
 
-    log.info('{op} complete: {filesProcessed} {filesNoun}, {bytesProcessed} {bytesNoun}', {
-      op: operationLabel,
-      filesProcessed: event.filesProcessed,
-      filesNoun: pluralize(event.filesProcessed, 'file'),
-      bytesProcessed: event.bytesProcessed,
-      bytesNoun: pluralize(event.bytesProcessed, 'byte'),
-    })
+  /* ----------------------------------------------------------------------- */
+  /* Closing the view                                                         */
+  /* ----------------------------------------------------------------------- */
 
-    operationSettled = true
-    cleanup()
-
-    const totalFiles = event.filesProcessed
-    const totalSkipped = event.filesSkipped
-    const totalBytes = event.bytesProcessed
-
-    // Enforce minimum display time to prevent jarring one-frame flash
-    const elapsed = Date.now() - startTime
-    const delay = Math.max(0, MIN_DISPLAY_MS - elapsed)
-    if (delay > 0) {
-      setTimeout(() => {
-        config.onComplete(totalFiles, totalSkipped, totalBytes)
-      }, delay)
-    } else {
-      config.onComplete(totalFiles, totalSkipped, totalBytes)
-    }
+  /** Reports an outcome to the parent exactly once, no sooner than the
+   *  anti-flicker floor allows. `holdOpen: false` skips the floor for the paths
+   *  that hand straight over to another dialog, where nothing could flash. */
+  function close(report: () => void, holdOpen = true): void {
+    if (closed) return
+    closed = true
+    clearWindDownTimers()
+    const remainingMs = holdOpen ? MIN_DISPLAY_MS - (Date.now() - viewOpenedAtMs) : 0
+    if (remainingMs > 0) setTimeout(report, remainingMs)
+    else report()
   }
 
-  function handleError(event: WriteErrorEvent) {
-    if (!filterEvent({ type: 'error', event })) return
-
-    if (event.error.type === 'archive_needs_password') {
-      // Expected, recoverable flow: the write-error only exists to prompt for a
-      // password and retry (intercepted upstream in `handleTransferError`), so
-      // log at warn to keep it out of prod error-report bundles (error+ only).
-      log.warn('{op} operation needs an archive password: {errorType}', {
-        op: operationLabel,
-        errorType: event.error.type,
-        error: event.error,
-      })
-    } else {
-      log.error('{op} error: {errorType}', { op: operationLabel, errorType: event.error.type, error: event.error })
-    }
-
-    operationSettled = true
-    cleanup()
-    config.onError(event.error)
-  }
-
-  function handleCancelled(event: WriteCancelledEvent) {
-    if (!filterEvent({ type: 'cancelled', event })) return
-
-    log.info('{op} cancelled after {filesProcessed} {filesNoun}, rolledBack={rolledBack}', {
-      op: operationLabel,
-      filesProcessed: event.filesProcessed,
-      filesNoun: pluralize(event.filesProcessed, 'file'),
-      rolledBack: event.rolledBack,
-    })
-
-    cancelEventReceived = true
-    cancelEventPayload = event
-    // Mark the operation as settled at the dialog state-machine level so
-    // Cancel/Rollback buttons disable (the BE state is already gone or
-    // about to be). The "Cancelling…" indicator stays on the FE side
-    // until `write-settled` lands.
-    operationSettled = true
-
-    // Rollback path: the backend already finished tearing down by the
-    // time it emits a non-rolled-back cancel (the user clicked Cancel
-    // during Rollback) or a rolled-back cancel (rollback completed
-    // normally). In both cases, settling has effectively happened. We
-    // still wait for `write-settled` for consistency, but start the slow
-    // label timer regardless.
-    startSlowSettleTimer()
-
-    maybeFinishCancelClose()
-  }
-
-  /** Called once the BE has signalled `write-settled` for the operation
-   *  the dialog is bound to. Combines with `write-cancelled` (already
-   *  received) to drive the close-out. Defensive about ordering: if
-   *  settle somehow arrives before cancelled, we wait. */
-  function handleSettled(event: WriteSettledEvent) {
-    if (!filterEvent({ type: 'settled', event })) return
-
-    log.debug('Settle event arrived for op={operationId}', { operationId: event.operationId })
-
-    settleEventReceived = true
-    clearSlowSettleTimer()
-    clearCancelSettleFallbackTimer()
-    maybeFinishCancelClose()
-  }
-
-  function startSlowSettleTimer() {
-    if (slowSettleTimer !== null) return
+  function startSlowSettleTimer(): void {
+    if (slowSettleTimer !== null || settleSlow) return
     slowSettleTimer = setTimeout(() => {
       settleSlow = true
       slowSettleTimer = null
     }, SLOW_SETTLE_LABEL_MS)
   }
 
-  function clearSlowSettleTimer() {
+  /** Arms both wind-down timers: the label tail and the last-resort close.
+   *  Idempotent, so the effect that calls it can re-run on every tick. */
+  function armWindDownTimers(): void {
+    if (windDownTimersArmed) return
+    windDownTimersArmed = true
+    startSlowSettleTimer()
+    cancelSettleFallbackTimer = setTimeout(() => {
+      cancelSettleFallbackTimer = null
+      // The backend went quiet: its op state is gone (or never existed), so no
+      // terminal event is coming. Close on what it did tell us rather than
+      // leaving the dialog at "Cancelling…" forever.
+      log.warn('The wind-down for op={operationId} went quiet after {ms}ms; closing the dialog', {
+        operationId,
+        ms: CANCEL_SETTLE_FALLBACK_MS,
+      })
+      close(() => {
+        config.onCancelled(reportedFilesProcessed())
+      })
+    }, CANCEL_SETTLE_FALLBACK_MS)
+  }
+
+  function clearWindDownTimers(): void {
     if (slowSettleTimer !== null) {
       clearTimeout(slowSettleTimer)
       slowSettleTimer = null
     }
     settleSlow = false
-  }
-
-  function startCancelSettleFallbackTimer() {
-    if (cancelSettleFallbackTimer !== null) return
-    cancelSettleFallbackTimer = setTimeout(() => {
-      cancelSettleFallbackTimer = null
-      // If we still haven't received both terminal events, the BE op state
-      // is gone (or never existed) — synthesise a clean close so the dialog
-      // doesn't stay at "Cancelling…" forever. Hand the FE a Cancelled
-      // outcome with `filesProcessed: 0` so the caller's cleanup runs.
-      if (!cancelEventReceived || !settleEventReceived) {
-        log.warn(
-          'Cancel settle fallback fired for op={operationId} after {ms}ms (cancelled={c}, settled={s}); closing dialog',
-          {
-            operationId,
-            ms: CANCEL_SETTLE_FALLBACK_MS,
-            c: cancelEventReceived,
-            s: settleEventReceived,
-          },
-        )
-        cleanup()
-        config.onCancelled(0)
-      }
-    }, CANCEL_SETTLE_FALLBACK_MS)
-  }
-
-  function clearCancelSettleFallbackTimer() {
     if (cancelSettleFallbackTimer !== null) {
       clearTimeout(cancelSettleFallbackTimer)
       cancelSettleFallbackTimer = null
     }
+    windDownTimersArmed = false
   }
 
   /**
@@ -544,246 +286,237 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    * stall into data loss. The operation keeps winding down in the background
    * exactly as it would have; we stop making the user watch it.
    */
-  function dismiss() {
-    if (dismissed) return
-    dismissed = true
-    log.info('User dismissed the dialog while the backend was still settling: op={operationId}', {
-      operationId,
-    })
+  function dismiss(): void {
+    if (closed) return
+    log.info('User dismissed the dialog while the backend was still settling: op={operationId}', { operationId })
     // Report what the backend has told us so far, rather than pretending zero.
-    const filesProcessed = cancelEventPayload?.filesProcessed ?? filesDone
-    cancelEventPayload = null
-    cleanup()
-    config.onCancelled(filesProcessed)
-  }
-
-  /** Closes the dialog if both `write-cancelled` and `write-settled` have
-   *  arrived. Applies the existing `MIN_DISPLAY_MS` floor so a sub-frame
-   *  cancel doesn't flash. Idempotent: safe to call from both handlers. */
-  function maybeFinishCancelClose() {
-    if (dismissed) return
-    if (!cancelEventReceived || !settleEventReceived) return
-    if (cancelEventPayload === null) return
-
-    const payload = cancelEventPayload
-    cancelEventPayload = null // single-shot
-    cleanup()
-
-    const elapsed = Date.now() - startTime
-    const delay = Math.max(0, MIN_DISPLAY_MS - elapsed)
-    if (delay > 0) {
-      setTimeout(() => {
-        config.onCancelled(payload.filesProcessed)
-      }, delay)
-    } else {
-      config.onCancelled(payload.filesProcessed)
-    }
-  }
-
-  function handleConflict(event: WriteConflictEvent) {
-    if (!filterEvent({ type: 'conflict', event })) return
-
-    log.info('Conflict detected: {sourcePath} -> {destinationPath}', {
-      sourcePath: event.sourcePath,
-      destinationPath: event.destinationPath,
+    const filesProcessed = reportedFilesProcessed()
+    close(() => {
+      config.onCancelled(filesProcessed)
     })
-
-    conflictEvent = event
   }
 
-  /**
-   * Answers the clash this dialog is showing.
-   *
-   * The backend reports which answer it acted on. Anything other than
-   * `resolved` means another surface answered this conflict first, so the
-   * question is settled and the prompt comes down either way; only a call that
-   * never landed (a throw) leaves it up.
-   */
-  async function handleConflictResolution(resolution: ConflictResolution, applyToAll: boolean) {
-    if (!operationId || !conflictEvent) return
+  /* ----------------------------------------------------------------------- */
+  /* Watching the operation                                                   */
+  /* ----------------------------------------------------------------------- */
 
-    log.info('Resolving conflict with {resolution}, applyToAll={applyToAll}', { resolution, applyToAll })
-
-    isResolvingConflict = true
-    try {
-      const outcome = await resolveWriteConflict(operationId, resolution, applyToAll)
-      if (outcome !== 'resolved') {
-        log.info('The conflict on {operationId} was settled without this dialog ({outcome}); taking it down', {
-          operationId,
-          outcome,
+  /** Reports the operation's end to the parent, once it has finished ending.
+   *  A cancel waits for `write-settled` as well: the backend may still be
+   *  tearing down USB / network sessions, and dispatching a new op against a
+   *  volume in that state is what wedged the device in the original incident.
+   *  See the "Settle contract" in
+   *  `src-tauri/src/file_system/write_operations/CLAUDE.md`. */
+  function reportOutcome(settled: OperationOutcome, settleEventReceived: boolean): void {
+    switch (settled.kind) {
+      case 'complete': {
+        const event = settled.event
+        log.info('{op} complete: {filesProcessed} {filesNoun}, {bytesProcessed} {bytesNoun}', {
+          op: operationLabel,
+          filesProcessed: event.filesProcessed,
+          filesNoun: pluralize(event.filesProcessed, 'file'),
+          bytesProcessed: event.bytesProcessed,
+          bytesNoun: pluralize(event.bytesProcessed, 'byte'),
         })
+        close(() => {
+          config.onComplete(event.filesProcessed, event.filesSkipped, event.bytesProcessed)
+        })
+        return
       }
-      conflictEvent = null
-    } catch (err) {
-      log.error('Failed to resolve conflict: {error}', { error: err })
-    } finally {
-      isResolvingConflict = false
+      case 'error': {
+        const error = settled.event.error
+        if (error.type === 'archive_needs_password') {
+          // Expected, recoverable flow: the write-error only exists to prompt for
+          // a password and retry (intercepted upstream in `handleTransferError`),
+          // so log at warn to keep it out of prod error-report bundles (error+).
+          log.warn('{op} operation needs an archive password: {errorType}', {
+            op: operationLabel,
+            errorType: error.type,
+            error,
+          })
+        } else {
+          log.error('{op} error: {errorType}', { op: operationLabel, errorType: error.type, error })
+        }
+        // No floor: the error dialog takes this dialog's place, so there is
+        // nothing that could flash.
+        close(() => {
+          config.onError(error)
+        }, false)
+        return
+      }
+      case 'cancelled': {
+        if (!settleEventReceived) return
+        const event = settled.event
+        log.info('{op} cancelled after {filesProcessed} {filesNoun}, rolledBack={rolledBack}', {
+          op: operationLabel,
+          filesProcessed: event.filesProcessed,
+          filesNoun: pluralize(event.filesProcessed, 'file'),
+          rolledBack: event.rolledBack,
+        })
+        close(() => {
+          config.onCancelled(event.filesProcessed)
+        })
+        return
+      }
+      case 'gone':
+        // The registry has no record of this operation, so it ended before this
+        // view could watch it. Close honestly rather than sit empty.
+        log.info('op={operationId} was already over by the time the dialog looked; closing', { operationId })
+        close(() => {
+          config.onCancelled(0)
+        })
     }
   }
 
-  // Store multiple unlisteners
-  let unlisteners: UnlistenFn[] = []
+  $effect(() => {
+    const op = bound.current
+    if (op === null) return
+    const settled = op.outcome
+    if (settled === null) return
+    reportOutcome(settled, op.settleEventReceived)
+  })
 
-  function cleanup() {
-    log.debug('Cleaning up {count} {listenersNoun}', {
-      count: unlisteners.length,
-      listenersNoun: pluralize(unlisteners.length, 'event listener'),
+  $effect(() => {
+    const op = bound.current
+    if (op === null) return
+    // Winding down: a cancel is on its way, or one has landed and the backend
+    // is still tearing the task down. `write-settled` is what ends the wait.
+    const windingDown = op.cancelling || op.outcome?.kind === 'cancelled'
+    if (op.settleEventReceived) clearWindDownTimers()
+    else if (windingDown) armWindDownTimers()
+  })
+
+  $effect(() => {
+    const op = bound.current
+    if (op === null || backgrounded) return
+    if (op.status === 'queued') handleAutoQueued()
+  })
+
+  /* ----------------------------------------------------------------------- */
+  /* Commanding the operation                                                 */
+  /* ----------------------------------------------------------------------- */
+
+  /** Cancel (keep what's written) or Rollback (undo it), through the operation's
+   *  own commands, so every other surface watching sees the press. */
+  async function handleCancel(rollback: boolean): Promise<void> {
+    if (operationId === null) {
+      // The backend hasn't named the operation yet. Record the command; birth
+      // issues it the moment the id lands.
+      log.warn('Cancel requested but no operationId yet; will cancel after the start command answers')
+      cancelRequestedBeforeId = true
+      return
+    }
+    const op = bound.current
+    if (op === null) {
+      // The binder acquires on the first effect flush after the id lands, a
+      // sub-frame sliver no click can reach. Logged rather than swallowed.
+      log.warn('Cancel requested for op={operationId} before its session took hold; ignoring', { operationId })
+      return
+    }
+    if (rollback) {
+      log.info('Rolling back operation: {operationId}', { operationId })
+      await op.rollback()
+    } else {
+      log.info('Cancelling operation (keeping partial files): {operationId}', { operationId })
+      await op.cancel()
+    }
+  }
+
+  /** Pauses or resumes this operation in place. Which way it goes is decided
+   *  from the registry snapshot's lifecycle status, so the button flips only
+   *  once the backend actually parked/resumed, never optimistically. */
+  async function handlePauseResume(): Promise<void> {
+    await bound.current?.togglePause()
+  }
+
+  /** Answers the clash this dialog is showing. The backend arbitrates and
+   *  reports its verdict; the session lets go of the clash on any of them, so
+   *  only a call that never landed leaves the prompt up. */
+  async function handleConflictResolution(resolution: ConflictResolution, applyToAll: boolean): Promise<void> {
+    const op = bound.current
+    if (op === null || op.conflict === null) return
+    log.info('Resolving conflict with {resolution}, applyToAll={applyToAll}', { resolution, applyToAll })
+    await op.resolveConflict(resolution, applyToAll)
+  }
+
+  /** Sends this operation to the background: keep it running, open the queue
+   *  window, and unmount this modal. The op is now managed in the queue window.
+   *  Fired by the Queue button, the dialog-scoped F2, and the auto-queue path. */
+  function handleQueue(): void {
+    if (!operationId || backgrounded) return
+    log.info('Backgrounding operation to the queue window: {operationId}', { operationId })
+    handOff(operationId)
+    addToast(tString('fileOperations.transferProgress.backgroundedToast'), {
+      level: 'info',
+      toastGroup: 'transfer-queue',
     })
-    for (const unlisten of unlisteners) {
-      unlisten()
-    }
-    unlisteners = []
-    opsUnlisten?.()
-    opsUnlisten = null
-    clearSlowSettleTimer()
-    clearCancelSettleFallbackTimer()
+    config.onQueue?.()
   }
 
-  /** Dispatches the backend command based on operation type. */
-  async function dispatchOperation(): Promise<{ operationId: string }> {
-    const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
-    const maxConflictsToShow = getSetting('fileOperations.maxConflictsToShow')
-    // Read once at dispatch (not reactively). Threaded into every zip-writing path
-    // (Compress, and copy/move INTO an archive); the backend clamps it to 1..=9 and
-    // ignores it for non-archive copies.
-    const compressionLevel = getSetting('behavior.archiveCompressionLevel')
-
-    if (config.operationType === 'trash') {
-      return trashFiles(
-        config.sourcePaths,
-        config.itemSizes,
-        { progressIntervalMs, previewId: config.previewId },
-        config.initiator,
-      )
-    }
-    if (config.operationType === 'delete') {
-      return deleteFiles(
-        config.sourcePaths,
-        { progressIntervalMs, sortColumn: config.sortColumn, sortOrder: config.sortOrder, previewId: config.previewId },
-        config.sourceVolumeId,
-        config.initiator,
-      )
-    }
-    if (config.operationType === 'move') {
-      // Volume move (MTP or other non-local); backend handles same-volume, cross-volume, etc.
-      if (isVolumeMove) {
-        return moveBetweenVolumes(
-          config.sourceVolumeId,
-          config.sourcePaths,
-          config.destVolumeId ?? DEFAULT_VOLUME_ID,
-          config.destinationPath ?? '',
-          {
-            conflictResolution: config.conflictResolution ?? 'stop',
-            progressIntervalMs,
-            maxConflictsToShow,
-            previewId: config.previewId,
-            preKnownConflicts: config.preKnownConflicts ?? [],
-            compressionLevel,
-          },
-          config.initiator,
-        )
-      }
-      // Local-to-local move
-      return moveFiles(
-        config.sourcePaths,
-        config.destinationPath ?? '',
-        {
-          conflictResolution: config.conflictResolution,
-          progressIntervalMs,
-          maxConflictsToShow,
-          sortColumn: config.sortColumn,
-          sortOrder: config.sortOrder,
-          previewId: config.previewId,
-          preKnownConflicts: config.preKnownConflicts ?? [],
-        },
-        config.initiator,
-      )
-    }
-    if (config.operationType === 'compress') {
-      return dispatchCompress(progressIntervalMs, maxConflictsToShow, compressionLevel)
-    }
-    return dispatchCopy(progressIntervalMs, maxConflictsToShow, compressionLevel)
-  }
-
-  /** Copy: always via `copyBetweenVolumes`; the backend optimizes local-to-local. */
-  function dispatchCopy(
-    progressIntervalMs: number,
-    maxConflictsToShow: number,
-    compressionLevel: number,
-  ): Promise<{ operationId: string }> {
-    return copyBetweenVolumes(
-      config.sourceVolumeId,
-      config.sourcePaths,
-      config.destVolumeId ?? DEFAULT_VOLUME_ID,
-      config.destinationPath ?? '',
-      {
-        conflictResolution: config.conflictResolution ?? 'stop',
-        progressIntervalMs,
-        maxConflictsToShow,
-        previewId: config.previewId,
-        preKnownConflicts: config.preKnownConflicts ?? [],
-        compressionLevel,
-      },
-      config.initiator,
-    )
+  /** Called once the operation first reports itself as `queued`: the manager
+   *  admitted it behind a busy lane rather than running it now. Don't stack a
+   *  second modal on top of the foreground op — surface the queue window with a
+   *  quiet toast and unmount, exactly like a manual Queue. */
+  function handleAutoQueued(): void {
+    if (backgrounded || !operationId) return
+    // How many operations this one is waiting behind: the ones occupying lanes
+    // right now, from the same live rows the Background/Queue label reads.
+    const ahead = getMainWindowOperationRows().filter(
+      (row) =>
+        row.snapshot.operationId !== operationId &&
+        (row.snapshot.status === 'running' || row.snapshot.status === 'paused'),
+    ).length
+    const aheadCount = Math.max(1, ahead)
+    log.info('Operation queued behind {ahead} on a busy lane; surfacing the queue window', { ahead: aheadCount })
+    handOff(operationId)
+    const countText = tString('fileOperations.transferProgress.queuedToastCount', { count: aheadCount })
+    addToast(tString('fileOperations.transferProgress.queuedToast', { countText }), {
+      level: 'info',
+      toastGroup: 'transfer-queue',
+    })
+    config.onQueue?.()
   }
 
   /**
-   * Compress: pack the sources into a NEW zip at the target. One command handles
-   * local and (later) remote sources; the backend seeds a valid empty zip then packs.
-   * The inner-conflict policy is moot (a fresh zip has no entries and two sources
-   * in one folder can't share a name), so `overwrite` is a safe constant; an
-   * existing target FILE was already resolved in the dialog.
+   * The modal closed: its × button, Escape, or the focus trap tearing down.
+   *
+   * ❌ Never a cancel. Closing a looking glass says nothing about the thing it
+   * was looking at, and a transfer that dies because someone pressed Escape is
+   * the coupling this whole seam exists to remove. So a still-running operation
+   * is handed to the queue window, exactly as the Queue button hands it over,
+   * and one that is already winding down or over is simply stopped watching.
    */
-  function dispatchCompress(
-    progressIntervalMs: number,
-    maxConflictsToShow: number,
-    compressionLevel: number,
-  ): Promise<{ operationId: string }> {
-    return compressFiles(
-      config.sourceVolumeId,
-      config.sourcePaths,
-      config.destVolumeId ?? DEFAULT_VOLUME_ID,
-      config.destinationPath ?? '',
-      {
-        conflictResolution: 'overwrite',
-        progressIntervalMs,
-        maxConflictsToShow,
-        previewId: config.previewId,
-        compressionLevel,
-      },
-      config.initiator,
-    )
+  function detach(): void {
+    if (operationId === null) {
+      // Nothing to hand over yet. Birth does it the moment the id lands, so the
+      // key press isn't silently dropped.
+      backgroundRequestedBeforeId = true
+      return
+    }
+    if (canHandOff()) handleQueue()
+    else dismiss()
   }
 
-  async function startOperation() {
+  /** The half the manual Queue and the auto-queue share: mark the handoff and
+   *  open the window that now owns it. The foreground slot is released HERE
+   *  rather than in `destroy()`, because handing over is exactly when the corner
+   *  chip and the failure notice must start speaking about this operation, and
+   *  `onQueue` is optional so the modal may stay mounted. */
+  function handOff(id: string): void {
+    backgrounded = true
+    clearForegroundOperation(id)
+    void openQueueWindow()
+  }
+
+  /* ----------------------------------------------------------------------- */
+  /* Birth                                                                    */
+  /* ----------------------------------------------------------------------- */
+
+  async function beginOperation(): Promise<void> {
     log.info('Starting {op} operation: {sourceCount} {sourcesNoun}', {
       op: config.operationType,
       sourceCount: config.sourcePaths.length,
       sourcesNoun: pluralize(config.sourcePaths.length, 'source'),
     })
-
-    startTime = Date.now()
-
-    // CRITICAL: Subscribe to events BEFORE starting the operation to avoid race condition
-    // Events are emitted immediately when the operation starts - if we subscribe after,
-    // we might miss progress/complete events for fast operations (like single large files)
-    log.debug('Subscribing to write events BEFORE starting operation')
-
-    unlisteners.push(await onWriteProgress(handleProgress))
-    unlisteners.push(await onWriteComplete(handleComplete))
-    unlisteners.push(await onWriteError(handleError))
-    unlisteners.push(await onWriteCancelled(handleCancelled))
-    unlisteners.push(await onWriteSettled(handleSettled))
-    unlisteners.push(await onWriteConflict(handleConflict))
-    // Track this op's lifecycle status (running vs paused, and the queued
-    // case the auto-queue path needs). Held separately so cleanup() can drop
-    // it without churning the write listeners.
-    opsUnlisten = await onOperationsChanged((event) => {
-      handleOperationsChanged(event.operations)
-    })
-
-    log.debug('Event subscriptions ready, starting {op}', { op: config.operationType })
 
     // From here until the slot is claimed (or the dispatch is abandoned), this
     // dialog owns an operation nothing can name yet. The conflict host waits out
@@ -793,75 +526,63 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
 
     try {
       try {
-        const result = await dispatchOperation()
-
-        operationId = result.operationId
-        log.info('{op} operation started with operationId: {operationId}', {
-          op: operationLabel,
-          operationId,
-        })
+        const result = await dispatchTransferOperation(config)
+        const id = result.operationId
+        operationId = id
+        log.info('{op} operation started with operationId: {operationId}', { op: operationLabel, operationId: id })
 
         // Reply to the MCP round-trip (if this op was started via an auto-confirmed
         // MCP tool) with the spawned operationId, so the waiting tool can return it
         // for a follow-up `queue` / `await operation_complete`. Fire-and-forget: the
         // op is already running regardless of whether the reply lands.
         if (config.mcpRequestId) {
-          void emit('mcp-response', { requestId: config.mcpRequestId, ok: true, operationId })
+          void emit('mcp-response', { requestId: config.mcpRequestId, ok: true, operationId: id })
         }
 
-        // If the dialog was destroyed/cancelled while waiting for the IPC response,
-        // cancel the operation immediately and bail out. Crucially, we must call
-        // `onCancelled` so the parent removes the dialog from state — otherwise
-        // the listeners are torn down by `cleanup()` but the `<TransferProgressDialog>`
-        // stays mounted forever (the BE eventually emits `write-cancelled` +
-        // `write-settled`, but no one's listening anymore). That stuck dialog
-        // poisons every following operation through ensureAppReady's Escape.
-        if (destroyed) {
-          log.info('Dialog destroyed before operationId arrived; cancelling op={operationId}', {
-            operationId,
+        if (cancelRequestedBeforeId) {
+          // An explicit Cancel that arrived before the operation had a name.
+          // Through the MANAGER, because an operation admitted behind a busy
+          // lane hasn't spawned a write op yet and only this path can drop it.
+          // Reported to the parent too, so the modal comes down: nothing else
+          // will close it, and a stuck progress dialog poisons every following
+          // operation through `ensureAppReady`'s Escape.
+          log.info('Cancel arrived before the id did; cancelling op={operationId}', { operationId: id })
+          void cancelOperation(id)
+          close(() => {
+            config.onCancelled(0)
           })
-          void cancelWriteOperation(operationId, true)
-          cleanup()
-          config.onCancelled(0)
+          return
+        }
+
+        if (backgroundRequestedBeforeId) {
+          // The modal was closed before the operation had a name. Now it has
+          // one, so hand it to the queue window rather than losing the press.
+          log.info('The modal closed before op={operationId} was named; backgrounding it', { operationId: id })
+          handleQueue()
+          return
+        }
+
+        // A view that went away without commanding anything has DETACHED. The
+        // operation keeps running, and the queue window and the corner chip are
+        // where it shows up now. It owns no foreground slot, though: a dialog
+        // that is already gone owns nothing.
+        if (destroyed) {
+          log.info('The dialog was gone before op={operationId} was named; it keeps running', { operationId: id })
           return
         }
 
         // This dialog now owns the operation in the foreground, so ambient
         // surfaces stay quiet about it (`../foreground-operation.svelte.ts`).
-        // Claimed after the `destroyed` bail-out above: a dialog that's already
-        // gone owns nothing.
-        setForegroundOperationId(operationId)
+        setForegroundOperationId(id)
       } finally {
         // Every route out of the dispatch settles the claim: the id landed, the
         // dialog was already gone, or the command threw. A leaked claim would
         // leave every later conflict deferred forever.
         endForegroundClaim()
       }
-
-      replayBufferedEvents()
-
-      // Seed this op's lifecycle status once. The manager emits
-      // `operations-changed` on registration, which may have fired before we
-      // knew our `operationId` (so our subscriber dropped it). A one-shot
-      // `list_operations` catches the current status — crucially the
-      // "admitted as Queued behind a busy lane" case the auto-queue path
-      // surfaces. After this, live snapshot ticks keep `opStatus` current.
-      try {
-        const snapshot = await listOperations()
-        // `handleOperationsChanged` is idempotent and self-guards on
-        // `backgrounded`, so a live tick that already backgrounded us
-        // between subscribe and seed is a no-op here. The `destroyed`
-        // re-check matters because the component can unmount during this
-        // `await` (eslint can't see that async-gap mutation, hence the
-        // disable).
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- destroyed can flip during the await above
-        if (!destroyed) handleOperationsChanged(snapshot)
-      } catch (err) {
-        log.warn('Failed to seed operation status: {error}', { error: err })
-      }
     } catch (err: unknown) {
       log.error('Failed to start {op} operation: {error}', { op: config.operationType, error: err })
-      cleanup()
+      clearWindDownTimers()
       // Fail the MCP round-trip too (the op never spawned, so no operationId).
       if (config.mcpRequestId) {
         const message = err instanceof Error ? err.message : String(err)
@@ -869,178 +590,17 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       }
       // Tauri commands return structured WriteOperationError objects on validation failure
       // (e.g. destination_inside_source). Pass them through to preserve the specific error type.
-      if (typeof err === 'object' && err !== null && 'type' in err) {
-        config.onError(err as WriteOperationError)
-      } else {
-        config.onError({
-          type: 'io_error',
-          path: config.sourcePaths[0] ?? '',
-          message: `Failed to start ${config.operationType}: ${String(err)}`,
-        })
-      }
-    }
-  }
-
-  async function handleCancel(rollback: boolean) {
-    // A backgrounded op was deliberately handed off to the queue window, so NO
-    // teardown path may cancel it. The modal's `onclose` (× button, Escape, or
-    // focus-trap teardown) fires during the backgrounding handoff and routes
-    // here; without this guard it would cancel the op (keeping only partial
-    // files) and the queue window would open empty. destroy() makes the same
-    // exception; the explicit Cancel/Rollback buttons always run with
-    // `backgrounded` false (the modal is gone by the time it's set).
-    if (backgrounded) return
-
-    if (!operationId) {
-      log.warn('Cancel requested but no operationId yet; will cancel after IPC resolves')
-      destroyed = true
-      return
-    }
-    if (isCancelling) {
-      log.debug('Cancel already in progress')
-      return
-    }
-
-    if (isRollingBack && !rollback) {
-      // Cancel during rollback: stop deleting, keep remaining files
-      log.info('Cancelling rollback for operation: {operationId}', { operationId })
-      isCancelling = true
-      try {
-        await cancelWriteOperation(operationId, false)
-        log.debug('Rollback cancel request sent successfully')
-        // Dialog will close when write-cancelled event is received
-      } catch (err) {
-        log.error('Failed to cancel rollback: {error}', { error: err })
-        isCancelling = false
-      }
-      return
-    }
-
-    if (isRollingBack) {
-      log.debug('Rollback already in progress')
-      return
-    }
-
-    if (rollback) {
-      // Rollback: keep dialog open, backend will enter rolling_back phase with progress events
-      log.info('Rolling back operation: {operationId}', { operationId })
-      operationSettled = true
-      isRollingBack = true
-      try {
-        await cancelWriteOperation(operationId, true)
-        log.debug('Rollback request sent successfully')
-        // Dialog stays open; progress events with phase=rolling_back will update the UI.
-        // Dialog closes when write-cancelled event is received.
-      } catch (err) {
-        log.error('Failed to rollback operation: {error}', { error: err })
-        isRollingBack = false
-      }
-    } else {
-      // Cancel: keep partial files. Stay in "Cancelling…" until both
-      // `write-cancelled` and `write-settled` have landed: the BE may
-      // still be tearing down USB / network sessions, and dispatching a
-      // new op against a volume in that state is what wedged the device
-      // in the original incident. See the "Settle contract" in
-      // `src-tauri/src/file_system/write_operations/CLAUDE.md`.
-      log.info('Cancelling operation (keeping partial files): {operationId}', { operationId })
-      isCancelling = true
-      startSlowSettleTimer()
-      startCancelSettleFallbackTimer()
-      try {
-        await cancelWriteOperation(operationId, false)
-        log.debug('Cancel request sent; waiting for write-cancelled + write-settled')
-        // Don't close here. The dialog closes from
-        // `maybeFinishCancelClose` once both events arrive.
-      } catch (err) {
-        log.error('Failed to cancel operation: {error}', { error: err })
-        isCancelling = false
-        clearSlowSettleTimer()
-        clearCancelSettleFallbackTimer()
-      }
-    }
-  }
-
-  /** Pauses or resumes this operation in place. The button label/icon and the
-   *  dialog title follow `opStatus`, which the `operations-changed` snapshot
-   *  drives — so the UI flips only once the backend actually parked/resumed,
-   *  never optimistically. */
-  async function handlePauseResume() {
-    if (!operationId || pauseInFlight) return
-    pauseInFlight = true
-    try {
-      if (isPaused()) {
-        log.info('Resuming operation: {operationId}', { operationId })
-        await resumeOperation(operationId)
-      } else {
-        log.info('Pausing operation: {operationId}', { operationId })
-        await pauseOperation(operationId)
-      }
-    } catch (err) {
-      log.error('Failed to pause/resume operation: {error}', { error: err })
-    } finally {
-      pauseInFlight = false
-    }
-  }
-
-  /** Sends this operation to the background: keep it running, open the queue
-   *  window, and unmount this modal. The op is now managed in the queue window.
-   *  Fired by the Queue button, the dialog-scoped F2, and the auto-queue path.
-   *  Sets `backgrounded` BEFORE handing off so destroy()'s safety-net cancel
-   *  won't stop the op as the modal tears down. */
-  function handleQueue() {
-    if (!operationId || backgrounded) return
-    log.info('Backgrounding operation to the queue window: {operationId}', { operationId })
-    backgrounded = true
-    // Ownership moves to the queue window here, which is exactly when the corner
-    // and the failure notice must start speaking about this operation. Released
-    // now rather than in `destroy()`: `onQueue` is optional, so the modal may
-    // stay mounted.
-    clearForegroundOperation(operationId)
-    void openQueueWindow()
-    addToast(tString('fileOperations.transferProgress.backgroundedToast'), {
-      level: 'info',
-      toastGroup: 'transfer-queue',
-    })
-    // Unmount this modal. The op keeps running; `onQueue` clears the dialog
-    // state in the parent (it does NOT call `cancelWriteOperation`).
-    config.onQueue?.()
-  }
-
-  /** Called once `operations-changed` first reports this op as `queued`: the
-   *  manager admitted it behind a busy lane rather than running it now. Don't
-   *  stack a second modal on top of the foreground op — surface the queue
-   *  window with a quiet toast and unmount, exactly like a manual Queue. */
-  function handleAutoQueued(aheadCount: number) {
-    if (backgrounded || !operationId) return
-    log.info('Operation queued behind {ahead} on a busy lane; surfacing the queue window', {
-      ahead: aheadCount,
-    })
-    backgrounded = true
-    // Same handoff as the manual Queue: the queue window owns it from here.
-    clearForegroundOperation(operationId)
-    void openQueueWindow()
-    const countText = tString('fileOperations.transferProgress.queuedToastCount', { count: aheadCount })
-    addToast(tString('fileOperations.transferProgress.queuedToast', { countText }), {
-      level: 'info',
-      toastGroup: 'transfer-queue',
-    })
-    config.onQueue?.()
-  }
-
-  /** Reduces an `operations-changed` snapshot for THIS op: tracks its lifecycle
-   *  status and, the first time it lands as `queued`, auto-backgrounds it. */
-  function handleOperationsChanged(operations: OperationSnapshot[]) {
-    if (!operationId) return
-    const mine = operations.find((op) => op.operationId === operationId)
-    if (!mine) return
-    opStatus = mine.status
-    if (mine.status === 'queued' && !backgrounded) {
-      // Count the ops ahead of this one that are occupying lanes (running or
-      // paused). That's how many transfers it's waiting behind.
-      const ahead = operations.filter(
-        (op) => op.operationId !== operationId && (op.status === 'running' || op.status === 'paused'),
-      ).length
-      handleAutoQueued(Math.max(1, ahead))
+      const error: WriteOperationError =
+        typeof err === 'object' && err !== null && 'type' in err
+          ? (err as WriteOperationError)
+          : {
+              type: 'io_error',
+              path: config.sourcePaths[0] ?? '',
+              message: `Failed to start ${config.operationType}: ${String(err)}`,
+            }
+      close(() => {
+        config.onError(error)
+      }, false)
     }
   }
 
@@ -1051,124 +611,104 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  waits for it, so the operation has an id, a queue row, and Background from
    *  the first frame. (Pause stays hidden until the write starts — a scan-wait
    *  has nothing to park, and the backend declines the flip.) */
-  function start() {
-    void startOperation()
+  function start(): void {
+    void beginOperation()
   }
 
-  /** Tears the dialog down (the component's `onDestroy`). Fires the safety-net
-   *  cancel for an unexpected teardown — UNLESS the op was deliberately
-   *  backgrounded (read live off the plain `backgrounded` / `destroyed` lets;
-   *  see the module doc).
+  /** Tears the view down (the component's `onDestroy`).
    *
-   *  ❌ It does NOT cancel the scan preview. The operation owns that preview
-   *  now, so a dialog going away is a viewer detaching, and stopping the walk
-   *  here would pull the result out from under a transfer that is still queued
-   *  or running. */
-  function destroy() {
+   *  ❌ It does NOT stop the operation, and it does NOT cancel the scan preview.
+   *  A dialog going away is a viewer detaching; the operation owns its preview
+   *  and its own life. The session is released by the binder, whose effect is
+   *  torn down with this component's scope. */
+  function destroy(): void {
     destroyed = true
     // The catch-all release: completion, cancel, error, and any other unmount
     // all land here. `clearForegroundOperation` no-ops if a later dialog already
     // took the slot.
     if (operationId) clearForegroundOperation(operationId)
-    if (operationId && !operationSettled && !backgrounded) {
-      // Unexpected teardown (hot-reload, navigation, window close): stop the operation
-      // but don't roll back; never do silent background work without visual feedback.
-      // A `backgrounded` op is the deliberate exception — the user sent it to the queue
-      // window, so it MUST keep running; only its modal unmounts.
-      void cancelWriteOperation(operationId, false)
-    }
-    cleanup()
+    clearWindDownTimers()
   }
 
   return {
     start,
     destroy,
+    detach,
     dismiss,
     handleCancel,
     handleConflictResolution,
     handlePauseResume,
     handleQueue,
-    get scanFilesFound() {
-      return scanFilesFound
+    /** The counting readout, zeros until the operation says otherwise. */
+    get scan(): ScanReadout {
+      return session()?.scan ?? EMPTY_SCAN
     },
-    get scanDirsFound() {
-      return scanDirsFound
+    get phase(): WriteOperationPhase {
+      return phase()
     },
-    get scanBytesFound() {
-      return scanBytesFound
+    get currentFile(): string | null {
+      return session()?.progress?.currentFile ?? null
     },
-    get scanCurrentDir() {
-      return scanCurrentDir
+    get filesDone(): number {
+      return session()?.progress?.filesDone ?? 0
     },
-    get scanFilesPerSec() {
-      return scanFilesPerSec
+    get filesTotal(): number {
+      return session()?.progress?.filesTotal ?? 0
     },
-    get scanBytesPerSec() {
-      return scanBytesPerSec
+    get bytesDone(): number {
+      return session()?.progress?.bytesDone ?? 0
     },
-    get phase() {
-      return phase
+    get bytesTotal(): number {
+      return session()?.progress?.bytesTotal ?? 0
     },
-    get currentFile() {
-      return currentFile
+    get isCancelling(): boolean {
+      return session()?.cancelling ?? false
     },
-    get filesDone() {
-      return filesDone
+    get isRollingBack(): boolean {
+      return isRollingBack()
     },
-    get filesTotal() {
-      return filesTotal
+    /** The operation has reported a cancel, and the dialog stays in
+     *  "Cancelling…" until the backend has finished tearing down too. */
+    get cancelEventReceived(): boolean {
+      return cancelledEvent() !== null
     },
-    get bytesDone() {
-      return bytesDone
-    },
-    get bytesTotal() {
-      return bytesTotal
-    },
-    get isCancelling() {
-      return isCancelling
-    },
-    get isRollingBack() {
-      return isRollingBack
-    },
-    get cancelEventReceived() {
-      return cancelEventReceived
-    },
-    get settleSlow() {
+    get settleSlow(): boolean {
       return settleSlow
     },
-    get operationSettled() {
-      return operationSettled
+    get operationSettled(): boolean {
+      return session()?.settled ?? false
     },
-    get isPaused() {
-      return isPaused()
+    get isPaused(): boolean {
+      return session()?.status === 'paused'
     },
-    get pauseInFlight() {
-      return pauseInFlight
+    get pauseInFlight(): boolean {
+      return session()?.pauseInFlight ?? false
     },
-    get canPauseOrQueue() {
+    get canPauseOrQueue(): boolean {
       return canPauseOrQueue()
     },
-    get conflictEvent() {
-      return conflictEvent
+    /** The clash this operation is parked on, if any. */
+    get conflict() {
+      return session()?.conflict ?? null
     },
-    get isResolvingConflict() {
-      return isResolvingConflict
+    get isResolvingConflict(): boolean {
+      return session()?.resolvingConflict ?? false
     },
-    get bytesPerSecond() {
-      return bytesPerSecond
+    get bytesPerSecond(): BytesPerSecond | null {
+      return session()?.readout?.bytesPerSecond ?? null
     },
-    get filesPerSecond() {
-      return filesPerSecond
+    get filesPerSecond(): number | null {
+      return session()?.progress?.filesPerSecond ?? null
     },
-    get etaSecondsDisplay() {
-      return etaSecondsDisplay
+    get etaSecondsDisplay(): Seconds | null {
+      return session()?.etaSecondsDisplay ?? null
     },
-    get activity() {
-      return activity
+    get activity(): TransferActivity | null {
+      return session()?.progress?.activity ?? null
     },
     /** This operation's backend id, `null` until the start command answers. The
      *  dialog needs it to exclude itself from the queue it's asking about. */
-    get operationId() {
+    get operationId(): string | null {
       return operationId
     },
   }

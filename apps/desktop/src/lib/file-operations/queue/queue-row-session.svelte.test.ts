@@ -19,10 +19,9 @@
  * that stays impossible rather than merely absent: nothing else here would
  * notice a second layer quietly reappearing in the store.
  *
- * The smoother count is scoped to the queue window on purpose. The progress
- * dialog still builds its own until it becomes a view of a session, so the same
- * assertion for the main window would fail for a reason this file has nothing to
- * say about.
+ * The smoother count is scoped to the queue window on purpose; the main
+ * window's half of the same guarantee lives beside the surface it protects, in
+ * `../transfer/transfer-progress-state.svelte.test.ts`.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'

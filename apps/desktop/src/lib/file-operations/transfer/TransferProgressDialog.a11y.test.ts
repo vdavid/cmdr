@@ -7,10 +7,14 @@
  * no-op unsubscribers so only the initial render is audited.
  */
 
-import { describe, it, vi } from 'vitest'
+import { describe, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import TransferProgressDialog from './TransferProgressDialog.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
+import {
+  destroyOperationSessions,
+  initOperationSessions,
+} from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -27,6 +31,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onWriteSettled: vi.fn(() => Promise.resolve(() => {})),
   onWriteConflict: vi.fn(() => Promise.resolve(() => {})),
   resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
+  cancelOperation: vi.fn(() => Promise.resolve()),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   cancelScanPreview: vi.fn(() => Promise.resolve()),
   checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
@@ -54,6 +59,15 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
 vi.mock('$lib/stores/volume-store.svelte', () => ({
   getVolumes: () => [{ id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false }],
 }))
+
+beforeEach(async () => {
+  // A view needs its window's session registry, the same as in the app.
+  await initOperationSessions()
+})
+
+afterEach(() => {
+  destroyOperationSessions()
+})
 
 describe('TransferProgressDialog a11y', () => {
   it('copy operation (initial "Scanning" state) has no a11y violations', async () => {
