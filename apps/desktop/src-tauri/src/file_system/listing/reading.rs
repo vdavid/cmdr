@@ -175,6 +175,10 @@ fn list_directory_core_impl(path: &Path, tally: Option<&ListingTally>) -> Result
         // Access), or a cloud sync placeholder that hasn't materialized yet. Surface the
         // path's own metadata so error reports distinguish "we got told the dir has no
         // children" from "the path itself is broken".
+        //
+        // Debug, not warn: an empty folder is ordinary (every fresh copy destination is
+        // one), and the file target logs Debug unconditionally, so a report bundle still
+        // carries this line when the restricted-directory case is the one being chased.
         let metadata_status = match fs::metadata(path) {
             Ok(m) => {
                 let kind = if m.is_dir() {
@@ -188,7 +192,7 @@ fn list_directory_core_impl(path: &Path, tally: Option<&ListingTally>) -> Result
             }
             Err(e) => format!("metadata failed: {e}"),
         };
-        log::warn!(
+        log::debug!(
             "list_directory_core: 0 entries at {} ({metadata_status}). Could be genuinely empty, permission/TCC restricted (Full Disk Access?), or a cloud-sync placeholder.",
             path.display(),
         );
