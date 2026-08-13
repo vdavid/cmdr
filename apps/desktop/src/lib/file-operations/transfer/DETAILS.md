@@ -38,8 +38,8 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
 - **`DirectionIndicator.svelte` is the progress dialog's alone** (the confirm dialog shows its `From` card instead). Its
   optional `sourceLabel` / `destinationLabel` props override the path-basename label so a volume root renders the volume
   display name, not a raw machine id (an MTP storage id like `65538`).
-- **`ScanPhaseBody.svelte` is shared by BOTH scan-phase code paths** (`waitingForScan` and `phase === 'scanning'`), so a
-  change to it lands in both.
+- **`ScanPhaseBody.svelte` is shared by the progress dialog and the queue row** (`comfortable` and `compact` densities),
+  so a change to it lands on both surfaces.
 - **`transfer-complete-toast.ts::composeTransferCompleteToast` splits TOP-LEVEL items by type only** ("Moved 1 file and
   3 folders"), never interior counts. It omits zero parts, and the skip suffix is file-only because folders always
   merge. When a top-level kind probe comes back partial it falls back to flattened file-count wording. F5/F6 feed it the
@@ -103,7 +103,7 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
      at 100% pretending the work is done. The phase maps back to the active stage chip (copying/moving) in
      `getStageStatus`, since it's the tail of the copy, not a separate chip. Shown for both copy and move. Pinned by
      `TransferProgressDialog.flushing.test.ts`. See the BE doc § "Durability" for what the flush actually does.
-   - **Scanning-phase UI** (both `waitingForScan` and `phase === 'scanning'` paths): rendered via `ScanPhaseBody`. Shows
+   - **Scanning-phase UI** (`phase === 'scanning'`, the one path there is now): rendered via `ScanPhaseBody`. Shows
      source path, running tallies (`bytesFound / filesFound / dirsFound`), FE-computed throughput from `ScanThroughput`
      (`../scan-throughput.ts`), and a spinner. Current directory (`event.currentDir`) renders above the filename so the
      user sees where in the tree the walker is. Title is reframed per operation: "Verifying before copy…", "Counting

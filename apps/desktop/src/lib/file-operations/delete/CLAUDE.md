@@ -30,11 +30,11 @@ progress. Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_ope
   orphan has no owner and nothing to cancel it (teardown's cleanup is gated on `!confirmed`). The IPC only mints an id
   and spawns the walk, so it answers promptly even on a wedged share. `TransferDialog` awaits its own `scanStarted` for
   the same three reasons.
-- **The confirmed operation then waits for the WALK, in the backend, not here** (`scan_bridge::await_claimed_preview`).
-  A permanent delete consumes the cached result rather than re-walking; a trash consumes nothing from it
-  (`trashItemAtURL` is atomic per top-level item) and waits only so the preview has an owner that stops it. Scan events
-  still carry index-derived `expectedFilesTotal`/`expectedBytesTotal`, but the FE no longer renders a progress bar from
-  them (it read as "already deleting" during scan).
+- **A permanent delete then waits for the WALK, in the backend, not here** (`scan_bridge::await_claimed_preview`), and
+  consumes the cached result rather than re-walking. **Trash is the one operation that doesn't wait**: `trashItemAtURL`
+  is atomic per top-level item, so it consumes nothing and `trash_files_start` frees the preview outright rather than
+  leaving an ownerless walk running. Scan events still carry index-derived `expectedFilesTotal`/`expectedBytesTotal`,
+  but the FE no longer renders a progress bar from them (it read as "already deleting" during scan).
 - **No undo, no `confirmBeforeDelete` setting.** Delete is destructive so the dialog always shows; both delete settings
   were removed from the registry. Items trashed via `NSFileManager.trashItemAtURL` support Finder's "Put back".
 - **`TransferProgressDialog` is shared** (`operationType: 'delete' | 'trash'`); transfer-only props (`destinationPath`,

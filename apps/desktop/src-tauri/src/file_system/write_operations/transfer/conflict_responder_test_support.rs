@@ -4,13 +4,13 @@
 //! ## Why an event-driven responder, not a polling one
 //!
 //! A Stop-mode clash emits a `write-conflict` event and then blocks the
-//! operation on a `tokio::sync::oneshot` receiver until something fills the
-//! `state.conflict_resolution_tx` slot. The merge engine stores that sender
-//! BEFORE emitting the event (see `volume/conflict.rs`'s Stop branch), so by the
-//! time any sink observes the `emit_conflict` call the sender is already in the
-//! slot. [`ConflictResponderSink`] exploits exactly that: it wraps an inner
+//! operation on a `tokio::sync::oneshot` receiver until something answers
+//! `state.conflict_slot`. The merge engine ARMS that slot BEFORE emitting the
+//! event (see `volume/conflict.rs`'s Stop branch), so by the time any sink
+//! observes the `emit_conflict` call the sender is already in the slot.
+//! [`ConflictResponderSink`] exploits exactly that: it wraps an inner
 //! [`CollectorEventSink`], forwards every event, and — the instant it sees a
-//! conflict — synchronously `take()`s the sender and sends the scripted
+//! conflict — synchronously answers the slot with the scripted
 //! [`ConflictResolutionResponse`]. The op's `rx.await` then returns immediately.
 //!
 //! This is order-independent by construction: there is no parallel counter to
