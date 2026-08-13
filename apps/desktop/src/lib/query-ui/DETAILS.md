@@ -256,9 +256,9 @@ folders wants.
 only on the run's own terminal event (the local state never flips optimistically, so the label stays the backend's
 word), so `cancelLive()` tracks whether this run has already been asked to stop and answers `false` from then on.
 Without it, a run whose terminal event never arrives answers "there was one to stop" forever, and Escape can never reach
-the close: the dialog is un-closable by keyboard until the window reloads. `cancelSearch` doesn't rescue it either, since
-a run the backend never registered is one it has nothing to cancel. One such run in the Playwright suite left the search
-dialog open for the remaining 44 tests on its shard.
+the close: the dialog is un-closable by keyboard until the window reloads. `cancelSearch` doesn't rescue it either,
+since a run the backend never registered is one it has nothing to cancel. One such run in the Playwright suite left the
+search dialog open for the remaining 44 tests on its shard.
 
 ### Count-only results
 
