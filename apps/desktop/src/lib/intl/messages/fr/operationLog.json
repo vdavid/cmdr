@@ -112,23 +112,23 @@
   "@operationLog.status.canceled": {
     "sourceHash": "13ca2ee"
   },
-  "operationLog.rollback.notRollbackable": "Restauration impossible",
+  "operationLog.rollback.notRollbackable": "Retour en arrière impossible",
   "@operationLog.rollback.notRollbackable": {
     "sourceHash": "c6f78ba"
   },
-  "operationLog.rollback.rollbackable": "Restauration possible",
+  "operationLog.rollback.rollbackable": "Retour en arrière possible",
   "@operationLog.rollback.rollbackable": {
     "sourceHash": "6e87942"
   },
-  "operationLog.rollback.rollingBack": "Restauration en cours",
+  "operationLog.rollback.rollingBack": "Retour en arrière en cours",
   "@operationLog.rollback.rollingBack": {
     "sourceHash": "8b9e964"
   },
-  "operationLog.rollback.rolledBack": "Restauré",
+  "operationLog.rollback.rolledBack": "Retour en arrière effectué",
   "@operationLog.rollback.rolledBack": {
     "sourceHash": "7159223"
   },
-  "operationLog.rollback.partiallyRolledBack": "Partiellement restauré",
+  "operationLog.rollback.partiallyRolledBack": "Retour en arrière partiel",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
@@ -144,7 +144,7 @@
   "@operationLog.outcome.failed": {
     "sourceHash": "59ea57b"
   },
-  "operationLog.outcome.rolledBack": "Restauré",
+  "operationLog.outcome.rolledBack": "Retour en arrière effectué",
   "@operationLog.outcome.rolledBack": {
     "sourceHash": "7159223"
   }

@@ -353,11 +353,11 @@
   "@fileOperations.transferProgress.scanTitleTrash": {
     "sourceHash": "d11467e"
   },
-  "fileOperations.transferProgress.rollbackUnavailableTooltip": "Återställning är inte tillgänglig för flyttar inom samma volym",
+  "fileOperations.transferProgress.rollbackUnavailableTooltip": "Det går inte att ångra flyttar inom samma volym",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
     "sourceHash": "da6af1f"
   },
-  "fileOperations.transferProgress.titleRollingBack": "Återställer...",
+  "fileOperations.transferProgress.titleRollingBack": "Ångrar...",
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
@@ -501,7 +501,7 @@
   "@fileOperations.transferProgress.conflictCancel": {
     "sourceHash": "19766ed"
   },
-  "fileOperations.transferProgress.conflictRollback": "Återställ",
+  "fileOperations.transferProgress.conflictRollback": "Ångra",
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
@@ -537,7 +537,7 @@
   "@fileOperations.transferProgress.etaRemaining": {
     "sourceHash": "a6b154c"
   },
-  "fileOperations.transferProgress.smbNativeNote": "Den här delade mappen använder systemanslutningen. Avbrytning och återställning kan fördröjas.",
+  "fileOperations.transferProgress.smbNativeNote": "Den här delade mappen använder systemanslutningen. Det kan ta tid att avbryta eller ångra.",
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
@@ -605,7 +605,7 @@
   "@fileOperations.transferProgress.operationBlockedToast": {
     "sourceHash": "bc6efa8"
   },
-  "fileOperations.rollbackConfirm.title": "Återställa den här åtgärden?",
+  "fileOperations.rollbackConfirm.title": "Ångra den här åtgärden?",
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
@@ -617,7 +617,7 @@
   "@fileOperations.rollbackConfirm.keep": {
     "sourceHash": "0d472b0"
   },
-  "fileOperations.rollbackConfirm.rollBack": "Återställ",
+  "fileOperations.rollbackConfirm.rollBack": "Ångra",
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
   },

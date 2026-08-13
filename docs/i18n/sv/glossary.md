@@ -133,9 +133,9 @@ From the `onboarding.json` + `fileOperations.json` pass (2026-06-21). Reuses all
   "skriv över" (style.md), "hoppa över" (Nautilus "\_Hoppa över"), "byt namn" (macOS "Byt namn på…"), "slå samman"
   (Nautilus "Sammanfoga", but "slå samman" reads more natural for folder-merge UI). `high` except merge `tentative`
   (chose "slå samman" over Apple/GNOME "sammanfoga" for plainer voice).
-- **rollback (undo a partial transfer): `återställ` (button) / `återställning` (noun) / `återställer` (in progress)** ·
-  macOS uses "ångra" for undo, but Cmdr's rollback is "delete the partial files and revert", so "återställ" (restore)
-  fits better than "ångra". `tentative` (Cmdr-specific sense; review).
+- **rollback (undo a partial transfer): `ångra`** · macOS `sv` `Undo` → "Ångra", Nautilus `sv` "_Ångra Kopiera" ·
+  high. Not `återställ`: that IS `restore`, and rollback doesn't restore what it overwrote. Full arbitration over the
+  14 keys: § "Rollback-familjen" at the end of this file.
 - **target (of a symlink / conflict): `mål`** · "målet", "målmapp", "målvolym", "målsökväg". macOS/MS standard. `high`.
 - **merge (no-op) / "under cursor": `under markören`** · "markör" = cursor (macOS "markören"). `high`.
 - **source-available: `källtillgänglig`** · composed (källa + tillgänglig), parallel to "open source" → "öppen källkod";
@@ -533,7 +533,9 @@ ones:
   `settings.operationLog.*` ("loggade åtgärder", "gå igenom din historik") and the `åtgärden {verb}` framing. `high`.
 - **history (operation history): `historik`; "operation history" → `åtgärdshistorik`** · `settings.operationLog` uses
   "historik"/"Behåll historik i"; compounded åtgärd+historik for `loadError`. `high`.
-- **roll back / rollback (reverse a logged operation): reuse `återställ`/`återställa`/`återställer`/`återställd`** · the
+- **roll back / rollback (reverse a logged operation): SUPERSEDED, see § "Rollback-familjen" at the end of this
+  file.** The status-chip reasoning below still holds; only the word family changed, to `ångra`. ~~reuse
+  `återställ`/`återställa`/`återställer`/`återställd`~~ · the
   settled rollback family (glossary rollback entry + `fileOperations.transferProgress` "Återställer"/"Återställ").
   Status chips: notRollbackable → "Går inte att återställa", rollbackable → "Går att återställa", rollingBack →
   "Återställer", rolledBack → "Återställd", partiallyRolledBack → "Delvis återställd". Command description "roll them
@@ -1161,3 +1163,26 @@ that jargon is exactly what the copy avoids.
 - `foregroundBusyToast` no longer claims an operation is in the way ("Något annat är öppet här"): the blocker can be any
   dialog. "bring this one up" → `ta sedan fram den här` (`åtgärd` is common gender, so `den`) · high
 - No `sameAsSourceJustification` needed: all eight values differ from English.
+
+## Rollback-familjen: `återställ` ersatt av `ångra` (2026-08-13, 14 nycklar i `fileOperations`, `operationLog`, `commands`)
+
+Rättar den `tentative`-markerade rollback-posten ovan och löser den inkonsekvens den själv flaggade
+(`settings.operationLog.intro` sa redan `ångra åtgärder` medan dialogen sa `återställ`).
+
+- **rollback → `ångra`** · macOS `sv` (`Undo` → "Ångra", "Du kan inte ångra det här kommandot."), Nautilus `sv`
+  ("_Ångra Kopiera", "_Ångra Flytta" — exakt vår domän: en filhanterare som ångrar en filåtgärd), Microsoft `sv`
+  (`undo` → "ångra") · high.
+- ❌ Inte `återställ`: det ÄR `restore` i svenskan (macOS och Microsoft `sv` `restore` → "återställa"), och rollback
+  återställer just inte — den raderar det åtgärden skrev, och en fil som skrevs över är borta (det säger
+  `rollbackConfirm.body` rakt ut). Microsoft `sv` ger visserligen `roll back → återställa`, men det är
+  databastransaktionens betydelse, där det tidigare tillståndet verkligen kommer tillbaka: sense-fällan nr 4 i
+  `docs/i18n/reference-pile/how-to-mine.md`. Katalogen använder dessutom `återställa` för äkta återställning
+  (`askCmdr.renameUndo.*`, där de gamla namnen faktiskt kommer tillbaka, och `reset to default`).
+- Ingen krock med Cancel: den heter `Avbryt` / `Avbruten`, så `Ångra` / `Ångrad` står fritt och de två statusarna går
+  att skilja åt i samma kolumn.
+- De sex pastillerna: `Går inte att ångra` / `Går att ångra` / `Ångrar` / `Ångrad` / `Delvis ångrad`, och
+  `operationLog.outcome.rolledBack` återanvänder `Ångrad` (engelskan använder samma sträng på båda ställena).
+- `transferProgress.smbNativeNote` skrevs om till verbform ("Det kan ta tid att avbryta eller ångra") i stället för
+  substantivet `ångring`, som är korrekt men styltigt i ett gränssnitt.
+- Oförändrade för att de redan stämmer: `rollbackConfirm.body`, `rollbackConfirm.keep`,
+  `transferProgress.rollbackTooltip` (`Stoppa`-posten ovan gäller fortfarande).

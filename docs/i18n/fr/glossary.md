@@ -232,9 +232,10 @@ match this doc's convention:
 - replace → remplacer · macOS Finder ("Souhaitez-vous le remplacer…"), Nautilus ("\_Remplacer") · high
 - merge (folders) → fusionner · Nautilus ("\_Merge"→"\_Fusionner", "Fusionner le dossier") · high
 - conflict → conflit · Nautilus ("créerait un conflit avec un fichier existant") · high
-- rollback (undo a transfer) → annuler et restaurer (button) / restauration (noun) / annulation (the rolling-back
-  action) · no exact macOS term; "annuler et restaurer" spells out the stop-and-undo for the button, "restauration" for
-  the noun, kept calm · tentative
+- rollback (undo a transfer) → revenir en arrière (verb) / retour en arrière (noun) · not `restaurer` (that's Restore,
+  and rollback doesn't bring an overwritten file back) and not `annuler` (that's Cancel, and `Annulé` is already
+  `operationLog.status.canceled`) · tentative · full arbitration over the 14 keys: § « La famille `rollback` » at the
+  end of this file
 - destination → destination · macOS Finder ("${destinationFolder}" framing); same word · high
 - target (of a link / a clash) → cible · standard FR; macOS uses "cible" for link targets · high
 - free of (space) → libre sur · macOS Finder ("Disponible :"); "{free} libre sur {total}" reads natural · high
@@ -634,8 +635,9 @@ apostrophes are doubled in the catalog:
   verbatim for `operationLog.dialog.title` AND `commands.logOperationLog.label` (same sourceHash 2c97965).
 - operation (a logged file operation) → `opération` (feminine) · reuses the settled
   `File operations → Opérations sur les fichiers` section name · high.
-- roll back / rollback (reverse a COMPLETED operation, operation-log sense) → `restaurer` (verb) / `restauration` (noun
-  / status family) · reuses the `restauration` noun the `fileOperations` rollback pass already settled · high.
+- roll back / rollback (reverse a COMPLETED operation, operation-log sense) → SUPERSEDED, see § « La famille
+  `rollback` » at the end of this file. The Canceled-vs-Rolled-back reasoning below still holds; only the word family
+  changed, from `restaur-` to `retour en arrière`.
   **DIVERGENCE from the live-transfer catalog, deliberate:** the transfer surface renders the rolling-back action as
   `annulation` (`fileOperations.transferProgress.titleRollingBack` = "Annulation en cours..."), but the operation log
   must keep `Canceled` and `Rolled back` as DISTINCT status pills. Anchoring rollback to the `restaur-` family reserves
@@ -1433,3 +1435,35 @@ jargon is exactly what the copy avoids.
 - Espace ASCII normale devant `?` et `:` (règle catalogue, style.md § Punctuation spacing) ; apostrophes ASCII doublées
   dans les valeurs ICU.
 - Aucun `sameAsSourceJustification` nécessaire : toutes les valeurs diffèrent de l'anglais.
+
+## La famille `rollback` : `restaurer` abandonné pour `revenir en arrière` (2026-08-13, 14 clés dans `fileOperations`, `operationLog`, `commands`, `settings`)
+
+Arbitrage sur TOUTE la famille, comme le demandait la note « à revoir » de la section précédente. Le corps de
+`rollbackConfirm` dit noir sur blanc que les fichiers écrasés ne reviennent pas : le rollback SUPPRIME ce que
+l'opération a écrit, il ne REND rien. `restaurer` promettait donc l'inverse de ce que l'action fait.
+
+- **rollback → `retour en arrière` (nom) / `revenir en arrière` (verbe)** · `tentative`. Les trois familles candidates
+  et pourquoi les deux autres sont écartées :
+  - ❌ `restaur-` : c'est `Restore` en français, y compris dans le domaine gestionnaire de fichiers (Nautilus `fr`
+    « Ann_uler la restauration depuis la corbeille », Time Machine « Restaurer »), et le catalogue s'en sert déjà pour
+    la vraie restauration (`askCmdr.renameUndo.*`, où les anciens noms sont bel et bien rendus). Microsoft `fr` donne
+    `roll back → restaurer` / `rollback → restauration`, mais c'est le sens TRANSACTION de base de données, où l'état
+    antérieur revient vraiment : le piège de sens n° 4 de `docs/i18n/reference-pile/how-to-mine.md`.
+  - ❌ `annul-` : c'est le mot de l'undo en français (macOS `fr` `Undo` → « Annuler » ; Nautilus « Annuler la copie » ;
+    Double Commander « Annuler (en arrière) » ; Microsoft `undo` → « annulation »), MAIS `Annuler` est déjà le bouton
+    Cancel (`transferProgress.conflictCancel`) et `Annulé` déjà le statut `operationLog.status.canceled`. Or le journal
+    doit garder « vous avez annulé avant » et « vous êtes revenu en arrière après » distinguables d'un coup d'œil.
+  - ✅ `retour en arrière` : libre des deux collisions, se décline sur les six pastilles comme sur les boutons, et ne
+    promet qu'une direction, jamais une récupération. La forme AVEC `en` est délibérée : `retour arrière` tout court est
+    le nom de la touche Retour arrière et, dans macOS `fr`, le retour rapide d'un lecteur média (« retour arrière de 15
+    secondes »).
+- Le bouton fait 18 caractères, sous les 20 de `Annuler et restaurer` que le budget de largeur de `.button-row` avait
+  mesurés (voir la section sur le libellé du bouton file d'attente vide), donc la rangée ne bouge pas.
+- Le bouton seul ne dit pas que des fichiers sont supprimés : c'est voulu, l'anglais `Rollback` non plus. L'infobulle
+  (« Arrêter et supprimer tous les fichiers écrits jusqu'à présent ») et la confirmation obligatoire portent
+  l'avertissement, et le rollback demande TOUJOURS confirmation.
+- Les six pastilles : `Retour en arrière possible` / `… impossible` / `… en cours` / `… effectué` / `… partiel`, et
+  `operationLog.outcome.rolledBack` reprend `… effectué` (l'anglais utilise la même chaîne aux deux endroits).
+- `settings.operationLog.intro` disait « annuler des actions » : aligné sur `revenir en arrière`, sinon l'intro et les
+  pastilles du journal juste en dessous ne parlent pas de la même chose.
+- Inchangés parce que déjà exacts : `rollbackConfirm.body`, `rollbackConfirm.keep`, `transferProgress.rollbackTooltip`.

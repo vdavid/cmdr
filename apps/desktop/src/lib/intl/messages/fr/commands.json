@@ -91,7 +91,7 @@
   "@commands.logOperationLog.label": {
     "sourceHash": "2c97965"
   },
-  "commands.logOperationLog.description": "Consultez l''historique de vos opérations sur les fichiers et restaurez l''état précédent",
+  "commands.logOperationLog.description": "Consultez l''historique de vos opérations sur les fichiers et revenez en arrière",
   "@commands.logOperationLog.description": {
     "sourceHash": "ea2d082"
   },

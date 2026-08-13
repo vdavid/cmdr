@@ -354,11 +354,11 @@
   "@fileOperations.transferProgress.scanTitleTrash": {
     "sourceHash": "d11467e"
   },
-  "fileOperations.transferProgress.rollbackUnavailableTooltip": "L''annulation n''est pas disponible pour les déplacements au sein d''un même volume",
+  "fileOperations.transferProgress.rollbackUnavailableTooltip": "Le retour en arrière n''est pas disponible pour les déplacements au sein d''un même volume",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
     "sourceHash": "da6af1f"
   },
-  "fileOperations.transferProgress.titleRollingBack": "Annulation en cours...",
+  "fileOperations.transferProgress.titleRollingBack": "Retour en arrière...",
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
@@ -502,7 +502,7 @@
   "@fileOperations.transferProgress.conflictCancel": {
     "sourceHash": "19766ed"
   },
-  "fileOperations.transferProgress.conflictRollback": "Annuler et restaurer",
+  "fileOperations.transferProgress.conflictRollback": "Revenir en arrière",
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
@@ -538,7 +538,7 @@
   "@fileOperations.transferProgress.etaRemaining": {
     "sourceHash": "a6b154c"
   },
-  "fileOperations.transferProgress.smbNativeNote": "Ce partage utilise la connexion système. L''annulation et la restauration peuvent être retardées.",
+  "fileOperations.transferProgress.smbNativeNote": "Ce partage utilise la connexion système. L''annulation et le retour en arrière peuvent être retardés.",
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
@@ -607,7 +607,7 @@
   "@fileOperations.transferProgress.operationBlockedToast": {
     "sourceHash": "bc6efa8"
   },
-  "fileOperations.rollbackConfirm.title": "Annuler et restaurer cette opération ?",
+  "fileOperations.rollbackConfirm.title": "Revenir en arrière sur cette opération ?",
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
@@ -619,7 +619,7 @@
   "@fileOperations.rollbackConfirm.keep": {
     "sourceHash": "0d472b0"
   },
-  "fileOperations.rollbackConfirm.rollBack": "Annuler et restaurer",
+  "fileOperations.rollbackConfirm.rollBack": "Revenir en arrière",
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
   },

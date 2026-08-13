@@ -1609,7 +1609,7 @@
   "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
-  "settings.operationLog.intro": "Cmdr enregistre vos opérations sur les fichiers pour que vous puissiez consulter votre historique et annuler des actions. Choisissez combien de temps le journal est conservé et l''espace disque qu''il peut utiliser.",
+  "settings.operationLog.intro": "Cmdr enregistre vos opérations sur les fichiers pour que vous puissiez consulter votre historique et revenir en arrière. Choisissez combien de temps le journal est conservé et l''espace disque qu''il peut utiliser.",
   "@settings.operationLog.intro": {
     "sourceHash": "0c62f4f"
   },
