@@ -13,7 +13,8 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::analytics::emit_completion_analytics;
 use super::types::{
-    ConflictInfo, DryRunResult, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
+    ConflictInfo, DryRunResult, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
+    ScanPreviewProgressEvent, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
     WriteErrorEvent, WriteOperationError, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
     WriteSourceItemDoneEvent,
 };
@@ -196,6 +197,83 @@ impl OperationEventSink for TauriEventSink {
     }
     fn emit_settled(&self, event: WriteSettledEvent) {
         let _ = event.emit(&self.app);
+    }
+}
+
+/// Abstraction for emitting the four SCAN PREVIEW events.
+///
+/// Same reason `OperationEventSink` exists, applied to the pre-confirm dialog's
+/// own counters: the preview workers and the watchdog that bounds them hold a
+/// sink rather than a `tauri::AppHandle`, so a test can point a walk at a volume
+/// that never answers and watch the preview settle anyway. Without the seam that
+/// case is only reachable through a real window.
+pub(super) trait ScanPreviewEventSink: Send + Sync + 'static {
+    fn emit_progress(&self, event: ScanPreviewProgressEvent);
+    fn emit_complete(&self, event: ScanPreviewCompleteEvent);
+    fn emit_error(&self, event: ScanPreviewErrorEvent);
+    fn emit_cancelled(&self, event: ScanPreviewCancelledEvent);
+}
+
+/// Tauri-backed scan-preview sink: calls `app.emit()` for each event.
+pub(super) struct TauriScanPreviewSink {
+    app: tauri::AppHandle,
+}
+
+impl TauriScanPreviewSink {
+    pub(super) fn new(app: tauri::AppHandle) -> Self {
+        Self { app }
+    }
+}
+
+impl ScanPreviewEventSink for TauriScanPreviewSink {
+    fn emit_progress(&self, event: ScanPreviewProgressEvent) {
+        let _ = event.emit(&self.app);
+    }
+    fn emit_complete(&self, event: ScanPreviewCompleteEvent) {
+        let _ = event.emit(&self.app);
+    }
+    fn emit_error(&self, event: ScanPreviewErrorEvent) {
+        let _ = event.emit(&self.app);
+    }
+    fn emit_cancelled(&self, event: ScanPreviewCancelledEvent) {
+        let _ = event.emit(&self.app);
+    }
+}
+
+/// Test scan-preview sink: stores events for inspection.
+#[cfg(test)]
+pub(crate) struct CollectorScanPreviewSink {
+    pub progress: std::sync::Mutex<Vec<ScanPreviewProgressEvent>>,
+    pub complete: std::sync::Mutex<Vec<ScanPreviewCompleteEvent>>,
+    pub errors: std::sync::Mutex<Vec<ScanPreviewErrorEvent>>,
+    pub cancelled: std::sync::Mutex<Vec<ScanPreviewCancelledEvent>>,
+}
+
+#[cfg(test)]
+impl CollectorScanPreviewSink {
+    pub(crate) fn new() -> Self {
+        Self {
+            progress: std::sync::Mutex::new(Vec::new()),
+            complete: std::sync::Mutex::new(Vec::new()),
+            errors: std::sync::Mutex::new(Vec::new()),
+            cancelled: std::sync::Mutex::new(Vec::new()),
+        }
+    }
+}
+
+#[cfg(test)]
+impl ScanPreviewEventSink for CollectorScanPreviewSink {
+    fn emit_progress(&self, event: ScanPreviewProgressEvent) {
+        self.progress.lock_ignore_poison().push(event);
+    }
+    fn emit_complete(&self, event: ScanPreviewCompleteEvent) {
+        self.complete.lock_ignore_poison().push(event);
+    }
+    fn emit_error(&self, event: ScanPreviewErrorEvent) {
+        self.errors.lock_ignore_poison().push(event);
+    }
+    fn emit_cancelled(&self, event: ScanPreviewCancelledEvent) {
+        self.cancelled.lock_ignore_poison().push(event);
     }
 }
 

@@ -37,12 +37,14 @@ use std::time::{Duration, Instant};
 
 use uuid::Uuid;
 
+use super::event_sinks::{ScanPreviewEventSink, TauriScanPreviewSink};
 use super::scan::{SubtreeTotals, WalkContext, scan_subtree_with_oracle, sort_files, walk_sources_with_per_path};
 use super::scan_bridge::{ScanCounts, forward_scan_progress};
 use super::scan_cache::{
     ScanOutcome, cached_scan_totals, claimed_operation, in_flight_state, register_preview, release_preview,
     settle_preview,
 };
+use super::scan_watchdog::{SCAN_INACTIVITY_LIMIT, ScanWatchdog, scan_target_label};
 use super::state::{CachedScanResult, FileInfo, ScanPreviewState};
 use super::types::{
     ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent,
@@ -89,24 +91,46 @@ pub fn start_scan_preview(
 
     register_preview(preview_id.clone(), Arc::clone(&state));
 
+    let events: Arc<dyn ScanPreviewEventSink> = Arc::new(TauriScanPreviewSink::new(app));
+    // Bounds the walk by INACTIVITY and narrates it in the log. Started here,
+    // before either worker spawns, so a walk that wedges on its very first
+    // syscall is still bounded — the workers only feed it.
+    let watchdog = ScanWatchdog::start(
+        preview_id.clone(),
+        scan_target_label(&sources, &source_volume_id),
+        SCAN_INACTIVITY_LIMIT,
+        Arc::clone(&state),
+        Arc::clone(&events),
+    );
+
     // Spawn background task.
     // Volume scans need a Tokio runtime context (MtpVolume uses Handle::block_on),
     // so we capture the runtime handle and enter it on the spawned thread.
     // Local scans use std::thread directly (no runtime needed).
     if let Some(volume) = source_volume {
         tokio::spawn(async move {
-            run_volume_scan_preview(app, preview_id_clone, sources, volume, source_volume_id, state).await;
+            run_volume_scan_preview(
+                events,
+                preview_id_clone,
+                sources,
+                volume,
+                source_volume_id,
+                state,
+                watchdog,
+            )
+            .await;
         });
     } else {
         std::thread::spawn(move || {
             run_scan_preview(
-                app,
+                events,
                 preview_id_clone,
                 sources,
                 sort_column,
                 sort_order,
                 state,
                 sample_for_estimate,
+                watchdog,
             );
         });
     }
@@ -161,17 +185,20 @@ pub fn cancel_scan_preview(preview_id: &str) {
 /// rides the complete event. The worker is joined after the walk (usually
 /// already done, since it ran concurrently) and cancels with the scan; a
 /// sampling failure degrades to "no estimate" and never affects the scan.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "One worker's inputs: what to walk, how to sort it, where to publish, and what bounds it"
+)]
 fn run_scan_preview(
-    app: tauri::AppHandle,
+    events: Arc<dyn ScanPreviewEventSink>,
     preview_id: String,
     sources: Vec<PathBuf>,
     sort_column: SortColumn,
     sort_order: SortOrder,
     state: Arc<ScanPreviewState>,
     sample_for_estimate: bool,
+    watchdog: Arc<ScanWatchdog>,
 ) {
-    use tauri_specta::Event;
-
     use super::compress_estimate::CompressEstimator;
 
     // E2E only: a deterministic scanning window for the specs that have to act
@@ -246,7 +273,10 @@ fn run_scan_preview(
             on_cancelled: &|| "Cancelled".to_string(),
             on_symlink_loop: &|path| format!("Symlink loop detected: {}", path.display()),
             on_progress: &|files_found, dirs_found, bytes_found, current_path, current_dir| {
-                let _ = ScanPreviewProgressEvent {
+                // Proof the walk is alive, fed before the emits so a slow sink
+                // can't read as a wedged volume.
+                watchdog.note_progress(files_found, dirs_found, bytes_found);
+                events.emit_progress(ScanPreviewProgressEvent {
                     preview_id: preview_id.to_string(),
                     files_found,
                     dirs_found,
@@ -255,8 +285,7 @@ fn run_scan_preview(
                     current_dir: current_dir.clone(),
                     expected_files_total: expected.map(|e| e.files),
                     expected_bytes_total: expected.map(|e| e.bytes),
-                }
-                .emit(&app);
+                });
                 // Same counts under the owning operation's id, so a confirmed
                 // transfer's queue row, chip, and dialog stay live through the
                 // walk instead of sitting at zero.
@@ -304,10 +333,18 @@ fn run_scan_preview(
     // so reading the error would reach a waiting operation as a failure whose
     // message merely says "cancelled".
     let cancelled = state.cancelled.load(Ordering::Relaxed);
+    // The watchdog may have already given this preview an outcome and told the
+    // dialog about it. Publishing a second one would resurrect a spinner the
+    // user has already been told is over, or overwrite a timeout with a result
+    // nobody is waiting for any more.
+    if !watchdog.claim_outcome() {
+        return;
+    }
     match result {
         _ if cancelled => {
+            watchdog.note_settled("cancelled");
             settle_preview(&preview_id, ScanOutcome::Cancelled, None);
-            let _ = ScanPreviewCancelledEvent { preview_id }.emit(&app);
+            events.emit_cancelled(ScanPreviewCancelledEvent { preview_id });
         }
         Ok(()) => {
             // Sort files
@@ -315,6 +352,7 @@ fn run_scan_preview(
 
             let file_count = files.len();
             let dirs_count = dirs.len();
+            watchdog.note_settled("complete");
             settle_preview(
                 &preview_id,
                 ScanOutcome::Complete,
@@ -330,19 +368,23 @@ fn run_scan_preview(
             );
 
             // Emit completion
-            let _ = ScanPreviewCompleteEvent {
+            events.emit_complete(ScanPreviewCompleteEvent {
                 preview_id,
                 files_total: file_count,
                 dirs_total: dirs_count,
                 bytes_total: total_bytes,
                 dedup_bytes_total: dedup_bytes,
                 estimated_compressed_bytes: estimate,
-            }
-            .emit(&app);
+            });
         }
         Err(message) => {
+            watchdog.note_settled("stopped");
             settle_preview(&preview_id, ScanOutcome::Error(message.clone()), None);
-            let _ = ScanPreviewErrorEvent { preview_id, message }.emit(&app);
+            events.emit_error(ScanPreviewErrorEvent {
+                preview_id,
+                message,
+                timed_out: false,
+            });
         }
     }
 }
@@ -360,16 +402,15 @@ fn run_scan_preview(
 ///
 /// Emits the same `scan-preview-progress` / `scan-preview-complete` events as
 /// the pre-oracle code, so the FE dialog behavior is unchanged.
-async fn run_volume_scan_preview(
-    app: tauri::AppHandle,
+pub(super) async fn run_volume_scan_preview(
+    events: Arc<dyn ScanPreviewEventSink>,
     preview_id: String,
     sources: Vec<PathBuf>,
     volume: Arc<dyn Volume>,
     source_volume_id: String,
     state: Arc<ScanPreviewState>,
+    watchdog: Arc<ScanWatchdog>,
 ) {
-    use tauri_specta::Event;
-
     // E2E only; see the local walk's matching delay.
     if let Some(ms) = crate::test_mode::e2e_scan_preview_delay_ms() {
         tokio::time::sleep(Duration::from_millis(ms)).await;
@@ -382,12 +423,17 @@ async fn run_volume_scan_preview(
     // each Volume impl so different backends share the same rate-limit policy.
     let progress_state = Arc::new(std::sync::Mutex::new(Instant::now()));
     let state_for_cb = Arc::clone(&state);
-    let app_for_cb = app.clone();
+    let events_for_cb = Arc::clone(&events);
+    let watchdog_for_cb = Arc::clone(&watchdog);
     let preview_id_for_cb = preview_id.clone();
     let on_progress = move |p: crate::file_system::volume::ListingProgress| {
         if state_for_cb.cancelled.load(Ordering::Relaxed) {
             return;
         }
+        // Fed BEFORE the 200 ms emit throttle: the watchdog asks whether the
+        // volume is answering, and every entry the backend hands us answers
+        // that, including the ones the UI throttle drops.
+        watchdog_for_cb.note_progress(p.files, p.dirs, p.bytes);
         let Ok(mut last) = progress_state.lock() else {
             return;
         };
@@ -396,7 +442,7 @@ async fn run_volume_scan_preview(
         }
         *last = Instant::now();
         drop(last);
-        let _ = ScanPreviewProgressEvent {
+        events_for_cb.emit_progress(ScanPreviewProgressEvent {
             preview_id: preview_id_for_cb.clone(),
             files_found: p.files,
             dirs_found: p.dirs,
@@ -405,8 +451,7 @@ async fn run_volume_scan_preview(
             current_dir: None,
             expected_files_total: None,
             expected_bytes_total: None,
-        }
-        .emit(&app_for_cb);
+        });
         // Same counts under the owning operation's id; see the local walk's
         // matching forward.
         forward_scan_progress(
@@ -457,12 +502,20 @@ async fn run_volume_scan_preview(
     // the error would reach a waiting operation as a failure. Mirrors the local
     // walk's arms exactly.
     let cancelled = state.cancelled.load(Ordering::Relaxed);
+    // See the local walk's matching guard: whoever claims the outcome first owns
+    // publishing it, so a walk that comes back after the watchdog gave up stays
+    // quiet instead of contradicting it.
+    if !watchdog.claim_outcome() {
+        return;
+    }
     match result {
         _ if cancelled => {
+            watchdog.note_settled("cancelled");
             settle_preview(&preview_id, ScanOutcome::Cancelled, None);
-            let _ = ScanPreviewCancelledEvent { preview_id }.emit(&app);
+            events.emit_cancelled(ScanPreviewCancelledEvent { preview_id });
         }
         Ok(batch) => {
+            watchdog.note_settled("complete");
             // Cache results: volume scans don't produce per-file FileInfo, but
             // the cache stores aggregate stats AND per-path scan results so
             // copy_between_volumes can reuse both without re-statting.
@@ -478,7 +531,7 @@ async fn run_volume_scan_preview(
                 )),
             );
 
-            let _ = ScanPreviewCompleteEvent {
+            events.emit_complete(ScanPreviewCompleteEvent {
                 preview_id,
                 files_total: total_files,
                 dirs_total: total_dirs,
@@ -486,12 +539,16 @@ async fn run_volume_scan_preview(
                 dedup_bytes_total: dedup_bytes,
                 // Remote sources never sample: the estimate is suppressed.
                 estimated_compressed_bytes: None,
-            }
-            .emit(&app);
+            });
         }
         Err(message) => {
+            watchdog.note_settled("stopped");
             settle_preview(&preview_id, ScanOutcome::Error(message.clone()), None);
-            let _ = ScanPreviewErrorEvent { preview_id, message }.emit(&app);
+            events.emit_error(ScanPreviewErrorEvent {
+                preview_id,
+                message,
+                timed_out: false,
+            });
         }
     }
 }

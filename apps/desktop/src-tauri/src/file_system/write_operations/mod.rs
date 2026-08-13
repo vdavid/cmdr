@@ -44,6 +44,7 @@ mod scan;
 mod scan_bridge;
 mod scan_cache;
 mod scan_preview;
+mod scan_watchdog;
 mod scratch_dir;
 mod state;
 mod status_cache;
@@ -771,6 +772,8 @@ mod scan_bridge_tests;
 mod scan_preview_listing_progress_tests;
 #[cfg(test)]
 mod scan_preview_oracle_tests;
+#[cfg(test)]
+mod scan_watchdog_tests;
 #[cfg(test)]
 mod settle_event_tests;
 #[cfg(test)]

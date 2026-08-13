@@ -752,6 +752,14 @@ pub struct ScanPreviewCompleteEvent {
 pub struct ScanPreviewErrorEvent {
     pub preview_id: String,
     pub message: String,
+    /// `true` when the walk didn't stop on its own: the watchdog gave up on a
+    /// volume that had counted nothing for `SCAN_INACTIVITY_LIMIT`. The dialog
+    /// says "not responding" and offers a retry for this one, and a plainer
+    /// "couldn't size this" for every other message. A typed flag because the
+    /// message is prose: classifying on its wording would break on the first
+    /// copy edit.
+    #[serde(default)]
+    pub timed_out: bool,
 }
 
 /// Cancelled event for scan preview.
