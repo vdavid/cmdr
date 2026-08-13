@@ -393,11 +393,14 @@ test.describe('Operation queue window', () => {
     await expect.poll(async () => (await readRows(queuePage)).length, { timeout: 10000 }).toBe(0)
   })
 
-  // The payoff of the whole queue: work you sent away can come back. This drives
-  // it across the window boundary the way a user does — a click in the queue
-  // window, a dialog in the main one — because that crossing is the one part no
-  // unit test can stand in for.
-  test('Show brings an operation back to the main window, and closing it hands the operation back', async ({
+  // The payoff of the whole queue: work you sent away can come back, and can be
+  // sent away again. This drives it across the window boundary the way a user
+  // does — a click in the queue window, a dialog in the main one — because that
+  // crossing is the one part no unit test can stand in for. The other way out,
+  // closing the dialog, is a detach with no crossing of its own and is pinned in
+  // `transfer-progress-state.svelte.test.ts` for both the adopted and the
+  // dispatching view.
+  test('Show brings an operation back to the main window, and Background hands it away again', async ({
     tauriPage,
   }) => {
     const fixtureRoot = getFixtureRoot()
