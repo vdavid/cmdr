@@ -36,6 +36,12 @@ which calls these handlers by path; action-tool handlers wait on a typed ack bef
   routinely send `~/Downloads`; a literal `~` fails validation or silently never matches and burns the full timeout.
   Validate existence via `validate_path_exists`, never bare `Path::exists()` (blocks forever on a hung mount). Exception:
   the `search` / `ai_search` `scope` param handles `~` itself in `search::query::parse_scope`.
+- **The tools that START a file operation fast-fail while a dialog is up** via `refuse_while_dialog_blocks` (`mod.rs`),
+  which reads `SoftDialogTracker`; the per-dialog verdict ships from the FE's `dialog-registry.ts` as
+  `KnownDialog::blocks_operations`. The refusal carries the blocking id in `data.blockingDialog`, a TYPED field the
+  agent acts on. ❌ Never widen it to `queue`, `operations_rollback`, or `dialog`: steering a RUNNING operation is
+  exactly what an agent needs while a progress dialog or clash prompt is up.
+  `src/lib/file-explorer/pane/DETAILS.md` § "The operation-start gate".
 - **`copy`/`move`/`delete` fast-fail on empty operations** via `check_operation_has_target` before dispatching (cursor on
   `..` or an empty pane → the FE silently drops the dialog), so the tool rejects with the real cause, not a timeout.
   Unsynced state (`path` empty) passes through (the FE is the authority).

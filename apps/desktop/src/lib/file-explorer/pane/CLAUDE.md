@@ -28,6 +28,10 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   `archive-password-flow.svelte.ts` get a read-only `hasBirthContext()` and argument-free commands, ❌ never the props,
   a writer, or a getter. ❌ Never read the progress slot's occupancy off `showTransferProgressDialog`. DETAILS § "Birth
   context".
+- **A dialog on screen refuses the commands that START a file operation, ❌ never the ones that STEER a running one.**
+  Cancel, pause, rollback, queue, and answering a clash must keep working with the progress dialog up. Which dialogs
+  block is declared per entry in `$lib/ui/dialog-registry.ts` (a new one won't compile without a verdict); the four
+  refusal layers, and why greying the menu can't be the guard, are DETAILS § "The operation-start gate".
 - **Every dialog renders inside ONE `<svelte:boundary>` in `DialogManager.svelte`**: `show*` flips before the dialog
   renders and suppresses pane keys, so a mid-render throw would wedge the keyboard with a blank screen.
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, A5): mutate the store and let

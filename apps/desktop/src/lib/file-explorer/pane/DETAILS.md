@@ -676,6 +676,63 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
   `navigate.ts` is the single source of that rule. The `'fallback'` source is also `terminal`: a fixed recovery target,
   so no old-path pre-save and no background `determineNavigationPath` correction.
 
+### The operation-start gate
+
+Starting a file operation while a dialog is up is refused, out loud. This is the canonical description; everything else
+points here.
+
+**The scope is commands that START an operation, ❌ never the ones that steer a running one.** Cancel, pause, resume,
+rollback, queue, and answering a name clash all keep working while the progress dialog and the conflict prompt are up,
+because that is exactly when a user needs them. Search's own "Show all in main window" is navigation, so it keeps
+working too. Getting this boundary wrong would disable the queue controls, which is worse than the defect the gate
+closes; don't let a later tidy-up widen it.
+
+**Four layers, because four different actors can ask.** They are not redundant: three of them are reachable without
+passing through any of the others.
+
+- **The start itself** (`dialog-state.svelte.ts::startBirthOperation`) refuses when birth context is already alive, and
+  returns an `OperationStartVerdict`. This one has to stand alone whatever the others do: the native menu is OS-side and
+  MCP is a separate actor, and neither is gated on this window's modal state. Without it, a second start overwrote the
+  running operation's props, so the mounted dialog re-rendered against an operation it had never dispatched and the user
+  got nothing and heard nothing. An ADOPTED operation owns no slot (birth still wins over adoption); a password prompt
+  DOES, and gets named as `archive-password` rather than `transfer-progress`, since telling an agent to close a dialog
+  that isn't on screen strands it.
+- **The command entry points** (`operation-start-gate.ts`, called from `file-operation-commands.ts` and
+  `clipboard-operations.ts`) refuse while any blocking dialog is open, so a confirmation never stacks over what the user
+  is reading. In practice this catches the native menu, whose items stay clickable whatever is on screen.
+- **MCP** is refused in Rust before dispatching (`mcp/executor/mod.rs::refuse_while_dialog_blocks`), which is what turns
+  a ten-second round-trip timeout into an immediate answer. The blocking dialog's id rides in the JSON-RPC error's
+  `data.blockingDialog`, a TYPED field: an agent acts on it to decide what to close, so it's a contract, and the
+  `no-error-string-match` rule applies to a sentence an agent parses just as it does to one our own code would. The
+  conversational sentence stays alongside it for the human reading the transcript.
+- **The native menu items grey out** (`routes/(main)/menu-operation-gate.svelte.ts` →
+  `commands/menu.rs::set_file_operations_blocked`). ⚠️ CHROME ONLY. A disabled item's accelerator still fires, so this
+  can never be the guard; it only stops the app offering what it would then turn down.
+
+**Which dialogs block is DECLARED, not listed here.** Every `SOFT_DIALOG_REGISTRY` entry carries a required `whileOpen`
+verdict (`$lib/ui/dialog-registry.ts`), so a new dialog fails to compile until its author answers the question. The
+default is `BLOCKS_OPERATIONS`; `allowsOperations(reason)` is the opt-out and its reason is mandatory. Today exactly
+three opt out, all for one reason: they're hosted outside the main window (`delete-ai-model` in Settings, the two viewer
+copy sheets), so the main window has no modal up and no decision to lose. Every main-window dialog blocks, `about` and
+`acknowledgements` included, because the window shows one modal at a time. **Search counts as a dialog** and blocks the
+menu operations, which is a deliberate product call rather than a side effect.
+
+**What's on screen comes from `$lib/ui/open-dialogs.svelte`**, which `ModalDialog` maintains from the same mount/destroy
+pair that already tells the Rust `SoftDialogTracker`. Exhaustive by construction: rendering a soft dialog means
+rendering a `ModalDialog` with a `SoftDialogId`. ❌ Don't replace it with a hand-written open/close pair — one missed
+close would block every file operation for the rest of the session, which is why the pairing is left to Svelte.
+`anyDialogOpen()` reads that set first; the local `show*` flags beside it are the same-tick guard between `show* = true`
+and the mount that registers it, ❌ not a second inventory.
+
+**Ask Cmdr is not a dialog**, so it never reaches the set. It blocks the menu items only while the composer has FOCUS
+(`explorerState.getRailFocused()`), ❌ never while it's merely visible: the rail is docked next to the panes most of the
+time, and blocking on visibility would take Copy away from anyone who leaves it open.
+
+**Two Rust-side traps worth keeping.** `set_menu_context` re-applies the blocked state LAST, because its own loop
+enables every explorer item — without that, a focus round-trip through Settings re-offers Copy while the dialog is still
+up. And `register_known_dialogs` clears the backend's open list, since a reloaded webview never fires the close half of
+its pairs and one orphaned entry would refuse every MCP file operation until restart.
+
 ## Gotchas
 
 - **The focus guard must exempt dialog content.** `DualPaneExplorer.handleFocusGuard` refocuses the container on any
