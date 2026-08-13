@@ -1,7 +1,7 @@
 # Operation sessions
 
-One session per operation per window, bound to an `operationId`: it reads the window's fan-out and says what the operation
-is now plus what you can do to it. Views bind and command through it; zero views is ordinary.
+One session per operation per window, bound to an `operationId`: it reads the window's fan-out and says what the
+operation is now plus what you can do to it. Views bind and command through it; zero views is ordinary.
 
 ## Module map
 

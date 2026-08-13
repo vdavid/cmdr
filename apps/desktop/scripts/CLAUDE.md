@@ -17,9 +17,8 @@ launch boundary, plus the llama-server fetch and the type-drift check.
 - **`marketing-shots.ts`** (+ `marketing-shots-thread.ts`): reshoots the brand masters (`pnpm marketing:shots`); guide
   in `docs/guides/screenshots.md`. Needs ImageMagick (the masters are written as lossless WebP), checked up front so a
   missing `magick` fails before the app launches rather than 30 s into a run
-- **`capture-runtime.ts`**: launch primitives shared by the two capture orchestrators, plus
-  `createTrackedArtifactGuard` (only a run that finishes green keeps its rewrite of tracked artifacts; DETAILS § "The
-  capture guard")
+- **`capture-runtime.ts`**: launch primitives shared by the two capture orchestrators, plus `createTrackedArtifactGuard`
+  (only a run that finishes green keeps its rewrite of tracked artifacts; DETAILS § "The capture guard")
 - **`e2e-linux.sh`**: Linux Docker E2E launcher (`playwright-e2e,virtual-mtp` features, single shard, legacy shared
   fixture path)
 
