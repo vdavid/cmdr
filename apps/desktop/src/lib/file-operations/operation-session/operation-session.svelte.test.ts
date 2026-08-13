@@ -12,9 +12,7 @@ const { listOperationsMock, commandMocks } = vi.hoisted(() => ({
     cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
     resolveWriteConflict: vi.fn<
       (id: string, conflictId: number, resolution: string, applyToAll: boolean) => Promise<string>
-    >(() =>
-      Promise.resolve('resolved'),
-    ),
+    >(() => Promise.resolve('resolved')),
   },
 }))
 
@@ -385,7 +383,7 @@ describe('commands', () => {
     const { fanout, session, dispose } = harness()
     fanout._testEmit({ kind: 'conflict', event: conflict('a') })
     commandMocks.resolveWriteConflict.mockImplementationOnce(() => {
-        fanout._testEmit({ kind: 'conflict', event: conflict('a', { conflictId: 2, destinationPath: '/dst/next' }) })
+      fanout._testEmit({ kind: 'conflict', event: conflict('a', { conflictId: 2, destinationPath: '/dst/next' }) })
       return Promise.resolve('resolved')
     })
 

@@ -249,10 +249,9 @@ asserting the status query is never made at all.
 
 `write-conflict` reaches every webview, so more than one surface can be showing the same prompt. The backend arbitrates:
 `resolve_write_conflict(operationId, conflictId, resolution, applyToAll)` returns a typed outcome (resolved / already
-resolved / stale answer / no pending conflict / unknown operation) from the slot in
-`write_operations/conflict_slot.rs`, which is where that contract is written down. The session hands that verdict back
-untouched and lets go of the clash it answered on any of them, because that question is over either way. Only a call
-that never landed keeps the prompt up.
+resolved / stale answer / no pending conflict / unknown operation) from the slot in `write_operations/conflict_slot.rs`,
+which is where that contract is written down. The session hands that verdict back untouched and lets go of the clash it
+answered on any of them, because that question is over either way. Only a call that never landed keeps the prompt up.
 
 **The answer names its clash, and only that clash is let go of.** `resolveConflict` takes the `conflictId` off the event
 the surface is showing, and clears `conflict` only while the slot still holds that same id. The operation raises its

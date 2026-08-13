@@ -8,9 +8,7 @@ const { commandMocks } = vi.hoisted(() => ({
     cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
     resolveWriteConflict: vi.fn<
       (id: string, conflictId: number, resolution: string, applyToAll: boolean) => Promise<string>
-    >(() =>
-      Promise.resolve('resolved'),
-    ),
+    >(() => Promise.resolve('resolved')),
     /** The `is_running` trap: a paused operation still reports `true` here, so
      *  nothing in a session may ask. Mocked so a test can prove it isn't asked. */
     getOperationStatus: vi.fn(() => Promise.resolve({ isRunning: true })),
