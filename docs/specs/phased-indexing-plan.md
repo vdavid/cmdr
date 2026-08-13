@@ -27,9 +27,11 @@ audit), `apps/desktop/src/lib/indexing/CLAUDE.md`, `apps/desktop/src/lib/onboard
    popup.
 2. The moment Full Disk Access is granted (today: the relaunch after step 1 of onboarding), the layout becomes left `~`,
    right `~/Downloads`, hidden files hidden, and the phased indexer starts on the user's own folders. By the time
-   onboarding is done, the folders they'll actually open are indexed.
+   onboarding is done, the folders they'll actually open are indexed. If they denied FDA instead, both panes stay on
+   `~` and nothing in the background ever raises a permission dialog.
 3. As they browse, whatever they open gets indexed next, ahead of everything still queued.
-4. Home finishes, then the rest of the drive, quietly, in the background.
+4. Home finishes, and that's "done" by default. The rest of the drive follows only if they turn on "Index stuff outside
+   my home folder".
 5. At every moment the sizes shown are honest: exact where covered, `<dir>` or `≥` where not, an hourglass on ground
    being walked right now.
 
@@ -147,8 +149,8 @@ concurrency half of the problem, fed to **four** places:
   walk holds a claim and is still writing**. `cover_context_for` only refuses NEW walks; nothing stops one already
   running. `start_scan` must refuse while `phase_active`, or stop the machine and join its walk first. **Make it a
   handled outcome, not the existing `Err("Scan already running")`**: that error propagates through `force_scan` and the
-  IPC, so a naive refusal ships a "Rescan now" that shows a failure for the entire first index. This is open Question 5
-  arriving early — answer it here.
+  IPC, so a naive refusal ships a "Rescan now" that shows a failure for the entire first index. Per the rescan decision
+  below, the handled outcome is "restart the phases".
 - `awaits_its_first_scan` (`state/queries.rs:93`);
 - `get_status`'s `scanning` field (`manager.rs:569`), which M2.9 needs anyway.
 
@@ -304,6 +306,18 @@ If a handover is written anyway, its traps are: start from `replayable_event_id(
 never 0, or the gap is lost; and `WatchScope` is captured by value into the reconciler and `LiveConfig`, so swapping it
 means re-spawning the loop — drain `take_promoted()` first or buffered events die with the old loop.
 
+**Branch watching stays on when drive indexing is off, on macOS only.** Today `branch_watch_allowed` ANDs the master
+switch, so walked ground stops being kept current and search can serve rows that are wrong. On macOS the FSEvents
+stream is volume-rooted and the filtering is free, so a covered folder stays watched whatever the setting says; stale
+search results are a worse failure than a watcher that costs nothing. On Linux the refusal stays: each branch is real
+inotify watches against `max_user_watches`, and a user who turned indexing off has asked us not to spend that.
+
+**Branches absorb their descendants.** Adding a branch that is an ancestor of existing ones must retire them: watching
+`~/A` should stop `~/A/B` and `~/A/C` being tracked separately. Today `finish_covering` only removes the path being
+finished when an ancestor already exists, so siblings accumulate and nothing ever collapses downward. Make absorption a
+property of the set itself (on insert, drop every strict descendant; leave any entry with `walks > 0` alone until it
+finishes), which is the general rule that the full-coverage collapse to `["/"]` then falls out of as a special case.
+
 **The branch set needs an explicit collapse.** `begin_covering` pushes one `Branch` per path, so N frontier roots means
 N branches (this is inherent to the stitch, not to interleaving: it's the same count whether one `cover()` takes N roots
 or N calls take one each). Every event then pays an O(branches) scan in `deepest_containing` on the live hot path, and
@@ -332,10 +346,12 @@ passes off `Freshness::Fresh` plus a `ScanCompleted` publish on the lifecycle bu
 fires). If nothing fires until the final `/` phase ends, **photo search and importance scoring are dead for the entire
 phased period, and forever on a machine that never finishes `/`.**
 
-Recommendation: treat the two axes as what they are. **Freshness = "are the rows we hold current?" Coverage = "how much
-do we hold?"** They are already orthogonal in this codebase. So publish `Fresh` (and the bus completion) once the
-volume is watched and the priority phases are done, not at full drive coverage, and let importance and media work over
-covered ground while later phases fill in. See Question 3.
+**Decision: `Fresh` means "fully covered for the scope the user chose", so it stays honest without stalling.**
+Concretely: with `index_outside_home` **off** (the default), the volume goes `Fresh` when `$HOME` is fully covered;
+with it **on**, only when the whole drive is. Freshness then never claims more than the user asked us to hold, the
+badge is truthful in both modes, and on the default setting importance and photo search come alive minutes into the
+first run rather than never. Full coverage of the chosen scope is also what stamps `scan_completed_at`, so completion
+and freshness stay one concept rather than two.
 
 Audited, and it is safe: **search never reads freshness at all** (it goes through `coverage()` / `cover()`, so it is
 coverage-gated by construction); `Index::is_fresh` has exactly one app caller
@@ -344,17 +360,16 @@ coverage-gated by construction); `Index::is_fresh` has exactly one app caller
 this plan now leans on it**; and the `ready_volumes_with_kind` consumers work over whatever the index holds, with the
 later full-coverage `ScanCompleted` retriggering a full recompute.
 
-Two costs to state rather than discover:
+Two consequences of that decision:
 
-- **The per-drive badge goes green on `Fresh`**, so the user would read "fully indexed" while the drive is 5% covered.
-  That is a copy and honesty decision for M5, and it is the real price of this correction.
-- **It also starts the media index against the same disk the walker is using.** `ready_volumes_with_kind` gates the
-  media scheduler's startup kick, so publishing `Fresh` early doesn't only unblock photo search: it starts OCR, Vision,
-  and CLIP enrichment while the `$HOME` and `/` phases are still walking, during onboarding, alongside the AI model
-  download. That is exactly the contention principle 5 (respect the user's resources) exists to prevent.
-  **Recommendation: gate the MEDIA kick on full coverage while letting importance run early** — importance is a cheap
-  read over rows that already exist, media enrichment is not. Otherwise state the contention as accepted and watch it
-  in the benchmark.
+- **With the toggle ON, the drive stays un-`Fresh` for a long time**, and importance plus photo search wait it out.
+  That is the user having asked for the bigger job; the badge and the copy should say so.
+- **With the toggle OFF (the default), the media index starts when home completes**, which is the right moment: the
+  walker is finished with everything the user asked for, so OCR / Vision / CLIP enrichment is not competing with it.
+  This is what makes the scope decision and the freshness decision one decision rather than two.
+- `enqueue_initial_full_pass_if_unscored` only scores a volume whose importance store has no generation yet, so a later
+  launch mid-coverage re-scores nothing. Under this decision that window is small (home completes early), but say it
+  rather than discover it.
 - `enqueue_initial_full_pass_if_unscored` only scores a volume whose importance store has no generation yet. Once the
   early pass stamps one, a later launch with coverage still incomplete re-scores nothing and no `ScanCompleted` fires
   until full coverage, so the importance ranking sits frozen at the priority-phase snapshot across launches (softened,
@@ -382,35 +397,55 @@ Confirmed by reading the code, 2026-08-13:
   `~/Documents`, `~/Downloads` on macOS; Home, `~/Desktop`, `~/Documents`, `~/Downloads` on Linux**. Not Finder's
   sidebar (explicitly out of scope).
 
-## The public surface constraint
+## Where the app's answers enter the crate
 
-`scripts/check/checks/index-crate-isolation.go` caps `cmdr-index` at exactly what it exposes: measured 2026-08-13,
-`50 root promises, 40 handle methods, 17 public modules, 156 items` against ceilings of `50 / 40 / 17 / 156`. **Zero
-headroom in all four buckets**, and raising one needs David's explicit say-so.
+Three things the index needs are **the app's to answer**: which folders matter to this user, how far indexing should
+go, and where the user is looking right now. `indexing/host/` is the established home for exactly that — "add a seam
+here, never a new `crate::<app module>` import", and "vocabulary moves down; questions become seams"
+(`host/CLAUDE.md`). So none of this arrives as an argument bolted onto a launch call:
 
-The plan therefore adds no new `Index` method and no new public type. Two existing doors carry everything:
+1. **Scope** (the "Index stuff outside my home folder" toggle) is a field on `IndexConfig` — `index_outside_home: bool`, applied through the
+   existing `set_config`, exactly as the media policy is. It is a stored setting, which is what that struct is for, and
+   it re-applies **live** when the user flips it: turning it on adds frontier (coverage is add-only), turning it off
+   simply stops maintaining rows we already hold. A plain `bool` rather than a `DriveScope` enum because a new public
+   type would breach the ceilings below; if it ever grows a third value, that is the moment to argue for the enum.
+2. **Priority roots** are a method on the existing `HostPolicy` trait (`host/policy.rs`), beside the other "what has the
+   user's attention" question. Asked when the machine needs them, so an edited favorites list or a new session's tabs
+   are picked up without a restart, instead of being frozen at launch.
+3. **Where the user is right now needs no new door at all.** `HostPolicy::open_listings()` already reports every
+   directory a pane is showing (it exists so mid-scan aggregation can punch the visible folders through the depth cap).
+   The phase machine polls it between frontier roots and keeps a small recently-seen set, so a folder the user opened
+   and left still gets queued. ❌ **This replaces the earlier idea of widening `Index::verify_directory`**, which was
+   both a forced fit and too loose a signal (it fires for the opposite pane, MCP listings, and refreshes).
 
-1. `Index::start_root_at_launch(fda_pending)` gains a parameter: the ordered priority roots as `&[String]`.
-2. `Index::verify_directory(volume_id, path)` gains "and if this ground isn't covered, queue it next".
+`Index::start_root_at_launch` therefore keeps its exact signature, and `verify_directory` keeps its exact meaning. The
+only handle-level change in the whole plan is behavioral, inside the crate.
 
-New `IndexEvent` variants are free: `countModuleItems` counts only line-prefixed `pub struct/enum/fn/const/type` and
-`pub use` leaves (`index-crate-isolation.go:506-539`), not enum variants. **Caveat: any new payload TYPE those variants
-carry, or any new `pub fn` on a public type, breaches immediately.** Each variant needs a doc comment
-(`#![deny(missing_docs)]`) and regenerated `bindings.ts`.
+**The ceilings this respects:** `scripts/check/checks/index-crate-isolation.go` caps `cmdr-index` at exactly what it
+exposes — measured 2026-08-13, `50 root promises, 40 handle methods, 17 public modules, 156 items` against ceilings of
+`50 / 40 / 17 / 156`, zero headroom in all four buckets, and a raise needs David's explicit say-so.
+`countModuleItems` matches column-0 `pub struct/enum/fn/const/type` and `pub use` leaves
+(`index-crate-isolation.go:506-539`), so **struct fields, trait methods, and enum variants are all free** — which is
+why the shape above costs nothing. ❌ A new payload TYPE on an event, a new `pub fn` on a public type, or a
+`DriveScope` enum would each breach immediately. New `IndexEvent` variants and `UnreadableCause::Abandoned` need doc
+comments (`#![deny(missing_docs)]`) and a regenerated `bindings.ts`.
 
 ## Milestone map
 
-- **M0** — first-run startup state (frontend only). Independently shippable.
-- **M1** — priority-root computation, app-side, pure and tested.
+This ships as **one effort on one worktree**, so the milestones are an execution ORDER, ❌ not shippable slices. Land
+them in sequence and keep the tree green at each boundary.
+
+- **M0** — first-run startup state (frontend only).
+- **M1** — priority-root computation plus the two host seams.
 - **M2** — the stitch plus the phase machine, gated on a benchmark.
 - **M3** — launch, resume, and every path that would truncate.
 - **M4** — events, status, and the hourglass UI.
-- **M5** — settings, surfaces, kill switch.
+- **M5** — settings (including the scope toggle), surfaces, kill switch.
 - **M6** — optional signals and follow-ups.
 
-M0 and M1 are independent of each other and of M2; either can run in parallel with M2's benchmark. Everything after M2
-is sequential, which is fine. One honest caveat: **M4's unit tests stand alone, but its end-to-end assertion doesn't**,
-because the bug it fixes only exists once M2/M3 land. Land M4's pure logic whenever; pin its E2E after M3.
+M0 and M1 touch nothing M2 depends on, so either can run alongside M2's benchmark if an agent is idle. Everything after
+M2 is strictly sequential. One ordering constraint that bites: **M4's unit tests stand alone, but its end-to-end
+assertion can't run until M3 lands**, because the surfaces it fixes only misbehave once the phase machine is real.
 
 ---
 
@@ -438,7 +473,10 @@ without ever overriding a returning user's own layout.
    plus a registry assertion on the frontend. No defaults-parity check exists in `scripts/check/`; these are the cheap
    substitute for one.
 2. **First run opens `~` on both panes** — already true (`DEFAULT_PATH = '~'`, `app-status-store.ts:12`); pin it.
-3. **The one-shot layout.** FDA granted + this install never had a layout ⇒ left `~`, right `~/Downloads`, once, ever.
+3. **The one-shot layout.** FDA **granted** + this install never had a layout ⇒ left `~`, right `~/Downloads`, once,
+   ever. **On Deny, both panes stay on `~`** and the phases skip TCC-restricted roots: the permission dialog then
+   appears only when the user navigates somewhere protected themselves, which is the one moment it has an obvious
+   cause. ❌ No background walk ever raises it.
 
    **⚠️ The naive guard fires for every existing beta user on the first boot of the new build** (FDA granted, no marker),
    clobbering a real layout. And because pane paths persist like any navigation, an applied layout *becomes* their
@@ -478,7 +516,10 @@ are most sensitive to. Expect i18n screenshot masters to shift; regenerate them 
 network. Ordered best-signal-first, because the order *is* the schedule.
 
 A new app-side module (`apps/desktop/src-tauri/src/indexing_priority/`) exposing one function: the ordered,
-deduplicated, existence-checked roots.
+deduplicated, existence-checked roots. It is called from `AppHostPolicy::priority_roots`
+(`priority::host_policy`), so the answer is recomputed when asked rather than frozen at launch. Keep it cheap: the seam
+is asked at phase boundaries, but the trait's contract is "don't do I/O, don't take a contended lock" for its other
+method, so cache the answer behind a short TTL rather than stat-ing a dozen paths per call.
 
 1. **Last session's tab paths**, most recently active first, from `app-status.json`. Empty on a true first run. The
    strongest signal there is: it is literally where the user was.
@@ -491,7 +532,14 @@ deduplicated, existence-checked roots.
    and though the guarded walker survives that, a stall should not delay `~/Downloads`.
 5. **`$HOME` itself**, last.
 
-Then the machine appends the volume root as the final phase.
+Then the machine appends the volume root as the final phase, **only when `index_outside_home` is on** (see the scope
+decision below).
+
+**`~/Library` is in scope but never a priority root.** It is inside home, so home coverage includes it, and search over
+it is occasionally what a user wants. It is also where the pathological churn lives (the 1.14M-empty-file Google Drive
+temp directory in `docs/specs/later/sealed-subtrees-plan.md`), so it must never be one of the roots we walk first, and
+`sealed-subtrees` remains the real fix for that case rather than anything invented here. **Assumption, flag it if
+wrong.**
 
 Rules: dedupe; drop any root that is a descendant of an earlier one; cap the list (24 is a reasonable start) so a user
 with 200 favorites doesn't turn phase 1 into a drive walk; and existence-check **without tripping TCC while the gate is
@@ -538,10 +586,11 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
    the writer). Between frontier roots, re-check the queue — that is what makes interleaving cheap.
 4. **Each phase step**: `coverage(volume_id, root, Listing)` for the frontier; empty ⇒ skip; otherwise walk its roots
    one at a time. The walk marks, aggregates, and claims its own ground.
-5. **Visits enter through `Index::verify_directory`**, and the enqueue must sit **above `maybe_verify`**: that function
-   early-returns while scanning and applies a 30 s debounce, a 2-slot cap, and in-flight dedup that would silently
-   swallow enqueues. Note it is a *listing* hook, so it also fires for the opposite pane, MCP listings, and refreshes;
-   `record_visit` is the tighter navigation signal if that proves too loose.
+5. **Visits enter through `HostPolicy::open_listings()`**, polled between frontier roots, with a small recently-seen
+   set so a folder the user opened and left is still queued. ❌ Not through `Index::verify_directory` (too loose: the
+   opposite pane, MCP listings, and refreshes all fire it) and ❌ not by widening any handle method. Respect the seam's
+   own rule: `open_listings` allocates and is documented as tick-rate, ❌ never per-entry — between frontier roots is
+   well within that.
 6. **Preemption is the fallback, not the mechanism** — with the join-before-restart and debounce rules above.
 7. **Completion is derived, not remembered — but "empty frontier" alone is not a terminating rule.** `abandoned_ground`
    is per-walk and in-memory, so it can't answer "was anything abandoned in a previous session?"; the durable signal is
@@ -642,7 +691,9 @@ the benchmark note.
 
 **Intent:** a partially covered volume must come back as a partially covered volume, and nothing may quietly truncate it.
 
-1. **`start_root_at_launch(fda_pending, priority_roots)`**; call site `apps/desktop/src-tauri/src/lib.rs:847`.
+1. **`start_root_at_launch(fda_pending)` is unchanged**; the roots and the scope arrive through the host seams instead
+   (see "Where the app's answers enter the crate"). The app side is an `AppHostPolicy::priority_roots` implementation
+   plus the new `IndexConfig` field.
 2. **`resume_or_scan` learns the phased answer** (see M2.1). The queue itself needs no persistence: it is recomputed
    from the M1 roots plus a coverage query per root, so a launch naturally skips what is done. Prefer that over
    persisted queue state, which can go stale or disagree with the database.
@@ -653,11 +704,15 @@ the benchmark note.
    that and is the one that needs explicit work.** Verify each with a test rather than trusting the reasoning. The ways
    in today:
    - **FDA Deny** ⇒ `start_indexing_after_fda_decision` → `start_volume(root)` → `awaits_its_first_scan` true ⇒
-     `force_scan` ⇒ truncating full scan (`commands/indexing.rs:221`, `handle/mod.rs:177-187`). This makes Question 2
-     sharper than it looks.
+     `force_scan` ⇒ truncating full scan (`commands/indexing.rs:221`, `handle/mod.rs:177-187`). Note this fires on the
+     Deny path even though the panes stay on `~`, so the decision to keep both panes home does NOT make this door go
+     away.
    - **Master switch off→on** ⇒ `drives_to_resume()` always includes root ⇒ `start_volume` ⇒ `state::start_indexing()`
      ⇒ `resume_or_scan` ⇒ `start_scan("incomplete previous scan")`.
-   - **"Rescan now"** (Question 5).
+   - **"Rescan now"**: it keeps today's meaning for a completed index (re-walk **in place**, diff each directory and
+     write only changes, so sizes stay visible and marked stale throughout — already what `local_rescan_reconciles`
+     does for a populated, previously-completed index). The work is making a phased volume qualify rather than falling
+     into truncate-and-rebuild. **During the phased period it means "restart the phases"**, ❌ never an error.
    - **A coalesced shallow `MustScanSubDirs`** ⇒ `perform_registry_rescan` → `start_scan`
      (`reconcile/reconciler/rescan.rs:122-126`).
    - **`awaits_its_first_scan`** will report "never walked" forever on a phased volume, so the per-drive "Turn on
@@ -726,6 +781,10 @@ post-hoc pin, not a red→green step**, gated on M3.
 
 ## M5 — Surfaces, copy, kill switch
 
+0. **The scope setting itself**: "Index stuff outside my home folder", default OFF, in the drive-indexing section,
+   written into `IndexConfig.index_outside_home` through the existing `set_config` path so flipping it takes effect
+   without a restart. Turning it ON queues the volume-root phase; turning it OFF stops after the current root. Copy is a
+   draft for David.
 1. **The phase label in the user's terms** ("Indexing your folders", "Indexing your home folder", "Indexing the rest of
    this drive"), in `IndexingDriveRow` / `IndexingStatusBody` — ❌ not `settings/sections/DriveIndexingSection.svelte`,
    which has three switches and no per-drive rows. Copy is a draft for David; all strings go through the catalog with
@@ -759,44 +818,42 @@ post-hoc pin, not a red→green step**, gated on M3.
    rule, plus its test. Note this also gates the media kick and the branch collapse, so it fails wide.
 3. **A partially covered volume claiming completeness** ⇒ completion derived from a durable empty frontier, not from
    in-memory `abandoned_ground`.
-4. **Photo search and importance silently dead** ⇒ the freshness decision, made explicitly (Question 3).
+4. **Photo search and importance silently dead** ⇒ freshness meaning "fully covered for the chosen scope", which on the
+   default setting arrives when home completes.
 5. **A truncate door left open** ⇒ M3.3 enumerates all five; one test each.
 6. **The verifier as a second, unthrottled indexer** ⇒ the `phase_active` flag plus the verifier marking a directory
    listed when it genuinely read all of it. Both are M2 deliverables, ❌ not "consider it later": with the stitch giving
    every frontier root a row, the verifier's recursive `scan_subtree` fires for every folder the user opens ahead of
    the walker, which is the central user behavior this plan is built around.
-7. **TCC popups from a background walk** ⇒ the FDA gate as today, plus Question 2.
+7. **TCC popups from a background walk** ⇒ the FDA gate as today, plus the Deny-path decision (panes stay on `~`, and
+   background phases skip TCC-restricted roots, so a prompt only ever follows the user's own navigation).
 8. **High-churn directories** (the 1.14M-empty-file Google Drive temp dir in `docs/specs/later/sealed-subtrees-plan.md`)
    land in the home phase now instead of the whole-drive scan, so they hit sooner. Watch for it during the benchmark.
 
-## Open questions
+## Decisions (David, 2026-08-13)
 
-Answers wanted before M2 starts; M0 and M1 can proceed regardless (except where noted).
+All seven open questions are answered. Recorded here with the reasoning, because the reasoning is what an implementer
+needs when reality disagrees with a detail.
 
-1. **Public-surface consent.** No new `Index` method, no new public type: `start_root_at_launch` gains a parameter and
-   `verify_directory` gains behavior. Enum variants on `IndexEvent` are free per the checker, as long as they carry no
-   new type. Confirm that's the deal.
-2. **The Deny path.** If the user denies FDA, indexing starts in-session and covering `~/Downloads` / `~/Documents`
-   raises a per-folder TCC prompt from a background walk. Also: today Deny routes through `start_volume` →
-   `force_scan`, which is a truncating full scan, so this path needs M3.3 either way. And the wizard renders the live
-   app behind its backdrop (`onboarding/DETAILS.md` leans on "first launch lands on `~`, so what peeks through is
-   friendly"), so applying the layout in-session makes the panes visibly re-shuffle behind the sheet. Options: (a) apply
-   the layout and run the phases anyway; (b) apply the layout but skip TCC-restricted roots until the user visits them;
-   (c) stay on `~`/`~` and index only unrestricted ground; (d) defer the layout to the next launch. Blocks the last part
-   of M0.
-3. **Freshness during phases** (the big one). Publish `Fresh` + the bus completion once the volume is watched and the
-   priority phases are done, so folder importance and the media index (photo search) work over covered ground — or hold
-   both until full drive coverage and accept they're dead until then? My recommendation is the first: freshness answers
-   "are these rows current?", coverage answers "how much do we hold?", and they're already orthogonal.
-4. **Branch watch while drive indexing is off.** `branch_watch_allowed` ANDs the master switch, so a search-walked
-   folder stays covered but stops being kept current, and search can serve stale rows from it. Your argument says watch
-   it anyway. My read: agree on macOS (the FSEvents stream is volume-rooted and nearly free; stale search results are
-   worse than a cheap watcher), keep the refusal on Linux (each branch costs real inotify watches). Confirm the platform
-   split, or pick one rule for both.
-5. **What "Rescan now" means** once there is no full scan: (a) truncate and re-walk everything (today's meaning), or
-   (b) re-walk covered ground in place, keeping sizes visible throughout.
-6. **Scope of the final phase.** Everything under `/` as today, or stop at `$HOME` plus mounted volumes and leave
-   `/System`, `/Library`, and friends to on-demand search walks? The second is faster to "done" and indexes less that
-   nobody browses, but changes what a `/`-scoped search can answer without walking.
-7. **Do you want M0 shipped on its own** (it is independent and delivers the startup-state half immediately), or held
-   until the whole effort lands as one story?
+1. **The app's answers arrive through host seams, not through widened handle calls.** Scope is an `IndexConfig` field,
+   priority roots are a `HostPolicy` method, and "where is the user" reuses the `open_listings` seam that already
+   exists. `start_root_at_launch` and `verify_directory` keep their exact signatures and meanings. The earlier
+   "add a parameter, widen a method" shape was a forced fit around the surface ceilings; this one is what the crate's
+   own seam rules already prescribe, and it happens to cost nothing. Full reasoning in "Where the app's answers enter
+   the crate".
+2. **On FDA Deny, both panes stay on `~`**, and background phases skip TCC-restricted roots. The permission dialog
+   fires when the user navigates somewhere protected, which is the only moment it has a cause they can see. Moving the
+   right pane to `~/Downloads` would buy the same prompt a few seconds earlier and re-shuffle the panes behind the
+   onboarding sheet.
+3. **`Fresh` means "fully covered for the scope the user chose"**: home with the scope toggle off (the default), the
+   whole drive with it on. Honest in both modes, and on the default it comes alive minutes into the first run.
+4. **Branch watching stays on when drive indexing is off, on macOS only**, and branches absorb their descendants.
+5. **"Rescan now" re-walks in place**, keeping sizes visible; during the phased period it restarts the phases.
+6. **New setting: "Index stuff outside my home folder", default OFF.** `index_outside_home` on `IndexConfig`. "Fully
+   covered" becomes "fully covered for the chosen scope", which is also what stamps completion and freshness. Flipping
+   it on adds frontier; flipping it off leaves rows we stop maintaining. Both fall out of coverage being add-only, so
+   neither needs a migration. `~/Library` is in scope but never a priority root (see M1).
+7. **One worktree, one effort, no separate shipping.** The milestones below are an execution order, ❌ not shippable
+   slices, so ordering still matters but "is M0 independently releasable" no longer does.
+
+Remaining assumption to confirm during execution, ❌ not a blocker: `~/Library` in scope but de-prioritized (M1).
