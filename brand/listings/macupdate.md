@@ -230,18 +230,23 @@ macOS 12 Monterey or later, both Apple Silicon and Intel
   3. `brand/screenshots/search-light.webp`, `chat-light.webp`, `settings-light.webp` if the listing takes more.
   - Five slots for eight masters, so the dark twins of search, chat, and Settings sit out: the main-view pair already
     shows both themes. The submitted listing still carries only that pair, from before the rest existed.
-  - The masters are lossless WebP. MacUpdate's uploader may want PNG: `magick app-main-light.webp app-main-light.png`.
-    Reshoot per `docs/guides/screenshots.md`.
+  - The masters are lossless WebP. MacUpdate's uploader want PNG, so use:
+    `magick app-main-light.webp app-main-light.png`. Reshoot per `docs/guides/screenshots.md`.
 
 ## Comments for the review team
 
 ```
-Hi folks! Cmdr is a two-pane file manager for macOS, written in Rust, in open beta.
+Hi folks!
 
+(Sorry, but it's 2026, so I must note that this is 100% human-written content here. ↓ )
+
+Cmdr is a two-pane file manager for macOS, written in Rust, in open beta. I'd love to get some early users to test-run it. It's a free app for individuals. Thanks for your work at MacUpdate!
+
+My notes:
 - The download URL redirects to the signed DMG on GitHub Releases. The app is Developer ID signed and notarized by Rymdskottkärra AB (my Swedish company), and ships as a universal binary.
-- I left the price empty because Cmdr is free for personal use, with no trial timer, no nags. Work use needs a paid license ($59/year, or $199 one-time), sold at https://getcmdr.com/pricing.
+- I left the price empty because, as I said above, Cmdr is free for personal use, with no trial timer and no nags. Work use needs a paid license ($59/year, or $199 one-time), sold at https://getcmdr.com/pricing.
 - The source is available under BSL 1.1 at https://github.com/vdavid/cmdr.
-- Anything you need from me, write to me at hello@getcmdr.com and I'll answer the same day.
+- Anything you need from me, write to me at hello@getcmdr.com and I'll answer usually the same day.
 
 Thanks for the review!
 David
