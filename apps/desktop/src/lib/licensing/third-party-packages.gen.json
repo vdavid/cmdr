@@ -195,7 +195,7 @@
     },
     {
       "name": "base64",
-      "version": "0.23.0",
+      "version": "0.23.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/marshallpierce/rust-base64"
     },
@@ -255,7 +255,7 @@
     },
     {
       "name": "blake3",
-      "version": "1.8.5",
+      "version": "1.8.6",
       "license": "CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception",
       "url": "https://github.com/BLAKE3-team/BLAKE3"
     },
@@ -987,7 +987,7 @@
     },
     {
       "name": "file_icon_provider",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "license": "MIT",
       "url": "https://github.com/IohannRabeson/file_icon_provider"
     },
@@ -1020,6 +1020,12 @@
       "version": "1.0.7",
       "license": "Apache-2.0  OR  MIT",
       "url": "https://github.com/servo/rust-fnv"
+    },
+    {
+      "name": "foldhash",
+      "version": "0.1.5",
+      "license": "Zlib",
+      "url": "https://github.com/orlp/foldhash"
     },
     {
       "name": "foldhash",
@@ -1551,6 +1557,12 @@
     },
     {
       "name": "hashbrown",
+      "version": "0.15.5",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/rust-lang/hashbrown"
+    },
+    {
+      "name": "hashbrown",
       "version": "0.16.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/rust-lang/hashbrown"
@@ -1929,13 +1941,7 @@
     },
     {
       "name": "lzma-rust2",
-      "version": "0.16.4",
-      "license": "Apache-2.0",
-      "url": "https://github.com/hasenbanck/lzma-rust2/"
-    },
-    {
-      "name": "lzma-rust2",
-      "version": "0.18.0",
+      "version": "0.18.1",
       "license": "Apache-2.0",
       "url": "https://github.com/hasenbanck/lzma-rust2/"
     },
@@ -2949,7 +2955,7 @@
     },
     {
       "name": "sevenz-rust2",
-      "version": "0.21.3",
+      "version": "0.21.4",
       "license": "Apache-2.0",
       "url": "https://github.com/hasenbanck/sevenz-rust"
     },
@@ -3375,7 +3381,7 @@
     },
     {
       "name": "time",
-      "version": "0.3.54",
+      "version": "0.3.55",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/time-rs/time"
     },

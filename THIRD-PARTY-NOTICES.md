@@ -6,7 +6,7 @@ the app, with its license, and reproduces the license texts in full.
 Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it
 by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.
 
-- Rust crates: 654
+- Rust crates: 655
 - npm packages: 125
 - Distinct license texts: 291
 
@@ -44,7 +44,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **axum-core** 0.5.6, MIT, <https://github.com/tokio-rs/axum>
 - **base64** 0.21.7, MIT OR Apache-2.0, <https://github.com/marshallpierce/rust-base64>
 - **base64** 0.22.1, MIT OR Apache-2.0, <https://github.com/marshallpierce/rust-base64>
-- **base64** 0.23.0, MIT OR Apache-2.0, <https://github.com/marshallpierce/rust-base64>
+- **base64** 0.23.1, MIT OR Apache-2.0, <https://github.com/marshallpierce/rust-base64>
 - **bincode2** 2.0.1, MIT, <https://github.com/pravega/bincode2>
 - **bisync** 0.3.0, MIT OR Apache-2.0, <https://github.com/JM4ier/bisync>
 - **bisync_macros** 0.2.3, MIT OR Apache-2.0, <https://github.com/JM4ier/bisync>
@@ -54,7 +54,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **bitflags** 1.3.2, MIT OR Apache-2.0, <https://github.com/bitflags/bitflags>
 - **bitflags** 2.13.1, MIT OR Apache-2.0, <https://github.com/bitflags/bitflags>
 - **bitstream-io** 4.10.0, MIT OR Apache-2.0, <https://github.com/tuffy/bitstream-io>
-- **blake3** 1.8.5, CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception, <https://github.com/BLAKE3-team/BLAKE3>
+- **blake3** 1.8.6, CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception, <https://github.com/BLAKE3-team/BLAKE3>
 - **block-buffer** 0.10.4, MIT OR Apache-2.0, <https://github.com/RustCrypto/utils>
 - **block-buffer** 0.12.1, MIT OR Apache-2.0, <https://github.com/RustCrypto/utils>
 - **block-padding** 0.4.2, MIT OR Apache-2.0, <https://github.com/RustCrypto/utils>
@@ -176,12 +176,13 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **fern** 0.7.1, MIT, <https://github.com/daboross/fern>
 - **file-id** 0.2.3, MIT OR Apache-2.0, <https://github.com/notify-rs/notify.git>
 - **file-rotate** 0.8.0, MIT, <https://github.com/kstrafe/file-rotate>
-- **file_icon_provider** 1.0.1, MIT, <https://github.com/IohannRabeson/file_icon_provider>
+- **file_icon_provider** 1.0.2, MIT, <https://github.com/IohannRabeson/file_icon_provider>
 - **filetime** 0.2.29, MIT OR Apache-2.0, <https://github.com/alexcrichton/filetime>
 - **find-msvc-tools** 0.1.9, MIT OR Apache-2.0, <https://github.com/rust-lang/cc-rs>
 - **flate2** 1.1.9, MIT OR Apache-2.0, <https://github.com/rust-lang/flate2-rs>
 - **flume** 0.12.0, Apache-2.0 OR MIT, <https://github.com/zesterer/flume>
 - **fnv** 1.0.7, Apache-2.0  OR  MIT, <https://github.com/servo/rust-fnv>
+- **foldhash** 0.1.5, Zlib, <https://github.com/orlp/foldhash>
 - **foldhash** 0.2.0, Zlib, <https://github.com/orlp/foldhash>
 - **foreign-types** 0.5.0, MIT OR Apache-2.0, <https://github.com/sfackler/foreign-types>
 - **foreign-types-macros** 0.2.3, MIT OR Apache-2.0, <https://github.com/sfackler/foreign-types>
@@ -270,6 +271,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **hash32** 0.3.1, MIT OR Apache-2.0, <https://github.com/japaric/hash32>
 - **hashbrown** 0.12.3, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.14.5, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
+- **hashbrown** 0.15.5, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.16.1, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.17.1, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashlink** 0.12.1, MIT OR Apache-2.0, <https://github.com/djc/hashlink>
@@ -333,8 +335,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **loop9** 0.1.5, MIT, <https://gitlab.com/kornelski/loop9.git>
 - **lz4_flex** 0.13.1, MIT, <https://github.com/pseitz/lz4_flex>
 - **lzma-rs** 0.3.0, MIT, <https://github.com/gendx/lzma-rs>
-- **lzma-rust2** 0.16.4, Apache-2.0, <https://github.com/hasenbanck/lzma-rust2/>
-- **lzma-rust2** 0.18.0, Apache-2.0, <https://github.com/hasenbanck/lzma-rust2/>
+- **lzma-rust2** 0.18.1, Apache-2.0, <https://github.com/hasenbanck/lzma-rust2/>
 - **mac-notification-sys** 0.6.15, MIT OR Apache-2.0, <https://github.com/h4llow3En/mac-notification-sys>
 - **mach2** 0.5.0, BSD-2-Clause OR MIT OR Apache-2.0, <https://github.com/JohnTitor/mach2>
 - **markup5ever** 0.38.0, MIT OR Apache-2.0, <https://github.com/servo/html5ever>
@@ -503,7 +504,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **serialize-to-javascript** 0.1.2, MIT OR Apache-2.0, <https://github.com/chippers/serialize-to-javascript>
 - **serialize-to-javascript-impl** 0.1.2, MIT OR Apache-2.0, <https://github.com/chippers/serialize-to-javascript>
 - **servo_arc** 0.4.3, MIT OR Apache-2.0, <https://github.com/servo/stylo>
-- **sevenz-rust2** 0.21.3, Apache-2.0, <https://github.com/hasenbanck/sevenz-rust>
+- **sevenz-rust2** 0.21.4, Apache-2.0, <https://github.com/hasenbanck/sevenz-rust>
 - **sha1** 0.10.6, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
 - **sha1** 0.11.0, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
 - **sha1-checked** 0.10.0, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
@@ -574,7 +575,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **thiserror-impl** 1.0.69, MIT OR Apache-2.0, <https://github.com/dtolnay/thiserror>
 - **thiserror-impl** 2.0.18, MIT OR Apache-2.0, <https://github.com/dtolnay/thiserror>
 - **tiff** 0.11.3, MIT, <https://github.com/image-rs/image-tiff>
-- **time** 0.3.54, MIT OR Apache-2.0, <https://github.com/time-rs/time>
+- **time** 0.3.55, MIT OR Apache-2.0, <https://github.com/time-rs/time>
 - **time-core** 0.1.9, MIT OR Apache-2.0, <https://github.com/time-rs/time>
 - **time-macros** 0.2.32, MIT OR Apache-2.0, <https://github.com/time-rs/time>
 - **tinystr** 0.8.3, Unicode-3.0, <https://github.com/unicode-org/icu4x>
@@ -803,7 +804,7 @@ carried along.
 
 ### Apache-2.0
 
-Covers: aws-lc-sys 0.42.0, blake3 1.8.5, constant_time_eq 0.4.2, dunce 1.0.5, numkong 7.7.1, ryu 1.0.23, sync_wrapper 1.0.2, usearch 2.26.0
+Covers: aws-lc-sys 0.42.0, blake3 1.8.6, constant_time_eq 0.4.2, dunce 1.0.5, numkong 7.7.1, ryu 1.0.23, sync_wrapper 1.0.2, usearch 2.26.0
 
 ```text
 Apache License
@@ -1723,7 +1724,7 @@ limitations under the License.
 
 ### Apache-2.0
 
-Covers: lzma-rust2 0.16.4, lzma-rust2 0.18.0, sevenz-rust2 0.21.3
+Covers: lzma-rust2 0.18.1, sevenz-rust2 0.21.4
 
 Text from: `LICENSE`
 
@@ -4120,7 +4121,7 @@ THE SOFTWARE.
 
 ### MIT
 
-Covers: base64 0.23.0
+Covers: base64 0.23.1
 
 Text from: `LICENSE-MIT`
 
@@ -4180,7 +4181,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: bisync 0.3.0, bisync_macros 0.2.3, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, file_icon_provider 1.0.1, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, minisign-verify 0.2.5, mtp-rs 0.30.0, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-pdf-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-uniform-type-identifiers 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
+Covers: bisync 0.3.0, bisync_macros 0.2.3, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, file_icon_provider 1.0.2, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, minisign-verify 0.2.5, mtp-rs 0.30.0, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-pdf-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-uniform-type-identifiers 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
 
 ```text
 MIT License
@@ -6735,7 +6736,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: hashbrown 0.12.3, hashbrown 0.14.5, hashbrown 0.16.1, hashbrown 0.17.1
+Covers: hashbrown 0.12.3, hashbrown 0.14.5, hashbrown 0.15.5, hashbrown 0.16.1, hashbrown 0.17.1
 
 Text from: `LICENSE-MIT`
 
@@ -10165,7 +10166,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: time 0.3.54, time-core 0.1.9, time-macros 0.2.32
+Covers: time 0.3.55, time-core 0.1.9, time-macros 0.2.32
 
 Text from: `LICENSE-MIT`
 
@@ -12812,7 +12813,7 @@ authorization of the copyright holder.
 
 ### Zlib
 
-Covers: foldhash 0.2.0
+Covers: foldhash 0.1.5, foldhash 0.2.0
 
 Text from: `LICENSE`
 

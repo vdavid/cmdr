@@ -64,7 +64,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@iconify-json/lucide": "1.2.120",
+    "@iconify-json/lucide": "1.2.123",
     "@playwright/test": "^1.61.1",
     "@srsholmes/tauri-playwright": "^0.4.1",
     "@sveltejs/adapter-static": "^3.0.10",
