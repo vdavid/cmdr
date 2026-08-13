@@ -29,11 +29,11 @@ user shortcuts, and enables/disables items by focus context.
   `MenuState.items` purely for accelerator sync (`DETAILS.md`).
 - **File-scoped commands are dual-guarded**: `activate_window_menu("other")` greys them out (visual only); the real
   guard is `main_window.is_focused()` in `on_menu_event`. Accelerators fire even when items look disabled.
-- **`OPERATION_START_ITEM_IDS` greys out while a dialog is up or Ask Cmdr has focus** (`commands/menu.rs`), and
-  `set_menu_context` re-applies it LAST — its loop enables every explorer item, so a focus round-trip would otherwise
-  re-offer Copy. Chrome only (accelerators still fire); the refusals live in `mcp/executor` and the two frontend gates.
-  ❌ Every gated id must be `FileScoped`: `Edit > Paste` is `App`-scoped because other windows forward the native
-  `paste:` selector through it, so greying it would kill ⌘V in their text fields. A test pins this.
+- **`OPERATION_START_ITEM_IDS` greys out while a dialog is up or Ask Cmdr has focus**, and `set_menu_context` re-applies
+  it LAST (its loop enables every explorer item, so a focus round-trip would re-offer Copy). Chrome only; the real
+  refusals are elsewhere. ❌ Every gated id must be `FileScoped` — `Edit > Paste` is `App`-scoped, and greying it would
+  kill ⌘V in other windows' text fields. Test-pinned. `src/lib/file-explorer/pane/DETAILS.md` § "The operation-start
+  gate".
 - **macOS swaps the app menu bar on focus-gain (`activate_window_menu`); Linux uses per-window menus.** macOS has one
   app-level menu bar (tauri-apps/tauri#5768), so each window's focus handler swaps `app.set_menu()` between the main and
   viewer menus (stored in `MenuState`); `active_menu_kind` skips redundant swaps. Re-run `cleanup_macos_menus` after

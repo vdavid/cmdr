@@ -20,12 +20,10 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
   `ModalDialog` owns the directive, so `role`-prop callers don't repeat it.
 - **Adding a dialog** (soft sheets too): register its id in `SOFT_DIALOG_REGISTRY`, pass it as `ModalDialog`'s
   `dialogId`, and add a gallery row (type error + `dialog-gallery-coverage`). The registry feeds MCP's available
-  dialogs. The entry's `whileOpen` verdict is REQUIRED (`BLOCKS_OPERATIONS`, or `allowsOperations(reason)` with a real
-  reason): it decides whether a file operation may start behind your dialog, and it won't compile until you answer.
-  Scope and reasoning: `$lib/file-explorer/pane/DETAILS.md` § "The operation-start gate".
-- **`open-dialogs.svelte.ts` is exhaustive because `ModalDialog` is its only registrar**, from the mount/destroy pair
-  that also notifies Rust. ❌ Never mark a dialog open from anywhere else: an unpaired close blocks every file operation
-  until restart.
+  dialogs. Its `whileOpen` verdict is REQUIRED and won't compile until answered: it decides whether a file operation may
+  start behind your dialog. Scope: `$lib/file-explorer/pane/DETAILS.md` § "The operation-start gate".
+- **`ModalDialog` is `open-dialogs.svelte.ts`'s only registrar**, which is what makes that set exhaustive. ❌ Never mark
+  a dialog open elsewhere: an unpaired close blocks every file operation until restart.
 - **`ModalDialog`'s overlay starts at `inset: var(--titlebar-height) 0 0 0`**, keeping the macOS window-drag region
   live; any full-window backdrop must too. ❌ Keep the drag offset and dragged size OFF the `style` attribute
   (`containerStyle` owns it), and ❌ never restore `overflow: hidden` on `.modal-dialog` (the resize bands hang over its
