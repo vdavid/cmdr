@@ -56,9 +56,11 @@ pub async fn execute_queue(params: &Value) -> ToolResult {
 /// The agent-facing answer to a pause request, from what the manager actually
 /// did with it.
 ///
-/// `Deferred` is an `OK` on purpose: the operation is still scanning, so nothing
-/// parks yet, but the request is latched and lands before the first byte is
-/// written. `NotApplicable` is a refusal, because nothing changed and nothing is
+/// An `OK` means the caller's intent holds. `Deferred` earns one because the
+/// operation is still scanning, so nothing parks yet, but the request is latched
+/// and lands before the first byte is written; `AlreadyInState` earns one
+/// because the operation is sitting exactly where the caller wants it.
+/// `NotApplicable` is a refusal, because nothing changed and nothing is
 /// remembered: a `Queued` operation is the everyday case (pause is documented to
 /// leave one alone), and an agent told "OK: Paused …" for one goes on to act on a
 /// queue that never stopped.
@@ -253,7 +255,7 @@ mod tests {
     /// (the queue stopped, will stop the moment the scan ends, or already was
     /// stopped), and nothing else may be phrased as one.
     #[test]
-    fn only_a_real_pause_or_a_latched_one_answers_ok() {
+    fn only_an_outcome_the_caller_asked_for_answers_ok() {
         for (outcome, expected_ok) in [
             (PauseOutcome::Applied, true),
             (PauseOutcome::Deferred, true),
