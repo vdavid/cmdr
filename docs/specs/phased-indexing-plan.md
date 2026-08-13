@@ -124,23 +124,43 @@ as new, and then runs a full recursive `scan_subtree` **per new subdirectory**, 
    and orphans its subtree (`lifecycle/cover/live.rs:1-23`). This is latent today and routine under this plan, because
    walking-while-browsing IS the plan.
 
-**The fix: an internal `phase_active: Arc<AtomicBool>` on `IndexManager`** (crate-internal, so no public-surface cost),
-fed to exactly three places:
+**The fix is durable, not a flag: make the verifier bail when the directory's `listed_epoch == 0`.** A stitched row
+outlives any runtime flag — it survives quit and relaunch — so the hazard fires for every listing that happens while
+the machine isn't walking: between launch and the first phase, after M5's `stop`, while the master switch is off, and
+permanently if the user never lets the phases finish. The one-line epoch gate restores exactly today's semantics on
+uncovered ground (today the verifier bails because there is no row; post-stitch it bails because nothing has listed
+it), and it matches the design rule that the walk owns coverage growth. The read it needs already exists
+(`IndexStore::get_listed_epoch_by_id`, used at `read/queries.rs:381`).
 
-- the `scanning` argument of `verifier::maybe_verify`, via `trigger_verification` (`state/scan_control.rs:46`) — this
-  closes all three problems above, and matches the design rule that the walk owns coverage growth;
-- `awaits_its_first_scan` (`state/queries.rs:93`, which already keys off `mgr.scanning`) — **this also closes two of
-  M3's truncate doors for free**: FDA Deny and the per-drive "Turn on indexing" button both stop force-scanning,
-  because `start_volume`'s guard goes false;
+**The alternative design is to have the verifier MARK a directory listed when it genuinely read all of it**, turning it
+from a producer of `NotVirgin` nodes into a producer of legitimately covered ones. The two are **mutually exclusive**;
+pick one deliberately rather than drifting into both. The bail is smaller and safer; the mark is more useful (browsed
+folders stop needing a walk at all) and strictly more work to get right.
+
+**Keep `phase_active: Arc<AtomicBool>` on `IndexManager` as well** (crate-internal, no public-surface cost) for the
+concurrency half of the problem, fed to **four** places:
+
+- the `scanning` argument of `verifier::maybe_verify`, via `trigger_verification` (`state/scan_control.rs:46`);
+- **`start_scan`'s single-flight guard (`manager/start.rs:321`)** — the dangerous one. Today that guard is
+  `mgr.scanning`, so with a separate flag `start_scan` would no longer refuse while phases run, and a `force_scan`
+  through any surviving door would send `TruncateData` + `BumpCurrentEpoch` and start a parallel walker **while a cover
+  walk holds a claim and is still writing**. `cover_context_for` only refuses NEW walks; nothing stops one already
+  running. `start_scan` must refuse while `phase_active`, or stop the machine and join its walk first.
+- `awaits_its_first_scan` (`state/queries.rs:93`);
 - `get_status`'s `scanning` field (`manager.rs:569`), which M2.9 needs anyway.
 
 ❌ **Do not reuse `mgr.scanning` for this.** `cover_context_for` returns `None` while `mgr.scanning` is true
 (`lifecycle/state.rs:251-266`), so the phase machine's own `Index::cover` calls would fail with `ScanInProgress`. Leave
 that gate exactly as it is.
 
-Worth doing at the same time, since the diff core is being extracted anyway: have the verifier **mark a directory
-listed when it genuinely read all of it**. That turns it from a producer of `NotVirgin` nodes into a producer of
-legitimately covered ones, and retires risk 6 below.
+Checked and clear: `get_writer_and_scanning_for`'s bool reaches only the MTP and SMB watch layers, which stay below the
+`is_trait_scanned` early return, and `freshness_bridge.rs:113` ignores it.
+
+**`awaits_its_first_scan` should key off a durable fact too.** A flag-only answer reopens the truncate door the moment
+`phase_active` goes false (phases idle, or stopped from the badge menu) while `scan_completed_at` is still absent. Make
+the predicate ask whether the volume has rows beyond the ROOT sentinel (`entry_count > 1`, the same signal
+`local_rescan_reconciles` already uses); keep the flag feed if you like, but don't let it be the only thing holding that
+door shut.
 
 ### Interleaving without preemption
 
@@ -212,6 +232,13 @@ Three consequences that are easy to miss:
    `IndexTheVolume` the persisted branch set is never reloaded, so a partially covered volume would come back with its
    covered ground **unwatched** and no epoch bump to admit it. `startup.rs` needs an explicit phased condition beside
    `WriterOnly`, or this plan's cross-session-resume claim is simply false.
+   **And the ordering matters**: `resume_or_scan` runs at `startup.rs:218`, before the registry insert and before
+   `resume_branch_watch` at `:251`. If the phase machine starts a walk from inside `resume_or_scan`, that walk's
+   `begin_branch_coverage` starts the watcher first, and the later `ensure_branch_watch` returns early because a watcher
+   is already running — so the `resuming = true` path never runs and **the epoch bump for an unreplayable gap never
+   fires**, making last session's covered rows render as *current* when nothing verified them. That is exactly the
+   honesty property the branch-watch resume exists to protect. Restore the branch set before the machine's first walk
+   (call `branches::resumed_for` ahead of `resume_or_scan`, or defer the first walk until after the registry insert).
 2. **The `dir_stats` ledger heal is armed but never paid.** `ArmLedgerHealLatch` is disarmed by the next successful
    `ComputeAllAggregates`, and cover walks send only `ComputeSubtreeAggregates` — so the latch stays armed and re-arms
    every launch, and the heal never happens. Fix is one message: send `PayLedgerIfUnpaid` (`writer/mod.rs:415-421`,
@@ -239,8 +266,12 @@ cost as whole-volume watching. **Prefer this**, with one required change and one
   coalesced root-scale anchor (macOS saying "a lot changed under here" and losing the detail) goes to the throttled
   `reconcile_subtree` drain on a shallow anchor, which is exactly the "holds the per-dir hourglass for the better part
   of a full scan" case the depth split exists to avoid, and the sweep-window bookkeeping accumulates with no sweep. One
-  line fixes it: `is_branch_confined()` is false when the branch set covers the volume root. That restores the shallow
-  sweep at exactly the moment the volume genuinely answers for everything.
+  line fixes it: `is_branch_confined()` is false when the branch set covers the volume root — precisely
+  `WatchScope::branches().covers(volume_root)` (`branches.rs:481-485`; `contains` matches `path == self.path`, so a `/`
+  branch satisfies it, and the reconciler already holds `self.space` for the root string). That restores the shallow
+  sweep at exactly the moment the volume genuinely answers for everything. **It does not reopen the truncate door, but
+  only because `scan_completed_at` is stamped by then** (which flips `local_rescan_reconciles` to true, so a shallow
+  anchor reconciles in place instead of truncating) — which is why the completion ORDER below is load-bearing.
 - **Bonus, while the volume IS branch-confined**: truncate door (d) in M3 is closed by construction, and so is a door
   the stitch would otherwise open — the stitch creates depth-1 and depth-2 branches, and `SHALLOW_RESCAN_MAX_DEPTH = 2`
   would send those to `perform_registry_rescan` → a truncating `start_scan` if the scope were `WholeVolume`.
@@ -256,10 +287,17 @@ N branches (this is inherent to the stitch, not to interleaving: it's the same c
 or N calls take one each). Every event then pays an O(branches) scan in `deepest_containing` on the live hot path, and
 `finish_covering` only absorbs the path being finished into an existing ancestor branch — siblings never absorb each
 other, so the set never collapses on its own. Expect roughly 50–150 entries during the phases (children of `/`, of
-`$HOME`, and the priority roots). At full coverage, replace the set with `["/"]` (no API for that today; `branches::clear`
-plus one begin/finish pair over `/` is the cheapest route, and correction 4 above needs it to be true anyway). During
-the phases, either accept the N-entry set or collapse a phase's children into its root on completion — measure
-`deepest_containing` under a churn burst before deciding.
+`$HOME`, and the priority roots). At full coverage, replace the set with `["/"]` — but ❌ **not via `branches::clear` plus a
+begin/finish pair.** `clear` calls `forget`, which drops the map entry, while the live loop and its reconciler each
+hold their own `Arc<BranchWatch>` captured at `ensure_branch_watch`; `live_for` would then mint a **brand-new**
+`BranchWatch` that nothing is reading. The persisted meta would say `["/"]` while the running loop kept filtering
+against the stale N-entry set for the rest of the session — and the `is_branch_confined` test above would read that
+same stale Arc and stay true, leaving the shallow sweep disabled until the next launch. Silent, and hard to notice.
+(The existing `clear` call in `start_scan` is safe only because the loop is torn down and replaced in the same breath.)
+Instead add a crate-internal `collapse_to(root)` that mutates the **shared** `BranchWatch` in place — replace
+`state.branches` with a single root `Branch`, leave any `walks > 0` entry alone, then `persist()`. During the phases,
+either accept the N-entry set or collapse a phase's children into its root on completion; measure `deepest_containing`
+under a churn burst before deciding.
 
 ### Freshness, and the two subsystems that depend on it
 
@@ -288,6 +326,13 @@ Two costs to state rather than discover:
 
 - **The per-drive badge goes green on `Fresh`**, so the user would read "fully indexed" while the drive is 5% covered.
   That is a copy and honesty decision for M5, and it is the real price of this correction.
+- **It also starts the media index against the same disk the walker is using.** `ready_volumes_with_kind` gates the
+  media scheduler's startup kick, so publishing `Fresh` early doesn't only unblock photo search: it starts OCR, Vision,
+  and CLIP enrichment while the `$HOME` and `/` phases are still walking, during onboarding, alongside the AI model
+  download. That is exactly the contention principle 5 (respect the user's resources) exists to prevent.
+  **Recommendation: gate the MEDIA kick on full coverage while letting importance run early** — importance is a cheap
+  read over rows that already exist, media enrichment is not. Otherwise state the contention as accepted and watch it
+  in the benchmark.
 - `enqueue_initial_full_pass_if_unscored` only scores a volume whose importance store has no generation yet. Once the
   early pass stamps one, a later launch with coverage still incomplete re-scores nothing and no `ScanCompleted` fires
   until full coverage, so the importance ranking sits frozen at the priority-phase snapshot across launches (softened,
@@ -461,7 +506,8 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
 ### The machine
 
 1. **Activation stays `IndexTheVolume`**, and the phase machine is a third answer inside `resume_or_scan`, beside
-   replay and scan. (Rationale above: journaling, launch freshness, and both ledger heals hang off this.)
+   replay and scan. (Rationale above: journaling, launch freshness, and the shallow-sweep seeding hang off this; the
+   `dir_stats` ledger heal additionally needs `PayLedgerIfUnpaid` at completion, or it is armed and never paid.)
 2. **The stitch runs before each phase** (described above): list each ancestor of the phase root, mark that one
    directory listed, don't descend. Ship it together with the **`phase_active` flag and the verifier changes** — the
    stitch without them is a net regression, so they are one unit of work, not two.
@@ -479,8 +525,17 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
    anything abandoned in a previous session?". The durable signal already exists: an abandoned directory is never
    marked listed, so it re-enters the frontier. **Derive completion from a final `coverage()` answer whose frontier is
    empty, with only `permission_denied` / `declined` left over**, and keep `abandoned_ground` as an in-session guard.
-8. **On completion**: stamp `scan_completed_at`, write the calibration meta, publish freshness, fire the terminal
-   events, and (unless the handover is written) leave the volume branch-watched with `/` as its single branch.
+8. **On completion, in this ORDER** (the order is required, not stylistic — see the `is_branch_confined` note above):
+   1. stamp `scan_completed_at`;
+   2. write the calibration meta;
+   3. `PayLedgerIfUnpaid` (nothing else ever pays the armed `dir_stats` ledger heal);
+   4. `BackfillMissingDirStats`;
+   5. `reconciler::record_sweep_completed` plus the `SHALLOW_SWEEP_AT_KEY` / `SHALLOW_COALESCED_KEY` writes — without
+      these the in-memory `SweepRecord` stays `None` for the session (it is seeded from meta only at launch), so the
+      very first shallow anchor after completion triggers a full sweep nobody asked for;
+   6. publish freshness and fire the terminal events;
+   7. **only then** collapse the branch set to `["/"]`. Collapse before the stamp and there is a window where the volume
+      is neither branch-confined nor marked complete, and one shallow anchor in it truncates the finished index.
 9. **Feed the live status shape** (`ScanCalibration`-equivalent counters) throughout, or the per-drive row, progress
    bar, and ETA stay dead for the whole first index. Drive `get_status`'s `scanning` field from the **`phase_active`
    flag**, ❌ never by setting `mgr.scanning` (that would make the machine's own `cover()` calls fail).
@@ -490,20 +545,25 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
 
 **Tests** (integration, `crates/cmdr-index/src/indexing/tests/`, over the disk-image fixture and `InMemoryVolume`):
 
-- after a stitch, an ancestor scope's frontier EXCLUDES already-covered ground, and every frontier root is virgin
-  (this is the finding that broke the first draft; pin it hard);
-- a stitched directory's `list_children` answer includes its FILES, not only its subdirectories;
-- while a phase is active, listing a stitched frontier root does NOT run the verifier's recursive `scan_subtree`, and
-  the root stays virgin;
-- a listing of ground a walk is covering right now writes nothing (the claim/`may_walk` case);
-- `Index::is_fresh` over partially covered ground still makes `journal_search` downgrade to `index_stale`;
-- phases run in order; a covered root is skipped without a walk;
-- a visited root is taken between frontier roots without cancelling anything;
-- a preempted walk's rows survive (row count only grows), and the restart joins before starting;
-- full coverage stamps completion exactly once; abandoned ground prevents it;
-- master-off runs nothing.
+- **`frontier_excludes_covered_ground_after_a_stitch`** — and every frontier root it returns is virgin. This is the
+  finding that broke the first draft; pin it hard. **Test-first.**
+- **`the_verifier_leaves_an_unlisted_directory_alone`** — the whole data-safety story of the stitch. **Test-first.**
+- **`a_stitched_directory_lists_its_files_not_only_its_subdirectories`**.
+- **`a_listing_of_ground_a_walk_is_covering_writes_nothing`** (the claim / `may_walk` case). **Test-first.**
+- **`start_scan_refuses_while_a_phase_is_active`** — a truncate under a live walk is the worst failure this plan can
+  have. **Test-first.**
+- **`the_branch_collapse_is_visible_to_the_running_live_loop`** (not just to the persisted meta).
+- **`a_relaunch_with_no_replayable_journal_bumps_the_epoch`** — the resume-honesty property.
+- **`completion_pays_the_ledger_and_seeds_the_sweep_keys`**.
+- `phases_run_in_order`, and a covered root is skipped without a walk.
+- `a_visited_root_is_taken_between_frontier_roots` without cancelling anything.
+- `a_preempted_walks_rows_survive` (row count only grows), and the restart joins before starting.
+- `full_coverage_stamps_completion_once`; abandoned ground prevents it.
+- `master_off_runs_nothing`.
 
-The first, second, fourth, and fifth are test-first, real red before green.
+**App-side, not in the crate**: `is_fresh` over partially covered ground still makes `journal_search` downgrade to
+`index_stale`. `journal_search` lives in `apps/desktop/src-tauri/src/file_system/write_operations/`, which the crate
+can't name; `enumerate_subtree_for_search` already has a `#[cfg(test)] test_hook` seam for exactly this.
 
 **Docs:** `lifecycle/CLAUDE.md` (one must-know per new invariant, terse), `lifecycle/DETAILS.md` (the stitch and why,
 the phase model, interleaving, completion), `indexing/DETAILS.md` (the data flow now that there is no first full scan),
