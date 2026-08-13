@@ -5544,6 +5544,13 @@ export type KeychainError =
 export type KnownDialog = {
   id: string
   description: string | null
+  /**
+   *  Whether an MCP tool that would START a file operation is refused while this
+   *  dialog is open. Declared per dialog in the frontend's `dialog-registry.ts`,
+   *  which is where a new dialog's author is forced to answer the question; this
+   *  side only carries the answer across.
+   */
+  blocksOperations: boolean
 }
 
 // Information about a known network share.

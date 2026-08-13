@@ -48,9 +48,8 @@ import type {
   TransferErrorPropsData,
   TransferProgressPropsData,
 } from './dialog-props'
-import { emit } from '@tauri-apps/api/event'
 import { isAnySoftDialogOpen } from '$lib/ui/open-dialogs.svelte'
-import { mcpOperationBlockedMessage } from './operation-start-gate'
+import { announceOperationBlocked } from './operation-start-gate'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import { formatByteSize } from '$lib/units'
 
@@ -136,22 +135,10 @@ export function createDialogState(deps: DialogStateDeps) {
     return archivePassword.showDialog ? 'archive-password' : 'transfer-progress'
   }
 
-  /**
-   * Refuses a start and says so, to whoever asked: a toast for the person who
-   * picked File > Copy, and a failed round-trip for an MCP agent, which beats
-   * making it wait out the ten-second budget for silence.
-   */
+  /** Refuses a start, saying so to whoever asked. The wording and the round-trip
+   *  failure live in `operation-start-gate.ts`, shared with the entry-point gate. */
   function refuseOperationStart(blockedBy: SoftDialogId, mcpRequestId: string | undefined): OperationStartVerdict {
-    log.info('Not starting an operation: the {blockedBy} dialog holds the slot', { blockedBy })
-    addToast(tString('fileOperations.transferProgress.operationBlockedToast'), { level: 'info' })
-    if (mcpRequestId) {
-      void emit('mcp-response', {
-        requestId: mcpRequestId,
-        ok: false,
-        blockedBy,
-        error: mcpOperationBlockedMessage(blockedBy),
-      })
-    }
+    announceOperationBlocked(blockedBy, mcpRequestId)
     return { blockedBy }
   }
 

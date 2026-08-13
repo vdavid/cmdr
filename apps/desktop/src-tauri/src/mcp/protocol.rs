@@ -59,6 +59,14 @@ impl McpResponse {
 
     /// Create an error response.
     pub fn error(id: Option<Value>, code: i32, message: impl Into<String>) -> Self {
+        Self::error_with_data(id, code, message, None)
+    }
+
+    /// Create an error response carrying structured detail in the JSON-RPC `data`
+    /// member. Used where the caller has to ACT on the reason rather than only read
+    /// it (which dialog is blocking, for instance), so it stays a typed field
+    /// instead of something an agent has to parse back out of the sentence.
+    pub fn error_with_data(id: Option<Value>, code: i32, message: impl Into<String>, data: Option<Value>) -> Self {
         Self {
             jsonrpc: "2.0".to_string(),
             id,
@@ -66,7 +74,7 @@ impl McpResponse {
             error: Some(McpError {
                 code,
                 message: message.into(),
-                data: None,
+                data,
             }),
         }
     }

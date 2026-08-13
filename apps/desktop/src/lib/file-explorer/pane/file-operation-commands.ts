@@ -25,6 +25,7 @@ import {
 } from './transfer-operations'
 import { capabilitiesFor, capabilitiesForPane, pathInsideArchive } from './volume-capabilities'
 import { checkTransferDestinationGuard } from './transfer-entry'
+import { operationStartIsBlocked } from './operation-start-gate'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { FilePaneAPI, StartRenameOptions } from './types'
 import type { TransferOperationType } from '../types'
@@ -127,6 +128,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     pane: 'left' | 'right' = access.getFocusedPane(),
     initiator?: Initiator,
   ) {
+    if (operationStartIsBlocked()) return
+
     const paneRef = access.getPaneRef(pane)
     const path = access.getPanePath(pane)
     const volumeIdForPane = access.getPaneVolumeId(pane)
@@ -170,6 +173,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     pane: 'left' | 'right' = access.getFocusedPane(),
     initiator?: Initiator,
   ) {
+    if (operationStartIsBlocked()) return
+
     const paneRef = access.getPaneRef(pane)
     const path = access.getPanePath(pane)
     const volumeIdForPane = access.getPaneVolumeId(pane)
@@ -405,6 +410,11 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     mcpRequestId?: string,
     initiator?: Initiator,
   ) {
+    // Nothing new starts behind a dialog: the confirmation would stack over what
+    // the user is reading, and this command reaches us from the native menu, whose
+    // items stay clickable whatever is on screen. `operation-start-gate.ts`.
+    if (operationStartIsBlocked(mcpRequestId)) return
+
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const destPane = access.otherPane(access.getFocusedPane())
     const destVolId = access.getPaneVolumeId(destPane)
@@ -551,6 +561,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     mcpRequestId?: string,
     initiator?: Initiator,
   ) {
+    if (operationStartIsBlocked(mcpRequestId)) return
+
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const focusedVolId = access.getPaneVolumeId(access.getFocusedPane())
 

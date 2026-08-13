@@ -244,18 +244,22 @@ fn known_dialogs_registration_covers_confirmation_dialogs() {
         KnownDialog {
             id: "transfer-confirmation".to_string(),
             description: None,
+            blocks_operations: true,
         },
         KnownDialog {
             id: "delete-confirmation".to_string(),
             description: None,
+            blocks_operations: true,
         },
         KnownDialog {
             id: "mkdir-confirmation".to_string(),
             description: None,
+            blocks_operations: true,
         },
         KnownDialog {
             id: "new-file-confirmation".to_string(),
             description: None,
+            blocks_operations: true,
         },
     ];
     tracker.register_known(dialogs);

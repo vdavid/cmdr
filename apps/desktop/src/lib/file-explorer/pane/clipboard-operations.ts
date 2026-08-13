@@ -15,6 +15,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
 import { checkTransferDestinationGuard } from './transfer-entry'
+import { operationStartIsBlocked } from './operation-start-gate'
 import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
 import { pasteClipboardContentAsFile } from './paste-clipboard-as-file'
 import type { createDialogState } from './dialog-state.svelte'
@@ -235,6 +236,11 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
   /** Pastes files from the system clipboard into the current directory. */
   async function pasteFromClipboard(forceMove: boolean) {
     try {
+      // Nothing new starts behind a dialog. Paste reaches us from Edit > Paste as
+      // well as ⌘V, and a menu item stays clickable whatever is on screen.
+      // `operation-start-gate.ts`.
+      if (operationStartIsBlocked()) return
+
       // Check MTP before reading clipboard; MTP paste is always rejected,
       // no point reading the system clipboard just to reject it. The capability
       // decides the refusal, not a `startsWith('mtp-')` string (A6). The

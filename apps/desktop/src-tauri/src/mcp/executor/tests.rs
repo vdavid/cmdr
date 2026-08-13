@@ -417,3 +417,39 @@ fn fit_to_result_budget_never_returns_an_empty_page() {
     assert_eq!(fitted.total, 2);
     assert!(fitted.truncated);
 }
+
+// ── The operation-start gate ──────────────────────────────────────────────────
+//
+// An agent asked to copy while a dialog is up used to get one of two useless
+// answers: silence for ten seconds (the auto-confirm round-trip waiting for an
+// operation the FE would never start), or a generic ack timeout. Now it gets the
+// reason immediately, and the dialog's identity in a field it can act on.
+//
+// Which dialogs block lives in the FE's `dialog-registry.ts` and rides over IPC as
+// `KnownDialog::blocks_operations`; `SoftDialogTracker::blocking_dialog` picks the
+// topmost open one (tested in `mcp/dialog_state.rs`).
+
+#[test]
+fn a_blocked_operation_names_the_dialog_in_a_typed_field() {
+    let err = dialog_block_error("copy", "transfer-progress");
+
+    // ❌ The agent must never have to parse the sentence to learn this.
+    assert_eq!(
+        err.data.as_ref().and_then(|d| d.get("blockingDialog")),
+        Some(&json!("transfer-progress"))
+    );
+}
+
+#[test]
+fn a_blocked_operation_says_what_to_do_about_it() {
+    let err = dialog_block_error("delete", "search");
+
+    assert!(err.message.contains("search"), "it names the dialog: {}", err.message);
+    assert!(
+        err.message.contains("Close it first"),
+        "and the way out: {}",
+        err.message
+    );
+    // Refusing a request the caller can fix is a bad-input answer, not a server fault.
+    assert_eq!(err.code, INVALID_PARAMS);
+}

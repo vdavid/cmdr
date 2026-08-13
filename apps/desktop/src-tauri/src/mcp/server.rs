@@ -787,7 +787,10 @@ async fn process_request<R: Runtime>(
                 }
                 Err(e) => {
                     log::warn!("MCP: tool {name} failed, code={}, message={}", e.code, e.message);
-                    (McpResponse::error(request.id, e.code, e.message), None)
+                    (
+                        McpResponse::error_with_data(request.id, e.code, e.message, e.data),
+                        None,
+                    )
                 }
             }
         }

@@ -51,6 +51,12 @@ pub type ToolResult = Result<Value, ToolError>;
 pub struct ToolError {
     pub code: i32,
     pub message: String,
+    /// Structured detail, carried through to the JSON-RPC error's `data` member.
+    ///
+    /// For anything an agent has to ACT on, this is the contract and the message is
+    /// only the human-readable half: the repo's `no-error-string-match` rule applies
+    /// to a sentence an agent parses exactly as it does to one our own code would.
+    pub data: Option<Value>,
 }
 
 impl ToolError {
@@ -58,6 +64,7 @@ impl ToolError {
         Self {
             code: INVALID_PARAMS,
             message: msg.into(),
+            data: None,
         }
     }
 
@@ -65,7 +72,14 @@ impl ToolError {
         Self {
             code: INTERNAL_ERROR,
             message: msg.into(),
+            data: None,
         }
+    }
+
+    /// Attaches structured detail to an error the caller is expected to act on.
+    pub fn with_data(mut self, data: Value) -> Self {
+        self.data = Some(data);
+        self
     }
 }
 
@@ -73,6 +87,35 @@ impl From<tauri::Error> for ToolError {
     fn from(e: tauri::Error) -> Self {
         Self::internal(e.to_string())
     }
+}
+
+/// Refuses a tool that would START a file operation while a dialog is up.
+///
+/// The gate runs BEFORE the tool dispatches, so the agent gets the reason at once
+/// instead of waiting out the ack budget for a dialog that will never appear. The
+/// blocking dialog's id rides in `data.blockingDialog` as well as in the sentence:
+/// the agent acts on it to decide what to close.
+///
+/// ❌ Scope is STARTING an operation. `queue`, `operations_rollback`, `dialog`, and
+/// everything else that steers or answers a running one stays open, which is
+/// exactly what an agent needs while a progress dialog or a clash prompt is up.
+pub(super) fn refuse_while_dialog_blocks<R: Runtime>(app: &AppHandle<R>, verb: &str) -> Result<(), ToolError> {
+    let Some(tracker) = app.try_state::<crate::mcp::dialog_state::SoftDialogTracker>() else {
+        return Ok(()); // No tracker yet; the FE is the authority and refuses on its own.
+    };
+    let Some(blocking) = tracker.blocking_dialog() else {
+        return Ok(());
+    };
+    Err(dialog_block_error(verb, &blocking))
+}
+
+/// The refusal itself: a sentence a human can read in the agent's transcript, plus
+/// the blocking dialog's id as a typed `data.blockingDialog` the agent acts on.
+pub(super) fn dialog_block_error(verb: &str, blocking: &str) -> ToolError {
+    ToolError::invalid_params(format!(
+        "Can't {verb}: the {blocking} dialog is open, so nothing new can start. Close it first (the dialog tool's close action, id {blocking}), then try again."
+    ))
+    .with_data(json!({ "blockingDialog": blocking }))
 }
 
 /// Resolve the target pane from an optional `pane` param, defaulting to the

@@ -5,7 +5,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
     AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_await_operation_start, mcp_round_trip,
-    wait_for_ack,
+    refuse_while_dialog_blocks, wait_for_ack,
 };
 use crate::pluralize::pluralize;
 
@@ -93,6 +93,7 @@ pub(super) fn empty_operation_error(
 /// `check_operation_has_target` fast-fails the cases the FE would silently drop
 /// (cursor on `..` with nothing selected); everything else is the FE's call.
 pub async fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    refuse_while_dialog_blocks(app, "copy")?;
     check_operation_has_target(app, "copy")?;
     // `autoConfirm: true` skips the user's confirmation dialog. This is safe because the
     // POST-handler boundary gates exactly this case: `tool_call_requires_token` flags
@@ -135,6 +136,7 @@ pub async fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
 /// Ack contract: same as `copy` (transfer-confirmation dialog shape), including the
 /// `check_operation_has_target` fast-fail.
 pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    refuse_while_dialog_blocks(app, "move")?;
     check_operation_has_target(app, "move")?;
     // `autoConfirm: true` skips the user's confirmation dialog; the POST-handler token gate
     // (`tool_call_requires_token` in `mcp/server.rs`) is what protects this now — it flags
@@ -183,6 +185,7 @@ pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
 ///   silently overwriting (never advancing the generation). Waiting on
 ///   `GenerationAdvanced` alone would hang until timeout in exactly that case.
 pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    refuse_while_dialog_blocks(app, "compress")?;
     check_operation_has_target(app, "compress")?;
     // `autoConfirm: true` skips the user's confirmation dialog; the POST-handler token
     // gate (`tool_call_requires_token` in `mcp/server.rs`) protects this case.
@@ -238,6 +241,7 @@ pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
 ///
 /// `check_operation_has_target` fast-fails the cases the FE would silently drop.
 pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    refuse_while_dialog_blocks(app, "delete")?;
     check_operation_has_target(app, "delete")?;
     // `autoConfirm: true` skips the user's confirmation dialog; the POST-handler token gate
     // (`tool_call_requires_token` in `mcp/server.rs`) is what protects this now — it flags
@@ -293,6 +297,7 @@ fn delete_permanent_from_mode(params: &Value) -> Result<Option<bool>, ToolError>
 ///
 /// The target is the named item (`name`), else the item under the cursor.
 pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    refuse_while_dialog_blocks(app, "rename")?;
     let new_name = params
         .get("newName")
         .and_then(|v| v.as_str())
@@ -439,6 +444,11 @@ async fn execute_create<R: Runtime>(
     ack_dialog: &'static str,
     kind: CreateKind,
 ) -> ToolResult {
+    let verb = match kind {
+        CreateKind::Directory => "create a folder",
+        CreateKind::File => "create a file",
+    };
+    refuse_while_dialog_blocks(app, verb)?;
     let name = params.get("name").and_then(|v| v.as_str()).map(str::to_string);
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
     let pane = super::optional_pane_param(params)?;

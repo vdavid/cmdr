@@ -444,6 +444,7 @@ mod tests {
             .map(|id| KnownDialog {
                 id: (*id).to_string(),
                 description: None,
+                blocks_operations: true,
             })
             .collect()
     }

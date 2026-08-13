@@ -2,7 +2,7 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import { commands, type ChildWindowRect, type PaneFileEntry, type PaneState } from '$lib/ipc/bindings'
-import type { SoftDialogId } from '$lib/ui/dialog-registry'
+import type { OperationGate, SoftDialogId } from '$lib/ui/dialog-registry'
 import { throwIpcError } from './ipc-types'
 
 export type { PaneFileEntry, PaneState }
@@ -79,9 +79,26 @@ export async function notifyDialogClosed(dialogType: SoftDialogId): Promise<void
   await commands.notifyDialogClosed(dialogType)
 }
 
-/** Register all known soft dialog types with the backend for the MCP "available dialogs" resource. */
-export async function registerKnownDialogs(dialogs: readonly { id: string; description?: string }[]): Promise<void> {
-  await commands.registerKnownDialogs(dialogs.map((d) => ({ id: d.id, description: d.description ?? null })))
+/**
+ * Register all known soft dialog types with the backend, for the MCP "available
+ * dialogs" resource and for the gate that refuses an MCP file operation while a
+ * dialog is up.
+ *
+ * `whileOpen` is declared once, per dialog, in `$lib/ui/dialog-registry.ts`; this
+ * ships the verdict across so Rust never keeps a second opinion about it. The call
+ * also clears the backend's open-dialog list, since startup means nothing is on
+ * screen yet.
+ */
+export async function registerKnownDialogs(
+  dialogs: readonly { id: string; description?: string; whileOpen: OperationGate }[],
+): Promise<void> {
+  await commands.registerKnownDialogs(
+    dialogs.map((d) => ({
+      id: d.id,
+      description: d.description ?? null,
+      blocksOperations: d.whileOpen.blocks,
+    })),
+  )
 }
 
 // ============================================================================

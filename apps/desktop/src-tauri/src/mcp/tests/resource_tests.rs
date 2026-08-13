@@ -10,10 +10,12 @@ fn dialogs_available_carries_registered_descriptions() {
         KnownDialog {
             id: "whats-new".to_string(),
             description: Some("Post-update changelog summary popup".to_string()),
+            blocks_operations: true,
         },
         KnownDialog {
             id: "about".to_string(),
             description: None,
+            blocks_operations: true,
         },
     ];
     let yaml = format_available_dialogs_yaml(&known);
