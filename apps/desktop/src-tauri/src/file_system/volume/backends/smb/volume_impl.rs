@@ -741,7 +741,18 @@ impl Volume for SmbVolume {
         &'a self,
         paths: &'a [PathBuf],
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        self.scan_for_copy_batch_impl(paths)
+        self.scan_for_copy_batch_impl(paths, None)
+    }
+
+    /// The scan preview's entry point. Reporting as the walk goes is what keeps
+    /// the dialog's counters climbing on a folder-sized SMB scan, and what tells
+    /// the scan watchdog this share is still answering.
+    fn scan_for_copy_batch_with_progress<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
+        self.scan_for_copy_batch_impl(paths, on_progress)
     }
 
     fn scan_for_conflicts<'a>(

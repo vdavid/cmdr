@@ -7,16 +7,78 @@ use super::mapping::map_smb_error;
 use super::{BatchScanResult, CopyScanResult, ScanConflict, SmbVolume, SourceItemInfo, VolumeError};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
+use crate::file_system::volume::ListingProgress;
 use log::{debug, warn};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+
+/// Running counts for ONE `scan_for_copy*` call, reported as the walk finds
+/// them.
+///
+/// ⚠️ Without this the recursive SMB scan reports nothing until it returns, so
+/// the transfer dialog sits on `0 bytes / 0 files / 0 dirs` for the whole scan
+/// of a folder, however long that takes. It also leaves the scan watchdog
+/// (`write_operations/scan_watchdog.rs`) blind: it bounds a preview by
+/// INACTIVITY, and a backend that never reports activity is indistinguishable
+/// from a share that has stopped answering.
+///
+/// Counts are cumulative for the call, which is what
+/// `Volume::scan_for_copy_batch_with_progress` promises its callers (they shift
+/// by their own baseline across several calls).
+pub(super) struct ScanTicker<'a> {
+    on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    files: AtomicUsize,
+    dirs: AtomicUsize,
+    bytes: AtomicU64,
+}
+
+impl<'a> ScanTicker<'a> {
+    pub(super) fn new(on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>) -> Self {
+        Self {
+            on_progress,
+            files: AtomicUsize::new(0),
+            dirs: AtomicUsize::new(0),
+            bytes: AtomicU64::new(0),
+        }
+    }
+
+    /// One more directory entered.
+    pub(super) fn dir(&self) {
+        self.dirs.fetch_add(1, Ordering::Relaxed);
+        self.report();
+    }
+
+    /// One more file counted, at `size` bytes.
+    pub(super) fn file(&self, size: u64) {
+        self.files.fetch_add(1, Ordering::Relaxed);
+        self.bytes.fetch_add(size, Ordering::Relaxed);
+        self.report();
+    }
+
+    /// The running totals so far.
+    pub(super) fn counts(&self) -> ListingProgress {
+        ListingProgress {
+            files: self.files.load(Ordering::Relaxed),
+            dirs: self.dirs.load(Ordering::Relaxed),
+            bytes: self.bytes.load(Ordering::Relaxed),
+        }
+    }
+
+    fn report(&self) {
+        if let Some(cb) = self.on_progress {
+            cb(self.counts());
+        }
+    }
+}
 
 impl SmbVolume {
     /// Recursively scans an SMB path, returning file/dir counts and total bytes.
     pub(super) fn scan_recursive<'a>(
         &'a self,
         smb_path: &'a str,
+        ticker: &'a ScanTicker<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mut result = CopyScanResult {
@@ -48,12 +110,14 @@ impl SmbVolume {
                     result.total_bytes = info.size;
                     result.dedup_bytes = info.size;
                     result.top_level_is_directory = false;
+                    ticker.file(info.size);
                     return Ok(result);
                 }
             }
 
             // It's a directory: list and recurse
             result.dir_count += 1;
+            ticker.dir();
             let display_path = self.to_display_path(smb_path);
             let entries = self.list_directory_impl(Path::new(&display_path)).await?;
 
@@ -65,7 +129,7 @@ impl SmbVolume {
                 };
 
                 if entry.is_directory {
-                    let sub = self.scan_recursive(&child_smb).await?;
+                    let sub = self.scan_recursive(&child_smb, ticker).await?;
                     result.file_count += sub.file_count;
                     result.dir_count += sub.dir_count;
                     result.total_bytes += sub.total_bytes;
@@ -74,6 +138,7 @@ impl SmbVolume {
                     result.file_count += 1;
                     result.total_bytes += entry.size.unwrap_or(0);
                     result.dedup_bytes += entry.size.unwrap_or(0);
+                    ticker.file(entry.size.unwrap_or(0));
                 }
             }
 
@@ -94,7 +159,11 @@ impl SmbVolume {
                 self.inner.share_name, smb_path
             );
 
-            self.scan_recursive(&smb_path).await
+            // No caller-side progress on the single-path method: the trait gives
+            // it nowhere to go. The batch method below is the one the scan
+            // preview uses.
+            let ticker = ScanTicker::new(None);
+            self.scan_recursive(&smb_path, &ticker).await
         })
     }
 
@@ -102,8 +171,13 @@ impl SmbVolume {
     pub(super) fn scan_for_copy_batch_impl<'a>(
         &'a self,
         paths: &'a [PathBuf],
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            // One ticker for the whole call: every branch below feeds it, so the
+            // counts the caller sees climb across oracle hits, pipelined stats,
+            // and recursion alike.
+            let ticker = ScanTicker::new(on_progress);
             // Fast paths: empty / single. Empty returns zeroes; single falls
             // through to the recursive scanner so we don't pay the cost of the
             // batch machinery for one path.
@@ -121,7 +195,7 @@ impl SmbVolume {
             }
             if paths.len() == 1 {
                 let smb_path = self.to_smb_path(&paths[0])?;
-                let scan = self.scan_recursive(&smb_path).await?;
+                let scan = self.scan_recursive(&smb_path, &ticker).await?;
                 return Ok(BatchScanResult {
                     aggregate: scan.clone(),
                     per_path: vec![(paths[0].clone(), scan)],
@@ -175,7 +249,7 @@ impl SmbVolume {
                         // descendants. The oracle just told us "this is a
                         // dir without an SMB stat"; recurse to expand it.
                         let smb_path = self.to_smb_path(path)?;
-                        let scan = self.scan_recursive(&smb_path).await?;
+                        let scan = self.scan_recursive(&smb_path, &ticker).await?;
                         per_path_results[idx] = Some(scan);
                     } else {
                         per_path_results[idx] = Some(CopyScanResult {
@@ -185,6 +259,7 @@ impl SmbVolume {
                             dedup_bytes: entry.size.unwrap_or(0),
                             top_level_is_directory: false,
                         });
+                        ticker.file(entry.size.unwrap_or(0));
                     }
                 }
 
@@ -305,6 +380,7 @@ impl SmbVolume {
                                 dedup_bytes: info.size,
                                 top_level_is_directory: false,
                             });
+                            ticker.file(info.size);
                         }
                     }
                     Err(e) => {
@@ -339,7 +415,7 @@ impl SmbVolume {
                 let smb_path = smb_path_by_idx
                     .get(&idx)
                     .expect("dirs_to_recurse only carries indices from the leftover stat batch");
-                let scan = self.scan_recursive(smb_path).await?;
+                let scan = self.scan_recursive(smb_path, &ticker).await?;
                 per_path_results[idx] = Some(scan);
             }
 
