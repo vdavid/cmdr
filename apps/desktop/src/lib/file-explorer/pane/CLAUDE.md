@@ -36,12 +36,10 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   renders and suppresses pane keys, so a mid-render throw would wedge the keyboard with a blank screen.
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, A5): mutate the store and let
   it react; ❌ don't scatter `saveAppStatus` / `saveTabsForPaneSide` across nav paths.
-- **The first-run layout's `markAlreadyLaidOut` branch is load-bearing, ❌ never "simplify" it away**: an install that
-  already has pane state gets the marker recorded and its panes left alone, and a wrong fire is unrecoverable. Two more
-  that look like tidy-ups and aren't: `~/Downloads` is probed only once Full Disk Access is confirmed (else the probe
-  can raise a TCC dialog), and an applied layout is persisted by `loadPersistedState` itself (the nav-state subscriber
-  never saves its seed, so nothing else would). Stakes, ordering, and the `settle` precondition: DETAILS § "First-run
-  pane layout".
+- **Three first-run-layout guardrails, each looking like a tidy-up. ❌ Never "simplify" one away.** `markAlreadyLaidOut`
+  leaves an install that already has pane state untouched (a wrong fire is unrecoverable); `~/Downloads` is probed only
+  after Full Disk Access is confirmed (else a TCC dialog); `loadPersistedState` persists an applied layout itself (the
+  nav-state subscriber never saves its seed). DETAILS § "First-run pane layout".
 - **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }` always
   switches. Resolve bare paths to a `Location` at the edge. Refusal `message` strings are byte-pinned.
 - **`DualPaneExplorer.svelte` and `FilePane.svelte` are `file-length`-flagged**: don't add to them, and ❌ don't carve

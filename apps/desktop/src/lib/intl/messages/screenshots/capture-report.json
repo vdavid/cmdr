@@ -3002,10 +3002,7 @@
   },
   "toast-tab": {
     "screenshot": "toast-tab.png",
-    "keys": [
-      "commands.handler.noRecentlyClosedTabs",
-      "ui.toast.dismissAria"
-    ]
+    "keys": ["commands.handler.noRecentlyClosedTabs", "ui.toast.dismissAria"]
   },
   "toast-zoom-in": {
     "screenshot": "toast-zoom-in.png",
