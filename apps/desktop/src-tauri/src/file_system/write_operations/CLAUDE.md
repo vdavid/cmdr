@@ -6,8 +6,9 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
 
 - Spine: `manager.rs` (registry, lanes, admission), `state.rs` (op state, `CopyTransaction`, cancel/abort),
   `status_cache.rs` (status cache + the busy-volume set that disables Eject; reach it through `state::`), `mod.rs`
-  (public API). Scan preview: `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs`. Subdirs `transfer/`, `delete/`,
-  `archive_edit/`. Frontend counterpart: `apps/desktop/src/lib/file-operations/CLAUDE.md`.
+  (public API). Scan preview: `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs`. Subdirs with their own docs:
+  `transfer/`, `delete/`, `archive_edit/` (`archive_edit/CLAUDE.md`). Frontend counterpart:
+  `apps/desktop/src/lib/file-operations/CLAUDE.md`.
 
 ## Must-knows
 
@@ -15,8 +16,7 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
   (validation included) inside `spawn_blocking`, so `*_files_start` returns an `operationId` before any I/O.
 - **A spawned op reserves every lane it touches** (source AND dest) or waits Queued; the next admits on the explicit
   `on_settled`, ❌ never in `Drop`.
-- **A zip edit is managed, not instant**, and every apply site goes through `run_managed_edit`. ❌ No in-place remote
-  edit: SMB and MTP pull the `.zip`, edit a copy, swap.
+- **A zip edit is managed, not instant**, and it owns its own rules: `archive_edit/CLAUDE.md`.
 - **`OperationIntent` is one `AtomicU8`**; ❌ never `store(...)` it directly. Cancel keeps copied files, Rollback deletes
   them in reverse. `PauseGate` is orthogonal; cancel wins.
 - **Stopping has two tiers.** `backend_cancel` (cooperative) is what EVERY user-initiated cancel uses; `backend_abort`

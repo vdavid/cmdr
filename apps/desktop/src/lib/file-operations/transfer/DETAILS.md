@@ -228,8 +228,8 @@ Parameterizing by `operationType` avoids duplication and guarantees UX consisten
 Compress rides the SAME dialog/progress/state components as copy/move via a third `operationType: 'compress'`; its
 "Compress" identity is frontend-only (title, toggle, confirm label, the `file.compress` command). The backend reuses
 `WriteOperationType::ArchiveEdit`; the seed mechanism lives in
-`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Compress = seed an empty zip, then copy-into".
-The user-visible differences from copy/move:
+`apps/desktop/src-tauri/src/file_system/write_operations/archive_edit/DETAILS.md` § "The driver, op by op". The
+user-visible differences from copy/move:
 
 - **The path field is a new FILE, not a destination folder.** It defaults to the other pane's folder plus a suggested
   `<name>.zip` (`initialEditedPath` + `suggestCompressArchiveName`) and stays editable. Suggested name: single source →

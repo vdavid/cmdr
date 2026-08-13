@@ -151,8 +151,8 @@ omission.
 
 A zip on a direct SMB or MTP volume browses and extracts through the SAME `ArchiveVolume` as a local one — only the byte
 supply differs. The read side is landed for both SMB and MTP; the write (edit) side pulls the archive local, edits, and
-uploads (see `src/mutation/DETAILS.md` and `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` §
-"Remote edit").
+uploads (see `src/mutation/DETAILS.md` and
+`apps/desktop/src-tauri/src/file_system/write_operations/archive_edit/DETAILS.md` § "Remote edit").
 
 **Local vs remote is the parent's capability, not the path.** `ArchiveVolume::parent_is_local()` returns
 `parent.supports_local_fs_access()`. A `LocalPosixVolume` parent (a plain drive OR an OS-mounted share) reports `true` ⇒
@@ -330,5 +330,5 @@ in `docs/specs/later/archive-browsing-polish.md`):
 
 A REMOTE source copied INTO a zip (an MTP/SMB file dropped onto an archive) now works: the source subtree is pulled to a
 local scratch dir first, then the ordinary local ingest runs against the pulled bytes (source-side pull in
-`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Archive edits"). The archive itself may be local
-or remote independently.
+`apps/desktop/src-tauri/src/file_system/write_operations/archive_edit/DETAILS.md`). The archive itself may be local or
+remote independently.

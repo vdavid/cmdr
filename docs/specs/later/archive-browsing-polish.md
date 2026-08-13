@@ -5,8 +5,8 @@ parents, full i18n). This spec captures everything deliberately deferred or flag
 impact (highest first). Each item stands alone; pick from the top.
 
 Canonical docs (don't restate mechanisms here): `crates/cmdr-archive/` C+D.md (read core, formats, remote sources),
-`apps/desktop/src-tauri/src/file_system/write_operations/` C+D.md § "Archive edits" (mutation, remote edit contract).
-The durable original decisions are already in the colocated docs.
+`apps/desktop/src-tauri/src/file_system/write_operations/archive_edit/` C+D.md (mutation, remote edit contract). The
+durable original decisions are already in the colocated docs.
 
 ## 1. One-pass bulk extract for sequential archives (perf, user-visible) — SHIPPED 2026-07-08
 
@@ -136,7 +136,7 @@ investigation.
 Copying/moving a remote (SMB / MTP) source INTO a zip now works: `archive_copy_into_start` runs a source-side pull-to-
 scratch prologue (via the copy engine's `pull_path_to_local` seam) before the ordinary local ingest, orthogonal to the
 archive parent's local-vs-remote handling. Move deletes the remote originals after the durable commit. Canonical docs:
-`write_operations/DETAILS.md` § "Archive edits" (source-side pull bullet).
+`write_operations/archive_edit/DETAILS.md` (source-side pull bullet).
 
 ## 6. Remote-backed archive live refresh (UX, niche) — SMB SHIPPED 2026-07-09, MTP manual by contract
 
@@ -204,8 +204,8 @@ instead of restarting from zero. A skipped or errored source stays in the archiv
 prefix; cancel/rollback delete nothing (cancel matches the plain cross-volume move). This also fixed a latent DATA-LOSS
 bug: a deep-merge Skip inside a directory source was uncounted, so the old all-or-nothing gate saw zero skips and
 deleted the whole subtree including the un-landed child. The copy engine now folds `CreatedPaths::skipped_file_count`
-into `files_skipped` and reports fully-extracted sources via `note_source_landed_clean`. Mechanism: `write_operations`
-`DETAILS.md` § "Archive edits".
+into `files_skipped` and reports fully-extracted sources via `note_source_landed_clean`. Mechanism:
+`write_operations/archive_edit/DETAILS.md`.
 
 ## 9. M6: MTP in-place editing (stretch, cross-repo)
 
