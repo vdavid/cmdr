@@ -14,6 +14,7 @@
 //! fixtures and doubles live in `volume/move_test_support.rs`
 //! (`super::test_support`).
 
+use super::super::super::conflict_responder_test_support::await_prompted_clash;
 use super::test_support::{make_state, make_state_with_interval_ms, make_volumes};
 use super::*;
 use crate::file_system::volume::LocalPosixVolume;
@@ -222,15 +223,16 @@ async fn cross_volume_move_conflict_stop_resolves_via_oneshot() {
 
     // Race the resolver: wait until the inner installs a oneshot sender, then push Skip-all.
     let state_for_resolver = Arc::clone(&state);
+    let events_for_resolver = Arc::clone(&events);
     let resolver = tokio::spawn(async move {
-        crate::test_support::wait_until_async(Duration::from_secs(5), "the conflict prompt to install", || {
-            state_for_resolver.conflict_slot.is_awaiting()
-        })
-        .await;
-        let _ = state_for_resolver.conflict_slot.answer(ConflictResolutionResponse {
-            resolution: ConflictResolution::Skip,
-            apply_to_all: true,
-        });
+        let clash = await_prompted_clash(&events_for_resolver).await;
+        let _ = state_for_resolver.conflict_slot.answer(
+            clash,
+            ConflictResolutionResponse {
+                resolution: ConflictResolution::Skip,
+                apply_to_all: true,
+            },
+        );
     });
 
     let result = move_volumes_with_progress(

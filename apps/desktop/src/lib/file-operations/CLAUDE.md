@@ -51,10 +51,11 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   what's running, prompt with the same `TransferConflictDialog`, resume exactly the ids paused. ❌ Never `resumeAll()`
   (it restarts a pause the USER made); ❌ never decide ownership while `isForegroundClaimPending()` — defer, or you
   double-prompt or re-wedge the operation. DETAILS § Conflict prompts.
-- **The backend arbitrates a clash and reports its verdict.** Answer through `session.resolveConflict(...)`
-  (`operation-session/CLAUDE.md`): anything but `resolved` means someone else answered, so take the prompt down and
-  release the hold, ❌ never surface it as a failure. Only a `null` (the call never landed) keeps the question on
-  screen. DETAILS § Conflict prompts.
+- **The backend arbitrates a clash and reports its verdict, and the answer names WHICH clash.** Answer through
+  `session.resolveConflict(conflictId, ...)` (`operation-session/CLAUDE.md`) with the id off the event on screen:
+  anything but `resolved` means the question is settled without us, so take that prompt down and release the hold, ❌
+  never surface it as a failure. Only a `null` (the call never landed) keeps the question on screen, and a clash that
+  arrived DURING the answer stays up. DETAILS § Conflict prompts.
 - **`ScanThroughput` is SCAN-phase only** (the backend `EtaEstimator` owns every write phase), returns nulls until two
   samples land, and must be `reset()` between scans. Pure, no Svelte / Tauri coupling. DETAILS § `scan-throughput.ts`.
 

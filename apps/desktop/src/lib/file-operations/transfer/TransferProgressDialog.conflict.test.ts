@@ -152,6 +152,7 @@ function buttonByText(target: HTMLElement, text: string): HTMLButtonElement | nu
 function makeEvent(overrides: Partial<WriteConflictEvent> = {}): WriteConflictEvent {
   return {
     operationId: 'op-1',
+    conflictId: 1,
     sourcePath: '/Users/test/things/report.pdf',
     destinationPath: '/Users/test/dest/report.pdf',
     sourceSize: 2048,

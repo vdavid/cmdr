@@ -10,7 +10,9 @@ const { listOperationsMock, commandMocks } = vi.hoisted(() => ({
     resumeOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
     cancelOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
     cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
-    resolveWriteConflict: vi.fn<(id: string, resolution: string, applyToAll: boolean) => Promise<string>>(() =>
+    resolveWriteConflict: vi.fn<
+      (id: string, conflictId: number, resolution: string, applyToAll: boolean) => Promise<string>
+    >(() =>
       Promise.resolve('resolved'),
     ),
   },
@@ -97,10 +99,13 @@ async function settleSeed(): Promise<void> {
   await Promise.resolve()
 }
 
-/** The clash a parked operation is waiting on. */
-function conflict(id: string): WriteConflictEvent {
+/** The clash a parked operation is waiting on. `conflictId` defaults to the
+ *  operation's first one; a test raising a second clash overrides it, because
+ *  that number is what an answer names. */
+function conflict(id: string, over: Partial<WriteConflictEvent> = {}): WriteConflictEvent {
   return {
     operationId: id,
+    conflictId: 1,
     sourcePath: '/src/f',
     destinationPath: '/dst/f',
     sourceSize: 1,
@@ -109,6 +114,7 @@ function conflict(id: string): WriteConflictEvent {
     destinationModified: null,
     destinationIsNewer: false,
     sizeDifference: 1,
+    ...over,
   }
 }
 
@@ -363,19 +369,39 @@ describe('commands', () => {
       const { fanout, session, dispose } = harness()
       fanout._testEmit({ kind: 'conflict', event: conflict('a') })
 
-      expect(await session.resolveConflict('overwrite', false)).toBe(outcome)
+      expect(await session.resolveConflict(1, 'overwrite', false)).toBe(outcome)
 
       expect(session.conflict).toBeNull()
       dispose()
     },
   )
 
+  it('lets go of the clash it answered, and keeps one that arrived while it was answering', async () => {
+    // The reported wedge: the backend raises the next clash in the same breath
+    // as it takes the answer for this one, so the fan-out delivers it while the
+    // IPC promise is still in the air. Clearing whatever sits in the slot when
+    // the answer returns throws that newer clash away, and the transfer parks
+    // forever with no prompt on screen.
+    const { fanout, session, dispose } = harness()
+    fanout._testEmit({ kind: 'conflict', event: conflict('a') })
+    commandMocks.resolveWriteConflict.mockImplementationOnce(() => {
+        fanout._testEmit({ kind: 'conflict', event: conflict('a', { conflictId: 2, destinationPath: '/dst/next' }) })
+      return Promise.resolve('resolved')
+    })
+
+    expect(await session.resolveConflict(1, 'skip', false)).toBe('resolved')
+
+    expect(session.conflict?.conflictId).toBe(2)
+    expect(session.conflict?.destinationPath).toBe('/dst/next')
+    dispose()
+  })
+
   it('keeps the clash when the answer never landed', async () => {
     commandMocks.resolveWriteConflict.mockRejectedValueOnce(new Error('ipc down'))
     const { fanout, session, dispose } = harness()
     fanout._testEmit({ kind: 'conflict', event: conflict('a') })
 
-    expect(await session.resolveConflict('overwrite', false)).toBeNull()
+    expect(await session.resolveConflict(1, 'overwrite', false)).toBeNull()
 
     expect(session.conflict?.sourcePath).toBe('/src/f')
     dispose()
@@ -387,9 +413,9 @@ describe('commands', () => {
     // button that does nothing; the backend's verdict is the only authority.
     const { session, dispose } = harness()
 
-    expect(await session.resolveConflict('skip', true)).toBe('resolved')
+    expect(await session.resolveConflict(7, 'skip', true)).toBe('resolved')
 
-    expect(commandMocks.resolveWriteConflict).toHaveBeenCalledWith('a', 'skip', true)
+    expect(commandMocks.resolveWriteConflict).toHaveBeenCalledWith('a', 7, 'skip', true)
     dispose()
   })
 

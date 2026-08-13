@@ -209,8 +209,8 @@ alone cannot tell you.
   the queue row, and the corner chip saying the same thing: they showed different answers to the same paused copy once.
   Every view renders these three, never `progress.bytesPerSecond` / `progress.filesPerSecond` / `progress.etaSeconds`.
 - `scan`: the counting readout, including the frontend-computed rates the backend does not emit during a scan.
-- `conflict`: the conflict the operation is parked on, set from the event and cleared once the backend has ruled on it,
-  whichever surface asked.
+- `conflict`: the conflict the operation is parked on, set from the event and cleared once the backend has ruled on the
+  clash that was ANSWERED, whichever surface asked. A newer clash that arrived mid-answer stays (see below).
 - `outcome` / `settled` / `settleEventReceived`: how it ended, whether it ended, and whether the backend task has torn
   down. The last is separate because `write-settled` says the task is gone, not how it finished. `outcome` is
   write-once, so a cancel racing a completion cannot flip an answer a view already rendered.
@@ -248,12 +248,20 @@ asserting the status query is never made at all.
 ### Answering a clash is a delegation
 
 `write-conflict` reaches every webview, so more than one surface can be showing the same prompt. The backend arbitrates:
-`resolve_write_conflict` returns a typed outcome (resolved / already resolved / no pending conflict / unknown operation)
-from a three-state slot in `write_operations/conflict_slot.rs`. The session hands that verdict back untouched and lets
-go of its `conflict` on any of them, because the question is over either way. Only a call that never landed keeps the
-prompt up.
+`resolve_write_conflict(operationId, conflictId, resolution, applyToAll)` returns a typed outcome (resolved / already
+resolved / stale answer / no pending conflict / unknown operation) from the slot in
+`write_operations/conflict_slot.rs`, which is where that contract is written down. The session hands that verdict back
+untouched and lets go of the clash it answered on any of them, because that question is over either way. Only a call
+that never landed keeps the prompt up.
 
-Two rules follow, and both are guardrails rather than observations:
+**The answer names its clash, and only that clash is let go of.** `resolveConflict` takes the `conflictId` off the event
+the surface is showing, and clears `conflict` only while the slot still holds that same id. The operation raises its
+next clash the instant it takes an answer, so a newer event routinely lands while the IPC promise is still in the air;
+clearing whatever sits in the slot on return threw that one away, and the transfer parked forever with no prompt on
+screen and no way out but Cancel. The main window's prompt host scopes its queue entry the same way (`dropPrompt`), and
+the two together are the frontend half of the backend's identity contract.
+
+Three rules follow, and all three are guardrails rather than observations:
 
 - ❌ **Never rebuild a frontend rule that makes correctness depend on one surface being allowed to answer.** That rule
   existed because the backend parked on a single sender and a second answer vanished silently; the slot removed the
@@ -261,7 +269,11 @@ Two rules follow, and both are guardrails rather than observations:
 - ❌ **Never refuse to answer a clash this session has not seen.** The fan-out drops an id's buffer the moment it is
   claimed, so a view that adopts an operation whose `write-conflict` went to a session since let go legitimately has no
   `conflict` field. Refusing would leave the user clicking a button that does nothing, and the backend is the authority
-  on whether there is anything parked.
+  on whether there is anything parked. This is why the `conflictId` is a PARAMETER rather than something the session
+  reads off its own state: the surface holding the event always has it, and a session that never saw the event still
+  can't be locked out of answering.
+- ❌ **Never clear the clash on "an answer came back".** Clear the clash that was answered, by id. The difference is one
+  `===`, and it is the difference between a transfer that carries on and one that parks with an empty screen.
 
 ### Where an archive password belongs, and why it is NOT a session concern
 

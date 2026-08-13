@@ -28,9 +28,11 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
   frontend teardown hook may call it. `../../quit/CLAUDE.md`.
 - **Stop-mode conflicts arm `state.conflict_slot` BEFORE emitting `write-conflict`** (emit-first hangs the recv); the
   dispatch mutex serializes merges and ❌ never spans the file write.
-- **`resolve_write_conflict` REPORTS its arbitration** (`ConflictResolutionOutcome`, across IPC): the event reaches every
-  webview, so a second surface must be able to tell `AlreadyResolved` from `NoPendingConflict` / `UnknownOperation` and
-  take its prompt down. ❌ Never answer the slot by hand or collapse those variants.
+- **An answer NAMES its clash** (`ConflictId`, minted by `conflict_slot.arm` and carried on `write-conflict`), and
+  `resolve_write_conflict` REPORTS its arbitration (`ConflictResolutionOutcome`, across IPC): the event reaches every
+  webview, so a second surface must be able to tell `AlreadyResolved` from `StaleAnswer` / `NoPendingConflict` /
+  `UnknownOperation` and take its prompt down. ❌ Never answer the slot by hand, collapse those variants, or let an
+  answer for a retired clash reach the one parked now.
 - **Emit through `OperationEventSink`, never `AppHandle`.** `write-settled` fires once, AFTER the terminal event; a
   volume-aware op doesn't re-emit `write-error` on `Cancelled`.
 - **Register a destination with the downloads watcher's ignore set BEFORE the syscall**

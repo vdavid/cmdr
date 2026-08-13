@@ -448,6 +448,7 @@ describe('createTransferProgressState: conflict resolution', () => {
   function conflictEvent(): WriteConflictEvent {
     return {
       operationId: 'op-1',
+      conflictId: 1,
       sourcePath: '/src/file.txt',
       destinationPath: '/dst/file.txt',
       sourceSize: 10,
@@ -466,7 +467,7 @@ describe('createTransferProgressState: conflict resolution', () => {
     expect(state.conflict).not.toBeNull()
 
     await state.handleConflictResolution('skip', true)
-    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 'skip', true)
+    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 1, 'skip', true)
     expect(state.conflict).toBeNull()
   })
 
@@ -475,7 +476,7 @@ describe('createTransferProgressState: conflict resolution', () => {
     if (!conflictCb) throw new Error('conflict subscriber never registered')
     conflictCb(conflictEvent())
     await state.handleConflictResolution('overwrite', false)
-    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 'overwrite', false)
+    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 1, 'overwrite', false)
     expect(state.conflict).toBeNull()
   })
 

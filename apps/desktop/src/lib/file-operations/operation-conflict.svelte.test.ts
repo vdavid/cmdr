@@ -105,6 +105,7 @@ function operationRow(id: string, status: OperationSnapshot['status'], over: Par
 function conflictEvent(over: Partial<WriteConflictEvent> = {}): WriteConflictEvent {
   return {
     operationId: 'op-1',
+    conflictId: 1,
     sourcePath: '/src/folder/notes.txt',
     destinationPath: '/dst/folder/notes.txt',
     sourceSize: 200,
@@ -257,14 +258,14 @@ describe('answering', () => {
     await deliver()
     await resolveConflictPrompt('overwrite', false)
 
-    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 'overwrite', false)
+    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 1, 'overwrite', false)
   })
 
   it('carries an apply-to-all through untouched', async () => {
     await deliver()
     await resolveConflictPrompt('skip', true)
 
-    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 'skip', true)
+    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 1, 'skip', true)
   })
 
   it('closes the prompt and resumes exactly what it paused', async () => {
@@ -370,18 +371,39 @@ describe('several operations clashing at once', () => {
     expect(setFocus).toHaveBeenCalledTimes(1)
   })
 
-  it('takes the newer event when one operation somehow asks twice', async () => {
-    // The backend serializes prompts per operation, so this shouldn't happen.
-    // If it ever did, the newer clash is the live one: `resolveWriteConflict`
-    // is keyed by operation id alone, so an answer lands on whatever that
-    // operation is parked on right now.
-    await deliver(conflictEvent({ destinationPath: '/dst/folder/one.txt' }))
-    await deliver(conflictEvent({ destinationPath: '/dst/folder/two.txt' }))
+  it('shows the newer clash when one operation asks again before the first is answered', async () => {
+    await deliver(conflictEvent({ conflictId: 1, destinationPath: '/dst/folder/one.txt' }))
+    await deliver(conflictEvent({ conflictId: 2, destinationPath: '/dst/folder/two.txt' }))
 
     expect(getConflictPrompt()?.event.destinationPath).toBe('/dst/folder/two.txt')
 
     await resolveConflictPrompt('skip', false)
+    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 2, 'skip', false)
     expect(getConflictPrompt()).toBeNull()
+  })
+
+  it('keeps the next clash on screen when it arrives while the answer is in flight', async () => {
+    // The wedge: the operation raises its next clash the moment it takes this
+    // answer, so the event lands before the IPC promise settles. Taking the
+    // prompt down on "an answer came back" would leave the transfer parked with
+    // nothing on screen and everything still on hold.
+    rows = [operationRow('op-1', 'running'), operationRow('op-2', 'running')]
+    await deliver(conflictEvent({ conflictId: 1, destinationPath: '/dst/folder/one.txt' }))
+    vi.mocked(resolveWriteConflict).mockImplementationOnce(async () => {
+      await deliver(conflictEvent({ conflictId: 2, destinationPath: '/dst/folder/two.txt' }))
+      return 'resolved'
+    })
+
+    await resolveConflictPrompt('skip', false)
+
+    expect(getConflictPrompt()?.event.destinationPath).toBe('/dst/folder/two.txt')
+    expect(resumeOperation).not.toHaveBeenCalled()
+
+    // And the person can answer the one they are now looking at.
+    await resolveConflictPrompt('skip', false)
+    expect(resolveWriteConflict).toHaveBeenLastCalledWith('op-1', 2, 'skip', false)
+    expect(getConflictPrompt()).toBeNull()
+    expect(resumeOperation).toHaveBeenCalledWith('op-2')
   })
 })
 

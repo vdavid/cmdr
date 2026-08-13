@@ -12,8 +12,8 @@ use tokio_util::sync::CancellationToken;
 
 use super::eta::EtaEstimator;
 use super::types::{
-    ConflictResolution, ConflictResolutionOutcome, OperationEventSink, WriteOperationType, WriteProgressEvent,
-    WriteSettledEvent,
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, OperationEventSink, WriteOperationType,
+    WriteProgressEvent, WriteSettledEvent,
 };
 
 // The conflict slot lives in its own module: arbitrating one answer per conflict
@@ -564,12 +564,20 @@ pub(super) fn resume_write_operation(operation_id: &str) -> bool {
 /// the returned [`ConflictResolutionOutcome`] is how the rest find out, and it
 /// crosses IPC so a losing surface can take its own prompt down.
 ///
+/// The answer names the clash it is FOR ([`ConflictId`], carried on the event).
+/// An operation raises its clashes one at a time, but an answer can arrive after
+/// the operation has parked on the next one, and applying it there would decide a
+/// question the user was never shown. Naming it makes that case `StaleAnswer`
+/// instead.
+///
 /// # Arguments
 /// * `operation_id` - The operation ID that has a pending conflict
+/// * `conflict_id` - Which clash of that operation is being answered
 /// * `resolution` - How to resolve the conflict (Skip, Overwrite, or Rename)
 /// * `apply_to_all` - If true, apply this resolution to all future conflicts in this operation
 pub fn resolve_write_conflict(
     operation_id: &str,
+    conflict_id: ConflictId,
     resolution: ConflictResolution,
     apply_to_all: bool,
 ) -> ConflictResolutionOutcome {
@@ -577,11 +585,16 @@ pub fn resolve_write_conflict(
         log::info!("resolve_write_conflict: op={operation_id}: no such operation, ignoring");
         return ConflictResolutionOutcome::UnknownOperation;
     };
-    let outcome = state.conflict_slot.answer(ConflictResolutionResponse {
-        resolution,
-        apply_to_all,
-    });
-    log::info!("resolve_write_conflict: op={operation_id} {resolution:?} apply_to_all={apply_to_all} -> {outcome:?}");
+    let outcome = state.conflict_slot.answer(
+        conflict_id,
+        ConflictResolutionResponse {
+            resolution,
+            apply_to_all,
+        },
+    );
+    log::info!(
+        "resolve_write_conflict: op={operation_id} clash={conflict_id:?} {resolution:?} apply_to_all={apply_to_all} -> {outcome:?}"
+    );
     outcome
 }
 

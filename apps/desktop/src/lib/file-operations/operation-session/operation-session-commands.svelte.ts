@@ -33,6 +33,7 @@ import {
   pauseOperation,
   resolveWriteConflict,
   resumeOperation,
+  type ConflictId,
   type ConflictResolutionOutcome,
 } from '$lib/tauri-commands'
 import type { ConflictResolution } from '$lib/file-explorer/types'
@@ -54,10 +55,15 @@ export interface OperationSessionCommands {
   /** Stop AND delete what has already been written. Only meaningful where the
    *  snapshot says `supportsRollback`; the view decides when to offer it. */
   rollback: () => Promise<boolean>
-  /** Answer the clash. Returns what the backend acted on — any verdict means
-   *  the question is over, whoever asked it — or `null` when the answer never
-   *  landed, in which case the prompt stays up. */
-  resolveConflict: (resolution: ConflictResolution, applyToAll: boolean) => Promise<ConflictResolutionOutcome | null>
+  /** Answer the clash named by `conflictId`, which every surface reads off the
+   *  `write-conflict` event it is showing. Returns what the backend acted on —
+   *  any verdict means the question is over, whoever asked it — or `null` when
+   *  the answer never landed, in which case the prompt stays up. */
+  resolveConflict: (
+    conflictId: ConflictId,
+    resolution: ConflictResolution,
+    applyToAll: boolean,
+  ) => Promise<ConflictResolutionOutcome | null>
 
   /** A pause or resume is on its way to the backend. */
   readonly pauseInFlight: boolean
@@ -137,13 +143,14 @@ export function createOperationSessionCommands(operationId: string, isPaused: ()
     },
 
     async resolveConflict(
+      conflictId: ConflictId,
       resolution: ConflictResolution,
       applyToAll: boolean,
     ): Promise<ConflictResolutionOutcome | null> {
       if (resolvingConflict) return null
       resolvingConflict = true
       try {
-        const outcome = await resolveWriteConflict(operationId, resolution, applyToAll)
+        const outcome = await resolveWriteConflict(operationId, conflictId, resolution, applyToAll)
         if (outcome !== 'resolved') {
           log.info('The clash on op={operationId} was settled without this answer ({outcome})', {
             operationId,

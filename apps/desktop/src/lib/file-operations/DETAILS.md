@@ -148,16 +148,20 @@ that's free to narrow later.
   its resume arrives; parking between files is what pause is for, and cancel still wins over both.
 - **Losing the race is not a failure.** The session's `resolveConflict` hands back the backend's
   `ConflictResolutionOutcome`, and anything but `resolved` means this clash is settled without us (another surface
-  answered first, a cancel took it away, the operation is gone). The prompt comes down and the hold releases exactly as
-  if this answer had won, with an info log naming the outcome; the progress dialog's `handleConflictResolution` clears
-  its own prompt the same way. ❌ Never treat a non-`resolved` outcome as an error and leave the question on screen:
-  nobody can answer it any more. Which outcome means what, and why the backend arbitrates rather than a frontend rule
-  naming who may answer: `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § Stop-mode conflict
-  resolution.
+  answered first, the operation moved past it, a cancel took it away, the operation is gone). The prompt comes down and
+  the hold releases exactly as if this answer had won, with an info log naming the outcome; the progress dialog's
+  `handleConflictResolution` clears its own prompt the same way. ❌ Never treat a non-`resolved` outcome as an error and
+  leave the question on screen: nobody can answer it any more. Which outcome means what, and why the backend arbitrates
+  rather than a frontend rule naming who may answer:
+  `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Answering a conflict is arbitrated".
 - **One prompt at a time, in arrival order**, resuming only after the last. The backend serializes prompts within one
   operation (`conflict_dispatch_lock` plus a single conflict slot), so the queue holds at most one entry per operation;
-  a second event for one that's already queued replaces it, because `resolve_write_conflict` is keyed by operation id
-  and an answer lands on whatever that operation is parked on now.
+  a second event for one that's already queued replaces it, since the newer clash is the live one. That replacement
+  happens routinely while an answer is in flight (the operation raises its next clash the moment it takes one), so
+  `dropPrompt(operationId, answeredConflictId)` takes the entry down only when it still shows the clash that was
+  answered. ❌ Never drop by operation id alone on the answer path: that throws away the question that just arrived and
+  leaves the transfer parked behind an empty screen. The cancel path passes `null` on purpose — the operation itself is
+  going away, so every question it might be asking is moot.
 - **An operation dying mid-prompt** is covered three ways: the prompt's Cancel, `reconcileConflictPrompts(rows)`
   dropping an entry whose operation left the snapshot (a queue-window cancel, a failure), and either of those releasing
   the hold. An entry is only droppable once its operation has been SEEN live: the rows arrive on their own stream, and

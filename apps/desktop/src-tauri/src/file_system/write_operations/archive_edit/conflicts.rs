@@ -112,12 +112,14 @@ fn prompt_archive_conflict(
     };
 
     // Store the sender BEFORE the emit (see doc comment); released as the
-    // statement ends, never held across the emit or the blocking recv.
+    // statement ends, never held across the emit or the blocking recv. Arming
+    // mints this clash's id, which the answer has to name back.
     let (tx, rx) = tokio::sync::oneshot::channel();
-    state.conflict_slot.arm(tx);
+    let conflict_id = state.conflict_slot.arm(tx);
 
     events.emit_conflict(WriteConflictEvent {
         operation_id: operation_id.to_string(),
+        conflict_id,
         source_path: src_path.display().to_string(),
         destination_path: archive_path.join(inner).display().to_string(),
         source_size,

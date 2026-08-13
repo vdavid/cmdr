@@ -13,7 +13,8 @@ use super::durability::lookup_indexed_size;
 use super::overwrite::ResolvedDestination;
 use super::state::WriteOperationState;
 use super::types::{
-    ConflictInfo, ConflictResolution, OperationEventSink, WriteConflictEvent, WriteOperationConfig, WriteOperationError,
+    ConflictId, ConflictInfo, ConflictResolution, OperationEventSink, WriteConflictEvent, WriteOperationConfig,
+    WriteOperationError,
 };
 
 // ============================================================================
@@ -145,15 +146,6 @@ pub(super) fn resolve_conflict(
             } else {
                 None
             };
-            let event = build_conflict_event(
-                operation_id,
-                source,
-                dest_path,
-                source_meta.as_ref(),
-                dest_meta.as_ref(),
-                source_size_for_dir,
-                destination_size_for_dir,
-            );
             // Arm the conflict slot BEFORE emitting the event. A responder (the
             // FE's `resolve_write_conflict`, which answers through the slot) can
             // only answer a conflict it has observed; if the event reached it
@@ -163,9 +155,23 @@ pub(super) fn resolve_conflict(
             // hands. The slot's lock is released inside `arm` — never held
             // across the emit or the recv. Mirrors the volume-side Stop branch
             // in `transfer/volume/conflict.rs`.
+            //
+            // Arming also mints this clash's id, which rides out on the event:
+            // an answer has to name it, so one meant for a clash this operation
+            // has already left behind can't decide the next one.
             let (tx, rx) = tokio::sync::oneshot::channel();
-            state.conflict_slot.arm(tx);
+            let conflict_id = state.conflict_slot.arm(tx);
 
+            let event = build_conflict_event(
+                operation_id,
+                conflict_id,
+                source,
+                dest_path,
+                source_meta.as_ref(),
+                dest_meta.as_ref(),
+                source_size_for_dir,
+                destination_size_for_dir,
+            );
             events.emit_conflict(event);
 
             // Wait for user to call resolve_write_conflict.
@@ -384,8 +390,13 @@ pub(super) fn find_unique_name(path: &Path) -> PathBuf {
 /// dialog couldn't tell the user "you're about to replace a folder with a
 /// file" and silently took the user's "Overwrite" click as consent to drop
 /// an entire directory tree.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the event describes both sides of a clash from four sources (identity, paths, stat'd metadata, indexed folder sizes); bundling them would only move the same list one call up"
+)]
 fn build_conflict_event(
     operation_id: &str,
+    conflict_id: ConflictId,
     source: &Path,
     dest_path: &Path,
     source_meta: Option<&fs::Metadata>,
@@ -447,6 +458,7 @@ fn build_conflict_event(
 
     WriteConflictEvent {
         operation_id: operation_id.to_string(),
+        conflict_id,
         source_path: source.display().to_string(),
         destination_path: dest_path.display().to_string(),
         source_size,
@@ -917,6 +929,7 @@ mod build_conflict_event_tests {
 
         let event = build_conflict_event(
             "op-1",
+            ConflictId(1),
             &source,
             &dest,
             Some(&source_meta),
@@ -942,6 +955,7 @@ mod build_conflict_event_tests {
 
         let event = build_conflict_event(
             "op-2",
+            ConflictId(1),
             &source,
             &dest,
             Some(&source_meta),
@@ -965,7 +979,16 @@ mod build_conflict_event_tests {
         let source_meta = fs::metadata(&source).unwrap();
         let dest_meta = fs::metadata(&dest).unwrap();
 
-        let event = build_conflict_event("op-3", &source, &dest, Some(&source_meta), Some(&dest_meta), None, None);
+        let event = build_conflict_event(
+            "op-3",
+            ConflictId(1),
+            &source,
+            &dest,
+            Some(&source_meta),
+            Some(&dest_meta),
+            None,
+            None,
+        );
 
         assert!(!event.source_is_directory);
         assert!(!event.destination_is_directory);
@@ -987,6 +1010,7 @@ mod build_conflict_event_tests {
 
         let event = build_conflict_event(
             "op",
+            ConflictId(1),
             &source,
             &dest,
             Some(&source_meta),
@@ -1016,6 +1040,7 @@ mod build_conflict_event_tests {
 
         let event = build_conflict_event(
             "op",
+            ConflictId(1),
             &source,
             &dest,
             Some(&source_meta),
@@ -1043,7 +1068,16 @@ mod build_conflict_event_tests {
         let source_meta = fs::metadata(&source).unwrap();
         let dest_meta = fs::metadata(&dest).unwrap();
 
-        let event = build_conflict_event("op", &source, &dest, Some(&source_meta), Some(&dest_meta), None, None);
+        let event = build_conflict_event(
+            "op",
+            ConflictId(1),
+            &source,
+            &dest,
+            Some(&source_meta),
+            Some(&dest_meta),
+            None,
+            None,
+        );
 
         assert_eq!(event.source_size, Some(1));
         assert_eq!(event.destination_size, None);
@@ -1065,6 +1099,7 @@ mod build_conflict_event_tests {
 
         let event = build_conflict_event(
             "op",
+            ConflictId(1),
             &source,
             &dest,
             Some(&source_meta),
@@ -1092,7 +1127,16 @@ mod build_conflict_event_tests {
         let source_meta = fs::metadata(&source).unwrap();
         let dest_meta = fs::metadata(&dest).unwrap();
 
-        let event = build_conflict_event("op", &source, &dest, Some(&source_meta), Some(&dest_meta), None, None);
+        let event = build_conflict_event(
+            "op",
+            ConflictId(1),
+            &source,
+            &dest,
+            Some(&source_meta),
+            Some(&dest_meta),
+            None,
+            None,
+        );
 
         assert_eq!(event.source_size, None);
         assert_eq!(event.destination_size, Some(2));
@@ -1337,11 +1381,16 @@ mod stop_branch_store_before_emit_tests {
             self.inner.emit_settled(e);
         }
         fn emit_conflict(&self, e: WriteConflictEvent) {
+            // Answer the clash this event names, exactly as a surface would.
+            let clash = e.conflict_id;
             self.inner.emit_conflict(e);
-            let _ = self.state.conflict_slot.answer(ConflictResolutionResponse {
-                resolution: self.resolution,
-                apply_to_all: false,
-            });
+            let _ = self.state.conflict_slot.answer(
+                clash,
+                ConflictResolutionResponse {
+                    resolution: self.resolution,
+                    apply_to_all: false,
+                },
+            );
         }
         fn emit_progress(&self, e: WriteProgressEvent) {
             self.inner.emit_progress(e);

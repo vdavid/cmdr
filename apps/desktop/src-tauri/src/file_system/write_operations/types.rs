@@ -98,6 +98,23 @@ pub enum ConflictResolution {
     OverwriteOlder,
 }
 
+/// Which clash an answer is for.
+///
+/// An operation raises many Stop-mode clashes over its life, one at a time, and
+/// the answer to each one travels out through a broadcast event, past a person,
+/// and back through IPC. That round trip can outlast the clash: by the time the
+/// answer arrives the operation may already be parked on the NEXT one. Without
+/// an identity the two are indistinguishable and the late answer silently
+/// decides a question nobody was shown.
+///
+/// So every clash carries one. `ConflictSlot` mints it as it arms, the
+/// `write-conflict` event carries it to every surface, and
+/// `resolve_write_conflict` requires it back. Ids count from 1 per operation;
+/// an answer is only ever matched against the slot of the operation it names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(transparent)]
+pub struct ConflictId(pub u64);
+
 /// What the backend did with one answer to a Stop-mode conflict. Produced by
 /// `conflict_slot::ConflictSlot::answer`.
 ///
@@ -114,6 +131,11 @@ pub enum ConflictResolutionOutcome {
     /// Somebody answered this conflict first. The operation carried on with
     /// THEIR answer; this one changed nothing.
     AlreadyResolved,
+    /// This answer names a clash the operation has left behind. It was raised,
+    /// it was settled (by an answer, an apply-to-all latch, or a cancel), and
+    /// the operation has moved on — possibly onto a different clash, which this
+    /// answer must NOT decide. Nothing changed.
+    StaleAnswer,
     /// The operation is live but isn't waiting on a conflict: it hasn't raised
     /// one, or a cancel took the pending one away.
     NoPendingConflict,
@@ -329,6 +351,11 @@ pub struct WriteSettledEvent {
 #[tauri_specta(event_name = "write-conflict")]
 pub struct WriteConflictEvent {
     pub operation_id: String,
+    /// Which clash this is, within its operation. The answer must name it back
+    /// (`resolve_write_conflict`), so an answer for a clash the operation has
+    /// already left behind can't land on the one it is parked on now. See
+    /// [`ConflictId`].
+    pub conflict_id: ConflictId,
     pub source_path: String,
     pub destination_path: String,
     /// Source size in bytes. Files use `metadata.len()`; folder sources use
@@ -839,6 +866,7 @@ mod write_conflict_event_serde_tests {
     fn sample_event(source_size: Option<u64>) -> WriteConflictEvent {
         WriteConflictEvent {
             operation_id: "op-1".to_string(),
+            conflict_id: ConflictId(3),
             source_path: "/src/photos".to_string(),
             destination_path: "/dst/photos".to_string(),
             source_size,

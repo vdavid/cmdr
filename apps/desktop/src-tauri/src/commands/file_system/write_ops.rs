@@ -1,7 +1,7 @@
 //! Tauri commands for write operations (create, copy, move, delete, trash) and scan preview.
 
 use crate::file_system::write_operations::{
-    ConflictResolution, ConflictResolutionOutcome, ScanPreviewStartResult,
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, ScanPreviewStartResult,
     cancel_scan_preview as ops_cancel_scan_preview, create_directory_managed as ops_create_directory_managed,
     create_file_managed as ops_create_file_managed, get_scan_preview_totals as ops_get_scan_preview_totals,
     resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
@@ -348,14 +348,19 @@ pub fn check_scan_preview_status(
 /// surfaces can be showing the same prompt; the returned outcome tells this
 /// caller whether ITS answer is the one the operation acted on, so a surface
 /// that lost the race takes its prompt down instead of hanging on it.
+///
+/// `conflict_id` names the clash being answered (it arrives on the event). An
+/// answer for a clash the operation has already moved past is refused as
+/// `stale_answer` rather than applied to whatever it is parked on now.
 #[tauri::command]
 #[specta::specta]
 pub fn resolve_write_conflict(
     operation_id: String,
+    conflict_id: ConflictId,
     resolution: ConflictResolution,
     apply_to_all: bool,
 ) -> ConflictResolutionOutcome {
-    ops_resolve_write_conflict(&operation_id, resolution, apply_to_all)
+    ops_resolve_write_conflict(&operation_id, conflict_id, resolution, apply_to_all)
 }
 
 #[tauri::command]

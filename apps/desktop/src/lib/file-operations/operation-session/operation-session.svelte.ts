@@ -36,7 +36,7 @@ import type { BytesPerSecond, Seconds } from '$lib/units'
 import type { ConflictResolution } from '$lib/file-explorer/types'
 import type { OperationDelivery, OperationEventFanout } from './operation-event-fanout'
 import { createOperationSessionCommands, type OperationSessionCommands } from './operation-session-commands.svelte'
-import type { ConflictResolutionOutcome } from '$lib/tauri-commands'
+import type { ConflictId, ConflictResolutionOutcome } from '$lib/tauri-commands'
 
 const log = getAppLogger('operationSession')
 
@@ -314,15 +314,23 @@ export function createOperationSession(operationId: string, fanout: OperationEve
     togglePause: commands.togglePause,
     cancel: commands.cancel,
     rollback: commands.rollback,
-    /** Answers the clash and lets go of it. Any verdict settles the question —
-     *  the backend arbitrates between whoever answered — so only a call that
-     *  never landed leaves the prompt up for another try. */
+    /** Answers the clash named by `conflictId` and lets go of THAT clash. Any
+     *  verdict settles the question — the backend arbitrates between whoever
+     *  answered — so only a call that never landed leaves the prompt up for
+     *  another try.
+     *
+     *  Which clash is let go of is the whole point of the id. The backend raises
+     *  the next one the moment it takes this answer, so a newer clash routinely
+     *  lands in the slot while this call is still in the air; clearing whatever
+     *  sits there on return would throw that one away, and the transfer would
+     *  park forever with nothing on screen. */
     async resolveConflict(
+      conflictId: ConflictId,
       resolution: ConflictResolution,
       applyToAll: boolean,
     ): Promise<ConflictResolutionOutcome | null> {
-      const outcome = await commands.resolveConflict(resolution, applyToAll)
-      if (outcome !== null) conflict = null
+      const outcome = await commands.resolveConflict(conflictId, resolution, applyToAll)
+      if (outcome !== null && conflict?.conflictId === conflictId) conflict = null
       return outcome
     },
     get pauseInFlight(): boolean {

@@ -5,6 +5,17 @@
 
 use super::test_support::*;
 
+/// The clash the operation is parked on, read off the `write-conflict` event a
+/// surface just observed. Answering names it, exactly as the frontend does.
+fn pending_clash(events: &CollectorEventSink) -> ConflictId {
+    events
+        .conflicts
+        .lock_ignore_poison()
+        .last()
+        .expect("a write-conflict was observed before answering it")
+        .conflict_id
+}
+
 /// Starts an interactive (Stop-policy) copy INTO `archive` of local dir `src_rel`
 /// (relative to `src_root`), landing at the archive root. Returns the collector +
 /// the operation id (for `resolve_write_conflict`).
@@ -55,7 +66,7 @@ async fn interactive_copy_into_prompts_on_a_file_collision_and_overwrite_replace
         !events.conflicts.lock_ignore_poison().is_empty()
     })
     .await;
-    resolve_write_conflict(&op_id, ConflictResolution::Overwrite, false);
+    resolve_write_conflict(&op_id, pending_clash(&events), ConflictResolution::Overwrite, false);
 
     wait_until_async(Duration::from_secs(5), "the write-complete event", || {
         !events.complete.lock_ignore_poison().is_empty()
@@ -102,7 +113,7 @@ async fn interactive_copy_into_skip_keeps_the_existing_entry() {
         !events.conflicts.lock_ignore_poison().is_empty()
     })
     .await;
-    resolve_write_conflict(&op_id, ConflictResolution::Skip, false);
+    resolve_write_conflict(&op_id, pending_clash(&events), ConflictResolution::Skip, false);
 
     wait_until_async(Duration::from_secs(5), "the write-complete event", || {
         !events.complete.lock_ignore_poison().is_empty()
@@ -136,7 +147,7 @@ async fn interactive_apply_to_all_latches_and_stops_prompting() {
         !events.conflicts.lock_ignore_poison().is_empty()
     })
     .await;
-    resolve_write_conflict(&op_id, ConflictResolution::Skip, true);
+    resolve_write_conflict(&op_id, pending_clash(&events), ConflictResolution::Skip, true);
 
     wait_until_async(Duration::from_secs(5), "the write-complete event", || {
         !events.complete.lock_ignore_poison().is_empty()
@@ -224,7 +235,7 @@ async fn interactive_conflict_event_carries_both_sides_metadata() {
             "the colliding archive entry is a file, not a folder"
         );
     }
-    resolve_write_conflict(&op_id, ConflictResolution::Skip, false);
+    resolve_write_conflict(&op_id, pending_clash(&events), ConflictResolution::Skip, false);
     wait_until_async(Duration::from_secs(5), "the write-complete event", || {
         !events.complete.lock_ignore_poison().is_empty()
     })
@@ -265,7 +276,12 @@ async fn interactive_move_into_with_a_skipped_collision_keeps_the_source() {
         !events.conflicts.lock_ignore_poison().is_empty()
     })
     .await;
-    resolve_write_conflict(&start.operation_id, ConflictResolution::Skip, false);
+    resolve_write_conflict(
+        &start.operation_id,
+        pending_clash(&events),
+        ConflictResolution::Skip,
+        false,
+    );
 
     wait_until_async(Duration::from_secs(5), "the write-complete event", || {
         !events.complete.lock_ignore_poison().is_empty()

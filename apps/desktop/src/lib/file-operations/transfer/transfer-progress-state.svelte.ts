@@ -472,14 +472,17 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     await bound.current?.togglePause()
   }
 
-  /** Answers the clash this dialog is showing. The backend arbitrates and
-   *  reports its verdict; the session lets go of the clash on any of them, so
-   *  only a call that never landed leaves the prompt up. */
+  /** Answers the clash this dialog is showing — that one by id, so a newer one
+   *  arriving while the answer is in flight stays on screen. The backend
+   *  arbitrates and reports its verdict; the session lets go of the answered
+   *  clash on any of them, so only a call that never landed leaves the prompt
+   *  up. */
   async function handleConflictResolution(resolution: ConflictResolution, applyToAll: boolean): Promise<void> {
     const op = bound.current
-    if (op === null || op.conflict === null) return
+    const clash = op?.conflict
+    if (op === null || !clash) return
     log.info('Resolving conflict with {resolution}, applyToAll={applyToAll}', { resolution, applyToAll })
-    await op.resolveConflict(resolution, applyToAll)
+    await op.resolveConflict(clash.conflictId, resolution, applyToAll)
   }
 
   /** Sends this operation to the background: keep it running, open the queue

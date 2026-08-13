@@ -53,6 +53,7 @@ function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
 function conflictEvent(over: Partial<WriteConflictEvent> = {}): WriteConflictEvent {
   return {
     operationId: 'op-1',
+    conflictId: 1,
     sourcePath: '/Users/me/Pictures/2026/sunset.jpg',
     destinationPath: '/Volumes/Naspolya/Backup/2026/sunset.jpg',
     sourceSize: 2048,

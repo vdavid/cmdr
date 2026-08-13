@@ -24,9 +24,9 @@ use std::sync::Arc;
 
 use super::super::state::{ConflictResolutionResponse, WriteOperationState};
 use super::super::types::{
-    CollectorEventSink, ConflictInfo, ConflictResolution, DryRunResult, OperationEventSink, ScanProgressEvent,
-    WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteProgressEvent,
-    WriteSettledEvent, WriteSourceItemDoneEvent,
+    CollectorEventSink, ConflictId, ConflictInfo, ConflictResolution, DryRunResult, OperationEventSink,
+    ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent,
+    WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 use crate::ignore_poison::IgnorePoison;
 
@@ -74,21 +74,48 @@ impl OperationEventSink for ConflictResponderSink {
     }
     fn emit_conflict(&self, e: WriteConflictEvent) {
         // Record the prompt first (so the count is authoritative even if the
-        // send below races teardown), then answer it.
+        // send below races teardown), then answer it. The answer names the
+        // clash this event carries, exactly as a real surface would.
+        let clash = e.conflict_id;
         self.inner.emit_conflict(e);
 
         // The slot was armed before this event was emitted, so the answer can't
         // miss. It unblocks the op's `rx.await` synchronously.
-        let _ = self.state.conflict_slot.answer(ConflictResolutionResponse {
-            resolution: self.resolution,
-            apply_to_all: self.apply_to_all,
-        });
+        let _ = self.state.conflict_slot.answer(
+            clash,
+            ConflictResolutionResponse {
+                resolution: self.resolution,
+                apply_to_all: self.apply_to_all,
+            },
+        );
     }
     fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
     fn emit_scan_progress(&self, _e: ScanProgressEvent) {}
     fn emit_scan_conflict(&self, _c: ConflictInfo) {}
     fn emit_dry_run_complete(&self, _r: DryRunResult) {}
     fn emit_settled(&self, _e: WriteSettledEvent) {}
+}
+
+/// Waits for the prompt an operation is parked on and hands back its
+/// [`ConflictId`], for the tests that answer from a spawned resolver task rather
+/// than from inside a sink.
+///
+/// Waits on the recorded EVENT rather than on `conflict_slot.is_awaiting()`,
+/// because the id only exists on the event: an answer names the clash it is for,
+/// and a resolver that reached into the slot for "whatever is parked" would be
+/// re-creating the very confusion the id exists to prevent. The slot is armed
+/// before the event is emitted, so an observed event always has a live sender
+/// behind it.
+pub(super) async fn await_prompted_clash(events: &CollectorEventSink) -> ConflictId {
+    crate::test_support::wait_until_async(std::time::Duration::from_secs(5), "the conflict prompt", || {
+        !events.conflicts.lock_ignore_poison().is_empty()
+    })
+    .await;
+    let conflicts = events.conflicts.lock_ignore_poison();
+    conflicts
+        .last()
+        .expect("the wait above proved one is recorded")
+        .conflict_id
 }
 
 /// Counts `write-conflict` events that are a FILE-vs-FILE clash (neither side a

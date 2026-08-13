@@ -170,6 +170,7 @@ async function fireConflict(): Promise<void> {
   if (cb === null) throw new Error('conflict subscriber never registered')
   cb({
     operationId: 'op-1',
+    conflictId: 1,
     sourcePath: '/Users/test/things/report.pdf',
     destinationPath: '/Users/test/dest/report.pdf',
     sourceSize: 2048,

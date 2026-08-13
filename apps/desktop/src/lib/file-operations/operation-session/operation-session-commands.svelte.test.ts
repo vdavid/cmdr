@@ -6,7 +6,9 @@ const { commandMocks } = vi.hoisted(() => ({
     resumeOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
     cancelOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
     cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
-    resolveWriteConflict: vi.fn<(id: string, resolution: string, applyToAll: boolean) => Promise<string>>(() =>
+    resolveWriteConflict: vi.fn<
+      (id: string, conflictId: number, resolution: string, applyToAll: boolean) => Promise<string>
+    >(() =>
       Promise.resolve('resolved'),
     ),
     /** The `is_running` trap: a paused operation still reports `true` here, so
@@ -232,9 +234,9 @@ describe('resolving a conflict', () => {
   it('hands the answer to the backend and reports what it acted on', async () => {
     const { commands, dispose } = harness()
 
-    expect(await commands.resolveConflict('overwrite', false)).toBe('resolved')
+    expect(await commands.resolveConflict(4, 'overwrite', false)).toBe('resolved')
 
-    expect(commandMocks.resolveWriteConflict).toHaveBeenCalledWith('op-1', 'overwrite', false)
+    expect(commandMocks.resolveWriteConflict).toHaveBeenCalledWith('op-1', 4, 'overwrite', false)
     expect(commands.resolvingConflict).toBe(false)
     dispose()
   })
@@ -248,7 +250,7 @@ describe('resolving a conflict', () => {
       commandMocks.resolveWriteConflict.mockResolvedValueOnce(outcome)
       const { commands, dispose } = harness()
 
-      expect(await commands.resolveConflict('skip', true)).toBe(outcome)
+      expect(await commands.resolveConflict(1, 'skip', true)).toBe(outcome)
       dispose()
     },
   )
@@ -258,10 +260,10 @@ describe('resolving a conflict', () => {
     commandMocks.resolveWriteConflict.mockReturnValueOnce(pending.promise)
     const { commands, dispose } = harness()
 
-    const first = commands.resolveConflict('overwrite', false)
+    const first = commands.resolveConflict(1, 'overwrite', false)
     expect(commands.resolvingConflict).toBe(true)
 
-    expect(await commands.resolveConflict('skip', false)).toBeNull()
+    expect(await commands.resolveConflict(1, 'skip', false)).toBeNull()
     expect(commandMocks.resolveWriteConflict).toHaveBeenCalledTimes(1)
 
     pending.resolve('resolved')
@@ -274,7 +276,7 @@ describe('resolving a conflict', () => {
     commandMocks.resolveWriteConflict.mockRejectedValueOnce(new Error('ipc down'))
     const { commands, dispose } = harness()
 
-    expect(await commands.resolveConflict('overwrite', false)).toBeNull()
+    expect(await commands.resolveConflict(1, 'overwrite', false)).toBeNull()
     expect(commands.resolvingConflict).toBe(false)
     dispose()
   })

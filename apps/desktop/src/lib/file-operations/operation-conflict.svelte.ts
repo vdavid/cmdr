@@ -52,6 +52,7 @@ import {
   onWriteConflict,
   pauseOperation,
   resumeOperation,
+  type ConflictId,
   type OperationSnapshot,
   type WriteConflictEvent,
 } from '$lib/tauri-commands'
@@ -204,11 +205,12 @@ function takePrompt(event: WriteConflictEvent): void {
   const rows = getMainWindowOperationRows()
   const existing = promptQueue.findIndex((entry) => entry.event.operationId === event.operationId)
   if (existing >= 0) {
-    // The backend serializes prompts per operation, so this shouldn't happen. If
-    // it ever did, the newer clash is the live one: `resolveWriteConflict` is
-    // keyed by operation id alone, so an answer lands on whatever that operation
-    // is parked on right now.
-    log.warn('A second conflict for {operationId} while one was still unanswered; taking the newer one', {
+    // The operation raises its next clash the moment it takes an answer, so this
+    // is the ordinary shape of a run of them: the answer for the one on screen is
+    // still in flight and the next question has already arrived. The newer clash
+    // is the live one, and it takes the slot; the answer in flight names the
+    // older one, so it can't touch it (`dropPrompt`).
+    log.debug('A second conflict for {operationId} while one was still unanswered; showing the newer one', {
       operationId: event.operationId,
     })
     promptQueue = promptQueue.map((entry, i) => (i === existing ? { ...entry, event } : entry))
@@ -273,8 +275,30 @@ async function release(): Promise<void> {
   }
 }
 
-function dropPrompt(operationId: string): void {
-  promptQueue = promptQueue.filter((entry) => entry.event.operationId !== operationId)
+/**
+ * Takes an operation's prompt off the queue and lets go of its session.
+ *
+ * `answeredConflictId` scopes that to the clash that was actually answered. The
+ * operation raises its next clash the moment it takes an answer, and
+ * {@link takePrompt} swaps that newer event into this same entry, so an answer
+ * returning a beat later can find a different question in it. Dropping the entry
+ * then would throw the new question away and park the transfer with nothing on
+ * screen.
+ *
+ * `null` is for the paths where the OPERATION is going away (cancel, rollback,
+ * or it ended): every question it might be asking is moot.
+ */
+function dropPrompt(operationId: string, answeredConflictId: ConflictId | null): void {
+  const entry = promptQueue.find((e) => e.event.operationId === operationId)
+  if (!entry) return
+  if (answeredConflictId !== null && entry.event.conflictId !== answeredConflictId) {
+    log.info('Keeping the prompt for {operationId}: it has since raised another clash at {destinationPath}', {
+      operationId,
+      destinationPath: entry.event.destinationPath,
+    })
+    return
+  }
+  promptQueue = promptQueue.filter((e) => e.event.operationId !== operationId)
   releaseSession(operationId)
 }
 
@@ -295,14 +319,15 @@ function dropPrompt(operationId: string): void {
  */
 export async function resolveConflictPrompt(resolution: ConflictResolution, applyToAll: boolean): Promise<void> {
   if (promptQueue.length === 0) return
-  const operationId = promptQueue[0].event.operationId
+  const answered = promptQueue[0].event
+  const operationId = answered.operationId
   const session = sessionFor(operationId)
   if (!session) return
 
-  const outcome = await session.resolveConflict(resolution, applyToAll)
+  const outcome = await session.resolveConflict(answered.conflictId, resolution, applyToAll)
   if (outcome === null) return
 
-  dropPrompt(operationId)
+  dropPrompt(operationId, answered.conflictId)
   await release()
 }
 
@@ -318,7 +343,7 @@ export async function cancelConflictPrompt(rollback: boolean): Promise<void> {
   const sent = rollback ? await session.rollback() : await session.cancel()
   if (!sent) return
 
-  dropPrompt(operationId)
+  dropPrompt(operationId, null)
   await release()
 }
 

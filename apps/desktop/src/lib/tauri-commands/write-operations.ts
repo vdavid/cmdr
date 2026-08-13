@@ -17,6 +17,7 @@ import type {
 // Rust struct shapes (write-operations sink + scan-preview) drive the FE types.
 import type {
   CompressedSizeEstimate,
+  ConflictId,
   ConflictInfo,
   ConflictResolutionOutcome,
   DryRunResult,
@@ -56,6 +57,7 @@ export type {
   WriteProgressEvent,
   WriteSettledEvent,
   WriteSourceItemDoneEvent,
+  ConflictId,
   ConflictInfo,
   ConflictResolutionOutcome,
   DryRunResult,
@@ -208,13 +210,19 @@ export async function cancelWriteOperation(operationId: string, rollback: boolea
  * one the operation acted on, so a surface that lost the race takes its own
  * prompt down instead of leaving the user looking at a question that's already
  * been answered.
+ *
+ * `conflictId` names the clash being answered; it arrives on the event. An
+ * operation raises its clashes one at a time, so an answer sent for one that has
+ * since been settled would otherwise decide the NEXT one, silently. Naming it
+ * gets a `stale_answer` verdict instead.
  */
 export async function resolveWriteConflict(
   operationId: string,
+  conflictId: ConflictId,
   resolution: ConflictResolution,
   applyToAll: boolean,
 ): Promise<ConflictResolutionOutcome> {
-  return await commands.resolveWriteConflict(operationId, resolution, applyToAll)
+  return await commands.resolveWriteConflict(operationId, conflictId, resolution, applyToAll)
 }
 
 // ============================================================================

@@ -422,10 +422,15 @@ test.describe('MTP cross-volume copy conflicts', () => {
           intervals: [50],
         })
         .toBeTruthy()
-      const firstConflict = await tauriPage.evaluate<{ operationId: string }>(`window.__skipBytesTestConflicts[0]`)
+      const firstConflict = await tauriPage.evaluate<{ operationId: string; conflictId: number }>(
+        `window.__skipBytesTestConflicts[0]`,
+      )
       expect(firstConflict.operationId).toBeTruthy()
+      // The answer names the clash it is for; an answer for a clash the
+      // operation has moved past is refused.
       await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resolve_write_conflict', {
           operationId: '${firstConflict.operationId}',
+          conflictId: ${String(firstConflict.conflictId)},
           resolution: 'skip',
           applyToAll: true,
         })`)

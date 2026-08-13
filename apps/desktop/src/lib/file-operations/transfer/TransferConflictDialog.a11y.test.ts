@@ -22,6 +22,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
 function fileConflict(overrides: Partial<WriteConflictEvent> = {}): WriteConflictEvent {
   return {
     operationId: 'op-1',
+    conflictId: 1,
     sourcePath: '/Users/test/report.pdf',
     destinationPath: '/Users/test/dest/report.pdf',
     sourceSize: 2048,

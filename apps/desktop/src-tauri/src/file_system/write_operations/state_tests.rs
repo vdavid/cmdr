@@ -10,7 +10,9 @@
 //! entries go through `TestOperationGuard`, which also removes them on unwind.
 use super::*;
 use crate::file_system::write_operations::test_support::TestOperationGuard;
-use crate::file_system::write_operations::types::{ConflictResolution, ConflictResolutionOutcome, WriteOperationType};
+use crate::file_system::write_operations::types::{
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, WriteOperationType,
+};
 use std::sync::atomic::Ordering;
 
 fn unique_id(label: &str) -> String {
@@ -404,10 +406,10 @@ async fn resolve_write_conflict_delivers_response_to_waiter() {
     let op = install_state("resolve-conflict", OperationIntent::Running);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    op.state().conflict_slot.arm(tx);
+    let clash = op.state().conflict_slot.arm(tx);
 
     assert_eq!(
-        resolve_write_conflict(op.id(), ConflictResolution::Overwrite, true),
+        resolve_write_conflict(op.id(), clash, ConflictResolution::Overwrite, true),
         ConflictResolutionOutcome::Resolved
     );
 
@@ -423,14 +425,14 @@ async fn a_second_answer_to_one_conflict_is_reported_as_already_resolved() {
     let op = install_state("resolve-conflict-twice", OperationIntent::Running);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    op.state().conflict_slot.arm(tx);
+    let clash = op.state().conflict_slot.arm(tx);
 
     assert_eq!(
-        resolve_write_conflict(op.id(), ConflictResolution::Overwrite, false),
+        resolve_write_conflict(op.id(), clash, ConflictResolution::Overwrite, false),
         ConflictResolutionOutcome::Resolved
     );
     assert_eq!(
-        resolve_write_conflict(op.id(), ConflictResolution::Skip, true),
+        resolve_write_conflict(op.id(), clash, ConflictResolution::Skip, true),
         ConflictResolutionOutcome::AlreadyResolved
     );
 
@@ -444,12 +446,43 @@ async fn a_second_answer_to_one_conflict_is_reported_as_already_resolved() {
     assert!(!op.state().conflict_slot.is_awaiting());
 }
 
+/// An answer for a clash the operation has already left behind, arriving after
+/// it parked on the next one. The whole point of the id: this answer decides
+/// nothing, and the caller is told that rather than being told it won.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_answer_for_a_retired_conflict_is_refused_and_reported_as_stale() {
+    let op = install_state("resolve-conflict-stale", OperationIntent::Running);
+
+    let (first_tx, first_rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
+    let first = op.state().conflict_slot.arm(first_tx);
+    assert_eq!(
+        resolve_write_conflict(op.id(), first, ConflictResolution::Overwrite, false),
+        ConflictResolutionOutcome::Resolved
+    );
+    first_rx.await.expect("the first clash gets its own answer");
+
+    // The operation moved on and parked on the next clash.
+    let (second_tx, mut second_rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
+    op.state().conflict_slot.arm(second_tx);
+
+    assert_eq!(
+        resolve_write_conflict(op.id(), first, ConflictResolution::Skip, true),
+        ConflictResolutionOutcome::StaleAnswer,
+        "an answer naming the retired clash must not be reported as resolving anything"
+    );
+    assert!(
+        second_rx.try_recv().is_err(),
+        "the live clash is still waiting for an answer of its own"
+    );
+    assert!(op.state().conflict_slot.is_awaiting());
+}
+
 #[test]
 fn resolve_write_conflict_on_an_operation_with_no_conflict_says_so() {
     let op = install_state("resolve-no-conflict", OperationIntent::Running);
     // The operation is live but has never raised a conflict.
     assert_eq!(
-        resolve_write_conflict(op.id(), ConflictResolution::Skip, false),
+        resolve_write_conflict(op.id(), ConflictId(1), ConflictResolution::Skip, false),
         ConflictResolutionOutcome::NoPendingConflict
     );
 }
@@ -459,7 +492,12 @@ fn resolve_write_conflict_on_an_unknown_operation_says_so() {
     // Nothing registered under this id: it settled, or it never existed. Not the
     // same thing as a live operation that isn't asking anything.
     assert_eq!(
-        resolve_write_conflict(&unique_id("resolve-gone"), ConflictResolution::Skip, false),
+        resolve_write_conflict(
+            &unique_id("resolve-gone"),
+            ConflictId(1),
+            ConflictResolution::Skip,
+            false
+        ),
         ConflictResolutionOutcome::UnknownOperation
     );
 }
@@ -468,13 +506,13 @@ fn resolve_write_conflict_on_an_unknown_operation_says_so() {
 fn cancelling_takes_the_pending_conflict_away() {
     let op = install_state("resolve-after-cancel", OperationIntent::Running);
     let (tx, _rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    op.state().conflict_slot.arm(tx);
+    let clash = op.state().conflict_slot.arm(tx);
 
     cancel_write_operation(op.id(), false);
 
     assert!(!op.state().conflict_slot.is_awaiting());
     assert_eq!(
-        resolve_write_conflict(op.id(), ConflictResolution::Skip, false),
+        resolve_write_conflict(op.id(), clash, ConflictResolution::Skip, false),
         ConflictResolutionOutcome::NoPendingConflict
     );
 }

@@ -1,3 +1,4 @@
+use super::super::super::conflict_responder_test_support::await_prompted_clash;
 use super::super::cleanup::{TreeRemoval, remove_tree};
 use super::super::transfer_error::map_volume_error;
 use super::*;
@@ -1358,12 +1359,11 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     // Drive the copy in a task; resolve the conflict via the state's oneshot
     // channel as soon as it's installed. This races, so poll briefly.
     let state_for_resolver = Arc::clone(&stop_state);
+    let events_for_resolver = Arc::clone(&stop_events);
     let resolver = tokio::spawn(async move {
-        crate::test_support::wait_until_async(Duration::from_secs(5), "the conflict prompt to install", || {
-            state_for_resolver.conflict_slot.is_awaiting()
-        })
-        .await;
+        let clash = await_prompted_clash(&events_for_resolver).await;
         let _ = state_for_resolver.conflict_slot.answer(
+            clash,
             crate::file_system::write_operations::state::ConflictResolutionResponse {
                 resolution: ConflictResolution::Skip,
                 apply_to_all: true,
@@ -1551,12 +1551,11 @@ async fn test_stop_mode_does_not_bulk_skip_pre_known_conflicts() {
     // that the per-file `write-conflict` event fires (proving Stop's per-file
     // flow ran), not that the user chose any specific action.
     let state_for_resolver = Arc::clone(&state);
+    let events_for_resolver = Arc::clone(&events);
     let resolver = tokio::spawn(async move {
-        crate::test_support::wait_until_async(Duration::from_secs(5), "the conflict prompt to install", || {
-            state_for_resolver.conflict_slot.is_awaiting()
-        })
-        .await;
+        let clash = await_prompted_clash(&events_for_resolver).await;
         let _ = state_for_resolver.conflict_slot.answer(
+            clash,
             crate::file_system::write_operations::state::ConflictResolutionResponse {
                 resolution: ConflictResolution::Skip,
                 apply_to_all: true,

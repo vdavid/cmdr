@@ -569,9 +569,23 @@ export const commands = {
    *  surfaces can be showing the same prompt; the returned outcome tells this
    *  caller whether ITS answer is the one the operation acted on, so a surface
    *  that lost the race takes its prompt down instead of hanging on it.
+   *
+   *  `conflict_id` names the clash being answered (it arrives on the event). An
+   *  answer for a clash the operation has already moved past is refused as
+   *  `stale_answer` rather than applied to whatever it is parked on now.
    */
-  resolveWriteConflict: (operationId: string, resolution: ConflictResolution, applyToAll: boolean) =>
-    __TAURI_INVOKE<ConflictResolutionOutcome>('resolve_write_conflict', { operationId, resolution, applyToAll }),
+  resolveWriteConflict: (
+    operationId: string,
+    conflictId: ConflictId,
+    resolution: ConflictResolution,
+    applyToAll: boolean,
+  ) =>
+    __TAURI_INVOKE<ConflictResolutionOutcome>('resolve_write_conflict', {
+      operationId,
+      conflictId,
+      resolution,
+      applyToAll,
+    }),
   listActiveOperations: () => __TAURI_INVOKE<OperationSummary[]>('list_active_operations'),
   getOperationStatus: (operationId: string) =>
     __TAURI_INVOKE<{
@@ -3913,6 +3927,23 @@ export type ConflictFileInfo = {
   isDirectory: boolean
 }
 
+/**
+ *  Which clash an answer is for.
+ *
+ *  An operation raises many Stop-mode clashes over its life, one at a time, and
+ *  the answer to each one travels out through a broadcast event, past a person,
+ *  and back through IPC. That round trip can outlast the clash: by the time the
+ *  answer arrives the operation may already be parked on the NEXT one. Without
+ *  an identity the two are indistinguishable and the late answer silently
+ *  decides a question nobody was shown.
+ *
+ *  So every clash carries one. `ConflictSlot` mints it as it arms, the
+ *  `write-conflict` event carries it to every surface, and
+ *  `resolve_write_conflict` requires it back. Ids count from 1 per operation;
+ *  an answer is only ever matched against the slot of the operation it names.
+ */
+export type ConflictId = number
+
 // Detailed information about a single conflict.
 export type ConflictInfo = {
   sourcePath: string
@@ -3968,6 +3999,13 @@ export type ConflictResolutionOutcome =
    *  THEIR answer; this one changed nothing.
    */
   | 'already_resolved'
+  /**
+   *  This answer names a clash the operation has left behind. It was raised,
+   *  it was settled (by an answer, an apply-to-all latch, or a cancel), and
+   *  the operation has moved on — possibly onto a different clash, which this
+   *  answer must NOT decide. Nothing changed.
+   */
+  | 'stale_answer'
   /**
    *  The operation is live but isn't waiting on a conflict: it hasn't raised
    *  one, or a cancel took the pending one away.
@@ -9284,6 +9322,13 @@ export type WriteCompleteEvent = {
 // Conflict event payload (emitted when Stop mode encounters a conflict).
 export type WriteConflictEvent = {
   operationId: string
+  /**
+   *  Which clash this is, within its operation. The answer must name it back
+   *  (`resolve_write_conflict`), so an answer for a clash the operation has
+   *  already left behind can't land on the one it is parked on now. See
+   *  [`ConflictId`].
+   */
+  conflictId: ConflictId
   sourcePath: string
   destinationPath: string
   /**

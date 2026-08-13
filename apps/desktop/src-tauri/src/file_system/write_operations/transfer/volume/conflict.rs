@@ -216,11 +216,16 @@ pub(super) async fn resolve_volume_conflict(
             // was armed, its answer would land on nothing and the op's
             // `rx.await` below would hang. Arming first makes the sender
             // available the instant the event is in the responder's hands.
+            //
+            // Arming also mints this clash's id, which rides out on the event:
+            // an answer has to name it, so one meant for a clash this operation
+            // has already left behind can't decide the next one.
             let (tx, rx) = tokio::sync::oneshot::channel();
-            state.conflict_slot.arm(tx);
+            let conflict_id = state.conflict_slot.arm(tx);
 
             events.emit_conflict(WriteConflictEvent {
                 operation_id: operation_id.to_string(),
+                conflict_id,
                 source_path: source_path.display().to_string(),
                 destination_path: dest_path.display().to_string(),
                 source_size,

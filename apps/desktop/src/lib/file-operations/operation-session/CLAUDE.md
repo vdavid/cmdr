@@ -60,10 +60,12 @@ views is an ordinary state.
 - **Cancel goes through the MANAGER, rollback through the write op.** `cancel()` also drops an operation still waiting
   on a busy lane; only `cancelWriteOperation(id, true)` can undo a partial destination. Rollback is refused once a
   cancel is on its way; cancel is NOT refused during a rollback ("stop undoing, keep what's left").
-- **Answering a clash is a DELEGATION.** The backend arbitrates between whoever answered and reports its verdict; the
-  session hands that back untouched and lets go of the clash on any verdict. ❌ Never make correctness depend on one
-  surface being allowed to answer, and ❌ never refuse to answer a clash this session hasn't seen: the fan-out's buffer
-  is dropped on claim, so an adopted operation legitimately has none.
+- **Answering a clash is a DELEGATION, and the answer NAMES its clash.** `resolveConflict(conflictId, …)` takes the id
+  off the event the surface is showing; the backend arbitrates and reports its verdict, and the session lets go of THAT
+  clash only. ❌ Never clear on "an answer came back": the operation raises its next clash while the answer is in
+  flight, and clearing the slot blindly parks the transfer with nothing on screen. ❌ Never make correctness depend on
+  one surface being allowed to answer, and ❌ never refuse to answer a clash this session hasn't seen: the fan-out's
+  buffer is dropped on claim, so an adopted operation legitimately has none.
 
 Architecture, the registry rationale, the buffer's bound, the ordering rules, and where an archive-password prompt
 belongs: `DETAILS.md`.

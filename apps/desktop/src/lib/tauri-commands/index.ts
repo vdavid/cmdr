@@ -284,6 +284,7 @@ export type {
   WriteProgressEvent,
   WriteSettledEvent,
   WriteSourceItemDoneEvent,
+  ConflictId,
   ConflictInfo,
   ConflictResolutionOutcome,
   DryRunResult,
