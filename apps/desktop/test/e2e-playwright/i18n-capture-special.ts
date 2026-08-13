@@ -25,6 +25,7 @@ import {
 } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { type SurfaceEntry, captureCall, captureSurface, focusWindow } from './i18n-capture-helpers.js'
+import { resetOperationState, resetOperationStateOrReport } from './i18n-capture-operations.js'
 
 /**
  * Captures the main-window report/feedback/license dialogs reachable on the
@@ -155,23 +156,6 @@ async function startQueueCopy(main: TauriPage, fixtureRoot: string, sourceName: 
   })`)
 }
 
-/** Clears the capture throttle, cancels every live operation, and drops every retained
- *  failure. Failures are deliberately sticky (only an explicit dismissal clears them), so
- *  a shot that stages one MUST clean it up or it follows the app into later surfaces. */
-async function resetOperationState(main: TauriPage): Promise<void> {
-  await main
-    .evaluate(`(async function(){
-      try { await window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null }); } catch (e) {}
-      try {
-        var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
-        var ids = ops.filter(function(o){ return o.status !== 'failed'; }).map(function(o){ return o.operationId; });
-        if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
-      } catch (e) {}
-      try { await window.__TAURI_INTERNALS__.invoke('dismiss_all_failed_operations'); } catch (e) {}
-    })()`)
-    .catch(() => {})
-}
-
 /** Counts the operation rows in the queue window carrying `data-status="<status>"`. */
 async function countRowsWithStatus(queue: TauriPage, status: string): Promise<number> {
   const n = await queue.evaluate<number>(`document.querySelectorAll('.queue-row[data-status="${status}"]').length`)
@@ -196,6 +180,10 @@ async function countRowsWithStatus(queue: TauriPage, status: string): Promise<nu
  *
  * The throttle is cleared and every staged operation cancelled in `finally`, so a
  * later surface never captures a queue still grinding through leftovers.
+ *
+ * An empty registry is a stated PRECONDITION here, not one inherited from
+ * whatever ran before: `queue-empty` has no empty state to photograph while any
+ * operation is alive, so this drains first and says so when it can't.
  */
 export async function captureQueueWindow(
   main: TauriPage,
@@ -208,6 +196,7 @@ export async function captureQueueWindow(
 
   let queue: TauriPage | undefined
   try {
+    expect(await resetOperationState(main), 'an operation was still in flight before the queue shots').toBe(true)
     await dispatchMenuCommand(main, 'queue.show')
     queue = await main.waitForWindow((w) => w.label === 'queue', { timeout: 10000 })
     const q = queue
@@ -263,7 +252,7 @@ export async function captureQueueWindow(
     }
     console.warn(`[i18n-capture] queue window setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
-    await resetOperationState(main)
+    await resetOperationStateOrReport(main, failed, 'queue-window')
     if (queue) await closeScopedWindow(main, queue, 'queue').catch(() => {})
     removeQueueSources(fixtureRoot)
   }
@@ -319,7 +308,10 @@ export async function captureOperationChipSurfaces(
     // takes the failure state when NOTHING is running (live work wins the
     // corner), so the running copy has to go first.
     await captureSurface('operation-failure', report, failed, async () => {
-      await resetOperationState(main)
+      // A stage, not a cleanup: the surface can't be staged at all while the
+      // previous copy is still running, so a drain that doesn't happen fails HERE
+      // rather than photographing the wrong corner.
+      expect(await resetOperationState(main), 'the running copy did not drain before the failure shot').toBe(true)
       await main.waitForFunction(`document.querySelector('.operation-chip') === null`, 15000)
       await startQueueCopy(main, fixtureRoot, QUEUE_DOOMED_SOURCES[0] ?? 'queue-shot-gone-a')
       // Both surfaces of one failure, in one frame: the toast is what the user
@@ -340,7 +332,7 @@ export async function captureOperationChipSurfaces(
     }
     console.warn(`[i18n-capture] operation chip setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
-    await resetOperationState(main)
+    await resetOperationStateOrReport(main, failed, 'operation-chip')
     await captureCall(main, 'disable').catch(() => {})
     removeQueueSources(fixtureRoot)
   }

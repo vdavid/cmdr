@@ -109,7 +109,9 @@ async function flushMicrotasks(): Promise<void> {
  *  left mounted would hold a session for `op-1` into the next test. */
 const mounted: ReturnType<typeof mount>[] = []
 
-async function mountDialogWithConflict(event: WriteConflictEvent): Promise<HTMLDivElement> {
+/** Mounts the dialog and lets it settle, with NO clash fired. The baseline the
+ *  clash cases differ from. */
+async function mountDialogWithoutConflict(): Promise<HTMLDivElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mounted.push(
@@ -134,6 +136,11 @@ async function mountDialogWithConflict(event: WriteConflictEvent): Promise<HTMLD
     }),
   )
   await flushMicrotasks()
+  return target
+}
+
+async function mountDialogWithConflict(event: WriteConflictEvent): Promise<HTMLDivElement> {
+  const target = await mountDialogWithoutConflict()
   // Into a const so TS narrowing doesn't get widened back to nullable across any
   // future await further down (another await could in theory reassign
   // `conflictCb`, even though we control the mock here).
@@ -444,5 +451,42 @@ describe('TransferProgressDialog conflict — folder → file, sourceSize null',
   it('has no a11y violations with (unknown) source size', async () => {
     const target = await mountDialogWithConflict(event)
     await expectNoA11yViolations(target)
+  })
+})
+
+/* ------------------------------------------------------------------------- */
+/* A clash offers no way out that isn't an answer                            */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * The dialog withdraws `ModalDialog`'s `onclose` while a clash is up, so there
+ * is no × and no Escape: every exit from a clash decides something about the
+ * user's files, and the conflict body carries its own buttons for all of them.
+ *
+ * Pinned here because the rule is invisible from the outside and expensive to
+ * relearn: the i18n capture harness assumed an Escape would take the dialog
+ * down, and when it stopped doing so the copy stayed PARKED on the clash,
+ * holding its device lane. Four unrelated-looking surfaces failed dozens of
+ * surfaces later. Anything that closes a clash without answering it has to
+ * answer or cancel the operation first.
+ */
+describe('TransferProgressDialog conflict — no way out that is not an answer', () => {
+  it('withdraws the × while a clash is on screen, and Escape leaves the clash up', async () => {
+    const target = await mountDialogWithConflict(makeEvent())
+    expect(target.querySelector('.conflict-section')).not.toBeNull()
+    expect(target.querySelector('.modal-close-button')).toBeNull()
+
+    target
+      .querySelector('.modal-overlay')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await tick()
+
+    expect(target.querySelector('.conflict-section')).not.toBeNull()
+  })
+
+  it('offers the × again on the same dialog when no clash is up', async () => {
+    const target = await mountDialogWithoutConflict()
+    expect(target.querySelector('.conflict-section')).toBeNull()
+    expect(target.querySelector('.modal-close-button')).not.toBeNull()
   })
 })

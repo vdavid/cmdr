@@ -13,7 +13,8 @@
  * Its neighbors, split out for the file-length budget: `i18n-capture-config.ts`
  * (which pass is running, where artifacts go), `i18n-capture-frame.ts` (window
  * framing, fitting, toast hygiene, the clip scan), and `i18n-capture-png.ts`
- * (decode, encode, crop, the blank check).
+ * (decode, encode, crop, the blank check). Backend state a surface staged and has
+ * to hand back is `i18n-capture-operations.ts`, not here.
  */
 
 import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'

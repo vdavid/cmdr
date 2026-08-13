@@ -44,6 +44,7 @@ import {
   settlePaint,
   shoot,
 } from './i18n-capture-helpers.js'
+import { resetOperationStateOrReport } from './i18n-capture-operations.js'
 import { isOverflowPass, overflowLocale } from './i18n-capture-config.js'
 import { CROP_PADDING_TIGHT_CSS_PX, scanForClipping } from './i18n-capture-frame.js'
 
@@ -306,8 +307,18 @@ export async function captureMainOverlays(
     await main.waitForSelector('[data-dialog-id="transfer-progress"]', 3000)
     return '.conflict-section'
   })
-  // The conflict flow opens the transfer-progress modal; cancel it cleanly so it
-  // doesn't run the copy or leak into later surfaces.
+  // The conflict flow leaves a real copy PARKED on an unanswered clash, and the
+  // way out of one is an answer, never an Escape: `TransferProgressDialog` passes
+  // `onclose={undefined}` while a clash is up, because every exit from a clash
+  // decides something about the user's files. So the exit here is a real cancel on
+  // the operation, which ends it and takes the dialog down with it.
+  //
+  // ❗ Assert the drain, don't hope for it. A copy parked on a clash holds the
+  // local lane AND a queue row, so leaving one behind fails every later surface
+  // that needs real work in flight — `toast-transfer-complete` and all three queue
+  // shots — dozens of surfaces downstream of the one that caused it. That is
+  // exactly what a swallowed `dismissOverlay` failure did here once.
+  await resetOperationStateOrReport(main, failed, 'conflict-dialog')
   await dismissOverlay(main).catch(() => {})
 
   // Go-to-path dialog (`nav.goToPath`).
