@@ -1,45 +1,40 @@
 # Playwright E2E tests (tauri-playwright)
 
 Playwright E2E in Tauri mode: commands inject into the real webview over a Unix socket. The same specs run on macOS and
-Linux (Docker), so a modifier key comes from `CTRL_OR_META`, never a hardcoded ⌘.
+Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcoded ⌘.
 
 ## Must-knows
 
-- **The suite connects to a running app, it never launches one**, so `npx playwright test` alone dies with
-  `ECONNREFUSED`. Use `pnpm check desktop-e2e-playwright`, or launch by hand and ALWAYS chain
-  `; pkill -f 'target.*Cmdr'` (`;`, not `&&`, so cleanup survives a failure).
-- **Run only the spec you're iterating on**: the full suite takes ~10 min and one broken test cascades into the rest. ❌
-  Keep `--project=tauri` in the `=` form; a space swallows the spec path.
+- **The suite connects to a running app, it never launches one**: `pnpm check desktop-e2e-playwright` runs the whole
+  lifecycle, and a hand launch ALWAYS chains `; pkill -f 'target.*Cmdr'`. Recipes: DETAILS § "Running on macOS".
+- **Run only the spec you're iterating on** (the full suite is ~10 min and one broken test cascades). ❌ Keep
+  `--project=tauri` in the `=` form; a space swallows the spec path.
 - **Scattered failures across unrelated specs, different every run, mean machine saturation, not a regression.**
-- **❌ Never `keyboard.press('Escape')`** to close a dialog, popover, dropdown, or palette: under Linux Xvfb the
-  keystroke can vanish as an opaque timeout. Use `dismissOverlay` / `expectAndDismissToast` / `dismissAllToasts`, and no
-  defensive double-Escape in `beforeEach` (the global `afterEach` fails and cleans any leak).
+- **❌ Never `keyboard.press('Escape')`** to close a dialog, popover, dropdown, or palette: under Linux Xvfb it can
+  vanish as an opaque timeout. Use `dismissOverlay` / `expectAndDismissToast` / `dismissAllToasts`, and no defensive
+  double-Escape in `beforeEach`.
 - **Bare `await pollUntil(...)` is silent on timeout** (returns `false`), so the test goes green when the condition
   never held. Use `expect.poll(...).toBeTruthy()`; same trap for every `Promise<boolean>` helper (`bare-poll` flags it).
 - **Exercise viewer + settings through the production multi-window flow** (`openViewerWindow` /
-  `openSettingsWindowViaProd` / `closeScopedWindow`), ❌ never by routing the main window to `/viewer` or `/settings`: a
-  scoped page that can't call a Tauri command is a REAL bug that route would hide.
-- **`ensureAppReady()` resets route, volume, AND directories, in that order**; without the volume reset, navigation
-  silently no-ops. File-op specs also need `recreateFixtures()`: the tree is shared and they mutate it.
+  `openSettingsWindowViaProd` / `closeScopedWindow`), ❌ never by routing the main window to `/viewer` or `/settings`,
+  which hides a REAL bug: a scoped page that can't call a Tauri command.
+- **`ensureAppReady()` resets route, volume, AND directories, in that order** (without the volume reset, navigation
+  silently no-ops). File-op specs also need `recreateFixtures()`: the tree is shared and they mutate it.
 - **Need the other pane focused? Click its `.file-pane` and read `.is-focused` back.** ❌ Never dispatch the
-  `pane.switch` TOGGLE at it, and never steer by `cmdr://state`'s `focused:` — that's a backend mirror the harness's own
-  `mcp-*` emits desync, so a toggle on a stale read lands the action in the wrong pane. `DETAILS.md` § "Claiming a
-  pane's focus inside a spec".
+  `pane.switch` TOGGLE at it, and never steer by `cmdr://state`'s `focused:` — a toggle on that stale backend mirror
+  lands the action in the wrong pane. DETAILS § "Claiming a pane's focus inside a spec".
 - **One global `afterEach` guards TWO leaks: UI artifacts, and a dirty `left/` + `right/`.** A mutating spec restores
-  the tree (`restoreFixtureTree(getFixtureRoot())`), or the guard names it with a path-level diff. ❌ Don't relax it:
-  it's all that stands between a mutating spec and a victim dying inside `ensureAppReady`. **Still holding an op? Drain
-  it BEFORE the restore, in ONE hook** (`afterEach`s run in DECLARATION order): a restore under a live op deletes its
-  source, and the retained `SourceNotFound` poisons the next test.
+  the tree (`restoreFixtureTree(getFixtureRoot())`) or the guard names it with a path-level diff. ❌ Don't relax it.
+  **Still holding an op? Drain it BEFORE the restore, in ONE hook** (`afterEach`s run in DECLARATION order): a restore
+  under a live op deletes its source, and the retained `SourceNotFound` poisons the next test.
 - **"Rows appeared" doesn't prove a WALK**: the instance indexes its fixture tree at launch, so a spec needing a real
   walk takes the index away first (`search-walk-ground.ts`).
 - **Two fakes**: the clipboard is mocked (a Rust `Mutex`, not `NSPasteboard`), and `tauri-plugin-store` reads your REAL
   store files unless redirected, so a locally flipped setting becomes a failure CI never sees.
 - **The marketing capture (`marketing-shots.spec.ts`) photographs real folders, with NO fixture tree.** ❌ Never point
-  it at a fixture root or set `CMDR_E2E_START_PATH`: the guard deletes anything not in the manifest.
-- **❗ A capture run needs the machine left alone AND no other app holding the front position** (an idle machine alone
-  isn't enough: this binary can't take the front from an app that has it), so say both before starting one. It
-  photographs only through `shoot()` — ❌ never `page.screenshot()`, never a looser pixel check, never a longer sleep
-  for a blank surface. Both gates read the PNG; the master in `brand/` is lossless WebP, ❌ never lossy.
+  it at a fixture root or set `CMDR_E2E_START_PATH`: the guard deletes anything not in the manifest. It shoots only
+  through `shoot()`, and ❗ needs the machine left alone AND no other app holding the front position, so say both before
+  starting one. Its full contract: DETAILS.
 
 Run recipes, architecture, sharding, app modes, the overlay and capture contracts, and decisions: `DETAILS.md`. Read it
 before any non-trivial work here: editing, planning, reorganizing, or advising.

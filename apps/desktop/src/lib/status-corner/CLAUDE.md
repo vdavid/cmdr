@@ -1,50 +1,39 @@
 # Status corner
 
-The main window's word on background work. The top-right row (`StatusCorner.svelte`, mounted once by
-`routes/(main)/+page.svelte`) hosts `OperationChip.svelte` (the backgrounded-operation preview, plus the mark a failure
-leaves) and `$lib/indexing/IndexingStatusIndicator.svelte` (the hourglass), rendering any `children` to their left. The
-chip's pick-and-measure rules are pure, in `operation-chip.ts`; `operation-failure-watch.svelte.ts` raises the failure
-toast.
+The main window's word on background work: the top-right row (`StatusCorner.svelte`, mounted once by
+`routes/(main)/+page.svelte`) hosting `OperationChip.svelte` and `$lib/indexing/IndexingStatusIndicator.svelte` (the
+hourglass), with any `children` to their left. The chip's pick-and-measure rules are pure, in `operation-chip.ts`;
+`operation-failure-watch.svelte.ts` raises the failure toast.
 
 ## Must-knows
 
-- **The corner owns placement, its members don't.** `StatusCorner` carries `position: absolute`, the `--spacing-sm`
-  offsets, and `--z-sticky`; each indicator inside is a plain inline box. A member that positions itself overlaps its
-  neighbours.
-- **No positioned ancestor, on purpose.** `.main-content` is static, so the offsets resolve against the initial
-  containing block, where the hourglass has always sat. ❌ Don't make an ancestor `relative` to "fix" it: that moves the
-  corner.
-- **The row is always mounted, so it's `pointer-events: none`** with `auto` on its children (the `ToastContainer`
-  pattern). An empty or gap-sized box over the pane must not eat clicks.
-- **The hourglass stays last**, the most ambient member. Everything else renders left of it: inline if this module owns
-  it, through `children` if not.
-- **The chip is a PREVIEW, not a queue.** One operation (first running, else first paused), a verb and an 80 px bar, no
-  percentage text, no "+N" affix. Detail belongs to its tooltip, completeness to the queue window. ❌ Don't reuse
-  `TransferProgressReadout` here: its fixed-width cells blow past the corner.
+- **The corner owns placement, its members don't**: it carries the `position: absolute`, the offsets, and `--z-sticky`,
+  and each member is a plain inline box. The hourglass stays last; everything else renders left of it.
+- **No positioned ancestor, on purpose**: `.main-content` stays static, or the corner moves with it.
+- **The row is always mounted, so it's `pointer-events: none`** with `auto` on its children, or an empty box over the
+  pane eats clicks.
+- **The chip is a PREVIEW, not a queue**: one operation (first running, else first paused), a verb and an 80 px bar, no
+  percentage, no "+N". ❌ Not `TransferProgressReadout` — its fixed-width cells blow past the corner.
 - **Both gates are pure and live in `operation-chip.ts`** (`pickChipOperation`, `pickChipState`), so add and test one
   there, not in the markup. The bar is bytes, falling back to the file count when `bytesTotal` is 0 (a same-volume move
-  moves no bytes, so a bytes bar would read 0% throughout). Instant ops are excluded by TYPED `operationType`, never a
-  substring test.
-- **A scanning operation gets a SPINNER and "Scanning…", never a bar** (both totals are 0). DETAILS § "The chip's
-  states".
-- **A paused-only queue KEEPS the chip**, with a still bar (`animated={false}`) and the word "Paused". Hiding it on
-  pause would re-hide the work, the bug the chip exists to fix. Tooltip and aria-label lead with that label, ❌ never
-  the verb, so every `queue.chip.tooltip` clause carries its own leading `·`. DETAILS § "The chip's label".
-- **Render the session's `etaSecondsDisplay`, never `progress.etaSeconds`.** The chip binds to its candidate's session
-  (`bindOperationSession`) for that one number; the raw value once had one operation reading "8m 12s" in one window and
-  "5m 46s" in the other.
-- **The chip waits `CHIP_SETTLE_MS` before its FIRST appearance.** Work over in a blink never flashes the corner, and
-  the beat closes a race with the foreground modal's claim. A handover to the next operation is immediate.
-- **The failure toast NEVER auto-dismisses**, and past three they collapse into one summary. That cap is mechanical: a
-  stack full of persistent toasts silently DROPS new ones, so an unbounded burst would lose the failures it reports. ❌
-  Don't raise it, and keep `toastGroup: 'operation-failure'`.
-- **Suppression needs BOTH foreground slots.** The progress dialog releases `getForegroundOperationId()` as it unmounts,
-  and the failure row reaches the snapshot only after, so `getForegroundFailureId()` (the error dialog's handover) is
-  what stops a double report. Check both, in the chip and the watch.
-- **The summary toast reads its count off the store, ❌ never a prop.** The toast store's dedup path replaces content
-  and level but NOT props, so a prop-carried count would freeze at the fourth failure.
-- **A failure's toast title is `queue.failureToast.title`, ❌ not the pipeline's**: it names the work the user started
-  ("Couldn't finish copying"); the pipeline's title names the cause and varies per error class. The explanation under it
-  IS the pipeline's.
+  moves no bytes); instant ops are excluded by TYPED `operationType`, ❌ never a substring test.
+- **A scanning operation gets a SPINNER and "Scanning…", never a bar** (both totals are 0).
+- **A paused-only queue KEEPS the chip**, still bar, label "Paused": hiding it would re-hide the work the chip exists to
+  surface. Tooltip and aria-label lead with that label, ❌ never the verb, so every `queue.chip.tooltip` clause carries
+  its own leading `·`.
+- **Render the session's `etaSecondsDisplay`, ❌ never `progress.etaSeconds`**: the raw value once read "8m 12s" in one
+  window and "5m 46s" in the other.
+- **The FIRST appearance waits `CHIP_SETTLE_MS`** (blink-long work never flashes the corner, and the beat closes a race
+  with the foreground modal's claim); a handover to the next operation is immediate.
+- **The failure toast NEVER auto-dismisses**, and past three they collapse into one summary. A stack full of persistent
+  toasts silently DROPS new ones, so ❌ don't raise that cap, and keep `toastGroup: 'operation-failure'`.
+- **Suppression needs BOTH foreground slots**, in the chip and in the watch: the dialog releases
+  `getForegroundOperationId()` as it unmounts and the failure row lands only after, so `getForegroundFailureId()` is
+  what stops a double report.
+- **The summary toast reads its count off the store, ❌ never a prop** (the dedup path replaces content and level, not
+  props, so a prop-carried count freezes at the fourth failure).
+- **A failure's toast title is `queue.failureToast.title`, ❌ not the pipeline's**: it names the work the user started,
+  while the explanation under it IS the pipeline's.
 
-Layout model, member contract, the chip's states, and decisions: `DETAILS.md`.
+Layout model, member contract, the chip's states, and decisions: `DETAILS.md`. Read it before any non-trivial work here:
+editing, planning, reorganizing, or advising.

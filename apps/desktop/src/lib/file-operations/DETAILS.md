@@ -1,7 +1,34 @@
 # File operations details
 
 The must-knows are in `CLAUDE.md`; per-dialog depth lives in each subdir's docs. This file holds only the umbrella-level
-detail.
+detail. Read this before any non-trivial work here: editing, planning, reorganizing, or advising.
+
+## File map
+
+Subdirs, each with its own docs:
+
+- `transfer/`: copy + move dialogs, plus `TransferProgressDialog` (reused by delete/trash, parameterized by
+  `operationType: 'copy' | 'move' | 'delete' | 'trash'`), error rendering, shared utilities.
+- `delete/`: the F8 / Shift+F8 delete + trash confirmation dialog and pure utilities. `mkdir/`: the F7 new-folder dialog
+  with AI suggestions. `mkfile/`: the Shift+F4 new-file dialog.
+- `operation-session/`: the window's event fan-out (seven broadcast write streams demultiplexed per `operationId`,
+  buffered for ids no session has claimed) plus the refcounted session registry, so every view of one operation reads
+  one derived state and commands it through one set of guards.
+- `queue/`: the standalone operation-queue window (every running/waiting operation with per-row
+  pause/resume/cancel/rollback, multi-select + Cancel selected, global pause/resume), rendered from the operations store
+  that merges the thin `operations-changed` snapshot with the live `write-progress` stream.
+
+Umbrella-level files:
+
+- `TransferProgressReadout.svelte`: the dual-bar readout shared by the progress dialog and the queue rows (§ below).
+- `scan-throughput.ts`: the rolling-window scan-rate estimator (§ below).
+- `foreground-operation.svelte.ts`: two module-scoped slots naming what the foreground owns — the operation its progress
+  dialog is running, and the failure its error dialog is showing — plus the claim marking a dispatch whose operation has
+  no name yet, so ambient main-window surfaces stay quiet about all three (§ below).
+- `foreground-request.ts`: `adoptedOperationFor(rows, id)`, the pure half of the queue's Show button, resolving the id
+  that crossed the window boundary against the MAIN window's own snapshot.
+- `operation-conflict.svelte.ts` + `OperationConflictDialog.svelte`: the main window's conflict prompt for an operation
+  no progress dialog is showing; its two rules are pure, in `operation-conflict-rules.ts` (§ below).
 
 ## Archive edits (`archive_edit`)
 

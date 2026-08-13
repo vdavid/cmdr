@@ -1,5 +1,22 @@
 # Operation sessions: details
 
+Read this before any non-trivial work here: editing, planning, reorganizing, or advising.
+
+## File map
+
+- `operation-event-fanout.ts`: the demultiplexer. Subscribes the seven broadcast streams once per window, seeds the
+  registry snapshot, and routes each event to the session that claimed its `operationId`, buffering for ids nobody has
+  claimed yet.
+- `operation-session.svelte.ts`: `createOperationSession(id, fanout)` — the derived read state, plus the
+  `list_operations` seed.
+- `operation-session-commands.svelte.ts`: the five commands, their in-flight guards, and their IPC. Composed into every
+  session; ❌ never built on its own.
+- `operation-session-registry.ts`: `createOperationSessionRegistry()` — refcounted `acquire` / `release`.
+- `bind-operation-session.svelte.ts`: `bindOperationSession(() => id)` — how a view binds, and how it lets go without
+  having to remember to. What the queue rows, the corner chip, and the progress dialog use.
+- `window-operation-sessions.svelte.ts`: this window's instance, plus `initOperationSessions()` /
+  `destroyOperationSessions()`, called by `routes/(main)/+page.svelte` and `routes/queue/+page.svelte`.
+
 ## The shape
 
 Two things, where a dialog used to be one.

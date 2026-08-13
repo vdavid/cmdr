@@ -2,66 +2,47 @@
 
 Frontend for copy (F5), move (F6), and compress (⌥F5): destination picker, dry-run conflict scan, dual-bar progress
 dialog, error rendering. One set serves all via `operationType`; delete/trash reuse the progress dialog. Backend
-counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md` (state machine, ETA, settle contract)
-and its `transfer/` subdir (copy/move semantics).
+counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md` and its `transfer/` subdir.
 
 ## Module map
 
-- `TransferDialog.svelte`: shell over `transfer-scan-state.svelte.ts` (deep scan preview),
-  `transfer-conflict-check.svelte.ts` (cheap top-level check), and `transfer-dialog-logic.ts` (pure helpers).
-- `TransferProgressDialog.svelte`: execution shell over `transfer-progress-state.svelte.ts` (the dialog as a VIEW of one
-  operation: it dispatches, binds the session, and owns the anti-flicker floor, dismissal, and the Queue handoff), plus
-  `TransferConflictDialog.svelte`, `transfer-stall.ts`.
-- `transfer-dispatch.ts`: birth. Which backend command a confirmed copy/move/compress/delete/trash routes to, and the
-  three settings it reads once. No state, no runes.
-- `TransferErrorDialog.svelte` + `FallbackErrorContent` for the typed `WriteOperationError`, and the rest:
-  `ArchivePasswordDialog`, `ScanPhaseBody`, `DirectionIndicator`, the `transfer-*.ts` helpers.
+- `TransferDialog.svelte` is the setup shell (over `transfer-scan-state.svelte.ts`, `transfer-conflict-check.svelte.ts`,
+  `transfer-dialog-logic.ts`); `TransferProgressDialog.svelte` is the execution shell (over
+  `transfer-progress-state.svelte.ts`, plus `TransferConflictDialog.svelte`, `transfer-stall.ts`).
+- `transfer-dispatch.ts` is birth: which backend command a confirmed copy/move/compress/delete/trash routes to. The rest
+  (error, password, scan-phase, direction components and the `transfer-*.ts` helpers): DETAILS § File map.
 
 ## Must-knows
 
-- **One transfer entry seam.** F5/F6, drag-and-drop, and paste all prepare through `pane/transfer-entry.ts`. The
-  destination-guard copy is an E2E-asserted contract, so don't reword it, and the paste path's MTP refusal stays
-  SEPARATE and BEFORE the shared guard.
+- **The dialog is a VIEW of its operation, ❌ never its owner.** Phase, counts, rates, smoothed ETA, clash, outcome, and
+  every command come from its session (`../operation-session/CLAUDE.md`), shared with the queue rows and the corner
+  chip. The view keeps only UI: `MIN_DISPLAY_MS`, dismissal, the settle-slow label, the cancel-settle fallback, the
+  Queue handoff. ❌ Never a second smoother, listener, or event buffer.
+- **A close is a DETACH, ❌ never a cancel.** `ModalDialog`'s `onclose` goes to `detach()`, handing a still-running
+  operation to the queue window; only the Cancel button cancels, and unmounting stops nothing. ❌ While a clash is up
+  there's no `onclose` at all: every way out of a clash decides something about the user's files.
+- **Queue and the dialog-scoped F2 are FRONTEND-ONLY** (set `backgrounded`, open the queue window, unmount via
+  `onQueue`). ❌ `backgrounded` and `destroyed` stay plain `let`s: teardown reads them during reactive-scope disposal,
+  where a rune returns a stale value, which is how a just-queued transfer once got cancelled.
+- **One transfer entry seam**: F5/F6, drag-and-drop, and paste all prepare through `pane/transfer-entry.ts`. The
+  destination-guard copy is E2E-asserted, and the paste path's MTP refusal stays SEPARATE and BEFORE the shared guard.
 - **Batch IPC for selection lookups** (`get_paths_at_indices` / `get_files_at_indices`), ❌ never a per-index
   `getFileAt` loop: 50k files is 5-10 s vs ~1 ms.
-- **Same-volume move disables Rollback and skips the deep scan preview** (the backend rename-merges server-side). ⚠️ A
-  CROSS-volume move can't roll back either, and this dialog doesn't know yet. DETAILS § Gotchas.
-- **Speed, ETA, and the bars are backend-owned, SHARED with the queue window** (`../progress-readout.ts`,
-  `../TransferProgressReadout.svelte`). ❌ No second instantaneous rate here; `ScanThroughput` is SCAN-phase only. Its
-  fixed-width columns are why this dialog is 580 px wide; don't narrow it without them.
-- **A stall drops the ETA and says why** (`transfer-stall.ts`). The BACKEND classifies; this side owns the threshold. ❌
-  Never infer a stall from event timing: a wedge emits no events at all.
-- **Rollback / Cancel disable during the settle window** (`disabled={isCancelling || operationSettled}`): a click in the
-  400 ms hold-open hits an already-removed op and falsely flashes "Rolling back...".
-- **Cancel close waits for both `write-cancelled` AND `write-settled`** (a fast second F8 mid-teardown once wedged an
-  MTP session), ❌ but never as the ONLY exit: `progress.dismiss()` backs a Close button that leaves at once.
-- **`archive_needs_password` is intercepted UPSTREAM** by `handleTransferError` (`pane/dialog-state.svelte.ts`).
-- **Move refreshes BOTH panes** (source files gone); copy only the destination.
-- **Confirm waits on the conflict check ONLY under `skip`**: elsewhere the backend ignores `pre_known_conflicts`, so
-  `conflicts: []` costs information, not safety. ❌ Don't drop `handleCancel`'s `confirmed` guard: it's also `onclose`,
-  and would free the preview under a pending dispatch.
-- **The progress dialog does NOT wait for the scan; the BACKEND does**
-  (`apps/desktop/src-tauri/src/file_system/write_operations/scan_bridge.rs`). It dispatches on mount, so a
-  still-counting transfer has an `operationId`, a queue row, and Background from frame one. ❌ Never cancel the preview
-  on teardown — the operation owns it. Confirm ALWAYS awaits `scan.scanStarted` (and `DeleteDialog` its own): a null
-  `previewId` means a concurrent re-walk plus an orphaned preview. DETAILS § Scan.
-- **`data-scan-state` on `.scan-stats`** is E2E's only race-free "counting done" signal; `DeleteDialog` mirrors it.
+- **Speed, ETA, and bars are backend-owned and SHARED with the queue window** (`../TransferProgressReadout.svelte`): ❌
+  no second instantaneous rate here, and its fixed-width columns are why the dialog is 580 px wide.
+- **A stall drops the ETA and says why** (`transfer-stall.ts`): the BACKEND classifies, this side owns the threshold. ❌
+  Never infer a stall from event timing — a wedge emits no events at all.
+- **Rollback / Cancel disable during the settle window** (`disabled={isCancelling || operationSettled}`), and a cancel
+  close waits for both `write-cancelled` AND `write-settled` — ❌ but never as the ONLY exit: `progress.dismiss()` backs
+  a Close button that leaves at once.
+- **The progress dialog does NOT wait for the scan; the BACKEND does.** It dispatches on mount, so a still-counting
+  transfer has an `operationId`, a queue row, and Background from frame one. ❌ Never cancel the preview on teardown —
+  the operation owns it. Confirm ALWAYS awaits `scan.scanStarted` (a null `previewId` means a concurrent re-walk plus an
+  orphaned preview). DETAILS § Scan.
 - **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its auto-confirm (MCP) path must NEVER
   silently overwrite.
-- **The dialog is a VIEW of its operation, ❌ never its owner.** What the operation is (phase, counts, rates, smoothed
-  ETA, clash, outcome) and what can be done to it (pause, resume, cancel, roll back, answer the clash) come from its
-  session (`../operation-session/CLAUDE.md`), shared with the queue rows and the corner chip. The view keeps only what
-  belongs to a piece of UI: `MIN_DISPLAY_MS`, dismissal, the settle-slow label, the cancel-settle fallback, the Queue
-  handoff. ❌ Never give it a second smoother, listener, or event buffer of its own.
-- **A close is a DETACH, ❌ never a cancel.** `ModalDialog`'s `onclose` (×, Escape, focus-trap teardown) goes to
-  `detach()`, which hands a still-running operation to the queue window and otherwise just stops watching. Only the
-  Cancel button cancels, and unmounting stops nothing at all. ❌ While a clash is up there's no `onclose` at all (so no
-  × and no Escape): every way out of a clash is a decision about the user's files, and the conflict body owns them all.
-  DETAILS § "The dialog is a view".
-- **Queue and the dialog-scoped F2 are FRONTEND-ONLY**: they set `backgrounded`, open the queue window, and unmount via
-  `onQueue` without cancelling. ❌ `backgrounded` and `destroyed` stay plain `let`s: teardown reads them during
-  reactive-scope disposal, where a rune returns a stale value — that is how a just-queued transfer once got cancelled
-  and the queue window opened empty.
 
-Flows, the phase catalog (`flushing`, MTP's interleaved move), decisions, and gotchas: `DETAILS.md`. Read it before any
-non-trivial work here: editing, planning, reorganizing, or advising.
+Rollback's limits on a move, `handleCancel`'s `confirmed` guard, `archive_needs_password` interception, the
+`data-scan-state` E2E marker, pane refresh after a move, flows, the phase catalog (`flushing`, MTP's interleaved move),
+decisions, and gotchas: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or
+advising.
