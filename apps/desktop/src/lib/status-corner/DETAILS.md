@@ -136,8 +136,9 @@ re-trigger itself.
 
 `queue.chip.tooltip`, one line of middle-dot-separated facts: "Copying · 214 items · to Backup · 42% · 1m 20s left". The
 count and the destination drop out when there's nothing to say (no progress yet, or a delete with no destination), and
-so does the trailing time left while the estimate is warming up or the operation is paused (a paused operation has no
-honest countdown).
+so does the trailing time left while the estimate is warming up. It STAYS through a pause, like every other surface
+showing that operation: the backend keeps the seconds a person spends deciding out of its rate window, so the countdown
+is still what remains once they resume (`write_operations/DETAILS.md` § "ETA + throughput").
 
 - **It leads with `chipLabel`, not the verb**, so a chip reading "Paused" can't open a line claiming the copy is running
   right now. English's aspect-free "Copying" hid that; zh's `正在拷贝` states it outright. The cost is that a paused

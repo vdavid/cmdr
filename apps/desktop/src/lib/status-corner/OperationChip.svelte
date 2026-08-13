@@ -108,12 +108,13 @@
             : tString('queue.chip.failed', { count: chipState.count, countText: formatInteger(chipState.count) }),
     )
 
-    /** The tooltip's trailing fact: how long is left. Absent while the backend's
-     *  estimate is still warming up, and while paused, which has no honest
-     *  countdown and whose state the tooltip's leading label already carries. */
+    /** The tooltip's trailing fact: how long is left. Absent only while the
+     *  backend's estimate is still warming up. It SURVIVES a pause, like every
+     *  other surface showing this operation: the seconds a person spends
+     *  deciding are kept out of the backend's rate window, so the countdown is
+     *  still what remains once they resume. */
     const detail = $derived.by(() => {
         if (candidate === null) return null
-        if (candidate.paused) return null
         // The session's SMOOTHED ETA, never `progress.etaSeconds`: the queue
         // window renders that same number for that same operation, and two
         // surfaces disagreeing about one operation is a bug we've shipped once.

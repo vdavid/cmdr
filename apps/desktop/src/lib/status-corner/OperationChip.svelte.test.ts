@@ -269,12 +269,16 @@ describe('OperationChip', () => {
   // The tooltip leads with what the chip itself says, so hovering "Paused" can't
   // open a line claiming the copy is running right now. Pre-fix it read
   // "Copying … · Paused", which English's aspect-free gerund hid and zh's 正在拷贝
-  // stated outright next to 已暂停.
-  it('leads with the paused state rather than contradicting it', () => {
+  // stated outright next to 已暂停. The countdown stays on the end of it: the
+  // work left doesn't stop being true because somebody paused to think, and
+  // this chip has to agree with the queue row and the dialog about it.
+  it('leads with the paused state, and still says how much is left', () => {
     store?._testApplySnapshot([snapshot({ status: 'paused' })])
     emitProgress(progress())
     renderChip()
-    expect(target.querySelector('.tooltip-content')?.textContent).toBe('Paused · 214 items · to Backup · 42%')
+    expect(target.querySelector('.tooltip-content')?.textContent).toBe(
+      'Paused · 214 items · to Backup · 42% · 1m 20s left',
+    )
   })
 
   it('leaves the count out of the tooltip before the first progress tick', () => {
