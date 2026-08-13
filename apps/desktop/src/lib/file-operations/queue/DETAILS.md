@@ -216,10 +216,14 @@ Decisions:
 
 ## Row layout
 
-A row's actions are Pause/Resume, Cancel, and — on a reversible op only — Rollback, styled `danger` exactly like the
-progress dialog's, since the same click deletes the same files. Rollback hides again once the op IS rolling back, which
-the row reads off the live `write-progress` phase: rollback is an `OperationIntent`, so the lifecycle status stays
-`running` throughout, and the status cell shows "Rolling back..." instead.
+A row's actions are Pause/Resume, Cancel, and — on a reversible op only — Rollback, all issued on the row's own session
+rather than handed up to the page: which way Pause goes is decided from the lifecycle status the session already holds,
+and the guards it carries are shared with every other view of that operation, so a Cancel pressed here is visible to
+whatever else is watching. The page keeps the fleet actions (Pause all, Resume all, Cancel selected) and Dismiss, none
+of which is a command on one operation. Rollback is styled `danger` exactly like the progress dialog's, since the same
+click deletes the same files. Rollback hides again once the op IS rolling back, which the row reads off the live
+`write-progress` phase: rollback is an `OperationIntent`, so the lifecycle status stays `running` throughout, and the
+status cell shows "Rolling back..." instead.
 
 A row is a five-column grid whose chrome (select, type icon, source→dest summary, status, actions) sits on line 1, with
 the shared `../TransferProgressReadout.svelte` spanning line 2 from the summary column to the end. The readout gets the
@@ -268,14 +272,16 @@ the MAIN window, which already holds those perms — nothing to add there (see `
   subscribed).
 - `failure-reason.test.ts`: the wire-type → catalog-arm mapping (per-operation wording, the copy fallback for the types
   the catalog has no arm for) and the null-for-a-live-row contract.
-- `QueueRow.svelte.test.ts`: per-status controls (Pause vs Resume vs queued vs failed), click wiring, the select
+- `QueueRow.svelte.test.ts`: which control a given status offers (Pause vs Resume vs queued vs failed), the select
   checkbox, the live bar from a progress event, the failed row's reason across two error variants and two operation
-  types, and the `data-status` / `data-operation-id` E2E hooks. The readout's own behavior (both bars, percents, rates,
+  types, and the `data-status` / `data-operation-id` E2E hooks. What a click SENDS isn't here: that needs a window
+  registry, so it lives in `queue-row-session.svelte.test.ts`. The readout's own behavior (both bars, percents, rates,
   time left, stall) is covered once, in `../TransferProgressReadout.svelte.test.ts`.
 - `QueueRow.a11y.test.ts`: axe over the row in running / paused / queued / selected states.
-- `queue-row-session.svelte.test.ts`: what a row takes from its session, through real rows on a real registry — one
-  `createEtaSmoother` per operation however many ticks or snapshot rebuilds arrive, none in the store, and a scanning
-  row's files/s.
+- `queue-row-session.svelte.test.ts`: what a row takes from its session and what it asks of it, through real rows on a
+  real registry — one `createEtaSmoother` per operation however many ticks or snapshot rebuilds arrive, none in the
+  store, a scanning row's files/s, and each control's command (including the toggle following the snapshot status, and
+  one cancel however many presses).
 - `apps/desktop/src/routes/queue/queue-selection.svelte.test.ts`: the window's selection bookkeeping, driven through the
   real page and the real store — the count and "Cancel selected" following a checked row, and letting go of one that
   fails, leaves, or was never theirs.

@@ -1,8 +1,8 @@
 # Operation queue window
 
 The standalone macOS window listing every running and waiting operation, plus the ones that couldn't finish: per-row
-pause/resume/cancel/dismiss, multi-select + "Cancel selected", global pause/resume. Opens from View > Operation queue
-(⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
+pause/resume/cancel/rollback/dismiss, multi-select + "Cancel selected", global pause/resume. Opens from View > Operation
+queue (⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 
 ## Module map
 
@@ -43,9 +43,14 @@ pause/resume/cancel/dismiss, multi-select + "Cancel selected", global pause/resu
   `../transfer/transfer-error-messages.ts`, `getMessage()` raw lookup, per-operation variant keys). Its `message` is
   MARKUP, so it renders through `{@html}` like the dialog's body. The pipeline's own title is dropped in the row: it
   would read "Couldn't copy" right beside "Couldn't finish".
-- **Cancel keeps partials; Rollback is the separate, opt-in undo.** Cancel maps to `cancel_operation(s)`: no rollback,
-  no confirm, which is why `capabilities/queue.json` DROPS `dialog:allow-ask` and `store:default`. Rollback calls
-  `cancelWriteOperation(id, true)` and shows ONLY where `supportsRollback` says so, never inferred from the type.
+- **A row commands its own operation through its session** (`../operation-session/CLAUDE.md`), so the same press means
+  the same thing from every surface and no two of them can send it twice. `routes/queue/+page.svelte` keeps only what
+  ISN'T a command on one operation: Pause all / Resume all / Cancel selected, and dismissing a retained failure. ❌
+  Don't route a per-row control back through the page.
+- **Cancel keeps partials; Rollback is the separate, opt-in undo.** `session.cancel()` maps to `cancel_operation`: no
+  rollback, no confirm (which is why `capabilities/queue.json` DROPS `dialog:allow-ask` and `store:default`), and it
+  drops a still-`queued` row before it spawns. `session.rollback()` calls `cancelWriteOperation(id, true)` and shows
+  ONLY where `supportsRollback` says so, never inferred from the type.
 - **Window perms fail SILENTLY.** Every Tauri call here is `await`ed in try/catch with a `log.warn`; smoke-test with
   `pnpm dev` after a perm change.
 - **Each child window is its own webview**, so the page inits and tears down its own i18n / theme / transparency / text

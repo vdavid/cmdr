@@ -38,11 +38,13 @@ All under `apps/desktop/src/lib/`.
 - `file-operations/mkfile/`: Shift+F4 new-file dialog
 - `file-operations/operation-session/`: The window's event fan-out (seven broadcast write streams demultiplexed per
   `operationId`, with a bounded holding area for operations no session has claimed yet) and the refcounted session
-  registry that gives every view of one operation the same derived read state (the queue rows and the corner chip bind
-  to it for the smoothed ETA and the scan rates). See `apps/desktop/src/lib/file-operations/operation-session/CLAUDE.md`
-- `file-operations/queue/`: Standalone operation-queue window (per-row pause/resume/cancel, multi-select, global
-  pause/resume), rendered from an ops store merging `operations-changed` + `write-progress`; route at `routes/queue/`.
-  See `apps/desktop/src/lib/file-operations/queue/CLAUDE.md`
+  registry that gives every view of one operation the same derived read state (the smoothed ETA and the scan rates) and
+  the same guarded commands (pause, resume, cancel, rollback, answer a clash). The queue rows and the corner chip bind
+  to it; so does the main window's conflict prompt. See
+  `apps/desktop/src/lib/file-operations/operation-session/CLAUDE.md`
+- `file-operations/queue/`: Standalone operation-queue window (per-row pause/resume/cancel/rollback through each row's
+  session, multi-select, global pause/resume), rendered from an ops store merging `operations-changed` +
+  `write-progress`; route at `routes/queue/`. See `apps/desktop/src/lib/file-operations/queue/CLAUDE.md`
 - `file-viewer/`: Read-only file viewer (separate window, virtual scrolling)
 - `settings/`: Settings UI + registry-based architecture, reactive state
 - `intl/`: The single locale source (`getLocale`) + memoized locale-aware number/size formatters; counts, file sizes,

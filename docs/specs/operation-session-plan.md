@@ -906,8 +906,13 @@ keeps doing exactly what it does today" reads as if starting it implies fresh co
 `handleArchivePasswordSubmit` (`:618-639`) starts a NEW operation from birth context captured before the prompt went up,
 and re-runs `snapshotSourcePaneSelection()` (`:638`) against wherever the pane is _now_, which may have navigated while
 the user was typing. So the axis is not "adopted versus started" but "fresh context versus stale context", and an
-operation can be started-by-this-view and still stale. M4 already schedules `archive_needs_password` for classification;
-this is where that classification lands.
+operation can be started-by-this-view and still stale.
+
+**M4 classified it: a BIRTH concern with a view-scoped prompt, never a session concern.** The password error arrives as
+`write-error`, so the backend has already settled that operation and no command could unpark it; the unlock is a second
+entry into dispatch, not a resumption. The reasoning and both consequences are written where the next reader of the
+session will find them, in `apps/desktop/src/lib/file-operations/operation-session/DETAILS.md` § "Where an archive
+password belongs". M6 owes this path its answer on the stale-context axis.
 
 Three more things to decide in the milestone:
 

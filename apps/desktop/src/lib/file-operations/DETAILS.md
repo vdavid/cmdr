@@ -119,9 +119,15 @@ dialog (the app's only listener) unmounts, and the operation waits for an answer
 
 The host is started and stopped by `routes/(main)/+page.svelte` next to the failure watch, listens for the life of the
 window, and on a conflict nobody owns: pauses, raises the main window, and prompts. The dialog is chrome around the same
-`TransferConflictDialog` the progress dialog embeds, resolving through the same
-`resolveWriteConflict(operationId, resolution, applyToAll)` and cancelling through the same
-`cancelWriteOperation(operationId, rollback)`.
+`TransferConflictDialog` the progress dialog embeds.
+
+**A prompt is a view, so it commands through a session.** It holds the asking operation's session for exactly as long as
+its question is on screen (acquired when the prompt goes up, released on every path that takes it down), and answers,
+cancels, and rolls back through it. So its disable states are the OPERATION's: a second surface answering the same clash
+disables these buttons too. Its plain Cancel is `session.cancel()`, the manager-level one; Rollback stays the write-op
+intent switch, the only path that can undo a partial destination. The one thing deliberately left on the raw commands is
+`hold()`'s fleet pause: it stops every executing operation, most of which has no view here, and the ids come from a rule
+that's free to narrow later.
 
 - **Ownership is `conflictOwner(operationId, foreground)`**, returning `here` / `foreground` / `unknown`. `unknown`
   means a dialog is mid-dispatch: the empty slot proves nothing, so the event is HELD and re-decided when the claim
@@ -137,13 +143,14 @@ window, and on a conflict nobody owns: pauses, raises the main window, and promp
 - **Resolve lands before resume.** A resolve that doesn't land (the IPC call throws) leaves the prompt up and everything
   paused, which is the honest state for an unanswered question. The resolved operation may park for the moment before
   its resume arrives; parking between files is what pause is for, and cancel still wins over both.
-- **Losing the race is not a failure.** `resolveWriteConflict` returns the backend's `ConflictResolutionOutcome`, and
-  anything but `resolved` means this clash is settled without us (another surface answered first, a cancel took it away,
-  the operation is gone). The prompt comes down and the hold releases exactly as if this answer had won, with an info
-  log naming the outcome; the progress dialog's `handleConflictResolution` clears its own prompt the same way. ❌ Never
-  treat a non-`resolved` outcome as an error and leave the question on screen: nobody can answer it any more. Which
-  outcome means what, and why the backend arbitrates rather than a frontend rule naming who may answer:
-  `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § Stop-mode conflict resolution.
+- **Losing the race is not a failure.** The session's `resolveConflict` hands back the backend's
+  `ConflictResolutionOutcome`, and anything but `resolved` means this clash is settled without us (another surface
+  answered first, a cancel took it away, the operation is gone). The prompt comes down and the hold releases exactly as
+  if this answer had won, with an info log naming the outcome; the progress dialog's `handleConflictResolution` clears
+  its own prompt the same way. ❌ Never treat a non-`resolved` outcome as an error and leave the question on screen:
+  nobody can answer it any more. Which outcome means what, and why the backend arbitrates rather than a frontend rule
+  naming who may answer: `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § Stop-mode conflict
+  resolution.
 - **One prompt at a time, in arrival order**, resuming only after the last. The backend serializes prompts within one
   operation (`conflict_dispatch_lock` plus a single conflict slot), so the queue holds at most one entry per operation;
   a second event for one that's already queued replaces it, because `resolve_write_conflict` is keyed by operation id

@@ -156,11 +156,82 @@ alone cannot tell you.
 - `etaSecondsDisplay`: the backend ETA through this session's smoother. Every view renders this, never
   `progress.etaSeconds`.
 - `scan`: the counting readout, including the frontend-computed rates the backend does not emit during a scan.
-- `conflict`: the conflict the operation is parked on, set from the event. Nothing clears it, because resolving one is a
-  command and a session issues none.
+- `conflict`: the conflict the operation is parked on, set from the event and cleared once the backend has ruled on it,
+  whichever surface asked.
 - `outcome` / `settled` / `settleEventReceived`: how it ended, whether it ended, and whether the backend task has torn
   down. The last is separate because `write-settled` says the task is gone, not how it finished. `outcome` is
   write-once, so a cancel racing a completion cannot flip an answer a view already rendered.
+
+## The command surface
+
+Pause, resume, cancel, rollback, and answering a clash live on the session, beside the state they act on. The property
+that buys is not tidiness: **the guards are shared because the session is.** A Cancel pressed on a queue row is visible
+to the corner chip watching the same operation, and a command arriving later over MCP will land in the same place. Two
+views of one transfer therefore cannot each send a cancel, and a second press mid-round-trip sends nothing.
+
+Every command reports whether the request reached the backend and logs its own failure, so a view issues one with a bare
+`void` and no try/catch. `false` (or a `null` verdict) always means the same thing: nothing was sent, so leave what is
+on screen exactly as it is. A guard returns it for the same reason a refused IPC does.
+
+**Which IPC each one uses is a decision, not an accident.**
+
+- `cancel()` calls `cancel_operation`, the MANAGER-level cancel, which drops an operation still queued behind a busy
+  lane before it ever spawns and otherwise routes into the same keep-partials path. `cancelWriteOperation(id, false)`
+  alone cannot do the first half, and a session can perfectly well be watching a `queued` operation.
+- `rollback()` keeps `cancelWriteOperation(id, true)`, the write-op intent switch, because it is the only path that can
+  ask a running operation to delete its partial destination.
+
+**The guards, and the one asymmetry.** Pause, resume, and `togglePause` share a guard because they are one button.
+Cancel and rollback hold theirs until the operation is gone rather than until the IPC returns, so a second click sends
+nothing; a refused request lets go, because the operation is still running and the user must be able to ask again.
+Rollback is refused once a cancel is on its way (there is nothing left to put back), but cancel is deliberately NOT
+refused during a rollback: "stop undoing and keep what's left" is a real thing to want, and this is the only way to ask.
+
+**`togglePause` reads the registry snapshot's lifecycle status.** A paused operation stays in the write-op state map and
+answers `is_running: true`, so a toggle keyed on that would try to pause what is already parked. The commands module
+takes the status as a predicate for exactly this reason, and `operation-session-commands.svelte.test.ts` pins it by
+asserting the status query is never made at all.
+
+### Answering a clash is a delegation
+
+`write-conflict` reaches every webview, so more than one surface can be showing the same prompt. The backend arbitrates:
+`resolve_write_conflict` returns a typed outcome (resolved / already resolved / no pending conflict / unknown operation)
+from a three-state slot in `write_operations/conflict_slot.rs`. The session hands that verdict back untouched and lets
+go of its `conflict` on any of them, because the question is over either way. Only a call that never landed keeps the
+prompt up.
+
+Two rules follow, and both are guardrails rather than observations:
+
+- ❌ **Never rebuild a frontend rule that makes correctness depend on one surface being allowed to answer.** That rule
+  existed because the backend parked on a single sender and a second answer vanished silently; the slot removed the
+  hazard. Which surface SHOWS a clash is still a UX preference, and it still lives in `../operation-conflict-rules.ts`.
+- ❌ **Never refuse to answer a clash this session has not seen.** The fan-out drops an id's buffer the moment it is
+  claimed, so a view that adopts an operation whose `write-conflict` went to a session since let go legitimately has no
+  `conflict` field. Refusing would leave the user clicking a button that does nothing, and the backend is the authority
+  on whether there is anything parked.
+
+### Where an archive password belongs, and why it is NOT a session concern
+
+An encrypted-archive source raises `archive_needs_password`, which `../../file-explorer/pane/dialog-state.svelte.ts`
+intercepts upstream of the error dialog. It looks like a second "operation parked waiting for the user", the same shape
+as a conflict. It is not, and the distinction decides where the work goes.
+
+**It is a BIRTH concern with a view-scoped prompt.** The password error arrives as `write-error`: the backend has
+already settled that operation, so its session has said everything it will ever say about it and there is no command
+that could unpark it. What an unlock does is store the password and **dispatch a NEW operation** from the same birth
+context, with `previewId` cleared (the previous preview was consumed, and the backend refuses a second claim on one). So
+the unlock path is a second entry into dispatch, not a resumption; the only genuinely view-scoped part is the prompt
+itself, which is why `showTransferProgressDialog` goes false while `transferProgressProps` stays alive.
+
+Two consequences worth carrying:
+
+- A session must not grow an "unlock" command, and a view must not treat the password prompt as a parked operation. The
+  operation the prompt names is over.
+- The re-dispatch reads birth context captured **before** the prompt went up, and re-runs
+  `snapshotSourcePaneSelection()` against wherever the pane is now, which may have navigated while the user was typing.
+  So the axis for a view's completion work is not "adopted versus started" but **fresh context versus stale context**:
+  an operation can be started-by-this-view and still carry stale context. Whoever splits birth from view owes this path
+  an answer, and "a view that started the operation keeps doing what it does today" is not it.
 
 ## Testing
 
@@ -172,3 +243,10 @@ synchronous block for the flush), never incidental microtask order.
 `bind-operation-session.svelte.test.ts` stands in for a view with an `$effect.root`, and asks the REGISTRY whether a
 release happened rather than asking the view: a binding that never releases leaves a session listening for an operation
 that ended, which nothing on screen would show, so the test acquires again and checks it got a fresh session.
+`operation-conflict.svelte.test.ts` asks the same question the same way, because the conflict prompt holds a session by
+hand rather than through the binder.
+
+The commands are covered twice on purpose. `operation-session-commands.svelte.test.ts` drives them directly, with no
+fan-out at all, which is what makes each guard a one-line test; the session and registry suites then prove the two
+things composition adds, namely that the clash is let go of on every verdict and that one view sees what another view
+sent.

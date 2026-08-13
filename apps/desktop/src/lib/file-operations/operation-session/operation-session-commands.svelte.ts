@@ -57,10 +57,7 @@ export interface OperationSessionCommands {
   /** Answer the clash. Returns what the backend acted on — any verdict means
    *  the question is over, whoever asked it — or `null` when the answer never
    *  landed, in which case the prompt stays up. */
-  resolveConflict: (
-    resolution: ConflictResolution,
-    applyToAll: boolean,
-  ) => Promise<ConflictResolutionOutcome | null>
+  resolveConflict: (resolution: ConflictResolution, applyToAll: boolean) => Promise<ConflictResolutionOutcome | null>
 
   /** A pause or resume is on its way to the backend. */
   readonly pauseInFlight: boolean
@@ -81,10 +78,7 @@ export interface OperationSessionCommands {
  *   snapshot. A paused operation still answers `is_running: true`, so that is
  *   the one thing the toggle may not ask.
  */
-export function createOperationSessionCommands(
-  operationId: string,
-  isPaused: () => boolean,
-): OperationSessionCommands {
+export function createOperationSessionCommands(operationId: string, isPaused: () => boolean): OperationSessionCommands {
   let pauseInFlight = $state(false)
   let cancelling = $state(false)
   let rollingBack = $state(false)

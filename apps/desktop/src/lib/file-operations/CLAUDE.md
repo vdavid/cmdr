@@ -12,10 +12,10 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 - `mkfile/CLAUDE.md`: Shift+F4 new-file dialog.
 - `operation-session/CLAUDE.md`: the window's event fan-out (seven broadcast write streams demultiplexed per
   `operationId`, buffered for ids no session has claimed) and the refcounted session registry, so every view of one
-  operation reads one derived state.
+  operation reads one derived state and commands it through one set of guards.
 - `queue/CLAUDE.md`: the standalone operation-queue window (lists every running/waiting operation with per-row
-  pause/resume/cancel, multi-select + Cancel selected, global pause/resume). Renders from the operations store that
-  merges the thin `operations-changed` snapshot with the live `write-progress` stream.
+  pause/resume/cancel/rollback, multi-select + Cancel selected, global pause/resume). Renders from the operations store
+  that merges the thin `operations-changed` snapshot with the live `write-progress` stream.
 - `TransferProgressReadout.svelte`: the dual-bar readout (size + count, each with amount, percent, rate, plus one
   time-left cell) shared by the progress dialog and the queue rows. Two densities, one layout.
 - `scan-throughput.ts`: rolling-window scan-rate estimator (see below).
@@ -49,9 +49,10 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   what's running, prompt with the same `TransferConflictDialog`, resume exactly the ids paused. ❌ Never `resumeAll()`
   (it restarts a pause the USER made); ❌ never decide ownership while `isForegroundClaimPending()` — defer, or you
   double-prompt or re-wedge the operation. DETAILS § Conflict prompts.
-- **`resolveWriteConflict` returns which answer the backend acted on.** Anything but `resolved` means someone else
-  answered this clash: take the prompt down and release the hold, ❌ never surface it as a failure. Only a throw (the
-  call never landed) keeps the question on screen. DETAILS § Conflict prompts.
+- **The backend arbitrates a clash and reports its verdict.** Answer through `session.resolveConflict(...)`
+  (`operation-session/CLAUDE.md`): anything but `resolved` means someone else answered, so take the prompt down and
+  release the hold, ❌ never surface it as a failure. Only a `null` (the call never landed) keeps the question on
+  screen. DETAILS § Conflict prompts.
 - **`ScanThroughput` is SCAN-phase only** (the backend `EtaEstimator` owns every write phase), returns nulls until two
   samples land, and must be `reset()` between scans. Pure, no Svelte / Tauri coupling. DETAILS § `scan-throughput.ts`.
 

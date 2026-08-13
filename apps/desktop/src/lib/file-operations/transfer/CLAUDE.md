@@ -45,9 +45,14 @@ and its `transfer/` subdir (copy/move semantics).
 - **`data-scan-state` on `.scan-stats`** is E2E's only race-free "counting done" signal; `DeleteDialog` mirrors it.
 - **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its auto-confirm (MCP) path must NEVER
   silently overwrite.
-- **Pause/Resume and the "Paused" title follow the `operations-changed` snapshot status, ❌ never `is_running`.** Queue
-  and the dialog-scoped F2 are FRONTEND-ONLY: they set `backgrounded` (so `onDestroy` skips its safety-net cancel), open
-  the queue window, and unmount via `onQueue` without cancelling.
+- **This dialog is the last surface that commands its operation directly.** Pause, resume, cancel, rollback, and the
+  conflict answer are session methods (`../operation-session/CLAUDE.md`), which the queue rows and the main window's
+  conflict prompt call; this module keeps private copies until it becomes a view of one. Both obey the same rule:
+  Pause/Resume and the "Paused" title follow the `operations-changed` snapshot status, ❌ never `is_running`.
+- **Queue and the dialog-scoped F2 are FRONTEND-ONLY**: they set `backgrounded` (so `onDestroy` skips its safety-net
+  cancel), open the queue window, and unmount via `onQueue` without cancelling. ❌ `backgrounded` and `destroyed` stay
+  plain `let`s: `destroy()` reads them during reactive-scope disposal, where a rune returns a stale value and the guard
+  wrongly cancels a just-queued transfer.
 
 Flows, the phase catalog (`flushing`, MTP's interleaved move), decisions, and gotchas: `DETAILS.md`. Read it before any
 non-trivial work here: editing, planning, reorganizing, or advising.

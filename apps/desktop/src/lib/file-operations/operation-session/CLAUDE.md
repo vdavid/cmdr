@@ -1,8 +1,9 @@
 # Operation sessions
 
 One session per operation per window: it binds to an `operationId`, reads the window's event fan-out, and exposes what
-that operation is right now (status, phase, counts, rates, smoothed ETA, conflict, outcome). Read-only; commands stay
-with their callers. Views bind to a session and render it, and zero views is an ordinary state.
+that operation is right now (status, phase, counts, rates, smoothed ETA, conflict, outcome) plus what you can do to it
+(pause, resume, cancel, roll back, answer its clash). Views bind to a session, render it, and command through it; zero
+views is an ordinary state.
 
 ## Module map
 
@@ -10,6 +11,8 @@ with their callers. Views bind to a session and render it, and zero views is an 
   one to the session that claimed its `operationId`, buffering for ids nobody has claimed yet.
 - `operation-session.svelte.ts`: `createOperationSession(id, fanout)` — the derived read state, plus the
   `list_operations` seed.
+- `operation-session-commands.svelte.ts`: the five commands, their in-flight guards, and their IPC. Composed into every
+  session; ❌ never built on its own.
 - `operation-session-registry.ts`: `createOperationSessionRegistry()` — refcounted `acquire` / `release`.
 - `bind-operation-session.svelte.ts`: `bindOperationSession(() => id)` — how a view binds, and how it lets go without
   having to remember to. What the queue rows and the corner chip use.
@@ -40,5 +43,17 @@ with their callers. Views bind to a session and render it, and zero views is an 
   init belongs to that component's scope. Compose in the getter instead.
 - **A session presents a scanning operation as live and counting**, never as 0%: `filesTotal` / `bytesTotal` stay 0
   through a scan, so `scan` carries the counting readout and views branch on `phase === 'scanning'`.
+- **No command throws, and each one says whether it landed.** A view writes `void session.cancel()` with no try/catch; a
+  `false` (or a `null` verdict) means nothing was sent, so leave what's on screen alone.
+- **`togglePause` steers by the snapshot's lifecycle status, ❌ never `is_running`**: a parked operation still answers
+  `true` there, so a toggle reading it tries to pause what's already paused.
+- **Cancel goes through the MANAGER, rollback through the write op.** `cancel()` also drops an operation still waiting
+  on a busy lane; only `cancelWriteOperation(id, true)` can undo a partial destination. Rollback is refused once a
+  cancel is on its way; cancel is NOT refused during a rollback ("stop undoing, keep what's left").
+- **Answering a clash is a DELEGATION.** The backend arbitrates between whoever answered and reports its verdict; the
+  session hands that back untouched and lets go of the clash on any verdict. ❌ Never make correctness depend on one
+  surface being allowed to answer, and ❌ never refuse to answer a clash this session hasn't seen: the fan-out's buffer
+  is dropped on claim, so an adopted operation legitimately has none.
 
-Architecture, the registry rationale, the buffer's bound, and the ordering rules: `DETAILS.md`.
+Architecture, the registry rationale, the buffer's bound, the ordering rules, and where an archive-password prompt
+belongs: `DETAILS.md`.

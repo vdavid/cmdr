@@ -69,7 +69,7 @@ cd apps/desktop
 # drives; a hand-rolled build without it leaves that spec nothing to measure.
 pnpm test:e2e:playwright:build
 
-# Start the app (in a separate terminal). All three env vars matter:
+# Start the app (in a separate terminal). Every env var here matters:
 # - CMDR_DATA_DIR isolates persisted state (favorites, settings, secrets) to a throwaway
 #   path. REQUIRED under E2E mode: without it the app refuses to start
 #   (`guard_e2e_requires_data_dir()` in `src-tauri/src/test_mode.rs`), because persisted
@@ -80,13 +80,19 @@ pnpm test:e2e:playwright:build
 #   decoration (`is_e2e_mode()` in `src-tauri/src/test_mode.rs`). Without it the
 #   app launches looking like a prod build, which is confusing when you have a
 #   real Cmdr open at the same time.
-CMDR_E2E_MODE=1 CMDR_DATA_DIR=/tmp/cmdr-e2e-data CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures /path/to/target/.../release/Cmdr
+# - CMDR_MCP_ENABLED=true + CMDR_MCP_PORT pin the MCP server the specs drive the app
+#   through. Miss them and every MCP-using spec (all the conflict ones) dies in
+#   `ensureMcpClient` with "MCP server not running", which reads like a code failure
+#   and isn't. The checker lane sets both; a hand launch has to as well, and the SAME
+#   port has to be exported for the test run below (`mcp-client.ts` prefers the pin).
+CMDR_E2E_MODE=1 CMDR_DATA_DIR=/tmp/cmdr-e2e-data CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures \
+    CMDR_MCP_ENABLED=true CMDR_MCP_PORT=18473 /path/to/target/.../release/Cmdr
 
 # Run the tests (app must be running with socket at /tmp/tauri-playwright.sock).
 # Chain `&& pkill -f 'target.*Cmdr'` so the manually-launched app is torn down
 # when the run finishes — tauri-playwright doesn't manage app lifecycle (it
 # just talks to the socket), so without this you leak a Cmdr process every run.
-CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright \
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures CMDR_MCP_PORT=18473 pnpm test:e2e:playwright \
     ; pkill -f 'target.*Cmdr'
 ```
 
@@ -112,11 +118,11 @@ form swallows the following positional and the run dies with `Project(s) "<spec-
 cd apps/desktop
 
 # By file path
-CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright \
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures CMDR_MCP_PORT=18473 pnpm test:e2e:playwright \
     test/e2e-playwright/brief-cursor-visibility.spec.ts ; pkill -f 'target.*Cmdr'
 
 # By test-name substring (matches `test('...')` and `describe('...')` titles)
-CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright \
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures CMDR_MCP_PORT=18473 pnpm test:e2e:playwright \
     --grep "cursor stays in view" ; pkill -f 'target.*Cmdr'
 ```
 
