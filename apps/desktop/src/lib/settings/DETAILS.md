@@ -123,6 +123,10 @@ Mechanics (`settings-store.ts`):
 - **Backend readers tolerate absent keys** (`src-tauri/src/settings/loader.rs`: missing file → `Settings::default()`,
   every field `Option<_>` with an `unwrap_or` fallback; `mcp/config.rs` has env → setting → build-default), so absence
   means "use my fallback", never an error.
+- **A backend fallback that isn't `None` has to match the registry default.** `listing.showHiddenFiles` is the one
+  today: Rust reads it as a plain `bool` and builds the native View menu's checked state from it at startup, so a
+  registry default changed here without the matching `loader.rs` change ships an app whose menu contradicts its own
+  listings. The backend half (one const behind all three of its spellings) is in `src-tauri/src/settings/DETAILS.md`.
 - **Existing installs are accepted as-is.** A pre-fix `settings.json` full of leaked defaults keeps every present key
   (present = explicit); we can't tell a past-explicit choice from a past leak, and dropping a deliberate choice is worse
   than keeping a stale one. The dev-side leaked `developer.mcpEnabled: false` stays neutralized by the wrapper's
