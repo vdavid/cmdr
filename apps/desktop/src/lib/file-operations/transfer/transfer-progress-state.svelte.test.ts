@@ -844,6 +844,121 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
   })
 })
 
+describe('createTransferProgressState: adopting a running operation', () => {
+  // Foreground from the queue: the view binds an operation that started
+  // somewhere else and dispatches nothing. Everything on screen comes from the
+  // session, which is the same session every other surface in this window reads.
+
+  /** The adopted operation is deliberately NOT the id the dispatch mock hands
+   *  back: a view that quietly dispatched would land on `op-1`, so every
+   *  assertion below would pass for the wrong reason. */
+  const ADOPTED = 'op-9'
+
+  /** Builds an adopting view and drains its startup, as `startedState` does for
+   *  a dispatching one. */
+  async function adoptedState(id = ADOPTED) {
+    vi.mocked(listOperations).mockResolvedValue([snapshot(id, 'running')])
+    const config = makeConfig({ adoptOperationId: id })
+    const state = makeState(config)
+    state.start()
+    await settle()
+    return { state, config }
+  }
+
+  it('binds the named operation without starting a new one', async () => {
+    const { state } = await adoptedState()
+
+    expect(copyBetweenVolumes).not.toHaveBeenCalled()
+    expect(state.operationId).toBe(ADOPTED)
+  })
+
+  it('shows the live progress of the operation it adopted', async () => {
+    const { state } = await adoptedState()
+    if (!progressCb) throw new Error('progress subscriber never registered')
+
+    progressCb(
+      progressEvent({
+        operationId: ADOPTED,
+        phase: 'copying',
+        filesDone: 7,
+        filesTotal: 10,
+        bytesDone: 700,
+        bytesTotal: 1000,
+      }),
+    )
+
+    expect(state.phase).toBe('copying')
+    expect(state.filesDone).toBe(7)
+    expect(state.bytesDone).toBe(700)
+  })
+
+  it('joins the session another surface already holds rather than estimating twice', async () => {
+    // The whole reason the registry exists: a smoother started twenty minutes
+    // in disagrees with the queue's for as long as it takes to converge. This is
+    // the ordinary case for adoption — the corner chip is already watching.
+    const registry = getOperationSessions()
+    if (!registry) throw new Error('the window has no session registry')
+    registry.acquire(ADOPTED)
+    expect(vi.mocked(createEtaSmoother)).toHaveBeenCalledTimes(1)
+
+    const { state } = await adoptedState()
+    if (!progressCb) throw new Error('progress subscriber never registered')
+    progressCb(progressEvent({ operationId: ADOPTED, etaSeconds: 80 }))
+
+    expect(vi.mocked(createEtaSmoother)).toHaveBeenCalledTimes(1)
+    expect(state.etaSecondsDisplay).toBe(80)
+    registry.release(ADOPTED)
+  })
+
+  it('claims the foreground slot, so ambient surfaces stop repeating it', async () => {
+    await adoptedState()
+    expect(getForegroundOperationId()).toBe(ADOPTED)
+  })
+
+  it('hands the operation back, still running, when the view closes again', async () => {
+    const { state, config } = await adoptedState()
+    if (!progressCb) throw new Error('progress subscriber never registered')
+    progressCb(progressEvent({ operationId: ADOPTED }))
+
+    state.detach()
+
+    expect(config.onQueue).toHaveBeenCalledTimes(1)
+    expect(getForegroundOperationId()).toBeNull()
+    state.destroy()
+    expect(cancelOperation).not.toHaveBeenCalled()
+    expect(cancelWriteOperation).not.toHaveBeenCalled()
+  })
+
+  it('keeps showing an operation the manager reports as queued', async () => {
+    // Auto-queue is a decision a DISPATCHING view makes: don't stack a second
+    // modal over the one already up. A view that was opened precisely to watch
+    // this operation would instead bounce it straight back out of sight.
+    vi.mocked(listOperations).mockResolvedValue([snapshot(ADOPTED, 'queued')])
+    const config = makeConfig({ adoptOperationId: ADOPTED })
+    const state = makeState(config)
+    state.start()
+    await settle()
+    flushSync()
+
+    expect(state.operationId).toBe(ADOPTED)
+    expect(config.onQueue).not.toHaveBeenCalled()
+  })
+
+  it('offers Rollback only where the operation says it can be reversed', async () => {
+    // The snapshot is the authority: this view has no birth context to reason
+    // about volumes from, and `supportsRollback` is a promise about the
+    // operation itself.
+    const { state } = await adoptedState()
+    if (!opsChangedCb) throw new Error('operations-changed subscriber never registered')
+
+    opsChangedCb({ operations: [{ ...snapshot(ADOPTED, 'running'), supportsRollback: false }] })
+    expect(state.rollbackUnavailable).toBe(true)
+
+    opsChangedCb({ operations: [snapshot(ADOPTED, 'running')] })
+    expect(state.rollbackUnavailable).toBe(false)
+  })
+})
+
 describe('createTransferProgressState: disposal', () => {
   it('an unexpected teardown leaves the operation running', async () => {
     // Replaces "fires the safety-net cancel for an unexpected teardown". A view

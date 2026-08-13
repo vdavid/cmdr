@@ -7,6 +7,12 @@
  * dispatches through `transfer-dispatch.ts`, answers the MCP round-trip, and
  * names the operation. It ends the moment an `operationId` exists.
  *
+ * A view can skip birth entirely: `adoptOperationId` names an operation that is
+ * already running, and `start()` binds it instead of dispatching. That is the
+ * queue window's Foreground button, and it is the reason the two halves are
+ * separable at all. An adopted view is the same view; the difference lives with
+ * the parent, which has no birth context to run a pane tail against.
+ *
  * **The view** is everything after that, and it owns only what belongs to a
  * piece of UI rather than to the operation: the anti-flicker floor, the
  * dismissal, the "(finishing USB transfers)" label, the last-resort close
@@ -68,6 +74,15 @@ import type { OperationOutcome, ScanReadout } from '../operation-session/operati
 import { dispatchTransferOperation, type TransferDispatchConfig } from './transfer-dispatch'
 
 export interface TransferProgressStateConfig extends TransferDispatchConfig {
+  /** An operation already running that this view ADOPTS instead of starting one
+   *  (Foreground from the queue window). When set, `start()` binds the session
+   *  for that id and dispatches nothing, so every `TransferDispatchConfig` field
+   *  above is inert: nobody reads them on this path.
+   *
+   *  The view is otherwise identical. What differs sits with the PARENT, which
+   *  has no birth context for an adopted operation and must not run a pane tail
+   *  against it (`../../file-explorer/pane/dialog-state.svelte.ts`). */
+  adoptOperationId?: string
   onComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
   onCancelled: (filesProcessed: number) => void
   onError: (error: WriteOperationError) => void
@@ -82,7 +97,14 @@ export interface TransferProgressStateConfig extends TransferDispatchConfig {
 
 /** What a view shows before its operation has said anything. A confirmed
  *  transfer starts by counting, so the dialog opens in the scan phase rather
- *  than at a meaningless 0%. */
+ *  than at a meaningless 0%.
+ *
+ *  An ADOPTED view almost never shows it: the window's fan-out holds the latest
+ *  `write-progress` for every id nobody has claimed, and flushes it inside the
+ *  same synchronous block the binder acquires in, so the operation's real phase
+ *  is there before the first paint. What's left is a window that has heard
+ *  nothing at all (a reload mid-transfer), where "counting" is the honest thing
+ *  to say for the one tick until the backend says otherwise. */
 const OPENING_PHASE: WriteOperationPhase = 'scanning'
 
 const EMPTY_SCAN: ScanReadout = {
@@ -141,7 +163,13 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   /** When this view appeared, for {@link MIN_DISPLAY_MS}. */
   const viewOpenedAtMs = Date.now()
 
-  /** This operation's backend id, `null` until the start command answers. */
+  /** The operation this view was opened to WATCH rather than to start, or
+   *  `null` for the ordinary dispatching view. Fixed for the view's whole life:
+   *  a dialog adopts once, at mount. */
+  const adoptedOperationId = config.adoptOperationId ?? null
+
+  /** This operation's backend id, `null` until the start command answers (an
+   *  adopted view knows it from the first frame). */
   let operationId = $state<string | null>(null)
 
   /** The session for the operation this view is watching. `null` for the first
@@ -391,9 +419,14 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     else clearWindDownTimers()
   })
 
+  // Auto-queue is a decision a DISPATCHING view makes: the manager admitted the
+  // operation behind a busy lane, and stacking a second modal over the one
+  // already up would be worse than surfacing the queue. A view opened precisely
+  // to watch this operation makes the opposite call — bouncing it back out of
+  // sight is the button appearing to do nothing.
   $effect(() => {
     const op = bound.current
-    if (op === null || backgrounded) return
+    if (op === null || backgrounded || adoptedOperationId !== null) return
     if (op.status === 'queued') handleAutoQueued()
   })
 
@@ -610,6 +643,18 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     }
   }
 
+  /** Adopts an operation that is already running: name it, claim the foreground
+   *  slot, and let the binder do the rest. There is no dispatch, no MCP reply,
+   *  and no unnamed window to defer a conflict over — the id was known before
+   *  this view existed. */
+  function adopt(id: string): void {
+    log.info('Adopting op={operationId} into the progress dialog', { operationId: id })
+    operationId = id
+    // Ambient surfaces (the corner chip, the failure notice) must stop repeating
+    // an operation the user is now watching in full.
+    setForegroundOperationId(id)
+  }
+
   /** Starts the dialog's work. Called from the component's `onMount`.
    *
    *  Dispatches straight away even when a `TransferDialog` preview is still
@@ -618,6 +663,10 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  the first frame. (Pause stays hidden until the write starts — a scan-wait
    *  has nothing to park, and the backend declines the flip.) */
   function start(): void {
+    if (adoptedOperationId !== null) {
+      adopt(adoptedOperationId)
+      return
+    }
     void beginOperation()
   }
 
@@ -672,6 +721,15 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     },
     get isRollingBack(): boolean {
       return isRollingBack()
+    },
+    /** The operation says it can't be reversed. `supportsRollback` is a promise
+     *  about the OPERATION, so the registry row is the authority wherever it has
+     *  arrived; the dialog's own same-volume-move rule stands beside it, for the
+     *  window before the first snapshot lands. An adopted view has nothing but
+     *  this: no volume ids, no direction, no birth context to reason from. */
+    get rollbackUnavailable(): boolean {
+      const snapshot = session()?.snapshot ?? null
+      return snapshot !== null && !snapshot.supportsRollback
     },
     /** The operation has reported a cancel, and the dialog stays in
      *  "Cancelling…" until the backend has finished tearing down too. */
