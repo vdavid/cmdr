@@ -51,12 +51,21 @@ async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathB
         .and_then(|first| archive::archive_boundary_candidate(first))
         .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
     let archive_source = if is_inner_candidate {
-        let resolved = get_volume_manager()
-            .resolve(volume_id, first_source.expect("candidate implies a source"))
-            .await;
+        // Bounded, because confirming a REMOTE archive boundary is real network
+        // I/O and this runs BEFORE the preview exists — so the scan watchdog,
+        // which bounds everything after, cannot cover it, and a wedged share
+        // would hold the dialog on its spinner with no preview to give up on.
+        // A deadline here degrades to the parent volume below, which reaches a
+        // terminal outcome the ordinary way.
+        let owned_id = volume_id.to_string();
+        let owned_source = first_source.expect("candidate implies a source").clone();
+        let resolved = crate::commands::util::timeout_detached(Duration::from_secs(15), async move {
+            Ok::<_, String>(get_volume_manager().resolve(&owned_id, &owned_source).await)
+        })
+        .await;
         // `is_archive` gates whether we actually got the ArchiveVolume (a mislabeled
         // `.zip` falls through to the parent, which the branches below handle).
-        resolved.is_archive.then_some(resolved.volume).flatten()
+        resolved.ok().and_then(|r| r.is_archive.then_some(r.volume).flatten())
     } else {
         None
     };
