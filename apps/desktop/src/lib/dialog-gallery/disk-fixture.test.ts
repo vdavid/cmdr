@@ -26,7 +26,14 @@ vi.mock('$lib/file-explorer/navigation/navigate-and-select', () => ({
 }))
 
 vi.mock('$lib/file-explorer/pane/explorer-state.svelte', () => ({
-  explorerState: { getShowHiddenFiles: () => true, getTabMgr: () => 'tab-manager' },
+  explorerState: { getTabMgr: () => 'tab-manager' },
+}))
+
+// Dotfile visibility comes from the live setting, not from the pane. Pinned to the
+// non-default value here so the assertions below prove the fixture carries what the
+// user has set, rather than accidentally matching the registry default.
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getShowHiddenFiles: () => true,
 }))
 
 vi.mock('$lib/file-explorer/tabs/tab-state-manager.svelte', () => ({

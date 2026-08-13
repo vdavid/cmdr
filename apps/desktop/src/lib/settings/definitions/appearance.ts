@@ -407,7 +407,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     cardKey: 'settings.appearance.card.namesAndIcons',
     keywords: ['hidden', 'dotfile', 'dotfiles', 'invisible', 'system', 'ds_store', 'show'],
     type: 'boolean',
-    default: true,
+    default: false,
     component: 'switch',
   },
   {

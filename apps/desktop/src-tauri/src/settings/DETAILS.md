@@ -7,7 +7,11 @@
 Each field is `parse_settings`-extracted from a literal dot-notation key in `settings.json`. Source key noted where it
 differs from the field name.
 
-- `show_hidden_files: bool` (default true).
+- `show_hidden_files: bool` (default off). The three backend spellings of that default (the serde attribute,
+  `Settings::default` for a missing/unreadable file, and `parse_settings` for a file without the key) all read one
+  `DEFAULT_SHOW_HIDDEN_FILES` const, so they can't drift. The frontend registry
+  (`src/lib/settings/definitions/appearance.ts`) carries the matching default; nothing checks the two sides
+  mechanically, so tests on each side stand in for a parity check.
 - `full_disk_access_choice`: consulted at launch by the indexer FDA gate.
 - `developer_mcp_enabled: Option<bool>`. Absent (the common case) → `None` → `mcp/config.rs` uses its
   env → setting → debug-build-on fallback. The FE settings store persists sparsely now (only keys an actor explicitly

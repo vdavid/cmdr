@@ -198,6 +198,29 @@ describe('sparse settings persistence', () => {
     expect(await store.forceSave()).toBe(true)
   })
 
+  it('(i) a hidden-files choice survives the default, an untouched store follows it', async () => {
+    // This is what makes the "hidden files off by default" flip safe without a migration:
+    // whoever deliberately turned dotfiles on has the key on disk and keeps them, and
+    // whoever never touched the switch picks up the default. Both toggle paths (the
+    // Settings switch and the native View menu, which arrives as `settings-changed`) go
+    // through `setSetting`, so both land in the explicit ledger.
+    disk.set('listing.showHiddenFiles', true)
+    disk.set('_schemaVersion', 4)
+
+    const chose = await loadStore()
+    await chose.initializeSettings()
+    expect(chose.getSetting('listing.showHiddenFiles')).toBe(true)
+    await chose.forceSave()
+    expect(disk.get('listing.showHiddenFiles')).toBe(true)
+
+    // A store nobody wrote that key into resolves to the registry default.
+    disk.clear()
+    vi.resetModules()
+    const untouched = await loadStore()
+    await untouched.initializeSettings()
+    expect(untouched.getSetting('listing.showHiddenFiles')).toBe(false)
+  })
+
   it('(f) pre-init reads return defaults and write nothing', async () => {
     const store = await loadStore()
 

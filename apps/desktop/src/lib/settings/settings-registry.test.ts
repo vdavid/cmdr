@@ -54,6 +54,16 @@ describe('getDefaultValue', () => {
     expect(value).toBe(true)
   })
 
+  it('hides hidden files by default', () => {
+    // A first listing shows what the user keeps, not `.DS_Store` and `.git`. Three
+    // defaults have to agree on this: the registry (resolved at read time here), the
+    // reactive `$state` seed in `reactive-settings.svelte.ts`, and the Rust loader
+    // (`src-tauri/src/settings/loader.rs`), which builds the native View-menu item's
+    // checked state. Nothing checks that parity mechanically, so this pins the frontend
+    // half.
+    expect(getDefaultValue('listing.showHiddenFiles')).toBe(false)
+  })
+
   it('should return correct defaults for number settings', () => {
     const value = getDefaultValue('fileOperations.progressUpdateInterval')
     expect(typeof value).toBe('number')

@@ -154,8 +154,14 @@ pub struct Settings {
     pub media_index_semantic_search_enabled: Option<bool>,
 }
 
+/// Dotfiles stay out of a listing until the user asks for them. The one place the
+/// backend spells this out: `parse_settings` (an existing `settings.json` without the
+/// key), `Settings::default` (no file at all, so the first run), and the serde attribute
+/// all read it, and they'd contradict each other if each carried its own literal.
+const DEFAULT_SHOW_HIDDEN_FILES: bool = false;
+
 fn default_show_hidden() -> bool {
-    true
+    DEFAULT_SHOW_HIDDEN_FILES
 }
 
 impl Settings {
@@ -169,7 +175,7 @@ impl Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            show_hidden_files: true,
+            show_hidden_files: DEFAULT_SHOW_HIDDEN_FILES,
             full_disk_access_choice: FullDiskAccessChoice::NotAskedYet,
             developer_mcp_enabled: None,
             developer_mcp_port: None,
@@ -232,7 +238,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let show_hidden_files = json
         .get("listing.showHiddenFiles")
         .and_then(|v| v.as_bool())
-        .unwrap_or(true);
+        .unwrap_or(DEFAULT_SHOW_HIDDEN_FILES);
 
     // The registry key, falling back to the pre-migration top-level name. The frontend's
     // schema-4 migration moves the value, but Rust reads `settings.json` at startup,
@@ -641,6 +647,29 @@ mod tests {
             parse_settings("{}").unwrap().full_disk_access_choice,
             FullDiskAccessChoice::NotAskedYet
         );
+    }
+
+    /// Dotfiles stay out of the way until someone asks for them. Three defaults have to
+    /// agree or the app contradicts itself between a fresh install, an existing
+    /// `settings.json`, and the native View menu built from whatever this returns.
+    #[test]
+    fn hidden_files_are_off_unless_the_user_turned_them_on() {
+        // A `settings.json` with no such key: the sparse frontend store writes the key only
+        // when an actor sets it, so "absent" means "never chose".
+        assert!(!parse_settings("{}").unwrap().show_hidden_files);
+        // No file at all, or an unreadable one: `load_settings` falls back to this, and the
+        // View menu's checked state is built from it.
+        assert!(!Settings::default().show_hidden_files);
+    }
+
+    #[test]
+    fn an_explicit_show_hidden_files_choice_wins_over_the_default() {
+        // Someone who turned dotfiles on keeps them on; someone who turned them off keeps
+        // that too, even though it now matches the default.
+        let on = r#"{ "listing.showHiddenFiles": true }"#;
+        assert!(parse_settings(on).unwrap().show_hidden_files);
+        let off = r#"{ "listing.showHiddenFiles": false }"#;
+        assert!(!parse_settings(off).unwrap().show_hidden_files);
     }
 
     #[test]

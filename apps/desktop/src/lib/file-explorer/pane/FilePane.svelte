@@ -158,7 +158,7 @@
         volumePath = '/',
         volumeName,
         isFocused = false,
-        showHiddenFiles = true,
+        showHiddenFiles = false,
         viewMode = 'full',
         sortBy = 'name',
         sortOrder = 'ascending',
