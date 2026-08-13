@@ -172,7 +172,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
    * Whether the current run has already been asked to stop.
    *
    * `running` only clears on the run's own terminal event, so a run that never sends
-   * one would answer "there was one to stop" forever — and Escape's two-step, which
+   * one would answer "there was one to stop" forever, and Escape's two-step, which
    * closes only once there is nothing left to stop, could never reach the close.
    */
   let stopAsked = false
@@ -580,7 +580,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       deps.getConfig().streamingSource?.cancel(liveRunId)
       // The end state is the run's own word (the terminal update relabels it), so
       // nothing flips here. What this promises the caller is only "this ask is the
-      // one that stopped it" — a second ask answers `false`, so Escape closes rather
+      // one that stopped it": a second ask answers `false`, so Escape closes rather
       // than sitting on a run whose terminal event may never come.
       return true
     },

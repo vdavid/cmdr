@@ -483,7 +483,7 @@ Both reports are collected and thrown together, so a test that leaks a toast AND
 
 **The overlay auto-clean presses Escape TWICE**, with the round-trip in between letting the DOM settle. Escape in the
 query dialogs is a two-step while a live run is going (first press stops the run, second closes the dialog,
-`lib/query-ui/DETAILS.md` § Streaming), so one press cleans nothing when a spec leaves a search running — and then the
+`lib/query-ui/DETAILS.md` § Streaming), so one press cleans nothing when a spec leaves a search running, and then the
 guard's promise above stops being true. That combination once turned one timed-out search into 47 failures on a shard:
 the dialog stayed on screen and every later test failed on the same leak. ❌ Don't cut it back to one press.
 

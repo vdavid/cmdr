@@ -57,7 +57,7 @@ test.describe('Search dialog: recent searches', () => {
     // just before this one on the same shard, and it scopes its search to "this
     // volume". Inheriting that chip pointed this run at the whole boot drive, so a
     // test that means to search a fixture tree was waiting on the root volume's index
-    // coverage instead — 0.5 s when the machine was idle, past the 5 s wait when it
+    // coverage instead: 0.5 s when the machine was idle, past the 5 s wait when it
     // wasn't.
     const seededQuery = 'file'
     await mcpCall('open_search_dialog', {

@@ -195,8 +195,8 @@ async function reportAndCleanOverlayLeak(
   // window-bound handlers elsewhere). Click each toast's close button.
   //
   // TWICE, with the round-trip in between letting the DOM settle: Escape in the query
-  // dialogs is a two-step while a live run is going (`QueryDialog.resolveEscape`) —
-  // the first press stops the run, the second closes the dialog. One press left a
+  // dialogs is a two-step while a live run is going (`QueryDialog.resolveEscape`),
+  // where the first press stops the run and the second closes the dialog. One left a
   // search dialog on screen, and since this guard is all that keeps a leak off the
   // next test, every later test on the shard died on the same overlay. The second
   // round finds nothing to dispatch at when the first press already closed things.
