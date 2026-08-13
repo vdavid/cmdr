@@ -322,15 +322,35 @@ async fn await_operation_complete(params: &Value, timeout_s: u64) -> ToolResult 
 /// Poll until no operation is running or queued (paused ops excluded — see
 /// `operations_are_idle`).
 async fn await_operations_idle(timeout_s: u64) -> ToolResult {
-    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(timeout_s);
+    let started = tokio::time::Instant::now();
+    let deadline = started + std::time::Duration::from_secs(timeout_s);
     let poll_interval = std::time::Duration::from_millis(250);
+    let mut polls = 0_u32;
 
     loop {
-        let statuses: Vec<LifecycleStatus> = crate::file_system::list_operations()
+        polls += 1;
+        let snapshot: Vec<(String, LifecycleStatus)> = crate::file_system::list_operations()
             .iter()
-            .map(|op| op.status)
+            .map(|op| (op.operation_id.clone(), op.status))
             .collect();
+        let statuses: Vec<LifecycleStatus> = snapshot.iter().map(|(_, status)| *status).collect();
         if operations_are_idle(&statuses) {
+            // ⚠️ Diagnostic anchor, keep it. This tool once answered "idle" while
+            // a copy admitted eight seconds earlier was ~20% done, silently
+            // invalidating the test that trusted it, and it has not reproduced —
+            // so the next occurrence has to be diagnosable from the log alone.
+            // The snapshot IS the evidence: an empty list means
+            // `list_operations` never saw the operation, a non-empty one means
+            // every row read as paused or settled, and the poll count separates
+            // "concluded on the first look" from "watched the queue drain".
+            // Debug, because the file target is unconditionally Debug (so it's in
+            // every report bundle) while the terminal stays quiet.
+            log::debug!(
+                target: "mcp::await",
+                "operations_idle: idle after {polls} poll(s) in {:?}, snapshot: {}",
+                started.elapsed(),
+                describe_operations(&snapshot),
+            );
             return Ok(json!("OK: Condition met — no running or queued operations."));
         }
         if tokio::time::Instant::now() >= deadline {
@@ -338,12 +358,31 @@ async fn await_operations_idle(timeout_s: u64) -> ToolResult {
                 .iter()
                 .filter(|s| matches!(s, LifecycleStatus::Running | LifecycleStatus::Queued))
                 .count();
+            log::debug!(
+                target: "mcp::await",
+                "operations_idle: timed out after {polls} poll(s), snapshot: {}",
+                describe_operations(&snapshot),
+            );
             return Err(ToolError::internal(format!(
                 "Timed out after {timeout_s}s waiting for the queue to go idle ({running} still running or queued)"
             )));
         }
         tokio::time::sleep(poll_interval).await;
     }
+}
+
+/// The operation snapshot a decision was made on, for the log: `id=status` per
+/// row, or `none` for an empty one. The empty case is the whole point, so it
+/// gets a word rather than rendering as nothing at all.
+fn describe_operations(snapshot: &[(String, LifecycleStatus)]) -> String {
+    if snapshot.is_empty() {
+        return "none".to_string();
+    }
+    snapshot
+        .iter()
+        .map(|(id, status)| format!("{id}={status:?}"))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 // ── Network tools ────────────────────────────────────────────────────
@@ -546,5 +585,20 @@ mod operation_await_tests {
         ]));
         // A lone paused op is idle: it's parked, so requiring it to drain would hang forever.
         assert!(operations_are_idle(&[LifecycleStatus::Paused]));
+    }
+
+    /// The two readings the diagnostic line has to keep apart: "the snapshot was
+    /// empty" (nothing was ever registered) and "the snapshot had rows, none of
+    /// them live". An empty list rendering as nothing at all would collapse them.
+    #[test]
+    fn an_empty_snapshot_is_described_as_none() {
+        assert_eq!(describe_operations(&[]), "none");
+        assert_eq!(
+            describe_operations(&[
+                ("op-a".to_string(), LifecycleStatus::Paused),
+                ("op-b".to_string(), LifecycleStatus::Done),
+            ]),
+            "op-a=Paused, op-b=Done"
+        );
     }
 }
