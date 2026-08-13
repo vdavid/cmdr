@@ -19,8 +19,10 @@ counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`
   chip. The view keeps only UI: `MIN_DISPLAY_MS`, dismissal, the settle-slow label, the cancel-settle fallback, the
   Queue handoff. ❌ Never a second smoother, listener, or event buffer.
 - **A close is a DETACH, ❌ never a cancel.** `ModalDialog`'s `onclose` goes to `detach()`, handing a still-running
-  operation to the queue window; only the Cancel button cancels, and unmounting stops nothing. ❌ While a clash is up
-  there's no `onclose` at all: every way out of a clash decides something about the user's files.
+  operation to the queue window; only the Cancel button cancels, and unmounting stops nothing. With no session yet (the
+  sub-frame after the id lands) it leaves the operation ALONE, exactly as `handleCancel` does: guessing would report a
+  cancel over a live transfer. ❌ While a clash is up there's no `onclose` at all: every way out of a clash decides
+  something about the user's files.
 - **Queue and the dialog-scoped F2 are FRONTEND-ONLY** (set `backgrounded`, open the queue window, unmount via
   `onQueue`). ❌ `backgrounded` and `destroyed` stay plain `let`s: teardown reads them during reactive-scope disposal,
   where a rune returns a stale value, which is how a just-queued transfer once got cancelled.

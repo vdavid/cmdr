@@ -888,6 +888,27 @@ describe('createTransferProgressState: adopting a running operation', () => {
     return { state, config }
   }
 
+  it('leaves the operation alone when it closes before the session takes hold', async () => {
+    // The sliver between the id landing and the binder's effect flushing: no
+    // click can reach it, but a teardown can. Reporting a cancel from here
+    // would run the pane tail over an operation that is still copying, so the
+    // detach does what its name says and stops watching. Same refusal
+    // `handleCancel` makes with no session to command.
+    vi.mocked(listOperations).mockResolvedValue([snapshot(ADOPTED, 'running')])
+    const config = makeConfig({ adoptOperationId: ADOPTED })
+    const state = makeState(config)
+    // ❌ Nothing may `await` between these two lines: the whole point is the
+    // frame where `operationId` is set and `bound.current` is still null.
+    state.start()
+    state.detach()
+    vi.advanceTimersByTime(450)
+
+    expect(config.onCancelled).not.toHaveBeenCalled()
+    expect(cancelOperation).not.toHaveBeenCalled()
+    expect(cancelWriteOperation).not.toHaveBeenCalled()
+    await settle()
+  })
+
   it('binds the named operation without starting a new one', async () => {
     const { state } = await adoptedState()
 

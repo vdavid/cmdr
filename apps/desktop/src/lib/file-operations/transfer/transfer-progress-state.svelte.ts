@@ -539,6 +539,18 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       backgroundRequestedBeforeId = true
       return
     }
+    if (bound.current === null) {
+      // The binder acquires on the first effect flush after the id lands, the
+      // same sub-frame sliver `handleCancel` refuses in. Nothing here knows
+      // whether the operation is still running, and a detach that guesses would
+      // report a cancel for a transfer that is still copying — the pane tail
+      // included. Stopping watching is what a detach means; the corner chip and
+      // the queue window keep showing the operation.
+      log.warn('The modal closed for op={operationId} before its session took hold; leaving the operation alone', {
+        operationId,
+      })
+      return
+    }
     if (canHandOff()) handleQueue()
     else dismiss()
   }

@@ -533,6 +533,11 @@ answer:
   follows (`../DETAILS.md` § "Conflict prompts").
 - **`dismiss()` refuses to speak for an operation that ended some other way.** It reports `onCancelled`, and the pane
   runs a different tail for a cancel than for a completion, so it fires only while a cancel is what is happening.
+- **A detach with no session leaves the operation alone.** The binder acquires on the first effect flush after the id
+  lands, and in that sub-frame sliver nothing knows whether the operation is still running — so `detach()` logs and
+  returns rather than falling through to `dismiss()`, which would report `onCancelled(0)` and run the pane tail over a
+  transfer that is still copying. Same refusal `handleCancel` makes in the same window, and for the same reason: with no
+  session there is nothing to ask and nothing to say.
 
 **A `gone` outcome closes the dialog too.** The session resolves `gone` when it has heard nothing about the operation
 and `list_operations()` doesn't have it either. For a dialog that just dispatched, that means the operation ended inside
