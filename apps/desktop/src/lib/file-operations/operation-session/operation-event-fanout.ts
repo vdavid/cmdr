@@ -3,12 +3,12 @@
  * delivery out.
  *
  * Everything the backend emits about write operations is broadcast to every
- * webview with no addressee, so each interested party used to subscribe to all
- * of them and filter by `operationId` (the progress dialog still does, until it
- * becomes a view). Ten sessions would mean seventy subscriptions, but listener
- * count is the least of it: the fan-out is a correctness boundary. It is the one
- * place that holds events arriving for an operation no session has claimed yet,
- * and the one place that defines arrival order.
+ * webview with no addressee, so each interested party would otherwise subscribe
+ * to all of them and filter by `operationId`. Ten sessions would mean seventy
+ * subscriptions, but listener count is the least of it: the fan-out is a
+ * correctness boundary. It is the one place that holds events arriving for an
+ * operation no session has claimed yet, and the one place that defines arrival
+ * order.
  *
  * It is a router with a holding area, NOT a gate. `createOperationsStore()` is a
  * reducer over ALL operations and keeps receiving everything unbuffered, so the

@@ -15,7 +15,7 @@ views is an ordinary state.
   session; ❌ never built on its own.
 - `operation-session-registry.ts`: `createOperationSessionRegistry()` — refcounted `acquire` / `release`.
 - `bind-operation-session.svelte.ts`: `bindOperationSession(() => id)` — how a view binds, and how it lets go without
-  having to remember to. What the queue rows and the corner chip use.
+  having to remember to. What the queue rows, the corner chip, and the progress dialog use.
 - `window-operation-sessions.svelte.ts`: this window's instance, plus `initOperationSessions()` /
   `destroyOperationSessions()`, called by `routes/(main)/+page.svelte` and `routes/queue/+page.svelte`.
 

@@ -9,8 +9,11 @@ and its `transfer/` subdir (copy/move semantics).
 
 - `TransferDialog.svelte`: shell over `transfer-scan-state.svelte.ts` (deep scan preview),
   `transfer-conflict-check.svelte.ts` (cheap top-level check), and `transfer-dialog-logic.ts` (pure helpers).
-- `TransferProgressDialog.svelte`: execution shell over `transfer-progress-state.svelte.ts` (the headless
-  event/phase/cancel/pause/queue/conflict machine), plus `TransferConflictDialog.svelte`, `transfer-stall.ts`.
+- `TransferProgressDialog.svelte`: execution shell over `transfer-progress-state.svelte.ts` (the dialog as a VIEW of one
+  operation: it dispatches, binds the session, and owns the anti-flicker floor, dismissal, and the Queue handoff), plus
+  `TransferConflictDialog.svelte`, `transfer-stall.ts`.
+- `transfer-dispatch.ts`: birth. Which backend command a confirmed copy/move/compress/delete/trash routes to, and the
+  three settings it reads once. No state, no runes.
 - `TransferErrorDialog.svelte` + `FallbackErrorContent` for the typed `WriteOperationError`, and the rest:
   `ArchivePasswordDialog`, `ScanPhaseBody`, `DirectionIndicator`, the `transfer-*.ts` helpers.
 
@@ -45,14 +48,18 @@ and its `transfer/` subdir (copy/move semantics).
 - **`data-scan-state` on `.scan-stats`** is E2E's only race-free "counting done" signal; `DeleteDialog` mirrors it.
 - **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its auto-confirm (MCP) path must NEVER
   silently overwrite.
-- **This dialog is the last surface that commands its operation directly.** Pause, resume, cancel, rollback, and the
-  conflict answer are session methods (`../operation-session/CLAUDE.md`), which the queue rows and the main window's
-  conflict prompt call; this module keeps private copies until it becomes a view of one. Both obey the same rule:
-  Pause/Resume and the "Paused" title follow the `operations-changed` snapshot status, ❌ never `is_running`.
-- **Queue and the dialog-scoped F2 are FRONTEND-ONLY**: they set `backgrounded` (so `onDestroy` skips its safety-net
-  cancel), open the queue window, and unmount via `onQueue` without cancelling. ❌ `backgrounded` and `destroyed` stay
-  plain `let`s: `destroy()` reads them during reactive-scope disposal, where a rune returns a stale value and the guard
-  wrongly cancels a just-queued transfer.
+- **The dialog is a VIEW of its operation, ❌ never its owner.** What the operation is (phase, counts, rates, smoothed
+  ETA, clash, outcome) and what can be done to it (pause, resume, cancel, roll back, answer the clash) come from its
+  session (`../operation-session/CLAUDE.md`), shared with the queue rows and the corner chip. The view keeps only what
+  belongs to a piece of UI: `MIN_DISPLAY_MS`, dismissal, the settle-slow label, the cancel-settle fallback, the Queue
+  handoff. ❌ Never give it a second smoother, listener, or event buffer of its own.
+- **A close is a DETACH, ❌ never a cancel.** `ModalDialog`'s `onclose` (×, Escape, focus-trap teardown) goes to
+  `detach()`, which hands a still-running operation to the queue window and otherwise just stops watching. Only the
+  Cancel button cancels, and unmounting stops nothing at all. DETAILS § "The dialog is a view".
+- **Queue and the dialog-scoped F2 are FRONTEND-ONLY**: they set `backgrounded`, open the queue window, and unmount via
+  `onQueue` without cancelling. ❌ `backgrounded` and `destroyed` stay plain `let`s: teardown reads them during
+  reactive-scope disposal, where a rune returns a stale value — that is how a just-queued transfer once got cancelled
+  and the queue window opened empty.
 
 Flows, the phase catalog (`flushing`, MTP's interleaved move), decisions, and gotchas: `DETAILS.md`. Read it before any
 non-trivial work here: editing, planning, reorganizing, or advising.

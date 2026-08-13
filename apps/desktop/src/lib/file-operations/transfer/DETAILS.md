@@ -32,9 +32,9 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
 `backgrounded` in § "Pause, Queue, and auto-queue". Only the layout facts that none of those carry live here:
 
 - **In `transfer-progress-state.svelte.ts`, `backgrounded` and `destroyed` are plain `let`s, NOT `$state`.** They're
-  read inside `destroy()` during synchronous reactive-scope disposal, where a `$state` rune read returns a STALE value
-  and the safety-net-cancel guard would wrongly fire on a just-queued transfer. Full why in the module header; don't
-  "modernize" them into runes.
+  read on teardown paths that run during synchronous reactive-scope disposal, where a `$state` rune read returns a
+  STALE value: that is how a just-queued transfer once got cancelled, killing the transfer and opening the queue window
+  empty. Full why in the module header; don't "modernize" them into runes.
 - **`DirectionIndicator.svelte` is the progress dialog's alone** (the confirm dialog shows its `From` card instead). Its
   optional `sourceLabel` / `destinationLabel` props override the path-basename label so a volume root renders the volume
   display name, not a raw machine id (an MTP storage id like `65538`).
@@ -89,10 +89,10 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
      from the first frame. While `phase === 'scanning'` it renders the scan-phase body, hides Pause (the backend
      declines a pause in a scan-wait), and disables Rollback (nothing written yet); Background stays, which is the whole
      point.
-   - Calls `copyFiles()` or `moveFiles()` based on `operationType`.
-   - Subscribes via `onWriteProgress`, `onWriteComplete`, `onWriteError`, `onWriteCancelled`, `onWriteSettled`,
-     `onWriteConflict` wrappers (which internally listen to Tauri events). Uses a `BufferedEvent` discriminated union
-     (`{ type: 'progress'; event: WriteProgressEvent }`, etc.) to buffer events until the `operationId` is known.
+   - Routes to a backend command through `transfer-dispatch.ts`, then binds the session for the id it gets back.
+   - Subscribes to nothing. The window's fan-out holds the seven streams and buffers whatever arrives for an id no
+     session has claimed yet, which covers the gap between the start command answering and the binder acquiring. §
+     "The dialog is a view".
    - Dual progress bars (size + file count). Speed (both bytes/s and files/s) and ETA come pre-computed from the backend
      (`write_operations/eta.rs`) on every `WriteProgressEvent`; the dialog renders the numbers and applies a tiny
      display low-pass to the ETA to prevent flicker. No FE-side math. See BE § "ETA + throughput".
@@ -247,13 +247,12 @@ The user-visible differences from copy/move:
   `confirmed` and leaves the dialog open for the user to decide. The MCP tool's composed ack
   (`GenerationAdvancedOrSoftDialog`) honestly reflects both outcomes — see
   `apps/desktop/src-tauri/src/mcp/executor/ack.rs`. Don't refactor this gate away.
-- **Confirm routes to `compressFiles`**, not `copyBetweenVolumes`
-  (`transfer-progress-state.svelte.ts::dispatchCompress`). One command handles local and (later) remote sources; the
-  scan preview still runs for the Size bar.
+- **Confirm routes to `compressFiles`**, not `copyBetweenVolumes` (`transfer-dispatch.ts::dispatchCompress`). One
+  command handles local and (later) remote sources; the scan preview still runs for the Size bar.
 - **A compression-level slider shows in compress mode only** (`CompressLevelControl.svelte`, below the scan tallies). It
   renders the shared `SettingSlider` with "Faster"/"Smaller" `endLabels` and binds to `behavior.archiveCompressionLevel`
   by id, so the dialog and the Settings › Behavior › Archives row are ONE persisted value with no dialog-local state —
-  moving either reflects in the other live. `createTransferProgressState` reads the setting once at dispatch and passes
+  moving either reflects in the other live. `dispatchTransferOperation` reads the setting once at dispatch and passes
   `compressionLevel` in the op config for compress, copy, AND cross-volume move (one uniform level for every user-driven
   zip write; the backend ignores it for non-archive copies). The level's effect on the archive (added-entries-only,
   clamped 1..=9, `None` = crate default 6) is single-sourced in
@@ -441,14 +440,14 @@ When the directory has a parent entry shown at index 0, frontend indices are off
   `MIN_DISPLAY_MS = 400 ms` after `write-complete` so the user can read the final state. During that window, both Cancel
   and Rollback buttons must be disabled (`disabled={isCancelling || operationSettled}`); a click here hits a backend
   whose operation state was already removed, so it's a no-op but briefly flashes "Rolling back..." giving false
-  feedback. `operationSettled` is a `$state(false)` that flips when the operation reaches a terminal state.
+  feedback. `operationSettled` reads the session's `settled`, which flips the moment a terminal event lands.
 - **Cancel close is two-condition: `write-cancelled` + `write-settled`.** When the user clicks Cancel (without
   rollback), `TransferProgressDialog` does NOT close immediately. It keeps the "Cancelling…" label up until both events
   have arrived for this `operationId`, then applies the existing `MIN_DISPLAY_MS` floor and closes via
   `onCancelled(filesProcessed)`. After 200 ms of waiting, the label gains a clarifying tail: "Cancelling… (finishing USB
   transfers)". The BE-side contract — settle fires after a fully-torn-down spawn task, even on panic — lives in the BE
-  doc § "Settle contract". Race protection: if `write-settled` arrives before `write-cancelled` (shouldn't happen, but
-  is defensive), the dialog buffers it and closes only after `write-cancelled` has been processed. Complete / error
+  doc § "Settle contract". Race protection comes free from reading state rather than events: the view closes when the
+  session reports BOTH an outcome of `cancelled` and `settleEventReceived`, whichever order they land in. Complete / error
   paths are unchanged: they still close on the existing `MIN_DISPLAY_MS` gate without waiting for settle. The wait is
   never the only exit: `progress.dismiss()` backs a Close button that leaves at once, and the last-resort
   `CANCEL_SETTLE_FALLBACK_MS` (20 s) sits above the backend's 15 s `CANCEL_DRAIN_DEADLINE`, so the automatic path can't
@@ -467,29 +466,67 @@ When the directory has a parent entry shown at index 0, frontend indices are off
   a cancel. The scan-error and scan-cancelled listeners also flip `started = true` as a terminal signal, so a late
   `scan-preview-complete` event can't dispatch an operation after we've errored or cancelled.
 
+## The dialog is a view
+
+`createTransferProgressState` is two things with one lifetime between them, and the split is the point.
+
+**Birth** runs once. It claims the foreground slot, calls `dispatchTransferOperation`, answers the MCP round-trip, and
+ends when an `operationId` exists. **The view** is everything after: it binds the session for that id
+(`bindOperationSession`) and renders it, commands through it, and owns only what belongs to a piece of UI.
+
+What the view owns, and why each one is genuinely view-scoped:
+
+- `MIN_DISPLAY_MS`, the anti-flicker floor, measured from when THIS VIEW appeared rather than when the operation
+  started. The floor exists because something appeared and vanished too fast to read, which is a fact about the thing on
+  screen. The two clocks coincide for a dialog that started its own transfer, and they diverge for one that adopts a
+  transfer already in flight: the operation's clock would say "twenty minutes, no flash possible" about a dialog that
+  had been up for 50 ms. The view's clock is the honest one.
+- `dismiss()`, the settle-slow label, and the last-resort close timer: all about how long a person is made to watch.
+- `backgrounded` and the Queue handoff: the decision that THIS dialog should stop showing a queued operation. Another
+  view of the same operation sees the same status and does nothing. (The auto-queue path is that split in miniature: the
+  session observes `status === 'queued'`, the view decides to detach.)
+
+What the session owns: phase, counts, `currentFile`, rates, the smoothed ETA, the scan readout, `activity`, the clash,
+the outcome, the lifecycle status, and all five commands with their in-flight guards. ❌ The view keeps no second copy
+of any of it, and no listener of its own — the window's fan-out is the only subscriber, and its unclaimed-id buffer is
+what covers the gap between the start command answering and the binder acquiring on the next effect flush.
+
+**Teardown stops nothing.** A close is a detach: `ModalDialog`'s `onclose` goes to `detach()`, which hands a
+still-running operation to the queue window (exactly as the Queue button does) and otherwise just stops watching. An
+unmount does neither — the operation lives in the backend registry, and the corner chip and the queue window keep
+showing it. The one teardown-adjacent flag that still means "stop" is `cancelRequestedBeforeId`: an explicit Cancel
+pressed while the start command was in flight, which birth honours through `cancel_operation` (the MANAGER-level
+cancel, because an operation admitted behind a busy lane has no write op to cancel yet).
+
+**A `gone` outcome closes the dialog too.** The session resolves `gone` when it has heard nothing about the operation
+and `list_operations()` doesn't have it either. For a dialog that just dispatched, that means the operation ended
+inside the sliver between the start command answering and the session claiming its id — and the honest reading is "it's
+over, we don't know how", so the view closes through `onCancelled(0)` rather than sitting empty. The buffered terminal
+event normally wins that race, which is why this is a corner rather than a path.
+
 ## Pause, Queue, and auto-queue (progress dialog)
 
 `TransferProgressDialog` exposes three operation-manager controls during the active copy/move/delete phases, alongside
-the existing Cancel/Rollback. They show only while `canPauseOrQueue` is true (op started, not scanning/cancelling/
-rolling-back/settled, no conflict prompt up).
+the existing Cancel/Rollback. They show only while `canPauseOrQueue` is true (session bound, not cancelling/rolling-
+back/settled, no conflict prompt up).
 
-- **Lifecycle status comes from `operations-changed`, not `write-progress`.** The dialog subscribes to the manager's
-  thin `operations-changed` snapshot and tracks `opStatus` for its own `operationId`. A paused op still reports
-  `is_running: true` from the write-op-state map, so the bar-is-moving truth is the snapshot status (`running` vs
-  `paused` vs `queued`), never `write-progress`. This mirrors the queue window's rule (see `../queue/CLAUDE.md`). The
-  Pause↔Resume label/icon and the "Paused" title both follow `opStatus`, so the UI flips only once the backend actually
-  parked — never optimistically.
-- **Pause/Resume** calls `pauseOperation` / `resumeOperation` (no rollback semantics; the op keeps its lane slot while
-  paused). `pauseInFlight` guards against a double-click racing the IPC.
+- **Lifecycle status comes from `operations-changed`, not `write-progress`.** The dialog reads `session.status`, which
+  the session takes from the manager's thin snapshot. A paused op still reports `is_running: true` from the
+  write-op-state map, so the bar-is-moving truth is the snapshot status (`running` vs `paused` vs `queued`), never
+  `write-progress`. This mirrors the queue window's rule (see `../queue/CLAUDE.md`). The Pause↔Resume label/icon and the
+  "Paused" title both follow it, so the UI flips only once the backend actually parked — never optimistically.
+- **Pause/Resume** is `session.togglePause()`, which steers by that same status (no rollback semantics; the op keeps its
+  lane slot while paused). The session's `pauseInFlight` guards against a double-click racing the IPC, and because the
+  guard lives on the shared session, a queue row watching the same operation sees the press too.
 - **Queue (send to background)** is FRONTEND-ONLY state, no backend command. `handleQueue` sets the local `backgrounded`
   flag, opens the queue window (`openQueueWindow`), shows a quiet `info` toast (group `transfer-queue`), and calls the
   `onQueue` prop so the parent (`dialog-state.svelte.ts` → `handleTransferQueue`) unmounts the modal **without
   cancelling** the op. The op runs on, now managed in the queue window. The button reads "Background" with an empty
   queue and "Queue" otherwise (`../queue/queue-backlog.ts`); the action is the same either way.
-- **`backgrounded` suppresses the onDestroy safety-net cancel.** Normally `onDestroy` cancels a non-settled op (hot-
-  reload / window close must not leak silent background work). Backgrounding is the deliberate exception: the user chose
-  to keep it running, so the cancel is gated on `!backgrounded`. This is the one path where the modal unmounts and the
-  op survives.
+- **`backgrounded` is a one-way latch, not a guard against anything.** It records that this view has already handed the
+  operation over, so a second Queue press, an auto-queue firing behind a manual one, and a close during the handoff are
+  all no-ops. It no longer suppresses a teardown cancel, because there is no teardown cancel: every unmount leaves the
+  operation running. It stays a plain `let` regardless — see § "File map".
 - **Dialog-scoped F2 → Queue.** `handleKeydown` (passed to `ModalDialog` as `onkeydown`) intercepts `F2` and triggers
   `handleQueue`, mirroring Total Commander's copy-dialog-local F2. It is NOT a `command-registry` binding: F2 is
   globally `file.rename`. The mechanism that scopes it: `ModalDialog`'s overlay `handleOverlayKeydown`
@@ -499,8 +536,9 @@ rolling-back/settled, no conflict prompt up).
   by the negative test in `TransferProgressDialog.queue.test.ts`.) `preventDefault` stops any default browser action on
   the key.
 - **Auto-queue surfacing.** When a new op starts on a busy lane, the manager admits it as `queued` rather than spawning
-  it. The dialog detects this from the snapshot (a one-shot `list_operations` seed after `operationId` arrives catches
-  the registration tick that may have fired before we knew our id; live ticks keep it current thereafter) and
-  auto-backgrounds: it surfaces the queue window with a quiet "N transfers ahead" toast and unmounts, exactly like a
-  manual Queue. The currently-foregrounded op keeps its modal; we never stack a second modal. "N ahead" counts the ops
-  occupying lanes (running or paused), floored at 1.
+  it. The view watches `session.status` for that and auto-backgrounds: it surfaces the queue window with a quiet "N
+  transfers ahead" toast and unmounts, exactly like a manual Queue. The currently-foregrounded op keeps its modal; we
+  never stack a second modal. "N ahead" counts the ops occupying lanes (running or paused) in the main window's
+  operations store — the same live rows the Background/Queue label reads — floored at 1. The dialog needs no seeding
+  logic of its own: a session that hears nothing on attach asks `list_operations()` itself, which is what catches the
+  registration tick that fired before anything in this window was watching.

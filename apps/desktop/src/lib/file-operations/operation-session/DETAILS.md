@@ -8,8 +8,9 @@ An **operation session** is keyed by `operationId`. It reads the write-event str
 snapshot, holds phase and metrics, and does not know or care whether anything is rendering it. It lives as long as
 something is watching, and its subject lives as long as the backend record.
 
-**Views** bind to a session and render it: the progress dialog is one, a queue row is one, the corner chip is a minimal
-one. Zero views is a legal, ordinary state, and it is precisely what "backgrounded" means.
+**Views** bind to a session and render it: the progress dialog is one (`../transfer/DETAILS.md` § "The dialog is a
+view"), a queue row is one, the corner chip is a minimal one. Zero views is a legal, ordinary state, and it is precisely
+what "backgrounded" means.
 
 ## Why a registry, not a session per view
 
@@ -65,9 +66,13 @@ so folding the queue into the main window as a popup would simply make its sessi
 
 ## Why sessions read a fan-out, not their own listeners
 
-The progress dialog subscribes to seven streams for one operation. Ten sessions must not mean seventy subscriptions, but
-listener count is the least of it: the fan-out is a **correctness boundary**. One place buffers events arriving for an
-id no session has claimed yet, and one place defines arrival order.
+Seven streams carry everything about one operation. Ten sessions must not mean seventy subscriptions, but listener count
+is the least of it: the fan-out is a **correctness boundary**. One place buffers events arriving for an id no session
+has claimed yet, and one place defines arrival order.
+
+That buffer is load-bearing rather than defensive. The progress dialog dispatches, learns its `operationId`, and binds a
+session on the next effect flush; everything the backend emits in between belongs to an id nobody has claimed. The
+buffer is what makes that gap harmless, and it is why the dialog needs no event buffer of its own.
 
 It is a new module rather than an extension of `createOperationsStore()`, which subscribes to two of the seven streams,
 is a reducer over all operations at once, and has no per-id attach API to extend. The demultiplexer sits underneath
