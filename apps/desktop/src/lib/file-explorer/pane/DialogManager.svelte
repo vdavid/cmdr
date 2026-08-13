@@ -17,7 +17,7 @@
         TransferErrorPropsData,
         ArchivePasswordPropsData,
         DeleteDialogPropsData,
-    } from './dialog-state.svelte'
+    } from './dialog-props'
     import type { ConflictResolution, FriendlyError, TransferOperationType, WriteOperationError } from '../types'
 
     const {

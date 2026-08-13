@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { PaneAccess } from './pane-access'
 import type { FilePaneAPI } from './types'
-import type { TransferProgressPropsData } from './dialog-state.svelte'
+import type { TransferProgressPropsData } from './dialog-props'
 
 const {
   copyFilesToClipboardSpy,

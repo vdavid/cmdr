@@ -15,7 +15,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createDialogState, type TransferProgressPropsData } from './dialog-state.svelte'
+import { createDialogState } from './dialog-state.svelte'
+import type { TransferProgressPropsData } from './dialog-props'
 import {
   clearForegroundOperation,
   getForegroundFailureId,

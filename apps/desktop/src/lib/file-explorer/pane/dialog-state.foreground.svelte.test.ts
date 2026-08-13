@@ -16,7 +16,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createDialogState, type AdoptedOperationData, type TransferProgressPropsData } from './dialog-state.svelte'
+import { createDialogState } from './dialog-state.svelte'
+import type { AdoptedOperationData, TransferProgressPropsData } from './dialog-props'
 import type { WriteOperationError } from '../types'
 import type { FilePaneAPI } from './types'
 import { addToast } from '$lib/ui/toast'

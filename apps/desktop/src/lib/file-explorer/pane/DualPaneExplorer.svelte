@@ -69,11 +69,8 @@
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import type { TransferOperationType } from '../types'
     import type { Initiator } from '$lib/tauri-commands'
-    import {
-        createDialogState,
-        type AdoptedOperationData,
-        type ForegroundOperationVerdict,
-    } from './dialog-state.svelte'
+    import { createDialogState } from './dialog-state.svelte'
+    import type { AdoptedOperationData, ForegroundOperationVerdict } from './dialog-props'
     import { explorerState } from './explorer-state.svelte'
     import type { PaneAccess } from './pane-access'
     import { createClipboardOperations } from './clipboard-operations'

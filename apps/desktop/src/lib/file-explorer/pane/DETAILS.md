@@ -442,6 +442,20 @@ architecture in `../drag/DETAILS.md` § "Self-drag identity".
 renders the copy on the FE from that typed error (`transfer-error-messages.ts`). The factory pattern keeps the giant
 component testable: pass deps in, get back a struct of state + handlers.
 
+That factory is a composition root over four siblings, and the split carries the safety argument of § "Birth context"
+below rather than merely spreading lines:
+
+- `dialog-props.ts`: the prop shape of every dialog plus `DialogStateDeps`. Types only, so the runtime modules can name
+  each other's data without importing each other's behavior.
+- `transfer-pane-effects.ts`: everything a settled transfer does to the panes, all of it reading birth context. The one
+  module that can touch a pane, and the one an adopted view is built without.
+- `adopted-operation.svelte.ts`: the progress dialog's adopted arm, owning that slot and its four outcomes.
+- `archive-password-flow.svelte.ts`: the password prompt and its `transfer` / `browse` modes.
+- `transfer-op-label.ts`: the log-line label for an operation type, shared by the two families.
+
+`dialog-state.svelte.ts` keeps birth context, the confirmation / alert / error dialogs, and the cross-cutting queries
+(`anyDialogOpen`, `isConfirmationDialogOpen`, `dismissAllAfterRenderFailure`, the MCP `confirmOpenDialog`).
+
 `handleTransferConfirm` takes no scan flag: the progress dialog no longer waits for a `TransferDialog` preview, because
 the backend registers the operation at confirm and its own task waits for the preview it claimed
 (`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "The scan-wait"). What the handler MUST keep
@@ -455,16 +469,24 @@ The progress dialog can show an operation this window never started (Show, on a 
 did** belongs to its session, **what a pane should do about it** belongs to the view and is bound to the moment the
 operation was born, and **what the dialog draws** is chrome either can supply.
 
-**Two slots, and they are separate variables on purpose.** `transferProgressProps` is birth context: the paths, the pane
-side, the per-type counts, the dispatch input. `adoptedProgressProps` is an operation this window is only watching: an
-id, a type, and two paths off the registry row. `foregroundOperation()` fills the second and never the first, so an
-adoption CANNOT overwrite a live birth context. That is not tidiness, it is the one hazard in this feature:
+**Two slots, and they live in separate MODULES on purpose.** `dialog-state.svelte.ts` owns `transferProgressProps`,
+birth context: the paths, the pane side, the per-type counts, the dispatch input. `adopted-operation.svelte.ts` owns its
+own `$state` for an operation this window is only watching: an id, a type, and two paths off the registry row. That
+factory is handed a read-only `hasBirthContext()` and nothing else, so an adoption cannot overwrite a live birth context
+— not by convention, but for want of a binding to write it with. That is the one hazard in this feature:
 `handleTransferError`'s archive branch takes the progress dialog down while keeping `transferProgressProps` alive, and
-`handleArchivePasswordSubmit` re-dispatches from it when the user types the password. A guard that tested
+the password submit re-dispatches from it when the user types the password. A guard that tested
 `showTransferProgressDialog` would find "no dialog shown" and let an adoption land on those props, and the submit would
 then copy the ADOPTED operation's sources to the ADOPTED operation's destination — a wrong write, out of a
 correct-looking guard. With two slots the question doesn't arise, and the occupancy test is "either slot full, or any
 dialog open", which also covers the invisible case.
+
+**The archive-password flow can't aim the re-dispatch either.** `archive-password-flow.svelte.ts` owns the prompt and
+both its modes but holds no reference to birth context: it asks `hasBirthContext()` and then calls
+`redispatchBirthOperation()` or `settleBirthOperation()`, neither of which takes an argument. So "the retry re-runs the
+operation the user unlocked" is a property of the wiring, not of the flow behaving itself. What the re-dispatch MUST
+keep doing is clearing `previewId` (a preview accepts exactly one claimant, so a carried-over id silently downgrades the
+retry to a full re-walk); that lives in `dialog-state.svelte.ts`'s `redispatchBirthOperation`.
 
 **A refusal is the honest answer to an occupied slot**, and it is a toast in the main window rather than silence: the
 listener focuses this window whatever the verdict, because a refusal behind the queue window reads as a dead button.
@@ -475,11 +497,13 @@ rather than a convention held here; keep it a chain. It resolves to the ADOPTED 
 what lets a newly started dialog appear at all. Pinned by `DialogManager.svelte.test.ts`.
 
 **An adopted view's outcome handlers touch no pane.** `handleAdoptedComplete` / `-Cancelled` / `-Error` / `-Queue` are
-separate callbacks, not a flag on the started ones, so the pane work is not reachable from them. They have nothing to
-reach it with: no `sourcePaths` to purge, no `sourcePaneSide` to pick a pane, no `fileCount` / `folderCount` to name
-what moved. The completion toast still reports the counts (those are facts about the OPERATION, from the completion
-event) and falls back to the file count instead of the per-type split. A failure still opens the error dialog with the
-same handover, because the reason is worth reading wherever the operation started.
+separate callbacks in a separate module, not a flag on the started ones. Every pane effect a settled transfer runs lives
+in `transfer-pane-effects.ts` — refresh, selection clear, snapshot drop, post-cancel re-select, all of them reading
+birth context — and `createAdoptedOperation` is built WITHOUT it, so the pane work is not reachable from an adopted
+outcome. It would have nothing to reach it with either: no `sourcePaneSide` to pick a pane, no `fileCount` /
+`folderCount` to name what moved. The completion toast still reports the counts (those are facts about the OPERATION,
+from the completion event) and falls back to the file count instead of the per-type split. A failure still opens the
+error dialog with the same handover, because the reason is worth reading wherever the operation started.
 
 **The axis is FRESH versus STALE context, not adopted versus started.** `handleArchivePasswordSubmit` starts a NEW
 operation from context captured before the prompt went up and re-snapshots the source pane's selection against wherever

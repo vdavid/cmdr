@@ -27,7 +27,7 @@ vi.mock('../../file-operations/transfer/TransferProgressDialog.svelte', async ()
 }))
 
 import DialogManager from './DialogManager.svelte'
-import type { AdoptedOperationData, TransferProgressPropsData } from './dialog-state.svelte'
+import type { AdoptedOperationData, TransferProgressPropsData } from './dialog-props'
 
 type DialogManagerProps = ComponentProps<typeof DialogManager>
 

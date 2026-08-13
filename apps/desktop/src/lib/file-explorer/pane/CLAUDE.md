@@ -27,11 +27,13 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **The snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false`, AND
   opening a real entry must LEAVE the snapshot volume. Skip either and selection goes off-by-one, or `search-results`
   sticks on a real path.
-- **BIRTH CONTEXT and an ADOPTED operation are separate slots in `dialog-state`**, and must stay that way: an adoption
+- **BIRTH CONTEXT and an ADOPTED operation are separate slots in separate MODULES**, and must stay that way: an adoption
   (Show, from the queue) writing `transferProgressProps` would let a later archive-password submit re-dispatch the
-  ADOPTED operation's sources. ❌ Never test the progress slot's occupancy on `showTransferProgressDialog` — the
-  password prompt keeps props alive with no dialog shown. An adopted view's outcome handlers touch NO pane. DETAILS §
-  "Birth context".
+  ADOPTED operation's sources. `adopted-operation.svelte.ts` and `archive-password-flow.svelte.ts` get a read-only
+  `hasBirthContext()` and argument-free commands, never the props; ❌ don't hand either one a writer or a getter. ❌
+  Never test the progress slot's occupancy on `showTransferProgressDialog` — the password prompt keeps props alive with
+  no dialog shown. Pane work lives in `transfer-pane-effects.ts`, and the adopted factory is built WITHOUT it: an
+  adopted view's outcomes touch NO pane. DETAILS § "Birth context".
 - **Every dialog renders inside ONE `<svelte:boundary>` in `DialogManager.svelte`**: a `show*` flag is set before the
   dialog renders and suppresses pane keys, so a mid-render throw would wedge the keyboard with a blank screen.
 - **The focus guard (`key-dispatch.ts`) must keep its `[role="dialog"], [role="alertdialog"]` exemption**: rename
