@@ -18,8 +18,8 @@ queue (⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system
 - **Progress is DEFINED with the copy dialog, not here.** Rows render `../TransferProgressReadout.svelte` (whose
   fixed-width columns set `queue-window.ts`'s `MIN_WIDTH`), and every ESTIMATE comes from the row's session via
   `bindOperationSession`, ❌ never the raw tick. The session is also what keeps a parked row's speed off the screen
-  while its time left stays. ❌ Never keep a smoother in the store: it holds membership and the
-  latest tick, both stateless.
+  while its time left stays. ❌ Never keep a smoother in the store: it holds membership and the latest tick, both
+  stateless.
 - **Two streams, never poll**: `operations-changed` is the THIN membership + status snapshot, `write-progress` drives
   the live bars, keyed by `operationId` and pruned to snapshot membership. ❌ Don't fatten `operations-changed`.
 - **Rows cover copy/move/delete/trash AND the instant ops** (`rename` / `create_folder` / `create_file`), which emit no
