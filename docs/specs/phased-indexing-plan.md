@@ -24,11 +24,12 @@ audit), `apps/desktop/src/lib/indexing/CLAUDE.md`, `apps/desktop/src/lib/onboard
 ## What the user gets
 
 1. First launch, before any decision: both panes on `~`. Nothing is indexed, nothing is read that would trip a TCC
-   popup.
-2. The moment Full Disk Access is granted (today: the relaunch after step 1 of onboarding), the layout becomes left `~`,
-   right `~/Downloads`, hidden files hidden, and the phased indexer starts on the user's own folders. By the time
-   onboarding is done, the folders they'll actually open are indexed. If they denied FDA instead, both panes stay on `~`
-   and nothing in the background ever raises a permission dialog.
+   popup. (Ships today.)
+2. The moment Full Disk Access is granted (today: the relaunch after step 1 of onboarding), the phased indexer starts on
+   the user's own folders. By the time onboarding is done, the folders they'll actually open are indexed. If they denied
+   FDA instead, nothing in the background ever raises a permission dialog. The startup state that goes with this moment
+   already ships: left `~`, right `~/Downloads` on a fresh install, hidden files hidden, and both panes staying on `~`
+   on Deny.
 3. As they browse, whatever they open gets indexed next, ahead of everything still queued.
 4. Home finishes, and that's "done" by default. The rest of the drive follows only if they turn on "Index stuff outside
    my home folder".
@@ -432,10 +433,16 @@ TYPE on an event, a new `pub fn` on a public type, or a `DriveScope` enum would 
 
 ## Milestone map
 
-This ships as **one effort on one worktree**, so the milestones are an execution ORDER, ❌ not shippable slices. Land
-them in sequence and keep the tree green at each boundary.
+What remains ships as **one effort on one worktree**, so the milestones are an execution ORDER, ❌ not shippable slices.
+Land them in sequence and keep the tree green at each boundary.
 
-- **M0** — first-run startup state (frontend only).
+**Already shipped, separately from this plan:** the first-run startup state. Dotfiles are hidden by default, and a fresh
+install with Full Disk Access opens left `~` / right `~/Downloads` exactly once, never over a layout somebody already
+has. The rule and its guardrails live in `apps/desktop/src/lib/file-explorer/pane/first-run-layout.ts`; the persistence
+trap it depends on is in `docs/architecture-patterns.md` § Persistence. One piece of its test list was deliberately
+skipped and is still worth writing: **a Playwright E2E over a first run with `CMDR_MOCK_FDA`**. Everything below assumes
+that startup behavior is in place.
+
 - **M1** — priority-root computation plus the two host seams.
 - **M2** — the stitch plus the phase machine, gated on a benchmark.
 - **M3** — launch, resume, and every path that would truncate.
@@ -443,72 +450,9 @@ them in sequence and keep the tree green at each boundary.
 - **M5** — settings (including the scope toggle), surfaces, kill switch.
 - **M6** — optional signals and follow-ups.
 
-M0 and M1 touch nothing M2 depends on, so either can run alongside M2's benchmark if an agent is idle. Everything after
+M1 touches nothing M2 depends on, so it can run alongside M2's benchmark if an agent is idle. Everything after
 M2 is strictly sequential. One ordering constraint that bites: **M4's unit tests stand alone, but its end-to-end
 assertion can't run until M3 lands**, because the surfaces it fixes only misbehave once the phase machine is real.
-
----
-
-## M0 — First-run startup state
-
-**Intent:** open on the two folders that matter, without tripping a TCC popup before the user has decided anything, and
-without ever overriding a returning user's own layout.
-
-1. **Hidden files off by default.** `listing.showHiddenFiles` defaults to `true` in **five** places, all of which move
-   together:
-   - `settings/definitions/appearance.ts:410` (the registry default, resolved at read time);
-   - `settings/reactive-settings.svelte.ts:34` (the `$state` seed);
-   - `src-tauri/src/settings/loader.rs:29` (`#[serde(default = "default_show_hidden")]`);
-   - `src-tauri/src/settings/loader.rs:235` — `parse_settings` is hand-rolled and hardcodes `.unwrap_or(true)`, which is
-     what actually runs; the serde attribute is dead for the real path;
-   - `src-tauri/src/settings/loader.rs:172` — `impl Default for Settings`, returned when `settings.json` is missing or
-     unparseable. **That is the first-run path**, so missing it defeats the item.
-
-   **Existing users are handled by the store's own design; say so in the plan so nobody "fixes" it with a migration:**
-   `settings-store.ts` is sparse and resolves defaults at read time, and `setSetting` records an explicit choice even
-   when the value equals the default. Never-touched ⇒ picks up `false`; deliberately turned on (Settings switch or View
-   menu, both via `setSetting`) ⇒ keeps `true`. David's product call accepts the flip for the first group.
-
-   **Tests:** `parse_settings("{}")` ⇒ `show_hidden_files == false`, `Settings::default().show_hidden_files == false`,
-   plus a registry assertion on the frontend. No defaults-parity check exists in `scripts/check/`; these are the cheap
-   substitute for one.
-
-2. **First run opens `~` on both panes** — already true (`DEFAULT_PATH = '~'`, `app-status-store.ts:12`); pin it.
-3. **The one-shot layout.** FDA **granted** + this install never had a layout ⇒ left `~`, right `~/Downloads`, once,
-   ever. **On Deny, both panes stay on `~`** and the phases skip TCC-restricted roots: the permission dialog then
-   appears only when the user navigates somewhere protected themselves, which is the one moment it has an obvious cause.
-   ❌ No background walk ever raises it.
-
-   **⚠️ The naive guard fires for every existing beta user on the first boot of the new build** (FDA granted, no
-   marker), clobbering a real layout. And because pane paths persist like any navigation, an applied layout _becomes_
-   their layout: a wrong fire is unrecoverable. So **backfill the marker for pre-existing installs before the rule is
-   evaluated**: if `app-status.json` has any pane state (`leftTabs` or the legacy `leftPath` key present — key presence,
-   ❌ not tab content), set `firstRunLayoutApplied: true` and skip. Backfill and rule land in one commit.
-
-   ❌ Don't gate on `onboarding.completed`: `startup-gates.ts` flips it to `true` in the same boot for a fresh install
-   on a Mac that already has FDA, which is exactly when the layout SHOULD apply.
-
-4. **Where it fires:** inside `loadPersistedState` (`pane/initialization.ts`), **before** the `if (e2eStartPath)` block,
-   so the E2E fixture override still wins. Boot is the site because granting FDA requires a relaunch (the gate is set
-   once at boot; clearing it at runtime raced 5–10 stacked TCC popups once).
-5. **Suppress under automation:** gate on `isE2eRun()` from `$lib/app-mode`, ❌ never `getAppMode() === 'e2e'` (capture
-   is a refinement of e2e). Every shard gets a fresh data dir and boots with FDA mocked granted; the marketing-capture
-   shard runs over real folders with `CMDR_E2E_START_PATH` unset, so without this it would move the right pane to the
-   real `~/Downloads` and change the masters.
-6. **`~/Downloads` may not exist.** Fall back to `~` and still set the marker.
-7. **Wiring the marker:** a field on `AppStatus`, a read in `loadAppStatus`, and a write branch in `doSaveAppStatus` —
-   that function persists only the fields it enumerates, so an unlisted key silently never saves. Don't let the marker
-   write ride the 200 ms debounce if anything that could quit follows it.
-
-**Tests:** unit tests for the decision as a pure function (granted × marker × backfill × path-exists × `isE2eRun`), a
-store round-trip test, and a Playwright E2E over first run with `CMDR_MOCK_FDA`. The decision function is test-first: a
-wrong fire destroys a real user's layout.
-
-**Docs:** `file-explorer/pane/DETAILS.md`, `onboarding/DETAILS.md`, `settings/DETAILS.md`.
-
-**Checks:** `pnpm check --fast`, then `pnpm check svelte desktop`, and **`pnpm check --include-slow` is an exit
-criterion for this milestone**: it changes the startup layout and dotfile visibility, which is what the Playwright specs
-are most sensitive to. Expect i18n screenshot masters to shift; regenerate them here.
 
 ---
 
@@ -855,7 +799,8 @@ needs when reality disagrees with a detail.
    covered" becomes "fully covered for the chosen scope", which is also what stamps completion and freshness. Flipping
    it on adds frontier; flipping it off leaves rows we stop maintaining. Both fall out of coverage being add-only, so
    neither needs a migration. `~/Library` is in scope but never a priority root (see M1).
-7. **One worktree, one effort, no separate shipping.** The milestones below are an execution order, ❌ not shippable
-   slices, so ordering still matters but "is M0 independently releasable" no longer does.
+7. **One worktree, one effort, for the indexing work.** The milestones below are an execution order, ❌ not shippable
+   slices, so ordering still matters but "is this milestone independently releasable" doesn't. The first-run startup
+   state was the exception: it turned out to be self-contained, so it shipped on its own ahead of the indexing work.
 
 Remaining assumption to confirm during execution, ❌ not a blocker: `~/Library` in scope but de-prioritized (M1).
