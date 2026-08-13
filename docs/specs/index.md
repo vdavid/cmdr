@@ -22,49 +22,15 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       chunk's 30-second deadline can't hold the quit, with the cooperative cancel path that lets backends clean their
       own partials still the default. Prerequisite (M0) of `operation-session-plan.md`, now satisfied. Ready to wipe
       once someone confirms the colocated docs carry everything.
-- [ ] 2026-08-09 `operation-session-plan.md` (refreshed 2026-08-12, re-pinned to `cce94565d`) - Make the progress
-      dialogs looking glasses instead of the process, so a "Foreground" button (click a running row in the operation
-      queue, get the rich progress dialog back) becomes buildable. `createTransferProgressState` (1,299 lines) OWNS its
-      operation: it scans, dispatches, and only then learns its `operationId`, so "attach to operation X" doesn't exist.
-      The fix is an **operation session** keyed by `operationId` plus **views** that bind to one, with zero views a
-      legal state. **M0 is done** (its own spec, `quit-and-operation-lifetime.md`): the backend owns operation lifetime
-      and the quit decision, so "the operation outlives the view" is finally true. **M1 is now a shipped-bug fix and
-      goes first:** a confirmed-but-still-scanning transfer has NO operation record (`scan_preview.rs` never touches
-      `manager.rs`), so `canPauseOrQueue` hides Pause and Queue, and `destroy()` kills the scan with the dialog — you
-      cannot background a transfer while it scans, and ⌘Q walks past it. Registering the operation at CONFIRM (not at
-      dialog-open) and moving the scan-wait into the operation's own task fixes all of it with no new IPC, no new
-      `LifecycleStatus` (reuse `Running`; `phase: 'scanning'` already exists), and ~120 lines DELETED from the module M5
-      has to rewrite, though M1 is NOT a net deletion and no longer claims to be. Three backend pieces, and the middle
-      one is what makes it a fix rather than a regression: the waiting task must FORWARD preview progress as
-      `write-progress { phase: 'scanning' }` under its own `operationId` (a `previewId → operationId` bridge, single
-      owner per preview), or every scan surface goes blank instead of live; and the preview must publish a terminal
-      OUTCOME readable after the fact, classified from `ScanPreviewState::cancelled` rather than from which event fired
-      (a cancelled walk actually emits the ERROR event), since both workers drop their in-flight state BEFORE caching
-      the result, so a completion pulse can't work. `preview_id` also has to be threaded into the two archive routes
-      (`route_archive_copy_into`, `compress_start`), which never receive it today, or Compress would dispatch into a
-      task with nothing to await and walk concurrently with its own preview. Pause is refused in `set_paused` during the
-      scan-wait, plus three frontend phase gates; a refused pause is already observable because nothing flips
-      optimistically, so no IPC change, but it MUST be latched on the record and applied when the scan-wait ends, or
-      "Pause all" loses it and that one operation writes at full speed while the user believes the device is free.
-      Totals stay 0 through a scan, so neither the dual bar nor the chip's percentage may render: the chip gets an
-      indeterminate state, and a `Queued` row still renders the scan line. M1 also absorbs `DeleteDialog`'s null-
-      `previewId` race, because the guard it needs would otherwise be written against the scan-wait M1 deletes. The
-      registry earns its place not because two smoothers disagree (the EMA is deterministic; the shipped ETA bug was
-      smoothed-versus-raw) but because smoothers **started at different times** diverge, which is exactly what a
-      late-attaching view creates, so M3 must DELETE `operations-store`'s per-id smoother map rather than stack a second
-      layer. M6's hardest problem is birth context: `OperationSnapshot` carries no `sourcePaths`, counts, or
-      `sourcePaneSide`, yet `handleTransferComplete` purges search snapshots, composes the toast, and clears selection
-      against a pane captured at dispatch, so an adopted view must degrade honestly (no pane mutation, a toast saying
-      only what the snapshot knows) — except the snapshot purge, which is operation-scoped truth and already misses
-      cancel and error entirely. And M6's occupancy test is `transferProgressProps !== null`, NEVER
-      `showTransferProgressDialog`: the archive-password prompt deliberately splits them, so testing the shown flag lets
-      Foreground overwrite live props and re-dispatch the adopted operation's sources to the adopted operation's
-      destination. Also settles the two in-dialog guards (`destroy()` and `handleCancel`'s `if (backgrounded) return`,
-      both retiring because "the modal closed" must stop meaning "cancel"), cross-window conflict ownership (a single
-      stored oneshot sender makes two windows resolving a real lost-take race), the event fan-out as a NEW module both
-      the store and sessions consume, and the pre-identity frontend session, now DECLINED with reasons (it mints
-      identity in the wrong place, its payoff is M1's, and it does NOT remove the buffer; the fan-out does). SPECCED,
-      not started.
+- [x] 2026-08-09 `operation-session-plan.md` - **Done; spec deleted, the code and its colocated docs carry it.** An
+      operation is now a thing views WATCH rather than something a dialog owns: a per-window event fan-out plus a
+      refcounted session registry keyed by `operationId`, with zero views a legal state. A transfer confirmed mid-scan
+      is a real backend operation from the first frame (backgroundable, pausable, cancellable, and it holds ⌘Q). The
+      corner chip, the queue rows, and the progress dialog all read one session, so one operation has one ETA. Closing
+      the dialog detaches instead of cancelling, and **Show** in the queue window hands a running operation to the main
+      window's dialog. Answering a conflict now reports its own arbitration (`ConflictResolutionOutcome`), so a second
+      surface can't silently swallow the user's click. Adopted views degrade honestly on birth context; the
+      search-snapshot purge stayed scoped out with its real fix described in `file-explorer/pane/DETAILS.md`.
 - [x] 2026-08-09 `background-conflict-prompt.md` (built) - A backgrounded transfer that hits a name clash deep inside a
       merging folder used to wedge invisibly: the upfront check is top-level only, folders always merge, and the app's
       only `write-conflict` listener is the progress dialog the Queue button just unmounted, so the operation parked on
