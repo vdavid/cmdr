@@ -165,7 +165,10 @@ export function isCancellingConflictPrompt(): boolean {
 }
 
 function handleConflict(event: WriteConflictEvent): void {
-  log.info('Conflict on an operation with no dialog in front of it: {operationId} at {destinationPath}', {
+  // Arrival only. Who owns the clash isn't decided until `drainDeferred` asks
+  // `conflictOwner`, and a line here claiming this host has it would be wrong
+  // for every conflict the progress dialog is already showing.
+  log.debug('A write conflict arrived for {operationId} at {destinationPath}', {
     operationId: event.operationId,
     destinationPath: event.destinationPath,
   })
@@ -211,6 +214,11 @@ function takePrompt(event: WriteConflictEvent): void {
     promptQueue = promptQueue.map((entry, i) => (i === existing ? { ...entry, event } : entry))
     return
   }
+
+  log.info('No dialog is showing {operationId}, so the main window asks about {destinationPath}', {
+    operationId: event.operationId,
+    destinationPath: event.destinationPath,
+  })
 
   const first = promptQueue.length === 0
   promptQueue = [
