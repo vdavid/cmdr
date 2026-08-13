@@ -505,10 +505,16 @@ otherwise the same one, down to the buttons. Three things differ, each for its o
 - **The parent runs no pane tail.** An adopted view has no birth context, and the two-slot arrangement in
   `dialog-state` is what makes the wrong version unreachable: `../../file-explorer/pane/DETAILS.md` § "Birth context".
 
-An adopted view almost never shows `OPENING_PHASE`: the window's fan-out holds the latest `write-progress` for every
-unclaimed id and flushes it in the same synchronous block the binder acquires in, so the operation's real phase is there
-before the first paint. What is left is a window that has heard nothing at all (a reload mid-transfer), where "counting"
-is the honest thing to say for one tick.
+**An adopted view never shows `OPENING_PHASE`, and that is a decision.** `scanning` is what a DISPATCHING view opens on,
+because a confirmed transfer is about to count; an adopted operation could be anywhere, and titling a 21%-written copy
+"Verifying before copy…" over an empty scan readout is what shipped for about an hour before the real-app run caught it.
+So an adopted view reports `phase: null` until the operation speaks, and the dialog renders its title, its paths, and its
+buttons with no bars at all.
+
+That is normally the same frame: the window's fan-out keeps the newest tick of every live operation and hands it to a
+session attaching late (`../operation-session/DETAILS.md` § "Where a live operation had got to"). The empty state is
+what is left over — a window that has heard nothing at all, with the operation paused so no tick is coming, which after
+a reload is a real path. It shows "Paused", offers Resume, and fills in the moment the operation says where it is.
 
 **Teardown stops nothing.** A close is a detach: `ModalDialog`'s `onclose` goes to `detach()`, which hands a
 still-running operation to the queue window (exactly as the Queue button does) and otherwise just stops watching. An

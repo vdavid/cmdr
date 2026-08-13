@@ -103,6 +103,28 @@ central buffer keyed by unclaimed ids is therefore unbounded unless it is given 
   from the backend's own precedent for scan results (`SCAN_RESULT_TTL` in `write_operations/scan_cache.rs`), and the
   insert-triggered sweep is what keeps an idle window at zero cost.
 
+### Where a live operation had got to
+
+The buffer answers "what did I miss while nobody was claiming this id". It cannot answer "where is this operation
+now", and a view that attaches twenty minutes in needs exactly that: the buffer is dropped on the first claim, and a
+PAUSED operation emits nothing to refill it, so a second session would sit at zero for as long as the pause lasts. That
+is what a queue row's Show button produces, and it read as a 21%-written copy shown as a scan that wasn't happening.
+
+So the fan-out also retains the newest `write-progress` per LIVE operation, whether or not anything is watching, and
+hands it to a session that attaches with no buffered tick of its own. Three rules keep it honest:
+
+- **The buffered tick wins**, because it is newer; feeding an older sample after a newer one corrupts the session's ETA
+  smoother, the one thing this module exists to protect.
+- **It is forgotten the moment a terminal event lands** for that id. A session claiming an id after the end must
+  resolve, ❌ never paint bars over an ending.
+- **Same TTL, same insert-triggered sweep** as the buffer, so it stays one tick per live operation and an idle window
+  still costs nothing.
+
+What it does NOT survive is a window reload: the retention is per-window state, so a reloaded window knows a paused
+operation's status (from `list_operations()`) and not its progress. Nothing in the frontend does — the registry snapshot
+is deliberately thin — and the queue row is equally bar-less there. A view must therefore be able to say "I don't know
+yet" (`../transfer/DETAILS.md` § "The dialog is a view").
+
 **Latest-only is safe because of ORDERING, not idempotence.** The tempting justification is that progress is idempotent,
 which is true of the store's latest-value map and false of a session: a session owns the stateful ETA smoother, so
 dropping intermediate samples is fine, while feeding an older sample after a newer one corrupts the very "one operation,
