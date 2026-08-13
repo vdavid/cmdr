@@ -100,6 +100,28 @@ pub enum LifecycleStatus {
     Failed,
 }
 
+/// What a pause or resume request actually did, so every caller can say so
+/// instead of assuming it worked. Pause and resume share it: the three outcomes
+/// are the same in both directions.
+///
+/// The distinction is load-bearing at the MCP boundary, where an agent acts on
+/// the answer: `Applied` and `Deferred` both mean "the queue will stop", but
+/// `NotApplicable` means nothing changed and nothing is remembered.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum PauseOutcome {
+    /// The record flipped: `Running`→`Paused` (the driver parks at its next
+    /// between-files boundary) or `Paused`→`Running`.
+    Applied,
+    /// The operation is still waiting on its scan, so there is nothing to park
+    /// yet. The request is latched and applies the moment the write starts
+    /// (`end_scan_wait`); a resume withdraws a latched pause the same way.
+    Deferred,
+    /// Nothing happened and nothing is remembered: the operation is queued,
+    /// already in the state asked for, over, or unknown.
+    NotApplicable,
+}
+
 /// What the manager needs to know about an op to register, schedule, and
 /// surface it. The deferred start is held separately so the descriptor stays
 /// cheaply cloneable for the `operations-changed` snapshot.
@@ -650,43 +672,42 @@ impl OperationManager {
     /// so resuming admits nobody new.
     ///
     /// Only the `Running`↔`Paused` pair flips; any other status (Queued, Done,
-    /// terminal) is left untouched and returns `false`. A Queued op can't be
-    /// "paused" in v1 — it simply isn't admitted yet (see the IPC layer's
-    /// no-op-for-Queued note). Returns `true` if it flipped a record.
+    /// terminal) is left untouched and reports `NotApplicable`. A Queued op
+    /// can't be "paused" in v1 — it simply isn't admitted yet.
     ///
-    /// **A scan-waiting op refuses the flip and LATCHES the request.** It is
-    /// `Running`, so without a rule the snapshot would say `Paused`, the dialog
-    /// title would say "Paused", and the walk would carry on at full speed —
-    /// while `set_paused` deliberately keeps the lane slots, so a "paused" scan
-    /// would hold its lane indefinitely doing nothing. The refusal is already
-    /// observable everywhere it matters (no surface flips optimistically), and
-    /// the latch is what stops `pause_all` from losing the request.
-    pub(crate) fn set_paused(&self, operation_id: &str, paused: bool) -> bool {
-        let flipped = {
+    /// **A scan-waiting op refuses the flip and LATCHES the request**
+    /// (`Deferred`). It is `Running`, so without a rule the snapshot would say
+    /// `Paused`, the dialog title would say "Paused", and the walk would carry
+    /// on at full speed — while `set_paused` deliberately keeps the lane slots,
+    /// so a "paused" scan would hold its lane indefinitely doing nothing. No
+    /// surface flips optimistically, and the latch is what stops `pause_all`
+    /// from losing the request.
+    pub(crate) fn set_paused(&self, operation_id: &str, paused: bool) -> PauseOutcome {
+        let outcome = {
             let mut inner = self.inner.lock_ignore_poison();
             match inner.records.get_mut(operation_id) {
                 Some(rec) if rec.in_scan_wait => {
-                    // Refused either way: a scan-wait has nothing to park. The
-                    // request (or its withdrawal) is remembered and applied at
-                    // `end_scan_wait`, the moment the write would have begun.
+                    // Nothing to park yet either way. The request (or its
+                    // withdrawal) is remembered and applied at `end_scan_wait`,
+                    // the moment the write would have begun.
                     rec.pause_requested = paused;
-                    false
+                    PauseOutcome::Deferred
                 }
                 Some(rec) if paused && rec.status == LifecycleStatus::Running => {
                     rec.status = LifecycleStatus::Paused;
-                    true
+                    PauseOutcome::Applied
                 }
                 Some(rec) if !paused && rec.status == LifecycleStatus::Paused => {
                     rec.status = LifecycleStatus::Running;
-                    true
+                    PauseOutcome::Applied
                 }
-                _ => false,
+                _ => PauseOutcome::NotApplicable,
             }
         };
-        if flipped {
+        if outcome == PauseOutcome::Applied {
             self.emit_changed();
         }
-        flipped
+        outcome
     }
 
     /// Marks the op's scan-wait over and reports whether a pause was latched
@@ -1053,24 +1074,33 @@ pub fn cancel_operations(operation_ids: &[String]) {
 /// A paused op keeps its lane slots. Pausing a Queued op is a v1 no-op (it isn't
 /// touching a device yet — it stays Queued and admits normally when its lanes
 /// free); pausing a Done/absent op is a no-op. Backs `pause_operation(id)`.
-pub fn pause_operation(operation_id: &str) {
+///
+/// The [`PauseOutcome`] rides all the way out to the IPC command and the MCP
+/// `queue` tool: a surface that reports a pause it didn't get sends its user (or
+/// its agent) off believing the device is free.
+pub fn pause_operation(operation_id: &str) -> PauseOutcome {
     // Flip the live gate (so the driver parks) and the record status (so the UI
     // shows Paused). `set_paused` only flips a Running record, so a Queued op's
     // gate is intentionally left untouched: parking a not-yet-spawned op would
     // do nothing and risk a Paused-but-Queued limbo.
-    if manager().set_paused(operation_id, true) {
+    let outcome = manager().set_paused(operation_id, true);
+    if outcome == PauseOutcome::Applied {
         super::state::pause_write_operation(operation_id);
     }
+    outcome
 }
 
 /// Resumes one Paused operation: clears its gate (waking the parked driver) and
 /// flips its `LifecycleStatus` back to `Running`. No admission pass — it never
 /// freed its lanes. Resuming a non-paused op is a no-op. Backs
-/// `resume_operation(id)`.
-pub fn resume_operation(operation_id: &str) {
-    if manager().set_paused(operation_id, false) {
+/// `resume_operation(id)`, and reports what it did for the same reason
+/// [`pause_operation`] does.
+pub fn resume_operation(operation_id: &str) -> PauseOutcome {
+    let outcome = manager().set_paused(operation_id, false);
+    if outcome == PauseOutcome::Applied {
         super::state::resume_write_operation(operation_id);
     }
+    outcome
 }
 
 /// Pauses every currently-Running operation. Backs `pause_all` (the queue

@@ -1,5 +1,6 @@
 //! Cross-cutting write-operation test fixtures: isolation for the process-global
-//! `WRITE_OPERATION_STATE` map, and the one sanctioned "a park is holding" wait.
+//! `WRITE_OPERATION_STATE` map, the one sanctioned "a park is holding" wait, and
+//! a real queued operation for suites outside this module.
 //!
 //! Per-driver fixtures (fake volumes, gated sources, collector sinks) stay in
 //! their own module's `test_support`, like `transfer/test_support.rs`.
@@ -8,7 +9,12 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+use tokio::sync::oneshot;
+
+use super::manager::{LifecycleStatus, OperationDescriptor, OperationSummaryText, manager};
 use super::state::{WRITE_OPERATION_STATE, WriteOperationState};
+use super::types::WriteOperationType;
+use crate::file_system::volume::LaneKey;
 
 /// A `WRITE_OPERATION_STATE` entry registered under a unique-per-test operation
 /// id, removed on drop.
@@ -126,4 +132,88 @@ fn unique_op_id(tag: &str) -> String {
         std::process::id(),
         N.fetch_add(1, Ordering::Relaxed)
     )
+}
+
+/// A real `Queued` operation, waiting behind a holder that owns a private lane
+/// until this fixture drops.
+///
+/// **Why this exists.** A suite OUTSIDE this module has no way to produce a
+/// queued row (`manager` is private here, and a real transfer needs a busy
+/// device), yet the consumers that misread one live out there: the MCP `queue`
+/// tool answered "OK: Paused …" for a queued operation that pause is documented
+/// to leave alone. Two synthetic operations on one private lane reproduce the
+/// state exactly, with no I/O and no reach into another test's operations.
+/// Sibling of [`TestOperationGuard`], which covers the state map rather than the
+/// manager.
+pub(crate) struct QueuedOperationFixture {
+    queued_id: String,
+    /// Releases, holder first. `Drop` sends both so each operation settles and
+    /// the lane frees for the rest of the process.
+    releases: Vec<oneshot::Sender<()>>,
+}
+
+impl QueuedOperationFixture {
+    /// Registers the holder (admitted at once, since its lane is fresh) and then
+    /// the operation that queues behind it.
+    ///
+    /// Admission runs inside `spawn_managed`, so both statuses are already
+    /// settled when this returns; it asserts them rather than waiting, which
+    /// makes a manager change that breaks the premise fail here instead of
+    /// silently weakening whatever test uses the fixture.
+    pub(crate) fn park(tag: &str) -> Self {
+        let lane = LaneKey::new(unique_op_id(&format!("{tag}-lane")));
+        let holder_id = unique_op_id(&format!("{tag}-holder"));
+        let queued_id = unique_op_id(&format!("{tag}-queued"));
+
+        let mut releases = Vec::new();
+        for id in [&holder_id, &queued_id] {
+            let (release_tx, release_rx) = oneshot::channel();
+            releases.push(release_tx);
+            let settle_id = id.clone();
+            manager().spawn_managed(
+                OperationDescriptor {
+                    operation_id: id.clone(),
+                    operation_type: WriteOperationType::Copy,
+                    lanes: vec![lane.clone()],
+                    volume_ids: vec![],
+                    summary: OperationSummaryText::default(),
+                    supports_rollback: false,
+                    preview_id: None,
+                },
+                Arc::new(WriteOperationState::new(Duration::from_millis(50))),
+                Box::new(move || {
+                    Box::pin(async move {
+                        let _ = release_rx.await;
+                        manager().on_settled(&settle_id);
+                    })
+                }),
+            );
+        }
+
+        assert_eq!(
+            manager().status_of(&holder_id),
+            Some(LifecycleStatus::Running),
+            "the holder takes its own fresh lane, so admission runs it immediately"
+        );
+        assert_eq!(
+            manager().status_of(&queued_id),
+            Some(LifecycleStatus::Queued),
+            "the second operation shares the lane, so it waits"
+        );
+
+        Self { queued_id, releases }
+    }
+
+    /// The id of the operation sitting `Queued`.
+    pub(crate) fn queued_id(&self) -> &str {
+        &self.queued_id
+    }
+}
+
+impl Drop for QueuedOperationFixture {
+    fn drop(&mut self) {
+        for release in self.releases.drain(..) {
+            let _ = release.send(());
+        }
+    }
 }

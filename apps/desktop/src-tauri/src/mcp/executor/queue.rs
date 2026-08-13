@@ -17,8 +17,8 @@ use serde_json::{Value, json};
 use super::{ToolError, ToolResult};
 use crate::file_system::write_operations::LifecycleStatus;
 use crate::file_system::{
-    OperationSnapshot, cancel_operation, cancel_operations, cancel_write_operation, list_operations, pause_all,
-    pause_operation, resume_all, resume_operation,
+    OperationSnapshot, PauseOutcome, cancel_operation, cancel_operations, cancel_write_operation, list_operations,
+    pause_all, pause_operation, resume_all, resume_operation,
 };
 
 pub async fn execute_queue(params: &Value) -> ToolResult {
@@ -39,18 +39,52 @@ pub async fn execute_queue(params: &Value) -> ToolResult {
         "pause" => {
             let id = require_operation_id(params)?;
             require_operation_exists(&id)?;
-            pause_operation(&id);
-            Ok(json!(format!("OK: Paused operation {id}.")))
+            pause_reply(&id, pause_operation(&id))
         }
         "resume" => {
             let id = require_operation_id(params)?;
             require_operation_exists(&id)?;
-            resume_operation(&id);
-            Ok(json!(format!("OK: Resumed operation {id}.")))
+            resume_reply(&id, resume_operation(&id))
         }
         "cancel" => execute_cancel(params),
         other => Err(ToolError::invalid_params(format!(
             "action must be 'pause', 'resume', 'cancel', 'pause_all', or 'resume_all' (got '{other}')"
+        ))),
+    }
+}
+
+/// The agent-facing answer to a pause request, from what the manager actually
+/// did with it.
+///
+/// `Deferred` is an `OK` on purpose: the operation is still scanning, so nothing
+/// parks yet, but the request is latched and lands before the first byte is
+/// written. `NotApplicable` is a refusal, because nothing changed and nothing is
+/// remembered: a `Queued` operation is the everyday case (pause is documented to
+/// leave one alone), and an agent told "OK: Paused …" for one goes on to act on a
+/// queue that never stopped.
+fn pause_reply(operation_id: &str, outcome: PauseOutcome) -> ToolResult {
+    match outcome {
+        PauseOutcome::Applied => Ok(json!(format!("OK: Paused operation {operation_id}."))),
+        PauseOutcome::Deferred => Ok(json!(format!(
+            "OK: Operation {operation_id} is still scanning, so there's nothing to park yet. It pauses the moment it starts writing."
+        ))),
+        PauseOutcome::NotApplicable => Err(ToolError::invalid_params(format!(
+            "Operation {operation_id} isn't running, so there's nothing to pause: it's queued, already paused, or over. See cmdr://state operations for its current status."
+        ))),
+    }
+}
+
+/// The mirror of [`pause_reply`] for resume. A resume during a scan withdraws a
+/// latched pause, which is a real effect and so an `OK`; anything else that
+/// isn't parked has nothing to resume.
+fn resume_reply(operation_id: &str, outcome: PauseOutcome) -> ToolResult {
+    match outcome {
+        PauseOutcome::Applied => Ok(json!(format!("OK: Resumed operation {operation_id}."))),
+        PauseOutcome::Deferred => Ok(json!(format!(
+            "OK: Operation {operation_id} is still scanning, so it isn't parked. Any pause waiting to take effect is now withdrawn."
+        ))),
+        PauseOutcome::NotApplicable => Err(ToolError::invalid_params(format!(
+            "Operation {operation_id} isn't paused, so there's nothing to resume. See cmdr://state operations for its current status."
         ))),
     }
 }
@@ -138,6 +172,7 @@ fn is_controllable(operations: &[OperationSnapshot], operation_id: &str) -> bool
 mod tests {
     use super::*;
     use crate::file_system::dismiss_failed_operation;
+    use crate::file_system::write_operations::test_support::QueuedOperationFixture;
     use crate::file_system::write_operations::{WriteOperationError, WriteOperationType, test_retain_failure};
 
     fn row(operation_id: &str, status: LifecycleStatus) -> OperationSnapshot {
@@ -195,6 +230,54 @@ mod tests {
         // pausing or cancelling it does nothing at all.
         let operations = vec![row("op-failed", LifecycleStatus::Failed)];
         assert!(!is_controllable(&operations, "op-failed"));
+    }
+
+    /// A queued operation is live, so the id guard waves it through — and pause
+    /// is a documented no-op for it (it isn't admitted, so there is no driver to
+    /// park). An agent that reads "OK: Paused …" here goes on to act on a queue
+    /// that never stopped.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn pausing_a_queued_operation_is_never_reported_as_paused() {
+        let fixture = QueuedOperationFixture::park("mcp-queue-pause");
+        let result = execute_queue(&json!({ "action": "pause", "operationId": fixture.queued_id() })).await;
+
+        assert!(
+            result.is_err(),
+            "a pause that didn't happen must reach the agent as a refusal, got {result:?}"
+        );
+    }
+
+    /// The whole mapping in one place: an `OK` means the queue really will stop
+    /// (now, or the moment the scan ends), and nothing else may be phrased as one.
+    #[test]
+    fn only_a_real_pause_or_a_latched_one_answers_ok() {
+        for (outcome, expected_ok) in [
+            (PauseOutcome::Applied, true),
+            (PauseOutcome::Deferred, true),
+            (PauseOutcome::NotApplicable, false),
+        ] {
+            assert_eq!(
+                pause_reply("op-1", outcome).is_ok(),
+                expected_ok,
+                "pause reply for {outcome:?}"
+            );
+            assert_eq!(
+                resume_reply("op-1", outcome).is_ok(),
+                expected_ok,
+                "resume reply for {outcome:?}"
+            );
+        }
+    }
+
+    /// A latched pause is worth saying out loud: the operation is still `Running`
+    /// in `cmdr://state`, so an agent that read "OK: Paused" and then polled would
+    /// think the pause had been ignored.
+    #[test]
+    fn a_latched_pause_says_it_takes_effect_later() {
+        let reply = pause_reply("op-1", PauseOutcome::Deferred).expect("a latched pause is an OK");
+        let text = reply.as_str().expect("the reply is a string");
+        assert!(text.contains("still scanning"), "got {text}");
+        assert!(text.contains("starts writing"), "got {text}");
     }
 
     #[test]

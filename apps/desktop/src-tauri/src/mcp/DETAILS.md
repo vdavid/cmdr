@@ -141,7 +141,11 @@ provider-egress question and `CONSENT_COPY_VERSION` are unchanged by this tier.
   `cancel_operations` / `cancel_write_operation(id, rollback)`) — direct backend calls, no FE ack (the `indexing`
   precedent). Per-op actions validate the id against `list_operations` for an honest "unknown operationId" instead of a
   silent backend no-op — skipping the RETAINED FAILURES that snapshot also carries (`is_controllable`), since acting on
-  one of those is precisely the no-op the guard exists to refuse. Gate `IfRollback`: pause/resume/plain-cancel are `Open` (transient runtime actions on a
+  one of those is precisely the no-op the guard exists to refuse. Pause / resume then answer from the manager's
+  `PauseOutcome` rather than assuming (`pause_reply` / `resume_reply`): `Applied` is the plain OK, `Deferred` is an OK
+  that says the operation is still scanning and pauses the moment it starts writing, and `NotApplicable` is a refusal —
+  a QUEUED operation is the everyday case there, since pause deliberately leaves one alone, and "OK: Paused …" for it
+  would send the agent on believing the queue had stopped. Gate `IfRollback`: pause/resume/plain-cancel are `Open` (transient runtime actions on a
   crash-safe pipeline), but `rollback: true` deletes already-copied files, so it needs the token. Discover ids + status
   in `cmdr://state` `operations:`. `connect_to_server` (add a manual SMB server by address, checks TCP reachability), `remove_manual_server` (remove a manually-added server by host ID), `upgrade_smb_to_direct` (upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O; thin wrapper over the existing manual "Connect directly" Tauri command — tries Keychain creds, returns a typed result mirroring `UpgradeResult`)
 - Favorites (1): `favorites` (`action` = `add` | `rename` | `remove` | `reorder`; `path` (+ optional `name`) for add, `id` for rename/remove, `name` for rename, `orderedIds` (the COMPLETE new ordering) for reorder; gate `Always`). A thin adapter over `commands::favorites` (`add_favorite` / `rename_favorite` / `remove_favorite` / `reorder_favorites`), which persist `favorites.json` and re-emit `volumes-changed` themselves, so the switcher refreshes live — no FE dispatch, no invented ack (the `indexing` precedent). `reorder` is a pass-through of the full ordering (a `(id, position)` shape would force the MCP layer to re-implement splicing). Discover ids in `cmdr://state` `favorites:`.

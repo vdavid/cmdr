@@ -7,8 +7,8 @@ use crate::file_system::write_operations::{
     resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
 };
 use crate::file_system::{
-    OperationEventSink, OperationSnapshot, OperationStatus, OperationSummary, SortColumn, SortOrder, TauriEventSink,
-    WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
+    OperationEventSink, OperationSnapshot, OperationStatus, OperationSummary, PauseOutcome, SortColumn, SortOrder,
+    TauriEventSink, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
     cancel_all_write_operations as ops_cancel_all_write_operations, cancel_operation as ops_cancel_operation,
     cancel_operations as ops_cancel_operations, cancel_write_operation as ops_cancel_write_operation,
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
@@ -403,18 +403,22 @@ pub fn cancel_operations(operation_ids: Vec<String>) {
 /// Pauses one Running operation. It parks at the next between-files boundary and
 /// its lifecycle status flips to `paused` in `operations-changed`. A paused op
 /// keeps holding its lane slots. Pausing a Queued/Done op is a no-op.
+///
+/// Returns what actually happened, so a caller never has to assume it worked.
 #[tauri::command]
 #[specta::specta]
-pub fn pause_operation(operation_id: String) {
-    ops_pause_operation(&operation_id);
+pub fn pause_operation(operation_id: String) -> PauseOutcome {
+    ops_pause_operation(&operation_id)
 }
 
 /// Resumes one paused operation: it continues from where it parked and its
 /// status flips back to `running`. Resuming a non-paused op is a no-op.
+///
+/// Returns what actually happened, like [`pause_operation`].
 #[tauri::command]
 #[specta::specta]
-pub fn resume_operation(operation_id: String) {
-    ops_resume_operation(&operation_id);
+pub fn resume_operation(operation_id: String) -> PauseOutcome {
+    ops_resume_operation(&operation_id)
 }
 
 /// Pauses every currently-running operation. Backs the queue window's global

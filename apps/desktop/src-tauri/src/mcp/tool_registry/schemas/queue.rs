@@ -9,7 +9,7 @@ pub fn queue_schema() -> Value {
             "action": {
                 "type": "string",
                 "enum": ["pause", "resume", "cancel", "pause_all", "resume_all"],
-                "description": "pause | resume | cancel | pause_all | resume_all"
+                "description": "pause | resume | cancel | pause_all | resume_all. pause acts on a running operation; a queued one isn't touching a device yet, so pausing it is refused rather than silently ignored."
             },
             "operationId": {
                 "type": "string",

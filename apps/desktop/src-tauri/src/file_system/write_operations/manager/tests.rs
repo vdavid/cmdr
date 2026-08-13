@@ -437,7 +437,11 @@ async fn set_paused_flips_running_op_to_paused_and_keeps_its_lane() {
     assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Running));
     assert_eq!(manager().lane_use_snapshot().get(&lane).copied(), Some(1));
 
-    assert!(manager().set_paused(&op, true), "pausing a Running op flips it");
+    assert_eq!(
+        manager().set_paused(&op, true),
+        PauseOutcome::Applied,
+        "pausing a Running op flips it"
+    );
     assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Paused));
     assert_eq!(
         manager().lane_use_snapshot().get(&lane).copied(),
@@ -445,7 +449,11 @@ async fn set_paused_flips_running_op_to_paused_and_keeps_its_lane() {
         "a paused Running op must keep holding its lane slot"
     );
 
-    assert!(manager().set_paused(&op, false), "resuming a Paused op flips it back");
+    assert_eq!(
+        manager().set_paused(&op, false),
+        PauseOutcome::Applied,
+        "resuming a Paused op flips it back"
+    );
     assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Running));
     assert_eq!(manager().lane_use_snapshot().get(&lane).copied(), Some(1));
 
@@ -482,7 +490,7 @@ async fn paused_running_op_does_not_admit_a_queued_same_lane_op() {
     // forcing one nothing would ever exercise the claim. Admission flips a record
     // to Running BEFORE it spawns, so a still-Queued B after a completed pass is
     // proof its deferred never ran.
-    assert!(manager().set_paused(&op_a, true));
+    assert_eq!(manager().set_paused(&op_a, true), PauseOutcome::Applied);
     manager().force_admission_pass();
     assert_eq!(
         manager().status_of(&op_b),
@@ -496,8 +504,9 @@ async fn paused_running_op_does_not_admit_a_queued_same_lane_op() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn set_paused_is_noop_for_queued_or_absent_ops() {
-    // A Queued op can't be "paused" in v1; an absent op is a no-op. Both return
-    // false and leave status untouched.
+    // A Queued op can't be "paused" in v1; an absent op is a no-op. Both report
+    // `NotApplicable` and leave status untouched, which is what every surface
+    // above (queue window, IPC, the MCP `queue` tool) turns into an honest answer.
     let lane = unique("lane");
     let op_a = unique("holder");
     let op_b = unique("queued");
@@ -520,13 +529,20 @@ async fn set_paused_is_noop_for_queued_or_absent_ops() {
     );
     assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
 
-    assert!(!manager().set_paused(&op_b, true), "pausing a Queued op is a no-op");
+    assert_eq!(
+        manager().set_paused(&op_b, true),
+        PauseOutcome::NotApplicable,
+        "pausing a Queued op does nothing and remembers nothing"
+    );
     assert_eq!(
         manager().status_of(&op_b),
         Some(LifecycleStatus::Queued),
         "a Queued op stays Queued (not Paused)"
     );
-    assert!(!manager().set_paused("does-not-exist-zzz", true));
+    assert_eq!(
+        manager().set_paused("does-not-exist-zzz", true),
+        PauseOutcome::NotApplicable
+    );
 
     let _ = a_rel_tx.send(());
 }

@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use super::manager::{LifecycleStatus, list_operations, manager, pause_operation, resume_operation};
+use super::manager::{LifecycleStatus, PauseOutcome, list_operations, manager, pause_operation, resume_operation};
 use super::scan_bridge::observed_scan_ticks;
 use super::scan_cache::{
     CachedScanResult, ScanOutcome, ScanPreviewState, claim_preview, register_preview, settle_preview,
@@ -457,12 +457,17 @@ async fn the_bridge_ticks_after_the_snapshot_that_first_carries_the_row() {
 
 /// Pause is refused while an operation is parked on its preview: it holds its
 /// lane and writes nothing, so flipping it to `Paused` would say the walk had
-/// stopped when it had not.
+/// stopped when it had not. The refusal reports itself as `Deferred`, which is
+/// what lets a surface say "not yet, but it's coming" rather than either lie.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn pause_is_declined_during_the_scan_wait() {
     let (events, op_id, preview_id, dir) = start_copy_awaiting_preview("scanwait-pause").await;
 
-    pause_operation(&op_id);
+    assert_eq!(
+        pause_operation(&op_id),
+        PauseOutcome::Deferred,
+        "a scan-waiting op can't park, and the request is latched rather than lost"
+    );
 
     assert_eq!(
         manager().status_of(&op_id),
@@ -510,9 +515,9 @@ async fn a_pause_during_a_scan_wait_latches_and_lands_before_the_first_write() {
         "`pause_all` walks the running set, so a scan-waiting op has to be in it"
     );
 
-    // The ask `pause_all` makes, per id. It's refused: a scan-wait has nothing
+    // The ask `pause_all` makes, per id. Nothing parks: a scan-wait has nothing
     // to park, and flipping the record would claim the walk had stopped.
-    pause_operation(&op_id);
+    assert_eq!(pause_operation(&op_id), PauseOutcome::Deferred);
     assert_eq!(
         manager().status_of(&op_id),
         Some(LifecycleStatus::Running),
