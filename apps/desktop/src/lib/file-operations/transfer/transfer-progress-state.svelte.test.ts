@@ -944,6 +944,21 @@ describe('createTransferProgressState: adopting a running operation', () => {
     expect(config.onQueue).not.toHaveBeenCalled()
   })
 
+  it("says nothing about a phase it hasn't heard, rather than inventing the scan", async () => {
+    // A dispatching view opens on `scanning`, because that is what a confirmed
+    // transfer is about to do. An adopted operation could be anywhere, and a
+    // window that has heard nothing (a reload, with the operation paused so no
+    // tick is coming) would otherwise title a 21%-written copy "Verifying before
+    // copy…" over an empty scan readout.
+    const { state } = await adoptedState()
+
+    expect(state.phase).toBeNull()
+
+    if (!progressCb) throw new Error('progress subscriber never registered')
+    progressCb(progressEvent({ operationId: ADOPTED, phase: 'copying' }))
+    expect(state.phase).toBe('copying')
+  })
+
   it('offers Rollback only where the operation says it can be reversed', async () => {
     // The snapshot is the authority: this view has no birth context to reason
     // about volumes from, and `supportsRollback` is a promise about the

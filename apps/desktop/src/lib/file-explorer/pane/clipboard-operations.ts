@@ -284,8 +284,11 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
         operationType,
         sourcePaths: result.paths,
         sourceFolderPath,
-        // Clipboard files don't belong to a specific pane; pick the opposite as best guess.
-        // Harmless if wrong: it just clears selection on the non-destination pane.
+        // Clipboard files don't belong to a specific pane; pick the opposite as
+        // best guess. A wrong guess costs nothing: the settled-transfer tail
+        // only clears a selection while the named pane still shows the folder
+        // the paste came from (`dialog-state` § "Birth context"), so a pane
+        // showing something else is left alone.
         sourcePaneSide: access.getFocusedPane() === 'left' ? 'right' : 'left',
         destinationPath: destPath,
         direction: access.getFocusedPane() === 'left' ? 'left' : 'right',

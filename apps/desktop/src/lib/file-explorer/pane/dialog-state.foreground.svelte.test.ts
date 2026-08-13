@@ -213,6 +213,44 @@ describe('adopting an operation into the progress dialog', () => {
   })
 })
 
+describe('an operation born while an adopted one is showing', () => {
+  // Birth wins: the adopted operation is still running and still listed in the
+  // queue window, which is where it goes back to. ❌ The two must never stack —
+  // the started dialog renders from the OTHER slot, so nothing else stops them.
+
+  it('hands the adopted one back rather than stacking a second dialog', () => {
+    const { dialogs } = makeState()
+    dialogs.foregroundOperation(adopted())
+
+    dialogs.startTransferProgress(moveProps())
+
+    expect(dialogs.adoptedProgressProps).toBeNull()
+    expect(dialogs.transferProgressProps?.sourcePaths).toEqual(moveProps().sourcePaths)
+    expect(dialogs.showTransferProgressDialog).toBe(true)
+  })
+
+  it('does the same for a confirmed delete', () => {
+    const { dialogs } = makeState()
+    dialogs.foregroundOperation(adopted())
+    dialogs.showDeleteConfirmation({
+      sourceItems: [],
+      sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
+      sourceFolderPath: SOURCE_FOLDER,
+      isPermanent: true,
+      supportsTrash: true,
+      isFromCursor: false,
+      sortColumn: 'name',
+      sortOrder: 'ascending',
+      sourceVolumeId: 'root',
+    })
+
+    dialogs.handleDeleteConfirm(null, true)
+
+    expect(dialogs.adoptedProgressProps).toBeNull()
+    expect(dialogs.transferProgressProps?.operationType).toBe('delete')
+  })
+})
+
 describe("an adopted view's outcomes touch no pane", () => {
   it('completes without refreshing, clearing, or re-selecting anything', () => {
     const { dialogs, rightPane, leftPane } = makeState()

@@ -97,21 +97,47 @@ interface UnclaimedBuffer {
   lastEventAtMs: number
 }
 
+/** The newest `write-progress` for a LIVE operation, kept whether or not anything
+ *  is watching. Separate from the buffer, which is dropped on the first claim. */
+interface LastProgress {
+  delivery: OperationEventDelivery
+  atMs: number
+}
+
 export function createOperationEventFanout(): OperationEventFanout {
   const sinks = new Map<string, OperationEventSink>()
   const buffers = new Map<string, UnclaimedBuffer>()
+  const lastProgress = new Map<string, LastProgress>()
   let latestSnapshot: OperationSnapshot[] = []
   let unlisteners: UnlistenFn[] = []
   let disposed = false
 
   function route(delivery: OperationEventDelivery): void {
     const operationId = delivery.event.operationId
+    remember(operationId, delivery)
     const sink = sinks.get(operationId)
     if (sink) {
       sink(delivery)
       return
     }
     buffer(operationId, delivery)
+  }
+
+  /**
+   * Keeps where a LIVE operation had got to, for a session that arrives later.
+   *
+   * The buffer can't answer that: it is dropped on the first claim, and a paused
+   * operation emits nothing to refill it, so a view adopting one would sit at
+   * zero for as long as the pause lasts. One tick per live operation, forgotten
+   * the moment the operation ends — a session claiming an id after a terminal
+   * event must resolve, ❌ never paint bars over an ending.
+   */
+  function remember(operationId: string, delivery: OperationEventDelivery): void {
+    if (delivery.kind === 'progress') {
+      lastProgress.set(operationId, { delivery, atMs: Date.now() })
+    } else if (delivery.kind !== 'conflict') {
+      lastProgress.delete(operationId)
+    }
   }
 
   function buffer(operationId: string, delivery: OperationEventDelivery): void {
@@ -133,6 +159,9 @@ export function createOperationEventFanout(): OperationEventFanout {
   function sweep(nowMs: number): void {
     for (const [operationId, held] of buffers) {
       if (nowMs - held.lastEventAtMs > UNCLAIMED_BUFFER_TTL_MS) buffers.delete(operationId)
+    }
+    for (const [operationId, held] of lastProgress) {
+      if (nowMs - held.atMs > UNCLAIMED_BUFFER_TTL_MS) lastProgress.delete(operationId)
     }
   }
 
@@ -159,6 +188,12 @@ export function createOperationEventFanout(): OperationEventFanout {
       buffers.delete(operationId)
       for (const delivery of held.byKind.values()) sink(delivery)
     }
+
+    // Where the operation had got to, for a session that arrives later. Skipped
+    // when the flush already carried a tick: that one is newer, and feeding an
+    // older sample after a newer one corrupts the session's ETA smoother.
+    const remembered = lastProgress.get(operationId)
+    if (remembered && !held?.byKind.has('progress')) sink(remembered.delivery)
 
     return {
       detach(): void {
@@ -211,6 +246,7 @@ export function createOperationEventFanout(): OperationEventFanout {
     dropListeners()
     sinks.clear()
     buffers.clear()
+    lastProgress.clear()
     latestSnapshot = []
   }
 

@@ -99,12 +99,14 @@ export interface TransferProgressStateConfig extends TransferDispatchConfig {
  *  transfer starts by counting, so the dialog opens in the scan phase rather
  *  than at a meaningless 0%.
  *
- *  An ADOPTED view almost never shows it: the window's fan-out holds the latest
- *  `write-progress` for every id nobody has claimed, and flushes it inside the
- *  same synchronous block the binder acquires in, so the operation's real phase
- *  is there before the first paint. What's left is a window that has heard
- *  nothing at all (a reload mid-transfer), where "counting" is the honest thing
- *  to say for the one tick until the backend says otherwise. */
+ *  ❌ It is NOT what an adopted view opens on. That view's operation could be
+ *  anywhere, and saying "counting" about a copy that is 21% written is a lie the
+ *  title repeats. An adopted view reports `null` until the operation speaks —
+ *  which is normally the same frame, because the window's fan-out hands a late
+ *  session the last tick it saw. A window that has heard nothing at all (a
+ *  reload, with the operation paused so no tick is coming) shows what it
+ *  honestly has: the title, the paths, and the buttons, with the bars appearing
+ *  the moment the operation says where it is. */
 const OPENING_PHASE: WriteOperationPhase = 'scanning'
 
 const EMPTY_SCAN: ScanReadout = {
@@ -218,8 +220,11 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     return settled?.kind === 'cancelled' ? settled.event : null
   }
 
-  /** The operation's phase, or the opening one until it says. */
-  const phase = (): WriteOperationPhase => bound.current?.phase ?? OPENING_PHASE
+  /** The operation's phase. `null` for an adopted view that hasn't heard where
+   *  its operation is yet; a dispatching one opens on the phase it knows it is
+   *  about to be in. */
+  const phase = (): WriteOperationPhase | null =>
+    bound.current?.phase ?? (adoptedOperationId !== null ? null : OPENING_PHASE)
 
   /** A rollback is under way whichever surface asked for it: this view's own
    *  in-flight command, or the backend reporting the phase. */
@@ -698,7 +703,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     get scan(): ScanReadout {
       return session()?.scan ?? EMPTY_SCAN
     },
-    get phase(): WriteOperationPhase {
+    get phase(): WriteOperationPhase | null {
       return phase()
     },
     get currentFile(): string | null {

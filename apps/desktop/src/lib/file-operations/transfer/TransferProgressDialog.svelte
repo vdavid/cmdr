@@ -223,6 +223,13 @@
      *  both arrive as `write-progress` in `phase: 'scanning'`. */
     const isScanning = $derived(phase === 'scanning')
 
+    /** This view is watching an operation that hasn't said where it is yet: only
+     *  an adopted one can be here, and only in a window that has heard nothing
+     *  about it at all (a reload, with the operation paused so no tick is
+     *  coming). Bars would read 0% about a copy that may be nearly done, so it
+     *  shows what it honestly has until the operation speaks. */
+    const phaseUnknown = $derived(phase === null)
+
     /** With an empty queue you're not queueing behind anything, you're sending
      *  this out of sight, so the button says "Background" instead. It reads the
      *  main window's operations store, the same live rows the corner chip reads,
@@ -375,7 +382,7 @@
                     {currentFile}
                 />
             </div>
-        {:else}
+        {:else if !phaseUnknown}
             <!-- Dual progress bars (size + count) for the active phase. The
                  operation queue's rows render the same component, so the two
                  surfaces can't drift apart on what a running op looks like. -->

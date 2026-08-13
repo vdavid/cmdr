@@ -292,3 +292,77 @@ describe('buffering for an unclaimed operation', () => {
     fanout.dispose()
   })
 })
+
+describe('where an operation had got to, for a session that arrives later', () => {
+  // A view can attach to an operation long after it started (the queue's Show
+  // button). The buffer alone can't answer "where is it now": it's dropped on
+  // the first claim, and a PAUSED operation emits nothing to refill it, so the
+  // second session would sit at zero for as long as the pause lasts.
+
+  it('hands a second session the last tick, even though the first session drained the buffer', () => {
+    const fanout = createOperationEventFanout()
+    fanout._testEmit({ kind: 'progress', event: progress('a', { bytesDone: 10 }) })
+
+    const first = recorder()
+    const held = fanout.attach('a', first.sink)
+    fanout._testEmit({ kind: 'progress', event: progress('a', { bytesDone: 80 }) })
+    held.detach()
+
+    const second = recorder()
+    fanout.attach('a', second.sink)
+
+    expect(second.deliveries).toHaveLength(1)
+    expect(second.deliveries[0]).toMatchObject({ kind: 'progress', event: { bytesDone: 80 } })
+    fanout.dispose()
+  })
+
+  it('prefers the buffered tick, which is newer than the last delivered one', () => {
+    const fanout = createOperationEventFanout()
+    const first = recorder()
+    fanout.attach('a', first.sink).detach()
+    fanout._testEmit({ kind: 'progress', event: progress('a', { bytesDone: 30 }) })
+
+    // Arrives while nobody holds the id, so it's buffered as well as retained.
+    fanout._testEmit({ kind: 'progress', event: progress('a', { bytesDone: 90 }) })
+    const second = recorder()
+    fanout.attach('a', second.sink)
+
+    expect(second.deliveries).toHaveLength(1)
+    expect(second.deliveries[0]).toMatchObject({ kind: 'progress', event: { bytesDone: 90 } })
+    fanout.dispose()
+  })
+
+  it('forgets it once the operation ends, so a later session never paints bars over an ending', () => {
+    const fanout = createOperationEventFanout()
+    const first = recorder()
+    const held = fanout.attach('a', first.sink)
+    fanout._testEmit({ kind: 'progress', event: progress('a', { bytesDone: 50 }) })
+    fanout._testEmit({ kind: 'complete', event: complete('a') })
+    held.detach()
+
+    const second = recorder()
+    fanout.attach('a', second.sink)
+
+    expect(second.deliveries).toHaveLength(0)
+    fanout.dispose()
+  })
+
+  it('ages out on the same TTL as the buffer', () => {
+    vi.useFakeTimers()
+    const fanout = createOperationEventFanout()
+    const first = recorder()
+    const held = fanout.attach('a', first.sink)
+    fanout._testEmit({ kind: 'progress', event: progress('a', { bytesDone: 50 }) })
+    held.detach()
+
+    vi.advanceTimersByTime(UNCLAIMED_BUFFER_TTL_MS + 1)
+    fanout._testEmit({ kind: 'progress', event: progress('unrelated') })
+
+    const second = recorder()
+    fanout.attach('a', second.sink)
+
+    expect(second.deliveries).toHaveLength(0)
+    fanout.dispose()
+    vi.useRealTimers()
+  })
+})

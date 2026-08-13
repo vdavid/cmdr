@@ -65,8 +65,8 @@ export interface TransferProgressPropsData {
  * Everything live comes from the operation's session; these four fields are the
  * dialog's chrome, and they are exactly what the registry snapshot carries.
  * There is deliberately nothing else here: no `sourcePaths`, no pane side, no
- * counts. See `dialog-state.svelte.ts` § "Birth context" in `DETAILS.md` for why
- * an adopted view must not invent them.
+ * counts: `DETAILS.md` § "Birth context" argues why an adopted view must not
+ * invent them.
  */
 export interface AdoptedOperationData {
   operationId: string
@@ -279,6 +279,19 @@ export function createDialogState(deps: DialogStateDeps) {
     void getSourcePaneRef()?.snapshotSelectionForOperation()
   }
 
+  /** Hands an adopted operation back to the queue window, if one is being shown.
+   *  Birth wins over adoption: a new operation is the user's fresh intent, and
+   *  the adopted one is still running and still listed in the queue, which is
+   *  where it came from. Without this the two would stack, since a dialog for an
+   *  operation this window STARTED renders from the other slot. */
+  function releaseAdoptedOperation(): void {
+    if (!adoptedProgressProps) return
+    log.info('Handing op={operationId} back to the queue window: this window is starting another operation', {
+      operationId: adoptedProgressProps.operationId,
+    })
+    adoptedProgressProps = null
+  }
+
   /** Drops the source pane's operation snapshot and its selection, the tail every
    *  settled transfer runs. Skipped for a pane that has navigated since the
    *  operation was born: the selection there is one the user made somewhere
@@ -402,6 +415,7 @@ export function createDialogState(deps: DialogStateDeps) {
 
     /** Opens the progress dialog directly, skipping the destination picker (used by clipboard paste). */
     startTransferProgress(props: TransferProgressPropsData) {
+      releaseAdoptedOperation()
       transferProgressProps = props
       snapshotSourcePaneSelection()
       showTransferProgressDialog = true
@@ -490,6 +504,7 @@ export function createDialogState(deps: DialogStateDeps) {
     ) {
       if (!transferDialogProps) return
 
+      releaseAdoptedOperation()
       transferProgressProps = {
         operationType,
         sourcePaths: transferDialogProps.sourcePaths,
@@ -537,6 +552,7 @@ export function createDialogState(deps: DialogStateDeps) {
         .filter((s): s is number => s != null)
       const itemSizes = sizes.length === deleteDialogProps.sourceItems.length ? sizes : undefined
 
+      releaseAdoptedOperation()
       transferProgressProps = {
         operationType: opType,
         sourcePaths: deleteDialogProps.sourcePaths,
