@@ -14,6 +14,10 @@ export const SOFT_DIALOG_REGISTRY = [
   { id: 'transfer-error', description: 'Shown after a copy/move failure' },
   { id: 'transfer-progress', description: 'Active during a copy/move operation' },
   {
+    id: 'rollback-confirmation',
+    description: 'Asks before Rollback deletes what a running copy or move has written',
+  },
+  {
     id: 'operation-conflict',
     description: 'Asks how to handle a name clash in an operation running with no progress dialog in front of it',
   },

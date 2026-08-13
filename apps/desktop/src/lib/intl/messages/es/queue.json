@@ -23,6 +23,14 @@
   "@queue.row.status": {
     "sourceHash": "2bbdaaa"
   },
+  "queue.row.statusAwaitingAnswer": "Respuesta necesaria",
+  "@queue.row.statusAwaitingAnswer": {
+    "sourceHash": "84ec74a"
+  },
+  "queue.row.awaitingAnswerTooltip": "Responde a la pregunta en la ventana principal y esta operación continuará.",
+  "@queue.row.awaitingAnswerTooltip": {
+    "sourceHash": "bf51776"
+  },
   "queue.row.pause": "Pausar",
   "@queue.row.pause": {
     "sourceHash": "858e4ba"

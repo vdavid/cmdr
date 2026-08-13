@@ -542,9 +542,9 @@
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
-  "fileOperations.transferProgress.rollbackTooltip": "Cancelar e apagar quaisquer arquivos de destino parciais que foram criados",
+  "fileOperations.transferProgress.rollbackTooltip": "Parar e apagar todos os arquivos gravados até agora",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "sourceHash": "df77f8e"
+    "sourceHash": "fa64117"
   },
   "fileOperations.transferProgress.titlePaused": "Pausado",
   "@fileOperations.transferProgress.titlePaused": {
@@ -598,9 +598,25 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
-  "fileOperations.transferProgress.foregroundBusyToast": "Outra operação está usando esta janela. Feche-a primeiro e depois traga esta para a frente.",
+  "fileOperations.transferProgress.foregroundBusyToast": "Há outra coisa aberta aqui. Feche-a e depois traga esta para a frente.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
-    "sourceHash": "f3b520d"
+    "sourceHash": "80d4d61"
+  },
+  "fileOperations.rollbackConfirm.title": "Reverter esta operação?",
+  "@fileOperations.rollbackConfirm.title": {
+    "sourceHash": "13ff3ea"
+  },
+  "fileOperations.rollbackConfirm.body": "Isso apaga todos os arquivos que a operação gravou até agora. O que foi substituído não volta.",
+  "@fileOperations.rollbackConfirm.body": {
+    "sourceHash": "8d61f81"
+  },
+  "fileOperations.rollbackConfirm.keep": "Manter os arquivos",
+  "@fileOperations.rollbackConfirm.keep": {
+    "sourceHash": "0d472b0"
+  },
+  "fileOperations.rollbackConfirm.rollBack": "Reverter",
+  "@fileOperations.rollbackConfirm.rollBack": {
+    "sourceHash": "931f703"
   },
   "fileOperations.errorDialog.technicalDetails": "Detalhes técnicos",
   "@fileOperations.errorDialog.technicalDetails": {

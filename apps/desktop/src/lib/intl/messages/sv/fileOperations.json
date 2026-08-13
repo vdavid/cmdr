@@ -541,9 +541,9 @@
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
-  "fileOperations.transferProgress.rollbackTooltip": "Avbryt och radera eventuella ofullständiga målfiler som skapats",
+  "fileOperations.transferProgress.rollbackTooltip": "Stoppa och radera alla filer som skrivits hittills",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "sourceHash": "df77f8e"
+    "sourceHash": "fa64117"
   },
   "fileOperations.transferProgress.titlePaused": "Pausad",
   "@fileOperations.transferProgress.titlePaused": {
@@ -597,9 +597,25 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
-  "fileOperations.transferProgress.foregroundBusyToast": "En annan åtgärd använder det här fönstret. Stäng den först och hämta sedan hit den här.",
+  "fileOperations.transferProgress.foregroundBusyToast": "Något annat är öppet här. Stäng det och ta sedan fram den här.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
-    "sourceHash": "f3b520d"
+    "sourceHash": "80d4d61"
+  },
+  "fileOperations.rollbackConfirm.title": "Återställa den här åtgärden?",
+  "@fileOperations.rollbackConfirm.title": {
+    "sourceHash": "13ff3ea"
+  },
+  "fileOperations.rollbackConfirm.body": "Det här raderar alla filer som åtgärden har skrivit hittills. Filer som den har skrivit över kommer inte tillbaka.",
+  "@fileOperations.rollbackConfirm.body": {
+    "sourceHash": "8d61f81"
+  },
+  "fileOperations.rollbackConfirm.keep": "Behåll dem",
+  "@fileOperations.rollbackConfirm.keep": {
+    "sourceHash": "0d472b0"
+  },
+  "fileOperations.rollbackConfirm.rollBack": "Återställ",
+  "@fileOperations.rollbackConfirm.rollBack": {
+    "sourceHash": "931f703"
   },
   "fileOperations.errorDialog.technicalDetails": "Tekniska detaljer",
   "@fileOperations.errorDialog.technicalDetails": {

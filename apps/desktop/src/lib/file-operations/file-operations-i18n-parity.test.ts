@@ -231,7 +231,7 @@ describe('transfer progress dialog chrome (en)', () => {
       'Rollback is not available for same-volume moves',
     )
     expect(tString('fileOperations.transferProgress.rollbackTooltip')).toBe(
-      'Cancel and delete any partial target files created',
+      'Stop, and delete every file written so far',
     )
     expect(tString('fileOperations.transferProgress.smallerDisabledTooltip')).toBe(
       "Can't compare: target folder size is unknown.",

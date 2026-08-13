@@ -229,6 +229,10 @@ alone cannot tell you.
   answers to the same paused copy once. Every view renders these three, never `progress.bytesPerSecond` /
   `progress.filesPerSecond` / `progress.etaSeconds`.
 - `scan`: the counting readout, including the frontend-computed rates the backend does not emit during a scan.
+- `awaitingAnswer`: the narrower half of `awaitingHuman` — parked on a clash nobody has answered yet, which is a thing
+  to DO rather than a thing that was done. It exists so a surface saying "this one needs you" and the surfaces deciding
+  what numbers to print read the same rule; the queue row's status column is the first caller (`../queue/DETAILS.md` §
+  "A row parked on a clash"). The pause is the other half, and the lifecycle status names that one already.
 - `conflict`: the conflict the operation is parked on, set from the event and cleared once the backend has ruled on the
   clash that was ANSWERED, whichever surface asked. A newer clash that arrived mid-answer stays (see below).
 - `outcome` / `settled` / `settleEventReceived`: how it ended, whether it ended, and whether the backend task has torn
@@ -245,9 +249,9 @@ else answer would hide its speed for the rest of the transfer.
 
 Every path reports the clash wait, including a local copy, which keeps no in-flight table: the backend classifies the
 wait off the operation's own pause gate and conflict slot, and re-sends its last tick on both edges of the wait so a
-parked operation says so even though it emits nothing while parked
-(`write_operations/DETAILS.md` § "Parking on a person"). ❌ So there is nothing here for a frontend to infer: a view
-that finds no `activity` is being told the operation is moving.
+parked operation says so even though it emits nothing while parked (`write_operations/DETAILS.md` § "Parking on a
+person"). ❌ So there is nothing here for a frontend to infer: a view that finds no `activity` is being told the
+operation is moving.
 
 ## The command surface
 

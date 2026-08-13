@@ -543,9 +543,9 @@
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
-  "fileOperations.transferProgress.rollbackTooltip": "Abbrechen und alle erstellten unvollständigen Zieldateien löschen",
+  "fileOperations.transferProgress.rollbackTooltip": "Stoppen und alle bisher geschriebenen Dateien löschen",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "sourceHash": "df77f8e"
+    "sourceHash": "fa64117"
   },
   "fileOperations.transferProgress.titlePaused": "Angehalten",
   "@fileOperations.transferProgress.titlePaused": {
@@ -600,9 +600,25 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
-  "fileOperations.transferProgress.foregroundBusyToast": "Ein anderer Vorgang belegt dieses Fenster. Schließe ihn zuerst und hole diesen dann nach vorn.",
+  "fileOperations.transferProgress.foregroundBusyToast": "Hier ist schon etwas anderes offen. Schließe es und zeige dann diesen Vorgang an.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
-    "sourceHash": "f3b520d"
+    "sourceHash": "80d4d61"
+  },
+  "fileOperations.rollbackConfirm.title": "Diesen Vorgang rückgängig machen?",
+  "@fileOperations.rollbackConfirm.title": {
+    "sourceHash": "13ff3ea"
+  },
+  "fileOperations.rollbackConfirm.body": "Das löscht alle Dateien, die der Vorgang bisher geschrieben hat. Ersetzte Dateien kommen nicht zurück.",
+  "@fileOperations.rollbackConfirm.body": {
+    "sourceHash": "8d61f81"
+  },
+  "fileOperations.rollbackConfirm.keep": "Dateien behalten",
+  "@fileOperations.rollbackConfirm.keep": {
+    "sourceHash": "0d472b0"
+  },
+  "fileOperations.rollbackConfirm.rollBack": "Rollback",
+  "@fileOperations.rollbackConfirm.rollBack": {
+    "sourceHash": "931f703"
   },
   "fileOperations.errorDialog.technicalDetails": "Technische Details",
   "@fileOperations.errorDialog.technicalDetails": {

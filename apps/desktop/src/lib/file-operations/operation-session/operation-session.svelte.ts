@@ -93,6 +93,11 @@ export interface OperationSession extends OperationSessionCommands {
    *  it honest by leaving their thinking time out of the rate window. */
   readonly etaSecondsDisplay: Seconds | null
   readonly scan: ScanReadout
+  /** The operation has stopped on a clash nobody has answered yet — a thing to
+   *  DO, unlike the pause the lifecycle status already names. For a surface
+   *  saying "this one needs you"; the numbers above hide themselves off the
+   *  same fact, so no two views can word one wait differently. */
+  readonly awaitingAnswer: boolean
   /** The conflict the operation is parked on, if any. Cleared once the backend
    *  has ruled on it, whichever surface asked. */
   readonly conflict: WriteConflictEvent | null
@@ -193,7 +198,15 @@ export function createOperationSession(operationId: string, fanout: OperationEve
    *  that hasn't heard anything yet says "not waiting" and its first frames
    *  render normally rather than blanking a running transfer. */
   function awaitingHuman(): boolean {
-    return snapshot?.status === 'paused' || progress?.activity?.waitingOn === 'you'
+    return snapshot?.status === 'paused' || awaitingAnswer()
+  }
+
+  /** The narrower half of `awaitingHuman`: the operation is parked on a clash
+   *  nobody has answered yet, which is a thing to DO rather than a thing that
+   *  was done. A pause is the other half, and the lifecycle status already
+   *  names that one, so a view wanting to say "this one needs you" wants this. */
+  function awaitingAnswer(): boolean {
+    return progress?.activity?.waitingOn === 'you'
   }
 
   /** First outcome wins: a cancel that races a completion must not flip the
@@ -310,6 +323,9 @@ export function createOperationSession(operationId: string, fanout: OperationEve
         filesPerSecond: scanFilesPerSecond,
         bytesPerSecond: scanBytesPerSecond,
       }
+    },
+    get awaitingAnswer(): boolean {
+      return awaitingAnswer()
     },
     get conflict(): WriteConflictEvent | null {
       return conflict

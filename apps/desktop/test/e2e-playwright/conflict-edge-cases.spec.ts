@@ -32,6 +32,7 @@ import {
   waitForConflictPolicy,
   selectConflictPolicy,
   clickTransferStart,
+  confirmRollback,
   waitForDialogsToClose,
 } from './conflict-helpers.js'
 
@@ -132,6 +133,8 @@ test.describe('Cancel and rollback', () => {
         return false;
       })()`)
       expect(clicked).toBe(true)
+      // Rollback asks before it deletes anything.
+      await confirmRollback(tauriPage)
 
       // Wait for rollback to finish and dialogs to close.
       await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()

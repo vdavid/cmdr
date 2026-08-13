@@ -23,6 +23,14 @@
   "@queue.row.status": {
     "sourceHash": "2bbdaaa"
   },
+  "queue.row.statusAwaitingAnswer": "Antwoord nodig",
+  "@queue.row.statusAwaitingAnswer": {
+    "sourceHash": "84ec74a"
+  },
+  "queue.row.awaitingAnswerTooltip": "Beantwoord de vraag in het hoofdvenster, dan loopt deze bewerking door.",
+  "@queue.row.awaitingAnswerTooltip": {
+    "sourceHash": "bf51776"
+  },
   "queue.row.pause": "Pauzeer",
   "@queue.row.pause": {
     "sourceHash": "858e4ba"

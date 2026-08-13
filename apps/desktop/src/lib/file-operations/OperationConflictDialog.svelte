@@ -14,6 +14,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import type { ConflictResolution } from '$lib/file-explorer/types'
     import TransferConflictDialog from './transfer/TransferConflictDialog.svelte'
+    import RollbackConfirmDialog from './RollbackConfirmDialog.svelte'
     import { getFolderName } from './transfer/transfer-dialog-utils'
     import {
         cancelConflictPrompt,
@@ -27,6 +28,11 @@
      *  progress dialog: that one is 580 px for its fixed-width readout columns,
      *  which this body doesn't have. */
     const DIALOG_WIDTH_STYLE = 'width: 520px; min-width: 520px'
+
+    /** Rollback deletes everything the operation has written, and a file it
+     *  overwrote has no backup, so the click raises the question rather than
+     *  the deletion. `DETAILS.md` § "Rollback asks first". */
+    let rollbackAsked = $state(false)
 
     const prompt = $derived(getConflictPrompt())
     const snapshot = $derived(prompt?.snapshot ?? null)
@@ -78,7 +84,11 @@
                 void resolveConflictPrompt(resolution, applyToAll)
             }}
             onCancel={(rollback: boolean) => {
-                void cancelConflictPrompt(rollback)
+                if (rollback) {
+                    rollbackAsked = true
+                    return
+                }
+                void cancelConflictPrompt(false)
             }}
         />
 
@@ -86,6 +96,21 @@
             <p class="paused-note">{tString('fileOperations.operationConflict.pausedNote')}</p>
         {/if}
     </ModalDialog>
+
+    <!-- Stacked over the prompt that raised it: same subtree, so DOM order puts
+         it on top and its focus trap takes over until it goes
+         (`$lib/ui/DETAILS.md` § ModalDialog). -->
+    {#if rollbackAsked}
+        <RollbackConfirmDialog
+            onConfirm={() => {
+                rollbackAsked = false
+                void cancelConflictPrompt(true)
+            }}
+            onCancel={() => {
+                rollbackAsked = false
+            }}
+        />
+    {/if}
 {/if}
 
 <style>

@@ -23,6 +23,14 @@
   "@queue.row.status": {
     "sourceHash": "2bbdaaa"
   },
+  "queue.row.statusAwaitingAnswer": "Válaszolnod kell",
+  "@queue.row.statusAwaitingAnswer": {
+    "sourceHash": "84ec74a"
+  },
+  "queue.row.awaitingAnswerTooltip": "Válaszolj a kérdésre a főablakban, és ez a művelet folytatódik.",
+  "@queue.row.awaitingAnswerTooltip": {
+    "sourceHash": "bf51776"
+  },
   "queue.row.pause": "Szüneteltetés",
   "@queue.row.pause": {
     "sourceHash": "858e4ba"

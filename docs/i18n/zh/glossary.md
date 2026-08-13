@@ -1097,3 +1097,25 @@ exactly what the copy avoids.
   consumer copy (Apple's Chinese privacy wording uses the same word).
 - **tied to → `关联到`** · the catalog's own verb (`onboarding.stepBeta.emailNote` “绝不会和你的使用统计关联”) · `high`
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+### 等待回答的队列行 + 回滚确认框 (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, 改写的 `transferProgress.foregroundBusyToast`/`.rollbackTooltip`, 2026-08-13)
+
+- **"Needs your answer" (queue-row status) → `需要你回答`** · ⚠️ must not open on `等待`: `等待中` is the queued status
+  in the same narrow column. `回答` is the catalog's own answering verb (`askCmdr` "来回答问题") and keeps the second
+  person `你` per style.md · high
+- **the prompt (the on-screen question) → `那个问题`** · the conflict prompt IS a question; `提示` is already the
+  catalog's word for a hint/tip banner, so it would read as the wrong surface · high. Main window stays `主窗口`
+  (`queue.row.foregroundAria`; Total Commander zh-CN `2083="主窗口"`).
+- **"carries on" → `就会继续`** · `继续` is the catalog's continue verb (`main.quit.keepWorking` = `继续工作`) · high
+- **"Keep them" (the safe button) → `保留文件`** · macOS "Keep" → `保留`, `保留部分副本`. Spelled out to `保留文件`
+  because a bare `保留` beside `回滚` could read as "keep the operation" · high
+- **"Roll back" / "Roll this operation back?" → `回滚` / `要回滚这项操作吗？`** · the settled `回滚` family
+  (`transferProgress.conflictRollback`, the `operationLog.rollback.*` chips); the `要…吗？` question shape mirrors
+  `main.quit.title` · high
+- **"Stop" in the rollback tooltip → `停止`** · macOS Finder `PE107` = `停止`, "停止该进程并保留部分副本". ❌ Never
+  `取消` here: that IS Cancel, which keeps the finished files, and the tooltip exists to say rollback doesn't · high
+- **the files an operation overwrote → `被覆盖掉的文件`** · the settled `覆盖` (overwrite) · high. "won't come back" →
+  `找不回来了`, the spoken register style.md asks for.
+- `foregroundBusyToast` no longer claims another operation holds the window (`这里已经打开了别的东西`): the blocker can
+  be any dialog. "bring this one up" → `再显示这一项`, tying to the row's `显示` (Show) button · high
+- No `sameAsSourceJustification` needed: all eight values differ from English.

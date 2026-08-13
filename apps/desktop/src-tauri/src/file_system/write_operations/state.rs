@@ -737,7 +737,7 @@ impl CopyTransaction {
     /// NOT restore an original that an Overwrite replaced (we keep no per-file
     /// backup — see `overwrite::safe_overwrite_file` step 4). Keeping backups for
     /// the whole operation risks unexpectedly filling the user's drive on a
-    /// large Overwrite. Revisit if users complain. See transfer/CLAUDE.md
+    /// large Overwrite. Revisit if users complain. See transfer/volume/DETAILS.md
     /// § "Overwrite isn't reversible".
     pub fn rollback(&self) {
         // Delete files first (in reverse order)

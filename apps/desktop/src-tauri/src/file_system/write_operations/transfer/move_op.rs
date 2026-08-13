@@ -47,7 +47,7 @@ impl MoveTransaction {
     /// destination that an Overwrite-with-rename replaced (no per-file backup is
     /// kept — see `overwrite::safe_overwrite_file` step 4). Keeping backups for the
     /// whole operation risks unexpectedly filling the user's drive on a large
-    /// Overwrite. Revisit if users complain. See transfer/CLAUDE.md
+    /// Overwrite. Revisit if users complain. See transfer/volume/DETAILS.md
     /// § "Overwrite isn't reversible".
     fn rollback(&self) {
         for (original_source, moved_to_dest) in self.renames.iter().rev() {

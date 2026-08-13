@@ -542,9 +542,9 @@
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
-  "fileOperations.transferProgress.rollbackTooltip": "Annuleer en verwijder eventuele gedeeltelijke doelbestanden die zijn aangemaakt",
+  "fileOperations.transferProgress.rollbackTooltip": "Stop en verwijder elk bestand dat tot nu toe is geschreven",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "sourceHash": "df77f8e"
+    "sourceHash": "fa64117"
   },
   "fileOperations.transferProgress.titlePaused": "Gepauzeerd",
   "@fileOperations.transferProgress.titlePaused": {
@@ -598,9 +598,25 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
-  "fileOperations.transferProgress.foregroundBusyToast": "Een andere bewerking gebruikt dit venster. Sluit die eerst en haal deze daarna naar voren.",
+  "fileOperations.transferProgress.foregroundBusyToast": "Hier is iets anders open. Sluit het en haal deze daarna naar voren.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
-    "sourceHash": "f3b520d"
+    "sourceHash": "80d4d61"
+  },
+  "fileOperations.rollbackConfirm.title": "Deze bewerking terugdraaien?",
+  "@fileOperations.rollbackConfirm.title": {
+    "sourceHash": "13ff3ea"
+  },
+  "fileOperations.rollbackConfirm.body": "Dit verwijdert elk bestand dat de bewerking tot nu toe heeft geschreven. Wat daarbij is vervangen, komt niet terug.",
+  "@fileOperations.rollbackConfirm.body": {
+    "sourceHash": "8d61f81"
+  },
+  "fileOperations.rollbackConfirm.keep": "Behoud de bestanden",
+  "@fileOperations.rollbackConfirm.keep": {
+    "sourceHash": "0d472b0"
+  },
+  "fileOperations.rollbackConfirm.rollBack": "Terugdraaien",
+  "@fileOperations.rollbackConfirm.rollBack": {
+    "sourceHash": "931f703"
   },
   "fileOperations.errorDialog.technicalDetails": "Technische details",
   "@fileOperations.errorDialog.technicalDetails": {

@@ -41,6 +41,17 @@
     "screenshot": "queue.png"
   },
 
+  "queue.row.statusAwaitingAnswer": "Needs your answer",
+  "@queue.row.statusAwaitingAnswer": {
+    "description": "Replaces the status word on an operation row that has stopped and is waiting for the user to answer a question about a file (a name clash: the file already exists at the destination). The question is on screen in the main window, not in the queue window this row is in. Keep it to two or three words: it sits in the same narrow column as \"Running\" and \"Waiting\", and it must not be confusable with \"Waiting\", which means queued behind another operation.",
+    "screenshot": "queue.png"
+  },
+
+  "queue.row.awaitingAnswerTooltip": "Answer the prompt in the main window and this operation carries on.",
+  "@queue.row.awaitingAnswerTooltip": {
+    "description": "Tooltip on the \"Needs your answer\" status of an operation row, saying where the question is. The main window is the two-pane file manager window; the operation queue is a separate window, so the prompt can be hidden behind it."
+  },
+
   "queue.row.pause": "Pause",
   "@queue.row.pause": {
     "description": "Button on an operation row that pauses that operation in place. It can be resumed later. Toggles to \"Resume\".",

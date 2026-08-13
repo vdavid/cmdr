@@ -152,6 +152,14 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     states: [],
   },
   {
+    dialogId: 'rollback-confirmation',
+    label: 'Rollback confirmation',
+    hostWindow: 'main',
+    status: 'ready',
+    note: 'Deleting nothing: the rollback lives in the onConfirm prop, which the gallery leaves empty. In the app it stacks over whichever surface offered Rollback — the progress dialog, the main window`s clash prompt, or a row in the operation queue window.',
+    states: [{ id: 'idle', label: 'Confirm' }],
+  },
+  {
     dialogId: 'operation-conflict',
     label: 'Operation conflict',
     hostWindow: 'main',

@@ -63,6 +63,7 @@
     // The viewer copy dialogs live in the viewer window's route. Same relative-import
     // shape `lib/search/ImageSearchResults.svelte` uses for `routes/viewer/media-view`.
     import ViewerCopyDialogs from '../../routes/viewer/ViewerCopyDialogs.svelte'
+    import RollbackConfirmDialog from '../file-operations/RollbackConfirmDialog.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { untrack } from 'svelte'
     import { closeGalleryDialog, getOpenGalleryDialog, type GalleryDiskFixture } from './gallery-state.svelte'
@@ -86,6 +87,7 @@
     type RenderPlan =
         | { kind: 'alert'; props: AlertFixture }
         | { kind: 'about' }
+        | { kind: 'rollback-confirmation' }
         | { kind: 'acknowledgements' }
         | { kind: 'commercial-reminder' }
         | { kind: 'expiration'; props: ExpirationFixture }
@@ -221,6 +223,7 @@
             withDiskFixture(fixtureRecords['go-to-path'][id], disk, (props) => ({ kind: 'go-to-path', props })),
 
         about: () => ({ kind: 'about' }),
+        'rollback-confirmation': () => ({ kind: 'rollback-confirmation' }),
         acknowledgements: () => ({ kind: 'acknowledgements' }),
         'commercial-reminder': () => ({ kind: 'commercial-reminder' }),
         license: () => ({ kind: 'license' }),
@@ -340,5 +343,7 @@
         <GoToPathDialog {...plan.props} onGo={closeGoToPathPreview} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'delete-ai-model'}
         <DeleteAiModelDialog {...plan.props} onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
+    {:else if plan?.kind === 'rollback-confirmation'}
+        <RollbackConfirmDialog onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {/if}
 {/key}

@@ -22,6 +22,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import TransferProgressReadout from '../TransferProgressReadout.svelte'
+    import RollbackConfirmDialog from '../RollbackConfirmDialog.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { stallNoticeFor } from './transfer-stall'
@@ -188,6 +189,14 @@
         mcpRequestId,
     })
 
+    /** Rollback is asked about before it happens: it deletes everything the
+     *  operation has written, and a file it overwrote has no backup, so one
+     *  mis-click on a button that sits beside a harmless Cancel is
+     *  unrecoverable. Both entry points (this dialog's own button and the
+     *  conflict body's) go through `handleCancel(true)`, so the question hangs
+     *  off that one call. `../DETAILS.md` § "Rollback asks first". */
+    let rollbackAsked = $state(false)
+
     // Local aliases over the factory getters so the markup reads the same names
     // it always has. Each tracks reactive state (the view's own, or the
     // session's through it), so the template updates exactly as before.
@@ -344,7 +353,11 @@
                 void progress.handleConflictResolution(resolution, applyToAll)
             }}
             onCancel={(rollback: boolean) => {
-                void progress.handleCancel(rollback)
+                if (rollback) {
+                    rollbackAsked = true
+                    return
+                }
+                void progress.handleCancel(false)
             }}
         />
     {:else}
@@ -531,7 +544,9 @@
                     <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
                         <Button
                             variant="danger"
-                            onclick={() => progress.handleCancel(true)}
+                            onclick={() => {
+                                rollbackAsked = true
+                            }}
                             disabled={isCancelling || operationSettled || isScanning}
                             >{tString('fileOperations.transferProgress.conflictRollback')}</Button
                         >
@@ -541,6 +556,22 @@
         </div>
     {/if}
 </ModalDialog>
+
+<!-- Stacked over the progress dialog, which is the dialog that raised it: same
+     subtree, so DOM order puts it on top and the focus trap it mounts takes
+     over until it goes (`$lib/ui/DETAILS.md` § ModalDialog). Withdrawn once the
+     operation settles, because there is nothing left to undo. -->
+{#if rollbackAsked && !operationSettled}
+    <RollbackConfirmDialog
+        onConfirm={() => {
+            rollbackAsked = false
+            void progress.handleCancel(true)
+        }}
+        onCancel={() => {
+            rollbackAsked = false
+        }}
+    />
+{/if}
 
 <style>
     /* Scan wait section (wraps the ScanPhaseBody child during the scan phases) */

@@ -1337,3 +1337,43 @@ jargon is exactly what the copy avoids.
   hyphen rule applies. Already what `onboarding.stepBeta.emailNote` ships; `settings.updates.emailPrivacyNote` now
   matches it (its old `a Macedre tárolva` was both unhyphenated and in the wrong case for `tárol`) · high
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+### Visszagörgetés-megerősítő + a válaszra váró sor állapota (`fileOperations.rollbackConfirm.*`, `queue.row.statusAwaitingAnswer`/`awaitingAnswerTooltip`, `transferProgress.foregroundBusyToast`/`rollbackTooltip`, 2026-08-13)
+
+A futó másolás/áthelyezés `Visszagörgetés` gombja most megerősítést kér, a műveleti sor pedig külön állapotot mutat, ha
+egy sor azért állt meg, mert a főablakban kérdés vár a felhasználóra.
+
+- **"Needs your answer" (sorállapot) → `Válaszolnod kell`** · a pile közvetlen találata a fogalomra a Double Commander
+  műveletnézete (`Waiting for user response` = `Várakozás felhasználói válaszra`), de az en `@key` kiköti, hogy ez az
+  állapot NE legyen összetéveszthető a `queued` ággal (`Várakozik`), és a DC alakja pont a `vár-` tővel kezdődik · high
+  a `válasz` tőre, `tentative` a formára. A `Válaszolnod kell` a `te`-regisztert használja (style.md § Formality), ahogy
+  az angol is közvetlenül szólítja meg a felhasználót ("your"), és két szó a szűk oszlopban.
+  - ❌ NEM `Válaszra vár`: idiomatikus, de a `vár` miatt egy pillantásra a `Várakozik` ággal mosódik össze.
+  - ❌ NEM `Választ kér`: a `választ` egyben a `választ` ige alakja is, tehát homográf-félreolvasás kockázata.
+- **`awaitingAnswerTooltip` → `Válaszolj a kérdésre a főablakban, és ez a művelet folytatódik.`** · a `válaszol` ige a
+  testvér `operationConflict.pausedNote`-ból jön (`amíg nem válaszolsz`), a `főablak` a szótár szava
+  (`queue.row.foregroundAria` = `Megjelenítés a főablakban`); a "prompt" itt `kérdés`, mert a megerősítő szövegek is
+  ezzel a szóval beszélnek róla · high.
+- **`rollbackConfirm.title` → `Visszagörgeted ezt a műveletet?`** · a katalógus minden kérdés-címe `te`-alakú, definit
+  ragozással (`Törlöd az AI-modellt?`, `Megváltoztatod a fájlkiterjesztést?`) · high. A `visszagörget` a szótár szava.
+- **`rollbackConfirm.body` → `Ez törli az összes fájlt, amit a művelet eddig kiírt. Amit felülírt, az nem jön vissza.`**
+  · a "written" a katalógus `ki van írva` alakja (`transferProgress.stallInFlight`), a "so far" mindenütt `eddig`
+  (`queryUi.results.live.matchesSoFar`, `search.imageResults.paused`), a `felülír` a szótár `overwrite` szava, macOS
+  Tier 1 (`Felülírás a célhelyen`) · high. A második mondat szabad vonatkozói szerkezet (`Amit felülírt, az …`), hogy
+  szám-semleges maradjon: az angol "any file" sem egy konkrét fájlról beszél.
+- **`rollbackConfirm.keep` ("Keep them", a biztonságos válasz) → `Fájlok megtartása`** · macOS Tier 1 a
+  `<Főnév> megtartása` alakra (AppKit `Keep` = `Megtartás`, `Mindkettő megtartása`, `Az összes megtartása`,
+  `Letöltött megtartása`) · high. A puszta `Megtartás` azért nem elég: a törzsszöveg utolsó mondata a FELÜLÍRT fájlokat
+  nevezi meg, így a tárgy kimondása nélkül egy pillanatra rossz tárgyra vonatkozhatna.
+- **`rollbackConfirm.rollBack` → `Visszagörgetés`** · szó szerint az a gomb, amelyik a párbeszédet nyitotta
+  (`transferProgress.conflictRollback`); az en `@key` kifejezetten kéri az egyezést · high.
+- **`transferProgress.rollbackTooltip` (új angol: "Stop, and delete every file written so far") →
+  `Leállítás, és minden eddig kiírt fájl törlése`** · a `Leállítás` macOS Tier 1 az abbahagyásra (`Másolás leállítása`,
+  `Kettőzés leállítása`, `Leállítás…`), és a katalógus is ezt használja (`queryUi` `Keresés leállítása`) · high.
+  Szándékosan NEM `Megszakítás`: az a futó művelet Cancel-szava, az en `@key` viszont pont azt köti ki, hogy a tooltip
+  ne olvasódjon sima Cancelként.
+- **`transferProgress.foregroundBusyToast` (új angol: "Something else is open here. Close it, then bring this one up.")
+  → `Itt valami más van nyitva. Zárd be, aztán hozd elő ezt.`** · az új angol szándékosan nem állítja, hogy a blokkoló
+  egy másik MŰVELET (lehet Új mappa vagy törlés-megerősítés is), így a korábbi `Egy másik művelet …` kezdet hamis lett;
+  az `itt` a most előtérbe hozott főablak · high. Informal `te` a két felszólító alakban.
+- Nem kell `sameAsSourceJustification`: mind a nyolc érték eltér az angoltól.

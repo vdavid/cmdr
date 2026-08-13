@@ -151,7 +151,7 @@ describe('OperationConflictDialog', () => {
     expect(resolveConflictPrompt).toHaveBeenCalledWith('skip', true)
   })
 
-  it('offers Rollback for a copy the backend can reverse', () => {
+  it('offers Rollback for a copy the backend can reverse, and asks before it deletes anything', () => {
     prompt = makePrompt()
     const host = render()
 
@@ -159,8 +159,31 @@ describe('OperationConflictDialog', () => {
     const rollback = buttons.find((b) => b.textContent.trim() === 'Rollback')
     expect(rollback?.disabled).toBe(false)
     rollback?.click()
+    flushSync()
+
+    // Nothing is deleted on that click: rollback removes every file the
+    // operation has written, and an overwritten one has no backup.
+    expect(cancelConflictPrompt).not.toHaveBeenCalled()
+
+    const confirm = [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Roll back')
+    expect(confirm, 'the question is on screen').toBeDefined()
+    confirm?.click()
 
     expect(cancelConflictPrompt).toHaveBeenCalledWith(true)
+  })
+
+  it('leaves the operation alone when the rollback question is declined', () => {
+    prompt = makePrompt()
+    const host = render()
+
+    ;[...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Rollback')?.click()
+    flushSync()
+    ;[...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Keep them')?.click()
+    flushSync()
+
+    expect(cancelConflictPrompt).not.toHaveBeenCalled()
+    // And the clash is still up, waiting for a real answer.
+    expect(host.querySelector('.conflict-filename')).not.toBeNull()
   })
 
   it('offers a plain Cancel when the backend cannot reverse the operation', () => {

@@ -23,6 +23,14 @@
   "@queue.row.status": {
     "sourceHash": "2bbdaaa"
   },
+  "queue.row.statusAwaitingAnswer": "Behöver ditt svar",
+  "@queue.row.statusAwaitingAnswer": {
+    "sourceHash": "84ec74a"
+  },
+  "queue.row.awaitingAnswerTooltip": "Svara på frågan i huvudfönstret, så fortsätter den här åtgärden.",
+  "@queue.row.awaitingAnswerTooltip": {
+    "sourceHash": "bf51776"
+  },
   "queue.row.pause": "Pausa",
   "@queue.row.pause": {
     "sourceHash": "858e4ba"

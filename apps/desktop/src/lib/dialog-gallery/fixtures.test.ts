@@ -19,6 +19,7 @@ const CALLBACK_ONLY = new Set([
   'commercial-reminder',
   'connect-to-server',
   'mtp-permission',
+  'rollback-confirmation',
 ])
 
 const readyEntries = DIALOG_GALLERY_ENTRIES.filter((entry) => entry.status === 'ready')

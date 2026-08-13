@@ -1384,3 +1384,48 @@ that jargon is exactly what the copy avoids.
   `Stuur anonieme gebruiksstatistieken`); a toggle label describes a setting, not a button, so the infinitive wins over
   the bare-stem imperative the button rule prescribes.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## De terugdraaibevestiging en de rij die op antwoord wacht (`fileOperations.rollbackConfirm.*`, `queue.row.statusAwaitingAnswer`/`awaitingAnswerTooltip`, `transferProgress.foregroundBusyToast`/`rollbackTooltip`, 2026-08-13)
+
+De knop `Terugdraaien` op een lopende kopie of verplaatsing vraagt nu eerst om bevestiging, en een rij in de
+`Bewerkingenwachtrij` krijgt een eigen status wanneer die stilstaat omdat er in het hoofdvenster een vraag klaarstaat.
+
+- **"Needs your answer" (rijstatus) → `Antwoord nodig`** · Double Commander nl heeft de enige directe pile-treffer op
+  dit concept (`Waiting for user response` → `Wachtend op reactie van gebruiker`), maar die is hier onbruikbaar: hij
+  begint met `Wacht…`, precies het woord van de `queued`-arm (`Wachten`) die de `@key` verbiedt te laten lijken, en
+  `reactie` is in dit catalogusdeel gereserveerd voor een apparaat of share dat antwoordt (`stallWaiting*`) · high op
+  `antwoord`, `tentative` op de vorm. `<Zelfstandig naamwoord> nodig` is de gangbare Nederlandse statusvorm (vgl. "actie
+  nodig") en past in de smalle kolom naast `Gepauzeerd` en `Niet voltooid`.
+- **`awaitingAnswerTooltip` → `Beantwoord de vraag in het hoofdvenster, dan loopt deze bewerking door.`** ·
+  `beantwoorden` (Microsoft, `answer` Verb) mag hier wél, omdat er een object staat; het intransitieve `antwoorden` van
+  `operationConflict.pausedNote` ("totdat je antwoordt") heeft er geen. `doorlopen` is het gevestigde werkwoord voor een
+  bewerking die blijft lopen (`queueTooltip`, `backgroundedToast`), en `hoofdvenster` staat al in deze woordenlijst ·
+  high.
+- **`rollbackConfirm.title` → `Deze bewerking terugdraaien?`** · de catalogus zet elke ja/nee-dialoogtitel in de
+  infinitief (`AI-model verwijderen?`, `{hostName} uit de serverlijst verwijderen?`) · high.
+- **`rollbackConfirm.body` →
+  `Dit verwijdert elk bestand dat de bewerking tot nu toe heeft geschreven. Wat daarbij is vervangen, komt niet terug.`**
+  · `geschreven` is het catalogus­woord voor een weggeschreven doelbestand (`stallInFlight`, `main.quit.body`),
+  `tot nu toe` is de vaste weergave van "so far" (`queryUi.results.live.matchesSoFar`), en `vervangen` is macOS Tier 1
+  voor `Replace` · high. De tweede zin gebruikt de vrije relatiefzin `Wat daarbij is vervangen` in plaats van een
+  voornaamwoord: `de bewerking` is een de-woord, dus `het` zou fout zijn, en zo blijft de zin bovendien getal-neutraal.
+- **`rollbackConfirm.keep` ("Keep them", het veilige antwoord) → `Behoud de bestanden`** · macOS Tier 1 `Keep` →
+  `Behoud` (AppKit Revisions: `Behoud beide`, `Behoud alle`, Finder `Behoud origineel`, `Behoud gedeeltelijke kopie`) ·
+  high. Het object wordt uitgeschreven in plaats van `Behoud ze`: de laatste zin van de body noemt de VERVANGEN
+  bestanden, dus een voornaamwoord kan even naar de verkeerde verwijzen.
+- **`rollbackConfirm.rollBack` → `Terugdraaien`** · exact de knop die het venster opende
+  (`transferProgress.conflictRollback`), zoals de `@key` vraagt · high. Wijkt bewust af van de bare-stem-imperatiefregel
+  voor knoppen (`Draai terug`): gelijkluidendheid met de openende knop weegt hier zwaarder.
+- **`transferProgress.rollbackTooltip` (nieuw Engels: "Stop, and delete every file written so far") →
+  `Stop en verwijder elk bestand dat tot nu toe is geschreven`** · `Stop` is het catalogus­woord voor het stoppen van
+  lopend werk (`queryUi` "Stop met zoeken", macOS `Stop toch`) en houdt de tooltip weg van `Annuleer`, wat de `@key`
+  juist verbiedt · high. Geen komma voor `en`, anders dan het Engels.
+- **`transferProgress.foregroundBusyToast` (nieuw Engels: "Something else is open here. Close it, then bring this one
+  up.") → `Hier is iets anders open. Sluit het en haal deze daarna naar voren.`** · het nieuwe Engels claimt bewust niet
+  dat de blokkade een andere BEWERKING is (het kan ook een nieuwe-map-venster of een verwijderbevestiging zijn), dus de
+  oude opening `Een andere bewerking …` was onwaar geworden · high. `het` verwijst naar het onzijdige `iets anders`,
+  `deze` naar de bewerking (de-woord).
+- Geen `sameAsSourceJustification` nodig: alle acht waarden verschillen van het Engels.
+
+REVIEW FLAG: `Antwoord nodig` is gemunt, niet gevonden in de pile; als een moedertaalspreker meekijkt, is dit de eerste
+regel om te toetsen (alternatief `Jouw antwoord nodig`, dat wel "your" meeneemt maar breder is).

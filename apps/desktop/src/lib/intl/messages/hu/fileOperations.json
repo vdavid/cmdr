@@ -541,9 +541,9 @@
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
-  "fileOperations.transferProgress.rollbackTooltip": "Megszakítás, és a létrehozott részleges célfájlok törlése",
+  "fileOperations.transferProgress.rollbackTooltip": "Leállítás, és minden eddig kiírt fájl törlése",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "sourceHash": "df77f8e"
+    "sourceHash": "fa64117"
   },
   "fileOperations.transferProgress.titlePaused": "Szüneteltetve",
   "@fileOperations.transferProgress.titlePaused": {
@@ -597,9 +597,25 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
-  "fileOperations.transferProgress.foregroundBusyToast": "Egy másik művelet foglalja ezt az ablakot. Zárd be előbb azt, aztán hozd ide ezt.",
+  "fileOperations.transferProgress.foregroundBusyToast": "Itt valami más van nyitva. Zárd be, aztán hozd elő ezt.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
-    "sourceHash": "f3b520d"
+    "sourceHash": "80d4d61"
+  },
+  "fileOperations.rollbackConfirm.title": "Visszagörgeted ezt a műveletet?",
+  "@fileOperations.rollbackConfirm.title": {
+    "sourceHash": "13ff3ea"
+  },
+  "fileOperations.rollbackConfirm.body": "Ez törli az összes fájlt, amit a művelet eddig kiírt. Amit felülírt, az nem jön vissza.",
+  "@fileOperations.rollbackConfirm.body": {
+    "sourceHash": "8d61f81"
+  },
+  "fileOperations.rollbackConfirm.keep": "Fájlok megtartása",
+  "@fileOperations.rollbackConfirm.keep": {
+    "sourceHash": "0d472b0"
+  },
+  "fileOperations.rollbackConfirm.rollBack": "Visszagörgetés",
+  "@fileOperations.rollbackConfirm.rollBack": {
+    "sourceHash": "931f703"
   },
   "fileOperations.errorDialog.technicalDetails": "Technikai részletek",
   "@fileOperations.errorDialog.technicalDetails": {

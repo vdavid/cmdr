@@ -153,7 +153,7 @@ where
     // rollback. Keeping per-file backups for the whole operation risks
     // unexpectedly filling the user's drive on a large Overwrite. Consequence:
     // rollback removes new files but can't restore overwritten originals.
-    // Revisit if users complain. See transfer/CLAUDE.md § "Overwrite isn't reversible".
+    // Revisit if users complain. See transfer/volume/DETAILS.md § "Overwrite isn't reversible".
     if let Some(aside) = &aside {
         if aside.path().is_dir() {
             let _ = fs::remove_dir_all(aside.path());

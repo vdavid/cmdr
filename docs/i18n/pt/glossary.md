@@ -962,3 +962,46 @@ that jargon is exactly what the copy avoids.
 - `emailPrivacyNote` now writes `e-mails` (hyphenated), matching the rest of the pt catalog; the old value had a bare
   `emails`.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+### Confirmação de reversão e a linha que espera resposta (`fileOperations.rollbackConfirm.*`, `queue.row.statusAwaitingAnswer`/`awaitingAnswerTooltip`, `transferProgress.foregroundBusyToast`/`rollbackTooltip`, 2026-08-13)
+
+O botão `Reverter` de uma cópia ou movimentação em andamento agora pede confirmação, e uma linha da `Fila de operações`
+ganha um status próprio quando para porque há uma pergunta esperando na janela principal.
+
+- "Needs your answer" (status da linha) · **Precisa de resposta** · o único acerto direto do pile no conceito é o Double
+  Commander pt-BR (`Waiting for user response` → "Aguardando resposta do usuário"), inutilizável aqui: começa com
+  **Aguardando**, exatamente a arm `queued` de `queue.row.status`, e a `@key` exige que os dois não se confundam · high
+  em **resposta**, `tentative` na forma. **Precisa de** mantém o tom amigável do catálogo (mais quente que "Requer
+  resposta" ou "Resposta necessária") e cabe na coluna estreita ao lado de "Não foi possível concluir".
+- `awaitingAnswerTooltip` · **Responda à pergunta na janela principal e esta operação continua.** · o verbo
+  **responder** vem do irmão `operationConflict.pausedNote` ("até você responder"), **janela principal** já é o termo do
+  catálogo (`shortcuts.scope.mainWindow`, `queue.row.foregroundAria`), e "prompt" vira **pergunta**, a palavra com que o
+  próprio diálogo se descreve · high. Imperativo de sujeito implícito, conforme o style guide.
+- `rollbackConfirm.title` · **Reverter esta operação?** · todo título de diálogo sim/não no catálogo é infinitivo
+  ("Excluir modelo de IA?", "Remover {hostName} da lista de servidores?") · high; **Reverter** é o termo já fixado para
+  rollback.
+- `rollbackConfirm.body` · **Isso apaga todos os arquivos que a operação gravou até agora. O que foi substituído não
+  volta.** · **gravar** é a palavra do catálogo para escrever um arquivo de destino (`stallInFlight` "parcialmente
+  gravado", `main.quit.body`), **até agora** é a forma fixa de "so far" (`search.imageResults.paused`), **substituir** é
+  macOS Tier 1 para `Replace`, e **apagar** é o `delete` fixado no glossário · high. A segunda frase usa a relativa
+  livre **O que foi substituído** para ficar neutra em número (o inglês "any file" também não fala de um arquivo
+  específico) e para não precisar do pronome de **a operação**. **Isso** (33 ocorrências no catálogo) e não "Isto" (3).
+- `rollbackConfirm.keep` ("Keep them", a resposta segura) · **Manter os arquivos** · macOS Finder pt-BR usa a forma
+  `Manter <substantivo>` ("Manter Ambos", "Manter Original", "Manter Cópia Parcial", "Manter Downloads") · high. O
+  objeto é escrito por extenso em vez de **Mantê-los**: a última frase do corpo fala dos arquivos SUBSTITUÍDOS, então o
+  pronome poderia apontar para o referente errado.
+- `rollbackConfirm.rollBack` · **Reverter** · exatamente o botão que abriu o diálogo
+  (`transferProgress.conflictRollback`), como a `@key` pede · high.
+- `transferProgress.rollbackTooltip` (novo inglês: "Stop, and delete every file written so far") · **Parar e apagar
+  todos os arquivos gravados até agora** · **Parar** é o verbo do catálogo para interromper trabalho em curso (`queryUi`
+  "Parar a busca") e mantém a dica longe de **Cancelar**, que é o que a `@key` proíbe evocar · high. Sem vírgula antes
+  do **e**, ao contrário do inglês.
+- `transferProgress.foregroundBusyToast` (novo inglês: "Something else is open here. Close it, then bring this one up.")
+  · **Há outra coisa aberta aqui. Feche-a e depois traga esta para a frente.** · o novo inglês evita de propósito
+  afirmar que o bloqueio é outra OPERAÇÃO (pode ser um diálogo de nova pasta ou uma confirmação de exclusão), então a
+  abertura antiga "Outra operação …" tinha virado falsa · high. Ênclise em **Feche-a** (marca pt-BR, como "Encontre-a na
+  fila de operações"); **esta** concorda com **operação**.
+- Verificação regional contra a lista de indícios pt-PT do style guide (ficheiro, `estar a` + infinitivo, consoante,
+  próclise antes de infinitivo, Rever, alterar o nome, **você** omitido): zero ocorrências. Marcas brasileiras:
+  **arquivos**, **gravou**, a ênclise **Feche-a**.
+- Nenhum `sameAsSourceJustification` necessário: os oito valores diferem do inglês.

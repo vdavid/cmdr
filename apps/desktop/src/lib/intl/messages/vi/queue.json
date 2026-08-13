@@ -23,6 +23,14 @@
   "@queue.row.status": {
     "sourceHash": "2bbdaaa"
   },
+  "queue.row.statusAwaitingAnswer": "Cần bạn trả lời",
+  "@queue.row.statusAwaitingAnswer": {
+    "sourceHash": "84ec74a"
+  },
+  "queue.row.awaitingAnswerTooltip": "Hãy trả lời câu hỏi trong cửa sổ chính, rồi thao tác này sẽ tiếp tục.",
+  "@queue.row.awaitingAnswerTooltip": {
+    "sourceHash": "bf51776"
+  },
   "queue.row.pause": "Tạm dừng",
   "@queue.row.pause": {
     "sourceHash": "858e4ba"

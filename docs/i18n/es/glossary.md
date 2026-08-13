@@ -1142,3 +1142,28 @@ jargon is exactly what the copy avoids.
 - **tied to → `vincularse a` / `se vinculan a`** · the catalog's own verb for this relation
   (`onboarding.stepBeta.emailNote` "nunca se vincula a tus estadísticas de uso") · high
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Filas en cola a la espera de respuesta y la confirmación de reversión (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, `transferProgress.foregroundBusyToast`/`.rollbackTooltip`, 2026-08-13)
+
+- **"Needs your answer" (badge de estado en la cola) → `Respuesta necesaria`** · macOS `es` ("Contraseña necesaria para
+  desactivar la encriptación"), el mismo patrón "X necesaria" · high. ❌ Nunca `Esperando tu respuesta` ni nada que
+  empiece por `Esperando`: `Esperando` ES el estado de "en cola detrás de otra operación" (`queue.row.status`), y los
+  dos tienen que distinguirse en la misma columna estrecha.
+- **"prompt" (la pregunta en pantalla que ha parado la operación) → `la pregunta`** · coincide con
+  `operationConflict.pausedNote` ("hasta que respondas") · high.
+- **"this operation carries on" → `esta operación continuará`** · estándar; evita `se reanudará`, que arrastra el
+  sentido de `Reanudar` (resume tras pausa) · high.
+- **rollback → `Revertir`** · reafirma la entrada ya establecida (`transferProgress.conflictRollback` = "Revertir"); el
+  título es `¿Revertir esta operación?` y el botón destructivo `Revertir`, así coincide con el botón que abrió el
+  diálogo · high.
+- **"Keep them" (la respuesta segura) → `Conservar los archivos`** · macOS `es` ("Conservar", "Conservar todo",
+  "Conservar original") · high. Se nombra el sustantivo en vez del clítico `Conservarlos`: el cuerpo menciona justo
+  antes los archivos REEMPLAZADOS, así que un pronombre quedaría ambiguo.
+- **"written so far" → `escritos hasta ahora`** · reutiliza `written → escrito` del catálogo
+  (`transferProgress.stallInFlight` "puede que ya esté parcialmente escrito") · high.
+- **"Stop, and …" (tooltip de reversión) → `Detener y …`** · macOS `es` ("Detener copia", "Detener eliminación",
+  "Detener traslado") · high. Distinto de `Cancelar`, que es justo lo que el tooltip NO debe parecer.
+- **foregroundBusyToast: nombra la operación.** El "this one" del inglés no tiene antecedente en español, así que el
+  valor lo explicita: "… y luego muestra esta operación", reutilizando el botón `Mostrar` (`queue.row.foreground`) ·
+  high.
+- No hace falta `sameAsSourceJustification`: todos los valores difieren del inglés.

@@ -1404,3 +1404,32 @@ jargon is exactly what the copy avoids.
 - The list "noms de fichiers, chemins, termes de recherche ou prompts" drops the Oxford comma the old value carried over
   from English: French doesn't use it.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Lignes de file en attente de réponse et la confirmation d'annulation-restauration (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, `transferProgress.foregroundBusyToast`/`.rollbackTooltip`, 2026-08-13)
+
+- **"Needs your answer" (pastille de statut dans la file) → `Réponse requise`** · macOS `fr` ("Authentification requise
+  pour effectuer cette opération.", "Un mot de passe est requis pour désactiver le chiffrement.") · high. ❌ Jamais
+  `Réponse attendue` ni rien en `attente` : `En attente` EST le statut "en file derrière une autre opération"
+  (`queue.row.status`), et les deux doivent rester distinguables dans la même colonne étroite.
+- **"prompt" (la question affichée sur laquelle l'opération est arrêtée) → `la question`** · aligné sur
+  `operationConflict.pausedNote` ("tant que vous n'avez pas répondu") · high.
+- **"this operation carries on" → `cette opération continuera`** · standard ; évite `reprendra`, réservé au sens
+  `resume → reprendre` (sortir de pause) · high.
+- **rollback → `Annuler et restaurer`** · réaffirme l'entrée déjà posée (`transferProgress.conflictRollback`) ; le titre
+  est `Annuler et restaurer cette opération ?` et le bouton destructeur reprend le même libellé, pour coller au bouton
+  qui a ouvert le dialogue · high · **tentative, à revoir** : le nouveau corps dit explicitement que les fichiers
+  écrasés ne reviennent pas, donc le `restaurer` du terme promet plus que ce que l'action fait. À arbitrer sur toute la
+  famille `rollback` du catalogue, pas clé par clé.
+- **"Keep them" (la réponse sûre) → `Conserver les fichiers`** · macOS `fr` ("Conserver", "Tout conserver", "Conserver
+  la copie partielle") · high. Le nom est explicité plutôt que `Les conserver` : le corps vient de nommer les fichiers
+  REMPLACÉS, un pronom serait ambigu.
+- **"written so far" → `écrits jusqu'à présent`** · reprend `written → écrit` du catalogue
+  (`transferProgress.stallInFlight` "peut-être déjà partiellement écrit") · high. Accord au masculin pluriel avec le COD
+  antéposé (`les fichiers que l'opération a écrits`).
+- **"Stop, and …" (infobulle de rollback) → `Arrêter et …`** · macOS `fr` ("Arrêter la copie", "Arrêter le déplacement",
+  "Arrêter l'effacement") · high. Distinct d'`Annuler`, ce que l'infobulle ne doit justement PAS évoquer.
+- **foregroundBusyToast : nommer l'opération.** Le "this one" anglais n'a pas d'antécédent en français, donc la valeur
+  l'explicite : « … puis affichez cette opération », en reprenant le bouton `Afficher` (`queue.row.foreground`) · high.
+- Espace ASCII normale devant `?` et `:` (règle catalogue, style.md § Punctuation spacing) ; apostrophes ASCII doublées
+  dans les valeurs ICU.
+- Aucun `sameAsSourceJustification` nécessaire : toutes les valeurs diffèrent de l'anglais.

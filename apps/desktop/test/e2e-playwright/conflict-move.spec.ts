@@ -25,6 +25,7 @@ import {
   selectConflictPolicy,
   clickTransferStart,
   clickConflictButton,
+  confirmRollback,
   waitForDialogsToClose,
 } from './conflict-helpers.js'
 
@@ -160,6 +161,8 @@ test.describe('Move rollback', () => {
     // Click Rollback to cancel the move mid-conflict. Retry on empty NodeList
     // for the same reason as the hasRollback poll above.
     await clickConflictButton(tauriPage, '.conflict-cancel button', 'Rollback')
+    // Rollback asks before it deletes anything.
+    await confirmRollback(tauriPage)
 
     await waitForDialogsToClose(tauriPage)
 

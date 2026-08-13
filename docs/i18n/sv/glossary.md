@@ -1136,3 +1136,28 @@ that jargon is exactly what the copy avoids.
 - `analyticsLede` drops the comma before `och` in "Det är på nu och du kan stänga av det när som helst" per the style
   guide's short-clause rule.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Frågan som stoppar en kö-rad + återställningsdialogen (2026-08-13; `queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, the four `fileOperations.rollbackConfirm.*`, and the reworded `transferProgress.foregroundBusyToast`/`.rollbackTooltip`)
+
+- **"Needs your answer" (queue-row status) → `Behöver ditt svar`** · ⚠️ NOT `Väntar på svar`: the same narrow column
+  shows `Väntar` for "queued behind another operation", so a status opening on that word is unreadable at a glance.
+  `behöver` is macOS-attested ("Du behöver en administratörs användarnamn"), and the answering verb matches
+  `fileOperations.operationConflict.pausedNote` ("tills du svarar") · high
+- **the prompt (the on-screen question) → `frågan`** · same framing as `pausedNote`; macOS Finder carries the question
+  sense in "Fråga inte igen" (`PE122`) · high
+- **"carries on" → `så fortsätter …`** · `fortsätta` is the catalog's continue verb (`main.quit.keepWorking` = "Fortsätt
+  arbeta"). Keep the comma before consequence-`så`; style.md's no-comma rule covers `och`/`eller`, not `så` · high
+- **"Keep them" (the safe button) → `Behåll dem`** · macOS AppKit `Keep` → `Behåll`, `Keep Both Files` →
+  `Behåll båda filerna` · high
+- **"Roll back" / "Roll this operation back?" → `Återställ` / `Återställa den här åtgärden?`** · the settled `återställ`
+  rollback family (matches `transferProgress.conflictRollback`); the bare-infinitive question mirrors `main.quit.title`
+  ("Avsluta medan en åtgärd pågår?") · high
+- **"Stop" in the rollback tooltip → `Stoppa`** · macOS Finder "Stoppa" (`PE107`, `SD23`, "stoppa processen och behålla
+  en delvis kopia"). ❌ Never `Avbryt` here: that IS the Cancel button, which KEEPS the finished files, and the tooltip
+  exists to say rollback doesn't · high
+- **"so far" → `hittills`** · standard Swedish, no direct pile hit; unambiguous · tentative (convention)
+- **the files an operation overwrote → `filer som den har skrivit över`** · the settled `skriv över` (style.md).
+  English's "replaced" is the overwrite sense here, so don't reach for `ersätta` · high
+- `foregroundBusyToast` no longer claims an operation is in the way ("Något annat är öppet här"): the blocker can be any
+  dialog. "bring this one up" → `ta sedan fram den här` (`åtgärd` is common gender, so `den`) · high
+- No `sameAsSourceJustification` needed: all eight values differ from English.

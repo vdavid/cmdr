@@ -29,6 +29,7 @@ Umbrella-level files:
   that crossed the window boundary against the MAIN window's own snapshot.
 - `operation-conflict.svelte.ts` + `OperationConflictDialog.svelte`: the main window's conflict prompt for an operation
   no progress dialog is showing; its two rules are pure, in `operation-conflict-rules.ts` (§ below).
+- `RollbackConfirmDialog.svelte`: the question every Rollback goes through (§ below).
 
 ## Archive edits (`archive_edit`)
 
@@ -209,6 +210,37 @@ that's free to narrow later.
   foreground dialog closed would be a softer version of the wedge this fixes.
 - **`rollbackUnavailable` comes from the snapshot's `supportsRollback`**, which is more than the progress dialog knows:
   a CROSS-volume move can't roll back either, and that dialog still derives the same-volume case itself.
+
+## Rollback asks first
+
+Every Rollback raises `RollbackConfirmDialog` and deletes nothing until the user answers it. Cancel, its neighbour on
+every one of those surfaces, still fires immediately: it keeps what was written.
+
+**Why this one button earns a question.** Rollback deletes every destination the operation has written, and a
+destination it OVERWROTE is one of those — no copy of the replaced original is kept
+(`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "Overwrite isn't reversible").
+So the harm isn't "the copy has to run again": a mis-click on the button beside Cancel can take away a file the user had
+before the operation started, and nothing brings it back. Against that, every other confirmation the app already shows
+(deleting the re-downloadable AI model, copying 10 MB out of the viewer, closing tabs) sits at a far lower bar.
+
+**What it says, and what it deliberately doesn't.** Two facts: it removes everything written so far (not only the
+half-written file a plain Cancel drops), and a file it replaced won't come back. ❌ No file count, tempting as one is:
+the running counter includes files the operation SKIPPED, so any number here would be wrong on exactly the operation
+that had clashes — which is most of the ones anybody rolls back.
+
+**Raised by the surface, not the session.** Three hosts hold the pending question in their own `$state`
+(`TransferProgressDialog`, `OperationConflictDialog`, `QueueRow`), each stacking the dialog over itself; the session
+stays a command surface with no view in it. In the first two the question stacks over a dialog from the same subtree,
+which is what DOM order and the trap stack already handle (`$lib/ui/DETAILS.md` § ModalDialog). The queue window raises
+its own copy — a soft dialog, ❌ never a native `ask`, which would need a capability the queue window deliberately drops
+and would be undriveable from the E2E suite.
+
+**A settled operation withdraws the question** rather than leaving one that answers to nothing: the progress dialog
+gates on `operationSettled`, the row on `canRollback`.
+
+**The Rollback tooltip is part of this.** It used to read "Cancel and delete any partial target files created", which
+describes CANCEL. A user who reads that and clicks has been misled before the question ever appears, so the tooltip
+names what the button does: "Stop, and delete every file written so far".
 
 ## `scan-throughput.ts`
 

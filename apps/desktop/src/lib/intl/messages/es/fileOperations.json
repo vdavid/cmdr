@@ -541,9 +541,9 @@
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
-  "fileOperations.transferProgress.rollbackTooltip": "Cancelar y eliminar los archivos de destino parciales creados",
+  "fileOperations.transferProgress.rollbackTooltip": "Detener y eliminar todos los archivos escritos hasta ahora",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "sourceHash": "df77f8e"
+    "sourceHash": "fa64117"
   },
   "fileOperations.transferProgress.titlePaused": "En pausa",
   "@fileOperations.transferProgress.titlePaused": {
@@ -597,9 +597,25 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
-  "fileOperations.transferProgress.foregroundBusyToast": "Otra operación está usando esta ventana. Ciérrala primero y luego trae esta al frente.",
+  "fileOperations.transferProgress.foregroundBusyToast": "Aquí ya hay algo abierto. Ciérralo y luego muestra esta operación.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
-    "sourceHash": "f3b520d"
+    "sourceHash": "80d4d61"
+  },
+  "fileOperations.rollbackConfirm.title": "¿Revertir esta operación?",
+  "@fileOperations.rollbackConfirm.title": {
+    "sourceHash": "13ff3ea"
+  },
+  "fileOperations.rollbackConfirm.body": "Esto elimina todos los archivos que la operación ha escrito hasta ahora. Los archivos que haya reemplazado no volverán.",
+  "@fileOperations.rollbackConfirm.body": {
+    "sourceHash": "8d61f81"
+  },
+  "fileOperations.rollbackConfirm.keep": "Conservar los archivos",
+  "@fileOperations.rollbackConfirm.keep": {
+    "sourceHash": "0d472b0"
+  },
+  "fileOperations.rollbackConfirm.rollBack": "Revertir",
+  "@fileOperations.rollbackConfirm.rollBack": {
+    "sourceHash": "931f703"
   },
   "fileOperations.errorDialog.technicalDetails": "Detalles técnicos",
   "@fileOperations.errorDialog.technicalDetails": {

@@ -1177,3 +1177,24 @@ is exactly what the copy avoids.
 - **tied to → `gắn với`** · plain everyday Vietnamese for the relation; `liên kết với` (used in
   `onboarding.stepBeta.emailNote`) is the heavier, more technical register and is kept for the linking sense · high
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Câu hỏi làm dừng một hàng trong hàng đợi + hộp thoại hoàn tác (2026-08-13; `queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, bốn khóa `fileOperations.rollbackConfirm.*`, và hai khóa viết lại `transferProgress.foregroundBusyToast`/`.rollbackTooltip`)
+
+- **"Needs your answer" (queue-row status) → `Cần bạn trả lời`** · ⚠️ NOT anything opening on `Đang chờ`: that is the
+  queued status in the same narrow column. `trả lời` is the catalog's own answering verb
+  (`fileOperations.operationConflict.pausedNote` "cho đến khi bạn trả lời") and macOS AppKit renders Reply as `trả lời`
+  · high
+- **the prompt (the on-screen question) → `câu hỏi`** · the conflict prompt IS a question; `lời nhắc` reads as a
+  reminder · high. Main window stays `cửa sổ chính` (`queue.row.foregroundAria`, `search.action.showAll.label`).
+- **"carries on" → `sẽ tiếp tục`** · `tiếp tục` is the settled resume/continue verb (macOS Finder "Tiếp tục") · high
+- **"Keep them" (the safe button) → `Giữ lại`** · macOS AppKit "Keep Selected" → `Giữ lại Tệp đã chọn`, "Keep Both
+  Files" → `Giữ lại Cả hai Tệp`; sentence-cased per style.md · high
+- **"Roll back" / "Roll this operation back?" → `Hoàn tác` / `Hoàn tác thao tác này?`** · the settled `hoàn tác`
+  rollback family (matches `transferProgress.conflictRollback` and the `operationLog.rollback.*` chips) · high
+- **"Stop" in the rollback tooltip → `Dừng lại`** · macOS AppKit `NSStopProgressTemplate` → `dừng tiến trình`. ❌ Never
+  `Hủy` here: that IS Cancel, which keeps the finished files · high
+- **"so far" → `đến giờ`** · the catalog's own phrase (`search` result counter "# kết quả đến giờ") · high
+- **the files an operation overwrote → `những tệp bị ghi đè`** · the settled `ghi đè` (overwrite) · high
+- `foregroundBusyToast` no longer claims another operation holds the window ("Ở đây đang mở một thứ khác"): the blocker
+  can be any dialog. "bring this one up" → `hiện thao tác này lên`, tying to the row's `Hiện` (Show) button · high
+- No `sameAsSourceJustification` needed: all eight values differ from English.

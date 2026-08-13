@@ -1036,3 +1036,34 @@ that jargon is exactly what the copy avoids.
 - **tied to → `verknüpft mit`** · the catalog's own verb for this exact relation (`onboarding.stepBeta.emailNote` "nie
   mit deinen Nutzungsstatistiken verknüpft") · high
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Conflict-parked queue rows and the rollback confirmation (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, `transferProgress.foregroundBusyToast`/`.rollbackTooltip`, 2026-08-13)
+
+- **"Needs your answer" (queue status chip) → `Antwort erforderlich`** · macOS `de` ("Authentifizierung ist
+  erforderlich, damit „^0“ den Vorgang abschließen kann.") · high. Deliberately neutral, not the du-address "Braucht
+  deine Antwort": the style guide says to keep direct address light where German phrases neutrally, and the sibling
+  chips are terse (`Wartet`, `Läuft`, `Angehalten`). ❌ Never anything built on `warten` here — `Wartet` is the
+  QUEUED-behind-another-operation status, and the two must stay distinguishable in the same narrow column.
+- **"prompt" (the on-screen question the operation is parked on) → `die Frage`** · matches
+  `operationConflict.pausedNote` ("bis du antwortest") and the conflict step's own wording · high. Not
+  `Eingabeaufforderung` (MS's `prompt` entry is the command-prompt sense).
+- **"this operation carries on" → `dann läuft dieser Vorgang weiter`** · settled `operation → Vorgang` +
+  `laufen`/`Läuft` from the queue status chips · high.
+- **rollback dialog: verb in prose, noun on the button.** Title `Diesen Vorgang rückgängig machen?` uses the settled
+  prose verb (`roll back / undo → rückgängig machen`); the confirming button is the bare technical noun `Rollback`, so
+  it matches the `Rollback` button the user just pressed (`transferProgress.conflictRollback`), exactly the split this
+  glossary already records for the status chips · high.
+- **"Keep them" (the safe answer) → `Dateien behalten`** · macOS `de` ("Behalten", "Original behalten", "Beide Dateien
+  behalten") · high. The noun is kept: standalone `Behalten` right after a body sentence that also names the REPLACED
+  files would be ambiguous about which files stay.
+- **"written so far" → `bisher geschrieben`** · reuses the catalog's `written → geschrieben`
+  (`transferProgress.stallInFlight` "möglicherweise schon teilweise geschrieben") · high.
+- **"won't come back" (an overwritten file is gone) → `kommen nicht zurück`** · plain register matching the deliberately
+  plain English; the replaced-file noun is `Ersetzte Dateien` (settled `replace → ersetzen`) · high.
+- **"Stop, and …" (rollback tooltip) → `Stoppen und …`** · macOS Finder ("Kopieren stoppen", "Löschen stoppen", "Bewegen
+  stoppen") · high. Kept distinct from `abbrechen`, which is the plain Cancel the tooltip must NOT read like.
+- **foregroundBusyToast: name the operation, don't lean on a pronoun.** English's "bring this one up" has no antecedent
+  in German, so the value spells it out: "… und zeige dann diesen Vorgang an", reusing the `Anzeigen` button label
+  (`queue.row.foreground`) so the instruction names the control the user has to press · high.
+- No `sameAsSourceJustification` needed: every value differs from English (`Rollback` differs from the source's two-word
+  `Roll back`).

@@ -48,6 +48,10 @@ vi.mock('$lib/tauri-commands', () => ({
   onWriteCancelled: vi.fn(() => Promise.resolve(() => {})),
   onWriteSettled: vi.fn(() => Promise.resolve(() => {})),
   onWriteConflict: vi.fn(() => Promise.resolve(() => {})),
+  // `ModalDialog` (the rollback question) registers itself with the backend's
+  // soft-dialog tracker on mount and unmount.
+  notifyDialogOpened: vi.fn(() => Promise.resolve()),
+  notifyDialogClosed: vi.fn(() => Promise.resolve()),
 }))
 
 // `<Size>` deep in the readout reads reactive settings; the real path needs the
@@ -266,13 +270,33 @@ describe('a row commands its operation through the session', () => {
     expect(commandMocks.cancelOperation).toHaveBeenCalledWith('op-a')
   })
 
-  it('rolls back by asking the write operation to undo what it wrote', () => {
+  it('rolls back by asking the write operation to undo what it wrote, once the user says so', () => {
     emitSnapshot([snapshot('op-a')])
     mountRow('op-a')
 
     button('Rollback').click()
+    flushSync()
+    // The click asks; it doesn't delete. Rollback removes every file the
+    // operation has written, and one it overwrote has no backup.
+    expect(commandMocks.cancelWriteOperation).not.toHaveBeenCalled()
+
+    button('Roll back').click()
 
     expect(commandMocks.cancelWriteOperation).toHaveBeenCalledWith('op-a', true)
+  })
+
+  it('keeps the files when the rollback question is declined', () => {
+    emitSnapshot([snapshot('op-a')])
+    mountRow('op-a')
+
+    button('Rollback').click()
+    flushSync()
+    button('Keep them').click()
+    flushSync()
+
+    expect(commandMocks.cancelWriteOperation).not.toHaveBeenCalled()
+    // The row is unchanged, so the operation can still be rolled back later.
+    expect(button('Rollback')).toBeDefined()
   })
 
   it('sends one cancel however many times the button is pressed', async () => {
@@ -284,6 +308,41 @@ describe('a row commands its operation through the session', () => {
     button('Cancel this operation').click()
 
     expect(commandMocks.cancelOperation).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('a row parked on a clash', () => {
+  // The row is the surface somebody goes looking at when nothing is happening,
+  // and "Running" over a frozen bar is the answer that sends them hunting. The
+  // lifecycle status is still `running` here (a clash doesn't pause anything),
+  // so the word has to come from what the backend says it's waiting on.
+  it('says it needs an answer instead of reading as plain Running', () => {
+    emitSnapshot([snapshot('op-a')])
+    mountRow('op-a')
+    emitProgress(progress('op-a', { bytesPerSecond: 4096, filesPerSecond: 8 }))
+    expect(target.querySelector('.status-text')?.textContent).toBe('Running')
+
+    emitProgress(
+      progress('op-a', {
+        bytesPerSecond: 4096,
+        filesPerSecond: 8,
+        activity: { inFlight: 0, stillForSeconds: 0, waitingOn: 'you' },
+      }),
+    )
+
+    expect(target.querySelector('.status-text')?.textContent).toBe('Needs your answer')
+    // And the speed goes with it: nothing is moving, so there's no honest one.
+    expect(target.textContent).not.toContain('/s')
+  })
+
+  it('goes back to Running once the answer is in', () => {
+    emitSnapshot([snapshot('op-a')])
+    mountRow('op-a')
+    emitProgress(progress('op-a', { activity: { inFlight: 0, stillForSeconds: 0, waitingOn: 'you' } }))
+
+    emitProgress(progress('op-a', { bytesDone: 600 }))
+
+    expect(target.querySelector('.status-text')?.textContent).toBe('Running')
   })
 })
 

@@ -539,9 +539,9 @@
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
-  "fileOperations.transferProgress.rollbackTooltip": "取消并删除已创建的所有部分目标文件",
+  "fileOperations.transferProgress.rollbackTooltip": "停止操作，并删除目前已写入的所有文件",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "sourceHash": "df77f8e"
+    "sourceHash": "fa64117"
   },
   "fileOperations.transferProgress.titlePaused": "已暂停",
   "@fileOperations.transferProgress.titlePaused": {
@@ -595,9 +595,25 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
-  "fileOperations.transferProgress.foregroundBusyToast": "另一项操作正在使用此窗口。请先关闭它，然后再显示这一项。",
+  "fileOperations.transferProgress.foregroundBusyToast": "这里已经打开了别的东西。先把它关掉，再显示这一项。",
   "@fileOperations.transferProgress.foregroundBusyToast": {
-    "sourceHash": "f3b520d"
+    "sourceHash": "80d4d61"
+  },
+  "fileOperations.rollbackConfirm.title": "要回滚这项操作吗？",
+  "@fileOperations.rollbackConfirm.title": {
+    "sourceHash": "13ff3ea"
+  },
+  "fileOperations.rollbackConfirm.body": "这会删除这项操作已经写入的所有文件。被覆盖掉的文件找不回来了。",
+  "@fileOperations.rollbackConfirm.body": {
+    "sourceHash": "8d61f81"
+  },
+  "fileOperations.rollbackConfirm.keep": "保留文件",
+  "@fileOperations.rollbackConfirm.keep": {
+    "sourceHash": "0d472b0"
+  },
+  "fileOperations.rollbackConfirm.rollBack": "回滚",
+  "@fileOperations.rollbackConfirm.rollBack": {
+    "sourceHash": "931f703"
   },
   "fileOperations.errorDialog.technicalDetails": "技术详情",
   "@fileOperations.errorDialog.technicalDetails": {

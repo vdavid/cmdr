@@ -379,6 +379,19 @@ export async function clickConflictButton(
   ).toBe(true)
 }
 
+/**
+ * Answers the question Rollback raises before it deletes anything.
+ *
+ * Rollback removes every file the operation has written, and a file it
+ * overwrote has no backup, so every surface offering it stacks
+ * `rollback-confirmation` over itself first
+ * (`src/lib/file-operations/DETAILS.md` § "Rollback asks first"). A spec that
+ * clicks Rollback and waits for the dialogs to close hangs without this.
+ */
+export async function confirmRollback(tauriPage: PageLike, timeout = 2000): Promise<void> {
+  await clickConflictButton(tauriPage, '[data-dialog-id="rollback-confirmation"] button', 'Roll back', timeout)
+}
+
 // ── Matrix helpers (state-machine spec) ──────────────────────────────────────
 
 /** Snapshot of the currently-rendered per-file conflict dialog. */

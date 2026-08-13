@@ -27,6 +27,10 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 - **An error dialog is a HANDOVER, not a release.** `handleTransferError` passes the id to `setForegroundFailureId`
   while the dialog still owns it; closing releases it and dismisses the failure. Skip it and the chip and the toast
   announce what the user is already reading.
+- **Rollback asks first, Cancel doesn't.** Every surface offering Rollback stacks `RollbackConfirmDialog` over itself
+  and calls nothing until the answer comes back: rollback deletes everything the operation wrote, and a destination it
+  OVERWROTE has no backup. ❌ Never a native `ask` (the queue window has no such capability, and E2E can't drive one),
+  ❌ never a file count in it (the counter includes skips). DETAILS § "Rollback asks first".
 - **A conflict for an operation no dialog owns is answered on the MAIN window** (`operation-conflict.svelte.ts`): pause
   what's running, prompt, resume exactly the ids paused. ❌ Never `resumeAll()` (it restarts a pause the USER made); ❌
   never decide ownership while `isForegroundClaimPending()` — defer, or you double-prompt or re-wedge the operation.

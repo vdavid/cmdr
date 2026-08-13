@@ -9,6 +9,7 @@
     import { operationTypeIcon } from './operation-icon'
     import { failureReasonFor } from './failure-reason'
     import TransferProgressReadout from '../TransferProgressReadout.svelte'
+    import RollbackConfirmDialog from '../RollbackConfirmDialog.svelte'
     import ScanPhaseBody from '../transfer/ScanPhaseBody.svelte'
     import { stallNoticeFor } from '../transfer/transfer-stall'
     import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
@@ -91,11 +92,27 @@
      *  there's nothing to show for them either. DETAILS § Show. */
     const canForeground = $derived((isRunning || isPaused) && !isInstantOperation(snapshot.operationType))
 
+    /** The operation has stopped on a clash nobody has answered yet. The
+     *  lifecycle status stays `running` throughout (a clash pauses nothing), so
+     *  this is the one thing the snapshot can't tell the row; it comes from the
+     *  backend's own wait classification, through the session. */
+    const awaitingAnswer = $derived(op?.awaitingAnswer ?? false)
+
     const label = $derived(tString('queue.row.label', { type: snapshot.operationType }))
+
+    /** The status cell names the LIFECYCLE, and twice it doesn't: a rollback and
+     *  an unanswered clash both leave the operation `running` while it does
+     *  something a person needs to recognize. This column is what somebody
+     *  reads down when they're looking for the operation that isn't moving, so
+     *  it carries the most specific true thing, with the lifecycle word as its
+     *  default vocabulary. Why here rather than in the readout: DETAILS §
+     *  "A row parked on a clash". */
     const statusLabel = $derived(
         isRollingBack
             ? tString('fileOperations.transferProgress.titleRollingBack')
-            : tString('queue.row.status', { status }),
+            : awaitingAnswer
+              ? tString('queue.row.statusAwaitingAnswer')
+              : tString('queue.row.status', { status }),
     )
 
     /** The dual-bar readout shows once there's something to fill either bar.
@@ -152,6 +169,12 @@
     const sourceName = $derived(basename(snapshot.source))
     const destName = $derived(basename(snapshot.destination))
 
+    /** Rollback is one click from unrecoverable (a file it overwrote has no
+     *  backup), and it sits beside a Cancel that keeps everything. So the click
+     *  raises the question instead of the deletion. `../DETAILS.md` §
+     *  "Rollback asks first". */
+    let rollbackAsked = $state(false)
+
 </script>
 
 <li class="queue-row" class:selected data-operation-id={snapshot.operationId} data-status={status}>
@@ -180,12 +203,17 @@
 
     <span
         class="status-cell"
-        class:running={isRunning}
+        class:running={isRunning && !awaitingAnswer}
         class:paused={isPaused}
         class:queued={isQueued}
         class:failed={isFailed}
+        class:awaiting-answer={awaitingAnswer}
+        use:tooltip={awaitingAnswer ? tString('queue.row.awaitingAnswerTooltip') : undefined}
     >
-        {#if isRunning}
+        {#if awaitingAnswer}
+            <!-- ❌ Not the spinner a running row gets: nothing is turning. -->
+            <Icon name="circle-alert" size={14} />
+        {:else if isRunning}
             <Spinner size="sm" />
         {:else if isFailed}
             <Icon name="triangle-alert" size={14} />
@@ -250,13 +278,33 @@
             <!-- Danger, like the progress dialog's: the same click deletes the
                  same files, so it can't read as gentler here. -->
             <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
-                <Button variant="danger" size="mini" onclick={() => void op?.rollback()}>
+                <Button
+                    variant="danger"
+                    size="mini"
+                    onclick={() => {
+                        rollbackAsked = true
+                    }}
+                >
                     <span class="btn-inner">
                         <Icon name="rotate-ccw" size={13} />
                         {tString('fileOperations.transferProgress.conflictRollback')}
                     </span>
                 </Button>
             </span>
+        {/if}
+        <!-- Gated on `canRollback` as well, so an operation that finishes while
+             the question is up takes the question with it: there is nothing
+             left to undo, and the row beneath already says so. -->
+        {#if rollbackAsked && canRollback}
+            <RollbackConfirmDialog
+                onConfirm={() => {
+                    rollbackAsked = false
+                    void op?.rollback()
+                }}
+                onCancel={() => {
+                    rollbackAsked = false
+                }}
+            />
         {/if}
     </div>
 
@@ -427,6 +475,12 @@
     /* Queued reads as "waiting", a notch quieter than running/paused. */
     .status-cell.queued {
         color: var(--color-text-tertiary);
+    }
+
+    /* The one live row that wants somebody: warmer than running, and not the
+       error red a failure owns, because nothing has gone wrong here. */
+    .status-cell.awaiting-answer {
+        color: var(--color-warning-text);
     }
 
     /* A failure is the one row state that earns a colour, and severity follows

@@ -946,9 +946,9 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.rollbackTooltip": "Cancel and delete any partial target files created",
+  "fileOperations.transferProgress.rollbackTooltip": "Stop, and delete every file written so far",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "description": "Tooltip on the Rollback button explaining it stops the operation and removes the half-written files it created so far.",
+    "description": "Tooltip on the Rollback button. It must not read like plain Cancel, which stops the operation and KEEPS the completed files, dropping only the one half-written file: Rollback deletes all of them. The user is asked to confirm before anything is deleted.",
     "screenshot": "conflict-dialog.png"
   },
 
@@ -1044,9 +1044,29 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.foregroundBusyToast": "Another operation is using this window. Close it first, then bring this one up.",
+  "fileOperations.transferProgress.foregroundBusyToast": "Something else is open here. Close it, then bring this one up.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
-    "description": "Quiet toast in the main window, shown when the user presses Show on a row in the operation queue but the main window is already busy with another operation''s dialog (its progress dialog, a question it''s asking, or a confirmation on its way to becoming one). Only one operation can be shown at a time, so this one stays where it is, still running, in the queue. \"Close it\" means the dialog that''s in the way; \"bring this one up\" means press Show again afterwards."
+    "description": "Quiet toast in the main window, shown when the user presses Show on a row in the operation queue but the main window already has a dialog on screen. The blocker is ANY dialog, not necessarily another operation: it can be another operation''s progress dialog or question, but equally a New folder prompt or a delete confirmation, so the wording must not claim an operation exists. The main window comes forward as this appears, so \"here\" is the window the user is now looking at and \"it\" is the dialog they can see. Only one thing can occupy that space, so the operation stays where it is, still running, in the queue; \"bring this one up\" means press Show again afterwards."
+  },
+
+  "fileOperations.rollbackConfirm.title": "Roll this operation back?",
+  "@fileOperations.rollbackConfirm.title": {
+    "description": "Title of the dialog that appears when the user presses Rollback on a running copy or move. \"Roll back\" means undoing the work done so far by deleting what the operation has written."
+  },
+
+  "fileOperations.rollbackConfirm.body": "This deletes every file the operation has written so far. Any file it replaced won''t come back.",
+  "@fileOperations.rollbackConfirm.body": {
+    "description": "Body of the Rollback confirmation. Two facts, both load-bearing: it removes everything written so far (not only the half-written file that a plain Cancel drops), and a file that was overwritten during the operation is gone for good, because no copy of the original was kept. Deliberately gives no file count: the running counter includes files the operation skipped, so a number here would be wrong."
+  },
+
+  "fileOperations.rollbackConfirm.keep": "Keep them",
+  "@fileOperations.rollbackConfirm.keep": {
+    "description": "Button that closes the Rollback confirmation without doing anything: the operation carries on and the files it has written stay. \"Them\" is those files."
+  },
+
+  "fileOperations.rollbackConfirm.rollBack": "Roll back",
+  "@fileOperations.rollbackConfirm.rollBack": {
+    "description": "The confirming button on the Rollback confirmation: stop the operation and delete what it has written. Styled as the destructive choice. Matches the \"Rollback\" button that opened this dialog."
   },
 
   "fileOperations.errorDialog.technicalDetails": "Technical details",

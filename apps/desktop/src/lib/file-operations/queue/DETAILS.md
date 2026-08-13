@@ -180,7 +180,37 @@ walking (`apps/desktop/src-tauri/src/file_system/write_operations/scan_bridge.rs
 - **The status column still says "Running"**, and that is deliberate. `queue.row.status` is a `select` over the
   LIFECYCLE status, which genuinely is `running`; the readout names the activity, and the scan-phase line already says
   "Counting…" in the user's language. A "Scanning" arm would mix two axes into one column and would need a `phase` input
-  the row's message doesn't take.
+  the row's message doesn't take. The clash wait below is the case that does earn the column, and § "A row parked on a
+  clash" is where the line between them is drawn.
+
+## A row parked on a clash
+
+An operation that hits a name clash stops and waits for an answer, and its lifecycle status stays `running` throughout
+(a clash pauses nothing). So the row read "Running" over a bar at 0%, which is precisely the state somebody opens this
+window to explain. The row says `queue.row.statusAwaitingAnswer` ("Needs your answer") in the STATUS column instead,
+with `circle-alert` in place of the spinner (nothing is turning) and `--color-warning-text` (warmer than a running row,
+and not the error red a failure owns, because nothing has gone wrong).
+
+**The column names the lifecycle, EXCEPT where the operation has stopped or reversed and nothing else on the row says
+so.** That is the whole rule, and it admits exactly two exceptions today: a rollback, whose only other signal is a bar
+running backwards, and this. A scan is neither — it is moving, and its own line says "Counting…" — which is why the
+column stays "Running" there. ❌ Don't grow a third exception for something the readout already names.
+
+**Not the readout, for the same reason.** The readout answers "how fast, how much left", and a stall notice annotates a
+running transfer that has gone quiet. This operation is not slow; it is finished waiting for the machine and waiting for
+a person, and `transfer-stall.ts` deliberately stays silent for a DELIBERATE wait (calling one a stall trains people to
+ignore the warning). The status column is also what a person reads DOWN when several operations are listed and one of
+them isn't moving.
+
+**Where it comes from.** `session.awaitingAnswer` — the backend's own classification (`activity.waitingOn === 'you'`),
+reaching every operation including a local copy, which keeps no in-flight table
+(`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Parking on a person"). ❌ Never the row's own
+`progress.activity` test and ❌ never `session.conflict`: the first would let two views word the same wait differently,
+and the second is this window's own copy of a prompt it may never have been sent.
+
+**The tooltip says where to answer** (`queue.row.awaitingAnswerTooltip`), because the prompt is in the MAIN window and
+this row is in another one, quite possibly on top of it. A pause needs none of this: it changes the lifecycle status, so
+the column already says "Paused" on its own.
 
 ## Retained failures
 

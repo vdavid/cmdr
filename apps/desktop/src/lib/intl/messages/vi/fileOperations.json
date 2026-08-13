@@ -540,9 +540,9 @@
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
-  "fileOperations.transferProgress.rollbackTooltip": "Hủy và xóa mọi tệp đích dở dang đã được tạo",
+  "fileOperations.transferProgress.rollbackTooltip": "Dừng lại và xóa mọi tệp đã ghi đến giờ",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "sourceHash": "df77f8e"
+    "sourceHash": "fa64117"
   },
   "fileOperations.transferProgress.titlePaused": "Đã tạm dừng",
   "@fileOperations.transferProgress.titlePaused": {
@@ -596,9 +596,25 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
-  "fileOperations.transferProgress.foregroundBusyToast": "Một thao tác khác đang dùng cửa sổ này. Hãy đóng nó trước, rồi mở thao tác này lên.",
+  "fileOperations.transferProgress.foregroundBusyToast": "Ở đây đang mở một thứ khác. Hãy đóng nó rồi hiện thao tác này lên.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
-    "sourceHash": "f3b520d"
+    "sourceHash": "80d4d61"
+  },
+  "fileOperations.rollbackConfirm.title": "Hoàn tác thao tác này?",
+  "@fileOperations.rollbackConfirm.title": {
+    "sourceHash": "13ff3ea"
+  },
+  "fileOperations.rollbackConfirm.body": "Việc này sẽ xóa mọi tệp mà thao tác đã ghi đến giờ. Những tệp bị ghi đè sẽ không lấy lại được.",
+  "@fileOperations.rollbackConfirm.body": {
+    "sourceHash": "8d61f81"
+  },
+  "fileOperations.rollbackConfirm.keep": "Giữ lại",
+  "@fileOperations.rollbackConfirm.keep": {
+    "sourceHash": "0d472b0"
+  },
+  "fileOperations.rollbackConfirm.rollBack": "Hoàn tác",
+  "@fileOperations.rollbackConfirm.rollBack": {
+    "sourceHash": "931f703"
   },
   "fileOperations.errorDialog.technicalDetails": "Chi tiết kỹ thuật",
   "@fileOperations.errorDialog.technicalDetails": {
