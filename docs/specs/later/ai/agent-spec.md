@@ -758,10 +758,10 @@ These came out of a later review pass and are captured as open items, not settle
 of sections above; treat them as inputs to the next planning round.
 
 15. **Importance scorer as a standalone neutral subsystem — decided and planned.** The scorer (§5.1) is its own
-    subsystem with its own plan (`docs/specs/later/importance-subsystem-plan.md`), serving multiple consumers: the
-    agent, the media-ML enrichment scheduler (`docs/specs/later/media-ml-index-plan.md`), and future ones. §5.1 stays
-    the requirements source; placement under `src/agent/` and D8's "cached in the drive index" are superseded (separate
-    per-volume `importance.db`, storing the raw signal vector alongside the scalar, confirmed).
+    subsystem with its own plan (`importance-subsystem-plan.md`), serving multiple consumers: the agent, the media-ML
+    enrichment scheduler (`indexing/media-ml-index-plan.md`), and future ones. §5.1 stays the requirements source;
+    placement under `src/agent/` and D8's "cached in the drive index" are superseded (separate per-volume
+    `importance.db`, storing the raw signal vector alongside the scalar, confirmed).
 16. **Per-folder "capability enrollment."** A concept for which folders are enrolled in which expensive analyses (e.g.
     deep photo analysis). Suggested vehicle: the agent's settings-suggestions via `notify_user` action buttons, NOT via
     `proposal_ops` (the freeze/drift semantics of §8.2 fit file ops, not settings changes).

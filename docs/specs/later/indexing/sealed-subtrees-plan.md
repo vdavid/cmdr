@@ -38,10 +38,10 @@ converts continuous background trickle into a 7-minute stall once per window.
 ## Why not just exclude
 
 Exclusion breaks size truth for every ancestor up to `~`. For `fetch_temp` the cost is zero (it is 0 bytes), but the
-same reflex applied to `target/` would silently remove 50+ GB. Today's exclusions are all absolute prefixes outside `~`
-— `/Library/Caches/` does **not** match `~/Library/Caches` (`scanner/exclusions.rs:39-53`) — and the only home-dir
-exclusions are four junk basenames. Everything inside the home folder is currently truthful. That invariant is worth
-defending.
+same reflex applied to `../../../../target` would silently remove 50+ GB. Today's exclusions are all absolute prefixes
+outside `~` — `/Library/Caches/` does **not** match `~/Library/Caches` (`scanner/exclusions.rs:39-53`) — and the only
+home-dir exclusions are four junk basenames. Everything inside the home folder is currently truthful. That invariant is
+worth defending.
 
 ## The idea
 
@@ -93,7 +93,7 @@ scheduling helpers (`should_send_partial_agg`, `collect_hot_paths`) and `writer/
 wrappers. Neither contains aggregate math.)_
 
 **Thread the sealed set as a required parameter, not an `Option` with a default.** `compute_bottom_up` already takes
-`listed_epochs` for exactly this shape, and `DETAILS.md` warns that all four callers must supply it ("a missing one
+`listed_epochs` for exactly this shape, and `../DETAILS.md` warns that all four callers must supply it ("a missing one
 would re-break coverage"). Let the compiler enforce the same for the sealed set.
 
 **Pass the sealed values, not just the ids.** `compute_bottom_up` takes only maps — **no `&Connection`**
@@ -102,10 +102,10 @@ instead; the opaque leaf would have no constant. Its only existing escape hatch,
 the four call sites (`:188`, `:387`, `:498`; only backfill at `:745` passes it). So thread a
 **`HashMap<i64, DirStatsById>`**, built by reading the sealed dirs' stored `dir_stats` rows before the pass.
 
-This is exactly where the `AggSource::Maps` path bites: a first full scan with a pre-seeded `target/` has the walker
-write the sealed aggregate, then `ComputeAllAggregates { Maps }` runs `compute_bottom_up` over maps that never saw the
-collapsed files, with `existing_stats: None`, and overwrites it with ~0. Funnelling through `compute_bottom_up` is
-necessary but **not sufficient** — the sealed values have to be threaded in.
+This is exactly where the `AggSource::Maps` path bites: a first full scan with a pre-seeded `../../../../target` has the
+walker write the sealed aggregate, then `ComputeAllAggregates { Maps }` runs `compute_bottom_up` over maps that never
+saw the collapsed files, with `existing_stats: None`, and overwrites it with ~0. Funnelling through `compute_bottom_up`
+is necessary but **not sufficient** — the sealed values have to be threaded in.
 
 **Key the seal row by `entry_id`, with path as a rebuild fallback — and fail loud.** Pure path keying fails _open_ on
 rename: renaming the seal root, or **any ancestor**, orphans the row, so the id never enters the sealed map,
@@ -126,7 +126,7 @@ strips the mount root only at `resolve_abs`, so "path-keyed" is ambiguous today.
 Seal state must be consulted by every path that walks and upserts. The complete set:
 
 - **`local_reconcile.rs`** (`run_local_reconcile:299`, `build_live_children:232`) — **the most likely way sealing gets
-  undone.** Per `DETAILS.md` § "Non-destructive rescan", a rescan of a populated, previously-completed index takes
+  undone.** Per `../DETAILS.md` § "Non-destructive rescan", a rescan of a populated, previously-completed index takes
   _this_ path. A shallow `MustScanSubDirs` → `start_scan` → `local_reconcile` re-walks and re-upserts the sealed subtree
   wholesale.
 - **`reconciler::reconcile_subtree`** and **`scanner::scan_subtree`**.
@@ -216,8 +216,9 @@ lane), or an explicit note that it's a macOS-only safety net.
 The classifier needs a cheap undo, not perfection. Seal lazily, unseal automatically on sustained quiet. A false
 positive then costs one subtree scan we would have done anyway.
 
-**Churn is episodic** — `target/` is a firehose during a build and quiet for days after. Permanent-until-navigated
-sealing would let one `cargo build` degrade a folder forever. Automatic unseal is not optional.
+**Churn is episodic** — `../../../../target` is a firehose during a build and quiet for days after.
+Permanent-until-navigated sealing would let one `cargo build` degrade a folder forever. Automatic unseal is not
+optional.
 
 ## Milestones
 
@@ -273,21 +274,21 @@ per-directory lock on the scan hot path is not acceptable. Expose it through the
 tool.
 
 **Tests.** Extract the decision as a **pure function** (the `rescan_route::classify` shape) with an injectable
-threshold, so it runs in the ms-scale unit tier per `docs/testing.md`.
+threshold, so it runs in the ms-scale unit tier per `../../../testing.md`.
 
 1. _(TDD, red first)_ Pure-function tests for the probe/cap decision at the boundary (under, at, over).
 2. _(TDD, red first)_ Integration: a batch with one over-threshold dir and one normal dir — the oversized one produces
    zero per-child upserts **and** the normal one is still fully diffed. The second half is not optional: without it the
-   test passes if the whole function is replaced with `return`, the no-op-fixture anti-pattern `docs/testing.md` names.
-   Use the existing `verifier.rs::tests` pattern (`:420`, `:514`, …), which already installs a root `ReadPool` under
-   `READ_POOL_TEST_MUTEX` with tiny fixtures — the caveat is about _scale_, not reachability.
+   test passes if the whole function is replaced with `return`, the no-op-fixture anti-pattern `../../../testing.md`
+   names. Use the existing `verifier.rs::tests` pattern (`:420`, `:514`, …), which already installs a root `ReadPool`
+   under `READ_POOL_TEST_MUTEX` with tiny fixtures — the caveat is about _scale_, not reachability.
 3. _(Regression guard, not TDD — it cannot go red, the code never wrote the epoch.)_ A declined directory leaves
    `listed_epoch` and every ancestor's `min_subtree_epoch` unchanged.
 
 **Docs.** `indexing/DETAILS.md` § verification gets the guard, the rationale, and the honest costs above.
 `indexing/CLAUDE.md` needs a guardrail line — but it is already **782 words against the 600-word ceiling** (1000
 allowlisted, `claude-md-length.go:35`), so **condense first, don't raise the allowlist** (`file-length-allowlist.md`,
-`docs/doc-system.md`).
+`../../../doc-system.md`).
 
 **Checks.** `pnpm check rust --fast` while iterating, then `pnpm check rust`.
 
@@ -387,9 +388,9 @@ which is its own scope.
 ### Also to update (currently unlisted)
 
 - The `indexing` MCP tool surface.
-- `docs/tooling/logging.md` and the `index-query` dev tool: both will show a tree whose row count no longer matches its
-  aggregate, which reads as corruption to a future debugger unless documented.
-- `docs/architecture.md`'s map entry.
+- `../../../tooling/logging.md` and the `index-query` dev tool: both will show a tree whose row count no longer matches
+  its aggregate, which reads as corruption to a future debugger unless documented.
+- `../../../architecture.md`'s map entry.
 - `enrichment.rs`'s integer-keyed batch fast path, when a sealed dir's children rows are gone.
 
 ## Sequencing and parallelism
@@ -432,14 +433,14 @@ the incident, on demand.
 
 **Decision 4 — Seed list: dropped. The churn classifier is the only thing that confirms a seal.** (Settled 2026-07-20.)
 
-An earlier draft shipped a list of known-churny patterns (`target/`, `node_modules/.cache`,
+An earlier draft shipped a list of known-churny patterns (`../../../../target`, `../../../../node_modules/.cache`,
 `~/Library/Containers/*/Data/tmp`, DriveFS logs, Cmdr's own dev data dir) as a cold-start prior. Dropped, for a stronger
 reason than the obvious maintenance burden (Google renames a path and we're stale; `uv` and `bun` ship cache layouts
 we've never seen; one machine's churn isn't another's):
 
-**A seed list hides classifier failures.** If the seeds catch `target/` and `fetch_temp`, the classifier never gets
-exercised on the two cases we actually understand, and we'd ship it having never watched it work on a known-answer
-input. We'd find out it was broken on a user's machine, on a directory we've never heard of.
+**A seed list hides classifier failures.** If the seeds catch `../../../../target` and `fetch_temp`, the classifier
+never gets exercised on the two cases we actually understand, and we'd ship it having never watched it work on a
+known-answer input. We'd find out it was broken on a user's machine, on a directory we've never heard of.
 
 It is also a direct reversal of `8b0e70ae5`'s own principle: "no per-folder allowlist: the OS-provided churn signal
 self-identifies the busy subtrees."
@@ -468,7 +469,7 @@ choices beats a pattern table.
 
 ## Spike results (2026-07-20) — read this before Phase B
 
-All three spikes ran. Notes: `../../notes/reanchor-cost-spike.md` and `../../notes/churn-observability-spike.md`.
+All three spikes ran. Notes: `../../../notes/reanchor-cost-spike.md` and `../../../notes/churn-observability-spike.md`.
 
 **Spike A: GO, with conditions.** A re-anchor of the worst directory (1.44M entries) costs 96–181 s wall, 19–29 s CPU,
 zero writer messages, and a flat 128 KiB using `getattrlistbulk` — about a quarter of the 426 s verification pass it
@@ -484,10 +485,10 @@ FileProvider filesystem mounted. It's a container _directory_, not a container _
 ~400k entries because the metadata working set stops fitting in cache.
 
 **Spike B: the seal-root rule is wrong as written, and this is the important result.** Separation is fast, so Decision 4
-holds: `fetch_temp` was classifiable within one rollup period and `target/` within three, on a run whose period was 10 s
-(so ≤10 s and ≤31 s, with 10 s of resolution). A classifier stands alone. But "climb while uniformly churny, stop at the
-first ratio drop" **over-climbs on real data**: it selects `~/Library/Containers` for `fetch_temp` and
-`~/Library/Caches` for the WebKit cache. Sealing either would seal every app's container or every app's cache.
+holds: `fetch_temp` was classifiable within one rollup period and `../../../../target` within three, on a run whose
+period was 10 s (so ≤10 s and ≤31 s, with 10 s of resolution). A classifier stands alone. But "climb while uniformly
+churny, stop at the first ratio drop" **over-climbs on real data**: it selects `~/Library/Containers` for `fetch_temp`
+and `~/Library/Caches` for the WebKit cache. Sealing either would seal every app's container or every app's cache.
 
 The cause: `fpext`→`Containers` measures a 0.971 churn share, indistinguishable from "uniformly churny", purely because
 the other ~40 containers were quiet during the window. **Churn share alone cannot distinguish "this parent is entirely
@@ -518,8 +519,8 @@ instead of judgment. **None require the feature to exist.**
 
 ### Spike A — re-anchor cost — DONE, go with conditions
 
-Measured 2026-07-20. Full numbers, method, and reasoning: `../../notes/reanchor-cost-spike.md`. Tool:
-`scripts/reanchor-cost`.
+Measured 2026-07-20. Full numbers, method, and reasoning: `../../../notes/reanchor-cost-spike.md`. Tool:
+`../../../../scripts/reanchor-cost`.
 
 **Result: go.** One `getattrlistbulk` re-anchor of `fetch_temp` (now 1.44M entries) is 96–181 s wall, 19–29 s CPU, no
 writer messages, and flat 128 KiB memory, against 426 s plus a pegged writer queue plus 1.01 GB for the verification
@@ -544,9 +545,9 @@ live event loop; it writes no index state and changes no behaviour.
 
 Answers three things at once:
 
-- **How fast does `fetch_temp` / `target/` separate from background noise?** This is the "can we drop the seed list"
-  question (Decision 4), answered with data rather than judgment. If separation takes hours, provisional-seal-on-size is
-  carrying more weight than assumed and Decision 4 needs revisiting.
+- **How fast does `fetch_temp` / `../../../../target` separate from background noise?** This is the "can we drop the
+  seed list" question (Decision 4), answered with data rather than judgment. If separation takes hours,
+  provisional-seal-on-size is carrying more weight than assumed and Decision 4 needs revisiting.
 - **What does the ratio-drop boundary look like on a real tree?** Phase B's seal-root selection is the riskiest logic in
   this plan and currently rests on an invented worked example (`something/cache/{hex}/{hex}`). Real ancestor-chain churn
   ratios either support it or don't.
@@ -555,7 +556,7 @@ Answers three things at once:
 
 Not throwaway: this instrumentation _is_ most of Phase B's churn accounting, so it gets promoted rather than deleted.
 
-Deliverable: a few hours of collected data plus an analysis note in `docs/notes/`. A short window is sufficient — the
+Deliverable: a few hours of collected data plus an analysis note in `../../../notes`. A short window is sufficient — the
 motivating churn sources (DriveFS log rotation ~1/min, `fetch_temp`, a `cargo build`) all cycle in minutes.
 
 ### Spike C — is one pathological directory a freak or a class? (answered)
@@ -563,7 +564,7 @@ motivating churn sources (DriveFS log rotation ~1/min, `fetch_temp`, a `cargo bu
 The question worth asking is not "how many machines have one" but "is `fetch_temp` a Google-Drive-specific freak, or an
 instance of a recurring class". One machine already answers it: four unbounded scratch directories from four unrelated
 vendors (`fetch_temp` at 1.4M entries, WebKit `Resource` at 119k, Chrome `Cache_Data` at 107k, and cargo's
-`target/debug`). Vendors will keep shipping these; the class is real.
+`../../../../target/debug`). Vendors will keep shipping these; the class is real.
 
 ❌ Do not reach for cross-machine telemetry here. It was proposed and rejected: a few dozen beta users is a
 statistically useless sample, and it would cost a privacy decision and a trust question to buy nothing that the

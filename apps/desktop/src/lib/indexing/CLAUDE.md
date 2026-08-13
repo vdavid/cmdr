@@ -33,10 +33,10 @@ API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or `codeg
   (active only). Same `index-state` discipline. DETAILS § Image-enrichment publisher.
 - **Checklist STEPS are composed from the events that fire for THIS volume** (`deriveSteps`), never a fixed list: a
   network scan omits Save and Catch-up; a roll-on collapses to one Update step. Branch on typed discriminants only.
-  Per-step ETA only; NO overall ETA by design (deferred — `docs/specs/later/drive-index-overall-eta.md`). The catch-up
-  (reconcile) step has ONLY the `phase` event, so the visibility gate and the indicator/badge must include `phase`-only
-  volumes (`getActivePhaseVolumeIds`), or the surface vanishes the moment aggregation completes. Full model: DETAILS §
-  Step checklist.
+  Per-step ETA only; NO overall ETA by design (deferred — `docs/specs/later/indexing/drive-index-overall-eta.md`). The
+  catch-up (reconcile) step has ONLY the `phase` event, so the visibility gate and the indicator/badge must include
+  `phase`-only volumes (`getActivePhaseVolumeIds`), or the surface vanishes the moment aggregation completes. Full
+  model: DETAILS § Step checklist.
 - **The run kind is the BACKEND's answer** (`ScanRunKind` off `index-scan-started`, stashed per volume), never guessed
   from the calibration numbers: they disagree on a populated index whose last scan never finished. It picks the header,
   the second step's wording, and the find-files hint. DETAILS § Run-kind header.

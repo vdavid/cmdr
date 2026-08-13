@@ -246,7 +246,7 @@ are ordinary members.
     MTP excluded) that recomputes on scan completion (full) and on live listing changes (incremental) — both driven by a
     neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
     (queryable even for an unmounted volume). See its `crates/cmdr-index/src/importance/CLAUDE.md` and
-    `specs/later/importance-subsystem-plan.md`
+    `specs/importance-subsystem-plan.md`
   - `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content (OCR text, Vision scene/
     object tags, image-similarity "find similar" via feature-print embeddings, and natural-language semantic search via
     an on-demand on-device CLIP model — `clip/`, macOS Core ML, a SEPARATE vector space with independent two-part
@@ -259,7 +259,7 @@ are ordinary members.
     find-similar, offline after unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively
     (priority-gated via `priority/`, bandwidth-bounded byte-fetch through the app's own smb2 session for Direct volumes
     with an OS-mount fallback; disconnect pauses without losing coverage; MTP never background-sweeps). Off by default.
-    See its `crates/cmdr-index/src/media_index/CLAUDE.md` and `specs/later/media-ml-index-plan.md`
+    See its `crates/cmdr-index/src/media_index/CLAUDE.md` and `specs/later/indexing/media-ml-index-plan.md`
 - `crates/index-query/`: developer CLI that queries the index DB with the `platform_case` collation `sqlite3` can't
   supply, plus the three importance measurement binaries. Depends on `cmdr-index` alone. See
   `docs/tooling/index-query.md`

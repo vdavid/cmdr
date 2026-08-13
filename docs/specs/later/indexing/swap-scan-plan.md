@@ -1,8 +1,8 @@
 # Swap-scan: replace the in-place reconcile rescan with a build-and-swap
 
 Status: plan, 2026-07-22. Local-disk only. Author-facing (AI agents). Read the two foundation notes first:
-`../../notes/swap-scan-feasibility.md` (the read-only study and the traps) and
-`../../notes/indexing-benchmarks-2026-07-21.md` § "Swap-scan re-measurement, 2026-07-22" (the justification). This plan
+`docs/notes/swap-scan-feasibility.md` (the read-only study and the traps) and
+`docs/notes/indexing-benchmarks-2026-07-21.md` § "Swap-scan re-measurement, 2026-07-22" (the justification). This plan
 names current post-reorg paths under `crates/cmdr-index/src/indexing`.
 
 ## 1. Intention

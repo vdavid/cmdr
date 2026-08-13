@@ -12,7 +12,7 @@ idle throughout. Principle 5 says respect the user's resources; this is a long w
 `crates/cmdr-index/src/indexing/reconcile/CLAUDE.md` and its `DETAILS.md`,
 `crates/cmdr-index/src/media_index/scheduler/`, `crates/cmdr-fs/src/sqlite_util.rs` module docs,
 `docs/tooling/memory-debugging.md`, `docs/tooling/logging.md`, `docs/notes/idle-cpu-indexing-streamlining-2026-07.md`,
-`docs/specs/later/sealed-subtrees-plan.md`.
+`later/indexing/sealed-subtrees-plan.md`.
 
 ## M0: where the CPU actually goes (DONE, and it reordered the plan)
 
@@ -457,7 +457,7 @@ vanished before settling. Cargo's persist, settle, and get walked.
 
 ### Inherited evidence: do not re-derive this
 
-`docs/specs/later/sealed-subtrees-plan.md` targets this exact problem under this exact constraint, and carries two
+`later/indexing/sealed-subtrees-plan.md` targets this exact problem under this exact constraint, and carries two
 completed spikes whose results this milestone must use:
 
 - **Spike B (`docs/notes/churn-observability-spike.md`) already answers the depth question, negatively.** A climb rule

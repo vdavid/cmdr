@@ -2,8 +2,8 @@
 
 The deterministic, cheap folder-importance score that any expensive feature consumes (the in-app agent, the media-ML
 enrichment scheduler, future disk-cleanup / prefetch). Full design and milestone plan:
-`docs/specs/later/importance-subsystem-plan.md`. This doc covers what's SUBSYSTEM-WIDE plus the top-level files no area
-subdir owns; each area documents itself.
+`docs/specs/importance-subsystem-plan.md`. This doc covers what's SUBSYSTEM-WIDE plus the top-level files no area subdir
+owns; each area documents itself.
 
 Read this before any non-trivial work here: editing, planning, reorganizing, or advising.
 

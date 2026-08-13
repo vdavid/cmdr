@@ -2,7 +2,7 @@
 
 Pull-tier docs for `src-tauri/src/agent/`. Must-knows live in `CLAUDE.md`.
 
-The agent is the app's AI agent (agent-spec: `docs/specs/later/agent-spec.md`). Its first shipped slice is **Ask Cmdr**:
+The agent is the app's AI agent (agent-spec: `docs/specs/later/ai/agent-spec.md`). Its first shipped slice is **Ask Cmdr**:
 a read-only chat rail where the user talks to a BYO-key LLM that can see what Cmdr already knows (the drive index,
 importance, the operation log, live app state) and answers questions about their files. It deliberately ships ahead of
 the agent's proactive machinery (wake loop, proposals, notifications) — the wow reaches beta users cheaply while the

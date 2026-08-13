@@ -12,7 +12,7 @@ Three reasons, in priority order. When a decision here is ambiguous, resolve it 
 2. **Build-time separation.** Backend work that doesn't touch the index no longer rebuilds the index, and vice versa.
 3. **The index could one day be a product of its own.** "Cmdr, plus a smart file+image index any agent can tap into"
    needs a documented, stable, self-contained API. This is that API. It is NOT a daemon; there's no separate process
-   here, and the deferred escalation lives in `docs/specs/later/out-of-process-indexing.md`.
+   here, and the deferred escalation lives in `docs/specs/later/indexing/out-of-process-indexing.md`.
 
 ## The contract this crate is held to
 
@@ -140,4 +140,4 @@ comparing memory numbers: Rust test runs are measured under the counting allocat
 - `crates/cmdr-fs/DETAILS.md` — the layer below: the vocabulary this crate indexes, and why each piece is down there.
 - `src/indexing/handle/DETAILS.md` — the public-surface audit, item by item.
 - `src/indexing/host/DETAILS.md` — the seams and their rationale.
-- `docs/specs/later/out-of-process-indexing.md` — the deferred daemon escalation this boundary makes cheaper.
+- `docs/specs/later/indexing/out-of-process-indexing.md` — the deferred daemon escalation this boundary makes cheaper.

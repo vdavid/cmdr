@@ -1,8 +1,8 @@
 # Media index subsystem — details
 
 Image-ML enrichment: makes a volume's images searchable by their content. Full design and milestone plan:
-`docs/specs/later/media-ml-index-plan.md`. This doc covers what's SUBSYSTEM-WIDE (the port rationale, the GC safety
-argument, the coverage/scope model) plus the top-level files no area subdir owns; each area documents itself.
+`docs/specs/later/indexing/media-ml-index-plan.md`. This doc covers what's SUBSYSTEM-WIDE (the port rationale, the GC
+safety argument, the coverage/scope model) plus the top-level files no area subdir owns; each area documents itself.
 
 Read this before any non-trivial work here: editing, planning, reorganizing, or advising.
 
