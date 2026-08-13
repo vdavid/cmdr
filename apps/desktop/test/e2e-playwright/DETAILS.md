@@ -481,6 +481,12 @@ await expectAndDismissToast(tauriPage, 'Copy complete') // asserts + cleans up
 
 Both reports are collected and thrown together, so a test that leaks a toast AND a dirty tree says so once.
 
+**The overlay auto-clean presses Escape TWICE**, with the round-trip in between letting the DOM settle. Escape in the
+query dialogs is a two-step while a live run is going (first press stops the run, second closes the dialog,
+`lib/query-ui/DETAILS.md` § Streaming), so one press cleans nothing when a spec leaves a search running — and then the
+guard's promise above stops being true. That combination once turned one timed-out search into 47 failures on a shard:
+the dialog stayed on screen and every later test failed on the same leak. ❌ Don't cut it back to one press.
+
 **❌ Never move these onto `test.beforeEach` / `test.afterEach` in `fixtures.ts`.** A hook declared at module scope
 there attaches to the suite of whichever spec file first triggered the import in that worker, so every other file the
 worker runs goes unguarded — silently. That is how leaked toasts passed for months and how the fixture leak surfaced
@@ -632,6 +638,14 @@ the index instead of walking. A spec asserting rows is satisfied either way, sil
 proved nothing. A spec that needs a real walk takes the index away first through the same two per-drive actions a user
 has (turn indexing off for the drive, then forget its index): `search-walk-ground.ts` owns that setup and the reasoning
 behind it.
+
+**Gotcha**: a search spec inherits the PREVIOUS spec's search state, scope chip included. **Why**: the search state
+survives the dialog's unmount by design (`⌘N` is the only sanctioned reset), and the shard runs the specs
+alphabetically, so `search-open-in-pane.spec.ts` scoping itself to "this volume" left `search-recent.spec.ts` searching
+the whole boot drive: the run sat in "Working out what's already indexed…" against the root volume's index instead of
+the fixture tree, 0.5 s on an idle machine and past its 5 s wait on a busy one. A spec that cares what it searches names
+its own scope (`open_search_dialog`'s `scope` parameter, or `resetSearchDialog`'s `⌘N`) rather than trusting what it
+finds.
 
 **Gotcha**: The clipboard is mocked, not real. **Why**: E2E builds compile with the `playwright-e2e` Cargo feature,
 which swaps the real `NSPasteboard` interop for an in-process mock store

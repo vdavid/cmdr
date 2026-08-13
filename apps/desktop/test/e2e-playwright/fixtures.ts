@@ -193,8 +193,16 @@ async function reportAndCleanOverlayLeak(
   // Auto-clean: dispatch Escape on each leaked overlay (target-phase fires
   // the overlay-bound handler in ModalDialog, bubble-phase fires
   // window-bound handlers elsewhere). Click each toast's close button.
-  try {
-    await tauriPage.evaluate(`(function(){
+  //
+  // TWICE, with the round-trip in between letting the DOM settle: Escape in the query
+  // dialogs is a two-step while a live run is going (`QueryDialog.resolveEscape`) —
+  // the first press stops the run, the second closes the dialog. One press left a
+  // search dialog on screen, and since this guard is all that keeps a leak off the
+  // next test, every later test on the shard died on the same overlay. The second
+  // round finds nothing to dispatch at when the first press already closed things.
+  for (let round = 0; round < 2; round++) {
+    try {
+      await tauriPage.evaluate(`(function(){
             var overlays = ['.ui-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
             overlays.forEach(function(s){
                 var el = document.querySelector(s);
@@ -203,8 +211,10 @@ async function reportAndCleanOverlayLeak(
             var btns = document.querySelectorAll('.toast .toast-close');
             for (var i = 0; i < btns.length; i++) btns[i].click();
         })()`)
-  } catch {
-    // Best-effort cleanup; the report below is the load-bearing signal.
+    } catch {
+      // Best-effort cleanup; the report below is the load-bearing signal.
+      break
+    }
   }
 
   leakReports.push(

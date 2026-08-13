@@ -19,7 +19,7 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, pollUntil } from './helpers.js'
+import { ensureAppReady, getFixtureRoot, pollUntil } from './helpers.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 
 // The footer action button is labelled "Show all in main window" and is always in the DOM,
@@ -51,8 +51,21 @@ test.describe('Search dialog: recent searches', () => {
     // preserved-state pitfall (where prior tests leave the query / mode dirty)
     // and the AI-mode default that would otherwise need a live provider to land
     // results.
+    //
+    // ❗ The SCOPE is prefilled for the same reason, and it is the load-bearing one:
+    // search state survives the dialog's close, `search-open-in-pane.spec.ts` runs
+    // just before this one on the same shard, and it scopes its search to "this
+    // volume". Inheriting that chip pointed this run at the whole boot drive, so a
+    // test that means to search a fixture tree was waiting on the root volume's index
+    // coverage instead — 0.5 s when the machine was idle, past the 5 s wait when it
+    // wasn't.
     const seededQuery = 'file'
-    await mcpCall('open_search_dialog', { query: seededQuery, mode: 'filename', autoRun: true })
+    await mcpCall('open_search_dialog', {
+      query: seededQuery,
+      mode: 'filename',
+      scope: getFixtureRoot(),
+      autoRun: true,
+    })
 
     // The footer's "Open in pane" only enables once `resultCount > 0`. Waiting
     // for the button is the observable signal that the search ran and landed
