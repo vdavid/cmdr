@@ -674,14 +674,19 @@ is the whole design:
 2. `layoutAlreadyApplied` (the `firstRunLayoutApplied` key in `app-status.json`) ⇒ `leaveAlone`. Once, ever.
 3. `hasPersistedPaneState` ⇒ `markAlreadyLaidOut`: record the marker, touch no panes.
 4. `!hasFullDiskAccess` ⇒ `leaveAlone`. A never-answered prompt reads the same as a refusal.
-5. Otherwise ⇒ `openHomeAndDownloads`, then record the marker.
+5. Otherwise ⇒ `openHomeAndDownloads`.
 
-_Decision / why step 3 exists:_ every user upgrading into the build that introduced this rule has Full Disk Access and
-no marker, so steps 1, 2, and 4 all pass them straight through to the layout. Pane paths persist like any navigation, so
-a layout applied over a real one silently BECOMES it, with nothing to undo it. Step 3 backfills the marker for them
-instead. `hasPersistedPaneState()` (`$lib/app-status-store`) asks whether any of the four pane KEYS is present
-(`leftTabs` / `rightTabs` plus the pre-tabs scalars `leftPath` / `rightPath`), never what the tabs contain: a user who
-left an empty tab list still has a layout of their own. Both sides are checked because nav-state persists per pane
+The resolver returns an outcome whose `kind` is the decision and writes nothing itself; `loadPersistedState` performs
+every write (see "What gets written, and in what order" below).
+
+_Decision / why step 3 exists (the stakes, stated once; everything else points here):_ every user upgrading into the
+build that introduced this rule has Full Disk Access and no marker, so steps 1, 2, and 4 all pass them straight through
+to the layout. **An applied layout is persisted immediately, exactly as a navigation would be, so a layout applied over
+somebody's real one silently BECOMES their layout, with nothing to undo it.** That is the one unrecoverable failure in
+this feature, and step 3 is what prevents it by backfilling the marker for those installs instead.
+`hasPersistedPaneState()` (`$lib/app-status-store`) asks whether any of the four pane KEYS is present (`leftTabs` /
+`rightTabs` plus the pre-tabs scalars `leftPath` / `rightPath`), never what the tabs contain: a user who left an empty
+tab list still has a layout of their own. Both sides are checked because nav-state persists per pane
 (`persistence-subscriber.svelte.ts` runs one effect per side, and the first post-init run only seeds), so someone who
 has only ever moved their right pane carries no left keys at all. An unreadable store answers `true` for the same
 reason.
@@ -702,16 +707,35 @@ Two guardrails that are easy to undo by accident:
   from its build define, a plain E2E run needs that resolved cache. Mount the explorer any earlier and the gate silently
   reads `dev`. See `$lib/app-mode.ts`.
 
-The marker is written with `saveAppStatusNow`, not the debounced `saveAppStatus`: startup is followed by plenty of
-things that can quit the app, and a lost marker means the rule fires again on the next launch. Every persisted state's
-timing, and the `doSaveAppStatus` enumeration trap that a new `AppStatus` field has to dodge, live in
-`docs/architecture-patterns.md` § Persistence.
+**What gets written, and in what order.** `loadPersistedState` does it all in one block, after volume resolution (so the
+stored `volumeId`s are the resolved ones) and before the `CMDR_E2E_START_PATH` override (so fixture paths can never
+reach the store). On `openHomeAndDownloads`: both panes' tabs via `savePaneTabs`, then
+`saveAppStatusNow({ leftPath, rightPath, firstRunLayoutApplied })`. On `markAlreadyLaidOut`: the marker alone.
 
-This sits between the app launching and the panes appearing, so the resolver is lazy: `resolveFirstRunLayout` seeds the
-two probed facts as placeholders and `settle` resolves one only when the rule would decide differently either way. A
-returning user's launch does no I/O at all, and an upgrading user's costs one store read and no permission probe. The
-laziness lives in `settle`, ❌ never as a hand-written short-circuit ahead of `decideFirstRunLayout`: that would repeat
-the guard order in a second place and drift the day the rule changes.
+- **The layout has to be persisted here, by this code.** The nav-state subscriber can't do it: it seeds its baseline
+  from post-init state WITHOUT saving (`persistence-subscriber.svelte.ts`, "Seed the baseline on the first post-init
+  run"), and an applied layout IS that state, so nothing would ever be written. It would then survive one session and
+  vanish, with the marker guaranteeing the user never saw `~/Downloads` again.
+- **Tabs before the marker.** A quit in between costs nothing: no marker means the rule simply runs again next launch.
+  The reverse order loses the layout permanently.
+- **`saveAppStatusNow`, not the debounced `saveAppStatus`, and awaited.** Startup is followed by plenty of things that
+  can quit the app. Every persisted state's timing, and the `doSaveAppStatus` enumeration trap that a new `AppStatus`
+  field has to dodge, live in `docs/architecture-patterns.md` § Persistence.
+
+**The resolver is lazy, and that laziness has a precondition.** This sits between the app launching and the panes
+appearing, so `resolveFirstRunLayout` seeds the two probed facts as placeholders and `settle` resolves one only when the
+rule would decide differently either way. A returning user's launch does no I/O at all; an upgrading user's costs one
+store read and no permission probe. The laziness lives in `settle`, ❌ never as a hand-written short-circuit ahead of
+`decideFirstRunLayout`: that would repeat the guard order in a second place and drift the day the rule changes.
+
+A skipped probe is only sound relative to the context as it stands, which still holds placeholders for facts settled
+later. Two properties of the rule make it safe, and a change to `decideFirstRunLayout` must preserve both: each probed
+fact is read by exactly ONE guard, and any skip is caused by an earlier guard that returns unconditionally. Break either
+and a placeholder steers the answer: a guard reading `hasPersistedPaneState && hasFullDiskAccess` together would skip
+the pane-state probe, leave it `false`, and lay out over a returning user's real layout. The pure function stays correct
+throughout, so the 16-row matrix test can't see it. The
+`matches the fully-probed decision for every combination of facts` test in `first-run-layout.test.ts` is what does; ❌
+don't delete it when editing the rule.
 
 Not covered by the automation gate: `scripts/marketing-shots.ts` leaves `CMDR_E2E_MODE` unset on purpose (it needs a
 prod-looking title bar and the key-window shadow). Its data dir is persistent, so it carries pane state and takes the

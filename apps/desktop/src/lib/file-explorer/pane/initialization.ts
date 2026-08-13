@@ -1,4 +1,10 @@
-import { loadAppStatus, loadPaneTabs, hasPersistedPaneState, saveAppStatusNow } from '$lib/app-status-store'
+import {
+  loadAppStatus,
+  loadPaneTabs,
+  hasPersistedPaneState,
+  saveAppStatusNow,
+  savePaneTabs,
+} from '$lib/app-status-store'
 import { hydrateRail } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { isE2eRun } from '$lib/app-mode'
 import {
@@ -47,17 +53,19 @@ export async function loadPersistedState(): Promise<InitializedState> {
   // right. Once per install, and never over a layout somebody already has: the rule and
   // its guardrails live in `first-run-layout.ts`. Runs before the E2E override below so
   // a fixture path still wins.
-  const firstRunLayout = await resolveFirstRunLayout({
+  const firstRun = await resolveFirstRunLayout({
     isAutomatedRun: isE2eRun,
     layoutAlreadyApplied: status.firstRunLayoutApplied,
     hasPersistedPaneState,
     hasFullDiskAccess: checkFullDiskAccessQuiet,
     pathExists,
-    markLaidOut: () => saveAppStatusNow({ firstRunLayoutApplied: true }),
   })
-  if (firstRunLayout) {
-    log.info('First run: opening {leftPath} and {rightPath}', { ...firstRunLayout })
-    applyFirstRunLayout(leftPaneTabs, rightPaneTabs, firstRunLayout)
+  if (firstRun.kind === 'openHomeAndDownloads') {
+    log.info('First run: opening {leftPath} and {rightPath}', {
+      leftPath: firstRun.leftPath,
+      rightPath: firstRun.rightPath,
+    })
+    applyFirstRunLayout(leftPaneTabs, rightPaneTabs, firstRun)
   }
 
   // E2E test override: use CMDR_E2E_START_PATH subdirectories when set
@@ -126,6 +134,27 @@ export async function loadPersistedState(): Promise<InitializedState> {
   const resolvedRightPaneTabs: PersistedPaneTabs = {
     tabs: resolvedRightTabs.map(toPersistedTab),
     activeTabId: rightPaneTabs.activeTabId,
+  }
+
+  // Everything the first-run rule decided gets written HERE, once, in this order, and
+  // BEFORE the E2E override below can rewrite these paths to fixture ones.
+  //
+  // The nav-state subscriber can't cover the layout: it seeds its baseline from the loaded
+  // state without saving, and an applied layout IS that state, so it would live in memory
+  // for one session and then vanish, with the marker guaranteeing it never comes back.
+  // Tabs before the marker, because a quit in between only lets the rule run again next
+  // launch, while the reverse would lose the layout for good. Awaited rather than
+  // fire-and-forget for the same reason `saveAppStatusNow` skips the debounce: startup is
+  // followed by plenty of things that can quit the app.
+  if (firstRun.kind === 'openHomeAndDownloads') {
+    await Promise.all([savePaneTabs('left', resolvedLeftPaneTabs), savePaneTabs('right', resolvedRightPaneTabs)])
+    await saveAppStatusNow({
+      leftPath: firstRun.leftPath,
+      rightPath: firstRun.rightPath,
+      firstRunLayoutApplied: true,
+    })
+  } else if (firstRun.kind === 'markAlreadyLaidOut') {
+    await saveAppStatusNow({ firstRunLayoutApplied: true })
   }
 
   // E2E override: apply fixture paths to the active tab data BEFORE creating tab managers,

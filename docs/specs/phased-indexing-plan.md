@@ -450,9 +450,9 @@ that startup behavior is in place.
 - **M5** — settings (including the scope toggle), surfaces, kill switch.
 - **M6** — optional signals and follow-ups.
 
-M1 touches nothing M2 depends on, so it can run alongside M2's benchmark if an agent is idle. Everything after
-M2 is strictly sequential. One ordering constraint that bites: **M4's unit tests stand alone, but its end-to-end
-assertion can't run until M3 lands**, because the surfaces it fixes only misbehave once the phase machine is real.
+M1 touches nothing M2 depends on, so it can run alongside M2's benchmark if an agent is idle. Everything after M2 is
+strictly sequential. One ordering constraint that bites: **M4's unit tests stand alone, but its end-to-end assertion
+can't run until M3 lands**, because the surfaces it fixes only misbehave once the phase machine is real.
 
 ---
 

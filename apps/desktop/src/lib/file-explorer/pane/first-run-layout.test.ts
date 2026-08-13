@@ -124,7 +124,6 @@ describe('decideFirstRunLayout', () => {
 
 function stubDeps(overrides: Partial<FirstRunLayoutDeps> = {}) {
   const pathExists = vi.fn<(path: string) => Promise<boolean>>().mockResolvedValue(true)
-  const markLaidOut = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
   const hasPersistedPaneState = vi.fn<() => Promise<boolean>>().mockResolvedValue(false)
   const hasFullDiskAccess = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
   const deps: FirstRunLayoutDeps = {
@@ -133,10 +132,9 @@ function stubDeps(overrides: Partial<FirstRunLayoutDeps> = {}) {
     hasPersistedPaneState,
     hasFullDiskAccess,
     pathExists,
-    markLaidOut,
     ...overrides,
   }
-  return { deps, pathExists, markLaidOut, hasPersistedPaneState, hasFullDiskAccess }
+  return { deps, pathExists, hasPersistedPaneState, hasFullDiskAccess }
 }
 
 /** Every probe the resolver can make. Each one costs a store open or an IPC round trip. */
@@ -148,30 +146,49 @@ function expectNoProbes(stubs: ReturnType<typeof stubDeps>): void {
 
 describe('resolveFirstRunLayout', () => {
   it('opens home on the left and Downloads on the right for a fresh install with Full Disk Access', async () => {
-    const { deps, markLaidOut } = stubDeps()
+    const { deps } = stubDeps()
     await expect(resolveFirstRunLayout(deps)).resolves.toEqual({
+      kind: 'openHomeAndDownloads',
       leftPath: FIRST_RUN_LEFT_PATH,
       rightPath: FIRST_RUN_RIGHT_PATH,
     })
-    expect(markLaidOut).toHaveBeenCalledTimes(1)
   })
 
-  it('falls back to home when the Downloads folder is missing, and still records the marker', async () => {
-    const { deps, pathExists, markLaidOut } = stubDeps()
+  it('falls back to home when the Downloads folder is missing', async () => {
+    const { deps, pathExists } = stubDeps()
     pathExists.mockResolvedValue(false)
     await expect(resolveFirstRunLayout(deps)).resolves.toEqual({
+      kind: 'openHomeAndDownloads',
       leftPath: FIRST_RUN_LEFT_PATH,
       rightPath: FIRST_RUN_LEFT_PATH,
     })
-    expect(markLaidOut).toHaveBeenCalledTimes(1)
   })
 
-  it('records the marker for an install that already has pane state, and returns no layout', async () => {
+  it('asks the caller to record the marker for an install that already has pane state', async () => {
     // The destructive case: every existing user boots the new build with Full Disk Access
     // and no marker. Backfilling here is what keeps their real layout intact.
-    const { deps, markLaidOut } = stubDeps({ hasPersistedPaneState: () => Promise.resolve(true) })
-    await expect(resolveFirstRunLayout(deps)).resolves.toBeNull()
-    expect(markLaidOut).toHaveBeenCalledTimes(1)
+    const stubs = stubDeps()
+    stubs.hasPersistedPaneState.mockResolvedValue(true)
+    await expect(resolveFirstRunLayout(stubs.deps)).resolves.toEqual({ kind: 'markAlreadyLaidOut' })
+  })
+
+  it('matches the fully-probed decision for every combination of facts', async () => {
+    // `settle` skips a probe whose value can't change the answer, which is only sound
+    // while the rule keeps the two properties documented on it. This walks the same 16
+    // rows the pure matrix does, but through the resolver, so a rule change that breaks
+    // those properties fails HERE even though the pure function stays correct.
+    for (const { ctx } of matrix) {
+      const stubs = stubDeps({
+        isAutomatedRun: () => ctx.isAutomatedRun,
+        layoutAlreadyApplied: ctx.layoutAlreadyApplied,
+      })
+      stubs.hasPersistedPaneState.mockResolvedValue(ctx.hasPersistedPaneState)
+      stubs.hasFullDiskAccess.mockResolvedValue(ctx.hasFullDiskAccess)
+
+      const outcome = await resolveFirstRunLayout(stubs.deps)
+
+      expect(outcome.kind, `lazy resolution diverged for ${describeCtx(ctx)}`).toBe(decideFirstRunLayout(ctx))
+    }
   })
 
   it('never touches the filesystem for an install that already has pane state', async () => {
@@ -193,25 +210,22 @@ describe('resolveFirstRunLayout', () => {
   it('never probes a folder without Full Disk Access, so no permission dialog can appear', async () => {
     const stubs = stubDeps()
     stubs.hasFullDiskAccess.mockResolvedValue(false)
-    await expect(resolveFirstRunLayout(stubs.deps)).resolves.toBeNull()
+    await expect(resolveFirstRunLayout(stubs.deps)).resolves.toEqual({ kind: 'leaveAlone' })
     expect(stubs.pathExists).not.toHaveBeenCalled()
-    expect(stubs.markLaidOut).not.toHaveBeenCalled()
   })
 
-  it('leaves an automated run alone entirely, probing and writing nothing', async () => {
+  it('leaves an automated run alone entirely, probing nothing', async () => {
     const stubs = stubDeps({ isAutomatedRun: () => true })
-    await expect(resolveFirstRunLayout(stubs.deps)).resolves.toBeNull()
+    await expect(resolveFirstRunLayout(stubs.deps)).resolves.toEqual({ kind: 'leaveAlone' })
     expectNoProbes(stubs)
-    expect(stubs.markLaidOut).not.toHaveBeenCalled()
   })
 
   it('does no work at all on an install whose marker is already set', async () => {
     // The overwhelmingly common launch. It sits between the app starting and the panes
     // appearing, so it has to cost nothing: no store open, no permission probe, no stat.
     const stubs = stubDeps({ layoutAlreadyApplied: true })
-    await expect(resolveFirstRunLayout(stubs.deps)).resolves.toBeNull()
+    await expect(resolveFirstRunLayout(stubs.deps)).resolves.toEqual({ kind: 'leaveAlone' })
     expectNoProbes(stubs)
-    expect(stubs.markLaidOut).not.toHaveBeenCalled()
   })
 
   it('probes the Downloads folder and nothing else', async () => {

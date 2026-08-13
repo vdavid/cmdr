@@ -14,6 +14,7 @@ const appStatus = vi.hoisted(() => ({
   loadPaneTabs: vi.fn(),
   hasPersistedPaneState: vi.fn(),
   saveAppStatusNow: vi.fn(),
+  savePaneTabs: vi.fn(),
 }))
 
 const commands = vi.hoisted(() => ({
@@ -73,6 +74,7 @@ beforeEach(() => {
   appStatus.loadAppStatus.mockResolvedValue(freshStatus)
   appStatus.hasPersistedPaneState.mockResolvedValue(false)
   appStatus.saveAppStatusNow.mockResolvedValue(undefined)
+  appStatus.savePaneTabs.mockResolvedValue(undefined)
   commands.pathExists.mockResolvedValue(true)
   commands.getDefaultVolumeId.mockResolvedValue('root')
   commands.getE2eStartPath.mockResolvedValue(null)
@@ -90,7 +92,7 @@ describe('loadPersistedState on a first run', () => {
     const state = await initialize()
     expect(getActiveTab(state.leftTabMgr).path).toBe('~')
     expect(getActiveTab(state.rightTabMgr).path).toBe('~/Downloads')
-    expect(appStatus.saveAppStatusNow).toHaveBeenCalledWith({ firstRunLayoutApplied: true })
+    expect(appStatus.saveAppStatusNow).toHaveBeenCalledWith(expect.objectContaining({ firstRunLayoutApplied: true }))
   })
 
   it('leaves both panes on home when Full Disk Access is not granted', async () => {
@@ -113,6 +115,49 @@ describe('loadPersistedState on a first run', () => {
 
     expect(getActiveTab(state.leftTabMgr).path).toBe('~/projects/left')
     expect(getActiveTab(state.rightTabMgr).path).toBe('~/projects/right')
+    expect(appStatus.saveAppStatusNow).toHaveBeenCalledWith({ firstRunLayoutApplied: true })
+  })
+
+  it('persists the layout, so quitting before navigating anywhere keeps it', async () => {
+    // The nav-state subscriber can't do this for us: it seeds its baseline from the loaded
+    // state WITHOUT saving, and the layout IS that state, so nothing would ever be written.
+    // The marker would then guarantee the user never sees Downloads again.
+    await initialize()
+
+    expect(appStatus.savePaneTabs).toHaveBeenCalledWith(
+      'right',
+      expect.objectContaining({ tabs: [expect.objectContaining({ path: '~/Downloads', volumeId: 'root' })] }),
+    )
+    expect(appStatus.savePaneTabs).toHaveBeenCalledWith(
+      'left',
+      expect.objectContaining({ tabs: [expect.objectContaining({ path: '~' })] }),
+    )
+    expect(appStatus.saveAppStatusNow).toHaveBeenCalledWith(
+      expect.objectContaining({ leftPath: '~', rightPath: '~/Downloads' }),
+    )
+  })
+
+  it('writes the tabs before the marker, so an interrupted first run retries instead of losing the layout', async () => {
+    const order: string[] = []
+    appStatus.savePaneTabs.mockImplementation(() => {
+      order.push('tabs')
+      return Promise.resolve()
+    })
+    appStatus.saveAppStatusNow.mockImplementation(() => {
+      order.push('marker')
+      return Promise.resolve()
+    })
+
+    await initialize()
+
+    expect(order.at(-1)).toBe('marker')
+    expect(order.filter((step) => step === 'tabs')).toHaveLength(2)
+  })
+
+  it('persists nothing for a returning user beyond the marker', async () => {
+    appStatus.hasPersistedPaneState.mockResolvedValue(true)
+    await initialize()
+    expect(appStatus.savePaneTabs).not.toHaveBeenCalled()
     expect(appStatus.saveAppStatusNow).toHaveBeenCalledWith({ firstRunLayoutApplied: true })
   })
 

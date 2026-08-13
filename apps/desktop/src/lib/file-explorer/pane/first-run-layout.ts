@@ -5,15 +5,17 @@
  * user left off.
  *
  * ⚠️ An install that already carries pane state gets its marker recorded WITHOUT its
- * panes being touched (`markAlreadyLaidOut`). Pane paths persist like any navigation, so
- * a layout applied to someone who already had one silently BECOMES their layout, with
- * nothing to undo it. Without that branch the rule fires for every user upgrading into
- * the build that introduces it, since they all have Full Disk Access and no marker.
+ * panes being touched (`markAlreadyLaidOut`). Why that branch is the one thing here that
+ * must never be "simplified", and what an applied layout costs a user who already had
+ * one: `DETAILS.md` § "First-run pane layout", which owns the full statement.
  *
  * The decision is a pure function so the whole matrix can be walked in a unit test, and
  * so the `~/Downloads` probe is structurally unreachable until Full Disk Access is
  * confirmed: `~/Downloads` sits behind a TCC gate, and even stat'ing it without the
  * permission can raise a system dialog the user has no context for.
+ *
+ * This module decides; it never writes. `loadPersistedState` (`initialization.ts`) owns
+ * every write the outcome implies, in one ordered place.
  */
 import type { PersistedPaneTabs, PersistedTab } from '../tabs/tab-types'
 
@@ -58,6 +60,19 @@ export interface FirstRunLayout {
   rightPath: string
 }
 
+/**
+ * What the caller should do. The `kind`s are named after `FirstRunLayoutDecision` on
+ * purpose: the outcome of a fully-resolved run is the decision, which is what lets
+ * `first-run-layout.test.ts` assert the two agree across every input combination.
+ *
+ * Nothing here is persisted by this module. The caller owns every write, so the ordering
+ * that makes an interrupted first run safe lives in one readable place.
+ */
+export type FirstRunLayoutOutcome =
+  | { kind: 'leaveAlone' }
+  | { kind: 'markAlreadyLaidOut' }
+  | ({ kind: 'openHomeAndDownloads' } & FirstRunLayout)
+
 export interface FirstRunLayoutDeps {
   isAutomatedRun: () => boolean
   /** Already loaded with the rest of the app status, so a value rather than a probe. */
@@ -65,8 +80,6 @@ export interface FirstRunLayoutDeps {
   hasPersistedPaneState: () => Promise<boolean>
   hasFullDiskAccess: () => Promise<boolean>
   pathExists: (path: string) => Promise<boolean>
-  /** Records the marker durably (no debounce): startup is followed by things that can quit. */
-  markLaidOut: () => Promise<void>
 }
 
 /** The two facts that cost a probe: a store open and a permission check over IPC. */
@@ -79,6 +92,21 @@ type ProbedFact = 'hasPersistedPaneState' | 'hasFullDiskAccess'
  * That keeps `decideFirstRunLayout` the single statement of the rule while the resolver
  * stays lazy. A hand-written short-circuit would have to repeat the guard order here, and
  * would drift the day the rule changes.
+ *
+ * ⚠️ The skip is only sound relative to the context AS IT STANDS, which still holds
+ * placeholders for facts settled later. Two properties of the rule make that safe, and a
+ * change to `decideFirstRunLayout` has to preserve both:
+ *
+ * 1. Each probed fact is read by exactly ONE guard, so no later guard can revive a fact an
+ *    earlier one made irrelevant.
+ * 2. Any skip is caused by an earlier guard that returns unconditionally, so the guards
+ *    after it are unreachable whatever the placeholders say.
+ *
+ * Break either and a probe gets skipped while its placeholder still steers the answer: a
+ * rule reading `hasPersistedPaneState && hasFullDiskAccess` in one guard would skip the
+ * pane-state probe, leave it `false`, and lay out over a returning user's real layout. The
+ * "matches the fully-probed decision" test in `first-run-layout.test.ts` is what catches
+ * that, so ❌ don't delete it when editing the rule.
  */
 async function settle(
   ctx: FirstRunLayoutContext,
@@ -91,15 +119,14 @@ async function settle(
 }
 
 /**
- * Gathers the facts, applies the rule, and records the marker. Returns the paths to open,
- * or `null` when the panes should keep whatever was persisted.
+ * Gathers the facts and applies the rule. Writes nothing; the caller owns persistence.
  *
  * This sits between the app launching and the panes appearing, and the overwhelmingly
  * common case is a returning user whose marker is already set. So the two probes start as
  * placeholders and `settle` resolves each only if it matters: that launch does no I/O at
  * all, and an upgrading user's costs one store read and no permission probe.
  */
-export async function resolveFirstRunLayout(deps: FirstRunLayoutDeps): Promise<FirstRunLayout | null> {
+export async function resolveFirstRunLayout(deps: FirstRunLayoutDeps): Promise<FirstRunLayoutOutcome> {
   let ctx: FirstRunLayoutContext = {
     isAutomatedRun: deps.isAutomatedRun(),
     layoutAlreadyApplied: deps.layoutAlreadyApplied,
@@ -112,17 +139,15 @@ export async function resolveFirstRunLayout(deps: FirstRunLayoutDeps): Promise<F
   ctx = await settle(ctx, 'hasFullDiskAccess', deps.hasFullDiskAccess)
 
   const decision = decideFirstRunLayout(ctx)
-
-  if (decision === 'leaveAlone') return null
-  if (decision === 'markAlreadyLaidOut') {
-    await deps.markLaidOut()
-    return null
-  }
+  if (decision !== 'openHomeAndDownloads') return { kind: decision }
 
   // Reached only with Full Disk Access in hand, so this stat can't raise a TCC dialog.
   const hasDownloads = await deps.pathExists(FIRST_RUN_RIGHT_PATH)
-  await deps.markLaidOut()
-  return { leftPath: FIRST_RUN_LEFT_PATH, rightPath: hasDownloads ? FIRST_RUN_RIGHT_PATH : FIRST_RUN_LEFT_PATH }
+  return {
+    kind: decision,
+    leftPath: FIRST_RUN_LEFT_PATH,
+    rightPath: hasDownloads ? FIRST_RUN_RIGHT_PATH : FIRST_RUN_LEFT_PATH,
+  }
 }
 
 /** Points each pane's active tab at its layout path, in place. */
