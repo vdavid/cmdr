@@ -43,7 +43,10 @@ let target: HTMLElement
 let instance: ReturnType<typeof mount> | undefined
 
 /** The row's callbacks default to no-ops, so each test names only the ones it
- *  asserts on. */
+ *  asserts on. Pause / Cancel / Rollback aren't among them: they go to the
+ *  operation's session, and what a click sends is asserted in
+ *  `queue-row-session.svelte.test.ts`, which has a window registry. This file
+ *  answers which control a given status offers. */
 function render(props: Partial<ComponentProps<typeof QueueRow>> & { row: OperationRow }) {
   target = document.createElement('ul')
   document.body.appendChild(target)
@@ -52,9 +55,6 @@ function render(props: Partial<ComponentProps<typeof QueueRow>> & { row: Operati
     props: {
       selected: false,
       onToggleSelect: () => {},
-      onPauseResume: () => {},
-      onCancel: () => {},
-      onRollback: () => {},
       onDismiss: () => {},
       ...props,
     },
@@ -74,47 +74,26 @@ beforeEach(() => {
 
 describe('QueueRow', () => {
   it('shows Pause for a running op and Resume for a paused op', () => {
-    const onPauseResume = vi.fn()
-    render({ row: buildRow('running'), selected: false, onToggleSelect: () => {}, onPauseResume, onCancel: () => {} })
+    render({ row: buildRow('running') })
     expect(target.querySelector('[aria-label="Pause this operation"]')).not.toBeNull()
     expect(target.querySelector('[aria-label="Resume this operation"]')).toBeNull()
     if (instance) void unmount(instance)
 
-    render({ row: buildRow('paused'), selected: false, onToggleSelect: () => {}, onPauseResume, onCancel: () => {} })
+    render({ row: buildRow('paused') })
     expect(target.querySelector('[aria-label="Resume this operation"]')).not.toBeNull()
     expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
   })
 
   it('a queued op has Cancel but no Pause/Resume', () => {
-    render({
-      row: buildRow('queued'),
-      selected: false,
-      onToggleSelect: () => {},
-      onPauseResume: () => {},
-      onCancel: () => {},
-    })
+    render({ row: buildRow('queued') })
     expect(target.querySelector('[aria-label="Cancel this operation"]')).not.toBeNull()
     expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
     expect(target.querySelector('[aria-label="Resume this operation"]')).toBeNull()
   })
 
-  it('clicking Pause fires onPauseResume; clicking Cancel fires onCancel', () => {
-    const onPauseResume = vi.fn()
-    const onCancel = vi.fn()
-    render({ row: buildRow('running'), selected: false, onToggleSelect: () => {}, onPauseResume, onCancel })
-
-    const pauseBtn = target.querySelector<HTMLButtonElement>('[aria-label="Pause this operation"]')
-    pauseBtn?.click()
-    expect(onPauseResume).toHaveBeenCalledOnce()
-
-    const cancelBtn = target.querySelector<HTMLButtonElement>('[aria-label="Cancel this operation"]')
-    cancelBtn?.click()
-    expect(onCancel).toHaveBeenCalledOnce()
-  })
-
   it('the select checkbox reflects `selected` and fires onToggleSelect', () => {
     const onToggleSelect = vi.fn()
-    render({ row: buildRow('running'), selected: true, onToggleSelect, onPauseResume: () => {}, onCancel: () => {} })
+    render({ row: buildRow('running'), selected: true, onToggleSelect })
     const checkbox = target.querySelector<HTMLInputElement>('input[type="checkbox"]')
     expect(checkbox?.checked).toBe(true)
     checkbox?.click()
@@ -132,13 +111,7 @@ describe('QueueRow', () => {
       bytesDone: 25,
       bytesTotal: 100,
     }
-    render({
-      row: buildRow('running', 'copy', progress),
-      selected: false,
-      onToggleSelect: () => {},
-      onPauseResume: () => {},
-      onCancel: () => {},
-    })
+    render({ row: buildRow('running', 'copy', progress) })
     const bar = target.querySelector('[role="progressbar"]')
     expect(bar).not.toBeNull()
     expect(bar?.getAttribute('aria-valuenow')).toBe('25')
@@ -166,13 +139,7 @@ describe('QueueRow', () => {
       ['archive_edit', 'Editing archive'],
     ]
     for (const [opType, expected] of cases) {
-      render({
-        row: buildRow('running', opType),
-        selected: false,
-        onToggleSelect: () => {},
-        onPauseResume: () => {},
-        onCancel: () => {},
-      })
+      render({ row: buildRow('running', opType) })
       const label = target.querySelector('.op-label')?.textContent.trim()
       expect(label).toBe(expected)
       if (instance) void unmount(instance)
@@ -180,10 +147,8 @@ describe('QueueRow', () => {
   })
 
   it('offers Rollback only where the backend says the op can be reversed', () => {
-    const onRollback = vi.fn()
-    render({ row: buildRow('running', 'copy', null, true), onRollback })
-    rollbackButton()?.click()
-    expect(onRollback).toHaveBeenCalledOnce()
+    render({ row: buildRow('running', 'copy', null, true) })
+    expect(rollbackButton()).not.toBeNull()
 
     // A same-volume move / delete / trash reports `supportsRollback: false`;
     // offering it would promise an undo the backend can't perform.
@@ -253,13 +218,7 @@ describe('QueueRow', () => {
   })
 
   it('exposes the lifecycle status as a data attribute for E2E', () => {
-    render({
-      row: buildRow('queued'),
-      selected: false,
-      onToggleSelect: () => {},
-      onPauseResume: () => {},
-      onCancel: () => {},
-    })
+    render({ row: buildRow('queued') })
     expect(target.querySelector('[data-status="queued"]')).not.toBeNull()
     expect(target.querySelector('[data-operation-id="op-1"]')).not.toBeNull()
   })

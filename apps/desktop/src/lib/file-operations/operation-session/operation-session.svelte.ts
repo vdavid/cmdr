@@ -10,9 +10,11 @@
  * STATEFUL, so a second one started at a different moment disagrees with the
  * first for as long as it takes to converge. See `DETAILS.md`.
  *
- * Read-only by design: a session REPORTS what an operation is doing. Pause,
- * resume, cancel, rollback, and conflict resolution are commands, and they live
- * with their callers.
+ * It also holds the commands: pause, resume, cancel, rollback, and answering a
+ * clash all go through the session, so the operation never has to care which
+ * surface pressed the button and every other surface watching it sees that the
+ * button was pressed. Their guards and their IPC live in
+ * `operation-session-commands.svelte.ts`.
  *
  * ## No `$derived` in here
  *
@@ -31,7 +33,10 @@ import { getAppLogger } from '$lib/logging/logger'
 import { createEtaSmoother, transferReadout, type TransferReadout } from '../progress-readout'
 import { ScanThroughput } from '../scan-throughput'
 import type { Seconds } from '$lib/units'
+import type { ConflictResolution } from '$lib/file-explorer/types'
 import type { OperationDelivery, OperationEventFanout } from './operation-event-fanout'
+import { createOperationSessionCommands, type OperationSessionCommands } from './operation-session-commands.svelte'
+import type { ConflictResolutionOutcome } from '$lib/tauri-commands'
 
 const log = getAppLogger('operationSession')
 
@@ -58,7 +63,7 @@ export interface ScanReadout {
   bytesPerSecond: number | null
 }
 
-export interface OperationSession {
+export interface OperationSession extends OperationSessionCommands {
   readonly operationId: string
   /** The operation's row in the registry snapshot, or `null` until one arrives.
    *  Holds its LAST known row after the operation leaves the snapshot. */
@@ -77,7 +82,8 @@ export interface OperationSession {
    *  view of this operation renders this, never `progress.etaSeconds`. */
   readonly etaSecondsDisplay: Seconds | null
   readonly scan: ScanReadout
-  /** The conflict the operation is parked on, if any. */
+  /** The conflict the operation is parked on, if any. Cleared once the backend
+   *  has ruled on it, whichever surface asked. */
   readonly conflict: WriteConflictEvent | null
   /** How it ended, or `null` while it's live. Write-once. */
   readonly outcome: OperationOutcome | null
@@ -192,6 +198,11 @@ export function createOperationSession(operationId: string, fanout: OperationEve
     }
   }
 
+  // The lifecycle status is what the toggle steers by. ❌ Never `is_running`: a
+  // parked operation stays in the write-op state map and answers `true` there,
+  // so a toggle reading it would try to pause what is already paused.
+  const commands = createOperationSessionCommands(operationId, () => snapshot?.status === 'paused')
+
   // Claim, flush, and go live are ONE synchronous block. Nothing may `await`
   // between the attach and the return: an event that arrived while a promise
   // settled would be delivered out of order, and the ETA smoother is stateful.
@@ -274,6 +285,36 @@ export function createOperationSession(operationId: string, fanout: OperationEve
     get settleEventReceived(): boolean {
       return settleEventReceived
     },
+
+    pause: commands.pause,
+    resume: commands.resume,
+    togglePause: commands.togglePause,
+    cancel: commands.cancel,
+    rollback: commands.rollback,
+    /** Answers the clash and lets go of it. Any verdict settles the question —
+     *  the backend arbitrates between whoever answered — so only a call that
+     *  never landed leaves the prompt up for another try. */
+    async resolveConflict(
+      resolution: ConflictResolution,
+      applyToAll: boolean,
+    ): Promise<ConflictResolutionOutcome | null> {
+      const outcome = await commands.resolveConflict(resolution, applyToAll)
+      if (outcome !== null) conflict = null
+      return outcome
+    },
+    get pauseInFlight(): boolean {
+      return commands.pauseInFlight
+    },
+    get cancelling(): boolean {
+      return commands.cancelling
+    },
+    get rollingBack(): boolean {
+      return commands.rollingBack
+    },
+    get resolvingConflict(): boolean {
+      return commands.resolvingConflict
+    },
+
     dispose(): void {
       disposed = true
       attachment.detach()

@@ -12,15 +12,11 @@
     import { trackOwnRect } from '$lib/window-positioning'
     import { getAppLogger } from '$lib/logging/logger'
     import {
-        cancelOperation,
         cancelOperations,
-        cancelWriteOperation,
         dismissAllFailedOperations,
         dismissFailedOperation,
         pauseAll,
-        pauseOperation,
         resumeAll,
-        resumeOperation,
     } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -78,37 +74,11 @@
         else selectedIds.add(operationId)
     }
 
-    async function pauseResumeRow(operationId: string, paused: boolean): Promise<void> {
-        try {
-            if (paused) await resumeOperation(operationId)
-            else await pauseOperation(operationId)
-        } catch (error) {
-            log.warn('Failed to pause/resume operation {operationId}: {error}', { operationId, error: String(error) })
-        }
-    }
-
-    async function cancelRow(operationId: string): Promise<void> {
-        try {
-            await cancelOperation(operationId)
-        } catch (error) {
-            log.warn('Failed to cancel operation {operationId}: {error}', { operationId, error: String(error) })
-        }
-    }
-
-    /**
-     * Cancel AND undo what the operation already wrote. This is the write-op
-     * intent switch (`cancelWriteOperation(id, rollback = true)`), NOT the
-     * manager-level `cancelOperation`: only the former can ask a running op to
-     * delete its partial destination. The row offers it solely where the
-     * backend's snapshot says the op is reversible.
-     */
-    async function rollbackRow(operationId: string): Promise<void> {
-        try {
-            await cancelWriteOperation(operationId, true)
-        } catch (error) {
-            log.warn('Failed to roll back operation {operationId}: {error}', { operationId, error: String(error) })
-        }
-    }
+    // ❌ No per-row pause/resume/cancel/rollback here. A row commands its own
+    // operation through the session it's already bound to, so the same press
+    // means the same thing from every surface and no two of them can send it
+    // twice. This page keeps only what ISN'T a command on one operation: the
+    // fleet actions below and dismissing a retained failure.
 
     async function cancelSelected(): Promise<void> {
         const ids = [...selectedIds]
@@ -284,10 +254,6 @@
                         {row}
                         selected={selectedIds.has(row.snapshot.operationId)}
                         onToggleSelect={() => { toggleSelect(row.snapshot.operationId); }}
-                        onPauseResume={() =>
-                            void pauseResumeRow(row.snapshot.operationId, row.snapshot.status === 'paused')}
-                        onCancel={() => void cancelRow(row.snapshot.operationId)}
-                        onRollback={() => void rollbackRow(row.snapshot.operationId)}
                         onDismiss={() => void dismissRow(row.snapshot.operationId)}
                     />
                 {/each}

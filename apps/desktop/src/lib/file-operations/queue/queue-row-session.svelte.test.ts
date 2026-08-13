@@ -1,6 +1,14 @@
 /**
- * What a queue row reads from its operation's session: the estimates nobody else
- * in the window is allowed to keep a second copy of.
+ * What a queue row reads from its operation's session, and what it asks of it.
+ *
+ * The command half lives here rather than in `QueueRow.svelte.test.ts` because a
+ * row issues its Pause / Cancel / Rollback through the session, which only
+ * exists once the window has a registry. That file keeps the affordance
+ * questions (which control shows for which status); this one answers what a
+ * click actually does.
+ *
+ * The read half: the estimates nobody else in the window is allowed to keep a
+ * second copy of.
  *
  * Both are stateful, and that is the whole reason they live in one place. The
  * ETA smoother has a shipped precedent behind it (one operation once read
@@ -21,8 +29,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, unmount, flushSync } from 'svelte'
 import type { OperationSnapshot, WriteProgressEvent } from '$lib/ipc/bindings'
 
+const { commandMocks } = vi.hoisted(() => ({
+  commandMocks: {
+    pauseOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+    resumeOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+    cancelOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+    cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
+    resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
+  },
+}))
+
 vi.mock('$lib/tauri-commands', () => ({
   listOperations: vi.fn(() => Promise.resolve([])),
+  ...commandMocks,
   onOperationsChanged: vi.fn(() => Promise.resolve(() => {})),
   onWriteProgress: vi.fn(() => Promise.resolve(() => {})),
   onWriteComplete: vi.fn(() => Promise.resolve(() => {})),
@@ -54,11 +73,11 @@ import {
 import { createOperationsStore, type OperationRow } from './operations-store.svelte'
 import QueueRow from './QueueRow.svelte'
 
-function snapshot(operationId: string): OperationSnapshot {
+function snapshot(operationId: string, status: OperationSnapshot['status'] = 'running'): OperationSnapshot {
   return {
     operationId,
     operationType: 'copy',
-    status: 'running',
+    status,
     source: '/Users/me/Documents/report.pdf',
     destination: '/Volumes/Backup/report.pdf',
     supportsRollback: true,
@@ -93,6 +112,17 @@ function refreshRows(): void {
   flushSync()
 }
 
+/** One `operations-changed`, delivered the way the backend delivers it: to
+ *  every listener in the window. The store reduces membership from it, and each
+ *  session learns its own lifecycle status, which is what a Pause/Resume press
+ *  steers by. */
+function emitSnapshot(operations: OperationSnapshot[]): void {
+  store._testApplySnapshot(operations)
+  getOperationSessions()?._testEmit({ kind: 'snapshot', operations })
+  flushSync()
+  refreshRows()
+}
+
 /** One tick, delivered the way the backend delivers it: to every listener in
  *  the window. The store keeps the latest one, the session smooths it. */
 function emitProgress(event: WriteProgressEvent): void {
@@ -109,13 +139,20 @@ function mountRow(operationId: string): void {
     row: rowFor(operationId),
     selected: false,
     onToggleSelect: () => {},
-    onPauseResume: () => {},
-    onCancel: () => {},
-    onRollback: () => {},
     onDismiss: () => {},
   })
   views.push({ operationId, props, instance: mount(QueueRow, { target, props }) })
   flushSync()
+}
+
+/** A control on the row, by its accessible name (Rollback carries none, so it
+ *  goes by label text). */
+function button(name: string): HTMLButtonElement {
+  const found =
+    target.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`) ??
+    [...target.querySelectorAll('button')].find((b) => b.textContent.includes(name))
+  if (!found) throw new Error(`No "${name}" control on the row`)
+  return found
 }
 
 function rowFor(operationId: string): OperationRow {
@@ -132,6 +169,7 @@ beforeEach(async () => {
   store = createOperationsStore()
   await initOperationSessions()
   vi.mocked(createEtaSmoother).mockClear()
+  for (const mock of Object.values(commandMocks)) mock.mockClear()
 })
 
 afterEach(() => {
@@ -198,6 +236,55 @@ describe('the queue window smooths an ETA exactly once per operation', () => {
 
     expect(vi.mocked(createEtaSmoother)).not.toHaveBeenCalled()
     expect(rowFor('op-a').progress?.bytesDone).toBe(500)
+  })
+})
+
+describe('a row commands its operation through the session', () => {
+  it('pauses a running operation and resumes a paused one', async () => {
+    emitSnapshot([snapshot('op-a')])
+    mountRow('op-a')
+
+    button('Pause this operation').click()
+    expect(commandMocks.pauseOperation).toHaveBeenCalledWith('op-a')
+    // Let the pause round-trip finish; until it does, the session refuses the
+    // next press on the same button.
+    await Promise.resolve()
+
+    // Which way the one button goes is decided from the lifecycle status, and
+    // the session learns it from the same snapshot the row renders.
+    emitSnapshot([snapshot('op-a', 'paused')])
+    button('Resume this operation').click()
+
+    expect(commandMocks.resumeOperation).toHaveBeenCalledWith('op-a')
+  })
+
+  it('cancels through the manager, so a row still waiting on a lane is dropped too', () => {
+    emitSnapshot([snapshot('op-a', 'queued')])
+    mountRow('op-a')
+
+    button('Cancel this operation').click()
+
+    expect(commandMocks.cancelOperation).toHaveBeenCalledWith('op-a')
+  })
+
+  it('rolls back by asking the write operation to undo what it wrote', () => {
+    emitSnapshot([snapshot('op-a')])
+    mountRow('op-a')
+
+    button('Rollback').click()
+
+    expect(commandMocks.cancelWriteOperation).toHaveBeenCalledWith('op-a', true)
+  })
+
+  it('sends one cancel however many times the button is pressed', async () => {
+    emitSnapshot([snapshot('op-a')])
+    mountRow('op-a')
+
+    button('Cancel this operation').click()
+    await Promise.resolve()
+    button('Cancel this operation').click()
+
+    expect(commandMocks.cancelOperation).toHaveBeenCalledTimes(1)
   })
 })
 

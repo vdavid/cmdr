@@ -1,14 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { OperationSnapshot, WriteProgressEvent } from '$lib/ipc/bindings'
+import type { OperationSnapshot, WriteConflictEvent, WriteProgressEvent } from '$lib/ipc/bindings'
 
 // Hoisted: `vi.mock`'s factory runs before the module body, so the mock it
 // closes over has to exist by then.
-const { listOperationsMock } = vi.hoisted(() => ({
+const { listOperationsMock, commandMocks } = vi.hoisted(() => ({
   listOperationsMock: vi.fn<() => Promise<OperationSnapshot[]>>(() => Promise.resolve([])),
+  commandMocks: {
+    pauseOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+    resumeOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+    cancelOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
+    cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
+    resolveWriteConflict: vi.fn<(id: string, resolution: string, applyToAll: boolean) => Promise<string>>(() =>
+      Promise.resolve('resolved'),
+    ),
+  },
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
   listOperations: listOperationsMock,
+  ...commandMocks,
   onWriteProgress: vi.fn(() => Promise.resolve(() => {})),
   onWriteComplete: vi.fn(() => Promise.resolve(() => {})),
   onWriteError: vi.fn(() => Promise.resolve(() => {})),
@@ -87,9 +97,30 @@ async function settleSeed(): Promise<void> {
   await Promise.resolve()
 }
 
+/** The clash a parked operation is waiting on. */
+function conflict(id: string): WriteConflictEvent {
+  return {
+    operationId: id,
+    sourcePath: '/src/f',
+    destinationPath: '/dst/f',
+    sourceSize: 1,
+    destinationSize: 2,
+    sourceModified: null,
+    destinationModified: null,
+    destinationIsNewer: false,
+    sizeDifference: 1,
+  }
+}
+
 beforeEach(() => {
   listOperationsMock.mockReset()
   listOperationsMock.mockResolvedValue([])
+  for (const mock of Object.values(commandMocks)) mock.mockReset()
+  commandMocks.pauseOperation.mockResolvedValue(undefined)
+  commandMocks.resumeOperation.mockResolvedValue(undefined)
+  commandMocks.cancelOperation.mockResolvedValue(undefined)
+  commandMocks.cancelWriteOperation.mockResolvedValue(undefined)
+  commandMocks.resolveWriteConflict.mockResolvedValue('resolved')
 })
 
 afterEach(() => {
@@ -263,20 +294,7 @@ describe('derived read state', () => {
   it('holds the conflict the operation is parked on', () => {
     const { fanout, session, dispose } = harness()
 
-    fanout._testEmit({
-      kind: 'conflict',
-      event: {
-        operationId: 'a',
-        sourcePath: '/src/f',
-        destinationPath: '/dst/f',
-        sourceSize: 1,
-        destinationSize: 2,
-        sourceModified: null,
-        destinationModified: null,
-        destinationIsNewer: false,
-        sizeDifference: 1,
-      },
-    })
+    fanout._testEmit({ kind: 'conflict', event: conflict('a') })
 
     expect(session.conflict?.sourcePath).toBe('/src/f')
     dispose()
@@ -291,5 +309,69 @@ describe('derived read state', () => {
 
     expect(session.readout?.bytesDone).toBe(10)
     fanout.dispose()
+  })
+})
+
+describe('commands', () => {
+  it('toggles the way the registry snapshot points, not the way the progress event does', async () => {
+    const { fanout, session, dispose } = harness()
+    // The trap in one emit pair: a parked operation keeps answering
+    // `is_running: true` and its last tick still says `copying`, while the
+    // snapshot is the only thing that knows it stopped.
+    fanout._testEmit({ kind: 'progress', event: progress('a', { phase: 'copying' }) })
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'paused')] })
+
+    await session.togglePause()
+
+    expect(commandMocks.resumeOperation).toHaveBeenCalledWith('a')
+    expect(commandMocks.pauseOperation).not.toHaveBeenCalled()
+    dispose()
+  })
+
+  it.each(['resolved', 'already_resolved', 'no_pending_conflict', 'unknown_operation'] as const)(
+    'lets go of the clash on a %s verdict, because the question is over either way',
+    async (outcome) => {
+      commandMocks.resolveWriteConflict.mockResolvedValueOnce(outcome)
+      const { fanout, session, dispose } = harness()
+      fanout._testEmit({ kind: 'conflict', event: conflict('a') })
+
+      expect(await session.resolveConflict('overwrite', false)).toBe(outcome)
+
+      expect(session.conflict).toBeNull()
+      dispose()
+    },
+  )
+
+  it('keeps the clash when the answer never landed', async () => {
+    commandMocks.resolveWriteConflict.mockRejectedValueOnce(new Error('ipc down'))
+    const { fanout, session, dispose } = harness()
+    fanout._testEmit({ kind: 'conflict', event: conflict('a') })
+
+    expect(await session.resolveConflict('overwrite', false)).toBeNull()
+
+    expect(session.conflict?.sourcePath).toBe('/src/f')
+    dispose()
+  })
+
+  it('answers a clash it never saw, because the backend is the one that arbitrates', async () => {
+    // A view can adopt an operation whose `write-conflict` went to a session
+    // that has since been let go. Refusing here would leave the user clicking a
+    // button that does nothing; the backend's verdict is the only authority.
+    const { session, dispose } = harness()
+
+    expect(await session.resolveConflict('skip', true)).toBe('resolved')
+
+    expect(commandMocks.resolveWriteConflict).toHaveBeenCalledWith('a', 'skip', true)
+    dispose()
+  })
+
+  it('issues a cancel through the manager, so a queued operation is dropped too', async () => {
+    const { session, dispose } = harness()
+
+    expect(await session.cancel()).toBe(true)
+
+    expect(commandMocks.cancelOperation).toHaveBeenCalledWith('a')
+    expect(session.cancelling).toBe(true)
+    dispose()
   })
 })

@@ -18,25 +18,24 @@
         row: OperationRow
         selected: boolean
         onToggleSelect: () => void
-        onPauseResume: () => void
-        onCancel: () => void
-        /** Cancel AND delete what this op has already written. Offered only on
-         *  rows the backend says can be reversed (`supportsRollback`). */
-        onRollback: () => void
-        /** Stop showing a retained failure. The only way one leaves the list:
-         *  no timer, no window close, no next operation. */
+        /** Stop showing a retained failure. Not a command on the operation (it
+         *  has none left): the page drops the row the backend retained. The only
+         *  way one leaves the list — no timer, no window close, no next
+         *  operation. */
         onDismiss: () => void
     }
 
-    const { row, selected, onToggleSelect, onPauseResume, onCancel, onRollback, onDismiss }: Props = $props()
+    const { row, selected, onToggleSelect, onDismiss }: Props = $props()
 
     const snapshot = $derived(row.snapshot)
     const progress = $derived(row.progress)
     const status = $derived(snapshot.status)
 
-    /** This row's looking glass onto the operation. It owns the one ETA smoother
-     *  and the one scan-rate estimator for this operation in this window, so the
-     *  numbers here can't drift from what any other view of it shows. */
+    /** This row's looking glass onto the operation, and how it talks back. It
+     *  owns the one ETA smoother and the one scan-rate estimator for this
+     *  operation in this window, so the numbers here can't drift from what any
+     *  other view of it shows — and the Pause / Cancel / Rollback it issues are
+     *  the same commands, against the same guards, whatever else is watching. */
     const session = bindOperationSession(() => snapshot.operationId)
 
     /** A paused op stays in the write-op-state map and reports `is_running:true`,
@@ -137,6 +136,13 @@
     }
     const sourceName = $derived(basename(snapshot.source))
     const destName = $derived(basename(snapshot.destination))
+
+    /** Every control here goes through the session, which decides pause-versus-
+     *  resume from the snapshot status and refuses a command it has already
+     *  sent. Nothing throws, so a click is a plain `void`. The session is null
+     *  only for the frame between mount and the first effect, which is before
+     *  anyone can click. */
+    const commands = $derived(session.current)
 </script>
 
 <li class="queue-row" class:selected data-operation-id={snapshot.operationId} data-status={status}>
@@ -182,7 +188,12 @@
         {#if (isRunning || isPaused) && !isScanning}
             <!-- Pause parks between files, so a still-counting operation has
                  nothing to park; the backend declines the flip. -->
-            <Button variant="secondary" size="mini" onclick={onPauseResume} aria-label={pauseResumeAria}>
+            <Button
+                variant="secondary"
+                size="mini"
+                onclick={() => void commands?.togglePause()}
+                aria-label={pauseResumeAria}
+            >
                 <span class="btn-inner">
                     <Icon name={isPaused ? 'play' : 'pause'} size={13} />
                     {pauseResumeLabel}
@@ -190,7 +201,12 @@
             </Button>
         {/if}
         {#if isActionable}
-            <Button variant="secondary" size="mini" onclick={onCancel} aria-label={tString('queue.row.cancelAria')}>
+            <Button
+                variant="secondary"
+                size="mini"
+                onclick={() => void commands?.cancel()}
+                aria-label={tString('queue.row.cancelAria')}
+            >
                 <span class="btn-inner">
                     <Icon name="x" size={13} />
                     {tString('queue.row.cancel')}
@@ -209,7 +225,7 @@
             <!-- Danger, like the progress dialog's: the same click deletes the
                  same files, so it can't read as gentler here. -->
             <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
-                <Button variant="danger" size="mini" onclick={onRollback}>
+                <Button variant="danger" size="mini" onclick={() => void commands?.rollback()}>
                     <span class="btn-inner">
                         <Icon name="rotate-ccw" size={13} />
                         {tString('fileOperations.transferProgress.conflictRollback')}

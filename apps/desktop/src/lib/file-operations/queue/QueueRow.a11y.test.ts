@@ -56,9 +56,6 @@ async function mountRow(r: OperationRow, selected = false): Promise<HTMLElement>
       row: r,
       selected,
       onToggleSelect: () => {},
-      onPauseResume: () => {},
-      onCancel: () => {},
-      onRollback: () => {},
       onDismiss: () => {},
     },
   })
