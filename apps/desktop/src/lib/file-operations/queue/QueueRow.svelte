@@ -38,6 +38,12 @@
      *  the same commands, against the same guards, whatever else is watching. */
     const session = bindOperationSession(() => snapshot.operationId)
 
+    /** The session once the binding takes hold: what the operation is, and what
+     *  this row can ask of it. Null only for the frame between mount and the
+     *  first effect, which is before anyone can click, and no command throws —
+     *  so a control is a plain `void op?.thing()`. */
+    const op = $derived(session.current)
+
     /** A paused op stays in the write-op-state map and reports `is_running:true`,
      *  so the bar-is-moving truth is the SNAPSHOT status, never the progress
      *  event. Only a `running` op shows the live spinner / animated bar. */
@@ -113,11 +119,11 @@
      *  number, so no two of them can disagree about how long is left. */
     const byteRate = $derived(isRunning && progress ? transferReadout(progress).bytesPerSecond : null)
     const fileRate = $derived(isRunning ? (progress?.filesPerSecond ?? null) : null)
-    const etaSeconds = $derived(isRunning ? (session.current?.etaSecondsDisplay ?? null) : null)
+    const etaSeconds = $derived(isRunning ? (op?.etaSecondsDisplay ?? null) : null)
 
     /** How fast the walk is going, which the backend doesn't measure during a
      *  scan: the session computes it from the same ticks this row renders. */
-    const scanRates = $derived(session.current?.scan ?? null)
+    const scanRates = $derived(op?.scan ?? null)
 
     const pauseResumeLabel = $derived(
         isPaused ? tString('queue.row.resume') : tString('queue.row.pause'),
@@ -137,12 +143,6 @@
     const sourceName = $derived(basename(snapshot.source))
     const destName = $derived(basename(snapshot.destination))
 
-    /** Every control here goes through the session, which decides pause-versus-
-     *  resume from the snapshot status and refuses a command it has already
-     *  sent. Nothing throws, so a click is a plain `void`. The session is null
-     *  only for the frame between mount and the first effect, which is before
-     *  anyone can click. */
-    const commands = $derived(session.current)
 </script>
 
 <li class="queue-row" class:selected data-operation-id={snapshot.operationId} data-status={status}>
@@ -191,7 +191,7 @@
             <Button
                 variant="secondary"
                 size="mini"
-                onclick={() => void commands?.togglePause()}
+                onclick={() => void op?.togglePause()}
                 aria-label={pauseResumeAria}
             >
                 <span class="btn-inner">
@@ -204,7 +204,7 @@
             <Button
                 variant="secondary"
                 size="mini"
-                onclick={() => void commands?.cancel()}
+                onclick={() => void op?.cancel()}
                 aria-label={tString('queue.row.cancelAria')}
             >
                 <span class="btn-inner">
@@ -225,7 +225,7 @@
             <!-- Danger, like the progress dialog's: the same click deletes the
                  same files, so it can't read as gentler here. -->
             <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
-                <Button variant="danger" size="mini" onclick={() => void commands?.rollback()}>
+                <Button variant="danger" size="mini" onclick={() => void op?.rollback()}>
                     <span class="btn-inner">
                         <Icon name="rotate-ccw" size={13} />
                         {tString('fileOperations.transferProgress.conflictRollback')}
