@@ -1,10 +1,23 @@
 # Phased, priority-driven drive indexing
 
-Status: plan, not started. Branch: `worktree-phased-indexing`.
+Status: plan, not started (M1 onward). Branch: `worktree-phased-indexing`. Revised 2026-08-14 after a review round that
+took the home-only default seriously; the decisions list records what changed and why.
 
 Turn first-run drive indexing from "one full scan of `/`, all or nothing, a few minutes before anything is useful" into
-"the folders this user actually cares about are indexed within seconds, and the rest of the drive fills in behind them".
-Nothing is truncated on the way, so every second spent walking stays bought.
+"the folders this user actually cares about are indexed within seconds, and the rest of their home fills in behind
+them". Nothing is truncated on the way, so every second spent walking stays bought.
+
+**The default is home-only, and that is a product change as much as a performance one.** By default the index holds
+`$HOME`, the priority roots, and whatever the user opens. The whole drive is one setting away, and existing installs
+that already scanned it keep it (decision 11). Everything below is written for the default: a volume that is
+permanently, honestly partial. The single most common way to get this plan wrong is to reason about the whole-drive end
+state and ship a mechanism that only fires there.
+
+**Be precise about which half of the product this costs, because the obvious answer is wrong.** Search is
+coverage-gated, and a search over uncovered ground already walks it: a drive converges toward instant through use, and
+search keeps finding files either way, only slower the first time. What loses ground is **the size column**, which has
+no equivalent fallback — outside the promised scope it renders `<dir>` and stays that way. So the affordance work in M5
+belongs in the pane first and the search dialog second, which is the reverse of where it looks like it belongs.
 
 Area docs to read before working here: `crates/cmdr-index/src/indexing/CLAUDE.md` (+ its `DETAILS.md`),
 `crates/cmdr-index/src/indexing/lifecycle/CLAUDE.md`, `.../lifecycle/cover/CLAUDE.md`, `.../watch/CLAUDE.md`,
@@ -31,10 +44,11 @@ audit), `apps/desktop/src/lib/indexing/CLAUDE.md`, `apps/desktop/src/lib/onboard
    already ships: left `~`, right `~/Downloads` on a fresh install, hidden files hidden, and both panes staying on `~`
    on Deny.
 3. As they browse, whatever they open gets indexed next, ahead of everything still queued.
-4. Home finishes, and that's "done" by default. The rest of the drive follows only if they turn on "Index stuff outside
-   my home folder".
+4. Home finishes, and that's "done" by default: the badge goes green, and photo search and folder importance start. The
+   rest of the drive follows only if they turn on "Index the whole drive".
 5. At every moment the sizes shown are honest: exact where covered, `<dir>` or `≥` where not, an hourglass on ground
-   being walked right now.
+   being walked right now. Where the answer is permanently `<dir>` because the folder is outside what they asked us to
+   index, the app says so and offers to fix it, rather than looking broken.
 
 ## The architecture
 
@@ -54,6 +68,86 @@ walks it — add-only, durable, resumable, cancellable, through the volume's nor
 walks, and "index the whole drive" stop being separate things with separate failure modes. It makes the later want
 ("watch only specific folders, especially on Linux where inotify watches are scarce") the _default_ shape rather than a
 retrofit. And it makes indexing interruptible without loss, which is what lets us spend the user's CPU politely.
+
+### The two scopes and the two markers
+
+**Read this before anything else below.** The default is home-only (decision 6), so on a normal Mac this index will
+_never_ hold the whole volume. Every existing mechanism that asks "is this index complete?" was written when the only
+two answers were "a full walk finished" and "no full walk finished", and handing it a permanently-partial volume breaks
+it in a different way each time. Four definitions have to stop being one, and they need names that can't be confused
+with each other:
+
+1. **The watched scope** — what this index currently answers for, moment to moment. It is the volume's `WatchScope`. ❌
+   **Not "whatever is in the branch set"**: `start_scan` calls `branches::clear` before a whole-volume walk
+   (`manager/start.rs:441`) and `finish_branch_coverage` uses `AfterWalk::Forget` while `branch_watched` is false
+   (`:275-283`), so a legacy scanned volume is `WatchScope::WholeVolume(<empty set>)` (`scan_completion.rs:164`). Read
+   literally, "the branch set is the scope" would make a legacy volume answer for **nothing**: rescan walks nothing, the
+   sweep walks nothing, and completion fires instantly. **So the accessor branches on the VARIANT**:
+   `WholeVolume ⇒ [volume_root]`, `Branches(set) ⇒ set`. One function — call it `covered_roots(volume_id)` — and every
+   consumer below goes through it. **Test-first**, because getting it wrong is silent and total.
+2. **The promised scope** — what we told the user we'd hold, and therefore what completion measures. `$HOME` plus the
+   priority roots on the boot volume, plus the volume root when the whole-drive toggle is on. It is **persisted
+   alongside its marker**, because it moves: the priority roots come from editable favorites and last session's tabs, so
+   adding a favorite outside home grows the promise. The generic rule is **"the promised scope changed ⇒ un-stamp and
+   re-derive the frontier"**, and the toggle-on case falls out of it instead of being a hand-written special case.
+3. **`promised_scope_covered_at`** (new meta key) — the promised scope is covered. This is what freshness, the
+   media/importance kick, the per-drive badge, the completion UI, and "the phases are done" read.
+4. **`scan_completed_at`** — keeps **today's exact meaning**: a full walk finished and the whole tree has rows. Only the
+   volume-root phase completing stamps it. With the default setting it is never stamped, and that is correct.
+
+**Any volume that isn't the boot volume promises its whole root.** An external disk holds no `$HOME` and usually no
+priority root, so a promised scope of "home plus favorites" would be **empty** — which stamps
+`promised_scope_covered_at` immediately, turns the badge green, and reports `Fresh` over zero rows, on a drive that
+today gets scanned when you enable it. Turning indexing on for a drive IS the request, so its promised scope is its
+root, and `index_whole_drive` governs the boot volume only. ❌ Don't leave this to fall out of the generic rule; state
+it and test it.
+
+**The machine stays resident and idle after the promise is covered.** A folder the user opens gets covered wherever it
+lives (decision 10), and that promise is worth nothing if the machine has exited by the time they open it. So scope
+completion stops the _phases_, ❌ not the machine: it stays subscribed to `open_listings`, and a visit to uncovered
+ground queues a rank-1 walk. A rank-1 walk ❌ never re-opens `promised_scope_covered_at` (it was never promised) and ❌
+never un-`Fresh`es the volume. Without this, "anything you open gets indexed" is true for the first few minutes of the
+app's life and false forever after, which is worse than not promising it at all.
+
+**Why not one marker.** The first draft stamped `scan_completed_at` at scope coverage, which reaches three consumers
+that all mean "the whole tree has rows":
+
+- **`local_rescan_reconciles`** (`lifecycle/manager.rs:193`, literally `entry_count > 1 && prior_scan_completed`) flips
+  to true, so "Rescan now" runs the serial per-directory reconcile with an add-everything delta over the ~70% of `/` we
+  never covered. Its own doc comment says reconcile is right "only when the index is substantially complete", because a
+  4%-complete partial made the app look hung for ~15 minutes. That failure would arrive **by design** instead of by
+  accident.
+- **`should_replay_journal`** (`manager.rs:435-440`) gates whole-volume FSEvents replay on it, and the phased answer
+  sits _below_ that branch. So after the first home completion, every later launch takes whole-volume replay and the
+  phase machine never runs again: **flipping the scope toggle on after a relaunch would silently do nothing.**
+- **`get_status.scan_completed_at`** feeds the per-drive footer and MCP `cmdr://indexing`, whose entire job is answering
+  "can I trust search on this volume?". "Fully scanned" while `/opt` has no rows is exactly the dishonesty this plan
+  refuses everywhere else.
+
+**The rule that falls out: the watched scope is the rescan scope.** Wherever today's code asks "is the whole volume
+complete?" to decide how to re-walk, the phased world asks `covered_roots(volume_id)` and re-walks those. Three places
+consult it — rescan routing (M3.3), sweep routing (the watching section), and completion (M2.8) — and because the
+variant-based accessor answers `["/"]` for a legacy `WholeVolume` volume, none of them changes behavior on an index
+built before this plan.
+
+⚠️ **The branch set's persistence is currently coupled to `branch_watched`**, so if `DriveWatcher::start_branches` fails
+(non-fatal, logged, `manager/start.rs:206-211`) the set silently becomes empty for the rest of the session and persists
+nothing. Under this plan that is the covered scope evaporating. Decouple persisting the set from whether a watcher came
+up, and treat a failed watcher as "covered but unwatched" (the epoch bump already makes that honest).
+
+**A phased volume never journal-replays through `should_replay_journal`**, since its `scan_completed_at` is absent. Its
+covered ground is replayed by `resume_branch_watch` instead, which replays from the volume's last event id and bumps the
+epoch when it can't. ⚠️ Confirm during M3 that the branch resume covers what `start_replay` does for the ledger heal
+(`heal_pending` is threaded into `start_replay`); if it doesn't, the phased answer owes that call itself.
+
+**⚠️ That also loses journal-gap recovery, and the result is a drive that looks permanently stale and never heals.**
+Today a gap wider than the threshold routes to `start_scan("stale index: journal gap too large")`
+(`manager.rs:448-462`). A phased volume never reaches that branch; its resume is `ensure_branch_watch(true)`, which on
+`since_event_id == 0` only sends `BumpCurrentEpoch` (`manager/start.rs:183-191`). After the bump every covered directory
+has `min_subtree_epoch < current_epoch` (so it renders stale / `≥`), the frontier is empty (everything is listed), and
+`promised_scope_covered_at` is stamped — **so nothing re-walks and nothing re-stamps, forever.** The phased answer needs
+its own arm: **a gap too wide ⇒ reconcile the watched scope in place** (the same M3.3 arm), which re-stamps epochs as it
+goes. Come back from a two-week absence and the drive heals instead of showing `≥` on every folder.
 
 ### The stitch: what makes phases compose at all
 
@@ -83,8 +177,8 @@ descent walks _through_ the ancestors and cuts at each genuinely unlisted child,
 
 Reviewed and confirmed against the descent rule and the epoch rollup: a stitched ancestor reads `Listed` (not `Covered`)
 while any child is unlisted, because `repair_dir_stats_upward` recomputes `min_subtree_epoch` as the min over the
-directory's own `listed_epoch` and its children's (`writer/aggregation.rs:285-298`). No coverage is claimed that wasn't
-earned, and sizes stay honest.
+directory's own `listed_epoch` and its children's (`writer/repair.rs:47`, `:98-135` → `store/dir_stats.rs:217-246`). No
+coverage is claimed that wasn't earned, and sizes stay honest.
 
 **Four things the stitch must get right:**
 
@@ -135,10 +229,12 @@ uncovered ground (today the verifier bails because there is no row; post-stitch 
 and it matches the design rule that the walk owns coverage growth. The read it needs already exists
 (`IndexStore::get_listed_epoch_by_id`, used at `read/queries.rs:381`).
 
-**The alternative design is to have the verifier MARK a directory listed when it genuinely read all of it**, turning it
-from a producer of `NotVirgin` nodes into a producer of legitimately covered ones. The two are **mutually exclusive**;
-pick one deliberately rather than drifting into both. The bail is smaller and safer; the mark is more useful (browsed
-folders stop needing a walk at all) and strictly more work to get right.
+**Decided: the bail, ❌ not the mark.** The alternative was to have the verifier MARK a directory listed when it
+genuinely read all of it, turning it from a producer of `NotVirgin` nodes into a producer of legitimately covered ones.
+That is more useful (browsed folders would stop needing a walk at all) and strictly more work to get right, and the two
+are **mutually exclusive** — a verifier that both bails and marks is incoherent. Build the bail. The mark is an M6
+candidate, ❌ never a thing to slip into M2 because it looked like an easy win. (An earlier draft of this plan said
+"bail" here and "mark" in its own risk table; if you find both again, the bail wins.)
 
 **Keep `phase_active: Arc<AtomicBool>` on `IndexManager` as well** (crate-internal, no public-surface cost) for the
 concurrency half of the problem, fed to **four** places:
@@ -158,6 +254,20 @@ concurrency half of the problem, fed to **four** places:
 ❌ **Do not reuse `mgr.scanning` for this.** `cover_context_for` returns `None` while `mgr.scanning` is true
 (`lifecycle/state.rs:251-266`), so the phase machine's own `Index::cover` calls would fail with `ScanInProgress`. Leave
 that gate exactly as it is.
+
+**⚠️ `phase_active` alone does NOT close the two-writer hazard, because a search-driven cover walk sets neither it nor
+`mgr.scanning`.** A coalesced shallow anchor can `TruncateData` under a live search walk today; this plan just makes it
+routine. Gate `start_scan` on **`cover::ground_being_walked(volume_id)` being non-empty as well as `phase_active`**.
+That is a pre-existing bug worth fixing on its own merits, and it makes the guard correct for both walk kinds instead of
+only ours.
+
+**⚠️ `begin_branch_coverage` / `finish_branch_coverage` silently no-op unless the manager is `Running`.** Both go
+through `with_running_manager` (`lifecycle/state.rs:275-294`), and both `force_scan` and `perform_registry_rescan`
+`mem::replace` the phase with `ShuttingDown` for the whole duration of `start_scan` (`state/scan_control.rs:82-94`,
+`manager.rs:252-274`). A cover walk that _ends_ inside that window never decrements `walks`, so its branch stays
+`walks > 0` **forever**: `may_walk` is false for that ground permanently, every event for it buffers and is never
+promoted, and it is never absorbed. Latent today because walks are rare; routine under this plan. Fix by making finish
+idempotent and independent of the registry phase, ❌ not by hoping the window is short. Test it.
 
 Checked and clear: `get_writer_and_scanning_for`'s bool reaches only the MTP and SMB watch layers, which stay below the
 `is_trait_scanned` early return, and `freshness_bridge.rs:113` ignores it.
@@ -181,17 +291,34 @@ and the master-off teardown). Say that plainly, or an implementer will build som
 Note the coupling: if completion never fires, the marker never clears and the per-drive enable button stays a silent
 no-op forever, which is a second reason the completion rule has to actually terminate.
 
+**⚠️ But the enable-button door must NOT be keyed on that marker alone.** Stop the phases from the badge menu before the
+promise is covered, and neither the marker nor `promised_scope_covered_at` holds — so `awaits_its_first_scan` answers
+"never walked", `start_volume` force-scans, and everything the phases built is truncated. **Key the door on "this volume
+has covered ground": `covered_roots(volume_id)` is non-empty.** That is true after the first walk, stays true across a
+user stop and a relaunch, and is false on the search-walked drive the predicate was written to serve only if no walk
+ever ran, which is exactly right.
+
+**And a second marker is needed, distinct from this one: a durable "this index was built by the phases" stamp**, set at
+the first stitch and **never cleared**. M3.6 truncates a legacy partial and preserves a phased partial, and both shapes
+have rows and no `scan_completed_at`, so without a format stamp a cleanly stopped phased index looks legacy and gets
+truncated on every launch. ❌ Don't reuse the in-progress marker for this; one says "running", the other says "built
+this way".
+
 ### Interleaving without preemption
 
 Because the stitch turns `$HOME` and `/` into a list of independent frontier roots, the machine walks them **one root at
-a time and checks the priority queue between roots**. A folder the user opens waits for one subtree, not for the drive.
+a time and checks the priority queue between roots** — one `cover()` call per root. A folder the user opens waits for
+one subtree, not for the drive. **This is the mechanism; there is no second candidate.**
 
-Cheaper variant worth measuring first: `cover()` already checks its cancel token **between** frontier roots
-(`lifecycle/cover.rs:326-330`), so a single `cover()` over a phase's whole frontier is already interruptible at each
-root boundary, without paying `finish_branch_coverage`'s persisted meta write per root.
+❌ Don't "save the per-root meta write" by handing one `cover()` call a phase's whole frontier. It looks cheaper (a
+single `cover()` already checks its cancel token between frontier roots, `lifecycle/cover.rs:326-330`), but that check
+is _inside_ `cover`, so the machine gets no point at which to consult the priority queue. It buys a persisted write per
+root and gives up the one property the plan exists for. If the benchmark shows `finish_branch_coverage`'s write is
+material, batch roots into small groups — ❌ never into one.
 
-Preemption (cancel the running walk, run the visited root, resume) stays available as a fallback, but it is not the
-primary mechanism, because it is expensive and subtle:
+Preemption (cancel the running walk, run the visited root, resume) is **out of scope**. It is expensive and subtle, and
+one-root-at-a-time already bounds the wait. If a real measurement later says a single big root starves the queue, these
+are the traps to reopen it with:
 
 - the `Claim` is released by the walk thread on exit (`lifecycle/cover/live.rs:104-117`), so cancel-then-immediately-
   start makes the new walk defer the same ground and cover **nothing** while reporting `roots_covered: 0`. The machine
@@ -200,11 +327,29 @@ primary mechanism, because it is expensive and subtle:
 - cancel latency is a watchdog tick plus up to `LOCAL_LIST_TIMEOUT` (15 s) on a parked read, so any debounce must be at
   least the join, not the 1 s the UI uses.
 
+The join rule is **not** optional even without preemption: the machine starts a walk only after the previous
+`CoverWalk::finish()` returns, and treats a non-empty `covered_by_another_walk()` as "this root did not run".
+
+**Two honest caveats on "one walk at a time" and "waits for one subtree, not for the drive".**
+
+- **Search walks are not ours to serialize.** Live search calls `Index::cover` on the user's behalf
+  (`search/execute/live_run.rs`), deliberately carved out of both indexing switches, and only _overlapping_ ground is
+  deferred by the `Claim` (`cover/live.rs:62-91`). Disjoint ground runs a second parallel walker against the same disk
+  and writer. That is correct — a search somebody typed outranks background phasing — but the plan may not claim a
+  single-walker invariant. Two consequences: the machine must tolerate a concurrent walk (it already must, via
+  `covered_by_another_walk()`), and the benchmark's browsing arm must include a search.
+- **A frontier root can be huge.** The wait is bounded by the largest child of the phase root, not by a small subtree;
+  `~/Library` or the 1.14M-file Google Drive temp dir is one root. State the bound honestly rather than promising
+  seconds.
+
 ### What a full scan does that cover walks don't (and what we owe each one)
 
 Audited end to end against `manager/start.rs::start_scan` + `lifecycle/scan_completion.rs`:
 
-- **`scan_completed_at`** — the phase machine stamps it at full coverage (below).
+- **`scan_completed_at`** — the phase machine stamps it only when the **volume root** is fully covered, which with the
+  default setting never happens. `promised_scope_covered_at` is the marker that fires at the end of the normal first
+  run. See "The covered scope" above; getting these two the wrong way round is the single most damaging mistake
+  available here.
 - **Scan calibration meta** (`scan_duration_ms`, `total_entries`, `total_physical_bytes`, per walk kind) — nothing
   writes them, so the ETA tier degrades permanently. The phase machine must write the equivalent from its own totals.
 - **`ScanCalibration` capture and the live counters.** `scan_calibration` is set only in `start_scan`, and `get_status`
@@ -224,15 +369,31 @@ Audited end to end against `manager/start.rs::start_scan` + `lifecycle/scan_comp
 - **`RootUnlistable` detection** is volume-root-scan only, so a cover walk over a vanished drive reports "covered
   nothing" instead of the typed abort that clears the stuck UI row. Handle it in the phase machine.
 
-Already handled, do not re-solve: the ROOT sentinel and epoch seeding, `volume_path` meta, and the exclusion-policy
-stamp all happen in `prepare_database_for_a_walk` (`state/walk_database.rs:99-121`). **State the stamp explicitly in the
-code comments**: a stale or absent `EXCLUSION_POLICY_KEY` sends every scope to the walk wholesale
-(`read/coverage.rs:314-317`), which would silently destroy convergence. `SYSTEM_DIR_EXCLUDES` and the exclusion policy
-apply identically to every walk. One real behavioral difference: `ScanRoot::Virgin` pins the walk root's **device**
-while `ScanRoot::Volume` bounds by path prefix, so the `/` phase cuts at mounted filesystems rather than at `/Volumes/`.
-A device cut writes no row, so it can't leave a permanent frontier node, and firmlinked system paths share one device
-(`/`, `/System/Volumes/Data`, `/Users`, `/Applications` all report dev=16777231; verified on macOS 25.5 via
-`stat -f %d`, 2026-08-13). Acceptable, but it means the `/` phase indexes a slightly different set than today's scan.
+**⚠️ NOT already handled, and this one is fatal on its own: the database is never prepared for a walk.**
+`prepare_database_for_a_walk` — the ROOT sentinel, epoch seeding, `volume_path` meta, and the `EXCLUSION_POLICY_KEY`
+stamp (`state/walk_database.rs:99-121`) — runs **only** when `activation == Activation::WriterOnly`
+(`state/startup.rs:165-167`), and this plan mandates `IndexTheVolume`. The only other writer of the stamp for a local
+volume is `start_scan`'s non-reconcile branch (`manager/start.rs:429-430`), which the phase machine never calls.
+
+An absent stamp makes `index_predates_exclusion_policy` answer **true** (`scanner/exclusions.rs:350-353`, "an absent
+stamp answers yes"), and `walk_coverage` then short-circuits every query to `Frontier` over the whole scope
+(`read/coverage.rs:314-317`). On a fresh phased install that means: the frontier never shrinks, so nothing ever
+converges, `promised_scope_covered_at` never fires, and after the first walk every root is non-virgin and takes the
+serial `repair_non_virgin`. It reproduces, exactly, the failure the stitch exists to prevent — and it would look like
+the stitch not working. `volume_path` meta going unwritten also breaks offline external reads.
+
+**So the phased start owes `prepare_database_for_a_walk`'s work itself.** Two constraints: the stamp is legal only on a
+provably empty DB or right after a `TruncateData` (`exclusion_policy_stamp_message`'s own rule), which is satisfied by
+the M3.6 upgrade truncate and by a first run; and `SYSTEM_DIR_EXCLUDES` plus the exclusion policy apply identically to
+every walk. **Pin it with a test that a fresh phased volume's frontier actually shrinks after one walk** — without it,
+every other test in M2 can pass while the product never converges.
+
+One real behavioral difference between the walk kinds: `ScanRoot::Virgin` pins the walk root's **device** while
+`ScanRoot::Volume` bounds by path prefix, so the `/` phase cuts at mounted filesystems rather than at `/Volumes/`. A
+device cut writes no row, so it can't leave a permanent frontier node, and firmlinked system paths share one device
+(`/`, `/System/Volumes/Data`, `/Users`, `/Applications`, `/System` all report dev=16777231; verified on macOS 26.5.2
+build 25F84 via `stat -f %d`, 2026-08-14). Acceptable, but it means the `/` phase indexes a slightly different set than
+today's scan.
 
 ### Activation: keep `IndexTheVolume`
 
@@ -280,27 +441,45 @@ On macOS `DriveWatcher::start_branches` already watches the **volume root** and 
 (`watch/watcher.rs:204-211`) — which is exactly the "watch `/`, keep only what we care about" model. On Linux it watches
 each branch, deliberately: `notify`'s recursive mode costs one inotify watch per directory against `max_user_watches`.
 
-So a fully covered volume can simply keep `WatchScope::Branches` with `/` as its single branch, and the
-branch→whole-volume handover never has to be written. On Linux a `/` branch is watched recursively, which is the same
-cost as whole-volume watching. **Prefer this**, with one required change and one bonus:
+So a volume that covers everything it promised can simply keep `WatchScope::Branches`, and the branch→whole-volume
+handover never has to be written. On Linux a `/` branch is watched recursively, which is the same cost as whole-volume
+watching. **Prefer this**, with one required change and one bonus:
 
-- **Required: teach `is_branch_confined()` to ask the real question.** A `Branches` scope never takes the
-  visible-scanner route for a `MustScanSubDirs` anchor, whatever its depth (`reconcile/reconciler.rs:369-374`,
-  `:517-527`). Keeping `Branches` forever therefore means a fully covered boot disk **never sweeps again**: every
-  coalesced root-scale anchor (macOS saying "a lot changed under here" and losing the detail) goes to the throttled
+- **Required: the sweep has to become scope-aware, because with the default setting the branch set is never `["/"]`.** A
+  `Branches` scope never takes the visible-scanner route for a `MustScanSubDirs` anchor, whatever its depth
+  (`reconcile/reconciler.rs:369-374`, `:517-527`). So a branch-confined volume **never sweeps again**: every coalesced
+  root-scale anchor (macOS saying "a lot changed under here" and losing the detail) goes to the throttled
   `reconcile_subtree` drain on a shallow anchor, which is exactly the "holds the per-dir hourglass for the better part
-  of a full scan" case the depth split exists to avoid, and the sweep-window bookkeeping accumulates with no sweep. One
-  line fixes it: `is_branch_confined()` is false when the branch set covers the volume root — precisely
-  `WatchScope::branches().covers(volume_root)` (`branches.rs:481-485`; `contains` matches `path == self.path`, so a `/`
-  branch satisfies it, and the reconciler already holds `self.space` for the root string). That restores the shallow
-  sweep at exactly the moment the volume genuinely answers for everything. **It does not reopen the truncate door, but
-  only because `scan_completed_at` is stamped by then** (which flips `local_rescan_reconciles` to true, so a shallow
-  anchor reconciles in place instead of truncating) — which is why the completion ORDER below is load-bearing.
+  of a full scan" case the depth split exists to avoid, and the sweep-window bookkeeping accumulates with no sweep.
+
+  ⚠️ **The obvious one-liner is wrong under the default setting.** Making `is_branch_confined()` false when the branch
+  set covers the volume root (`WatchScope::branches().covers(volume_root)`, `branches.rs:481-485`) only fires on a
+  volume that covered all of `/`, which by default never happens. It would leave the sweep permanently dead on exactly
+  the configuration every user runs.
+
+  **The fix is the scope rule: the visible-scanner (sweep) route walks the covered scope, not the volume.** A
+  shallow/root-scale anchor takes the visible-scanner route as it does today; what changes is where that route lands.
+  Today it is `route_shallow_to_scanner` → `perform_registry_rescan` → a whole-volume `start_scan`
+  (`reconciler/rescan.rs:119-128`). It becomes **the same branch-anchored rescan arm M3.3 defines** — one
+  implementation, not two, and `/` for a legacy `WholeVolume` volume, so its behavior is byte-identical.
+  `is_branch_confined()` then stops being a routing question at all and the special case disappears. Two things this
+  must not lose: the sweep may only run once `promised_scope_covered_at` is stamped (a sweep over a scope still being
+  covered fights the phase machine), and it must **reconcile in place**, ❌ never truncate.
+
+  The sweep window's seed, `max(shallow_sweep_at, scan_completed_at)` (`manager.rs:409-419`), loses its second term on a
+  default install. That is why M2.8 step 5 writes `SHALLOW_SWEEP_AT_KEY` at scope completion: without it the window
+  reads permanently expired and every launch hands the next shallow anchor a free sweep.
+
+  _Fallback if scoping the sweep route turns out to be genuinely hard_: leave `is_branch_confined()` alone and accept no
+  sweep under `Branches`, but then the shallow bookkeeping (`SHALLOW_SWEEP_AT_KEY`, `SHALLOW_COALESCED_KEY`) must stop
+  accumulating, or the counters grow forever against a sweep that can't happen. Say which one you built.
+
 - **Bonus, while the volume IS branch-confined**: truncate door (d) in M3 is closed by construction, and so is a door
   the stitch would otherwise open — the stitch creates depth-1 and depth-2 branches, and `SHALLOW_RESCAN_MAX_DEPTH = 2`
   would send those to `perform_registry_rescan` → a truncating `start_scan` if the scope were `WholeVolume`.
-- Verified for the single-`/`-branch shape: `may_walk` (`covers("/")` is true), `admit` (a `/` branch is
-  `deepest_containing` for every path ⇒ `Process`), and the re-anchoring arm is unreachable with nothing above `/`.
+- Verified for the single-`/`-branch shape (the toggle-on end state): `may_walk` (`covers("/")` is true), `admit` (a `/`
+  branch is `deepest_containing` for every path ⇒ `Process`), and the re-anchoring arm is unreachable with nothing above
+  `/`.
 
 If a handover is written anyway, its traps are: start from `replayable_event_id()` / `BranchWatch::safe_event_id()`,
 never 0, or the gap is lost; and `WatchScope` is captured by value into the reconciler and `LiveConfig`, so swapping it
@@ -316,24 +495,30 @@ watches against `max_user_watches`, and a user who turned indexing off has asked
 `~/A` should stop `~/A/B` and `~/A/C` being tracked separately. Today `finish_covering` only removes the path being
 finished when an ancestor already exists, so siblings accumulate and nothing ever collapses downward. Make absorption a
 property of the set itself (on insert, drop every strict descendant; leave any entry with `walks > 0` alone until it
-finishes), which is the general rule that the full-coverage collapse to `["/"]` then falls out of as a special case.
+finishes). Every collapse below is then just this one rule firing, with no special case for full coverage.
 
 **The branch set needs an explicit collapse.** `begin_covering` pushes one `Branch` per path, so N frontier roots means
 N branches (this is inherent to the stitch, not to interleaving: it's the same count whether one `cover()` takes N roots
 or N calls take one each). Every event then pays an O(branches) scan in `deepest_containing` on the live hot path, and
 `finish_covering` only absorbs the path being finished into an existing ancestor branch — siblings never absorb each
 other, so the set never collapses on its own. Expect roughly 50–150 entries during the phases (children of `/`, of
-`$HOME`, and the priority roots). At full coverage, replace the set with `["/"]` — but ❌ **not via `branches::clear`
-plus a begin/finish pair.** `clear` calls `forget`, which drops the map entry, while the live loop and its reconciler
-each hold their own `Arc<BranchWatch>` captured at `ensure_branch_watch`; `live_for` would then mint a **brand-new**
-`BranchWatch` that nothing is reading. The persisted meta would say `["/"]` while the running loop kept filtering
-against the stale N-entry set for the rest of the session — and the `is_branch_confined` test above would read that same
-stale Arc and stay true, leaving the shallow sweep disabled until the next launch. Silent, and hard to notice. (The
+`$HOME`, and the priority roots).
+
+**Collapse at the end of each phase, to that phase's root** — that is the general rule, and it works whatever the scope
+setting is. When the home phase finishes, everything under `$HOME` absorbs into a single `$HOME` branch; the steady
+state on a default install is `$HOME` plus any outside-home priority or visited roots, so well under 30 entries on the
+`deepest_containing` hot path. ❌ Don't make the collapse conditional on full-volume coverage: with the default setting
+that moment never comes, and the set would stay at 50–150 forever. The `["/"]` end state is then just what the same rule
+produces when the volume-root phase finishes with the toggle on — but ❌ **not via `branches::clear` plus a begin/finish
+pair.** `clear` calls `forget`, which drops the map entry, while the live loop and its reconciler each hold their own
+`Arc<BranchWatch>` captured at `ensure_branch_watch`; `live_for` would then mint a **brand-new** `BranchWatch` that
+nothing is reading. The persisted meta would say the collapsed set while the running loop kept filtering against the
+stale N-entry set for the rest of the session — and every scope question above (sweep routing, rescan anchoring) would
+read that same stale Arc and answer for the wrong ground until the next launch. Silent, and hard to notice. (The
 existing `clear` call in `start_scan` is safe only because the loop is torn down and replaced in the same breath.)
-Instead add a crate-internal `collapse_to(root)` that mutates the **shared** `BranchWatch` in place — replace
-`state.branches` with a single root `Branch`, leave any `walks > 0` entry alone, then `persist()`. During the phases,
-either accept the N-entry set or collapse a phase's children into its root on completion; measure `deepest_containing`
-under a churn burst before deciding.
+Instead add a crate-internal `collapse_to(root)` that mutates the **shared** `BranchWatch` in place — replace the
+covered descendants with a single `Branch` at `root`, leave any `walks > 0` entry alone, then `persist()`. Measure
+`deepest_containing` under a churn burst to confirm the mid-phase set is not itself a problem.
 
 ### Freshness, and the two subsystems that depend on it
 
@@ -347,11 +532,14 @@ fires). If nothing fires until the final `/` phase ends, **photo search and impo
 phased period, and forever on a machine that never finishes `/`.**
 
 **Decision: `Fresh` means "fully covered for the scope the user chose", so it stays honest without stalling.**
-Concretely: with `index_outside_home` **off** (the default), the volume goes `Fresh` when `$HOME` is fully covered; with
-it **on**, only when the whole drive is. Freshness then never claims more than the user asked us to hold, the badge is
-truthful in both modes, and on the default setting importance and photo search come alive minutes into the first run
-rather than never. Full coverage of the chosen scope is also what stamps `scan_completed_at`, so completion and
-freshness stay one concept rather than two.
+Concretely: with the whole-drive toggle **off** (the default), the volume goes `Fresh` when the promised scope (`$HOME`
+plus the priority roots) is fully covered; with it **on**, only when the whole drive is. Freshness then never claims
+more than the user asked us to hold, the badge is truthful in both modes, and on the default setting importance and
+photo search come alive minutes into the first run rather than never.
+
+Freshness fires off **`promised_scope_covered_at`**, ❌ never `scan_completed_at` — see "The covered scope". Scope
+completion and whole-volume completion are one concept only on a toggle-on machine that finished; everywhere else they
+must stay apart.
 
 Audited, and it is safe: **search never reads freshness at all** (it goes through `coverage()` / `cover()`, so it is
 coverage-gated by construction); `Index::is_fresh` has exactly one app caller
@@ -360,20 +548,23 @@ coverage-gated by construction); `Index::is_fresh` has exactly one app caller
 this plan now leans on it**; and the `ready_volumes_with_kind` consumers work over whatever the index holds, with the
 later full-coverage `ScanCompleted` retriggering a full recompute.
 
-Two consequences of that decision:
+Three consequences of that decision:
 
 - **With the toggle ON, the drive stays un-`Fresh` for a long time**, and importance plus photo search wait it out. That
   is the user having asked for the bigger job; the badge and the copy should say so.
 - **With the toggle OFF (the default), the media index starts when home completes**, which is the right moment: the
   walker is finished with everything the user asked for, so OCR / Vision / CLIP enrichment is not competing with it.
   This is what makes the scope decision and the freshness decision one decision rather than two.
-- `enqueue_initial_full_pass_if_unscored` only scores a volume whose importance store has no generation yet, so a later
-  launch mid-coverage re-scores nothing. Under this decision that window is small (home completes early), but say it
-  rather than discover it.
 - `enqueue_initial_full_pass_if_unscored` only scores a volume whose importance store has no generation yet. Once the
   early pass stamps one, a later launch with coverage still incomplete re-scores nothing and no `ScanCompleted` fires
-  until full coverage, so the importance ranking sits frozen at the priority-phase snapshot across launches (softened,
-  not fixed, by the incremental `record_visit` / `publish_dirs_changed` paths).
+  until scope coverage, so the importance ranking sits frozen at the priority-phase snapshot across launches (softened,
+  not fixed, by the incremental `record_visit` / `publish_dirs_changed` paths). On the default setting that window is
+  small, because scope coverage arrives when home completes.
+
+**Flipping the toggle ON un-`Fresh`es a volume that was `Fresh`**, because the promised scope just grew. That is correct
+and it must be explicit: the badge goes back to incomplete, and photo search plus importance keep serving what they
+already computed (they work over whatever the index holds) rather than being torn down. ❌ Don't clear the media index
+or the importance generation on a scope change; the later `ScanCompleted` retriggers a full recompute.
 
 ## What already exists (do not rebuild it)
 
@@ -404,12 +595,24 @@ and where the user is looking right now. `indexing/host/` is the established hom
 never a new `crate::<app module>` import", and "vocabulary moves down; questions become seams" (`host/CLAUDE.md`). So
 none of this arrives as an argument bolted onto a launch call:
 
-1. **Scope** (the "Index stuff outside my home folder" toggle) is a field on `IndexConfig` — `index_outside_home: bool`,
-   applied through the existing `set_config`, exactly as the media policy is. It is a stored setting, which is what that
-   struct is for, and it re-applies **live** when the user flips it: turning it on adds frontier (coverage is add-only),
-   turning it off simply stops maintaining rows we already hold. A plain `bool` rather than a `DriveScope` enum because
-   a new public type would breach the ceilings below; if it ever grows a third value, that is the moment to argue for
-   the enum.
+1. **Scope** (the whole-drive toggle) is a field on `IndexConfig` — `index_whole_drive: bool`, applied through the
+   existing `set_config`, exactly as the media policy is. It is a stored setting, which is what that struct is for, and
+   it re-applies **live** when the user flips it: turning it on adds frontier (coverage is add-only) and un-`Fresh`es
+   the volume, turning it off simply stops maintaining rows we already hold. A plain `bool` rather than a `DriveScope`
+   enum because a new public type would breach the ceilings below; if it ever grows a third value, that is the moment to
+   argue for the enum.
+
+   **What the toggle governs is BACKGROUND coverage of ground nobody asked for, ❌ not "never index outside home".** A
+   folder the user actually opens gets indexed either way (rank 1, below): opening a folder is the strongest possible
+   statement that they want it, and a file manager whose size column stays `<dir>` in a folder you are standing in reads
+   as broken, not as respectful. So the setting's name must not promise otherwise — hence `index_whole_drive`, ❌ not
+   `index_outside_home`. Draft copy in M5.0.
+
+   **Visited roots don't gate scope completion.** The promised scope is `$HOME` plus the priority roots (plus the volume
+   root when the toggle is on); a root the user wandered into is covered opportunistically and added to the branch set,
+   but it never holds `promised_scope_covered_at` open. Otherwise a user who opens `/usr` during the first run defers
+   freshness, photo search, and importance indefinitely.
+
 2. **Priority roots** are a method on the existing `HostPolicy` trait (`host/policy.rs`), beside the other "what has the
    user's attention" question. Asked when the machine needs them, so an edited favorites list or a new session's tabs
    are picked up without a restart, instead of being frozen at launch.
@@ -427,9 +630,15 @@ exposes — measured 2026-08-13, `50 root promises, 40 handle methods, 17 public
 `50 / 40 / 17 / 156`, zero headroom in all four buckets, and a raise needs David's explicit say-so. `countModuleItems`
 matches column-0 `pub struct/enum/fn/const/type` and `pub use` leaves (`index-crate-isolation.go:506-539`), so **struct
 fields, trait methods, and enum variants are all free** — which is why the shape above costs nothing. ❌ A new payload
-TYPE on an event, a new `pub fn` on a public type, or a `DriveScope` enum would each breach immediately. New
-`IndexEvent` variants and `UnreadableCause::Abandoned` need doc comments (`#![deny(missing_docs)]`) and a regenerated
-`bindings.ts`.
+TYPE on an event or a new `pub fn` on a public type would each breach immediately. New `IndexEvent` variants need doc
+comments (`#![deny(missing_docs)]`) and a regenerated `bindings.ts`; `UnreadableCause` isn't re-exported from `lib.rs`
+and doesn't cross the bindings, so `Abandoned` needs the doc comment only.
+
+⚠️ **Re-measure before accepting "an enum is impossible".** `pub mod indexing` is private with
+`pub use indexing::{host, store}`, so the walker may not descend into `host/`, which would make an enum in
+`host/config.rs` free — and `MediaConfig` already carries an `IndexScope` enum as precedent. The measurement is one
+command (`pnpm check index-isolation -v`), so settle it by adding the enum and running it, ❌ not by argument. The
+`bool` is fine for two values; it will read badly the day per-folder scopes land (already M6.2).
 
 ## Milestone map
 
@@ -478,8 +687,12 @@ a short TTL rather than stat-ing a dozen paths per call.
    and though the guarded walker survives that, a stall should not delay `~/Downloads`.
 5. **`$HOME` itself**, last.
 
-Then the machine appends the volume root as the final phase, **only when `index_outside_home` is on** (see the scope
+Then the machine appends the volume root as the final phase, **only when `index_whole_drive` is on** (see the scope
 decision below).
+
+These five plus the volume root are the **promised scope**. Roots the user visits while the machine runs are covered too
+(rank 1 in M2.3), but they are not part of it: they never hold `promised_scope_covered_at` open, and they are not
+recomputed here.
 
 **`~/Library` is in scope but never a priority root.** It is inside home, so home coverage includes it, and search over
 it is occasionally what a user wants. It is also where the pathological churn lives (the 1.14M-empty-file Google Drive
@@ -517,7 +730,32 @@ Measure on a real `/`: (a) today's truncate-and-bulk-build full scan, and (b) st
 measures a virgin `/` walk that the product would never actually run. Venue: `crates/index-query` or an in-crate
 `#[cfg(test)]` bench — ❌ not `crates/cmdr-index/benches/`, which compiles against the crate as EXTERNAL and can only
 reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-<date>.md`, link it from the lifecycle
-`DETAILS.md`. **If (b) is more than roughly 1.5× (a) to full coverage, stop and re-decide with David.**
+`DETAILS.md`.
+
+**Record time-to-value, not only time-to-full — the gate is meaningless without it.** Full coverage is the cost side of
+this trade; the benefit is that `~/Downloads` is usable in seconds. A benchmark that reports only wall clock to full
+coverage could pass at 1.4× having never measured the thing the plan is for, or fail at 1.6× while hiding a 4-minutes-
+to-3-seconds win nobody would give up. So capture, per arm:
+
+- **a coverage timestamp per priority root**, and for `$HOME` (arm (a) reaches all of them only at the end, which is the
+  point);
+- **wall clock to full coverage, and peak RSS**;
+- **a third arm: (b) under browsing**, driving `open_listings` through a handful of folders mid-run. Interleaving is the
+  mechanism, and its cost is invisible in a quiet benchmark. This is also where the M1 high-churn risk shows up.
+
+Also measure **`~/Library`'s share of home-coverage wall clock**. It sits inside the default promised scope, it holds
+DerivedData, container images, and the 1.14M-file Google Drive temp directory (risk 8), and `promised_scope_covered_at`
+— which gates photo search, importance, the green badge, and `PayLedgerIfUnpaid` — waits for all of it. If it dominates,
+the answer is to drop `~/Library` out of the promised scope (still reachable by rank-1 visits and by search walks), ❌
+not to weaken the completion rule.
+
+**Gate: if (b) is more than roughly 1.5× (a) to full coverage, stop and re-decide with David** — with the
+time-to-first-root numbers in hand, because they are what the decision is actually about.
+
+**The gate runs on a throwaway harness, ❌ not on M2's deliverable.** Arm (b) needs only the stitch, a hardcoded root
+list, and a loop: no queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise the milestone is
+gated on itself, and "M1 can run alongside M2's benchmark" is false because the benchmark would need M1's roots. Keep
+the harness disposable and say so, so nobody grows it into the machine.
 
 ### The machine
 
@@ -530,31 +768,52 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
 3. **The queue**: rank 0 the M1 roots, rank 1 roots the user visited while running, rank 2 `$HOME`, rank 3 the volume
    root. One walk at a time (`cover` is already internally parallel; a second concurrent walk fights it for the disk and
    the writer). Between frontier roots, re-check the queue — that is what makes interleaving cheap.
+
+   **Rank 1 is NOT gated by `index_whole_drive`.** A folder the user opened gets covered wherever it lives; the toggle
+   governs background coverage of ground nobody asked for. Rank 3 is the only rank the toggle gates. Ranks 0, 2, and 3
+   are the promised scope that `promised_scope_covered_at` answers for; rank 1 is covered opportunistically and ❌ never
+   holds completion open (M1, "Where the app's answers enter the crate").
+
 4. **Each phase step**: `coverage(volume_id, root, Listing)` for the frontier; empty ⇒ skip; otherwise walk its roots
    one at a time. The walk marks, aggregates, and claims its own ground.
-5. **Visits enter through `HostPolicy::open_listings()`**, polled between frontier roots, with a small recently-seen set
-   so a folder the user opened and left is still queued. ❌ Not through `Index::verify_directory` (too loose: the
-   opposite pane, MCP listings, and refreshes all fire it) and ❌ not by widening any handle method. Respect the seam's
-   own rule: `open_listings` allocates and is documented as tick-rate, ❌ never per-entry — between frontier roots is
-   well within that.
-6. **Preemption is the fallback, not the mechanism** — with the join-before-restart and debounce rules above.
+5. **Visits enter through `HostPolicy::open_listings()`**, with a small recently-seen set so a folder the user opened
+   and left is still queued. ❌ Not through `Index::verify_directory` (too loose: the opposite pane, MCP listings, and
+   refreshes all fire it) and ❌ not by widening any handle method.
+
+   **Rate-limit the poll to ≥500 ms, independent of root boundaries.** The seam's contract is explicit: it allocates and
+   "it's asked on the scan-progress reporter's 500 ms tick. ❌ Not from anything faster" (`host/policy.rs:93-100`).
+   "Between frontier roots" is not automatically within that — the stitch deliberately produces 50–150 roots and many
+   finish in milliseconds. Poll on a timer, consult the cached answer at root boundaries.
+
+6. **One root, one `cover()` call, join before the next.** Preemption is out of scope (see "Interleaving without
+   preemption"); the join rule still applies.
 7. **Completion is derived, not remembered — but "empty frontier" alone is not a terminating rule.** `abandoned_ground`
    is per-walk and in-memory, so it can't answer "was anything abandoned in a previous session?"; the durable signal is
    that an abandoned directory is never marked listed, so it re-enters the frontier.
 
+   **Two completions, same rule, different scope.** `promised_scope_covered_at` when the frontier of the **promised
+   scope** is empty (the union of the M1 roots and `$HOME`, plus the volume root when the toggle is on);
+   `scan_completed_at` when the frontier of the **volume root** is empty. On a default install the second never fires,
+   and no step below may assume it does. Evaluate both after every root finishes, ❌ not only at the end of a phase:
+   with the toggle off, the last root of the home phase is the moment the product has been waiting for.
+
    **The trap**: a directory the walker timed out on gets **no `unreadable_cause`** — deliberately, "since mounts heal"
    (only denied ids carry a marker, `scanner/mod.rs:881`). So it stays `Frontier` forever, "the frontier is empty except
    for `permission_denied` / `declined`" can never become true, and _everything_ hanging off completion never happens:
-   the stamp, `PayLedgerIfUnpaid`, the sweep keys, the branch collapse, the media kick, `is_branch_confined` flipping.
-   Every launch re-walks it, times out again at 15 s a directory, and stalls in the same place.
+   the stamps, `PayLedgerIfUnpaid`, the sweep keys, the branch collapse, the media kick, freshness. Every launch
+   re-walks it, times out again at 15 s a directory, and stalls in the same place. One wedged directory anywhere under
+   `$HOME` is enough to kill the whole first-run payoff, so this rule is load-bearing on the default setting, not an
+   edge case for exotic drives.
 
    **The fix is a third `UnreadableCause`, not a pass counter.** Give the walk `UnreadableCause::Abandoned` for a
    directory it gave up on, and completion goes back to being a pure function of the database — "frontier empty, only
    unreadable causes left" — durable across relaunch, immune to churn, with no in-session bookkeeping. The machinery
    already fits:
    - `UnreadableCause` is `Denied = 1` / `Declined = 2` and `from_stored` falls back to `Denied` for anything unknown
-     (`store/errors.rs:19-49`), so `Abandoned = 3` is additive and an older build reading a newer DB degrades
-     truthfully. The index is a disposable cache, so no migration.
+     (`store/errors.rs:19-49`), so `Abandoned = 3` is additive and an older build reading a newer DB degrades without
+     crashing. ⚠️ It degrades to "permission denied", so a downgraded build would tell the user to grant Full Disk
+     Access for a timed-out mount. Acceptable for a disposable cache (no migration), worth knowing before someone calls
+     it truthful.
    - `MarkDirsUnreadable { ids, cause }` already exists, and **`MarkDirsListed` clears the cause**
      (`writer/mod.rs:332-342`), so it self-heals on the next successful listing with no rebuild — the same contract
      `Denied` already relies on.
@@ -562,11 +821,25 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
      error** at exactly the place that must grow a bucket. The decision can't be silently skipped.
    - Free under the surface ceilings: neither a new enum variant nor a new `CoverageMap` field is counted.
 
+   **⚠️ The timeout is only half of it. The consecutive-failure budget prunes queued siblings UNREAD**, and a pruned
+   task never reaches the visitor, so it gets no id, no mark, and stays `Frontier` forever: `run_worker`'s pre-read
+   check is `if scheduled.budget.is_given_up() { self.complete_one(); continue; }` (`scanner/walker/engine.rs:341-347`).
+   That is precisely the dead-mount case the rule exists for, so completion would still never fire. **Mark the pruned
+   tasks `Abandoned` too** — the id is on `scheduled.task` — or the rule is incomplete in exactly its motivating
+   scenario. The watchdog-timeout half does reach `visit_read_error(.., TimedOut)` with the id in hand
+   (`scanner/insert_visitor.rs:405-427`), so that half is straightforward.
+
    **The tradeoff, stated rather than hidden:** marking a timeout `Abandoned` takes it out of the frontier, so nothing
    re-attempts it, and with the verifier now bailing on `listed_epoch == 0` its heal path is narrower than `Denied`'s.
-   For an external disk that was merely spinning up, that is pessimistic. Refinement: treat `Abandoned` — ❌ not
-   `Denied` or `Declined` — as frontier-eligible again in a **new session**. One attempt per launch, terminates within a
-   session, heals across launches.
+   For an external disk that was merely spinning up, that is pessimistic.
+
+   **How it heals, decided rather than left as two half-rules.** ❌ Not "frontier-eligible again in a new session": that
+   is the same 15 s per wedged directory per launch the pass-counter rule was rejected for, and it would put process
+   state inside `walk_coverage`, a pure DB descent that live search shares — so coverage answers would become
+   session-dependent. Instead: **`Abandoned` rows are retried by an explicit, bounded re-attempt** — a launch-time write
+   that clears the `Abandoned` cause on a bounded number of rows (leaving `Denied` / `Declined` alone), plus the same
+   clear on the maintenance timer and on a user visit to that folder. Coverage stays a pure function of the database,
+   the retry is a write like every other heal, and a long-running app (which this is) heals without a relaunch.
 
    ❌ **Don't use a "frontier didn't shrink across two passes" rule instead.** It has to compare sets rather than counts
    (a pass can legitimately grow the frontier by listing a root and exposing the abandoned directories inside it), it
@@ -576,29 +849,48 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
    ⚠️ This is still the newest part of the plan. Keep the test
    `a_permanently_timing_out_directory_still_lets_completion_happen`, and nail the details down in M2.
 
-8. **On completion, in this ORDER — and the order is enforced by a FLUSH, not by the numbering.** Steps 1–6 are writer
-   _messages_; step 7 is in-process state. The read the whole ordering protects (`local_rescan_reconciles`'s
-   `get_index_status()` inside `start_scan`) goes through a read connection, so it sees the stamp only once the writer
-   has committed it — and step 3 runs a full `ComputeAllAggregates` over a complete `/` index, which is minutes of
-   writer-thread work sitting between the stamp being queued and being visible. **Flush after step 1 and before step
-   7**, or the collapse lands inside exactly the window the order exists to close. Use the shape that matches the
-   context: `writer.flush().await` from async (as `scan_completion.rs:228` does), or
+8. **On scope completion, in this ORDER — and the order is enforced by a FLUSH, not by the numbering.** Steps 1–6 are
+   writer _messages_; step 7 is in-process state. The read the whole ordering protects (the rescan routing's
+   `get_index_status()` inside `start_scan`) goes through a read connection, so it sees a stamp only once the writer has
+   committed it — and step 3 can run a full `ComputeAllAggregates` over a large index, which is minutes of writer-thread
+   work sitting between the stamp being queued and being visible. **Flush after step 1 and before step 7**, or the
+   collapse lands inside exactly the window the order exists to close. Use the shape that matches the context:
+   `writer.flush().await` from async (as `scan_completion.rs:228` does), or
    `tokio::task::block_in_place(|| writer.flush_blocking())` from a sync path in an async context (as
    `manager/start.rs:432` does). ❌ A bare `flush_blocking()` blocks a runtime worker; it is only safe on a plain
    `std::thread`, which is why the cover walk's own call is fine.
-   1. stamp `scan_completed_at`;
+   1. stamp `promised_scope_covered_at` — **and `scan_completed_at` too, but only if the promised scope was the volume
+      root**;
    2. write the calibration meta;
    3. `PayLedgerIfUnpaid` (nothing else ever pays the armed `dir_stats` ledger heal);
    4. `BackfillMissingDirStats`;
    5. `reconciler::record_sweep_completed` plus the `SHALLOW_SWEEP_AT_KEY` / `SHALLOW_COALESCED_KEY` writes — without
       these the in-memory `SweepRecord` stays `None` for the session (it is seeded from meta only at launch), so the
       very first shallow anchor after completion triggers a full sweep nobody asked for;
-   6. publish freshness and fire the terminal events;
-   7. **only then** collapse the branch set to `["/"]`. Collapse before the stamp and there is a window where the volume
-      is neither branch-confined nor marked complete, and one shallow anchor in it truncates the finished index.
+   6. publish freshness (`FreshnessEvent::ScanCompleted`, which is what wakes photo search and importance) and fire the
+      terminal events;
+   7. **only then** collapse the branch set, per the absorption rule: to the phase root in every case, which is `["/"]`
+      exactly when the volume-root phase is what finished. Collapse before the stamp and there is a window where the
+      volume answers for wider ground than it is marked as having covered, and one shallow anchor in it re-walks or
+      truncates the index the phases just built.
+
+   ⚠️ **Step 3 is expensive and now fires on the common path.** With the toggle off, scope completion arrives minutes
+   into the first run, so `PayLedgerIfUnpaid`'s full `ComputeAllAggregates` lands while the user is actively browsing
+   rather than at the end of a long quiet scan. Measure it in the M2 benchmark's browsing arm; if it stalls the writer
+   visibly, the answer is to defer it to the maintenance timer, ❌ not to skip it (an unpaid latch re-arms every launch
+   and the heal never happens).
+
 9. **Feed the live status shape** (`ScanCalibration`-equivalent counters) throughout, or the per-drive row, progress
    bar, and ETA stay dead for the whole first index. Drive `get_status`'s `scanning` field from the **`phase_active`
    flag**, ❌ never by setting `mgr.scanning` (that would make the machine's own `cover()` calls fail).
+
+   **Decide the progress shape here rather than discovering it in M4.** A phased walk has no knowable total, and the
+   design principles forbid a progress bar parked at 100% and require a distinct state when the quantifiable part ends.
+   So: **phase label + live entry counter + elapsed, and ❌ no percentage until the volume-root phase**, which is the
+   only one with a calibrated total. Say what `writer.set_expected_total_entries` gets meanwhile (the calibration
+   estimate for the current root, or nothing) — it is the writer's flushing-progress denominator, so "nothing" is a real
+   answer with a real consequence.
+
 10. **Handle `RootUnlistable`** yourself: a cover walk over a vanished drive otherwise reports "covered nothing" instead
     of the typed abort that clears the stuck UI row.
 11. **Master switch and per-drive veto** keep outranking everything.
@@ -612,16 +904,36 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
 - **`a_listing_of_ground_a_walk_is_covering_writes_nothing`** (the claim / `may_walk` case). **Test-first.**
 - **`start_scan_refuses_while_a_phase_is_active`** — a truncate under a live walk is the worst failure this plan can
   have. **Test-first.**
+- **`a_fresh_phased_volume_s_frontier_shrinks_after_one_walk`** — the exclusion-policy stamp. Without it every other
+  test here can pass while the product never converges. **Test-first.**
+- **`covered_roots_answers_the_volume_root_for_a_legacy_whole_volume_index`** — the variant-based accessor. Silent and
+  total if wrong. **Test-first.**
+- **`a_walk_that_finishes_while_the_manager_is_shutting_down_still_releases_its_branch`** (the permanent `walks > 0`
+  hazard).
+- **`a_truncating_rescan_refuses_while_a_search_cover_walk_is_live`** — the two-writer hazard that `phase_active` alone
+  does not close.
 - **`the_branch_collapse_is_visible_to_the_running_live_loop`** (not just to the persisted meta).
 - **`a_relaunch_with_no_replayable_journal_bumps_the_epoch`** — the resume-honesty property.
 - **`completion_pays_the_ledger_and_seeds_the_sweep_keys`**.
-- **`a_permanently_timing_out_directory_still_lets_completion_happen`** (the bounded-progress rule).
+- **`a_permanently_timing_out_directory_still_lets_completion_happen`**, and its sibling
+  **`a_subtree_pruned_by_the_failure_budget_still_lets_completion_happen`** — the bounded-progress rule, whose failure
+  mode is wide (it gates the stamps, the media kick, the collapse, and the sweep keys). **Test-first**, both.
 - **`enabling_indexing_for_a_search_walked_drive_still_scans_it`** — the shipped behavior `awaits_its_first_scan`
   protects, which the truncate-door work must not regress.
+- **`home_coverage_stamps_scope_but_not_scan_completed`** — the marker split, on the default setting. Its inverse,
+  **`a_home_scoped_volume_never_journal_replays_the_whole_volume`**, is what keeps the toggle working after a relaunch.
+  Both **test-first**: they are the load-bearing half of this revision.
+- **`turning_the_whole_drive_toggle_on_queues_the_volume_root_phase`** after a relaunch, on a volume that already
+  stamped `promised_scope_covered_at`. This is the one that silently did nothing under the single-marker design.
+  **Test-first.**
+- **`a_visited_root_outside_home_is_covered_with_the_toggle_off`**, **`it_does_not_hold_scope_completion_open`**, and
+  **`a_visit_after_scope_completion_still_gets_walked`** (the resident-machine rule: without it the promise in the
+  settings copy is false for the entire rest of the app's life).
+- **`growing_the_priority_roots_un_stamps_the_promise`** — the persisted promised scope.
 - `phases_run_in_order`, and a covered root is skipped without a walk.
 - `a_visited_root_is_taken_between_frontier_roots` without cancelling anything.
-- `a_preempted_walks_rows_survive` (row count only grows), and the restart joins before starting.
-- `full_coverage_stamps_completion_once`; abandoned ground prevents it.
+- `rows_survive_a_stopped_and_restarted_machine` (row count only grows), and the restart joins before starting.
+- `scope_coverage_stamps_completion_once`; abandoned ground prevents it.
 - `master_off_runs_nothing`.
 
 **App-side, not in the crate**: `is_fresh` over partially covered ground still makes `journal_search` downgrade to
@@ -645,34 +957,84 @@ it.
 2. **`resume_or_scan` learns the phased answer** (see M2.1). The queue itself needs no persistence: it is recomputed
    from the M1 roots plus a coverage query per root, so a launch naturally skips what is done. Prefer that over
    persisted queue state, which can go stale or disagree with the database.
-3. **Close every truncate door.** A cover-built index has `entry_count > 1` and no `scan_completed_at`, so
-   `local_rescan_reconciles` is false and `start_scan` sends `TruncateData`. Two of these close for free once
-   `phase_active` feeds `awaits_its_first_scan` (the FDA Deny path and the per-drive enable button), and one is already
-   closed while the volume is branch-confined (the shallow anchor). **Door (b), master off→on, is untouched by any of
-   that and is the one that needs explicit work.** Verify each with a test rather than trusting the reasoning. The ways
-   in today:
+3. **Rescan routing: the branch set is the rescan scope.** Today the local rescan has two arms and
+   `local_rescan_reconciles` (`entry_count > 1 && prior_scan_completed`) picks between them: reconcile the whole volume
+   in place, or truncate and bulk-rebuild. A phased volume fits neither — truncating throws away everything the phases
+   bought, and reconciling `/` runs the serial per-directory walk with an add-everything delta over ground we never
+   covered, which is the documented ~15-minute hang.
+
+   **The third arm is the whole fix: reconcile in place, anchored at each covered branch.** By construction those
+   subtrees are the ground we actually hold, so the delta is small and the "only when substantially complete" condition
+   the predicate was protecting is satisfied per anchor rather than per volume. Rules:
+
+   - a legacy volume whose scope is `WatchScope::WholeVolume` anchors at `/` — byte-identical to today, which is what
+     keeps this from being a behavior change for existing installs;
+   - skip any branch with `walks > 0` (it is being covered right now) and let the machine finish it instead;
+   - **during the phased period, "Rescan now" means "restart the phases"**, ❌ never an error and ❌ never a truncate;
+   - `local_rescan_reconciles` keeps its exact meaning and its exact inputs. ❌ Do not re-key it on
+     `promised_scope_covered_at`: it answers "does this volume hold the whole tree", and the phased arm is chosen
+     _before_ it is consulted.
+
+4. **Close every truncate door.** A cover-built index has `entry_count > 1` and no `scan_completed_at`, so
+   `local_rescan_reconciles` is false and `start_scan` sends `TruncateData`. Two of them close once
+   `awaits_its_first_scan` learns about covered ground (the FDA Deny path and the per-drive enable button). **Door (b),
+   master off→on, needs explicit work**, and so does **door (d), the coalesced shallow anchor: it is closed today only
+   by `is_branch_confined()`, which the watching section deliberately removes** — so door (d) stays open until the sweep
+   route is rewritten onto the item-3 arm, and the two are one change, not two. Verify each with a test rather than
+   trusting the reasoning. The ways in today:
    - **FDA Deny** ⇒ `start_indexing_after_fda_decision` → `start_volume(root)` → `awaits_its_first_scan` true ⇒
      `force_scan` ⇒ truncating full scan (`commands/indexing.rs:221`, `handle/mod.rs:177-187`). Note this fires on the
      Deny path even though the panes stay on `~`, so the decision to keep both panes home does NOT make this door go
-     away.
+     away. (It only reaches `force_scan` when `state::is_active(volume_id)` already holds, i.e. a search walk stood a
+     writer up first — which is precisely the volume that has covered ground worth not truncating.)
    - **Master switch off→on** ⇒ `drives_to_resume()` always includes root ⇒ `start_volume` ⇒ `state::start_indexing()` ⇒
      `resume_or_scan` ⇒ `start_scan("incomplete previous scan")`.
-   - **"Rescan now"**: it keeps today's meaning for a completed index (re-walk **in place**, diff each directory and
-     write only changes, so sizes stay visible and marked stale throughout — already what `local_rescan_reconciles` does
-     for a populated, previously-completed index). The work is making a phased volume qualify rather than falling into
-     truncate-and-rebuild. **During the phased period it means "restart the phases"**, ❌ never an error.
+   - **"Rescan now"** ⇒ routed by item 3 above; the door is the truncate arm it must no longer reach.
    - **A coalesced shallow `MustScanSubDirs`** ⇒ `perform_registry_rescan` → `start_scan`
      (`reconcile/reconciler/rescan.rs:122-126`).
-   - **`awaits_its_first_scan`** will report "never walked" forever on a phased volume, so the per-drive "Turn on
-     indexing for this drive" button force-scans too. The predicate needs a phased-aware answer.
-4. **Freshness during phases** per the decision above. `StaleDriveDialog` already returns early for `root`, so the
-   exposed surface is the per-drive **badge**, not the dialog: a volume that has never reached full coverage is
+   - **`awaits_its_first_scan`** will report "never walked" forever on a phased volume, because it reads
+     `scan_completed_at`, which the default setting never stamps. So the per-drive "Turn on indexing for this drive"
+     button force-scans too. The predicate needs a phased-aware answer: `promised_scope_covered_at` present, or the
+     phased marker set, means "this drive has been walked". ❌ Still not `entry_count > 1` (see the verifier section for
+     why that regresses shipped behavior).
+5. **Freshness during phases** per the decision above. `StaleDriveDialog` already returns early for `root`, so the
+   exposed surface is the per-drive **badge**, not the dialog: a volume that has never reached scope coverage is
    _incomplete_, not _stale_, and those are different sentences to the user.
+6. **Existing installs.** The plan is written for a first run, but every beta user upgrades into it with an index
+   already on disk. Two cases, and neither may silently narrow what they have:
+   - **A volume with `scan_completed_at` set** (a full scan finished under today's code) already holds the whole drive
+     and its scope is `WholeVolume`. **Default `index_whole_drive` to ON for it**, once, at the first launch after the
+     upgrade, so nobody silently loses drive-wide search they have had for months. New installs get OFF. Implement it
+     app-side as a one-time settings backfill keyed on the existing marker, ❌ not as index-DB migration.
+   - **A volume with no `scan_completed_at`** (an interrupted or never-finished scan) has partial rows written by a
+     `ScanRoot::Volume` walk, whose `listed_epoch` pattern the coverage descent was never designed to read. Per
+     "Rebuild, don't migrate" (`indexing/CLAUDE.md`), **truncate it once and let the phases build it fresh**. It is a
+     disposable cache, the user was going to pay for a rescan anyway, and reasoning about a foreign partial is a bug
+     farm. Say so out loud in the code comment, or someone will "optimize" it later. The truncate is also what makes the
+     `EXCLUSION_POLICY_KEY` stamp legal on this path.
 
-**Tests:** integration tests for launch over an index in each state (nothing, partially covered, fully covered, fully
-covered but stale), asserting which of {phases, replay, scan} runs; plus one test per truncate door asserting no
-`TruncateData`. Test-first for the routing table: a wrong cell means either a wasted full rescan or a silently stale
-index.
+     **⚠️ This rule needs a discriminator that doesn't exist yet.** A phased partial and a legacy interrupted partial
+     both have rows and no `scan_completed_at`, so "no marker ⇒ truncate" would wipe a cleanly stopped phased index on
+     every launch — the exact data loss this milestone exists to prevent. That is what the **durable "built by the
+     phases" stamp** (see the verifier section) is for: written at the first stitch, never cleared, and distinct from
+     the in-progress marker. ❌ Don't infer it from the branch set or the in-progress flag; both are absent in the
+     stopped case.
+
+7. **An external volume promises its own root**, per "The two scopes and the two markers". Test that enabling indexing
+   on a drive with no `$HOME` still walks it and does ❌ not stamp completion over an empty promise.
+
+**Tests:** integration tests for launch over an index in each state (nothing, partially covered by phases, partially
+covered by a legacy interrupted scan, scope-covered, fully covered, fully covered but stale), asserting which of
+{phases, replay, scan, truncate-then-phases} runs; plus one test per truncate door asserting no `TruncateData`. All
+**test-first**, because a wrong cell means a wasted full rescan, a silently stale index, or a user quietly losing
+coverage they already had. Named individually because each has been reasoned about and could pass for the wrong reason:
+
+- **`an_upgraded_fully_scanned_volume_keeps_indexing_the_whole_drive`** (risk 9: the failure most likely to reach a real
+  person, since every beta user hits the upgrade path and nobody hits a first run twice);
+- **`a_stopped_phased_index_is_not_truncated_on_the_next_launch`** (the discriminator);
+- **`a_legacy_interrupted_partial_is_truncated_once_and_rebuilt`**;
+- **`an_external_volume_promises_its_own_root`**;
+- **`a_wide_journal_gap_reconciles_the_watched_scope_instead_of_stranding_it`**.
 
 ---
 
@@ -712,10 +1074,18 @@ debounce so work finishing inside a second never flashes anything.
      `ScanRunKind`, so the tooltip renders headerless with no steps.
    - **MCP `cmdr://indexing`** (`mcp/resources/indexing.rs`): built from `scanning` / `entries_scanned` /
      `scan_completed_at`; its purpose is answering "can I trust search on this volume?", and it would answer "not
-     scanning, never scanned" while indexing runs.
+     scanning, never scanned" while indexing runs — and then, on the default setting, "never scanned" **forever**. It
+     has to report the covered scope, ❌ not a boolean: what we cover, and whether that scope is complete. An agent that
+     searches `/opt` and gets nothing deserves to know why.
 7. **Write down what a first-run user sees while phases run** (corner hourglass with a phase label, sizes appearing
    folder by folder, search saying it is still building) and check it against the running app. That is the whole "wow
    moment" claim; it deserves an explicit acceptance pass.
+
+   **Include the steady state, not only the busy one.** On the default setting the permanent shape is: home has exact
+   sizes, everything outside it renders `<dir>` with no hourglass and no explanation, and nothing is walking. That is
+   honest, but "honest" and "doesn't look broken" are different bars, and it is what most users will see most of the
+   time. The acceptance pass covers both, and if the steady state reads as broken, the fix is in-context copy (item 3 in
+   M5), ❌ not a quiet default flip.
 
 **Tests:** unit tests for the debounce publisher and the bidirectional predicate (both genuinely test-first); a
 component test that a row inside _and_ a row above a walking branch show the hourglass while an unrelated row doesn't; a
@@ -728,22 +1098,71 @@ pin, not a red→green step**, gated on M3.
 
 ## M5 — Surfaces, copy, kill switch
 
-0. **The scope setting itself**: "Index stuff outside my home folder", default OFF, in the drive-indexing section,
-   written into `IndexConfig.index_outside_home` through the existing `set_config` path so flipping it takes effect
-   without a restart. Turning it ON queues the volume-root phase; turning it OFF stops after the current root. Copy is a
-   draft for David.
-1. **The phase label in the user's terms** ("Indexing your folders", "Indexing your home folder", "Indexing the rest of
-   this drive"), in `IndexingDriveRow` / `IndexingStatusBody` — ❌ not `settings/sections/DriveIndexingSection.svelte`,
-   which has three switches and no per-drive rows. Copy is a draft for David; all strings go through the catalog with
-   `@key` descriptions, ❌ never hardcoded.
-2. The drive-index settings section explains the model in a sentence or two.
-3. Search's coverage note should read correctly when the reason is "we haven't got there yet" rather than "we were
-   refused".
-4. **`stop` and `forget` need a defined meaning against a phase queue** (`driveIndexMenuActions('scanning')` offers
-   both). Proposal: `stop` cancels the running walk and clears the queue, leaving covered ground covered and watched;
-   `forget` keeps today's meaning.
-5. **A kill switch.** This is a big behavioral change to ship into an open beta: one flag (env var is enough) that
-   restores the bulk-build path, so a bad week is a restart rather than a rollback.
+**⚠️ Every user-facing string here is a DRAFT for David** (principle 4: anything meeting human eyes is human-reviewed).
+They go through the message catalog with `@key` descriptions, ❌ never hardcoded, and **11 locales ship** — budget the
+translation pass rather than discovering it at the end of the milestone.
+
+0. **The whole-drive setting**: default OFF, in the drive-indexing section, written into
+   `IndexConfig.index_whole_drive`. Existing installs with a completed full scan get ON once, at upgrade (M3.6).
+
+   ⚠️ **`set_config` is not sufficient on its own.** The media policy works through it because the media gate _reads_
+   the value on demand (`host/config.rs:91-103` is a whole-value replace into a static plus atomics). Flipping this one
+   has to _do_ something: queue the volume-root phase, un-`Fresh` the volume, and (per the resident-machine rule) wake a
+   machine that has already stopped. Name that wake-up path in the implementation, ❌ don't assume the existing call
+   covers it.
+
+   Draft copy: label **"Index the whole drive"**; help text **"Cmdr indexes your home folder and the folders you open.
+   Turn this on to cover system and app folders too, so search and folder sizes reach everywhere. It runs in the
+   background and takes a few extra minutes."** The label has to carry the rule that folders you open are always
+   indexed, or the setting reads as a promise the product doesn't keep.
+
+1. **⚠️ The app and the website currently promise a whole-drive index, in the copy that justifies asking for Full Disk
+   Access.** This is a deliverable, not a follow-up: shipping default-off without it makes the FDA screen false.
+   - App: `onboarding.stepOptional.indexing.benefit1` ("Instant search of your whole drive. Think Spotlight, but even
+     faster.") and `benefit2` ("Real-time folder sizes for your whole drive."), plus the `benefit2` key description, in
+     `apps/desktop/src/lib/intl/messages/en/onboarding.json` (× 11 locales). Also
+     `settings.indexing.enabled.description` ("Index your drive in the background for instant directory sizes."), and
+     the three run labels that all claim a full scan: `indexing.run.firstScan`, `indexing.scan.label`,
+     `indexing.step.findFilesFirstScan`.
+   - Website: `Hero.astro:40`, `Features.astro:13` ("Indexes _your entire drive_ in 4 minutes. Once."),
+     `Layout.astro:13`, `index.astro:17`, `features.astro:39`, `llms.txt.ts:35`, `llms-full.txt.ts:51`.
+   - **David decides the new claim.** The honest version is stronger, not weaker: your folders are searchable in seconds
+     rather than the whole disk in four minutes. Draft it, ❌ don't ship it unreviewed.
+2. **The phase labels**, in `IndexingDriveRow` / `IndexingStatusBody` — ❌ not
+   `settings/sections/DriveIndexingSection.svelte`, which has three switches and no per-drive rows. Draft: **"Indexing
+   the folders you use most"** → **"Indexing the rest of your home folder"** → **"Indexing the rest of the drive"**. ❌
+   Not "Indexing your folders" → "Indexing your home folder", which reads as the scope widening and then narrowing,
+   since the first is a subset of the second.
+3. The drive-index settings section explains the model in a sentence or two.
+4. **Three coverage messages, not one, and the third one is the whole discoverability story.** Search's note has to
+   distinguish "we haven't got there yet" from "we were refused" and from **"this is outside what you asked us to
+   index"**.
+
+   ⚠️ **Get the mechanism right before writing the copy: search self-heals, folder sizes don't.** A search over
+   uncovered ground already cover-walks it (carved out of both switches), so search converges toward instant through
+   use. What regresses permanently and silently on the default setting is **the size column**, which has no equivalent
+   fallback. So the priority is inverted from the obvious one: **the in-pane size affordance comes first**, the search
+   note second. Reuse the shipped "index this" affordance rather than inventing a second one, and state plainly that a
+   user-requested folder is a rank-1 walk that ❌ never re-opens `promised_scope_covered_at`.
+
+5. **Folders we couldn't read.** Scope completion can be stamped with `Denied` / `Declined` / `Abandoned` directories
+   inside it, so "done" can mean "done, with holes". Surface the count where the badge and the coverage note already
+   live, ❌ never silently, with a disclosure listing the paths and the cause (principle 3, radical transparency).
+   Thousands separators on the count.
+6. **The scope-covered badge state needs its own copy.** Green-and-done is the moment a user concludes the app has
+   finished, and on the default setting it means "your home folder is indexed, the rest of the drive isn't". Draft that
+   sentence with an action attached, ❌ don't let the badge imply more than it holds.
+7. **`stop` and `forget` against a phase queue** (`driveIndexMenuActions('scanning')` offers both). **Decided**: `stop`
+   cancels the running walk and clears the queue, leaving covered ground covered and watched, and leaves the durable
+   "built by the phases" stamp in place so the next launch resumes instead of truncating; `forget` keeps today's
+   meaning. ❌ Not a proposal — this is a shipping menu action and an implementer needs the answer.
+8. **A kill switch.** This is a big behavioral change to ship into an open beta: one flag that restores the bulk-build
+   path, so a bad week is a restart rather than a rollback. ❌ **An env var is not enough**: a beta user launching from
+   the Dock never sees one, so it would only ever help David locally. Use a `defaults write` key or a hidden setting
+   read at startup, and say who is expected to flip it and how they'd be told to.
+9. **Measure it.** Anonymous analytics are live, and this change's justification is a user-experience claim, so make it
+   falsifiable: time to `promised_scope_covered_at`, whole-drive toggle adoption, and how often a pane or a search hits
+   the "outside your scope" state.
 
 ---
 
@@ -765,22 +1184,40 @@ pin, not a red→green step**, gated on M3.
    plus its test. Note this also gates the media kick and the branch collapse, so it fails wide.
 3. **A partially covered volume claiming completeness** ⇒ completion derived from a durable empty frontier, not from
    in-memory `abandoned_ground`.
-4. **Photo search and importance silently dead** ⇒ freshness meaning "fully covered for the chosen scope", which on the
-   default setting arrives when home completes.
-5. **A truncate door left open** ⇒ M3.3 enumerates all five; one test each.
-6. **The verifier as a second, unthrottled indexer** ⇒ the `phase_active` flag plus the verifier marking a directory
-   listed when it genuinely read all of it. Both are M2 deliverables, ❌ not "consider it later": with the stitch giving
-   every frontier root a row, the verifier's recursive `scan_subtree` fires for every folder the user opens ahead of the
-   walker, which is the central user behavior this plan is built around.
+4. **Photo search and importance silently dead** ⇒ freshness meaning "fully covered for the chosen scope", fired off
+   `promised_scope_covered_at`, which on the default setting arrives when home completes.
+5. **A truncate door left open** ⇒ M3.4 enumerates all five; one test each. And the door's twin, the ~15-minute
+   reconcile hang over ground we never covered ⇒ M3.3, rescan anchored at the branch set.
+6. **The verifier as a second, unthrottled indexer** ⇒ the `phase_active` flag plus the verifier **bailing** on
+   `listed_epoch == 0` (❌ not the mark; the two are mutually exclusive and the bail is what this plan builds). Both are
+   M2 deliverables, ❌ not "consider it later": with the stitch giving every frontier root a row, the verifier's
+   recursive `scan_subtree` fires for every folder the user opens ahead of the walker, which is the central user
+   behavior this plan is built around.
 7. **TCC popups from a background walk** ⇒ the FDA gate as today, plus the Deny-path decision (panes stay on `~`, and
    background phases skip TCC-restricted roots, so a prompt only ever follows the user's own navigation).
 8. **High-churn directories** (the 1.14M-empty-file Google Drive temp dir in `docs/specs/later/sealed-subtrees-plan.md`)
-   land in the home phase now instead of the whole-drive scan, so they hit sooner. Watch for it during the benchmark.
+   land in the home phase now instead of the whole-drive scan, so they hit sooner. Watch for it during the benchmark's
+   browsing arm.
+9. **An existing user silently losing drive-wide coverage** on upgrade ⇒ M3.6: a volume that already completed a full
+   scan gets the whole-drive setting ON, once. This is the failure most likely to reach a real person, because every
+   beta user hits the upgrade path and nobody hits a first run twice.
+10. **The default configuration going untested** because the plan and its tests reason about the toggle-on end state ⇒
+    every routing, sweep, collapse, and completion test above runs with the toggle **off** unless it is specifically
+    about the whole-drive phase. Default-off is what ships to everyone.
+11. **The now-minority whole-drive path rotting**, which is the inverse risk and the one nobody will notice: after this
+    change `should_replay_journal`, `local_rescan_reconciles`'s reconcile arm, the whole-volume sweep, and the
+    truncate-rebuild path only run on legacy and toggle-on volumes — and per decision 11 that is every existing beta
+    user's index. ⇒ Keep a named toggle-on / legacy suite running, and record in `lifecycle/DETAILS.md` that those are
+    the minority path now so nobody deletes them as dead.
+12. **The app promising a whole-drive index while shipping a home-only one** ⇒ M5.1 enumerates the onboarding, settings,
+    run-label, and website strings. This is the one that makes the Full Disk Access ask untrue, so it is a deliverable
+    rather than a copy-polish follow-up.
 
-## Decisions (David, 2026-08-13)
+## Decisions (David, 2026-08-13, revised 2026-08-14)
 
-All seven open questions are answered. Recorded here with the reasoning, because the reasoning is what an implementer
-needs when reality disagrees with a detail.
+Recorded with the reasoning, because the reasoning is what an implementer needs when reality disagrees with a detail.
+Decisions 8–11 came out of the review round that took the home-only default seriously and found that the rest of the
+plan had been written for a whole-drive end state that, by default, never arrives.
 
 1. **The app's answers arrive through host seams, not through widened handle calls.** Scope is an `IndexConfig` field,
    priority roots are a `HostPolicy` method, and "where is the user" reuses the `open_listings` seam that already
@@ -791,16 +1228,44 @@ needs when reality disagrees with a detail.
    when the user navigates somewhere protected, which is the only moment it has a cause they can see. Moving the right
    pane to `~/Downloads` would buy the same prompt a few seconds earlier and re-shuffle the panes behind the onboarding
    sheet.
-3. **`Fresh` means "fully covered for the scope the user chose"**: home with the scope toggle off (the default), the
-   whole drive with it on. Honest in both modes, and on the default it comes alive minutes into the first run.
-4. **Branch watching stays on when drive indexing is off, on macOS only**, and branches absorb their descendants.
-5. **"Rescan now" re-walks in place**, keeping sizes visible; during the phased period it restarts the phases.
-6. **New setting: "Index stuff outside my home folder", default OFF.** `index_outside_home` on `IndexConfig`. "Fully
-   covered" becomes "fully covered for the chosen scope", which is also what stamps completion and freshness. Flipping
-   it on adds frontier; flipping it off leaves rows we stop maintaining. Both fall out of coverage being add-only, so
-   neither needs a migration. `~/Library` is in scope but never a priority root (see M1).
+3. **`Fresh` means "fully covered for the scope the user chose"**: home plus the priority roots with the toggle off (the
+   default), the whole drive with it on. Honest in both modes, and on the default it comes alive minutes into the first
+   run. It fires off `promised_scope_covered_at` (decision 8).
+4. **Branch watching stays on when drive indexing is off, on macOS only**, and branches absorb their descendants. The
+   branch set collapses to the phase root at the end of every phase, ❌ not only at full-volume coverage.
+5. **"Rescan now" re-walks in place, anchored at the branch set**, keeping sizes visible; during the phased period it
+   restarts the phases. ❌ Never anchored at `/` on a volume that only covers part of it: that is the documented
+   ~15-minute serial hang, and the single-marker design walked straight into it.
+6. **New setting: "Index the whole drive", default OFF.** `index_whole_drive` on `IndexConfig`. Flipping it on adds
+   frontier and un-`Fresh`es the volume; flipping it off leaves rows we stop maintaining. Both fall out of coverage
+   being add-only, so neither needs a migration. `~/Library` is in scope but never a priority root (see M1).
 7. **One worktree, one effort, for the indexing work.** The milestones below are an execution order, ❌ not shippable
    slices, so ordering still matters but "is this milestone independently releasable" doesn't. The first-run startup
    state was the exception: it turned out to be self-contained, so it shipped on its own ahead of the indexing work.
+8. **Two markers, not one.** `promised_scope_covered_at` (new) means the promised scope is covered and drives freshness,
+   the media and importance kick, the badge, and the completion UI. `scan_completed_at` keeps today's exact meaning, the
+   whole tree has rows, and with the default setting is never stamped. Stamping one marker for both would route "Rescan
+   now" into a serial reconcile over uncovered ground, make whole-volume journal replay pre-empt the phase machine
+   forever (so turning the toggle on after a relaunch would silently do nothing), and have MCP tell an agent a
+   third-covered drive was fully scanned. Full reasoning in "The covered scope".
+9. **The watched scope is the rescan scope**, derived from the `WatchScope` VARIANT (`WholeVolume ⇒ [volume_root]`,
+   `Branches(set) ⇒ set`), and it is what rescan routing, sweep routing, and completion all consult. ❌ Not the branch
+   set's contents: a legacy scanned volume carries `WholeVolume(<empty set>)`, so reading the contents would make it
+   answer for nothing.
+10. **The toggle governs background coverage, ❌ not "never index outside home".** A folder the user opens is covered
+    wherever it lives, and never holds scope completion open. The setting's name and help text have to say so (M5.0), or
+    it promises something the product deliberately doesn't do. **The machine therefore stays resident and idle after the
+    promise is covered** — completion stops the phases, not the machine — or the promise is true for a few minutes and
+    false forever after.
+11. **Any volume that isn't the boot volume promises its whole root.** Enabling indexing on a drive IS the request, and
+    a promise of "home plus favorites" would be empty on an external disk, stamping completion and going `Fresh` over
+    zero rows. `index_whole_drive` governs the boot volume only.
+12. **Where a user-facing claim and the shipped behavior disagree, the claim changes and David writes it.** The
+    onboarding benefit copy, the settings description, the run labels, and seven website strings all promise a
+    whole-drive index today (M5.1). Shipping default-off without changing them makes the Full Disk Access ask false.
+13. **An existing install that already completed a full scan gets the toggle ON, once, at upgrade** (M3.6). Everyone in
+    the beta upgrades into this change; nobody may quietly lose drive-wide search they have been using for months. An
+    index with a partial, never-completed scan is truncated once and rebuilt by the phases, per "rebuild, don't
+    migrate".
 
 Remaining assumption to confirm during execution, ❌ not a blocker: `~/Library` in scope but de-prioritized (M1).
