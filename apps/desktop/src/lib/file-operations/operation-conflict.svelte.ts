@@ -46,6 +46,7 @@
  */
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
+import { SvelteMap } from 'svelte/reactivity'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
   onWriteConflict,
@@ -105,10 +106,13 @@ let deferred: WriteConflictEvent[] = []
  *  as long as its prompt is up. A prompt IS a view of an operation, so it
  *  commands through the session like any other: the answer, the cancel, and the
  *  rollback all carry guards that whatever else is watching can see.
- *  Deliberately not `$state` — nothing renders from the map, only from the
- *  session fields the getters below reach through it. */
-// eslint-disable-next-line svelte/prefer-svelte-reactivity -- see above: a plain lookup table, never rendered from
-const promptSessions = new Map<string, OperationSession>()
+ *
+ *  A `SvelteMap` because the disable-state getters read THROUGH it: a session
+ *  acquired late (the registry wasn't up when the prompt was raised) has to make
+ *  those getters re-run, and a plain map's `get` registers no dependency. It
+ *  holds session references, which `SvelteMap` stores as they are rather than
+ *  proxying — right, since a session is a getter-bearing object. */
+const promptSessions = new SvelteMap<string, OperationSession>()
 
 let unlisten: UnlistenFn | null = null
 let stopEffects: (() => void) | null = null
