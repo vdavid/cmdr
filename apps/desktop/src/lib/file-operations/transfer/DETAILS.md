@@ -572,8 +572,10 @@ back/settled, no conflict prompt up).
   by the negative test in `TransferProgressDialog.queue.test.ts`.) `preventDefault` stops any default browser action on
   the key.
 - **Auto-queue surfacing.** When a new op starts on a busy lane, the manager admits it as `queued` rather than spawning
-  it. The view watches `session.status` for that and auto-backgrounds: it surfaces the queue window with a quiet "N
-  transfers ahead" toast and unmounts, exactly like a manual Queue. The currently-foregrounded op keeps its modal; we
+  it. A DISPATCHING view watches `session.status` for that and auto-backgrounds: it surfaces the queue window with a
+  quiet "N transfers ahead" toast and unmounts, exactly like a manual Queue. ❌ An ADOPTED view (`adoptedOperationId`,
+  the queue window's Show) never does, and the effect returns early for one: a dialog opened precisely to watch this
+  operation hiding itself again is the button appearing to do nothing. The currently-foregrounded op keeps its modal; we
   never stack a second modal. "N ahead" counts the ops occupying lanes (running or paused) in the main window's
   operations store — the same live rows the Background/Queue label reads — floored at 1. The dialog needs no seeding
   logic of its own: a session that hears nothing on attach asks `list_operations()` itself, which is what catches the

@@ -45,8 +45,8 @@ queue (⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system
   would read "Couldn't copy" right beside "Couldn't finish".
 - **Show hands a row's operation back to the main window's progress dialog**, over `foreground-operation` carrying only
   the id (the main window resolves it against its own snapshot, `../foreground-request.ts`). ❌ Not a command on the
-  operation, and ❌ never offered on a `queued` row: that dialog auto-backgrounds a queued operation and would hand it
-  straight back. The main window may refuse and says so there. DETAILS § Show.
+  operation, and ❌ never offered on a `queued` row (nothing to show yet). The main window may refuse and says so there.
+  DETAILS § Show.
 - **A row commands its own operation through its session** (`../operation-session/CLAUDE.md`), so the same press means
   the same thing from every surface and no two of them can send it twice. `routes/queue/+page.svelte` keeps only what
   ISN'T a command on one operation: Pause all / Resume all / Cancel selected, and dismissing a retained failure. ❌

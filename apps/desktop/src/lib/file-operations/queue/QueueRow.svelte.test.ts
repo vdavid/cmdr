@@ -330,9 +330,9 @@ describe('QueueRow: Show (back to the main window)', () => {
     expect(showButton()).not.toBeNull()
   })
 
-  it('offers none on a queued row: the dialog would hand it straight back', () => {
-    // A dialog showing a `queued` operation has nothing to show and no reason to
-    // be up. It waits its turn where the whole queue is visible.
+  it('offers none on a queued row: there is no progress to show yet', () => {
+    // An operation waiting for a lane has nothing to fill the dialog's bars with,
+    // so it waits its turn here, where the whole queue is visible.
     render({ row: buildRow('queued') })
 
     expect(showButton()).toBeNull()

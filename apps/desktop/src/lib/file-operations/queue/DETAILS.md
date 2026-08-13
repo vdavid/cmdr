@@ -142,8 +142,11 @@ where it is shown.
   window: the main window focuses ITSELF in its listener, whatever the verdict, because a refusal the user cannot see
   reads as the button doing nothing.
 - **Offered only where a dialog would have something to show.** Running or paused, and not an instant op. ❌ Never on a
-  `queued` row: the dialog auto-backgrounds a queued operation, so it would open and hand it straight back. ❌ Never on
-  a failed row: there is nothing left to watch, and its reason is already on the row in full.
+  `queued` row: an operation waiting for a lane has no progress to put in the dialog's bars, so Show would open an empty
+  one. ❌ Never on a failed row: there is nothing left to watch, and its reason is already on the row in full.
+  - ❌ Don't write that the dialog would bounce a queued operation back: auto-queue is a dispatching view's decision
+    only, and an adopted one stays put (`../transfer/DETAILS.md` § "Auto-queue surfacing", pinned by
+    `../transfer/transfer-progress-state.svelte.test.ts`).
 - **The main window can refuse.** Its dialog slot is single-occupancy; a refusal comes back as a toast there, next to
   the dialog that refused. Reasoning and the invisible-occupancy hazard: `../../file-explorer/pane/DETAILS.md` § "Birth
   context".

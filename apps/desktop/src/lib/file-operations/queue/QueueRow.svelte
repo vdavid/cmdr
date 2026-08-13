@@ -87,9 +87,9 @@
 
     /** Show hands this operation back to the main window's progress dialog, the
      *  one it was backgrounded from. Offered while the operation is actually
-     *  moving (a scan counts) and never on a `queued` one: that dialog would
-     *  have nothing to show and would hand it straight back here. Instant ops
-     *  emit no progress at all, so there's nothing to show for them either. */
+     *  moving (a scan counts) and never on a `queued` one, which has no progress
+     *  to fill the dialog with yet. Instant ops emit no progress at all, so
+     *  there's nothing to show for them either. DETAILS § Show. */
     const canForeground = $derived((isRunning || isPaused) && !isInstantOperation(snapshot.operationType))
 
     const label = $derived(tString('queue.row.label', { type: snapshot.operationType }))
