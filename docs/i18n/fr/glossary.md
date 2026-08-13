@@ -635,14 +635,13 @@ apostrophes are doubled in the catalog:
   verbatim for `operationLog.dialog.title` AND `commands.logOperationLog.label` (same sourceHash 2c97965).
 - operation (a logged file operation) → `opération` (feminine) · reuses the settled
   `File operations → Opérations sur les fichiers` section name · high.
-- roll back / rollback (reverse a COMPLETED operation, operation-log sense) → SUPERSEDED, see § « La famille
-  `rollback` » at the end of this file. The Canceled-vs-Rolled-back reasoning below still holds; only the word family
-  changed, from `restaur-` to `retour en arrière`.
-  **DIVERGENCE from the live-transfer catalog, deliberate:** the transfer surface renders the rolling-back action as
-  `annulation` (`fileOperations.transferProgress.titleRollingBack` = "Annulation en cours..."), but the operation log
-  must keep `Canceled` and `Rolled back` as DISTINCT status pills. Anchoring rollback to the `restaur-` family reserves
-  `annuler`/`Annulé` exclusively for `Canceled`, preserving the you-canceled-before-it-ran vs you-reversed-it-after
-  semantic split. The five rollback pills read as one concept:
+- roll back / rollback (reverse a COMPLETED operation, operation-log sense) → SUPERSEDED, see § « La famille `rollback`
+  » at the end of this file. The Canceled-vs-Rolled-back reasoning below still holds; only the word family changed, from
+  `restaur-` to `retour en arrière`. **DIVERGENCE from the live-transfer catalog, deliberate:** the transfer surface
+  renders the rolling-back action as `annulation` (`fileOperations.transferProgress.titleRollingBack` = "Annulation en
+  cours..."), but the operation log must keep `Canceled` and `Rolled back` as DISTINCT status pills. Anchoring rollback
+  to the `restaur-` family reserves `annuler`/`Annulé` exclusively for `Canceled`, preserving the
+  you-canceled-before-it-ran vs you-reversed-it-after semantic split. The five rollback pills read as one concept:
   - Can roll back → `Restauration possible`; Can''t roll back → `Restauration impossible` (macOS calm "… impossible"
     pattern)
   - Rolling back → `Restauration en cours`
@@ -1444,9 +1443,9 @@ l'opération a écrit, il ne REND rien. `restaurer` promettait donc l'inverse de
 
 - **rollback → `retour en arrière` (nom) / `revenir en arrière` (verbe)** · `tentative`. Les trois familles candidates
   et pourquoi les deux autres sont écartées :
-  - ❌ `restaur-` : c'est `Restore` en français, y compris dans le domaine gestionnaire de fichiers (Nautilus `fr`
-    « Ann_uler la restauration depuis la corbeille », Time Machine « Restaurer »), et le catalogue s'en sert déjà pour
-    la vraie restauration (`askCmdr.renameUndo.*`, où les anciens noms sont bel et bien rendus). Microsoft `fr` donne
+  - ❌ `restaur-` : c'est `Restore` en français, y compris dans le domaine gestionnaire de fichiers (Nautilus `fr` «
+    Ann_uler la restauration depuis la corbeille », Time Machine « Restaurer »), et le catalogue s'en sert déjà pour la
+    vraie restauration (`askCmdr.renameUndo.*`, où les anciens noms sont bel et bien rendus). Microsoft `fr` donne
     `roll back → restaurer` / `rollback → restauration`, mais c'est le sens TRANSACTION de base de données, où l'état
     antérieur revient vraiment : le piège de sens n° 4 de `docs/i18n/reference-pile/how-to-mine.md`.
   - ❌ `annul-` : c'est le mot de l'undo en français (macOS `fr` `Undo` → « Annuler » ; Nautilus « Annuler la copie » ;
@@ -1459,8 +1458,8 @@ l'opération a écrit, il ne REND rien. `restaurer` promettait donc l'inverse de
     secondes »).
 - Le bouton fait 18 caractères, sous les 20 de `Annuler et restaurer` que le budget de largeur de `.button-row` avait
   mesurés (voir la section sur le libellé du bouton file d'attente vide), donc la rangée ne bouge pas.
-- Le bouton seul ne dit pas que des fichiers sont supprimés : c'est voulu, l'anglais `Rollback` non plus. L'infobulle
-  (« Arrêter et supprimer tous les fichiers écrits jusqu'à présent ») et la confirmation obligatoire portent
+- Le bouton seul ne dit pas que des fichiers sont supprimés : c'est voulu, l'anglais `Rollback` non plus. L'infobulle («
+  Arrêter et supprimer tous les fichiers écrits jusqu'à présent ») et la confirmation obligatoire portent
   l'avertissement, et le rollback demande TOUJOURS confirmation.
 - Les six pastilles : `Retour en arrière possible` / `… impossible` / `… en cours` / `… effectué` / `… partiel`, et
   `operationLog.outcome.rolledBack` reprend `… effectué` (l'anglais utilise la même chaîne aux deux endroits).

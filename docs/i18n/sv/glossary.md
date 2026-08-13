@@ -133,9 +133,9 @@ From the `onboarding.json` + `fileOperations.json` pass (2026-06-21). Reuses all
   "skriv över" (style.md), "hoppa över" (Nautilus "\_Hoppa över"), "byt namn" (macOS "Byt namn på…"), "slå samman"
   (Nautilus "Sammanfoga", but "slå samman" reads more natural for folder-merge UI). `high` except merge `tentative`
   (chose "slå samman" over Apple/GNOME "sammanfoga" for plainer voice).
-- **rollback (undo a partial transfer): `ångra`** · macOS `sv` `Undo` → "Ångra", Nautilus `sv` "_Ångra Kopiera" ·
-  high. Not `återställ`: that IS `restore`, and rollback doesn't restore what it overwrote. Full arbitration over the
-  14 keys: § "Rollback-familjen" at the end of this file.
+- **rollback (undo a partial transfer): `ångra`** · macOS `sv` `Undo` → "Ångra", Nautilus `sv` "_Ångra Kopiera" · high.
+  Not `återställ`: that IS `restore`, and rollback doesn't restore what it overwrote. Full arbitration over the 14 keys:
+  § "Rollback-familjen" at the end of this file.
 - **target (of a symlink / conflict): `mål`** · "målet", "målmapp", "målvolym", "målsökväg". macOS/MS standard. `high`.
 - **merge (no-op) / "under cursor": `under markören`** · "markör" = cursor (macOS "markören"). `high`.
 - **source-available: `källtillgänglig`** · composed (källa + tillgänglig), parallel to "open source" → "öppen källkod";
@@ -533,15 +533,15 @@ ones:
   `settings.operationLog.*` ("loggade åtgärder", "gå igenom din historik") and the `åtgärden {verb}` framing. `high`.
 - **history (operation history): `historik`; "operation history" → `åtgärdshistorik`** · `settings.operationLog` uses
   "historik"/"Behåll historik i"; compounded åtgärd+historik for `loadError`. `high`.
-- **roll back / rollback (reverse a logged operation): SUPERSEDED, see § "Rollback-familjen" at the end of this
-  file.** The status-chip reasoning below still holds; only the word family changed, to `ångra`. ~~reuse
-  `återställ`/`återställa`/`återställer`/`återställd`~~ · the
-  settled rollback family (glossary rollback entry + `fileOperations.transferProgress` "Återställer"/"Återställ").
-  Status chips: notRollbackable → "Går inte att återställa", rollbackable → "Går att återställa", rollingBack →
-  "Återställer", rolledBack → "Återställd", partiallyRolledBack → "Delvis återställd". Command description "roll them
-  back" → "återställ dem". `high`. NOTE: `settings.operationLog.intro` (already shipped) phrases the same concept as
-  "ångra åtgärder"; the dialog uses the `återställ` family for consistency with the transfer-rollback surface — flagged
-  for David if he wants the intro aligned.
+- **roll back / rollback (reverse a logged operation): SUPERSEDED, see § "Rollback-familjen" at the end of this file.**
+  The status-chip reasoning below still holds; only the word family changed, to `ångra`. ~~reuse
+  `återställ`/`återställa`/`återställer`/`återställd`~~ · the settled rollback family (glossary rollback entry +
+  `fileOperations.transferProgress` "Återställer"/"Återställ"). Status chips: notRollbackable → "Går inte att
+  återställa", rollbackable → "Går att återställa", rollingBack → "Återställer", rolledBack → "Återställd",
+  partiallyRolledBack → "Delvis återställd". Command description "roll them back" → "återställ dem". `high`. NOTE:
+  `settings.operationLog.intro` (already shipped) phrases the same concept as "ångra åtgärder"; the dialog uses the
+  `återställ` family for consistency with the transfer-rollback surface — flagged for David if he wants the intro
+  aligned.
 - **status chips (reuse queue.row.status): queued → `Väntar`, running → `Pågår`, done → `Klar`, canceled → `Avbruten`,
   "Didn''t finish" → `Gick inte att slutföra`** · matched exactly to `queue.json` `queue.row.status`. `high`.
 - **initiator/provenance labels: You → `Du`, AI client → `AI-klient`, Agent → `Agent`** · `du` address (style.md); MS
@@ -1169,9 +1169,9 @@ that jargon is exactly what the copy avoids.
 Rättar den `tentative`-markerade rollback-posten ovan och löser den inkonsekvens den själv flaggade
 (`settings.operationLog.intro` sa redan `ångra åtgärder` medan dialogen sa `återställ`).
 
-- **rollback → `ångra`** · macOS `sv` (`Undo` → "Ångra", "Du kan inte ångra det här kommandot."), Nautilus `sv`
-  ("_Ångra Kopiera", "_Ångra Flytta" — exakt vår domän: en filhanterare som ångrar en filåtgärd), Microsoft `sv`
-  (`undo` → "ångra") · high.
+- **rollback → `ångra`** · macOS `sv` (`Undo` → "Ångra", "Du kan inte ångra det här kommandot."), Nautilus `sv` ("_Ångra
+  Kopiera", "_Ångra Flytta" — exakt vår domän: en filhanterare som ångrar en filåtgärd), Microsoft `sv` (`undo` →
+  "ångra") · high.
 - ❌ Inte `återställ`: det ÄR `restore` i svenskan (macOS och Microsoft `sv` `restore` → "återställa"), och rollback
   återställer just inte — den raderar det åtgärden skrev, och en fil som skrevs över är borta (det säger
   `rollbackConfirm.body` rakt ut). Microsoft `sv` ger visserligen `roll back → återställa`, men det är
