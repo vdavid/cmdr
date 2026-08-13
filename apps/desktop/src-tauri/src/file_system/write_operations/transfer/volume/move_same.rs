@@ -125,7 +125,6 @@ pub(super) async fn move_within_same_volume(
             )
             .await
             .stopped()
-            .is_some()
             {
                 task_guard.disarm();
                 manager::manager().on_settled(&op_id);

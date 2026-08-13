@@ -151,7 +151,6 @@ pub(crate) async fn route_archive_move_out(
             )
             .await
             .stopped()
-            .is_some()
             {
                 task_guard.disarm();
                 manager::manager().on_settled(&op_id);

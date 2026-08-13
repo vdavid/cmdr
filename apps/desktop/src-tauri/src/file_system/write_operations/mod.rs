@@ -311,7 +311,6 @@ where
             if scan_bridge::await_claimed_preview(&*events, &op_id, operation_type, &state)
                 .await
                 .stopped()
-                .is_some()
             {
                 task_guard.disarm();
                 manager::manager().on_settled(&op_id);
@@ -626,7 +625,6 @@ pub async fn delete_files_start(
                 if scan_bridge::await_claimed_preview(&*events, &op_id, WriteOperationType::Delete, &state)
                     .await
                     .stopped()
-                    .is_some()
                 {
                     task_guard.disarm();
                     manager::manager().on_settled(&op_id);

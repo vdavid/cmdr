@@ -619,7 +619,6 @@ async fn archive_copy_into_start(
             )
             .await
             .stopped()
-            .is_some()
             {
                 task_guard.disarm();
                 manager::manager().on_settled(&op_id);

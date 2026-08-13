@@ -31,6 +31,12 @@ use super::types::{
 };
 
 /// What the wait concluded, in the operation's own vocabulary.
+///
+/// Deliberately carries no reason. The wait runs BEFORE the journal row opens,
+/// so there is nothing for a caller to journal, and the cancelled-vs-errored
+/// distinction is already out as this operation's terminal event by the time the
+/// caller sees `Stopped`. A caller's only decision is settle-or-carry-on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum ScanWait {
     /// Walk the plan: the preview finished, or there was nothing to wait for.
     /// Either way the operation proceeds, consuming the cached result if one is
@@ -38,24 +44,13 @@ pub(super) enum ScanWait {
     Proceed,
     /// The operation is over before it wrote anything, and its terminal event
     /// is already out. Settle and return.
-    Stopped(StoppedBy),
-}
-
-/// Why a scan-wait ended the operation, so the caller can journal the right
-/// terminal status without re-deriving it from an event.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum StoppedBy {
-    Cancelled,
-    Error,
+    Stopped,
 }
 
 impl ScanWait {
-    /// `Some(reason)` when the caller must stop; `None` to carry on.
-    pub(super) fn stopped(&self) -> Option<StoppedBy> {
-        match self {
-            ScanWait::Proceed => None,
-            ScanWait::Stopped(reason) => Some(*reason),
-        }
+    /// `true` when the caller must stop; `false` to carry on.
+    pub(super) fn stopped(&self) -> bool {
+        matches!(self, ScanWait::Stopped)
     }
 }
 
@@ -105,7 +100,7 @@ pub(super) async fn await_claimed_preview(
                 files_processed: 0,
                 rolled_back: false,
             });
-            ScanWait::Stopped(StoppedBy::Cancelled)
+            ScanWait::Stopped
         }
         ScanOutcome::Error(message) => {
             abandon_claim(&preview_id);
@@ -118,7 +113,7 @@ pub(super) async fn await_claimed_preview(
                     message,
                 },
             ));
-            ScanWait::Stopped(StoppedBy::Error)
+            ScanWait::Stopped
         }
     }
 }

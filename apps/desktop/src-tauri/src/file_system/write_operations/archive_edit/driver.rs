@@ -178,7 +178,6 @@ pub(crate) async fn archive_edit_start(
             )
             .await
             .stopped()
-            .is_some()
             {
                 task_guard.disarm();
                 manager::manager().on_settled(&op_id);
