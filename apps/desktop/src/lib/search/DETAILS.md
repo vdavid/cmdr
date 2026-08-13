@@ -575,11 +575,35 @@ the per-site breakdown. Consumers:
   `"Search results aren't a folder. Paste into a real folder instead."` (canonical string
   `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) — for the `search-results` kind only; a `network` pane keeps its prior silence.
 
-### Cross-snapshot delete sync
+### Cross-snapshot purge
 
-When the user deletes a row from a search-results pane, the delete dialog runs against the real file path (the snapshot
-stores absolute paths). On `handleTransferComplete` for `op === 'delete' | 'trash' | 'move'`, `dialog-state.svelte.ts`
-calls `removeEntryFromAllSnapshots(sourcePath)` once per deleted path. That helper:
+A stored snapshot outlives the pane that opened it and the operation that emptied it: the user can reopen
+`search-results://sr-3` in any window, hours later, and its rows must not name files that were moved, deleted, trashed,
+or renamed away meanwhile. `snapshot-purge.ts` keeps it honest, subscribed once per window from `(main)/+page.svelte`.
+
+**Its input is the `write-source-item-done` stream, which is outcome and not intent.** A top-level source item emits
+once it is fully processed, carrying `sourceRemoved`; the purge acts on that flag and ignores everything else. So:
+
+- A **skipped** item emits nothing, and its row stays (the file is still on disk).
+- An item a **cancel** never reached emits nothing, and the ones the operation did get through are still purged. There
+  is no "on completion" about it.
+- A **cross-FS move** reports `sourceRemoved: false` from its staging pass and `true` from its source-delete phase, so a
+  Skip decided in between can't purge a file that stays.
+- A **copy** reports `false` throughout. A **bulk rename** reports `true`: nothing answers to the old path any more.
+
+**Why not the operation's `sourcePaths`.** They are what the user ASKED for, so they miss all four cases above; the
+dialog that holds them is also the wrong place, since a window watching an operation it never started has none
+(`file-explorer/pane/DETAILS.md` § "Birth context") and a snapshot is not a pane's property anyway. Putting the vanished
+paths on the completion event instead was the other candidate and is not available: a 500k-file move would ship 500k
+strings to every webview. **Why not `directory-diff`**, which also reports vanished rows: it is emitted per WATCHED
+listing, and a delete from a search-results pane targets a real file whose parent folder is usually open in no pane at
+all, so the flow this feature exists for would purge nothing.
+
+The purge is per top-level source path, so a snapshot row for a file INSIDE a moved directory outlives its file. That
+was true of the old shape too; the honest fix is a prefix sweep, and it needs care around a directory merge whose
+children were partly skipped.
+
+`removeEntryFromAllSnapshots(path)` is the store-side half:
 
 1. Walks every stored snapshot and replaces its `entries` array with one that excludes the deleted path (preserves
    reference identity on the unchanged entries; only the array changes).
@@ -587,7 +611,7 @@ calls `removeEntryFromAllSnapshots(sourcePath)` once per deleted path. That help
 3. Leaves `totalCount` alone — the existing `entries.length` vs `totalCount` mismatch is the truncation signal.
 
 `SearchResultsView.svelte`'s snapshot lookup reads `getMutationTick()` inside its `$derived` so the view re-renders
-after a delete. Without the tick, the `Map` mutation would be invisible to Svelte reactivity (snapshots aren't `$state`
+after a purge. Without the tick, the `Map` mutation would be invisible to Svelte reactivity (snapshots aren't `$state`
 themselves, by design — see the store's header).
 
 ### Source-side ops from the snapshot pane
@@ -608,8 +632,8 @@ snapshot pane shares `FilePane.selection` state with normal panes. Wire path:
 - **Drag-out** uses the `'paths'` drag context in `lib/file-explorer/drag/drag-drop.ts`: when `FullList` is rendered
   with `staticEntries` and the user drags a selection, the FE builds a paths array from `getEntryAt(idx)` and routes
   through `start_drag_paths`.
-- **Post-move snapshot cleanup**: covered by the cross-snapshot delete-sync hook above. After F6 from the snapshot pane,
-  the moved rows disappear from every snapshot that referenced them.
+- **Post-move snapshot cleanup**: covered by the cross-snapshot purge above. After F6 from the snapshot pane, the rows
+  the move actually took disappear from every snapshot that referenced them; a skipped one stays.
 
 Destination-side write ops are still blocked: pasting INTO a search-results pane shows the canonical
 `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` (via the F-bar disablement, the menu item omission, and the dispatcher's

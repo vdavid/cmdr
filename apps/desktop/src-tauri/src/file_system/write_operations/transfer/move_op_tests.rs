@@ -8,6 +8,7 @@
 
 use super::*;
 use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution};
+use crate::ignore_poison::IgnorePoison;
 
 fn make_state(progress_interval_ms: u64) -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(std::time::Duration::from_millis(
@@ -773,5 +774,127 @@ fn a_local_move_never_acts_on_a_preview_of_a_different_selection() {
     assert!(
         !dst_dir.join("other.bin").exists(),
         "a preview of another file must never put it at the destination"
+    );
+}
+
+// ============================================================================
+// `write-source-item-done`: `source_removed` is the vanished-path contract
+// ============================================================================
+//
+// The frontend's search-snapshot purge acts on this flag alone
+// (`apps/desktop/src/lib/search/snapshot-purge.ts`), so a `true` for a path that
+// is still on disk drops a row for a file the user can still open. Inferring
+// removal from the operation type is exactly what these cases break.
+
+/// The `source_removed` flags this run reported for `path`, in emit order.
+fn removal_flags_for(events: &CollectorEventSink, path: &Path) -> Vec<bool> {
+    events
+        .source_items_done
+        .lock_ignore_poison()
+        .iter()
+        .filter(|e| e.source_path == path.display().to_string())
+        .map(|e| e.source_removed)
+        .collect()
+}
+
+#[test]
+fn a_same_fs_move_that_took_the_whole_item_reports_it_removed() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    let dst_root = tmp.path().join("dst");
+    fs::create_dir_all(&src_root).unwrap();
+    fs::create_dir_all(&dst_root).unwrap();
+    let source = src_root.join("a.bin");
+    fs::write(&source, b"content").unwrap();
+
+    let events = run_same_fs_move(
+        std::slice::from_ref(&source),
+        &dst_root,
+        ConflictResolution::Stop,
+        "same-fs-removed",
+    )
+    .expect("the move must succeed");
+
+    assert!(!source.exists(), "precondition: the rename took the source");
+    assert_eq!(removal_flags_for(&events, &source), vec![true]);
+}
+
+#[test]
+fn a_same_fs_merge_that_skipped_a_child_reports_the_source_still_there() {
+    // The directory stays behind holding its skipped child, so a purge keyed on
+    // "it was a move" would drop a row for a folder that is still on disk.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    let dst_root = tmp.path().join("dst");
+    fs::create_dir_all(&src_root).unwrap();
+    fs::create_dir_all(&dst_root).unwrap();
+
+    let src_dir = src_root.join("d");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::write(src_dir.join("keep.bin"), b"new child").unwrap();
+    fs::write(src_dir.join("collide.bin"), b"AAAA").unwrap();
+    let dst_dir = dst_root.join("d");
+    fs::create_dir_all(&dst_dir).unwrap();
+    fs::write(dst_dir.join("collide.bin"), b"BBBB").unwrap();
+
+    let events = run_same_fs_move(
+        std::slice::from_ref(&src_dir),
+        &dst_root,
+        ConflictResolution::Skip,
+        "same-fs-merge-skip",
+    )
+    .expect("the move must succeed");
+
+    assert!(src_dir.exists(), "precondition: the skipped child keeps the source dir");
+    assert_eq!(removal_flags_for(&events, &src_dir), vec![false]);
+}
+
+#[test]
+fn a_cross_fs_move_reports_removal_only_after_the_source_delete_phase() {
+    // Phase 2 finishes staging while the original is untouched; Phase 4 deletes
+    // it. Reading the first event as "gone" would purge a live file for as long
+    // as the copy takes, and forever if a Skip in between keeps the source.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    let dst_root = tmp.path().join("dst");
+    fs::create_dir_all(&src_root).unwrap();
+    fs::create_dir_all(&dst_root).unwrap();
+    let source = src_root.join("a.bin");
+    fs::write(&source, b"content").unwrap();
+
+    let events = run_cross_fs_move(
+        std::slice::from_ref(&source),
+        &dst_root,
+        ConflictResolution::Stop,
+        "cross-fs-removed",
+    )
+    .expect("the move must succeed");
+
+    assert_eq!(removal_flags_for(&events, &source), vec![false, true]);
+}
+
+#[test]
+fn a_cross_fs_move_that_skipped_the_item_never_reports_it_removed() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    let dst_root = tmp.path().join("dst");
+    fs::create_dir_all(&src_root).unwrap();
+    fs::create_dir_all(&dst_root).unwrap();
+    let source = src_root.join("a.bin");
+    fs::write(&source, b"source").unwrap();
+    fs::write(dst_root.join("a.bin"), b"dest").unwrap();
+
+    let events = run_cross_fs_move(
+        std::slice::from_ref(&source),
+        &dst_root,
+        ConflictResolution::Skip,
+        "cross-fs-skip",
+    )
+    .expect("the move must succeed");
+
+    assert!(source.exists(), "precondition: Skip keeps the source");
+    assert!(
+        !removal_flags_for(&events, &source).contains(&true),
+        "a skipped source must never be reported removed"
     );
 }

@@ -35,6 +35,7 @@
         initMainWindowOperations,
         destroyMainWindowOperations,
     } from '$lib/file-operations/queue/main-window-operations.svelte'
+    import { initSnapshotPurge, destroySnapshotPurge } from '$lib/search/snapshot-purge'
     import {
         initOperationSessions,
         destroyOperationSessions,
@@ -414,6 +415,10 @@
         // session, because its listeners are async and an operation dispatched
         // while they're being set up would go unheard.
         await initOperationSessions()
+        // Stored search snapshots drop rows for files an operation removed, from
+        // the per-path outcome stream. Independent of any pane or dialog: a
+        // snapshot outlives both. See `$lib/search/snapshot-purge.ts`.
+        await initSnapshotPurge()
         // Watches that store for operations that stopped before they were done,
         // and says so. After the store, so the first snapshot has somewhere to
         // land before anything reads it.
@@ -460,6 +465,7 @@
         stopOperationConflictHost()
         destroyMainWindowOperations()
         destroyOperationSessions()
+        destroySnapshotPurge()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)
         }

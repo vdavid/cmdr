@@ -215,6 +215,7 @@ pub(crate) struct CollectorEventSink {
     pub scan_conflicts: std::sync::Mutex<Vec<ConflictInfo>>,
     pub dry_run: std::sync::Mutex<Vec<DryRunResult>>,
     pub settled: std::sync::Mutex<Vec<WriteSettledEvent>>,
+    pub source_items_done: std::sync::Mutex<Vec<WriteSourceItemDoneEvent>>,
 }
 
 #[cfg(test)]
@@ -230,6 +231,7 @@ impl CollectorEventSink {
             scan_conflicts: std::sync::Mutex::new(Vec::new()),
             dry_run: std::sync::Mutex::new(Vec::new()),
             settled: std::sync::Mutex::new(Vec::new()),
+            source_items_done: std::sync::Mutex::new(Vec::new()),
         }
     }
 }
@@ -251,7 +253,9 @@ impl OperationEventSink for CollectorEventSink {
     fn emit_conflict(&self, event: WriteConflictEvent) {
         self.conflicts.lock_ignore_poison().push(event);
     }
-    fn emit_source_item_done(&self, _event: WriteSourceItemDoneEvent) {}
+    fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent) {
+        self.source_items_done.lock_ignore_poison().push(event);
+    }
     fn emit_scan_progress(&self, event: ScanProgressEvent) {
         self.scan_progress.lock_ignore_poison().push(event);
     }

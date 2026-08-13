@@ -289,6 +289,10 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
                 events.emit_source_item_done(WriteSourceItemDoneEvent {
                     operation_id: operation_id.to_string(),
                     source_path: source.display().to_string(),
+                    // `trashItemAtURL` moved the whole tree, so the original path
+                    // is gone. This arm is the Ok branch; a failure pushes to
+                    // `errors` instead and emits nothing.
+                    source_removed: true,
                 });
             }
             Err(e) => {

@@ -29,7 +29,6 @@ import { tString } from '$lib/intl/messages.svelte'
 import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
-import { removeEntryFromAllSnapshots } from '$lib/search/snapshot-store.svelte'
 import { pathInsideArchive } from './volume-capabilities'
 import { transferOpLabel } from './transfer-op-label'
 import { createTransferPaneEffects } from './transfer-pane-effects'
@@ -352,17 +351,11 @@ export function createDialogState(deps: DialogStateDeps) {
       const op = props?.operationType ?? 'copy'
       const opLabel = transferOpLabel(op)
 
-      // Cross-snapshot delete sync: when files are removed from disk via Delete
-      // or Trash (or moved away via Move — the source path no longer resolves),
-      // purge each source path from every stored search-results snapshot. The
-      // snapshot store bumps its mutation tick so `SearchResultsView`'s
-      // `$derived` re-evaluates and the row vanishes without a manual refresh.
-      // No-op when no snapshot contains the path.
-      if ((op === 'delete' || op === 'trash' || op === 'move') && props?.sourcePaths) {
-        for (const sourcePath of props.sourcePaths) {
-          removeEntryFromAllSnapshots(sourcePath)
-        }
-      }
+      // ❌ No search-snapshot purge here. A dialog knows what the operation was
+      // ASKED to do, which is the wrong input: it misses a skip, misses a cancel,
+      // and isn't available at all to a window watching an operation it never
+      // started. `$lib/search/snapshot-purge.ts` reads the per-path outcome
+      // stream instead, for every window and every ending.
       log.info(
         `${opLabel} complete: ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatByteSize(bytesProcessed)})`,
       )

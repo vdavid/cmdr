@@ -176,6 +176,9 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
             events.emit_source_item_done(WriteSourceItemDoneEvent {
                 operation_id: operation_id.to_string(),
                 source_path: source_path.display().to_string(),
+                // Every file under this top-level item is unlinked. Delete has no
+                // Skip, so there is no way for it to still be there.
+                source_removed: true,
             });
         }
 

@@ -8,11 +8,11 @@
  *    that tested the SHOWN flag would let an adoption overwrite those props, and
  *    the password submit would then re-dispatch the adopted operation's sources
  *    to the adopted operation's destination. Here the two live in separate
- *    slots, so an adoption cannot reach the birth context at all — and it is
+ *    MODULES, so an adoption cannot reach the birth context at all — and it is
  *    refused outright, which this file pins from both ends.
  * 2. **An adopted view has no birth context and must not act as if it had.**
  *    Its outcome handlers touch no pane: no refresh, no selection change, no
- *    operation snapshot. `dialog-state.svelte.ts` § "Birth context" argues why.
+ *    operation snapshot. `pane/DETAILS.md` § "Birth context" argues why.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -269,11 +269,17 @@ describe("an adopted view's outcomes touch no pane", () => {
     expect(dialogs.adoptedProgressProps).toBeNull()
   })
 
-  it('purges no search snapshot: it never knew which paths moved', () => {
+  it('purges no search snapshot, and neither does the started family', () => {
+    // ❌ Not a gap to fill here. A dialog knows the operation's INTENT, which
+    // misses a skip and a cancel and is absent from an adopted view entirely;
+    // `$lib/search/snapshot-purge.ts` reads the per-path outcome stream for the
+    // whole window instead. This pins that neither family reaches for the store.
     const { dialogs } = makeState()
     dialogs.foregroundOperation({ ...adopted(), operationType: 'move' })
-
     dialogs.handleAdoptedComplete(3, 0, 128)
+
+    dialogs.startTransferProgress(moveProps())
+    dialogs.handleTransferComplete(2, 0, 2048)
 
     expect(removeEntryFromAllSnapshots).not.toHaveBeenCalled()
   })
@@ -331,8 +337,6 @@ describe('a view whose pane has moved on since the operation was born', () => {
 
     expect(refreshListing).toHaveBeenCalled()
     expect(addToast).toHaveBeenCalledTimes(1)
-    // The operation still moved these files, wherever the pane went.
-    expect(removeEntryFromAllSnapshots).toHaveBeenCalledTimes(2)
     expect(rightPane.spies.clearSelection).not.toHaveBeenCalled()
     expect(rightPane.spies.clearOperationSnapshot).not.toHaveBeenCalled()
   })

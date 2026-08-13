@@ -304,6 +304,11 @@ fn move_with_rename(
             events.emit_source_item_done(WriteSourceItemDoneEvent {
                 operation_id: operation_id.to_string(),
                 source_path: source.display().to_string(),
+                // Usually true (the rename took the whole item), but a directory
+                // MERGE whose children were partly skipped leaves the source dir
+                // standing. One `lstat` per top-level item is cheap next to the
+                // move itself, and it's the only honest answer.
+                source_removed: !path_exists_or_is_symlink(source),
             });
         }
         Ok(())
@@ -631,6 +636,10 @@ fn move_with_staging(
                 events.emit_source_item_done(WriteSourceItemDoneEvent {
                     operation_id: operation_id.to_string(),
                     source_path: source_path.display().to_string(),
+                    // Staging only: the source is still on disk, and a Skip in
+                    // the rename phase can mean it stays for good. Phase 4 emits
+                    // again with `source_removed: true` for the ones it deletes.
+                    source_removed: false,
                 });
             }
         }
@@ -887,6 +896,9 @@ fn delete_sources_after_move(
             events.emit_source_item_done(WriteSourceItemDoneEvent {
                 operation_id: operation_id.to_string(),
                 source_path: source.display().to_string(),
+                // Phase 4 only reaches here for a source it just removed; a
+                // skipped one is filtered out above.
+                source_removed: true,
             });
         }
     }

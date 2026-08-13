@@ -842,6 +842,9 @@ fn emit_bulk_rename_progress(
             events.emit_source_item_done(WriteSourceItemDoneEvent {
                 operation_id: operation_id.to_string(),
                 source_path: row.source.to_string_lossy().to_string(),
+                // `Done` means the row landed at its new name, so nothing answers
+                // to the old path any more.
+                source_removed: true,
             });
         }
     }

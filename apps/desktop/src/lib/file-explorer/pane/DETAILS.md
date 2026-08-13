@@ -512,21 +512,12 @@ that pane is NOW; a plain transfer whose source pane navigated away mid-copy is 
 pane's current folder against the one the operation was born in. Refreshing a listing is harmless whatever the answer
 and still happens; changing a selection the user made somewhere else is not.
 
-**Known gap: the search-snapshot purge doesn't run for an adopted view.** `removeEntryFromAllSnapshots` walks
-`sourcePaths`, which is birth context, so a move finished from an adopted dialog can leave rows for files that no longer
-exist in a stored search snapshot. Scoped out deliberately, with the reasoning recorded because the fix is not the
-obvious one:
-
-- The purge is operation-scoped truth wearing view-scoped clothing, so "re-home the read" is the tempting fix, and it is
-  not available: the id is all an adopted view has, and the outcome cannot be made to carry the paths. A 500k-file move
-  would ship 500k strings to every webview on every completion.
-- It is already wrong in two ways this doesn't introduce. `handleTransferComplete` is the only caller, so a cancelled or
-  errored move purges nothing and leaves the same phantom rows today; and `sourcePaths` is INTENT, not outcome, so a
-  `skip`-resolved move purges rows for files still on disk.
-- The shape of the real fix is therefore a different input, not a different reader: the snapshot store should learn from
-  the `directory-diff` stream that already tells panes rows vanished. That is outcome truth, it arrives for every path
-  including the skipped and the cancelled ones, and it costs nothing per operation. Until then, an adopted completion
-  leaves the snapshots alone rather than guessing.
+**❌ No dialog handler purges a search snapshot, in either family.** A dialog holds what the operation was ASKED to do,
+and the purge needs what it DID; a snapshot also outlives every pane and dialog, in every window. So it is a
+window-level subscription to the per-path `write-source-item-done` stream, `$lib/search/snapshot-purge.ts`, and an
+adopted view's snapshots stay correct without the view knowing anything. Why that stream and not `directory-diff` or a
+fatter completion event: `$lib/search/DETAILS.md` § "Cross-snapshot purge". Both families are pinned against reaching
+for the store in `dialog-state.foreground.svelte.test.ts`.
 
 **A dialog that throws during render must never wedge input.** Every dialog renders inside one `<svelte:boundary>` in
 `DialogManager.svelte`. Opening a dialog sets its `show*` flag BEFORE anything renders, and `isConfirmationDialogOpen()`

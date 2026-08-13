@@ -375,6 +375,8 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 ctx.events.emit_source_item_done(WriteSourceItemDoneEvent {
                     operation_id: operation_id.to_string(),
                     source_path: source_path.display().to_string(),
+                    // A copy leaves its source exactly where it was.
+                    source_removed: false,
                 });
             }
 

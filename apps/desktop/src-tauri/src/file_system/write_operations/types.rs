@@ -258,14 +258,28 @@ pub struct WriteErrorEvent {
     pub error: WriteOperationError,
 }
 
-/// Emitted when all files belonging to a top-level source item have been processed.
-/// Used by the frontend for gradual deselection during operations.
+/// Emitted when a top-level source item has been processed IN FULL, and only then:
+/// a skipped item, or one the operation never reached before a cancel, emits
+/// nothing. So this is the per-path OUTCOME stream, not a restatement of intent,
+/// and it costs one event per top-level item rather than one list per operation.
+///
+/// The frontend uses it for gradual deselection during an operation, and
+/// `source_removed` additionally drives the search-snapshot purge
+/// (`$lib/search/snapshot-purge.ts`).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 #[tauri_specta(event_name = "write-source-item-done")]
 pub struct WriteSourceItemDoneEvent {
     pub operation_id: String,
     pub source_path: String,
+    /// Whether `source_path` is GONE from its original location now.
+    ///
+    /// ⚠️ Not "is this a move or a delete": a cross-FS move emits once when the
+    /// item finishes STAGING (the source is still there, and a Skip in the
+    /// rename phase may mean it stays) and again when the source-delete phase
+    /// removes it. Anything that acts on a vanished file must read this flag,
+    /// not infer removal from the operation type.
+    pub source_removed: bool,
 }
 
 /// Cancelled event payload.
