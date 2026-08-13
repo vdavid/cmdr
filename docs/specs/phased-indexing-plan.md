@@ -78,15 +78,79 @@ descent walks *through* the ancestors and cuts at each genuinely unlisted child,
 - the big phases become **many small walks instead of one huge one**, which is what makes priority interleaving cheap
   (below).
 
-Check whether a depth-1 listing primitive can be assembled from `reconcile/verifier.rs`'s readdir-diff rather than
-written from scratch; ❌ do not use `scan_subtree` (`ScanRoot::Rebuild` deletes descendants first, which would destroy
-covered ground).
+Reviewed and confirmed against the descent rule and the epoch rollup: a stitched ancestor reads `Listed` (not
+`Covered`) while any child is unlisted, because `repair_dir_stats_upward` recomputes `min_subtree_epoch` as the min over
+the directory's own `listed_epoch` and its children's (`writer/aggregation.rs:285-298`). No coverage is claimed that
+wasn't earned, and sizes stay honest.
+
+**Four things the stitch must get right:**
+
+1. **Upsert FILES, not just directories.** `listed_children_on` returns `None` while `listed_epoch == 0` and the **full
+   child list** the moment it is non-zero (`read/queries.rs:377-386`), and `Index::list_children` feeds the MCP/agent
+   `list_dir` tool. So marking a directory listed makes its rows authoritative to a user-visible consumer that same
+   instant: a directories-only stitch would report a folder as containing no files. Pin it with a test.
+2. **Resolve ids, read the current epoch, and flush before marking.** `MarkDirsListed { ids, epoch }` is a PK-keyed
+   `UPDATE`, and marking a row that is still pending in an unflushed batch leaves it `listed_epoch = 0` **forever**
+   (`writer/mod.rs:321-330`). The stitch creates the deeper ancestor rows itself, so a `flush_blocking` between the
+   upserts and the mark is mandatory, not an optimization. Read `current_epoch` (`IndexStore::read_current_epoch`), the
+   same value a walk stamps; ❌ never bump it.
+3. **Reuse the diff core, not the whole primitive.** `verify_and_correct` is the right shape (depth-1 readdir diff,
+   upserts, stale-row deletes) but must not be used as-is: it recurses into every new subdirectory with
+   `scanner::scan_subtree` (`reconcile/verifier.rs:406-419`), which would destroy the point, since new children must
+   stay virgin for the parallel walker. `reconcile_subtree` is fully recursive with no depth parameter, so it can't be
+   "used at depth 1" either — but it is the model for the mark (it accumulates `listed_dir_ids` and sends one
+   `MarkDirsListed` after the walk, `reconciler.rs:953-961`). Extract the depth-1 diff core, have both the verifier and
+   the stitch call it, and let the stitch add the mark. ❌ Not `scan_subtree` (`ScanRoot::Rebuild` deletes descendants
+   first).
+4. **Suppress the verifier while phases run** — see the next section. This one is a data-safety requirement, not a
+   performance one.
+
+### The verifier has to be told that phases are running
+
+**Without this, the stitch makes things worse rather than better, in two ways.**
+
+Today `verify_and_correct` no-ops on uncovered ground because the directory has no row to resolve
+(`reconcile/verifier.rs:171-186`). **After the stitch, every frontier root has a row.** So the first time the user
+lists a stitched, virgin frontier root, the verifier resolves it, finds zero indexed children, treats every disk entry
+as new, and then runs a full recursive `scan_subtree` **per new subdirectory**, serially, on the verifier task. That:
+
+1. leaves the directory at `listed_epoch = 0` with children, which is exactly the `NotVirgin` node the stitch exists to
+   prevent, so its later phase walk takes the serial repair — and it fires for **every folder the user opens ahead of
+   the walker**, which is the user behavior this whole plan is designed around;
+2. runs a second, unthrottled indexer against the same disk and writer as the phase machine;
+3. **can write the same names as a live cover walk.** The verifier consults neither the cover claim nor
+   `WatchScope::may_walk` (no references to either in `reconcile/verifier.rs` or `lifecycle/state/scan_control.rs`); it
+   sees only the `scanning` flag. Two writers of the same names allocate different ids, and `INSERT OR IGNORE` drops one
+   and orphans its subtree (`lifecycle/cover/live.rs:1-23`). This is latent today and routine under this plan, because
+   walking-while-browsing IS the plan.
+
+**The fix: an internal `phase_active: Arc<AtomicBool>` on `IndexManager`** (crate-internal, so no public-surface cost),
+fed to exactly three places:
+
+- the `scanning` argument of `verifier::maybe_verify`, via `trigger_verification` (`state/scan_control.rs:46`) — this
+  closes all three problems above, and matches the design rule that the walk owns coverage growth;
+- `awaits_its_first_scan` (`state/queries.rs:93`, which already keys off `mgr.scanning`) — **this also closes two of
+  M3's truncate doors for free**: FDA Deny and the per-drive "Turn on indexing" button both stop force-scanning,
+  because `start_volume`'s guard goes false;
+- `get_status`'s `scanning` field (`manager.rs:569`), which M2.9 needs anyway.
+
+❌ **Do not reuse `mgr.scanning` for this.** `cover_context_for` returns `None` while `mgr.scanning` is true
+(`lifecycle/state.rs:251-266`), so the phase machine's own `Index::cover` calls would fail with `ScanInProgress`. Leave
+that gate exactly as it is.
+
+Worth doing at the same time, since the diff core is being extracted anyway: have the verifier **mark a directory
+listed when it genuinely read all of it**. That turns it from a producer of `NotVirgin` nodes into a producer of
+legitimately covered ones, and retires risk 6 below.
 
 ### Interleaving without preemption
 
 Because the stitch turns `$HOME` and `/` into a list of independent frontier roots, the machine walks them **one root
 at a time and checks the priority queue between roots**. A folder the user opens waits for one subtree, not for the
 drive.
+
+Cheaper variant worth measuring first: `cover()` already checks its cancel token **between** frontier roots
+(`lifecycle/cover.rs:326-330`), so a single `cover()` over a phase's whole frontier is already interruptible at each
+root boundary, without paying `finish_branch_coverage`'s persisted meta write per root.
 
 Preemption (cancel the running walk, run the visited root, resume) stays available as a fallback, but it is not the
 primary mechanism, because it is expensive and subtle:
@@ -137,10 +201,26 @@ one device (`/`, `/System/Volumes/Data`, `/Users`, `/Applications` all report de
 ❌ **Do not launch the phased volume as `Activation::WriterOnly`.** `journaled` is computed as
 `activation == IndexTheVolume && kind.has_event_journal()` (`state/startup.rs:135`), and a `WriterOnly` start never
 calls `resume_or_scan`. That would cost, on every launch: no FSEvents journal replay for the boot disk, and (once
-`scan_completed_at` exists) a `Stale` load that **bumps the epoch**, rendering every directory size stale forever. Both
-ledger heals above live in `resume_or_scan` too. `WriterOnly` is designed for a volume no scan is ever coming for; a
-launch-time phased index is not that. The phase machine belongs **inside `resume_or_scan`'s decision**, as a third
-answer beside replay and scan.
+`scan_completed_at` exists) a `Stale` load that **bumps the epoch**, rendering every directory size stale forever. The
+shallow-sweep seeding (`reconciler::seed_from_meta`) lives in `resume_or_scan` too. `WriterOnly` is designed for a
+volume no scan is ever coming for; a launch-time phased index is not that. The phase machine belongs **inside
+`resume_or_scan`'s decision**, as a third answer beside replay and scan.
+
+Three consequences that are easy to miss:
+
+1. **`resume_branch_watch` currently runs only for `Activation::WriterOnly`** (`state/startup.rs:251-253`). Under
+   `IndexTheVolume` the persisted branch set is never reloaded, so a partially covered volume would come back with its
+   covered ground **unwatched** and no epoch bump to admit it. `startup.rs` needs an explicit phased condition beside
+   `WriterOnly`, or this plan's cross-session-resume claim is simply false.
+2. **The `dir_stats` ledger heal is armed but never paid.** `ArmLedgerHealLatch` is disarmed by the next successful
+   `ComputeAllAggregates`, and cover walks send only `ComputeSubtreeAggregates` — so the latch stays armed and re-arms
+   every launch, and the heal never happens. Fix is one message: send `PayLedgerIfUnpaid` (`writer/mod.rs:415-421`,
+   which runs a full `ComputeAllAggregates` iff armed and no-ops otherwise) at full coverage, alongside
+   `scan_completed_at`.
+3. **Placement inside `resume_or_scan` is constrained.** The phased answer sits *after* the sweep seed and latch arm
+   (`manager.rs:409-430`) and *after* the `should_replay_journal` branch (`:435-467`), replacing only the final
+   `start_scan` fallthrough (`:474-497`). ❌ It must stay below the `is_trait_scanned` early return (`:388`), or SMB and
+   MTP volumes get routed into a local phase machine.
 
 ### Watching: probably no handover at all
 
@@ -151,10 +231,35 @@ watches each branch, deliberately: `notify`'s recursive mode costs one inotify w
 
 So a fully covered volume can simply keep `WatchScope::Branches` with `/` as its single branch, and the
 branch→whole-volume handover never has to be written. On Linux a `/` branch is watched recursively, which is the same
-cost as whole-volume watching. **Prefer this.** If a handover is written anyway, its traps are: start from
-`replayable_event_id()` / `BranchWatch::safe_event_id()`, never 0, or the gap is lost; and `WatchScope` is captured by
-value into the reconciler and `LiveConfig`, so swapping it means re-spawning the loop — drain `take_promoted()` first
-or buffered events die with the old loop.
+cost as whole-volume watching. **Prefer this**, with one required change and one bonus:
+
+- **Required: teach `is_branch_confined()` to ask the real question.** A `Branches` scope never takes the
+  visible-scanner route for a `MustScanSubDirs` anchor, whatever its depth (`reconcile/reconciler.rs:369-374`,
+  `:517-527`). Keeping `Branches` forever therefore means a fully covered boot disk **never sweeps again**: every
+  coalesced root-scale anchor (macOS saying "a lot changed under here" and losing the detail) goes to the throttled
+  `reconcile_subtree` drain on a shallow anchor, which is exactly the "holds the per-dir hourglass for the better part
+  of a full scan" case the depth split exists to avoid, and the sweep-window bookkeeping accumulates with no sweep. One
+  line fixes it: `is_branch_confined()` is false when the branch set covers the volume root. That restores the shallow
+  sweep at exactly the moment the volume genuinely answers for everything.
+- **Bonus, while the volume IS branch-confined**: truncate door (d) in M3 is closed by construction, and so is a door
+  the stitch would otherwise open — the stitch creates depth-1 and depth-2 branches, and `SHALLOW_RESCAN_MAX_DEPTH = 2`
+  would send those to `perform_registry_rescan` → a truncating `start_scan` if the scope were `WholeVolume`.
+- Verified for the single-`/`-branch shape: `may_walk` (`covers("/")` is true), `admit` (a `/` branch is
+  `deepest_containing` for every path ⇒ `Process`), and the re-anchoring arm is unreachable with nothing above `/`.
+
+If a handover is written anyway, its traps are: start from `replayable_event_id()` / `BranchWatch::safe_event_id()`,
+never 0, or the gap is lost; and `WatchScope` is captured by value into the reconciler and `LiveConfig`, so swapping it
+means re-spawning the loop — drain `take_promoted()` first or buffered events die with the old loop.
+
+**The branch set needs an explicit collapse.** `begin_covering` pushes one `Branch` per path, so N frontier roots means
+N branches (this is inherent to the stitch, not to interleaving: it's the same count whether one `cover()` takes N roots
+or N calls take one each). Every event then pays an O(branches) scan in `deepest_containing` on the live hot path, and
+`finish_covering` only absorbs the path being finished into an existing ancestor branch — siblings never absorb each
+other, so the set never collapses on its own. Expect roughly 50–150 entries during the phases (children of `/`, of
+`$HOME`, and the priority roots). At full coverage, replace the set with `["/"]` (no API for that today; `branches::clear`
+plus one begin/finish pair over `/` is the cheapest route, and correction 4 above needs it to be true anyway). During
+the phases, either accept the N-entry set or collapse a phase's children into its root on completion — measure
+`deepest_containing` under a churn burst before deciding.
 
 ### Freshness, and the two subsystems that depend on it
 
@@ -171,6 +276,22 @@ Recommendation: treat the two axes as what they are. **Freshness = "are the rows
 do we hold?"** They are already orthogonal in this codebase. So publish `Fresh` (and the bus completion) once the
 volume is watched and the priority phases are done, not at full drive coverage, and let importance and media work over
 covered ground while later phases fill in. See Question 3.
+
+Audited, and it is safe: **search never reads freshness at all** (it goes through `coverage()` / `cover()`, so it is
+coverage-gated by construction); `Index::is_fresh` has exactly one app caller
+(`file_system/write_operations/journal_search.rs:102`), which applies its own coverage gate
+(`min_subtree_epoch > 0 && == current_epoch`) and downgrades to `index_stale` otherwise — **pin that with a test, since
+this plan now leans on it**; and the `ready_volumes_with_kind` consumers work over whatever the index holds, with the
+later full-coverage `ScanCompleted` retriggering a full recompute.
+
+Two costs to state rather than discover:
+
+- **The per-drive badge goes green on `Fresh`**, so the user would read "fully indexed" while the drive is 5% covered.
+  That is a copy and honesty decision for M5, and it is the real price of this correction.
+- `enqueue_initial_full_pass_if_unscored` only scores a volume whose importance store has no generation yet. Once the
+  early pass stamps one, a later launch with coverage still incomplete re-scores nothing and no `ScanCompleted` fires
+  until full coverage, so the importance ranking sits frozen at the priority-phase snapshot across launches (softened,
+  not fixed, by the incremental `record_visit` / `publish_dirs_changed` paths).
 
 ## What already exists (do not rebuild it)
 
@@ -342,7 +463,8 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
 1. **Activation stays `IndexTheVolume`**, and the phase machine is a third answer inside `resume_or_scan`, beside
    replay and scan. (Rationale above: journaling, launch freshness, and both ledger heals hang off this.)
 2. **The stitch runs before each phase** (described above): list each ancestor of the phase root, mark that one
-   directory listed, don't descend.
+   directory listed, don't descend. Ship it together with the **`phase_active` flag and the verifier changes** — the
+   stitch without them is a net regression, so they are one unit of work, not two.
 3. **The queue**: rank 0 the M1 roots, rank 1 roots the user visited while running, rank 2 `$HOME`, rank 3 the volume
    root. One walk at a time (`cover` is already internally parallel; a second concurrent walk fights it for the disk and
    the writer). Between frontier roots, re-check the queue — that is what makes interleaving cheap.
@@ -360,7 +482,8 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
 8. **On completion**: stamp `scan_completed_at`, write the calibration meta, publish freshness, fire the terminal
    events, and (unless the handover is written) leave the volume branch-watched with `/` as its single branch.
 9. **Feed the live status shape** (`ScanCalibration`-equivalent counters) throughout, or the per-drive row, progress
-   bar, and ETA stay dead for the whole first index.
+   bar, and ETA stay dead for the whole first index. Drive `get_status`'s `scanning` field from the **`phase_active`
+   flag**, ❌ never by setting `mgr.scanning` (that would make the machine's own `cover()` calls fail).
 10. **Handle `RootUnlistable`** yourself: a cover walk over a vanished drive otherwise reports "covered nothing" instead
     of the typed abort that clears the stuck UI row.
 11. **Master switch and per-drive veto** keep outranking everything.
@@ -369,6 +492,11 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
 
 - after a stitch, an ancestor scope's frontier EXCLUDES already-covered ground, and every frontier root is virgin
   (this is the finding that broke the first draft; pin it hard);
+- a stitched directory's `list_children` answer includes its FILES, not only its subdirectories;
+- while a phase is active, listing a stitched frontier root does NOT run the verifier's recursive `scan_subtree`, and
+  the root stays virgin;
+- a listing of ground a walk is covering right now writes nothing (the claim/`may_walk` case);
+- `Index::is_fresh` over partially covered ground still makes `journal_search` downgrade to `index_stale`;
 - phases run in order; a covered root is skipped without a walk;
 - a visited root is taken between frontier roots without cancelling anything;
 - a preempted walk's rows survive (row count only grows), and the restart joins before starting;
@@ -392,7 +520,11 @@ the benchmark note.
    from the M1 roots plus a coverage query per root, so a launch naturally skips what is done. Prefer that over
    persisted queue state, which can go stale or disagree with the database.
 3. **Close every truncate door.** A cover-built index has `entry_count > 1` and no `scan_completed_at`, so
-   `local_rescan_reconciles` is false and `start_scan` sends `TruncateData`. The ways in today:
+   `local_rescan_reconciles` is false and `start_scan` sends `TruncateData`. Two of these close for free once
+   `phase_active` feeds `awaits_its_first_scan` (the FDA Deny path and the per-drive enable button), and one is already
+   closed while the volume is branch-confined (the shallow anchor). **Door (b), master off→on, is untouched by any of
+   that and is the one that needs explicit work.** Verify each with a test rather than trusting the reasoning. The ways
+   in today:
    - **FDA Deny** ⇒ `start_indexing_after_fda_decision` → `start_volume(root)` → `awaits_its_first_scan` true ⇒
      `force_scan` ⇒ truncating full scan (`commands/indexing.rs:221`, `handle/mod.rs:177-187`). This makes Question 2
      sharper than it looks.
@@ -500,11 +632,10 @@ post-hoc pin, not a red→green step**, gated on M3.
    in-memory `abandoned_ground`.
 4. **Photo search and importance silently dead** ⇒ the freshness decision, made explicitly (Question 3).
 5. **A truncate door left open** ⇒ M3.3 enumerates all five; one test each.
-6. **The verifier manufacturing non-virgin nodes.** `verify_and_correct` upserts children into a directory without
-   marking it listed, which is exactly what `ScanRoot::Virgin` refuses. Today that is rare because the volume is fully
-   scanned early; under this plan the user browses uncovered ground for minutes, so browsed-but-uncovered folders become
-   non-virgin nodes whose later phase walk takes the serial repair. Bounded (those subtrees are small), but measure it,
-   and consider having the stitch mark a verified directory listed when the verifier genuinely read all of it.
+6. **The verifier as a second, unthrottled indexer** ⇒ the `phase_active` flag plus the verifier marking a directory
+   listed when it genuinely read all of it. Both are M2 deliverables, ❌ not "consider it later": with the stitch giving
+   every frontier root a row, the verifier's recursive `scan_subtree` fires for every folder the user opens ahead of
+   the walker, which is the central user behavior this plan is built around.
 7. **TCC popups from a background walk** ⇒ the FDA gate as today, plus Question 2.
 8. **High-churn directories** (the 1.14M-empty-file Google Drive temp dir in `docs/specs/later/sealed-subtrees-plan.md`)
    land in the home phase now instead of the whole-drive scan, so they hit sooner. Watch for it during the benchmark.
