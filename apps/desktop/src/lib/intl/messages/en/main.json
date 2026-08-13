@@ -15,12 +15,14 @@
     "placeholders": {
       "count": "how many operations are still running (drives the singular/plural form)",
       "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,024)"
-    }
+    },
+    "screenshot": "quit-confirmation-one-copy.png"
   },
 
   "main.quit.body": "Whatever''s finished stays done. Anything still being written stops where it is, and Cmdr clears away what it leaves half-written.",
   "@main.quit.body": {
-    "description": "Body text of the quit-while-running dialog, directly under the title. It reassures the user that quitting is safe: completed files are kept, nothing is undone, and anything caught mid-write is cleaned up rather than left looking complete. IMPORTANT: keep this number-neutral. One operation can be writing several files at once, and several operations can run at once, so the sentence must read correctly whether one file or many are interrupted — do NOT introduce a singular that commits to exactly one. Keep the reassuring, matter-of-fact tone; this is not a warning."
+    "description": "Body text of the quit-while-running dialog, directly under the title. It reassures the user that quitting is safe: completed files are kept, nothing is undone, and anything caught mid-write is cleaned up rather than left looking complete. IMPORTANT: keep this number-neutral. One operation can be writing several files at once, and several operations can run at once, so the sentence must read correctly whether one file or many are interrupted — do NOT introduce a singular that commits to exactly one. Keep the reassuring, matter-of-fact tone; this is not a warning.",
+    "screenshot": "quit-confirmation-one-copy.png"
   },
 
   "main.quit.countdown": "{seconds, plural, one {Quitting in {secondsText} second, so a restart or logout never waits on Cmdr.} other {Quitting in {secondsText} seconds, so a restart or logout never waits on Cmdr.}}",
@@ -29,26 +31,31 @@
     "placeholders": {
       "seconds": "how many seconds are left (drives the singular/plural form)",
       "secondsText": "the same number of seconds, already formatted for display"
-    }
+    },
+    "screenshot": "quit-confirmation-one-copy.png"
   },
 
   "main.quit.countdownAria": "Time until Cmdr quits on its own",
   "@main.quit.countdownAria": {
-    "description": "Screen-reader label for the countdown region of the quit-while-running dialog. The visible text spells out the seconds; this names what the number measures. Keep it short."
+    "description": "Screen-reader label for the countdown region of the quit-while-running dialog. The visible text spells out the seconds; this names what the number measures. Keep it short.",
+    "screenshot": "quit-confirmation-one-copy.png"
   },
 
   "main.quit.keepWorking": "Keep working",
   "@main.quit.keepWorking": {
-    "description": "Button on the quit-while-running dialog that calls the quit off. It is NOT a \"remind me later\": the countdown is removed entirely and the operations carry on as if nothing happened. Avoid a word that suggests postponing. It sits left of the Quit button, which is the primary action."
+    "description": "Button on the quit-while-running dialog that calls the quit off. It is NOT a \"remind me later\": the countdown is removed entirely and the operations carry on as if nothing happened. Avoid a word that suggests postponing. It sits left of the Quit button, which is the primary action.",
+    "screenshot": "quit-confirmation-one-copy.png"
   },
 
   "main.quit.quitNow": "Quit now",
   "@main.quit.quitNow": {
-    "description": "Primary button on the quit-while-running dialog, confirming the quit. \"Now\" is doing real work here: the app quits either way when the countdown ends, and this button skips the wait. It is styled as the destructive choice."
+    "description": "Primary button on the quit-while-running dialog, confirming the quit. \"Now\" is doing real work here: the app quits either way when the countdown ends, and this button skips the wait. It is styled as the destructive choice.",
+    "screenshot": "quit-confirmation-one-copy.png"
   },
 
   "main.quit.operationsHeading": "Still running",
   "@main.quit.operationsHeading": {
-    "description": "Small heading above the list of operations in the quit-while-running dialog, naming what the rows below are. Each row shows what the operation is doing and the names it is working on, for example \"Copying · Holiday.mov → Backup\". Keep it to a couple of words."
+    "description": "Small heading above the list of operations in the quit-while-running dialog, naming what the rows below are. Each row shows what the operation is doing and the names it is working on, for example \"Copying · Holiday.mov → Backup\". Keep it to a couple of words.",
+    "screenshot": "quit-confirmation-one-copy.png"
   }
 }

@@ -29,7 +29,7 @@
     "placeholders": {
       "type": "the kind of operation: copy, move, delete, trash, rename, create_folder, create_file, or archive_edit"
     },
-    "screenshot": "queue.png"
+    "screenshot": "quit-confirmation-one-copy.png"
   },
 
   "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Cancelled} failed {Couldn''t finish} other {Running}}",
@@ -119,7 +119,7 @@
   "queue.list.aria": "Operations",
   "@queue.list.aria": {
     "description": "Screen-reader label for the list of operations in the queue window. It names the category, matching the visible heading above the list.",
-    "screenshot": "queue.png"
+    "screenshot": "quit-confirmation-one-copy.png"
   },
 
   "queue.toolbar.pauseAll": "Pause all",
