@@ -18,6 +18,19 @@ each other.
 dialog already says so in its title. An operation with no activity at all — local copy, delete, trash, which keep no
 in-flight table — also stays silent rather than guessing.
 
+**Where it sits, and what it's made of.** A warning-toned `SectionCard` at the FOOT of the dialog body, below the
+current-file line and directly above the button row, at full content width with no inset of its own. It's the reason a
+person reaches for Cancel, so it belongs beside the button they'd reach for rather than wedged into the readout, and it
+gets the card's `--spacing-lg` padding so a warning doesn't read as a cramped aside. The tone comes from the house
+primitive (`$lib/ui/SectionCard.svelte`), the same one `TransferDialog`'s conflict block uses, so the two warning
+surfaces in the transfer flow can't drift apart and both themes are handled in one place. Per the tone contract the fill
+and border carry the warning and the text keeps its normal color; the hourglass icon is the one colored mark, in
+`--color-warning-text` (the brand `--color-warning` only clocks ~3.3:1 on the tint). The notice renders outside the
+branch that owns the progress bars, so `TransferProgressDialog`'s `showStall` re-states the two phases that branch
+excludes: a scan writes nothing to be stalled about, and a view with no phase yet knows too little to accuse anything.
+Pinned by `TransferProgressDialog.stall.test.ts` (placement, tone, silence while moving, and an axe pass over the
+stalled state, which the tier-3 suite can't reach because it only renders the just-mounted dialog).
+
 **The in-flight line is conditional, not permanent.** It renders only inside the stall notice, and only when
 `inFlight > 0`. During a healthy transfer the file counter plus a speed and an ETA is enough, and "5 files in flight"
 would be noise on every copy. It earns its place exactly when it explains something: a stalled counter reading lower

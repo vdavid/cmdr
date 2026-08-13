@@ -16,6 +16,7 @@
     import TransferConflictDialog from './TransferConflictDialog.svelte'
     import { createTransferProgressState } from './transfer-progress-state.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
@@ -239,6 +240,12 @@
      *  shows what it honestly has until the operation speaks. */
     const phaseUnknown = $derived(phase === null)
 
+    /** The notice renders at the foot of the body, outside the branch that owns
+     *  the bars, so it has to re-state the two phases that branch excludes: a
+     *  scan writes nothing to be stalled about, and a view with no phase yet
+     *  knows too little to accuse anything of being stuck. */
+    const showStall = $derived(stall !== null && !isScanning && !phaseUnknown)
+
     /** With an empty queue you're not queueing behind anything, you're sending
      *  this out of sight, so the button says "Background" instead. It reads the
      *  main window's operations store, the same live rows the corner chip reads,
@@ -416,31 +423,6 @@
                 />
             </div>
 
-            {#if stall}
-                <div class="stall-notice" role="status">
-                    <span class="stall-icon" aria-hidden="true"><Icon name="hourglass" size={14} /></span>
-                    <div class="stall-text">
-                        <p class="stall-reason">
-                            {#if stall.reason === 'destination'}
-                                {tString('fileOperations.transferProgress.stallWaitingDestination')}
-                            {:else if stall.reason === 'source'}
-                                {tString('fileOperations.transferProgress.stallWaitingSource')}
-                            {:else}
-                                {tString('fileOperations.transferProgress.stallUnknown')}
-                            {/if}
-                        </p>
-                        {#if stall.inFlight > 0}
-                            <!-- Why the finished count can read lower than what
-                                 the user can see at the destination. -->
-                            <p class="stall-detail">
-                                {tString('fileOperations.transferProgress.stallInFlight', { count: stall.inFlight })}
-                            </p>
-                        {/if}
-                        <p class="stall-detail">{tString('fileOperations.transferProgress.stallLogHint')}</p>
-                    </div>
-                </div>
-            {/if}
-
             <!-- Current file (active phase only; scanning shows it inside scanPhaseBody) -->
             {#if currentFile}
                 <div class="current-file" use:useShortenMiddle={{ text: currentFile, preferBreakAt: '/' }}>
@@ -452,6 +434,42 @@
             <p class="smb-native-note">
                 {tString('fileOperations.transferProgress.smbNativeNote')}
             </p>
+        {/if}
+
+        <!-- The stall notice lives at the foot of the body, directly above the
+             actions: it is the reason a person reaches for Cancel, so it sits
+             next to the button they'd reach for rather than interrupting the
+             readout. Full content width, warning-toned, and built from the house
+             card so it can't drift from the conflict block in `TransferDialog`. -->
+        {#if showStall && stall}
+            <div class="stall-notice">
+                <SectionCard tone="warning">
+                    <div class="stall-body" role="status">
+                        <span class="stall-icon" aria-hidden="true"><Icon name="hourglass" size={16} /></span>
+                        <div class="stall-text">
+                            <p class="stall-reason">
+                                {#if stall.reason === 'destination'}
+                                    {tString('fileOperations.transferProgress.stallWaitingDestination')}
+                                {:else if stall.reason === 'source'}
+                                    {tString('fileOperations.transferProgress.stallWaitingSource')}
+                                {:else}
+                                    {tString('fileOperations.transferProgress.stallUnknown')}
+                                {/if}
+                            </p>
+                            {#if stall.inFlight > 0}
+                                <!-- Why the finished count can read lower than what
+                                     the user can see at the destination. -->
+                                <p class="stall-detail">
+                                    {tString('fileOperations.transferProgress.stallInFlight', {
+                                        count: stall.inFlight,
+                                    })}
+                                </p>
+                            {/if}
+                            <p class="stall-detail">{tString('fileOperations.transferProgress.stallLogHint')}</p>
+                        </div>
+                    </div>
+                </SectionCard>
+            </div>
         {/if}
 
         <!-- Action buttons -->
@@ -600,40 +618,54 @@
         margin-bottom: var(--spacing-md);
     }
 
-    .stall-notice {
-        display: flex;
-        gap: var(--spacing-sm);
-        align-items: flex-start;
-        margin: 0 var(--spacing-xl);
-        padding: var(--spacing-sm) var(--spacing-md);
-        border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-md);
-        background: var(--color-bg-secondary);
+    /* Full content width: no side inset of its own, so the card lines up with
+       the readout above it instead of sitting in from both edges. The card
+       carries the tint, the border, and its own generous padding; all this
+       wrapper owns is the gap below, which the button row's top padding
+       already supplies. */
+    .stall-notice :global(.section-card-wrap) {
+        margin-bottom: 0;
     }
 
+    .stall-body {
+        display: flex;
+        gap: var(--spacing-md);
+        align-items: flex-start;
+    }
+
+    /* The one colored mark on the card. A tone colors the SURFACE and text keeps
+       its own color (`$lib/ui/DETAILS.md` § SectionCard), so the icon is where
+       the warning reads as a warning. `--color-warning-text`, not
+       `--color-warning`: the brand orange clocks ~3.3:1 on this tint. */
     .stall-icon {
-        color: var(--color-text-secondary);
+        color: var(--color-warning-text);
         flex-shrink: 0;
         display: flex;
         align-items: center;
+        /* Optically centered on the first line of the reason, whose line box is
+           taller than the 16px glyph. */
+        padding-top: 1px;
     }
 
     .stall-text {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-xxs);
+        gap: var(--spacing-xs);
         min-width: 0;
     }
 
+    /* Matches the conflict card's summary line in `TransferDialog`: the verdict
+       reads at the body size, in ordinary primary text on the tint. */
     .stall-reason {
         margin: 0;
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         color: var(--color-text-primary);
+        font-weight: 500;
     }
 
     .stall-detail {
         margin: 0;
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
     }
 
