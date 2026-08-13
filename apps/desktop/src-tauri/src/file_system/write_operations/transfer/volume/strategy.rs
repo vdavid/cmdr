@@ -96,6 +96,61 @@ fn auto_yield_tuning() -> (Duration, u64, Duration) {
     )
 }
 
+/// How many FILE byte-copies this operation may have in flight at once, across
+/// every merge walker at every level AND the concurrent driver's top-level file
+/// tasks.
+///
+/// **ONE per operation.** ❌ Never one per directory level and ❌ never one per
+/// top-level source: the concurrent driver already fans out `W` ways over
+/// sources, so a `W`-wide window inside each walker would put `W²` files on one
+/// connection — 100 at the shipped default of 10, far past the point where
+/// throughput starts falling (measured 4-8 useful, degrading past it:
+/// `docs/notes/transfer-subtree-concurrency-bench-2026-08-13.md`).
+///
+/// A width of 1 makes it [`FileWindow::is_serial`], which is what keeps MTP
+/// (`max_concurrent_ops() == 1`) walking a subtree strictly one file at a time,
+/// with no overlap of any kind — not even a directory create against a live
+/// write. That backend's cap is a single USB bulk transport, not a guard-rail.
+#[derive(Clone)]
+pub(super) struct FileWindow(Option<Arc<tokio::sync::Semaphore>>);
+
+impl FileWindow {
+    /// `width` is [`super::copy::transfer_concurrency`]'s answer for the pair —
+    /// the same number the top-level driver sizes its window with, ❌ never a
+    /// second private constant.
+    pub(super) fn new(width: usize) -> Self {
+        Self((width > 1).then(|| Arc::new(tokio::sync::Semaphore::new(width))))
+    }
+
+    /// A window that never overlaps anything: every leaf runs inline, exactly as
+    /// the walk did before it had a window at all. What `merge: None` callers
+    /// (the archive scratch pull) and MTP both get.
+    pub(super) fn serial() -> Self {
+        Self(None)
+    }
+
+    pub(super) fn is_serial(&self) -> bool {
+        self.0.is_none()
+    }
+
+    /// Reserves one of the operation's slots for a leaf about to stream. The
+    /// permit rides INSIDE the leaf's future, so the slot comes back the moment
+    /// that file finishes, fails, or is dropped.
+    ///
+    /// ❌ Never hold one across a recursive descent: a walker that held a permit
+    /// while waiting for its children to take permits would deadlock the whole
+    /// operation at width 1.
+    pub(super) async fn reserve(&self) -> Option<tokio::sync::OwnedSemaphorePermit> {
+        match &self.0 {
+            // `acquire_owned` errors only on a closed semaphore, and nothing
+            // closes this one; a `None` here would merely widen the window, so
+            // it can't turn into a hang either way.
+            Some(permits) => Arc::clone(permits).acquire_owned().await.ok(),
+            None => None,
+        }
+    }
+}
+
 /// Context threaded into the recursive merge walk so each pre-existing level can
 /// resolve its clashing children through the same conflict machinery the
 /// top-level copy uses (Stop-wait, the apply-to-all latch, conditional reduce,
@@ -131,6 +186,16 @@ pub(super) struct MergeCtx<'a> {
     /// trait calls for them (the size/mtime annotations come from `get_metadata`
     /// on the Stop path only, bounded by the user's click time).
     pub source_hints: &'a HashMap<PathBuf, SourceHint>,
+    /// The operation-wide file-copy window, shared by every walker. See
+    /// [`FileWindow`] for why there is exactly one of these per operation.
+    pub window: FileWindow,
+    /// The operation's live in-flight table, so each leaf a walker overlaps gets
+    /// its OWN row (and its own stall-abort token). `None` in the tests that
+    /// register no probe. A leaf runs inside its row's
+    /// `CURRENT_TASK_PROBE` scope, which is what keeps the invariant every
+    /// `TaskProbe` field assumes — one row, one write attempt — true once a
+    /// subtree streams several files at once.
+    pub op_probe: Option<Arc<super::super::transfer_probe::OperationProbe>>,
 }
 
 /// Records exactly what a single `copy_single_path` call wrote to the

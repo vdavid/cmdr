@@ -188,6 +188,72 @@ The rule the list encodes: **a probe whose answer can select a destructive branc
 
 **MTP can't signal collisions via `create_directory` — the merge walker pre-checks existence there.** Every backend except MTP returns `VolumeError::AlreadyExists` for an existing same-name dir (LocalPosix: `std::fs::create_dir`; SMB: smb2 typed STATUS_OBJECT_NAME_COLLISION; InMemory: explicit check). MTP's `create_folder` happily makes a same-name sibling object (the protocol allows duplicates), which would make the merge target the wrong dir. `Volume::create_directory_errors_on_existing_dir()` (default `true`, `false` for MTP) gates this: on MTP the walker pre-checks `exists()` with the one listing the merge level pays anyway, before creating.
 
+### One window for the whole operation
+
+**Decision**: a directory subtree's file copies run concurrently, through a SINGLE `strategy.rs::FileWindow` that the
+whole operation shares — sized by the same `copy.rs::transfer_concurrency` that sizes the top-level driver's window, and
+carried on `MergeCtx` so the three production pipelines (`copy_serial.rs`, `copy_concurrent.rs`, `move.rs`) each hand it
+in where they already build one.
+
+**Why**: `merge.rs` walked a tree with a plain serial `for entry in &entries { … .await }`, and the concurrent driver
+fans out only across TOP-LEVEL sources. Select one folder — what a user actually does — and it is one source, so it
+takes the serial driver and nothing inside it ever overlapped. `network.smbConcurrency` (advertised 1-32, default 10)
+did nothing for the commonest copy there is. Measured on the Docker Samba stack, ~2.8 MB files inside one folder:
+`docs/notes/transfer-subtree-concurrency-bench-2026-08-13.md`.
+
+**The N² trap, and why the window is not per-level.** The driver already keeps `W` sources in flight. If each walker
+opened a `W`-wide window of its own, one connection would carry `W²` files — 100 at the shipped default, far past where
+throughput starts falling. So there is exactly ONE semaphore per operation and everything that writes a FILE takes a
+permit from it: every walker's leaves at every depth, and the concurrent driver's top-level FILE tasks (a top-level file
+IS a leaf). A top-level DIRECTORY task takes none — it holds no permit while it walks, which is what keeps a width-1
+window from deadlocking on itself. ❌ Don't add a second width for the subtree; ❌ don't let a walker hold a permit
+across a recursive descent.
+
+**What did NOT change, deliberately.** Discovery stays serial: ONE walker descends in listing order, creates each
+directory, and resolves every conflict on itself before that child's bytes join the window — the same rule
+`copy_concurrent.rs` follows at the top level ("conflict resolution runs synchronously on the driver BEFORE a task is
+spawned"). So prompt order, the `apply_to_all` latch, `conflict_dispatch_lock`'s role, and the order `created_dirs` is
+recorded in are all exactly what they were. Rollback's "creation order, shallowest first" therefore survives untouched
+within a source; across sources the concurrent driver already interleaved it, and the property that matters there is
+only ancestor-before-descendant, which holds because a level can't start until its parent's `create_directory` returned.
+
+**PLAN MODE stays serial.** `sequential_extract.rs` runs `copy_directory_streaming` with `plan: Some(_)`, which records
+destinations and streams nothing, so there are no bytes to overlap. It builds the pool and never submits to it.
+`merge: None` (the archive scratch pull, and tests that never merge) has no `MergeCtx` to carry a window, so it keeps a
+strictly serial walk too.
+
+**The walk drains before it returns, on every exit path.** A leaf still writing when `copy_directory_streaming` returned
+would keep touching the destination after the driver moved on to cleanup, and its `created` record would land too late
+for rollback to see. So the pool is drained after the walk finishes, fails, or hits a cancel. Under CANCEL that is
+prompt: `stream_pipe_file` checks the intent per chunk, and the concurrent driver's cancel-drain deadline is the backstop
+for a leaf that won't wind down. Under an ERROR it means the walk waits out the ≤ `W-1` leaves already streaming rather
+than abandoning them — they complete, get recorded, and the FIRST failure is still the one reported (`cleanup.rs`'s
+`remove_tree` follows the same first-failure rule). Pinned by
+`merge_window_tests.rs::{a_cancel_mid_subtree_leaves_no_leaf_still_writing,
+a_rolled_back_wide_window_copy_leaves_no_directory_it_created}`.
+
+**One in-flight-table row per leaf.** `TaskProbe` is built on "one row, one write attempt": `arm_stall_abort` REPLACES
+the row's token per attempt and `set_bytes` STORES (never adds) that attempt's count. Two overlapping leaves sharing one
+row would clobber each other's stall-abort signal and keep resetting the watchdog's stillness clock, so each leaf gets
+its own `begin_task` row and runs inside its own `CURRENT_TASK_PROBE` scope. That also makes the dump name the leaf that
+wedged instead of the folder, and makes `WriteProgressEvent::activity.in_flight` a real measurement of how full the
+window got. The top-level source's own row stays alongside them at `Spawned` (a phase the watchdog never acts on).
+
+**The live progress bar under-reports transiently, by design.** Both per-file progress callbacks were written for one
+in-flight leaf: `SerialLeafProgress`'s `leaf_high_water` and `make_concurrent_per_file_progress`'s `last_file_bytes` are
+each one watermark shared by every file in a subtree. With `W` leaves reporting into one watermark the bar lags by up to
+`(W-1)` files' worth mid-flight. It never over-reports (both use `fetch_max`, so a lower report contributes nothing),
+and on the SERIAL driver — the one a single-folder copy takes — it is exact at every completion boundary, because
+`on_leaf_complete` adds each finished leaf's exact size to `byte_base`. ❌ Reshaping `progress.rs` for this is not worth
+it; the bound is the contract.
+
+**Known, pre-existing, and NOT caused by this**: the CONCURRENT driver's `make_concurrent_per_file_progress` never
+resets `last_file_bytes` between the files of one subtree (`on_file_complete` there only bumps the file counter), so a
+multi-file directory copied through that driver credits roughly `max(file sizes)` rather than their sum — its final byte
+total is under-reported, not just its live bar. `SerialLeafProgress` does it correctly. Out of scope by David's decision
+(2026-08-13); fixing it means resetting the watermark per leaf and compensating on completion, the way the serial type
+already does.
+
 ### Answering the pre-check from one listing
 
 Before spawning each top-level source, the CONCURRENT driver has to know whether something already sits at that name; if so, conflict resolution runs. Asked as a `dest_volume.get_metadata(dest_item_path)` per source it is one round trip PER FILE, serialized on the driver, and no window width can overlap it — a batch of N files carries a hard floor of `N × RTT`. Measured against David's QNAP at 3.7 ms RTT: **2.378 s of a 3.224 s best run for 500 files, 74%** (`docs/notes/transfer-concurrency-window-bench-2026-08-02.md`).

@@ -439,7 +439,12 @@ const MAX_TRANSFER_CONCURRENCY: usize = 32;
 /// A remote cap always binds, in both directions, which is what keeps MTP's 1
 /// routing a phone to the serial driver (`use_concurrent_path` needs
 /// `concurrency > 1`).
-fn transfer_concurrency(source: &dyn Volume, dest: &dyn Volume) -> usize {
+///
+/// This ONE number sizes both windows the operation has: the driver's top-level
+/// source window and the `strategy.rs::FileWindow` every merge walker copies
+/// through. ❌ Don't give the subtree walk a width of its own — the two would
+/// multiply on the same connection.
+pub(super) fn transfer_concurrency(source: &dyn Volume, dest: &dyn Volume) -> usize {
     let binding_cap = |volume: &dyn Volume| (!volume.operations_are_local()).then(|| volume.max_concurrent_ops());
     // Both local (or both remote): the smaller cap is the honest answer. One of
     // each: only the remote side's cap means anything.
@@ -555,6 +560,11 @@ pub(crate) async fn copy_volumes_with_progress(
     // pre-check index below is only worth building for the concurrent path.
     let concurrency = transfer_concurrency(&*source_volume, &*dest_volume);
     let use_concurrent_path = source_paths.len() >= 3 && concurrency > 1;
+    // The operation's ONE file-copy window, shared by every merge walker under
+    // either driver. It is what makes `network.smbConcurrency` mean something
+    // for the commonest copy there is — one folder, selected in a pane, which
+    // is a single source and therefore takes the SERIAL driver.
+    let file_window = super::strategy::FileWindow::new(concurrency);
     // Phase 0.5 created `dest_path` rather than finding it, so nothing the user
     // already had can be inside it and the concurrent loop's per-file conflict
     // probe below has nothing to find. See the comment at its call site for what
@@ -807,8 +817,11 @@ pub(crate) async fn copy_volumes_with_progress(
     // of this function deregisters the operation and stops the watchdog.
     let probe_guard = Some(super::super::transfer_probe::register_operation(
         operation_id,
-        // The serial path runs exactly one source at a time.
-        if use_concurrent_path { concurrency } else { 1 },
+        // Both drivers can hold `concurrency` file writes at once: the
+        // concurrent one across top-level sources, the serial one across the
+        // leaves of the subtree it is walking (`strategy.rs::FileWindow`). So
+        // the declared width is the same number either way.
+        concurrency,
         total_files,
         // Both ends, so the watchdog can ask whether either connection has been
         // PROVEN dead before it acts on a stall (no backend can answer that yet
@@ -835,6 +848,7 @@ pub(crate) async fn copy_volumes_with_progress(
             dest_path,
             config,
             concurrency,
+            file_window: file_window.clone(),
             dest_dir_is_ours,
             dest_index: &dest_index,
             pre_skip_paths: &pre_skip_paths,
@@ -876,6 +890,7 @@ pub(crate) async fn copy_volumes_with_progress(
             dest_volume: Arc::clone(&dest_volume),
             dest_path,
             config,
+            file_window,
             total_files,
             total_bytes,
             bulk_skip_files,
@@ -1079,6 +1094,9 @@ mod extract_out_tests;
 #[cfg(test)]
 #[path = "merge_tests.rs"]
 mod merge_tests;
+#[cfg(test)]
+#[path = "merge_window_tests.rs"]
+mod merge_window_tests;
 #[cfg(test)]
 #[path = "copy_precheck_tests.rs"]
 mod precheck_tests;

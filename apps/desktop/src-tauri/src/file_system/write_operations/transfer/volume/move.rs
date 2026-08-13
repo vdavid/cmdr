@@ -509,6 +509,12 @@ pub(crate) async fn move_volumes_with_progress(
             let operation_id = operation_id_owned.clone();
             let config_for_merge = config_owned.clone();
             let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
+            // A cross-volume move copies one source at a time, so a folder move
+            // is the same single-source shape a folder copy is: without a window
+            // its whole subtree streams one file at a time. Same width as the
+            // copy driver's, from the same function.
+            let file_window =
+                super::strategy::FileWindow::new(super::copy::transfer_concurrency(&*source_volume, &*dest_volume));
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
             let leaf_files_done = Arc::clone(&leaf_files_done);
             let deep_skipped_files = Arc::clone(&deep_skipped_files);
@@ -530,6 +536,7 @@ pub(crate) async fn move_volumes_with_progress(
                 let operation_id = operation_id.clone();
                 let config_for_merge = config_for_merge.clone();
                 let merge_apply_to_all = Arc::clone(&merge_apply_to_all);
+                let file_window = file_window.clone();
                 let last_progress_time = Arc::clone(&last_progress_time);
                 let leaf_files_done = Arc::clone(&leaf_files_done);
                 let deep_skipped_files = Arc::clone(&deep_skipped_files);
@@ -598,6 +605,10 @@ pub(crate) async fn move_volumes_with_progress(
                         state: &state,
                         apply_to_all: &merge_apply_to_all,
                         source_hints: &source_hints,
+                        window: file_window,
+                        // The cross-volume move registers no transfer probe, so
+                        // its leaves have no in-flight table to appear in.
+                        op_probe: None,
                     };
                     // Held for this source's whole transfer, copy phase AND
                     // source sweep; dropping it clears the row. Mirrors

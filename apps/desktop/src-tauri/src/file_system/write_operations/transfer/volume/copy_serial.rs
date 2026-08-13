@@ -63,6 +63,11 @@ pub(super) struct SerialCopy<'a> {
     pub(super) dest_volume: Arc<dyn Volume>,
     pub(super) dest_path: &'a Path,
     pub(super) config: &'a VolumeCopyConfig,
+    /// The operation's file-copy window. One source at a time up here, but a
+    /// DIRECTORY source's subtree streams up to `transfer_concurrency` files at
+    /// once through it — which is what makes `network.smbConcurrency` matter for
+    /// the single-folder copy that lands on this driver.
+    pub(super) file_window: super::strategy::FileWindow,
     pub(super) total_files: usize,
     pub(super) total_bytes: u64,
     /// What the bulk pre-skip pass already credited, so the driver's prelude
@@ -108,6 +113,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
         dest_volume,
         dest_path,
         config,
+        file_window,
         total_files,
         total_bytes,
         bulk_skip_files,
@@ -296,8 +302,10 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
             // labels rows in a dump; sources run one at a time here.
             let op_probe_serial = op_probe.clone();
             let serial_source_index = Arc::new(AtomicUsize::new(0));
+            let file_window = file_window.clone();
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let op_probe_serial = op_probe_serial.clone();
+                let file_window = file_window.clone();
                 let serial_source_index = Arc::clone(&serial_source_index);
                 let source_volume = Arc::clone(&source_volume);
                 let dest_volume = Arc::clone(&dest_volume);
@@ -395,6 +403,13 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         state: &state,
                         apply_to_all: &merge_apply_to_all,
                         source_hints: &source_hints,
+                        // A DIRECTORY source streams its subtree through the
+                        // op-wide window even here, where the driver itself runs
+                        // one source at a time. That is the whole point: one
+                        // folder is one source, so without this the commonest
+                        // copy there is stays strictly one file at a time.
+                        window: file_window.clone(),
+                        op_probe: op_probe_serial.clone(),
                     };
 
                     *last_dest_cell.lock_ignore_poison() = Some(dest_item_path.clone());

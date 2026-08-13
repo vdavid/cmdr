@@ -122,6 +122,13 @@ pub(super) struct ConcurrentCopy<'a> {
     pub(super) config: &'a VolumeCopyConfig,
     /// Window width, from `transfer_concurrency`.
     pub(super) concurrency: usize,
+    /// The operation's file-copy window, the same width as `concurrency` and
+    /// shared with every merge walker under it. A top-level FILE task takes a
+    /// permit for its own write, and a DIRECTORY task's leaves take theirs, so
+    /// the operation never has more than `concurrency` files in flight no matter
+    /// how the batch is shaped. ❌ Never a second, per-walker width: `W` sources
+    /// × `W` leaves is `W²` files on one connection.
+    pub(super) file_window: super::strategy::FileWindow,
     /// The destination directory was created by THIS operation (Phase 0.5), so
     /// nothing the user already had can be inside it and every pre-check is a
     /// guaranteed miss.
@@ -241,6 +248,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
         dest_path,
         config,
         concurrency,
+        file_window,
         dest_dir_is_ours,
         dest_index,
         pre_skip_paths,
@@ -515,6 +523,9 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
             let merge_config = config.clone();
             let merge_op_id = operation_id.to_string();
             let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
+            let merge_window = file_window.clone();
+            let merge_probe = op_probe.clone();
+            let leaf_window = file_window.clone();
             // Register before the task is pushed, so a task that never gets
             // polled still shows up in a dump as `spawned`.
             let task_probe = op_probe.as_ref().map(|probe| {
@@ -554,6 +565,8 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                     state: &state_clone,
                     apply_to_all: &merge_apply_to_all,
                     source_hints: &merge_hints,
+                    window: merge_window,
+                    op_probe: merge_probe,
                 };
                 let on_file_progress = make_concurrent_per_file_progress(
                     Arc::clone(&events_task),
@@ -574,6 +587,20 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 // so this only advances the leaf-file axis.
                 let on_file_complete = |_leaf_bytes: u64| {
                     files_done_a.fetch_add(1, Ordering::Relaxed);
+                };
+                // A top-level FILE source IS a leaf, so it takes its slot from
+                // the same op-wide window a directory's children take theirs
+                // from. Otherwise a batch mixing files and folders would carry
+                // `W` file tasks PLUS the walkers' `W` leaves — twice the width
+                // the user's setting asked for, on one connection.
+                //
+                // ❌ A DIRECTORY source takes none. A walker that held a slot
+                // while waiting for its own children to get theirs would
+                // deadlock the operation outright at width 1.
+                let _leaf_permit = if source_is_dir {
+                    None
+                } else {
+                    leaf_window.reserve().await
                 };
                 let copy_fut = copy_single_path(
                     &src_vol,
