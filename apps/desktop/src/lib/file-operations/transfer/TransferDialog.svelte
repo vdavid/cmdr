@@ -281,6 +281,20 @@
         scanComplete ? 'done' : isSameVolumeMove ? 'skipped' : 'counting',
     )
 
+    /** Settle state of the top-level conflict check, exposed as `data-conflict-state`
+     *  on the dialog body. The conflicts section renders NOTHING when the check comes
+     *  back clean, so "did the check finish?" has no element to poll for; a test that
+     *  waits for `.conflict-policy` can only ever observe the conflict outcome and
+     *  would have to guess at the clean one. This marker makes both observable:
+     *   - `checking` → the dest listing is in flight (or about to start on mount).
+     *   - `done`     → the check settled; the conflicts section below is final.
+     *   - `skipped`  → compress makes ONE new file, so the multi-file check never
+     *                  runs and the dest-exists affordance answers instead.
+     *  The body carries it because it's the only element present in every state. */
+    const conflictState = $derived<'checking' | 'done' | 'skipped'>(
+        conflicts.conflictCheckComplete ? 'done' : activeOperationType === 'compress' ? 'skipped' : 'checking',
+    )
+
     const pathError = $derived.by(() => {
         const structural = validateDirectoryPath(editedPath)
         if (structural.severity === 'error') return structural.message
@@ -534,7 +548,7 @@
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
-    <div class="dialog-body">
+    <div class="dialog-body" data-conflict-state={conflictState}>
         <!-- Copy / Move / Compress. `fullWidth` so the segmented control spans the
              same column as the fields below it. -->
         <ToggleGroup

@@ -18,7 +18,6 @@ import {
   expectAndDismissToast,
   getFixtureRoot,
   moveCursorToFile,
-  sleep,
   TRANSFER_DIALOG,
 } from './helpers.js'
 import {
@@ -29,6 +28,7 @@ import {
   readFile,
   fileExists,
   selectItemsByName,
+  waitForConflictCheck,
   waitForConflictPolicy,
   selectConflictPolicy,
   clickTransferStart,
@@ -360,12 +360,10 @@ test.describe('Type mismatch conflicts', () => {
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
     // This might or might not show conflict policy depending on how the dry-run
-    // detects the type mismatch. Wait long enough for the dry-run to settle, then
-    // peek: we explicitly want to accept BOTH outcomes (visible vs. not visible),
-    // so there's no observable signal to poll for: polling for `.conflict-policy`
-    // to appear would mask the legitimate "no conflict UI" case.
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- dry-run-completion peek; intentionally tolerates both "conflict UI shown" and "no conflict UI" outcomes, so polling for a specific selector would mask the second case
-    await sleep(1000)
+    // detects the type mismatch, and we accept BOTH outcomes. `waitForConflictCheck`
+    // polls the dialog's `data-conflict-state` marker, which reaches `done` either
+    // way, so the peek below reads a settled state instead of a timed guess.
+    await waitForConflictCheck(tauriPage)
     const hasConflict = await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`)
     if (hasConflict) {
       await selectConflictPolicy(tauriPage, 'overwrite')

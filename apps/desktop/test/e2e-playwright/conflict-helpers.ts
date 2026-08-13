@@ -294,6 +294,24 @@ export async function waitForConflictPolicy(tauriPage: PageLike): Promise<void> 
   if (!found) throw new Error('waitForConflictPolicy: .conflict-policy radio buttons did not appear within 6s')
 }
 
+/**
+ * Waits for the top-level conflict check to settle, whatever it found.
+ *
+ * Use this instead of `waitForConflictPolicy` when the test legitimately accepts
+ * BOTH outcomes (conflict UI shown or not): a clean check renders nothing, so
+ * polling for `.conflict-policy` would only ever observe one of the two and mask
+ * the other. `data-conflict-state` is on the dialog body, present in every state.
+ */
+export async function waitForConflictCheck(tauriPage: PageLike): Promise<void> {
+  // Same 6 s budget and reasoning as `waitForConflictPolicy` above.
+  const settled = await pollUntil(
+    tauriPage,
+    async () => tauriPage.isVisible(`${TRANSFER_DIALOG} .dialog-body[data-conflict-state="done"]`),
+    6000,
+  )
+  if (!settled) throw new Error('waitForConflictCheck: the conflict check did not settle within 6s')
+}
+
 /** Selects a conflict resolution policy radio button. */
 export async function selectConflictPolicy(
   tauriPage: PageLike,
