@@ -228,22 +228,22 @@ alone cannot tell you.
   per-surface is what keeps the dialog, the queue row, and the corner chip saying the same thing: they showed different
   answers to the same paused copy once. Every view renders these three, never `progress.bytesPerSecond` /
   `progress.filesPerSecond` / `progress.etaSeconds`.
-
-  "A person is deciding" is `awaitingHuman()`, and it takes TWO signals because the two waits report differently: a user
-  pause shows up as `snapshot.status === 'paused'`, while an operation parked on a clash is still `running` and says so
-  through the backend's own classification, `progress.activity.waitingOn === 'you'`. Both are known-facts tests (`===`,
-  never `!==`), so a session that has heard nothing yet reads as "not waiting" and renders its first frames normally
-  instead of blanking a transfer that is running fine. ❌ Don't reach for `conflict !== null` as a third signal: that
-  field is this window's own copy of the prompt, cleared only by the surface that answers, so a row that watched someone
-  else answer would hide its speed for the rest of the transfer. A local copy keeps no in-flight table, so `activity` is
-  `null` for one and its speed stays on screen through a clash — the honest fix there is a backend tick, not a
-  frontend guess.
 - `scan`: the counting readout, including the frontend-computed rates the backend does not emit during a scan.
 - `conflict`: the conflict the operation is parked on, set from the event and cleared once the backend has ruled on the
   clash that was ANSWERED, whichever surface asked. A newer clash that arrived mid-answer stays (see below).
 - `outcome` / `settled` / `settleEventReceived`: how it ended, whether it ended, and whether the backend task has torn
   down. The last is separate because `write-settled` says the task is gone, not how it finished. `outcome` is
   write-once, so a cancel racing a completion cannot flip an answer a view already rendered.
+
+**"A person is deciding" is `awaitingHuman()`**, and it takes TWO signals because the two waits report differently: a
+user pause shows up as `snapshot.status === 'paused'`, while an operation parked on a clash is still `running` and says
+so through the backend's own classification, `progress.activity.waitingOn === 'you'`. Both are known-facts tests (`===`,
+never `!==`), so a session that has heard nothing yet reads as "not waiting" and renders its first frames normally
+instead of blanking a transfer that is running fine. ❌ Don't reach for `conflict !== null` as a third signal: that
+field is this window's own copy of the prompt, cleared only by the surface that answers, so a row that watched somebody
+else answer would hide its speed for the rest of the transfer. A local copy keeps no in-flight table, so `activity` is
+`null` for one and its speed stays on screen through a clash; the honest fix there is a backend tick, not a frontend
+guess.
 
 ## The command surface
 

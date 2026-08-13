@@ -54,8 +54,8 @@ row binds to with `bindOperationSession(() => snapshot.operationId)`:
 
 - `session.etaSecondsDisplay`, the backend's ETA through the one smoother this operation has in this window. It stays on
   a parked row: how much longer this has to run doesn't stop being true because somebody is deciding something.
-- `session.bytesPerSecondDisplay` / `filesPerSecondDisplay`, the backend's rates, dropped while a person is deciding
-  (a row that isn't moving has no speed to report).
+- `session.bytesPerSecondDisplay` / `filesPerSecondDisplay`, the backend's rates, dropped while a person is deciding (a
+  row that isn't moving has no speed to report).
 - `session.scan`, the walk's files/s and bytes/s, which the backend doesn't emit while it counts.
 
 Two estimators fed identical samples from identical starting points would agree; the divergence comes from one starting
