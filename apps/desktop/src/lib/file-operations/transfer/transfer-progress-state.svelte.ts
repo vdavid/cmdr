@@ -380,9 +380,12 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     if (op === null) return
     // Winding down: a cancel is on its way, or one has landed and the backend
     // is still tearing the task down. `write-settled` is what ends the wait.
+    // Disarming on the way back out matters as much as arming: a cancel the
+    // backend refused lets go of `cancelling`, and a timer left running would
+    // close the dialog on a transfer that is still going.
     const windingDown = op.cancelling || op.outcome?.kind === 'cancelled'
-    if (op.settleEventReceived) clearWindDownTimers()
-    else if (windingDown) armWindDownTimers()
+    if (windingDown && !op.settleEventReceived) armWindDownTimers()
+    else clearWindDownTimers()
   })
 
   $effect(() => {

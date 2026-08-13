@@ -557,6 +557,21 @@ describe('createTransferProgressState: cancel + settle close-out', () => {
     void state // keep reference
   })
 
+  it('stops waiting when the backend refuses the cancel', async () => {
+    // The operation is still going, so the last-resort close must NOT fire and
+    // shut the dialog on a live transfer. The session lets go of `cancelling`
+    // for exactly that reason, and the view follows it back out.
+    vi.mocked(cancelOperation).mockImplementationOnce(() => Promise.reject(new Error('ipc down')))
+    const { state, config } = await startedState()
+    await state.handleCancel(false)
+    await settle()
+    expect(state.isCancelling).toBe(false)
+
+    vi.advanceTimersByTime(20_000)
+    expect(config.onCancelled).not.toHaveBeenCalled()
+    expect(state.settleSlow).toBe(false)
+  })
+
   it('lets the user out at once while the backend is still winding down', async () => {
     const { state, config } = await startedState()
     if (!progressCb) throw new Error('progress subscriber never registered')
