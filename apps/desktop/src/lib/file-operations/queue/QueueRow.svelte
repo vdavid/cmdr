@@ -120,11 +120,12 @@
      *  the two windows can't disagree about whether something is stuck. */
     const stall = $derived(stallNoticeFor(progress?.activity))
 
-    /** Speed and ETA come from the session, which drops all three while the
-     *  operation is paused (it isn't moving, so there's no honest number) and
-     *  smooths the ETA. ❌ Never `progress.etaSeconds` or a rate off the raw
-     *  tick: every view of this operation reads the session's numbers, so no
-     *  two of them can disagree about how fast it's going or how long is left. */
+    /** Speed and ETA come from the session, which drops the two RATES while a
+     *  person is deciding (a pause, an unanswered clash: nothing is moving, so
+     *  there's no honest speed), keeps the ETA through both, and smooths it.
+     *  ❌ Never `progress.etaSeconds` or a rate off the raw tick: every view of
+     *  this operation reads the session's numbers, so no two of them can
+     *  disagree about how fast it's going or how long is left. */
     const byteRate = $derived(op?.bytesPerSecondDisplay ?? null)
     const fileRate = $derived(op?.filesPerSecondDisplay ?? null)
     const etaSeconds = $derived(op?.etaSecondsDisplay ?? null)

@@ -29,6 +29,7 @@ mod durability;
 mod error_classification;
 mod eta;
 mod event_sinks;
+mod human_wait;
 mod in_flight_temps;
 mod journal;
 mod journal_search;

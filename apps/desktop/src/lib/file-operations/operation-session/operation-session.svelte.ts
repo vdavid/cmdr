@@ -78,15 +78,19 @@ export interface OperationSession extends OperationSessionCommands {
   readonly phase: WriteOperationPhase | null
   /** The latest tick's numbers, branded. `null` before the first tick. */
   readonly readout: TransferReadout | null
-  /** The speed to DISPLAY: the backend's byte rate, or `null` when there's
-   *  nothing honest to show. Every view renders this, never
+  /** The speed to DISPLAY: the backend's byte rate, or `null` while a person is
+   *  deciding something (a pause, an unanswered clash), where the last measured
+   *  rate describes a transfer that has stopped. Every view renders this, never
    *  `progress.bytesPerSecond`. */
   readonly bytesPerSecondDisplay: BytesPerSecond | null
   /** The file rate to DISPLAY, on the same terms as
    *  {@link bytesPerSecondDisplay}. */
   readonly filesPerSecondDisplay: number | null
   /** The ETA to DISPLAY: the backend's, through this session's smoother. Every
-   *  view of this operation renders this, never `progress.etaSeconds`. */
+   *  view of this operation renders this, never `progress.etaSeconds`. Unlike
+   *  the two rates it SURVIVES a pause and a clash — how much longer this will
+   *  take is exactly what someone deciding wants to know, and the backend keeps
+   *  it honest by leaving their thinking time out of the rate window. */
   readonly etaSecondsDisplay: Seconds | null
   readonly scan: ScanReadout
   /** The conflict the operation is parked on, if any. Cleared once the backend
@@ -171,14 +175,25 @@ export function createOperationSession(operationId: string, fanout: OperationEve
     }
   }
 
-  /** Whether the operation is actually moving right now. A paused one emits no
-   *  further ticks, so the last rate and ETA it measured stay put, describing a
-   *  transfer that has stopped: a speed and a "58s left" that nobody can stand
-   *  behind. The three display getters below answer `null` instead, so no
-   *  surface can render them, and the lifecycle STATUS decides it — a parked
-   *  operation still answers `is_running: true`. */
-  function moving(): boolean {
-    return snapshot?.status !== 'paused'
+  /** Whether the operation is standing still because a PERSON is deciding
+   *  something: they paused it, or they haven't answered its clash yet.
+   *
+   *  A parked operation emits no further ticks, so the last speed it measured
+   *  sits there describing a transfer that has stopped, and "4.1 MB/s" over a
+   *  frozen copy is a number nobody can stand behind. The ETA is a different
+   *  claim and stays: the backend excludes human-wait time from the rate window
+   *  (`write_operations/human_wait.rs`), so "58s left" is still what remains
+   *  once the person is done, which is exactly what they want to know while
+   *  deciding.
+   *
+   *  Two signals, because two shapes of operation report differently: the
+   *  lifecycle STATUS carries the pause (never `is_running` — a parked
+   *  operation still answers `true` there), and the backend's own wait
+   *  classification carries the clash. Both are known-facts tests, so a session
+   *  that hasn't heard anything yet says "not waiting" and its first frames
+   *  render normally rather than blanking a running transfer. */
+  function awaitingHuman(): boolean {
+    return snapshot?.status === 'paused' || progress?.activity?.waitingOn === 'you'
   }
 
   /** First outcome wins: a cancel that races a completion must not flip the
@@ -278,13 +293,13 @@ export function createOperationSession(operationId: string, fanout: OperationEve
       return readout
     },
     get bytesPerSecondDisplay(): BytesPerSecond | null {
-      return moving() ? (readout?.bytesPerSecond ?? null) : null
+      return awaitingHuman() ? null : (readout?.bytesPerSecond ?? null)
     },
     get filesPerSecondDisplay(): number | null {
-      return moving() ? (progress?.filesPerSecond ?? null) : null
+      return awaitingHuman() ? null : (progress?.filesPerSecond ?? null)
     },
     get etaSecondsDisplay(): Seconds | null {
-      return moving() ? etaSecondsDisplay : null
+      return etaSecondsDisplay
     },
     get scan(): ScanReadout {
       return {

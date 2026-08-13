@@ -29,8 +29,10 @@ Views bind, render, and command through it; zero views is an ordinary state.
   aged out at `UNCLAIMED_BUFFER_TTL_MS`. ❌ Not an append-only log. Beside it, the newest tick of each LIVE operation is
   kept claimed or not (a paused one emits nothing to refill), and dropped on every terminal event, so a session claiming
   an id after the end resolves instead of painting bars over an ending.
-- **A paused operation has no speed and no time left**: render `bytesPerSecondDisplay` / `filesPerSecondDisplay` /
-  `etaSecondsDisplay`, ❌ never a rate or ETA off the raw tick.
+- **An operation waiting on a PERSON has no speed, and still has a time left**: `bytesPerSecondDisplay` /
+  `filesPerSecondDisplay` answer `null` while it's paused or parked on an unanswered clash (the status, plus the
+  backend's `activity.waitingOn === 'you'`); `etaSecondsDisplay` survives both, because the backend leaves human-wait
+  time out of its rate window so the number stays true. Render those three, ❌ never a rate or ETA off the raw tick.
 - **❌ No `$derived` in a session** (it outlives the view that created it). Compose in the getter.
 - **A scanning operation reads as live and counting, never 0%**: totals stay 0 through a scan, so views branch on
   `phase === 'scanning'`.

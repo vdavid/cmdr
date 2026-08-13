@@ -8,8 +8,10 @@
 //! resolving.
 
 use crate::ignore_poison::IgnorePoison;
-use std::sync::Condvar;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::{Arc, Condvar};
+
+use super::human_wait::{HumanWaitClock, HumanWaitSource};
 
 // ============================================================================
 // Operation intent (state machine for cancellation)
@@ -98,15 +100,21 @@ pub struct PauseGate {
     condvar_mutex: std::sync::Mutex<()>,
     condvar: Condvar,
     notify: tokio::sync::Notify,
+    /// The operation's human-wait accounting, driven from the same two calls
+    /// that flip the flag so the two can't disagree. A pause is somebody
+    /// thinking, and the ETA must not charge the transfer for it. See
+    /// [`HumanWaitClock`].
+    human_wait: Arc<HumanWaitClock>,
 }
 
 impl PauseGate {
-    pub(super) fn new() -> Self {
+    pub(super) fn new(human_wait: Arc<HumanWaitClock>) -> Self {
         Self {
             paused: AtomicBool::new(false),
             condvar_mutex: std::sync::Mutex::new(()),
             condvar: Condvar::new(),
             notify: tokio::sync::Notify::new(),
+            human_wait,
         }
     }
 
@@ -119,6 +127,7 @@ impl PauseGate {
     /// no-op-on-double-pause: setting an already-set flag changes nothing.
     pub fn pause(&self) {
         self.paused.store(true, Ordering::Release);
+        self.human_wait.set(HumanWaitSource::Pause, true);
     }
 
     /// Clears the paused flag and wakes any waiter (sync condvar + async
@@ -126,6 +135,7 @@ impl PauseGate {
     /// which re-check the flag and continue).
     pub fn resume(&self) {
         self.paused.store(false, Ordering::Release);
+        self.human_wait.set(HumanWaitSource::Pause, false);
         self.wake();
     }
 
@@ -188,7 +198,7 @@ mod tests {
     use super::*;
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
 
     // ---- OperationIntent::from_u8 ----
 
@@ -236,13 +246,13 @@ mod tests {
 
     #[test]
     fn pause_gate_starts_unpaused() {
-        let gate = PauseGate::new();
+        let gate = PauseGate::new(HumanWaitClock::shared());
         assert!(!gate.is_paused());
     }
 
     #[test]
     fn pause_gate_pause_then_resume_toggles_flag() {
-        let gate = PauseGate::new();
+        let gate = PauseGate::new(HumanWaitClock::shared());
         gate.pause();
         assert!(gate.is_paused());
         gate.resume();
@@ -250,9 +260,36 @@ mod tests {
     }
 
     #[test]
+    fn a_pause_is_charged_to_the_person_who_made_it() {
+        // The gate drives the operation's human-wait clock, which is what keeps
+        // the paused seconds out of the ETA's rate window. Both halves matter:
+        // a pause that never opened the clock would collapse the rate on
+        // resume, and one that never closed it would freeze the rate forever.
+        let clock = HumanWaitClock::shared();
+        let gate = PauseGate::new(Arc::clone(&clock));
+        let start = Instant::now();
+        assert_eq!(clock.total_at(start), Duration::ZERO);
+
+        gate.pause();
+        let paused_at = Instant::now();
+        assert!(
+            clock.total_at(paused_at + Duration::from_secs(3)) >= Duration::from_secs(3),
+            "a pause opens the clock",
+        );
+
+        gate.resume();
+        let banked = clock.total_at(Instant::now());
+        assert_eq!(
+            banked,
+            clock.total_at(Instant::now() + Duration::from_secs(5)),
+            "a resume closes the clock, so later seconds are the transfer's own",
+        );
+    }
+
+    #[test]
     fn wait_while_paused_sync_returns_immediately_when_not_paused() {
         // Not paused → the wait must be a no-op (no deadlock, no condvar park).
-        let gate = PauseGate::new();
+        let gate = PauseGate::new(HumanWaitClock::shared());
         let intent = AtomicU8::new(OperationIntent::Running as u8);
         gate.wait_while_paused_sync(&intent); // returns instantly or the test hangs
     }
@@ -262,7 +299,7 @@ mod tests {
         // Pause, park a worker thread on the gate, then resume from the main
         // thread. The worker must wake. Without a working condvar notify it
         // would hang and the test would time out.
-        let gate = Arc::new(PauseGate::new());
+        let gate = Arc::new(PauseGate::new(HumanWaitClock::shared()));
         let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
         gate.pause();
 
@@ -289,7 +326,7 @@ mod tests {
     fn wait_while_paused_sync_unblocks_on_cancel() {
         // Cancellation must win over pause: a paused, parked thread wakes when
         // the intent flips to a non-Running state, WITHOUT a resume.
-        let gate = Arc::new(PauseGate::new());
+        let gate = Arc::new(PauseGate::new(HumanWaitClock::shared()));
         let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
         gate.pause();
 
@@ -322,7 +359,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn wait_while_paused_async_returns_immediately_when_not_paused() {
-        let gate = PauseGate::new();
+        let gate = PauseGate::new(HumanWaitClock::shared());
         let intent = AtomicU8::new(OperationIntent::Running as u8);
         // Must not hang.
         tokio::time::timeout(Duration::from_secs(1), gate.wait_while_paused_async(&intent))
@@ -332,7 +369,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn wait_while_paused_async_unblocks_on_resume() {
-        let gate = Arc::new(PauseGate::new());
+        let gate = Arc::new(PauseGate::new(HumanWaitClock::shared()));
         let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
         gate.pause();
 
@@ -357,7 +394,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn wait_while_paused_async_unblocks_on_cancel() {
         // Cancellation wins over pause for the async path too.
-        let gate = Arc::new(PauseGate::new());
+        let gate = Arc::new(PauseGate::new(HumanWaitClock::shared()));
         let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
         gate.pause();
 

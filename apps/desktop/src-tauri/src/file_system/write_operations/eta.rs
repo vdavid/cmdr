@@ -18,6 +18,17 @@
 //! `α = 1 - exp(-Δt / τ)`, so the response is identical whether progress events
 //! arrive every 50 ms or every 500 ms.
 //!
+//! ## The clock is WORKING time, not wall time
+//!
+//! Every interval is measured minus whatever of it a person spent deciding —
+//! a user pause, or an open conflict prompt — read off the operation's
+//! `super::human_wait::HumanWaitClock` and carried on each [`EtaSample`]. A
+//! parked transfer emits no progress, so without this the first sample after a
+//! five-minute answer divides one file's bytes by five minutes: the rate
+//! collapses and the ETA jumps to hours, on a copy that is running fine.
+//! Device waits are deliberately NOT excluded: a slow share IS the transfer
+//! being slow, and the ETA has to say so.
+//!
 //! ## Phase transitions and rollback
 //!
 //! Resetting on phase change (scanning → copying, copying → rolling_back) is
@@ -41,9 +52,9 @@ const EWMA_TAU_SECS: f64 = 3.0;
 /// can be wild. Wait for one more to stabilize.
 const MIN_SAMPLES_FOR_ETA: u32 = 2;
 
-/// Don't emit an ETA until at least this much wall time has elapsed in the current
-/// phase. Catches the "200 ms in, rate is 50 MB/s" → "ETA = 0 s" footgun before
-/// the EWMA settles.
+/// Don't emit an ETA until at least this much WORKING time has elapsed in the
+/// current phase (wall time minus every human wait). Catches the "200 ms in,
+/// rate is 50 MB/s" → "ETA = 0 s" footgun before the EWMA settles.
 const MIN_ELAPSED_FOR_ETA: Duration = Duration::from_millis(800);
 
 /// Computed rates + ETA emitted to the frontend.
@@ -66,12 +77,36 @@ impl EtaStats {
     };
 }
 
+/// One progress observation: the counters, plus the two clocks that turn a
+/// change in them into a rate.
+#[derive(Debug, Clone, Copy)]
+pub struct EtaSample {
+    /// Injected (not read from `Instant::now()` inside the estimator) so tests
+    /// can drive synthetic timelines without touching the real clock.
+    pub now: Instant,
+    /// How long this operation has spent waiting on a PERSON, in total
+    /// (`super::human_wait::HumanWaitClock`). Monotonic; the estimator
+    /// subtracts what accrued since the last sample from the elapsed wall time.
+    pub human_wait_total: Duration,
+    pub phase: WriteOperationPhase,
+    pub bytes_done: u64,
+    pub bytes_total: u64,
+    pub files_done: usize,
+    pub files_total: usize,
+}
+
 /// State for one phase of one operation. Reset on phase transition.
 #[derive(Debug)]
 struct PhaseState {
     phase: WriteOperationPhase,
-    started_at: Instant,
     last_t: Instant,
+    /// The human-wait reading at `last_t`, so the next sample can tell working
+    /// time from time somebody spent deciding.
+    last_human_wait: Duration,
+    /// Working time seen in this phase: wall time minus every human wait. What
+    /// the warm-up gate measures, so a copy paused 10 s into its first 200 ms of
+    /// work doesn't come back claiming to be warmed up.
+    working_elapsed: Duration,
     last_bytes: u64,
     last_files: usize,
     /// EWMA in absolute units per second, toward the phase target (forward or rollback).
@@ -106,9 +141,10 @@ impl EtaEstimator {
     /// No-op if no phase is active (the next `update` will seed normally).
     /// Does NOT change the phase; the next `update` keeps the current phase
     /// unless it actually transitions.
-    pub fn reseed_baseline(&mut self, now: Instant, bytes_done: u64, files_done: usize) {
+    pub fn reseed_baseline(&mut self, now: Instant, human_wait_total: Duration, bytes_done: u64, files_done: usize) {
         if let Some(state) = self.state.as_mut() {
             state.last_t = now;
+            state.last_human_wait = human_wait_total;
             state.last_bytes = bytes_done;
             state.last_files = files_done;
             // Reset samples to 0 so the next `update` takes the fast-path
@@ -123,18 +159,17 @@ impl EtaEstimator {
     }
 
     /// Update the estimator with the latest counters and return the current stats.
-    ///
-    /// `now` is injected (not read from `Instant::now()` internally) so tests can
-    /// drive synthetic timelines without touching the real clock.
-    pub fn update(
-        &mut self,
-        now: Instant,
-        phase: WriteOperationPhase,
-        bytes_done: u64,
-        bytes_total: u64,
-        files_done: usize,
-        files_total: usize,
-    ) -> EtaStats {
+    pub fn update(&mut self, sample: EtaSample) -> EtaStats {
+        let EtaSample {
+            now,
+            human_wait_total,
+            phase,
+            bytes_done,
+            bytes_total,
+            files_done,
+            files_total,
+        } = sample;
+
         // On phase change (or first call), reseed and emit zero stats.
         // The next call's Δt will be measured against this seed.
         let needs_reset = match &self.state {
@@ -145,8 +180,9 @@ impl EtaEstimator {
         if needs_reset {
             self.state = Some(PhaseState {
                 phase,
-                started_at: now,
                 last_t: now,
+                last_human_wait: human_wait_total,
+                working_elapsed: Duration::ZERO,
                 last_bytes: bytes_done,
                 last_files: files_done,
                 bytes_rate: 0.0,
@@ -157,9 +193,25 @@ impl EtaEstimator {
         }
 
         let state = self.state.as_mut().expect("just reset or pre-existing");
-        let dt = now.saturating_duration_since(state.last_t).as_secs_f64();
+        // The rate window measures WORKING time. Whatever of this interval a
+        // person spent deciding (a pause, an open conflict prompt) is theirs,
+        // and dividing one file's bytes by the five minutes a prompt sat open
+        // is how a healthy copy came to report "0.4 files/s, 409h 39m left".
+        let waited = human_wait_total.saturating_sub(state.last_human_wait);
+        let dt = now
+            .saturating_duration_since(state.last_t)
+            .saturating_sub(waited)
+            .as_secs_f64();
         if dt <= 0.0 {
-            // Two updates in the same instant; return the last computed stats.
+            // Two updates in the same instant, or an interval that was entirely
+            // somebody's to spend. Re-anchor on this sample — its counters are
+            // the new baseline, and any bytes that moved alongside the wait
+            // simply don't inform the rate — and report the rates unchanged, so
+            // the ETA on screen stays where the last real measurement left it.
+            state.last_t = now;
+            state.last_human_wait = human_wait_total;
+            state.last_bytes = bytes_done;
+            state.last_files = files_done;
             return compute_stats(state, bytes_done, bytes_total, files_done, files_total);
         }
 
@@ -207,6 +259,8 @@ impl EtaEstimator {
         }
 
         state.last_t = now;
+        state.last_human_wait = human_wait_total;
+        state.working_elapsed += Duration::from_secs_f64(dt);
         state.last_bytes = bytes_done;
         state.last_files = files_done;
         state.samples = state.samples.saturating_add(1);
@@ -225,8 +279,7 @@ fn compute_stats(
     let bytes_per_second = state.bytes_rate.max(0.0).round() as u64;
     let files_per_second = state.files_rate.max(0.0) as f32;
 
-    let warmed_up = state.samples >= MIN_SAMPLES_FOR_ETA
-        && state.last_t.saturating_duration_since(state.started_at) >= MIN_ELAPSED_FOR_ETA;
+    let warmed_up = state.samples >= MIN_SAMPLES_FOR_ETA && state.working_elapsed >= MIN_ELAPSED_FOR_ETA;
 
     // Remaining work toward the phase target.
     let (remaining_bytes, remaining_files) = if state.phase == WriteOperationPhase::RollingBack {
@@ -289,6 +342,31 @@ fn eta_from_axes(remaining_bytes: u64, bytes_rate: f64, remaining_files: usize, 
     Some(seconds.min(u32::MAX as f64).ceil() as u32)
 }
 
+/// Test-only shorthand for the common case: nobody was ever asked anything, so
+/// wall time and working time are the same thing.
+#[cfg(test)]
+impl EtaEstimator {
+    fn update_at(
+        &mut self,
+        now: Instant,
+        phase: WriteOperationPhase,
+        bytes_done: u64,
+        bytes_total: u64,
+        files_done: usize,
+        files_total: usize,
+    ) -> EtaStats {
+        self.update(EtaSample {
+            now,
+            human_wait_total: Duration::ZERO,
+            phase,
+            bytes_done,
+            bytes_total,
+            files_done,
+            files_total,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -309,7 +387,7 @@ mod tests {
         let mut est = EtaEstimator::new();
         let mut last = EtaStats::ZERO;
         for &(t_ms, b, f) in samples {
-            last = est.update(at(start, t_ms), phase, b, bytes_total, f, files_total);
+            last = est.update_at(at(start, t_ms), phase, b, bytes_total, f, files_total);
         }
         last
     }
@@ -336,17 +414,17 @@ mod tests {
         let mut est = EtaEstimator::new();
 
         // t=0: initial Copying emit (phase transition Scanning -> Copying).
-        let initial = est.update(at(start, 0), WriteOperationPhase::Copying, 0, 35_000_000_000, 0, 1051);
+        let initial = est.update_at(at(start, 0), WriteOperationPhase::Copying, 0, 35_000_000_000, 0, 1051);
         assert_eq!(initial, EtaStats::ZERO);
 
         // t=1 ms: driver bulk-skip prelude credits 22 GB / 250 files
         // instantly. Caller calls `reseed_baseline` immediately before the
         // emit so the estimator absorbs the jump as its new starting point.
-        est.reseed_baseline(at(start, 1), 22_000_000_000, 250);
+        est.reseed_baseline(at(start, 1), Duration::ZERO, 22_000_000_000, 250);
 
         // t=1001 ms: first real per-file emit. Actually-copied delta vs.
         // the new baseline = 15 MB / 1 file over 1 s.
-        let stats = est.update(
+        let stats = est.update_at(
             at(start, 1001),
             WriteOperationPhase::Copying,
             22_015_000_000,
@@ -436,7 +514,7 @@ mod tests {
         let files_total = 174_661_usize;
 
         // Phase 1 (0–1 s): two huge files delete, bytes saturate, files barely move.
-        est.update(
+        est.update_at(
             at(start, 0),
             WriteOperationPhase::Deleting,
             0,
@@ -444,7 +522,7 @@ mod tests {
             0,
             files_total,
         );
-        est.update(
+        est.update_at(
             at(start, 500),
             WriteOperationPhase::Deleting,
             2_700_000_000,
@@ -452,7 +530,7 @@ mod tests {
             5,
             files_total,
         );
-        est.update(
+        est.update_at(
             at(start, 1000),
             WriteOperationPhase::Deleting,
             5_400_000_000,
@@ -468,7 +546,7 @@ mod tests {
         for i in 1..=10 {
             let t = 1000 + i * 500;
             let files_done = (10 + i as usize * 2_500).min(files_total);
-            last = est.update(
+            last = est.update_at(
                 at(start, t),
                 WriteOperationPhase::Deleting,
                 bytes_total,
@@ -504,7 +582,7 @@ mod tests {
 
         // Phase 1 (0–6 s): 6 small-to-medium files complete at ~1/s.
         // Each ~80 MB at ~80 MB/s. After this: 480 MB done, 6 files done.
-        est.update(
+        est.update_at(
             at(start, 0),
             WriteOperationPhase::Copying,
             0,
@@ -514,7 +592,7 @@ mod tests {
         );
         for i in 1..=6 {
             let t = i * 1000;
-            est.update(
+            est.update_at(
                 at(start, t),
                 WriteOperationPhase::Copying,
                 i * 80_000_000,
@@ -532,7 +610,7 @@ mod tests {
         for i in 1..=90 {
             let t = 6_000 + i * 200;
             bytes_done += 5_600_000; // 5.6 MB per 200 ms = 28 MB/s
-            last = est.update(
+            last = est.update_at(
                 at(start, t),
                 WriteOperationPhase::Copying,
                 bytes_done,
@@ -579,7 +657,7 @@ mod tests {
         // 10 s at 60 MB/s.
         for i in 0..=10 {
             let t = i * 1000;
-            est.update(
+            est.update_at(
                 at(start, t),
                 WriteOperationPhase::Copying,
                 bytes_done,
@@ -595,7 +673,7 @@ mod tests {
         for i in 1..=12 {
             let t = 10_000 + i * 1000;
             bytes_done += 6_000_000;
-            final_stats = est.update(
+            final_stats = est.update_at(
                 at(start, t),
                 WriteOperationPhase::Copying,
                 bytes_done,
@@ -628,7 +706,7 @@ mod tests {
 
         // 5 s of steady 100 MB/s.
         for i in 0..=5 {
-            est.update(
+            est.update_at(
                 at(start, i * 1000),
                 WriteOperationPhase::Copying,
                 i * 100_000_000,
@@ -640,7 +718,7 @@ mod tests {
 
         // 5 s of stall (no progress).
         for i in 1..=5 {
-            est.update(
+            est.update_at(
                 at(start, 5_000 + i * 1000),
                 WriteOperationPhase::Copying,
                 500_000_000,
@@ -652,7 +730,7 @@ mod tests {
 
         // The rate has decayed significantly. ETA may be None or large; either
         // is acceptable. We just need it not to be a wildly wrong small number.
-        let stalled = est.update(
+        let stalled = est.update_at(
             at(start, 10_000),
             WriteOperationPhase::Copying,
             500_000_000,
@@ -671,7 +749,7 @@ mod tests {
         let mut final_stats = EtaStats::ZERO;
         for i in 1..=6 {
             bytes += 100_000_000;
-            final_stats = est.update(
+            final_stats = est.update_at(
                 at(start, 10_000 + i * 1000),
                 WriteOperationPhase::Copying,
                 bytes,
@@ -687,20 +765,137 @@ mod tests {
         );
     }
 
+    /// Drive a steady 100 MB/s, 1 file/s copy for 5 s, then leave it parked for
+    /// five minutes with `human_wait` deciding whether those minutes were a
+    /// person's or the transfer's, and take one more second of the same steady
+    /// copy afterwards. Returns the stats from that last sample.
+    fn steady_copy_across_a_five_minute_wait(human_wait: bool) -> EtaStats {
+        const PARK_MS: u64 = 300_000;
+        let start = Instant::now();
+        let mut est = EtaEstimator::new();
+        let bytes_total = 10_000_000_000_u64;
+        let files_total = 100_usize;
+
+        for i in 0..=5 {
+            est.update(EtaSample {
+                now: at(start, i * 1000),
+                human_wait_total: Duration::ZERO,
+                phase: WriteOperationPhase::Copying,
+                bytes_done: i * 100_000_000,
+                bytes_total,
+                files_done: i as usize,
+                files_total,
+            });
+        }
+
+        // Nothing is emitted while the operation is parked (a paused transfer
+        // and one waiting on an answer both go quiet), so the wait shows up as
+        // one long gap before the next sample.
+        let waited = if human_wait {
+            Duration::from_millis(PARK_MS)
+        } else {
+            Duration::ZERO
+        };
+        est.update(EtaSample {
+            now: at(start, 5_000 + PARK_MS + 1_000),
+            human_wait_total: waited,
+            phase: WriteOperationPhase::Copying,
+            bytes_done: 600_000_000,
+            bytes_total,
+            files_done: 6,
+            files_total,
+        })
+    }
+
+    /// The assertion the whole human-wait exclusion exists for: a transfer that
+    /// spent five minutes waiting for a person to answer a conflict prompt (or
+    /// sat paused) comes back with the estimate it had, rather than one that
+    /// counted the thinking as dead-slow copying.
+    #[test]
+    fn a_human_wait_leaves_the_rate_and_the_eta_where_they_were() {
+        let after = steady_copy_across_a_five_minute_wait(true);
+
+        // 9.4 GB left at 100 MB/s ≈ 94 s. Pre-fix this read ~400 h, because the
+        // 100 MB moved across the gap was divided by the five minutes the
+        // prompt was open.
+        let eta = after.eta_seconds.expect("warmed up long before the wait");
+        assert!(
+            (80..=110).contains(&eta),
+            "eta = {eta}s after a human wait: the estimate must survive the answer, not jump",
+        );
+        assert!(
+            (90_000_000..=110_000_000).contains(&after.bytes_per_second),
+            "bytes_per_second = {} after a human wait: expected the steady ~100 MB/s",
+            after.bytes_per_second,
+        );
+    }
+
+    /// The negative control, so the exclusion can't quietly grow to cover
+    /// everything: five minutes of a slow share is the TRANSFER being slow, and
+    /// the ETA has to say so.
+    #[test]
+    fn a_device_wait_still_moves_the_eta() {
+        let after = steady_copy_across_a_five_minute_wait(false);
+
+        let eta = after.eta_seconds.expect("warmed up");
+        assert!(
+            eta > 1_000,
+            "eta = {eta}s: five minutes for 100 MB is a genuinely slow transfer and the ETA must reflect it",
+        );
+        assert!(
+            after.bytes_per_second < 10_000_000,
+            "bytes_per_second = {}: the rate must follow a real slowdown down",
+            after.bytes_per_second,
+        );
+    }
+
+    #[test]
+    fn the_warm_up_gate_measures_working_time_not_wall_time() {
+        // Paused 10 s into the first 200 ms of copying: the ETA must still be
+        // withheld, because 200 ms of measured work is exactly what the gate
+        // exists to distrust.
+        let start = Instant::now();
+        let mut est = EtaEstimator::new();
+        est.update(EtaSample {
+            now: at(start, 0),
+            human_wait_total: Duration::ZERO,
+            phase: WriteOperationPhase::Copying,
+            bytes_done: 0,
+            bytes_total: 10_000_000,
+            files_done: 0,
+            files_total: 100,
+        });
+        let stats = est.update(EtaSample {
+            now: at(start, 10_200),
+            human_wait_total: Duration::from_secs(10),
+            phase: WriteOperationPhase::Copying,
+            bytes_done: 2_000_000,
+            bytes_total: 10_000_000,
+            files_done: 20,
+            files_total: 100,
+        });
+
+        assert_eq!(stats.eta_seconds, None, "200 ms of work is not a warmed-up estimator");
+        assert!(
+            stats.bytes_per_second > 0,
+            "the rates still populate on the first delta"
+        );
+    }
+
     #[test]
     fn phase_transition_resets_state() {
         let start = Instant::now();
         let mut est = EtaEstimator::new();
 
         // Scanning phase: 1000 files/s.
-        est.update(at(start, 0), WriteOperationPhase::Scanning, 0, 0, 0, 0);
-        est.update(at(start, 1000), WriteOperationPhase::Scanning, 0, 0, 1000, 0);
-        est.update(at(start, 2000), WriteOperationPhase::Scanning, 0, 0, 2000, 0);
+        est.update_at(at(start, 0), WriteOperationPhase::Scanning, 0, 0, 0, 0);
+        est.update_at(at(start, 1000), WriteOperationPhase::Scanning, 0, 0, 1000, 0);
+        est.update_at(at(start, 2000), WriteOperationPhase::Scanning, 0, 0, 2000, 0);
 
         // Transition to Copying: bytes_done resets to 0 from scanning's 0,
         // but the file count is fresh. files_done starts back at 0 in the
         // emitter's view of "files copied so far" (vs "files scanned").
-        let on_transition = est.update(at(start, 2100), WriteOperationPhase::Copying, 0, 5_000_000_000, 0, 2000);
+        let on_transition = est.update_at(at(start, 2100), WriteOperationPhase::Copying, 0, 5_000_000_000, 0, 2000);
         // Reset → zero stats on the transition sample, then re-warm.
         assert_eq!(on_transition, EtaStats::ZERO);
     }
@@ -712,7 +907,7 @@ mod tests {
 
         // Operation made it to 500 MB / 50 files before rollback starts.
         // During rollback, the counters decrease.
-        est.update(
+        est.update_at(
             at(start, 0),
             WriteOperationPhase::RollingBack,
             500_000_000,
@@ -720,7 +915,7 @@ mod tests {
             50,
             100,
         );
-        est.update(
+        est.update_at(
             at(start, 1000),
             WriteOperationPhase::RollingBack,
             400_000_000,
@@ -728,7 +923,7 @@ mod tests {
             40,
             100,
         );
-        let stats = est.update(
+        let stats = est.update_at(
             at(start, 2000),
             WriteOperationPhase::RollingBack,
             300_000_000,
@@ -747,10 +942,10 @@ mod tests {
     fn same_instant_double_update_is_idempotent() {
         let start = Instant::now();
         let mut est = EtaEstimator::new();
-        est.update(at(start, 0), WriteOperationPhase::Copying, 0, 1_000, 0, 10);
-        est.update(at(start, 1000), WriteOperationPhase::Copying, 500, 1_000, 5, 10);
-        let a = est.update(at(start, 2000), WriteOperationPhase::Copying, 700, 1_000, 7, 10);
-        let b = est.update(at(start, 2000), WriteOperationPhase::Copying, 800, 1_000, 8, 10);
+        est.update_at(at(start, 0), WriteOperationPhase::Copying, 0, 1_000, 0, 10);
+        est.update_at(at(start, 1000), WriteOperationPhase::Copying, 500, 1_000, 5, 10);
+        let a = est.update_at(at(start, 2000), WriteOperationPhase::Copying, 700, 1_000, 7, 10);
+        let b = est.update_at(at(start, 2000), WriteOperationPhase::Copying, 800, 1_000, 8, 10);
         // Second call at same instant: rates unchanged, but counters refreshed.
         // The next call (with dt > 0) will use the latest counters as the
         // reference. We just check that the second update didn't blow up or

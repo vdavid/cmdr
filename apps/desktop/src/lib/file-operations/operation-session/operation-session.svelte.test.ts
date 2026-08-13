@@ -279,7 +279,7 @@ describe('derived read state', () => {
     dispose()
   })
 
-  it('has no speed and no countdown while the operation is paused', () => {
+  it('drops the speed but keeps the countdown while the operation is paused', () => {
     const { fanout, session, dispose } = harness()
 
     fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'running')] })
@@ -291,17 +291,60 @@ describe('derived read state', () => {
     expect(session.filesPerSecondDisplay).toBe(1905)
     expect(session.etaSecondsDisplay).toBe(58)
 
-    // A paused transfer emits no further ticks, so the backend's last measured
-    // numbers sit there describing a transfer that isn't moving. "58s left"
-    // over a frozen copy is a number nobody can stand behind.
+    // A paused transfer emits no further ticks, so the last measured SPEED sits
+    // there describing a copy that isn't moving. The time left is a different
+    // claim: the backend leaves the paused seconds out of its rate window, so
+    // "58s left" is still what remains once the user presses Resume — which is
+    // the number they paused to think about.
     fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'paused')] })
     expect(session.bytesPerSecondDisplay).toBeNull()
     expect(session.filesPerSecondDisplay).toBeNull()
-    expect(session.etaSecondsDisplay).toBeNull()
+    expect(session.etaSecondsDisplay).toBe(58)
 
-    // Resuming brings them back: the smoother kept its history, so the display
-    // picks up where it left off rather than re-warming from scratch.
+    // Resuming brings the speed back: the smoother kept its history, so the
+    // display picks up where it left off rather than re-warming from scratch.
     fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'running')] })
+    expect(session.bytesPerSecondDisplay).toBe(4096)
+    expect(session.etaSecondsDisplay).toBe(58)
+    dispose()
+  })
+
+  it('drops the speed but keeps the countdown while a clash waits for an answer', () => {
+    const { fanout, session, dispose } = harness()
+
+    // Not paused: an operation parked on a conflict prompt is still `running`.
+    // The backend's own wait classification is what says a person is deciding.
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'running')] })
+    fanout._testEmit({
+      kind: 'progress',
+      event: progress('a', {
+        bytesPerSecond: 4096,
+        filesPerSecond: 1905,
+        etaSeconds: 58,
+        activity: { inFlight: 1, stillForSeconds: 0, waitingOn: 'you' },
+      }),
+    })
+
+    expect(session.bytesPerSecondDisplay).toBeNull()
+    expect(session.filesPerSecondDisplay).toBeNull()
+    expect(session.etaSecondsDisplay).toBe(58)
+    dispose()
+  })
+
+  it('keeps showing the speed through a wait on a slow device, which IS the transfer', () => {
+    const { fanout, session, dispose } = harness()
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'running')] })
+    fanout._testEmit({
+      kind: 'progress',
+      event: progress('a', {
+        bytesPerSecond: 4096,
+        filesPerSecond: 1905,
+        etaSeconds: 58,
+        activity: { inFlight: 1, stillForSeconds: 12, waitingOn: 'destination' },
+      }),
+    })
+
     expect(session.bytesPerSecondDisplay).toBe(4096)
     expect(session.etaSecondsDisplay).toBe(58)
     dispose()

@@ -10,7 +10,8 @@ use std::sync::{Arc, LazyLock, RwLock};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
-use super::eta::EtaEstimator;
+use super::eta::{EtaEstimator, EtaSample};
+use super::human_wait::HumanWaitClock;
 use super::types::{
     ConflictId, ConflictResolution, ConflictResolutionOutcome, OperationEventSink, WriteOperationType,
     WriteProgressEvent, WriteSettledEvent,
@@ -72,6 +73,14 @@ pub struct WriteOperationState {
     /// at every `write-progress` emit site, so every emitter (local copy/delete,
     /// volume copy/move, MTP, SMB) reports rates and ETA uniformly.
     pub estimator: std::sync::Mutex<EtaEstimator>,
+    /// How long this operation has spent waiting on a PERSON: the pause the user
+    /// pressed, and the conflict prompts they haven't answered yet. The
+    /// [`pause_gate`](Self::pause_gate) and the
+    /// [`conflict_slot`](Self::conflict_slot) each hold a handle and drive it
+    /// from their own transitions; `enrich_progress` reads it so the estimator
+    /// can charge those seconds to the person rather than to the transfer. See
+    /// [`HumanWaitClock`].
+    pub human_wait: Arc<HumanWaitClock>,
     /// Cooperative cancel flag for in-flight backend I/O. Flipped whenever the
     /// op transitions out of `Running` (via `cancel_write_operation`,
     /// `cancel_all_write_operations`, or `cancel_all_write_operations_with_rollback`).
@@ -163,15 +172,19 @@ impl WriteOperationState {
     /// `*_files_start` entry point; keeps the field list out of every call
     /// site so adding new state members (like the estimator) is one-line.
     pub fn new(progress_interval: Duration) -> Self {
+        // One clock, two owners: whichever of them parks the operation, the
+        // estimator reads the union.
+        let human_wait = HumanWaitClock::shared();
         Self {
             intent: Arc::new(AtomicU8::new(OperationIntent::Running as u8)),
             progress_interval,
-            conflict_slot: ConflictSlot::new(),
+            conflict_slot: ConflictSlot::new(Arc::clone(&human_wait)),
             conflict_dispatch_lock: tokio::sync::Mutex::new(()),
             estimator: std::sync::Mutex::new(EtaEstimator::new()),
             backend_cancel: CancellationToken::new(),
             backend_abort: CancellationToken::new(),
-            pause_gate: PauseGate::new(),
+            pause_gate: PauseGate::new(Arc::clone(&human_wait)),
+            human_wait,
             journal_volumes: None,
             in_flight_temps: std::sync::Mutex::new(Vec::new()),
             liveness: std::sync::Mutex::new(Some(Arc::new(()))),
@@ -200,6 +213,19 @@ impl WriteOperationState {
         self
     }
 
+    /// Re-anchor the rate estimator on counters that jumped without any bytes
+    /// moving (the bulk-skip prelude credits every pre-known conflict at once).
+    /// The one caller-facing wrapper over `EtaEstimator::reseed_baseline`, so
+    /// no emit site has to know the estimator lives behind a lock or that the
+    /// human-wait clock feeds it. A poisoned lock skips the re-anchor: the rate
+    /// display is advisory, and a panic here would take the transfer with it.
+    pub fn reseed_estimator_baseline(&self, bytes_done: u64, files_done: usize) {
+        let now = Instant::now();
+        if let Ok(mut est) = self.estimator.lock() {
+            est.reseed_baseline(now, self.human_wait.total_at(now), bytes_done, files_done);
+        }
+    }
+
     /// Populate `bytes_per_second`, `files_per_second`, `eta_seconds`, and
     /// `activity` on a `WriteProgressEvent` before it's emitted. Call this from
     /// every `write-progress` emit site (local copy, local delete, trash, volume
@@ -216,15 +242,19 @@ impl WriteOperationState {
             event.activity = Some(activity);
         }
 
+        let now = Instant::now();
         let stats = match self.estimator.lock() {
-            Ok(mut est) => est.update(
-                Instant::now(),
-                event.phase,
-                event.bytes_done,
-                event.bytes_total,
-                event.files_done,
-                event.files_total,
-            ),
+            Ok(mut est) => est.update(EtaSample {
+                now,
+                // The seconds a person spent deciding are not the transfer's,
+                // so the rate window doesn't get to count them.
+                human_wait_total: self.human_wait.total_at(now),
+                phase: event.phase,
+                bytes_done: event.bytes_done,
+                bytes_total: event.bytes_total,
+                files_done: event.files_done,
+                files_total: event.files_total,
+            }),
             // Poisoned mutex (another thread panicked). Skip the enrichment
             // rather than propagating the panic; progress events are advisory.
             Err(_) => return,

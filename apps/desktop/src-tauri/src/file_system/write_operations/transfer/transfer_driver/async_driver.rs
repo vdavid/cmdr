@@ -111,9 +111,7 @@ where
         );
         // Re-anchor the rate estimator: bulk-skip credit is past work, not
         // throughput. See `drive_transfer_serial_sync` for the rationale.
-        if let Ok(mut est) = state.estimator.lock() {
-            est.reseed_baseline(Instant::now(), bytes_done, files_done);
-        }
+        state.reseed_estimator_baseline(bytes_done, files_done);
         emit_progress_and_status(
             events,
             state,

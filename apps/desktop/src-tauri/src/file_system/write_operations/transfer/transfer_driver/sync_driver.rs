@@ -3,7 +3,6 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Instant;
 
 use crate::file_system::write_operations::state::{WriteOperationState, is_cancelled};
 use crate::file_system::write_operations::types::{OperationEventSink, WriteOperationError};
@@ -90,9 +89,7 @@ where
         // reseed the first real per-file emit's delta is computed against
         // `(0, 0)` and pins `bytes_per_second` at GB/s level. See
         // `eta::EtaEstimator::reseed_baseline` for the full rationale.
-        if let Ok(mut est) = state.estimator.lock() {
-            est.reseed_baseline(Instant::now(), bytes_done, files_done);
-        }
+        state.reseed_estimator_baseline(bytes_done, files_done);
         emit_progress_and_status(
             events,
             state,

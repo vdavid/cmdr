@@ -219,12 +219,25 @@ alone cannot tell you.
 - `phase`: `null` before the first tick, then `scanning` and the write phases. Views gate on it (a scanning operation
   has written nothing, so Rollback makes no sense for it).
 - `bytesPerSecondDisplay` / `filesPerSecondDisplay` / `etaSecondsDisplay`: the numbers a view is allowed to print. The
-  backend's rates, and its ETA through this session's smoother — except while the operation is PAUSED, where all three
-  answer `null`. A parked operation emits no further ticks, so its last measured rate and countdown sit there describing
-  a transfer that has stopped, and "1905 files/s, 58s left" over a frozen copy is a number nobody can stand behind
-  (`AGENTS.md` principle 2: honest progress and ETA). Deciding it here rather than per-surface is what keeps the dialog,
-  the queue row, and the corner chip saying the same thing: they showed different answers to the same paused copy once.
-  Every view renders these three, never `progress.bytesPerSecond` / `progress.filesPerSecond` / `progress.etaSeconds`.
+  backend's rates, and its ETA through this session's smoother. The two RATES answer `null` while a person is deciding
+  something, because a parked operation emits no further ticks and its last measured speed sits there describing a
+  transfer that has stopped: "1905 files/s" over a frozen copy is a number nobody can stand behind (`AGENTS.md`
+  principle 2: honest progress and ETA). The ETA is a different claim and STAYS: "58s left" is what remains once the
+  person is done, which is exactly what they want while they decide, and the backend keeps it true by excluding
+  human-wait time from the rate window (`write_operations/human_wait.rs`). Deciding all this here rather than
+  per-surface is what keeps the dialog, the queue row, and the corner chip saying the same thing: they showed different
+  answers to the same paused copy once. Every view renders these three, never `progress.bytesPerSecond` /
+  `progress.filesPerSecond` / `progress.etaSeconds`.
+
+  "A person is deciding" is `awaitingHuman()`, and it takes TWO signals because the two waits report differently: a user
+  pause shows up as `snapshot.status === 'paused'`, while an operation parked on a clash is still `running` and says so
+  through the backend's own classification, `progress.activity.waitingOn === 'you'`. Both are known-facts tests (`===`,
+  never `!==`), so a session that has heard nothing yet reads as "not waiting" and renders its first frames normally
+  instead of blanking a transfer that is running fine. ❌ Don't reach for `conflict !== null` as a third signal: that
+  field is this window's own copy of the prompt, cleared only by the surface that answers, so a row that watched someone
+  else answer would hide its speed for the rest of the transfer. A local copy keeps no in-flight table, so `activity` is
+  `null` for one and its speed stays on screen through a clash — the honest fix there is a backend tick, not a
+  frontend guess.
 - `scan`: the counting readout, including the frontend-computed rates the backend does not emit during a scan.
 - `conflict`: the conflict the operation is parked on, set from the event and cleared once the backend has ruled on the
   clash that was ANSWERED, whichever surface asked. A newer clash that arrived mid-answer stays (see below).

@@ -39,7 +39,9 @@
         /** The session's `filesPerSecondDisplay`, on the same terms. */
         filesPerSecond?: number | null
         /** The session's `etaSecondsDisplay`: smoothed, and absent whenever no
-         *  countdown can be believed. ❌ Never the raw backend value. */
+         *  countdown can be believed — which a pause and an open clash are NOT,
+         *  since the work left over is what the person is deciding about.
+         *  ❌ Never the raw backend value. */
         etaSeconds?: Seconds | null
         /** The backend's stall verdict; it displaces the countdown while set. */
         stall?: StallNotice | null

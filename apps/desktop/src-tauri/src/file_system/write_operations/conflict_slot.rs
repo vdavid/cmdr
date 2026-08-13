@@ -22,9 +22,10 @@
 //! also what lets the slot report that honestly instead of confidently wrong.
 
 use crate::ignore_poison::IgnorePoison;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
 
+use super::human_wait::{HumanWaitClock, HumanWaitSource};
 use super::types::{ConflictId, ConflictResolution, ConflictResolutionOutcome};
 
 /// Response to a conflict resolution request.
@@ -63,16 +64,34 @@ struct Slot {
 /// answer land?" for every surface that tries.
 pub struct ConflictSlot {
     inner: Mutex<Slot>,
+    /// The operation's human-wait accounting. A clash on screen is the transfer
+    /// waiting for somebody to decide, and the ETA must not charge it for that
+    /// time. Kept in step with the slot's own state under the slot's lock — see
+    /// [`sync_human_wait`](Self::sync_human_wait).
+    human_wait: Arc<HumanWaitClock>,
 }
 
 impl ConflictSlot {
-    pub fn new() -> Self {
+    pub fn new(human_wait: Arc<HumanWaitClock>) -> Self {
         Self {
             inner: Mutex::new(Slot {
                 state: SlotState::Idle,
                 raised: 0,
             }),
+            human_wait,
         }
+    }
+
+    /// Mirrors "a clash is on screen" onto the human-wait clock. Called from
+    /// every transition, DERIVED from the state that transition just left
+    /// behind, so no path can arm the prompt and forget to start the clock (or
+    /// answer it and leave the clock running, which would freeze the rate for
+    /// the rest of the transfer).
+    fn sync_human_wait(&self, slot: &Slot) {
+        self.human_wait.set(
+            HumanWaitSource::Conflict,
+            matches!(slot.state, SlotState::Awaiting { .. }),
+        );
     }
 
     /// Arms the slot with the sender the waiting operation listens on, and
@@ -86,6 +105,7 @@ impl ConflictSlot {
         inner.raised = inner.raised.saturating_add(1);
         let id = ConflictId(inner.raised);
         inner.state = SlotState::Awaiting { id, tx };
+        self.sync_human_wait(&inner);
         id
     }
 
@@ -100,7 +120,9 @@ impl ConflictSlot {
     /// a cancel does; afterwards nothing is pending, so a late answer is
     /// truthfully told there's nothing to answer.
     pub fn abandon(&self) {
-        self.inner.lock_ignore_poison().state = SlotState::Idle;
+        let mut inner = self.inner.lock_ignore_poison();
+        inner.state = SlotState::Idle;
+        self.sync_human_wait(&inner);
     }
 
     /// Delivers `response` to the parked operation IF `conflict` is the clash it
@@ -109,17 +131,18 @@ impl ConflictSlot {
     /// reaches nothing at all.
     pub fn answer(&self, conflict: ConflictId, response: ConflictResolutionResponse) -> ConflictResolutionOutcome {
         let mut inner = self.inner.lock_ignore_poison();
-        match std::mem::replace(&mut inner.state, SlotState::Idle) {
+        let outcome = match std::mem::replace(&mut inner.state, SlotState::Idle) {
             SlotState::Awaiting { id, tx } if id == conflict => {
                 if tx.send(response).is_err() {
                     // The waiting task went away without disarming the slot, so
                     // this answer reached nothing and resolved nothing. Leaves
                     // the slot Idle: there's no conflict here any more.
                     log::warn!("A conflict answer arrived after its operation stopped listening; nothing to resolve");
-                    return ConflictResolutionOutcome::NoPendingConflict;
+                    ConflictResolutionOutcome::NoPendingConflict
+                } else {
+                    inner.state = SlotState::Answered { id };
+                    ConflictResolutionOutcome::Resolved
                 }
-                inner.state = SlotState::Answered { id };
-                ConflictResolutionOutcome::Resolved
             }
             // A different question is on screen. Put it back untouched: this
             // answer was never about it, and the person it IS on screen for
@@ -141,13 +164,18 @@ impl ConflictSlot {
                 }
             }
             SlotState::Idle => ConflictResolutionOutcome::NoPendingConflict,
-        }
+        };
+        // Whatever just happened, the clock follows the slot: an answered or
+        // refused clash stops charging the person, a still-parked one keeps on.
+        self.sync_human_wait(&inner);
+        outcome
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::{Duration, Instant};
 
     fn overwrite() -> ConflictResolutionResponse {
         ConflictResolutionResponse {
@@ -165,7 +193,7 @@ mod tests {
 
     #[tokio::test]
     async fn the_first_answer_reaches_the_waiter_and_is_reported_as_resolved() {
-        let slot = ConflictSlot::new();
+        let slot = ConflictSlot::new(HumanWaitClock::shared());
         let (tx, rx) = oneshot::channel();
         let clash = slot.arm(tx);
 
@@ -179,7 +207,7 @@ mod tests {
 
     #[tokio::test]
     async fn a_second_answer_is_reported_as_already_resolved_and_delivers_nothing() {
-        let slot = ConflictSlot::new();
+        let slot = ConflictSlot::new(HumanWaitClock::shared());
         let (tx, rx) = oneshot::channel();
         let clash = slot.arm(tx);
 
@@ -191,9 +219,51 @@ mod tests {
         assert_eq!(delivered.resolution, ConflictResolution::Overwrite);
     }
 
+    #[tokio::test]
+    async fn the_seconds_a_clash_sits_on_screen_are_charged_to_the_person() {
+        // The rate window subtracts this clock, so the transfer isn't blamed for
+        // the minutes a prompt spent waiting for a decision. Both ends matter: a
+        // clock left running would freeze the rate for the rest of the copy.
+        let clock = HumanWaitClock::shared();
+        let slot = ConflictSlot::new(Arc::clone(&clock));
+        let start = Instant::now();
+        assert_eq!(clock.total_at(start), Duration::ZERO);
+
+        let (tx, rx) = oneshot::channel();
+        let clash = slot.arm(tx);
+        let armed_at = Instant::now();
+        assert!(
+            clock.total_at(armed_at + Duration::from_secs(2)) >= Duration::from_secs(2),
+            "an unanswered clash is time spent waiting on a person",
+        );
+
+        assert_eq!(slot.answer(clash, overwrite()), ConflictResolutionOutcome::Resolved);
+        rx.await.expect("the waiter gets the answer");
+        let banked = clock.total_at(Instant::now());
+        assert_eq!(
+            banked,
+            clock.total_at(Instant::now() + Duration::from_secs(5)),
+            "the answer closes the clock, so the copying that follows counts as the transfer's own",
+        );
+    }
+
+    #[test]
+    fn abandoning_a_clash_stops_charging_the_person() {
+        // What a cancel leaves behind. Nobody is being asked anything any more,
+        // so the clock has to close even though no answer ever arrived.
+        let clock = HumanWaitClock::shared();
+        let slot = ConflictSlot::new(Arc::clone(&clock));
+        let (tx, _rx) = oneshot::channel();
+        slot.arm(tx);
+        slot.abandon();
+
+        let banked = clock.total_at(Instant::now());
+        assert_eq!(banked, clock.total_at(Instant::now() + Duration::from_secs(5)));
+    }
+
     #[test]
     fn an_unarmed_slot_reports_no_pending_conflict() {
-        let slot = ConflictSlot::new();
+        let slot = ConflictSlot::new(HumanWaitClock::shared());
         assert_eq!(
             slot.answer(ConflictId(1), skip()),
             ConflictResolutionOutcome::NoPendingConflict
@@ -204,7 +274,7 @@ mod tests {
     fn an_abandoned_conflict_reports_no_pending_conflict() {
         // What a cancel leaves behind: the sender is dropped (the waiter reads
         // that as cancellation), so there's nothing left to answer.
-        let slot = ConflictSlot::new();
+        let slot = ConflictSlot::new(HumanWaitClock::shared());
         let (tx, mut rx) = oneshot::channel();
         let clash = slot.arm(tx);
         slot.abandon();
@@ -219,7 +289,7 @@ mod tests {
         // screen and arriving after the operation has already parked on B. B is
         // a different question, so A's answer must not resolve it — and B's
         // sender must survive, because the person looking at B hasn't clicked.
-        let slot = ConflictSlot::new();
+        let slot = ConflictSlot::new(HumanWaitClock::shared());
         let (tx_a, rx_a) = oneshot::channel();
         let a = slot.arm(tx_a);
         assert_eq!(slot.answer(a, overwrite()), ConflictResolutionOutcome::Resolved);
@@ -250,7 +320,7 @@ mod tests {
         // A and carried on. A second answer naming A is a second opinion
         // (`AlreadyResolved`), but one naming a clash that was never the last
         // question is late — the slot says so rather than acting on it.
-        let slot = ConflictSlot::new();
+        let slot = ConflictSlot::new(HumanWaitClock::shared());
         let (tx_a, rx_a) = oneshot::channel();
         let a = slot.arm(tx_a);
         assert_eq!(slot.answer(a, overwrite()), ConflictResolutionOutcome::Resolved);
@@ -269,7 +339,7 @@ mod tests {
     fn an_answer_nobody_is_listening_for_reports_no_pending_conflict() {
         // The waiting task went away without disarming the slot (it was dropped
         // mid-flight). The answer reaches nothing, so it resolved nothing.
-        let slot = ConflictSlot::new();
+        let slot = ConflictSlot::new(HumanWaitClock::shared());
         let (tx, rx) = oneshot::channel();
         let clash = slot.arm(tx);
         drop(rx);

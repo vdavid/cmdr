@@ -738,9 +738,7 @@ pub(crate) async fn copy_volumes_with_progress(
         // throughput. Without this the first per-task progress callback's
         // delta against `(0, 0)` pins `bytes_per_second` at GB/s level.
         // Same pattern as the driver's serial preludes.
-        if let Ok(mut est) = state.estimator.lock() {
-            est.reseed_baseline(Instant::now(), new_bytes, new_files);
-        }
+        state.reseed_estimator_baseline(new_bytes, new_files);
         state.emit_progress_via_sink(
             &*events,
             WriteProgressEvent::new(
