@@ -55,6 +55,7 @@ import {
   waitForFrontPositionToClear,
   waitForSocket,
   warnIfForeignCmdr,
+  createTrackedArtifactGuard,
 } from './capture-runtime.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -150,6 +151,27 @@ function cleanupCaptureDataDir() {
   captureDataDir = null
 }
 process.on('exit', cleanupCaptureDataDir)
+
+/**
+ * Only a run that finishes green keeps its rewrite of the two files in
+ * `screenshots/` that git TRACKS. The PNGs beside them are gitignored and
+ * regenerable, and an overflow pass writes to its own gitignored subdir, so it
+ * guards nothing and those two are the whole tracked surface. Mechanism and why
+ * on `exit`: `capture-runtime.ts`.
+ */
+const trackedArtifacts = createTrackedArtifactGuard(
+  screenshotsBaseDir,
+  isOverflow ? [] : ['capture-report.json', 'capture-skipped.json'],
+)
+process.on('exit', () => {
+  const restored = trackedArtifacts.restoreUnlessEarned()
+  if (restored.length > 0) {
+    console.warn(
+      `[i18n-capture] run did not finish green, so its rewrite of ${String(restored.length)} tracked artifact(s) was rolled back. ` +
+        'A partial report would make the couplings claim surfaces this run never photographed.',
+    )
+  }
+})
 
 let appProc: ChildProcess | null = null
 // Stop ONLY the app process THIS script launched, never a broad
@@ -290,6 +312,7 @@ async function main() {
   // turns any hole into a loud failure.
   const failedPasses: string[] = []
   const runStartedAtMs = Date.now()
+  trackedArtifacts.snapshot()
   try {
     await launchAndCapture(binary, startPath, mainEnv, 'main')
   } catch (e) {
@@ -347,6 +370,9 @@ async function main() {
     throw new Error(`capture passes failed: ${failedPasses.join(', ')}`)
   }
 
+  // Complete and green: the rewritten report and skip list describe what this run
+  // actually photographed, so they stay.
+  trackedArtifacts.earn()
   console.log('[i18n-capture] done. Next: `pnpm i18n:couple` to write @key.screenshot couplings.')
 }
 

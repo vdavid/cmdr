@@ -8,12 +8,18 @@
  * another app photographs stale frames. That fact was learned once, expensively
  * (a run shipped 31 blank images), and it belongs in one place.
  *
+ * Both also rewrite files git TRACKS while they run, so the tracked-artifact guard
+ * at the bottom lives here too: same shape of mistake, same one place.
+ *
  * Stdlib only, like `instance-id.ts`, so either orchestrator can import it with no
- * build step.
+ * build step. Everything here except the launch primitives is pure filesystem work
+ * and is covered by `capture-runtime.test.ts`.
  */
 
 import { execSync, spawnSync } from 'node:child_process'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import net from 'node:net'
+import { join } from 'node:path'
 
 /** Resolves the host target triple, which is where the built binary lands. */
 export function hostTriple(): string {
@@ -145,5 +151,73 @@ export async function waitForFrontPositionToClear(logPrefix: string): Promise<vo
       )
     }
     await new Promise((resolve) => setTimeout(resolve, FRONT_POLL_MS))
+  }
+}
+
+/**
+ * Guards the files a capture run rewrites that git TRACKS, so only a run that
+ * finished green gets to keep its rewrite.
+ *
+ * A capture writes its report DURING the run, because each later mock pass loads
+ * it, captures its one surface, and merges back, so the write can't wait for the
+ * end. That left a partial run silently degrading a tracked file: a capture that
+ * died four surfaces short rewrote `capture-report.json` without them, and
+ * `message-screenshots-fresh` then validated couplings against a report no
+ * complete run ever produced.
+ *
+ * A factory rather than module state, so an orchestrator owns its own guard and
+ * two of them can't interfere. Wire `restoreUnlessEarned` to `process.on('exit')`
+ * rather than around the run: an interrupted run (SIGINT exits 130, which still
+ * runs exit handlers) has earned its rewrite exactly as little as a failed one.
+ */
+export function createTrackedArtifactGuard(dir: string, names: string[]) {
+  /** What each artifact held before the run; null for one that wasn't there, and
+   *  a null LIST means nothing was snapshotted, so there's nothing to put back. */
+  let before: { path: string; content: string | null }[] | null = null
+  let earned = false
+
+  return {
+    /** Records the current contents. Call once, before the run may write. */
+    snapshot(): void {
+      before = names.map((name) => {
+        const path = join(dir, name)
+        let content: string | null = null
+        try {
+          content = readFileSync(path, 'utf8')
+        } catch {
+          /* not there yet; putting that back means removing it again */
+        }
+        return { path, content }
+      })
+    },
+
+    /** The run finished complete and green, so its rewrite describes what it really did. */
+    earn(): void {
+      earned = true
+    },
+
+    /**
+     * Puts the artifacts back unless the run earned them, and returns the paths it
+     * actually rewrote (empty when there was nothing to undo). Untouched files are
+     * left alone so a green-but-identical run doesn't churn mtimes, and the
+     * snapshot is dropped either way so a second call can't undo a later write.
+     */
+    restoreUnlessEarned(): string[] {
+      if (before === null || earned) return []
+      const restored: string[] = []
+      for (const { path, content } of before) {
+        try {
+          const now = existsSync(path) ? readFileSync(path, 'utf8') : null
+          if (now === content) continue
+          if (content === null) rmSync(path, { force: true })
+          else writeFileSync(path, content)
+          restored.push(path)
+        } catch {
+          /* best-effort: a failed restore leaves a dirty tracked file, which git shows anyway */
+        }
+      }
+      before = null
+      return restored
+    },
   }
 }
