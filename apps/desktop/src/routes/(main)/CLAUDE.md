@@ -35,6 +35,10 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
   rename breaks compilation here; the `mcp-nav-to-path` / `mcp-response` round-trips stay off the bus (DETAILS § MCP).
 - **E2E and debug listeners stay off the bus by design**: `e2e-trigger-file-drop` and the DEV `debug-*-error` ones call
   `explorerRef.*` directly, no registry entry. Don't "finish the migration" (DETAILS § Off-bus hooks).
+- **`foreground-operation` is the one inbound channel from another WINDOW**: the queue's Show button asks this window to
+  adopt an operation into its progress dialog. It focuses this window whatever the verdict, and
+  `ExplorerAPI.foregroundOperation` hands that verdict straight back; ❌ never route it through the bus, which is
+  fire-and-forget and would drop it. DETAILS § Cross-window.
 
 ## Gotchas
 

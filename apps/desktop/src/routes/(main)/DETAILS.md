@@ -7,8 +7,9 @@ Depth and rationale for the app orchestrator. `CLAUDE.md` holds the must-knows; 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
 map, plus `command-handlers/CLAUDE.md` for the handler families. What each piece DOES is in the sections below (§
 "Startup: paint-gated window show", § "Dispatch core", § "The exempt families", § "Capability guard", § "MCP transport",
-§ "Mouse back / forward buttons", § "Right-click ownership", § "Native-menu and input-focus interactions", § "Off-bus
-test and debug hooks"). Only the layout facts that none of those carry live here:
+§ "Cross-window: `foreground-operation`", § "Mouse back / forward buttons", § "Right-click ownership", § "Native-menu
+and input-focus interactions", § "Off-bus test and debug hooks"). Only the layout facts that none of those carry live
+here:
 
 - **`listener-setup.ts` is a plain `.ts` with NO runes**, so it can't hold `$state`. State crosses the boundary through
   a `ListenerSetupContext` of getter functions (reads) and setter callbacks (writes), which is what keeps the moved
@@ -166,6 +167,25 @@ additionally carry an optional `pane` so a create never races FE focus timing.)
 A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`), whose handlers call
 `explorerRef.navigate({ pane, to: { history: 'back' | 'forward' }, source: 'user' })`, same shape as `nav.parent`
 (`to: { history: 'parent' }`). Every other key stays a `sendKeyToFocusedPane` passthrough (invariant P2).
+
+## Cross-window: `foreground-operation`
+
+The operation-queue window's Show button asks THIS window to put one already-running operation into its progress
+dialog. It's the only INBOUND channel here whose sender is another window rather than a menu, a key, or MCP. Which rows
+offer the button, and why only the id travels: `$lib/file-operations/queue/DETAILS.md` § Show.
+
+`setupDialogListeners` owns the receiving half (`onForegroundOperationRequested`):
+
+- **This window comes forward whatever the verdict**, so `focusMainWindow()` runs before anything is decided. The
+  dialog that might refuse is here, and so is the toast that says so; a refusal behind another window reads as the
+  button doing nothing.
+- **The id resolves against THIS window's snapshot**, `adoptedOperationFor(getMainWindowOperationRows(), id)`. A miss
+  means the operation ended between the click and the delivery, which also took its queue row: log it and stop, since
+  there's nothing left to show and nothing to say about it.
+- **`ExplorerAPI.foregroundOperation` returns the verdict synchronously**, passing through to `dialog-state`'s
+  single-occupancy progress slot (`$lib/file-explorer/pane/DETAILS.md` § "Birth context") and taking `busy` back to the
+  toast. ❌ Don't route it through the command bus: a bus dispatch is fire-and-forget and would drop the verdict, and
+  the queue window would have no way to learn its button did nothing.
 
 ## Mouse back / forward buttons
 
