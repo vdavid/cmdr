@@ -4,6 +4,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import {
+  containingFolder,
   deriveTransferLabel,
   generateTitle,
   getFolderName,
@@ -108,6 +109,28 @@ describe('getFolderName', () => {
 
   it('handles home directory tilde expansion result', () => {
     expect(getFolderName('/Users/veszelovszki')).toBe('veszelovszki')
+  })
+})
+
+describe('containingFolder', () => {
+  it('names the folder a clashing file sits in, which is what tells two of them apart', () => {
+    expect(containingFolder('/Volumes/Backup/2026/set-0417/f001')).toBe('/Volumes/Backup/2026/set-0417')
+    expect(containingFolder('/Volumes/Backup/2026/set-0418/f001')).toBe('/Volumes/Backup/2026/set-0418')
+  })
+
+  it('answers for a file at the root', () => {
+    expect(containingFolder('/f001')).toBe('/')
+  })
+
+  it('answers for a virtual volume, where a clash is just as ambiguous', () => {
+    expect(containingFolder('mtp://device/DCIM/Camera/IMG_0001.jpg')).toBe('mtp://device/DCIM/Camera')
+  })
+
+  it('says nothing rather than guessing at a path it cannot take a parent of', () => {
+    // Backend paths are absolute or virtual URLs, so these are bugs elsewhere.
+    // The dialog shows the name alone instead of an invented folder.
+    expect(containingFolder('f001')).toBeNull()
+    expect(containingFolder('~/Documents/f001')).toBeNull()
   })
 })
 

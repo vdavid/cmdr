@@ -412,6 +412,24 @@ SMB, MTP, in-memory). So the warning is honest for EVERY destination type, which
 destinations (there's no `isLocalDestination` check — `showTargetWarning` keys only off `targetMissing` + no
 `pathError`).
 
+### The clash prompt names the folder, not just the file
+
+`TransferConflictDialog` leads with the destination's basename, and under it, quietly, the folder that file sits in
+(`containingFolder`, `transfer-dialog-utils.ts`). A bare name answers "what" and not "which", and a copy of a deep tree
+raises one prompt per clash: a QA pass over 1,600 folders that each held an `f001` got 1,600 questions that read
+identically.
+
+- **The folder, not the whole path.** The name stays the headline, because it is what the buttons act on. A dialog
+  leading with a deep absolute path buries that.
+- **Mid-truncated toward its tail** (`useShortenMiddle`, `preferBreakAt: '/'`, `startRatio: 0.3`), because the deepest
+  segments are the ones that differ, and the house tooltip carries the whole path on hover. Same treatment and same
+  parameters as the scan phase's "From:" line and the search results' current path, so paths in tight space behave one
+  way across the app.
+- **The DESTINATION's folder**, which is where the file that would be overwritten lives and what every button acts on.
+- **`null` rather than a guess** for a path that can't yield a parent (relative, `~`-rooted). Backend paths are absolute
+  or virtual-volume URLs, so that is a bug elsewhere, and the prompt shows the name alone rather than inventing a
+  folder.
+
 ### Index conversion for ".." entry
 
 When the directory has a parent entry shown at index 0, frontend indices are offset by +1 from backend:

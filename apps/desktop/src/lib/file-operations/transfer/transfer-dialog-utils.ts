@@ -6,6 +6,7 @@
 import type { TransferOperationType } from '$lib/file-explorer/types'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import { tString } from '$lib/intl/messages.svelte'
+import { parentOf, toCanonical } from '$lib/path/canonical'
 import { suggestCompressArchiveName } from './transfer-compress-name'
 
 /**
@@ -25,6 +26,25 @@ export function generateTitle(operationType: TransferOperationType, files: numbe
   }
   const phrase = parts.length === 2 ? tString('fileOperations.shared.andJoin', { a: parts[0], b: parts[1] }) : parts[0]
   return tString('fileOperations.transferDialog.titleWithCounts', { verb: operationType, phrase })
+}
+
+/**
+ * The folder a file sits in, for a dialog that has named the file and now has
+ * to say WHICH one it means. A conflict prompt showing a bare `f001` is
+ * ambiguous the moment two folders hold that name, and a copy of a deep tree is
+ * exactly where that happens.
+ *
+ * `null` when the path isn't one we can safely take a parent of (relative, or
+ * `~`-rooted). Backend paths are absolute or virtual-volume URLs, so that is a
+ * bug elsewhere rather than something a dialog should render an error about:
+ * the caller falls back to showing the name alone.
+ */
+export function containingFolder(path: string): string | null {
+  try {
+    return parentOf(toCanonical(path, ''))
+  } catch {
+    return null
+  }
 }
 
 /**

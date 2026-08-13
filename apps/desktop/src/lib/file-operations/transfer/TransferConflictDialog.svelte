@@ -4,6 +4,8 @@
     import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
+    import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
+    import { containingFolder } from './transfer-dialog-utils'
     import { formatByteSize, dynamicTierIndex } from '$lib/units'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
     import { sizeTierClasses } from '$lib/file-explorer/selection/selection-info-utils'
@@ -51,6 +53,12 @@
     // labels, the red warning block above the filename for file→folder, and the
     // "Overwrite" button copy in that one case.
     const fileName = $derived(conflictEvent.destinationPath.split('/').pop() ?? '')
+    /** Which `f001` this is. A copy of a deep tree raises one prompt per clash,
+     *  and a QA pass over 1,600 folders that each held an `f001` got 1,600
+     *  identical-looking questions. The folder is what tells them apart, so it
+     *  sits under the name, mid-truncated toward its deepest segments (the ones
+     *  that differ) with the whole path on hover. */
+    const destinationFolder = $derived(containingFolder(conflictEvent.destinationPath))
     const existingIsNewer = $derived(conflictEvent.destinationIsNewer)
     const newIsNewer = $derived(!existingIsNewer && conflictEvent.sourceModified !== conflictEvent.destinationModified)
     const sizeDiff = $derived(conflictEvent.sizeDifference)
@@ -116,10 +124,18 @@
         </p>
     {/if}
 
-    <!-- Filename -->
-    <p class="conflict-filename" use:tooltip={{ text: conflictEvent.destinationPath, overflowOnly: true }}>
-        {fileName}
-    </p>
+    <!-- Filename, and the folder that says which one it is -->
+    <div class="conflict-subject">
+        <p class="conflict-filename" use:tooltip={{ text: conflictEvent.destinationPath, overflowOnly: true }}>
+            {fileName}
+        </p>
+        {#if destinationFolder !== null}
+            <p
+                class="conflict-folder"
+                use:useShortenMiddle={{ text: destinationFolder, preferBreakAt: '/', startRatio: 0.3 }}
+            ></p>
+        {/if}
+    </div>
 
     <!-- File comparison: same shape across all variants. Type tags
          (`Existing (file):` / `New (folder):` etc.) flag the mismatch
@@ -287,8 +303,14 @@
         padding: var(--spacing-md) var(--spacing-xl) var(--spacing-xl);
     }
 
+    /* Name and folder read as one subject, so the gap to the comparison rows
+       belongs to the pair rather than to whichever line happens to be last. */
+    .conflict-subject {
+        margin-bottom: var(--spacing-md);
+    }
+
     .conflict-filename {
-        margin: 0 0 var(--spacing-md);
+        margin: 0;
         font-size: var(--font-size-md);
         font-weight: 600;
         color: var(--color-text-primary);
@@ -296,6 +318,16 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /* The folder under the name: quiet, because the name is what the buttons
+       act on and this only says which one. `useShortenMiddle` owns the
+       truncation and the hover, so no ellipsis rules here. */
+    .conflict-folder {
+        margin: var(--spacing-xxs) 0 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        text-align: center;
     }
 
     .conflict-comparison {
