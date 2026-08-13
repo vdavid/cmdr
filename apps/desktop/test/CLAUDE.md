@@ -13,6 +13,9 @@
   - "app state changed" → `expect.poll(() => condition(), { timeout }).toBeTruthy()`. Avoid bare `await pollUntil(...)`:
     it returns `false` on timeout and a discarded return is a silent pass (the `bare-poll` fast-lane check flags it).
   - "Tauri event fired" → `tauriPage.waitForFunction(...)`, or `pollUntil` for Node-side logic.
+  - "the test accepts BOTH outcomes, so nothing specific renders" → this is the case that tempts a `sleep`, and it's
+    still a bug. Expose the settle state as a `data-*` marker on an element that exists in EVERY outcome (see
+    `data-scan-state` / `data-conflict-state` in `src/lib/file-operations/transfer/DETAILS.md`) and poll that.
 - **E2E is all Playwright now.** The Playwright suite (`e2e-playwright/`) uses upstream `tauri-plugin-playwright` (Rust,
   crates.io) + `@srsholmes/tauri-playwright` (npm), injecting JS into the Tauri webview via `webview.eval()` and getting
   results over Tauri IPC. The same specs run on macOS (native) and Linux (Docker). Gated behind the `playwright-e2e`

@@ -385,6 +385,23 @@ the counter line, so an assertion never fires against a partial in-flight tally.
 Pinned by `TransferDialog.test.ts` § "data-scan-state marker" (counting → done, the skipped fast path, and the counting
 → skipped toggle).
 
+### `data-conflict-state` marker on the dialog body
+
+The sibling marker for the OTHER async settle in this dialog: the top-level conflict check
+(`transfer-conflict-check.svelte.ts`). `.dialog-body` carries `data-conflict-state` (`checking` | `done` | `skipped`),
+derived from that factory's existing `conflictCheckComplete` — again no new wire event.
+
+- `done` → the check settled; the conflicts section below it is final. Set in the failure path too, so a check that
+  threw still reaches a terminal state instead of hanging a poller.
+- `skipped` → compress makes ONE new file, so the multi-file check never runs; the dest-exists affordance answers
+  instead.
+- `checking` → the dest listing is in flight, or about to start on mount.
+
+**It lives on the BODY, not on the conflicts section, because there IS no conflicts section when the check comes back
+clean.** That asymmetry is the whole point: `waitForConflictPolicy` can only ever observe the conflict outcome, so a
+test that legitimately accepts both (`conflict-edge-cases.spec.ts` › `directory-over-file`) has nothing to poll and
+reaches for a fixed `sleep`. `waitForConflictCheck` in `conflict-helpers.ts` polls this marker instead.
+
 ### Destination path: home shortcut, long-form display, and "will be created" warning
 
 The destination box (`editedPath`) accepts the home shortcut as well as absolute paths: `validateDirectoryPath` passes a

@@ -45,6 +45,6 @@ counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`
   silently overwrite.
 
 Rollback's limits on a move, `handleCancel`'s `confirmed` guard, `archive_needs_password` interception, the
-`data-scan-state` E2E marker, pane refresh after a move, flows, the phase catalog (`flushing`, MTP's interleaved move),
-decisions, and gotchas: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or
-advising.
+`data-scan-state` and `data-conflict-state` E2E markers, pane refresh after a move, flows, the phase catalog
+(`flushing`, MTP's interleaved move), decisions, and gotchas: `DETAILS.md`. Read it before any non-trivial work here:
+editing, planning, reorganizing, or advising.
