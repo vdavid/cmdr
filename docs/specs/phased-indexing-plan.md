@@ -145,7 +145,10 @@ concurrency half of the problem, fed to **four** places:
   `mgr.scanning`, so with a separate flag `start_scan` would no longer refuse while phases run, and a `force_scan`
   through any surviving door would send `TruncateData` + `BumpCurrentEpoch` and start a parallel walker **while a cover
   walk holds a claim and is still writing**. `cover_context_for` only refuses NEW walks; nothing stops one already
-  running. `start_scan` must refuse while `phase_active`, or stop the machine and join its walk first.
+  running. `start_scan` must refuse while `phase_active`, or stop the machine and join its walk first. **Make it a
+  handled outcome, not the existing `Err("Scan already running")`**: that error propagates through `force_scan` and the
+  IPC, so a naive refusal ships a "Rescan now" that shows a failure for the entire first index. This is open Question 5
+  arriving early — answer it here.
 - `awaits_its_first_scan` (`state/queries.rs:93`);
 - `get_status`'s `scanning` field (`manager.rs:569`), which M2.9 needs anyway.
 
@@ -156,11 +159,17 @@ that gate exactly as it is.
 Checked and clear: `get_writer_and_scanning_for`'s bool reaches only the MTP and SMB watch layers, which stay below the
 `is_trait_scanned` early return, and `freshness_bridge.rs:113` ignores it.
 
-**`awaits_its_first_scan` should key off a durable fact too.** A flag-only answer reopens the truncate door the moment
-`phase_active` goes false (phases idle, or stopped from the badge menu) while `scan_completed_at` is still absent. Make
-the predicate ask whether the volume has rows beyond the ROOT sentinel (`entry_count > 1`, the same signal
-`local_rescan_reconciles` already uses); keep the flag feed if you like, but don't let it be the only thing holding that
-door shut.
+**The door `awaits_its_first_scan` guards needs a durable answer too**, because a flag-only one reopens the moment
+`phase_active` goes false (phases idle, or stopped from the badge menu) while `scan_completed_at` is still absent.
+
+❌ **But do not re-key the predicate on `entry_count > 1`.** It exists for exactly two shapes — a search-driven walk that
+stood up a writer and nothing else, and a first scan someone stopped (`state/queries.rs:79-86`) — and **both have rows**.
+Keying on row count would make "Turn on indexing for this drive" a silent no-op on the very volumes the predicate was
+written to serve, external drives included. That would be a regression on shipped behavior, introduced by a change meant
+to close a truncate door.
+
+Gate the force-scan at the caller instead (`start_volume`, `handle/mod.rs:183-185`) on `phase_active` **or** a persisted
+"phased index in progress" marker in meta. The durable half is the marker, not the row count.
 
 ### Interleaving without preemption
 
@@ -237,8 +246,11 @@ Three consequences that are easy to miss:
    `begin_branch_coverage` starts the watcher first, and the later `ensure_branch_watch` returns early because a watcher
    is already running — so the `resuming = true` path never runs and **the epoch bump for an unreplayable gap never
    fires**, making last session's covered rows render as *current* when nothing verified them. That is exactly the
-   honesty property the branch-watch resume exists to protect. Restore the branch set before the machine's first walk
-   (call `branches::resumed_for` ahead of `resume_or_scan`, or defer the first walk until after the registry insert).
+   honesty property the branch-watch resume exists to protect. **Defer the machine's first walk until after the registry
+   insert and `resume_branch_watch`.** ❌ Moving `branches::resumed_for` earlier is NOT an equivalent fix: it restores
+   the branch set but not the bump, because `ensure_branch_watch` still returns at its first line once a watcher is
+   running. If you do restore early anyway, pair it with an explicit bump decided at restore time (read
+   `replayable_event_id()`; if it is 0, send `BumpCurrentEpoch`) before anything can start a watcher.
 2. **The `dir_stats` ledger heal is armed but never paid.** `ArmLedgerHealLatch` is disarmed by the next successful
    `ComputeAllAggregates`, and cover walks send only `ComputeSubtreeAggregates` — so the latch stays armed and re-arms
    every launch, and the heal never happens. Fix is one message: send `PayLedgerIfUnpaid` (`writer/mod.rs:415-421`,
@@ -521,11 +533,29 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
    swallow enqueues. Note it is a *listing* hook, so it also fires for the opposite pane, MCP listings, and refreshes;
    `record_visit` is the tighter navigation signal if that proves too loose.
 6. **Preemption is the fallback, not the mechanism** — with the join-before-restart and debounce rules above.
-7. **Completion is derived, not remembered.** `abandoned_ground` is per-walk and in-memory, so it can't answer "was
-   anything abandoned in a previous session?". The durable signal already exists: an abandoned directory is never
-   marked listed, so it re-enters the frontier. **Derive completion from a final `coverage()` answer whose frontier is
-   empty, with only `permission_denied` / `declined` left over**, and keep `abandoned_ground` as an in-session guard.
-8. **On completion, in this ORDER** (the order is required, not stylistic — see the `is_branch_confined` note above):
+7. **Completion is derived, not remembered — but "empty frontier" alone is not a terminating rule.** `abandoned_ground`
+   is per-walk and in-memory, so it can't answer "was anything abandoned in a previous session?"; the durable signal is
+   that an abandoned directory is never marked listed, so it re-enters the frontier.
+
+   **The trap**: a directory the walker timed out on gets **no `unreadable_cause`** — deliberately, "since mounts heal"
+   (only denied ids carry a marker, `scanner/mod.rs:881`). So it stays `Frontier` forever, "the frontier is empty except
+   for `permission_denied` / `declined`" can never become true, and *everything* hanging off completion never happens:
+   the stamp, `PayLedgerIfUnpaid`, the sweep keys, the branch collapse, the media kick, `is_branch_confined` flipping.
+   Every launch re-walks it, times out again at 15 s a directory, and stalls in the same place.
+
+   So completion needs a **bounded-progress rule**: if the frontier did not shrink across two consecutive full passes,
+   treat the remainder as unreachable-for-now, stamp completion, and record those leftovers the way `permission_denied`
+   and `declined` are recorded, so the UI can say something true about them. Also decide **where a timed-out directory
+   gets retried** once the machine is done: a later search walk, or the next launch's first pass.
+
+   ⚠️ This rule is the newest and least-reviewed part of the plan. Treat it as a design sketch to be nailed down in M2,
+   with a test that a permanently-timing-out directory still lets the volume reach completion.
+8. **On completion, in this ORDER — and the order is enforced by a FLUSH, not by the numbering.** Steps 1–6 are writer
+   *messages*; step 7 is in-process state. The read the whole ordering protects (`local_rescan_reconciles`'s
+   `get_index_status()` inside `start_scan`) goes through a read connection, so it sees the stamp only once the writer
+   has committed it — and step 3 runs a full `ComputeAllAggregates` over a complete `/` index, which is minutes of
+   writer-thread work sitting between the stamp being queued and being visible. **`flush_blocking()` after step 1 and
+   before step 7**, or the collapse lands inside exactly the window the order exists to close.
    1. stamp `scan_completed_at`;
    2. write the calibration meta;
    3. `PayLedgerIfUnpaid` (nothing else ever pays the armed `dir_stats` ledger heal);
@@ -555,6 +585,9 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
 - **`the_branch_collapse_is_visible_to_the_running_live_loop`** (not just to the persisted meta).
 - **`a_relaunch_with_no_replayable_journal_bumps_the_epoch`** — the resume-honesty property.
 - **`completion_pays_the_ledger_and_seeds_the_sweep_keys`**.
+- **`a_permanently_timing_out_directory_still_lets_completion_happen`** (the bounded-progress rule).
+- **`enabling_indexing_for_a_search_walked_drive_still_scans_it`** — the shipped behavior `awaits_its_first_scan`
+  protects, which the truncate-door work must not regress.
 - `phases_run_in_order`, and a covered root is skipped without a walk.
 - `a_visited_root_is_taken_between_frontier_roots` without cancelling anything.
 - `a_preempted_walks_rows_survive` (row count only grows), and the restart joins before starting.
@@ -688,6 +721,8 @@ post-hoc pin, not a red→green step**, gated on M3.
 1. **Cover-over-`/` slower than the bulk build** ⇒ the M2 benchmark gate, with the stitch included, before the machine
    is written.
 2. **The frontier not composing** (the finding that broke draft 1) ⇒ the stitch, plus the first M2 test.
+2b. **Completion never firing** because one wedged directory holds the frontier open forever ⇒ the bounded-progress
+   rule, plus its test. Note this also gates the media kick and the branch collapse, so it fails wide.
 3. **A partially covered volume claiming completeness** ⇒ completion derived from a durable empty frontier, not from
    in-memory `abandoned_ground`.
 4. **Photo search and importance silently dead** ⇒ the freshness decision, made explicitly (Question 3).
