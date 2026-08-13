@@ -170,5 +170,3 @@ export function createArchivePasswordFlow(deps: ArchivePasswordFlowDeps) {
     },
   }
 }
-
-export type ArchivePasswordFlow = ReturnType<typeof createArchivePasswordFlow>

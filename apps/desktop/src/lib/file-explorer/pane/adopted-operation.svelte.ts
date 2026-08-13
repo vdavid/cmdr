@@ -171,5 +171,3 @@ export function createAdoptedOperation(deps: AdoptedOperationDeps) {
     },
   }
 }
-
-export type AdoptedOperation = ReturnType<typeof createAdoptedOperation>

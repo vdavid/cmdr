@@ -122,5 +122,3 @@ export function createTransferPaneEffects(
     },
   }
 }
-
-export type TransferPaneEffects = ReturnType<typeof createTransferPaneEffects>
