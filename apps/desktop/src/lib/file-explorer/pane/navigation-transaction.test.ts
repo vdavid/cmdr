@@ -38,8 +38,11 @@ vi.mock('$lib/app-status-store', () => ({
     leftViewMode: 'brief',
     rightViewMode: 'brief',
     leftPaneWidthPercent: 50,
+    firstRunLayoutApplied: true,
   }),
   saveAppStatus: vi.fn(),
+  saveAppStatusNow: vi.fn().mockResolvedValue(undefined),
+  hasPersistedPaneState: vi.fn().mockResolvedValue(true),
   getLastUsedPathForVolume: vi.fn().mockResolvedValue(undefined),
   saveLastUsedPathForVolume: vi.fn().mockResolvedValue(undefined),
   loadPaneTabs: vi.fn().mockResolvedValue({

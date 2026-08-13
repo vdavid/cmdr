@@ -659,6 +659,56 @@ single module — A5 is per concern, not per call shape):
   the one reactive value (`getShowHiddenFiles()` from `$lib/settings/reactive-settings.svelte`), the settings store
   persists it, and `settings-applier.ts` mirrors it onto the View menu's CheckMenuItem.
 
+### First-run pane layout
+
+A brand-new install that already has Full Disk Access opens the left pane on `~` and the right pane on `~/Downloads`.
+Every other launch restores whatever was persisted. The rule lives in `first-run-layout.ts` and fires from
+`loadPersistedState` (`initialization.ts`), right after the persisted tabs load and BEFORE the `CMDR_E2E_START_PATH`
+override, so a fixture path still wins. It edits the loaded `PersistedPaneTabs` in place, ahead of volume resolution, so
+`~/Downloads` gets its volume resolved like any other path.
+
+`decideFirstRunLayout(ctx)` is a pure function over four booleans and returns one of three outcomes. Its order of checks
+is the whole design:
+
+1. `isAutomatedRun` (from `isE2eRun()`) ⇒ `leaveAlone`. Nothing is written either, so a run leaves no trace.
+2. `layoutAlreadyApplied` (the `firstRunLayoutApplied` key in `app-status.json`) ⇒ `leaveAlone`. Once, ever.
+3. `hasPersistedPaneState` ⇒ `markAlreadyLaidOut`: record the marker, touch no panes.
+4. `!hasFullDiskAccess` ⇒ `leaveAlone`. A never-answered prompt reads the same as a refusal.
+5. Otherwise ⇒ `openHomeAndDownloads`, then record the marker.
+
+_Decision / why step 3 exists:_ every user upgrading into the build that introduced this rule has Full Disk Access and
+no marker, so steps 1, 2, and 4 all pass them straight through to the layout. Pane paths persist like any navigation, so
+a layout applied over a real one silently BECOMES it, with nothing to undo it. Step 3 backfills the marker for them
+instead. `hasPersistedPaneState()` (`$lib/app-status-store`) asks whether any of the four pane KEYS is present
+(`leftTabs` / `rightTabs` plus the pre-tabs scalars `leftPath` / `rightPath`), never what the tabs contain: a user who
+left an empty tab list still has a layout of their own. Both sides are checked because nav-state persists per pane
+(`persistence-subscriber.svelte.ts` runs one effect per side, and the first post-init run only seeds), so someone who
+has only ever moved their right pane carries no left keys at all. An unreadable store answers `true` for the same
+reason.
+
+_Decision / why the marker rather than `onboarding.completed`:_ a fresh install on a Mac that already granted Cmdr Full
+Disk Access gets `onboarding.completed` flipped to `true` during the same boot, by
+`routes/(main)/startup-gates.ts::resolveOnboardingMount`. That is exactly the launch the layout is FOR, so gating on
+that flag would switch the feature off in its main case.
+
+Two guardrails that are easy to undo by accident:
+
+- **`~/Downloads` is probed only after Full Disk Access is confirmed.** It sits behind a per-folder TCC gate
+  (`crates/cmdr-fs/src/tcc_paths.rs`), so even stat'ing it without the permission can raise a system dialog the user has
+  no context for. The pure decision function has no `~/Downloads` input at all, which makes the ordering structural
+  rather than a comment. If the folder is missing, the right pane falls back to `~` and the marker is still recorded.
+- **`isE2eRun()`, never `getAppMode() === 'e2e'`**, and it is only trustworthy because `DualPaneExplorer` renders behind
+  `showApp`, which `routes/(main)/+page.svelte` sets after `await initAppMode()`. A capture build answers synchronously
+  from its build define, a plain E2E run needs that resolved cache. Mount the explorer any earlier and the gate silently
+  reads `dev`. See `$lib/app-mode.ts`.
+
+The marker is written with `saveAppStatusNow`, not the debounced `saveAppStatus`: startup is followed by plenty of
+things that can quit the app, and a lost marker means the rule fires again on the next launch.
+
+Not covered by the automation gate: `scripts/marketing-shots.ts` leaves `CMDR_E2E_MODE` unset on purpose (it needs a
+prod-looking title bar and the key-window shadow). Its data dir is persistent, so it carries pane state and takes the
+backfill branch; only a wiped shots data dir would see the layout, on panes that would otherwise be `~` and `~` anyway.
+
 **The five edge-flow handlers fold onto `navigate()`.** `handleCancelLoading`, `handleMtpFatalError`,
 `handleRetryUnreachable`, `handleOpenHome`, and `handleVolumeUnmount` are thin shims: they do their flow-specific async
 orchestration (resolve the default volume, clear `tab.unreachable`, `requestVolumeRefresh`, re-anchor DOM focus) and

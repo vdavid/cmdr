@@ -79,9 +79,6 @@
     "file-explorer/pane/dialog-state.svelte.ts": {
       "reason": "Reactive Svelte state, depends on FilePane refs and Tauri commands"
     },
-    "file-explorer/pane/initialization.ts": {
-      "reason": "All code paths depend on Tauri commands (pathExists, getDefaultVolumeId, resolvePathVolume, getE2eStartPath)"
-    },
     "file-explorer/pane/listing-diff-sync.svelte.ts": {
       "reason": "Tauri listen() wiring inside $effect factories (same shape as ai-toast-sync); pure reconcileCursorAndSelection core tested in listing-diff-sync.test.ts, integration via selection-consistency.test.ts"
     },

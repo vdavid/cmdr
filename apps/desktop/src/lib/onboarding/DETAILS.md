@@ -336,6 +336,13 @@ After the user decides:
 The Tauri command is idempotent. See `src-tauri/src/fda_gate.rs`, `src-tauri/src/volumes/CLAUDE.md` § "FDA gate", and
 `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "FDA-deferred root auto-start".
 
+A third thing reads the permission at launch without being part of that gate: the one-shot first-run pane layout, which
+opens the right pane on `~/Downloads` only when Cmdr already has Full Disk Access. It probes with
+`checkFullDiskAccessQuiet` (like step 1's poller, never the loud `checkFullDiskAccess`) and, on anything other than a
+grant, leaves both panes on `~` so no TCC dialog can appear before the user has decided anything. It deliberately does
+NOT read `onboarding.completed`, which flips to `true` in the same boot for a fresh install on an already-granted Mac.
+The rule and its guardrails: `file-explorer/pane/DETAILS.md` § "First-run pane layout".
+
 ## Mount + onboarding flag
 
 `routes/(main)/startup-gates.ts::resolveOnboardingMount` decides whether to mount the wizard (unit-tested row by row in

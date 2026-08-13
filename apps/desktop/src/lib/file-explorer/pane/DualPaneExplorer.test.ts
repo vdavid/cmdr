@@ -16,8 +16,11 @@ vi.mock('$lib/app-status-store', () => ({
     leftViewMode: 'brief',
     rightViewMode: 'brief',
     leftPaneWidthPercent: 50,
+    firstRunLayoutApplied: true,
   }),
   saveAppStatus: vi.fn(),
+  saveAppStatusNow: vi.fn().mockResolvedValue(undefined),
+  hasPersistedPaneState: vi.fn().mockResolvedValue(true),
   getLastUsedPathForVolume: vi.fn().mockResolvedValue(undefined),
   saveLastUsedPathForVolume: vi.fn().mockResolvedValue(undefined),
   loadPaneTabs: vi.fn().mockResolvedValue({
@@ -63,6 +66,7 @@ vi.mock('$lib/tauri-commands', () => ({
   showFileContextMenu: vi.fn(() => Promise.resolve()),
   updateMenuContext: vi.fn(() => Promise.resolve()),
   getRestrictedPaths: vi.fn().mockResolvedValue([]),
+  checkFullDiskAccessQuiet: vi.fn().mockResolvedValue(true),
   hasFontMetrics: vi.fn().mockResolvedValue(true),
   storeFontMetrics: vi.fn().mockResolvedValue(undefined),
   listVolumes: vi.fn().mockResolvedValue({
@@ -194,6 +198,7 @@ describe('DualPaneExplorer', () => {
       leftPaneWidthPercent: 50,
       askCmdrRailOpen: false,
       askCmdrRailWidth: 340,
+      firstRunLayoutApplied: true,
     })
     vi.mocked(updateFocusedPane).mockClear()
 
@@ -224,6 +229,7 @@ describe('Sorting integration', () => {
       leftPaneWidthPercent: 50,
       askCmdrRailOpen: false,
       askCmdrRailWidth: 340,
+      firstRunLayoutApplied: true,
     })
 
     const target = document.createElement('div')

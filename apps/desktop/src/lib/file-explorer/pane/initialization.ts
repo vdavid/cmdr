@@ -1,7 +1,15 @@
-import { loadAppStatus, loadPaneTabs } from '$lib/app-status-store'
+import { loadAppStatus, loadPaneTabs, hasPersistedPaneState, saveAppStatusNow } from '$lib/app-status-store'
 import { hydrateRail } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
-import { pathExists, getDefaultVolumeId, resolvePathVolume, getE2eStartPath } from '$lib/tauri-commands'
+import { isE2eRun } from '$lib/app-mode'
+import {
+  pathExists,
+  getDefaultVolumeId,
+  resolvePathVolume,
+  getE2eStartPath,
+  checkFullDiskAccessQuiet,
+} from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import { applyFirstRunLayout, resolveFirstRunLayout } from './first-run-layout'
 import { createTabManagerFromPersisted } from './tab-operations'
 import { getAllTabs, type TabManager } from '../tabs/tab-state-manager.svelte'
 import type { PersistedTab, PersistedPaneTabs } from '../tabs/tab-types'
@@ -34,6 +42,23 @@ export async function loadPersistedState(): Promise<InitializedState> {
 
   // Restore the Ask Cmdr rail's persisted open/width (reopening loads its active thread).
   hydrateRail(status.askCmdrRailOpen, status.askCmdrRailWidth)
+
+  // On a first run with Full Disk Access, open home on the left and Downloads on the
+  // right. Once per install, and never over a layout somebody already has: the rule and
+  // its guardrails live in `first-run-layout.ts`. Runs before the E2E override below so
+  // a fixture path still wins.
+  const firstRunLayout = await resolveFirstRunLayout({
+    isAutomatedRun: isE2eRun,
+    layoutAlreadyApplied: status.firstRunLayoutApplied,
+    hasPersistedPaneState,
+    hasFullDiskAccess: checkFullDiskAccessQuiet,
+    pathExists,
+    markLaidOut: () => saveAppStatusNow({ firstRunLayoutApplied: true }),
+  })
+  if (firstRunLayout) {
+    log.info('First run: opening {leftPath} and {rightPath}', { ...firstRunLayout })
+    applyFirstRunLayout(leftPaneTabs, rightPaneTabs, firstRunLayout)
+  }
 
   // E2E test override: use CMDR_E2E_START_PATH subdirectories when set
   const e2eStartPath = await getE2eStartPath()

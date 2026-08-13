@@ -31,6 +31,11 @@ export interface AppStatus {
   askCmdrRailOpen: boolean
   /** Ask Cmdr rail width in px (280-520). Default: 340 */
   askCmdrRailWidth: number
+  /**
+   * Whether this install has already had its one-shot first-run pane layout decided.
+   * Set once and never cleared. See `file-explorer/pane/first-run-layout.ts`.
+   */
+  firstRunLayoutApplied: boolean
 }
 
 const DEFAULT_LEFT_PANE_WIDTH_PERCENT = 50
@@ -51,6 +56,7 @@ const DEFAULT_STATUS: AppStatus = {
   leftPaneWidthPercent: DEFAULT_LEFT_PANE_WIDTH_PERCENT,
   askCmdrRailOpen: false,
   askCmdrRailWidth: DEFAULT_ASK_CMDR_RAIL_WIDTH,
+  firstRunLayoutApplied: false,
 }
 
 let storeInstance: Store | null = null
@@ -116,6 +122,7 @@ export async function loadAppStatus(pathExists: (p: string) => Promise<boolean>)
     const leftPaneWidthPercent = parsePaneWidthPercent(await store.get('leftPaneWidthPercent'))
     const askCmdrRailOpen = (await store.get('askCmdrRailOpen')) === true
     const askCmdrRailWidth = parseRailWidth(await store.get('askCmdrRailWidth'))
+    const firstRunLayoutApplied = (await store.get('firstRunLayoutApplied')) === true
 
     // Resolve paths with fallback - skip for virtual 'network' volume
     const resolvedLeftPath = leftVolumeId === 'network' ? leftPath : await resolvePersistedPath(leftPath, pathExists)
@@ -135,6 +142,7 @@ export async function loadAppStatus(pathExists: (p: string) => Promise<boolean>)
       leftPaneWidthPercent,
       askCmdrRailOpen,
       askCmdrRailWidth,
+      firstRunLayoutApplied,
     }
   } catch {
     // If store fails, return defaults
@@ -203,9 +211,53 @@ async function doSaveAppStatus(status: Partial<AppStatus>): Promise<void> {
     if (status.askCmdrRailWidth !== undefined) {
       await store.set('askCmdrRailWidth', status.askCmdrRailWidth)
     }
+    if (status.firstRunLayoutApplied !== undefined) {
+      await store.set('firstRunLayoutApplied', status.firstRunLayoutApplied)
+    }
     await store.save()
   } catch {
     // Silently fail - persistence is nice-to-have
+  }
+}
+
+/**
+ * Writes immediately instead of after the 200 ms debounce, and resolves once the file is
+ * on disk. For state whose loss would change behavior on the next launch rather than just
+ * lose a nicety: the first-run layout marker is written during startup, which is followed
+ * by plenty of things that can quit the app.
+ */
+export async function saveAppStatusNow(status: Partial<AppStatus>): Promise<void> {
+  await doSaveAppStatus(status)
+}
+
+/**
+ * Keys whose presence proves a pane was navigated in some earlier run. Both SIDES are
+ * listed because nav-state persists per pane (`persistence-subscriber.svelte.ts` runs one
+ * effect per side), so someone who only ever moved their right pane has no left keys at
+ * all. The `*Tabs` keys are what a current install writes; the scalar `*Path` keys are the
+ * pre-tabs shape a long-untouched install may still be the only carrier of.
+ */
+const PANE_STATE_KEYS = ['leftTabs', 'rightTabs', 'leftPath', 'rightPath'] as const
+
+/**
+ * Whether `app-status.json` already carries pane state, meaning this install has run
+ * before. KEY PRESENCE is the signal, never tab content: a user who left an empty tab
+ * list still has a layout of their own.
+ *
+ * Reads the store directly rather than going through `loadAppStatus`, which fills in
+ * defaults and so can't tell "saved the home folder" from "never saved anything".
+ * An unreadable store answers `true`: assuming a prior install only skips a nicety,
+ * while assuming a fresh one would overwrite somebody's real layout.
+ */
+export async function hasPersistedPaneState(): Promise<boolean> {
+  try {
+    const store = await getStore()
+    for (const key of PANE_STATE_KEYS) {
+      if (await store.has(key)) return true
+    }
+    return false
+  } catch {
+    return true
   }
 }
 
