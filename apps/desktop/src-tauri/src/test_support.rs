@@ -25,8 +25,109 @@
 //! `search/ranking/memory_tests.rs` asserts a non-zero measurement before it asserts a budget.
 
 use std::cell::Cell;
+use std::path::{Path, PathBuf};
+use std::pin::Pin;
 
 pub(crate) use cmdr_fs::testing::{TestDir, wait_until, wait_until_async};
+
+use crate::file_system::listing::FileEntry;
+use crate::file_system::volume::{
+    BatchScanResult, CopyScanResult, InMemoryVolume, ListingProgress, ScanConflict, SourceItemInfo, Volume, VolumeError,
+};
+
+/// A volume that never answers: every read and scan future parks forever.
+///
+/// This is what a wedged mount looks like from inside the app: no error, no
+/// cancel, no progress, no return. It's the fixture for every bound that exists
+/// to survive one, because a real network drop isn't repeatable and a volume
+/// that never answers is exactly repeatable and reaches the same code.
+///
+/// Name and root come from an `InMemoryVolume` so this is a real `Volume` rather
+/// than a panic trap.
+pub(crate) struct WedgedVolume {
+    inner: InMemoryVolume,
+}
+
+impl WedgedVolume {
+    pub(crate) fn new(name: &str) -> Self {
+        Self {
+            inner: InMemoryVolume::new(name),
+        }
+    }
+}
+
+/// Every wedged method body: park, and never come back.
+macro_rules! never_answers {
+    () => {
+        Box::pin(async move {
+            std::future::pending::<()>().await;
+            unreachable!("a wedged volume never answers")
+        })
+    };
+}
+
+impl Volume for WedgedVolume {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        never_answers!()
+    }
+
+    fn get_metadata<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        never_answers!()
+    }
+
+    fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        never_answers!()
+    }
+
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        never_answers!()
+    }
+
+    fn scan_for_copy<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        never_answers!()
+    }
+
+    fn scan_for_copy_batch_with_progress<'a>(
+        &'a self,
+        _paths: &'a [PathBuf],
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
+        never_answers!()
+    }
+
+    fn scan_for_conflicts<'a>(
+        &'a self,
+        _items: &'a [SourceItemInfo],
+        _dest: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
+        never_answers!()
+    }
+}
 
 // Live heap bytes accounted so far ON THIS THREAD. Thread-local rather than global so the
 // harness's other threads can allocate freely without polluting a measurement: a plain

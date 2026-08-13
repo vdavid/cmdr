@@ -177,6 +177,61 @@ impl BlockingBudget {
     }
 }
 
+/// One wall-clock budget shared by a command's several legs.
+///
+/// **Why a command with more than one leg needs one.** Give each leg its own
+/// `timeout_detached(30 s)` and the command's promise becomes "30 s times however
+/// many legs it happens to run today" — a number nobody can state, that grows
+/// silently when a leg is added, and that a frontend can't size a spinner
+/// against. A deadline turns it back into one number the user can be told: this
+/// answers, or says it couldn't, within `total`.
+///
+/// Hand each leg [`Deadline::remaining`]; a leg that starts with nothing left
+/// doesn't start at all ([`timeout_detached_within`]).
+pub struct Deadline {
+    started: tokio::time::Instant,
+    total: Duration,
+}
+
+impl Deadline {
+    pub fn new(total: Duration) -> Self {
+        Self {
+            started: tokio::time::Instant::now(),
+            total,
+        }
+    }
+
+    /// How long the command has run so far.
+    pub fn elapsed(&self) -> Duration {
+        self.started.elapsed()
+    }
+
+    /// What's left of the budget: `ZERO` once it's spent, never negative.
+    pub fn remaining(&self) -> Duration {
+        self.total.saturating_sub(self.elapsed())
+    }
+}
+
+/// [`timeout_detached`] against what's LEFT of `deadline`.
+///
+/// A spent deadline returns the timeout without spawning: the work would only be
+/// abandoned a moment later, and the caller has already been kept as long as it
+/// agreed to wait.
+pub async fn timeout_detached_within<T, E>(
+    deadline: &Deadline,
+    fut: impl Future<Output = Result<T, E>> + Send + 'static,
+) -> Result<T, IpcError>
+where
+    T: Send + 'static,
+    E: std::fmt::Display + Send + 'static,
+{
+    let remaining = deadline.remaining();
+    if remaining.is_zero() {
+        return Err(IpcError::timeout());
+    }
+    timeout_detached(remaining, fut).await
+}
+
 /// Bounds how long the FRONTEND waits, never the work itself.
 ///
 /// `fut` runs in its own task and the timeout races that task's join handle. On

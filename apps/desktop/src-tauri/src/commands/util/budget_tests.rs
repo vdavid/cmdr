@@ -1,9 +1,14 @@
-//! [`BlockingBudget`]'s one guarantee: however many callers pile in, only `permits` of
-//! them hold a blocking-pool thread at a time — and every caller still gets its answer.
+//! Two budgets, two guarantees.
+//!
+//! [`BlockingBudget`]: however many callers pile in, only `permits` of them hold a
+//! blocking-pool thread at a time, and every caller still gets its answer.
+//! [`Deadline`]: a command with several legs answers within ONE wall clock, not
+//! within the sum of whatever timeouts its legs happen to carry.
 
-use super::BlockingBudget;
+use super::{BlockingBudget, Deadline, IpcError, timeout_detached_within};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::time::Duration;
 
 /// Tracks how many tasks were inside the budget at once, so a test can assert the
 /// PEAK rather than a sample that could miss the overlap.
@@ -57,6 +62,44 @@ async fn a_burst_never_exceeds_the_budget_and_everyone_still_finishes() {
         done,
         (0..CALLERS).collect::<Vec<_>>(),
         "a caller past the cap waits its turn; it is never dropped"
+    );
+}
+
+// ── Deadline: one wall-clock budget across a command's legs ─────────────────
+
+/// The second leg of a command gets what the first one LEFT, which is the whole
+/// point: otherwise the command's promise is the sum of its legs.
+#[tokio::test(start_paused = true)]
+async fn a_deadline_hands_each_leg_what_is_left() {
+    let deadline = Deadline::new(Duration::from_secs(30));
+    assert_eq!(deadline.remaining(), Duration::from_secs(30));
+
+    tokio::time::sleep(Duration::from_secs(20)).await;
+
+    assert_eq!(deadline.remaining(), Duration::from_secs(10));
+    assert_eq!(deadline.elapsed(), Duration::from_secs(20));
+}
+
+/// A spent deadline reports nothing left rather than wrapping around, and the
+/// leg that asks for it doesn't run.
+#[tokio::test(start_paused = true)]
+async fn a_spent_deadline_refuses_the_next_leg_outright() {
+    let deadline = Deadline::new(Duration::from_secs(5));
+    tokio::time::sleep(Duration::from_secs(9)).await;
+    assert_eq!(deadline.remaining(), Duration::ZERO);
+
+    let ran = Arc::new(AtomicBool::new(false));
+    let flag = Arc::clone(&ran);
+    let outcome: Result<(), IpcError> = timeout_detached_within(&deadline, async move {
+        flag.store(true, Ordering::SeqCst);
+        Ok::<(), String>(())
+    })
+    .await;
+
+    assert!(outcome.expect_err("nothing is left to wait with").timed_out);
+    assert!(
+        !ran.load(Ordering::SeqCst),
+        "work that would be abandoned a moment later is never started"
     );
 }
 
