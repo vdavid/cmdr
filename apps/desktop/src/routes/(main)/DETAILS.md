@@ -170,15 +170,15 @@ A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`), 
 
 ## Cross-window: `foreground-operation`
 
-The operation-queue window's Show button asks THIS window to put one already-running operation into its progress
-dialog. It's the only INBOUND channel here whose sender is another window rather than a menu, a key, or MCP. Which rows
-offer the button, and why only the id travels: `$lib/file-operations/queue/DETAILS.md` § Show.
+The operation-queue window's Show button asks THIS window to put one already-running operation into its progress dialog.
+It's the only INBOUND channel here whose sender is another window rather than a menu, a key, or MCP. Which rows offer
+the button, and why only the id travels: `$lib/file-operations/queue/DETAILS.md` § Show.
 
 `setupDialogListeners` owns the receiving half (`onForegroundOperationRequested`):
 
-- **This window comes forward whatever the verdict**, so `focusMainWindow()` runs before anything is decided. The
-  dialog that might refuse is here, and so is the toast that says so; a refusal behind another window reads as the
-  button doing nothing.
+- **This window comes forward whatever the verdict**, so `focusMainWindow()` runs before anything is decided. The dialog
+  that might refuse is here, and so is the toast that says so; a refusal behind another window reads as the button doing
+  nothing.
 - **The id resolves against THIS window's snapshot**, `adoptedOperationFor(getMainWindowOperationRows(), id)`. A miss
   means the operation ended between the click and the delivery, which also took its queue row: log it and stop, since
   there's nothing left to show and nothing to say about it.

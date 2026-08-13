@@ -27,6 +27,7 @@ vi.mock('../../file-operations/transfer/TransferProgressDialog.svelte', async ()
 }))
 
 import DialogManager from './DialogManager.svelte'
+import type { AdoptedOperationData, TransferProgressPropsData } from './dialog-state.svelte'
 
 type DialogManagerProps = ComponentProps<typeof DialogManager>
 
@@ -154,14 +155,14 @@ describe('DialogManager progress dialog', () => {
     host.remove()
   })
 
-  const adopted: DialogManagerProps['adoptedProgressProps'] = {
+  const adopted: AdoptedOperationData = {
     operationId: 'op-1',
     operationType: 'copy',
     sourcePath: '/src',
     destinationPath: '/dst',
   }
 
-  const dispatching: DialogManagerProps['transferProgressProps'] = {
+  const dispatching: TransferProgressPropsData = {
     operationType: 'copy',
     sourcePaths: ['/src/a.txt'],
     sourceFolderPath: '/src',

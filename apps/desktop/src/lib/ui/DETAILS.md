@@ -287,12 +287,12 @@ rows are display-only; the frontend returns opaque proposal and row ids to the b
 
 The MCP `dialog` tool's generic `close` action closes any registered soft dialog by id. `dialog-close-registry.ts` holds
 a `Map<SoftDialogId, () => void>` that `ModalDialog` keeps pointing at its CURRENT `onclose` from an `$effect` (every
-soft dialog goes through it, `QueryDialog`'s three ids included). The backend emits
-`mcp-close-dialog { id }`; the main-window router (`listener-setup.ts`) calls `closeDialogById(id)`, which runs the
-dialog's own close, unmounting it (→ `notifyDialogClosed` → the backend `SoftDialogTracker` → the tool's
-`SoftDialogDisappeared` ack). A dialog rendered without an `onclose` isn't in the map, so `closeDialogById` returns
-`false` and the tool reports an honest failure rather than silently closing nothing. `unregisterDialogClose` only clears
-an entry that's still its own registration, so a rapid remount can't have the outgoing instance evict the incoming one.
+soft dialog goes through it, `QueryDialog`'s three ids included). The backend emits `mcp-close-dialog { id }`; the
+main-window router (`listener-setup.ts`) calls `closeDialogById(id)`, which runs the dialog's own close, unmounting it
+(→ `notifyDialogClosed` → the backend `SoftDialogTracker` → the tool's `SoftDialogDisappeared` ack). A dialog rendered
+without an `onclose` isn't in the map, so `closeDialogById` returns `false` and the tool reports an honest failure
+rather than silently closing nothing. `unregisterDialogClose` only clears an entry that's still its own registration, so
+a rapid remount can't have the outgoing instance evict the incoming one.
 
 The effect is what makes a CONDITIONAL `onclose` safe. `TransferProgressDialog` withdraws its close while a conflict is
 on screen, so the arrow is a `$derived` with a fresh identity per flip; a register-on-mount / unregister-on-destroy pair
