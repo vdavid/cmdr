@@ -68,8 +68,9 @@ fn pause_reply(operation_id: &str, outcome: PauseOutcome) -> ToolResult {
         PauseOutcome::Deferred => Ok(json!(format!(
             "OK: Operation {operation_id} is still scanning, so there's nothing to park yet. It pauses the moment it starts writing."
         ))),
+        PauseOutcome::AlreadyInState => Ok(json!(format!("OK: Operation {operation_id} was already paused."))),
         PauseOutcome::NotApplicable => Err(ToolError::invalid_params(format!(
-            "Operation {operation_id} isn't running, so there's nothing to pause: it's queued, already paused, or over. See cmdr://state operations for its current status."
+            "Operation {operation_id} isn't running, so there's nothing to pause: it's queued or already over. See cmdr://state operations for its current status."
         ))),
     }
 }
@@ -83,8 +84,9 @@ fn resume_reply(operation_id: &str, outcome: PauseOutcome) -> ToolResult {
         PauseOutcome::Deferred => Ok(json!(format!(
             "OK: Operation {operation_id} is still scanning, so it isn't parked. Any pause waiting to take effect is now withdrawn."
         ))),
+        PauseOutcome::AlreadyInState => Ok(json!(format!("OK: Operation {operation_id} was already running."))),
         PauseOutcome::NotApplicable => Err(ToolError::invalid_params(format!(
-            "Operation {operation_id} isn't paused, so there's nothing to resume. See cmdr://state operations for its current status."
+            "Operation {operation_id} isn't paused, so there's nothing to resume: it's queued or already over. See cmdr://state operations for its current status."
         ))),
     }
 }
@@ -247,13 +249,15 @@ mod tests {
         );
     }
 
-    /// The whole mapping in one place: an `OK` means the queue really will stop
-    /// (now, or the moment the scan ends), and nothing else may be phrased as one.
+    /// The whole mapping in one place: an `OK` means the caller's intent holds
+    /// (the queue stopped, will stop the moment the scan ends, or already was
+    /// stopped), and nothing else may be phrased as one.
     #[test]
     fn only_a_real_pause_or_a_latched_one_answers_ok() {
         for (outcome, expected_ok) in [
             (PauseOutcome::Applied, true),
             (PauseOutcome::Deferred, true),
+            (PauseOutcome::AlreadyInState, true),
             (PauseOutcome::NotApplicable, false),
         ] {
             assert_eq!(

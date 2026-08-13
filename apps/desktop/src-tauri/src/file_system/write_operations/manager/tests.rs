@@ -449,6 +449,15 @@ async fn set_paused_flips_running_op_to_paused_and_keeps_its_lane() {
         "a paused Running op must keep holding its lane slot"
     );
 
+    // A repeated request is satisfied, not refused: nothing to flip, but the op
+    // IS in the state the caller asked for.
+    assert_eq!(
+        manager().set_paused(&op, true),
+        PauseOutcome::AlreadyInState,
+        "pausing a Paused op reports its intent as already held"
+    );
+    assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Paused));
+
     assert_eq!(
         manager().set_paused(&op, false),
         PauseOutcome::Applied,

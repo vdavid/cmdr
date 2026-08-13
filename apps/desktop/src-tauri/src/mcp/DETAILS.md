@@ -143,7 +143,8 @@ provider-egress question and `CONSENT_COPY_VERSION` are unchanged by this tier.
   silent backend no-op — skipping the RETAINED FAILURES that snapshot also carries (`is_controllable`), since acting on
   one of those is precisely the no-op the guard exists to refuse. Pause / resume then answer from the manager's
   `PauseOutcome` rather than assuming (`pause_reply` / `resume_reply`): `Applied` is the plain OK, `Deferred` is an OK
-  that says the operation is still scanning and pauses the moment it starts writing, and `NotApplicable` is a refusal —
+  that says the operation is still scanning and pauses the moment it starts writing, `AlreadyInState` is an OK for a
+  repeated request (the intent holds, so a retrying agent isn't refused), and `NotApplicable` is a refusal —
   a QUEUED operation is the everyday case there, since pause deliberately leaves one alone, and "OK: Paused …" for it
   would send the agent on believing the queue had stopped. Gate `IfRollback`: pause/resume/plain-cancel are `Open` (transient runtime actions on a
   crash-safe pipeline), but `rollback: true` deletes already-copied files, so it needs the token. Discover ids + status

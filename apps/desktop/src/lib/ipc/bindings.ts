@@ -7116,8 +7116,15 @@ export type PauseOutcome =
    */
   | 'deferred'
   /**
+   *  The operation is already in the state asked for (pausing a `Paused` one,
+   *  resuming a `Running` one). Nothing changed because nothing had to, so a
+   *  caller that retries its own request gets an honest yes rather than a
+   *  refusal.
+   */
+  | 'already_in_state'
+  /**
    *  Nothing happened and nothing is remembered: the operation is queued,
-   *  already in the state asked for, over, or unknown.
+   *  over, or unknown.
    */
   | 'not_applicable'
 

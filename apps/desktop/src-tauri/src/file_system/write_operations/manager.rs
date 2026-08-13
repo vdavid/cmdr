@@ -117,8 +117,13 @@ pub enum PauseOutcome {
     /// yet. The request is latched and applies the moment the write starts
     /// (`end_scan_wait`); a resume withdraws a latched pause the same way.
     Deferred,
+    /// The operation is already in the state asked for (pausing a `Paused` one,
+    /// resuming a `Running` one). Nothing changed because nothing had to, so a
+    /// caller that retries its own request gets an honest yes rather than a
+    /// refusal.
+    AlreadyInState,
     /// Nothing happened and nothing is remembered: the operation is queued,
-    /// already in the state asked for, over, or unknown.
+    /// over, or unknown.
     NotApplicable,
 }
 
@@ -700,6 +705,15 @@ impl OperationManager {
                 Some(rec) if !paused && rec.status == LifecycleStatus::Paused => {
                     rec.status = LifecycleStatus::Running;
                     PauseOutcome::Applied
+                }
+                // Asked for what it already is. Separate from `NotApplicable`
+                // because the caller's intent IS satisfied, so a retry (an
+                // agent's, a double-click) shouldn't read as a refusal.
+                Some(rec)
+                    if (paused && rec.status == LifecycleStatus::Paused)
+                        || (!paused && rec.status == LifecycleStatus::Running) =>
+                {
+                    PauseOutcome::AlreadyInState
                 }
                 _ => PauseOutcome::NotApplicable,
             }
