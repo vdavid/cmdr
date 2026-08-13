@@ -29,8 +29,11 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   error naming), `move_progress_tests.rs` (byte totals, scan tallies, leaf granularity), and
   `move_merge_tests.rs` (the no-byte-lost policy matrix, which owns its own fixture trees). Fixtures every suite
   shares (`make_state`, `make_state_with_interval_ms`, `make_volumes`, `config_default`) plus the
-  `CancelAfterFirstSink` and `MoveRenameFailsDestVolume` doubles live in `move_test_support.rs`, reached as
-  `super::test_support` — a new move test adds itself to the matching subject rather than growing one file.
+  `CancelAfterFirstSink`, `SampleInFlightTableSink`, and `MoveRenameFailsDestVolume` doubles live in
+  `move_test_support.rs`, reached as `super::test_support` — a new move test adds itself to the matching subject rather
+  than growing one file. `SampleInFlightTableSink` is the only way to see the probe's in-flight table: it renders the
+  table from `emit_progress`, which the destination calls from inside `write_from_stream` and therefore inside the
+  `CURRENT_TASK_PROBE` scope. Outside that window the row is already gone.
 - **A `*_tests.rs` file is a `#[path]` CHILD of the module it pins**, not a sibling of it: `copy_tests.rs` is
   `volume::copy::tests`, `strategy_pause_tests.rs` is `volume::strategy::pause_tests`. So inside one, `super::` is that
   parent module and `super::super::` is `volume` — one level shallower than the same text at file scope in

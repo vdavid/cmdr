@@ -234,9 +234,23 @@ reads). `STALL_AFTER` is 20 s for the LOG: a log line wants to stay rare. The UI
 (`STALL_NOTICE_SECONDS` in the frontend), because a frozen bar with a confident ETA is a lie the moment it stops being
 true. Both read the same `still_for_seconds`, so the dialog and the log can't disagree.
 
-**Registered on both paths.** `volume/copy.rs` registers a probe for the serial path as well as the concurrent one, and
-the serial closure binds its own `CURRENT_TASK_PROBE`. Without that a single-directory copy — the likely shape of the
-incident — would have a stall timer but no reason to report.
+**Which transfers register a probe, and why the list is what it is.** All three STREAMING cross-volume paths:
+`volume/copy.rs` for both of its drivers (concurrent and serial), and `volume/move.rs`. Each also binds its own
+`CURRENT_TASK_PROBE` around `copy_single_path`, which is the half that matters most — a path that registers but doesn't
+bind looks wired and isn't: its rows sit at `spawned` forever, `wait_reason` can never answer `Source` or
+`Destination`, and `stream_pipe_file` can't arm a stall-abort. Without registration at all, `state.rs::enrich_progress`
+misses the lookup and every event goes out with `activity: None`, so the dialog shows a frozen bar with a confident ETA
+and says nothing. That is what a cross-volume MOVE did until it was registered, and a silent failure on the operation
+holding the user's only copy of the data is worse than a noisy one. The move also sets `TaskPhase::Finalizing` on its
+handle directly once the copy phase ends, because its safe-replace finalize and source sweep run after the task-local's
+scope closes and a dump taken during them must not still claim it is streaming.
+
+NOT registered, on purpose: the same-volume move (`volume/move_same.rs` + `rename_merge.rs`) is a rename, so it streams
+no bytes and has no wedge of this shape; and the local-FS copy, delete, and trash keep no in-flight table at all, which
+`enrich_progress` handles by falling back to `person_wait()`. Pinned by
+`volume/move_progress_tests.rs::{cross_volume_move_tells_the_dialog_what_it_is_doing,
+a_cross_volume_move_in_flight_shows_its_source_and_phase}`, which sample the live table from inside the destination's
+write — the one window where a row exists.
 
 **The probe surface.** Two backends opt in; `LocalPosixVolume`, `InMemoryVolume`, and `ArchiveVolume` use the trait defaults (`false` / no-op) and never auto-yield.
 

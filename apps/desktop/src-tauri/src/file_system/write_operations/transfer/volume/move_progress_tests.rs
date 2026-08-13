@@ -15,7 +15,7 @@ use super::super::move_same::move_within_same_volume_with_progress;
 use super::test_support::{make_state_with_interval_ms, make_volumes};
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
-use crate::file_system::write_operations::types::CollectorEventSink;
+use crate::file_system::write_operations::types::{CollectorEventSink, TransferWaitReason};
 
 /// Cross-volume move emits `bytes_total > 0` on every Copying-phase progress
 /// event. Without this, the FE's `TransferProgressDialog` hides the Size
@@ -336,4 +336,117 @@ async fn cross_volume_move_directory_source_progress_is_leaf_granular() {
         "expected a Copying event with files_done >= 2, got {:?}",
         copying.iter().map(|e| e.files_done).collect::<Vec<_>>(),
     );
+}
+
+// ========================================================================
+// The stall signal: a cross-volume move keeps an in-flight table like a copy
+// ========================================================================
+
+/// A cross-volume move must hand the dialog a `TransferActivity` on its
+/// progress events, the same as a copy does.
+///
+/// That struct is the ENTIRE input to the stalled-transfer notice, the ETA's
+/// decision to stop being confident, and the watchdog's heartbeat. Without a
+/// registered probe, `state.rs::enrich_progress` misses the lookup and leaves
+/// `activity` at `None`, so a wedged move shows a frozen bar with a confident
+/// ETA and says nothing — a SILENT failure on the one operation that leaves the
+/// user's only copy of their data mid-flight.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_tells_the_dialog_what_it_is_doing() {
+    let (source, dest) = make_volumes();
+    source.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state_with_interval_ms(0);
+    let config = VolumeCopyConfig {
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-activity",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/a.txt")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let progress = events.progress.lock().unwrap();
+    let copying: Vec<_> = progress
+        .iter()
+        .filter(|p| p.phase == WriteOperationPhase::Copying)
+        .collect();
+    assert!(!copying.is_empty(), "expected at least one Copying progress event");
+    assert!(
+        copying
+            .iter()
+            .any(|p| p.activity.as_ref().is_some_and(|a| a.in_flight >= 1)),
+        "every Copying event must carry activity, and one of them must show the source in flight; got {:?}",
+        copying.iter().map(|e| e.activity).collect::<Vec<_>>(),
+    );
+    // The classifier ran and reached a verdict, rather than the dialog being
+    // handed a populated-looking struct it can't read. A move that is streaming
+    // bytes is `Moving`; anything else here would put a stall reason on screen.
+    assert!(
+        copying
+            .iter()
+            .filter_map(|p| p.activity.as_ref())
+            .all(|a| a.waiting_on == TransferWaitReason::Moving),
+        "a streaming move is moving, not waiting on anything; got {:?}",
+        copying.iter().map(|e| e.activity).collect::<Vec<_>>(),
+    );
+}
+
+/// The in-flight table must name what the move is doing, not just that
+/// something is happening.
+///
+/// Sampled from inside the destination's write, the one window where the row
+/// exists. `streaming` is the load-bearing half: the phase is recorded through
+/// the `CURRENT_TASK_PROBE` task-local, so a transfer that registers a probe but
+/// never binds the scope shows its row parked at `spawned` forever — the dump
+/// explains nothing, `wait_reason` can never answer `Source` or `Destination`,
+/// and `stream_pipe_file` can't arm a stall-abort. That is a strictly worse
+/// failure than no probe at all, because it looks wired.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_cross_volume_move_in_flight_shows_its_source_and_phase() {
+    let (source, dest) = make_volumes();
+    source
+        .create_file(Path::new("/holiday.mov"), b"a-few-bytes")
+        .await
+        .unwrap();
+
+    let events = Arc::new(test_support::SampleInFlightTableSink::new("op-move-table"));
+    let state = make_state_with_interval_ms(0);
+    let config = VolumeCopyConfig {
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-table",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/holiday.mov")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let table = events
+        .in_flight_table()
+        .expect("a running cross-volume move must keep an in-flight table");
+    assert!(table.contains("in_flight=1/1"), "one source in flight: {table}");
+    assert!(
+        table.contains("streaming"),
+        "the row must carry the phase the task-local records, not `spawned`: {table}"
+    );
+    assert!(table.contains("holiday.mov"), "the row must name the source: {table}");
 }

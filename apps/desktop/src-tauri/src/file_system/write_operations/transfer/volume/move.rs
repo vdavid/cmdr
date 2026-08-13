@@ -379,6 +379,28 @@ pub(crate) async fn move_volumes_with_progress(
     // moved. Mirrors `volume/copy_serial.rs`'s `deep_skipped_files`.
     let deep_skipped_files = Arc::new(AtomicUsize::new(0));
 
+    // Live in-flight table + stall watchdog, the same registration
+    // `volume/copy.rs` makes for both of its paths. Without it
+    // `state.rs::enrich_progress` misses the lookup, every `write-progress`
+    // event goes out with `activity: None`, and a wedged move shows a frozen bar
+    // with a confident ETA and no stall notice at all — silent, on the one
+    // operation that has the user's ONLY copy of the data in flight. Dropping
+    // the guard when this function returns deregisters the operation and stops
+    // the watchdog on its next tick.
+    let probe_guard = super::super::transfer_probe::register_operation(
+        operation_id,
+        // The move pipeline runs exactly one source at a time.
+        1,
+        total_files,
+        // Both ends, so the watchdog can ask whether either connection has been
+        // PROVEN dead before it acts on a stall (no backend can answer that yet
+        // — see `Volume::connection_liveness`).
+        vec![Arc::clone(&source_volume), Arc::clone(&dest_volume)],
+        Arc::clone(state),
+        Arc::clone(&events),
+    );
+    let op_probe = probe_guard.probe();
+
     let outcome = drive_transfer_serial_async(
         &*events,
         state,
@@ -491,7 +513,15 @@ pub(crate) async fn move_volumes_with_progress(
             let leaf_files_done = Arc::clone(&leaf_files_done);
             let deep_skipped_files = Arc::clone(&deep_skipped_files);
             let journal_volumes = journal_volumes.clone();
+            // The move registers its one in-flight source too, so a frozen bar
+            // during a folder move gets the same "waiting on the destination"
+            // answer a copy does. The counter only labels rows in a dump;
+            // sources run one at a time here.
+            let op_probe = Arc::clone(&op_probe);
+            let source_index = Arc::new(AtomicUsize::new(0));
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
+                let op_probe = Arc::clone(&op_probe);
+                let source_index = Arc::clone(&source_index);
                 let source_volume = Arc::clone(&source_volume);
                 let dest_volume = Arc::clone(&dest_volume);
                 let state = Arc::clone(&state);
@@ -569,7 +599,16 @@ pub(crate) async fn move_volumes_with_progress(
                         apply_to_all: &merge_apply_to_all,
                         source_hints: &source_hints,
                     };
-                    let bytes = match copy_single_path(
+                    // Held for this source's whole transfer, copy phase AND
+                    // source sweep; dropping it clears the row. Mirrors
+                    // `volume/copy_serial.rs`.
+                    let task_probe = op_probe.begin_task(
+                        source_index.fetch_add(1, Ordering::Relaxed),
+                        &source_path.display().to_string(),
+                        &dest_item_path.display().to_string(),
+                    );
+                    let probe = task_probe.probe();
+                    let copy_fut = copy_single_path(
                         &source_volume,
                         &source_path,
                         Some(source_is_dir),
@@ -582,8 +621,16 @@ pub(crate) async fn move_volumes_with_progress(
                         &on_file_complete,
                         Some(&merge_ctx),
                         super::strategy::staging_for(&replace_after_write),
-                    )
-                    .await
+                    );
+                    // Bind this source's probe as a task-local for the whole
+                    // copy phase, so `stream_pipe_file` and `CheckpointStream`
+                    // record their phases with no signature threading. Without
+                    // it the row stays parked at `spawned`, `wait_reason` can
+                    // never answer `Source` or `Destination`, and
+                    // `stream_pipe_file` can't arm a stall-abort.
+                    let bytes = match super::super::transfer_probe::CURRENT_TASK_PROBE
+                        .scope(Arc::clone(&probe), copy_fut)
+                        .await
                     {
                         Ok(b) => b,
                         Err(e) => {
@@ -602,6 +649,13 @@ pub(crate) async fn move_volumes_with_progress(
                             return Err(map_volume_error(&e.path.display().to_string(), e.error));
                         }
                     };
+                    // Past the last byte. Set directly on the handle rather than
+                    // through the task-local, whose scope ended with the copy:
+                    // everything below (the safe-replace finalize, then the
+                    // source sweep) is a move's most dangerous stretch, and a
+                    // dump taken during it must not still claim the task is
+                    // streaming.
+                    probe.set_phase(super::super::transfer_probe::TaskPhase::Finalizing);
                     // Overwrote iff the top-level file→file safe-replace fires below
                     // OR a deep-merge child replaced a dest file. Captured before
                     // `replace_after_write` is consumed; feeds move eligibility.

@@ -18,8 +18,10 @@ map: `DETAILS.md` § Files.
   `RENAME_NOREPLACE`), keeping the guarantee the old direct `O_EXCL` create gave.
 - **Cross-volume copy parks and yields between chunks** (`CheckpointStream`): park in place, ❌ no release/reopen. TWO
   opt-ins, ❌ don't merge them: SOURCE read-yield (MTP + SMB) is unbounded, DESTINATION write-yield (SMB only) is capped.
-- **Every phase announces itself to `transfer_probe.rs`, on BOTH drivers**: ❌ no `.await` on a transfer path without a
-  phase, ❌ never derive a stall from FE timing.
+- **Every phase announces itself to `transfer_probe.rs`, on ALL THREE streaming paths** (both copy drivers and the
+  cross-volume move): ❌ no `.await` on a transfer path without a phase, ❌ never derive a stall from FE timing. A new
+  streaming path owes BOTH `register_operation` and a `CURRENT_TASK_PROBE` scope — registering without binding looks
+  wired and reports nothing. `DETAILS.md` § "The stall signal".
 - **The stall watchdog judges movement by the byte total the UI is showing** (`state.last_progress_bytes()`); ❌ the
   probe never gets a byte counter of its own. One the drivers must remember to feed is one a driver forgets, and the
   serial path forgetting it called every 1–2-source (and every MTP) transfer stalled. `DETAILS.md` § "The stall signal".

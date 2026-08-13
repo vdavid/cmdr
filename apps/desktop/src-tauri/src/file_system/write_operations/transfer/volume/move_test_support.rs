@@ -72,6 +72,72 @@ impl OperationEventSink for CancelAfterFirstSink {
     fn emit_dry_run_complete(&self, _r: crate::file_system::write_operations::types::DryRunResult) {}
 }
 
+/// Sink that photographs the live in-flight table at the one moment it is
+/// populated.
+///
+/// A `write-progress` event in the Copying phase is emitted from
+/// `SerialLeafProgress::on_chunk`, which the destination calls from inside
+/// `write_from_stream` — so it runs inside the transfer's `CURRENT_TASK_PROBE`
+/// scope, with the task's row in the table and its phase set. Nothing outside
+/// that window can see it: the row is dropped when the source finishes, and the
+/// operation is deregistered when the transfer returns.
+pub(super) struct SampleInFlightTableSink {
+    pub(super) inner: CollectorEventSink,
+    operation_id: String,
+    dump: std::sync::Mutex<Option<String>>,
+}
+
+impl SampleInFlightTableSink {
+    pub(super) fn new(operation_id: &str) -> Self {
+        Self {
+            inner: CollectorEventSink::new(),
+            operation_id: operation_id.to_owned(),
+            dump: std::sync::Mutex::new(None),
+        }
+    }
+
+    /// The table as it looked mid-write, or `None` when the operation kept no
+    /// in-flight table at all — which is exactly what a transfer that never
+    /// registered a probe looks like from here.
+    pub(super) fn in_flight_table(&self) -> Option<String> {
+        self.dump.lock_ignore_poison().clone()
+    }
+}
+
+impl OperationEventSink for SampleInFlightTableSink {
+    fn emit_progress(&self, event: WriteProgressEvent) {
+        if event.phase == WriteOperationPhase::Copying {
+            let mut slot = self.dump.lock_ignore_poison();
+            if slot.is_none() {
+                *slot = crate::file_system::write_operations::transfer::transfer_probe::render_live_dump(
+                    &self.operation_id,
+                    "mid-write sample",
+                );
+            }
+        }
+        self.inner.emit_progress(event);
+    }
+    fn emit_settled(&self, e: crate::file_system::write_operations::types::WriteSettledEvent) {
+        self.inner.emit_settled(e);
+    }
+    fn emit_complete(&self, e: WriteCompleteEvent) {
+        self.inner.emit_complete(e);
+    }
+    fn emit_cancelled(&self, e: WriteCancelledEvent) {
+        self.inner.emit_cancelled(e);
+    }
+    fn emit_error(&self, e: WriteErrorEvent) {
+        self.inner.emit_error(e);
+    }
+    fn emit_conflict(&self, e: WriteConflictEvent) {
+        self.inner.emit_conflict(e);
+    }
+    fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
+    fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}
+    fn emit_scan_conflict(&self, _c: crate::file_system::write_operations::types::ConflictInfo) {}
+    fn emit_dry_run_complete(&self, _r: crate::file_system::write_operations::types::DryRunResult) {}
+}
+
 /// Wraps an `InMemoryVolume` destination whose `rename` ALWAYS fails: models a
 /// disconnect at the exact instant `finalize_safe_replace` swaps the
 /// fully-written temp over the original. Everything else delegates.
