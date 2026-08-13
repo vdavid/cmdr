@@ -18,7 +18,7 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/conflict.rs": 1391,
     "apps/desktop/src-tauri/src/file_system/write_operations/delete/walker.rs": 942,
     "apps/desktop/src-tauri/src/file_system/write_operations/journal_capture_tests.rs": 941,
-    "apps/desktop/src-tauri/src/file_system/write_operations/manager.rs": 966,
+    "apps/desktop/src-tauri/src/file_system/write_operations/manager.rs": 1152,
     "apps/desktop/src-tauri/src/file_system/write_operations/manager/tests.rs": 852,
     "apps/desktop/src-tauri/src/file_system/write_operations/rename/bulk.rs": 807,
     "apps/desktop/src-tauri/src/file_system/write_operations/scan.rs": 1064,
