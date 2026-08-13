@@ -22,6 +22,10 @@ re-measurement compares against, it records the two shapes' bottlenecks separate
 hides), and it's the evidence behind two guardrails in
 `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § Key decisions.
 
+**Everything here sweeps the TOP-LEVEL window only**, because that was the only window there was: every shape below
+hands the copy N loose files as N sources. A DIRECTORY source got no concurrency at all until 2026-08-13 — see
+`transfer-subtree-concurrency-bench-2026-08-13.md`, which adds a one-folder shape to this same harness and measures it.
+
 ## Method
 
 `volume/copy_concurrency_bench.rs` (`#[ignore]`d, in

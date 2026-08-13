@@ -35,6 +35,13 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 - `frontend-lane-cache-partitioning.md` — what the 21 checks on `svelteInputs` cost (59.6 h of a 24-day window), what
   excluding the colocated agent docs bought (41.3% → 35.0% of commits), the isolated Vitest timings behind it, and the
   three independent reasons a per-area split of `svelte-tests` was rejected.
+- `transfer-concurrency-window-bench-2026-08-02.md` — the transfer concurrency window swept 1-32 against a real QNAP and
+  Docker Samba: that the window was worth ~14% while a serialized per-file destination probe was worth 74%, both fixes'
+  after-numbers, and the rule that a Docker SMB number is a correctness signal and never a latency one.
+- `transfer-subtree-concurrency-bench-2026-08-13.md` — what putting one operation-wide window inside the folder-merge
+  walk bought (1.79× on loopback for a folder copy that could not overlap at all before), the loose-files-vs-one-folder
+  A/B the harness gained to measure it, David's real-hardware curve saying the useful width is 4-8, and the open
+  question about a default of 10 that nothing has changed.
 
 **Load-bearing as the input to a job that hasn't been done yet:**
 

@@ -23,12 +23,13 @@
 //! ```
 //!
 //! Knobs, all optional: `CMDR_BENCH_TARGET` (`docker` | `nas`),
-//! `CMDR_BENCH_DEST` (`existing` | `fresh`, default `existing`),
+//! `CMDR_BENCH_DEST` (`existing` | `fresh` | `both`, default `existing`),
 //! `CMDR_BENCH_WINDOWS` (comma-separated, default `1,2,4,6,8,10,12,16,24,32`),
 //! `CMDR_BENCH_REPS` (default 5), `CMDR_BENCH_SHAPES` (`small` | `large` |
-//! `both`), `CMDR_BENCH_SMALL_COUNT`, `CMDR_BENCH_SMALL_KIB`,
-//! `CMDR_BENCH_LARGE_COUNT`, `CMDR_BENCH_LARGE_MIB`, `SMB2_TEST_NAS_HOST`,
-//! `SMB2_TEST_NAS_SHARE`, `SMB2_TEST_NAS_USER`.
+//! `subtree` | `folder-ab` | anything else for all three),
+//! `CMDR_BENCH_SMALL_COUNT`, `CMDR_BENCH_SMALL_KIB`, `CMDR_BENCH_LARGE_COUNT`,
+//! `CMDR_BENCH_LARGE_MIB`, `SMB2_TEST_NAS_HOST`, `SMB2_TEST_NAS_SHARE`,
+//! `SMB2_TEST_NAS_USER`.
 //!
 //! ## Why the numbers are shaped the way they are
 //!
@@ -64,6 +65,12 @@
 //!   user who sets `network.smbConcurrency` to 1 gets, so the row is honest —
 //!   but it is a different code path, and a step between 1 and 2 is partly that
 //!   switch rather than the window alone.
+//! - **`many-small (one folder)` is the SERIAL driver at EVERY window.** One
+//!   source is under the concurrent path's three-source threshold, so its whole
+//!   curve is `merge.rs`'s subtree window and nothing else. Read it against
+//!   `many-small (loose files)` at the same width: the two run the identical
+//!   corpus, so a gap between them is the cost of having selected a folder.
+//!   `CMDR_BENCH_SHAPES=folder-ab` runs exactly that pair.
 
 use std::collections::HashMap;
 
@@ -104,6 +111,9 @@ const DEFAULT_LARGE_MIB: usize = 24;
 const DEFAULT_WINDOWS: &[usize] = &[1, 2, 4, 6, 8, 10, 12, 16, 24, 32];
 
 const DEFAULT_REPS: usize = 5;
+
+/// The one folder the `Subtree` shape hands the copy as its single source.
+const SUBTREE_FOLDER: &str = "one-folder";
 
 /// Everything this harness writes to a real NAS lives under here, and the
 /// cleanup helper refuses to delete a path that doesn't start with it. `_test/`
@@ -288,13 +298,23 @@ enum Shape {
     Small,
     /// Few files that each take the staged streaming writer.
     Large,
+    /// The SAME many-small files, but inside ONE folder handed to the copy as a
+    /// single source — what a user does when they select a folder and press F5.
+    ///
+    /// One source means the SERIAL driver, so the top-level window is out of the
+    /// picture entirely and every byte goes through `merge.rs`'s walk. That makes
+    /// this the only row in the sweep that measures the subtree window at all;
+    /// against `many-small` at the same width it is a straight A/B on "does
+    /// selecting a folder cost you the setting?".
+    Subtree,
 }
 
 impl Shape {
     fn label(self) -> &'static str {
         match self {
-            Shape::Small => "many-small",
+            Shape::Small => "many-small (loose files)",
             Shape::Large => "few-large",
+            Shape::Subtree => "many-small (one folder)",
         }
     }
 }
@@ -303,7 +323,16 @@ impl Shape {
 struct Corpus {
     _dir: tempfile::TempDir,
     volume: Arc<dyn Volume>,
+    /// What the copy is handed as its top-level sources: every file for the loose
+    /// shapes, the single folder for `Subtree`.
     paths: Vec<PathBuf>,
+    /// The leaf file names, which is what the verification pass and every
+    /// per-file number in the report are about. ❌ Not `paths.len()`: a subtree
+    /// run has one source and hundreds of files.
+    file_names: Vec<String>,
+    /// Where the leaves land under the destination directory. `None` for the
+    /// loose shapes (straight into it), `Some(folder)` for `Subtree`.
+    landing_suffix: Option<String>,
     /// Bytes per file. Uniform within a shape.
     file_len: u64,
     total_bytes: u64,
@@ -316,7 +345,7 @@ struct Corpus {
 /// throughput that has nothing to do with the wire.
 fn build_corpus(shape: Shape, source_concurrency: usize) -> Corpus {
     let (count, len) = match shape {
-        Shape::Small => (
+        Shape::Small | Shape::Subtree => (
             env_usize("CMDR_BENCH_SMALL_COUNT", DEFAULT_SMALL_COUNT),
             env_usize("CMDR_BENCH_SMALL_KIB", DEFAULT_SMALL_KIB) * 1024,
         ),
@@ -326,12 +355,26 @@ fn build_corpus(shape: Shape, source_concurrency: usize) -> Corpus {
         ),
     };
     let dir = tempfile::TempDir::new().expect("create the corpus tempdir");
-    let mut paths = Vec::with_capacity(count);
+    // The subtree shape puts the same files one level down and hands the copy the
+    // FOLDER, so everything below is byte-identical except who walks it.
+    let folder = (shape == Shape::Subtree).then(|| SUBTREE_FOLDER.to_owned());
+    if let Some(folder) = folder.as_ref() {
+        std::fs::create_dir(dir.path().join(folder)).expect("create the corpus subtree folder");
+    }
+    let mut file_names = Vec::with_capacity(count);
     for index in 0..count {
         let name = format!("b-{index:04}.bin");
-        std::fs::write(dir.path().join(&name), bench_content(index, len)).expect("write a corpus file");
-        paths.push(PathBuf::from(&name));
+        let on_disk = match folder.as_ref() {
+            Some(folder) => dir.path().join(folder).join(&name),
+            None => dir.path().join(&name),
+        };
+        std::fs::write(on_disk, bench_content(index, len)).expect("write a corpus file");
+        file_names.push(name);
     }
+    let paths = match folder.as_ref() {
+        Some(folder) => vec![PathBuf::from(folder)],
+        None => file_names.iter().map(PathBuf::from).collect(),
+    };
     let volume: Arc<dyn Volume> = Arc::new(FixedConcurrencySource {
         inner: LocalPosixVolume::new("bench-src", dir.path().to_path_buf()),
         concurrency: source_concurrency,
@@ -340,6 +383,8 @@ fn build_corpus(shape: Shape, source_concurrency: usize) -> Corpus {
         _dir: dir,
         volume,
         paths,
+        file_names,
+        landing_suffix: folder,
         file_len: len as u64,
         total_bytes: (count as u64) * (len as u64),
     }
@@ -452,8 +497,12 @@ async fn timed_copy(corpus: &Corpus, dest: &Arc<dyn Volume>, dir: &str, window: 
     // enough to run every rep, and it catches the failure modes that would
     // otherwise make a fast run look good — a truncated tail, a dropped file, or
     // a staging temp left behind.
+    let landing = match corpus.landing_suffix.as_ref() {
+        Some(folder) => format!("{dir}/{folder}"),
+        None => dir.to_owned(),
+    };
     let landed = dest
-        .list_directory(Path::new(dir), None)
+        .list_directory(Path::new(&landing), None)
         .await
         .expect("list the destination");
     let leftovers: Vec<&str> = landed
@@ -467,16 +516,15 @@ async fn timed_copy(corpus: &Corpus, dest: &Arc<dyn Volume>, dir: &str, window: 
     );
     assert_eq!(
         landed.len(),
-        corpus.paths.len(),
+        corpus.file_names.len(),
         "window={window}: destination holds {} entries, expected {}",
         landed.len(),
-        corpus.paths.len(),
+        corpus.file_names.len(),
     );
     let sizes: HashMap<&str, Option<u64>> = landed.iter().map(|e| (e.name.as_str(), e.size)).collect();
-    for path in &corpus.paths {
-        let name = path.to_str().expect("a corpus name is UTF-8");
+    for name in &corpus.file_names {
         assert_eq!(
-            sizes.get(name).copied().flatten(),
+            sizes.get(name.as_str()).copied().flatten(),
             Some(corpus.file_len),
             "window={window}: {name} landed at the wrong size (or not at all)"
         );
@@ -638,7 +686,11 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
     let shapes: Vec<Shape> = match std::env::var("CMDR_BENCH_SHAPES").as_deref() {
         Ok("small") => vec![Shape::Small],
         Ok("large") => vec![Shape::Large],
-        _ => vec![Shape::Small, Shape::Large],
+        Ok("subtree") => vec![Shape::Subtree],
+        // The A/B the subtree window exists for: the same files loose, then in a
+        // folder. Run back to back so machine load hits both equally.
+        Ok("folder-ab") => vec![Shape::Small, Shape::Subtree],
+        _ => vec![Shape::Small, Shape::Large, Shape::Subtree],
     };
     let restore = smb_concurrency();
 
@@ -666,7 +718,7 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
         let single_shot = target.volume.write_is_single_shot(corpus.file_len).await;
         assert_eq!(
             single_shot,
-            shape == Shape::Small,
+            shape != Shape::Large,
             "{}: a {}-byte write reports single_shot={single_shot}, which is not the write path \
              this shape exists to measure",
             shape.label(),
@@ -702,7 +754,7 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
         println!(
             "── {} — {} files × {} B = {:.1} MiB ─────────────────────",
             shape.label(),
-            corpus.paths.len(),
+            corpus.file_names.len(),
             corpus.file_len,
             corpus.total_bytes as f64 / (1024.0 * 1024.0),
         );
@@ -723,7 +775,7 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
                     runs.first().copied().unwrap_or_default(),
                     runs.last().copied().unwrap_or_default(),
                     corpus.total_bytes as f64 / secs / 1_000_000.0,
-                    corpus.paths.len() as f64 / secs,
+                    corpus.file_names.len() as f64 / secs,
                     peaks.get(&(mode_index, window)).copied().unwrap_or(0),
                 );
                 // The headline compares against the best run anywhere in the
@@ -746,7 +798,7 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
             .create_directory(Path::new(&probe_dir))
             .await
             .expect("create the pre-check probe directory");
-        let floor = serial_precheck_floor(&target.volume, &probe_dir, corpus.paths.len()).await;
+        let floor = serial_precheck_floor(&target.volume, &probe_dir, corpus.file_names.len()).await;
         empty_directory(&target.volume, &probe_dir).await;
 
         if let Some((window, med)) = best {
@@ -760,8 +812,8 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
             let share = floor.as_secs_f64() / med.as_secs_f64() * 100.0;
             println!(
                 "  serial pre-check floor: {floor:.3?} for {} files ({:.2?}/file) = {share:.0}% of the fastest run",
-                corpus.paths.len(),
-                floor / u32::try_from(corpus.paths.len()).unwrap_or(1),
+                corpus.file_names.len(),
+                floor / u32::try_from(corpus.file_names.len()).unwrap_or(1),
             );
         }
     }
