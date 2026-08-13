@@ -180,9 +180,7 @@ impl ScanWatchdog {
         // A short budget has to be checked more often than the 5 s a production
         // one uses, or the first beat lands long after the deadline it is meant
         // to catch.
-        let tick = HEARTBEAT
-            .min(self.inactivity_limit / 2)
-            .max(Duration::from_millis(10));
+        let tick = HEARTBEAT.min(self.inactivity_limit / 2).max(Duration::from_millis(10));
         loop {
             tokio::time::sleep(tick).await;
             match self.beat() {

@@ -394,18 +394,21 @@ the counter line, so an assertion never fires against a partial in-flight tally.
 - `skipped` → no deep scan runs (a same-volume move renames server-side, zero bytes), so the tallies legitimately stay
   at 0. The helper only accepts this state when the caller opts in with `allowSkipped`.
 - `counting` → a scan is in flight or about to start on mount.
+- `unavailable` → the scan stopped without an answer. The tallies stay on screen as a FLOOR, with the notice below
+  saying so; see "When the dialog can't find out".
 
 Pinned by `TransferDialog.test.ts` § "data-scan-state marker" (counting → done, the skipped fast path, and the counting
-→ skipped toggle).
+→ skipped toggle), and `TransferDialog.unavailable.test.ts` for `unavailable`.
 
 ### `data-conflict-state` marker on the dialog body
 
 The sibling marker for the OTHER async settle in this dialog: the top-level conflict check
-(`transfer-conflict-check.svelte.ts`). `.dialog-body` carries `data-conflict-state` (`checking` | `done` | `skipped`),
-derived from that factory's existing `conflictCheckComplete` — again no new wire event.
+(`transfer-conflict-check.svelte.ts`). `.dialog-body` carries `data-conflict-state`
+(`checking` | `done` | `skipped` | `unknown`), derived from that factory's status — again no new wire event.
 
-- `done` → the check settled; the conflicts section below it is final. Set in the failure path too, so a check that
-  threw still reaches a terminal state instead of hanging a poller.
+- `done` → the check RAN, and the conflicts section below it is final.
+- `unknown` → the check couldn't run, so nothing is known about the destination. ⚠️ A failure used to land in `done`
+  with an empty conflict list, which is byte-identical to a clean destination; see "When the dialog can't find out".
 - `skipped` → compress makes ONE new file, so the multi-file check never runs; the dest-exists affordance answers
   instead.
 - `checking` → the dest listing is in flight, or about to start on mount.
@@ -467,6 +470,32 @@ When the directory has a parent entry shown at index 0, frontend indices are off
 - Frontend `[0, 1, 2, 3]` with `hasParent=true` → Backend `[-1, 0, 1, 2]` → filtered to `[0, 1, 2]`
 - Index 0 with `hasParent=true` is always the ".." entry (backend index `-1`, invalid)
 - `toBackendCursorIndex(0, true)` returns `null` to signal no-op
+
+## When the dialog can't find out
+
+Both pre-confirm questions reach a volume that can stop answering, and each has a settled shape for "I couldn't".
+
+**The size scan.** `transfer-scan-state.svelte.ts` records `scanFailure = { timedOut }` from `scan-preview-error`
+(`timedOut` is the backend watchdog's typed flag, ❌ never read off the message). The dialog keeps the tallies — they're
+a real floor, and blanking them would claim the source is empty — adds a warning-toned line saying either that the
+source isn't responding or that the measurement couldn't finish, and offers **Try again**, which frees the dead preview
+and walks again (`scan.retry()` = `cancelPreview()` + `startScan()`, so the retry can't adopt the old scan's events).
+
+**Retry, and NOT "proceed without a scan", is the affordance offered.** Proceeding is already possible: the confirm
+button stays live throughout, because the preview only feeds this Size line and a cache the operation can rebuild
+itself. A second button for something the primary button already does would be noise. What the user can't do without
+help is ask again after plugging the network back in.
+
+**The conflict check.** `transfer-conflict-check.svelte.ts` carries a `status` of `idle` / `checking` / `answered` /
+`unknown` (a bounded `withTimeout` at 35 s over the IPC, just above the backend's own 30 s budget, catches a call that
+never returns at all). `unknown` renders its own line, because rendering nothing is what a genuinely clean destination
+renders, and the user is about to decide what happens to their files on the strength of it.
+
+**Why an unknown check is still safe to transfer on.** The pre-flight names feed `pre_known_conflicts`, which the
+backend reads under `Skip` alone as a bulk-skip PERF hint (`build_pre_skip_set`); every clash is still detected and
+arbitrated at write time. An unknown check contributes no names, so nothing is pre-skipped, and the policy radios never
+render for it — leaving the default `stop`, which prompts per clash. ❌ Don't "helpfully" default an unknown check to a
+non-prompting policy: that would turn "nobody looked" into a silent overwrite.
 
 ## Gotchas
 

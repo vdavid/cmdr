@@ -87,6 +87,13 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
   let estimatedBytes = $state<CompressedSizeEstimate | null>(null)
   let isScanning = $state(false)
   let scanComplete = $state(false)
+  // Why the scan stopped without an answer, or `null` while all is well. A scan
+  // that ends this way used to just drop its spinner and leave the tallies at
+  // zero, which reads as "this folder is empty" rather than "I couldn't look".
+  // `timedOut` is the backend watchdog's typed flag (the volume counted nothing
+  // for a minute); it's the one case worth naming to the user, and the one
+  // where retrying is a sensible thing to offer.
+  let scanFailure = $state<{ timedOut: boolean } | null>(null)
   let unlisteners: UnlistenFn[] = []
 
   // Promise that resolves once startScanPreview IPC has returned and previewId is set.
@@ -139,7 +146,10 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
       await onScanPreviewError((event) => {
         if (!isOurScanEvent(event.previewId)) return
         isScanning = false
-        // Keep showing whatever stats we have
+        // Keep whatever stats we have, and record WHY they stopped: the dialog
+        // owes the user the difference between "that's all of it" and "I lost
+        // the volume partway through".
+        scanFailure = { timedOut: event.timedOut ?? false }
       }),
     )
     unlisteners.push(
@@ -151,6 +161,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
 
     // Start the scan
     isScanning = true
+    scanFailure = null
     const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
     const result = await startScanPreview(
       deps.getSourcePaths(),
@@ -199,7 +210,17 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
     bytesFound = 0
     dedupBytesFound = 0
     estimatedBytes = null
+    scanFailure = null
     scanStarted = Promise.resolve()
+  }
+
+  /** Walks the source again after a scan that couldn't finish. The old preview
+   *  is freed first (the backend settled it, but its entry is ours to release),
+   *  and the listeners are rebuilt with it, so the retry can't adopt the dead
+   *  scan's events. */
+  function retry() {
+    cancelPreview()
+    scanStarted = startScan()
   }
 
   /** Starts the initial scan unless this is a same-volume move (server-side
@@ -252,6 +273,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
 
   return {
     start,
+    retry,
     cancelPreview,
     freeAndCleanup,
     /** Drops the scan-preview listeners WITHOUT cancelling the preview. Used on
@@ -282,6 +304,10 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
     },
     get isScanning() {
       return isScanning
+    },
+    /** Why the scan stopped without an answer, or `null`. */
+    get scanFailure() {
+      return scanFailure
     },
     get scanComplete() {
       return scanComplete

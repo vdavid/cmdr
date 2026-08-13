@@ -235,6 +235,22 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.transferDialog.scanUnresponsive": "来源没有响应，我们只统计到这些。",
+  "@fileOperations.transferDialog.scanUnresponsive": {
+    "sourceHash": "03d95e0"
+  },
+  "fileOperations.transferDialog.scanStopped": "我们没能统计完来源，只统计到这些。",
+  "@fileOperations.transferDialog.scanStopped": {
+    "sourceHash": "aac156c"
+  },
+  "fileOperations.transferDialog.scanRetry": "重试",
+  "@fileOperations.transferDialog.scanRetry": {
+    "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.conflictsUnknown": "我们无法检查目标位置已有的内容。遇到重名时会逐个询问你。",
+  "@fileOperations.transferDialog.conflictsUnknown": {
+    "sourceHash": "1bc997a"
+  },
   "fileOperations.transferDialog.checkingConflicts": "正在检查冲突…",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

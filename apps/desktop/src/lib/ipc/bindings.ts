@@ -7707,6 +7707,15 @@ export type ScanPreviewCompleteEvent = {
 export type ScanPreviewErrorEvent = {
   previewId: string
   message: string
+  /**
+   *  `true` when the walk didn't stop on its own: the watchdog gave up on a
+   *  volume that had counted nothing for `SCAN_INACTIVITY_LIMIT`. The dialog
+   *  says "not responding" and offers a retry for this one, and a plainer
+   *  "couldn't size this" for every other message. A typed flag because the
+   *  message is prose: classifying on its wording would break on the first
+   *  copy edit.
+   */
+  timedOut?: boolean
 }
 
 // Progress event for scan preview (shown in Copy dialog).

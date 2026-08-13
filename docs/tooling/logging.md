@@ -165,6 +165,10 @@ Copy-paste commands for common debugging scenarios. All include `info` as the ba
   `RUST_LOG=cmdr_lib::indexing::reconcile=trace,info pnpm dev`
 - **Per-subtree churn** (needs `CMDR_CHURN_SPIKE`, see below): `RUST_LOG=cmdr_lib::indexing::churn=debug,info pnpm dev`
 - **File operations (copy/move/delete)**: `RUST_LOG=cmdr_lib::file_system::write_operations=debug,info pnpm dev`
+- **A transfer dialog that sits on 0 bytes, or on "Checking for conflicts..."**:
+  `RUST_LOG=scan_preview=debug,conflict_scan=debug,info pnpm dev`. The scan preview logs its start, a 5 s heartbeat with
+  running counts, and its outcome; the conflict check logs its start, the collision count, and which leg gave up. Both
+  targets are already at Debug in the log FILE, so a user's bundle answers this without a re-run.
 - **Directory listing**: `RUST_LOG=cmdr_lib::file_system::listing=debug,info pnpm dev`
 - **File viewer**: `RUST_LOG=cmdr_lib::file_viewer=debug,FE:viewer=debug,info pnpm dev`
 - **MTP (Android devices)**: `RUST_LOG=cmdr_lib::mtp=debug,FE:mtp=debug,info pnpm dev`

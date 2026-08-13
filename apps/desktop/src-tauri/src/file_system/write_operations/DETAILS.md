@@ -429,6 +429,45 @@ cancelled walk returns an error (the local walk's `on_cancelled` string, the vol
 message merely says "cancelled", and recovering the truth from that message would be string-matching on the control
 path. Both workers' arms were reconciled to match.
 
+## Bounding the scan
+
+A preview had no bound of any kind. That is survivable while a walk can only end, and it stops being survivable the
+moment the volume under it can stop answering: a `stat` on a wedged kernel mount blocks until the mount is forced down,
+observing no cancel flag and returning nothing, so the preview stayed in flight forever. The pre-confirm dialog spun on
+`0 bytes / 0 files / 0 dirs`, and a transfer already confirmed waited with it, because it parks on the same preview.
+
+**Why inactivity, not duration.** A legitimate scan of a large tree over SMB runs for minutes, so any total-duration cap
+either cuts real work or is too generous to catch a wedge. What separates "slow but working" from "dead" is whether the
+walk is still COUNTING: every entry a backend hands back is proof the far end answered. `ScanWatchdog::note_progress`
+records that proof from both workers' progress paths (fed BEFORE the emit throttle on the volume path — the throttle is
+a UI rate limit, not evidence about the device), and the watchdog fires only after `SCAN_INACTIVITY_LIMIT` (60 s) with
+nothing counted.
+
+**Why 60 s.** It sits above every bound the layers below own, so their better message wins whenever they have one: a
+direct-SMB request gives up after ~50 s (20 s to the socket, then 30 s of server silence), and the IPC scan deadlines
+are 30 s. What's left underneath is the case with no bound at all, and that's what this catches.
+
+**Why the watchdog publishes.** It can't ask a wedged walk to stop and report, so it settles the preview
+(`ScanOutcome::Error`) and emits `scan-preview-error` with `timed_out: true` itself, leaving the walk detached behind
+it. It also sets the cancel flag as a courtesy: a walk that is merely slower than we believed reads it and stops working
+for a dialog that has moved on. `claim_outcome` is the one-shot CAS both the watchdog and the worker pass through, so
+exactly one publishes and a late walk can't contradict a timeout the user has already been shown.
+
+**What it reaches.** The pre-confirm dialog renders an honest notice with a retry
+(`src/lib/file-operations/transfer/DETAILS.md` § "When the dialog can't find out"). A CONFIRMED transfer's wait already
+turns `ScanOutcome::Error` into that operation's failure (`await_claimed_preview`), so the same bound also ends the
+post-confirm hang — with the watchdog's message, which is why that message is written for a person to read.
+
+**The log is the other half.** `grep scan_preview` over the reporting user's multi-megabyte log returned nothing: the
+module had two `debug!` calls, neither at scan start. Every preview now logs one INFO at start (sources + volume), a 5 s
+DEBUG heartbeat with counts and time since the last one, and an INFO (or WARN, on a timeout) at the end, all under the
+`scan_preview` target, so the next hang answers "did it start, did it progress, how did it end" without guessing.
+
+**Testability.** `ScanPreviewEventSink` (mirroring `OperationEventSink`) keeps both workers off `tauri::AppHandle`, so
+`scan_watchdog_tests.rs` can point a real walk at `test_support::WedgedVolume` — every future parks forever — and watch
+the preview settle anyway. A network drop isn't repeatable; a volume that never answers is exactly repeatable and
+reaches the same code.
+
 **Trash is the one operation that doesn't wait.** `trashItemAtURL` is atomic per top-level item, so a trash walks
 nothing: there is no second walk to serialize against and no cached result to consume, and waiting would be pure delay
 — a long one on a big tree. `trash_files_start` therefore passes no `preview_id` and frees the preview outright,

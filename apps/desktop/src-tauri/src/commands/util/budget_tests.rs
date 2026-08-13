@@ -45,7 +45,7 @@ async fn a_burst_never_exceeds_the_budget_and_everyone_still_finishes() {
             seen.enter();
             // allowed-test-sleep: the occupancy IS the subject — the task has to hold its
             // pool thread long enough for the other 31 callers to pile up behind it.
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            std::thread::sleep(Duration::from_millis(5));
             seen.leave();
             i
         }));
@@ -74,6 +74,8 @@ async fn a_deadline_hands_each_leg_what_is_left() {
     let deadline = Deadline::new(Duration::from_secs(30));
     assert_eq!(deadline.remaining(), Duration::from_secs(30));
 
+    // allowed-test-sleep: elapsed time IS the subject, and `start_paused` makes it
+    // virtual, so this advances the clock 20 s without costing the suite anything.
     tokio::time::sleep(Duration::from_secs(20)).await;
 
     assert_eq!(deadline.remaining(), Duration::from_secs(10));
@@ -85,6 +87,8 @@ async fn a_deadline_hands_each_leg_what_is_left() {
 #[tokio::test(start_paused = true)]
 async fn a_spent_deadline_refuses_the_next_leg_outright() {
     let deadline = Deadline::new(Duration::from_secs(5));
+    // allowed-test-sleep: virtual time again (`start_paused`), spending the budget
+    // and then some, which is the condition under test.
     tokio::time::sleep(Duration::from_secs(9)).await;
     assert_eq!(deadline.remaining(), Duration::ZERO);
 

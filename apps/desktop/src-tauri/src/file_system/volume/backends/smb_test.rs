@@ -993,7 +993,7 @@ fn scan_ticker_reports_running_totals() {
 
     let seen: Mutex<Vec<ListingProgress>> = Mutex::new(Vec::new());
     let record = |p: ListingProgress| seen.lock_ignore_poison().push(p);
-    let ticker = super::scan::ScanTicker::new(Some(&record));
+    let ticker = scan::ScanTicker::new(Some(&record));
 
     ticker.dir();
     ticker.file(1_000);
@@ -1010,7 +1010,7 @@ fn scan_ticker_reports_running_totals() {
 /// trait gives it no callback) can share one implementation with the batch path.
 #[test]
 fn scan_ticker_without_a_listener_still_counts() {
-    let ticker = super::scan::ScanTicker::new(None);
+    let ticker = scan::ScanTicker::new(None);
     ticker.dir();
     ticker.file(512);
 

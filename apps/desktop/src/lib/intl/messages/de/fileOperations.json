@@ -237,6 +237,22 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.transferDialog.scanUnresponsive": "Die Quelle antwortet nicht, mehr konnten wir nicht zählen.",
+  "@fileOperations.transferDialog.scanUnresponsive": {
+    "sourceHash": "03d95e0"
+  },
+  "fileOperations.transferDialog.scanStopped": "Wir konnten die Quelle nicht zu Ende vermessen, mehr konnten wir nicht zählen.",
+  "@fileOperations.transferDialog.scanStopped": {
+    "sourceHash": "aac156c"
+  },
+  "fileOperations.transferDialog.scanRetry": "Erneut versuchen",
+  "@fileOperations.transferDialog.scanRetry": {
+    "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.conflictsUnknown": "Wir konnten nicht prüfen, was am Ziel schon liegt. Bei jeder Überschneidung fragen wir nach.",
+  "@fileOperations.transferDialog.conflictsUnknown": {
+    "sourceHash": "1bc997a"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Konflikte werden geprüft …",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

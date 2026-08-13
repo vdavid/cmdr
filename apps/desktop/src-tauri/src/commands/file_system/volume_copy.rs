@@ -532,8 +532,8 @@ mod tests {
         Deadline, SourceItemInput, merge_source_types_from_batch, resolve_dest_path, resolve_source,
         scan_volume_for_conflicts_within,
     };
-    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo};
     use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
+    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo};
     use crate::test_support::WedgedVolume;
     use cmdr_fs::volume::{InMemoryVolume, Volume};
     use std::path::{Path, PathBuf};

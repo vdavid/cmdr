@@ -276,9 +276,11 @@
      *                  zero bytes), so the tallies legitimately stay at 0 — there's
      *                  nothing to count.
      *   - `counting` → a scan is in flight (or about to start on mount).
+     *   - `unavailable` → the scan stopped without an answer; the tallies are a
+     *                  floor, and the notice under them says so.
      *  `done` wins over `skipped`: a same-volume COPY still scans and completes. */
-    const scanState = $derived<'counting' | 'done' | 'skipped'>(
-        scanComplete ? 'done' : isSameVolumeMove ? 'skipped' : 'counting',
+    const scanState = $derived<'counting' | 'done' | 'skipped' | 'unavailable'>(
+        scanComplete ? 'done' : scan.scanFailure ? 'unavailable' : isSameVolumeMove ? 'skipped' : 'counting',
     )
 
     /** Settle state of the top-level conflict check, exposed as `data-conflict-state`
@@ -290,9 +292,18 @@
      *   - `done`     → the check settled; the conflicts section below is final.
      *   - `skipped`  → compress makes ONE new file, so the multi-file check never
      *                  runs and the dest-exists affordance answers instead.
+     *   - `unknown`  → the check couldn't run, so nothing is known about the
+     *                  destination. ⚠️ Never folded into `done`: an empty conflict
+     *                  list from a check that never ran reads as "all clear".
      *  The body carries it because it's the only element present in every state. */
-    const conflictState = $derived<'checking' | 'done' | 'skipped'>(
-        conflicts.conflictCheckComplete ? 'done' : activeOperationType === 'compress' ? 'skipped' : 'checking',
+    const conflictState = $derived<'checking' | 'done' | 'skipped' | 'unknown'>(
+        conflicts.conflictCheckComplete
+            ? 'done'
+            : conflicts.conflictCheckUnknown
+              ? 'unknown'
+              : activeOperationType === 'compress'
+                ? 'skipped'
+                : 'checking',
     )
 
     const pathError = $derived.by(() => {
@@ -644,6 +655,27 @@
             {/if}
         </div>
 
+        <!-- The size scan couldn't finish. Said plainly, because the tallies
+             above are now a floor rather than a total, and a dialog that goes
+             quiet here is one the user reads as "nothing to copy". The transfer
+             can still start: the operation counts as it goes, and the scan
+             preview only feeds this Size line and a cache it can rebuild. -->
+        {#if scan.scanFailure}
+            <p class="scan-unavailable" role="status">
+                <span class="scan-unavailable-icon" aria-hidden="true">
+                    <Icon name="triangle-alert" size={16} />
+                </span>
+                <span>
+                    {scan.scanFailure.timedOut
+                        ? tString('fileOperations.transferDialog.scanUnresponsive')
+                        : tString('fileOperations.transferDialog.scanStopped')}
+                </span>
+                <Button variant="secondary" size="mini" onclick={() => { scan.retry(); }}>
+                    {tString('fileOperations.transferDialog.scanRetry')}
+                </Button>
+            </p>
+        {/if}
+
         <!-- Compression level + live estimated size: Compress mode only. The wrapper
              owns the side inset for both children and gives the mode switch one
              element to slide, so the dialog's height change reads as a reveal. -->
@@ -671,6 +703,16 @@
                 <span class="conflicts-checking-text">{tString('fileOperations.transferDialog.checkingConflicts')}</span
                 >
             </div>
+        {:else if conflicts.conflictCheckUnknown}
+            <!-- The check couldn't run. Rendering nothing here would show exactly
+                 what a clean destination shows, and the user is about to make a
+                 decision about their own files on the strength of it. -->
+            <p class="conflicts-unknown" role="status">
+                <span class="conflicts-unknown-icon" aria-hidden="true">
+                    <Icon name="triangle-alert" size={16} />
+                </span>
+                <span>{tString('fileOperations.transferDialog.conflictsUnknown')}</span>
+            </p>
         {:else if totalConflictCount > 0 || mergeFolderCount > 0}
             <!-- A warning-toned card, not a full-bleed band: it's one more block in the
              dialog's column, so it obeys the same inset as the fields above it. -->
@@ -876,6 +918,26 @@
     .scan-status {
         display: inline-flex;
         align-items: center;
+    }
+
+    /* Both "couldn't find out" notices: one row, warning-toned text on the
+       dialog's own background (they're a caveat about a number above them, not a
+       card of their own). */
+    .scan-unavailable,
+    .conflicts-unknown {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-warning-text);
+    }
+
+    .scan-unavailable-icon,
+    .conflicts-unknown-icon {
+        display: inline-flex;
+        flex: 0 0 auto;
+        color: var(--color-warning-text);
     }
 
     /* Conflicts checking */

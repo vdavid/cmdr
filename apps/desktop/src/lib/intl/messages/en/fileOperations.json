@@ -400,6 +400,26 @@
     "description": "Tooltip on the \"Estimated size\" label in the Compress dialog, clarifying the number is a quick approximation and the real packed size may differ. \"zip\" is a file format; do not translate it."
   },
 
+  "fileOperations.transferDialog.scanUnresponsive": "The source isn''t responding, so this size is all we could count.",
+  "@fileOperations.transferDialog.scanUnresponsive": {
+    "description": "Shown in the transfer dialog when the size scan gave up because the source volume (a network share, say) stopped answering. The counters above it stay on screen, so the sentence explains that they're a partial count rather than a total. A 'Try again' button sits beside it."
+  },
+
+  "fileOperations.transferDialog.scanStopped": "We couldn''t finish measuring the source, so this size is all we could count.",
+  "@fileOperations.transferDialog.scanStopped": {
+    "description": "Shown in the transfer dialog when the size scan stopped for any reason other than an unresponsive volume (a folder disappeared mid-walk, a permission problem). Same shape as the unresponsive variant, without blaming the connection."
+  },
+
+  "fileOperations.transferDialog.scanRetry": "Try again",
+  "@fileOperations.transferDialog.scanRetry": {
+    "description": "Button beside the message about a size scan that couldn't finish. Starts the scan over. Short control label."
+  },
+
+  "fileOperations.transferDialog.conflictsUnknown": "We couldn''t check what''s already at the destination. You''ll be asked about anything that clashes.",
+  "@fileOperations.transferDialog.conflictsUnknown": {
+    "description": "Shown in the transfer dialog when the check for existing files at the destination couldn't run (an unresponsive volume, say). Two parts: it doesn't know what's there, and the transfer will still ask about each clash it meets. It must never read as 'nothing is there'."
+  },
+
   "fileOperations.transferDialog.checkingConflicts": "Checking for conflicts...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "description": "Status shown while the transfer dialog scans the destination for name clashes before the copy/move. Keep the trailing ellipsis.",

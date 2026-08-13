@@ -6,7 +6,7 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
 
 - Spine: `manager.rs` (registry, lanes, admission), `state.rs` (op state, `CopyTransaction`, cancel/abort),
   `status_cache.rs` (status cache + the busy-volume set that disables Eject; reach it through `state::`), `mod.rs`
-  (public API). Scan preview: `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs`. Subdirs with their own docs:
+  (public API). Scan preview: `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs`, `scan_watchdog.rs`. Subdirs with their own docs:
   `transfer/`, `delete/`, `archive_edit/` (`archive_edit/CLAUDE.md`). Frontend counterpart:
   `apps/desktop/src/lib/file-operations/CLAUDE.md`.
 
@@ -44,6 +44,13 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
   never `"root"`. `../../operation_log/DETAILS.md` § Capture.
 - **A confirmed transfer registers BEFORE its preview finishes**, staying `Running` with `phase: 'scanning'` while its
   task awaits the walk — ❌ no new `LifecycleStatus`. DETAILS § "The scan-wait".
+- **Every preview runs under a `ScanWatchdog`, and whoever settles it CLAIMS the outcome first**
+  (`watchdog.claim_outcome()`). It bounds the walk by INACTIVITY (60 s with nothing counted), not duration, and
+  publishes the timeout itself, because a walk parked on a dead mount never returns to be asked. A new terminal path in
+  either worker owes that claim, or a late walk contradicts a timeout the user already saw. DETAILS § "Bounding the
+  scan".
+- **A backend that scans without reporting progress is indistinguishable from a dead one.** A new `Volume` whose
+  `scan_for_copy_batch_with_progress` stays silent will eventually be cut off by the watchdog. Feed the callback.
 - **A FAILED op is retained out-of-band**, the one exception to removal-on-terminal; ❌ `record_failure` emits only once
   the record is GONE.
 - **Op state hangs off a struct, not a `static`**: `test_support::TestOperationGuard`,

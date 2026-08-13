@@ -20,6 +20,9 @@ subsystems are the reverse, since they can't carry `tauri::`. Inventory and rati
   - `timeout_detached` → **required when the future can reach a device backend** (rename, conflict/copy scans): it
     times out the JOIN HANDLE, never the work. ❌ A bare `tokio::time::timeout` drops the future and wedges an MTP
     phone. DETAILS § "IPC deadlines detach, never drop".
+  - **A command with SEVERAL legs takes one `Deadline` and gives each leg `timeout_detached_within`**, ❌ never a fresh
+    30 s per leg: the legs run in sequence, so per-leg timeouts make the command's promise their sum, which nobody
+    writes down and a spinner can't be sized against (`scan_volume_for_conflicts`).
   - ❌ Don't wrap `sync_status`: it applies its own deadline. `../file_system/sync_status/DETAILS.md`.
 - **A command the FRONTEND can re-issue faster than it completes needs a `BlockingBudget` (`util.rs`)**, one `static`
   per family, SHARED across the commands contending for the same resource (`media_index/mod.rs`). The pool caps at 512

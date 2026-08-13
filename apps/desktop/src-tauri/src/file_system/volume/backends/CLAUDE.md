@@ -46,6 +46,10 @@ checklist: `../CLAUDE.md` + `../DETAILS.md`.
 - **`list_directory` must feed `on_progress`; ❌ never `_on_progress`.** It's the pane's only "Loaded N files..."
   signal, so dropping it strands a big folder on "Opening folder...". `../../listing/DETAILS.md` § "Local listing
   progress".
+- **So must a copy SCAN** (`scan_for_copy_batch_with_progress`; SMB threads a `ScanTicker` through its recursion). It's
+  the transfer dialog's only climbing counter, AND the scan watchdog reads it as proof the device is answering: a
+  backend that scans in silence eventually gets cut off as unresponsive
+  (`write_operations/DETAILS.md` § "Bounding the scan").
 - **`LocalPosixVolume::write_from_stream` `sync_data`s each file** (+ best-effort parent-dir fsync) before returning:
   every cross-volume copy landing on local disk flows through it, and a bare `flush()` loses data on eject or sleep.
 - **`MtpVolume::get_metadata` lists the entire parent directory** (MTP has no single-file stat). Avoid in hot paths.

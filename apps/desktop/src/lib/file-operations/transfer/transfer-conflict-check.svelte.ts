@@ -20,7 +20,17 @@
 
 import { scanVolumeForConflicts, type SourceItemInput } from '$lib/tauri-commands'
 import { pluralize } from '$lib/utils/pluralize'
+import { withTimeout } from '$lib/utils/timing'
 import type { Logger } from '$lib/logging/logger'
+
+/** The frontend's own bound on the check, in ms.
+ *
+ *  The backend already answers or gives up within 30 s (`scan_volume_for_conflicts`),
+ *  so this is the second layer the codebase asks for on any path that can reach
+ *  a wedged volume: it catches an IPC call that never comes back at all. Sized
+ *  just above the backend's budget, so the backend's better-informed answer
+ *  wins every time it has one. */
+const CONFLICT_CHECK_TIMEOUT_MS = 35_000
 
 export interface TransferConflictCheckDeps {
   /** Destination volume id (the volume the dialog currently targets). */
@@ -57,14 +67,17 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
   // per-file dialog's file→folder warning.
   let hasTypeMismatchConflict = $state(false)
   let conflictNames = $state<string[]>([])
-  let isCheckingConflicts = $state(false)
-  let conflictCheckComplete = $state(false)
+  // Where the check has got to. `unknown` is the state that must never be
+  // collapsed into `answered`: this feeds a data-destroying decision, and an
+  // empty conflict list from a check that never ran looks exactly like a clean
+  // destination.
+  let status = $state<'idle' | 'checking' | 'answered' | 'unknown'>('idle')
 
   /** Checks for conflicts at the destination. */
   async function check(): Promise<void> {
-    if (deps.getDestroyed() || isCheckingConflicts || conflictCheckComplete) return
+    if (deps.getDestroyed() || status !== 'idle') return
 
-    isCheckingConflicts = true
+    status = 'checking'
     try {
       // Build source item info from the source paths. We extract the
       // filename from each path for name matching. The real per-item
@@ -84,13 +97,24 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
         }
       })
 
-      const foundConflicts = await scanVolumeForConflicts(
-        deps.getSelectedVolumeId(),
-        sourceItems,
-        deps.getEditedPath(),
-        deps.getSourceVolumeId(),
-        sourcePaths,
+      // `null` is the fallback, and no real answer can be null, so it reads
+      // unambiguously as "the call never came back".
+      const foundConflicts = await withTimeout(
+        scanVolumeForConflicts(
+          deps.getSelectedVolumeId(),
+          sourceItems,
+          deps.getEditedPath(),
+          deps.getSourceVolumeId(),
+          sourcePaths,
+        ),
+        CONFLICT_CHECK_TIMEOUT_MS,
+        null,
       )
+      if (foundConflicts === null) {
+        deps.log.warn('The conflict check did not come back within {ms}ms', { ms: CONFLICT_CHECK_TIMEOUT_MS })
+        status = 'unknown'
+        return
+      }
 
       // Classify each collision:
       //  - dir + dir  → a silent merge, not a conflict (informational).
@@ -104,7 +128,6 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
       totalConflictCount = realConflicts.length
       hasTypeMismatchConflict = realConflicts.some((c) => c.sourceIsDirectory !== c.destIsDirectory)
       conflictNames = realConflicts.map((c) => c.sourcePath)
-      conflictCheckComplete = true
 
       if (totalConflictCount > 0 || mergeFolderCount > 0) {
         deps.log.info('Found {count} {conflictsNoun} and {merges} folder merges at destination', {
@@ -113,12 +136,16 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
           merges: mergeFolderCount,
         })
       }
+      // Last, so nothing between here and the answer can throw us into `unknown`
+      // after we already have one.
+      status = 'answered'
     } catch (err) {
-      deps.log.error('Failed to check for conflicts: {error}', { error: err })
-      // Don't block the operation on conflict check failure
-      conflictCheckComplete = true
-    } finally {
-      isCheckingConflicts = false
+      // The check couldn't run. It doesn't block the transfer — the backend
+      // arbitrates every clash it meets at write time — but it must NOT be
+      // recorded as an answer: "no conflicts found" and "nobody looked" are
+      // different things to show someone about to overwrite their files.
+      deps.log.error('Could not check for conflicts: {error}', { error: err })
+      status = 'unknown'
     }
   }
 
@@ -137,10 +164,15 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
       return conflictNames
     },
     get isCheckingConflicts() {
-      return isCheckingConflicts
+      return status === 'checking'
     },
+    /** The check ran and this is what it found. */
     get conflictCheckComplete() {
-      return conflictCheckComplete
+      return status === 'answered'
+    },
+    /** The check couldn't run, so nothing is known about the destination. */
+    get conflictCheckUnknown() {
+      return status === 'unknown'
     },
   }
 }

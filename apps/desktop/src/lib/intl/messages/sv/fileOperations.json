@@ -237,6 +237,22 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.transferDialog.scanUnresponsive": "Källan svarar inte, så mer än så här kunde vi inte räkna.",
+  "@fileOperations.transferDialog.scanUnresponsive": {
+    "sourceHash": "03d95e0"
+  },
+  "fileOperations.transferDialog.scanStopped": "Vi kunde inte mäta klart källan, så mer än så här kunde vi inte räkna.",
+  "@fileOperations.transferDialog.scanStopped": {
+    "sourceHash": "aac156c"
+  },
+  "fileOperations.transferDialog.scanRetry": "Försök igen",
+  "@fileOperations.transferDialog.scanRetry": {
+    "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.conflictsUnknown": "Vi kunde inte kolla vad som redan finns på målplatsen. Du får en fråga om allt som krockar.",
+  "@fileOperations.transferDialog.conflictsUnknown": {
+    "sourceHash": "1bc997a"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Söker efter konflikter...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

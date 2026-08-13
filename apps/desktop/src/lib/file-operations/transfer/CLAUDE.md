@@ -36,6 +36,9 @@ counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`
   Never infer a stall from event timing — a wedge emits no events at all. The notice is a warning-toned `SectionCard`
   above the buttons; ❌ don't hand-pick a yellow, the tone token owns both themes. `DETAILS.md` § "The stalled-transfer
   notice".
+- **"Couldn't find out" is its own state in BOTH pre-confirm checks, ❌ never silence and ❌ never an empty answer.**
+  Rendering nothing is exactly what a clean destination renders, and this feeds an overwrite decision. `DETAILS.md` §
+  "When the dialog can't find out".
 - **Rollback / Cancel disable during the settle window** (`disabled={isCancelling || operationSettled}`), and a cancel
   close waits for both `write-cancelled` AND `write-settled` — ❌ but never as the ONLY exit: `progress.dismiss()` backs
   a Close button that leaves at once.

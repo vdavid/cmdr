@@ -237,6 +237,22 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.transferDialog.scanUnresponsive": "A origem não está respondendo, então isso é tudo o que conseguimos contar.",
+  "@fileOperations.transferDialog.scanUnresponsive": {
+    "sourceHash": "03d95e0"
+  },
+  "fileOperations.transferDialog.scanStopped": "Não conseguimos terminar de medir a origem, então isso é tudo o que conseguimos contar.",
+  "@fileOperations.transferDialog.scanStopped": {
+    "sourceHash": "aac156c"
+  },
+  "fileOperations.transferDialog.scanRetry": "Tentar de novo",
+  "@fileOperations.transferDialog.scanRetry": {
+    "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.conflictsUnknown": "Não conseguimos verificar o que já está no destino. Vamos perguntar sobre cada conflito.",
+  "@fileOperations.transferDialog.conflictsUnknown": {
+    "sourceHash": "1bc997a"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Verificando conflitos...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

@@ -237,6 +237,22 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.transferDialog.scanUnresponsive": "A forrás nem válaszol, ennél többet nem tudtunk megszámolni.",
+  "@fileOperations.transferDialog.scanUnresponsive": {
+    "sourceHash": "03d95e0"
+  },
+  "fileOperations.transferDialog.scanStopped": "Nem tudtuk végigmérni a forrást, ennél többet nem tudtunk megszámolni.",
+  "@fileOperations.transferDialog.scanStopped": {
+    "sourceHash": "aac156c"
+  },
+  "fileOperations.transferDialog.scanRetry": "Újrapróbálás",
+  "@fileOperations.transferDialog.scanRetry": {
+    "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.conflictsUnknown": "Nem tudtuk megnézni, mi van már a célhelyen. Minden ütközésnél rákérdezünk.",
+  "@fileOperations.transferDialog.conflictsUnknown": {
+    "sourceHash": "1bc997a"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Ütközések keresése…",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

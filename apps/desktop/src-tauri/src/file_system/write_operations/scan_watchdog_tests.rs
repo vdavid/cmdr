@@ -101,6 +101,9 @@ async fn a_walk_that_keeps_counting_is_left_alone() {
 
     // Six budgets' worth of wall clock, fed a count every half budget.
     for tick in 1..=12u64 {
+        // allowed-test-sleep: the WAIT is the subject. The claim is that a walk
+        // counting something every half budget is never cut off, which can only be
+        // shown by letting several budgets of real time pass between counts.
         tokio::time::sleep(TEST_LIMIT / 2).await;
         watchdog.note_progress(tick as usize, 0, tick * 1_024);
     }
@@ -134,7 +137,9 @@ async fn a_worker_that_claims_first_keeps_the_watchdog_quiet() {
 
     assert!(watchdog.claim_outcome(), "the worker takes the outcome first");
 
-    // Well past the budget: the watchdog has woken, seen the claim, and stopped.
+    // allowed-test-sleep: the point is that nothing happens across a span in which
+    // the watchdog woke, saw the claim, and stopped. There's no condition to wait
+    // on, because a correct watchdog produces no event at all.
     tokio::time::sleep(TEST_LIMIT * 4).await;
 
     assert!(
