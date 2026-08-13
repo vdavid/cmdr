@@ -5,6 +5,7 @@
     import { trapFocus } from './focus-trap'
     import type { SoftDialogId } from './dialog-registry'
     import { registerDialogClose, unregisterDialogClose } from './dialog-close-registry'
+    import { markDialogOpen, markDialogClosed } from './open-dialogs.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -416,7 +417,10 @@
 
     onMount(async () => {
         previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
-        if (dialogId) void notifyDialogOpened(dialogId)
+        if (dialogId) {
+            markDialogOpen(dialogId)
+            void notifyDialogOpened(dialogId)
+        }
         await tick()
         overlayElement?.focus()
 
@@ -436,7 +440,10 @@
         heightObserver?.disconnect()
         heightObserver = null
         if (growDownward) window.removeEventListener('resize', anchorToCurrentCenter)
-        if (dialogId) void notifyDialogClosed(dialogId)
+        if (dialogId) {
+            markDialogClosed(dialogId)
+            void notifyDialogClosed(dialogId)
+        }
         // Restore focus to whatever had it before the dialog opened. The connected-check
         // skips elements that were unmounted while the dialog was up (e.g., a rename input).
         if (previousActiveElement?.isConnected) {
