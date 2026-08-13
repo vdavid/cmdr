@@ -37,8 +37,12 @@ Test folders are created at `_ignored/test-data/folder with XXXXX files`.
 ```bash
 cd /path/to/cmdr
 
-# Kill any existing dev server
-pkill -f "cmdr" || true
+# Stop any dev session already holding this worktree's data dir. ❌ Never widen this
+# to `pkill -f cmdr`: every checkout lives under a path containing "cmdr", so that
+# reaches every Cmdr on the machine, E2E shards included. See
+# `apps/desktop/test/e2e-playwright/DETAILS.md` § "Running on macOS" for why no argv
+# pattern can single one out, and prefer killing a pid you started.
+pgrep -fl "$PWD/.*/Cmdr"   # look first; kill only the pid you recognize
 
 # Start with benchmarking enabled
 RUSTY_COMMANDER_BENCHMARK=1 VITE_BENCHMARK=1 pnpm tauri dev 2>&1 | tee benchmark.log

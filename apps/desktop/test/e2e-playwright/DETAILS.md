@@ -85,21 +85,33 @@ pnpm test:e2e:playwright:build
 #   `ensureMcpClient` with "MCP server not running", which reads like a code failure
 #   and isn't. The checker lane sets both; a hand launch has to as well, and the SAME
 #   port has to be exported for the test run below (`mcp-client.ts` prefers the pin).
+#
+# Launch in the BACKGROUND and record the pid, so the cleanup below can target
+# this app and nothing else. `wait` keeps the terminal attached to the app's
+# output exactly as a foreground launch would.
 CMDR_E2E_MODE=1 CMDR_DATA_DIR=/tmp/cmdr-e2e-data CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures \
-    CMDR_MCP_ENABLED=true CMDR_MCP_PORT=18473 /path/to/target/.../release/Cmdr
+    CMDR_MCP_ENABLED=true CMDR_MCP_PORT=18473 /path/to/target/.../release/Cmdr &
+echo $! > /tmp/cmdr-e2e-app.pid && wait
 
 # Run the tests (app must be running with socket at /tmp/tauri-playwright.sock).
-# Chain `&& pkill -f 'target.*Cmdr'` so the manually-launched app is torn down
-# when the run finishes — tauri-playwright doesn't manage app lifecycle (it
-# just talks to the socket), so without this you leak a Cmdr process every run.
+# Chain the `kill` so the manually-launched app is torn down when the run
+# finishes — tauri-playwright doesn't manage app lifecycle (it just talks to the
+# socket), so without this you leak a Cmdr process every run.
 CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures CMDR_MCP_PORT=18473 pnpm test:e2e:playwright \
-    ; pkill -f 'target.*Cmdr'
+    ; kill "$(cat /tmp/cmdr-e2e-app.pid)"
 ```
 
 When running manually, the test suite does NOT launch the app. The app must be started with `CMDR_E2E_START_PATH`
-pointing to a fixture directory created by `e2e-shared/fixtures.ts`. **Always pair the launch with a `pkill` step** —
+pointing to a fixture directory created by `e2e-shared/fixtures.ts`. **Always pair the launch with a cleanup step** —
 neither the test runner nor `closeScopedWindow` kills the main process, so leaks accumulate fast across iterations. The
 `;` (instead of `&&`) keeps the cleanup running even when the tests fail.
+
+❌ **Never clean up with `pkill -f 'target.*Cmdr'` (or any other argv pattern).** Every Cmdr on the machine is launched
+from the same `target/<triple>/release/Cmdr` argv — the checker's three E2E shards included — and the only thing that
+distinguishes them is their ENVIRONMENT (`CMDR_INSTANCE_ID`, `CMDR_DATA_DIR`, MCP port). `pkill -f` matches the command
+line, never the environment (verified on macOS 15, `pgrep -f` against an env value matches nothing, 2026-08-13), so
+there is no pattern that reaches your app and spares a suite running in another worktree. Broad `pkill` has SIGTERM'd a
+shard mid-test and produced 38 red tests, none of them real. Kill the pid you started.
 
 ## Running a single spec
 
@@ -107,8 +119,8 @@ When iterating on one spec, **run only that spec**. The full suite takes ~10 min
 when the broken test takes the app down with it (subsequent specs fail with connection errors). Save the full run for
 the final CI-green check.
 
-With the app already running (see "Manually" above), filter by file or by name. The same `; pkill -f 'target.*Cmdr'`
-cleanup applies — chain it after every iteration so the next launch isn't a stale process.
+With the app already running (see "Manually" above), filter by file or by name. The same `; kill "$(cat …)"` cleanup
+applies — chain it after every iteration so the next launch isn't a stale process.
 
 `pnpm test:e2e:playwright` pins the project as `--project=tauri` (the `=` form), so a positional spec path passes
 straight through. ❌ Don't change it to `--project tauri`: playwright's `--project` takes multiple values, so the space
@@ -119,11 +131,11 @@ cd apps/desktop
 
 # By file path
 CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures CMDR_MCP_PORT=18473 pnpm test:e2e:playwright \
-    test/e2e-playwright/brief-cursor-visibility.spec.ts ; pkill -f 'target.*Cmdr'
+    test/e2e-playwright/brief-cursor-visibility.spec.ts ; kill "$(cat /tmp/cmdr-e2e-app.pid)"
 
 # By test-name substring (matches `test('...')` and `describe('...')` titles)
 CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures CMDR_MCP_PORT=18473 pnpm test:e2e:playwright \
-    --grep "cursor stays in view" ; pkill -f 'target.*Cmdr'
+    --grep "cursor stays in view" ; kill "$(cat /tmp/cmdr-e2e-app.pid)"
 ```
 
 The checker invocation (`pnpm check desktop-e2e-playwright`) doesn't support filtering: it always runs the whole suite.
@@ -148,10 +160,9 @@ bug.
 in-flight `webview.eval()` hangs to the 15 s test timeout, then every later spec fails in ~60 ms on a socket with no
 listener. Read the shard log's app section: it stops mid-test, with no panic and no crash report, because the app was
 signalled rather than crashed. Then ask who signalled it — a second suite on the same machine used to, through a fixed
-MCP port (fixed since; `scripts/check/checks/DETAILS.md` § "Nothing a shard owns is shared between runs"), and the hand
-launch's `pkill -f 'target.*Cmdr'` below reaches every shard of a running checker suite just as well. That cleanup is
-right for the usual hand launch; when a suite may be running (another worktree, another agent), kill the pid you started
-instead.
+MCP port (fixed since; `scripts/check/checks/DETAILS.md` § "Nothing a shard owns is shared between runs"), and a broad
+`pkill -f 'target.*Cmdr'` reaches every shard of a running checker suite just as well. The hand-launch recipe above
+kills a recorded pid for exactly this reason.
 
 Two `/tmp` paths still belong to a shard NAME rather than a run, so a concurrent suite overwrites them: the fixture
 hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`) and the JSON report (`/tmp/cmdr-e2e-report-<shard>.json`). Recordings

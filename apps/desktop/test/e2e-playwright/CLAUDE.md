@@ -6,7 +6,9 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcod
 ## Must-knows
 
 - **The suite connects to a running app, it never launches one**: `pnpm check desktop-e2e-playwright` runs the whole
-  lifecycle, and a hand launch ALWAYS chains `; pkill -f 'target.*Cmdr'`. Recipes: DETAILS § "Running on macOS".
+  lifecycle, and a hand launch ALWAYS records its pid and chains `; kill "$(cat /tmp/cmdr-e2e-app.pid)"`. ❌ Never
+  `pkill -f 'target.*Cmdr'`: every Cmdr shares that argv (shards differ only by ENV, which `pkill -f` can't see), so it
+  SIGTERMs a concurrent checker suite mid-test. Recipes: DETAILS § "Running on macOS".
 - **Run only the spec you're iterating on** (the full suite is ~10 min and one broken test cascades). ❌ Keep
   `--project=tauri` in the `=` form; a space swallows the spec path.
 - **Scattered failures across unrelated specs, different every run, mean machine saturation, not a regression.**

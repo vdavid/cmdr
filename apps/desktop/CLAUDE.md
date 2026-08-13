@@ -22,7 +22,7 @@ in `DETAILS.md`. Feature must-knows in the colocated `CLAUDE.md`s.
   mock flags: `DETAILS.md` § Debugging.
 - **Run Playwright E2E via `pnpm check desktop-e2e-playwright`** (full lifecycle: build, launch, run, teardown). Raw
   `npx playwright test` fails with `ECONNREFUSED` — the suite connects to a running app over a socket, it doesn't launch
-  one. Single-spec iteration and the manual launch+`pkill` recipe: `test/e2e-playwright/CLAUDE.md`.
+  one. Single-spec iteration and the manual launch + kill-the-recorded-pid recipe: `test/e2e-playwright/CLAUDE.md`.
 - **Gating behavior on an automated run? Call `isE2eRun()` from `$lib/app-mode`, ❌ never `getAppMode() === 'e2e'`.**
   There are four app modes (`prod` / `dev` / `e2e` / `capture`, driving the plain / pink `DEV MODE` / blue `E2E MODE` /
   yellow `SCREENSHOT` title bars), and `capture` is a REFINEMENT of `e2e`, not an alternative: the i18n screenshot run
