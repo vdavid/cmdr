@@ -13,22 +13,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   addToastMock,
   dismissToastMock,
-  loadSettingsMock,
-  saveSettingsMock,
+  getSettingMock,
+  setSettingMock,
+  forceSaveMock,
   invokeMock,
   getVersionMock,
   pluginCheckMock,
 } = vi.hoisted(() => ({
   addToastMock: vi.fn(),
   dismissToastMock: vi.fn(),
-  loadSettingsMock: vi.fn(() =>
-    Promise.resolve({
-      showHiddenFiles: true,
-      fullDiskAccessChoice: 'notAskedYet' as const,
-      isOnboarded: false,
-    }),
-  ),
-  saveSettingsMock: vi.fn(() => Promise.resolve()),
+  // `advanced.updateCheckInterval` for the poll loop, `onboarding.completed` for the gate.
+  getSettingMock: vi.fn((id: string) => (id === 'onboarding.completed' ? false : 60 * 60 * 1000)),
+  setSettingMock: vi.fn(),
+  forceSaveMock: vi.fn(() => Promise.resolve(true)),
   invokeMock: vi.fn(),
   getVersionMock: vi.fn(() => Promise.resolve('0.0.0-test')),
   pluginCheckMock: vi.fn(),
@@ -39,14 +36,10 @@ vi.mock('$lib/ui/toast', () => ({
   dismissToast: dismissToastMock,
 }))
 
-vi.mock('$lib/settings-store', () => ({
-  loadSettings: loadSettingsMock,
-  saveSettings: saveSettingsMock,
-}))
-
-// The settings registry hook is only used by `startUpdateChecker`, but importing the module pulls it in.
 vi.mock('$lib/settings/settings-store', () => ({
-  getSetting: vi.fn(() => 60 * 60 * 1000),
+  getSetting: getSettingMock,
+  setSetting: setSettingMock,
+  forceSave: forceSaveMock,
   onSpecificSettingChange: vi.fn(() => () => {}),
 }))
 
@@ -121,16 +114,17 @@ describe('notifyOnboardingComplete', () => {
   beforeEach(() => {
     _resetUpdaterStateForTest()
     addToastMock.mockClear()
-    saveSettingsMock.mockClear()
+    setSettingMock.mockClear()
   })
 
   afterEach(() => {
     _resetUpdaterStateForTest()
   })
 
-  it('persists isOnboarded: true', async () => {
+  it('persists onboarding.completed: true, without waiting out the save debounce', async () => {
     await notifyOnboardingComplete()
-    expect(saveSettingsMock).toHaveBeenCalledWith({ isOnboarded: true })
+    expect(setSettingMock).toHaveBeenCalledWith('onboarding.completed', true)
+    expect(forceSaveMock).toHaveBeenCalledOnce()
   })
 
   it('triggers the toast when an update is already ready', async () => {

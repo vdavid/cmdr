@@ -1329,6 +1329,22 @@
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
+  "settings.onboarding.completed.label": "Introdução concluída",
+  "@settings.onboarding.completed.label": {
+    "sourceHash": "4730c4f"
+  },
+  "settings.onboarding.fullDiskAccessChoice.label": "Escolha de Acesso total ao disco",
+  "@settings.onboarding.fullDiskAccessChoice.label": {
+    "sourceHash": "4d73a2b"
+  },
+  "settings.onboarding.termsAcceptedVersion.label": "Versão dos termos aceitos",
+  "@settings.onboarding.termsAcceptedVersion.label": {
+    "sourceHash": "f4bdd97"
+  },
+  "settings.onboarding.termsAcceptedAt.label": "Termos aceitos em",
+  "@settings.onboarding.termsAcceptedAt.label": {
+    "sourceHash": "b35cf3b"
+  },
   "settings.advanced.updateCheckInterval.label": "Intervalo de verificação de atualizações",
   "@settings.advanced.updateCheckInterval.label": {
     "sourceHash": "91912bc"

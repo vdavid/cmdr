@@ -28,7 +28,7 @@ pub enum FullDiskAccessChoice {
 pub struct Settings {
     #[serde(alias = "listing.showHiddenFiles", default = "default_show_hidden")]
     pub show_hidden_files: bool,
-    #[serde(alias = "fullDiskAccessChoice", default)]
+    #[serde(alias = "onboarding.fullDiskAccessChoice", alias = "fullDiskAccessChoice", default)]
     pub full_disk_access_choice: FullDiskAccessChoice,
     #[serde(alias = "developer.mcpEnabled", default)]
     pub developer_mcp_enabled: Option<bool>,
@@ -234,8 +234,14 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         .and_then(|v| v.as_bool())
         .unwrap_or(true);
 
+    // The registry key, falling back to the pre-migration top-level name. The frontend's
+    // schema-4 migration moves the value, but Rust reads `settings.json` at startup,
+    // BEFORE any frontend code runs: without this fallback the very launch that performs
+    // the migration would read `NotAskedYet` and close the FDA gate on someone who already
+    // answered Deny, skipping drive indexing and the Downloads watcher for that launch.
     let full_disk_access_choice = json
-        .get("fullDiskAccessChoice")
+        .get("onboarding.fullDiskAccessChoice")
+        .or_else(|| json.get("fullDiskAccessChoice"))
         .and_then(|v| serde_json::from_value(v.clone()).ok())
         .unwrap_or_default();
 
@@ -604,6 +610,38 @@ fn parse_operation_log_retention_limits(contents: &str) -> OperationLogRetention
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The launch that performs the frontend's schema-4 migration reads `settings.json`
+    /// before the frontend runs, so it still sees the pre-migration key. Missing this
+    /// would close the FDA gate on a user who answered Deny long ago, silently skipping
+    /// drive indexing and the Downloads watcher for that launch.
+    #[test]
+    fn fda_choice_falls_back_to_the_pre_migration_key() {
+        let legacy = r#"{ "fullDiskAccessChoice": "deny" }"#;
+        assert_eq!(
+            parse_settings(legacy).unwrap().full_disk_access_choice,
+            FullDiskAccessChoice::Deny
+        );
+    }
+
+    #[test]
+    fn fda_choice_prefers_the_registry_key_once_the_migration_has_run() {
+        // Both present can't happen (the migration deletes the legacy key as it moves the
+        // value), but if it ever did, the registry key is the live one.
+        let both = r#"{ "onboarding.fullDiskAccessChoice": "allow", "fullDiskAccessChoice": "deny" }"#;
+        assert_eq!(
+            parse_settings(both).unwrap().full_disk_access_choice,
+            FullDiskAccessChoice::Allow
+        );
+    }
+
+    #[test]
+    fn fda_choice_defaults_to_not_asked_yet_when_absent() {
+        assert_eq!(
+            parse_settings("{}").unwrap().full_disk_access_choice,
+            FullDiskAccessChoice::NotAskedYet
+        );
+    }
 
     #[test]
     fn restricted_window_settings_parse_set_values() {

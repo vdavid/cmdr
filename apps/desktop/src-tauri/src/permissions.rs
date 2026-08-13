@@ -160,7 +160,7 @@ fn try_read_dir_parent(path: &Path) -> std::io::Result<()> {
 /// returns `None`, so the caller falls through to the real probe. The
 /// wizard distinguishes "denied" (user clicked Deny last step) vs
 /// "notgranted" (user clicked Allow but TCC still says no) via the
-/// persisted `fullDiskAccessChoice` setting; this mock only controls the
+/// persisted `onboarding.fullDiskAccessChoice` setting; this mock only controls the
 /// OS-level signal so all four step-2 banner branches can be tested without
 /// ever opening real System Settings.
 ///

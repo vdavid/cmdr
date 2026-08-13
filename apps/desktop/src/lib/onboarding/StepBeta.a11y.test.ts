@@ -15,27 +15,16 @@ import { closeWizard, resetForTesting, openWizard, setCurrentStep } from './onbo
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { TERMS_VERSION } from '$lib/legal/terms'
 
-const { storedSettings } = vi.hoisted(() => ({
-  storedSettings: { termsAcceptedVersion: null as string | null, termsAcceptedAt: null as string | null },
-}))
-
 vi.mock('$lib/tauri-commands', async () => {
   const real = await vi.importActual<typeof import('$lib/tauri-commands')>('$lib/tauri-commands')
   return { ...real, betaSignup: vi.fn(() => Promise.resolve({ kind: 'subscribed' as const })) }
 })
 
-vi.mock('$lib/settings-store', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return {
-    ...actual,
-    loadSettings: () => Promise.resolve({ ...storedSettings }),
-    saveSettings: () => Promise.resolve(true),
-  }
-})
-
 const settingsMap: Record<string, unknown> = {
   'analytics.enabled': true,
   'analytics.email': '',
+  'onboarding.termsAcceptedVersion': '',
+  'onboarding.termsAcceptedAt': '',
 }
 
 vi.mock('$lib/settings', async (importOriginal) => {
@@ -46,6 +35,8 @@ vi.mock('$lib/settings', async (importOriginal) => {
     setSetting: (id: string, value: unknown) => {
       settingsMap[id] = value
     },
+    // Overridden, not spread through: the real one reaches the plugin store.
+    forceSave: () => Promise.resolve(true),
   }
 })
 
@@ -74,8 +65,8 @@ function mountStep(): HTMLElement {
 beforeEach(() => {
   settingsMap['analytics.enabled'] = true
   settingsMap['analytics.email'] = ''
-  storedSettings.termsAcceptedVersion = null
-  storedSettings.termsAcceptedAt = null
+  settingsMap['onboarding.termsAcceptedVersion'] = ''
+  settingsMap['onboarding.termsAcceptedAt'] = ''
   closeWizard()
   resetForTesting()
   openWizard('force')
@@ -118,8 +109,8 @@ describe('StepBeta a11y', () => {
   })
 
   it('accepted-terms state has no a11y violations', async () => {
-    storedSettings.termsAcceptedVersion = TERMS_VERSION
-    storedSettings.termsAcceptedAt = '2026-08-10T09:00:00.000Z'
+    settingsMap['onboarding.termsAcceptedVersion'] = TERMS_VERSION
+    settingsMap['onboarding.termsAcceptedAt'] = '2026-08-10T09:00:00.000Z'
     const target = mountStep()
     await settle()
     await expectNoA11yViolations(target)

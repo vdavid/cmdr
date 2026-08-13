@@ -1328,6 +1328,22 @@
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
+  "settings.onboarding.completed.label": "Bevezetés befejezve",
+  "@settings.onboarding.completed.label": {
+    "sourceHash": "4730c4f"
+  },
+  "settings.onboarding.fullDiskAccessChoice.label": "Teljes lemezhozzáférés választása",
+  "@settings.onboarding.fullDiskAccessChoice.label": {
+    "sourceHash": "4d73a2b"
+  },
+  "settings.onboarding.termsAcceptedVersion.label": "Elfogadott feltételek verziója",
+  "@settings.onboarding.termsAcceptedVersion.label": {
+    "sourceHash": "f4bdd97"
+  },
+  "settings.onboarding.termsAcceptedAt.label": "Feltételek elfogadva ekkor",
+  "@settings.onboarding.termsAcceptedAt.label": {
+    "sourceHash": "b35cf3b"
+  },
   "settings.advanced.updateCheckInterval.label": "Frissítéskeresés gyakorisága",
   "@settings.advanced.updateCheckInterval.label": {
     "sourceHash": "91912bc"

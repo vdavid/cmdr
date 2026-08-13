@@ -81,6 +81,15 @@ access, and neither is visible from a passing type-check.
 - **`openOnboardingFromMenuOrPalette(ctx, source)`**: re-entry. Both `menu` and `palette` open at the first reachable
   step (`openWizard` enforces that per-source), so this only guards against re-opening an open wizard.
 
+**The gates read settings SYNCHRONOUSLY, which puts weight on the `settingsReady` gate.** `onboarding.completed` and
+`onboarding.fullDiskAccessChoice` are ordinary registry settings, so the gates just `getSetting` them: no store load, no
+await. That's only safe because `+layout.svelte` mounts `+page.svelte` behind `{#if settingsReady}` and starts the
+update checker after the same flag. A pre-init `getSetting` returns the REGISTRY DEFAULT, and here the defaults read as
+"never onboarded, never asked about Full Disk Access" — so moving either call ahead of that flag would re-run the wizard
+for everyone rather than fail loudly. The three writes (`onboarding.completed`, the FDA answer, the terms acceptance)
+pair `setSetting` with an awaited `forceSave()` for the mirror-image reason: they record something that happened, and
+the 500 ms save debounce would drop the record if the user quits right after answering.
+
 **Why a context of getters.** `StartupGatesContext` passes setters for the `$state` these flip and GETTERS for what they
 read. `maybeRunWhatsNew` runs at boot and again on wizard close, so a captured `showOnboarding` value would report the
 boot-time answer on the second call and the popup would either double-show or never show. Same rule as

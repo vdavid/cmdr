@@ -16,8 +16,9 @@ current version and acts on `decideWhatsNew`:
 - **Upgrade**: enabled → show `lastSeen < v <= current`, newest first, `max:5`, then stamp. Disabled → stamp silently.
 - **Downgrade**: rewrite `lastSeenVersion` to current, no popup. **Unchanged**: nothing.
 
-`isOnboarded` lives OUTSIDE the settings registry (`$lib/settings-store`), so the trigger can't read it via
-`getSetting`; the caller (`routes/(main)/+page.svelte`) passes it in via `loadSettings()`.
+The onboarded flag is the `onboarding.completed` setting. The trigger still takes it as a parameter rather than reading
+it: the decision stays pure, so the truth table above is unit-testable without a store. `startup-gates.ts` reads it and
+passes it in.
 
 `compareVersions` compares numerically per component: a string compare would order `0.10.0` before `0.9.0` and misread
 an upgrade as a downgrade.

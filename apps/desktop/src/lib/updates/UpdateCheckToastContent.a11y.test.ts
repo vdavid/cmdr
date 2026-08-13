@@ -17,10 +17,6 @@ vi.mock('$lib/ui/toast', () => ({
   addToast: vi.fn(),
   dismissToast: vi.fn(),
 }))
-vi.mock('$lib/settings-store', () => ({
-  loadSettings: vi.fn(() => Promise.resolve({ isOnboarded: false })),
-  saveSettings: vi.fn(() => Promise.resolve()),
-}))
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn(() => 60 * 60 * 1000),
   onSpecificSettingChange: vi.fn(() => () => {}),

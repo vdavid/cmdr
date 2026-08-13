@@ -146,6 +146,13 @@ export type FileSizeUnit = 'dynamic' | 'bytes' | 'kB' | 'MB' | 'GB'
 export type DateTimeFormat = 'system' | 'iso' | 'short' | 'custom'
 export type NetworkTimeoutMode = 'normal' | 'slow' | 'custom'
 export type ThemeMode = 'light' | 'dark' | 'system'
+/**
+ * The user's answer to the Full Disk Access step: `allow` if they clicked "Open System
+ * Settings" (presumably granted), `deny` if they declined, `notAskedYet` before the prompt
+ * has been shown. Rust reads the persisted value at startup (`settings/loader.rs`), so the
+ * three tokens are a wire contract, not just a frontend enum.
+ */
+export type FullDiskAccessChoice = 'allow' | 'deny' | 'notAskedYet'
 export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
 /** What ⌘V does in a pane when the clipboard holds no file URLs but has pasteable content (text, image, PDF). */
 export type PasteClipboardAsFileMode = 'doNothing' | 'createFile' | 'createFileAndRename'
@@ -476,6 +483,17 @@ export interface SettingsValues {
 
   // Onboarding (internal state, hidden from UI)
   'onboarding.upgradeNudgeShown': boolean
+  'onboarding.completed': boolean
+  'onboarding.fullDiskAccessChoice': FullDiskAccessChoice
+  /**
+   * Which terms the user accepted (`TERMS_VERSION` from `$lib/legal/terms`), or `''` if they
+   * never have. The version, not a boolean: consent to a superseded document isn't consent to
+   * the current one, so a terms change makes every stored acceptance stale and the onboarding
+   * beta step asks again.
+   */
+  'onboarding.termsAcceptedVersion': string
+  /** When that acceptance happened, as an ISO 8601 instant. `''` alongside an `''` version. */
+  'onboarding.termsAcceptedAt': string
 }
 
 export type SettingId = keyof SettingsValues

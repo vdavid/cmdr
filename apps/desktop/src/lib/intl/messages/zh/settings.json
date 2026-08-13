@@ -1327,6 +1327,22 @@
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
+  "settings.onboarding.completed.label": "已完成引导",
+  "@settings.onboarding.completed.label": {
+    "sourceHash": "4730c4f"
+  },
+  "settings.onboarding.fullDiskAccessChoice.label": "完全磁盘访问权限的选择",
+  "@settings.onboarding.fullDiskAccessChoice.label": {
+    "sourceHash": "4d73a2b"
+  },
+  "settings.onboarding.termsAcceptedVersion.label": "已接受的条款版本",
+  "@settings.onboarding.termsAcceptedVersion.label": {
+    "sourceHash": "f4bdd97"
+  },
+  "settings.onboarding.termsAcceptedAt.label": "接受条款的时间",
+  "@settings.onboarding.termsAcceptedAt.label": {
+    "sourceHash": "b35cf3b"
+  },
   "settings.advanced.updateCheckInterval.label": "更新检查间隔",
   "@settings.advanced.updateCheckInterval.label": {
     "sourceHash": "91912bc"

@@ -137,10 +137,6 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 // Mock settings-store to avoid Tauri event API dependency in tests
-vi.mock('$lib/settings-store', () => ({
-  loadSettings: vi.fn().mockResolvedValue({}),
-  saveSettings: vi.fn().mockResolvedValue(undefined),
-}))
 
 // Mock $lib/settings to avoid @tauri-apps/plugin-store dependency (used by network-store via initializeSettings)
 vi.mock('$lib/settings', () => ({

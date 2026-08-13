@@ -14,8 +14,7 @@
 import { isForceOnboarding, checkFullDiskAccess } from '$lib/tauri-commands'
 import { openWizard as openOnboardingWizard } from '$lib/onboarding/onboarding-state.svelte'
 import { runWhatsNewStartupTrigger } from '$lib/whats-new/whats-new-trigger.svelte'
-import { loadSettings, saveSettings } from '$lib/settings-store'
-import { getSetting, setSetting } from '$lib/settings'
+import { forceSave, getSetting, setSetting } from '$lib/settings'
 import { isE2eRun } from '$lib/app-mode'
 import { notifyOnboardingComplete } from '$lib/updates/updater.svelte'
 import { isMacOS } from '$lib/shortcuts/key-capture'
@@ -50,13 +49,10 @@ export interface StartupGatesContext {
  */
 export async function resolveOnboardingMount(ctx: StartupGatesContext): Promise<void> {
   const forceOnboarding = await isForceOnboarding().catch(() => false)
-  const settings = await loadSettings()
   const hasFda = await checkFullDiskAccess()
-  const wizardCtx = {
-    fullDiskAccessChoice: settings.fullDiskAccessChoice,
-    isOnboarded: settings.isOnboarded,
-    hasFda,
-  }
+  const fullDiskAccessChoice = getSetting('onboarding.fullDiskAccessChoice')
+  const isOnboarded = getSetting('onboarding.completed')
+  const wizardCtx = { fullDiskAccessChoice, isOnboarded, hasFda }
 
   if (forceOnboarding) {
     openOnboardingWizard('force', wizardCtx)
@@ -68,12 +64,13 @@ export async function resolveOnboardingMount(ctx: StartupGatesContext): Promise<
   if (hasFda) {
     // Granted-now: mirror the setting if it diverged (covers OS-side toggles), then
     // either skip or mark onboarded based on the `isOnboarded` flag.
-    if (settings.fullDiskAccessChoice !== 'allow') {
-      if (!(await saveSettings({ fullDiskAccessChoice: 'allow' }))) {
-        log.warn('Could not mirror fullDiskAccessChoice=allow; FDA may re-prompt on next launch')
+    if (fullDiskAccessChoice !== 'allow') {
+      setSetting('onboarding.fullDiskAccessChoice', 'allow')
+      if (!(await forceSave())) {
+        log.warn('Could not mirror onboarding.fullDiskAccessChoice=allow; FDA may re-prompt on next launch')
       }
     }
-    if (!settings.isOnboarded) {
+    if (!isOnboarded) {
       // Pre-wizard users who granted FDA before the wizard existed: unblock the
       // update toast by marking them onboarded.
       await notifyOnboardingComplete()
@@ -83,7 +80,7 @@ export async function resolveOnboardingMount(ctx: StartupGatesContext): Promise<
     return
   }
 
-  if (settings.fullDiskAccessChoice === 'deny' && settings.isOnboarded) {
+  if (fullDiskAccessChoice === 'deny' && isOnboarded) {
     // User explicitly denied and already finished onboarding. Don't re-prompt.
     ctx.showApp()
     maybeFireUpgradeNudge()
@@ -122,7 +119,7 @@ export function maybeFireUpgradeNudge(): void {
 }
 
 /**
- * Runs the automatic "What's new" post-update check. Reads `isOnboarded` from settings
+ * Runs the automatic "What's new" post-update check. Reads `onboarding.completed` from settings
  * and the live startup-modal flags, then hands off to the pure decision in
  * `whats-new-trigger`. Called once after onboarding resolves and re-attempted when the
  * onboarding wizard closes (mirroring the update-toast re-attempt in `updater.svelte.ts`).
@@ -136,9 +133,8 @@ export function maybeFireUpgradeNudge(): void {
  */
 export async function maybeRunWhatsNew(ctx: StartupGatesContext, force = false): Promise<void> {
   if (!force && isE2eRun()) return
-  const settings = await loadSettings()
   await runWhatsNewStartupTrigger({
-    onboarded: settings.isOnboarded,
+    onboarded: getSetting('onboarding.completed'),
     onboardingShowing: ctx.isOnboardingVisible(),
     otherStartupModalOpen: ctx.isOtherStartupModalOpen(),
   })
@@ -156,11 +152,10 @@ export async function openOnboardingFromMenuOrPalette(
   source: 'menu' | 'palette',
 ): Promise<void> {
   if (ctx.isOnboardingVisible()) return
-  const settings = await loadSettings()
   const hasFda = await checkFullDiskAccess()
   openOnboardingWizard(source, {
-    fullDiskAccessChoice: settings.fullDiskAccessChoice,
-    isOnboarded: settings.isOnboarded,
+    fullDiskAccessChoice: getSetting('onboarding.fullDiskAccessChoice'),
+    isOnboarded: getSetting('onboarding.completed'),
     hasFda,
   })
   ctx.setOnboardingVisible(true)

@@ -1331,6 +1331,22 @@
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
+  "settings.onboarding.completed.label": "Einführung abgeschlossen",
+  "@settings.onboarding.completed.label": {
+    "sourceHash": "4730c4f"
+  },
+  "settings.onboarding.fullDiskAccessChoice.label": "Auswahl für Vollen Festplattenzugriff",
+  "@settings.onboarding.fullDiskAccessChoice.label": {
+    "sourceHash": "4d73a2b"
+  },
+  "settings.onboarding.termsAcceptedVersion.label": "Version der akzeptierten Bedingungen",
+  "@settings.onboarding.termsAcceptedVersion.label": {
+    "sourceHash": "f4bdd97"
+  },
+  "settings.onboarding.termsAcceptedAt.label": "Bedingungen akzeptiert am",
+  "@settings.onboarding.termsAcceptedAt.label": {
+    "sourceHash": "b35cf3b"
+  },
   "settings.advanced.updateCheckInterval.label": "Intervall für Update-Suche",
   "@settings.advanced.updateCheckInterval.label": {
     "sourceHash": "91912bc"

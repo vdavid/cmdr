@@ -95,8 +95,8 @@ When a gate opens, the helper re-attempts the toast; if the download finished du
 - `@tauri-apps/api/core` `invoke()` (macOS custom commands).
 - `@tauri-apps/plugin-updater` `check()` / `downloadAndInstall()` (non-macOS, dynamically imported).
 - `@tauri-apps/plugin-process` `relaunch()`; `@tauri-apps/api/app` `getVersion()`.
-- `$lib/settings/settings-store` (`getSetting`, `onSpecificSettingChange`); `$lib/settings-store` (`loadSettings`,
-  `saveSettings` for `isOnboarded`); `$lib/logging/logger` (`getAppLogger`).
+- `$lib/settings/settings-store` (`getSetting`, `setSetting`, `forceSave`, `onSpecificSettingChange`; `forceSave` is
+  what makes the `onboarding.completed` write survive an immediate quit); `$lib/logging/logger` (`getAppLogger`).
 
 ## i18n
 

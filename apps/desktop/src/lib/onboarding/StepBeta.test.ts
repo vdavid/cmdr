@@ -21,37 +21,26 @@ import { mount, tick, unmount, flushSync } from 'svelte'
 
 // `vi.mock` calls are hoisted above module-level `const`s, so any value a factory closes
 // over must come from `vi.hoisted` (which runs first). The settings map + spies live here.
-const { betaSignupMock, settingsMap, setSetting, storedSettings, loadSettingsMock, saveSettingsMock } = vi.hoisted(
-  () => {
-    const settingsMap: Record<string, unknown> = {
-      'analytics.enabled': true,
-      'analytics.email': '',
-    }
-    // The `$lib/settings-store` store (separate from the registry above): what the wizard
-    // persists the terms acceptance into.
-    const storedSettings: Record<string, unknown> = {
-      showHiddenFiles: true,
-      fullDiskAccessChoice: 'notAskedYet',
-      isOnboarded: false,
-      termsAcceptedVersion: null,
-      termsAcceptedAt: null,
-    }
-    return {
-      betaSignupMock: vi.fn(() => Promise.resolve({ kind: 'subscribed' as const })),
-      settingsMap,
-      // `setSetting` mutates the map AND records the call so we can assert which ids got written.
-      setSetting: vi.fn((id: string, value: unknown) => {
-        settingsMap[id] = value
-      }),
-      storedSettings,
-      loadSettingsMock: vi.fn(() => Promise.resolve({ ...storedSettings })),
-      saveSettingsMock: vi.fn((patch: Record<string, unknown>) => {
-        Object.assign(storedSettings, patch)
-        return Promise.resolve(true)
-      }),
-    }
-  },
-)
+const { betaSignupMock, settingsMap, setSetting, forceSaveMock } = vi.hoisted(() => {
+  const settingsMap: Record<string, unknown> = {
+    'analytics.enabled': true,
+    'analytics.email': '',
+    // Where the terms acceptance lands, alongside every other setting.
+    'onboarding.termsAcceptedVersion': '',
+    'onboarding.termsAcceptedAt': '',
+  }
+  return {
+    betaSignupMock: vi.fn(() => Promise.resolve({ kind: 'subscribed' as const })),
+    settingsMap,
+    // `setSetting` mutates the map AND records the call so we can assert which ids got written.
+    setSetting: vi.fn((id: string, value: unknown) => {
+      settingsMap[id] = value
+    }),
+    forceSaveMock: vi.fn(() => {
+      return Promise.resolve(true)
+    }),
+  }
+})
 
 // Spread the real barrel and override only `betaSignup`, so other `$lib/tauri-commands`
 // exports the mounted tree might reach stay intact (a barrel mock that drops them silently
@@ -69,17 +58,14 @@ vi.mock('$lib/settings', async (importOriginal) => {
     setSetting: (id: string, value: unknown) => {
       setSetting(id, value)
     },
+    // Overridden, not spread through: the real one reaches the plugin store.
+    forceSave: forceSaveMock,
   }
 })
 
 vi.mock('$lib/settings/settings-store', () => ({
   onSpecificSettingChange: () => () => {},
 }))
-
-vi.mock('$lib/settings-store', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return { ...actual, loadSettings: loadSettingsMock, saveSettings: saveSettingsMock }
-})
 
 import StepBeta from './StepBeta.svelte'
 import { closeWizard, resetForTesting, openWizard, setCurrentStep, getOnboardingState } from './onboarding-state.svelte'
@@ -125,11 +111,10 @@ describe('StepBeta', () => {
   beforeEach(() => {
     settingsMap['analytics.enabled'] = true
     settingsMap['analytics.email'] = ''
-    storedSettings.termsAcceptedVersion = null
-    storedSettings.termsAcceptedAt = null
+    settingsMap['onboarding.termsAcceptedVersion'] = ''
+    settingsMap['onboarding.termsAcceptedAt'] = ''
     setSetting.mockClear()
-    loadSettingsMock.mockClear()
-    saveSettingsMock.mockClear()
+    forceSaveMock.mockClear()
     betaSignupMock.mockClear()
     betaSignupMock.mockResolvedValue({ kind: 'subscribed' as const })
     // jsdom has no layout engine, so `scrollIntoView` doesn't exist. The blocked-click path
@@ -316,32 +301,34 @@ describe('StepBeta', () => {
   it('persists the accepted terms version and the acceptance timestamp', async () => {
     mounted = mountStep()
     await waitForAsync()
-    saveSettingsMock.mockClear()
+    setSetting.mockClear()
 
     await acceptTerms(mounted.target)
 
-    expect(saveSettingsMock).toHaveBeenCalledTimes(1)
-    const patch = saveSettingsMock.mock.calls[0]?.[0] as { termsAcceptedVersion: string; termsAcceptedAt: string }
-    expect(patch.termsAcceptedVersion).toBe(TERMS_VERSION)
+    expect(setSetting).toHaveBeenCalledWith('onboarding.termsAcceptedVersion', TERMS_VERSION)
+    const acceptedAt = settingsMap['onboarding.termsAcceptedAt'] as string
     // An ISO 8601 instant, so a later dispute can name the moment, not just the day.
-    expect(new Date(patch.termsAcceptedAt).toISOString()).toBe(patch.termsAcceptedAt)
+    expect(new Date(acceptedAt).toISOString()).toBe(acceptedAt)
+    // Consent doesn't wait out the 500 ms save debounce.
+    expect(forceSaveMock).toHaveBeenCalled()
   })
 
   it('clearing the checkbox clears the stored acceptance', async () => {
     mounted = mountStep()
     await waitForAsync()
     await acceptTerms(mounted.target)
-    saveSettingsMock.mockClear()
+    setSetting.mockClear()
 
     await acceptTerms(mounted.target)
 
-    expect(saveSettingsMock).toHaveBeenCalledWith({ termsAcceptedVersion: null, termsAcceptedAt: null })
+    expect(setSetting).toHaveBeenCalledWith('onboarding.termsAcceptedVersion', '')
+    expect(setSetting).toHaveBeenCalledWith('onboarding.termsAcceptedAt', '')
     expect(getOnboardingState().footerOverride?.[0].blockedReason).toBe('Accept the terms and conditions to continue.')
   })
 
   it('pre-checks the box when the CURRENT terms version was already accepted', async () => {
-    storedSettings.termsAcceptedVersion = TERMS_VERSION
-    storedSettings.termsAcceptedAt = '2026-08-10T09:00:00.000Z'
+    settingsMap['onboarding.termsAcceptedVersion'] = TERMS_VERSION
+    settingsMap['onboarding.termsAcceptedAt'] = '2026-08-10T09:00:00.000Z'
     mounted = mountStep()
     await waitForAsync()
 
@@ -350,8 +337,8 @@ describe('StepBeta', () => {
   })
 
   it('asks again when the stored acceptance names an older terms version', async () => {
-    storedSettings.termsAcceptedVersion = '2020-01-01'
-    storedSettings.termsAcceptedAt = '2020-01-01T09:00:00.000Z'
+    settingsMap['onboarding.termsAcceptedVersion'] = '2020-01-01'
+    settingsMap['onboarding.termsAcceptedAt'] = '2020-01-01T09:00:00.000Z'
     mounted = mountStep()
     await waitForAsync()
 

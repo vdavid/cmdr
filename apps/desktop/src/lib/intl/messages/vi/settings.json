@@ -1325,6 +1325,22 @@
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
+  "settings.onboarding.completed.label": "Đã hoàn tất phần giới thiệu",
+  "@settings.onboarding.completed.label": {
+    "sourceHash": "4730c4f"
+  },
+  "settings.onboarding.fullDiskAccessChoice.label": "Lựa chọn Quyền truy cập toàn bộ đĩa",
+  "@settings.onboarding.fullDiskAccessChoice.label": {
+    "sourceHash": "4d73a2b"
+  },
+  "settings.onboarding.termsAcceptedVersion.label": "Phiên bản điều khoản đã chấp nhận",
+  "@settings.onboarding.termsAcceptedVersion.label": {
+    "sourceHash": "f4bdd97"
+  },
+  "settings.onboarding.termsAcceptedAt.label": "Chấp nhận điều khoản lúc",
+  "@settings.onboarding.termsAcceptedAt.label": {
+    "sourceHash": "b35cf3b"
+  },
   "settings.advanced.updateCheckInterval.label": "Khoảng thời gian kiểm tra cập nhật",
   "@settings.advanced.updateCheckInterval.label": {
     "sourceHash": "91912bc"

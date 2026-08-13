@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { forceSave, setSetting } from '$lib/settings'
     import { onMount } from 'svelte'
     import {
         checkFullDiskAccess,
@@ -8,7 +9,6 @@
         openPrivacySettings,
         startIndexingAfterFdaDecision,
     } from '$lib/tauri-commands'
-    import { saveSettings } from '$lib/settings-store'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import OnboardingStepShell from './OnboardingStepShell.svelte'
@@ -135,8 +135,9 @@
         } catch (error) {
             log.warn('FDA re-probe before opening Settings failed: {error}', { error })
         }
-        if (!(await saveSettings({ fullDiskAccessChoice: 'allow' }))) {
-            log.warn('Could not persist fullDiskAccessChoice=allow; the choice may not survive a restart')
+        setSetting('onboarding.fullDiskAccessChoice', 'allow')
+        if (!(await forceSave())) {
+            log.warn('Could not persist onboarding.fullDiskAccessChoice=allow; the choice may not survive a restart')
         }
         try {
             await openPrivacySettings()
@@ -152,8 +153,9 @@
     }
 
     async function handleDeny() {
-        if (!(await saveSettings({ fullDiskAccessChoice: 'deny' }))) {
-            log.warn('Could not persist fullDiskAccessChoice=deny; the choice may not survive a restart')
+        setSetting('onboarding.fullDiskAccessChoice', 'deny')
+        if (!(await forceSave())) {
+            log.warn('Could not persist onboarding.fullDiskAccessChoice=deny; the choice may not survive a restart')
         }
         // Indexing was deferred at app launch (FDA gate). Now that the user has decided,
         // start it within this session so they don't need to restart for the index to

@@ -132,12 +132,11 @@ Mechanics (`settings-store.ts`):
   per-worktree dev, E2E) that would read the real production store file; the helper asks the backend
   (`get_isolated_store_path`) for an absolute path under the resolved data dir so the frontend store agrees with the
   Rust side. Production returns the bare name, byte-identical. **Every `tauri-plugin-store` reader must go through this
-  helper** — `settings.json` (this store, plus `lib/settings-store.ts`'s FDA/onboarding store and
-  `lib/logging/logger.ts`'s verbose-logging probe), `shortcuts.json` (`lib/shortcuts/shortcuts-store.ts`), and
-  `app-status.json` (`lib/app-status-store.ts`) all do. The backend command takes `store_name` from the frontend and
-  sanitizes it (`sanitize_store_name` in `commands/settings.rs`): it rejects anything that isn't a plain filename (path
-  separators, `..`, absolute paths) and returns `None`, which the helper treats like production, so a bad name can never
-  escape the data dir.
+  helper** — `settings.json` (this store, plus `lib/logging/logger.ts`'s verbose-logging probe), `shortcuts.json`
+  (`lib/shortcuts/shortcuts-store.ts`), and `app-status.json` (`lib/app-status-store.ts`) all do. The backend command
+  takes `store_name` from the frontend and sanitizes it (`sanitize_store_name` in `commands/settings.rs`): it rejects
+  anything that isn't a plain filename (path separators, `..`, absolute paths) and returns `None`, which the helper
+  treats like production, so a bad name can never escape the data dir.
 
 ### Restricted-window mode (the viewer)
 
@@ -462,9 +461,11 @@ When modifying the settings format, increment `SCHEMA_VERSION` in `settings-stor
 
 Current cases: v2 renamed `appearance.dateColors`'s "off" value to "none"; v3 states `mediaIndex.scope` for installs
 that already had image indexing on, so the new "only folders I choose" default doesn't silently narrow what they've
-already indexed. A migration that changes a BACKEND-read setting also needs the same rule applied Rust-side (v3:
-`media_index::gate::scope_from_settings`), because the backend reads `settings.json` at startup and would otherwise see
-the raw default on the launch before the migration writes the key.
+already indexed; v4 moves onboarding's four keys (`isOnboarded`, `fullDiskAccessChoice`, `termsAcceptedVersion`,
+`termsAcceptedAt`) from top-level legacy names onto their `onboarding.*` registry ids and deletes the originals, which
+the sparse save can't prune on its own. A migration that changes a BACKEND-read setting also needs the same rule applied
+Rust-side (v3: `media_index::gate::scope_from_settings`), because the backend reads `settings.json` at startup and would
+otherwise see the raw default on the launch before the migration writes the key.
 
 ### Settings cache is write-through
 

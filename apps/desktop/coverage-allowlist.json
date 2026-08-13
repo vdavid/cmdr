@@ -160,9 +160,6 @@
     "reduce-transparency.ts": {
       "reason": "Depends on Tauri invoke (getShouldReduceTransparency) and listen (reduceTransparencyChanged) APIs; just toggles the reduce-transparency html class"
     },
-    "settings-store.ts": {
-      "reason": "Depends on Tauri store APIs"
-    },
     "settings/components/SettingCheckbox.svelte": {
       "reason": "UI component, logic is simple"
     },

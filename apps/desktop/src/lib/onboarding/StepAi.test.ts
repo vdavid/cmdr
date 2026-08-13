@@ -111,14 +111,6 @@ vi.mock('$lib/settings', async (importOriginal) => {
   }
 })
 
-const loadSettings = vi.fn(() =>
-  Promise.resolve({ showHiddenFiles: true, fullDiskAccessChoice: 'allow', isOnboarded: false }),
-)
-vi.mock('$lib/settings-store', () => ({
-  loadSettings: () => loadSettings(),
-  saveSettings: vi.fn(() => Promise.resolve()),
-}))
-
 const pushConfigToBackend = vi.fn(() => Promise.resolve())
 vi.mock('$lib/settings/ai-config', () => ({
   pushConfigToBackend: () => pushConfigToBackend(),
@@ -167,12 +159,8 @@ describe('StepAi', () => {
     getAiApiKeyStatus.mockResolvedValue({ isSet: false, fingerprint: '' })
     openExternalUrl.mockClear()
     pushConfigToBackend.mockClear()
-    loadSettings.mockReset()
-    loadSettings.mockResolvedValue({
-      showHiddenFiles: true,
-      fullDiskAccessChoice: 'allow',
-      isOnboarded: false,
-    })
+    settingsMap['onboarding.fullDiskAccessChoice'] = 'allow'
+    settingsMap['onboarding.completed'] = false
     getAiRuntimeStatus.mockReset()
     getAiRuntimeStatus.mockResolvedValue({
       serverRunning: false,
@@ -219,11 +207,7 @@ describe('StepAi', () => {
   it('shows the "denied" banner when the user denied FDA', async () => {
     setStepTwoBanner('denied')
     checkFullDiskAccess.mockResolvedValue(false)
-    loadSettings.mockResolvedValue({
-      showHiddenFiles: true,
-      fullDiskAccessChoice: 'deny',
-      isOnboarded: false,
-    })
+    settingsMap['onboarding.fullDiskAccessChoice'] = 'deny'
     mounted = mountStep()
     await waitForAsync()
     expect(mounted.target.textContent).toContain('You chose not to enable full disk access')
@@ -232,11 +216,7 @@ describe('StepAi', () => {
   it('shows the "stuck" banner when FDA was requested but not granted', async () => {
     setStepTwoBanner('stuck')
     checkFullDiskAccess.mockResolvedValue(false)
-    loadSettings.mockResolvedValue({
-      showHiddenFiles: true,
-      fullDiskAccessChoice: 'allow',
-      isOnboarded: false,
-    })
+    settingsMap['onboarding.fullDiskAccessChoice'] = 'allow'
     mounted = mountStep()
     await waitForAsync()
     expect(mounted.target.textContent).toContain("Cmdr doesn't seem to have full disk access yet")

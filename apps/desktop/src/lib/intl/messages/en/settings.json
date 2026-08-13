@@ -1688,6 +1688,23 @@
     "description": "Internal help text for the upgrade-nudge flag (not user-facing). \"Onboarding\" is the Cmdr setup-wizard feature name; \"toast\" = a small transient notification."
   },
 
+  "settings.onboarding.completed.label": "Onboarding completed",
+  "@settings.onboarding.completed.label": {
+    "description": "Internal, hidden-from-UI label for the flag recording that the user finished the setup wizard. Surfaces only in settings search. \"Onboarding\" is the Cmdr setup-wizard feature name."
+  },
+  "settings.onboarding.fullDiskAccessChoice.label": "Full Disk Access choice",
+  "@settings.onboarding.fullDiskAccessChoice.label": {
+    "description": "Internal, hidden-from-UI label for the stored answer to the Full Disk Access step. Surfaces only in settings search. \"Full Disk Access\" is the macOS System Settings permission name; keep it as macOS names it in the target language."
+  },
+  "settings.onboarding.termsAcceptedVersion.label": "Accepted terms version",
+  "@settings.onboarding.termsAcceptedVersion.label": {
+    "description": "Internal, hidden-from-UI label for which version of the terms the user accepted. Surfaces only in settings search. \"terms\" = the terms of use document."
+  },
+  "settings.onboarding.termsAcceptedAt.label": "Terms accepted at",
+  "@settings.onboarding.termsAcceptedAt.label": {
+    "description": "Internal, hidden-from-UI label for the timestamp of the terms acceptance. Surfaces only in settings search. \"at\" introduces a point in time."
+  },
+
   "settings.advanced.updateCheckInterval.label": "Update check interval",
   "@settings.advanced.updateCheckInterval.label": {
     "description": "Advanced-section label for the control setting how often background update checks run.",

@@ -1,12 +1,11 @@
 import { checkForUpdate, downloadUpdate, installUpdate } from '$lib/tauri-commands'
 import { getVersion } from '@tauri-apps/api/app'
-import { getSetting, onSpecificSettingChange } from '$lib/settings/settings-store'
+import { forceSave, getSetting, onSpecificSettingChange, setSetting } from '$lib/settings/settings-store'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 import UpdateToastContent from './UpdateToastContent.svelte'
 import UpdateCheckToastContent from './UpdateCheckToastContent.svelte'
 import { addToast, dismissToast } from '$lib/ui/toast'
-import { loadSettings, saveSettings } from '$lib/settings-store'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 // `updateState` lives in its own module to avoid an import cycle: toast components read it directly,
 // and this module also imports those toast components. Re-exported here so existing consumers
@@ -60,8 +59,9 @@ function showUpdateToast(): void {
  */
 export async function notifyOnboardingComplete(): Promise<void> {
   onboarded = true
-  if (!(await saveSettings({ isOnboarded: true }))) {
-    log.warn('Could not persist isOnboarded=true; onboarding may re-run on next launch')
+  setSetting('onboarding.completed', true)
+  if (!(await forceSave())) {
+    log.warn('Could not persist onboarding.completed=true; onboarding may re-run on next launch')
   }
   showUpdateToast()
 }
@@ -268,12 +268,10 @@ export function applyAutoCheckEnabled(enabled: boolean): void {
 export function startUpdateChecker(): () => void {
   log.debug('Started')
 
-  // Seed onboarded flag from persisted settings so returning users aren't gated.
-  void loadSettings().then((settings) => {
-    onboarded = settings.isOnboarded
-    // Edge case: an interval tick fired and reached 'ready' before this resolved.
-    showUpdateToast()
-  })
+  // Seed the onboarded flag from settings so returning users aren't gated. Settings
+  // are initialized before this runs (`(main)/+layout.svelte` starts the checker after
+  // `settingsReady`), so this is a synchronous read.
+  onboarded = getSetting('onboarding.completed')
 
   const autoCheckEnabled = getSetting('updates.autoCheck')
 

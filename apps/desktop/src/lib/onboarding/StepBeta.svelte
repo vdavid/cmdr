@@ -8,7 +8,7 @@
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { setFooterOverride, nextStep, requestWizardComplete } from './onboarding-state.svelte'
-    import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
+    import { forceSave, getSetting, getSettingDefinition, setSetting } from '$lib/settings'
     import { onSpecificSettingChange } from '$lib/settings/settings-store'
     import { betaSignup, openExternalUrl } from '$lib/tauri-commands'
     import {
@@ -19,7 +19,6 @@
         DISCORD_INVITE_URL,
     } from '$lib/beta-links'
     import { TERMS_URL, TERMS_VERSION } from '$lib/legal/terms'
-    import { loadSettings, saveSettings } from '$lib/settings-store'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
@@ -83,13 +82,12 @@
     /** Guards the mount-time read from overwriting a tick the user got in first. */
     let termsTouched = false
 
-    onMount(async () => {
+    onMount(() => {
         // Re-entry from the menu / palette (or a Back from the Optional step) shouldn't make
         // the user re-tick a box they already ticked. An acceptance of an OLDER version
         // doesn't count, which is the whole point of storing the version.
-        const settings = await loadSettings()
         if (termsTouched) return
-        termsAccepted = settings.termsAcceptedVersion === TERMS_VERSION
+        termsAccepted = getSetting('onboarding.termsAcceptedVersion') === TERMS_VERSION
     })
 
     function handleTermsChange(accepted: boolean): void {
@@ -98,11 +96,13 @@
         // Write through immediately, like every other control on this page. Clearing the box
         // clears the record too: keeping a stale "accepted" after the user unticked it would
         // be a claim we can't back up.
-        void saveSettings(
-            accepted
-                ? { termsAcceptedVersion: TERMS_VERSION, termsAcceptedAt: new Date().toISOString() }
-                : { termsAcceptedVersion: null, termsAcceptedAt: null },
-        )
+        setSetting('onboarding.termsAcceptedVersion', accepted ? TERMS_VERSION : '')
+        setSetting('onboarding.termsAcceptedAt', accepted ? new Date().toISOString() : '')
+        // Consent is a record of something that happened, so don't leave it to the save
+        // debounce: a quit right after ticking would lose it and ask again next launch.
+        void forceSave().then((saved) => {
+            if (!saved) log.warn('Could not persist the terms acceptance; the beta step may ask again')
+        })
     }
 
     /**

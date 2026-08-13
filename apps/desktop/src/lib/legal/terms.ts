@@ -3,7 +3,7 @@
  * those were.
  *
  * The onboarding beta step records `TERMS_VERSION` alongside the acceptance timestamp
- * (`termsAcceptedVersion` / `termsAcceptedAt` in `$lib/settings-store`), so a stored
+ * (`onboarding.termsAcceptedVersion` / `onboarding.termsAcceptedAt`), so a stored
  * acceptance always names the document it applied to. Consent to a superseded document
  * isn't consent to the current one, which is the whole reason the version is stored.
  *

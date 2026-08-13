@@ -8,15 +8,14 @@
  * user straight into an explorer with no disk access.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { FullDiskAccessChoice, Settings } from '$lib/settings-store'
+import type { FullDiskAccessChoice } from '$lib/settings'
 
 const mocks = vi.hoisted(() => ({
   isForceOnboarding: vi.fn(),
   checkFullDiskAccess: vi.fn(),
   openWizard: vi.fn(),
   runWhatsNewStartupTrigger: vi.fn(),
-  loadSettings: vi.fn(),
-  saveSettings: vi.fn(),
+  forceSave: vi.fn(),
   getSetting: vi.fn(),
   setSetting: vi.fn(),
   getAppMode: vi.fn(),
@@ -34,8 +33,11 @@ vi.mock('$lib/onboarding/onboarding-state.svelte', () => ({ openWizard: mocks.op
 vi.mock('$lib/whats-new/whats-new-trigger.svelte', () => ({
   runWhatsNewStartupTrigger: mocks.runWhatsNewStartupTrigger,
 }))
-vi.mock('$lib/settings-store', () => ({ loadSettings: mocks.loadSettings, saveSettings: mocks.saveSettings }))
-vi.mock('$lib/settings', () => ({ getSetting: mocks.getSetting, setSetting: mocks.setSetting }))
+vi.mock('$lib/settings', () => ({
+  forceSave: mocks.forceSave,
+  getSetting: mocks.getSetting,
+  setSetting: mocks.setSetting,
+}))
 // `isE2eRun` mirrors the real helper: a capture run counts as an E2E run.
 vi.mock('$lib/app-mode', () => ({
   getAppMode: mocks.getAppMode,
@@ -62,9 +64,13 @@ let appShown: boolean
 let otherModalOpen: boolean
 let ctx: StartupGatesContext
 
-/** Only the two fields the gates read; the rest of `Settings` is irrelevant here. */
-function settings(fullDiskAccessChoice: FullDiskAccessChoice, isOnboarded: boolean): Settings {
-  return { fullDiskAccessChoice, isOnboarded } as Settings
+/** The three settings the gates read, backing the keyed `getSetting` stub below. */
+let stored: { choice: FullDiskAccessChoice; onboarded: boolean; nudgeShown: boolean }
+
+/** Puts the gates on one row of the truth table. */
+function settings(fullDiskAccessChoice: FullDiskAccessChoice, isOnboarded: boolean): void {
+  stored.choice = fullDiskAccessChoice
+  stored.onboarded = isOnboarded
 }
 
 beforeEach(() => {
@@ -84,12 +90,19 @@ beforeEach(() => {
   }
   mocks.isForceOnboarding.mockResolvedValue(false)
   mocks.checkFullDiskAccess.mockResolvedValue(false)
-  mocks.loadSettings.mockResolvedValue(settings('notAskedYet', false))
-  mocks.saveSettings.mockResolvedValue(true)
+  stored = { choice: 'notAskedYet', onboarded: false, nudgeShown: false }
+  mocks.forceSave.mockResolvedValue(true)
   mocks.notifyOnboardingComplete.mockResolvedValue(undefined)
   mocks.runWhatsNewStartupTrigger.mockResolvedValue(undefined)
   mocks.getAppMode.mockReturnValue('prod')
-  mocks.getSetting.mockReturnValue(false)
+  // Keyed, not a blanket return: the gates read three different settings, and a
+  // single `false` would silently answer for all of them.
+  mocks.getSetting.mockImplementation((id: string) => {
+    if (id === 'onboarding.fullDiskAccessChoice') return stored.choice
+    if (id === 'onboarding.completed') return stored.onboarded
+    if (id === 'onboarding.upgradeNudgeShown') return stored.nudgeShown
+    throw new Error(`Unexpected getSetting(${id})`)
+  })
   mocks.isMacOS.mockReturnValue(true)
 })
 
@@ -97,7 +110,7 @@ describe('resolveOnboardingMount', () => {
   it('forces the wizard when CMDR_FORCE_ONBOARDING is set, whatever the settings say', async () => {
     mocks.isForceOnboarding.mockResolvedValue(true)
     mocks.checkFullDiskAccess.mockResolvedValue(true)
-    mocks.loadSettings.mockResolvedValue(settings('allow', true))
+    settings('allow', true)
 
     await resolveOnboardingMount(ctx)
 
@@ -115,7 +128,7 @@ describe('resolveOnboardingMount', () => {
   it('treats a failing force probe as "not forced"', async () => {
     mocks.isForceOnboarding.mockRejectedValue(new Error('no backend'))
     mocks.checkFullDiskAccess.mockResolvedValue(true)
-    mocks.loadSettings.mockResolvedValue(settings('allow', true))
+    settings('allow', true)
 
     await resolveOnboardingMount(ctx)
 
@@ -125,11 +138,11 @@ describe('resolveOnboardingMount', () => {
 
   it('skips the wizard when FDA is granted and mirrors a diverged setting', async () => {
     mocks.checkFullDiskAccess.mockResolvedValue(true)
-    mocks.loadSettings.mockResolvedValue(settings('deny', true))
+    settings('deny', true)
 
     await resolveOnboardingMount(ctx)
 
-    expect(mocks.saveSettings).toHaveBeenCalledWith({ fullDiskAccessChoice: 'allow' })
+    expect(mocks.setSetting).toHaveBeenCalledWith('onboarding.fullDiskAccessChoice', 'allow')
     expect(mocks.notifyOnboardingComplete).not.toHaveBeenCalled()
     expect(onboardingVisible).toBe(false)
     expect(appShown).toBe(true)
@@ -137,8 +150,8 @@ describe('resolveOnboardingMount', () => {
 
   it('warns instead of throwing when the mirror write fails', async () => {
     mocks.checkFullDiskAccess.mockResolvedValue(true)
-    mocks.loadSettings.mockResolvedValue(settings('deny', true))
-    mocks.saveSettings.mockResolvedValue(false)
+    settings('deny', true)
+    mocks.forceSave.mockResolvedValue(false)
 
     await resolveOnboardingMount(ctx)
 
@@ -148,17 +161,17 @@ describe('resolveOnboardingMount', () => {
 
   it('marks a pre-wizard FDA user onboarded', async () => {
     mocks.checkFullDiskAccess.mockResolvedValue(true)
-    mocks.loadSettings.mockResolvedValue(settings('allow', false))
+    settings('allow', false)
 
     await resolveOnboardingMount(ctx)
 
-    expect(mocks.saveSettings).not.toHaveBeenCalled()
+    expect(mocks.setSetting).not.toHaveBeenCalledWith('onboarding.fullDiskAccessChoice', expect.anything())
     expect(mocks.notifyOnboardingComplete).toHaveBeenCalledOnce()
     expect(appShown).toBe(true)
   })
 
   it('does not re-prompt someone who denied and finished onboarding', async () => {
-    mocks.loadSettings.mockResolvedValue(settings('deny', true))
+    settings('deny', true)
 
     await resolveOnboardingMount(ctx)
 
@@ -173,7 +186,7 @@ describe('resolveOnboardingMount', () => {
     ['allow', true],
     ['deny', false],
   ] as const)('routes fullDiskAccessChoice=%s / isOnboarded=%s through the wizard', async (choice, onboarded) => {
-    mocks.loadSettings.mockResolvedValue(settings(choice, onboarded))
+    settings(choice, onboarded)
 
     await resolveOnboardingMount(ctx)
 
@@ -192,7 +205,7 @@ describe('resolveOnboardingMount', () => {
         for (const hasFda of [false, true]) {
           appShown = false
           mocks.checkFullDiskAccess.mockResolvedValue(hasFda)
-          mocks.loadSettings.mockResolvedValue(settings(choice, onboarded))
+          settings(choice, onboarded)
 
           await resolveOnboardingMount(ctx)
 
@@ -220,7 +233,7 @@ describe('maybeFireUpgradeNudge', () => {
   })
 
   it('stays quiet once it has already fired', () => {
-    mocks.getSetting.mockReturnValue(true)
+    stored.nudgeShown = true
 
     maybeFireUpgradeNudge()
 
@@ -239,7 +252,7 @@ describe('maybeFireUpgradeNudge', () => {
 
   it('fires from the FDA-granted mount branch', async () => {
     mocks.checkFullDiskAccess.mockResolvedValue(true)
-    mocks.loadSettings.mockResolvedValue(settings('allow', true))
+    settings('allow', true)
 
     await resolveOnboardingMount(ctx)
 
@@ -247,7 +260,7 @@ describe('maybeFireUpgradeNudge', () => {
   })
 
   it('fires from the denied-and-onboarded mount branch', async () => {
-    mocks.loadSettings.mockResolvedValue(settings('deny', true))
+    settings('deny', true)
 
     await resolveOnboardingMount(ctx)
 
@@ -257,7 +270,7 @@ describe('maybeFireUpgradeNudge', () => {
 
 describe('maybeRunWhatsNew', () => {
   it('hands the live modal state to the trigger', async () => {
-    mocks.loadSettings.mockResolvedValue(settings('allow', true))
+    settings('allow', true)
     onboardingVisible = true
     otherModalOpen = true
 
@@ -305,7 +318,7 @@ describe('maybeRunWhatsNew', () => {
 describe('openOnboardingFromMenuOrPalette', () => {
   it.each(['menu', 'palette'] as const)('opens the wizard from the %s', async (source) => {
     mocks.checkFullDiskAccess.mockResolvedValue(true)
-    mocks.loadSettings.mockResolvedValue(settings('allow', true))
+    settings('allow', true)
 
     await openOnboardingFromMenuOrPalette(ctx, source)
 
@@ -325,6 +338,6 @@ describe('openOnboardingFromMenuOrPalette', () => {
     await openOnboardingFromMenuOrPalette(ctx, 'menu')
 
     expect(mocks.openWizard).not.toHaveBeenCalled()
-    expect(mocks.loadSettings).not.toHaveBeenCalled()
+    expect(mocks.checkFullDiskAccess).not.toHaveBeenCalled()
   })
 })

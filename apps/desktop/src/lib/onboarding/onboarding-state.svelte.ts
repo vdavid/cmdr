@@ -19,7 +19,7 @@
  */
 
 import { isMacOS } from '$lib/shortcuts/key-capture'
-import type { FullDiskAccessChoice } from '$lib/settings-store'
+import type { FullDiskAccessChoice } from '$lib/settings'
 
 /** Where the wizard was opened from. */
 export type OnboardingSource = 'force' | 'first-launch' | 'menu' | 'palette'

@@ -24,7 +24,8 @@ const getMacosMajorVersion = vi.fn<() => Promise<number>>(() => Promise.resolve(
 const openPrivacySettings = vi.fn<() => Promise<void>>(() => Promise.resolve())
 const startIndexingAfterFdaDecision = vi.fn<() => Promise<void>>(() => Promise.resolve())
 const openExternalUrl = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
-const saveSettings = vi.fn<(s: unknown) => Promise<void>>(() => Promise.resolve())
+const setSetting = vi.fn<(id: string, value: unknown) => void>()
+const forceSave = vi.fn<() => Promise<boolean>>(() => Promise.resolve(true))
 
 vi.mock('$lib/tauri-commands', () => ({
   checkFullDiskAccess: () => checkFullDiskAccess(),
@@ -35,9 +36,17 @@ vi.mock('$lib/tauri-commands', () => ({
   openExternalUrl: (url: string) => openExternalUrl(url),
 }))
 
-vi.mock('$lib/settings-store', () => ({
-  saveSettings: (settings: unknown) => saveSettings(settings),
-}))
+vi.mock('$lib/settings', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return {
+    ...actual,
+    setSetting: (id: string, value: unknown) => {
+      setSetting(id, value)
+    },
+    // Overridden, not spread through: the real one reaches the plugin store.
+    forceSave: () => forceSave(),
+  }
+})
 
 // jsdom's userAgent doesn't contain "mac" by default, so the Linux safety net inside
 // `StepFda.svelte` would return null and leave us nothing to assert against. Pretend
@@ -81,7 +90,8 @@ describe('StepFda', () => {
     openPrivacySettings.mockClear()
     startIndexingAfterFdaDecision.mockClear()
     openExternalUrl.mockClear()
-    saveSettings.mockClear()
+    setSetting.mockClear()
+    forceSave.mockClear()
     checkFullDiskAccess.mockResolvedValue(false)
     checkFullDiskAccessQuiet.mockResolvedValue(false)
     getMacosMajorVersion.mockResolvedValue(14)
@@ -138,7 +148,8 @@ describe('StepFda', () => {
     }
     flushSync()
     expect(checkFullDiskAccess).toHaveBeenCalled()
-    expect(saveSettings).toHaveBeenCalledWith({ fullDiskAccessChoice: 'allow' })
+    expect(setSetting).toHaveBeenCalledWith('onboarding.fullDiskAccessChoice', 'allow')
+    expect(forceSave).toHaveBeenCalled()
     expect(openPrivacySettings).toHaveBeenCalled()
     expect(getOnboardingState().step1FooterMode).toBe('restart')
     expect(getOnboardingState().currentStep).toBe(1)
@@ -157,7 +168,8 @@ describe('StepFda', () => {
       await Promise.resolve()
     }
     flushSync()
-    expect(saveSettings).toHaveBeenCalledWith({ fullDiskAccessChoice: 'deny' })
+    expect(setSetting).toHaveBeenCalledWith('onboarding.fullDiskAccessChoice', 'deny')
+    expect(forceSave).toHaveBeenCalled()
     expect(startIndexingAfterFdaDecision).toHaveBeenCalledOnce()
     expect(getOnboardingState().currentStep).toBe(2)
     expect(getOnboardingState().stepTwoBanner).toBe('denied')
@@ -252,7 +264,6 @@ describe('StepFda on Linux', () => {
       startIndexingAfterFdaDecision: () => Promise.resolve(),
       openExternalUrl: () => Promise.resolve(),
     }))
-    vi.doMock('$lib/settings-store', () => ({ saveSettings: () => Promise.resolve() }))
 
     const { mount: mountFresh, unmount: unmountFresh, tick: tickFresh } = await import('svelte')
     const { default: LinuxStepFda } = await import('./StepFda.svelte')
@@ -275,7 +286,6 @@ describe('StepFda on Linux', () => {
     target.remove()
     vi.doUnmock('$lib/shortcuts/key-capture')
     vi.doUnmock('$lib/tauri-commands')
-    vi.doUnmock('$lib/settings-store')
     vi.resetModules()
   })
 })

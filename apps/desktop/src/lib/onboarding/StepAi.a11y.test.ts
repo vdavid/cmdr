@@ -60,13 +60,6 @@ vi.mock('$lib/settings', async (importOriginal) => {
   }
 })
 
-vi.mock('$lib/settings-store', () => ({
-  loadSettings: vi.fn(() =>
-    Promise.resolve({ showHiddenFiles: true, fullDiskAccessChoice: 'allow', isOnboarded: false }),
-  ),
-  saveSettings: vi.fn(() => Promise.resolve()),
-}))
-
 vi.mock('$lib/settings/ai-config', () => ({
   pushConfigToBackend: vi.fn(() => Promise.resolve()),
 }))

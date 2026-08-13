@@ -41,7 +41,7 @@ interface SettingChangedPayload {
 // Store Configuration
 // ============================================================================
 
-const SCHEMA_VERSION = 3
+const SCHEMA_VERSION = 4
 
 let storeInstance: Store | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
@@ -327,6 +327,55 @@ async function setupCrossWindowListener(): Promise<void> {
 }
 
 /**
+ * Migration 4: onboarding's four keys move out of a hand-rolled second store over the
+ * same `settings.json` and into the registry, gaining dot-notation ids. Returns whether
+ * anything changed.
+ *
+ * The values are carried across, not defaulted: dropping them would re-run the onboarding
+ * wizard and re-ask for Full Disk Access. The old keys are then deleted, because they sit
+ * outside the registry and the sparse save can't prune them.
+ *
+ * Idempotent: it only acts on a legacy key that's still present, and the delete is what
+ * makes the second run a no-op. Only the store is written; the cache load right after this
+ * migration reads every registry key back out of it, so writing the cache here too would
+ * just be a way for the two to drift.
+ *
+ * `null` was the legacy "never accepted" marker on the two terms keys; the registry
+ * default is `''`, so a null maps to "don't write" rather than to a stored null (which
+ * would fail validation on the next load).
+ */
+const LEGACY_ONBOARDING_KEYS: { from: string; to: SettingId }[] = [
+  { from: 'isOnboarded', to: 'onboarding.completed' },
+  { from: 'fullDiskAccessChoice', to: 'onboarding.fullDiskAccessChoice' },
+  { from: 'termsAcceptedVersion', to: 'onboarding.termsAcceptedVersion' },
+  { from: 'termsAcceptedAt', to: 'onboarding.termsAcceptedAt' },
+]
+
+async function migrateOnboardingKeysIntoRegistry(store: Store): Promise<boolean> {
+  const movedKeys: string[] = []
+  for (const { from, to } of LEGACY_ONBOARDING_KEYS) {
+    const legacyValue = await store.get<unknown>(from)
+    if (legacyValue === undefined) continue
+    movedKeys.push(from)
+    if (legacyValue === null) continue
+    if (typeof legacyValue !== typeof getDefaultValue(to)) {
+      log.warn('Migration 4: dropping {from} with unexpected type {type}', { from, type: typeof legacyValue })
+      continue
+    }
+    await store.set(to, legacyValue)
+  }
+  if (movedKeys.length === 0) return false
+  for (const key of movedKeys) {
+    await store.delete(key)
+  }
+  log.info('Migration 4: moved {count} onboarding {keysNoun} into the settings registry', {
+    count: movedKeys.length,
+    keysNoun: pluralize(movedKeys.length, 'key'),
+  })
+  return true
+}
+
+/**
  * Migrate settings from older schema versions.
  */
 async function migrateSettings(store: Store, fromVersion: number): Promise<void> {
@@ -360,6 +409,10 @@ async function migrateSettings(store: Store, fromVersion: number): Promise<void>
       await store.set('mediaIndex.scope', 'importance')
       changed = true
     }
+  }
+
+  if (fromVersion < 4 && (await migrateOnboardingKeysIntoRegistry(store))) {
+    changed = true
   }
 
   // Persist the version stamp only when this launch has something to write: a
@@ -574,7 +627,11 @@ function scheduleSave(): void {
   }, SAVE_DEBOUNCE_MS)
 }
 
-async function saveToStore(): Promise<void> {
+/**
+ * Writes the sparse explicit set to disk. Returns whether the write landed, so
+ * `forceSave()` can report it; the debounced path ignores the result.
+ */
+async function saveToStore(): Promise<boolean> {
   log.debug('saveToStore() called')
 
   try {
@@ -607,6 +664,7 @@ async function saveToStore(): Promise<void> {
       saved: savedCount,
       removed: removedCount,
     })
+    return true
   } catch (error) {
     log.error('Failed to save settings: {error}', { error })
     // Retry once
@@ -615,9 +673,10 @@ async function saveToStore(): Promise<void> {
       const store = await getStore()
       await store.save()
       log.info('Retry save succeeded')
+      return true
     } catch (retryError) {
       log.error('Retry save failed: {error}', { error: retryError })
-      // Could show a toast here in the future
+      return false
     }
   }
 }
@@ -679,18 +738,37 @@ function notifyListeners<K extends SettingId>(id: K, value: SettingsValues[K]): 
 }
 
 // ============================================================================
-// Utility: Force Save (for testing)
+// Utility: immediate, awaited persistence
 // ============================================================================
 
 /**
- * Force an immediate save to disk. Used for testing.
+ * Persists every explicitly-set value NOW, and reports whether the write landed.
+ *
+ * `setSetting` is fire-and-forget behind a 500 ms debounce, which is right for a
+ * preference: the UI already reflects it, and a dropped write costs a re-toggle.
+ * It's wrong for the settings that RECORD SOMETHING THAT HAPPENED — onboarding
+ * finishing, the Full Disk Access answer, a terms acceptance. A lost write there
+ * re-runs onboarding or re-prompts for a permission the user already answered,
+ * with no trail. Those callers write, then await this, and log a warning on
+ * `false` so the next launch's odd behavior has an explanation in the log. The
+ * settings window also calls it on close, to beat the debounce.
+ *
+ * Cancels any pending debounce (its work is subsumed) and always writes, even
+ * with nothing pending: a caller asking "is it on disk?" wants the disk checked,
+ * not the timer inspected. A restricted window has no store, so this reports
+ * `false` without touching it — going through `saveToStore` would `log.error`,
+ * which auto-reports on every viewer open.
  */
-export async function forceSave(): Promise<void> {
+export async function forceSave(): Promise<boolean> {
+  if (restrictedWindowMode) {
+    log.warn('forceSave() in a restricted window: no store here, nothing was written')
+    return false
+  }
   if (saveTimeout) {
     clearTimeout(saveTimeout)
     saveTimeout = null
   }
-  await saveToStore()
+  return saveToStore()
 }
 
 // ============================================================================

@@ -27,6 +27,9 @@ import { getDefaultValue } from './settings-registry'
 // `vi.resetModules()` to stand in for the on-disk `settings.json`.
 const disk = vi.hoisted(() => new Map<string, unknown>())
 
+/** Flipped by the `forceSave` test to make the fake disk reject every write. */
+const diskState = vi.hoisted(() => ({ saveFails: false }))
+
 vi.mock('@tauri-apps/plugin-store', () => ({
   load: vi.fn((_path: string, opts?: { defaults?: Record<string, unknown> }) => {
     // Apply defaults only for keys not already present (matches plugin-store).
@@ -42,7 +45,7 @@ vi.mock('@tauri-apps/plugin-store', () => ({
       delete: (key: string) => Promise.resolve(disk.delete(key)),
       has: (key: string) => Promise.resolve(disk.has(key)),
       keys: () => Promise.resolve([...disk.keys()]),
-      save: () => Promise.resolve(),
+      save: () => (diskState.saveFails ? Promise.reject(new Error('disk full')) : Promise.resolve()),
     })
   }),
 }))
@@ -86,6 +89,7 @@ function persistedSettingKeys(): string[] {
 
 beforeEach(() => {
   disk.clear()
+  diskState.saveFails = false
   vi.resetModules()
 })
 
@@ -179,6 +183,21 @@ describe('sparse settings persistence', () => {
     expect(disk.has('ai.localContextSize')).toBe(false)
   })
 
+  it('(h) forceSave answers false when the write cannot land', async () => {
+    // The caller contract that matters: onboarding, the Full Disk Access answer, and the
+    // terms acceptance all gate a `log.warn` on this boolean. A silent `true` here would
+    // mean the next launch re-asks with nothing in the log to explain why.
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    store.setSetting('developer.mcpEnabled', true)
+    diskState.saveFails = true
+    expect(await store.forceSave()).toBe(false)
+
+    diskState.saveFails = false
+    expect(await store.forceSave()).toBe(true)
+  })
+
   it('(f) pre-init reads return defaults and write nothing', async () => {
     const store = await loadStore()
 
@@ -190,5 +209,81 @@ describe('sparse settings persistence', () => {
 
     // Those reads must not have leaked anything to disk.
     expect([...disk.keys()]).toEqual([])
+  })
+})
+
+/**
+ * Migration 4 lifted onboarding's four keys out of a hand-rolled second store over the
+ * same `settings.json` and into the registry. Getting this wrong is expensive in a way a
+ * preference migration isn't: a dropped value re-runs the onboarding wizard or re-asks
+ * for Full Disk Access on someone who already answered.
+ */
+describe('migration 4: the onboarding keys move into the registry', () => {
+  /** A pre-migration file: legacy top-level keys, stamped at the previous schema. */
+  function seedLegacyStore(overrides: Record<string, unknown> = {}): void {
+    disk.set('isOnboarded', true)
+    disk.set('fullDiskAccessChoice', 'deny')
+    disk.set('termsAcceptedVersion', '2026-07-01')
+    disk.set('termsAcceptedAt', '2026-07-02T09:00:00.000Z')
+    disk.set('_schemaVersion', 3)
+    for (const [k, v] of Object.entries(overrides)) disk.set(k, v)
+  }
+
+  it('carries every value across under its new id', async () => {
+    seedLegacyStore()
+
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    expect(store.getSetting('onboarding.completed')).toBe(true)
+    expect(store.getSetting('onboarding.fullDiskAccessChoice')).toBe('deny')
+    expect(store.getSetting('onboarding.termsAcceptedVersion')).toBe('2026-07-01')
+    expect(store.getSetting('onboarding.termsAcceptedAt')).toBe('2026-07-02T09:00:00.000Z')
+  })
+
+  it('drops the legacy keys, which the sparse save would otherwise leave forever', async () => {
+    seedLegacyStore()
+
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    for (const legacy of ['isOnboarded', 'fullDiskAccessChoice', 'termsAcceptedVersion', 'termsAcceptedAt']) {
+      expect(disk.has(legacy)).toBe(false)
+    }
+    expect(disk.get('_schemaVersion')).toBe(4)
+  })
+
+  it('survives a re-run: the second launch finds nothing to move and changes nothing', async () => {
+    seedLegacyStore()
+    const first = await loadStore()
+    await first.initializeSettings()
+    const afterFirst = new Map(disk)
+
+    vi.resetModules()
+    const second = await loadStore()
+    await second.initializeSettings()
+
+    expect([...disk.entries()].sort()).toEqual([...afterFirst.entries()].sort())
+    expect(second.getSetting('onboarding.completed')).toBe(true)
+  })
+
+  it('reads a legacy null terms acceptance as "never accepted", not as a stored null', async () => {
+    // `null` was the legacy marker for "never accepted"; the registry default is `''`.
+    // Storing the null instead would fail validation on the next load and read as garbage.
+    seedLegacyStore({ termsAcceptedVersion: null, termsAcceptedAt: null })
+
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    expect(store.getSetting('onboarding.termsAcceptedVersion')).toBe('')
+    expect(disk.has('onboarding.termsAcceptedVersion')).toBe(false)
+  })
+
+  it('leaves a fresh install alone: nothing to move, nothing written', async () => {
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    expect([...disk.keys()]).toEqual([])
+    expect(store.getSetting('onboarding.completed')).toBe(false)
   })
 })

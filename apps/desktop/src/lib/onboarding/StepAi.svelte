@@ -14,7 +14,6 @@
     } from '$lib/tauri-commands'
     import { systemStrings } from '$lib/system-strings.svelte'
     import { getSetting, setSetting, type AiProvider } from '$lib/settings'
-    import { loadSettings } from '$lib/settings-store'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
     import { tooltip } from '$lib/tooltip/tooltip'
     import LinkButton from '$lib/ui/LinkButton.svelte'
@@ -119,14 +118,14 @@
         // Skip on Linux: the resume rule sets `linux` and there's no banner to render.
         if (onboardingState.stepTwoBanner === 'linux') return
         try {
-            const [hasFda, settings] = await Promise.all([checkFullDiskAccess(), loadSettings()])
+            const hasFda = await checkFullDiskAccess()
             if (hasFda) {
                 // Celebrate the grant ONLY when the user just came through the FDA step this
                 // launch (fresh first-run, not yet onboarded). On menu / palette re-entry after
                 // onboarding finished, FDA being on is the steady state, not news, so show no
                 // banner.
-                setStepTwoBanner(settings.isOnboarded ? 'none' : 'granted')
-            } else if (settings.fullDiskAccessChoice === 'deny') {
+                setStepTwoBanner(getSetting('onboarding.completed') ? 'none' : 'granted')
+            } else if (getSetting('onboarding.fullDiskAccessChoice') === 'deny') {
                 setStepTwoBanner('denied')
             } else {
                 setStepTwoBanner('stuck')

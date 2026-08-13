@@ -74,13 +74,6 @@ vi.mock('@tauri-apps/plugin-process', () => ({
   relaunch: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('$lib/settings-store', () => ({
-  saveSettings: vi.fn(() => Promise.resolve()),
-  // StepBeta reads the stored terms acceptance on mount; a barrel mock that drops it
-  // breaks every wizard test that renders step 3.
-  loadSettings: vi.fn(() => Promise.resolve({ termsAcceptedVersion: null, termsAcceptedAt: null })),
-}))
-
 // Force macOS in jsdom so the wizard renders step 1 (StepFda) instead of skipping it.
 // Resume-rule behaviour on Linux is unit-tested in onboarding-state.test.ts.
 vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => {

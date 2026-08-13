@@ -52,10 +52,6 @@ vi.mock('$lib/settings/settings-store', () => ({
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
 vi.mock('@tauri-apps/api/app', () => ({ getVersion: vi.fn(() => Promise.resolve('1.2.3')) }))
 vi.mock('@tauri-apps/plugin-updater', () => ({ check: vi.fn() }))
-vi.mock('$lib/settings-store', () => ({
-  loadSettings: vi.fn(() => Promise.resolve({ isOnboarded: false })),
-  saveSettings: vi.fn(() => Promise.resolve()),
-}))
 vi.mock('$lib/ui/toast', () => ({
   addToast: vi.fn(),
   dismissToast: vi.fn(),

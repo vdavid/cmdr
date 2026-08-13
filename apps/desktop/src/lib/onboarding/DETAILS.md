@@ -260,10 +260,12 @@ so: never pre-tick it, never add a path that reaches the app around it, and keep
 first-person statement of agreement (the parity test pins it word for word for exactly that reason).
 
 **Why the version, not a boolean.** Consent to a superseded document isn't consent to the current one. `TERMS_VERSION`
-(`$lib/legal/terms`, the terms page's `lastUpdated` date) is stored with the acceptance as `termsAcceptedVersion` +
-`termsAcceptedAt` (an ISO instant) in `$lib/settings-store`. On mount the step ticks the box only when the stored
-version EQUALS the current one, so bumping the constant after a terms change re-asks everyone. Unticking clears both
-fields rather than leaving a stale record we couldn't stand behind.
+(`$lib/legal/terms`, the terms page's `lastUpdated` date) is stored with the acceptance as
+`onboarding.termsAcceptedVersion` + `onboarding.termsAcceptedAt` (an ISO instant). On mount the step ticks the box only
+when the stored version EQUALS the current one, so bumping the constant after a terms change re-asks everyone. Unticking
+clears both fields (to `''`) rather than leaving a stale record we couldn't stand behind. The write doesn't wait out the
+settings save debounce: it `setSetting`s both, then `forceSave()`s, because a quit right after the tick would otherwise
+lose a record of consent.
 
 **Why the buttons are blocked, not disabled.** While the box is unticked, both footer buttons carry `blockedReason`
 (`WizardFooterButton`), which the wizard renders as `aria-disabled` + dimmed + `not-allowed` cursor + the reason as a
@@ -346,7 +348,7 @@ its sibling `startup-gates.test.ts`):
 - `deny && isOnboarded` → no wizard (user denied and finished onboarding).
 - Anything else → mount wizard.
 
-The `isOnboarded` boolean lives in `$lib/settings-store.ts`. It flips to `true` on full wizard completion via
+The onboarded flag is the hidden `onboarding.completed` setting. It flips to `true` on full wizard completion via
 `notifyOnboardingComplete()` (from `$lib/updates/updater.svelte`), so the auto-update "restart to apply" toast doesn't
 fire during first-launch onboarding.
 
@@ -439,7 +441,8 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 - `$lib/tauri-commands`: `checkFullDiskAccess`, `checkFullDiskAccessQuiet` (Step 1's 500 ms grant-detection poller),
   `getMacosMajorVersion`, `openPrivacySettings`, `startIndexingAfterFdaDecision`, `openExternalUrl`,
   `notifyDialogOpened`, `notifyDialogClosed`, `isForceOnboarding`, `betaSignup` (Step 3's email signup)
-- `$lib/settings-store`: `saveSettings`, `loadSettings` (also Step 3's `termsAcceptedVersion` / `termsAcceptedAt`)
+- `$lib/settings`: `getSetting`, `setSetting`, `forceSave` (the `onboarding.*` keys: the FDA choice, the completed flag,
+  and Step 3's terms acceptance)
 - `$lib/legal/terms`: `TERMS_VERSION`, `TERMS_URL` (Step 3's terms checkbox)
 - `$lib/shortcuts/key-capture`: `isMacOS`
 - `$lib/system-strings.svelte`: localized system pane names

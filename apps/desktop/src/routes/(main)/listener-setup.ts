@@ -43,7 +43,6 @@ import type { ViewMode } from '$lib/app-status-store'
 import { adoptedOperationFor } from '$lib/file-operations/foreground-request'
 import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
 import { openSettingsWindow } from '$lib/settings/settings-window'
-import { saveSettings } from '$lib/settings-store'
 import { seedSettingForE2E, setSetting } from '$lib/settings'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { closeDialogById } from '$lib/ui/dialog-close-registry'
@@ -532,7 +531,7 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   // the SAME trigger the boot path uses. Gated on `isE2eRun()`,
   // never true in prod.
   //
-  // The whats-new keys are seeded via `seedSettingForE2E` (cache + save, NO
+  // The keys are seeded via `seedSettingForE2E` (cache + save, NO
   // cross-window emit), NOT `setSetting`: the trigger then stamps
   // `lastSeenVersion` to the current version, and a `setSetting` seed's
   // self-echo (`settings:changed` loops back to this same window) could land
@@ -547,7 +546,7 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
       showOnUpdate: boolean
     }
     void (async () => {
-      await saveSettings({ isOnboarded })
+      seedSettingForE2E('onboarding.completed', isOnboarded)
       seedSettingForE2E('whatsNew.lastSeenVersion', lastSeenVersion)
       seedSettingForE2E('whatsNew.showOnUpdate', showOnUpdate)
       await maybeRunWhatsNew(true)

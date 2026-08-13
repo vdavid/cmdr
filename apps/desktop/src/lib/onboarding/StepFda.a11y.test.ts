@@ -21,10 +21,6 @@ vi.mock('$lib/tauri-commands', () => ({
   openExternalUrl: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('$lib/settings-store', () => ({
-  saveSettings: vi.fn(() => Promise.resolve()),
-}))
-
 // Same reason as in `StepFda.test.ts`: jsdom isn't macOS so the safety-net guard would
 // short-circuit the render. Resume-rule platform logic is unit-tested separately.
 vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => {

@@ -13,6 +13,7 @@ export type {
   ExtensionChangePolicy,
   FileSizeFormat,
   FileSizeUnit,
+  FullDiskAccessChoice,
   SettingId,
   SettingsValues,
   SizeColorsPalette,

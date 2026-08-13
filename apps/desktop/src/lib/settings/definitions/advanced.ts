@@ -387,6 +387,54 @@ export const advancedSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // Onboarding's own internal state. Hidden: these record what the user already
+    // answered, so re-asking is the bug, and a Settings row offering to flip them
+    // would be a way to lie about consent. Written from the wizard steps and the
+    // startup gates; `onboarding.fullDiskAccessChoice` is also read by Rust at
+    // startup (`settings/loader.rs`).
+    id: 'onboarding.completed',
+    section: ['Advanced'],
+    labelKey: 'settings.onboarding.completed.label',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+  {
+    id: 'onboarding.fullDiskAccessChoice',
+    section: ['Advanced'],
+    labelKey: 'settings.onboarding.fullDiskAccessChoice.label',
+    keywords: [],
+    // A `string`, not an `enum`: an enum's options each need a rendered label, and
+    // nothing ever renders these. `FullDiskAccessChoice` keeps the three tokens
+    // type-safe at every call site.
+    type: 'string',
+    default: 'notAskedYet',
+    component: 'text-input',
+    hidden: true,
+  },
+  {
+    id: 'onboarding.termsAcceptedVersion',
+    section: ['Advanced'],
+    labelKey: 'settings.onboarding.termsAcceptedVersion.label',
+    keywords: [],
+    type: 'string',
+    default: '',
+    component: 'text-input',
+    hidden: true,
+  },
+  {
+    id: 'onboarding.termsAcceptedAt',
+    section: ['Advanced'],
+    labelKey: 'settings.onboarding.termsAcceptedAt.label',
+    keywords: [],
+    type: 'string',
+    default: '',
+    component: 'text-input',
+    hidden: true,
+  },
+  {
     id: 'advanced.updateCheckInterval',
     section: ['Advanced'],
     cardKey: 'settings.advanced.card.updates',
