@@ -177,6 +177,11 @@ pub enum TransferWaitReason {
 /// The live shape of a running transfer, attached to every progress event so
 /// both windows can render the same answer to "why isn't this moving?" and
 /// "why does the counter say fewer files than I can see at the destination?".
+///
+/// Built from the in-flight table where there is one. An operation without one
+/// still answers for the WAIT ON A PERSON, off its own pause gate and conflict
+/// slot (`WriteOperationState::person_wait`), with no count to report and no
+/// stillness that isn't the person's.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TransferActivity {
@@ -239,9 +244,10 @@ pub struct WriteProgressEvent {
     /// Pairs with `expected_files_total`. See its doc.
     #[serde(default)]
     pub expected_bytes_total: Option<u64>,
-    /// Live in-flight count + stall classification, from the transfer probe.
-    /// `None` for operations that keep no in-flight table (local copy, delete,
-    /// trash), where the UI simply shows nothing extra.
+    /// Live in-flight count + stall classification, from the transfer probe —
+    /// or, for an operation that keeps no in-flight table (local copy, delete,
+    /// trash), just the wait on a person. `None` means the operation is moving
+    /// and has nothing extra to say, so the UI shows nothing extra.
     #[serde(default)]
     pub activity: Option<TransferActivity>,
 }

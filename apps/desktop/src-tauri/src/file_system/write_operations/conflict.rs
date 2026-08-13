@@ -162,6 +162,13 @@ pub(super) fn resolve_conflict(
             let (tx, rx) = tokio::sync::oneshot::channel();
             let conflict_id = state.conflict_slot.arm(tx);
 
+            // The operation has parked on a person, and from here it emits
+            // nothing until they answer. Announced BEFORE the prompt goes out,
+            // and while the slot is armed: a surface can answer synchronously
+            // from inside `emit_conflict` (the FE effectively does), and this
+            // window's own wait would be over before it was ever mentioned.
+            state.announce_human_wait(events);
+
             let event = build_conflict_event(
                 operation_id,
                 conflict_id,
@@ -184,6 +191,11 @@ pub(super) fn resolve_conflict(
             // uses `rx.await` instead.
             match rx.blocking_recv() {
                 Ok(response) => {
+                    // The wait is over: the slot is spent, so this tick carries no
+                    // wait at all and every window puts the speed back. The next
+                    // file's own progress would eventually say the same thing, and
+                    // on a Skip near the end of a copy there may not be one.
+                    state.announce_human_wait(events);
                     // Save the original (unreduced) variant under the right bucket so
                     // subsequent conflicts re-evaluate the conditional variants against
                     // their own metadata, not the file that originally prompted.
@@ -1338,9 +1350,12 @@ mod apply_to_all_tests {
 }
 
 #[cfg(test)]
-mod stop_branch_store_before_emit_tests {
-    //! Pins the store-before-emit ordering of the local-FS Stop branch in
-    //! `resolve_conflict`: the oneshot sender must be armed in
+mod stop_branch_park_tests {
+    //! What the local-FS Stop branch of `resolve_conflict` must do when it parks
+    //! on a person: arm the slot before the prompt goes out, and say out loud
+    //! that it has parked.
+    //!
+    //! The ordering pin: the oneshot sender must be armed in
     //! `state.conflict_slot` BEFORE the `write-conflict` event is
     //! emitted, so a responder that observes the event and answers it
     //! synchronously (the FE's `resolve_write_conflict`, modeled here by a sink
@@ -1350,8 +1365,8 @@ mod stop_branch_store_before_emit_tests {
     use crate::file_system::write_operations::state::{ConflictResolutionResponse, WriteOperationState};
     use crate::file_system::write_operations::types::{
         CollectorEventSink, ConflictInfo, ConflictResolution, DryRunResult, OperationEventSink, ScanProgressEvent,
-        WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationConfig,
-        WriteProgressEvent, WriteSourceItemDoneEvent,
+        TransferWaitReason, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent,
+        WriteOperationConfig, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
     };
     use crate::ignore_poison::IgnorePoison;
     use std::sync::Arc;
@@ -1449,6 +1464,64 @@ mod stop_branch_store_before_emit_tests {
         assert!(
             !conflicts[0].source_is_directory && !conflicts[0].destination_is_directory,
             "the clash is file-vs-file"
+        );
+    }
+
+    /// A local copy keeps no in-flight table, so nothing speaks for it while it
+    /// stands still: it emits no progress at all with a prompt up, and the tick
+    /// it emitted just before the clash says it was moving at whatever it was
+    /// doing then. Every window would keep that speed on screen for the whole
+    /// answer. So the park announces itself, and so does its end.
+    #[test]
+    fn a_local_clash_announces_the_wait_and_its_end() {
+        let dir = TempDir::new().unwrap();
+        let src = dir.path().join("f001");
+        let dst = dir.path().join("dst-f001");
+        fs::write(&src, b"SRC").unwrap();
+        fs::write(&dst, b"DEST").unwrap();
+
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+        let events = AnswerOnConflictSink {
+            inner: CollectorEventSink::new(),
+            state: Arc::clone(&state),
+            resolution: ConflictResolution::Skip,
+        };
+
+        // The copy was moving, and said so, right up to the clash.
+        state.emit_progress_via_sink(
+            &events,
+            WriteProgressEvent::new(
+                "op-local-park".to_owned(),
+                WriteOperationType::Copy,
+                WriteOperationPhase::Copying,
+                Some("f000".to_owned()),
+                3,
+                40,
+                300,
+                4_000,
+            ),
+        );
+
+        let config = WriteOperationConfig::default(); // Stop, overwrite=false
+        let mut latch = ApplyToAll::default();
+        let result = resolve_conflict(&src, &dst, &config, &events, "op-local-park", &state, &mut latch);
+        assert!(matches!(result, Ok(None)), "the scripted Skip resolves the clash");
+
+        let progress = events.inner.progress.lock_ignore_poison();
+        assert_eq!(progress.len(), 3, "the copy's own tick, then one per edge of the wait");
+        assert_eq!(progress[0].activity, None, "nothing was waiting on anybody yet");
+
+        let parked = progress[1].activity.expect("the park has to reach the windows");
+        assert_eq!(parked.waiting_on, TransferWaitReason::You);
+        assert_eq!(
+            (progress[1].files_done, progress[1].bytes_done),
+            (3, 300),
+            "the counters are the ones from before the clash: nothing moved, and saying otherwise would be a lie",
+        );
+
+        assert_eq!(
+            progress[2].activity, None,
+            "the answer is in, so the copy is nobody's to wait on any more",
         );
     }
 }

@@ -32,7 +32,7 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::super::event_sinks::OperationEventSink;
 use super::super::state::{OperationIntent, WriteOperationState, load_intent};
-use super::super::types::{TransferActivity, TransferWaitReason, WriteOperationPhase, WriteProgressEvent};
+use super::super::types::{TransferActivity, TransferWaitReason, WriteOperationPhase};
 
 /// How often the watchdog samples an operation, and how long a transfer may
 /// show zero byte movement before it is called out IN THE LOG.
@@ -398,10 +398,6 @@ pub(super) struct OperationProbe {
     /// Where to send a heartbeat. Set once at registration; `None` in the unit
     /// tests that don't exercise emission.
     sink: Mutex<Option<Arc<dyn OperationEventSink>>>,
-    /// The last progress event this operation emitted, kept so the watchdog can
-    /// re-send it with fresh activity when nothing is moving. Cloning one event
-    /// per emit is cheap next to the IPC hop it's already making.
-    last_event: Mutex<Option<WriteProgressEvent>>,
     /// Whole seconds the aggregate byte counter has been still, maintained by
     /// the watchdog at `STALL_TICK` granularity and reset on every movement and
     /// on pause. Read by [`OperationProbe::activity`] on the progress path, so
@@ -459,20 +455,6 @@ impl OperationProbe {
     #[cfg(test)]
     fn set_sink(&self, sink: Arc<dyn OperationEventSink>) {
         *self.sink.lock_ignore_poison() = Some(sink);
-    }
-
-    /// Remember the last progress event, so the watchdog can re-send it with
-    /// fresh activity while nothing moves. Called from `enrich_progress`, which
-    /// every emit site already routes through.
-    pub(super) fn record_progress(&self, event: &WriteProgressEvent) {
-        // Only the phases where a stall is meaningful. A scan emits its own
-        // steady stream and finishing phases are brief.
-        if matches!(
-            event.phase,
-            WriteOperationPhase::Copying | WriteOperationPhase::Flushing
-        ) {
-            *self.last_event.lock_ignore_poison() = Some(event.clone());
-        }
     }
 
     /// One watchdog tick, split out from the timer loop so it can be tested
@@ -649,7 +631,14 @@ impl OperationProbe {
         let Some(sink) = self.sink.lock_ignore_poison().clone() else {
             return;
         };
-        let Some(mut event) = self.last_event.lock_ignore_poison().clone() else {
+        // The operation keeps the newest tick (`WriteOperationState::last_progress`);
+        // the phases where a stall is meaningful are this caller's business. A
+        // scan emits its own steady stream, and the finishing phases are brief.
+        let Some(mut event) = self
+            .state
+            .last_progress()
+            .filter(|e| matches!(e.phase, WriteOperationPhase::Copying | WriteOperationPhase::Flushing))
+        else {
             return;
         };
         // Set from the probe we're already holding rather than leaving it to the
@@ -860,7 +849,6 @@ pub(super) fn register_operation(
         tasks: Mutex::new(Vec::new()),
         bytes_done,
         sink: Mutex::new(Some(sink)),
-        last_event: Mutex::new(None),
         still_for_seconds: AtomicU64::new(0),
         stall_abort_after: stall_abort_after(),
         volumes,
@@ -909,15 +897,6 @@ pub(crate) fn render_live_dump(operation_id: &str, reason: &str) -> Option<Strin
         .lock_ignore_poison()
         .get(operation_id)
         .map(|probe| probe.render_dump(reason))
-}
-
-/// Stash a progress event so the watchdog can re-send it while nothing moves.
-/// Paired with [`activity_for`] on the `enrich_progress` path; a no-op for
-/// operations with no probe.
-pub(in crate::file_system::write_operations) fn record_progress(event: &WriteProgressEvent) {
-    if let Some(probe) = REGISTRY.lock_ignore_poison().get(&event.operation_id) {
-        probe.record_progress(event);
-    }
 }
 
 /// Deregisters its operation on drop.

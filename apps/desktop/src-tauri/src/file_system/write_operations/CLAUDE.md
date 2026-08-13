@@ -18,9 +18,11 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
   `on_settled`, ❌ never in `Drop`.
 - **A zip edit is managed, not instant**, and it owns its own rules: `archive_edit/CLAUDE.md`.
 - **`OperationIntent` is one `AtomicU8`**; ❌ never `store(...)` it directly. Cancel keeps copied files, Rollback deletes
-  them in reverse. `PauseGate` is orthogonal; cancel wins. Both it and `conflict_slot` drive the operation's
-  `human_wait.rs` clock, which the ETA's rate window subtracts, so ❌ a new way to park on a PERSON must open it too or
-  the estimate collapses on resume.
+  them in reverse. `PauseGate` is orthogonal; cancel wins.
+- **Parking on a PERSON has two duties**, and a new way to park owes both: open the `human_wait.rs` clock (`PauseGate`
+  and `conflict_slot` do, and the ETA's rate window subtracts it, or the estimate collapses on resume) AND call
+  `state.announce_human_wait(sink)` on both edges (a parked op emits nothing, so every surface keeps a speed on screen
+  over a copy that has stopped). DETAILS § "Parking on a person".
 - **Stopping has two tiers.** `backend_cancel` (cooperative) is what EVERY user-initiated cancel uses; `backend_abort`
   and `cancel_all_write_operations` belong to the quit deadline alone, ❌ never to a click or a teardown hook.
   `transfer/DETAILS.md` § "Two tiers of cancel".

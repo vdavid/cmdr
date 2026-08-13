@@ -241,9 +241,13 @@ so through the backend's own classification, `progress.activity.waitingOn === 'y
 never `!==`), so a session that has heard nothing yet reads as "not waiting" and renders its first frames normally
 instead of blanking a transfer that is running fine. ❌ Don't reach for `conflict !== null` as a third signal: that
 field is this window's own copy of the prompt, cleared only by the surface that answers, so a row that watched somebody
-else answer would hide its speed for the rest of the transfer. A local copy keeps no in-flight table, so `activity` is
-`null` for one and its speed stays on screen through a clash; the honest fix there is a backend tick, not a frontend
-guess.
+else answer would hide its speed for the rest of the transfer.
+
+Every path reports the clash wait, including a local copy, which keeps no in-flight table: the backend classifies the
+wait off the operation's own pause gate and conflict slot, and re-sends its last tick on both edges of the wait so a
+parked operation says so even though it emits nothing while parked
+(`write_operations/DETAILS.md` § "Parking on a person"). ❌ So there is nothing here for a frontend to infer: a view
+that finds no `activity` is being told the operation is moving.
 
 ## The command surface
 

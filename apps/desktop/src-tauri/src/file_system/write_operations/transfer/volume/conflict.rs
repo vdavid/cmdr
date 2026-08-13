@@ -223,6 +223,13 @@ pub(super) async fn resolve_volume_conflict(
             let (tx, rx) = tokio::sync::oneshot::channel();
             let conflict_id = state.conflict_slot.arm(tx);
 
+            // Say that the operation has parked on a person, before the prompt
+            // goes out and while the slot is armed. A concurrent copy usually
+            // has other tasks still emitting, but a serial one (MTP, a
+            // single-file copy) goes as quiet as a local one does, and the same
+            // frozen speed sits on screen. Local twin: `../../conflict.rs`.
+            state.announce_human_wait(events);
+
             events.emit_conflict(WriteConflictEvent {
                 operation_id: operation_id.to_string(),
                 conflict_id,
@@ -241,6 +248,8 @@ pub(super) async fn resolve_volume_conflict(
             // Wait for user to call resolve_write_conflict.
             match rx.await {
                 Ok(response) => {
+                    // The wait is over, and this tick is what puts the speed back.
+                    state.announce_human_wait(events);
                     // Save the original (unreduced) variant under the right bucket so
                     // subsequent clashes re-evaluate the conditional variants against
                     // their own metadata. `apply_to_all_record` also flips the

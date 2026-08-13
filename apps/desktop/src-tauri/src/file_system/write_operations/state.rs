@@ -13,8 +13,8 @@ use tokio_util::sync::CancellationToken;
 use super::eta::{EtaEstimator, EtaSample};
 use super::human_wait::HumanWaitClock;
 use super::types::{
-    ConflictId, ConflictResolution, ConflictResolutionOutcome, OperationEventSink, WriteOperationType,
-    WriteProgressEvent, WriteSettledEvent,
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, OperationEventSink, TransferActivity,
+    TransferWaitReason, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
 };
 
 // The conflict slot lives in its own module: arbitrating one answer per conflict
@@ -156,6 +156,15 @@ pub struct WriteOperationState {
     /// [`super::in_flight_temps`], which also keeps the persisted half that
     /// outlives the process.
     pub in_flight_temps: std::sync::Mutex<Vec<PathBuf>>,
+    /// The newest `write-progress` this operation emitted, kept so whoever has
+    /// to speak for it while it stands still can re-send it
+    /// ([`announce_human_wait`](Self::announce_human_wait), and the transfer
+    /// probe's stall heartbeat). A wedged or parked operation emits nothing on
+    /// its own, so without this the newest event any window holds is from
+    /// before it stopped, and a confident speed stays on screen throughout.
+    /// Cloning one event per emit is cheap next to the IPC hop it is already
+    /// making.
+    last_progress: std::sync::Mutex<Option<WriteProgressEvent>>,
     /// "This operation is still going." Dropped by [`end_liveness`](Self::end_liveness)
     /// when it settles.
     ///
@@ -187,6 +196,7 @@ impl WriteOperationState {
             human_wait,
             journal_volumes: None,
             in_flight_temps: std::sync::Mutex::new(Vec::new()),
+            last_progress: std::sync::Mutex::new(None),
             liveness: std::sync::Mutex::new(Some(Arc::new(()))),
         }
     }
@@ -233,13 +243,22 @@ impl WriteOperationState {
     /// classification regardless of which backend produced the event.
     pub fn enrich_progress(&self, event: &mut WriteProgressEvent) {
         // Looked up by operation id rather than threaded through every emit
-        // site's signature. Operations that keep no in-flight table (local copy,
-        // delete, trash) miss the lookup and keep whatever the caller set, which
-        // is `None` everywhere except the probe's own stall heartbeat.
+        // site's signature. An operation that keeps no in-flight table (local
+        // copy, delete, trash) misses the lookup and answers for itself: the one
+        // thing it can still say is that it has parked on a PERSON, and that is
+        // the one thing a view must not have to guess. § `person_wait`.
         if let Some(activity) =
             crate::file_system::write_operations::transfer::transfer_probe::activity_for(&event.operation_id)
         {
             event.activity = Some(activity);
+        } else if let Some(waiting_on) = self.person_wait() {
+            event.activity = Some(TransferActivity {
+                // No table, so no honest count; and a parked operation has been
+                // still for nobody's time but the person's.
+                in_flight: 0,
+                still_for_seconds: 0,
+                waiting_on,
+            });
         }
 
         let now = Instant::now();
@@ -263,11 +282,59 @@ impl WriteOperationState {
         event.files_per_second = Some(stats.files_per_second);
         event.eta_seconds = stats.eta_seconds;
 
-        // Stash the finished event so the probe's watchdog can re-send it while
-        // nothing moves. A wedged transfer fires no chunk callbacks, so without
-        // this the UI's newest event is from before the wedge and keeps a
-        // confident ETA on screen for as long as the wedge lasts.
-        crate::file_system::write_operations::transfer::transfer_probe::record_progress(event);
+        // Stash the finished event: see [`last_progress`](Self::last_progress).
+        // WITHOUT its activity, which is the one field a re-send must never
+        // replay: an operation is re-sent precisely because what it is doing has
+        // changed, and a stored "waiting on you" would outlive the answer and
+        // freeze the speed off the screen for the rest of the transfer.
+        *self.last_progress.lock_ignore_poison() = Some(WriteProgressEvent {
+            activity: None,
+            ..event.clone()
+        });
+    }
+
+    /// Who this operation is waiting on, when the answer is a PERSON.
+    ///
+    /// Both sources are the ones the human-wait clock tracks
+    /// ([`super::human_wait`]), read in the same order
+    /// `transfer_probe::wait_reason` reads them, so an operation with an
+    /// in-flight table and one without classify the same wait the same way.
+    /// `None` means nobody is being asked, which is not the same as "it is
+    /// moving": a local operation with no probe genuinely cannot tell.
+    fn person_wait(&self) -> Option<TransferWaitReason> {
+        if self.pause_gate.is_paused() {
+            return Some(TransferWaitReason::Paused);
+        }
+        if self.conflict_slot.is_awaiting() {
+            return Some(TransferWaitReason::You);
+        }
+        None
+    }
+
+    /// The newest progress event this operation emitted, if it has emitted one,
+    /// carrying no activity: a re-sender classifies the wait itself, or lets
+    /// [`enrich_progress`](Self::enrich_progress) do it on the way out.
+    pub(super) fn last_progress(&self) -> Option<WriteProgressEvent> {
+        self.last_progress.lock_ignore_poison().clone()
+    }
+
+    /// Tell every window that this operation has just parked on a person, or
+    /// just stopped being parked. Call it on BOTH edges of a wait.
+    ///
+    /// A parked operation emits nothing at all: it is between files, holding
+    /// still on purpose, and the newest tick every window holds was measured
+    /// while it was moving. Left alone, a copy frozen on a clash keeps a speed
+    /// on screen, and a queue row watching it says "Running" (`AGENTS.md`
+    /// principle 2: honest progress). This re-sends that same tick — counters
+    /// untouched, because nothing moved — and [`enrich_progress`](Self::enrich_progress)
+    /// re-classifies it on the way out, so the window learns what changed.
+    ///
+    /// A no-op before the first progress event, which is a state no clash can
+    /// reach: every transfer emits its phase-transition tick before it opens a
+    /// destination.
+    pub(super) fn announce_human_wait(&self, sink: &dyn OperationEventSink) {
+        let Some(event) = self.last_progress() else { return };
+        self.emit_progress_via_sink(sink, event);
     }
 
     /// Enrich and emit a `WriteProgressEvent` via an `OperationEventSink`. The

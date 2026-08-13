@@ -10,7 +10,7 @@ use super::*;
 use crate::file_system::volume::Volume;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::test_support::TestOperationGuard;
-use crate::file_system::write_operations::types::WriteOperationType;
+use crate::file_system::write_operations::types::{WriteOperationType, WriteProgressEvent};
 
 /// A probe whose stall-abort window is `window` AND whose connection is proven
 /// dead, so a test can drive the watchdog past the window in a handful of
@@ -44,7 +44,6 @@ fn probe_with(id: &str, state: &Arc<WriteOperationState>, volumes: Vec<Arc<dyn V
         tasks: Mutex::new(Vec::new()),
         bytes_done: Arc::new(AtomicU64::new(83_650_000)),
         sink: Mutex::new(None),
-        last_event: Mutex::new(None),
         still_for_seconds: AtomicU64::new(0),
         stall_abort_after: stall_abort_after(),
         volumes,
@@ -161,7 +160,6 @@ fn a_wedged_transfer_keeps_telling_the_ui_it_is_wedged() {
         900_000_000,
     );
     state.enrich_progress(&mut event);
-    probe.record_progress(&event);
     let a = probe.begin_task(9, "/src/a", "/dst/a");
     a.probe().set_phase(TaskPhase::ParkedDestYield);
 
@@ -205,7 +203,6 @@ fn a_moving_transfer_gets_no_heartbeat() {
         900_000_000,
     );
     state.enrich_progress(&mut event);
-    probe.record_progress(&event);
 
     let mut watchdog = WatchdogState::new();
     // Bytes keep moving on every tick.
