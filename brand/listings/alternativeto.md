@@ -18,11 +18,6 @@ the app-directory listings".
 An extremely fast Total Commander alternative for macOS: a two-pane file manager with SMB and MTP/Android support, with optional and privacy-first AI features like natural language search and bulk rename.
 ```
 
-- **Supported languages**: English, German, Spanish, French, Hungarian, Dutch, Portuguese, Swedish, Vietnamese, Chinese.
-  (The 10 the app ships: `apps/desktop/src/lib/intl/messages`.)
-- **Pricing**: `Free for personal use`. Model `Purchase`, min `$59`, max `$199`
-- **Is Opensource?**: checked. License `Other`. Source URL `https://github.com/vdavid/cmdr`
-
 ### Full description
 
 Plain text, their own line breaks. Same substance as the MacUpdate description (`macupdate.md`), minus the HTML, plus
@@ -64,15 +59,20 @@ AI features (entirely optional, can be fully local and private with a built-in L
 - The model runs on your Mac by default, so your files and data stay 100% private. You can choose to bring your own OpenAI, Claude, Gemini, etc. key, or point Cmdr at any OpenAI-compatible endpoint to use more powerful models.
 ```
 
+## More info
+
+- **Supported languages**: English, German, Spanish, French, Hungarian, Dutch, Portuguese, Swedish, Vietnamese, Chinese.
+  (The 10 the app ships: `apps/desktop/src/lib/intl/messages`.)
+- **Pricing**: `Free for personal use`. Model `Purchase`, min `$59`, max `$199`
+- **Is Opensource?**: checked. License `Other`. Source URL `https://github.com/vdavid/cmdr`
+
 ## Tags
 
-Keep all 24 that are there: `total-commander`, `ai`, `finder-alternative`, `built-in-file-manager`, `macos`,
-`offline-access`, `svelte`, `finder`, `dual-pane`, `ad-free`, `no-registration`, `lightweight`, `rust`,
-`privacy-focused`, `built-in-viewer`, `tauri`, `two-pane`, `portable`, `file-management`, `file-manager`,
-`live-preview`, `rust-based`, `rust-lang`, `night-mode`
-
-Worth adding if their autocomplete offers them (the field only takes tags already in their vocabulary): `smb`, `mtp`,
-`git`, `file-search`, `batch-rename`, `archive-manager`, `keyboard-driven`, `semantic-search`.
+Current tags: `total-commander`, `ai`, `finder-alternative`, `built-in-file-manager`, `macos`, `offline-access`,
+`svelte`, `finder`, `dual-pane`, `ad-free`, `no-registration`, `lightweight`, `rust`, `privacy-focused`,
+`built-in-viewer`, `tauri`, `two-pane`, `portable`, `file-management`, `file-manager`, `live-preview`, `rust-based`,
+`rust-lang`, `night-mode`, `smb`, `mtp`, `git`, `file-search`, `batch-rename`, `batch-renamer`, `archive-manager`,
+`keyboard-driven`, `keyboard-shortcuts-support`, `semantic-search`
 
 ## Application type
 
@@ -93,6 +93,10 @@ Leave unchecked, deliberately:
 - **No tracking**: Cmdr sends anonymous analytics.
 - **Support for themes**: dark/light and accent colors aren't user-authored themes.
 - **Extensible by plugins/extensions** and **Windows Explorer extension**: not a thing.
+- **AES-256 encryption** (appears once File Archiver is ticked): Cmdr opens AES-256 and ZipCrypto archives, prompting
+  for the password, but creates no encrypted archives and refuses edits that would retain an encrypted entry
+  (`crates/cmdr-archive`). The checkbox reads as "can encrypt", so it stays off until that ships.
+- **Command line interface**
 
 ## Platforms
 
