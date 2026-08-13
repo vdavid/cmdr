@@ -498,6 +498,17 @@ showing it. The one teardown-adjacent flag that still means "stop" is `cancelReq
 pressed while the start command was in flight, which birth honours through `cancel_operation` (the MANAGER-level cancel,
 because an operation admitted behind a busy lane has no write op to cancel yet).
 
+Two shapes of that rule are worth stating, because each is one condition standing between a keystroke and the wrong
+answer:
+
+- **While a clash is showing there is no `onclose` at all**, so no × and no Escape. Backgrounding a parked operation
+  would leave it waiting on a question nobody is asking (the conflict host discards a clash the foreground owned), and
+  dismissing would tell the pane "cancelled" about an operation that is still parked. The conflict body carries Skip,
+  Rename, Overwrite, Cancel, and Rollback, which is every honest way out. Same rule the main window's conflict prompt
+  follows (`../DETAILS.md` § "Conflict prompts").
+- **`dismiss()` refuses to speak for an operation that ended some other way.** It reports `onCancelled`, and the pane
+  runs a different tail for a cancel than for a completion, so it fires only while a cancel is what is happening.
+
 **A `gone` outcome closes the dialog too.** The session resolves `gone` when it has heard nothing about the operation
 and `list_operations()` doesn't have it either. For a dialog that just dispatched, that means the operation ended inside
 the sliver between the start command answering and the session claiming its id — and the honest reading is "it's over,

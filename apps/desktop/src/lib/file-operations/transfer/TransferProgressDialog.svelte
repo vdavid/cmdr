@@ -270,11 +270,17 @@
     titleId="progress-dialog-title"
     onkeydown={handleKeydown}
     dialogId="transfer-progress"
-    onclose={() => {
-        // ❌ Never a cancel. Closing this dialog detaches it from the operation;
-        // only the Cancel button asks the operation to stop.
-        progress.detach()
-    }}
+    onclose={conflictEvent
+        ? // No × and no Escape while a clash is on screen: every way out of one
+          // is a decision about the user's files, and the conflict body carries
+          // its own buttons for all of them. Same rule the main window's
+          // conflict prompt follows.
+          undefined
+        : () => {
+              // ❌ Never a cancel. Closing this dialog detaches it from the
+              // operation; only the Cancel button asks the operation to stop.
+              progress.detach()
+          }}
     containerStyle={DIALOG_WIDTH_STYLE}
     resizable="horizontal"
 >

@@ -55,7 +55,9 @@ and its `transfer/` subdir (copy/move semantics).
   handoff. ❌ Never give it a second smoother, listener, or event buffer of its own.
 - **A close is a DETACH, ❌ never a cancel.** `ModalDialog`'s `onclose` (×, Escape, focus-trap teardown) goes to
   `detach()`, which hands a still-running operation to the queue window and otherwise just stops watching. Only the
-  Cancel button cancels, and unmounting stops nothing at all. DETAILS § "The dialog is a view".
+  Cancel button cancels, and unmounting stops nothing at all. ❌ While a clash is up there's no `onclose` at all (so no
+  × and no Escape): every way out of a clash is a decision about the user's files, and the conflict body owns them all.
+  DETAILS § "The dialog is a view".
 - **Queue and the dialog-scoped F2 are FRONTEND-ONLY**: they set `backgrounded`, open the queue window, and unmount via
   `onQueue` without cancelling. ❌ `backgrounded` and `destroyed` stay plain `let`s: teardown reads them during
   reactive-scope disposal, where a rune returns a stale value — that is how a just-queued transfer once got cancelled

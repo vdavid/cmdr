@@ -204,9 +204,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   }
 
   /** Whether handing this operation to the queue window still makes sense: it
-   *  is running rather than winding down or over. A clash counts as running —
-   *  the main window's conflict host takes the prompt over the moment no dialog
-   *  owns the operation (`../operation-conflict.svelte.ts`). */
+   *  is running rather than winding down or over. */
   const canHandOff = (): boolean => {
     const op = bound.current
     return op !== null && !op.settled && !op.cancelling && !isRollingBack()
@@ -288,6 +286,11 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    */
   function dismiss(): void {
     if (closed) return
+    // It reports a CANCEL, so it may only fire while one is what's happening. A
+    // completion or a failure is already on its way to the parent, and telling
+    // it "cancelled" instead would run the wrong tail over the user's panes.
+    const settled = outcome()
+    if (settled !== null && settled.kind !== 'cancelled') return
     log.info('User dismissed the dialog while the backend was still settling: op={operationId}', { operationId })
     // Report what the backend has told us so far, rather than pretending zero.
     const filesProcessed = reportedFilesProcessed()

@@ -883,6 +883,22 @@ describe('createTransferProgressState: disposal', () => {
     expect(cancelWriteOperation).not.toHaveBeenCalled()
   })
 
+  it('never reports a cancel for an operation that completed', async () => {
+    // `dismiss()` tells the pane "cancelled", which runs a different tail over
+    // its selection than a completion does. It must stay silent once the
+    // operation ended some other way.
+    const { state, config } = await startedState()
+    if (!completeCb) throw new Error('complete subscriber never registered')
+    completeCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 3, filesSkipped: 0, bytesProcessed: 9 })
+
+    state.dismiss()
+    flushSync()
+    vi.advanceTimersByTime(450)
+
+    expect(config.onCancelled).not.toHaveBeenCalled()
+    expect(config.onComplete).toHaveBeenCalledWith(3, 0, 9)
+  })
+
   it('closing the modal while a cancel winds down just stops watching', async () => {
     const { state, config } = await startedState()
     if (!progressCb) throw new Error('progress subscriber never registered')
