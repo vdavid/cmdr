@@ -15,49 +15,53 @@ the app-directory listings".
 - **Short description** (their hint: one concise sentence on the main purpose):
 
 ```
-An extremely fast Total Commander alternative for macOS: a two-pane file manager with SMB and MTP/Android support, with optional and privacy-first AI features like natural language search and bulk rename.
+A very fast two-pane file manager for macOS with Total Commander-compatible keyboard shortcuts, SMB and MTP/Android support. Optional+privacy-first AI features like natural language search and bulk rename.
 ```
 
 ### Full description
 
 Plain text, their own line breaks, **max 3,000 characters** (the form rejects longer). Same substance as the MacUpdate
 description (`macupdate.md`), minus the HTML, plus the licensing and pricing lines that MacUpdate's form bans. The
-version below is 2,588 characters, leaving room to grow a feature or two before the next trim.
+version below is 2,914 characters, so a new bullet or two needs a trim elsewhere.
 
 ```
-Cmdr brings the Total Commander experience to macOS, and (only if you enable it) adds AI features that genuinely help. Built with Rust, it's extremely fast and easy on your CPU, RAM, and disk.
+Cmdr is on macOS what Total Commander is on Windows: familiar shortcuts, two panes, fast and transparent in telling you what's going on with your files. Built with Rust, it's extremely fast and respectful to your CPU, RAM, and disk.
 
-Cmdr is in open beta: the newer features (search, archives, the operation log, AI) have sharp edges, but the core is well-tested software used daily by the author and a group of testers. Feedback goes straight to the developer!
+Plus it has two more cool things:
+- It indexes your drive for near-instant search and to show you live folder sizes (optional, enabled/disabled at onboarding!)
+- AI features like bulk renames and search. (optional, off by default, can run 100% locally, and all destructive operations need human approval.)
 
-Cmdr is source-available under the Business Source License 1.1: the source is on GitHub, though BSL isn't OSI-approved, so this page's "open source" label is auto-generated, not mine. Free forever for personal use, commercial license for work use.
+Cmdr is in open beta: the core is well-tested software used daily by the author and a group of testers, while the newer features (search, archives, operation log, AI) are marked as "alpha". Your feedback is very much appreciated and goes straight to the developer!
+
+Cmdr is source-available under the Business Source License 1.1, and the source is on GitHub. Free for personal use, commercial license for work use.
 
 Core features:
 
 - Two panes, tabs, command palette, keyboard-first. F5 to copy, F6 to move, F8 to delete, all remappable.
-- Copy, move, rename, delete, compress and decompress, with accurate progress bars, honest ETAs, and cancellation. Built for data safety, speed, and transparency.
+- Copy, move, rename, delete, compress and decompress, with accurate progress bars, ETAs, and cancellation. Built for data safety, speed, and transparency.
 - Queue operations, background them, pause and resume transfers, and browse a searchable log of past operations, with rollback where nothing was permanently deleted.
-- Lists 50,000 files near-instantly; the built-in viewer opens a 10 GB file just as fast, with search.
-- Browse zip, tar, and 7z archives like normal folders, and write into zip.
-- Real dark and light modes, native macOS behavior, WCAG 2.2 AA and APCA verified contrasts.
-- Speaks 10 languages.
+- Lists 50,000 files near-instantly; the built-in viewer opens a 10 GB file near-instantly, too, with search (!)
+- Browse zip, tar, and 7z archives like normal folders, and compress/uncompress archives.
+- Real dark and light modes, native macOS behavior, WCAG 2.2 AA and APCA verified contrasts, so you can read what's on the screen.
+- Translated in good quality to 10 languages.
 
 Extra features:
 
-- Android phones, Kindles, and cameras over MTP and PTP, up to 4x faster than Android File Transfer, with any USB cable.
-- Network drives over a custom SMB implementation, roughly 4x faster than the macOS client.
-- Keeps a fully local index of your disk, for live folder sizes everywhere and near-instant search. Not-yet-indexed folders get walked live.
+- Reads/writes Android phones, Kindles, and cameras over MTP and PTP, up to 4x faster than Android File Transfer, with any USB cable. Just plug it in and it works.
+- Uses network drives 4x faster than the macOS client, but for small files it's sometimes 100x.
+- Keeps a fully local index of your disk, for live folder sizes and fast search.
 - Browse Git history, branches, worktrees, and stashes like normal folders.
 
 AI features (optional, off by default, and can stay fully local with a built-in LLM):
 
-- With AI off, Cmdr is a complete Total Commander-style file manager.
 - Natural-language search: "Find my tax report from last year"
 - Smart selection: "Select all screenshots in this folder"
 - Chat: "Why is my Downloads folder so big?"
 - Local image indexing: "Find photos where a dog looks into the camera"
 - Natural-language renaming: "Rename these screenshots based on their content." The agent only suggests; you review, apply, and can roll back.
-- Auto-organization is on the way.
-- The model runs on your Mac by default; bring your own OpenAI, Claude, or Gemini key (or any OpenAI-compatible endpoint) for more powerful models.
+- Auto-organization is coming soon.
+- The model runs on your Mac by default; bring your own OpenAI, Claude, or Gemini key (or ollama, etc.) for better models.
+- With AI off, Cmdr is a complete Total Commander-style file manager!
 ```
 
 ## More info
