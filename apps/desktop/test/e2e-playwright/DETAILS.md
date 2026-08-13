@@ -579,6 +579,16 @@ Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), o
 
 ## Gotchas
 
+**Gotcha**: a spec that MEASURES a dialog has to gate on the dialog's CONTENT, not on `.modal-dialog`. **Why**: a panel
+whose body loads over IPC mounts in a spinner state (the trigger flips `open` and `loading` in one synchronous block),
+so the panel element exists for as long as the read takes and its height is the spinner's. The rows then land and the
+panel grows by hundreds of pixels, up to its own `max-height`. A `before` rect taken in that window belongs to a
+different layout than the `after` one, and the diff reads as a wholesale wrong number rather than a drift, which sends
+you looking for a second dialog in the DOM. `dialog-resize.spec.ts`'s `SETTLED` map is the shape: one selector per
+dialog naming only what the settled body renders (for the operation log, rows OR the nothing-yet / read-failed notice).
+Whether it bites depends on how fast the read is, so it presents as a load-dependent flake. Same rule, different
+consumer, as `StagedSurface.readySelector` in the capture run.
+
 **Gotcha**: `npx playwright test` alone will fail with `ECONNREFUSED`. **Why**: The test suite does NOT launch the Cmdr
 binary. It connects to an already-running app via `/tmp/tauri-playwright.sock`. Use `pnpm check desktop-e2e-playwright`
 which handles the full lifecycle (build → launch → test → cleanup), or start the app manually first (see "Manually"

@@ -28,6 +28,22 @@ const TOLERANCE_PX = 1.5
 const OPERATION_LOG = 'operation-log'
 const GO_TO_PATH = 'go-to-path'
 
+/**
+ * What each dialog renders only once its body has settled, which is what every
+ * measurement below needs.
+ *
+ * The operation log is the one that can't gate on the panel: it mounts in a spinner
+ * state and its first page arrives over IPC, so the rows land some frames after
+ * `.modal-dialog` exists and the panel grows from the spinner's height to the list's
+ * (hundreds of pixels, up to the panel's own max-height). Any `before` rect taken in
+ * that window belongs to a different layout than the `after` one. Rows, the
+ * nothing-yet notice, and the read-failed notice are the three settled ends.
+ */
+const SETTLED = {
+  [OPERATION_LOG]: `[data-dialog-id="${OPERATION_LOG}"] .op-list, [data-dialog-id="${OPERATION_LOG}"] .notice`,
+  [GO_TO_PATH]: `[data-dialog-id="${GO_TO_PATH}"] .dialog-body`,
+}
+
 interface PanelRect {
   left: number
   right: number
@@ -37,9 +53,10 @@ interface PanelRect {
   height: number
 }
 
-async function openDialog(page: TauriPage, dialogId: string, command: string): Promise<void> {
+async function openDialog(page: TauriPage, dialogId: keyof typeof SETTLED, command: string): Promise<void> {
   await dispatchMenuCommand(page, command)
   await page.waitForSelector(`[data-dialog-id="${dialogId}"] .modal-dialog`, 5000)
+  await page.waitForSelector(SETTLED[dialogId], 5000)
 }
 
 function panelRect(page: TauriPage, dialogId: string): Promise<PanelRect> {
