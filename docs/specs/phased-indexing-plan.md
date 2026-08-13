@@ -168,8 +168,15 @@ Keying on row count would make "Turn on indexing for this drive" a silent no-op 
 written to serve, external drives included. That would be a regression on shipped behavior, introduced by a change meant
 to close a truncate door.
 
-Gate the force-scan at the caller instead (`start_volume`, `handle/mod.rs:183-185`) on `phase_active` **or** a persisted
-"phased index in progress" marker in meta. The durable half is the marker, not the row count.
+Gate the force-scan at the caller instead: `start_volume`'s branch (`handle/mod.rs:183-185`) becomes
+`awaits_its_first_scan(vid) && master_enabled && !phased_in_progress(vid)`. A search-walked drive has no marker, so its
+enable still force-scans, and the documented case survives.
+
+**The marker's only real job is the crash window** — `phase_active` already covers every in-process case — so: set it
+when the machine starts, clear it whenever the machine stops for any reason (completion as part of step 8, M5's `stop`,
+and the master-off teardown). Say that plainly, or an implementer will build something more elaborate than it needs.
+Note the coupling: if completion never fires, the marker never clears and the per-drive enable button stays a silent
+no-op forever, which is a second reason the completion rule has to actually terminate.
 
 ### Interleaving without preemption
 
@@ -246,11 +253,14 @@ Three consequences that are easy to miss:
    `begin_branch_coverage` starts the watcher first, and the later `ensure_branch_watch` returns early because a watcher
    is already running — so the `resuming = true` path never runs and **the epoch bump for an unreplayable gap never
    fires**, making last session's covered rows render as *current* when nothing verified them. That is exactly the
-   honesty property the branch-watch resume exists to protect. **Defer the machine's first walk until after the registry
-   insert and `resume_branch_watch`.** ❌ Moving `branches::resumed_for` earlier is NOT an equivalent fix: it restores
-   the branch set but not the bump, because `ensure_branch_watch` still returns at its first line once a watcher is
-   running. If you do restore early anyway, pair it with an explicit bump decided at restore time (read
-   `replayable_event_id()`; if it is 0, send `BumpCurrentEpoch`) before anything can start a watcher.
+   honesty property the branch-watch resume exists to protect.
+
+   **The rule, precisely: the machine's first walk starts only after `resume_branch_watch` has run** (`startup.rs:252`),
+   ❌ not merely after the registry insert (`:244`) — the hazard lives in the few lines between them. Concretely:
+   `resume_or_scan`'s phased answer only **registers intent**, and `start_indexing_for` starts the machine in its
+   `(true, Ok(()))` arm, after `resume_branch_watch`. Spawning the walk from inside `resume_or_scan` and hoping is
+   racy. ❌ Moving `branches::resumed_for` earlier is NOT an equivalent fix: it restores the branch set but not the
+   bump, because `ensure_branch_watch` returns at its first line once a watcher is running.
 2. **The `dir_stats` ledger heal is armed but never paid.** `ArmLedgerHealLatch` is disarmed by the next successful
    `ComputeAllAggregates`, and cover walks send only `ComputeSubtreeAggregates` — so the latch stays armed and re-arms
    every launch, and the heal never happens. Fix is one message: send `PayLedgerIfUnpaid` (`writer/mod.rs:415-421`,
@@ -543,19 +553,43 @@ reach the public surface. Write the numbers to `docs/notes/phased-vs-bulk-index-
    the stamp, `PayLedgerIfUnpaid`, the sweep keys, the branch collapse, the media kick, `is_branch_confined` flipping.
    Every launch re-walks it, times out again at 15 s a directory, and stalls in the same place.
 
-   So completion needs a **bounded-progress rule**: if the frontier did not shrink across two consecutive full passes,
-   treat the remainder as unreachable-for-now, stamp completion, and record those leftovers the way `permission_denied`
-   and `declined` are recorded, so the UI can say something true about them. Also decide **where a timed-out directory
-   gets retried** once the machine is done: a later search walk, or the next launch's first pass.
+   **The fix is a third `UnreadableCause`, not a pass counter.** Give the walk `UnreadableCause::Abandoned` for a
+   directory it gave up on, and completion goes back to being a pure function of the database — "frontier empty, only
+   unreadable causes left" — durable across relaunch, immune to churn, with no in-session bookkeeping. The machinery
+   already fits:
+   - `UnreadableCause` is `Denied = 1` / `Declined = 2` and `from_stored` falls back to `Denied` for anything unknown
+     (`store/errors.rs:19-49`), so `Abandoned = 3` is additive and an older build reading a newer DB degrades
+     truthfully. The index is a disposable cache, so no migration.
+   - `MarkDirsUnreadable { ids, cause }` already exists, and **`MarkDirsListed` clears the cause**
+     (`writer/mod.rs:332-342`), so it self-heals on the next successful listing with no rebuild — the same contract
+     `Denied` already relies on.
+   - The verdict match (`read/coverage.rs:277-282`) is exhaustive over the two variants, so a third one is a **compile
+     error** at exactly the place that must grow a bucket. The decision can't be silently skipped.
+   - Free under the surface ceilings: neither a new enum variant nor a new `CoverageMap` field is counted.
 
-   ⚠️ This rule is the newest and least-reviewed part of the plan. Treat it as a design sketch to be nailed down in M2,
-   with a test that a permanently-timing-out directory still lets the volume reach completion.
+   **The tradeoff, stated rather than hidden:** marking a timeout `Abandoned` takes it out of the frontier, so nothing
+   re-attempts it, and with the verifier now bailing on `listed_epoch == 0` its heal path is narrower than `Denied`'s. For
+   an external disk that was merely spinning up, that is pessimistic. Refinement: treat `Abandoned` — ❌ not `Denied` or
+   `Declined` — as frontier-eligible again in a **new session**. One attempt per launch, terminates within a session,
+   heals across launches.
+
+   ❌ **Don't use a "frontier didn't shrink across two passes" rule instead.** It has to compare sets rather than counts
+   (a pass can legitimately grow the frontier by listing a root and exposing the abandoned directories inside it), it
+   never terminates on a continuously-written drive (a build or a sync client produces new unlisted rows every pass —
+   see risk 8), and being session-scoped it re-pays a full re-walk plus 15 s per wedged directory on every launch.
+
+   ⚠️ This is still the newest part of the plan. Keep the test
+   `a_permanently_timing_out_directory_still_lets_completion_happen`, and nail the details down in M2.
 8. **On completion, in this ORDER — and the order is enforced by a FLUSH, not by the numbering.** Steps 1–6 are writer
    *messages*; step 7 is in-process state. The read the whole ordering protects (`local_rescan_reconciles`'s
    `get_index_status()` inside `start_scan`) goes through a read connection, so it sees the stamp only once the writer
    has committed it — and step 3 runs a full `ComputeAllAggregates` over a complete `/` index, which is minutes of
-   writer-thread work sitting between the stamp being queued and being visible. **`flush_blocking()` after step 1 and
-   before step 7**, or the collapse lands inside exactly the window the order exists to close.
+   writer-thread work sitting between the stamp being queued and being visible. **Flush after step 1 and before step
+   7**, or the collapse lands inside exactly the window the order exists to close. Use the shape that matches the
+   context: `writer.flush().await` from async (as `scan_completion.rs:228` does), or
+   `tokio::task::block_in_place(|| writer.flush_blocking())` from a sync path in an async context (as
+   `manager/start.rs:432` does). ❌ A bare `flush_blocking()` blocks a runtime worker; it is only safe on a plain
+   `std::thread`, which is why the cover walk's own call is fine.
    1. stamp `scan_completed_at`;
    2. write the calibration meta;
    3. `PayLedgerIfUnpaid` (nothing else ever pays the armed `dir_stats` ledger heal);
