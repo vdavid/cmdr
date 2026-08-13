@@ -1,8 +1,8 @@
 /**
  * A self-maintaining registry of the close function for each currently-mounted soft
- * dialog, keyed by its `SoftDialogId`. `ModalDialog` and `QueryDialog` register their
- * `onclose` on mount and unregister on destroy, so the map always reflects what's open
- * and closable without any central per-dialog wiring.
+ * dialog, keyed by its `SoftDialogId`. `ModalDialog` (which `QueryDialog` renders through)
+ * keeps the entry pointing at its current `onclose` from an effect, so the map always
+ * reflects what's open and closable without any central per-dialog wiring.
  *
  * The MCP `dialog` tool's generic `close` action drives this: the backend emits
  * `mcp-close-dialog { id }`, the main-window router calls `closeDialogById(id)`, and the
@@ -17,15 +17,16 @@ import type { SoftDialogId } from './dialog-registry'
 
 const closers = new Map<SoftDialogId, () => void>()
 
-/** Register a dialog's close function. Called by `ModalDialog` / `QueryDialog` on mount. */
+/** Register a dialog's close function. Called by `ModalDialog` whenever its `onclose` changes. */
 export function registerDialogClose(id: SoftDialogId, close: () => void): void {
   closers.set(id, close)
 }
 
 /**
- * Unregister a dialog's close function on destroy. Only removes the entry if it's still
- * the one being unregistered, so a rapid remount (HMR, or reopen before the old destroy
- * ran) can't have the outgoing instance evict the incoming one's registration.
+ * Unregister a dialog's close function, on destroy or when it's superseded. Only removes
+ * the entry if it's still the one being unregistered, so a rapid remount (HMR, or reopen
+ * before the old destroy ran) can't have the outgoing instance evict the incoming one's
+ * registration.
  */
 export function unregisterDialogClose(id: SoftDialogId, close: () => void): void {
   if (closers.get(id) === close) closers.delete(id)

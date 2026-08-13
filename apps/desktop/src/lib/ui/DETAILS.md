@@ -138,7 +138,7 @@ also what keeps the height content-driven. A dialog never remembers the size it 
 - **The opposite edge stays put.** The panel is CENTERED, not absolutely placed, so growing it by N also slides its
   layout box by N/2 and the drag offset has to pay that back. Vertically the share depends on the alignment: a centered
   panel drifts by half its growth, while `growDownward` and `align="top"` pin the top edge and drift by none, so
-  dragging their top edge has to move the whole growth. `ModalDialog.test.ts` pins each case.
+  dragging their top edge has to move the whole growth. `ModalDialog.svelte.test.ts` pins each case.
 - **Size and offset are written as inline PROPERTIES from an effect**, never into the `style` attribute: that attribute
   is `containerStyle`'s, and re-rendering it mid-drag would snap the panel back to its opening size on the next pointer
   frame. The effect only ever SETS width and height — removing them would take `containerStyle`'s own sizing with them.
@@ -286,13 +286,19 @@ rows are display-only; the frontend returns opaque proposal and row ids to the b
 ### Generic close (`dialog-close-registry.ts`)
 
 The MCP `dialog` tool's generic `close` action closes any registered soft dialog by id. `dialog-close-registry.ts` holds
-a `Map<SoftDialogId, () => void>` that `ModalDialog` populates on mount and clears on destroy whenever it has an
-`onclose` (every soft dialog goes through it, `QueryDialog`'s three ids included). The backend emits
+a `Map<SoftDialogId, () => void>` that `ModalDialog` keeps pointing at its CURRENT `onclose` from an `$effect` (every
+soft dialog goes through it, `QueryDialog`'s three ids included). The backend emits
 `mcp-close-dialog { id }`; the main-window router (`listener-setup.ts`) calls `closeDialogById(id)`, which runs the
 dialog's own close, unmounting it (→ `notifyDialogClosed` → the backend `SoftDialogTracker` → the tool's
 `SoftDialogDisappeared` ack). A dialog rendered without an `onclose` isn't in the map, so `closeDialogById` returns
 `false` and the tool reports an honest failure rather than silently closing nothing. `unregisterDialogClose` only clears
 an entry that's still its own registration, so a rapid remount can't have the outgoing instance evict the incoming one.
+
+The effect is what makes a CONDITIONAL `onclose` safe. `TransferProgressDialog` withdraws its close while a conflict is
+on screen, so the arrow is a `$derived` with a fresh identity per flip; a register-on-mount / unregister-on-destroy pair
+would unregister by an identity the map no longer holds and leave the entry behind, and MCP would answer `true` for a
+dialog that isn't open. The effect re-registers on each change and its cleanup covers destroy.
+`ModalDialog.svelte.test.ts` pins both directions.
 
 ## Tooltip (`../tooltip/tooltip.ts`)
 

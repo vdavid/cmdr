@@ -391,16 +391,32 @@
         onclose()
     }
 
+    /**
+     * Keeps the MCP close registry pointing at the CURRENT `onclose`, so the
+     * `dialog` tool's generic close runs the live primitive and the entry goes
+     * away with the dialog.
+     *
+     * ❌ Never move this back to a register-on-mount / unregister-on-destroy
+     * pair. `onclose` may be conditional (`TransferProgressDialog` withdraws it
+     * while a conflict is on screen), which gives it a new identity on every
+     * flip; the registry unregisters BY identity, so the mount-time arrow would
+     * outlive the dialog and MCP would answer `true` for a dialog that isn't
+     * there. An effect re-registers on each change and its cleanup runs on
+     * destroy, covering both.
+     *
+     * No `onclose` means no dismiss affordance, so the dialog stays non-closable
+     * (an honest tool failure over a silent no-op).
+     */
+    $effect(() => {
+        if (!dialogId || !onclose) return
+        const close = onclose
+        registerDialogClose(dialogId, close)
+        return () => { unregisterDialogClose(dialogId, close) }
+    })
+
     onMount(async () => {
         previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
-        if (dialogId) {
-            void notifyDialogOpened(dialogId)
-            // Register the close primitive so the MCP `dialog` tool's generic close can
-            // dismiss this dialog by id. Only when `onclose` exists — a dialog with no
-            // dismiss affordance stays non-closable (an honest tool failure over a
-            // silent no-op).
-            if (onclose) registerDialogClose(dialogId, onclose)
-        }
+        if (dialogId) void notifyDialogOpened(dialogId)
         await tick()
         overlayElement?.focus()
 
@@ -420,10 +436,7 @@
         heightObserver?.disconnect()
         heightObserver = null
         if (growDownward) window.removeEventListener('resize', anchorToCurrentCenter)
-        if (dialogId) {
-            void notifyDialogClosed(dialogId)
-            if (onclose) unregisterDialogClose(dialogId, onclose)
-        }
+        if (dialogId) void notifyDialogClosed(dialogId)
         // Restore focus to whatever had it before the dialog opened. The connected-check
         // skips elements that were unmounted while the dialog was up (e.g., a rename input).
         if (previousActiveElement?.isConnected) {

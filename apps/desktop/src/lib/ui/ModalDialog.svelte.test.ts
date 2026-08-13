@@ -1,12 +1,13 @@
 /**
  * Behavior tests for `ModalDialog.svelte`. Tier-3 a11y wiring lives in
- * `ModalDialog.a11y.test.ts`. This file covers focus restoration on close
- * and the Enter-on-focused-button suppression.
+ * `ModalDialog.a11y.test.ts`. This file covers focus restoration on close, the
+ * Enter-on-focused-button suppression, resizing, and the MCP close registry.
  */
 
 import { describe, it, expect, vi } from 'vitest'
 import { mount, unmount, tick, createRawSnippet } from 'svelte'
 import ModalDialog from './ModalDialog.svelte'
+import { closeDialogById } from './dialog-close-registry'
 
 // Avoid Tauri IPC side-effects from notifyDialogOpened / notifyDialogClosed.
 vi.mock('$lib/tauri-commands', () => ({
@@ -332,6 +333,86 @@ describe('ModalDialog Enter key', () => {
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
 
     expect(onkeydown).toHaveBeenCalledTimes(1)
+    target.remove()
+  })
+})
+
+describe('ModalDialog MCP close registry', () => {
+  /**
+   * A dialog whose `onclose` is CONDITIONAL renders a new arrow every time the
+   * condition flips (`TransferProgressDialog` withdraws its close while a
+   * conflict is on screen). The registry is keyed by dialog id but guarded by
+   * function identity, so it has to follow the current `onclose` rather than
+   * the one that happened to exist at mount: a stale entry makes MCP's
+   * `dialog close` answer `true` for a dialog that isn't there.
+   */
+  /**
+   * ⚠️ The props object goes to `mount` UNSPREAD: spreading a `$state` object
+   * into a fresh literal reads every field once and hands the component a
+   * plain snapshot, so nothing the test writes afterwards reaches it.
+   */
+  interface ClosableProps {
+    titleId: string
+    title: typeof titleSnippet
+    children: typeof bodySnippet
+    dialogId: 'transfer-progress'
+    onclose?: () => void
+  }
+
+  function mountWithProps(props: ClosableProps) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(ModalDialog, { target, props })
+    return { target, component }
+  }
+
+  it('follows the current onclose when its identity changes, and unregisters on unmount', async () => {
+    const closed: string[] = []
+    const props: ClosableProps = $state({
+      titleId: 't',
+      title: titleSnippet,
+      children: bodySnippet,
+      dialogId: 'transfer-progress',
+      onclose: () => closed.push('first'),
+    })
+    const { target, component } = mountWithProps(props)
+    await tick()
+
+    expect(closeDialogById('transfer-progress')).toBe(true)
+
+    props.onclose = () => closed.push('second')
+    await tick()
+    expect(closeDialogById('transfer-progress')).toBe(true)
+    expect(closed).toEqual(['first', 'second'])
+
+    void unmount(component)
+    await tick()
+
+    expect(closeDialogById('transfer-progress')).toBe(false)
+    target.remove()
+  })
+
+  it('drops the registration while the dialog renders without an onclose', async () => {
+    const closed: string[] = []
+    const props: ClosableProps = $state({
+      titleId: 't',
+      title: titleSnippet,
+      children: bodySnippet,
+      dialogId: 'transfer-progress',
+      onclose: () => closed.push('closed'),
+    })
+    const { target, component } = mountWithProps(props)
+    await tick()
+
+    // The conflict body takes over: no ×, no Escape, so nothing to close by.
+    props.onclose = undefined
+    await tick()
+    expect(closeDialogById('transfer-progress')).toBe(false)
+    expect(closed).toEqual([])
+
+    void unmount(component)
+    await tick()
+    expect(closeDialogById('transfer-progress')).toBe(false)
     target.remove()
   })
 })

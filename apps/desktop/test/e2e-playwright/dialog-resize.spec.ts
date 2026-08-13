@@ -3,7 +3,7 @@
  * only the edge under the pointer.
  *
  * Both halves need a REAL engine, which is why they're here and not in
- * `ModalDialog.test.ts` (which covers the arithmetic in jsdom):
+ * `ModalDialog.svelte.test.ts` (which covers the arithmetic in jsdom):
  *
  * - The bands hang over the panel's edge on purpose, so an `overflow: hidden`
  *   creeping back onto `.modal-dialog` would clip them away. `elementFromPoint` is
