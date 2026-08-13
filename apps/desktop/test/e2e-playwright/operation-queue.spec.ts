@@ -31,6 +31,7 @@ import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   closeScopedWindow,
+  dismissAllToasts,
   ensureAppReady,
   expectAndDismissToast,
   getFixtureRoot,
@@ -390,5 +391,71 @@ test.describe('Operation queue window', () => {
     if (!failedId) throw new Error('no failed row')
     await clickRowButton(queuePage, failedId, 'Dismiss this operation')
     await expect.poll(async () => (await readRows(queuePage)).length, { timeout: 10000 }).toBe(0)
+  })
+
+  // The payoff of the whole queue: work you sent away can come back. This drives
+  // it across the window boundary the way a user does — a click in the queue
+  // window, a dialog in the main one — because that crossing is the one part no
+  // unit test can stand in for.
+  test('Show brings an operation back to the main window, and closing it hands the operation back', async ({
+    tauriPage,
+  }) => {
+    const fixtureRoot = getFixtureRoot()
+    const main = tauriPage as TauriPage
+
+    // Started through the IPC, so no dialog owns it: exactly the state a
+    // backgrounded operation is in.
+    await startCopy(main, fixtureRoot, SOURCE_A)
+    const queuePage = await openQueueWindow(main)
+
+    await expect
+      .poll(async () => (await readRows(queuePage)).map((r) => r.status).join(','), { timeout: 15000 })
+      .toBe('running')
+    const runningId = (await readRows(queuePage)).find((r) => r.status === 'running')?.id
+    expect(runningId, 'a running row exists').toBeTruthy()
+    if (!runningId) throw new Error('no running row')
+
+    await clickRowButton(queuePage, runningId, 'Show this operation in the main window')
+
+    // The main window shows it, with its live readout rather than an empty
+    // frame: the window's fan-out hands a late session the last tick it saw.
+    await expect
+      .poll(
+        async () =>
+          (await main.evaluate(`(function() {
+            var dialog = document.querySelector('[data-dialog-id="transfer-progress"]');
+            if (!dialog) return 'no dialog';
+            return dialog.querySelector('.progress-readout') ? 'readout' : 'no readout';
+          })()`)) as string,
+        { timeout: 15000 },
+      )
+      .toBe('readout')
+
+    // Background it again: the dialog goes, the operation doesn't.
+    await main.evaluate(`(function() {
+      var btn = document.querySelector('[aria-label="Keep this running in the background"]');
+      if (!btn) throw new Error('the adopted dialog offers no Background button');
+      btn.click();
+    })()`)
+
+    await expect
+      .poll(
+        async () =>
+          (await main.evaluate(
+            `!!document.querySelector('[data-dialog-id="transfer-progress"]')`,
+          )) as boolean,
+        { timeout: 10000 },
+      )
+      .toBe(false)
+
+    const stillListed = (await main.evaluate(`(async function() {
+      var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
+      return ops.some(function(o) { return o.operationId === ${JSON.stringify(runningId)}; });
+    })()`)) as boolean
+    expect(stillListed, 'the operation kept running after its dialog closed').toBe(true)
+
+    // Backgrounding says so, the same quiet way it does for an operation this
+    // window started.
+    await dismissAllToasts(main)
   })
 })
