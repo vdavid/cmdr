@@ -59,8 +59,9 @@ The divergence would then be self-inflicted, in the one place built to prevent i
 pins it by counting `createEtaSmoother` calls across a snapshot rebuild.
 
 The runes in the binder belong to the VIEW's scope, which is why it is a separate module from the session and not a
-method on one: a session may hold no `$derived` at all (see below), and the binder is nothing but view-scoped
-reactivity.
+method on one: a session holds no `$derived` at all (the module doc on `operation-session.svelte.ts` has the reason: a
+`$derived` built while a component initialises belongs to THAT component's scope and dies with it, while the session
+lives on), and the binder is nothing but view-scoped reactivity.
 
 ## What a session owns, and what the operations store keeps
 

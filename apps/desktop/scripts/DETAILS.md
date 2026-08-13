@@ -25,6 +25,32 @@ saved value on first run, and that saved `false` then beats the debug-build-on d
 setting, so the export wins; `CMDR_MCP_ENABLED=0` still exercises the off path. The deeper fix — not persisting registry
 defaults as explicit choices — is a known settings-store follow-up (see `src-tauri/src/settings/DETAILS.md`).
 
+## The llama-server fetch
+
+`download-llama-server.go` runs from `src-tauri/build.rs` and puts the llama-server binaries where the build expects
+them. In a linked worktree whose `.version` matches the main clone's, it takes them from there instead of the network:
+an APFS clonefile (`cp -c`), falling back to a plain copy, and downloading only when neither is possible.
+
+- **A copy, never a symlink into the main clone.** The Linux-E2E Docker container bind-mounts only the worktree, so a
+  symlink pointing outside it dangles there and breaks the in-container build.
+- **CI release builds codesign each extracted binary**, detected by `APPLE_SIGNING_IDENTITY` being set. When
+  `LLAMA_SIGN_KEYCHAIN` is set the script passes `codesign --keychain` explicitly, and `release.yml` ALSO puts that
+  keychain in the search list: the runner's launchd session can't reach the login keychain's key, and `--keychain` on
+  its own doesn't work for a keychain outside the search list.
+
+## The capture guard
+
+`capture-runtime.ts`'s `createTrackedArtifactGuard` is why a half-finished i18n capture can't leave the repo claiming a
+full one happened. `i18n-capture.ts` wraps the two tracked artifacts the run rewrites, `capture-report.json` and
+`capture-skipped.json`, which is what the message-screenshot couplings read: a partial report would name surfaces the
+run never photographed, and the repo would treat that as true. The screenshots themselves aren't guarded (regenerable),
+and an overflow pass writes to its own gitignored subdir, so it guards nothing at all.
+
+The shape is snapshot → run → `earn()` only on a complete green finish, with `restoreUnlessEarned()` on `process.exit`
+putting the previous contents back (removing a file that wasn't there before). An untouched file is left alone so a
+green-but-identical run doesn't churn mtimes, and the snapshot is dropped either way so a second call can't undo a later
+write.
+
 ## Key decisions
 
 - **Pure helpers in `instance-id.ts`, side effects in `tauri-wrapper.ts`.** The sanitizer, identifier composer,
