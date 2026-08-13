@@ -1,5 +1,6 @@
 /**
- * Tests for `DialogManager.svelte`'s error boundary.
+ * Tests for `DialogManager.svelte`'s error boundary and its single progress
+ * dialog.
  *
  * A dialog that throws while rendering used to leave the app wedged: nothing
  * reached the screen, but the `show*` flag was already true, so
@@ -17,6 +18,12 @@ import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
 
 vi.mock('$lib/ui/AlertDialog.svelte', async () => ({
   default: (await import('../../../../test/fixtures/dialog-throw-fixture.svelte')).default,
+}))
+
+// A marker stands in for the progress dialog: the real one dispatches a backend
+// operation on mount, and what's under test here is how many of it render.
+vi.mock('../../file-operations/transfer/TransferProgressDialog.svelte', async () => ({
+  default: (await import('../../../../test/fixtures/dialog-marker-fixture.svelte')).default,
 }))
 
 import DialogManager from './DialogManager.svelte'
@@ -127,5 +134,82 @@ describe('DialogManager error boundary', () => {
     flushSync()
 
     expect(onDialogRenderError).not.toHaveBeenCalled()
+  })
+})
+
+describe('DialogManager progress dialog', () => {
+  let host: HTMLDivElement
+  let component: Record<string, unknown> | null = null
+
+  beforeEach(() => {
+    host = document.createElement('div')
+    document.body.appendChild(host)
+  })
+
+  afterEach(() => {
+    if (component) {
+      void unmount(component)
+      component = null
+    }
+    host.remove()
+  })
+
+  const adopted: DialogManagerProps['adoptedProgressProps'] = {
+    operationId: 'op-1',
+    operationType: 'copy',
+    sourcePath: '/src',
+    destinationPath: '/dst',
+  }
+
+  const dispatching: DialogManagerProps['transferProgressProps'] = {
+    operationType: 'copy',
+    sourcePaths: ['/src/a.txt'],
+    sourceFolderPath: '/src',
+    sourcePaneSide: 'left',
+    destinationPath: '/dst',
+    sortColumn: 'name',
+    sortOrder: 'ascending',
+    previewId: null,
+    sourceVolumeId: 'local',
+  }
+
+  function markers(): NodeListOf<Element> {
+    return host.querySelectorAll('[data-testid="progress-dialog"]')
+  }
+
+  function render(props: Partial<DialogManagerProps>) {
+    component = mount(DialogManager, {
+      target: host,
+      props: { ...baseProps(vi.fn()), ...props },
+    }) as Record<string, unknown>
+    flushSync()
+  }
+
+  it('shows the adopted view when the queue handed an operation over', () => {
+    render({ showTransferProgressDialog: true, adoptedProgressProps: adopted })
+
+    expect(markers()).toHaveLength(1)
+    expect(markers()[0].getAttribute('data-adopted')).toBe('op-1')
+  })
+
+  it('shows the dispatching view when this window started the operation', () => {
+    render({ showTransferProgressDialog: true, transferProgressProps: dispatching })
+
+    expect(markers()).toHaveLength(1)
+    expect(markers()[0].getAttribute('data-adopted')).toBe('')
+  })
+
+  it('never stacks two progress dialogs, even with both slots filled', () => {
+    // `foregroundOperation` refuses an occupied slot, so this state can't occur
+    // upstream today. The markup is a chain so that stays true for free: one
+    // careless edit in `dialog-state` must not put two modals over a transfer.
+    render({
+      showTransferProgressDialog: true,
+      adoptedProgressProps: adopted,
+      transferProgressProps: dispatching,
+    })
+
+    expect(markers()).toHaveLength(1)
+    expect(markers()[0].getAttribute('data-adopted')).toBe('op-1')
   })
 })

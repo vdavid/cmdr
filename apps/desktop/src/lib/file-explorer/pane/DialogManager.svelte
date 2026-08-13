@@ -187,9 +187,13 @@
         Two arms, one dialog, because the two are genuinely different things: one
         STARTS an operation from birth context and may act on the panes
         afterwards, the other only WATCHES one that started elsewhere and must
-        not. They can't both be up (`foregroundOperation` refuses an occupied
-        slot), and the callbacks differ by design — an adopted view's outcomes
-        touch no pane. See `dialog-state.svelte.ts` § "Birth context".
+        not. The callbacks differ by design — an adopted view's outcomes touch no
+        pane. See `dialog-state.svelte.ts` § "Birth context".
+
+        ❌ Keep them ONE chain rather than two sibling `{#if}`s. `foregroundOperation`
+        refuses an occupied slot, so only one set of props is ever filled; the
+        `{:else if}` is what makes stacking two progress dialogs over a user's
+        transfer unreachable instead of a convention held in another file.
     -->
     {#if showTransferProgressDialog && adoptedProgressProps}
         <TransferProgressDialog
@@ -202,9 +206,7 @@
             onError={onAdoptedError}
             onQueue={onAdoptedQueue}
         />
-    {/if}
-
-    {#if showTransferProgressDialog && transferProgressProps}
+    {:else if showTransferProgressDialog && transferProgressProps}
         <TransferProgressDialog
             operationType={transferProgressProps.operationType}
             sourcePaths={transferProgressProps.sourcePaths}

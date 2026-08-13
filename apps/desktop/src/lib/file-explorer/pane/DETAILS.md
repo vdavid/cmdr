@@ -469,8 +469,10 @@ dialog open", which also covers the invisible case.
 **A refusal is the honest answer to an occupied slot**, and it is a toast in the main window rather than silence: the
 listener focuses this window whatever the verdict, because a refusal behind the queue window reads as a dead button.
 **Birth is the one thing that wins over adoption**: the three dispatch paths hand an adopted operation back to the queue
-before showing their own, since the started dialog renders from the other slot and nothing else would stop the two from
-stacking.
+before showing their own, since the started dialog renders from the other slot. `DialogManager` renders the two arms as
+ONE `{#if}` / `{:else if}` chain, which is what makes "two progress dialogs stacked over a user's transfer" unreachable
+rather than a convention held here; keep it a chain. It resolves to the ADOPTED arm, though, so the handoff is still
+what lets a newly started dialog appear at all. Pinned by `DialogManager.svelte.test.ts`.
 
 **An adopted view's outcome handlers touch no pane.** `handleAdoptedComplete` / `-Cancelled` / `-Error` / `-Queue` are
 separate callbacks, not a flag on the started ones, so the pane work is not reachable from them. They have nothing to
