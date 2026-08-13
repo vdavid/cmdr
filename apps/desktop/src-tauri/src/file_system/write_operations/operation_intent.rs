@@ -146,6 +146,12 @@ impl PauseGate {
     /// is still set. Without this, a paused op parked on the condvar would never
     /// see a cancel (the cancel path doesn't touch `paused`).
     pub fn wake(&self) {
+        // The park is being released without a resume, which today means a
+        // cancel: the operation is winding down and nobody is being waited on
+        // any more, so stop charging the person even though the flag stays set.
+        // Without this the clock would run for the rest of the operation, and a
+        // rollback after a cancel-while-paused would never measure a rate.
+        self.human_wait.set(HumanWaitSource::Pause, false);
         // Wake the sync waiter under the condvar mutex so a wake that races a
         // just-about-to-`wait` thread isn't missed (the waiter re-checks under
         // the lock).
@@ -283,6 +289,27 @@ mod tests {
             banked,
             clock.total_at(Instant::now() + Duration::from_secs(5)),
             "a resume closes the clock, so later seconds are the transfer's own",
+        );
+    }
+
+    #[test]
+    fn a_cancel_during_a_pause_stops_charging_the_person() {
+        // Cancel wakes the gate WITHOUT clearing the flag (cancellation wins
+        // over pause), so the paused bit alone would leave the clock running
+        // for the rest of the operation — and a rollback that follows would
+        // measure every interval as somebody's thinking time and never report a
+        // rate.
+        let clock = HumanWaitClock::shared();
+        let gate = PauseGate::new(Arc::clone(&clock));
+        gate.pause();
+        gate.wake();
+
+        assert!(gate.is_paused(), "the cancel path leaves the flag set");
+        let banked = clock.total_at(Instant::now());
+        assert_eq!(
+            banked,
+            clock.total_at(Instant::now() + Duration::from_secs(5)),
+            "the wake closed the clock, so the wind-down counts as the operation's own time",
         );
     }
 
