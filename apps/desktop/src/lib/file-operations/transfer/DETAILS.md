@@ -502,14 +502,14 @@ otherwise the same one, down to the buttons. Three things differ, each for its o
   promise about the OPERATION; an adopted view has no volume ids or direction to reason from. The props-only
   same-volume-move rule stands beside it for the window before the first snapshot lands, and the phase gate (nothing
   written during a scan) is unchanged.
-- **The parent runs no pane tail.** An adopted view has no birth context, and the two-slot arrangement in
-  `dialog-state` is what makes the wrong version unreachable: `../../file-explorer/pane/DETAILS.md` § "Birth context".
+- **The parent runs no pane tail.** An adopted view has no birth context, and the two-slot arrangement in `dialog-state`
+  is what makes the wrong version unreachable: `../../file-explorer/pane/DETAILS.md` § "Birth context".
 
 **An adopted view never shows `OPENING_PHASE`, and that is a decision.** `scanning` is what a DISPATCHING view opens on,
 because a confirmed transfer is about to count; an adopted operation could be anywhere, and titling a 21%-written copy
 "Verifying before copy…" over an empty scan readout is what shipped for about an hour before the real-app run caught it.
-So an adopted view reports `phase: null` until the operation speaks, and the dialog renders its title, its paths, and its
-buttons with no bars at all.
+So an adopted view reports `phase: null` until the operation speaks, and the dialog renders its title, its paths, and
+its buttons with no bars at all.
 
 That is normally the same frame: the window's fan-out keeps the newest tick of every live operation and hands it to a
 session attaching late (`../operation-session/DETAILS.md` § "Where a live operation had got to"). The empty state is

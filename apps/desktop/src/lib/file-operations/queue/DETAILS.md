@@ -145,8 +145,8 @@ where it is shown.
   `queued` row: the dialog auto-backgrounds a queued operation, so it would open and hand it straight back. ❌ Never on
   a failed row: there is nothing left to watch, and its reason is already on the row in full.
 - **The main window can refuse.** Its dialog slot is single-occupancy; a refusal comes back as a toast there, next to
-  the dialog that refused. Reasoning and the invisible-occupancy hazard:
-  `../../file-explorer/pane/DETAILS.md` § "Birth context".
+  the dialog that refused. Reasoning and the invisible-occupancy hazard: `../../file-explorer/pane/DETAILS.md` § "Birth
+  context".
 - Pinned by `QueueRow.svelte.test.ts` (which statuses offer it, and that the click asks for that row's own operation)
   and `../foreground-request.test.ts` (the lookup, including the ordinary miss).
 

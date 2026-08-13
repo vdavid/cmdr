@@ -105,10 +105,10 @@ central buffer keyed by unclaimed ids is therefore unbounded unless it is given 
 
 ### Where a live operation had got to
 
-The buffer answers "what did I miss while nobody was claiming this id". It cannot answer "where is this operation
-now", and a view that attaches twenty minutes in needs exactly that: the buffer is dropped on the first claim, and a
-PAUSED operation emits nothing to refill it, so a second session would sit at zero for as long as the pause lasts. That
-is what a queue row's Show button produces, and it read as a 21%-written copy shown as a scan that wasn't happening.
+The buffer answers "what did I miss while nobody was claiming this id". It cannot answer "where is this operation now",
+and a view that attaches twenty minutes in needs exactly that: the buffer is dropped on the first claim, and a PAUSED
+operation emits nothing to refill it, so a second session would sit at zero for as long as the pause lasts. That is what
+a queue row's Show button produces, and it read as a 21%-written copy shown as a scan that wasn't happening.
 
 So the fan-out also retains the newest `write-progress` per LIVE operation, whether or not anything is watching, and
 hands it to a session that attaches with no buffered tick of its own. Three rules keep it honest:
@@ -264,9 +264,9 @@ Two consequences worth carrying:
 
 ## What a view that ADOPTED its operation may not do
 
-A view can bind a session for an operation it never started (the queue's Show button). The session is indifferent —
-that is the whole point of it — but the VIEW's parent is not, and the line is worth stating here because it is where a
-reader of the session will look for it.
+A view can bind a session for an operation it never started (the queue's Show button). The session is indifferent — that
+is the whole point of it — but the VIEW's parent is not, and the line is worth stating here because it is where a reader
+of the session will look for it.
 
 The session says what the operation did. It cannot say what a pane should do about it: which pane started it, which
 paths it was aimed at, and how many files and folders the user picked are all captured at birth, in the pane, and none

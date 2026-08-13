@@ -6,6 +6,7 @@
 
     /** Where each glyph shows up in the app. Derived by grepping `name="<icon>"` call sites. */
     const USAGE: Record<IconName, string> = {
+        'app-window': 'Show button on a running operation row in the operation queue, which puts that operation back in the main window\'s progress dialog.',
         archive: 'Archive action on an Ask Cmdr chat row in the sessions panel, and the archived-view toggle.',
         'archive-restore': 'Unarchive action on an archived Ask Cmdr chat row in the sessions panel.',
         'arrow-left': 'Back button in the onboarding wizard.',

@@ -455,9 +455,9 @@ The progress dialog can show an operation this window never started (Show, on a 
 did** belongs to its session, **what a pane should do about it** belongs to the view and is bound to the moment the
 operation was born, and **what the dialog draws** is chrome either can supply.
 
-**Two slots, and they are separate variables on purpose.** `transferProgressProps` is birth context: the paths, the
-pane side, the per-type counts, the dispatch input. `adoptedProgressProps` is an operation this window is only watching:
-an id, a type, and two paths off the registry row. `foregroundOperation()` fills the second and never the first, so an
+**Two slots, and they are separate variables on purpose.** `transferProgressProps` is birth context: the paths, the pane
+side, the per-type counts, the dispatch input. `adoptedProgressProps` is an operation this window is only watching: an
+id, a type, and two paths off the registry row. `foregroundOperation()` fills the second and never the first, so an
 adoption CANNOT overwrite a live birth context. That is not tidiness, it is the one hazard in this feature:
 `handleTransferError`'s archive branch takes the progress dialog down while keeping `transferProgressProps` alive, and
 `handleArchivePasswordSubmit` re-dispatches from it when the user types the password. A guard that tested

@@ -99,7 +99,7 @@ describe('QueueRow a11y', () => {
     const list = await mountRow(row('running', 'copy', runningProgress))
     const button = list.querySelector('[aria-label="Show this operation in the main window"]')
     expect(button, 'the running row offers Show').not.toBeNull()
-    expect(button?.getAttribute('aria-label')).toContain(button?.textContent?.trim())
+    expect(button?.getAttribute('aria-label')).toContain(button?.textContent.trim())
     await expectNoA11yViolations(list)
   })
 
