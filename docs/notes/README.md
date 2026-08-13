@@ -19,6 +19,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   `SCOPED_WALK_MAX_DIRS` is refuted, and the measurement (99.88% against 0.03%) behind the signals-not-score equality
   key. Keep it until the open batch-width question in it is settled.
 
+**Load-bearing as the evidence behind a decision that would otherwise look arbitrary:**
+
+- `index-scope-measurement-2026-08-14.md` — what indexing outside `$HOME` actually costs (15.4% of the entries, ~30 s,
+  ~115 MB, against `~/Library`'s 27.7% _inside_ home), and why phased indexing reorders the walk instead of narrowing
+  it. Read it before anyone proposes a home-only default again; it names the conditions that would change the answer.
+
 **Load-bearing as regression anchors:**
 
 - `coverage-frontier-query-2026-08-05.md` — the search frontier query measured against its 50 ms warm budget on a real

@@ -8,13 +8,13 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 - [ ] 2026-08-13 `phased-indexing-plan.md` - Replace the first full drive scan with ordered coverage phases: the user's
       own folders (last session's tabs, favorites, standard home dirs, cloud roots), then whatever they open while the
-      app runs, then `$HOME`, and the rest of the drive only if they ask for it. Every phase is an `Index::cover` walk,
-      so nothing is ever truncated and every walk survives a restart, which also makes branch-scoped watching the
-      default shape rather than a retrofit. Because the default index is permanently partial, the covered scope (the
-      branch set) becomes what rescan routing, sweep routing, and completion all consult, and scope coverage gets its
-      own marker apart from whole-volume completion. Carries the hourglass fix (corner and per-folder, keyed to ground
-      actually being walked, with a 1 s debounce). Gated on a benchmark: cover-over-`/` versus today's bulk build, timed
-      to first useful folder as well as to full coverage. The first-run startup state it used to carry has shipped.
+      app runs, then `$HOME`, then the rest of the drive. Every phase is an `Index::cover` walk, so nothing is ever
+      truncated, an interrupted first run survives, and branch-scoped watching becomes the default shape rather than a
+      retrofit. The whole drive still gets indexed and every existing promise stays true; the one addition is a
+      `home_covered_at` signal so photo search and importance start when home is done instead of waiting for `/`.
+      Carries the hourglass fix (corner and per-folder, keyed to ground actually being walked, with a 1 s debounce).
+      Gated on a benchmark: cover-over-`/` versus today's bulk build, timed to first useful folder as well as to full
+      coverage.
 - [ ] 2026-08-12 `marketing-screenshot-pipeline-plan.md` - Turn the hand-driven marketing screenshot round (20–30 min of
       MCP calls) into one Playwright command. The shutter stays `screencapture -l` because the plugin's native capture
       has no macOS shadow; the run leaves `CMDR_E2E_MODE` unset so the window can become key and earn the focused
