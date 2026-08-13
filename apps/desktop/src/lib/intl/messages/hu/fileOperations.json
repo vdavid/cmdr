@@ -597,6 +597,10 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.transferProgress.foregroundBusyToast": "Egy másik művelet foglalja ezt az ablakot. Zárd be előbb azt, aztán hozd ide ezt.",
+  "@fileOperations.transferProgress.foregroundBusyToast": {
+    "sourceHash": "f3b520d"
+  },
   "fileOperations.errorDialog.technicalDetails": "Technikai részletek",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

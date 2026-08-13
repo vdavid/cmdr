@@ -31,6 +31,14 @@
   "@queue.row.resume": {
     "sourceHash": "d640c74"
   },
+  "queue.row.foreground": "显示",
+  "@queue.row.foreground": {
+    "sourceHash": "0df6f1c"
+  },
+  "queue.row.foregroundAria": "在主窗口中显示这项操作",
+  "@queue.row.foregroundAria": {
+    "sourceHash": "ece64ad"
+  },
   "queue.row.cancel": "取消",
   "@queue.row.cancel": {
     "sourceHash": "19766ed"

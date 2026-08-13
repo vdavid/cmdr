@@ -597,6 +597,10 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.transferProgress.foregroundBusyToast": "En annan åtgärd använder det här fönstret. Stäng den först och hämta sedan hit den här.",
+  "@fileOperations.transferProgress.foregroundBusyToast": {
+    "sourceHash": "f3b520d"
+  },
   "fileOperations.errorDialog.technicalDetails": "Tekniska detaljer",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

@@ -58,6 +58,30 @@ export interface TransferProgressPropsData {
   initiator?: Initiator
 }
 
+/**
+ * An operation this window did NOT start, shown in the progress dialog because
+ * the user pressed Show on its queue row.
+ *
+ * Everything live comes from the operation's session; these four fields are the
+ * dialog's chrome, and they are exactly what the registry snapshot carries.
+ * There is deliberately nothing else here: no `sourcePaths`, no pane side, no
+ * counts. See `dialog-state.svelte.ts` § "Birth context" in `DETAILS.md` for why
+ * an adopted view must not invent them.
+ */
+export interface AdoptedOperationData {
+  operationId: string
+  operationType: TransferOperationType
+  /** The operation's source, from its registry row. Display only. */
+  sourcePath: string | null
+  /** The operation's destination, from its registry row. Display only. */
+  destinationPath: string | null
+}
+
+/** What came of a request to show a running operation in the progress dialog.
+ *  `busy` is a refusal the caller has to surface; `alreadyShowing` is a
+ *  successful no-op (the user pressed Show on the operation already up). */
+export type ForegroundOperationVerdict = 'adopted' | 'alreadyShowing' | 'busy'
+
 export interface NewFolderDialogPropsData {
   currentPath: string
   listingId: string
@@ -170,9 +194,15 @@ export function createDialogState(deps: DialogStateDeps) {
   let showTransferDialog = $state(false)
   let transferDialogProps = $state<TransferDialogPropsData | null>(null)
 
-  // Transfer progress dialog state
+  // Transfer progress dialog state. Two slots, never one: `transferProgressProps`
+  // is BIRTH CONTEXT (what this window started, and what it may therefore do to
+  // its panes afterwards), `adoptedProgressProps` is an operation this window is
+  // only watching. Keeping them apart is what makes it impossible for an
+  // adoption to overwrite the input the archive-password submit re-dispatches
+  // from — a wrong write against the user's files. `DETAILS.md` § "Birth context".
   let showTransferProgressDialog = $state(false)
   let transferProgressProps = $state<TransferProgressPropsData | null>(null)
+  let adoptedProgressProps = $state<AdoptedOperationData | null>(null)
 
   // New folder dialog state
   let showNewFolderDialog = $state(false)
@@ -206,6 +236,41 @@ export function createDialogState(deps: DialogStateDeps) {
     return transferProgressProps?.sourcePaneSide === 'left' ? deps.getLeftPaneRef() : deps.getRightPaneRef()
   }
 
+  /**
+   * Whether the birth context still describes the source pane.
+   *
+   * The axis for a view's pane work is FRESH versus STALE context, not "did this
+   * view start the operation": a pane that navigated away mid-transfer holds a
+   * selection the user made somewhere else, and the archive-password re-dispatch
+   * re-snapshots against wherever the pane is now. Refreshing a listing is
+   * harmless either way, but changing a selection is not, so the selection work
+   * asks this first.
+   *
+   * Comparing the pane's current folder to the one the operation was born in is
+   * the honest cheap test. No pane at all means nothing to speak for.
+   */
+  function sourcePaneStillShowsBirthFolder(): boolean {
+    const props = transferProgressProps
+    const paneRef = getSourcePaneRef()
+    if (!props || !paneRef) return false
+    return paneRef.getCurrentPath() === props.sourceFolderPath
+  }
+
+  /** Every dialog this module can put on screen. The main window shows one at a
+   *  time, so this is what an adoption has to find empty. */
+  function anyDialogOpen(): boolean {
+    return (
+      showTransferDialog ||
+      showTransferProgressDialog ||
+      showNewFolderDialog ||
+      showNewFileDialog ||
+      showAlertDialog ||
+      showTransferErrorDialog ||
+      showArchivePasswordDialog ||
+      showDeleteDialog
+    )
+  }
+
   function clearSourcePaneSelection(): void {
     getSourcePaneRef()?.clearSelection()
   }
@@ -214,8 +279,21 @@ export function createDialogState(deps: DialogStateDeps) {
     void getSourcePaneRef()?.snapshotSelectionForOperation()
   }
 
+  /** Drops the source pane's operation snapshot and its selection, the tail every
+   *  settled transfer runs. Skipped for a pane that has navigated since the
+   *  operation was born: the selection there is one the user made somewhere
+   *  else, and this operation has no business clearing it. */
+  function clearSourcePaneAfterTransfer(): void {
+    if (!sourcePaneStillShowsBirthFolder()) return
+    getSourcePaneRef()?.clearOperationSnapshot()
+    clearSourcePaneSelection()
+  }
+
   /** Adjusts source pane selection after a cancelled operation based on the snapshot state. */
   function adjustSelectionAfterCancel(op: TransferOperationType): void {
+    // Same rule as `clearSourcePaneAfterTransfer`: a pane showing a different
+    // folder has a selection that isn't this operation's to restore or clear.
+    if (!sourcePaneStillShowsBirthFolder()) return
     const prevSnapshot = getSourcePaneRef()?.clearOperationSnapshot()
     if (prevSnapshot === 'all' && op !== 'copy' && op !== 'compress') {
       // Re-select all survivors (move/delete/trash changed the source listing;
@@ -269,6 +347,9 @@ export function createDialogState(deps: DialogStateDeps) {
     },
     get transferProgressProps() {
       return transferProgressProps
+    },
+    get adoptedProgressProps() {
+      return adoptedProgressProps
     },
     get showNewFolderDialog() {
       return showNewFolderDialog
@@ -324,6 +405,37 @@ export function createDialogState(deps: DialogStateDeps) {
       transferProgressProps = props
       snapshotSourcePaneSelection()
       showTransferProgressDialog = true
+    },
+
+    /**
+     * Shows an operation that is already running (the queue row's Show button).
+     *
+     * The dialog slot is single-occupancy and refusing is the honest answer when
+     * it is taken: swapping would either drop a transfer's dialog out from under
+     * the user or, worse, land next to a live birth context. "Taken" includes
+     * the case where nothing is on screen — an archive-password prompt keeps
+     * `transferProgressProps` alive with the progress dialog unmounted — which
+     * is why `anyDialogOpen()` is only half the test.
+     */
+    foregroundOperation(operation: AdoptedOperationData): ForegroundOperationVerdict {
+      if (adoptedProgressProps?.operationId === operation.operationId) {
+        // Pressing Show on the operation already up. Deliberately not a
+        // re-adoption: replacing the props remounts the dialog, which disposes
+        // its session and builds a second one, whose ETA smoother would start
+        // over from nothing halfway through the transfer.
+        return 'alreadyShowing'
+      }
+      if (transferProgressProps !== null || adoptedProgressProps !== null || anyDialogOpen()) {
+        log.info('Not showing op={operationId}: this window is busy with another dialog', {
+          operationId: operation.operationId,
+        })
+        addToast(tString('fileOperations.transferProgress.foregroundBusyToast'), { level: 'info' })
+        return 'busy'
+      }
+      log.info('Showing op={operationId} in the progress dialog', { operationId: operation.operationId })
+      adoptedProgressProps = operation
+      showTransferProgressDialog = true
+      return 'adopted'
     },
 
     showNewFolder(props: NewFolderDialogPropsData) {
@@ -492,11 +604,81 @@ export function createDialogState(deps: DialogStateDeps) {
       addToast(toastMessage, { level: allSkipped ? 'info' : 'success', timeoutMs: 7000 })
 
       refreshPanesAfterTransfer()
-      getSourcePaneRef()?.clearOperationSnapshot()
-      clearSourcePaneSelection()
+      clearSourcePaneAfterTransfer()
 
       showTransferProgressDialog = false
       transferProgressProps = null
+      deps.onRefocus()
+    },
+
+    /**
+     * An ADOPTED operation finished.
+     *
+     * It says what the operation did and stops there. What a pane should do
+     * about a transfer belongs to the view that started it: which pane, which
+     * paths, how many files and folders, and which selection to restore are all
+     * birth context, and this view has none of it. Guessing would clear a
+     * selection in a pane that has nothing to do with the operation and raise a
+     * toast that can't name what moved.
+     *
+     * The counts ARE facts about the operation, so the toast still uses them; it
+     * simply falls back to the file count instead of the per-type split.
+     *
+     * ⚠️ Known gap, and it predates adoption: the search-snapshot purge doesn't
+     * run here, so a move finished from an adopted dialog can leave rows for
+     * files that no longer exist in a stored search snapshot. It keys on
+     * `sourcePaths`, which is birth context. `DETAILS.md` § "Birth context"
+     * carries the reasoning and the shape of the real fix.
+     */
+    handleAdoptedComplete(filesProcessed: number, filesSkipped: number, bytesProcessed: number) {
+      const op = adoptedProgressProps?.operationType ?? 'copy'
+      log.info(
+        `${transferOpLabel(op)} complete (adopted): ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatByteSize(bytesProcessed)})`,
+      )
+      const toastMessage = composeTransferCompleteToast({ operationType: op, filesProcessed, filesSkipped })
+      const allSkipped = filesSkipped > 0 && filesSkipped === filesProcessed
+      addToast(toastMessage, { level: allSkipped ? 'info' : 'success', timeoutMs: 7000 })
+
+      showTransferProgressDialog = false
+      adoptedProgressProps = null
+      deps.onRefocus()
+    },
+
+    /** An adopted operation was cancelled. No pane work, for the same reason
+     *  completion has none: the selection to adjust was never taken here. */
+    handleAdoptedCancelled(filesProcessed: number) {
+      const op = adoptedProgressProps?.operationType ?? 'copy'
+      log.info(`${transferOpLabel(op)} cancelled (adopted) after ${String(filesProcessed)} files`)
+
+      showTransferProgressDialog = false
+      adoptedProgressProps = null
+      deps.onRefocus()
+    },
+
+    /** An adopted operation couldn't finish. The reason is worth showing exactly
+     *  as it is for an operation this window started; only the pane tail is
+     *  missing. The failure handover is the same too, so the corner chip and the
+     *  toast stay quiet about what the user is already reading. */
+    handleAdoptedError(error: WriteOperationError) {
+      const op = adoptedProgressProps?.operationType ?? 'copy'
+      const failedOperationId = getForegroundOperationId()
+      log.error('{op} failed (adopted): {errorType}', { op: transferOpLabel(op), errorType: error.type, error })
+
+      showTransferProgressDialog = false
+      adoptedProgressProps = null
+
+      setForegroundFailureId(failedOperationId)
+      transferErrorProps = { operationType: op, error }
+      showTransferErrorDialog = true
+    },
+
+    /** The user sent an adopted operation back to the queue window (Background,
+     *  F2, or a close). Stop showing it; it keeps running. */
+    handleAdoptedQueue() {
+      if (!adoptedProgressProps) return
+      log.info('{op} handed back to the queue window', { op: transferOpLabel(adoptedProgressProps.operationType) })
+      showTransferProgressDialog = false
+      adoptedProgressProps = null
       deps.onRefocus()
     },
 
@@ -510,8 +692,7 @@ export function createDialogState(deps: DialogStateDeps) {
       const op = transferProgressProps?.operationType ?? 'copy'
       log.info('{op} sent to the background (managed in the queue window)', { op: transferOpLabel(op) })
 
-      getSourcePaneRef()?.clearOperationSnapshot()
-      clearSourcePaneSelection()
+      clearSourcePaneAfterTransfer()
 
       showTransferProgressDialog = false
       transferProgressProps = null
@@ -572,8 +753,7 @@ export function createDialogState(deps: DialogStateDeps) {
       })
 
       refreshPanesAfterTransfer()
-      getSourcePaneRef()?.clearOperationSnapshot()
-      clearSourcePaneSelection()
+      clearSourcePaneAfterTransfer()
 
       showTransferProgressDialog = false
       transferProgressProps = null
@@ -661,8 +841,7 @@ export function createDialogState(deps: DialogStateDeps) {
       log.info('{op} archive-password prompt cancelled', { op: transferOpLabel(op) })
 
       refreshPanesAfterTransfer()
-      getSourcePaneRef()?.clearOperationSnapshot()
-      clearSourcePaneSelection()
+      clearSourcePaneAfterTransfer()
 
       showArchivePasswordDialog = false
       archivePasswordProps = null
@@ -813,6 +992,7 @@ export function createDialogState(deps: DialogStateDeps) {
       transferDialogProps = null
       showTransferProgressDialog = false
       transferProgressProps = null
+      adoptedProgressProps = null
       showNewFolderDialog = false
       newFolderDialogProps = null
       showNewFileDialog = false

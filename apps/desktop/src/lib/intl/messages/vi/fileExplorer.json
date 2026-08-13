@@ -96,12 +96,16 @@
     "sourceHash": "d8b8392"
   },
   "fileExplorer.errorPane.openSystemSettings": "Mở {systemSettings}",
+  "@fileExplorer.errorPane.openSystemSettings": {
+    "sourceHash": "f735c5c"
+  },
   "fileExplorer.errorPane.goBack": "Quay lại",
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "@fileExplorer.errorPane.openSystemSettings": {
-    "sourceHash": "f735c5c"
+  "fileExplorer.errorPane.goHome": "Mở thư mục chính",
+  "@fileExplorer.errorPane.goHome": {
+    "sourceHash": "74b2a8b"
   },
   "fileExplorer.errorPane.technicalDetails": "Chi tiết kỹ thuật",
   "@fileExplorer.errorPane.technicalDetails": {
@@ -1404,9 +1408,5 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Lập chỉ mục ổ đĩa đang tắt trong Cài đặt. Hãy bật trong Lập chỉ mục > Lập chỉ mục ổ đĩa, và ổ đĩa này sẽ tiếp tục từ chỗ đã dừng.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
-  },
-  "fileExplorer.errorPane.goHome": "Mở thư mục chính",
-  "@fileExplorer.errorPane.goHome": {
-    "sourceHash": "74b2a8b"
   }
 }

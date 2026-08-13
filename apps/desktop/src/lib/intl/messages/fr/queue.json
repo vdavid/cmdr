@@ -32,6 +32,14 @@
   "@queue.row.resume": {
     "sourceHash": "d640c74"
   },
+  "queue.row.foreground": "Afficher",
+  "@queue.row.foreground": {
+    "sourceHash": "0df6f1c"
+  },
+  "queue.row.foregroundAria": "Afficher cette opération dans la fenêtre principale",
+  "@queue.row.foregroundAria": {
+    "sourceHash": "ece64ad"
+  },
   "queue.row.cancel": "Annuler",
   "@queue.row.cancel": {
     "sourceHash": "19766ed"

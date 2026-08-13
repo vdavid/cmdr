@@ -323,22 +323,22 @@
     "sourceHash": "6aadac2"
   },
   "commands.navForward.label": "Ga vooruit",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
   "commands.navGoHome.label": "Ga naar thuismap",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
-  "@commands.navForward.label": {
-    "sourceHash": "8121136"
+  "commands.errorPaneToggleTechnicalDetails.label": "Technische details tonen",
+  "@commands.errorPaneToggleTechnicalDetails.label": {
+    "sourceHash": "bde0de8"
   },
   "commands.navOpenUnderCursor.label": "Open onderdeel onder cursor",
   "@commands.navOpenUnderCursor.label": {
     "sourceHash": "6b54df9"
   },
   "commands.cursorMoveTo.label": "Verplaats paneelcursor",
-  "commands.errorPaneToggleTechnicalDetails.label": "Technische details tonen",
-  "@commands.errorPaneToggleTechnicalDetails.label": {
-    "sourceHash": "bde0de8"
-  },
   "@commands.cursorMoveTo.label": {
     "sourceHash": "4c196ef"
   },

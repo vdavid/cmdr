@@ -7,6 +7,7 @@ import type { ViewMode } from '$lib/app-status-store'
 import type { McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
 import type { QuickLookKeyEventPayload } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import type { FileEntry, FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
+import type { AdoptedOperationData, ForegroundOperationVerdict } from '$lib/file-explorer/pane/dialog-state.svelte'
 import type { NavigateIntent, NavigateResult } from '$lib/file-explorer/pane/navigate'
 import type { StartRenameOptions } from '$lib/file-explorer/pane/types'
 import type { Initiator } from '$lib/tauri-commands'
@@ -166,6 +167,13 @@ export interface ExplorerAPI {
     mcpRequestId?: string,
     initiator?: Initiator,
   ) => Promise<void>
+  /**
+   * Shows an operation that is already running in the main window's progress
+   * dialog (the queue row's Show button, over `foreground-operation`). The
+   * verdict says whether it landed: `busy` means this window is showing another
+   * operation's dialog and said so in a toast.
+   */
+  foregroundOperation: (operation: AdoptedOperationData) => ForegroundOperationVerdict
   closeConfirmationDialog: () => void
   confirmDialog: (dialogType: ConfirmDialogType, onConflict?: string) => void
   isConfirmationDialogOpen: () => boolean

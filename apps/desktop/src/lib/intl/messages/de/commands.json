@@ -321,22 +321,22 @@
     "sourceHash": "6aadac2"
   },
   "commands.navForward.label": "Vor",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
   "commands.navGoHome.label": "Zum persönlichen Ordner gehen",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
-  "@commands.navForward.label": {
-    "sourceHash": "8121136"
+  "commands.errorPaneToggleTechnicalDetails.label": "Technische Details anzeigen",
+  "@commands.errorPaneToggleTechnicalDetails.label": {
+    "sourceHash": "bde0de8"
   },
   "commands.navOpenUnderCursor.label": "Objekt unter Cursor öffnen",
   "@commands.navOpenUnderCursor.label": {
     "sourceHash": "6b54df9"
   },
   "commands.cursorMoveTo.label": "Cursor im Bereich bewegen",
-  "commands.errorPaneToggleTechnicalDetails.label": "Technische Details anzeigen",
-  "@commands.errorPaneToggleTechnicalDetails.label": {
-    "sourceHash": "bde0de8"
-  },
   "@commands.cursorMoveTo.label": {
     "sourceHash": "4c196ef"
   },

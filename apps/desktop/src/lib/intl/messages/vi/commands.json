@@ -321,22 +321,22 @@
     "sourceHash": "6aadac2"
   },
   "commands.navForward.label": "Đi tới",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
   "commands.navGoHome.label": "Đi tới thư mục chính",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
-  "@commands.navForward.label": {
-    "sourceHash": "8121136"
+  "commands.errorPaneToggleTechnicalDetails.label": "Hiện chi tiết kỹ thuật",
+  "@commands.errorPaneToggleTechnicalDetails.label": {
+    "sourceHash": "bde0de8"
   },
   "commands.navOpenUnderCursor.label": "Mở mục dưới con trỏ",
   "@commands.navOpenUnderCursor.label": {
     "sourceHash": "6b54df9"
   },
   "commands.cursorMoveTo.label": "Di chuyển con trỏ của khung",
-  "commands.errorPaneToggleTechnicalDetails.label": "Hiện chi tiết kỹ thuật",
-  "@commands.errorPaneToggleTechnicalDetails.label": {
-    "sourceHash": "bde0de8"
-  },
   "@commands.cursorMoveTo.label": {
     "sourceHash": "4c196ef"
   },

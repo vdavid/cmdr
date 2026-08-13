@@ -39,6 +39,10 @@ function makePaneRef() {
     snapshotSelectionForOperation: vi.fn(() => Promise.resolve()),
     clearOperationSnapshot: vi.fn(() => null),
     getListingId: vi.fn(() => 'listing-1'),
+    // The pane is where the operation was born, which is what the settled-transfer
+    // tail checks before it touches a selection: a pane that has navigated since
+    // holds one the user made somewhere else.
+    getCurrentPath: vi.fn(() => '/Users/me/secret.zip/inner'),
     refreshVolumeSpace: vi.fn(() => Promise.resolve()),
   }
   return { ref: spies as unknown as FilePaneAPI, spies }

@@ -321,22 +321,22 @@
     "sourceHash": "6aadac2"
   },
   "commands.navForward.label": "Előre",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
   "commands.navGoHome.label": "Ugrás a saját mappára",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
-  "@commands.navForward.label": {
-    "sourceHash": "8121136"
+  "commands.errorPaneToggleTechnicalDetails.label": "Technikai részletek megjelenítése",
+  "@commands.errorPaneToggleTechnicalDetails.label": {
+    "sourceHash": "bde0de8"
   },
   "commands.navOpenUnderCursor.label": "Kurzor alatti elem megnyitása",
   "@commands.navOpenUnderCursor.label": {
     "sourceHash": "6b54df9"
   },
   "commands.cursorMoveTo.label": "Panelkurzor mozgatása",
-  "commands.errorPaneToggleTechnicalDetails.label": "Technikai részletek megjelenítése",
-  "@commands.errorPaneToggleTechnicalDetails.label": {
-    "sourceHash": "bde0de8"
-  },
   "@commands.cursorMoveTo.label": {
     "sourceHash": "4c196ef"
   },

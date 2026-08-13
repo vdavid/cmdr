@@ -52,6 +52,18 @@
     "description": "Button on a paused operation row that resumes the operation. Toggles back from \"Pause\"."
   },
 
+  "queue.row.foreground": "Show",
+  "@queue.row.foreground": {
+    "description": "Button on a running or paused operation row that moves it back into the main window: the main window comes forward and shows this operation's full progress dialog, the same one the user backgrounded it from. The operation keeps running throughout; nothing about it changes, only where it's shown. Keep it short, it sits beside Pause and Cancel on one row.",
+    "screenshot": "queue.png"
+  },
+
+  "queue.row.foregroundAria": "Show this operation in the main window",
+  "@queue.row.foregroundAria": {
+    "description": "Screen-reader label for the per-row Show button (the visible button shows only \"Show\"). It must contain the visible label word for word, so translate \"Show\" the same way in both.",
+    "screenshot": "queue.png"
+  },
+
   "queue.row.cancel": "Cancel",
   "@queue.row.cancel": {
     "description": "Button on an operation row that stops that operation. Files already copied are kept; only the half-written file is removed.",

@@ -596,6 +596,10 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.transferProgress.foregroundBusyToast": "Một thao tác khác đang dùng cửa sổ này. Hãy đóng nó trước, rồi mở thao tác này lên.",
+  "@fileOperations.transferProgress.foregroundBusyToast": {
+    "sourceHash": "f3b520d"
+  },
   "fileOperations.errorDialog.technicalDetails": "Chi tiết kỹ thuật",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

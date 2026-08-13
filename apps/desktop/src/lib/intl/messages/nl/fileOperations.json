@@ -598,6 +598,10 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.transferProgress.foregroundBusyToast": "Een andere bewerking gebruikt dit venster. Sluit die eerst en haal deze daarna naar voren.",
+  "@fileOperations.transferProgress.foregroundBusyToast": {
+    "sourceHash": "f3b520d"
+  },
   "fileOperations.errorDialog.technicalDetails": "Technische details",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

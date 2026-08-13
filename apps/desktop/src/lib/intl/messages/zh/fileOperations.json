@@ -595,6 +595,10 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.transferProgress.foregroundBusyToast": "另一项操作正在使用此窗口。请先关闭它，然后再显示这一项。",
+  "@fileOperations.transferProgress.foregroundBusyToast": {
+    "sourceHash": "f3b520d"
+  },
   "fileOperations.errorDialog.technicalDetails": "技术详情",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

@@ -96,12 +96,16 @@
     "sourceHash": "d8b8392"
   },
   "fileExplorer.errorPane.openSystemSettings": "{systemSettings} megnyitása",
+  "@fileExplorer.errorPane.openSystemSettings": {
+    "sourceHash": "f735c5c"
+  },
   "fileExplorer.errorPane.goBack": "Vissza",
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "@fileExplorer.errorPane.openSystemSettings": {
-    "sourceHash": "f735c5c"
+  "fileExplorer.errorPane.goHome": "Saját mappa megnyitása",
+  "@fileExplorer.errorPane.goHome": {
+    "sourceHash": "74b2a8b"
   },
   "fileExplorer.errorPane.technicalDetails": "Technikai részletek",
   "@fileExplorer.errorPane.technicalDetails": {
@@ -1404,9 +1408,5 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "A meghajtó indexelése ki van kapcsolva a Beállításokban. Kapcsold be itt: Indexelés > Meghajtó indexelése. Ez a meghajtó ott folytatja majd, ahol abbahagyta.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
-  },
-  "fileExplorer.errorPane.goHome": "Saját mappa megnyitása",
-  "@fileExplorer.errorPane.goHome": {
-    "sourceHash": "74b2a8b"
   }
 }

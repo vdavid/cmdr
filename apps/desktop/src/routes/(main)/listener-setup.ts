@@ -32,6 +32,7 @@ import {
   onCloseAbout,
   onCloseConfirmation,
   onSettingsChanged,
+  onForegroundOperationRequested,
 } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { markDispatchSource } from './dispatch-dedup'
@@ -39,6 +40,8 @@ import { setFolderExcluded } from '$lib/media-index/excluded-folders'
 import { setFolderChosen } from '$lib/media-index/always-index-folders'
 import { isCommandId, type CommandId, type CommandDispatchArgs } from '$lib/commands'
 import type { ViewMode } from '$lib/app-status-store'
+import { adoptedOperationFor } from '$lib/file-operations/foreground-request'
+import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { saveSettings } from '$lib/settings-store'
 import { seedSettingForE2E, setSetting } from '$lib/settings'
@@ -409,6 +412,25 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   await pushTauri(unlistenFns, () =>
     onFocusFileViewer((payload) => {
       void focusFileViewer(payload.path ?? undefined)
+    }),
+  )
+
+  // Show one operation in the progress dialog: the queue window's row button.
+  // The window comes forward WHATEVER the verdict — it holds the dialog that
+  // refused, and a toast behind another window reads as the button doing
+  // nothing. A row this window's snapshot doesn't have is an operation that
+  // ended between the click and the delivery; its queue row went with it.
+  await pushTauri(unlistenFns, () =>
+    onForegroundOperationRequested((payload) => {
+      void focusMainWindow()
+      const operation = adoptedOperationFor(getMainWindowOperationRows(), payload.operationId)
+      if (!operation) {
+        log.info('Nothing to show for op={operationId}: this window has no such operation', {
+          operationId: payload.operationId,
+        })
+        return
+      }
+      getExplorer()?.foregroundOperation(operation)
     }),
   )
 

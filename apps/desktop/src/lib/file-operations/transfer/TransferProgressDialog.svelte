@@ -29,21 +29,31 @@
     import { hasOtherQueuedWork } from '$lib/file-operations/queue/queue-backlog'
 
     interface Props {
+        /** An operation already running that this dialog WATCHES instead of
+         *  starting one (Show, from the operation queue). It arrives with the
+         *  four things the registry snapshot knows — the id, the type, and the
+         *  two paths below — and nothing else: the dispatch props marked
+         *  "started only" are absent, because nobody dispatches on this path. */
+        adoptOperationId?: string
         operationType: TransferOperationType
-        sourcePaths: string[]
+        /** Started only. */
+        sourcePaths?: string[]
         sourceFolderPath: string
         /** Destination path (not applicable for delete/trash) */
         destinationPath?: string
-        /** Transfer direction (not applicable for delete/trash) */
+        /** Transfer direction (not applicable for delete/trash, and unknown for
+         *  an adopted operation: the snapshot names paths, not panes). */
         direction?: 'left' | 'right'
-        /** Current sort column on source pane (files will be processed in this order) */
-        sortColumn: SortColumn
-        /** Current sort order on source pane */
-        sortOrder: SortOrder
-        /** Preview scan ID from TransferDialog (for reusing scan results, optional) */
-        previewId: string | null
-        /** Source volume ID (like "root", "mtp-336592896:65537") */
-        sourceVolumeId: string
+        /** Started only: current sort column on source pane (files will be processed in this order) */
+        sortColumn?: SortColumn
+        /** Started only: current sort order on source pane */
+        sortOrder?: SortOrder
+        /** Started only: preview scan ID from TransferDialog (for reusing scan results) */
+        previewId?: string | null
+        /** Source volume ID (like "root", "mtp-336592896:65537"). Started only:
+         *  an adopted operation's Rollback affordance comes from its registry
+         *  row instead. */
+        sourceVolumeId?: string
         /** Destination volume ID (not applicable for delete/trash) */
         destVolumeId?: string
         /** Conflict resolution policy from TransferDialog (not applicable for delete/trash) */
@@ -68,16 +78,20 @@
         mcpRequestId?: string
     }
 
+    // The "started only" defaults are never read on the path that omits them:
+    // an adopted dialog dispatches nothing, so the whole dispatch config sits
+    // unused. They exist so this component keeps one flat prop list.
     const {
+        adoptOperationId,
         operationType,
-        sourcePaths,
+        sourcePaths = [],
         sourceFolderPath,
         destinationPath,
         direction,
-        sortColumn,
-        sortOrder,
-        previewId,
-        sourceVolumeId,
+        sortColumn = 'name',
+        sortOrder = 'ascending',
+        previewId = null,
+        sourceVolumeId = DEFAULT_VOLUME_ID,
         destVolumeId,
         conflictResolution,
         preKnownConflicts,
@@ -154,6 +168,7 @@
     // corner chip. Lives in a factory so it's testable without rendering; the
     // markup reads it through the aliases below.
     const progress = createTransferProgressState({
+        adoptOperationId,
         operationType,
         sourcePaths,
         destinationPath,
@@ -178,6 +193,7 @@
     // session's through it), so the template updates exactly as before.
     const phase = $derived(progress.phase)
     const isRollingBack = $derived(progress.isRollingBack)
+    const rollbackUnavailable = $derived(progress.rollbackUnavailable)
     const isCancelling = $derived(progress.isCancelling)
     const cancelEventReceived = $derived(progress.cancelEventReceived)
     const settleSlow = $derived(progress.settleSlow)
@@ -486,9 +502,12 @@
                 {#if isRollingBack}
                     <Button variant="danger" disabled>{tString('fileOperations.transferProgress.titleRollingBack')}</Button
                     >
-                {:else if isSameVolumeMove}
-                    <!-- Same-volume volume moves have no backend rollback; the
-                         button is disabled with an explanatory tooltip. Plain
+                {:else if isSameVolumeMove || rollbackUnavailable}
+                    <!-- No backend rollback for this one: either a same-volume
+                         move (which the props alone can tell), or the
+                         operation's own registry row saying so — the authority
+                         wherever it has arrived, and an adopted view's only
+                         source. Disabled with an explanatory tooltip; plain
                          Cancel above stays reachable. -->
                     <span use:tooltip={ROLLBACK_UNAVAILABLE_TOOLTIP}>
                         <Button variant="danger" disabled

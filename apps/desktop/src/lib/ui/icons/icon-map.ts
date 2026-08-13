@@ -1,5 +1,6 @@
 import type { Component } from 'svelte'
 import IconArchive from '~icons/lucide/archive'
+import IconAppWindow from '~icons/lucide/app-window'
 import IconArchiveRestore from '~icons/lucide/archive-restore'
 import IconArrowLeft from '~icons/lucide/arrow-left'
 import IconArrowRight from '~icons/lucide/arrow-right'
@@ -73,6 +74,7 @@ import EjectIcon from './EjectIcon.svelte'
  */
 export const ICON_COMPONENTS = {
   archive: IconArchive,
+  'app-window': IconAppWindow,
   'archive-restore': IconArchiveRestore,
   'arrow-left': IconArrowLeft,
   'arrow-right': IconArrowRight,

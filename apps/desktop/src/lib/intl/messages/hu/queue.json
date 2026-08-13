@@ -31,6 +31,14 @@
   "@queue.row.resume": {
     "sourceHash": "d640c74"
   },
+  "queue.row.foreground": "Megjelenítés",
+  "@queue.row.foreground": {
+    "sourceHash": "0df6f1c"
+  },
+  "queue.row.foregroundAria": "Megjelenítés a főablakban",
+  "@queue.row.foregroundAria": {
+    "sourceHash": "ece64ad"
+  },
   "queue.row.cancel": "Megszakítás",
   "@queue.row.cancel": {
     "sourceHash": "19766ed"

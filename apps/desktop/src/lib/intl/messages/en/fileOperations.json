@@ -1044,6 +1044,11 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
+  "fileOperations.transferProgress.foregroundBusyToast": "Another operation is using this window. Close it first, then bring this one up.",
+  "@fileOperations.transferProgress.foregroundBusyToast": {
+    "description": "Quiet toast in the main window, shown when the user presses Show on a row in the operation queue but the main window is already busy with another operation''s dialog (its progress dialog, a question it''s asking, or a confirmation on its way to becoming one). Only one operation can be shown at a time, so this one stays where it is, still running, in the queue. \"Close it\" means the dialog that''s in the way; \"bring this one up\" means press Show again afterwards."
+  },
+
   "fileOperations.errorDialog.technicalDetails": "Technical details",
   "@fileOperations.errorDialog.technicalDetails": {
     "description": "Toggle that expands raw, developer-facing details (paths, error codes) below a friendly transfer-error message. Control label.",

@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, vi } from 'vitest'
+import { describe, it, beforeEach, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import QueueRow from './QueueRow.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
@@ -88,6 +88,18 @@ describe('QueueRow a11y', () => {
   // one whose accessible name comes from its label rather than an aria-label.
   it('a rollbackable copy row has no a11y violations', async () => {
     const list = await mountRow(row('running', 'copy', runningProgress, true))
+    await expectNoA11yViolations(list)
+  })
+
+  // Show is the row's one control that acts on a WINDOW rather than on the
+  // operation, so its spoken name has to say where it goes. WCAG 2.5.3 also
+  // wants the visible word inside the accessible name, or "click Show" doesn't
+  // reach the control a speech user is looking at.
+  it('names the Show button so it says where the operation goes', async () => {
+    const list = await mountRow(row('running', 'copy', runningProgress))
+    const button = list.querySelector('[aria-label="Show this operation in the main window"]')
+    expect(button, 'the running row offers Show').not.toBeNull()
+    expect(button?.getAttribute('aria-label')).toContain(button?.textContent?.trim())
     await expectNoA11yViolations(list)
   })
 

@@ -69,7 +69,11 @@
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import type { TransferOperationType } from '../types'
     import type { Initiator } from '$lib/tauri-commands'
-    import { createDialogState } from './dialog-state.svelte'
+    import {
+        createDialogState,
+        type AdoptedOperationData,
+        type ForegroundOperationVerdict,
+    } from './dialog-state.svelte'
     import { explorerState } from './explorer-state.svelte'
     import type { PaneAccess } from './pane-access'
     import { createClipboardOperations } from './clipboard-operations'
@@ -749,6 +753,14 @@
         fileOps.closeConfirmationDialog()
     }
 
+    /** Shows a running operation in the progress dialog: the queue row's Show
+     *  button, arriving over `foreground-operation`. The verdict goes back to
+     *  the listener, which raises this window either way — a refusal the user
+     *  can't see reads as the button doing nothing. */
+    export function foregroundOperation(operation: AdoptedOperationData): ForegroundOperationVerdict {
+        return dialogs.foregroundOperation(operation)
+    }
+
     /** Returns whether any confirmation dialog is currently open. */
     export function isConfirmationDialogOpen(): boolean {
         return fileOps.isConfirmationDialogOpen()
@@ -1392,6 +1404,7 @@
     transferDialogProps={dialogs.transferDialogProps}
     showTransferProgressDialog={dialogs.showTransferProgressDialog}
     transferProgressProps={dialogs.transferProgressProps}
+    adoptedProgressProps={dialogs.adoptedProgressProps}
     showNewFolderDialog={dialogs.showNewFolderDialog}
     newFolderDialogProps={dialogs.newFolderDialogProps}
     showNewFileDialog={dialogs.showNewFileDialog}
@@ -1420,6 +1433,18 @@
     }}
     onTransferCancelled={(files: number) => {
         dialogs.handleTransferCancelled(files)
+    }}
+    onAdoptedComplete={(files: number, skipped: number, bytes: number) => {
+        dialogs.handleAdoptedComplete(files, skipped, bytes)
+    }}
+    onAdoptedCancelled={(files: number) => {
+        dialogs.handleAdoptedCancelled(files)
+    }}
+    onAdoptedError={(error: WriteOperationError) => {
+        dialogs.handleAdoptedError(error)
+    }}
+    onAdoptedQueue={() => {
+        dialogs.handleAdoptedQueue()
     }}
     onTransferError={(error: WriteOperationError) => {
         dialogs.handleTransferError(error)

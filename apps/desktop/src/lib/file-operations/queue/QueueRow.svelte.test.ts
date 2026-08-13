@@ -4,12 +4,19 @@ import QueueRow from './QueueRow.svelte'
 import { operationTypeIcon } from './operation-icon'
 import type { OperationRow } from './operations-store.svelte'
 import type { OperationSnapshot, WriteOperationError, WriteProgressEvent } from '$lib/ipc/bindings'
+import { requestForegroundOperation } from '$lib/tauri-commands'
 
 // The component reads reactive settings (file-size format) deep in `<Size>`. The
 // real path needs the settings store; stub the format getter to keep the unit
 // test isolated.
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getFileSizeFormat: () => 'decimal',
+}))
+
+// Show crosses to the main window over a Tauri event; the row's job is to ask
+// for its own operation and nothing else.
+vi.mock('$lib/tauri-commands', () => ({
+  requestForegroundOperation: vi.fn(() => Promise.resolve()),
 }))
 
 function buildRow(
@@ -284,5 +291,62 @@ describe('QueueRow while the operation is still counting', () => {
     })
 
     expect(rollbackButton()).not.toBeNull()
+  })
+})
+
+describe('QueueRow: Show (back to the main window)', () => {
+  const showButton = () => target.querySelector('[aria-label="Show this operation in the main window"]')
+
+  /** A row mid-scan: still counting, no totals yet. */
+  function scanningRow(): OperationRow {
+    return buildRow('running', 'copy', {
+      operationId: 'op-1',
+      operationType: 'copy',
+      phase: 'scanning',
+      currentFile: 'a.txt',
+      filesDone: 12,
+      filesTotal: 0,
+      bytesDone: 400,
+      bytesTotal: 0,
+    })
+  }
+
+  it("offers Show on a running row, and asks for that row's operation", () => {
+    render({ row: buildRow('running') })
+
+    const button = showButton()
+    expect(button).not.toBeNull()
+    ;(button as HTMLButtonElement).click()
+
+    expect(requestForegroundOperation).toHaveBeenCalledWith('op-1')
+  })
+
+  it('offers Show on a paused row and on one still counting', () => {
+    render({ row: buildRow('paused') })
+    expect(showButton()).not.toBeNull()
+    if (instance) void unmount(instance)
+
+    render({ row: scanningRow() })
+    expect(showButton()).not.toBeNull()
+  })
+
+  it('offers none on a queued row: the dialog would hand it straight back', () => {
+    // A dialog showing a `queued` operation has nothing to show and no reason to
+    // be up. It waits its turn where the whole queue is visible.
+    render({ row: buildRow('queued') })
+
+    expect(showButton()).toBeNull()
+  })
+
+  it('offers none on a row that has already stopped', () => {
+    render({ row: buildFailedRow({ type: 'io_error', path: '/x', message: 'boom' }) })
+
+    expect(showButton()).toBeNull()
+  })
+
+  it('offers none for an instant operation: there is no progress to show', () => {
+    render({ row: buildRow('running', 'rename') })
+
+    expect(showButton()).toBeNull()
   })
 })

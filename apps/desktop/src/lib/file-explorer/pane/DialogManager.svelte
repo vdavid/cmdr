@@ -9,6 +9,7 @@
     import AlertDialog from '$lib/ui/AlertDialog.svelte'
     import type { TransferDialogPropsData } from './transfer-operations'
     import type {
+        AdoptedOperationData,
         TransferProgressPropsData,
         NewFolderDialogPropsData,
         NewFileDialogPropsData,
@@ -25,6 +26,7 @@
         transferDialogProps,
         showTransferProgressDialog,
         transferProgressProps,
+        adoptedProgressProps,
         showNewFolderDialog,
         newFolderDialogProps,
         showNewFileDialog,
@@ -43,6 +45,10 @@
         onTransferCancelled,
         onTransferError,
         onTransferQueue,
+        onAdoptedComplete,
+        onAdoptedCancelled,
+        onAdoptedError,
+        onAdoptedQueue,
         onTransferErrorClose,
         onArchivePasswordSubmit,
         onArchivePasswordCancel,
@@ -60,6 +66,7 @@
         transferDialogProps: TransferDialogPropsData | null
         showTransferProgressDialog: boolean
         transferProgressProps: TransferProgressPropsData | null
+        adoptedProgressProps: AdoptedOperationData | null
         showNewFolderDialog: boolean
         newFolderDialogProps: NewFolderDialogPropsData | null
         showNewFileDialog: boolean
@@ -85,6 +92,13 @@
         onTransferCancelled: (filesProcessed: number) => void
         onTransferError: (error: WriteOperationError, friendly?: FriendlyError) => void
         onTransferQueue: () => void
+        /** The four outcomes of a dialog that ADOPTED its operation. Separate
+         *  callbacks, not a flag on the started ones: an adopted view has no
+         *  birth context, so its tail must not be able to reach the pane work. */
+        onAdoptedComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
+        onAdoptedCancelled: (filesProcessed: number) => void
+        onAdoptedError: (error: WriteOperationError) => void
+        onAdoptedQueue: () => void
         onTransferErrorClose: () => void
         onArchivePasswordSubmit: (password: string) => void
         onArchivePasswordCancel: () => void
@@ -167,6 +181,27 @@
                 onCancel={onTransferCancel}
             />
         {/key}
+    {/if}
+
+    <!--
+        Two arms, one dialog, because the two are genuinely different things: one
+        STARTS an operation from birth context and may act on the panes
+        afterwards, the other only WATCHES one that started elsewhere and must
+        not. They can't both be up (`foregroundOperation` refuses an occupied
+        slot), and the callbacks differ by design — an adopted view's outcomes
+        touch no pane. See `dialog-state.svelte.ts` § "Birth context".
+    -->
+    {#if showTransferProgressDialog && adoptedProgressProps}
+        <TransferProgressDialog
+            adoptOperationId={adoptedProgressProps.operationId}
+            operationType={adoptedProgressProps.operationType}
+            sourceFolderPath={adoptedProgressProps.sourcePath ?? ''}
+            destinationPath={adoptedProgressProps.destinationPath ?? undefined}
+            onComplete={onAdoptedComplete}
+            onCancelled={onAdoptedCancelled}
+            onError={onAdoptedError}
+            onQueue={onAdoptedQueue}
+        />
     {/if}
 
     {#if showTransferProgressDialog && transferProgressProps}

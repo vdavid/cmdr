@@ -5,7 +5,7 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { OperationRow } from './operations-store.svelte'
+    import { isInstantOperation, type OperationRow } from './operations-store.svelte'
     import { operationTypeIcon } from './operation-icon'
     import { failureReasonFor } from './failure-reason'
     import { transferReadout } from '../progress-readout'
@@ -13,6 +13,7 @@
     import ScanPhaseBody from '../transfer/ScanPhaseBody.svelte'
     import { stallNoticeFor } from '../transfer/transfer-stall'
     import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
+    import { requestForegroundOperation } from '$lib/tauri-commands'
 
     interface Props {
         row: OperationRow
@@ -83,6 +84,13 @@
     const canRollback = $derived(
         snapshot.supportsRollback && (isRunning || isPaused) && !isRollingBack && !isScanning,
     )
+
+    /** Show hands this operation back to the main window's progress dialog, the
+     *  one it was backgrounded from. Offered while the operation is actually
+     *  moving (a scan counts) and never on a `queued` one: that dialog would
+     *  have nothing to show and would hand it straight back here. Instant ops
+     *  emit no progress at all, so there's nothing to show for them either. */
+    const canForeground = $derived((isRunning || isPaused) && !isInstantOperation(snapshot.operationType))
 
     const label = $derived(tString('queue.row.label', { type: snapshot.operationType }))
     const statusLabel = $derived(
@@ -185,6 +193,22 @@
     </span>
 
     <div class="actions-cell">
+        {#if canForeground}
+            <!-- ❌ Not a command on the operation: nothing about it changes, only
+                 where it's shown. The main window decides whether it can take
+                 it and says so there, because that's where the answer lands. -->
+            <Button
+                variant="secondary"
+                size="mini"
+                onclick={() => void requestForegroundOperation(snapshot.operationId)}
+                aria-label={tString('queue.row.foregroundAria')}
+            >
+                <span class="btn-inner">
+                    <Icon name="app-window" size={13} />
+                    {tString('queue.row.foreground')}
+                </span>
+            </Button>
+        {/if}
         {#if (isRunning || isPaused) && !isScanning}
             <!-- Pause parks between files, so a still-counting operation has
                  nothing to park; the backend declines the flip. -->

@@ -321,22 +321,22 @@
     "sourceHash": "6aadac2"
   },
   "commands.navForward.label": "Gå framåt",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
   "commands.navGoHome.label": "Gå till hemmappen",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
-  "@commands.navForward.label": {
-    "sourceHash": "8121136"
+  "commands.errorPaneToggleTechnicalDetails.label": "Visa tekniska detaljer",
+  "@commands.errorPaneToggleTechnicalDetails.label": {
+    "sourceHash": "bde0de8"
   },
   "commands.navOpenUnderCursor.label": "Öppna objektet under markören",
   "@commands.navOpenUnderCursor.label": {
     "sourceHash": "6b54df9"
   },
   "commands.cursorMoveTo.label": "Flytta panelmarkören",
-  "commands.errorPaneToggleTechnicalDetails.label": "Visa tekniska detaljer",
-  "@commands.errorPaneToggleTechnicalDetails.label": {
-    "sourceHash": "bde0de8"
-  },
   "@commands.cursorMoveTo.label": {
     "sourceHash": "4c196ef"
   },

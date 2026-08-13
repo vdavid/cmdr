@@ -597,6 +597,10 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.transferProgress.foregroundBusyToast": "Otra operación está usando esta ventana. Ciérrala primero y luego trae esta al frente.",
+  "@fileOperations.transferProgress.foregroundBusyToast": {
+    "sourceHash": "f3b520d"
+  },
   "fileOperations.errorDialog.technicalDetails": "Detalles técnicos",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

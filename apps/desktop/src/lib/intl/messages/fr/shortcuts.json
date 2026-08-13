@@ -39,11 +39,11 @@
   "@shortcuts.scope.network": {
     "sourceHash": "1744b96"
   },
-  "shortcuts.scope.shareBrowser": "Navigateur de partages",
   "shortcuts.scope.errorScreen": "Écran d'erreur",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
+  "shortcuts.scope.shareBrowser": "Navigateur de partages",
   "@shortcuts.scope.shareBrowser": {
     "sourceHash": "5cec2a6"
   },

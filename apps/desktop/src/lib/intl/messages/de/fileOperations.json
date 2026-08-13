@@ -600,6 +600,10 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.transferProgress.foregroundBusyToast": "Ein anderer Vorgang belegt dieses Fenster. Schließe ihn zuerst und hole diesen dann nach vorn.",
+  "@fileOperations.transferProgress.foregroundBusyToast": {
+    "sourceHash": "f3b520d"
+  },
   "fileOperations.errorDialog.technicalDetails": "Technische Details",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"
