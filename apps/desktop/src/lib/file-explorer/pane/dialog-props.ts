@@ -9,6 +9,7 @@
  */
 
 import type { Initiator } from '$lib/tauri-commands'
+import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
 import type { FilePaneAPI } from './types'
@@ -78,6 +79,16 @@ export interface AdoptedOperationData {
  *  `busy` is a refusal the caller has to surface; `alreadyShowing` is a
  *  successful no-op (the user pressed Show on the operation already up). */
 export type ForegroundOperationVerdict = 'adopted' | 'alreadyShowing' | 'busy'
+
+/**
+ * What came of a command that would START a file operation.
+ *
+ * The refusal names the dialog in the way as a TYPED id, never only in prose: an
+ * MCP agent acts on it to decide what to close, so it's a contract, and the
+ * repo's `no-error-string-match` rule applies to a message an agent parses just
+ * as it does to one our own code would.
+ */
+export type OperationStartVerdict = 'started' | { blockedBy: SoftDialogId }
 
 export interface NewFolderDialogPropsData {
   currentPath: string

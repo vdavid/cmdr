@@ -44,9 +44,14 @@ import type {
   ForegroundOperationVerdict,
   NewFileDialogPropsData,
   NewFolderDialogPropsData,
+  OperationStartVerdict,
   TransferErrorPropsData,
   TransferProgressPropsData,
 } from './dialog-props'
+import { emit } from '@tauri-apps/api/event'
+import { isAnySoftDialogOpen } from '$lib/ui/open-dialogs.svelte'
+import { mcpOperationBlockedMessage } from './operation-start-gate'
+import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import { formatByteSize } from '$lib/units'
 
 const log = getAppLogger('fileExplorer')
@@ -87,10 +92,20 @@ export function createDialogState(deps: DialogStateDeps) {
 
   const paneEffects = createTransferPaneEffects(deps, () => transferProgressProps)
 
-  /** Every dialog this module can put on screen. The main window shows one at a
-   *  time, so this is what an adoption has to find empty. */
+  /**
+   * Whether anything is on screen. The main window shows one dialog at a time, so
+   * this is what an adoption has to find empty.
+   *
+   * The INVENTORY is `$lib/ui/open-dialogs.svelte`, which `ModalDialog` maintains
+   * from its own mount/destroy pair: exhaustive by construction, so a dialog added
+   * anywhere in this window counts here without anyone remembering to say so. The
+   * local flags below are not a second inventory — they close the same-tick window
+   * between `show* = true` and the mount that registers it, which is when a
+   * back-to-back MCP dispatch would otherwise see an empty set.
+   */
   function anyDialogOpen(): boolean {
     return (
+      isAnySoftDialogOpen() ||
       showTransferDialog ||
       showTransferProgressDialog ||
       showNewFolderDialog ||
@@ -100,6 +115,44 @@ export function createDialogState(deps: DialogStateDeps) {
       archivePassword.showDialog ||
       showDeleteDialog
     )
+  }
+
+  /**
+   * The dialog holding the progress slot, or `null` when it's free.
+   *
+   * BIRTH CONTEXT is the whole test, read off the props and ❌ never off
+   * `showTransferProgressDialog`. Two consequences worth stating:
+   *
+   * - An ADOPTED operation doesn't hold the slot. Watching someone else's
+   *   operation isn't owning one: birth still wins, the adopted view goes back to
+   *   the queue window it came from, and it keeps running. Pinned in
+   *   `dialog-state.foreground.svelte.test.ts`.
+   * - A password prompt DOES, with nothing on screen but itself: it keeps birth
+   *   context alive for the submit to re-dispatch from. It gets named as the
+   *   blocker, so an agent isn't told to close a dialog that isn't up.
+   */
+  function progressSlotHolder(): SoftDialogId | null {
+    if (transferProgressProps === null) return null
+    return archivePassword.showDialog ? 'archive-password' : 'transfer-progress'
+  }
+
+  /**
+   * Refuses a start and says so, to whoever asked: a toast for the person who
+   * picked File > Copy, and a failed round-trip for an MCP agent, which beats
+   * making it wait out the ten-second budget for silence.
+   */
+  function refuseOperationStart(blockedBy: SoftDialogId, mcpRequestId: string | undefined): OperationStartVerdict {
+    log.info('Not starting an operation: the {blockedBy} dialog holds the slot', { blockedBy })
+    addToast(tString('fileOperations.transferProgress.operationBlockedToast'), { level: 'info' })
+    if (mcpRequestId) {
+      void emit('mcp-response', {
+        requestId: mcpRequestId,
+        ok: false,
+        blockedBy,
+        error: mcpOperationBlockedMessage(blockedBy),
+      })
+    }
+    return { blockedBy }
   }
 
   /** Opens the error dialog, claiming the failure so the corner chip and the
@@ -152,14 +205,27 @@ export function createDialogState(deps: DialogStateDeps) {
     onRefocus: deps.onRefocus,
   })
 
-  /** Opens the progress dialog on an operation this window is starting. Hands any
-   *  adopted operation back to the queue first: birth wins over adoption, and the
-   *  two arms would otherwise stack. */
-  function startBirthOperation(props: TransferProgressPropsData): void {
+  /**
+   * Opens the progress dialog on an operation this window is starting. Hands any
+   * adopted operation back to the queue first: birth wins over adoption, and the
+   * two arms would otherwise stack.
+   *
+   * Refuses outright when the slot is already taken. ⚠️ This refusal has to stand
+   * on its own, whatever the entry points do: the native menu is OS-side and MCP
+   * is a separate actor, and neither is gated on this window's modal state. A
+   * second start used to overwrite the first operation's props, so the mounted
+   * dialog re-rendered against something it had never dispatched and the user got
+   * no operation and no explanation.
+   */
+  function startBirthOperation(props: TransferProgressPropsData): OperationStartVerdict {
+    const blockedBy = progressSlotHolder()
+    if (blockedBy) return refuseOperationStart(blockedBy, props.mcpRequestId)
+
     adopted.release()
     transferProgressProps = props
     paneEffects.snapshotSourcePaneSelection()
     showTransferProgressDialog = true
+    return 'started'
   }
 
   return {
@@ -228,9 +294,10 @@ export function createDialogState(deps: DialogStateDeps) {
       showTransferDialog = true
     },
 
-    /** Opens the progress dialog directly, skipping the destination picker (used by clipboard paste). */
-    startTransferProgress(props: TransferProgressPropsData) {
-      startBirthOperation(props)
+    /** Opens the progress dialog directly, skipping the destination picker (used by
+     *  clipboard paste). Refuses, and says so, when the slot is taken. */
+    startTransferProgress(props: TransferProgressPropsData): OperationStartVerdict {
+      return startBirthOperation(props)
     },
 
     /** Shows an operation that is already running (the queue row's Show button).
@@ -277,6 +344,9 @@ export function createDialogState(deps: DialogStateDeps) {
     ) {
       if (!transferDialogProps) return
 
+      // A refusal still takes this dialog down (below): the user answered it, and
+      // leaving it stacked over the operation it can't join would say nothing. The
+      // refusal itself does the talking.
       startBirthOperation({
         operationType,
         sourcePaths: transferDialogProps.sourcePaths,

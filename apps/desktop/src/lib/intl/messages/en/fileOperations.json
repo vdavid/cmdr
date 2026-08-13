@@ -1049,6 +1049,11 @@
     "description": "Quiet toast in the main window, shown when the user presses Show on a row in the operation queue but the main window already has a dialog on screen. The blocker is ANY dialog, not necessarily another operation: it can be another operation''s progress dialog or question, but equally a New folder prompt or a delete confirmation, so the wording must not claim an operation exists. The main window comes forward as this appears, so \"here\" is the window the user is now looking at and \"it\" is the dialog they can see. Only one thing can occupy that space, so the operation stays where it is, still running, in the queue; \"bring this one up\" means press Show again afterwards."
   },
 
+  "fileOperations.transferProgress.operationBlockedToast": "Something else is open here. Close it, then try again.",
+  "@fileOperations.transferProgress.operationBlockedToast": {
+    "description": "Quiet toast in the main window, shown when the user asks for a NEW file operation (copy, move, compress, delete, new folder, new file) while a dialog is already on screen, so it can''t start. Usually reached from the native menu bar, which stays clickable while a dialog is up. \"Here\" is the main window the user is looking at, and \"it\" is the dialog they can see; the wording must not name a specific dialog, since the blocker can be any of them. Nothing was started and nothing was changed, so this is neutral news, not a warning. \"Try again\" means repeat the command once the dialog is gone."
+  },
+
   "fileOperations.rollbackConfirm.title": "Roll this operation back?",
   "@fileOperations.rollbackConfirm.title": {
     "description": "Title of the dialog that appears when the user presses Rollback on a running copy or move. \"Roll back\" means undoing the work done so far by deleting what the operation has written."

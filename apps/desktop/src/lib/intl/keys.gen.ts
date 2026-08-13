@@ -1374,6 +1374,7 @@ export type MessageKey =
   | 'fileOperations.transferProgress.newFileLabel'
   | 'fileOperations.transferProgress.newFolderLabel'
   | 'fileOperations.transferProgress.newLabel'
+  | 'fileOperations.transferProgress.operationBlockedToast'
   | 'fileOperations.transferProgress.pause'
   | 'fileOperations.transferProgress.pauseAria'
   | 'fileOperations.transferProgress.progressBytes'

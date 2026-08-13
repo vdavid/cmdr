@@ -599,6 +599,10 @@
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"
   },
+  "fileOperations.transferProgress.operationBlockedToast": "这里已经打开了别的东西。先把它关掉，再试一次。",
+  "@fileOperations.transferProgress.operationBlockedToast": {
+    "sourceHash": "bc6efa8"
+  },
   "fileOperations.rollbackConfirm.title": "要回滚这项操作吗？",
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"

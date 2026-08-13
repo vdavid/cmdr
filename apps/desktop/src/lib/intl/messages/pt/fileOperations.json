@@ -602,6 +602,10 @@
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"
   },
+  "fileOperations.transferProgress.operationBlockedToast": "Há outra coisa aberta aqui. Feche-a e tente novamente.",
+  "@fileOperations.transferProgress.operationBlockedToast": {
+    "sourceHash": "bc6efa8"
+  },
   "fileOperations.rollbackConfirm.title": "Reverter esta operação?",
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"

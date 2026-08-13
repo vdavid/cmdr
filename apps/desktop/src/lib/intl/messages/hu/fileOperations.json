@@ -601,6 +601,10 @@
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"
   },
+  "fileOperations.transferProgress.operationBlockedToast": "Itt valami más van nyitva. Zárd be, aztán próbáld újra.",
+  "@fileOperations.transferProgress.operationBlockedToast": {
+    "sourceHash": "bc6efa8"
+  },
   "fileOperations.rollbackConfirm.title": "Visszagörgeted ezt a műveletet?",
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"

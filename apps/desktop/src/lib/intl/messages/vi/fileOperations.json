@@ -600,6 +600,10 @@
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"
   },
+  "fileOperations.transferProgress.operationBlockedToast": "Ở đây đang mở một thứ khác. Hãy đóng nó rồi thử lại.",
+  "@fileOperations.transferProgress.operationBlockedToast": {
+    "sourceHash": "bc6efa8"
+  },
   "fileOperations.rollbackConfirm.title": "Hoàn tác thao tác này?",
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
