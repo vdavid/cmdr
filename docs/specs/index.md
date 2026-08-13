@@ -6,6 +6,13 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-13 `phased-indexing-plan.md` - Replace the first full drive scan with ordered coverage phases: the user's
+      own folders (last session's tabs, favorites, standard home dirs, cloud roots), then whatever they open while the
+      app runs, then `$HOME`, then the rest of the drive. Every phase is an `Index::cover` walk, so nothing is ever
+      truncated and every walk survives a restart, which also makes branch-scoped watching the default shape rather
+      than a retrofit. Carries the first-run startup state (both panes on `~` until FDA is decided, then `~` plus
+      `~/Downloads`, hidden files off) and the hourglass fix (corner and per-folder, keyed to ground actually being
+      walked, with a 1 s debounce). Gated on a benchmark: cover-over-`/` versus today's bulk build.
 - [ ] 2026-08-12 `marketing-screenshot-pipeline-plan.md` - Turn the hand-driven marketing screenshot round (20–30 min of
       MCP calls) into one Playwright command. The shutter stays `screencapture -l` because the plugin's native capture
       has no macOS shadow; the run leaves `CMDR_E2E_MODE` unset so the window can become key and earn the focused
