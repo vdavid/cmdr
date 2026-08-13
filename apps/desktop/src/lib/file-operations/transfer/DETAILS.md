@@ -491,6 +491,25 @@ the outcome, the lifecycle status, and all five commands with their in-flight gu
 of any of it, and no listener of its own — the window's fan-out is the only subscriber, and its unclaimed-id buffer is
 what covers the gap between the start command answering and the binder acquiring on the next effect flush.
 
+**Birth is skippable.** `adoptOperationId` names an operation that is already running, and `start()` binds its session
+instead of dispatching: the queue's Show button, and the reason the two halves are worth separating at all. The view is
+otherwise the same one, down to the buttons. Three things differ, each for its own reason:
+
+- **Auto-queue is off.** It is a decision a DISPATCHING view makes (don't stack a second modal over the one already up);
+  a view opened precisely to watch this operation would instead bounce it back out of sight, which reads as the button
+  doing nothing. The queue row correspondingly doesn't offer Show on a `queued` row.
+- **Rollback comes from the registry row.** `rollbackUnavailable` reads the snapshot's `supportsRollback`, which is a
+  promise about the OPERATION; an adopted view has no volume ids or direction to reason from. The props-only
+  same-volume-move rule stands beside it for the window before the first snapshot lands, and the phase gate (nothing
+  written during a scan) is unchanged.
+- **The parent runs no pane tail.** An adopted view has no birth context, and the two-slot arrangement in
+  `dialog-state` is what makes the wrong version unreachable: `../../file-explorer/pane/DETAILS.md` § "Birth context".
+
+An adopted view almost never shows `OPENING_PHASE`: the window's fan-out holds the latest `write-progress` for every
+unclaimed id and flushes it in the same synchronous block the binder acquires in, so the operation's real phase is there
+before the first paint. What is left is a window that has heard nothing at all (a reload mid-transfer), where "counting"
+is the honest thing to say for one tick.
+
 **Teardown stops nothing.** A close is a detach: `ModalDialog`'s `onclose` goes to `detach()`, which hands a
 still-running operation to the queue window (exactly as the Queue button does) and otherwise just stops watching. An
 unmount does neither — the operation lives in the backend registry, and the corner chip and the queue window keep

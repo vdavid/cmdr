@@ -235,8 +235,23 @@ Two consequences worth carrying:
 - The re-dispatch reads birth context captured **before** the prompt went up, and re-runs
   `snapshotSourcePaneSelection()` against wherever the pane is now, which may have navigated while the user was typing.
   So the axis for a view's completion work is not "adopted versus started" but **fresh context versus stale context**:
-  an operation can be started-by-this-view and still carry stale context. Whoever splits birth from view owes this path
-  an answer, and "a view that started the operation keeps doing what it does today" is not it.
+  an operation can be started-by-this-view and still carry stale context. That axis is answered in
+  `../../file-explorer/pane/DETAILS.md` § "Birth context": the settled-transfer tail asks whether the source pane still
+  shows the folder the operation was born in before it touches a selection, which covers this path and the plain
+  navigated-away-mid-copy one with one rule.
+
+## What a view that ADOPTED its operation may not do
+
+A view can bind a session for an operation it never started (the queue's Show button). The session is indifferent —
+that is the whole point of it — but the VIEW's parent is not, and the line is worth stating here because it is where a
+reader of the session will look for it.
+
+The session says what the operation did. It cannot say what a pane should do about it: which pane started it, which
+paths it was aimed at, and how many files and folders the user picked are all captured at birth, in the pane, and none
+of them are on the wire. An adopted view therefore degrades honestly rather than guessing — no pane refresh, no
+selection change, no snapshot purge, and a completion toast that says only what the operation reported. The full
+argument, the two-slot arrangement that makes the wrong version unreachable, and the one known gap it leaves live in
+`../../file-explorer/pane/DETAILS.md` § "Birth context".
 
 ## Testing
 

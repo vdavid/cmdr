@@ -448,6 +448,57 @@ the backend registers the operation at confirm and its own task waits for the pr
 threading is `previewId`, and the archive-password retry MUST keep clearing it: that retry is a new operation, a preview
 accepts exactly one claimant, so a carried-over id would silently downgrade to a full re-walk.
 
+### Birth context
+
+The progress dialog can show an operation this window never started (Show, on a queue row:
+`$lib/file-operations/queue/DETAILS.md` § Show). That splits what used to be one thing into three: **what the operation
+did** belongs to its session, **what a pane should do about it** belongs to the view and is bound to the moment the
+operation was born, and **what the dialog draws** is chrome either can supply.
+
+**Two slots, and they are separate variables on purpose.** `transferProgressProps` is birth context: the paths, the
+pane side, the per-type counts, the dispatch input. `adoptedProgressProps` is an operation this window is only watching:
+an id, a type, and two paths off the registry row. `foregroundOperation()` fills the second and never the first, so an
+adoption CANNOT overwrite a live birth context. That is not tidiness, it is the one hazard in this feature:
+`handleTransferError`'s archive branch takes the progress dialog down while keeping `transferProgressProps` alive, and
+`handleArchivePasswordSubmit` re-dispatches from it when the user types the password. A guard that tested
+`showTransferProgressDialog` would find "no dialog shown" and let an adoption land on those props, and the submit would
+then copy the ADOPTED operation's sources to the ADOPTED operation's destination — a wrong write, out of a
+correct-looking guard. With two slots the question doesn't arise, and the occupancy test is "either slot full, or any
+dialog open", which also covers the invisible case.
+
+**A refusal is the honest answer to an occupied slot**, and it is a toast in the main window rather than silence: the
+listener focuses this window whatever the verdict, because a refusal behind the queue window reads as a dead button.
+
+**An adopted view's outcome handlers touch no pane.** `handleAdoptedComplete` / `-Cancelled` / `-Error` / `-Queue` are
+separate callbacks, not a flag on the started ones, so the pane work is not reachable from them. They have nothing to
+reach it with: no `sourcePaths` to purge, no `sourcePaneSide` to pick a pane, no `fileCount` / `folderCount` to name
+what moved. The completion toast still reports the counts (those are facts about the OPERATION, from the completion
+event) and falls back to the file count instead of the per-type split. A failure still opens the error dialog with the
+same handover, because the reason is worth reading wherever the operation started.
+
+**The axis is FRESH versus STALE context, not adopted versus started.** `handleArchivePasswordSubmit` starts a NEW
+operation from context captured before the prompt went up and re-snapshots the source pane's selection against wherever
+that pane is NOW; a plain transfer whose source pane navigated away mid-copy is the same shape. So
+`clearSourcePaneAfterTransfer` and `adjustSelectionAfterCancel` ask `sourcePaneStillShowsBirthFolder()` first — the
+pane's current folder against the one the operation was born in. Refreshing a listing is harmless whatever the answer
+and still happens; changing a selection the user made somewhere else is not.
+
+**Known gap: the search-snapshot purge doesn't run for an adopted view.** `removeEntryFromAllSnapshots` walks
+`sourcePaths`, which is birth context, so a move finished from an adopted dialog can leave rows for files that no longer
+exist in a stored search snapshot. Scoped out deliberately, with the reasoning recorded because the fix is not the
+obvious one:
+
+- The purge is operation-scoped truth wearing view-scoped clothing, so "re-home the read" is the tempting fix, and it is
+  not available: the id is all an adopted view has, and the outcome cannot be made to carry the paths. A 500k-file move
+  would ship 500k strings to every webview on every completion.
+- It is already wrong in two ways this doesn't introduce. `handleTransferComplete` is the only caller, so a cancelled or
+  errored move purges nothing and leaves the same phantom rows today; and `sourcePaths` is INTENT, not outcome, so a
+  `skip`-resolved move purges rows for files still on disk.
+- The shape of the real fix is therefore a different input, not a different reader: the snapshot store should learn from
+  the `directory-diff` stream that already tells panes rows vanished. That is outcome truth, it arrives for every path
+  including the skipped and the cancelled ones, and it costs nothing per operation. Until then, an adopted completion
+  leaves the snapshots alone rather than guessing.
+
 **A dialog that throws during render must never wedge input.** Every dialog renders inside one `<svelte:boundary>` in
 `DialogManager.svelte`. Opening a dialog sets its `show*` flag BEFORE anything renders, and `isConfirmationDialogOpen()`
 suppresses the pane's keyboard while that flag is true, so a dialog that throws mid-render leaves the user with no keys

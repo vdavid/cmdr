@@ -126,6 +126,30 @@ either way; only the word and its `aria-label` change.
 - Pinned by `queue-backlog.test.ts` (every gate) and `../transfer/TransferProgressDialog.queue.test.ts` (the live flip
   through a real store instance fed by the same `operations-changed` stream).
 
+## Show — handing a row back to the main window
+
+A running or paused row offers **Show**, which puts that operation in the main window's progress dialog: full bars, the
+smoothed ETA, and the same Pause / Cancel / Rollback the row has. Closing the dialog hands the operation straight back
+here, still running, exactly as Background does. It is not a command on the operation: nothing about it changes, only
+where it is shown.
+
+- **Only the id crosses.** The row emits `foreground-operation` (`$lib/tauri-commands/dialog-events.ts`), and the main
+  window resolves that id against ITS OWN `operations-changed` snapshot
+  (`../foreground-request.ts::adoptedOperationFor`). The registry row is the single source of truth about an operation,
+  and both webviews already receive it, so nothing about the operation travels on the wire. Fold this window into the
+  main window as a popup one day and the emit collapses to a direct call with the same argument.
+- **The queue window holds `core:event:default`**, so no capability change was needed. It does NOT raise the main
+  window: the main window focuses ITSELF in its listener, whatever the verdict, because a refusal the user cannot see
+  reads as the button doing nothing.
+- **Offered only where a dialog would have something to show.** Running or paused, and not an instant op. ❌ Never on a
+  `queued` row: the dialog auto-backgrounds a queued operation, so it would open and hand it straight back. ❌ Never on
+  a failed row: there is nothing left to watch, and its reason is already on the row in full.
+- **The main window can refuse.** Its dialog slot is single-occupancy; a refusal comes back as a toast there, next to
+  the dialog that refused. Reasoning and the invisible-occupancy hazard:
+  `../../file-explorer/pane/DETAILS.md` § "Birth context".
+- Pinned by `QueueRow.svelte.test.ts` (which statuses offer it, and that the click asks for that row's own operation)
+  and `../foreground-request.test.ts` (the lookup, including the ordinary miss).
+
 ## A scanning row
 
 An operation is registered the moment the user confirms, which is before its `TransferDialog` scan preview has finished

@@ -22,6 +22,8 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 - `foreground-operation.svelte.ts`: two module-scoped slots naming what the foreground owns — the operation its progress
   dialog is running, and the failure its error dialog is showing — plus the claim marking a dispatch whose operation has
   no name yet, so ambient main-window surfaces stay quiet about all three.
+- `foreground-request.ts`: `adoptedOperationFor(rows, id)` — the pure half of the queue's Show button, resolving the id
+  that crossed the window boundary against the MAIN window's own snapshot.
 - `operation-conflict.svelte.ts` + `OperationConflictDialog.svelte`: the main window's conflict prompt for an operation
   no progress dialog is showing. Its two rules are pure, in `operation-conflict-rules.ts`.
 

@@ -69,7 +69,9 @@ commands, and notable non-obvious placements.
   menu/cross-window relay), the MCP `dialog` lifecycle (`on{Open,Focus,Close}Settings` / `…FileViewer` / `…About` /
   `…Confirmation`, `onCloseAllFileViewers`, `onMcpSettingsClose`), `requestOpenSettings` (emit `open-settings` so the
   main window opens Settings on behalf of a window without window-creation perms), `onViewerWordWrapToggled`,
-  `onPersistRestrictedSetting`.
+  `onPersistRestrictedSetting`, and `requestForegroundOperation` / `onForegroundOperationRequested` (the queue window
+  asking the main window to show one operation in its progress dialog; the payload is the id alone, because the registry
+  snapshot both windows receive is the truth about everything else).
 - **`git.ts`**: git-browser commands (`getGitRepoInfo`, `subscribeGitState` / `unsubscribeGitState`,
   `getGitStatusForPaths`) plus `onGitStateChanged` over the per-repo `git-state-changed` event.
 - **`go-to-path.ts`**: ⌘G path resolution (`resolveGoToPath`) and the persisted recent-paths list (`getRecentPaths`,
