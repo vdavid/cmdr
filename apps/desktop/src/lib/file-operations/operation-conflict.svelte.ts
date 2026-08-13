@@ -30,17 +30,27 @@
  *    raise the main window, and ask.
  * 4. The answer resolves the clash, then resumes exactly what was paused, and
  *    only once the last queued prompt is answered.
+ *
+ * ## A prompt is a view, so it commands through a session
+ *
+ * It holds the asking operation's session for exactly as long as its question is
+ * on screen, and answers, cancels, and rolls back through it. Which surface may
+ * SHOW a clash is still the ownership rule above, a UX preference; which answer
+ * the operation acts on is the backend's call, and it reports its verdict. So
+ * every verdict takes this prompt down, and only a call that never landed leaves
+ * it up. ❌ Don't rebuild an ownership rule that makes correctness depend on one
+ * surface answering.
+ *
+ * The one thing that stays off sessions is the fleet pause in `hold()`; the
+ * reason is written there.
  */
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
-  cancelWriteOperation,
   onWriteConflict,
   pauseOperation,
-  resolveWriteConflict,
   resumeOperation,
-  type ConflictResolutionOutcome,
   type OperationSnapshot,
   type WriteConflictEvent,
 } from '$lib/tauri-commands'
@@ -51,6 +61,8 @@ import { getMainWindowOperationRows } from './queue/main-window-operations.svelt
 import { isTerminalStatus, type OperationRow } from './queue/operations-store.svelte'
 import { getForegroundOperationId, isForegroundClaimPending } from './foreground-operation.svelte'
 import { conflictOwner, operationsToPauseFor } from './operation-conflict-rules'
+import { getOperationSessions } from './operation-session/window-operation-sessions.svelte'
+import type { OperationSession } from './operation-session/operation-session.svelte'
 
 const log = getAppLogger('operation-conflict')
 
@@ -89,11 +101,40 @@ let pausedIds = $state<string[]>([])
  *  drains it is driven by the claim settling, not by this array. */
 let deferred: WriteConflictEvent[] = []
 
-let resolving = $state(false)
-let cancelling = $state(false)
+/** The session for each operation this host is asking about, held for exactly
+ *  as long as its prompt is up. A prompt IS a view of an operation, so it
+ *  commands through the session like any other: the answer, the cancel, and the
+ *  rollback all carry guards that whatever else is watching can see.
+ *  Deliberately not `$state` — nothing renders from the map, only from the
+ *  session fields the getters below reach through it. */
+// eslint-disable-next-line svelte/prefer-svelte-reactivity -- see above: a plain lookup table, never rendered from
+const promptSessions = new Map<string, OperationSession>()
 
 let unlisten: UnlistenFn | null = null
 let stopEffects: (() => void) | null = null
+
+/** The session for a prompted operation, built on first need and kept until the
+ *  prompt goes. Lazy rather than eager only so a prompt raised before the
+ *  window's registry exists can still find one later. */
+function sessionFor(operationId: string): OperationSession | null {
+  const held = promptSessions.get(operationId)
+  if (held) return held
+  const registry = getOperationSessions()
+  if (!registry) {
+    log.warn('No session registry yet for the conflict on {operationId}', { operationId })
+    return null
+  }
+  const session = registry.acquire(operationId)
+  promptSessions.set(operationId, session)
+  return session
+}
+
+/** Lets go of a prompt's session. ❌ Never skip this on a path that drops a
+ *  prompt: an unreleased session keeps listening for an operation that ended. */
+function releaseSession(operationId: string): void {
+  if (!promptSessions.delete(operationId)) return
+  getOperationSessions()?.release(operationId)
+}
 
 /** The prompt on screen, or `null`. Reactive. */
 export function getConflictPrompt(): ConflictPrompt | null {
@@ -104,14 +145,19 @@ export function getConflictPrompt(): ConflictPrompt | null {
   return { operationId, event: entry.event, snapshot, pausedOthers: pausedIds.length > 1 }
 }
 
-/** A resolution is in flight; the resolution buttons disable. Reactive. */
+/** A resolution is in flight; the resolution buttons disable. Reactive, and it
+ *  reads the OPERATION's own flag: a second surface answering the same clash
+ *  disables these buttons too. */
 export function isResolvingConflictPrompt(): boolean {
-  return resolving
+  if (promptQueue.length === 0) return false
+  return promptSessions.get(promptQueue[0].event.operationId)?.resolvingConflict ?? false
 }
 
 /** A cancel is in flight; the Cancel / Rollback row disables. Reactive. */
 export function isCancellingConflictPrompt(): boolean {
-  return cancelling
+  if (promptQueue.length === 0) return false
+  const session = promptSessions.get(promptQueue[0].event.operationId)
+  return (session?.cancelling ?? false) || (session?.rollingBack ?? false)
 }
 
 function handleConflict(event: WriteConflictEvent): void {
@@ -167,13 +213,22 @@ function takePrompt(event: WriteConflictEvent): void {
     ...promptQueue,
     { event, confirmedLive: rows.some((r) => r.snapshot.operationId === event.operationId) },
   ]
+  // Claimed now rather than at the first click: the fan-out has been holding
+  // this operation's events for whoever asks, and the session picks them up.
+  sessionFor(event.operationId)
   void hold(event.operationId, rows)
   // Only for the first of a run: the person is already looking at the prompt for
   // the rest of it, and re-raising under their hands would be rude.
   if (first) void raiseMainWindow()
 }
 
-/** Pauses what this conflict stops, skipping anything already on hold. */
+/** Pauses what this conflict stops, skipping anything already on hold.
+ *
+ *  ❌ Not through sessions, and that's the line: this is a FLEET action over
+ *  every executing operation, the same class as the queue window's Pause all,
+ *  and most of what it stops has no view here at all. A session's guards are
+ *  about one operation's buttons; these ids are chosen by a rule
+ *  (`operationsToPauseFor`) that is free to narrow to one operation later. */
 async function hold(conflictOperationId: string, rows: OperationRow[]): Promise<void> {
   const ids = operationsToPauseFor(conflictOperationId, rows).filter((id) => !pausedIds.includes(id))
   if (ids.length === 0) return
@@ -208,11 +263,12 @@ async function release(): Promise<void> {
 
 function dropPrompt(operationId: string): void {
   promptQueue = promptQueue.filter((entry) => entry.event.operationId !== operationId)
+  releaseSession(operationId)
 }
 
 /**
- * Answers the prompt on screen: the same command, with the same arguments, that
- * the progress dialog sends.
+ * Answers the prompt on screen: the operation's own resolve command, the same
+ * one every other surface issues.
  *
  * Resolve first, resume second. If the call itself doesn't land, the prompt
  * stays up and everything stays paused, which is the honest state for a question
@@ -220,54 +276,34 @@ function dropPrompt(operationId: string): void {
  * boundary in the moment before the resume reaches it; that's what pause is
  * built for, and a cancel still wins over both.
  *
- * Losing the race is NOT that case. The backend reports which answer it acted
- * on, and every outcome other than `resolved` means this conflict is settled
- * without us: the prompt comes down and what it paused resumes, exactly as if
- * this answer had won. Leaving it up would ask the user a question that no
- * longer has an answer to give.
+ * Losing the race is NOT that case. Any verdict at all means the backend has
+ * arbitrated this clash: the prompt comes down and what it paused resumes,
+ * exactly as if this answer had won. Leaving it up would ask the user a question
+ * that no longer has an answer to give.
  */
 export async function resolveConflictPrompt(resolution: ConflictResolution, applyToAll: boolean): Promise<void> {
-  if (promptQueue.length === 0 || resolving) return
+  if (promptQueue.length === 0) return
   const operationId = promptQueue[0].event.operationId
+  const session = sessionFor(operationId)
+  if (!session) return
 
-  resolving = true
-  let outcome: ConflictResolutionOutcome | null = null
-  try {
-    outcome = await resolveWriteConflict(operationId, resolution, applyToAll)
-  } catch (error) {
-    log.error('Failed to resolve the conflict on {operationId}: {error}', { operationId, error })
-  } finally {
-    resolving = false
-  }
+  const outcome = await session.resolveConflict(resolution, applyToAll)
   if (outcome === null) return
-  if (outcome !== 'resolved') {
-    log.info('The conflict on {operationId} was settled without this prompt ({outcome}); taking it down', {
-      operationId,
-      outcome,
-    })
-  }
 
   dropPrompt(operationId)
   await release()
 }
 
 /** Backs out of the operation the prompt is asking about. `rollback` reverses
- *  what it already wrote. The backend drops the conflict's oneshot sender, which
- *  is what unblocks the parked operation. */
+ *  what it already wrote. The backend drops the conflict's parked answer slot,
+ *  which is what unblocks the operation. */
 export async function cancelConflictPrompt(rollback: boolean): Promise<void> {
-  if (promptQueue.length === 0 || cancelling) return
+  if (promptQueue.length === 0) return
   const operationId = promptQueue[0].event.operationId
+  const session = sessionFor(operationId)
+  if (!session) return
 
-  cancelling = true
-  let sent = false
-  try {
-    await cancelWriteOperation(operationId, rollback)
-    sent = true
-  } catch (error) {
-    log.error('Failed to cancel {operationId} from its conflict prompt: {error}', { operationId, error })
-  } finally {
-    cancelling = false
-  }
+  const sent = rollback ? await session.rollback() : await session.cancel()
   if (!sent) return
 
   dropPrompt(operationId)
@@ -307,6 +343,7 @@ export function reconcileConflictPrompts(rows: OperationRow[]): void {
       log.info('Dropping the conflict prompt for {operationId}: the operation is gone', {
         operationId: entry.event.operationId,
       })
+      releaseSession(entry.event.operationId)
       changed = true
       continue
     }
@@ -361,15 +398,15 @@ export async function startOperationConflictHost(): Promise<void> {
   unlisten = await onWriteConflict(handleConflict)
 }
 
-/** Drops the listener, the effects, and every prompt. */
+/** Drops the listener, the effects, every prompt, and every session those
+ *  prompts were holding. */
 export function stopOperationConflictHost(): void {
   unlisten?.()
   unlisten = null
   stopEffects?.()
   stopEffects = null
+  for (const operationId of [...promptSessions.keys()]) releaseSession(operationId)
   promptQueue = []
   pausedIds = []
   deferred = []
-  resolving = false
-  cancelling = false
 }

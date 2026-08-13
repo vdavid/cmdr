@@ -25,9 +25,19 @@ vi.mock('$lib/tauri-commands', () => ({
     return Promise.resolve(noopUnlisten)
   }),
   resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
+  cancelOperation: vi.fn(() => Promise.resolve()),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   pauseOperation: vi.fn(() => Promise.resolve()),
   resumeOperation: vi.fn(() => Promise.resolve()),
+  // The prompt commands through the asking operation's session, so the window
+  // needs a real registry, and the registry's fan-out needs the streams.
+  listOperations: vi.fn(() => Promise.resolve([])),
+  onOperationsChanged: vi.fn(() => Promise.resolve(() => {})),
+  onWriteProgress: vi.fn(() => Promise.resolve(() => {})),
+  onWriteComplete: vi.fn(() => Promise.resolve(() => {})),
+  onWriteError: vi.fn(() => Promise.resolve(() => {})),
+  onWriteCancelled: vi.fn(() => Promise.resolve(() => {})),
+  onWriteSettled: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 let rows: OperationRow[] = []
@@ -51,10 +61,16 @@ vi.mock('$lib/logging/logger', () => ({
 import {
   onWriteConflict,
   resolveWriteConflict,
+  cancelOperation,
   cancelWriteOperation,
   pauseOperation,
   resumeOperation,
 } from '$lib/tauri-commands'
+import {
+  destroyOperationSessions,
+  getOperationSessions,
+  initOperationSessions,
+} from './operation-session/window-operation-sessions.svelte'
 import {
   startOperationConflictHost,
   stopOperationConflictHost,
@@ -120,16 +136,23 @@ beforeEach(async () => {
   conflictCb = null
   rows = [operationRow('op-1', 'running')]
   setForegroundOperationId(null)
+  await initOperationSessions()
   await startOperationConflictHost()
 })
 
 afterEach(() => {
   stopOperationConflictHost()
+  destroyOperationSessions()
 })
 
 describe('a conflict nobody in the foreground owns', () => {
-  it('subscribes to write-conflict for the life of the window', () => {
-    expect(onWriteConflict).toHaveBeenCalledTimes(1)
+  it('subscribes once, however many times the window starts it', async () => {
+    // Counted as a delta rather than an absolute: the window's session fan-out
+    // is a second subscriber to the same stream, and both are meant to be
+    // there. What must not happen is this host subscribing twice.
+    const before = vi.mocked(onWriteConflict).mock.calls.length
+    await startOperationConflictHost()
+    expect(vi.mocked(onWriteConflict).mock.calls.length).toBe(before)
   })
 
   it('prompts, instead of leaving the operation parked with nobody listening', async () => {
@@ -368,6 +391,31 @@ describe('the operation going away mid-prompt', () => {
     await cancelConflictPrompt(true)
 
     expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', true)
+    expect(getConflictPrompt()).toBeNull()
+  })
+
+  it('lets go of the operation session when its question is answered', async () => {
+    // Asked of the REGISTRY rather than of the prompt: a session the host
+    // forgot to release keeps listening for an operation that ended, and
+    // nothing on screen would show it. A fresh instance on the next acquire is
+    // the proof the old one was disposed.
+    await deliver()
+    const registry = getOperationSessions()
+    const duringPrompt = registry?.acquire('op-1')
+    registry?.release('op-1')
+
+    await resolveConflictPrompt('overwrite', false)
+
+    const afterPrompt = registry?.acquire('op-1')
+    expect(afterPrompt).not.toBe(duringPrompt)
+    registry?.release('op-1')
+  })
+
+  it('backs out through the manager when the user keeps what was written', async () => {
+    await deliver()
+    await cancelConflictPrompt(false)
+
+    expect(cancelOperation).toHaveBeenCalledWith('op-1')
     expect(getConflictPrompt()).toBeNull()
   })
 
