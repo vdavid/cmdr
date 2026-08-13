@@ -426,7 +426,7 @@ test.describe('Operation queue window', () => {
             var dialog = document.querySelector('[data-dialog-id="transfer-progress"]');
             if (!dialog) return 'no dialog';
             return dialog.querySelector('.progress-readout') ? 'readout' : 'no readout';
-          })()`)) as string,
+          })()`)),
         { timeout: 15000 },
       )
       .toBe('readout')
@@ -441,9 +441,7 @@ test.describe('Operation queue window', () => {
     await expect
       .poll(
         async () =>
-          (await main.evaluate(
-            `!!document.querySelector('[data-dialog-id="transfer-progress"]')`,
-          )) as boolean,
+          (await main.evaluate(`!!document.querySelector('[data-dialog-id="transfer-progress"]')`)),
         { timeout: 10000 },
       )
       .toBe(false)
@@ -451,7 +449,7 @@ test.describe('Operation queue window', () => {
     const stillListed = (await main.evaluate(`(async function() {
       var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
       return ops.some(function(o) { return o.operationId === ${JSON.stringify(runningId)}; });
-    })()`)) as boolean
+    })()`))
     expect(stillListed, 'the operation kept running after its dialog closed').toBe(true)
 
     // Backgrounding says so, the same quiet way it does for an operation this
