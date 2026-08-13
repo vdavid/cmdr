@@ -448,6 +448,8 @@ export {
   onMcpSettingsClose,
   onViewerWordWrapToggled,
   onPersistRestrictedSetting,
+  requestForegroundOperation,
+  onForegroundOperationRequested,
 } from './dialog-events'
 
 // Licensing

@@ -112,6 +112,18 @@ pub struct TabContextAction {
     pub action: String,
 }
 
+/// `foreground-operation`: the operation queue asks the main window to show one
+/// operation in its progress dialog (the row's Foreground button). Carries only
+/// the id: the registry snapshot both windows already receive is the single
+/// source of truth for everything else about that operation. Emitted by the
+/// queue window's frontend and listened for by the main window; Rust never emits
+/// it, exactly like `execute-command` from the settings window.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct ForegroundOperation {
+    pub operation_id: String,
+}
+
 /// `persist-restricted-setting`: the viewer (a restricted-capability window with
 /// no store access) forwards an allowlisted setting write to the main window,
 /// which persists it through the normal store pipeline. Emitted to the main

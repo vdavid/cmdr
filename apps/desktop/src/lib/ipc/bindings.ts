@@ -3351,6 +3351,7 @@ export const events = {
   focusConfirmation: makeEvent<FocusConfirmation>('focus-confirmation'),
   focusFileViewer: makeEvent<FocusFileViewer>('focus-file-viewer'),
   focusSettings: makeEvent<FocusSettings>('focus-settings'),
+  foregroundOperation: makeEvent<ForegroundOperation>('foreground-operation'),
   gitStateChanged: makeEvent<GitStateChangedPayload>('git-state-changed'),
   globalShortcutFired: makeEvent<GlobalShortcutFired>('global-shortcut-fired'),
   indexAggregationComplete: makeEvent<IndexAggregationCompleteEvent>('index-aggregation-complete'),
@@ -4896,6 +4897,18 @@ export type FolderCoverage = {
   eligible: number
   // Of those, how many have a stored `done`/`failed` row (both count as accounted).
   accounted: number
+}
+
+/**
+ *  `foreground-operation`: the operation queue asks the main window to show one
+ *  operation in its progress dialog (the row's Foreground button). Carries only
+ *  the id: the registry snapshot both windows already receive is the single
+ *  source of truth for everything else about that operation. Emitted by the
+ *  queue window's frontend and listened for by the main window; Rust never emits
+ *  it, exactly like `execute-command` from the settings window.
+ */
+export type ForegroundOperation = {
+  operationId: string
 }
 
 /**

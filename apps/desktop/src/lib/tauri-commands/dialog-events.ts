@@ -14,6 +14,7 @@ import {
   type CloseFileViewer,
   type ExecuteCommand,
   type FocusFileViewer,
+  type ForegroundOperation,
   type OpenFileViewer,
   type OpenSettings,
   type PersistRestrictedSetting,
@@ -152,6 +153,25 @@ export function onMcpSettingsClose(handler: () => void): Promise<UnlistenFn> {
 export function onViewerWordWrapToggled(handler: () => void): Promise<UnlistenFn> {
   return events.viewerWordWrapToggled.listen(() => {
     handler()
+  })
+}
+
+/**
+ * A queue row asks the main window to show its operation in the progress dialog
+ * (the row's "Show" button). Emitted from the queue window, listened for on the
+ * main window; only the id travels, because the registry snapshot both windows
+ * already receive says everything else about that operation.
+ *
+ * Fold the queue into the main window as a popup and this collapses to a direct
+ * call: same argument, no wire.
+ */
+export function requestForegroundOperation(operationId: string): Promise<void> {
+  return events.foregroundOperation.emit({ operationId })
+}
+
+export function onForegroundOperationRequested(handler: (payload: ForegroundOperation) => void): Promise<UnlistenFn> {
+  return events.foregroundOperation.listen((event) => {
+    handler(event.payload)
   })
 }
 
