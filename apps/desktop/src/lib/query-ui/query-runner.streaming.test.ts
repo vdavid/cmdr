@@ -251,6 +251,35 @@ describe('the live view the dialog renders', () => {
     expect(h.cancelled).toEqual([])
   })
 
+  it('has nothing left to stop on a second ask, so a run that never answers cannot trap the dialog', async () => {
+    const h = makeStreamRunner()
+    await startRun(h)
+    const runId = h.started[0].runId
+
+    // A run that never reaches a terminal event: no progress, no end, no failure.
+    // The stop reaches the backend, but nothing comes back to flip `running`.
+    expect(h.runner.cancelLive()).toBe(true)
+    expect(h.cancelled).toEqual([runId])
+
+    // The second ask reports "nothing left to stop", which is what lets Escape's
+    // two-step move on to closing. Answering `true` forever left the dialog
+    // un-closable by keyboard, and in the E2E suite one such run cascaded into
+    // every later test on the shard.
+    expect(h.runner.cancelLive()).toBe(false)
+    expect(h.cancelled).toEqual([runId])
+  })
+
+  it('stops the NEXT run on its own first ask', async () => {
+    const h = makeStreamRunner()
+    await startRun(h)
+    expect(h.runner.cancelLive()).toBe(true)
+    expect(h.runner.cancelLive()).toBe(false)
+
+    await startRun(h)
+    expect(h.runner.cancelLive()).toBe(true)
+    expect(h.cancelled).toEqual([h.started[0].runId, h.started[1].runId])
+  })
+
   it('surfaces a run that could not run at all, and clears the spinner', async () => {
     const h = makeStreamRunner()
     const run = await startRun(h)

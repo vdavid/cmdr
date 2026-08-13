@@ -252,6 +252,13 @@ and the dialog's own keydown go through it. Closing on the first press would sto
 but would also take the results already on screen away, which is the opposite of what somebody pressing Escape at 40,000
 folders wants.
 
+**"Stop the run" is answered once per run, and that's what keeps Escape from trapping the dialog.** `running` clears only
+on the run's own terminal event (the local state never flips optimistically, so the label stays the backend's word), so
+`cancelLive()` tracks whether this run has already been asked to stop and answers `false` from then on. Without it, a run
+whose terminal event never arrives — the backend never registered it, so `cancelSearch` has nothing to cancel — answers
+"there was one to stop" forever, and Escape can never reach the close: the dialog is un-closable by keyboard until the
+window reloads. One such run in the Playwright suite left the search dialog open for the remaining 44 tests on its shard.
+
 ### Count-only results
 
 Count-only is Search-only (`config.filterChipsExtras.countOnly` / `onToggleCountOnly`; Selection leaves both undefined

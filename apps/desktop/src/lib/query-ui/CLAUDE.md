@@ -44,7 +44,9 @@ Primitives shared by Search and Selection. Chips: `filter-chips/CLAUDE.md`. Cons
 - **A `config.streamingSource` consumer answers over TIME, and `isSearching` stays true the whole run.** The run is the
   RUNNER's (run id, generation guard, append, cursor by path, one re-rank at the end); the source owns only the wire. ❌
   Never gate the list on `isSearching` alone, or a live run hides every row it finds. Auto-apply takes `runQuery`, never
-  the stream (Decision 7); Escape STOPS a run before closing. DETAILS.md § Streaming.
+  the stream (Decision 7); Escape STOPS a run before closing, and `cancelLive()` says "there was one to stop" ONCE per
+  run — answering it forever would trap the dialog behind a run whose terminal event never comes. DETAILS.md §
+  Streaming.
 - **AI mode never auto-applies** (cost); filename/regex do, behind `search.autoApply` (1,000 ms, IME-gated). An AI
   translation overwrites `query` + `mode`, so `getLastAiPrompt()` holds what the user typed.
 - **Nothing to run is not a run**: `hasRunnableQuery()` gates `executeQuery`; false → `resetToEmptyState()`, no IPC. An

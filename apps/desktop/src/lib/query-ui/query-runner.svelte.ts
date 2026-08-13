@@ -67,8 +67,10 @@ export interface QueryRunner {
    */
   readonly live: LiveRunView | null
   /**
-   * Stops a running live search and the work behind it. Returns whether there was one
-   * to stop, which is what makes Escape a two-step (first stops, then closes).
+   * Stops a running live search and the work behind it. Returns whether THIS ask is the
+   * one that stopped it, which is what makes Escape a two-step (first stops, then
+   * closes). Once per run: a run whose terminal event never arrives would otherwise
+   * answer `true` forever and leave the dialog un-closable by keyboard.
    */
   cancelLive: () => boolean
   /**
@@ -166,6 +168,14 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
   let liveRunId: string | null = null
   /** Teardown for the current run's subscription. */
   let stopLiveUpdates: (() => void) | null = null
+  /**
+   * Whether the current run has already been asked to stop.
+   *
+   * `running` only clears on the run's own terminal event, so a run that never sends
+   * one would answer "there was one to stop" forever — and Escape's two-step, which
+   * closes only once there is nothing left to stop, could never reach the close.
+   */
+  let stopAsked = false
 
   /** The backend's own message when there is one; a generic fallback otherwise. */
   function describeRunFailure(err: unknown): string {
@@ -187,6 +197,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     stopLiveUpdates?.()
     stopLiveUpdates = null
     liveRunId = null
+    stopAsked = false
   }
 
   /**
@@ -564,10 +575,13 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       return live
     },
     cancelLive: () => {
-      if (liveRunId === null || live === null || !live.running) return false
+      if (liveRunId === null || live === null || !live.running || stopAsked) return false
+      stopAsked = true
       deps.getConfig().streamingSource?.cancel(liveRunId)
       // The end state is the run's own word (the terminal update relabels it), so
-      // nothing flips here. What this promises the caller is only "there was one".
+      // nothing flips here. What this promises the caller is only "this ask is the
+      // one that stopped it" — a second ask answers `false`, so Escape closes rather
+      // than sitting on a run whose terminal event may never come.
       return true
     },
     resumeLive: () => {
