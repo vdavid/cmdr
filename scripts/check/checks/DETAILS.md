@@ -409,8 +409,8 @@ only removes its own pid-scoped socket file.
 `9429 + shard offset`, and the pre-flight SIGTERM'd whatever was listening on it — so a suite starting at 16:03:30
 killed a suite that had been running since 15:58, mid-test. The victim's shard reported one 15 s timeout (the in-flight
 `webview.eval()` hanging on a socket whose process had gone) and 37 cascading `ECONNREFUSED` failures, with no panic and
-no crash report to say the app had been signalled. It reads exactly like a product bug and cost a full triage cycle.
-The output dir moved for the second half of that cost: the concurrent suite had already overwritten the failing run's
+no crash report to say the app had been signalled. It reads exactly like a product bug and cost a full triage cycle. The
+output dir moved for the second half of that cost: the concurrent suite had already overwritten the failing run's
 recordings and error contexts, so the only pictures of the failure were of the run that passed.
 
 Still shared, and still worth knowing: the fixture hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`, content-addressed,

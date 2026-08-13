@@ -220,8 +220,8 @@ shards: one MTP shard (serialized) plus two non-MTP shards split by `--shard X/2
 
 - `CMDR_INSTANCE_ID=e2e-<kind>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`).
 - `CMDR_DATA_DIR=/tmp/cmdr-e2e-data-<instance>/`.
-- `CMDR_MCP_PORT=<free port from the OS>` (for the Cmdr MCP server: pinned per-shard so test fixtures don't have to
-  read the port file, and reserved per RUN so a second suite starting on this machine can't want the same one).
+- `CMDR_MCP_PORT=<free port from the OS>` (for the Cmdr MCP server: pinned per-shard so test fixtures don't have to read
+  the port file, and reserved per RUN so a second suite starting on this machine can't want the same one).
 - `CMDR_MCP_BRIDGE_PORT=<ephemeral>` for the Tauri MCP bridge.
 - `CMDR_PLAYWRIGHT_SOCKET=/tmp/tauri-playwright-<instance>.sock`.
 - `CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures-<instance>-<ts>/` (created with hardlinks from the shared cache).

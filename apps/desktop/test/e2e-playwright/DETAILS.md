@@ -150,8 +150,8 @@ listener. Read the shard log's app section: it stops mid-test, with no panic and
 signalled rather than crashed. Then ask who signalled it — a second suite on the same machine used to, through a fixed
 MCP port (fixed since; `scripts/check/checks/DETAILS.md` § "Nothing a shard owns is shared between runs"), and the hand
 launch's `pkill -f 'target.*Cmdr'` below reaches every shard of a running checker suite just as well. That cleanup is
-right for the usual hand launch; when a suite may be running (another worktree, another agent), kill the pid you
-started instead.
+right for the usual hand launch; when a suite may be running (another worktree, another agent), kill the pid you started
+instead.
 
 Two `/tmp` paths still belong to a shard NAME rather than a run, so a concurrent suite overwrites them: the fixture
 hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`) and the JSON report (`/tmp/cmdr-e2e-report-<shard>.json`). Recordings
