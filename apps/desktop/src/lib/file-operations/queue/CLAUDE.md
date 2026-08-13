@@ -22,10 +22,11 @@ queue (⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system
 - **It's a HARD window, not a modal**: keeping the main window usable while operations run is the whole point. A real
   `WebviewWindow` on `/queue`, sibling to Settings.
 - **Progress is DEFINED with the copy dialog, not here.** Rows render `../TransferProgressReadout.svelte`, and every
-  ESTIMATE (smoothed ETA, scan rates) comes from the row's session via `bindOperationSession`, NEVER
-  `progress.etaSeconds` (raw here while the dialog smoothed it once showed one operation as "8m 12s" in one window and
-  "5m 46s" in the other). ❌ Never keep a smoother in the store: it holds membership and the latest tick, both
-  stateless. The readout's fixed-width columns set `queue-window.ts`'s `MIN_WIDTH`; the two move together.
+  ESTIMATE (rates, smoothed ETA, scan rates) comes from the row's session via `bindOperationSession`, NEVER the raw tick
+  (which the dialog smoothed and this window didn't, once showing one operation as "8m 12s" here and "5m 46s" there; the
+  session is also what keeps a paused row's speed and countdown off the screen). ❌ Never keep a smoother in the store:
+  it holds membership and the latest tick, both stateless. The readout's fixed-width columns set `queue-window.ts`'s
+  `MIN_WIDTH`; the two move together.
 - **Two streams, never poll.** `operations-changed` is the THIN membership + status snapshot; `write-progress` drives
   the live bars/ETA, keyed by `operationId` and pruned to snapshot membership. ❌ Don't fatten `operations-changed`.
 - **Rows cover copy/move/delete/trash AND the instant ops** (`rename` / `create_folder` / `create_file`), which emit no

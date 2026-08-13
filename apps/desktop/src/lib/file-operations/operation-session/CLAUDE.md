@@ -42,6 +42,9 @@ views is an ordinary state.
 - **The newest tick of each LIVE operation is kept beside it**, claimed or not, so a session attaching late opens on
   where its operation actually is (a paused one emits nothing to refill a dropped buffer). ❌ Forget it on any terminal
   event: a session claiming an id after the end must resolve, never paint bars over an ending.
+- **A paused operation has no speed and no time left.** `bytesPerSecondDisplay` / `filesPerSecondDisplay` /
+  `etaSecondsDisplay` answer `null` while it's parked; views render those three, ❌ never a rate or ETA off the raw
+  tick, which would promise "58s left" over a transfer that isn't moving.
 - **❌ No `$derived` in a session.** It outlives the view that created it, and a `$derived` built during a component's
   init belongs to that component's scope. Compose in the getter instead.
 - **A session presents a scanning operation as live and counting**, never as 0%: `filesTotal` / `bytesTotal` stay 0

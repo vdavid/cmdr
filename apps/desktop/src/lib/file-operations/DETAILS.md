@@ -57,8 +57,11 @@ catalog keys.
   earned nothing but height.
 - **A stalled transfer's notice displaces the time left**, in both surfaces, from the same `transfer/transfer-stall.ts`
   verdict. The dialog additionally shows the explanatory stall block underneath.
-- **Speed and ETA describe a transfer that's moving**, so a caller passes `null` for all three while paused, and the
-  cells go empty rather than freezing a stale number.
+- **Speed and ETA describe a transfer that's moving**, and the OPERATION'S SESSION decides when there's an honest number
+  (`operation-session/DETAILS.md` § "Read surface"): a caller feeds the readout `bytesPerSecondDisplay` /
+  `filesPerSecondDisplay` / `etaSecondsDisplay`, which go `null` while paused, and the cells empty rather than freezing
+  a stale number. ❌ Don't reinstate the judgement per surface: the dialog once counted down "58s left" over a paused
+  copy whose queue row showed nothing.
 
 ## Foreground-operation slot
 

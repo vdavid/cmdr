@@ -54,8 +54,10 @@ latest raw tick. All of it is stateless, so a second copy of one event object ca
 
 A session owns every ESTIMATE built ON that stream: the ETA smoother and `ScanThroughput`. Those are stateful, they
 diverge when one starts later than another, and that is what makes them a single-home concern rather than a preference.
-So the ETA a view renders is `session.etaSecondsDisplay` and the scan rates are `session.scan`, from the corner chip and
-the queue row alike.
+It owns the JUDGEMENT about the raw rates too — whether there is an honest number to print at all — for the same reason:
+it is one call, and a view that made it for itself would eventually make it differently. So the speed, the ETA, and the
+scan rates a view renders are `session.bytesPerSecondDisplay` / `filesPerSecondDisplay` / `etaSecondsDisplay` /
+`session.scan`, from the corner chip and the queue row alike.
 
 ## Sessions are per-window, and that is fine
 
@@ -180,8 +182,13 @@ alone cannot tell you.
 - `snapshot` / `status`: the registry row. The lifecycle status is the bar-is-moving truth, never `is_running`.
 - `phase`: `null` before the first tick, then `scanning` and the write phases. Views gate on it (a scanning operation
   has written nothing, so Rollback makes no sense for it).
-- `etaSecondsDisplay`: the backend ETA through this session's smoother. Every view renders this, never
-  `progress.etaSeconds`.
+- `bytesPerSecondDisplay` / `filesPerSecondDisplay` / `etaSecondsDisplay`: the numbers a view is allowed to print. The
+  backend's rates, and its ETA through this session's smoother — except while the operation is PAUSED, where all three
+  answer `null`. A parked operation emits no further ticks, so its last measured rate and countdown sit there describing
+  a transfer that has stopped, and "1905 files/s, 58s left" over a frozen copy is a number nobody can stand behind
+  (`AGENTS.md` principle 2: honest progress and ETA). Deciding it here rather than per-surface is what keeps the dialog,
+  the queue row, and the corner chip saying the same thing: they showed different answers to the same paused copy once.
+  Every view renders these three, never `progress.bytesPerSecond` / `progress.filesPerSecond` / `progress.etaSeconds`.
 - `scan`: the counting readout, including the frontend-computed rates the backend does not emit during a scan.
 - `conflict`: the conflict the operation is parked on, set from the event and cleared once the backend has ruled on it,
   whichever surface asked.

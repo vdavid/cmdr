@@ -8,7 +8,6 @@
     import { isInstantOperation, type OperationRow } from './operations-store.svelte'
     import { operationTypeIcon } from './operation-icon'
     import { failureReasonFor } from './failure-reason'
-    import { transferReadout } from '../progress-readout'
     import TransferProgressReadout from '../TransferProgressReadout.svelte'
     import ScanPhaseBody from '../transfer/ScanPhaseBody.svelte'
     import { stallNoticeFor } from '../transfer/transfer-stall'
@@ -121,13 +120,14 @@
      *  the two windows can't disagree about whether something is stuck. */
     const stall = $derived(stallNoticeFor(progress?.activity))
 
-    /** Speed and ETA describe a transfer that's moving, so a paused row shows
-     *  neither. The ETA is the session's SMOOTHED value, never
-     *  `progress.etaSeconds`: every view of this operation reads that one
-     *  number, so no two of them can disagree about how long is left. */
-    const byteRate = $derived(isRunning && progress ? transferReadout(progress).bytesPerSecond : null)
-    const fileRate = $derived(isRunning ? (progress?.filesPerSecond ?? null) : null)
-    const etaSeconds = $derived(isRunning ? (op?.etaSecondsDisplay ?? null) : null)
+    /** Speed and ETA come from the session, which drops all three while the
+     *  operation is paused (it isn't moving, so there's no honest number) and
+     *  smooths the ETA. ❌ Never `progress.etaSeconds` or a rate off the raw
+     *  tick: every view of this operation reads the session's numbers, so no
+     *  two of them can disagree about how fast it's going or how long is left. */
+    const byteRate = $derived(op?.bytesPerSecondDisplay ?? null)
+    const fileRate = $derived(op?.filesPerSecondDisplay ?? null)
+    const etaSeconds = $derived(op?.etaSecondsDisplay ?? null)
 
     /** How fast the walk is going, which the backend doesn't measure during a
      *  scan: the session computes it from the same ticks this row renders. */

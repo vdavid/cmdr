@@ -639,6 +639,24 @@ describe('createTransferProgressState: pause, queue, and auto-queue', () => {
     expect(state.pauseInFlight).toBe(false)
   })
 
+  it('shows no speed and no time left while paused, like every other view of the op', async () => {
+    const { state } = await startedState()
+    if (!progressCb || !opsChangedCb) throw new Error('progress/operations-changed subscribers never registered')
+
+    opsChangedCb({ operations: [snapshot('op-1', 'running')] })
+    progressCb(progressEvent({ bytesPerSecond: 4096, filesPerSecond: 1905, etaSeconds: 58 }))
+    expect(state.bytesPerSecond).toBe(4096)
+    expect(state.filesPerSecond).toBe(1905)
+    expect(state.etaSecondsDisplay).toBe(58)
+
+    // The queue row for this same operation shows none of the three while
+    // paused, and a countdown over a transfer that isn't moving is invented.
+    opsChangedCb({ operations: [snapshot('op-1', 'paused')] })
+    expect(state.bytesPerSecond).toBeNull()
+    expect(state.filesPerSecond).toBeNull()
+    expect(state.etaSecondsDisplay).toBeNull()
+  })
+
   it('backgrounds the op via Queue without cancelling it on teardown', async () => {
     const { state, config } = await startedState()
     if (!progressCb) throw new Error('progress subscriber never registered')

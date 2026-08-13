@@ -32,11 +32,14 @@
         bytesTotal: number
         filesDone: number
         filesTotal: number
-        /** The backend's rate. `null` during its warm-up, and while paused. */
+        /** The session's `bytesPerSecondDisplay`, ❌ never a rate off the raw
+         *  tick: the session is what decides when there's an honest number to
+         *  show. `null` leaves the cell empty. */
         bytesPerSecond?: number | null
-        /** The backend's rate. `null` during its warm-up, and while paused. */
+        /** The session's `filesPerSecondDisplay`, on the same terms. */
         filesPerSecond?: number | null
-        /** The SMOOTHED ETA (`createEtaSmoother`), never the raw backend value. */
+        /** The session's `etaSecondsDisplay`: smoothed, and absent whenever no
+         *  countdown can be believed. ❌ Never the raw backend value. */
         etaSeconds?: Seconds | null
         /** The backend's stall verdict; it displaces the countdown while set. */
         stall?: StallNotice | null

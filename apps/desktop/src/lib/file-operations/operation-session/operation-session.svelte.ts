@@ -32,7 +32,7 @@ import type { WriteOperationPhase } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
 import { createEtaSmoother, transferReadout, type TransferReadout } from '../progress-readout'
 import { ScanThroughput } from '../scan-throughput'
-import type { Seconds } from '$lib/units'
+import type { BytesPerSecond, Seconds } from '$lib/units'
 import type { ConflictResolution } from '$lib/file-explorer/types'
 import type { OperationDelivery, OperationEventFanout } from './operation-event-fanout'
 import { createOperationSessionCommands, type OperationSessionCommands } from './operation-session-commands.svelte'
@@ -78,6 +78,13 @@ export interface OperationSession extends OperationSessionCommands {
   readonly phase: WriteOperationPhase | null
   /** The latest tick's numbers, branded. `null` before the first tick. */
   readonly readout: TransferReadout | null
+  /** The speed to DISPLAY: the backend's byte rate, or `null` when there's
+   *  nothing honest to show. Every view renders this, never
+   *  `progress.bytesPerSecond`. */
+  readonly bytesPerSecondDisplay: BytesPerSecond | null
+  /** The file rate to DISPLAY, on the same terms as
+   *  {@link bytesPerSecondDisplay}. */
+  readonly filesPerSecondDisplay: number | null
   /** The ETA to DISPLAY: the backend's, through this session's smoother. Every
    *  view of this operation renders this, never `progress.etaSeconds`. */
   readonly etaSecondsDisplay: Seconds | null
@@ -162,6 +169,16 @@ export function createOperationSession(operationId: string, fanout: OperationEve
       scanFilesPerSecond = rates.filesPerSecond
       scanBytesPerSecond = rates.bytesPerSecond
     }
+  }
+
+  /** Whether the operation is actually moving right now. A paused one emits no
+   *  further ticks, so the last rate and ETA it measured stay put, describing a
+   *  transfer that has stopped: a speed and a "58s left" that nobody can stand
+   *  behind. The three display getters below answer `null` instead, so no
+   *  surface can render them, and the lifecycle STATUS decides it — a parked
+   *  operation still answers `is_running: true`. */
+  function moving(): boolean {
+    return snapshot?.status !== 'paused'
   }
 
   /** First outcome wins: a cancel that races a completion must not flip the
@@ -260,8 +277,14 @@ export function createOperationSession(operationId: string, fanout: OperationEve
     get readout(): TransferReadout | null {
       return readout
     },
+    get bytesPerSecondDisplay(): BytesPerSecond | null {
+      return moving() ? (readout?.bytesPerSecond ?? null) : null
+    },
+    get filesPerSecondDisplay(): number | null {
+      return moving() ? (progress?.filesPerSecond ?? null) : null
+    },
     get etaSecondsDisplay(): Seconds | null {
-      return etaSecondsDisplay
+      return moving() ? etaSecondsDisplay : null
     },
     get scan(): ScanReadout {
       return {

@@ -53,6 +53,8 @@ Every ESTIMATE is stateful and lives on the operation's session instead (`../ope
 row binds to with `bindOperationSession(() => snapshot.operationId)`:
 
 - `session.etaSecondsDisplay`, the backend's ETA through the one smoother this operation has in this window.
+- `session.bytesPerSecondDisplay` / `filesPerSecondDisplay`, the backend's rates, dropped while the operation is paused
+  (a row that isn't moving has no speed to report, and no countdown either).
 - `session.scan`, the walk's files/s and bytes/s, which the backend doesn't emit while it counts.
 
 Two estimators fed identical samples from identical starting points would agree; the divergence comes from one starting

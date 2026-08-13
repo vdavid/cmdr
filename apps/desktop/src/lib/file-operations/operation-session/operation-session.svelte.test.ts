@@ -275,6 +275,34 @@ describe('derived read state', () => {
     dispose()
   })
 
+  it('has no speed and no countdown while the operation is paused', () => {
+    const { fanout, session, dispose } = harness()
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'running')] })
+    fanout._testEmit({
+      kind: 'progress',
+      event: progress('a', { bytesPerSecond: 4096, filesPerSecond: 1905, etaSeconds: 58 }),
+    })
+    expect(session.bytesPerSecondDisplay).toBe(4096)
+    expect(session.filesPerSecondDisplay).toBe(1905)
+    expect(session.etaSecondsDisplay).toBe(58)
+
+    // A paused transfer emits no further ticks, so the backend's last measured
+    // numbers sit there describing a transfer that isn't moving. "58s left"
+    // over a frozen copy is a number nobody can stand behind.
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'paused')] })
+    expect(session.bytesPerSecondDisplay).toBeNull()
+    expect(session.filesPerSecondDisplay).toBeNull()
+    expect(session.etaSecondsDisplay).toBeNull()
+
+    // Resuming brings them back: the smoother kept its history, so the display
+    // picks up where it left off rather than re-warming from scratch.
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'running')] })
+    expect(session.bytesPerSecondDisplay).toBe(4096)
+    expect(session.etaSecondsDisplay).toBe(58)
+    dispose()
+  })
+
   it('re-warms the ETA and drops the scan rates when the phase changes', () => {
     vi.useFakeTimers()
     const { fanout, session, dispose } = harness()

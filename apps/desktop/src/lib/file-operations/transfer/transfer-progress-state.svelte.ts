@@ -764,10 +764,10 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       return session()?.resolvingConflict ?? false
     },
     get bytesPerSecond(): BytesPerSecond | null {
-      return session()?.readout?.bytesPerSecond ?? null
+      return session()?.bytesPerSecondDisplay ?? null
     },
     get filesPerSecond(): number | null {
-      return session()?.progress?.filesPerSecond ?? null
+      return session()?.filesPerSecondDisplay ?? null
     },
     get etaSecondsDisplay(): Seconds | null {
       return session()?.etaSecondsDisplay ?? null
