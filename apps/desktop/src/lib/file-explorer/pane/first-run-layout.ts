@@ -69,17 +69,49 @@ export interface FirstRunLayoutDeps {
   markLaidOut: () => Promise<void>
 }
 
+/** The two facts that cost a probe: a store open and a permission check over IPC. */
+type ProbedFact = 'hasPersistedPaneState' | 'hasFullDiskAccess'
+
+/**
+ * Resolves one fact, but only when it can still change the answer: if the rule decides the
+ * same thing whichever way the fact goes, the probe is skipped and the placeholder stays.
+ *
+ * That keeps `decideFirstRunLayout` the single statement of the rule while the resolver
+ * stays lazy. A hand-written short-circuit would have to repeat the guard order here, and
+ * would drift the day the rule changes.
+ */
+async function settle(
+  ctx: FirstRunLayoutContext,
+  fact: ProbedFact,
+  probe: () => Promise<boolean>,
+): Promise<FirstRunLayoutContext> {
+  const withFact = (value: boolean): FirstRunLayoutContext => ({ ...ctx, [fact]: value })
+  if (decideFirstRunLayout(withFact(false)) === decideFirstRunLayout(withFact(true))) return ctx
+  return withFact(await probe())
+}
+
 /**
  * Gathers the facts, applies the rule, and records the marker. Returns the paths to open,
  * or `null` when the panes should keep whatever was persisted.
+ *
+ * This sits between the app launching and the panes appearing, and the overwhelmingly
+ * common case is a returning user whose marker is already set. So the two probes start as
+ * placeholders and `settle` resolves each only if it matters: that launch does no I/O at
+ * all, and an upgrading user's costs one store read and no permission probe.
  */
 export async function resolveFirstRunLayout(deps: FirstRunLayoutDeps): Promise<FirstRunLayout | null> {
-  const decision = decideFirstRunLayout({
+  let ctx: FirstRunLayoutContext = {
     isAutomatedRun: deps.isAutomatedRun(),
     layoutAlreadyApplied: deps.layoutAlreadyApplied,
-    hasPersistedPaneState: await deps.hasPersistedPaneState(),
-    hasFullDiskAccess: await deps.hasFullDiskAccess(),
-  })
+    // Placeholders. `settle` either replaces one or proves the answer doesn't turn on it,
+    // so the decision below is the same one a fully-probed context would give.
+    hasPersistedPaneState: false,
+    hasFullDiskAccess: false,
+  }
+  ctx = await settle(ctx, 'hasPersistedPaneState', deps.hasPersistedPaneState)
+  ctx = await settle(ctx, 'hasFullDiskAccess', deps.hasFullDiskAccess)
+
+  const decision = decideFirstRunLayout(ctx)
 
   if (decision === 'leaveAlone') return null
   if (decision === 'markAlreadyLaidOut') {

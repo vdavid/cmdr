@@ -160,11 +160,17 @@ zero-permission entries with fallback metadata.
 
 Philosophy: status is "where you are" (ephemeral), settings are "how you like it" (preferences).
 
+**Gotcha, adding a field to `AppStatus`**: `doSaveAppStatus` (`lib/app-status-store.ts`) writes the fields it enumerates
+one `if` at a time, so a new key that gets an interface field and a `loadAppStatus` read but no write branch saves
+nothing, silently, and reads back as its default forever. Reach for `saveAppStatusNow` over the debounced
+`saveAppStatus` when losing the value would change behavior on the next launch rather than lose a nicety.
+
 **Persistence timing** (what's at risk on crash):
 
 | State                                     | Timing                                                   | Crash loss                                  |
 | ----------------------------------------- | -------------------------------------------------------- | ------------------------------------------- |
 | Pane paths, focused pane, view mode, sort | Debounced 200ms (`saveAppStatus`)                        | Up to 200ms of changes                      |
+| First-run layout marker                   | **Immediate** (`saveAppStatusNow`)                       | None; a lost marker re-fires the one-shot   |
 | Tab state (paths, sort, viewMode, pinned) | **Immediate** (no debounce)                              | None; tabs are the reliable source of truth |
 | `lastUsedPath` per volume                 | **Immediate** (no debounce)                              | None                                        |
 | Settings v2                               | Debounced 500ms; explicit flush on Settings window close | Up to 500ms if main window crashes          |

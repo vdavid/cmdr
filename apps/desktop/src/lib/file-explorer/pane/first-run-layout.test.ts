@@ -125,16 +125,25 @@ describe('decideFirstRunLayout', () => {
 function stubDeps(overrides: Partial<FirstRunLayoutDeps> = {}) {
   const pathExists = vi.fn<(path: string) => Promise<boolean>>().mockResolvedValue(true)
   const markLaidOut = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+  const hasPersistedPaneState = vi.fn<() => Promise<boolean>>().mockResolvedValue(false)
+  const hasFullDiskAccess = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
   const deps: FirstRunLayoutDeps = {
     isAutomatedRun: () => false,
     layoutAlreadyApplied: false,
-    hasPersistedPaneState: () => Promise.resolve(false),
-    hasFullDiskAccess: () => Promise.resolve(true),
+    hasPersistedPaneState,
+    hasFullDiskAccess,
     pathExists,
     markLaidOut,
     ...overrides,
   }
-  return { deps, pathExists, markLaidOut }
+  return { deps, pathExists, markLaidOut, hasPersistedPaneState, hasFullDiskAccess }
+}
+
+/** Every probe the resolver can make. Each one costs a store open or an IPC round trip. */
+function expectNoProbes(stubs: ReturnType<typeof stubDeps>): void {
+  expect(stubs.hasPersistedPaneState).not.toHaveBeenCalled()
+  expect(stubs.hasFullDiskAccess).not.toHaveBeenCalled()
+  expect(stubs.pathExists).not.toHaveBeenCalled()
 }
 
 describe('resolveFirstRunLayout', () => {
@@ -166,36 +175,57 @@ describe('resolveFirstRunLayout', () => {
   })
 
   it('never touches the filesystem for an install that already has pane state', async () => {
-    const { deps, pathExists } = stubDeps({ hasPersistedPaneState: () => Promise.resolve(true) })
-    await resolveFirstRunLayout(deps)
-    expect(pathExists).not.toHaveBeenCalled()
+    const stubs = stubDeps()
+    stubs.hasPersistedPaneState.mockResolvedValue(true)
+    await resolveFirstRunLayout(stubs.deps)
+    expect(stubs.pathExists).not.toHaveBeenCalled()
+  })
+
+  it('never asks about Full Disk Access once pane state settles the answer', async () => {
+    // Pane state present means `markAlreadyLaidOut` whichever way the permission goes, so
+    // the probe would be a round trip that can't change anything.
+    const stubs = stubDeps()
+    stubs.hasPersistedPaneState.mockResolvedValue(true)
+    await resolveFirstRunLayout(stubs.deps)
+    expect(stubs.hasFullDiskAccess).not.toHaveBeenCalled()
   })
 
   it('never probes a folder without Full Disk Access, so no permission dialog can appear', async () => {
-    const { deps, pathExists, markLaidOut } = stubDeps({ hasFullDiskAccess: () => Promise.resolve(false) })
-    await expect(resolveFirstRunLayout(deps)).resolves.toBeNull()
-    expect(pathExists).not.toHaveBeenCalled()
-    expect(markLaidOut).not.toHaveBeenCalled()
+    const stubs = stubDeps()
+    stubs.hasFullDiskAccess.mockResolvedValue(false)
+    await expect(resolveFirstRunLayout(stubs.deps)).resolves.toBeNull()
+    expect(stubs.pathExists).not.toHaveBeenCalled()
+    expect(stubs.markLaidOut).not.toHaveBeenCalled()
   })
 
-  it('leaves an automated run alone entirely, writing nothing', async () => {
-    const { deps, pathExists, markLaidOut } = stubDeps({ isAutomatedRun: () => true })
-    await expect(resolveFirstRunLayout(deps)).resolves.toBeNull()
-    expect(pathExists).not.toHaveBeenCalled()
-    expect(markLaidOut).not.toHaveBeenCalled()
+  it('leaves an automated run alone entirely, probing and writing nothing', async () => {
+    const stubs = stubDeps({ isAutomatedRun: () => true })
+    await expect(resolveFirstRunLayout(stubs.deps)).resolves.toBeNull()
+    expectNoProbes(stubs)
+    expect(stubs.markLaidOut).not.toHaveBeenCalled()
   })
 
-  it('does nothing on an install whose marker is already set', async () => {
-    const { deps, pathExists, markLaidOut } = stubDeps({ layoutAlreadyApplied: true })
-    await expect(resolveFirstRunLayout(deps)).resolves.toBeNull()
-    expect(pathExists).not.toHaveBeenCalled()
-    expect(markLaidOut).not.toHaveBeenCalled()
+  it('does no work at all on an install whose marker is already set', async () => {
+    // The overwhelmingly common launch. It sits between the app starting and the panes
+    // appearing, so it has to cost nothing: no store open, no permission probe, no stat.
+    const stubs = stubDeps({ layoutAlreadyApplied: true })
+    await expect(resolveFirstRunLayout(stubs.deps)).resolves.toBeNull()
+    expectNoProbes(stubs)
+    expect(stubs.markLaidOut).not.toHaveBeenCalled()
   })
 
   it('probes the Downloads folder and nothing else', async () => {
     const { deps, pathExists } = stubDeps()
     await resolveFirstRunLayout(deps)
     expect(pathExists.mock.calls).toEqual([[FIRST_RUN_RIGHT_PATH]])
+  })
+
+  it('asks each probe at most once on a true first run', async () => {
+    const stubs = stubDeps()
+    await resolveFirstRunLayout(stubs.deps)
+    expect(stubs.hasPersistedPaneState).toHaveBeenCalledTimes(1)
+    expect(stubs.hasFullDiskAccess).toHaveBeenCalledTimes(1)
+    expect(stubs.pathExists).toHaveBeenCalledTimes(1)
   })
 })
 

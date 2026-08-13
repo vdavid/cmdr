@@ -49,25 +49,28 @@ function freshPaneTabs(side: 'left' | 'right'): PersistedPaneTabs {
   }
 }
 
+/** A never-launched install's app status. */
+const freshStatus = {
+  leftPath: '~',
+  rightPath: '~',
+  focusedPane: 'left',
+  leftViewMode: 'brief',
+  rightViewMode: 'brief',
+  leftVolumeId: 'root',
+  rightVolumeId: 'root',
+  leftSortBy: 'name',
+  rightSortBy: 'name',
+  leftPaneWidthPercent: 50,
+  askCmdrRailOpen: false,
+  askCmdrRailWidth: 340,
+  firstRunLayoutApplied: false,
+} as const
+
 beforeEach(() => {
   vi.clearAllMocks()
   isE2eRun.mockReturnValue(false)
   appStatus.loadPaneTabs.mockImplementation((side: 'left' | 'right') => Promise.resolve(freshPaneTabs(side)))
-  appStatus.loadAppStatus.mockResolvedValue({
-    leftPath: '~',
-    rightPath: '~',
-    focusedPane: 'left',
-    leftViewMode: 'brief',
-    rightViewMode: 'brief',
-    leftVolumeId: 'root',
-    rightVolumeId: 'root',
-    leftSortBy: 'name',
-    rightSortBy: 'name',
-    leftPaneWidthPercent: 50,
-    askCmdrRailOpen: false,
-    askCmdrRailWidth: 340,
-    firstRunLayoutApplied: false,
-  })
+  appStatus.loadAppStatus.mockResolvedValue(freshStatus)
   appStatus.hasPersistedPaneState.mockResolvedValue(false)
   appStatus.saveAppStatusNow.mockResolvedValue(undefined)
   commands.pathExists.mockResolvedValue(true)
@@ -111,6 +114,18 @@ describe('loadPersistedState on a first run', () => {
     expect(getActiveTab(state.leftTabMgr).path).toBe('~/projects/left')
     expect(getActiveTab(state.rightTabMgr).path).toBe('~/projects/right')
     expect(appStatus.saveAppStatusNow).toHaveBeenCalledWith({ firstRunLayoutApplied: true })
+  })
+
+  it('costs a marked install nothing on the way to the panes', async () => {
+    // Startup latency: the common launch must not open the store or probe the permission
+    // to re-derive an answer the marker already gave.
+    appStatus.loadAppStatus.mockResolvedValue({ ...freshStatus, firstRunLayoutApplied: true })
+
+    await initialize()
+
+    expect(appStatus.hasPersistedPaneState).not.toHaveBeenCalled()
+    expect(commands.checkFullDiskAccessQuiet).not.toHaveBeenCalled()
+    expect(commands.pathExists).not.toHaveBeenCalledWith('~/Downloads')
   })
 
   it('lets an E2E fixture path win over the layout', async () => {

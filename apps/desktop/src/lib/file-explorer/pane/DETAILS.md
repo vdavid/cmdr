@@ -703,7 +703,15 @@ Two guardrails that are easy to undo by accident:
   reads `dev`. See `$lib/app-mode.ts`.
 
 The marker is written with `saveAppStatusNow`, not the debounced `saveAppStatus`: startup is followed by plenty of
-things that can quit the app, and a lost marker means the rule fires again on the next launch.
+things that can quit the app, and a lost marker means the rule fires again on the next launch. Every persisted state's
+timing, and the `doSaveAppStatus` enumeration trap that a new `AppStatus` field has to dodge, live in
+`docs/architecture-patterns.md` § Persistence.
+
+This sits between the app launching and the panes appearing, so the resolver is lazy: `resolveFirstRunLayout` seeds the
+two probed facts as placeholders and `settle` resolves one only when the rule would decide differently either way. A
+returning user's launch does no I/O at all, and an upgrading user's costs one store read and no permission probe. The
+laziness lives in `settle`, ❌ never as a hand-written short-circuit ahead of `decideFirstRunLayout`: that would repeat
+the guard order in a second place and drift the day the rule changes.
 
 Not covered by the automation gate: `scripts/marketing-shots.ts` leaves `CMDR_E2E_MODE` unset on purpose (it needs a
 prod-looking title bar and the key-window shadow). Its data dir is persistent, so it carries pane state and takes the
