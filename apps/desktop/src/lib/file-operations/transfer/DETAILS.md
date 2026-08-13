@@ -32,9 +32,9 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
 `backgrounded` in § "Pause, Queue, and auto-queue". Only the layout facts that none of those carry live here:
 
 - **In `transfer-progress-state.svelte.ts`, `backgrounded` and `destroyed` are plain `let`s, NOT `$state`.** They're
-  read on teardown paths that run during synchronous reactive-scope disposal, where a `$state` rune read returns a
-  STALE value: that is how a just-queued transfer once got cancelled, killing the transfer and opening the queue window
-  empty. Full why in the module header; don't "modernize" them into runes.
+  read on teardown paths that run during synchronous reactive-scope disposal, where a `$state` rune read returns a STALE
+  value: that is how a just-queued transfer once got cancelled, killing the transfer and opening the queue window empty.
+  Full why in the module header; don't "modernize" them into runes.
 - **`DirectionIndicator.svelte` is the progress dialog's alone** (the confirm dialog shows its `From` card instead). Its
   optional `sourceLabel` / `destinationLabel` props override the path-basename label so a volume root renders the volume
   display name, not a raw machine id (an MTP storage id like `65538`).
@@ -91,8 +91,8 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
      point.
    - Routes to a backend command through `transfer-dispatch.ts`, then binds the session for the id it gets back.
    - Subscribes to nothing. The window's fan-out holds the seven streams and buffers whatever arrives for an id no
-     session has claimed yet, which covers the gap between the start command answering and the binder acquiring. §
-     "The dialog is a view".
+     session has claimed yet, which covers the gap between the start command answering and the binder acquiring. § "The
+     dialog is a view".
    - Dual progress bars (size + file count). Speed (both bytes/s and files/s) and ETA come pre-computed from the backend
      (`write_operations/eta.rs`) on every `WriteProgressEvent`; the dialog renders the numbers and applies a tiny
      display low-pass to the ETA to prevent flicker. No FE-side math. See BE § "ETA + throughput".
@@ -447,9 +447,9 @@ When the directory has a parent entry shown at index 0, frontend indices are off
   `onCancelled(filesProcessed)`. After 200 ms of waiting, the label gains a clarifying tail: "Cancelling… (finishing USB
   transfers)". The BE-side contract — settle fires after a fully-torn-down spawn task, even on panic — lives in the BE
   doc § "Settle contract". Race protection comes free from reading state rather than events: the view closes when the
-  session reports BOTH an outcome of `cancelled` and `settleEventReceived`, whichever order they land in. Complete / error
-  paths are unchanged: they still close on the existing `MIN_DISPLAY_MS` gate without waiting for settle. The wait is
-  never the only exit: `progress.dismiss()` backs a Close button that leaves at once, and the last-resort
+  session reports BOTH an outcome of `cancelled` and `settleEventReceived`, whichever order they land in. Complete /
+  error paths are unchanged: they still close on the existing `MIN_DISPLAY_MS` gate without waiting for settle. The wait
+  is never the only exit: `progress.dismiss()` backs a Close button that leaves at once, and the last-resort
   `CANCEL_SETTLE_FALLBACK_MS` (20 s) sits above the backend's 15 s `CANCEL_DRAIN_DEADLINE`, so the automatic path can't
   report `0 files` before the real count lands. Why it matters: the original incident was an MTP delete cancel followed
   by an immediate second F8 — the device was still mid-teardown, the second op queued behind the 17 s tail, hit the 30 s
@@ -495,14 +495,14 @@ what covers the gap between the start command answering and the binder acquiring
 still-running operation to the queue window (exactly as the Queue button does) and otherwise just stops watching. An
 unmount does neither — the operation lives in the backend registry, and the corner chip and the queue window keep
 showing it. The one teardown-adjacent flag that still means "stop" is `cancelRequestedBeforeId`: an explicit Cancel
-pressed while the start command was in flight, which birth honours through `cancel_operation` (the MANAGER-level
-cancel, because an operation admitted behind a busy lane has no write op to cancel yet).
+pressed while the start command was in flight, which birth honours through `cancel_operation` (the MANAGER-level cancel,
+because an operation admitted behind a busy lane has no write op to cancel yet).
 
 **A `gone` outcome closes the dialog too.** The session resolves `gone` when it has heard nothing about the operation
-and `list_operations()` doesn't have it either. For a dialog that just dispatched, that means the operation ended
-inside the sliver between the start command answering and the session claiming its id — and the honest reading is "it's
-over, we don't know how", so the view closes through `onCancelled(0)` rather than sitting empty. The buffered terminal
-event normally wins that race, which is why this is a corner rather than a path.
+and `list_operations()` doesn't have it either. For a dialog that just dispatched, that means the operation ended inside
+the sliver between the start command answering and the session claiming its id — and the honest reading is "it's over,
+we don't know how", so the view closes through `onCancelled(0)` rather than sitting empty. The buffered terminal event
+normally wins that race, which is why this is a corner rather than a path.
 
 ## Pause, Queue, and auto-queue (progress dialog)
 
