@@ -112,6 +112,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         // in `generate_handler![]` only: `menu::{show_file_context_menu,
         // show_breadcrumb_context_menu, show_volume_row_context_menu,
         // show_parent_row_context_menu, update_pin_tab_menu, set_reopen_closed_tab_enabled,
+        // set_file_operations_blocked,
         // update_menu_context, activate_window_menu, toggle_hidden_files,
         // sync_menu_show_hidden, update_view_mode_menu}`,
         // `window_ordering::{show_main_window, order_window_to_back}`, and

@@ -6,11 +6,14 @@
 
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    CLOSE_TAB_ID, CommandScope, FileContextInfo, MenuState, REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode,
-    build_breadcrumb_context_menu, build_context_menu, build_network_host_context_menu, build_parent_row_context_menu,
-    build_tab_context_menu, build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command,
-    rebuild_view_mode_items, sync_view_mode_check_states,
+    CLOSE_TAB_ID, CommandScope, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
+    FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FileContextInfo, MenuState, RENAME_ID,
+    REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode, build_breadcrumb_context_menu, build_context_menu,
+    build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu,
+    build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items,
+    sync_view_mode_check_states,
 };
+use std::sync::atomic::Ordering;
 use tauri::menu::ContextMenu;
 use tauri::{AppHandle, Manager, Runtime, Window};
 use tauri_specta::Event as _;
@@ -542,6 +545,7 @@ fn swap_to_viewer_menu<R: Runtime>(app: &AppHandle<R>) {
 fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<(), String> {
     let enabled = context == "explorer";
     let menu_state = app.state::<MenuState<R>>();
+    menu_state.explorer_menu_active.store(enabled, Ordering::Relaxed);
 
     for (id, entry) in menu_state.items.lock_ignore_poison().iter() {
         // Close tab stays enabled: on_menu_event has special logic to close the focused
@@ -592,5 +596,101 @@ fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<()
         let _ = submenu.set_enabled(enabled);
     }
 
+    // ⚠️ Last, and never skipped: the loop above enables EVERY explorer item, so
+    // without this a trip through Settings and back would offer Copy again while a
+    // dialog is still up.
+    apply_operation_item_state(&menu_state);
+
     Ok(())
+}
+
+/// The menu items that would START a file operation, greyed out while the main
+/// window can't take one.
+///
+/// ❌ Not the ones that steer a RUNNING operation, and not Cut / Copy: marking a
+/// clipboard selection starts nothing.
+///
+/// ⚠️ Every id here must be `FileScoped`. `Edit > Paste` is deliberately absent
+/// even though pasting files DOES start a copy: it's `App`-scoped because in
+/// Settings and the viewer it forwards the native `paste:` selector, so greying it
+/// for a main-window dialog would kill ⌘V in those windows' text fields (and
+/// `set_menu_context` skips `App` items, so nothing would put it back). Pasting
+/// files is still refused honestly by `pane/operation-start-gate.ts`; only the
+/// chrome differs. `every_gated_item_is_a_real_file_scoped_menu_item` pins this.
+const OPERATION_START_ITEM_IDS: &[&str] = &[
+    FILE_COPY_ID,
+    FILE_MOVE_ID,
+    FILE_COMPRESS_ID,
+    FILE_NEW_FOLDER_ID,
+    FILE_DELETE_ID,
+    FILE_DELETE_PERMANENTLY_ID,
+    RENAME_ID,
+    EDIT_PASTE_MOVE_ID,
+];
+
+/// Recomputes the operation items' enabled state from BOTH inputs: the explorer has
+/// to own the menu, and the main window has to be able to take an operation.
+fn apply_operation_item_state<R: Runtime>(menu_state: &MenuState<R>) {
+    let enabled = menu_state.explorer_menu_active.load(Ordering::Relaxed)
+        && !menu_state.file_operations_blocked.load(Ordering::Relaxed);
+    let items = menu_state.items.lock_ignore_poison();
+    for id in OPERATION_START_ITEM_IDS {
+        if let Some(entry) = items.get(*id) {
+            let _ = entry.item.set_enabled(enabled);
+        }
+    }
+}
+
+/// Greys out (or restores) the menu items that would start a file operation.
+///
+/// Called by the main window whenever a dialog opens or closes, or the Ask Cmdr
+/// composer takes or gives up focus. ⚠️ CHROME only: a disabled item's accelerator
+/// still fires, so this stops the app OFFERING what it would refuse; the refusals
+/// themselves live in `mcp/executor/mod.rs` and the two frontend gates.
+#[tauri::command]
+#[specta::specta]
+pub fn set_file_operations_blocked<R: Runtime>(app: AppHandle<R>, blocked: bool) -> Result<(), String> {
+    let menu_state = app.state::<MenuState<R>>();
+    menu_state.file_operations_blocked.store(blocked, Ordering::Relaxed);
+    apply_operation_item_state(&menu_state);
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::menu::{EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID};
+
+    #[test]
+    fn every_gated_item_is_a_real_file_scoped_menu_item() {
+        // A typo, or an id that stopped being registered, would make the loop in
+        // `apply_operation_item_state` skip that item SILENTLY: the menu would keep
+        // offering Copy while a dialog is up, and nothing would say why. Every id
+        // here has to resolve to a file-scoped command, which is what `register_item`
+        // registers and what `set_menu_context` manages.
+        for id in OPERATION_START_ITEM_IDS {
+            let mapped = menu_id_to_command(id);
+            assert!(mapped.is_some(), "{id} isn't a known menu item id");
+            assert!(
+                matches!(mapped, Some((_, CommandScope::FileScoped))),
+                "{id} must be file-scoped, else `set_menu_context` doesn't manage it either"
+            );
+        }
+    }
+
+    #[test]
+    fn the_gate_leaves_the_commands_that_steer_a_running_operation_alone() {
+        // The boundary, pinned: cancel, rollback, and the queue window are what a
+        // user reaches for WHILE a dialog is up. Cut and Copy stay too — marking a
+        // clipboard selection starts nothing.
+        for id in [EDIT_CUT_ID, EDIT_COPY_ID] {
+            assert!(
+                !OPERATION_START_ITEM_IDS.contains(&id),
+                "{id} doesn't start an operation, so it must stay enabled"
+            );
+        }
+        // And `Edit > Paste`, which does start one but carries the OS text-paste
+        // selector in other windows. See the const's comment.
+        assert!(!OPERATION_START_ITEM_IDS.contains(&EDIT_PASTE_ID));
+    }
 }

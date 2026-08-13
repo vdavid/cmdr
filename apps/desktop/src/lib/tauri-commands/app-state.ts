@@ -53,6 +53,17 @@ export async function updatePinTabMenu(isPinned: boolean): Promise<void> {
   await invoke('update_pin_tab_menu', { isPinned })
 }
 
+/**
+ * Greys out (or restores) the native menu items that would START a file operation.
+ *
+ * ⚠️ Chrome, never the guard: a disabled item's accelerator still fires. Driven by
+ * `routes/(main)/menu-operation-gate.svelte.ts`; the refusals live elsewhere.
+ */
+export async function setFileOperationsBlocked(blocked: boolean): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic over Runtime; not in typed bindings
+  await invoke('set_file_operations_blocked', { blocked })
+}
+
 /** Enables or disables the Tab menu "Reopen closed tab" item based on whether the focused pane's closed-tab stack has entries. */
 export async function setReopenClosedTabEnabled(enabled: boolean): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic over Runtime; not in typed bindings

@@ -127,6 +127,7 @@ export {
   notifyDialogOpened,
   notifyDialogClosed,
   registerKnownDialogs,
+  setFileOperationsBlocked,
   updateMenuContext,
   activateWindowMenu,
   syncMenuShowHidden,

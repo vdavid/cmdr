@@ -36,6 +36,7 @@ use std::collections::HashMap;
 #[cfg(target_os = "macos")]
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::sync::atomic::AtomicBool;
 use tauri::{
     Runtime,
     menu::{CheckMenuItem, Menu, MenuItem, Submenu},
@@ -225,6 +226,19 @@ pub struct MenuState<R: Runtime> {
     pub view_mode_full_right: Mutex<Option<CheckMenuItem<R>>>,
     pub view_mode_brief_right: Mutex<Option<CheckMenuItem<R>>>,
     pub context: Mutex<MenuContext>,
+    /// Whether the main file explorer owns the menu right now (`activate_window_menu`).
+    /// Stored so the operation-item state can be recomputed from BOTH inputs; without
+    /// it, a focus round-trip through Settings would re-enable Copy while a dialog is
+    /// still up, since `set_menu_context` enables every explorer item.
+    pub explorer_menu_active: AtomicBool,
+    /// Whether the main window currently refuses to START a file operation: a dialog
+    /// is up, or the Ask Cmdr composer has focus. Pushed by the frontend
+    /// (`routes/(main)/menu-operation-gate.svelte.ts`), which is the only writer.
+    ///
+    /// ⚠️ Greying items is CHROME. A disabled item's accelerator still fires, so this
+    /// is never the guard: the refusals in `mcp/executor`, `pane/operation-start-gate.ts`,
+    /// and `pane/dialog-state.svelte.ts` are.
+    pub file_operations_blocked: AtomicBool,
     /// Per-pane submenus that hold the Full/Brief CheckMenuItems. The View submenu
     /// itself just nests these two (`Left pane >` and `Right pane >`).
     /// Each pane's Full item is at position 0, Brief at position 1.
@@ -283,6 +297,8 @@ impl<R: Runtime> Default for MenuState<R> {
             view_mode_full_right: Mutex::new(None),
             view_mode_brief_right: Mutex::new(None),
             context: Mutex::new(MenuContext::default()),
+            explorer_menu_active: AtomicBool::new(true),
+            file_operations_blocked: AtomicBool::new(false),
             view_left_pane_submenu: Mutex::new(None),
             view_right_pane_submenu: Mutex::new(None),
             view_mode_active_pane: Mutex::new("left".to_string()),

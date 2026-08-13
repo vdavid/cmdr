@@ -65,6 +65,7 @@
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import { type UnlistenFn, getWindowTitle, registerKnownDialogs } from '$lib/tauri-commands'
     import { showMainOnMount } from './show-main-on-mount'
+    import { startMenuOperationGate } from './menu-operation-gate.svelte'
     import {
         type StartupGatesContext,
         maybeRunWhatsNew,
@@ -160,6 +161,9 @@
     // helpers and with `setupMcpListeners` so every registered listener tears
     // down through one array.
     const tauriUnlistenFns: UnlistenFn[] = []
+
+    /** Tears down the native-menu enabled-state sync on destroy (HMR safety). */
+    let stopMenuOperationGate: (() => void) | null = null
 
     /** `listenTauri` bound to the shared cleanup array; passed to `setupMcpListeners`. */
     const listenTauri = makeListenTauri(tauriUnlistenFns)
@@ -302,8 +306,13 @@
         // Fetch platform-specific path limits (non-blocking, macOS defaults until resolved)
         void initPathLimits()
 
-        // Register known dialog types with backend (for MCP "available dialogs" resource)
+        // Register known dialog types with backend (for MCP "available dialogs" resource,
+        // and for the gate that refuses an MCP file operation while a dialog is up)
         void registerKnownDialogs(SOFT_DIALOG_REGISTRY)
+
+        // Grey out the File menu's operation items while a dialog is up or Ask Cmdr
+        // has focus. Chrome only; every real refusal is elsewhere.
+        stopMenuOperationGate = startMenuOperationGate()
 
         // Load license status from cache (fast, no network)
         try {
@@ -466,6 +475,7 @@
         destroyMainWindowOperations()
         destroyOperationSessions()
         destroySnapshotPurge()
+        stopMenuOperationGate?.()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)
         }

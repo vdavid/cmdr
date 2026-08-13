@@ -220,6 +220,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::menu::show_network_host_context_menu,
         crate::commands::menu::update_pin_tab_menu,
         crate::commands::menu::set_reopen_closed_tab_enabled,
+        crate::commands::menu::set_file_operations_blocked,
         crate::commands::window_ordering::show_main_window,
         crate::commands::window_ordering::order_window_to_back,
         crate::commands::menu::update_menu_context,
