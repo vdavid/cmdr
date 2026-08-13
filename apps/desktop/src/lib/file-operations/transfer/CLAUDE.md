@@ -33,9 +33,9 @@ counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`
 - **Speed, ETA, and bars are backend-owned and SHARED with the queue window** (`../TransferProgressReadout.svelte`): ❌
   no second instantaneous rate here, and its fixed-width columns are why the dialog is 580 px wide.
 - **A stall drops the ETA and says why** (`transfer-stall.ts`): the BACKEND classifies, this side owns the threshold. ❌
-  Never infer a stall from event timing — a wedge emits no events at all. The notice is a warning-toned `SectionCard` at
-  the foot of the body, above the buttons; ❌ don't hand-pick a yellow, the tone token owns both themes.
-  `DETAILS.md` § "The stalled-transfer notice".
+  Never infer a stall from event timing — a wedge emits no events at all. The notice is a warning-toned `SectionCard`
+  above the buttons; ❌ don't hand-pick a yellow, the tone token owns both themes. `DETAILS.md` § "The stalled-transfer
+  notice".
 - **Rollback / Cancel disable during the settle window** (`disabled={isCancelling || operationSettled}`), and a cancel
   close waits for both `write-cancelled` AND `write-settled` — ❌ but never as the ONLY exit: `progress.dismiss()` backs
   a Close button that leaves at once.
