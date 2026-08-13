@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,8 +29,6 @@ const (
 	// and the non-MTP file durations (file-watching ~78s, accessibility ~66s)
 	// already balance well across two shards.
 	nonMtpShards = 2
-
-	mcpPortBase = 9429
 )
 
 type shardSpec struct {
@@ -41,11 +40,17 @@ type shardSpec struct {
 	// <short-name> is `mtp` or `nonmtpN`. See planShards for the mapping.
 	instanceID string
 	socketPath string
+	// mcpPort comes from the OS (reserveMcpPorts), never a fixed base: a second
+	// suite starting while this one runs would otherwise want the same port.
 	mcpPort    int
 	dataDir    string
 	fixtureDir string
 	logFile    string
 	jsonReport string
+	// outputDir is where Playwright writes this shard's recordings and error
+	// contexts. Run-scoped, so a concurrent suite can't overwrite the evidence of
+	// a failure while someone is reading it.
+	outputDir string
 	// For non-mtp shards, Playwright's --shard arg ("1/2", "2/2"). Empty for mtp.
 	playwrightShard string
 }
@@ -81,7 +86,11 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
-	shards := planShards(desktopDir, timestamp, pid)
+	mcpPorts, err := reserveMcpPorts(nonMtpShards + 1)
+	if err != nil {
+		return CheckResult{}, err
+	}
+	shards := planShards(desktopDir, timestamp, pid, mcpPorts)
 
 	cleanupFixtures, err := allocateShardFixtures(desktopDir, shards)
 	if err != nil {
@@ -89,9 +98,13 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 	}
 	defer cleanupFixtures()
 
+	// ❌ Never clear the way by killing whoever holds the port. Two suites run at
+	// once whenever two worktrees are busy, and the ports were fixed until a
+	// starting run SIGTERM'd a running one's app mid-test: 38 failures that read
+	// like a product bug, one real and 37 cascading off a dead socket. The socket
+	// path below is pid-scoped, so removing it can only touch our own leftovers.
 	for _, s := range shards {
 		os.Remove(s.socketPath)
-		stopProcessOnPort(strconv.Itoa(s.mcpPort))
 	}
 
 	apps, cleanupApps, err := startShardApps(binaryPath, shards)
@@ -217,9 +230,41 @@ func shardInstanceID(shortName string, pid int) string {
 	return fmt.Sprintf("e2e-%s-%d", shortName, pid)
 }
 
+// reserveMcpPorts asks the OS for `count` free loopback ports, one per shard.
+//
+// Every listener stays open until the last one is reserved: closing each before
+// opening the next lets the kernel hand the same port back, and two shards on one
+// port is the collision this exists to avoid. They're released on return, so the
+// apps can bind them — a window, but a freshly-released ephemeral port isn't what
+// the OS reaches for next.
+//
+// ❌ Never go back to a fixed base port. It's what let one suite's pre-flight kill
+// another suite's running app.
+func reserveMcpPorts(count int) ([]int, error) {
+	listeners := make([]net.Listener, 0, count)
+	defer func() {
+		for _, l := range listeners {
+			l.Close()
+		}
+	}()
+
+	ports := make([]int, 0, count)
+	for range count {
+		l, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			return nil, fmt.Errorf("couldn't reserve an MCP port for the E2E shards: %w", err)
+		}
+		listeners = append(listeners, l)
+		ports = append(ports, l.Addr().(*net.TCPAddr).Port)
+	}
+	return ports, nil
+}
+
 // planShards builds the per-shard plan. Shard 0 is the MTP lane; shards
 // 1..N are the non-MTP lanes, split by Playwright's --shard X/N.
-func planShards(_ string, timestamp int64, pid int) []shardSpec {
+//
+// mcpPorts comes from reserveMcpPorts and must hold one port per shard.
+func planShards(_ string, timestamp int64, pid int, mcpPorts []int) []shardSpec {
 	shards := make([]shardSpec, 0, nonMtpShards+1)
 
 	mkLog := func(name string) string {
@@ -228,6 +273,13 @@ func planShards(_ string, timestamp int64, pid int) []shardSpec {
 	mkJSON := func(name string) string {
 		return fmt.Sprintf("/tmp/cmdr-e2e-report-%s.json", name)
 	}
+	// Run-scoped, unlike the JSON report: `scripts/e2e-test-timings` and
+	// `e2e-test-log.go` both read the report back from its fixed path, while
+	// nothing but a person reads the recordings — and a concurrent suite
+	// overwriting them takes away the only picture of what a failure looked like.
+	mkOutputDir := func(name string) string {
+		return fmt.Sprintf("/tmp/cmdr-e2e-results-%s-%d", name, pid)
+	}
 
 	// MTP shard (sequential lane)
 	shards = append(shards, shardSpec{
@@ -235,24 +287,27 @@ func planShards(_ string, timestamp int64, pid int) []shardSpec {
 		kind:       "mtp",
 		instanceID: shardInstanceID("mtp", pid),
 		socketPath: fmt.Sprintf("/tmp/tauri-playwright-mtp-%d.sock", pid),
-		mcpPort:    mcpPortBase,
+		mcpPort:    mcpPorts[0],
 		dataDir:    fmt.Sprintf("/tmp/cmdr-e2e-data-mtp-%d", pid),
 		logFile:    mkLog("mtp"),
 		jsonReport: mkJSON("mtp"),
+		outputDir:  mkOutputDir("mtp"),
 	})
 
 	// Non-MTP shards
 	for i := 1; i <= nonMtpShards; i++ {
 		shortName := fmt.Sprintf("nonmtp%d", i)
+		name := fmt.Sprintf("non-mtp-%d", i)
 		shards = append(shards, shardSpec{
-			name:            fmt.Sprintf("non-mtp-%d", i),
+			name:            name,
 			kind:            "non-mtp",
 			instanceID:      shardInstanceID(shortName, pid),
 			socketPath:      fmt.Sprintf("/tmp/tauri-playwright-nonmtp%d-%d.sock", i, pid),
-			mcpPort:         mcpPortBase + i,
+			mcpPort:         mcpPorts[i],
 			dataDir:         fmt.Sprintf("/tmp/cmdr-e2e-data-nonmtp%d-%d", i, pid),
 			logFile:         mkLog(shortName),
 			jsonReport:      mkJSON(shortName),
+			outputDir:       mkOutputDir(name),
 			playwrightShard: fmt.Sprintf("%d/%d", i, nonMtpShards),
 		})
 	}
@@ -304,7 +359,7 @@ func runShard(desktopDir string, s shardSpec) shardResult {
 		"CMDR_PLAYWRIGHT_SOCKET="+s.socketPath,
 		"CMDR_E2E_SHARD_KIND="+s.kind,
 		"CMDR_E2E_JSON_REPORT="+s.jsonReport,
-		"CMDR_E2E_OUTPUT_DIR="+fmt.Sprintf("/tmp/cmdr-e2e-results-%s", s.name),
+		"CMDR_E2E_OUTPUT_DIR="+s.outputDir,
 	)
 	// Only the MTP shard is allowed to wipe the shared virtual MTP backing
 	// directory in globalSetup. The non-MTP shards must skip it to avoid
@@ -488,21 +543,6 @@ func cleanupTauriApp(cmd *exec.Cmd, exited <-chan struct{}, dataDir, socketPath 
 
 	os.Remove(socketPath)
 	os.RemoveAll(dataDir)
-}
-
-// stopProcessOnPort finds and terminates any process listening on the given TCP port.
-func stopProcessOnPort(port string) {
-	cmd := exec.Command("lsof", "-ti:"+port)
-	output, err := RunCommand(cmd, true)
-	if err != nil || strings.TrimSpace(output) == "" {
-		return
-	}
-	for pidStr := range strings.SplitSeq(strings.TrimSpace(output), "\n") {
-		if pid, err := strconv.Atoi(strings.TrimSpace(pidStr)); err == nil {
-			_ = syscall.Kill(pid, syscall.SIGTERM)
-		}
-	}
-	time.Sleep(500 * time.Millisecond)
 }
 
 // extractE2ETestOutput returns a concise failure summary for E2E test runs.

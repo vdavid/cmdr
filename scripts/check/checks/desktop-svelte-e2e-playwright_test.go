@@ -40,7 +40,7 @@ func TestPlanShardsAssignsInstanceIDs(t *testing.T) {
 	t.Parallel()
 
 	const pid = 4242
-	shards := planShards("", 1700000000, pid)
+	shards := planShards("", 1700000000, pid, []int{40001, 40002, 40003})
 
 	if len(shards) != nonMtpShards+1 {
 		t.Fatalf("planShards returned %d shards, want %d", len(shards), nonMtpShards+1)
@@ -63,6 +63,63 @@ func TestPlanShardsAssignsInstanceIDs(t *testing.T) {
 		if !strings.HasPrefix(shard.instanceID, "e2e-nonmtp") {
 			t.Errorf("shards[%d].instanceID = %q, want e2e-nonmtp prefix", i, shard.instanceID)
 		}
+	}
+}
+
+// Two suites run at once whenever two worktrees are busy, which is most of the time.
+// Everything a shard OWNS therefore has to be scoped to its run: a resource two runs
+// share is one run reaching into the other's. That is not theoretical — a fixed MCP
+// port once let a starting run SIGTERM a running one's app mid-test, and the 38
+// failures that followed read exactly like a product bug.
+func TestPlanShardsSharesNothingBetweenConcurrentRuns(t *testing.T) {
+	t.Parallel()
+
+	first := planShards("", 1700000000, 4242, []int{40001, 40002, 40003})
+	second := planShards("", 1700000042, 4343, []int{40004, 40005, 40006})
+
+	for i := range first {
+		a, b := first[i], second[i]
+		owned := map[string][2]string{
+			"instanceID": {a.instanceID, b.instanceID},
+			"socketPath": {a.socketPath, b.socketPath},
+			"dataDir":    {a.dataDir, b.dataDir},
+			"logFile":    {a.logFile, b.logFile},
+			"outputDir":  {a.outputDir, b.outputDir},
+		}
+		for field, pair := range owned {
+			if pair[0] == pair[1] {
+				t.Errorf("shard %q: both runs got %s = %q; a concurrent run would clobber it", a.name, field, pair[0])
+			}
+		}
+		if a.mcpPort == b.mcpPort {
+			t.Errorf("shard %q: both runs got mcpPort = %d", a.name, a.mcpPort)
+		}
+	}
+}
+
+// The ports have to be distinct WITHIN a run too, and the only way to get that from
+// the OS is to hold every listener open while asking for the next one: close each in
+// turn and the kernel is free to hand the same port back.
+func TestReserveMcpPortsAreDistinctAndUsable(t *testing.T) {
+	t.Parallel()
+
+	const count = 3
+	ports, err := reserveMcpPorts(count)
+	if err != nil {
+		t.Fatalf("reserveMcpPorts(%d) failed: %v", count, err)
+	}
+	if len(ports) != count {
+		t.Fatalf("reserveMcpPorts(%d) returned %d ports", count, len(ports))
+	}
+	seen := map[int]bool{}
+	for _, p := range ports {
+		if p <= 0 {
+			t.Errorf("port %d isn't usable", p)
+		}
+		if seen[p] {
+			t.Errorf("port %d handed out twice", p)
+		}
+		seen[p] = true
 	}
 }
 

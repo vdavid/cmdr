@@ -236,7 +236,8 @@ separate.
 fixtures, start N Tauri instances, run N Playwright processes in parallel, cleanup). The build is fingerprinted and
 skipped when the binary on disk already matches the tree it would be built from, which is worth 172 s per run because
 the build isn't incremental (`checks/DETAILS.md` § "The Playwright lane's binary is fingerprinted"). Each shard runs in
-its own isolated `CMDR_DATA_DIR` with its own Unix socket and MCP port (9429 + shard offset), plus a per-shard
+its own isolated `CMDR_DATA_DIR` with its own Unix socket and MCP port (asked of the OS per run, never a fixed base:
+`checks/DETAILS.md` § "Nothing a shard owns is shared between runs"), plus a per-shard
 `CMDR_INSTANCE_ID` of the form `e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`). The instance ID
 drives the macOS Keychain `SERVICE_NAME` suffix (`Cmdr-e2e-<short>-<pid>`) so two parallel shards can never collide on
 credentials, and reshapes the Dock label into `Cmdr (E2E <short>)` so cleanup scripts can target with

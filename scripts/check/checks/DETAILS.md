@@ -397,6 +397,29 @@ depends on the canonical path persisting — no CI artifact upload, and threshol
 config — so isolation applies everywhere, with no CI split. Manual `pnpm test:coverage` (no env var set) still writes
 `./coverage`.
 
+## Nothing a shard owns is shared between runs
+
+**Decision**: every live resource in `planShards` is scoped to the RUN, not to the shard name. The MCP ports come from
+the OS (`reserveMcpPorts` binds `127.0.0.1:0` once per shard, holding every listener open until the last is reserved, so
+the kernel can't hand the same port back twice), and the Playwright output dir carries the pid alongside the socket
+path, data dir, fixture dir, and instance ID that already did. The pre-flight no longer kills whoever holds a port; it
+only removes its own pid-scoped socket file.
+
+**Why**: two suites run at once whenever two worktrees are busy, which is most of the time. The MCP port used to be
+`9429 + shard offset`, and the pre-flight SIGTERM'd whatever was listening on it — so a suite starting at 16:03:30
+killed a suite that had been running since 15:58, mid-test. The victim's shard reported one 15 s timeout (the in-flight
+`webview.eval()` hanging on a socket whose process had gone) and 37 cascading `ECONNREFUSED` failures, with no panic and
+no crash report to say the app had been signalled. It reads exactly like a product bug and cost a full triage cycle.
+The output dir moved for the second half of that cost: the concurrent suite had already overwritten the failing run's
+recordings and error contexts, so the only pictures of the failure were of the run that passed.
+
+Still shared, and still worth knowing: the fixture hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`, content-addressed,
+so sharing is the point), the virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures`, global by the app's design), and
+the JSON report path (`/tmp/cmdr-e2e-report-<shard>.json`, which `scripts/e2e-test-timings` and `e2e-test-log.go` both
+read back from a fixed location).
+
+`TestPlanShardsSharesNothingBetweenConcurrentRuns` pins the whole rule against two plans from different pids.
+
 ## The Playwright lane's binary is fingerprinted, because its build isn't incremental
 
 **Decision**: `buildTauriBinary` stamps the release binary with a fingerprint of everything it was compiled from

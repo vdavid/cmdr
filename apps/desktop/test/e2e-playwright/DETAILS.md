@@ -41,8 +41,8 @@ pnpm check desktop-e2e-playwright
 
 The checker runs the suite as **N parallel shards**: one dedicated MTP lane (sequential, every spec whose filename
 matches `playwright.config.ts`'s `/mtp(-[a-z-]+)?\.spec\.ts$/`) plus 2 non-MTP lanes split by Playwright's
-`--shard X/2`. Each shard gets its own Tauri instance with a distinct `CMDR_DATA_DIR`, MCP port (9429 + offset), Unix
-socket path, and `CMDR_INSTANCE_ID` of the form `e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`).
+`--shard X/2`. Each shard gets its own Tauri instance with a distinct `CMDR_DATA_DIR`, MCP port (asked of the OS per
+run), Unix socket path, and `CMDR_INSTANCE_ID` of the form `e2e-<short>-<pid>` (`e2e-mtp-12345`, `e2e-nonmtp1-12345`).
 The instance ID drives the macOS Keychain `SERVICE_NAME` suffix so two parallel shards can never collide on credentials,
 and reshapes the Dock label to `Cmdr (E2E <short>)` for easy `pgrep` cleanup. The MTP shard runs alone because the
 virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures`) is shared by every Tauri instance. Running MTP specs from two
@@ -143,6 +143,20 @@ A related tell: the fixture tree under `/tmp/cmdr-e2e-fixtures` is SHARED and mu
 failure leaves it dirty and the next spec that needs a fixture reports something like
 `entry "sample.zip" should be in the focused pane`. That's a downstream symptom of the first failure, not an independent
 bug.
+
+**A different signature, a different cause: ONE timeout followed by a wall of `ECONNREFUSED` means the app DIED.** The
+in-flight `webview.eval()` hangs to the 15 s test timeout, then every later spec fails in ~60 ms on a socket with no
+listener. Read the shard log's app section: it stops mid-test, with no panic and no crash report, because the app was
+signalled rather than crashed. Then ask who signalled it — a second suite on the same machine used to, through a fixed
+MCP port (fixed since; `scripts/check/checks/DETAILS.md` § "Nothing a shard owns is shared between runs"), and the hand
+launch's `pkill -f 'target.*Cmdr'` below reaches every shard of a running checker suite just as well. That cleanup is
+right for the usual hand launch; when a suite may be running (another worktree, another agent), kill the pid you
+started instead.
+
+Two `/tmp` paths still belong to a shard NAME rather than a run, so a concurrent suite overwrites them: the fixture
+hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`) and the JSON report (`/tmp/cmdr-e2e-report-<shard>.json`). Recordings
+and error contexts are run-scoped (`/tmp/cmdr-e2e-results-<shard>-<pid>/`), so a post-mortem reads the pictures of the
+run it's investigating — check the pid against the failing run's log before trusting a frame.
 
 ## Running on Linux (Docker)
 
