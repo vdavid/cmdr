@@ -442,7 +442,9 @@ describe('TransferProgressDialog dialog-scoped F2', () => {
 describe('TransferProgressDialog auto-queue surfacing', () => {
   it('an op admitted as Queued backgrounds itself: opens the window, toasts, fires onQueue, no second modal', async () => {
     // Seed `list_operations` so the op reports `queued` right after it starts
-    // (admitted behind a busy lane), with one running op ahead of it.
+    // (admitted behind a busy lane), with one running op ahead of it. The seed
+    // is the fan-out's, taken once at init, so the window reopens on it.
+    destroyOperationSessions()
     listOperationsMock.mockResolvedValue(
       snapshot('queued', [
         {
@@ -456,6 +458,7 @@ describe('TransferProgressDialog auto-queue surfacing', () => {
         },
       ]),
     )
+    await initOperationSessions()
 
     const onQueue = vi.fn()
     const target = document.createElement('div')

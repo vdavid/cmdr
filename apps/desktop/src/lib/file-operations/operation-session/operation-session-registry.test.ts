@@ -25,6 +25,24 @@ vi.mock('$lib/tauri-commands', () => ({
 import * as progressReadout from '../progress-readout'
 import { createOperationSessionRegistry } from './operation-session-registry'
 
+function snapshot(id: string, status: OperationSnapshot['status'] = 'running'): OperationSnapshot {
+  return {
+    operationId: id,
+    operationType: 'copy',
+    status,
+    source: '/src',
+    destination: '/dst',
+    supportsRollback: true,
+    error: null,
+  }
+}
+
+/** Lets every session's seed, had it taken one, run to its continuation. */
+async function flushSeeds(): Promise<void> {
+  await Promise.resolve()
+  await Promise.resolve()
+}
+
 function progress(id: string, over: Partial<WriteProgressEvent> = {}): WriteProgressEvent {
   return {
     operationId: id,
@@ -122,6 +140,38 @@ describe('the session registry', () => {
     // And the second view can't send it again.
     expect(await chipView.cancel()).toBe(false)
     expect(cancelOperationMock).toHaveBeenCalledTimes(1)
+    registry.dispose()
+  })
+
+  it('opens a cold window on ONE list_operations call, however many rows it shows', async () => {
+    // What the operation queue does on a cold open: init, then a session per
+    // row, before any `operations-changed` has been broadcast. The fan-out's own
+    // seed is the answer to all of them, so no row pays for its own round trip.
+    const rows = ['a', 'b', 'c', 'd', 'e']
+    listOperationsMock.mockResolvedValue(rows.map((id) => snapshot(id, 'running')))
+    const registry = createOperationSessionRegistry()
+    await registry.init()
+
+    const sessions = rows.map((id) => registry.acquire(id))
+    await flushSeeds()
+
+    expect(listOperationsMock).toHaveBeenCalledTimes(1)
+    expect(sessions.map((session) => session.status)).toEqual(rows.map(() => 'running'))
+    registry.dispose()
+  })
+
+  it('still resolves a row whose operation ended before the window opened', async () => {
+    // The seed can't answer for an id it doesn't carry, so that session asks for
+    // itself and resolves as already over rather than sitting empty.
+    listOperationsMock.mockResolvedValue([snapshot('a')])
+    const registry = createOperationSessionRegistry()
+    await registry.init()
+
+    const ghost = registry.acquire('ended-already')
+    await flushSeeds()
+
+    expect(ghost.outcome).toEqual({ kind: 'gone' })
+    expect(listOperationsMock).toHaveBeenCalledTimes(2)
     registry.dispose()
   })
 

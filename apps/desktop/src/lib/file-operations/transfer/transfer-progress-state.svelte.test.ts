@@ -687,8 +687,11 @@ describe('createTransferProgressState: pause, queue, and auto-queue', () => {
   it('auto-queues an operation seeded as queued, with no live snapshot at all', async () => {
     // A cold main window learns the status from `list_operations()` rather than
     // from a tick: the manager emits `operations-changed` at registration, which
-    // can fire before anything is watching for it.
+    // can fire before anything is watching for it. The window's fan-out is what
+    // takes that seed, once at init, so the window is reopened on it here.
+    destroyOperationSessions()
     vi.mocked(listOperations).mockResolvedValue([snapshot('op-1', 'queued')])
+    await initOperationSessions()
     const { config } = await startedState()
     expect(config.onQueue).toHaveBeenCalledTimes(1)
   })

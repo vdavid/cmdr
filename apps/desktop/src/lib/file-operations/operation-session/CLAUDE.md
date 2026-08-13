@@ -7,8 +7,9 @@ views is an ordinary state.
 
 ## Module map
 
-- `operation-event-fanout.ts`: the demultiplexer. Subscribes the seven broadcast streams once per window and routes each
-  one to the session that claimed its `operationId`, buffering for ids nobody has claimed yet.
+- `operation-event-fanout.ts`: the demultiplexer. Subscribes the seven broadcast streams once per window, seeds the
+  registry snapshot, and routes each event to the session that claimed its `operationId`, buffering for ids nobody has
+  claimed yet.
 - `operation-session.svelte.ts`: `createOperationSession(id, fanout)` — the derived read state, plus the
   `list_operations` seed.
 - `operation-session-commands.svelte.ts`: the five commands, their in-flight guards, and their IPC. Composed into every
@@ -31,6 +32,9 @@ views is an ordinary state.
   the return: the flush must land before any live event for that id, because feeding the smoother an older sample after
   a newer one corrupts it. The `list_operations` seed is async on purpose and guarded on `receivedDelivery` for the same
   reason.
+- **The window asks `list_operations()` ONCE, in `fanout.init()`, and awaits it.** A cold window has heard no snapshot
+  yet, so a seed that stops being awaited (or moves ahead of the subscriptions) puts every row's session back on its own
+  round trip. A broadcast landing mid-seed wins over it; a session's own seed is the fallback. DETAILS § Seeding.
 - **Settle comes from the terminal EVENTS, never from leaving the snapshot.** "Removed" is what a completed, a
   cancelled, and a never-existed operation all look like. The one exception is the seeding miss case, which resolves to
   `outcome: 'gone'` rather than hanging empty.

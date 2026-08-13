@@ -141,7 +141,8 @@ here are async.
 
 - **(a) The fan-out subscribes at window init, before any session can exist.** `listen()` is async, so subscribing
   lazily on the first session would leave events arriving before that promise resolves unbuffered and unheard. That is
-  exactly the dispatch → dialog → session sequence on a cold main window.
+  exactly the dispatch → dialog → session sequence on a cold main window. The window's one `list_operations()` seed is
+  taken there too, immediately after those subscriptions resolve (§ Seeding).
 - **(b) Claim, flush, and go live are one synchronous block, with no `await` between them.** Seeding is async, so a
   session that claims its id and then awaits `list_operations()` would overwrite live events with an older seed. The
   seed applies only if nothing has been delivered since the claim. `createOperationsStore.init` guards this exact shape
@@ -151,14 +152,32 @@ here are async.
 
 ## Seeding, and its miss case
 
-A session created for an operation this window has heard nothing about asks `list_operations()`. With operations
-surviving a reload, a reloaded main window has to recover them or the chip shows nothing for a transfer that is very
-much still running.
+Two seeds at two levels, and the window's is the one that usually answers.
 
-The test for "heard nothing" is whether the attach delivered anything, and it gates the CALL, not just the result. A
-live window's fan-out already holds the latest snapshot, so every row that appears while it is up is claimed with its
-row in hand: without the gate each view of each row would cost an IPC round trip for an answer already in memory, and
-sessions now have one view per queue row.
+**The fan-out takes the window's one `list_operations()` at `init()`**, and holds the result as its snapshot. That is
+what a COLD window opens on: no `operations-changed` has been broadcast yet, so the fan-out would otherwise hold nothing
+and each row's session would spend a round trip on the answer the next broadcast carries anyway. With one session per
+queue row that is N calls for one fact.
+
+Three things keep that seed honest:
+
+- **It is taken AFTER the subscriptions, never beside them.** A seed issued before the listeners are live could be older
+  than a broadcast nobody was there to hear, and nothing would correct it. Taken after, the seed can only be newer than
+  the moment the window started listening, so anything it misses is something the window is guaranteed to be told.
+- **A broadcast that lands while it is in flight wins**, on the same guard `createOperationsStore.init` uses. The guard
+  is a FLAG set by the broadcast, not a "is the snapshot still empty" test: an `operations-changed` carrying zero rows
+  is a real event (the last operation finishing broadcasts one), and a seed landing after it would repopulate a snapshot
+  the backend has already emptied.
+- **`initOperationSessions()` awaits it**, and the queue window renders no rows until that resolves, which is what makes
+  one call per cold open structural rather than merely likely. The cost is one round trip added to a window open, in
+  exchange for one per row removed.
+
+**A session seeds itself only when the attach told it nothing**, which is what recovers an operation that outlived the
+window watching it: operations survive a reload, and a reloaded main window that couldn't recover them would show
+nothing for a transfer that is very much still running. The test for "heard nothing" is whether the attach delivered
+anything, and it gates the CALL, not just the result. It stays the fallback for the three things the window's snapshot
+can't cover: a view that acquired while `init()` was still in flight (the registry is published before it resolves, so
+the main window's dispatch → dialog → session sequence can beat it), a fan-out seed that failed, and the miss case.
 
 The **miss case** is a real path, not a defensive branch: a terminal operation leaves the snapshot entirely (retained
 failures are the one exception), so an operation that finished between the click and the mount seeds nothing. That

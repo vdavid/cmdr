@@ -19,7 +19,14 @@ const unlisteners = {
   operations: vi.fn(),
 }
 
+// Hoisted: `vi.mock`'s factory runs before the module body, so the mock it
+// closes over has to exist by then.
+const { listOperationsMock } = vi.hoisted(() => ({
+  listOperationsMock: vi.fn<() => Promise<OperationSnapshot[]>>(() => Promise.resolve([])),
+}))
+
 vi.mock('$lib/tauri-commands', () => ({
+  listOperations: listOperationsMock,
   onWriteProgress: vi.fn(() => Promise.resolve(unlisteners.progress)),
   onWriteComplete: vi.fn(() => Promise.resolve(unlisteners.complete)),
   onWriteError: vi.fn(() => Promise.resolve(unlisteners.error)),
@@ -78,6 +85,16 @@ function snapshot(id: string, status: OperationSnapshot['status'] = 'running'): 
   }
 }
 
+/** A promise plus its resolver, so a test decides exactly when an async
+ *  dependency settles (and can leave it pending indefinitely). */
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((r) => {
+    resolve = r
+  })
+  return { promise, resolve }
+}
+
 /** Records every delivery a session would see, in arrival order. */
 function recorder(): { deliveries: OperationDelivery[]; sink: (delivery: OperationDelivery) => void } {
   const deliveries: OperationDelivery[] = []
@@ -86,6 +103,8 @@ function recorder(): { deliveries: OperationDelivery[]; sink: (delivery: Operati
 
 beforeEach(() => {
   vi.clearAllMocks()
+  listOperationsMock.mockReset()
+  listOperationsMock.mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -188,6 +207,79 @@ describe('subscriptions', () => {
     for (const unlisten of Object.values(unlisteners)) {
       expect(unlisten).toHaveBeenCalledTimes(1)
     }
+  })
+})
+
+describe('the snapshot the fan-out opens with', () => {
+  // A window opens cold: nothing has broadcast a snapshot yet, so without a seed
+  // here every session would ask the backend for the row the fan-out is about to
+  // hear about anyway. One IPC per queue row, for one answer.
+
+  it('holds the registry snapshot from init, so a session attaching cold is handed its row', async () => {
+    listOperationsMock.mockResolvedValue([snapshot('a', 'paused'), snapshot('b')])
+    const fanout = createOperationEventFanout()
+    await fanout.init()
+
+    const a = recorder()
+    fanout.attach('a', a.sink)
+
+    expect(a.deliveries).toEqual([{ kind: 'snapshot', snapshot: snapshot('a', 'paused') }])
+    fanout.dispose()
+  })
+
+  it('lets a snapshot broadcast that lands mid-seed win over the seed', async () => {
+    // The interleaving is explicit: the seed stays pending until this test says
+    // otherwise, so it can't pass on incidental microtask ordering.
+    const pendingSeed = deferred<OperationSnapshot[]>()
+    listOperationsMock.mockReturnValue(pendingSeed.promise)
+    const fanout = createOperationEventFanout()
+    const initialized = fanout.init()
+    await vi.waitFor(() => {
+      expect(listOperationsMock).toHaveBeenCalled()
+    })
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'paused')] })
+    // The registry still had it running when the seed was taken.
+    pendingSeed.resolve([snapshot('a', 'running')])
+    await initialized
+
+    const a = recorder()
+    fanout.attach('a', a.sink)
+
+    expect(a.deliveries).toEqual([{ kind: 'snapshot', snapshot: snapshot('a', 'paused') }])
+    fanout.dispose()
+  })
+
+  it('stays live when the seed fails, leaving sessions to seed themselves', async () => {
+    listOperationsMock.mockRejectedValue(new Error('no registry'))
+    const fanout = createOperationEventFanout()
+    await expect(fanout.init()).resolves.toBeUndefined()
+
+    const a = recorder()
+    fanout.attach('a', a.sink)
+    fanout._testEmit({ kind: 'progress', event: progress('a') })
+
+    expect(a.deliveries.map((d) => d.kind)).toEqual(['progress'])
+    fanout.dispose()
+  })
+
+  it('does not repopulate a fan-out disposed while the seed was in flight', async () => {
+    const pendingSeed = deferred<OperationSnapshot[]>()
+    listOperationsMock.mockReturnValue(pendingSeed.promise)
+    const fanout = createOperationEventFanout()
+    const initialized = fanout.init()
+    await vi.waitFor(() => {
+      expect(listOperationsMock).toHaveBeenCalled()
+    })
+
+    fanout.dispose()
+    pendingSeed.resolve([snapshot('a')])
+    await initialized
+
+    const a = recorder()
+    fanout.attach('a', a.sink)
+
+    expect(a.deliveries).toHaveLength(0)
   })
 })
 

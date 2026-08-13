@@ -7,8 +7,9 @@
  * to all of them and filter by `operationId`. Ten sessions would mean seventy
  * subscriptions, but listener count is the least of it: the fan-out is a
  * correctness boundary. It is the one place that holds events arriving for an
- * operation no session has claimed yet, and the one place that defines arrival
- * order.
+ * operation no session has claimed yet, the one place that defines arrival
+ * order, and the one place that asks the backend where every operation stands
+ * when the window opens.
  *
  * It is a router with a holding area, NOT a gate. `createOperationsStore()` is a
  * reducer over ALL operations and keeps receiving everything unbuffered, so the
@@ -22,6 +23,7 @@
  */
 
 import {
+  listOperations,
   onWriteProgress,
   onWriteComplete,
   onWriteError,
@@ -69,9 +71,11 @@ export interface FanoutAttachment {
 }
 
 export interface OperationEventFanout {
-  /** Subscribe to every stream. Call once at window init, before any session
-   *  exists: `listen()` is async, so subscribing lazily on the first session
-   *  would miss everything that arrives while the promise is in flight. */
+  /** Subscribe to every stream and seed the registry snapshot. Call once at
+   *  window init, before any session exists: `listen()` is async, so
+   *  subscribing lazily on the first session would miss everything that arrives
+   *  while the promise is in flight. Awaiting it is what makes a cold window
+   *  cost one `list_operations()` rather than one per row. */
   init: () => Promise<void>
   /** Claim an operation's events. Claim, flush, and go live are ONE synchronous
    *  block: no `await` may be introduced between them. Throws if the operation
@@ -111,6 +115,21 @@ export function createOperationEventFanout(): OperationEventFanout {
   let latestSnapshot: OperationSnapshot[] = []
   let unlisteners: UnlistenFn[] = []
   let disposed = false
+  /** Whether an `operations-changed` has landed. The seed at init is an `await`
+   *  behind the subscriptions, so a broadcast arriving meanwhile is FRESHER and
+   *  the seed must stand down. A flag rather than a `latestSnapshot.length`
+   *  test: an `operations-changed` carrying zero rows is a real event (the last
+   *  operation finishing broadcasts one), and a seed landing after it would
+   *  repopulate a snapshot the backend has already emptied. */
+  let receivedSnapshot = false
+
+  /** Whether the seed taken at init has been overtaken: by a live broadcast, or
+   *  by the window going away. Read through a call rather than off the flags,
+   *  because both are set from outside this straight line (a stream callback, a
+   *  `dispose()`) and type narrowing can't see that. */
+  function seedSuperseded(): boolean {
+    return disposed || receivedSnapshot
+  }
 
   function route(delivery: OperationEventDelivery): void {
     const operationId = delivery.event.operationId
@@ -166,6 +185,7 @@ export function createOperationEventFanout(): OperationEventFanout {
   }
 
   function applySnapshot(operations: OperationSnapshot[]): void {
+    receivedSnapshot = true
     latestSnapshot = operations
     for (const row of operations) {
       sinks.get(row.operationId)?.({ kind: 'snapshot', snapshot: row })
@@ -229,10 +249,27 @@ export function createOperationEventFanout(): OperationEventFanout {
       ])
       unlisteners = subscriptions
       // Disposed while we awaited: undo whatever landed late.
-      if (disposed) dropListeners()
+      if (disposed) {
+        dropListeners()
+        return
+      }
+
+      // Open holding the registry snapshot, so the first session to attach is
+      // handed its row instead of asking for it. A cold window has heard no
+      // `operations-changed` yet, and without this every row's session would
+      // spend an IPC round trip on the answer the next broadcast carries
+      // anyway. Seeded AFTER the subscriptions, never beside them: a seed taken
+      // before the listeners are live could be older than a broadcast nobody
+      // was there to hear, and nothing would correct it.
+      const operations = await listOperations()
+      // A broadcast that landed while we awaited is fresher than the seed. Same
+      // shape and same guard as `createOperationsStore.init`.
+      if (seedSuperseded()) return
+      applySnapshot(operations)
     } catch (error) {
-      // A dead fan-out means silent sessions, not a dead window.
-      log.warn('Failed to subscribe the operation event fan-out: {error}', { error: String(error) })
+      // A dead fan-out means silent sessions, not a dead window; a failed seed
+      // just leaves each session to seed itself, as it did before this call.
+      log.warn('Failed to start the operation event fan-out: {error}', { error: String(error) })
     }
   }
 
