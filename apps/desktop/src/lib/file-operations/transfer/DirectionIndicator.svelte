@@ -5,8 +5,12 @@
     interface Props {
         sourcePath: string
         destinationPath: string
-        /** Direction the arrow points: 'left' means copying to left pane, 'right' means copying to right pane */
-        direction: 'left' | 'right'
+        /** Which pane the files are heading for: 'left' reads destination ← source,
+         *  'right' reads source → destination. Omitted when there is no pane to be
+         *  relative to (a dialog that adopted an operation started elsewhere knows
+         *  the two paths and nothing about panes), where the arrow simply means
+         *  "from → to" — the same thing the queue row shows. */
+        direction?: 'left' | 'right'
         /** Override for the source label. Used when the path basename isn't a
          *  user-meaningful name (an MTP storage root, where the basename is a raw
          *  storage id). Falls back to the path basename when undefined. */
@@ -22,7 +26,7 @@
 </script>
 
 <div class="direction-indicator">
-    {#if direction === 'right'}
+    {#if direction !== 'left'}
         <span class="folder-name source" use:tooltip={{ text: sourcePath, overflowOnly: true }}>{sourceName}</span>
         <span class="arrow">&#x2192;</span>
         <span class="folder-name destination" use:tooltip={{ text: destinationPath, overflowOnly: true }}

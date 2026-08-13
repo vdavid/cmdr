@@ -348,8 +348,11 @@
             }}
         />
     {:else}
-        <!-- Direction indicator (copy/move only) -->
-        {#if !isDeleteOrTrash && destinationPath && direction}
+        <!-- Where the files are going (copy/move only). An adopted operation
+             brings its two paths and no pane-relative direction, and naming
+             neither end would be worse than naming both without the arrow
+             pointing at a pane. -->
+        {#if !isDeleteOrTrash && destinationPath}
             <DirectionIndicator
                 sourcePath={sourceFolderPath}
                 {destinationPath}

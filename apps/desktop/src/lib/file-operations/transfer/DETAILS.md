@@ -37,7 +37,11 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
   Full why in the module header; don't "modernize" them into runes.
 - **`DirectionIndicator.svelte` is the progress dialog's alone** (the confirm dialog shows its `From` card instead). Its
   optional `sourceLabel` / `destinationLabel` props override the path-basename label so a volume root renders the volume
-  display name, not a raw machine id (an MTP storage id like `65538`).
+  display name, not a raw machine id (an MTP storage id like `65538`). `direction` is optional too: it points the arrow
+  at a PANE, which an adopted operation has no way to know (the registry snapshot names paths), so without it the
+  indicator reads source → destination — the same "from → to" the queue row the user just came from shows. ❌ Never
+  gate the whole indicator on `direction`: a dialog that named neither end of the transfer is worse than one that
+  names both without pointing at a pane.
 - **`ScanPhaseBody.svelte` is shared by the progress dialog and the queue row** (`comfortable` and `compact` densities),
   so a change to it lands on both surfaces.
 - **`transfer-complete-toast.ts::composeTransferCompleteToast` splits TOP-LEVEL items by type only** ("Moved 1 file and
