@@ -30,12 +30,18 @@ export async function cancelOperations(operationIds: string[]): Promise<void> {
 }
 
 /** Pause one running operation in place. It keeps its lane slot and can be
- *  resumed; its snapshot status flips to `paused`. */
+ *  resumed; its snapshot status flips to `paused`.
+ *
+ *  The command answers with a `PauseOutcome`, dropped here on purpose: every
+ *  frontend surface renders the live status from `operations-changed`, so none
+ *  of them has to trust a return value. The MCP `queue` tool is the consumer
+ *  that reads it, since an agent has nothing else to go on. */
 export async function pauseOperation(operationId: string): Promise<void> {
   await commands.pauseOperation(operationId)
 }
 
-/** Resume one paused operation. */
+/** Resume one paused operation. Its `PauseOutcome` is dropped for the same
+ *  reason as `pauseOperation`'s. */
 export async function resumeOperation(operationId: string): Promise<void> {
   await commands.resumeOperation(operationId)
 }
