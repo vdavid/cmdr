@@ -3,10 +3,9 @@
 Live: https://alternativeto.net/software/cmdr/about/. Edit it while signed in; changes go through an admin approval
 queue, and the "Note about your changes" field at the bottom speeds that up.
 
-Status: live, with a refresh pending. The fields below are the values to paste; the live listing still shows the
-previous ones (English-only languages, a description that predates bulk rename and the disk index, and three unchecked
-features that are now true). Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing
-the app-directory listings".
+Status: refresh submitted 2026-08-13, awaiting admin approval. The fields below are what was submitted; edit them here
+first when refreshing, then paste. Refresh cadence and what to update per release: `docs/guides/releasing.md` §
+"Refreshing the app-directory listings".
 
 ## Main info
 
@@ -22,14 +21,15 @@ A very fast two-pane file manager for macOS with Total Commander-compatible keyb
 
 Plain text, their own line breaks, **max 3,000 characters** (the form rejects longer). Same substance as the MacUpdate
 description (`macupdate.md`), minus the HTML, plus the licensing and pricing lines that MacUpdate's form bans. The
-version below is 2,914 characters, so a new bullet or two needs a trim elsewhere.
+version below is 2,843 characters, so a new bullet or two needs a trim elsewhere.
 
 ```
-Cmdr is on macOS what Total Commander is on Windows: familiar shortcuts, two panes, fast and transparent in telling you what's going on with your files. Built with Rust, it's extremely fast and respectful to your CPU, RAM, and disk.
+Cmdr is on macOS what Total Commander is on Windows: familiar shortcuts, two panes, fast and transparent. Built with Rust, it's extremely fast and respectful of your CPU, RAM, and disk.
 
 Plus it has two more cool things:
+
 - It indexes your drive for near-instant search and to show you live folder sizes (optional, enabled/disabled at onboarding!)
-- AI features like bulk renames and search. (optional, off by default, can run 100% locally, and all destructive operations need human approval.)
+- AI features like bulk renames and search (optional, off by default, can run 100% locally, and all destructive operations need human approval)
 
 Cmdr is in open beta: the core is well-tested software used daily by the author and a group of testers, while the newer features (search, archives, operation log, AI) are marked as "alpha". Your feedback is very much appreciated and goes straight to the developer!
 
@@ -40,15 +40,15 @@ Core features:
 - Two panes, tabs, command palette, keyboard-first. F5 to copy, F6 to move, F8 to delete, all remappable.
 - Copy, move, rename, delete, compress and decompress, with accurate progress bars, ETAs, and cancellation. Built for data safety, speed, and transparency.
 - Queue operations, background them, pause and resume transfers, and browse a searchable log of past operations, with rollback where nothing was permanently deleted.
-- Lists 50,000 files near-instantly; the built-in viewer opens a 10 GB file near-instantly, too, with search (!)
-- Browse zip, tar, and 7z archives like normal folders, and compress/uncompress archives.
+- Lists 50,000 files near-instantly; the built-in viewer opens a 10 GB file in 1 sec, with search. (!)
+- Browse zip, tar, and 7z archives like normal folders, and compress/extract archives.
 - Real dark and light modes, native macOS behavior, WCAG 2.2 AA and APCA verified contrasts, so you can read what's on the screen.
-- Translated in good quality to 10 languages.
+- Translated into 10 languages.
 
 Extra features:
 
 - Reads/writes Android phones, Kindles, and cameras over MTP and PTP, up to 4x faster than Android File Transfer, with any USB cable. Just plug it in and it works.
-- Uses network drives 4x faster than the macOS client, but for small files it's sometimes 100x.
+- Uses SMB network drives 4x faster than the macOS client, but for small files it's sometimes 100x.
 - Keeps a fully local index of your disk, for live folder sizes and fast search.
 - Browse Git history, branches, worktrees, and stashes like normal folders.
 
