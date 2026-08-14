@@ -21,6 +21,11 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing as the evidence behind a decision that would otherwise look arbitrary:**
 
+- `phased-vs-bulk-index-2026-08-14.md` — the measurement gate in `docs/specs/phased-indexing-plan.md`: covering a real
+  `/` as phased cover walks costs 4.8× today's bulk build against a 1.5× bar, 69% of it one fixable bug (a failed
+  `readdir` is re-offered by every later phase), and 1.84× with that and the writer drain fixed. Carries the
+  time-to-value numbers the decision is actually about, the depth-1-against-depth-2 answer, and the stale-baseline
+  discrepancy that has to be resolved first. Read it before anyone re-opens the phased-indexing gate.
 - `index-scope-measurement-2026-08-14.md` — what indexing outside `$HOME` actually costs (15.4% of the entries, ~30 s,
   ~115 MB, against `~/Library`'s 27.7% _inside_ home), and why phased indexing reorders the walk instead of narrowing
   it. Read it before anyone proposes a home-only default again; it names the conditions that would change the answer.
