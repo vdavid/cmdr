@@ -135,6 +135,10 @@ pub enum PauseOutcome {
 /// truthfully say. A caller that assumes one tells its user (or its agent) the
 /// device is free when a scan is still running or the set was empty all along,
 /// which is the whole reason the per-operation outcome exists.
+// DEFAULT-OK: all-zero is exactly what an empty sweep collected, and it's the value
+// `FromIterator` folds onto. It makes no claim about a disk: `total() == 0` reads as "the
+// sweep found nothing to ask", which is the truth in that case, and the reply builder
+// says so out loud rather than reporting a success.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PauseAllOutcome {

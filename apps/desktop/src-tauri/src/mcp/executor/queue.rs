@@ -450,6 +450,10 @@ mod tests {
 
     /// Every sweep reply names the intent that now holds, so nothing reads as a
     /// bare "done" (`docs/style-guide.md`: no "error" / "failed" either).
+    ///
+    /// The two `contains` below assert a COPY rule on our own English prose, not error
+    /// classification: the wording IS what's under test, so there is no typed value to
+    /// match instead. Same shape as the frontend's `operation-start-gate.test.ts`.
     #[test]
     fn no_sweep_reply_uses_the_words_this_app_refuses() {
         let shapes = [
@@ -468,7 +472,9 @@ mod tests {
         for shape in shapes {
             for text in [pause_all_reply(shape), resume_all_reply(shape)] {
                 let lowered = text.to_lowercase();
+                // allowed-error-string-match: a copy rule on our own prose, not classification
                 assert!(!lowered.contains("error"), "got {text}");
+                // allowed-error-string-match: a copy rule on our own prose, not classification
                 assert!(!lowered.contains("failed"), "got {text}");
                 assert!(text.starts_with("OK: "), "got {text}");
             }

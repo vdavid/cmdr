@@ -775,8 +775,8 @@ Checks by app and tech:
   map/set idiom. That leaves exactly the gap the compiler can't see, a bare `bool` or a named outcome type. Every
   ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return type, a method
   call — because a check people learn to ignore is worse than none. Opt out with
-  `// allowed-discarded-outcome: <why nobody above needs the answer>`), mtp-dropping-timeout,
-  mtp-no-transport-reset, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
+  `// allowed-discarded-outcome: <why nobody above needs the answer>`), mtp-dropping-timeout, mtp-no-transport-reset,
+  bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
 
 The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in
 opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test module, derive-default and
