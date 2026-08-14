@@ -39,6 +39,10 @@ is offline, which froze the whole scan.
   against one budget), the same caveat the network scanner notes. **Honest-stale, never false-complete:** a pruned dir
   is never marked listed (never added to `listed_ids`), so it stays `listed_epoch = 0` (unknown size) — its `EntryRow`
   still exists (its parent listed it), but its subtree is left unknown, not zeroed and not `scan_completed_at`-marked.
+  Honest-stale is NOT silent, though: the prune calls `DirVisitor::visit_pruned`, which is the only mention a pruned
+  directory ever gets anywhere. Without it a visitor recording ground nothing can read would miss exactly the pruned
+  majority the budget exists to avoid probing, and every one of them would sit in the coverage frontier forever. ❌
+  Don't log in that hook — killing the per-descendant log flood is what the budget is for.
   `WalkStats.subtrees_abandoned` counts the trips; `run_scan` logs a one-line scan-wide summary. This MIRRORS (not
   shares) the network scanner's counter: that one is a single global `usize` over a serial BFS that aborts the WHOLE
   walk; this is a per-subtree parallel `Arc<Atomic>` tree that prunes one subtree — different granularity and

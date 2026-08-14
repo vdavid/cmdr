@@ -365,11 +365,13 @@ path ever deletes: covering is add-only work.
 **What it costs to cover a whole volume this way**, measured over a real 6.06M-entry `/` against today's
 truncate-and-bulk-build: `docs/notes/phased-vs-bulk-index-2026-08-14.md`. Two findings a caller planning many walks over
 one volume needs. First, the shallow stitch and the frontier query are free (0.2 s and 5 ms across 1,496 walks), so the
-cost is never in the bookkeeping. Second, and load-bearing: a directory whose `readdir` fails with anything other than
-permission-denied is left plain unlisted with no cause (`../scanner/insert_visitor.rs`, deliberately, so a transient
-error heals), which means **every later walk over an ancestor scope offers it again and pays the failing read again** —
-101 s of 147 s of walk time on a machine with 76 such directories. ❌ Don't reach for `WalkHeartbeat::abandoned_count`
-to detect it: that counts stall timeouts and consecutive-failure pruning, and reads zero for this case.
+cost is never in the bookkeeping. Second, and load-bearing: a directory a walk couldn't read must be RECORDED, or every
+later walk over an ancestor scope offers it again and pays the failing read again — 101 s of 147 s of walk time on a
+machine with 76 such directories. The walk does that for itself now (`UnreadableCause::Abandoned`,
+`../scanner/DETAILS.md` § "Ground the walk couldn't read"), so a caller planning many walks needs no bookkeeping of its
+own. ❌ Don't reach for `WalkHeartbeat::abandoned_count` if you ever need the signal in-process: it counts stall
+timeouts and consecutive-failure pruning, and read zero for every walk in every arm of that measurement — the failing
+`readdir` case, which was 100% of what fired, never touched it.
 
 **The backend's scan session brackets the WHOLE frontier**, not each root: over SMB that's a pool of extra connections
 (`begin_scan_session` / `end_scan_session`), and opening one per frontier root would pay the setup repeatedly inside one

@@ -163,6 +163,33 @@ cancel and the whole subtree re-entered the frontier on the next search.
 Two things fall out for free: the mark-before-final-aggregate ordering invariant now holds by construction rather than
 by the caller remembering it, and a long walk's coverage becomes queryable as it goes rather than only at the end.
 
+## Ground the walk couldn't read
+
+Every directory whose contents this walk didn't get is recorded with a cause, so the coverage frontier stops offering it
+on every later search. The causes themselves and why there are three are `../store/DETAILS.md` § "What coverage needs";
+what this module owns is which one each failure earns and when the message goes out.
+
+`InsertVisitor` accumulates ids into `UnreadableIds`, split two ways:
+
+- **`denied`** — `WalkReadError::Io` whose `ErrorKind` is `PermissionDenied`. Also emits `IndexEvent::PathAccessDenied`,
+  which is what puts the "limited by macOS" styling on a TCC-restricted folder in the sidebar.
+- **`abandoned`** — the other three ways a listing doesn't arrive: `WalkReadError::TimedOut` (the watchdog condemned a
+  stalled read), `WalkReadError::Io` with any other errno, and `DirVisitor::visit_pruned` (the give-up budget dropped
+  the task unread). A pruned task never reaches `visit_read_error`, so that hook is its only mention in the whole
+  system; without it the pruned MAJORITY of a dead mount — the part the budget exists to avoid probing — would stay
+  silently in the frontier.
+
+`send_unreadable_marks` sends one `MarkDirsUnreadable` per cause, in `MARK_CHUNK` batches, from `run_scan` **after
+`visitor.finish()`**. Two ordering properties ride on that:
+
+1. Every `MarkDirsListed` this walk earned is already ahead of the marks on the writer channel, so a directory that
+   failed once and then succeeded on a retry within the same walk ends up listed rather than pinned unreadable.
+   (`mark_dirs_listed` clears the cause anyway, so either order is survivable; this makes it not depend on luck.)
+2. ⚠️ The condemned ids are **only the ones a read actually failed on**. ❌ Never compute them as "whatever is still
+   unlisted under the root", which is the shape a phase driver reaches for: run it before the walk's own marks commit
+   and it condemns everything the walk read but hasn't stamped. That reads as a 2× speed-up and its only symptom is an
+   entry count 21% low. `convergence_tests::marking_abandoned_ground_costs_no_coverage` pins it.
+
 ## What a walk emits, and to whom
 
 `cover_subtree` takes an optional `EntrySender` (`SyncSender<Vec<CoveredEntry>>`). When one is present the visitor

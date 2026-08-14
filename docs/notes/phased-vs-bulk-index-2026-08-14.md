@@ -56,8 +56,8 @@ real bulk scan and a real phase machine both carry all of it.
 
 Machine: Apple M3 Max, 16 cores, 64 GB, internal SSD, macOS 26.5.2 build 25F84, otherwise idle. Branch
 `worktree-david+phased-indexing`. **Full Disk Access: granted** (verified by reading
-`~/Library/Application Support/com.apple.TCC`), so nothing here is a fast number bought by not being allowed to look.
-12 directories came back permission-denied in every arm.
+`~/Library/Application Support/com.apple.TCC`), so nothing here is a fast number bought by not being allowed to look. 12
+directories came back permission-denied in every arm.
 
 The boot volume held **6,060,889 entries** at bulk-build time. Two SMB shares and a mounted DMG were present under
 `/Volumes` throughout; the boot-disk exclusion tier keeps every walk off them.
@@ -104,8 +104,8 @@ than inside it, and the app's own scan timer says they cost it nothing measurabl
 ⚠️ **What changed since the older measurements was not established.** `partial_agg.rs` recorded 5.94M entries / 558K
 dirs in ~2m25s with 28 passes each ≤ 397 ms on 2026-08-03; today the same code path over a slightly bigger tree gives
 39.1 s and 7 passes, the last one 4× slower per pass than any of theirs. That shape (faster overall, slower per pass) is
-not what a pure page-cache difference produces, but **page-cache warmth is the confounder I could not exclude**: `sudo
-purge` needs a password this session doesn't have, and no unprivileged way to evict 6M inodes from 64 GB of RAM is
+not what a pure page-cache difference produces, but **page-cache warmth is the confounder I could not exclude**:
+`sudo purge` needs a password this session doesn't have, and no unprivileged way to evict 6M inodes from 64 GB of RAM is
 practical. The best bound available is that the **first** bulk measurement of the session, taken before any arm had
 traversed the tree, was **38.5 s** — if a cold cache cost 4×, it would have shown there. Both stale claims have been
 re-anchored in place rather than left to mislead.
@@ -247,9 +247,9 @@ walk ended rather than probed. At depth 2 the priority roots land at **19.9 ms, 
 114.4 ms** — the ±1 s probe simply can't see how early they are.
 
 **Read both halves.** Phasing turns the worst priority root from 26.6 s into 0.1 s, a 250× improvement on exactly the
-thing the plan exists for. It also pushes `home_covered_at` from 39 s to 88 s at best, and 154 s as specified. The plan's
-own open question was "whether `~/Library`'s size makes `home_covered_at` late enough to want the M1 refinement". It
-does: `~/Library` is walked as part of the `$HOME` phase in every arm, and it is what `$HOME` waits for.
+thing the plan exists for. It also pushes `home_covered_at` from 39 s to 88 s at best, and 154 s as specified. The
+plan's own open question was "whether `~/Library`'s size makes `home_covered_at` late enough to want the M1 refinement".
+It does: `~/Library` is walked as part of the `$HOME` phase in every arm, and it is what `$HOME` waits for.
 
 ## Depth 1 against depth 2 (plan decision 13)
 
@@ -288,9 +288,9 @@ baseline. Each arm ran 3–6 times across the afternoon; wall clocks repeated wi
 The baseline is the strongest of them: an independent release-app run agreed with the harness arm to 0.1 s, and both
 arms are shown producing the same 603,559 `dir_stats` rows and the same volume total.
 
-**Weaker**: the absolute wall clocks drift a few percent across the afternoon (the same depth-1 arm read 176.3 s,
-176.9 s, 182.5 s, 183.7 s, and 188.2 s). The `~/projects-git` walk in particular ranged 13.4–34.3 s. Always compare arms
-from the same pass, never across passes.
+**Weaker**: the absolute wall clocks drift a few percent across the afternoon (the same depth-1 arm read 176.3 s, 176.9
+s, 182.5 s, 183.7 s, and 188.2 s). The `~/projects-git` walk in particular ranged 13.4–34.3 s. Always compare arms from
+the same pass, never across passes.
 
 **Unresolved, and the one thing I would not stake the decision on alone**: whether a genuinely cold page cache moves the
 baseline. Everything ran on a machine that had been walking this tree all afternoon; `sudo purge` needed a password this
@@ -300,7 +300,7 @@ close it**, and it is worth taking before the gate call, because the ratio is on
 
 **The 76 unreadable directories are this machine's**, so 4.7× is not the number a typical machine would show. ~2.1× is —
 that is what the marking arm measures, and marking is precisely "behave as if the dead mount weren't there". It would
-not be *zero* on any machine: one `readdir` failure anywhere reproduces the mechanism, and the fix costs one message per
+not be _zero_ on any machine: one `readdir` failure anywhere reproduces the mechanism, and the fix costs one message per
 phase either way.
 
 ## Conditions that would change the answer
@@ -347,4 +347,17 @@ roots only, no whole-drive phase) is the better product, and the numbers here do
 **Before deciding, take one reboot-fresh baseline.** It is the only input to this that is still a bound rather than a
 measurement.
 
-❌ I have not acted on any of this.
+## What has been acted on since
+
+**Fix 1 landed on 2026-08-14, as a shipped-build bug fix rather than as part of the phased plan.** A local walk records
+every directory it couldn't read as `UnreadableCause::Abandoned` (all three producers, including the `readdir`-errno one
+above), and a persisted per-volume 1 h → 4 h → 24 h backoff reopens that ground. Canonical write-ups:
+`crates/cmdr-index/src/indexing/store/DETAILS.md` § "What coverage needs" and
+`crates/cmdr-index/src/indexing/writer/DETAILS.md` § "Retrying ground a walk gave up on".
+
+So the arms above are no longer comparable to a re-measurement on this branch: the marking arm's behavior is now the
+BASELINE walk's behavior, and the "unfixed" 4.70× shape can't be reproduced without reverting the fix. A re-run should
+compare the drain knob against ~2.10×.
+
+❌ Nothing else here has been acted on: the drain batching, the phase machine, and the gate call itself are all still
+open.

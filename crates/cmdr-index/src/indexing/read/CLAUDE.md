@@ -30,8 +30,9 @@ volume-keyed handle tables.
   it, ❌ don't reset a new pool's starting generation to a constant.
 - **The coverage frontier needs BOTH epoch fields; ❌ never `min_subtree_epoch` alone** (it 0-absorbs upward, so the
   answer becomes "walk everything"). `min > 0` covered, `min == 0 && listed > 0` descend,
-  `listed == 0 && unreadable_cause` skip (into `permission_denied` or `declined`, ❌ never merged), else frontier. Rests
-  on the `EXCLUSION_POLICY_KEY` stamp: stale or absent ⇒ nothing is trusted.
+  `listed == 0 && unreadable_cause` skip (into `permission_denied`, `declined`, or `abandoned`, ❌ never merged — and
+  `abandoned` is a HOLE nothing else in the answer hints at, so a caller reporting completeness must read it), else
+  frontier. Rests on the `EXCLUSION_POLICY_KEY` stamp: stale or absent ⇒ nothing is trusted.
 - **Enrichment logs once per changed result, via `EnrichResultMemo`.** ❌ No per-pass line: an idle pane triggers this
   ~2/s.
 - ⚠️ **An UNLISTED directory's rows aren't its contents**, so `list_dir_children` answers `None` there.

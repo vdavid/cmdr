@@ -109,7 +109,13 @@ pub(super) fn arm(conn: &Connection, now: u64) -> Result<(), IndexStoreError> {
     if read_window(conn)?.is_some() {
         return Ok(());
     }
-    write_window(conn, RetryWindow { opened_at: now, step: 0 })
+    write_window(
+        conn,
+        RetryWindow {
+            opened_at: now,
+            step: 0,
+        },
+    )
 }
 
 /// Clear every `Abandoned` cause if this volume's retry window has elapsed,

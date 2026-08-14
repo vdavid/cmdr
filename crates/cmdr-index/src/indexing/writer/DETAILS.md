@@ -251,10 +251,32 @@ volume renders incomplete forever). `MarkDirsListed` does NOT bump the writer ge
 is in `../aggregator/DETAILS.md`.
 
 **`MarkDirsListed` also CLEARS `unreadable_cause`.** A directory we just listed is by definition readable again (Full
-Disk Access granted, a permission fixed, a mount back), so the flag heals itself with no rebuild and no separate pass.
-`MarkDirsUnreadable` is the setter, sent by the local walk after its marks for the dirs whose read failed with
-permission denied. It touches only that column: the dir stays `listed_epoch = 0` so sizes stay honest, and all the flag
-buys is that `read/coverage.rs`'s frontier reports it instead of re-offering it on every search.
+Disk Access granted, a permission fixed, a mount back), so the mark heals itself with no rebuild and no separate pass.
+`MarkDirsUnreadable` is the setter, sent by a walk after its own marks, once per cause, for every directory whose
+contents it didn't get. It touches only that column: the dir stays `listed_epoch = 0` so sizes stay honest, and all the
+mark buys is that `read/coverage.rs`'s frontier reports it instead of re-offering it on every search. The three causes
+are `../store/DETAILS.md` § "What coverage needs".
+
+### Retrying ground a walk gave up on
+
+`UnreadableCause::Abandoned` is the one cause Cmdr owns rather than the user, and it's the one that can't heal by
+itself: the mark takes the directory out of the frontier, so no walk lists it, so nothing clears it.
+`ClearAbandonedIfDue` is the way back, and the policy behind it is `abandoned_retry.rs`.
+
+- **A per-volume window, persisted in `meta`, growing 1 h → 4 h → 24 h.** A cleared cause reopens the whole subtree, and
+  the next walk over it pays the failing reads again. ❌ Never a flat retry: on a mount that's still wedged that's a
+  stall timeout per directory every cycle, which is the bug the mark fixes, slowed down.
+- **Armed by a `MarkDirsUnreadable { cause: Abandoned }` that commits, disarmed by a retry that clears nothing.** So an
+  unarmed volume costs one `meta` read per 30 s maintenance tick and never touches `entries` — load-bearing, because
+  `unreadable_cause` carries no index and a speculative clear is a full scan of every row on the volume. ❌ Re-arming an
+  OPEN window must stay a no-op, or a walk that re-condemns the same ground pins the backoff at its first step.
+- **The whole decision runs here, on the writer thread**, because every input to it is in this database. A caller
+  deciding on a read connection would race the writes that move the window and would pay that `entries` scan to ask.
+- **Only `Abandoned` is ever cleared.** A refusal is an answer the user has to act on; a declined snapshot tree is
+  standing policy. Reopening either re-pays a read that will fail the same way forever.
+- ❌ **Nothing here enqueues a walk.** Reopened ground is walked by the next search over that scope, or by a rescan. A
+  driver that walks the frontier on its own schedule is a phase machine's job, and a maintenance tick is the wrong place
+  to start background disk work nobody asked for.
 
 **Live-path discipline (the path local lives on).** After a scan the local index spends ~all its life in live mode, so
 coverage must stay honest under every live mutation. Three rules, all in `writer/` + `../reconcile/`:

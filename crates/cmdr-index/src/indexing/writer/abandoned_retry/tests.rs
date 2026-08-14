@@ -20,8 +20,18 @@ fn abandoned_index(marked: usize) -> (Connection, tempfile::TempDir) {
 
     let ids: Vec<i64> = (0..marked)
         .map(|i| {
-            IndexStore::insert_entry_v2(&conn, ROOT_ID, &format!("wedged{i}"), true, false, None, None, None, None)
-                .expect("insert")
+            IndexStore::insert_entry_v2(
+                &conn,
+                ROOT_ID,
+                &format!("wedged{i}"),
+                true,
+                false,
+                None,
+                None,
+                None,
+                None,
+            )
+            .expect("insert")
         })
         .collect();
     IndexStore::mark_dirs_unreadable(&conn, &ids, Some(UnreadableCause::Abandoned)).expect("mark");

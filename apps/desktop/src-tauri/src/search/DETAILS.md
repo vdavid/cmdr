@@ -320,6 +320,15 @@ the index alone and says nothing about reporting; `execute/live_run.rs` is the r
 1. **Ask what's uncovered** — `Index::coverage(volume, scope, Listing)` per scope path, merged. Frontier roots plus the
    directories nothing will walk, plus a `CoverageToken` naming the state of the index the answer describes, plus which
    of those roots another walk is covering right now (`being_walked`).
+
+   `UnreadableGround` keeps the three "nothing will walk this" lists apart exactly as the index does
+   (`crates/cmdr-index`'s `UnreadableCause`, canonically `indexing/store/DETAILS.md` § "What coverage needs"):
+   `permission_denied`, `declined`, and `abandoned`. ⚠️ **`abandoned` is the one that doesn't reach the wire as a
+   list.** `SearchRunCoverage` carries the other two as paths and folds this one into the `abandoned_ground` boolean,
+   OR-ed with what this run's own walk gave up on. That fold is what keeps a search over a wedged mount honest: the
+   index remembers that ground, so the frontier never offers it, so nothing else in the answer would hint that it was
+   skipped. Naming those folders on screen needs copy that exists for neither of the other two ("nothing for you to do,
+   Cmdr will try again"), which is David's call, ❌ not something to invent alongside the plumbing.
 2. **Load the arena** — after step 1, deliberately (below).
 3. **The covered half** — `search_covered_half`, the identical engine pass `run_blocking` runs. The frontier is exactly
    the ground the arena has nothing to say about, so an unfiltered pass over the scope IS the covered half; nothing

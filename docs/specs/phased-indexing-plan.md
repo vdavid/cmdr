@@ -671,11 +671,14 @@ time-to-first-root numbers in hand, because they are what the decision is about.
 
 **Measured, 2026-08-14: `docs/notes/phased-vs-bulk-index-2026-08-14.md`. The gate FIRES.** Baseline 39.1 s (confirmed by
 running the real app, ❌ not the 193 s this plan quoted, which does not reproduce); (b) as written 4.70×. Two fixes take
-it to 1.79×, and neither changes the design: record ground a walk could not read so no later phase re-offers it
-(4.70× → 2.10×), and batch the writer drain (→ 1.79×). Every priority root is covered in under 120 ms against
-1.0–26.6 s, and `home_covered_at` moves the wrong way, 39 s → 88 s. ⚠️ The re-offer fix is a **shipped-build bug**, not a
-phasing one, and it needs a third `UnreadableCause` producer this plan doesn't list: a `readdir` returning a
-non-permission errno (`ETIMEDOUT` from a wedged mount here, 1,497 directories).
+it to 1.79×, and neither changes the design: record ground a walk could not read so no later phase re-offers it (4.70× →
+2.10×), and batch the writer drain (→ 1.79×). Every priority root is covered in under 120 ms against 1.0–26.6 s, and
+`home_covered_at` moves the wrong way, 39 s → 88 s.
+
+**✅ The first of those fixes has LANDED** (2026-08-14), as a shipped-build bug fix rather than part of this plan: a
+walk now records every directory it couldn't read as `UnreadableCause::Abandoned`, including the `readdir`-errno
+producer this plan originally missed (`ETIMEDOUT` from a wedged mount, 1,497 directories on David's machine). Details in
+item 7 below. So a re-measurement should start from ~2.10× rather than 4.70×, and the remaining gap is the writer drain.
 
 **What "re-decide" means, decided in advance so the gate is decidable rather than a stop sign.** The honest comparison
 isn't wall-clock parity: full coverage is background work already paced by the `clearance` seam, so 1.5× of 193 s is 290
@@ -716,51 +719,32 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
    **Two stamps, same rule, different root.** `home_covered_at` when the `$HOME` frontier is empty; `scan_completed_at`
    when the volume-root frontier is empty. Evaluate after every root finishes, ❌ not only at the end of a phase.
 
-   **The trap**: a directory the walker timed out on gets **no `unreadable_cause`** — deliberately, "since mounts heal"
-   (only denied ids carry a marker, `scanner/mod.rs:881`). So it stays `Frontier` forever, "the frontier is empty except
-   for `permission_denied` / `declined`" can never become true, and _everything_ hanging off completion never happens:
-   the stamps, `PayLedgerIfUnpaid`, the sweep keys, the branch collapse, the media kick, freshness, `is_branch_confined`
-   flipping. Every launch re-walks it, times out again at 15 s a directory, and stalls in the same place.
+   **✅ The `Abandoned` cause and its retry LANDED as a standalone bug fix (2026-08-14), ahead of this milestone**, so
+   the completion rule can be written against it as an existing mechanism. What shipped, canonically documented in
+   `store/DETAILS.md` § "What coverage needs" and `writer/DETAILS.md` § "Retrying ground a walk gave up on":
 
-   **⚠️ There is a THIRD producer, measured 2026-08-14 and missing from the two below**: `readdir` returning an errno
-   that isn't `EACCES` — `WalkReadError::Io(e)` with `e.kind() != PermissionDenied`, left unmarked on purpose so a
-   transient error heals (`scanner/insert_visitor.rs`). On David's machine that is 100% of the cases: 1,497 directories
-   inside a disconnected MacDroid FUSE mount returning `ETIMEDOUT`. One `Abandoned` variant covers all three producers
-   (nothing downstream branches on which fired), but applying it to today's bulk scan changes shipped behavior, so the
-   `ClearUnreadableCause` backoff below ships WITH it, ❌ not after it.
-   `docs/notes/phased-vs-bulk-index-2026-08-14.md` has the cost: 101 s of a 146 s phased walk, and a slow search on any
-   machine with a dead mount today.
+   - `UnreadableCause::Abandoned = 3`, written by all three producers a local walk has — a `readdir` errno that isn't
+     `EACCES` (the third one this plan originally missed, and 100% of what fires on David's machine), a watchdog
+     timeout, and a give-up-pruned task through the new `DirVisitor::visit_pruned` hook.
+   - `CoverageMap::abandoned`, a third list beside `permission_denied` and `declined`.
+   - `ClearAbandonedIfDue`, fired by the per-volume maintenance timer, clearing only `Abandoned` rows on a persisted 1 h
+     → 4 h → 24 h per-volume window that a mark arms and a retry finding nothing disarms.
+   - Search folds the index's abandoned list into `SearchRunCoverage::abandoned_ground`, so a run over a wedged mount
+     can't report itself exhaustive now that the frontier no longer offers that ground.
 
-   **The fix is a third `UnreadableCause`, not a pass counter.** Give the walk `UnreadableCause::Abandoned` for a
-   directory it gave up on, and completion is a pure function of the database — "frontier empty, only unreadable causes
-   left" — durable across relaunch, immune to churn, with no in-session bookkeeping. The machinery already fits:
-   - `UnreadableCause` is `Denied = 1` / `Declined = 2` and `from_stored` falls back to `Denied` for anything unknown
-     (`store/errors.rs:19-49`), so `Abandoned = 3` is additive. ⚠️ It degrades to "permission denied", so a downgraded
-     build would tell the user to grant Full Disk Access for a timed-out mount. Acceptable for a disposable cache (no
-     migration), worth knowing before someone calls it truthful.
-   - `MarkDirsUnreadable { ids, cause }` already exists, and **`MarkDirsListed` clears the cause**
-     (`writer/mod.rs:332-342`), so it self-heals on the next successful listing — the same contract `Denied` relies on.
-   - The verdict match (`read/coverage.rs:277-282`) is exhaustive over the two variants, so a third one is a **compile
-     error** at exactly the place that must grow a bucket.
-   - Free under the surface ceilings.
+   So **completion can now be a pure function of the database** — "frontier empty, only unreadable causes left" —
+   durable across relaunch, immune to churn, with no in-session bookkeeping. Without it a timed-out directory stayed
+   `Frontier` forever and _everything_ hanging off completion never happened: the stamps, `PayLedgerIfUnpaid`, the sweep
+   keys, the branch collapse, the media kick, freshness, `is_branch_confined` flipping.
 
-   **⚠️ The timeout is only half of it. The consecutive-failure budget prunes queued siblings UNREAD**, and a pruned
-   task never reaches the visitor, so it gets no id, no mark, and stays `Frontier` forever:
-   `if scheduled.budget.is_given_up() { self.complete_one(); continue; }` (`scanner/walker/engine.rs:341-347`). That is
-   precisely the dead-mount case the rule exists for. **Mark the pruned tasks `Abandoned` too** — the id is on
-   `scheduled.task`. The watchdog-timeout half does reach `visit_read_error(.., TimedOut)` with the id in hand
-   (`scanner/insert_visitor.rs:405-427`).
+   ⚠️ Two things still to know. `from_stored` maps unknown values to `Denied`, so a DOWNGRADED build would tell the user
+   to grant Full Disk Access for a timed-out mount (acceptable for a disposable cache, worth not calling truthful). And
+   the retry **does not enqueue a walk**: reopened ground is walked by the next search over that scope, or by a rescan.
+   Making the clear drive a walk is this machine's job, ❌ not the maintenance timer's.
 
-   **How it heals.** ❌ Not "frontier-eligible again in a new session": that puts process state inside `walk_coverage`,
-   a pure DB descent live search shares, so coverage answers would become session-dependent. Healing is an ordinary
-   **write**:
-   - a new writer message, `ClearUnreadableCause { cause: Abandoned }`, clearing **only** `Abandoned` rows;
-   - fired from the maintenance timer on a **per-volume exponential backoff (1 h, 4 h, 24 h), persisted**, and on a
-     **user visit** to a folder inside an abandoned subtree. ❌ Not on a flat timer: a cleared cause reopens the
-     frontier, so a flat retry re-pays 15 s per wedged directory every cycle;
-   - **the clear must enqueue the walk itself** — reopening the frontier does nothing on its own;
-   - the visit signal comes from the machine's `open_listings` poll, ❌ never from `verify_directory` (an abandoned
-     directory has `listed_epoch == 0`, so the verifier bails on it by design).
+   **What this milestone still owes the heal**: the **user-visit trigger**, deliberately left out. It belongs on the
+   machine's `open_listings` poll — ❌ never on `verify_directory`, since an abandoned directory has `listed_epoch == 0`
+   and the verifier bails on it by design.
 
    ❌ **Don't use a "frontier didn't shrink across two passes" rule instead.** It has to compare sets rather than counts
    (a pass can legitimately grow the frontier by listing a root and exposing the abandoned directories inside it), it

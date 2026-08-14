@@ -73,20 +73,41 @@ connection then sees `database is locked` indefinitely, and the writer's own lat
 Two additions serve the search frontier (`../read/DETAILS.md` § "The coverage frontier"), and neither is optional for
 it: the descent rule reads one and refuses to answer without the other.
 
-**`entries.unreadable_cause`** (schema v16) marks a directory nothing is going to read into, and says WHY:
-`UnreadableCause::Denied` (1) is a walk that tried and was refused, `Declined` (2) is one no walk will read at all (a
-NAS snapshot tree). `0` is the ordinary state, "something may yet read this". A CAUSE rather than a flag because the two
-reach the user as different sentences and only the first is one they can act on; telling them apart from the paths would
-mean matching folder names, which isn't an option. An unknown stored value reads as `Denied`, the truthful half of any
-cause a future schema could add. Deliberately NOT folded into `listed_epoch`: an unreadable directory was never listed,
-so it stays at `0` and keeps absorbing its ancestors' `min_subtree_epoch` to `0`, which is what keeps sizes honest. What
-the marker buys is that the frontier can SKIP it instead of handing it to the walk again on every single search —
-without it, a permission-denied subtree is a permanent repeating slow path with no user signal. The local walk stamps it
-(`MarkDirsUnreadable`, sent after its marks) for a read that failed with PERMISSION DENIED only: a stall timeout means a
-dead mount or a storm, both of which heal, and pinning those would stop the retry. `mark_dirs_listed` CLEARS the column
-in the same `UPDATE` that stamps `listed_epoch` — a directory we just listed is by definition readable again — so
-granting Full Disk Access heals it with no rebuild and no separate pass. `mark_dirs_unreadable(conn, ids, None)` is the
-explicit clear, for a caller that has a reason to reset it without a listing.
+**`entries.unreadable_cause`** (schema v16) marks a directory nothing is going to read into right now, and says WHY.
+This is the CANONICAL description of the three causes; everywhere else points here.
+
+- **`Denied` (1)** — a walk tried and the OS refused. The user's to fix: on macOS, granting Full Disk Access and
+  searching again heals it.
+- **`Declined` (2)** — no walk will read it at all, by Cmdr's own choice: a NAS snapshot tree
+  (`../network_scanner/DETAILS.md`). A standing policy, nothing to fix.
+- **`Abandoned` (3)** — a walk tried and gave up: the read stalled past the watchdog, or `readdir` failed with an errno
+  that isn't `EACCES`, or the walker's consecutive-failure budget pruned the task unread. Cmdr's to RETRY, on the
+  backoff in `../writer/abandoned_retry.rs`.
+
+`0` is the ordinary state, "something may yet read this". A CAUSE rather than a flag because the three reach the user as
+different sentences and only the first is one they can act on; telling them apart from the paths would mean matching
+folder names, which isn't an option. An unknown stored value reads as `Denied`, the truthful half of any cause a future
+schema could add. Deliberately NOT folded into `listed_epoch`: an unreadable directory was never listed, so it stays at
+`0` and keeps absorbing its ancestors' `min_subtree_epoch` to `0`, which is what keeps sizes honest.
+
+What the marker buys is that the frontier can SKIP it instead of handing it to the walk again on every single search. ⚠️
+Leaving the non-permission errno UNCAUSED, on the reasoning that a transient failure should be retried, is what made a
+disconnected mount cost a stall timeout per directory on every search forever — 1,497 `ETIMEDOUT` directories on David's
+machine, 101 s of a 147 s walk (`docs/notes/phased-vs-bulk-index-2026-08-14.md`). The retry was real and it never
+converged, because nothing about the next walk was different. Recording it and retrying on a backoff is the same retry
+at a price worth paying.
+
+**One `Abandoned` for all three producers**, because nothing downstream branches on which fired: the coverage verdict,
+completion, and the heal all want the same answer from each. ❌ Don't split by errno either — `ETIMEDOUT` on a wedged
+mount and `ENOENT` on a directory that vanished mid-walk both want "stop offering this", and the vanished row is the
+watcher's to delete anyway.
+
+The local walk stamps the column with `MarkDirsUnreadable`, one message per cause, sent AFTER `visitor.finish()` so
+every `MarkDirsListed` it earned is already ahead of it on the writer channel. `mark_dirs_listed` CLEARS the column in
+the same `UPDATE` that stamps `listed_epoch` — a directory we just listed is by definition readable again — so any
+successful listing heals any cause with no rebuild and no separate pass. `clear_unreadable_cause(conn, cause)` clears
+one whole cause across the volume (the retry's tool; ⚠️ a full table scan, since the column carries no index), and
+`mark_dirs_unreadable(conn, ids, None)` is the explicit per-id clear.
 
 **`meta.exclusion_policy_built_for`** (`EXCLUSION_POLICY_KEY`) records WHICH scan-exclusion policy the DB's rows were
 written under: an FNV-1a fingerprint of `EXCLUDED_PREFIXES`, `JUNK_BASENAMES`, `PSEUDO_FS_BASENAMES`, and (macOS)

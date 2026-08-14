@@ -219,10 +219,18 @@ plan's accepted difference 4. Because nothing is added or dropped, the fork that
 differently isn't possible here.
 
 **The abandoned-ground signal is the quiet third way a run comes back short.** `walk: completed` no longer means the
-list is exhaustive: `abandonedGround` is true when the walk gave up on folders it started (one that stopped responding,
-or a subtree pruned after too many failed reads), and those folders stay unlisted so the next search retries them. It
-rides ALONGSIDE the ending rather than inside it — folding it into `interrupted` would tell the user the drive went
-away, which isn't what happened. `isIncomplete` and the note both consult it (Accepted difference 9).
+list is exhaustive: `abandonedGround` is true when ground was given up on — a folder that stopped responding, one that
+failed with an errno Cmdr can't act on, or a subtree pruned after too many failed reads. It covers both what THIS run's
+walk gave up on and what an earlier walk recorded, since the index remembers those and the frontier stops offering them
+(`crates/cmdr-index`'s `UnreadableCause::Abandoned`), so a run over a wedged mount never goes near them and would
+otherwise look exhaustive. Cmdr retries that ground on a backoff of its own. The flag rides ALONGSIDE the ending rather
+than inside it — folding it into `interrupted` would tell the user the drive went away, which isn't what happened.
+`isIncomplete` and the note both consult it (Accepted difference 9).
+
+⚠️ **It's still only a boolean, and the paths exist.** The wire carries `permissionDenied` and `declined` as lists but
+folds abandoned ground into this flag, so the note can say a run is short and can't say which folders. Naming them is a
+copy decision (David reviews every user-facing string), and the honest sentence is different from both existing lists:
+nothing for the user to do, and Cmdr will try again.
 
 **Count-only tells the truth about a rising number.** "N so far" while the walk runs and after a run that ended short (a
 lower bound either way); the exact sentence only when the ground was covered. Even then the total inherits accepted

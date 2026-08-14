@@ -206,12 +206,17 @@ Both epoch fields plus `entries.unreadable_cause`. Descending from the scope roo
 - `min_subtree_epoch == 0 && listed_epoch > 0` ⇒ **listed**. The directory itself is covered ground; descend into its
   child directories and classify each.
 - `listed_epoch == 0 && unreadable_cause != 0` ⇒ **unreadable**. Cut; reported rather than dropped, in the list its
-  CAUSE names. Two walks write the column, for the same reason from opposite directions: the local walker stamps
-  `Denied` on a permission-denied read (tried, can't), and the trait cover walk stamps `Declined` on a NAS snapshot
-  directory (won't, ever — `../network_scanner/DETAILS.md`). Either way nothing is coming for that subtree, so offering
-  it as frontier would be a promise no walk keeps. The two answers stay APART all the way to the screen
-  (`CoverageMap::permission_denied` / `::declined`): only the first is something a user can act on, and "grant Full Disk
-  Access" over a snapshot folder is advice that does nothing.
+  CAUSE names. Nothing is coming for that subtree right now, so offering it as frontier would be a promise no walk
+  keeps. The three answers stay APART all the way to the screen (`CoverageMap::permission_denied` / `::declined` /
+  `::abandoned`), because each is a different sentence: `Denied` is the one a user can act on, `Declined` is a standing
+  policy over a NAS snapshot tree, and `Abandoned` is ground Cmdr gave up on and retries on a backoff. "Grant Full Disk
+  Access" over either of the last two is advice that does nothing. The causes themselves are `../store/DETAILS.md` §
+  "What coverage needs".
+
+  ⚠️ **An `abandoned` list is a hole in an otherwise complete answer, and only this list says so.** Those subtrees left
+  the frontier, so nothing else in a coverage answer hints that they were skipped; a caller reporting how complete its
+  result is has to consult it (search folds it into `SearchRunCoverage::abandoned_ground`).
+
 - `listed_epoch == 0` ⇒ **frontier**. Cut; the subtree goes to the walk.
 - No `entries` row at all (a cold volume, or a path this index has never seen) ⇒ the scope root is the whole frontier.
 

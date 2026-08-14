@@ -54,6 +54,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::pluralize::{pluralize, pluralize_with};
 use rusqlite::Connection;
 use tokio_util::sync::CancellationToken;
 
@@ -1148,7 +1149,7 @@ impl Report {
             };
             let left = match settled.left_unlisted {
                 0 => String::new(),
-                n => format!("  ({n} dirs no walk could read)"),
+                n => format!("  ({} no walk could read)", pluralize(n, "dir")),
             };
             let _ = writeln!(out, "    {:>8}  {}{}", at, settled.path.display(), left);
         }
@@ -1157,15 +1158,15 @@ impl Report {
             return;
         }
         let walk_total: Duration = self.roots.iter().map(|root| root.walk).sum();
-        let entries: u64 = self.roots.iter().map(|root| root.entries).sum();
+        let entries = pluralize_with(self.roots.iter().map(|root| root.entries).sum(), "entry", "entries");
         let _ = writeln!(
             out,
-            "  where the wall clock went: {:.1?} walking {} frontier roots ({entries} entries), \
-             {:.1?} stitching {} dirs, {:.1?} draining the writer, {:.1?} asking for frontiers",
+            "  where the wall clock went: {:.1?} walking {} ({entries}), \
+             {:.1?} stitching {}, {:.1?} draining the writer, {:.1?} asking for frontiers",
             walk_total,
-            self.roots.len(),
+            pluralize(self.roots.len() as u64, "frontier root"),
             self.stitch_time,
-            self.stitched_dirs,
+            pluralize(self.stitched_dirs, "dir"),
             self.drain_time,
             self.frontier_query_time,
         );

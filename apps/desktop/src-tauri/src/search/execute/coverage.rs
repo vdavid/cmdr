@@ -41,11 +41,7 @@ impl UnreadableGround {
 
     /// One order, no duplicates, however many scopes contributed.
     fn settle(&mut self) {
-        for list in [
-            &mut self.permission_denied,
-            &mut self.declined,
-            &mut self.abandoned,
-        ] {
+        for list in [&mut self.permission_denied, &mut self.declined, &mut self.abandoned] {
             list.sort_unstable();
             list.dedup();
         }

@@ -8156,16 +8156,18 @@ export type SearchRunCoverage = {
    */
   unresolvedScopes: string[]
   /**
-   *  Whether the walk gave up on ground it started: a directory that stopped
-   *  responding and was abandoned, or a subtree pruned by the walker's
-   *  consecutive-failure budget.
+   *  Whether ground was given up on: a directory that stopped responding, one
+   *  that failed with an errno the walk can't act on, or a subtree pruned by the
+   *  walker's consecutive-failure budget. Covers both what THIS run's walk gave
+   *  up on and what an earlier walk recorded as `UnreadableCause::Abandoned` (the
+   *  reason the frontier didn't offer it to this run at all).
    *
    *  TRUE means the list is a lower bound even when [`walk`](Self::walk) is
    *  [`WalkEnding::Completed`] — the third way a run can be short, alongside
    *  cancel and disconnect (Accepted difference 9), and the quiet one: nothing
-   *  else on the wire hints at it. ❌ Don't fold it into `walk`: those
-   *  directories stay unlisted, so the frontier offers them again, which is a
-   *  different sentence from "the drive went away".
+   *  else on the wire hints at it. ❌ Don't fold it into `walk`: Cmdr retries
+   *  this ground on a backoff, which is a different sentence from "the drive went
+   *  away".
    */
   abandonedGround: boolean
   /**
