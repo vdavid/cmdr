@@ -24,6 +24,11 @@ pub(crate) mod manager;
 pub mod master;
 pub(crate) mod network_scan;
 pub(crate) mod partial_agg;
+/// A throwaway measurement harness over the real boot volume, comparing today's
+/// bulk build against stitch-plus-phased cover walks. `#[ignore]`d; it prints
+/// numbers, it asserts nothing about the product.
+#[cfg(test)]
+mod phased_bench;
 pub(crate) mod progress_reporter;
 pub(crate) mod scan_completion;
 pub(crate) mod state;
