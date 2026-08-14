@@ -230,6 +230,37 @@ would treat one NAS as two, force a second mount with `ForceNewSession`, and bre
 `mount_share_sync` returns early with `already_mounted: true` when `find_mount_path_for_share` finds the same
 server+share+port already mounted, skipping NetFS entirely.
 
+## Every SMB subprocess runs under a deadline
+
+`smbutil view` (macOS) and `smbclient -L` (Linux) are the last thing tried when smb2 can't list a host's shares, and
+the share browser's spinner waits on them. Neither has a timeout flag, and neither gives up against a server that
+accepts the connection and then goes quiet. `list_shares`'s `timeout_ms` only ever reached the smb2 attempt, so the
+CLI fallback had no bound at all.
+
+Both run under `crate::subprocess::output_within` with a 20 s limit (`SMBUTIL_VIEW_LIMIT` / `SMBCLIENT_LIST_LIMIT`),
+set well above the ~1 s a working tool takes on a slow LAN: the number only decides how long a dead server is allowed
+to look alive.
+
+❌ Don't "fix" a future one with `tokio::time::timeout` around `spawn_blocking`. That releases the caller and leaks
+both the child and the blocking-pool thread parked in `wait()`; the pool caps at 512 threads and is shared with every
+directory listing in the app. `output_within` bounds a `tokio::process` child with `kill_on_drop`, so expiry ends the
+process. Rationale and the stdio trap it closes: the module doc on `subprocess.rs`.
+
+## The direct-connect fallback names its cause
+
+When smb2 can't connect, the share stays on the macOS kernel mount for the session: slower, and without the direct
+session's control surface. Both upgrade paths log that through `smb_upgrade::log_direct_connect_failure`, on the
+`smb_fallback` target.
+
+It asks `is_auth_error` itself rather than describing the failure with `UpgradeFailure`. **`UpgradeFailure` has no auth
+variant** and folds a rejected password into `Unexpected`: it crosses IPC to pick the network-error copy, and the auth
+case reaches `CredentialsNeeded` instead. Describing an auth failure with it makes a stale Keychain password read as a
+flaky server.
+
+Level follows what happens to the user, since that decides whether anything else will mention it: a share that
+silently stays on the kernel mount is a WARN even for auth (nobody will be asked anything), while the manual "Connect
+directly" path's auth failure is an INFO (a credentials prompt follows immediately).
+
 ## Gotchas
 
 - **Don't hold mutex during DNS resolution**: `get_host_for_resolution` / `update_host_resolution` extract host info and release the mutex before blocking DNS, then re-acquire to update. Holding the mutex across network calls risks deadlock.

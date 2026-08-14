@@ -169,6 +169,11 @@ Copy-paste commands for common debugging scenarios. All include `info` as the ba
   `RUST_LOG=scan_preview=debug,conflict_scan=debug,info pnpm dev`. The scan preview logs its start, a 5 s heartbeat with
   running counts, and its outcome; the conflict check logs its start, the collision count, and which leg gave up. Both
   targets are already at Debug in the log FILE, so a user's bundle answers this without a re-run.
+- **A share that's slow, or a share browser that comes back empty**:
+  `RUST_LOG=smb_fallback=debug,subprocess=debug,info pnpm dev`. `smb_fallback` says why a share is on the macOS kernel
+  mount rather than a direct smb2 session (it names a rejected password as such, which is the fixable cause);
+  `subprocess` says when `smbutil` / `smbclient` was stopped for not answering. Both are already at Debug in the log
+  FILE, so a user's bundle answers this without a re-run.
 - **Directory listing**: `RUST_LOG=cmdr_lib::file_system::listing=debug,info pnpm dev`
 - **File viewer**: `RUST_LOG=cmdr_lib::file_viewer=debug,FE:viewer=debug,info pnpm dev`
 - **MTP (Android devices)**: `RUST_LOG=cmdr_lib::mtp=debug,FE:mtp=debug,info pnpm dev`
