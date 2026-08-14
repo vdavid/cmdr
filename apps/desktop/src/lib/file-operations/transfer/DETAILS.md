@@ -403,8 +403,8 @@ Pinned by `TransferDialog.test.ts` § "data-scan-state marker" (counting → don
 ### `data-conflict-state` marker on the dialog body
 
 The sibling marker for the OTHER async settle in this dialog: the top-level conflict check
-(`transfer-conflict-check.svelte.ts`). `.dialog-body` carries `data-conflict-state`
-(`checking` | `done` | `skipped` | `unknown`), derived from that factory's status — again no new wire event.
+(`transfer-conflict-check.svelte.ts`). `.dialog-body` carries `data-conflict-state` (`checking` | `done` | `skipped` |
+`unknown`), derived from that factory's status — again no new wire event.
 
 - `done` → the check RAN, and the conflicts section below it is final.
 - `unknown` → the check couldn't run, so nothing is known about the destination. ⚠️ A failure used to land in `done`
