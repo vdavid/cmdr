@@ -647,12 +647,17 @@ fn the_completion_sequence_runs_once_however_often_the_machine_takes_stock() {
 
     // And a relaunch of a COMPLETED volume never reaches the machine at all: it
     // takes today's reconcile-in-place path, which leaves the rows standing.
+    //
+    // ⚠️ Waited on the DURABLE marker, ❌ not on `scanning`. That path clears the
+    // marker before it walks and re-stamps at the end, and its completion handler
+    // drops the flag BEFORE the meta write reaches the writer — a window Linux
+    // loses regularly.
     let rows = drive.entry_count();
     drive.restart();
-    drive.wait_for_the_machine();
-    assert!(
-        drive.meta("scan_completed_at").is_some(),
-        "the relaunch keeps a completion marker"
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(30),
+        "the relaunch to record its own completion",
+        || drive.meta("scan_completed_at").is_some(),
     );
     assert!(drive.entry_count() >= rows, "and it never blanks the index");
     let _ = (stamped, swept);
