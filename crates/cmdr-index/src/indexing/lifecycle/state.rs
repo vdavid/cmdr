@@ -43,6 +43,7 @@ use super::freshness::Freshness;
 use super::manager::IndexManager;
 use crate::indexing::store::{IndexFailure, IndexStore};
 use crate::indexing::volume::{IndexVolumeKind, VolumeId};
+use crate::indexing::watch::branches::{self, AfterWalk};
 
 mod auto_start;
 mod freshness_bridge;
@@ -67,9 +68,9 @@ pub use queries::{is_active, is_failed};
 #[cfg(any(test, feature = "testing"))]
 pub use reservation::reserve_initializing_index_for_test;
 pub(crate) use reservation::{is_initializing_phase, try_reserve_initializing_phase};
-#[cfg(test)]
-pub(crate) use scan_control::set_scanning_for_test;
 pub use scan_control::{force_scan, stop_scan, trigger_verification};
+#[cfg(test)]
+pub(crate) use scan_control::{set_scanning_for_test, while_shutting_down_for_test};
 pub use startup::start_indexing;
 pub(in crate::indexing::lifecycle) use startup::{Activation, start_indexing_for};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -278,8 +279,28 @@ pub(crate) fn begin_branch_coverage(volume_id: &str, paths: &[String]) {
 
 /// Tell it the walk ended, so what it held is released and what it covered
 /// becomes ground the volume keeps current.
+///
+/// ❌ The release itself is NOT routed through the running manager. A walk ends
+/// minutes after it began, and `force_scan` / `perform_registry_rescan` publish
+/// `ShuttingDown` for the whole of a scan start — a finish that no-opped in that
+/// window would leave the branch at `walks > 0` for the rest of the session:
+/// `may_walk` false for that ground permanently, every event for it buffered and
+/// never promoted, and the branch never absorbed. The set lives outside the
+/// registry (`branches::live_for`) precisely so this can't depend on a phase.
 pub(crate) fn finish_branch_coverage(volume_id: &str, paths: &[String]) {
-    with_running_manager(volume_id, |mgr| mgr.finish_branch_coverage(paths));
+    let branches = branches::live_for(volume_id);
+    // What the volume wants remembered is still the manager's answer, when it has
+    // one. A volume whose manager is momentarily out of the registry keeps nothing
+    // written down: the rescan that took it out retires the branch set anyway.
+    let mut after = AfterWalk::Forget;
+    let mut record = None;
+    with_running_manager(volume_id, |mgr| (after, record) = mgr.after_walk());
+    branches.finish_covering(paths, after);
+    // Off the registry lock: `persist` hands a meta row to the writer thread, and
+    // nothing under this lock may block.
+    if let Some((space, writer)) = record {
+        branches.persist(&space, &writer);
+    }
 }
 
 /// Run something against a volume's `Running` manager, or nothing if it has

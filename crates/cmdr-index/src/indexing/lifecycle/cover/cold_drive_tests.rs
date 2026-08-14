@@ -485,6 +485,63 @@ async fn a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_doe
     );
 }
 
+/// A walk registers its ground when it starts and releases it when it ends, and
+/// the release can't depend on what the registry is doing minutes later.
+///
+/// `force_scan` and `perform_registry_rescan` publish `ShuttingDown` for the whole
+/// of a scan start, so a walk ending inside that window used to leave its branch
+/// at `walks > 0` forever: `may_walk` false for that ground permanently, every
+/// event for it buffered and never promoted, and the branch never absorbed.
+#[test]
+fn a_walk_that_finishes_while_the_manager_is_shutting_down_still_releases_its_branch() {
+    use crate::indexing::watch::branches::{self, WatchScope};
+    use crate::indexing::watch::watcher::{FsChangeEvent, FsEventFlags};
+
+    let drive = ColdDrive::new("cover-branch-shutdown-finish-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    let scope = drive.path("scope");
+    let branch = vec![scope.clone()];
+    crate::indexing::lifecycle::state::start_indexing_for(
+        drive.volume_id,
+        drive.tree.path().to_path_buf(),
+        IndexVolumeKind::LocalExternal,
+        true,
+        crate::indexing::lifecycle::state::Activation::WriterOnly,
+    )
+    .expect("stand the index up");
+
+    crate::indexing::lifecycle::state::begin_branch_coverage(drive.volume_id, &branch);
+    let watch = branches::live_for(drive.volume_id);
+    assert!(
+        watch.is_being_walked(Path::new(&scope)),
+        "precondition: the ground is registered and its events wait for the walk"
+    );
+    let held = FsChangeEvent {
+        path: drive.path("scope/arrived-mid-walk.txt"),
+        event_id: 1,
+        flags: FsEventFlags {
+            item_created: true,
+            item_is_file: true,
+            ..Default::default()
+        },
+    };
+    let _ = WatchScope::Branches(Arc::clone(&watch)).admit(held);
+
+    crate::indexing::lifecycle::state::while_shutting_down_for_test(drive.volume_id, || {
+        crate::indexing::lifecycle::state::finish_branch_coverage(drive.volume_id, &branch);
+    });
+
+    assert!(
+        !watch.is_being_walked(Path::new(&scope)),
+        "the hold goes with the walk, whatever phase the registry was in"
+    );
+    assert_eq!(
+        watch.take_promoted().events.len(),
+        1,
+        "and what it held is released, rather than buffering for the rest of the session"
+    );
+}
+
 /// Clearing a drive's index takes its branches with it, because they describe
 /// coverage that no longer exists.
 ///

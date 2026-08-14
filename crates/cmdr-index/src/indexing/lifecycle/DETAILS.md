@@ -414,6 +414,13 @@ canonical in `../watch/DETAILS.md` § "Watching what a search walked"; what belo
   scanned one.
 - **The walk thread finishes it** (`state::finish_branch_coverage`) after `walk_frontier`'s own writer flush, whatever
   the outcome: a cancelled walk still marked every directory it read, so that ground needs watching exactly as much.
+- **The release is independent of the registry phase**, and the asymmetry with `begin` is deliberate. A walk can only
+  START on a `Running` volume (`cover_context_for` hands out a context for no other phase), but it ENDS minutes later,
+  possibly inside the `ShuttingDown` window `force_scan` / `perform_registry_rescan` publish for the whole of a scan
+  start. So finish reaches the set through `branches::live_for` and only ASKS the manager (when there is one) what to
+  leave behind; routing the release itself through `with_running_manager` left the branch at `walks > 0` for the rest of
+  the session — its events buffered and never promoted, `may_walk` false for that ground, and never absorbed. Anchor:
+  `cover::cold_drive_tests::a_walk_that_finishes_while_the_manager_is_shutting_down_still_releases_its_branch`.
 - **`ensure_branch_watch` starts the watcher** for a volume that has none — the `WriterOnly` shape, the only one with
   coverage and no watcher. A scanned volume declines it (`branch_watched` says which of the two is up), and `start_scan`
   retires the branch set outright, so a volume is branch-watched or whole-watched and never both.

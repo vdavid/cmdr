@@ -266,21 +266,17 @@ impl IndexManager {
         }
     }
 
-    /// A search walk over `paths` ended. Their held events are released, and on a
-    /// branch-watched volume the ground becomes this volume's to keep current.
-    pub(in crate::indexing) fn finish_branch_coverage(&mut self, paths: &[String]) {
-        let branches = branches::live_for(&self.volume_id);
-        // A volume with a whole-volume watcher already answers for this ground, so
-        // it keeps no branch bookkeeping and persists nothing: its branches existed
-        // only to buffer events for the walk's duration.
-        let after = if self.branch_watched {
-            AfterWalk::Watch
+    /// What a finished cover walk leaves on this volume's branch set, and what it
+    /// takes to write that down.
+    ///
+    /// A volume with a whole-volume watcher already answers for the ground, so it
+    /// keeps no branch bookkeeping and persists nothing: its branches existed only
+    /// to buffer events for the walk's duration.
+    pub(in crate::indexing::lifecycle) fn after_walk(&self) -> (AfterWalk, Option<(IndexPathSpace, IndexWriter)>) {
+        if self.branch_watched {
+            (AfterWalk::Watch, Some((self.path_space(), self.writer.clone())))
         } else {
-            AfterWalk::Forget
-        };
-        branches.finish_covering(paths, after);
-        if after == AfterWalk::Watch {
-            branches.persist(&self.path_space(), &self.writer);
+            (AfterWalk::Forget, None)
         }
     }
 

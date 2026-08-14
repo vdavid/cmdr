@@ -23,6 +23,32 @@ pub(crate) fn set_scanning_for_test(volume_id: &str, scanning: bool) {
     }
 }
 
+/// Run `f` with the volume's manager held OUT of the registry under a published
+/// `ShuttingDown`, which is exactly what [`force_scan`] and
+/// `perform_registry_rescan` do for the whole of a scan start.
+///
+/// That window is where a long walk can end, so it's where anything a walk does
+/// on its way out has to keep working.
+#[cfg(test)]
+pub(crate) fn while_shutting_down_for_test(volume_id: &str, f: impl FnOnce()) {
+    use cmdr_fs::ignore_poison::IgnorePoison;
+    let held = {
+        let mut reg = INDEX_REGISTRY.lock_ignore_poison();
+        let instance = reg.get_mut(volume_id).expect("a registered volume to shut down");
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+            IndexPhase::Running(mgr) => mgr,
+            other => {
+                instance.phase = other;
+                panic!("'{volume_id}' has no running manager to take out");
+            }
+        }
+    };
+    f();
+    let mut reg = INDEX_REGISTRY.lock_ignore_poison();
+    let instance = reg.get_mut(volume_id).expect("the volume to still be registered");
+    instance.phase = IndexPhase::Running(held);
+}
+
 /// Trigger background verification of a directory against the volume's index DB.
 /// Called after enrichment on each navigation. No-op if the volume's index is
 /// not running. Fully fire-and-forget: the registry lock is acquired on a
