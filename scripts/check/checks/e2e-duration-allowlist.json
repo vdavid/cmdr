@@ -3,6 +3,7 @@
   "macos": {
     "accessibility.spec.ts::dark mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.5s at flagger introduction)",
     "accessibility.spec.ts::light mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.5s at flagger introduction)",
+    "background-while-scanning.spec.ts::Backgrounding a transfer that is still counting::sends a scanning copy to the queue window instead of losing it": "David approved (2026-08-14): inherent, not fixable. The test HOLDS a scan open, backgrounds it mid-count, then waits for the copy to finish to prove the operation outlived its dialog; the open scan window IS the thing under test, so shortening it deletes the coverage. Measured 3.4-4.7s on macOS over 26 runs (~3.8s typical). ❌ Don't ‘optimise’ the scan window away.",
     "brief-cursor-visibility.spec.ts::Brief view cursor visibility::cursor stays in view under arrow nav, Home/End, PageUp/PageDown, and resize": "one test drives many nav + window-resize cycles (2.3s at flagger introduction)",
     "mtp-conflicts.spec.ts::MTP cross-volume copy conflicts::MTP-to-local copy with apply-to-all Skip credits byte progress": "virtual MTP per-operation protocol overhead (2.2s at flagger introduction)",
     "mtp-conflicts.spec.ts::MTP cross-volume move conflicts::MTP-to-local move with overwrite replaces dest and removes source": "virtual MTP per-operation protocol overhead (2.3s at flagger introduction)",
@@ -47,6 +48,7 @@
   "linux": {
     "accessibility.spec.ts::dark mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.5s at flagger introduction)",
     "accessibility.spec.ts::light mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.8s at flagger introduction)",
+    "background-while-scanning.spec.ts::Backgrounding a transfer that is still counting::sends a scanning copy to the queue window instead of losing it": "David approved (2026-08-14): inherent, not fixable. Same test and same reason as the `macos` entry: the open scan window IS what the test asserts survives being backgrounded. Measured 2.8-3.8s here over 15 runs.",
     "brief-cursor-visibility.spec.ts::Brief view cursor visibility::cursor stays in view under arrow nav, Home/End, PageUp/PageDown, and resize": {
       "maxMs": 3000,
       "reason": "one test drives many nav + window-resize cycles; ~2.9s under --include-slow contention on 2026-06-28, cap 3s"
