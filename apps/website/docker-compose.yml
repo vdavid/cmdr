@@ -1,3 +1,10 @@
+# Pinned, not derived from the directory basename. Two things depend on this exact string:
+# remark42's comment database is the volume `website_remark42-data` (Compose prefixes volumes with
+# the project name, so renaming the project would silently swap in a NEW, empty volume and the
+# comments would vanish), and the prvw site on the same host would otherwise derive `website` too
+# from its own apps/website directory, making each stack see the other's containers as orphans.
+name: website
+
 services:
   getcmdr-static:
     build:
