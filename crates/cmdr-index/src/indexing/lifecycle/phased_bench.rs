@@ -65,7 +65,7 @@ use crate::indexing::scanner::{
     ScanConfig, WalkHeartbeat, cover_subtree, exclusion_policy_stamp_message, scan_volume, should_exclude,
 };
 use crate::indexing::store::{IndexStore, ROOT_ID, UnreadableCause, resolve_path};
-use crate::indexing::writer::{IndexWriter, WriteMessage};
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
 /// How often the sampler asks the index what it covers and the process how much
 /// memory it holds. The coverage question costs a recursive query per target, so
@@ -90,8 +90,27 @@ const SEARCH_WALK_ROOT: &str = "/Applications";
 #[test]
 #[ignore = "benchmark over the real boot volume; run manually with --nocapture"]
 fn bulk_build() {
-    let bench = Bench::new("bulk build (today's `scan_volume` from `/`)");
+    run_bulk("bulk build (today's `scan_volume` from `/`)", false);
+}
+
+/// The bulk build plus every other thing `start_scan` and the completion handler
+/// put on the SAME writer, so the comparison isn't the phased arms paying for
+/// aggregation while the baseline skips it.
+///
+/// Adds `set_expected_total_entries`, `BackfillMissingDirStats`, and a
+/// `ScanProgressReporter`-shaped 500 ms tick that fires `ComputePartialAggregates`
+/// every tenth pass with `AggSource::Maps` over the hot paths a pane would be
+/// showing — the pump the phase machine would have to run too.
+#[test]
+#[ignore = "benchmark over the real boot volume; run manually with --nocapture"]
+fn bulk_build_with_the_full_post_scan_sequence() {
+    run_bulk("bulk build, with the whole post-scan sequence `start_scan` runs", true);
+}
+
+fn run_bulk(label: &'static str, full_sequence: bool) {
+    let bench = Bench::new(label);
     let sampler = bench.start_sampling();
+    let pump = full_sequence.then(|| bench.start_partial_aggregation_pump());
 
     let config = ScanConfig {
         root: PathBuf::from("/"),
@@ -99,6 +118,19 @@ fn bulk_build() {
     };
     let (_handle, thread) = scan_volume(config, &bench.writer, CancellationToken::new()).expect("start the scan");
     let summary = thread.join().expect("scan thread").expect("scan completed");
+    if let Some(pump) = pump {
+        pump.stop();
+    }
+    if full_sequence {
+        // `scan_completion.rs`: the denominator the writer reports progress
+        // against, then the backfill that catches directories created by events
+        // that landed mid-walk.
+        bench.writer.set_expected_total_entries(summary.total_entries);
+        bench
+            .writer
+            .send(WriteMessage::BackfillMissingDirStats)
+            .expect("backfill");
+    }
     bench.writer.flush_blocking().expect("flush");
 
     let mut report = bench.finish(sampler);
@@ -671,6 +703,13 @@ impl Bench {
         Sampler::spawn(self.db_path.clone(), self.started_at)
     }
 
+    /// The `ScanProgressReporter`'s 500 ms tick, reduced to the only part of it
+    /// that touches this writer: a `ComputePartialAggregates` every tenth pass, the
+    /// same 5 s cadence `PARTIAL_AGG_TICK_INTERVAL` sets.
+    fn start_partial_aggregation_pump(&self) -> Pump {
+        Pump::spawn(self.writer.clone())
+    }
+
     fn start_browsing(&self) -> Browser {
         Browser::spawn(self.db_path.clone(), self.space.clone(), self.writer.clone())
     }
@@ -682,6 +721,17 @@ impl Bench {
         let samples = sampler.stop();
         let conn = self.read_conn();
         let total_entries = count(&conn, "SELECT COUNT(*) FROM entries");
+        // What each arm actually left behind, so "the same work" is shown rather
+        // than asserted: a `dir_stats` row per directory, a non-zero
+        // `min_subtree_epoch` on the ones that are genuinely covered, and the
+        // volume's recursive size at the root.
+        let dirs = count(&conn, "SELECT COUNT(*) FROM entries WHERE is_directory = 1");
+        let dir_stats = count(&conn, "SELECT COUNT(*) FROM dir_stats");
+        let covered_dirs = count(&conn, "SELECT COUNT(*) FROM dir_stats WHERE min_subtree_epoch > 0");
+        let root_bytes = count(
+            &conn,
+            "SELECT COALESCE(recursive_physical_size, 0) FROM dir_stats WHERE entry_id = 1",
+        );
         let denied = count(&conn, "SELECT COUNT(*) FROM entries WHERE unreadable_cause = 1");
         let declined = count(&conn, "SELECT COUNT(*) FROM entries WHERE unreadable_cause = 2");
         // The sampler's cheap probe against the product's own coverage query, so
@@ -706,6 +756,10 @@ impl Bench {
             walked_entries: 0,
             denied,
             declined,
+            dirs,
+            dir_stats,
+            covered_dirs,
+            root_bytes,
             not_virgin: self.not_virgin.load(Ordering::Relaxed),
             marked_abandoned: self.marked_abandoned.load(Ordering::Relaxed),
             roots,
@@ -873,6 +927,59 @@ fn resolve_for_sampler(conn: &Connection, path: &Path) -> Option<i64> {
 
 // ── The browsing arm's second and third walkers ──────────────────────
 
+/// The mid-scan partial-aggregation pump, so a baseline arm carries the same
+/// writer load a real scan does.
+struct Pump {
+    stop: Arc<AtomicBool>,
+    thread: std::thread::JoinHandle<u64>,
+}
+
+impl Pump {
+    fn spawn(writer: IndexWriter) -> Self {
+        let stop = Arc::new(AtomicBool::new(false));
+        let thread_stop = Arc::clone(&stop);
+        let thread = std::thread::Builder::new()
+            .name("phase-bench-partial-agg".into())
+            .spawn(move || {
+                let mut tick: u64 = 0;
+                let mut passes = 0;
+                while !thread_stop.load(Ordering::Relaxed) {
+                    // allowed-test-sleep: this IS the reporter's 500 ms tick, the
+                    // cadence being reproduced.
+                    std::thread::sleep(Duration::from_millis(500));
+                    tick += 1;
+                    if !tick.is_multiple_of(10) {
+                        continue;
+                    }
+                    let hot_paths = browse_path_ring()
+                        .into_iter()
+                        .take(2)
+                        .map(|path| path.to_string_lossy().into_owned())
+                        .collect();
+                    if writer
+                        .send(WriteMessage::ComputePartialAggregates {
+                            hot_paths,
+                            source: AggSource::Maps,
+                        })
+                        .is_ok()
+                    {
+                        passes += 1;
+                    }
+                }
+                passes
+            })
+            .expect("spawn the partial-aggregation pump");
+        Self { stop, thread }
+    }
+
+    fn stop(self) {
+        self.stop.store(true, Ordering::Relaxed);
+        let passes = self.thread.join().unwrap_or(0);
+        let mut out = std::io::stderr();
+        let _ = writeln!(out, "  partial-aggregation passes fired: {passes}");
+    }
+}
+
 /// A pane reading listings ahead of the walker, plus one search-shaped cover walk
 /// on disjoint ground: the two things the phase machine doesn't control.
 struct Browser {
@@ -975,6 +1082,10 @@ struct Report {
     walked_entries: u64,
     denied: u64,
     declined: u64,
+    dirs: u64,
+    dir_stats: u64,
+    covered_dirs: u64,
+    root_bytes: u64,
     not_virgin: u64,
     marked_abandoned: u64,
     roots: Vec<RootWalk>,
@@ -1007,6 +1118,11 @@ impl Report {
             "  peak resident: {:.0} MB   peak phys footprint: {:.0} MB",
             self.samples.peak_resident as f64 / 1_048_576.0,
             self.samples.peak_footprint as f64 / 1_048_576.0,
+        );
+        let _ = writeln!(
+            out,
+            "  aggregation left behind: {} dir_stats rows for {} dirs, {} of them covered, {} bytes at the root",
+            self.dir_stats, self.dirs, self.covered_dirs, self.root_bytes
         );
         let _ = writeln!(out, "  frontier roots refused as non-virgin: {}", self.not_virgin);
         let _ = writeln!(

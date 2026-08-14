@@ -4,15 +4,25 @@ The measurement gate in `docs/specs/phased-indexing-plan.md` before the phase ma
 real `/` as a sequence of stitched cover walks cost against today's truncate-and-bulk-build, and does it buy the thing
 it is for, which is `~/Downloads` being searchable in seconds.
 
-**The gate is 1.5×. Phased as the plan describes it came in at 4.8×, so by the letter of the gate the answer is stop and
-re-decide.** But 69% of that is one thing the plan doesn't mention and nothing about phasing requires: a directory whose
-`readdir` fails is left unlisted with no cause, so **every later phase's frontier offers it again and pays the same
-failing reads again**. Record it once and the same walk drops to 2.2×; move the writer drain from every frontier root to
-every phase as well and it lands at **1.84×**.
+**The baseline is 39.1 s, not the 145–193 s two in-repo sources claim.** That was checked the only way worth trusting:
+by running the real app. A release Cmdr on a throwaway data dir indexed this `/` in **39.1 s (6,072,728 entries, 603,559
+dirs)**, and the harness arm carrying the same post-scan sequence measured **39.1 s** for the same tree. The harness is
+an accurate model of a real first scan; the older figures do not reproduce. Details and the one confounder nobody has
+excluded: "The baseline, resolved" below.
 
-Time-to-value is exactly what the plan hoped for and the reason the decision isn't obvious: every priority root is
-covered in **under 120 ms** against **1.0–26.6 s** for the bulk build. The cost is on the other side of the ledger,
-`$HOME`: **88 s phased at its best against 39 s bulk**, which is the signal that gates the early media kick.
+**Against that baseline, phased as the plan describes it is 4.7×**, so by the letter of the 1.5× gate the answer is stop
+and re-decide. But 69% of that is one thing the plan doesn't mention and nothing about phasing requires: a directory
+whose `readdir` fails with a non-permission errno is left unlisted with no cause, so **every later phase's frontier
+offers it again and pays the same failing reads again**. On this machine that is 1,497 directories inside a wedged
+MacDroid MTP mount returning `ETIMEDOUT`. Record it once and the same walk drops to **2.10×**; batch the writer drain as
+well and it lands at **1.79×**.
+
+**So the representative number is ~2.1×, and 4.7× is this machine's dead mount.** A machine without one has no re-offer
+cost, which is exactly what the marking arm measures.
+
+Time-to-value is what the plan hoped for and the reason the decision isn't obvious: every priority root is covered in
+**under 120 ms** against **1.0–26.6 s** for the bulk build. The cost is on the other side of the ledger, `$HOME`: **88 s
+phased at its best against 39 s bulk**, which is the signal that gates the early media kick.
 
 ## Method
 
@@ -52,25 +62,70 @@ Machine: Apple M3 Max, 16 cores, 64 GB, internal SSD, macOS 26.5.2 build 25F84, 
 The boot volume held **6,060,889 entries** at bulk-build time. Two SMB shares and a mounted DMG were present under
 `/Volumes` throughout; the boot-disk exclusion tier keeps every walk off them.
 
-⚠️ **The plan's reference numbers are stale.** It quotes 5,191,189 entries and a 193 s full walk measured 2026-08-14 on
-this machine; the same walk measures **38.1 s over 6.06M entries** here. That matters more than a footnote: the whole
-gate is a ratio against a baseline, and a bulk build that finishes in 38 s leaves phasing far less room than one that
-takes three minutes. Whatever produced 193 s (the full app, a contended machine, aggregation counted differently) should
-be re-derived before the 193 s figure is used for anything else.
+## The baseline, resolved
+
+Two in-repo sources put a real first scan at 145–193 s, four to five times what the harness measured, and a gate that is
+a ratio can't be decided on a disputed denominator. Three hypotheses, checked:
+
+**1. Missing work in the harness's bulk arm — refuted, and now proven rather than argued.**
+`bulk_build_with_the_full_post_scan_sequence` adds everything `start_scan` and the completion handler put on the same
+writer: `set_expected_total_entries`, `BackfillMissingDirStats`, and a `ScanProgressReporter`-shaped 500 ms tick firing
+`ComputePartialAggregates { source: Maps }` every tenth pass. Both bulk arms already ran `ComputeAllAggregates` (that's
+inside `scan_volume`) and both waited for it through `flush_blocking`. Every arm now reports what it left behind, so
+"the same work" is shown:
+
+- bulk build: 37.2 s, **603,559 `dir_stats` rows for 603,559 dirs**, 603,433 covered, 995,334,483,968 bytes at the root.
+- bulk build + full post-scan sequence: **39.1 s**, 603,559 rows for 603,559 dirs, 603,439 covered, 995,329,966,080
+  bytes.
+- phased + mark + per-phase drain: 70.1 s, 604,191 rows for 604,191 dirs, 604,038 covered, 995,391,729,664 bytes.
+
+Same row count, same coverage, same volume total to within 0.006% (ordinary churn between runs). **Neither side is
+skipping aggregation**, and the full sequence costs the baseline 1.9 s, not two minutes.
+
+**2. Throttling — refuted.** The local walker never consults the `clearance` seam. The only production callers are the
+media-index scheduler and the network scanner's pacing (`grep -rn '\.clearance('`). A local `/` scan runs unpaced in the
+app exactly as it does here.
+
+**3. The app really is slower — refuted, by running it.** A release build on a throwaway `CMDR_DATA_DIR`, launched from
+this FDA-granted shell, logged:
+
+```
+Scan: complete (6072728 entries, 603559 dirs, 39.1s)
+ComputeAllAggregates: done, 603560 directories in 3.9s
+```
+
+**39.1 s, to the tenth of a second the same as the harness arm carrying the same composition.** It fired 7 partial
+passes, the last 1 573 ms over 588K dirs.
+
+**So the harness is a faithful model and 39.1 s is the baseline.** What it does NOT carry: the FSEvents watcher and its
+buffered-event reconcile, the event sink and its IPC, freshness, and the frontend. Those run alongside the scan rather
+than inside it, and the app's own scan timer says they cost it nothing measurable.
+
+⚠️ **What changed since the older measurements was not established.** `partial_agg.rs` recorded 5.94M entries / 558K
+dirs in ~2m25s with 28 passes each ≤ 397 ms on 2026-08-03; today the same code path over a slightly bigger tree gives
+39.1 s and 7 passes, the last one 4× slower per pass than any of theirs. That shape (faster overall, slower per pass) is
+not what a pure page-cache difference produces, but **page-cache warmth is the confounder I could not exclude**: `sudo
+purge` needs a password this session doesn't have, and no unprivileged way to evict 6M inodes from 64 GB of RAM is
+practical. The best bound available is that the **first** bulk measurement of the session, taken before any arm had
+traversed the tree, was **38.5 s** — if a cold cache cost 4×, it would have shown there. Both stale claims have been
+re-anchored in place rather than left to mislead.
 
 ## Wall clock to full coverage
 
-Probe-free pass. Every arm indexed 6,067,5xx entries (the phased arms sit ~6,700 above the bulk build, which is the
-stitch's own upserts of directories the bulk walk reaches by descent).
+Probe-free pass, ratios against the **39.1 s** full-composition baseline. Every arm indexed 6.06–6.08M entries (the
+phased arms sit ~6,700 above the bulk build, which is the stitch's own upserts of directories the bulk walk reaches by
+descent).
 
-- **bulk build** (`scan_volume` from `/`) — **38.1 s**, 1.00×. Peak resident 586 MB, peak phys footprint 457 MB.
-- **phased, stitch depth 1** — **182.5 s**, 4.79×. 405 MB / 240 MB.
-- **phased, stitch depth 2** — **184.5 s**, 4.84×. 404 MB / 248 MB.
-- **phased, depth 2, while browsing and searching** — **180.7 s**, 4.74×. 408 MB / 230 MB.
-- **phased, depth 2, writer drained once per phase** — **155.1 s**, 4.07×. 531 MB / 264 MB.
-- **phased, depth 2, four frontier roots at once** — **103.9 s**, 2.73×. 403 MB / 240 MB.
-- **phased, depth 2, unreadable ground recorded** — **82.5 s**, 2.17×. 412 MB / 253 MB.
-- **phased, depth 2, unreadable ground recorded + drained once per phase** — **70.0 s**, **1.84×**. 808 MB / 621 MB.
+- **bulk build + full post-scan sequence** — **39.1 s**, 1.00×. Peak resident 772 MB, peak phys footprint 634 MB. _The
+  baseline; matches the real app exactly._
+- **bulk build** (`scan_volume` alone) — 37.2 s, 0.95×. 574 MB / 443 MB.
+- **phased, stitch depth 1** — **183.7 s**, **4.70×**. 401 MB / 241 MB.
+- **phased, stitch depth 2** — 184.5 s, 4.72×. 404 MB / 248 MB.
+- **phased, depth 2, while browsing and searching** — 180.7 s, 4.62×. 408 MB / 230 MB.
+- **phased, depth 2, writer drained once per phase** — 155.1 s, 3.97×. 531 MB / 264 MB.
+- **phased, depth 2, four frontier roots at once** — 103.9 s, 2.66×. 403 MB / 240 MB.
+- **phased, depth 2, unreadable ground recorded** — **82.1 s**, **2.10×**. 411 MB / 254 MB.
+- **phased, depth 2, unreadable ground recorded + drained once per phase** — **70.1 s**, **1.79×**. 773 MB / 613 MB.
 
 **Peak memory is the one number that favours phasing outright.** The bulk build carries the whole aggregation
 accumulator and finishes with one `ComputeAllAggregates` over 6M rows; the phased arms aggregate per subtree and hold
@@ -96,13 +151,57 @@ unlisted and retried", deliberately, because a transient error should heal. Unde
 right and costs one retry. Under phases it means **a directory that fails is handed back by every later phase's
 frontier, immediately, at full cost**.
 
-On this machine 76 directories fail that way, all inside `~/Library/CloudStorage` (a MacDroid MTP mount for a phone, and
-File Provider domains for Dropbox and Google Drive). They are walked once as a priority root, then re-offered by the
-`$HOME` phase and again by the `/` phase: 224 barren frontier roots, 101.2 s of nothing.
+**What actually fails here, measured rather than assumed**: a recursive `scandir` of `~/Library` found **1,497
+directories returning `ETIMEDOUT` (errno 60)**, every one of them inside
+`~/Library/CloudStorage/MacDroid-googlePixel9ProXL` — a FUSE mount for an Android phone, exposing the phone's `/proc`
+(`.../proc/1069/fd`, `.../proc/1069/task/1069/net/can`, …). The phone is not connected, so each read blocks and then
+times out. That single-threaded probe took over 13 minutes to enumerate them.
+
+The walker never visits all 1,497: its consecutive-failure budget prunes whole subtrees, so a walk leaves **76**
+directories unlisted. Those 76 are walked once as a priority root, then re-offered by the `$HOME` phase and again by the
+`/` phase: 186–226 barren frontier roots, ~101 s of nothing.
+
+⚠️ **Why the bulk build doesn't pay this and the phased shape does.** Both traverse the wedged mount, but the bulk build
+does it as 1,497 tasks inside one 16-thread pool overlapped with six million other entries, so the timeouts hide behind
+real work. The phased shape hands each failed directory back as **its own frontier root, walked serially**, where
+nothing hides it. That is structural, not a quirk: any dead mount converts into serial dead time in proportion to the
+number of phases above it.
+
+**This is a live bug today, not only under phases.** `coverage_for_scope` puts those 76 directories in the frontier, so
+every search scoped at or above `~/Library` hands them to a cover walk that pays the timeouts again — today, in the
+shipped build, on any machine with a disconnected File Provider or FUSE mount.
 
 Recording them once — one `MarkDirsUnreadable` per phase for whatever that phase left unlisted under its root — takes
-the barren roots from 224 to 72 and their cost from **101.2 s to 42 ms**, and the arm from 184.5 s to 82.5 s. Entry
-counts are identical (6,067,569 against 6,067,556), so nothing was skipped to get there.
+the barren roots from 226 to 72 and their cost from **101.9 s to 34 ms**, and the arm from 183.7 s to 82.1 s. Entry
+counts are identical (6,079,410 against 6,079,395) and both leave 604,19x `dir_stats` rows, so nothing was skipped to
+get there.
+
+### Does one `UnreadableCause::Abandoned` cover every case? Yes.
+
+The plan already designs `Abandoned` for two producers. There is a third, and it is the one that fires here:
+
+1. **The watchdog timeout** — `WalkReadError::TimedOut`, the read produced nothing for 15 s. Reaches `visit_read_error`
+   with the directory's id. The plan has this one.
+2. **The consecutive-failure budget** — `engine.rs:341-347` drops a queued sibling task unread, so it never reaches the
+   visitor at all; the id is on `scheduled.task`. The plan has this one.
+3. **`readdir` returning a non-permission errno** — `WalkReadError::Io(e)` with `e.kind() != PermissionDenied`. Reaches
+   `visit_read_error` with the id, and is deliberately left unmarked ("any other I/O error might be transient, so those
+   stay plain unlisted and get retried"). **The plan does not have this one, and it is 100% of what fires on this
+   machine.**
+
+**One variant covers all three**, because nothing downstream branches on which of them happened. The cause is consumed
+in three places, and all three want the same answer from each case: the coverage verdict (not the user's to fix, so ❌
+never the `permission_denied` bucket that says "grant Full Disk Access"), completion (must not hold the frontier open),
+and healing (`MarkDirsListed` already clears any cause on the next successful listing). ❌ Don't split it by errno:
+`ETIMEDOUT` on a wedged mount and `ENOENT` on a directory that vanished mid-walk both want "stop offering this", and the
+`ENOENT` row is the watcher's to delete anyway.
+
+⚠️ **Two things the implementer has to carry across with it.** First, if the mark is applied by today's bulk scan too —
+and it should be, since case 3 is a live bug there — it **changes shipped behavior**: a transient failure stops being
+retried by the next walk. The exposure is narrow (a truncating fresh scan wipes every row and cause; `MarkDirsListed`
+clears on any success), but it makes the plan's `ClearUnreadableCause { cause: Abandoned }` backoff **not optional**.
+Second, the mark must be computed **after the walk's own `MarkDirsListed` has committed**, or it condemns everything the
+walk listed but hasn't stamped yet — see the trap below.
 
 ⚠️ **The signal is NOT `heartbeat.abandoned_count()`.** That counts stall timeouts and consecutive-failure pruning, and
 it was **zero for every walk in every arm** — the first version of this measurement gated on it, marked nothing, and
@@ -184,16 +283,25 @@ was corrupted: the arm indexed the same 6,067,558 entries, and zero frontier roo
 
 ## What I'd stake a decision on, and what I wouldn't
 
-**Solid**: the ratios, the cost decomposition, the depth-1-against-depth-2 answer, and the time-to-value numbers. Each
-arm was run 3–5 times across the afternoon; wall clocks repeated within ~5% and the decomposition within ~2%.
+**Solid**: the ratios, the cost decomposition, the depth-1-against-depth-2 answer, the time-to-value numbers, and the
+baseline. Each arm ran 3–6 times across the afternoon; wall clocks repeated within ~5% and the decomposition within ~2%.
+The baseline is the strongest of them: an independent release-app run agreed with the harness arm to 0.1 s, and both
+arms are shown producing the same 603,559 `dir_stats` rows and the same volume total.
 
-**Weaker**: the absolute wall clocks drift with page-cache warmth across the afternoon (the same depth-1 arm read
-176.3 s, 176.9 s, 182.5 s, and 188.2 s). The `~/projects-git` walk in particular ranged 13.4–34.3 s between a cold and a
-warm afternoon. Always compare arms from the same pass, never across passes.
+**Weaker**: the absolute wall clocks drift a few percent across the afternoon (the same depth-1 arm read 176.3 s,
+176.9 s, 182.5 s, 183.7 s, and 188.2 s). The `~/projects-git` walk in particular ranged 13.4–34.3 s. Always compare arms
+from the same pass, never across passes.
 
-**The 76 unreadable directories are this machine's.** A machine with no MTP mount and no stalled File Provider domain
-would see a much smaller re-offer cost, and the unfixed phased arm would come in well below 4.8×. It would not see
-*zero*: any `readdir` failure anywhere reproduces it, and the fix costs one message per phase either way.
+**Unresolved, and the one thing I would not stake the decision on alone**: whether a genuinely cold page cache moves the
+baseline. Everything ran on a machine that had been walking this tree all afternoon; `sudo purge` needed a password this
+session didn't have, and no unprivileged way to evict 6M inodes from 64 GB is practical. The bound is that the first
+bulk reading of the session, before any arm had traversed the tree, was 38.5 s. **One reboot-fresh measurement would
+close it**, and it is worth taking before the gate call, because the ratio is only as good as its denominator.
+
+**The 76 unreadable directories are this machine's**, so 4.7× is not the number a typical machine would show. ~2.1× is —
+that is what the marking arm measures, and marking is precisely "behave as if the dead mount weren't there". It would
+not be *zero* on any machine: one `readdir` failure anywhere reproduces the mechanism, and the fix costs one message per
+phase either way.
 
 ## Conditions that would change the answer
 
@@ -203,34 +311,40 @@ would see a much smaller re-offer cost, and the unfixed phased arm would come in
   and the gap narrows.
 - **A volume with one dominant subtree, or many even ones.** The depth-1-against-depth-2 answer is entirely a property
   of the tree's shape, and this tree has one 2.4M-entry child that is itself 97% one folder.
-- **Anything that makes the bulk build slower again.** If the plan's 193 s is real under the full app, the same phased
-  overhead against a 193 s baseline is a completely different ratio, and the gate would pass without any fix at all.
-  **This is the single biggest lever on the decision and it is unresolved.**
+- **A machine with no wedged mount.** Then the plan's shape costs what the marking arm costs, ~2.1×, and the 4.7× here
+  never appears. Conversely a machine with several dead mounts is worse than 4.7×.
+- **A cold page cache**, the one confounder left standing. See above.
 
 ## Recommendation (David's call, not mine)
 
-**Against the gate as written, phased fails: 4.8× against a 1.5× bar.** But the gate's two prepared answers were written
-for a phased shape that is inherently slower, and that is not what the measurement found. Three of the four costs the
-plan worried about are free (stitch 0.2 s, coverage queries 5 ms, the one-walk-at-a-time join rule ~0 s), and the two
-that aren't are both fixable without changing the design:
+**The baseline is settled at 39.1 s, and against it the plan's shape as written is 4.70× — over the 1.5× bar.** But the
+gate's two prepared answers assume a phased shape that is inherently slower, and that is not what the measurement found.
+Three of the four costs the plan worried about are free (stitch 0.2 s, coverage queries 5 ms, the one-walk-at-a-time
+join rule ~0 s), and the two that aren't are both fixable without changing the design:
 
-1. **Record ground a walk could not read**, so no later phase re-offers it. 184.5 s → 82.5 s. This is a bug worth fixing
-   on its own merits, like M0's four: it costs a scan nothing today and a phased machine 101 s. It needs its own
-   `UnreadableCause` variant, since "the walk could not read it" is neither a permission the user can grant nor a
-   refusal Cmdr chose, and it must be cleared by a later successful listing exactly as `Denied` is.
+1. **Record ground a walk could not read**, so no later phase re-offers it. 183.7 s → 82.1 s (**2.10×**). This is a bug
+   worth fixing on its own merits, alongside M0's four, and it is not phasing-specific: it makes every search scoped
+   above a dead mount pay the timeouts again, today, in the shipped build. It wants one `UnreadableCause::Abandoned`
+   covering all three producers, and it obliges the plan's `ClearUnreadableCause` backoff to ship with it.
 2. **Drain the writer once per phase rather than once per frontier root** (the plan's own "batch into small groups").
-   82.5 s → 70.0 s.
+   82.1 s → 70.1 s (**1.79×**).
 
-That is **1.84×**, still above the 1.5× bar, with the remaining ~25 s being writer commit work the bulk build overlaps with
-walking and the phased shape currently does not. I did not measure a variant that overlaps it, because letting the next
-root walk while the previous root's rows commit changes when a root may be reported covered, which is a design question
-rather than a knob.
+**1.79× is the best measured configuration**, still above the bar. The remaining ~21 s is writer commit work the bulk
+build overlaps with walking and the phased shape does not. I did not measure a variant that overlaps it: letting the
+next root walk while the previous root's rows commit changes when a root may be reported covered, which is a design
+question rather than a knob, and I was asked not to build the machine.
 
-So my recommendation is the gate's **first prepared answer, accept the slower full coverage**, conditional on fix 1
-landing first — with the honest caveat that the trade is sharper than the plan assumed. Phasing buys the worst priority
-root going from 26.6 s to 0.1 s and costs `home_covered_at` going from 39 s to 88 s. If the early media kick matters
-more than sub-second priority coverage, that trade is bad and the second prepared answer is the better one. **Resolve
-the 193 s-against-38 s baseline discrepancy before deciding**: if the real in-app bulk build is anywhere near 193 s, the
-whole question dissolves.
+So my recommendation is the gate's **first prepared answer — accept the slower full coverage — conditional on fix 1
+landing first**, with two honest caveats. The trade is sharper than the plan assumed: phasing buys the worst priority
+root going from 26.6 s to 0.1 s and costs `home_covered_at` going from 39 s to 88 s. And 1.79× is a real overshoot of a
+bar David set, not a rounding error; taking it means deciding the bar was measuring the wrong thing, since 30 extra
+seconds of politely-throttled background walking is invisible unless someone is watching the badge, while the
+minutes-earlier priority coverage is not.
+
+If the early media kick outranks sub-second priority coverage, the second prepared answer (`$HOME` and the priority
+roots only, no whole-drive phase) is the better product, and the numbers here don't argue against it.
+
+**Before deciding, take one reboot-fresh baseline.** It is the only input to this that is still a bound rather than a
+measurement.
 
 ❌ I have not acted on any of this.

@@ -13,11 +13,20 @@ use cmdr_fs::firmlinks;
 /// How many 500 ms progress ticks between partial-aggregation passes.
 ///
 /// 10 ticks = 5 s. Matches the frontend's 2 s/pane `index-dir-updated` refresh
-/// throttle (so no emit is wasted), and yields ~28 reveals over a ~2.5 min scan
-/// — frequent enough to feel live without measurably slowing the scan. Verified
-/// on a real volume (Apple Silicon, 5.94M entries / 558K dirs, release build):
-/// 28 passes, each ≤ 397 ms, total scan ~2m25s, indistinguishable from the
-/// feature-off baseline. See the per-pass cost note on `PARTIAL_AGG_MAX_DEPTH`.
+/// throttle, so no emit is wasted, and it stays frequent enough to feel live
+/// without measurably slowing the scan.
+///
+/// ⚠️ How MANY reveals that buys has moved a long way, so ❌ don't size anything
+/// off a remembered pass count. Verified on David's boot volume (Apple Silicon
+/// M3 Max, 6.07M entries / 604K dirs, release build, 2026-08-14): the whole scan
+/// now takes **39.1 s**, so it yields **7** passes, the last of them 1 573 ms
+/// over 588K dirs. An earlier run of the same measurement (5.94M entries / 558K
+/// dirs, 2026-08-03) recorded 28 passes each ≤ 397 ms over a ~2m25s scan. Same
+/// interval, same code path, a scan that got ~3.7× faster; what changed between
+/// them was never pinned down, and page-cache warmth is the confounder nobody
+/// has excluded. Treat the interval as tuned to the 5 s cadence, ❌ not to a
+/// reveal count. Cost per pass: the note on `PARTIAL_AGG_MAX_DEPTH`. Full
+/// measurement: `docs/notes/phased-vs-bulk-index-2026-08-14.md`.
 pub(crate) const PARTIAL_AGG_TICK_INTERVAL: u64 = 10;
 
 /// Skip a partial pass when the writer channel is backed up beyond this many

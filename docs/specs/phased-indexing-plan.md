@@ -239,13 +239,14 @@ cover **nothing** while reporting `roots_covered: 0`.
   `~/Library` is 1.44M entries on David's machine, `~/projects-git` 1.58M. So "whatever they open gets indexed next" can
   mean "in 40 seconds", on exactly the machines where it matters most.
 
-  **The knob for this is the stitch, not preemption.** The stitch already turns a directory into a list of smaller
-  frontier roots, so give it a DEPTH and apply it one level deeper on an oversized root: stitching `~/Library` itself
-  makes `~/Library/Caches` (423k) a frontier root instead of `~/Library` (1.44M), cutting the worst-case wait by roughly
-  3×. Same mechanism, no new concept, and the branch collapse already absorbs the extra branches. **Decide the trigger
-  from the benchmark, ❌ not from a guess**: the machine can't cheaply know a root's size in advance, so the rule is
-  "stitch depth 2 under the `$HOME` and `/` phase roots, depth 1 elsewhere" unless the numbers say otherwise. Cost is a
-  handful more `readdir`s per phase.
+  **A deeper stitch was the proposed knob, and the benchmark refuted it.** The idea was that stitching one level deeper
+  turns an oversized root into a list of smaller ones — `~/Library/Caches` (423k) as a frontier root instead of
+  `~/Library` (1.44M) — cutting the worst-case wait by roughly 3×. Measured, it cut it from 14.0 s to 13.4 s
+  (`docs/notes/phased-vs-bulk-index-2026-08-14.md`), because the worst case was never `~/Library`: it is
+  `~/projects-git`, and 97% of that is a single child, so a level deeper hands the walker a barely smaller root. **Ship
+  depth 1** (Decision 13). The wait is bounded by one user's one big folder, and no stitch depth short of splitting that
+  folder changes it. Preemption stays out of scope, so the honest statement is that a visited root can wait tens of
+  seconds behind a large sibling.
 
 ### What a full scan does that cover walks don't (and what we owe each one)
 
@@ -668,6 +669,14 @@ thing the plan is for. Capture, per arm:
 **Gate: if (b) is more than roughly 1.5× (a) to full coverage, stop and re-decide with David** — with the
 time-to-first-root numbers in hand, because they are what the decision is about.
 
+**Measured, 2026-08-14: `docs/notes/phased-vs-bulk-index-2026-08-14.md`. The gate FIRES.** Baseline 39.1 s (confirmed by
+running the real app, ❌ not the 193 s this plan quoted, which does not reproduce); (b) as written 4.70×. Two fixes take
+it to 1.79×, and neither changes the design: record ground a walk could not read so no later phase re-offers it
+(4.70× → 2.10×), and batch the writer drain (→ 1.79×). Every priority root is covered in under 120 ms against
+1.0–26.6 s, and `home_covered_at` moves the wrong way, 39 s → 88 s. ⚠️ The re-offer fix is a **shipped-build bug**, not a
+phasing one, and it needs a third `UnreadableCause` producer this plan doesn't list: a `readdir` returning a
+non-permission errno (`ETIMEDOUT` from a wedged mount here, 1,497 directories).
+
 **What "re-decide" means, decided in advance so the gate is decidable rather than a stop sign.** The honest comparison
 isn't wall-clock parity: full coverage is background work already paced by the `clearance` seam, so 1.5× of 193 s is 290
 s of politely-throttled walking against a permanent gain in interrupt-survival and a minutes-earlier photo search. The
@@ -712,6 +721,15 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
    for `permission_denied` / `declined`" can never become true, and _everything_ hanging off completion never happens:
    the stamps, `PayLedgerIfUnpaid`, the sweep keys, the branch collapse, the media kick, freshness, `is_branch_confined`
    flipping. Every launch re-walks it, times out again at 15 s a directory, and stalls in the same place.
+
+   **⚠️ There is a THIRD producer, measured 2026-08-14 and missing from the two below**: `readdir` returning an errno
+   that isn't `EACCES` — `WalkReadError::Io(e)` with `e.kind() != PermissionDenied`, left unmarked on purpose so a
+   transient error heals (`scanner/insert_visitor.rs`). On David's machine that is 100% of the cases: 1,497 directories
+   inside a disconnected MacDroid FUSE mount returning `ETIMEDOUT`. One `Abandoned` variant covers all three producers
+   (nothing downstream branches on which fired), but applying it to today's bulk scan changes shipped behavior, so the
+   `ClearUnreadableCause` backoff below ships WITH it, ❌ not after it.
+   `docs/notes/phased-vs-bulk-index-2026-08-14.md` has the cost: 101 s of a 146 s phased walk, and a slow search on any
+   machine with a dead mount today.
 
    **The fix is a third `UnreadableCause`, not a pass counter.** Give the walk `UnreadableCause::Abandoned` for a
    directory it gave up on, and completion is a pure function of the database — "frontier empty, only unreadable causes
@@ -1070,8 +1088,13 @@ Recorded with the reasoning, because the reasoning is what an implementer needs 
     gate sends everything after them back to the drawing board.
 12. **The phase machine owns a `ScanProgressReporter`.** Without it the 500 ms tick dies with `start_scan`, taking the
     progress event stream, mid-scan partial aggregation, and the only legal home for the `open_listings` poll with it.
-13. **Interleaving granularity is a stitch DEPTH, not preemption.** Stitch two levels under the `$HOME` and `/` phase
-    roots so a user-visited root waits behind `~/Library/Caches`, not behind `~/Library`. Preemption stays out of scope.
+13. **Stitch ONE level, and accept that a visited root can wait behind a large sibling.** Revised from the benchmark
+    (`docs/notes/phased-vs-bulk-index-2026-08-14.md`): stitching two levels under the `$HOME` and `/` phase roots was
+    supposed to cut the worst-case wait ~3× by making `~/Library/Caches` a frontier root instead of `~/Library`. It cut
+    it from 14.0 s to 13.4 s, because the worst case is `~/projects-git` and 97% of that is one child. Depth 2 costs
+    nothing measurable (190 ms of extra `readdir`s, 1.1% of wall clock, inside noise) — it simply buys nothing, so ❌
+    don't carry a depth parameter for it. Preemption stays out of scope; the wait is bounded by the user's largest
+    folder and no stitch depth fixes that.
 14. **The hourglass debounce lives in the backend**, in the app's Tauri indexing layer: it is a rule, and rules are
     testable in Rust. The frontend renders what it is told. (❌ Not in `cmdr-index`: the crate reports what it is doing;
     how long the UI waits before believing it is the app's presentation decision.)
