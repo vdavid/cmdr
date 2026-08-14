@@ -186,6 +186,9 @@ jobs:
       - name: Check sqlite-open-direct
         run: ./scripts/check/check --check desktop-rust-sqlite-open-direct --ci
 
+      - name: Check discarded-outcome
+        run: ./scripts/check/check --check desktop-rust-discarded-outcome --ci
+
       - name: Check error-string-match
         run: ./scripts/check/check --check desktop-rust-error-string-match --ci
 

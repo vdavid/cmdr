@@ -412,6 +412,7 @@ pub fn run() {
             // One-shot startup sweep: pre-`319d5d37` `tauri-plugin-log` left rotated files
             // named `Cmdr_<timestamp>.log` behind. Idempotent. Logs INFO per file removed.
             if let Some(dir) = logging::log_dir() {
+                // allowed-discarded-outcome: the count is logged per file inside; a startup sweep has nobody to report a total to.
                 logging::cleanup_legacy_log_files(dir);
             }
 

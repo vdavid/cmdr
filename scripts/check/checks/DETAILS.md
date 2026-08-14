@@ -768,7 +768,14 @@ Checks by app and tech:
   `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information", it's a claim about
   the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in production
   `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the branch that
-  deletes; opt out with `// allowed-probe-unwrap: <why the guess is truthful>`), mtp-dropping-timeout,
+  deletes; opt out with `// allowed-probe-unwrap: <why the guess is truthful>`), discarded-outcome (a function that
+  returns NOTHING while dropping a typed answer from the free function it delegates to; three of these shipped before it
+  existed, and each ended as an IPC command or MCP tool inventing a success. `Result` and `Option` returns are
+  deliberately out of scope: `Result` is `#[must_use]`, so the compiler already warns, and an `Option` discard is the
+  map/set idiom. That leaves exactly the gap the compiler can't see, a bare `bool` or a named outcome type. Every
+  ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return type, a method
+  call — because a check people learn to ignore is worse than none. Opt out with
+  `// allowed-discarded-outcome: <why nobody above needs the answer>`), mtp-dropping-timeout,
   mtp-no-transport-reset, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
 
 The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in

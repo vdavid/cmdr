@@ -800,6 +800,7 @@ impl OperationManager {
     pub(super) fn end_scan_wait(&'static self, operation_id: &str) {
         if self.clear_scan_wait(operation_id) {
             log::info!(target: "op_manager", "applying deferred pause op={operation_id}");
+            // allowed-discarded-outcome: this APPLIES a pause already answered `Deferred` to whoever asked. The op is Running by now, so the outcome is `Applied` and the original caller was told the truth at request time.
             pause_operation(operation_id);
         }
     }

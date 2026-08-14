@@ -14,6 +14,9 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
 - ❌ No bare `.unwrap()` in production: it's a silent panic. Handle the error (`?` / `ok_or` / `match`), or
   `.expect("<concrete why it can't fail>")` for a true invariant. Enforced by `clippy::unwrap_used`; `#[test]` fns are
   exempt (`clippy.toml` `allow-unwrap-in-tests`), but test *helper* fns outside one aren't.
+- ❌ Don't drop a typed answer on the floor: a fn returning `()` that discards a delegate's `bool` or outcome enum
+  leaves the IPC command or MCP tool above it inventing a success. Return it (the `PauseOutcome` pattern) or justify the
+  drop with `// allowed-discarded-outcome: <why>`. Enforced by `discarded-outcome`.
 - ❌ No `thiserror` / `anyhow` as a direct dependency, anywhere in the workspace: errors are hand-rolled enums with a
   manual `From`, each variant carrying the data a caller acts on rather than a sentence. Transitive copies are fine.
 - ❌ In a Rust test, never hand-roll a poll loop, a fixed sleep, or a constant-path fixture dir: all three pass silently

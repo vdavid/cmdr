@@ -569,6 +569,7 @@ impl TauriEventSink {
 
 impl EventSink for TauriEventSink {
     fn emit(&self, event: IndexEvent) {
+        // allowed-discarded-outcome: `Destination` says where an event went, and exists so a test can assert it without an app. The production sink is the end of the line: nobody above it asks.
         route(event, Some(&self.app));
     }
 }

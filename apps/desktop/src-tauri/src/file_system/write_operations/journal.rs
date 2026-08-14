@@ -402,6 +402,7 @@ fn header_totals_from_status(op_id: &str) -> (Option<u64>, u64, u64) {
 /// dialog renders a real "Copy N items" instead of zero.
 pub(super) fn finalize_op(op_id: &str, kind: OpKind, execution_status: ExecutionStatus) {
     let (item_count, items_done, bytes_total) = header_totals_from_status(op_id);
+    // allowed-discarded-outcome: `FinalizeOutcome`'s row counts feed the completeness check, which runs inside `operation_log::capture::finalize` where they're produced. These wrappers only pick the kind.
     journal_finalize(
         op_id,
         FinalizeInputs {
@@ -426,6 +427,7 @@ pub(super) fn finalize_archive_op(
     net_new: bool,
     execution_status: ExecutionStatus,
 ) {
+    // allowed-discarded-outcome: `FinalizeOutcome`'s row counts feed the completeness check, which runs inside `operation_log::capture::finalize` where they're produced. These wrappers only pick the kind.
     journal_finalize(
         op_id,
         FinalizeInputs {

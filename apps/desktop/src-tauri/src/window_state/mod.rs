@@ -331,6 +331,7 @@ fn on_resized<R: Runtime>(window: &WebviewWindow<R>, store: &WindowStateStore, l
     store.edit(label, |geometry| {
         geometry.maximized = false;
         geometry.fullscreen = false;
+        // allowed-discarded-outcome: `false` means a zero-sized event, which it already declines to record. There is nothing for the resize handler to do differently.
         apply_resize(geometry, width, height);
     });
 }

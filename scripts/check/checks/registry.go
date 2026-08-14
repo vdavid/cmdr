@@ -161,6 +161,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunSqliteOpenDirect,
 	},
 	{
+		ID:                "desktop-rust-discarded-outcome",
+		Nickname:          "discarded-outcome",
+		DisplayName:       "discarded-outcome",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            rustInputs,
+		Run:               RunDiscardedOutcome,
+	},
+	{
 		ID:                "desktop-rust-error-string-match",
 		Nickname:          "error-string-match",
 		DisplayName:       "error-string-match",

@@ -367,6 +367,7 @@ where
     F: FnOnce(&mut FavoritesStore) -> bool,
 {
     // Make sure the store is loaded (and seeded) before mutating.
+    // allowed-discarded-outcome: called for the seed side effect only; the list itself is read back under the cache lock below.
     load_or_seed();
 
     let snapshot = {

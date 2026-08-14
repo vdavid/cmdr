@@ -285,6 +285,7 @@ fn stop_local_external_index_off_main(volume_id: String) {
         return;
     }
     std::thread::spawn(move || {
+        // allowed-discarded-outcome: the `bool` exists so tests get a deterministic result; this thread is fire-and-forget off an `NSWorkspace` observer with no caller left to tell.
         stop_local_external_index(&volume_id);
     });
 }

@@ -51,6 +51,10 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 		Kinds: []MemberKind{KindApp},
 		Why:   "narrowed further to `file_system/`, the only tree where `Volume::is_directory` is called at all",
 	},
+	"desktop-rust-discarded-outcome": {
+		AppTreeOnly: true,
+		Why:         "it guards the IPC and MCP surfaces, which only exist in the app tree; a standalone CLI has no surface that could report a success it didn't get",
+	},
 	"desktop-rust-ipc-enum-camelcase": {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-jscpd":              {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-sqlite-open-direct": {
