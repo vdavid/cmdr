@@ -35,8 +35,8 @@ search-generation bump. Other areas point here.
 - **Coverage epochs:** `propagate_delta_by_id` carries `min_subtree_epoch` through UNCHANGED on a pure size/count delta
   (resetting it flips exact→"≥" on every file write); `propagate_min_subtree_epoch` fires on TREE-SHAPE changes only.
   Marks (`MarkDirsListed`) land BEFORE the aggregate. ❌ Never write `listed_epoch = 0` for a dir we listed but skipped.
-- **`Abandoned` is the one `unreadable_cause` Cmdr RETRIES** (`abandoned_retry.rs`: a persisted per-volume
-  5 min → 1 h → 4 h → 24 h window, armed by the mark). ❌ Never a flat retry, ❌ never clear `Denied`/`Declined`.
+- **`Abandoned` is the one `unreadable_cause` Cmdr RETRIES** (`abandoned_retry.rs`: a persisted per-volume 5 min → 1 h →
+  4 h → 24 h window, armed by the mark). ❌ Never a flat retry, ❌ never clear `Denied`/`Declined`.
 - **Full-aggregate source is sender-declared (`source: Maps|Sql`), ❌ never sniffed.** `Maps` comes ONLY from a fresh
   full scan; every other flow sends `Sql`. ❌ The subtree handler must not clear the accumulator.
 - **Partial aggregation borrows the maps READ-ONLY**, no-ops on empty maps with NO SQL fallback (load-bearing: a late

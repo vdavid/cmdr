@@ -727,8 +727,8 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
      `EACCES` (the third one this plan originally missed, and 100% of what fires on David's machine), a watchdog
      timeout, and a give-up-pruned task through the new `DirVisitor::visit_pruned` hook.
    - `CoverageMap::abandoned`, a third list beside `permission_denied` and `declined`.
-   - `ClearAbandonedIfDue`, fired by the per-volume maintenance timer, clearing only `Abandoned` rows on a persisted
-     5 min → 1 h → 4 h → 24 h per-volume window that a mark arms and a retry finding nothing disarms.
+   - `ClearAbandonedIfDue`, fired by the per-volume maintenance timer, clearing only `Abandoned` rows on a persisted 5
+     min → 1 h → 4 h → 24 h per-volume window that a mark arms and a retry finding nothing disarms.
    - Search folds the index's abandoned list into `SearchRunCoverage::abandoned_ground`, so a run over a wedged mount
      can't report itself exhaustive now that the frontier no longer offers that ground.
 
@@ -1010,6 +1010,25 @@ verified 2026-08-14) — budget the translation pass rather than discovering it 
 3. **"Watch only these folders" as a user setting** — the branch-watch mechanism is already the implementation, and this
    plan makes branch-scoped watching the default shape rather than a retrofit.
 4. **Finder sidebar favorites**. Deferred.
+5. **The SMB/MTP twin of the abandoned-ground bug** (found 2026-08-14 while fixing the local one; ❌ not fixed).
+   `network_scanner/cover_scan.rs` leaves a directory whose listing FAILED with no cause — its own comment says "the dir
+   stays unlisted, so the frontier offers it again" — so every later search over an ancestor scope re-pays the same
+   failing listing, exactly as the local walker did before `UnreadableCause::Abandoned`. On a NAS that went to sleep
+   this fires more readily than the local case does.
+
+   ⚠️ **It is NOT a mechanical port of the local fix, and that is the whole reason it's deferred rather than done.** The
+   network walk has two failures wearing one shape, and they want opposite answers:
+
+   - **One directory that won't list** while the share is otherwise healthy — the local case, and `Abandoned` is right.
+   - **The share itself going away**, which surfaces as `CONSECUTIVE_FAILURE_ABORT` →
+     `VolumeScanError::ConsecutiveFailures` after N failures in a row. Marking those `Abandoned` would condemn every
+     directory the walk had reached on the way down, potentially thousands, for a disconnect that heals the moment the
+     NAS wakes. ❌ Don't.
+
+   So the work is a design question first (where does the boundary sit? does the abort path unwind the marks it made
+   before it tripped, or does it never make them?) and a port second, with its own tests over the SMB fixtures. The
+   local half's mechanism — the cause, `ClearAbandonedIfDue`, the arming — is already shared and needs nothing new.
+   Guardrail and pointers: `network_scanner/DETAILS.md` § "A failed listing leaves no cause (known bug)".
 
 ---
 

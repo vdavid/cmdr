@@ -195,9 +195,16 @@ pub(crate) async fn cover_volume_subtree(
             }
             Err(err) => {
                 consecutive_failures += 1;
-                // Ground this walk started and won't finish. The dir stays
-                // unlisted, so the frontier offers it again — but THIS run's
-                // answer is a lower bound and has to say so.
+                // Ground this walk started and won't finish. THIS run's answer is a
+                // lower bound and has to say so.
+                //
+                // ⚠️ The dir also stays unlisted with NO `unreadable_cause`, so the
+                // frontier offers it again and every later search re-pays the same
+                // failing listing. That is a known bug, and the local walker's fixed
+                // twin (`UnreadableCause::Abandoned`). ❌ Don't port that fix
+                // mechanically: a whole-share disconnect reaches this same arm, and
+                // marking on it would condemn every directory the walk touched on
+                // the way down. `DETAILS.md` § "A failed listing leaves no cause".
                 heartbeat.abandoned(1);
                 log::debug!(
                     "network_scanner: skipping unlistable dir {} while covering (consecutive_failures={consecutive_failures}): {err}",

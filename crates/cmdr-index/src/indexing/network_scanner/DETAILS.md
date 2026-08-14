@@ -304,6 +304,34 @@ exactly four places, all of them consequences of a person having asked:
 Tests live with the driver (`lifecycle/cover/network_tests.rs`), over an `InMemoryVolume`, because what they pin is the
 walk's contract with a backend rather than anything SMB- or MTP-specific.
 
+### A failed listing leaves no cause (known bug)
+
+⚠️ **A directory whose listing FAILS is left plain unlisted with no `unreadable_cause`** (the `Err(err)` arm of the BFS
+loop). So `coverage_for_scope` puts it back in the frontier, and every later search over an ancestor scope hands it to a
+walk that re-pays the same failing listing, forever, with nothing converging. On a NAS that went to sleep this fires
+more readily than the local equivalent does.
+
+**This is the same defect the LOCAL walker had until 2026-08-14**, where it was measured at 101 s of a 147 s walk on a
+machine with a wedged mount (`docs/notes/phased-vs-bulk-index-2026-08-14.md`). The local half was fixed with
+`UnreadableCause::Abandoned` plus a retry backoff; the cause, the writer message (`ClearAbandonedIfDue`), the arming,
+and the coverage bucket are all shared and need nothing new to serve this side. The canonical description of the three
+causes is `../store/DETAILS.md` § "What coverage needs".
+
+❌ **It was deliberately NOT ported, because a mechanical port would be wrong.** Two different failures wear one shape
+here and they want opposite answers:
+
+- **One directory that won't list** while the share is otherwise healthy. That's the local case, and `Abandoned` is
+  right: stop offering it, retry it on the backoff.
+- **The share itself going away**, which reaches the same `Err` arm and only becomes distinguishable after
+  `CONSECUTIVE_FAILURE_ABORT` failures in a row (`VolumeScanError::ConsecutiveFailures`). Marking those `Abandoned`
+  would condemn every directory the walk touched on the way down — potentially thousands — for a disconnect that heals
+  the moment the NAS wakes up. ❌ Never.
+
+So the open question is where the boundary sits, and specifically whether the abort path should UNWIND the marks it made
+before it tripped or never make them until the walk proves it survived. That's a design decision with its own tests over
+the SMB fixtures, ❌ not a five-line change. Tracked as `docs/specs/phased-indexing-plan.md` § "M6 — Follow-ups, not
+blockers" item 5.
+
 ## Reconcile
 
 `reconcile_volume_via_trait` is the rescan-in-place BFS: it keeps every `scan_volume_via_trait` round-trip discipline
