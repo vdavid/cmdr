@@ -345,6 +345,11 @@ impl OperationEventSink for SuppressTerminalsSink {
     fn emit_conflict(&self, event: WriteConflictEvent) {
         self.inner.emit_conflict(event);
     }
+    fn emit_conflict_resolved(&self, event: super::super::types::WriteConflictResolvedEvent) {
+        // Forwarded like the prompt itself: it is what takes that prompt back
+        // off screen. Only the copy's TERMINAL events are withheld here.
+        self.inner.emit_conflict_resolved(event);
+    }
     fn emit_source_item_done(&self, event: super::super::types::WriteSourceItemDoneEvent) {
         self.inner.emit_source_item_done(event);
     }

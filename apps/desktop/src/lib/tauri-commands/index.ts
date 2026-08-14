@@ -240,6 +240,7 @@ export {
   onWriteCancelled,
   onWriteSettled,
   onWriteConflict,
+  onWriteConflictResolved,
   onWriteSourceItemDone,
 } from './write-operations'
 export type { Event, UnlistenFn } from './write-operations'
@@ -278,6 +279,7 @@ export type {
   WriteCancelledEvent,
   WriteCompleteEvent,
   WriteConflictEvent,
+  WriteConflictResolvedEvent,
   WriteErrorEvent,
   WriteOperationConfig,
   WriteOperationError,

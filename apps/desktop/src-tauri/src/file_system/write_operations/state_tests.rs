@@ -9,7 +9,7 @@
 //! collide with concurrent test runs in the same process. `WRITE_OPERATION_STATE`
 //! entries go through `TestOperationGuard`, which also removes them on unwind.
 use super::*;
-use crate::file_system::write_operations::test_support::TestOperationGuard;
+use crate::file_system::write_operations::test_support::{TestOperationGuard, placeholder_conflict};
 use crate::file_system::write_operations::types::{
     ConflictId, ConflictResolution, ConflictResolutionOutcome, WriteOperationType,
 };
@@ -82,7 +82,7 @@ fn cancel_drops_the_conflict_resolution_sender() {
     // After cancel, any pending receiver should observe a closed channel.
     let op = install_state("cancel-drops-tx", OperationIntent::Running);
     let (tx, mut rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    op.state().conflict_slot.arm(tx);
+    op.state().conflict_slot.arm(tx, placeholder_conflict);
     cancel_write_operation(op.id(), false);
     // The receiver should now be closed (sender dropped).
     match rx.try_recv() {
@@ -205,7 +205,7 @@ fn cancel_all_drops_pending_conflict_senders() {
     let registry = WriteOperationRegistry::new();
     let state = registered_in(&registry, "cancel-all-conflict", OperationIntent::Running);
     let (tx, mut rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    state.conflict_slot.arm(tx);
+    state.conflict_slot.arm(tx, placeholder_conflict);
 
     registry.cancel_all();
 
@@ -406,7 +406,7 @@ async fn resolve_write_conflict_delivers_response_to_waiter() {
     let op = install_state("resolve-conflict", OperationIntent::Running);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    let clash = op.state().conflict_slot.arm(tx);
+    let clash = op.state().conflict_slot.arm(tx, placeholder_conflict).conflict_id;
 
     assert_eq!(
         resolve_write_conflict(op.id(), clash, ConflictResolution::Overwrite, true),
@@ -425,7 +425,7 @@ async fn a_second_answer_to_one_conflict_is_reported_as_already_resolved() {
     let op = install_state("resolve-conflict-twice", OperationIntent::Running);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    let clash = op.state().conflict_slot.arm(tx);
+    let clash = op.state().conflict_slot.arm(tx, placeholder_conflict).conflict_id;
 
     assert_eq!(
         resolve_write_conflict(op.id(), clash, ConflictResolution::Overwrite, false),
@@ -454,7 +454,7 @@ async fn an_answer_for_a_retired_conflict_is_refused_and_reported_as_stale() {
     let op = install_state("resolve-conflict-stale", OperationIntent::Running);
 
     let (first_tx, first_rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    let first = op.state().conflict_slot.arm(first_tx);
+    let first = op.state().conflict_slot.arm(first_tx, placeholder_conflict).conflict_id;
     assert_eq!(
         resolve_write_conflict(op.id(), first, ConflictResolution::Overwrite, false),
         ConflictResolutionOutcome::Resolved
@@ -463,7 +463,7 @@ async fn an_answer_for_a_retired_conflict_is_refused_and_reported_as_stale() {
 
     // The operation moved on and parked on the next clash.
     let (second_tx, mut second_rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    op.state().conflict_slot.arm(second_tx);
+    op.state().conflict_slot.arm(second_tx, placeholder_conflict);
 
     assert_eq!(
         resolve_write_conflict(op.id(), first, ConflictResolution::Skip, true),
@@ -506,7 +506,7 @@ fn resolve_write_conflict_on_an_unknown_operation_says_so() {
 fn cancelling_takes_the_pending_conflict_away() {
     let op = install_state("resolve-after-cancel", OperationIntent::Running);
     let (tx, _rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-    let clash = op.state().conflict_slot.arm(tx);
+    let clash = op.state().conflict_slot.arm(tx, placeholder_conflict).conflict_id;
 
     cancel_write_operation(op.id(), false);
 

@@ -25,6 +25,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onWriteCancelled: vi.fn(() => Promise.resolve(() => {})),
   onWriteSettled: vi.fn(() => Promise.resolve(() => {})),
   onWriteConflict: vi.fn(() => Promise.resolve(() => {})),
+  onWriteConflictResolved: vi.fn(() => Promise.resolve(() => {})),
   onOperationsChanged: vi.fn(() => Promise.resolve(() => {})),
 }))
 
@@ -434,6 +435,35 @@ describe('commands', () => {
 
     expect(session.conflict?.conflictId).toBe(2)
     expect(session.conflict?.destinationPath).toBe('/dst/next')
+    dispose()
+  })
+
+  it('lets go of a clash somebody else answered', () => {
+    // Nothing was called here: an agent answered over MCP, or another window
+    // won the race. The operation says the clash is over, and this view has to
+    // stop showing it — a modal asking a question with no answer left to give
+    // also blocks everything new behind it.
+    const { fanout, session, dispose } = harness()
+    fanout._testEmit({ kind: 'conflict', event: conflict('a') })
+
+    fanout._testEmit({ kind: 'conflictResolved', event: { operationId: 'a', conflictId: 1 } })
+
+    expect(session.conflict).toBeNull()
+    expect(commandMocks.resolveWriteConflict).not.toHaveBeenCalled()
+    dispose()
+  })
+
+  it('keeps a newer clash when the retraction names the older one', () => {
+    // Same race as the answering path: the operation raises its next clash the
+    // moment it takes an answer, so the retraction for the old one can land
+    // with the new one already on screen.
+    const { fanout, session, dispose } = harness()
+    fanout._testEmit({ kind: 'conflict', event: conflict('a') })
+    fanout._testEmit({ kind: 'conflict', event: conflict('a', { conflictId: 2, destinationPath: '/dst/next' }) })
+
+    fanout._testEmit({ kind: 'conflictResolved', event: { operationId: 'a', conflictId: 1 } })
+
+    expect(session.conflict?.conflictId).toBe(2)
     dispose()
   })
 

@@ -13,7 +13,8 @@ use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, ConflictResolution, WriteConflictEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
+    CollectorEventSink, ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent,
+    WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::AtomicU8;
 
@@ -49,6 +50,9 @@ impl OperationEventSink for RollbackAfterFirstFileSink {
     }
     fn emit_conflict(&self, e: WriteConflictEvent) {
         self.inner.emit_conflict(e);
+    }
+    fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+        self.inner.emit_conflict_resolved(e);
     }
     fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
     fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}
@@ -251,6 +255,9 @@ impl OperationEventSink for TripIntentOnFirstByteSink {
     }
     fn emit_conflict(&self, e: WriteConflictEvent) {
         self.inner.emit_conflict(e);
+    }
+    fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+        self.inner.emit_conflict_resolved(e);
     }
     fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
     fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}
@@ -472,6 +479,9 @@ impl OperationEventSink for TripIntentAtFilesDoneSink {
     }
     fn emit_conflict(&self, e: WriteConflictEvent) {
         self.inner.emit_conflict(e);
+    }
+    fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+        self.inner.emit_conflict_resolved(e);
     }
     fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
     fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}

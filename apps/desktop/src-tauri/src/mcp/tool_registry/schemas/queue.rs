@@ -28,3 +28,29 @@ pub fn queue_schema() -> Value {
         "required": ["action"]
     })
 }
+
+pub fn resolve_conflict_schema() -> Value {
+    json!({
+        "type": "object",
+        "properties": {
+            "operationId": {
+                "type": "string",
+                "description": "The operation parked on the clash. From the pendingConflict block in cmdr://state operations."
+            },
+            "conflictId": {
+                "type": "integer",
+                "description": "Which clash of that operation you're answering, from the same pendingConflict block. Required: an operation raises its clashes one at a time, and naming the one you saw is what stops your answer from landing on the next one."
+            },
+            "resolution": {
+                "type": "string",
+                "enum": ["skip", "overwrite", "rename", "overwrite_smaller", "overwrite_older"],
+                "description": "skip leaves the destination alone | overwrite replaces it | rename keeps both (the copy lands as 'name (1).ext') | overwrite_smaller and overwrite_older replace only when the destination is strictly smaller / strictly older, and skip otherwise."
+            },
+            "applyToAll": {
+                "type": "boolean",
+                "description": "Apply this answer to every later clash in the same operation, so it stops asking. Default false: this answers one file."
+            }
+        },
+        "required": ["operationId", "conflictId", "resolution"]
+    })
+}

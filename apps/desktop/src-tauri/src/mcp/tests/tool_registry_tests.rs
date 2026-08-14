@@ -52,6 +52,7 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "set_setting",
     "indexing",
     "queue",
+    "resolve_conflict",
     "favorites",
     "connect_to_server",
     "remove_manual_server",
@@ -70,9 +71,9 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
 #[test]
 fn test_all_tools_count() {
     // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app
-    // + 2 search + 1 settings + 1 indexing + 1 queue + 1 favorites + 3 network + 1 eject + 1
-    // await + 1 downloads + 3 operation_log + 2 photo (search + facts) + 1 index listing (list_dir) = 45
-    assert_eq!(get_all_tools().len(), 45);
+    // + 2 search + 1 settings + 1 indexing + 1 queue + 1 conflict + 1 favorites + 3 network + 1 eject + 1
+    // await + 1 downloads + 3 operation_log + 2 photo (search + facts) + 1 index listing (list_dir) = 46
+    assert_eq!(get_all_tools().len(), 46);
 }
 
 #[test]
@@ -444,6 +445,66 @@ fn test_queue_tool_schema_and_gate() {
 }
 
 #[test]
+fn test_resolve_conflict_schema_and_gate() {
+    let tools = get_all_tools();
+    let schema = &tool(&tools, "resolve_conflict").input_schema;
+    let props = schema.get("properties").unwrap();
+
+    let resolutions = props
+        .get("resolution")
+        .unwrap()
+        .get("enum")
+        .unwrap()
+        .as_array()
+        .unwrap();
+    for resolution in ["skip", "overwrite", "rename", "overwrite_smaller", "overwrite_older"] {
+        assert!(resolutions.contains(&json!(resolution)), "missing '{resolution}'");
+    }
+    // `stop` is the policy that RAISES the question; offering it as an answer
+    // would park the operation on the same clash again.
+    assert!(!resolutions.contains(&json!("stop")));
+
+    // The clash's id is required: an answer that doesn't name one can land on
+    // whatever the operation has parked on since.
+    let required = schema.get("required").unwrap().as_array().unwrap();
+    for param in ["operationId", "conflictId", "resolution"] {
+        assert!(required.contains(&json!(param)), "'{param}' must be required");
+    }
+
+    // It answers, with no dialog, a question that was put to the user — and
+    // `overwrite` destroys a file. Same bypass the token guards everywhere else.
+    assert_eq!(tool_gate("resolve_conflict"), Some(TokenGate::Always));
+}
+
+#[test]
+fn test_transfer_confirmation_offers_the_stop_policy() {
+    // Without `stop` in this enum, every agent-driven transfer settles its
+    // clashes upfront and the per-file prompt is unreachable from automation —
+    // which is how a wedging bug in it survived for months.
+    let tools = get_all_tools();
+    let schema = &tool(&tools, "dialog").input_schema;
+    let policies = schema
+        .get("properties")
+        .unwrap()
+        .get("onConflict")
+        .unwrap()
+        .get("enum")
+        .unwrap()
+        .as_array()
+        .unwrap();
+    for policy in [
+        "stop",
+        "skip_all",
+        "overwrite_all",
+        "rename_all",
+        "overwrite_smaller_all",
+        "overwrite_older_all",
+    ] {
+        assert!(policies.contains(&json!(policy)), "missing policy '{policy}'");
+    }
+}
+
+#[test]
 fn test_rename_tool_schema_and_gate() {
     let tools = get_all_tools();
     let schema = &tool(&tools, "rename").input_schema;
@@ -587,6 +648,7 @@ fn test_gate_table_is_complete_and_correct() {
         ("set_setting", TokenGate::Always),
         ("indexing", TokenGate::Always),
         ("queue", TokenGate::IfRollback),
+        ("resolve_conflict", TokenGate::Always),
         ("connect_to_server", TokenGate::Open),
         ("remove_manual_server", TokenGate::Open),
         ("upgrade_smb_to_direct", TokenGate::Open),

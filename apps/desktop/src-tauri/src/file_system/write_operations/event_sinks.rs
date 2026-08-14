@@ -15,8 +15,8 @@ use super::analytics::emit_completion_analytics;
 use super::types::{
     ConflictInfo, DryRunResult, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
-    WriteErrorEvent, WriteOperationError, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
-    WriteSourceItemDoneEvent,
+    WriteConflictResolvedEvent, WriteErrorEvent, WriteOperationError, WriteOperationType, WriteProgressEvent,
+    WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 use cmdr_index::ExpectedTotals;
 
@@ -107,6 +107,12 @@ pub trait OperationEventSink: Send + Sync {
     fn emit_cancelled(&self, event: WriteCancelledEvent);
     fn emit_error(&self, event: WriteErrorEvent);
     fn emit_conflict(&self, event: WriteConflictEvent);
+    /// The clash named by this event is over and the operation has carried on.
+    /// Every surface showing it takes it down, including the ones that answered
+    /// nothing (an agent over MCP answered, or another window won the race).
+    /// Emit it from wherever an answer lands, ❌ never from the answering call:
+    /// only the operation knows an answer actually reached it.
+    fn emit_conflict_resolved(&self, event: WriteConflictResolvedEvent);
     fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent);
     /// Per-iteration progress during dry-run scanning (separate from `write-progress`).
     fn emit_scan_progress(&self, event: ScanProgressEvent);
@@ -181,6 +187,9 @@ impl OperationEventSink for TauriEventSink {
         let _ = event.emit(&self.app);
     }
     fn emit_conflict(&self, event: WriteConflictEvent) {
+        let _ = event.emit(&self.app);
+    }
+    fn emit_conflict_resolved(&self, event: WriteConflictResolvedEvent) {
         let _ = event.emit(&self.app);
     }
     fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent) {
@@ -289,6 +298,7 @@ pub(crate) struct CollectorEventSink {
     pub cancelled: std::sync::Mutex<Vec<WriteCancelledEvent>>,
     pub errors: std::sync::Mutex<Vec<WriteErrorEvent>>,
     pub conflicts: std::sync::Mutex<Vec<WriteConflictEvent>>,
+    pub conflicts_resolved: std::sync::Mutex<Vec<WriteConflictResolvedEvent>>,
     pub scan_progress: std::sync::Mutex<Vec<ScanProgressEvent>>,
     pub scan_conflicts: std::sync::Mutex<Vec<ConflictInfo>>,
     pub dry_run: std::sync::Mutex<Vec<DryRunResult>>,
@@ -305,6 +315,7 @@ impl CollectorEventSink {
             cancelled: std::sync::Mutex::new(Vec::new()),
             errors: std::sync::Mutex::new(Vec::new()),
             conflicts: std::sync::Mutex::new(Vec::new()),
+            conflicts_resolved: std::sync::Mutex::new(Vec::new()),
             scan_progress: std::sync::Mutex::new(Vec::new()),
             scan_conflicts: std::sync::Mutex::new(Vec::new()),
             dry_run: std::sync::Mutex::new(Vec::new()),
@@ -330,6 +341,9 @@ impl OperationEventSink for CollectorEventSink {
     }
     fn emit_conflict(&self, event: WriteConflictEvent) {
         self.conflicts.lock_ignore_poison().push(event);
+    }
+    fn emit_conflict_resolved(&self, event: WriteConflictResolvedEvent) {
+        self.conflicts_resolved.lock_ignore_poison().push(event);
     }
     fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent) {
         self.source_items_done.lock_ignore_poison().push(event);

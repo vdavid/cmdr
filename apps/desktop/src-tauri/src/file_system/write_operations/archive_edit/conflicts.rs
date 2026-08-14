@@ -13,7 +13,7 @@ use uuid::Uuid;
 use super::super::OperationEventSink;
 use super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
 use super::super::state::{ConflictResolutionResponse, WriteOperationState};
-use super::super::types::{ConflictResolution, WriteConflictEvent};
+use super::super::types::{ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent};
 use super::engine::PlanError;
 use crate::file_system::volume::backends::archive::ArchiveIndex;
 
@@ -113,11 +113,10 @@ fn prompt_archive_conflict(
 
     // Store the sender BEFORE the emit (see doc comment); released as the
     // statement ends, never held across the emit or the blocking recv. Arming
-    // mints this clash's id, which the answer has to name back.
+    // mints this clash's id and builds the event around it, and the answer has
+    // to name that id back.
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let conflict_id = state.conflict_slot.arm(tx);
-
-    events.emit_conflict(WriteConflictEvent {
+    let event = state.conflict_slot.arm(tx, |conflict_id| WriteConflictEvent {
         operation_id: operation_id.to_string(),
         conflict_id,
         source_path: src_path.display().to_string(),
@@ -132,10 +131,21 @@ fn prompt_archive_conflict(
         destination_is_directory: is_file_to_folder,
     });
 
+    let conflict_id = event.conflict_id;
+    events.emit_conflict(event);
+
     // Blocking recv: the planner runs on the blocking pool (like the local-FS Stop
     // path), so parking this thread on the oneshot is correct. A dropped sender
     // (cancel) returns `Err` → `Cancelled`.
-    rx.blocking_recv().map_err(|_| PlanError::Cancelled)
+    let response = rx.blocking_recv().map_err(|_| PlanError::Cancelled)?;
+    // Answered, so every surface showing this clash can take it down — including
+    // the ones that answered nothing. Only on `Ok`: a cancel leaves no answer,
+    // and the operation going away is what clears the prompt there.
+    events.emit_conflict_resolved(WriteConflictResolvedEvent {
+        operation_id: operation_id.to_string(),
+        conflict_id,
+    });
+    Ok(response)
 }
 
 /// Whether a conditional policy overwrites the existing entry: `OverwriteSmaller`

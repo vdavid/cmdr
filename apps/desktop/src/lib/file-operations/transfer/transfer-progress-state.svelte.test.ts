@@ -77,6 +77,7 @@ vi.mock('$lib/tauri-commands', () => ({
     conflictCb = cb
     return Promise.resolve(noopUnlisten)
   }),
+  onWriteConflictResolved: vi.fn(() => Promise.resolve(noopUnlisten)),
   onOperationsChanged: vi.fn((cb: (e: { operations: OperationSnapshot[] }) => void) => {
     opsChangedCb = cb
     return Promise.resolve(noopUnlisten)

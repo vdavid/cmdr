@@ -13,15 +13,20 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { OperationSnapshot, WriteConflictEvent } from '$lib/tauri-commands'
+import type { OperationSnapshot, WriteConflictEvent, WriteConflictResolvedEvent } from '$lib/tauri-commands'
 import type { OperationRow } from './queue/operations-store.svelte'
 
 let conflictCb: ((e: WriteConflictEvent) => void) | null = null
+let conflictResolvedCb: ((e: WriteConflictResolvedEvent) => void) | null = null
 const noopUnlisten = vi.fn()
 
 vi.mock('$lib/tauri-commands', () => ({
   onWriteConflict: vi.fn((cb: (e: WriteConflictEvent) => void) => {
     conflictCb = cb
+    return Promise.resolve(noopUnlisten)
+  }),
+  onWriteConflictResolved: vi.fn((cb: (e: WriteConflictResolvedEvent) => void) => {
+    conflictResolvedCb = cb
     return Promise.resolve(noopUnlisten)
   }),
   resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
@@ -132,9 +137,18 @@ async function deliver(event: WriteConflictEvent = conflictEvent()): Promise<voi
   await flush()
 }
 
+/** Says a clash is over, the way the operation does once an answer reaches it —
+ *  whoever gave that answer. */
+async function announceResolved(operationId: string, conflictId: number): Promise<void> {
+  if (!conflictResolvedCb) throw new Error('the host never subscribed to write-conflict-resolved')
+  conflictResolvedCb({ operationId, conflictId })
+  await flush()
+}
+
 beforeEach(async () => {
   vi.clearAllMocks()
   conflictCb = null
+  conflictResolvedCb = null
   rows = [operationRow('op-1', 'running')]
   setForegroundOperationId(null)
   await initOperationSessions()
@@ -249,6 +263,44 @@ describe('a conflict that beats the start command response', () => {
     endForegroundClaim()
     await flush()
 
+    expect(getConflictPrompt()?.operationId).toBe('op-1')
+  })
+})
+
+describe('a clash somebody else answered', () => {
+  it('takes the prompt down and resumes, without this window answering anything', async () => {
+    // An agent answering over MCP, or another window winning the race. Nothing
+    // here called anything, so without the backend saying the clash is over,
+    // this prompt sits on screen asking a question that has no answer left to
+    // give — and blocks every new operation behind it.
+    rows = [operationRow('op-1', 'running'), operationRow('op-2', 'running')]
+    await deliver()
+    expect(getConflictPrompt()).not.toBeNull()
+
+    await announceResolved('op-1', 1)
+
+    expect(getConflictPrompt()).toBeNull()
+    expect(resolveWriteConflict).not.toHaveBeenCalled()
+    expect(resumeOperation).toHaveBeenCalledWith('op-1')
+    expect(resumeOperation).toHaveBeenCalledWith('op-2')
+  })
+
+  it('keeps a clash the operation raised after the one that was answered', async () => {
+    // The operation raises its next clash the moment it takes an answer, so the
+    // retraction for the OLD one can arrive with the NEW one already on screen.
+    // Dropping "whatever is showing" would throw away a live question and park
+    // the transfer with nothing asking.
+    await deliver()
+    await deliver(conflictEvent({ conflictId: 2, destinationPath: '/dst/folder/next.txt' }))
+
+    await announceResolved('op-1', 1)
+
+    expect(getConflictPrompt()?.event.conflictId).toBe(2)
+  })
+
+  it('ignores a retraction for an operation this window is not asking about', async () => {
+    await deliver()
+    await announceResolved('op-other', 1)
     expect(getConflictPrompt()?.operationId).toBe('op-1')
   })
 })
@@ -498,11 +550,13 @@ describe('the operation going away mid-prompt', () => {
 })
 
 describe('teardown', () => {
-  it('drops the listener and forgets every prompt', async () => {
+  it('drops both listeners and forgets every prompt', async () => {
     await deliver()
     stopOperationConflictHost()
 
-    expect(noopUnlisten).toHaveBeenCalledTimes(1)
+    // Both streams: the clash and its retraction. A leaked retraction listener
+    // would drop a prompt in a window that is no longer hosting any.
+    expect(noopUnlisten).toHaveBeenCalledTimes(2)
     expect(getConflictPrompt()).toBeNull()
   })
 })

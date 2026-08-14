@@ -549,11 +549,14 @@
             "type": "string"
           },
           "onConflict": {
-            "description": "For confirm action on transfer-confirmation: conflict resolution policy for clashing FILES. Folders always merge (a source folder landing on a same-named dest folder merges into it), and this policy governs the files inside. Default: skip_all",
+            "description": "For confirm action on transfer-confirmation: conflict resolution policy for clashing FILES. Folders always merge (a source folder landing on a same-named dest folder merges into it), and this policy governs the files inside. 'stop' decides nothing upfront: the operation asks per file and parks until you answer each one with resolve_conflict (watch cmdr://state operations for the pendingConflict block). The *_all policies decide every clash upfront. overwrite_smaller_all / overwrite_older_all overwrite only when the destination is strictly smaller / strictly older, and skip otherwise. Default: skip_all",
             "enum": [
+              "stop",
               "skip_all",
               "overwrite_all",
-              "rename_all"
+              "rename_all",
+              "overwrite_smaller_all",
+              "overwrite_older_all"
             ],
             "type": "string"
           },
@@ -855,6 +858,43 @@
         "type": "object"
       },
       "name": "queue"
+    },
+    {
+      "description": "Answer ONE name clash a running operation is parked on: skip / overwrite / rename that file, applyToAll for the rest. Read cmdr://state operations first for the pendingConflict block. Returns a typed outcome; refuses rather than pretending. Token-gated.",
+      "inputSchema": {
+        "properties": {
+          "applyToAll": {
+            "description": "Apply this answer to every later clash in the same operation, so it stops asking. Default false: this answers one file.",
+            "type": "boolean"
+          },
+          "conflictId": {
+            "description": "Which clash of that operation you're answering, from the same pendingConflict block. Required: an operation raises its clashes one at a time, and naming the one you saw is what stops your answer from landing on the next one.",
+            "type": "integer"
+          },
+          "operationId": {
+            "description": "The operation parked on the clash. From the pendingConflict block in cmdr://state operations.",
+            "type": "string"
+          },
+          "resolution": {
+            "description": "skip leaves the destination alone | overwrite replaces it | rename keeps both (the copy lands as 'name (1).ext') | overwrite_smaller and overwrite_older replace only when the destination is strictly smaller / strictly older, and skip otherwise.",
+            "enum": [
+              "skip",
+              "overwrite",
+              "rename",
+              "overwrite_smaller",
+              "overwrite_older"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "operationId",
+          "conflictId",
+          "resolution"
+        ],
+        "type": "object"
+      },
+      "name": "resolve_conflict"
     },
     {
       "description": "Manage the user's favorites (the switcher's Favorites section). add: path (+ optional name). rename: id + name. remove: id. reorder: orderedIds, the COMPLETE new ordering. Discover ids in cmdr://state favorites.",

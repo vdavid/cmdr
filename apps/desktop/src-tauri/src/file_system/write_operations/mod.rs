@@ -95,7 +95,7 @@ pub use in_flight_temps::init_and_sweep as init_and_sweep_in_flight_temps;
 pub use scan_preview::{cancel_scan_preview, get_scan_preview_totals, start_scan_preview};
 pub use state::{
     VolumesBusyChanged, busy_volume_ids, cancel_all_write_operations, cancel_write_operation, get_operation_status,
-    init_busy_volume_emitter, list_active_operations, resolve_write_conflict,
+    init_busy_volume_emitter, list_active_operations, pending_write_conflict, resolve_write_conflict,
 };
 // The hard-abort tier. Exactly one legitimate caller: the quit deadline
 // (`crate::quit`), which fires it only after the cooperative cancel has had its
@@ -136,9 +136,9 @@ pub use types::{
     ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, OperationStatus,
     OperationSummary, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanPreviewStartResult, ScanPreviewTotals, ScanProgressEvent, SortColumn, SortOrder,
-    WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
-    WriteSettledEvent, WriteSourceItemDoneEvent,
+    WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
+    WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 
 // Re-export for tests (these are pub(crate) in validation.rs and state.rs)

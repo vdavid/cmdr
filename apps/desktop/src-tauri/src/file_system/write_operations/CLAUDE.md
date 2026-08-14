@@ -26,11 +26,15 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
 - **Stopping has two tiers.** `backend_cancel` (cooperative) is what EVERY user-initiated cancel uses; `backend_abort`
   and `cancel_all_write_operations` belong to the quit deadline alone, ❌ never to a click or a teardown hook.
   `transfer/DETAILS.md` § "Two tiers of cancel".
-- **Conflicts arm `state.conflict_slot` BEFORE emitting `write-conflict`** (emit-first hangs the recv), and the dispatch
-  mutex ❌ never spans the file write.
+- **Conflicts arm `state.conflict_slot` with the QUESTION before emitting `write-conflict`** (emit-first hangs the
+  recv): `arm(tx, |id| event)` mints the id, builds the event, and stores it, so the id on the wire and the question
+  `pending()` hands a late reader (`cmdr://state`) are one value. The dispatch mutex ❌ never spans the file write.
 - **An answer NAMES its clash** (`ConflictId`) and `resolve_write_conflict` REPORTS a `ConflictResolutionOutcome`; ❌
   never answer the slot by hand, collapse `AlreadyResolved` / `StaleAnswer` / `NoPendingConflict`, or let a retired
   clash's answer reach the one parked now.
+- **An answered clash is announced** (`emit_conflict_resolved`, naming the id), because only the surface whose own call
+  returned learns the verdict; ❌ never leave a prompt up for a question that's over (a modal blocks every new
+  operation). Emit from where the answer LANDS, ❌ never from the answering call.
 - **Emit through `OperationEventSink`, never `AppHandle`.** `write-settled` fires once, AFTER the terminal event.
 - **Register a destination with the downloads watcher's ignore set BEFORE the syscall**
   (`crate::downloads::note_pending_write_for_cmdr`; renames register both halves).

@@ -83,8 +83,8 @@ use crate::file_system::write_operations::state::{
 use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::{
     CollectorEventSink, ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteCancelledEvent,
-    WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationPhase,
-    WriteProgressEvent, WriteSourceItemDoneEvent,
+    WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteOperationConfig,
+    WriteOperationPhase, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -264,6 +264,9 @@ impl OperationEventSink for CancelOnFirstProgressSink {
     }
     fn emit_conflict(&self, e: WriteConflictEvent) {
         self.inner.emit_conflict(e);
+    }
+    fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+        self.inner.emit_conflict_resolved(e);
     }
     fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
     fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}

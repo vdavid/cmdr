@@ -5,7 +5,8 @@ use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{CopyScanResult, InMemoryVolume, ListingProgress, LocalPosixVolume};
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, ConflictResolution, WriteConflictEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
+    CollectorEventSink, ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent,
+    WriteSourceItemDoneEvent,
 };
 use crate::test_support::TestDir;
 use std::sync::atomic::AtomicU8;
@@ -860,6 +861,9 @@ async fn test_multi_file_copy_cancel_mid_flight() {
         }
         fn emit_conflict(&self, e: WriteConflictEvent) {
             self.inner.emit_conflict(e);
+        }
+        fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+            self.inner.emit_conflict_resolved(e);
         }
         fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
         fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}

@@ -34,6 +34,10 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 - **A conflict for an operation no dialog owns is answered on the MAIN window** (`operation-conflict.svelte.ts`): pause
   what's running, prompt, resume exactly the ids paused. ❌ Never `resumeAll()` (it restarts a pause the USER made); ❌
   never decide ownership while `isForegroundClaimPending()` — defer, or you double-prompt or re-wedge the operation.
+- **A clash answered ANYWHERE takes every surface's prompt down** (`write-conflict-resolved`, handled in
+  `operation-conflict.svelte.ts` and `operation-session.svelte.ts`): another window may have won the race, or an agent
+  may have answered over MCP with nothing here calling anything. Drop only the clash the event NAMES — the operation
+  raises its next one the moment it takes an answer.
 - **The backend arbitrates a clash and the answer names WHICH clash.** Answer through
   `session.resolveConflict(conflictId, ...)` with the id off the event on screen: anything but `resolved` means the
   question is settled without us, so take that prompt down and release the hold, ❌ never surface it as a failure. Only

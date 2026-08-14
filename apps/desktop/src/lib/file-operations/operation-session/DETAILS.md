@@ -4,7 +4,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 
 ## File map
 
-- `operation-event-fanout.ts`: the demultiplexer. Subscribes the seven broadcast streams once per window, seeds the
+- `operation-event-fanout.ts`: the demultiplexer. Subscribes the eight broadcast streams once per window, seeds the
   registry snapshot, and routes each event to the session that claimed its `operationId`, buffering for ids nobody has
   claimed yet.
 - `operation-session.svelte.ts`: `createOperationSession(id, fanout)` — the derived read state, plus the
@@ -86,7 +86,7 @@ so folding the queue into the main window as a popup would simply make its sessi
 
 ## Why sessions read a fan-out, not their own listeners
 
-Seven streams carry everything about one operation. Ten sessions must not mean seventy subscriptions, but listener count
+Eight streams carry everything about one operation. Ten sessions must not mean eighty subscriptions, but listener count
 is the least of it: the fan-out is a **correctness boundary**. One place buffers events arriving for an id no session
 has claimed yet, and one place defines arrival order.
 
@@ -94,7 +94,7 @@ That buffer is load-bearing rather than defensive. The progress dialog dispatche
 session on the next effect flush; everything the backend emits in between belongs to an id nobody has claimed. The
 buffer is what makes that gap harmless, and it is why the dialog needs no event buffer of its own.
 
-It is a new module rather than an extension of `createOperationsStore()`, which subscribes to two of the seven streams,
+It is a new module rather than an extension of `createOperationsStore()`, which subscribes to two of the eight streams,
 is a reducer over all operations at once, and has no per-id attach API to extend. The demultiplexer sits underneath
 instead, and both can be its consumers.
 
@@ -298,6 +298,14 @@ next clash the instant it takes an answer, so a newer event routinely lands whil
 clearing whatever sits in the slot on return threw that one away, and the transfer parked forever with no prompt on
 screen and no way out but Cancel. The main window's prompt host scopes its queue entry the same way (`dropPrompt`), and
 the two together are the frontend half of the backend's identity contract.
+
+**A clash answered by somebody else takes its prompt down too.** The verdict above only reaches the surface whose own
+call returned. `write-conflict-resolved` is the operation saying the clash is over to everyone: another window won the
+race, or an agent answered over MCP (`resolve_conflict`) and nothing here called anything at all. The session clears
+`conflict` when the event names the clash it is holding, and the main window's host does the same to its prompt queue
+and then releases the hold it took. Without it a prompt sits on screen asking a question with no answer left to give,
+and being a modal, refuses to let any new operation start behind it. Scoped by id for the same reason answering is: the
+retraction for the old clash routinely lands with the new one already on screen.
 
 Three rules follow, and all three are guardrails rather than observations:
 

@@ -356,6 +356,7 @@ async fn volume_cancel_emits_write_settled_event() {
         fn emit_conflict(&self, e: super::super::types::WriteConflictEvent) {
             self.inner_collector.emit_conflict(e);
         }
+        fn emit_conflict_resolved(&self, _e: super::super::types::WriteConflictResolvedEvent) {}
         fn emit_source_item_done(&self, e: super::super::types::WriteSourceItemDoneEvent) {
             self.inner_collector.emit_source_item_done(e);
         }

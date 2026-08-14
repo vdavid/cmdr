@@ -20,7 +20,7 @@ use crate::file_system::write_operations::state::cancel_write_operation;
 use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::{
     CollectorEventSink, ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
-    WriteErrorEvent, WriteSourceItemDoneEvent,
+    WriteConflictResolvedEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::AtomicU8;
 
@@ -255,6 +255,9 @@ async fn merge_cancel_mid_stream_preserves_unshadowed_dest_files() {
         }
         fn emit_conflict(&self, e: WriteConflictEvent) {
             self.inner.emit_conflict(e);
+        }
+        fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+            self.inner.emit_conflict_resolved(e);
         }
         fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
         fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}

@@ -50,11 +50,13 @@ import { SvelteMap } from 'svelte/reactivity'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
   onWriteConflict,
+  onWriteConflictResolved,
   pauseOperation,
   resumeOperation,
   type ConflictId,
   type OperationSnapshot,
   type WriteConflictEvent,
+  type WriteConflictResolvedEvent,
 } from '$lib/tauri-commands'
 import type { ConflictResolution } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
@@ -116,6 +118,8 @@ let deferred: WriteConflictEvent[] = []
 const promptSessions = new SvelteMap<string, OperationSession>()
 
 let unlisten: UnlistenFn | null = null
+/** The retraction stream: a clash answered anywhere, by anyone. */
+let unlistenResolved: UnlistenFn | null = null
 let stopEffects: (() => void) | null = null
 
 /** The session for a prompted operation, built on first need and kept until the
@@ -163,6 +167,25 @@ export function isCancellingConflictPrompt(): boolean {
   if (promptQueue.length === 0) return false
   const session = promptSessions.get(promptQueue[0].event.operationId)
   return (session?.cancelling ?? false) || (session?.rollingBack ?? false)
+}
+
+/**
+ * Somebody answered a clash this host may be showing, and it wasn't necessarily
+ * this window: another surface won the race, or an agent answered over MCP
+ * (`resolve_conflict`). The backend has arbitrated, so the prompt comes down and
+ * what it paused resumes, exactly as if the click had happened here — leaving it
+ * up would ask a question that has no answer left to give, and (being a modal)
+ * block anything new from starting behind it.
+ *
+ * Scoped to the clash the event NAMES, like every other path that drops a
+ * prompt: the operation raises its next one the moment it takes an answer.
+ */
+function handleConflictResolved(event: WriteConflictResolvedEvent): void {
+  // A conflict still waiting for an owner is decided too: nothing will re-raise
+  // it, so a held one would sit in `deferred` until the operation ended.
+  deferred = deferred.filter((held) => held.operationId !== event.operationId || held.conflictId !== event.conflictId)
+  dropPrompt(event.operationId, event.conflictId)
+  void release()
 }
 
 function handleConflict(event: WriteConflictEvent): void {
@@ -417,7 +440,7 @@ async function raiseMainWindow(): Promise<void> {
  * callable from a test.
  */
 export async function startOperationConflictHost(): Promise<void> {
-  if (unlisten ?? stopEffects) return
+  if (unlisten ?? unlistenResolved ?? stopEffects) return
 
   stopEffects = $effect.root(() => {
     $effect(() => {
@@ -433,6 +456,7 @@ export async function startOperationConflictHost(): Promise<void> {
   })
 
   unlisten = await onWriteConflict(handleConflict)
+  unlistenResolved = await onWriteConflictResolved(handleConflictResolved)
 }
 
 /** Drops the listener, the effects, every prompt, and every session those
@@ -440,6 +464,8 @@ export async function startOperationConflictHost(): Promise<void> {
 export function stopOperationConflictHost(): void {
   unlisten?.()
   unlisten = null
+  unlistenResolved?.()
+  unlistenResolved = null
   stopEffects?.()
   stopEffects = null
   for (const operationId of [...promptSessions.keys()]) releaseSession(operationId)

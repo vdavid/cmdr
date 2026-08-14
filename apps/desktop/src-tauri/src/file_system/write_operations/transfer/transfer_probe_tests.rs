@@ -12,7 +12,7 @@ use super::super::transfer_driver::SerialLeafProgress;
 use super::*;
 use crate::file_system::volume::Volume;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
-use crate::file_system::write_operations::test_support::TestOperationGuard;
+use crate::file_system::write_operations::test_support::{TestOperationGuard, placeholder_conflict};
 use crate::file_system::write_operations::types::{WriteOperationType, WriteProgressEvent};
 
 /// A probe whose stall-abort window is `window` AND whose connection is proven
@@ -317,7 +317,7 @@ fn a_transfer_waiting_on_a_conflict_answer_is_not_stalled() {
 
     // The driver stores the responder before emitting `write-conflict`.
     let (tx, _rx) = tokio::sync::oneshot::channel();
-    state.conflict_slot.arm(tx);
+    state.conflict_slot.arm(tx, placeholder_conflict);
 
     let activity = probe.activity();
     assert_eq!(activity.waiting_on, TransferWaitReason::You);
@@ -338,7 +338,7 @@ fn the_watchdog_does_not_accrue_stall_time_behind_a_conflict_prompt() {
     let state = guard.state();
     let probe = probe_for(guard.id(), state);
     let (tx, _rx) = tokio::sync::oneshot::channel();
-    state.conflict_slot.arm(tx);
+    state.conflict_slot.arm(tx, placeholder_conflict);
 
     let mut watchdog = WatchdogState::new();
     // First step syncs the byte counter; a second one with the SAME bytes is

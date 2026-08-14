@@ -396,6 +396,33 @@ pub struct WriteConflictEvent {
     pub destination_is_directory: bool,
 }
 
+/// A Stop-mode clash is over: the operation took an answer for it and carried
+/// on. The counterpart to [`WriteConflictEvent`], and it closes the same loop
+/// the id opened.
+///
+/// The prompt goes out to EVERY webview, so several surfaces can be showing one
+/// clash, and only the surface whose own `resolve_write_conflict` call returned
+/// learns what happened to it. Every other one — the queue window's copy of the
+/// prompt, the main window's host, a surface that never called anything because
+/// an AGENT answered over MCP — would sit there asking a question that has no
+/// answer left to give, and (being a modal) refusing to let anything new start.
+/// So the operation says so as it resumes, and each surface drops the clash it
+/// names.
+///
+/// Emitted only when an answer actually reached the operation. A cancel takes
+/// the clash away without one, and the surfaces drop it because the operation
+/// itself is gone.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "write-conflict-resolved")]
+pub struct WriteConflictResolvedEvent {
+    pub operation_id: String,
+    /// The clash that is over. Named, ❌ never implied: by the time this lands,
+    /// the operation may already be parked on the NEXT one, and a surface that
+    /// dropped "whatever it is showing" would throw away a live question.
+    pub conflict_id: ConflictId,
+}
+
 /// Progress event during scanning phase (emitted in dry-run mode).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]

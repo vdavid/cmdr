@@ -5,7 +5,7 @@ operation is now plus what you can do to it. Views bind and command through it; 
 
 ## Module map
 
-- `operation-event-fanout.ts` demultiplexes seven broadcast streams; `operation-session.svelte.ts` +
+- `operation-event-fanout.ts` demultiplexes eight broadcast streams; `operation-session.svelte.ts` +
   `operation-session-commands.svelte.ts` hold the read state and the five commands; `operation-session-registry.ts`
   refcounts them, `bind-operation-session.svelte.ts` attaches a view, `window-operation-sessions.svelte.ts` is this
   window's instance. DETAILS § File map.
@@ -28,8 +28,9 @@ operation is now plus what you can do to it. Views bind and command through it; 
 - **No command throws, and each says whether it landed**: `false` or a `null` verdict means nothing was sent, so leave
   the screen alone. `togglePause` steers by the lifecycle status, ❌ never `is_running` (a parked one still says
   `true`); cancel goes through the MANAGER, rollback through the write op.
-- **An answer NAMES its clash**: `resolveConflict(conflictId, …)` releases THAT clash only. ❌ Never clear on "an answer
-  came back", never privilege one surface, never refuse a clash this session hasn't seen. DETAILS § "Answering a clash
-  is a delegation".
+- **An answer NAMES its clash**: `resolveConflict(conflictId, …)` releases THAT clash only, and so does the
+  `conflictResolved` delivery, which is how a clash answered by ANOTHER surface (or by an agent over MCP) stops being
+  shown here. ❌ Never clear on "an answer came back", never privilege one surface, never refuse a clash this session
+  hasn't seen. DETAILS § "Answering a clash is a delegation".
 
 Everything else: `DETAILS.md`. Read it before any non-trivial work here.

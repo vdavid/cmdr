@@ -13,8 +13,32 @@ use tokio::sync::oneshot;
 
 use super::manager::{LifecycleStatus, OperationDescriptor, OperationSummaryText, manager};
 use super::state::{WRITE_OPERATION_STATE, WriteOperationState};
-use super::types::WriteOperationType;
+use super::types::{ConflictId, WriteConflictEvent, WriteOperationType};
 use crate::file_system::volume::LaneKey;
+
+/// A stand-in `write-conflict` event for a test that arms the conflict slot only
+/// to park an operation, and never reads the question back.
+///
+/// Arming takes the question it is arming for, so a test that cares about
+/// nothing but the park still has to supply one. Passing this by name
+/// (`slot.arm(tx, placeholder_conflict)`) says exactly that at the call site,
+/// and keeps a dozen irrelevant fields out of it.
+pub(crate) fn placeholder_conflict(conflict_id: ConflictId) -> WriteConflictEvent {
+    WriteConflictEvent {
+        operation_id: "op-under-test".to_string(),
+        conflict_id,
+        source_path: "/src/placeholder.txt".to_string(),
+        destination_path: "/dst/placeholder.txt".to_string(),
+        source_size: Some(1),
+        destination_size: Some(2),
+        source_modified: None,
+        destination_modified: None,
+        destination_is_newer: false,
+        size_difference: Some(1),
+        source_is_directory: false,
+        destination_is_directory: false,
+    }
+}
 
 /// A `WRITE_OPERATION_STATE` entry registered under a unique-per-test operation
 /// id, removed on drop.

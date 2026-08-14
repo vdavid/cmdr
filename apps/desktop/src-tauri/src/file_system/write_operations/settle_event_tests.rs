@@ -44,6 +44,9 @@ impl OperationEventSink for Bridge {
     fn emit_conflict(&self, e: super::types::WriteConflictEvent) {
         self.inner.emit_conflict(e);
     }
+    fn emit_conflict_resolved(&self, e: super::types::WriteConflictResolvedEvent) {
+        self.inner.emit_conflict_resolved(e);
+    }
     fn emit_source_item_done(&self, e: super::types::WriteSourceItemDoneEvent) {
         self.inner.emit_source_item_done(e);
     }

@@ -16,6 +16,7 @@ const unlisteners = {
   cancelled: vi.fn(),
   settled: vi.fn(),
   conflict: vi.fn(),
+  conflictResolved: vi.fn(),
   operations: vi.fn(),
 }
 
@@ -33,6 +34,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onWriteCancelled: vi.fn(() => Promise.resolve(unlisteners.cancelled)),
   onWriteSettled: vi.fn(() => Promise.resolve(unlisteners.settled)),
   onWriteConflict: vi.fn(() => Promise.resolve(unlisteners.conflict)),
+  onWriteConflictResolved: vi.fn(() => Promise.resolve(unlisteners.conflictResolved)),
   onOperationsChanged: vi.fn(() => Promise.resolve(unlisteners.operations)),
 }))
 

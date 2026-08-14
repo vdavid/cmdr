@@ -30,7 +30,7 @@ use crate::file_system::write_operations::state::cancel_write_operation;
 use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::{
     CollectorEventSink, ConflictResolution, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent,
-    WriteConflictEvent, WriteErrorEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
+    WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::AtomicU8;
 
@@ -487,6 +487,9 @@ async fn a_rolled_back_wide_window_copy_leaves_no_directory_it_created() {
         }
         fn emit_conflict(&self, e: WriteConflictEvent) {
             self.inner.emit_conflict(e);
+        }
+        fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+            self.inner.emit_conflict_resolved(e);
         }
         fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
         fn emit_scan_progress(&self, _e: ScanProgressEvent) {}

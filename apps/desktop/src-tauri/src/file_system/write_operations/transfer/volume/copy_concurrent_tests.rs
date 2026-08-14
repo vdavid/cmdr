@@ -12,7 +12,7 @@ use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{CopyScanResult, InMemoryVolume, ListingProgress, SpaceInfo, VolumeReadStream};
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, WriteConflictEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
+    CollectorEventSink, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::AtomicU8;
 
@@ -240,6 +240,9 @@ async fn test_concurrent_copy_cancellation_mid_batch() {
         }
         fn emit_conflict(&self, e: WriteConflictEvent) {
             self.inner.emit_conflict(e);
+        }
+        fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+            self.inner.emit_conflict_resolved(e);
         }
         fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
         fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}

@@ -18,6 +18,15 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   transport budget only: when it runs out the reply carries what had arrived plus a typed note, and the walk keeps
   going. `coverage_note` renders the typed coverage signal above the results, including the two unreadable lists
   (a refused folder offers Full Disk Access when granting it would help; a declined snapshot tree explains instead).
+- **`queue.rs`**: the `queue` tool (pause / resume / cancel one id, pause_all / resume_all). Thin adapter over the
+  manager: no FE action, so no ack.
+- **`conflicts.rs`**: `resolve_conflict` — answers ONE Stop-mode clash a running operation is parked on. Same adapter
+  shape as `queue.rs`, over `write_operations::resolve_write_conflict`, and the whole point of it is reporting the
+  ARBITRATION honestly: `Resolved` / `AlreadyResolved` answer `OK` (the clash is settled either way), `StaleAnswer` /
+  `NoPendingConflict` / `UnknownOperation` are refusals, and every one of them crosses the wire as a typed `outcome`
+  field or `data.outcome`, never as prose an agent would have to parse. `stop` is rejected as a resolution: it is the
+  policy that RAISES the question. Discovery is the `pendingConflict:` block in `cmdr://state` under `operations:`
+  (`resources/operations.rs`), which is also the only place the `conflictId` an answer must carry comes from.
 - **`downloads.rs`**: `go_to_latest_download` (resolves via `downloads::commands::go_to_latest_download`, then
   `mcp-nav-to-path` + `mcp-move-cursor`).
 - **`operation_log.rs`**: `operations_list`, `operations_get` (short-lived read-only connection over the query API,

@@ -70,6 +70,41 @@ export async function mcpCall(tool: string, args: Record<string, unknown>): Prom
   return text
 }
 
+/** JSON-RPC error shape, with the typed `data` a tool attaches for the caller
+ *  to branch on. */
+export interface McpRpcError {
+  code: number
+  message: string
+  data?: Record<string, unknown>
+}
+
+/**
+ * The same tool call as {@link mcpCall}, returning the whole JSON-RPC envelope
+ * instead of throwing on an error.
+ *
+ * Use it when the REFUSAL is what's under test: `mcpCall` collapses an error to
+ * its message, and the typed `data` a tool attaches (`outcome`,
+ * `blockingDialog`) is the half an agent is supposed to act on. Asserting on the
+ * message instead would be exactly the string-matching the repo forbids.
+ */
+export async function mcpCallRaw<T = { error?: McpRpcError; result?: { content?: { text?: string }[] } }>(
+  tool: string,
+  args: Record<string, unknown>,
+): Promise<T> {
+  if (!mcpPort) throw new Error('Call initMcpClient() first')
+  const res = await fetch(`http://localhost:${String(mcpPort)}/mcp`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: Date.now(),
+      method: 'tools/call',
+      params: { name: tool, arguments: args },
+    }),
+  })
+  return (await res.json()) as T
+}
+
 export async function mcpReadResource(uri: string): Promise<string> {
   if (!mcpPort) throw new Error('Call initMcpClient() first')
   const res = await fetch(`http://localhost:${String(mcpPort)}/mcp`, {

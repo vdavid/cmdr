@@ -24,6 +24,10 @@ stores.
   guessed-wrong call.
 - **Action tools wait for a typed ack before returning `OK`.** `OK` means the FE accepted the action, not that it
   finished; poll `await` for that.
+- **Whatever a user can reach, an agent must be able to reach, answer, and OBSERVE.** A state only a hand can drive is
+  where bugs accumulate invisibly (a conflict wedge lived in one for months). So `dialog confirm` offers `stop`,
+  `cmdr://state` carries the parked clash, and `resolve_conflict` answers ONE of them by `conflictId` and reports the
+  backend's typed outcome. ❌ Don't add a modal state with no way to see it or answer it. DETAILS § Answering one clash.
 - **A directory size in `cmdr://state` is never a bare number.** `≥` means lower bound (subtree not fully covered),
   `[size-pending]`/`[size-stale]` qualify it, and `(N on disk)` counts hard links and APFS clones in FULL, so it isn't
   "what deleting frees". ❌ Don't strip a qualifier to save tokens: an agent acts on the number. DETAILS § Directory

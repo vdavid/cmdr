@@ -137,6 +137,34 @@ What this means for automation:
 
 Architecture details: `apps/desktop/src-tauri/src/mcp/executor/DETAILS.md` § "Ack contract".
 
+## Answering a name clash one file at a time
+
+A transfer confirmed with `onConflict: "stop"` decides nothing upfront: it parks on each clashing file and waits for an
+answer, which is what a person gets by leaving the dialog on "Ask for each". Drive it entirely over MCP:
+
+```bash
+./scripts/mcp-call.sh select '{"pane":"left","names":["photos"]}'
+./scripts/mcp-call.sh copy '{}'
+./scripts/mcp-call.sh dialog '{"action":"confirm","type":"transfer-confirmation","onConflict":"stop"}'
+
+# The parked clash shows up under the operation, with the id an answer must carry.
+./scripts/mcp-call.sh --read-resource 'cmdr://state?include=operations'
+#   - operationId: op-7
+#     status: running
+#     pendingConflict:
+#       conflictId: 1
+#       destination: "/Users/…/photos/dsc-1.raw"
+#       answerWith: resolve_conflict (…)
+
+./scripts/mcp-call.sh resolve_conflict '{"operationId":"op-7","conflictId":1,"resolution":"skip"}'
+```
+
+The reply carries a typed `outcome`: `resolved` (yours is the answer the operation used) or `already_resolved` (somebody
+answered the same clash first). A refusal carries `data.outcome` instead: `stale_answer` (the operation has moved on,
+re-read `cmdr://state`), `no_pending_conflict`, or `unknown_operation`. Branch on those, never on the sentence.
+`applyToAll: true` answers the rest of the operation's clashes the same way. Both `dialog confirm` and
+`resolve_conflict` are token-gated, so route them through `./scripts/mcp-call.sh`.
+
 ## Connection resilience
 
 The MCP server goes down during hot reloads (up to 15s for Rust changes, up to 3s for frontend changes). Multiple agents

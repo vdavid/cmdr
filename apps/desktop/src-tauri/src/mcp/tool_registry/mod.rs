@@ -46,8 +46,8 @@ use serde_json::Value;
 
 use super::executor::{ToolError, ToolResult};
 use super::executor::{
-    app, async_tools, dialogs, downloads, eject, favorites, file_ops, image_facts, indexing, nav, operation_log,
-    photos, queue, search, tags, view,
+    app, async_tools, conflicts, dialogs, downloads, eject, favorites, file_ops, image_facts, indexing, nav,
+    operation_log, photos, queue, search, tags, view,
 };
 use super::tools::Tool;
 
@@ -502,6 +502,16 @@ mcp_tools! {
         consumers: &[Consumer::AiClient],
         access: Access::Write,
         run: params_only queue::execute_queue
+    },
+    "resolve_conflict" => {
+        desc: "Answer ONE name clash a running operation is parked on: skip / overwrite / rename that file, \
+               applyToAll for the rest. Read cmdr://state operations first for the pendingConflict block. \
+               Returns a typed outcome; refuses rather than pretending. Token-gated.",
+        schema: schemas::resolve_conflict_schema(),
+        gate: TokenGate::Always,
+        consumers: &[Consumer::AiClient],
+        access: Access::Write,
+        run: params_only conflicts::execute_resolve_conflict
     },
 
     // ── Favorites ───────────────────────────────────────────────────────────

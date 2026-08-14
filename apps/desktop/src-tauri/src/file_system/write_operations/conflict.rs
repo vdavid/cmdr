@@ -13,8 +13,8 @@ use super::durability::lookup_indexed_size;
 use super::overwrite::ResolvedDestination;
 use super::state::WriteOperationState;
 use super::types::{
-    ConflictId, ConflictInfo, ConflictResolution, OperationEventSink, WriteConflictEvent, WriteOperationConfig,
-    WriteOperationError,
+    ConflictId, ConflictInfo, ConflictResolution, OperationEventSink, WriteConflictEvent, WriteConflictResolvedEvent,
+    WriteOperationConfig, WriteOperationError,
 };
 
 // ============================================================================
@@ -156,11 +156,25 @@ pub(super) fn resolve_conflict(
             // across the emit or the recv. Mirrors the volume-side Stop branch
             // in `transfer/volume/conflict.rs`.
             //
-            // Arming also mints this clash's id, which rides out on the event:
-            // an answer has to name it, so one meant for a clash this operation
-            // has already left behind can't decide the next one.
+            // Arming also mints this clash's id and builds the event around it,
+            // so the question the slot holds and the one on the wire are the
+            // same value: an answer has to name that id, and one meant for a
+            // clash this operation has already left behind can't decide the
+            // next one.
             let (tx, rx) = tokio::sync::oneshot::channel();
-            let conflict_id = state.conflict_slot.arm(tx);
+            let event = state.conflict_slot.arm(tx, |conflict_id| {
+                build_conflict_event(
+                    operation_id,
+                    conflict_id,
+                    source,
+                    dest_path,
+                    source_meta.as_ref(),
+                    dest_meta.as_ref(),
+                    source_size_for_dir,
+                    destination_size_for_dir,
+                )
+            });
+            let event_conflict_id = event.conflict_id;
 
             // The operation has parked on a person, and from here it emits
             // nothing until they answer. Announced BEFORE the prompt goes out,
@@ -169,16 +183,6 @@ pub(super) fn resolve_conflict(
             // window's own wait would be over before it was ever mentioned.
             state.announce_human_wait(events);
 
-            let event = build_conflict_event(
-                operation_id,
-                conflict_id,
-                source,
-                dest_path,
-                source_meta.as_ref(),
-                dest_meta.as_ref(),
-                source_size_for_dir,
-                destination_size_for_dir,
-            );
             events.emit_conflict(event);
 
             // Wait for user to call resolve_write_conflict.
@@ -196,6 +200,16 @@ pub(super) fn resolve_conflict(
                     // file's own progress would eventually say the same thing, and
                     // on a Skip near the end of a copy there may not be one.
                     state.announce_human_wait(events);
+                    // This clash is over. Said out loud, because only ONE surface
+                    // learns it from its own call's return value: everyone else
+                    // showing the same prompt (the queue window, the main
+                    // window's host, anything watching after an agent answered
+                    // over MCP) would keep asking a question with no answer left
+                    // to give. Volume twin: `transfer/volume/conflict.rs`.
+                    events.emit_conflict_resolved(WriteConflictResolvedEvent {
+                        operation_id: operation_id.to_string(),
+                        conflict_id: event_conflict_id,
+                    });
                     // Save the original (unreduced) variant under the right bucket so
                     // subsequent conflicts re-evaluate the conditional variants against
                     // their own metadata, not the file that originally prompted.
@@ -1407,6 +1421,9 @@ mod stop_branch_park_tests {
                 },
             );
         }
+        fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+            self.inner.emit_conflict_resolved(e);
+        }
         fn emit_progress(&self, e: WriteProgressEvent) {
             self.inner.emit_progress(e);
         }
@@ -1465,6 +1482,42 @@ mod stop_branch_park_tests {
             !conflicts[0].source_is_directory && !conflicts[0].destination_is_directory,
             "the clash is file-vs-file"
         );
+    }
+
+    /// A clash that gets answered is announced as over, naming itself.
+    ///
+    /// The prompt went out to every webview, and only the surface whose own call
+    /// returned learns what became of it. Without this, the queue window's copy
+    /// of the prompt — or the main window's, after an AGENT answered over MCP —
+    /// keeps asking a question with no answer left to give, and blocks anything
+    /// new from starting behind it.
+    #[test]
+    fn an_answered_clash_is_announced_as_over_by_id() {
+        let dir = TempDir::new().unwrap();
+        let src = dir.path().join("src.txt");
+        let dst = dir.path().join("dst.txt");
+        fs::write(&src, b"SRC").unwrap();
+        fs::write(&dst, b"DEST").unwrap();
+
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+        let events = AnswerOnConflictSink {
+            inner: CollectorEventSink::new(),
+            state: Arc::clone(&state),
+            resolution: ConflictResolution::Skip,
+        };
+        let config = WriteOperationConfig::default();
+        let mut latch = ApplyToAll::default();
+
+        let _ = resolve_conflict(&src, &dst, &config, &events, "op-local-resolved", &state, &mut latch);
+
+        let raised = events.inner.conflicts.lock_ignore_poison();
+        let resolved = events.inner.conflicts_resolved.lock_ignore_poison();
+        assert_eq!(resolved.len(), 1, "the answered clash is announced exactly once");
+        assert_eq!(
+            resolved[0].conflict_id, raised[0].conflict_id,
+            "it names the clash that was answered, ❌ never 'whatever is on screen'"
+        );
+        assert_eq!(resolved[0].operation_id, "op-local-resolved");
     }
 
     /// A local copy keeps no in-flight table, so nothing speaks for it while it

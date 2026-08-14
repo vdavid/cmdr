@@ -13,6 +13,7 @@ const { subscribeMocks, unlistenMock } = vi.hoisted(() => {
       onWriteCancelled: subscribe(),
       onWriteSettled: subscribe(),
       onWriteConflict: subscribe(),
+      onWriteConflictResolved: subscribe(),
       onOperationsChanged: subscribe(),
     },
   }
@@ -61,7 +62,7 @@ describe('the window`s session registry', () => {
     destroyOperationSessions()
 
     expect(getOperationSessions()).toBeNull()
-    expect(unlistenMock).toHaveBeenCalledTimes(7)
+    expect(unlistenMock).toHaveBeenCalledTimes(8)
   })
 
   it('builds a fresh instance after a teardown rather than reviving a deaf one', async () => {
@@ -81,6 +82,6 @@ describe('the window`s session registry', () => {
 
     // Whatever subscribed late is unsubscribed, so a torn-down window can't
     // keep a listener alive.
-    expect(unlistenMock).toHaveBeenCalledTimes(7)
+    expect(unlistenMock).toHaveBeenCalledTimes(8)
   })
 })

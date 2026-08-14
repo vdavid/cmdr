@@ -20,6 +20,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onWriteCancelled: vi.fn(() => Promise.resolve(() => {})),
   onWriteSettled: vi.fn(() => Promise.resolve(() => {})),
   onWriteConflict: vi.fn(() => Promise.resolve(() => {})),
+  onWriteConflictResolved: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 import { bindOperationSession, type BoundOperationSession } from './bind-operation-session.svelte'

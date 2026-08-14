@@ -48,6 +48,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onWriteCancelled: vi.fn(() => Promise.resolve(() => {})),
   onWriteSettled: vi.fn(() => Promise.resolve(() => {})),
   onWriteConflict: vi.fn(() => Promise.resolve(() => {})),
+  onWriteConflictResolved: vi.fn(() => Promise.resolve(() => {})),
   // `ModalDialog` (the rollback question) registers itself with the backend's
   // soft-dialog tracker on mount and unmount.
   notifyDialogOpened: vi.fn(() => Promise.resolve()),

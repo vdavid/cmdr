@@ -34,6 +34,7 @@ import type {
   WriteCancelledEvent,
   WriteCompleteEvent,
   WriteConflictEvent,
+  WriteConflictResolvedEvent,
   WriteErrorEvent,
   WriteProgressEvent,
   WriteSettledEvent,
@@ -50,6 +51,7 @@ export type {
   WriteCancelledEvent,
   WriteCompleteEvent,
   WriteConflictEvent,
+  WriteConflictResolvedEvent,
   WriteErrorEvent,
   WriteOperationConfig,
   WriteOperationError,
@@ -265,6 +267,22 @@ export async function onWriteSettled(callback: (event: WriteSettledEvent) => voi
 /** Only emitted in Stop conflict resolution mode. */
 export async function onWriteConflict(callback: (event: WriteConflictEvent) => void): Promise<UnlistenFn> {
   return events.writeConflict.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/**
+ * A Stop-mode clash is over: the operation took an answer for it and carried on.
+ *
+ * Every surface showing that clash drops it, including the ones that answered
+ * nothing — another window won the race, or an agent answered over MCP. The
+ * event NAMES the clash, because by the time it lands the operation may already
+ * be parked on the next one.
+ */
+export async function onWriteConflictResolved(
+  callback: (event: WriteConflictResolvedEvent) => void,
+): Promise<UnlistenFn> {
+  return events.writeConflictResolved.listen((event) => {
     callback(event.payload)
   })
 }

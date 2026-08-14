@@ -240,6 +240,14 @@ export function createOperationSession(operationId: string, fanout: OperationEve
       case 'conflict':
         conflict = delivery.event
         break
+      case 'conflictResolved':
+        // Somebody answered it: this window, another window, or an agent over
+        // MCP. Only the clash it NAMES goes — the operation raises its next one
+        // the moment it takes an answer, and dropping "whatever we're holding"
+        // would throw away a live question and park the transfer with nothing
+        // on screen.
+        if (conflict?.conflictId === delivery.event.conflictId) conflict = null
+        break
     }
   }
 

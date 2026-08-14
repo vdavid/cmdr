@@ -163,6 +163,11 @@ fn cross_fs_local_move_flushes_final_dests_before_deleting_sources() {
         fn emit_cancelled(&self, _event: WriteCancelledEvent) {}
         fn emit_error(&self, _event: WriteErrorEvent) {}
         fn emit_conflict(&self, _event: WriteConflictEvent) {}
+        fn emit_conflict_resolved(
+            &self,
+            _event: crate::file_system::write_operations::types::WriteConflictResolvedEvent,
+        ) {
+        }
         fn emit_source_item_done(&self, _event: WriteSourceItemDoneEvent) {}
         fn emit_scan_progress(&self, _event: ScanProgressEvent) {}
         fn emit_scan_conflict(&self, _conflict: ConflictInfo) {}

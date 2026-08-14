@@ -63,7 +63,7 @@ use crate::file_system::listing::streaming::{
 use crate::file_system::write_operations::{
     ConflictInfo, DryRunResult, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
-    WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
+    WriteConflictResolvedEvent, WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::write_operations::{OperationsChanged, VolumesBusyChanged};
 use crate::ipc_collectors::collect_all_types;
@@ -740,6 +740,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             WriteCancelledEvent,
             WriteErrorEvent,
             WriteConflictEvent,
+            WriteConflictResolvedEvent,
             WriteSourceItemDoneEvent,
             ScanProgressEvent,
             ConflictInfo, // scan-conflict

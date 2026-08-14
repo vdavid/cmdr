@@ -17,7 +17,8 @@ use std::sync::Arc;
 use super::super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
-    ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteOperationError,
+    ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent,
+    WriteOperationError,
 };
 use super::transfer_error::map_volume_error;
 use crate::file_system::volume::{Volume, VolumeError};
@@ -217,20 +218,13 @@ pub(super) async fn resolve_volume_conflict(
             // `rx.await` below would hang. Arming first makes the sender
             // available the instant the event is in the responder's hands.
             //
-            // Arming also mints this clash's id, which rides out on the event:
-            // an answer has to name it, so one meant for a clash this operation
-            // has already left behind can't decide the next one.
+            // Arming also mints this clash's id and builds the event around it,
+            // so the question the slot holds and the one on the wire are the
+            // same value: an answer has to name that id, and one meant for a
+            // clash this operation has already left behind can't decide the
+            // next one.
             let (tx, rx) = tokio::sync::oneshot::channel();
-            let conflict_id = state.conflict_slot.arm(tx);
-
-            // Say that the operation has parked on a person, before the prompt
-            // goes out and while the slot is armed. A concurrent copy usually
-            // has other tasks still emitting, but a serial one (MTP, a
-            // single-file copy) goes as quiet as a local one does, and the same
-            // frozen speed sits on screen. Local twin: `../../conflict.rs`.
-            state.announce_human_wait(events);
-
-            events.emit_conflict(WriteConflictEvent {
+            let event = state.conflict_slot.arm(tx, |conflict_id| WriteConflictEvent {
                 operation_id: operation_id.to_string(),
                 conflict_id,
                 source_path: source_path.display().to_string(),
@@ -245,11 +239,28 @@ pub(super) async fn resolve_volume_conflict(
                 destination_is_directory,
             });
 
+            // Say that the operation has parked on a person, before the prompt
+            // goes out and while the slot is armed. A concurrent copy usually
+            // has other tasks still emitting, but a serial one (MTP, a
+            // single-file copy) goes as quiet as a local one does, and the same
+            // frozen speed sits on screen. Local twin: `../../conflict.rs`.
+            state.announce_human_wait(events);
+
+            let event_conflict_id = event.conflict_id;
+            events.emit_conflict(event);
+
             // Wait for user to call resolve_write_conflict.
             match rx.await {
                 Ok(response) => {
                     // The wait is over, and this tick is what puts the speed back.
                     state.announce_human_wait(events);
+                    // And this clash is over, for every surface showing it, not
+                    // only the one whose own call returned. Local twin:
+                    // `../../conflict.rs`.
+                    events.emit_conflict_resolved(WriteConflictResolvedEvent {
+                        operation_id: operation_id.to_string(),
+                        conflict_id: event_conflict_id,
+                    });
                     // Save the original (unreduced) variant under the right bucket so
                     // subsequent clashes re-evaluate the conditional variants against
                     // their own metadata. `apply_to_all_record` also flips the

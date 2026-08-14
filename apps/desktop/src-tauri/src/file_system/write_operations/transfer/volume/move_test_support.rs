@@ -11,7 +11,8 @@
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, VolumeError};
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, WriteConflictEvent, WriteErrorEvent, WriteProgressEvent, WriteSourceItemDoneEvent,
+    CollectorEventSink, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteProgressEvent,
+    WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::{AtomicU8, Ordering};
 
@@ -65,6 +66,9 @@ impl OperationEventSink for CancelAfterFirstSink {
     }
     fn emit_conflict(&self, e: WriteConflictEvent) {
         self.inner.emit_conflict(e);
+    }
+    fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+        self.inner.emit_conflict_resolved(e);
     }
     fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
     fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}
@@ -131,6 +135,9 @@ impl OperationEventSink for SampleInFlightTableSink {
     }
     fn emit_conflict(&self, e: WriteConflictEvent) {
         self.inner.emit_conflict(e);
+    }
+    fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+        self.inner.emit_conflict_resolved(e);
     }
     fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
     fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}

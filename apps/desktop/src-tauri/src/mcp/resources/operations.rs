@@ -21,25 +21,34 @@
 //! when is it done" questions.
 
 use crate::file_system::write_operations::{
-    LifecycleStatus, OperationSnapshot, OperationStatus, get_operation_status, list_operations,
+    LifecycleStatus, OperationSnapshot, OperationStatus, WriteConflictEvent, get_operation_status, list_operations,
+    pending_write_conflict,
 };
 use crate::search::query::format_size;
 
 /// One row of the `operations:` section: the registry's membership / status /
-/// summary joined with the status cache's live progress (absent for queued ops).
+/// summary joined with the status cache's live progress (absent for queued ops)
+/// and the clash it's parked on (absent unless it's asking).
 pub(crate) struct OperationRow {
     pub snapshot: OperationSnapshot,
     pub progress: Option<OperationStatus>,
+    pub pending_conflict: Option<WriteConflictEvent>,
 }
 
 /// Snapshot every registered operation (queued / running / paused), joining the
-/// registry membership with the live progress cache by id.
+/// registry membership with the live progress cache by id, plus any Stop-mode
+/// clash the operation is parked on.
 pub(crate) fn snapshot_operations() -> Vec<OperationRow> {
     list_operations()
         .into_iter()
         .map(|snapshot| {
             let progress = get_operation_status(&snapshot.operation_id);
-            OperationRow { snapshot, progress }
+            let pending_conflict = pending_write_conflict(&snapshot.operation_id);
+            OperationRow {
+                snapshot,
+                progress,
+                pending_conflict,
+            }
         })
         .collect()
 }
@@ -106,8 +115,51 @@ pub(crate) fn build_operations_yaml(rows: &[OperationRow], now_ms: u64) -> Strin
             }
             yaml.push_str(&format!("    elapsedSeconds: {elapsed_s}\n"));
         }
+        // The operation is parked on a person. Without this an agent sees a
+        // `running` row whose counters never move and no way to learn why, let
+        // alone which clash to answer.
+        if let Some(conflict) = &row.pending_conflict {
+            yaml.push_str(&pending_conflict_yaml(conflict));
+        }
     }
     yaml
+}
+
+/// The `pendingConflict:` block: what is being asked, and the id an answer has
+/// to name. The `conflictId` is the load-bearing part — `resolve_conflict`
+/// requires it, so an answer can't land on a clash the operation has since
+/// moved past.
+fn pending_conflict_yaml(conflict: &WriteConflictEvent) -> String {
+    let mut yaml = String::from("    pendingConflict:\n");
+    yaml.push_str(&format!("      conflictId: {}\n", conflict.conflict_id.0));
+    // Verbatim, like the pane's own `path:` and `files:` in this same resource
+    // (`resources/mod.rs`), ❌ NOT redacted like the `source:` / `destination:`
+    // summaries above. `redact_line` turns a path into `/tmp/<dir>/<file>.txt`,
+    // and a clash an agent can't name is a clash it can't answer: it would be
+    // choosing between skip and overwrite for a file it can't see, over a
+    // decision that destroys data. Nothing is protected by hiding it either —
+    // the same read already lists that directory by name.
+    yaml.push_str(&format!("      source: {:?}\n", conflict.source_path));
+    yaml.push_str(&format!("      destination: {:?}\n", conflict.destination_path));
+    yaml.push_str(&format!("      sourceSize: {}\n", optional_size(conflict.source_size)));
+    yaml.push_str(&format!(
+        "      destinationSize: {}\n",
+        optional_size(conflict.destination_size)
+    ));
+    yaml.push_str(&format!(
+        "      destinationIsNewer: {}\n",
+        conflict.destination_is_newer
+    ));
+    yaml.push_str(
+        "      answerWith: resolve_conflict (operationId + conflictId + resolution skip|overwrite|rename|overwrite_smaller|overwrite_older, optional applyToAll)\n",
+    );
+    yaml
+}
+
+/// A size the backend couldn't determine reads as `unknown`, ❌ never as a `0`
+/// an agent would compare against.
+fn optional_size(size: Option<u64>) -> String {
+    size.map_or_else(|| "unknown".to_string(), format_size)
 }
 
 /// One human line: bytes and file counters, with a percent when totals are known.

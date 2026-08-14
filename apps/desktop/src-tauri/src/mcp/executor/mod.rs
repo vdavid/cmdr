@@ -9,6 +9,7 @@ mod ack;
 // can't otherwise reach `executor`'s descendants (E0603). `ack` stays private (executor-internal).
 pub(crate) mod app;
 pub(crate) mod async_tools;
+pub(crate) mod conflicts;
 pub(crate) mod dialogs;
 pub(crate) mod downloads;
 pub(crate) mod eject;

@@ -318,6 +318,23 @@ async fn execute_generic_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_typ
     Ok(json!(format!("OK: Closed {dialog_type} dialog")))
 }
 
+/// The conflict policies the transfer dialog can be confirmed with, matching the
+/// radio buttons a person picks between.
+///
+/// `stop` is the one that isn't a bulk decision: it leaves the operation asking
+/// per file, which is the ONLY way to reach the per-file clash prompt. Without
+/// it every agent-driven transfer decided all its clashes upfront, so nothing
+/// automated could reach — or test — the state a person reaches by leaving the
+/// dialog on "Ask for each". Answer those clashes with `resolve_conflict`.
+const CONFLICT_POLICIES: &[&str] = &[
+    "stop",
+    "skip_all",
+    "overwrite_all",
+    "rename_all",
+    "overwrite_smaller_all",
+    "overwrite_older_all",
+];
+
 /// Execute dialog confirm action.
 /// Programmatically confirms an already-open dialog.
 async fn execute_dialog_confirm<R: Runtime>(
@@ -328,10 +345,11 @@ async fn execute_dialog_confirm<R: Runtime>(
     match dialog_type {
         "transfer-confirmation" => {
             let conflict_policy = on_conflict.unwrap_or("skip_all");
-            if !["skip_all", "overwrite_all", "rename_all"].contains(&conflict_policy) {
-                return Err(ToolError::invalid_params(
-                    "onConflict must be 'skip_all', 'overwrite_all', or 'rename_all'",
-                ));
+            if !CONFLICT_POLICIES.contains(&conflict_policy) {
+                return Err(ToolError::invalid_params(format!(
+                    "onConflict must be one of: {}",
+                    CONFLICT_POLICIES.join(", ")
+                )));
             }
             let pre_gen = snapshot_generation(app);
             app.emit(

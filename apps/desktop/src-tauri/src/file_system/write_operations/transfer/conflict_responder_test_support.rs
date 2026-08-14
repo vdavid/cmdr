@@ -25,8 +25,8 @@ use std::sync::Arc;
 use super::super::state::{ConflictResolutionResponse, WriteOperationState};
 use super::super::types::{
     CollectorEventSink, ConflictId, ConflictInfo, ConflictResolution, DryRunResult, OperationEventSink,
-    ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent,
-    WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
+    ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent,
+    WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 use crate::ignore_poison::IgnorePoison;
 
@@ -88,6 +88,9 @@ impl OperationEventSink for ConflictResponderSink {
                 apply_to_all: self.apply_to_all,
             },
         );
+    }
+    fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
+        self.inner.emit_conflict_resolved(e);
     }
     fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
     fn emit_scan_progress(&self, _e: ScanProgressEvent) {}

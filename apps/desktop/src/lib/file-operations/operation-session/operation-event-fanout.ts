@@ -30,12 +30,14 @@ import {
   onWriteCancelled,
   onWriteSettled,
   onWriteConflict,
+  onWriteConflictResolved,
   onOperationsChanged,
   type OperationSnapshot,
   type UnlistenFn,
   type WriteCancelledEvent,
   type WriteCompleteEvent,
   type WriteConflictEvent,
+  type WriteConflictResolvedEvent,
   type WriteErrorEvent,
   type WriteProgressEvent,
   type WriteSettledEvent,
@@ -52,6 +54,7 @@ export type OperationEventDelivery =
   | { kind: 'cancelled'; event: WriteCancelledEvent }
   | { kind: 'settled'; event: WriteSettledEvent }
   | { kind: 'conflict'; event: WriteConflictEvent }
+  | { kind: 'conflictResolved'; event: WriteConflictResolvedEvent }
 
 /** What a session receives: a write-stream event, or its own row out of the
  *  registry snapshot. A row is only ever delivered when the operation is IN the
@@ -154,7 +157,10 @@ export function createOperationEventFanout(): OperationEventFanout {
   function remember(operationId: string, delivery: OperationEventDelivery): void {
     if (delivery.kind === 'progress') {
       lastProgress.set(operationId, { delivery, atMs: Date.now() })
-    } else if (delivery.kind !== 'conflict') {
+    } else if (delivery.kind !== 'conflict' && delivery.kind !== 'conflictResolved') {
+      // A clash and its answer bracket a pause, ❌ not an ending: the operation
+      // is exactly where its last tick left it, and a session arriving after
+      // either one still needs that tick to paint anything at all.
       lastProgress.delete(operationId)
     }
   }
@@ -242,6 +248,9 @@ export function createOperationEventFanout(): OperationEventFanout {
         }),
         onWriteConflict((event) => {
           route({ kind: 'conflict', event })
+        }),
+        onWriteConflictResolved((event) => {
+          route({ kind: 'conflictResolved', event })
         }),
         onOperationsChanged((event) => {
           applySnapshot(event.operations)

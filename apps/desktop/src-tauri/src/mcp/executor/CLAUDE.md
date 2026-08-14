@@ -9,7 +9,8 @@ which calls these handlers by path; action-tool handlers wait on a typed ack bef
 - **`mod.rs`**: shared types (`ToolResult`, `ToolError`), the `mcp_round_trip` / `resource_round_trip` helpers, and
   `user_path_param` / `expand_user_path` (tilde expansion). Dispatch is generated in the registry, not here.
 - **`ack.rs`**: the ack contract (`AckSignal` variants, `snapshot_generation`, `wait_for_ack`, default budgets).
-- Category handlers: `app.rs`, `view.rs`, `nav.rs`, `file_ops.rs`, `dialogs.rs`, `async_tools.rs`, `search.rs`,
+- Category handlers: `app.rs`, `view.rs`, `nav.rs`, `file_ops.rs`, `dialogs.rs`, `queue.rs`, `conflicts.rs`
+  (`resolve_conflict`, one parked name clash), `async_tools.rs`, `search.rs`,
   `downloads.rs`, `operation_log.rs` (`operations_*` journal), `photos.rs` (`search_photos`, text-only DTO over the
   `media_index` read API), `image_facts.rs` (`image_facts`, the lookup direction over the same index; reuses
   `photos.rs`'s volume/coverage helpers). Per-file tool lists in DETAILS.md.
@@ -36,6 +37,10 @@ which calls these handlers by path; action-tool handlers wait on a typed ack bef
   routinely send `~/Downloads`; a literal `~` fails validation or silently never matches and burns the full timeout.
   Validate existence via `validate_path_exists`, never bare `Path::exists()` (blocks forever on a hung mount). Exception:
   the `search` / `ai_search` `scope` param handles `~` itself in `search::query::parse_scope`.
+- **An answer to a name clash must NAME the clash, and report what the answer DID.** `resolve_conflict` requires the
+  `conflictId` off `cmdr://state`'s `pendingConflict:` block and returns the backend's typed outcome; ❌ never collapse
+  `stale_answer` / `no_pending_conflict` into an `OK`, and ❌ never let it default the id to "whatever is pending" —
+  the operation may have moved on. Confirm the transfer with `onConflict: "stop"` to reach this state at all.
 - **Tools that START a file operation fast-fail while a dialog is up** (`refuse_while_dialog_blocks`), refusing with the
   blocking id in `data.blockingDialog`, a TYPED field the agent acts on. ❌ Never widen it to `queue`,
   `operations_rollback`, or `dialog`: steering a RUNNING operation is what an agent needs while a dialog is up.

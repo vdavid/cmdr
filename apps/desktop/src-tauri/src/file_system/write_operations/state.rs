@@ -14,7 +14,7 @@ use super::eta::{EtaEstimator, EtaSample};
 use super::human_wait::HumanWaitClock;
 use super::types::{
     ConflictId, ConflictResolution, ConflictResolutionOutcome, OperationEventSink, TransferActivity,
-    TransferWaitReason, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
+    TransferWaitReason, WriteConflictEvent, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
 };
 
 // The conflict slot lives in its own module: arbitrating one answer per conflict
@@ -706,6 +706,17 @@ pub fn resolve_write_conflict(
         "resolve_write_conflict: op={operation_id} clash={conflict_id:?} {resolution:?} apply_to_all={apply_to_all} -> {outcome:?}"
     );
     outcome
+}
+
+/// The clash `operation_id` is parked on right now, or `None` when it isn't
+/// asking anything.
+///
+/// `write-conflict` is a broadcast, so it only reaches whoever was listening
+/// when it went out. This is the pull side of the same question, for a reader
+/// that arrives afterwards: `cmdr://state` renders it so an agent can see WHICH
+/// clash is owed an answer, and answer that one by id rather than guessing.
+pub fn pending_write_conflict(operation_id: &str) -> Option<WriteConflictEvent> {
+    WRITE_OPERATION_STATE.get(operation_id)?.conflict_slot.pending()
 }
 
 // ============================================================================
