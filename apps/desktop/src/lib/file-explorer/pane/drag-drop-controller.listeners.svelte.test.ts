@@ -103,6 +103,10 @@ vi.mock('$lib/tauri-commands', () => ({
 
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
 
+// Nothing is on screen in this suite, so the gate always lets a drop through.
+// Its verdict is driven in `drag-drop-controller.svelte.test.ts`.
+vi.mock('./operation-start-gate', () => ({ operationStartIsBlocked: () => false }))
+
 vi.mock('@tauri-apps/api/webview', () => ({
   getCurrentWebview: () => ({
     onDragDropEvent: vi.fn((handler: (event: { payload: DragDropPayload }) => void) => {

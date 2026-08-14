@@ -53,6 +53,7 @@ const {
   getModifierStateSpy,
   statPathsKindsSpy,
   addToastSpy,
+  operationStartIsBlockedSpy,
   listenHandlers,
   dragDropHandlerRef,
 } = vi.hoisted(() => ({
@@ -71,6 +72,7 @@ const {
   stopModifierTrackingSpy: vi.fn(),
   getModifierStateSpy: vi.fn<() => { altHeld: boolean; cmdHeld: boolean; shiftHeld: boolean }>(),
   addToastSpy: vi.fn(),
+  operationStartIsBlockedSpy: vi.fn<() => boolean>(),
   // Captured event-name → handler map, for driving the native listeners in `init()`.
   listenHandlers: new Map<string, (event: { payload: unknown }) => void>(),
   dragDropHandlerRef: { current: null as ((event: { payload: DragDropPayload }) => void) | null },
@@ -104,6 +106,11 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
+
+// The shared operation-start gate. Mocked so this suite can drive the verdict;
+// the gate's own behavior (which dialogs block, the toast, the MCP reply) is
+// pinned in `operation-start-gate.test.ts`.
+vi.mock('./operation-start-gate', () => ({ operationStartIsBlocked: operationStartIsBlockedSpy }))
 
 vi.mock('@tauri-apps/api/webview', () => ({
   getCurrentWebview: () => ({
@@ -195,6 +202,7 @@ describe('drag-drop-controller', () => {
     getSelfDragFileInfosSpy.mockReturnValue(null)
     getSelfDragIdentitySpy.mockReturnValue(null)
     getCachedIconSpy.mockReturnValue(undefined)
+    operationStartIsBlockedSpy.mockReturnValue(false)
     // Default: kinds unknown so the props builder uses today's approximate
     // shape unless a test opts into a specific split.
     statPathsKindsSpy.mockResolvedValue([])
@@ -559,6 +567,45 @@ describe('drag-drop-controller', () => {
 
       expect(showAlert).not.toHaveBeenCalled()
       expect(showTransfer).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('the operation-start gate (a drop is one more way to start an operation)', () => {
+    it('refuses the drop while a blocking dialog is open, before any stat or volume work', async () => {
+      operationStartIsBlockedSpy.mockReturnValue(true)
+      const { controller, showTransfer, showAlert } = create({
+        volumeIds: { left: 'root', right: 'ext' },
+        paths: { right: EXT_VOL_PATH },
+        volumes: [ROOT_VOLUME, EXT_VOLUME],
+      })
+
+      await controller.handleFileDrop(['/Users/x/photo.jpg'], 'right', undefined, 'copy')
+
+      // The gate announces (a toast, and an MCP reply when there's a request id);
+      // stacking a second dialog under the one on screen is the bug being closed.
+      expect(showTransfer).not.toHaveBeenCalled()
+      expect(showAlert).not.toHaveBeenCalled()
+      expect(statPathsKindsSpy).not.toHaveBeenCalled()
+    })
+
+    it('lets the drop through when nothing is in the way', async () => {
+      const { controller, showTransfer } = create({
+        volumeIds: { left: 'root', right: 'ext' },
+        paths: { right: EXT_VOL_PATH },
+        volumes: [ROOT_VOLUME, EXT_VOLUME],
+      })
+
+      await controller.handleFileDrop(['/Users/x/photo.jpg'], 'right', undefined, 'copy')
+
+      expect(showTransfer).toHaveBeenCalledTimes(1)
+    })
+
+    it('asks the gate once per drop, never per dropped path', async () => {
+      const { controller } = create({ volumes: [ROOT_VOLUME] })
+
+      await controller.handleFileDrop(['/a/one', '/a/two', '/a/three'], 'left', undefined, 'copy')
+
+      expect(operationStartIsBlockedSpy).toHaveBeenCalledTimes(1)
     })
   })
 

@@ -779,9 +779,13 @@ passing through any of the others.
   got nothing and heard nothing. An ADOPTED operation owns no slot (birth still wins over adoption); a password prompt
   DOES, and gets named as `archive-password` rather than `transfer-progress`, since telling an agent to close a dialog
   that isn't on screen strands it.
-- **The command entry points** (`operation-start-gate.ts`, called from `file-operation-commands.ts` and
-  `clipboard-operations.ts`) refuse while any blocking dialog is open, so a confirmation never stacks over what the user
-  is reading. In practice this catches the native menu, whose items stay clickable whatever is on screen.
+- **The command entry points** (`operation-start-gate.ts`, called from `file-operation-commands.ts`,
+  `clipboard-operations.ts`, and `drag-drop-controller.svelte.ts`) refuse while any blocking dialog is open, so a
+  confirmation never stacks over what the user is reading. In practice this catches the native menu, whose items stay
+  clickable whatever is on screen, and the DROP: dragging files onto a pane starts an operation like any other actor
+  does, and nothing about the mouse earns it an exemption. The drop's gate sits in `handleFileDrop`, after the drag
+  lifecycle has been torn down and before any stat or volume-resolution work, so the refusal costs one toast and no
+  syscalls. `triggerFileDrop` (the E2E entry) goes through the same function, so the gate is on that path too.
 - **MCP** is refused in Rust before dispatching (`mcp/executor/mod.rs::refuse_while_dialog_blocks`), which is what turns
   a ten-second round-trip timeout into an immediate answer. The blocking dialog's id rides in the JSON-RPC error's
   `data.blockingDialog`, a TYPED field: an agent acts on it to decide what to close, so it's a contract, and the

@@ -4,9 +4,11 @@
  *
  * Two gates share it, because they catch different things:
  *
- * - **The entry points** (`file-operation-commands.ts`): a dialog is on screen, so
- *   a confirmation would stack over what the user is reading. Which dialogs count
- *   is declared per dialog in `$lib/ui/dialog-registry.ts`.
+ * - **The entry points** (`file-operation-commands.ts`, `clipboard-operations.ts`,
+ *   and `drag-drop-controller.svelte.ts`): a dialog is on screen, so a
+ *   confirmation would stack over what the user is reading. Which dialogs count
+ *   is declared per dialog in `$lib/ui/dialog-registry.ts`. A DROP counts as an
+ *   entry point: the mouse starts an operation like any other actor does.
  * - **The start itself** (`dialog-state.svelte.ts`): the progress slot is taken.
  *   That one has to stand alone whatever the entry points do — the native menu is
  *   OS-side and MCP is a separate actor, and neither passes through this window's

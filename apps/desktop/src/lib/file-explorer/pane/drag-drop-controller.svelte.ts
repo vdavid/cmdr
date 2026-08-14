@@ -28,6 +28,7 @@ import { addToast } from '$lib/ui/toast'
 import { statPathsKinds, resolvePathVolume } from '$lib/tauri-commands'
 import { buildTransferPropsFromDroppedPaths } from './transfer-operations'
 import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
+import { operationStartIsBlocked } from './operation-start-gate'
 import type { SelfDragIdentity } from '../drag/drag-drop'
 import type { PathVolumeResolution } from '$lib/tauri-commands'
 import type { TransferOperationType } from '../types'
@@ -113,7 +114,14 @@ export function createDragDropController(deps: DragDropControllerDeps) {
    * Handles a file drop onto a target pane by opening the transfer confirmation
    * dialog.
    *
-   * Runs the SHARED destination guard (`checkTransferDestinationGuard`) first —
+   * Runs the SHARED operation-start gate (`operationStartIsBlocked`) first: a drop
+   * is one more way to start a file operation, so it's refused while a dialog is
+   * on screen exactly as F5, paste, the native menu, and the MCP tools are. The
+   * drag lifecycle has already been torn down by the time we get here, so the
+   * refusal is the whole response: a toast, and no confirmation stacked under
+   * what the user is reading.
+   *
+   * Then the SHARED destination guard (`checkTransferDestinationGuard`) —
    * the same chain F5/F6 and paste run — so dropping onto a read-only volume
    * shows the same "Read-only device" alert (a drop must hit the same read-only
    * guard F5 does) instead of silently opening a copy dialog that the backend
@@ -152,6 +160,8 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     // pasteboard. The dropped `paths` are only used for hit-testing upstream.
     const sourcePaths = recordedIdentity?.sourcePaths ?? paths
     if (sourcePaths.length === 0) return
+
+    if (operationStartIsBlocked()) return
 
     const destVolId = access.getPaneVolumeId(targetPane)
     // The real drop target: a hovered folder row (`targetFolderPath`, which can be
