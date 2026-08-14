@@ -75,6 +75,29 @@ buffer while the rest of that branch keeps flowing.
 **Buffer overflow re-lists rather than replays.** Past `BRANCH_BUFFER_CAP` (100,000 events) the buffer stops being a
 complete record, so the branch is dropped and queued as a `MustScanSubDirs` anchor when its walk ends.
 
+**Branches absorb what they cover, and that is the ONE collapse rule** (`State::insert` /
+`State::absorb_settled_under`). A branch arriving over settled ones retires them, however it arrives: a walk registering
+it, a resume restoring it, an explicit `collapse_to`. A walk finishing absorbs whatever settled underneath it while it
+was live. Two reasons, and the second is a correctness one:
+
+- `deepest_containing` scans the whole set once per event on the live hot path, and a set that only ever grows makes
+  every event pay for branches that can't change the answer. The phases in `docs/specs/phased-indexing-plan.md` would
+  put 50–150 entries there.
+- A settled descendant entry under a branch a walk is covering RIGHT NOW is the deepest match, so its events would
+  PROCESS live while the walk writes the same names — the two-writer collision the buffering exists to prevent, arriving
+  through the set itself.
+
+❌ An entry with `walks > 0` is never absorbed: its buffer belongs to that walk, and dropping the entry would strand the
+events it holds. Settled entries are always safe, because a branch only buffers while a walk covers it.
+
+**`collapse_to(root)` mutates the set the running loop is READING**, in place, and then persists. The live loop and its
+reconciler each captured an `Arc<BranchWatch>` at `ensure_branch_watch`. ❌ Never express a collapse as `branches::clear`
+plus a begin/finish pair: `clear` calls `forget`, so `live_for` mints a brand-new set nobody is reading — the persisted
+meta would say `["/"]` while the loop filtered against the stale entries for the rest of the session, and
+`is_branch_confined` would read that same stale `Arc` and keep the shallow sweep disabled until the next launch. It
+fails silently and only at runtime. (`start_scan`'s `clear` is safe only because the loop is torn down and replaced in
+the same breath.) Anchor: `branches::tests::the_branch_collapse_is_visible_to_the_running_live_loop`.
+
 **A coalesced sweep above the branches is RE-ANCHORED onto them, never dropped.** FSEvents reports "a lot changed under
 here" at a shallower path than the branch; a plain prefix test would lose every change inside covered ground behind one
 `MustScanSubDirs`. On a whole-watched volume the original sweep is kept too — unless a walk is covering one of the

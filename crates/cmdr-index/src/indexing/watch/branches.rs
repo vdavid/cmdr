@@ -286,10 +286,10 @@ pub(crate) struct BranchWatch {
 
 #[derive(Default)]
 struct State {
-    /// Deepest-match wins, so the list is not required to be ancestor-minimal
-    /// while a walk is in flight: a walk over a pocket inside an already-covered
-    /// branch needs its own entry to buffer against. Absorption happens when
-    /// that walk ends.
+    /// Ancestor-minimal among SETTLED entries, and no more than that: a walk over
+    /// a pocket inside an already-covered branch needs its own entry to buffer
+    /// against, and deepest-match wins so it gets one. Every collapse is the same
+    /// absorption rule firing, on insert and when a walk ends.
     branches: Vec<Branch>,
     /// Released buffers waiting for the loop's next flush tick.
     promoted: Promoted,
@@ -317,10 +317,9 @@ impl BranchWatch {
         let mut state = self.state.lock_ignore_poison();
         for branch in restored {
             if !state.branches.iter().any(|held| held.contains(&branch.path)) {
-                state.branches.push(branch);
+                state.insert(&branch.path);
             }
         }
-        state.branches.sort_by(|a, b| a.path.cmp(&b.path));
     }
 
     /// A walk is about to cover `paths`. Their events buffer from this moment,
@@ -333,14 +332,11 @@ impl BranchWatch {
         let mut state = self.state.lock_ignore_poison();
         let mut added = Vec::new();
         for path in paths {
-            match state.branches.iter_mut().find(|b| b.path == *path) {
-                Some(branch) => branch.walks += 1,
-                None => {
-                    let mut branch = Branch::new(path.clone());
-                    branch.walks = 1;
-                    state.branches.push(branch);
-                    added.push(path.clone());
-                }
+            if state.insert(path) {
+                added.push(path.clone());
+            }
+            if let Some(branch) = state.branches.iter_mut().find(|b| b.path == *path) {
+                branch.walks += 1;
             }
         }
         added
@@ -372,21 +368,49 @@ impl BranchWatch {
             } else {
                 state.promoted.events.extend(released);
             }
-            // Drop the entry when the volume's loop already answers for this
-            // ground (a scanned volume), and when a LIVE branch around it already
-            // does. Either way the set stays the shortest description of the
-            // ground this volume watches branch by branch, and a whole-watched
-            // volume keeps no branch bookkeeping at all.
-            let redundant = after == AfterWalk::Forget
-                || state
-                    .branches
-                    .iter()
-                    .any(|other| other.path != *path && other.walks == 0 && other.contains(path));
-            if redundant {
+            // The set is the shortest description of the ground this volume
+            // watches branch by branch. So a branch goes when the volume's loop
+            // already answers for it (a scanned volume) or a settled branch around
+            // it does, and one that stays absorbs whatever settled underneath it
+            // while it was live.
+            let covered_by_a_settled_branch = state
+                .branches
+                .iter()
+                .any(|other| other.path != *path && other.walks == 0 && other.contains(path));
+            if after == AfterWalk::Forget || covered_by_a_settled_branch {
                 state.branches.remove(index);
+            } else {
+                state.absorb_settled_under(path);
             }
         }
         state.branches.sort_by(|a, b| a.path.cmp(&b.path));
+    }
+
+    /// Collapse the set to `root`: one entry covering everything walked under it,
+    /// written down.
+    ///
+    /// The set is scanned once per event on the live hot path
+    /// (`deepest_containing`), so a caller that knows a whole subtree is covered
+    /// can say so and stop paying for the branches inside it. Absorption does the
+    /// rest: an entry a walk is covering right now stays, and is absorbed by the
+    /// same rule when it finishes.
+    ///
+    /// ⚠️ It mutates THIS `BranchWatch` in place, and that is the point: the live
+    /// loop and its reconciler each captured an `Arc` of it at
+    /// `ensure_branch_watch`. ❌ Never build a collapse out of `branches::clear`
+    /// plus a begin/finish pair — `clear` calls `forget`, so `live_for` mints a
+    /// brand-new set nobody is reading, the running loop keeps filtering against
+    /// the old entries for the rest of the session, and the database says
+    /// something else. (`start_scan`'s `clear` is safe only because the loop is
+    /// torn down and replaced in the same breath.)
+    #[allow(
+        dead_code,
+        reason = "no caller in the crate: what collapses the set today is absorption as walks finish. This is the \
+                  explicit form, for the phase boundaries in docs/specs/phased-indexing-plan.md."
+    )]
+    pub(crate) fn collapse_to(&self, root: &str, space: &IndexPathSpace, writer: &IndexWriter) {
+        self.state.lock_ignore_poison().insert(root);
+        self.persist(space, writer);
     }
 
     /// What the live loop should do with one event, whose path is already
@@ -512,6 +536,35 @@ impl BranchWatch {
 }
 
 impl State {
+    /// Add `path` to the set, retiring every settled branch it now covers, and
+    /// report whether it was new. A path already held keeps its entry — only its
+    /// walk count is the caller's business.
+    ///
+    /// Absorption is a property of the SET, so it holds however a branch arrives:
+    /// a walk registering one, a resume restoring one, an explicit collapse.
+    /// Watching `/a` covers `/a/b`, and keeping both makes every event pay a
+    /// longer `deepest_containing` scan for an answer that can't differ.
+    fn insert(&mut self, path: &str) -> bool {
+        self.absorb_settled_under(path);
+        if self.branches.iter().any(|held| held.path == path) {
+            return false;
+        }
+        self.branches.push(Branch::new(path.to_string()));
+        self.branches.sort_by(|a, b| a.path.cmp(&b.path));
+        true
+    }
+
+    /// Drop every settled branch strictly under `path`, which now covers them.
+    ///
+    /// ❌ A branch a walk is covering RIGHT NOW is left alone: its buffer belongs
+    /// to that walk, and dropping the entry would strand the events it holds. The
+    /// same rule absorbs it when it finishes. Settled entries are safe to drop
+    /// because a branch only buffers while `walks > 0`.
+    fn absorb_settled_under(&mut self, path: &str) {
+        self.branches
+            .retain(|held| held.walks > 0 || !is_strict_descendant(&held.path, path));
+    }
+
     /// The most specific branch holding `path`, so a pocket being walked inside a
     /// live branch buffers rather than processes.
     fn deepest_containing(&self, path: &str) -> Option<usize> {

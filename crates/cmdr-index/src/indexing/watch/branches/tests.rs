@@ -423,6 +423,99 @@ fn an_ordinary_event_outside_the_branches_is_dropped_not_held() {
     assert!(events_are_discarded(&scope, must_scan("/vol/elsewhere", 2)));
 }
 
+// ── Absorption ───────────────────────────────────────────────────────
+
+/// A branch that arrives over existing ones RETIRES them. Watching `/vol/a`
+/// covers `/vol/a/one`, so keeping both makes every event pay a longer
+/// `deepest_containing` scan for an answer that can't differ — and the set is
+/// scanned once per event on the live hot path.
+#[test]
+fn a_branch_absorbs_the_ones_it_covers_and_leaves_a_live_walk_alone() {
+    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let settled = vec!["/vol/a/one".to_string(), "/vol/a/two".to_string()];
+    watch.begin_covering(&settled);
+    watch.finish_covering(&settled, AfterWalk::Watch);
+    let live = vec!["/vol/a/three".to_string()];
+    watch.begin_covering(&live);
+
+    let over_them = vec!["/vol/a".to_string()];
+    watch.begin_covering(&over_them);
+
+    assert_eq!(
+        watch.branch_paths(),
+        ["/vol/a", "/vol/a/three"],
+        "the settled ones are absorbed; the one a walk is covering keeps its entry, because its \
+         buffer belongs to that walk"
+    );
+    assert!(
+        matches!(
+            watch.admit(created_file("/vol/a/one/new.txt", 1), Reach::CoveredBranches),
+            Admission::Buffered
+        ),
+        "and ground the absorbing walk is covering now waits for it, rather than being written \
+         underneath it through a settled entry"
+    );
+
+    watch.finish_covering(&live, AfterWalk::Watch);
+    watch.finish_covering(&over_them, AfterWalk::Watch);
+    assert_eq!(
+        watch.branch_paths(),
+        ["/vol/a"],
+        "and a walk that ends under a settled branch is absorbed by the same rule"
+    );
+}
+
+/// A collapse mutates the set the running loop is READING, which is the whole
+/// reason it exists as an operation.
+///
+/// The live loop and its reconciler each capture an `Arc<BranchWatch>` when the
+/// watch starts (`ensure_branch_watch`). ❌ A collapse built out of
+/// `branches::clear` plus a begin/finish pair would drop the map entry, so
+/// `live_for` mints a brand-new set nobody is reading: the database would say
+/// `["/vol"]` while the loop kept filtering against the old entries for the rest
+/// of the session, and `is_branch_confined` would read that same stale set.
+#[test]
+fn the_branch_collapse_is_visible_to_the_running_live_loop() {
+    let f = Fixture::new();
+    let space = IndexPathSpace::root();
+    let volume_id = "branch-collapse-test";
+    let root = f.path("collapsing");
+
+    let watch = live_for(volume_id);
+    let covered = vec![f.path("collapsing/one"), f.path("collapsing/two")];
+    watch.begin_covering(&covered);
+    watch.finish_covering(&covered, AfterWalk::Watch);
+    // What the live loop and its reconciler hold: a clone taken when the watch
+    // started, never re-resolved.
+    let scope = WatchScope::Branches(Arc::clone(&watch));
+
+    // And what a caller that knows the whole subtree is covered does, resolving
+    // the set the way any caller would.
+    live_for(volume_id).collapse_to(&root, &space, &f.writer);
+
+    assert_eq!(
+        scope.branches().branch_paths(),
+        [root.clone()],
+        "the loop's own set is the one that collapsed"
+    );
+    assert!(
+        matches!(
+            scope.admit(created_file(&f.path("collapsing/three/new.txt"), 1)),
+            Admission::Process(_)
+        ),
+        "so the loop admits the whole collapsed branch, including ground no entry named before"
+    );
+
+    f.writer.flush_blocking().expect("flush");
+    let conn = IndexStore::open_read_connection(&f.db_path).expect("read connection");
+    assert_eq!(
+        BranchWatch::with_branches(load_branches(&space, &conn)).branch_paths(),
+        [root],
+        "and the database says the same thing the loop is reading"
+    );
+    forget(volume_id);
+}
+
 // ── Persistence ──────────────────────────────────────────────────────
 
 #[test]

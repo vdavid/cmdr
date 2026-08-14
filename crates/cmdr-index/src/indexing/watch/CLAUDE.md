@@ -44,6 +44,9 @@ plus the event loop that turns its stream into index writes.
   but stops being kept current.
 - **`AfterWalk::Forget` means "the loop already answers for this ground", ❌ not "no branch watcher is up".** A failed or
   vetoed watcher still leaves ground a walk COVERED, and dropping its entry erases the only record of that.
+- **Branches absorb the settled ones they cover, on insert and on finish; a `walks > 0` entry is never absorbed.** ❌
+  Never express a collapse as `branches::clear` + begin/finish: it mints a set the running loop isn't reading, and fails
+  silently at runtime. Use `collapse_to`.
 - **Linux watches the BRANCHES, macOS the volume root.** `notify`'s recursive mode costs one inotify watch per directory
   against `max_user_watches`; an FSEvents stream costs nothing per directory and its volume-rooted `sinceWhen` is what
   replays a branch covered last session.
