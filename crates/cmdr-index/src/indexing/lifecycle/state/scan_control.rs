@@ -142,13 +142,26 @@ pub fn force_scan(volume_id: &str) -> Result<RescanOutcome, String> {
     // root (`start_volume_scan`). Calling `start_scan` unconditionally here ran
     // the local guarded walker over a network mount — walking nothing and falsely
     // marking the index complete — so a NAS "Rescan now" indexed zero entries.
+    //
+    // The request is recorded BEFORE the attempt, and cleared by an attempt that
+    // got somewhere. Recording it after a `GroundBeingWalked` refusal reads more
+    // naturally and has a hole in it: the walk can end in the window between the
+    // guard answering and the request landing, and its `run_if_owed` would carry
+    // nothing out — leaving a promise waiting on a walk that already finished.
+    rescan_request::remember(volume_id);
     let result = match mgr.force_rescan("manual start") {
-        Ok(()) | Err(ScanStartError::AlreadyScanning) => Ok(RescanOutcome::Started),
+        Ok(()) | Err(ScanStartError::AlreadyScanning) => {
+            rescan_request::forget(volume_id);
+            Ok(RescanOutcome::Started)
+        }
         Err(ScanStartError::GroundBeingWalked) => {
-            rescan_request::remember(volume_id);
+            log::info!("force_scan: '{volume_id}' is being walked; its scan runs when that walk ends");
             Ok(RescanOutcome::Deferred)
         }
-        Err(ScanStartError::Internal(diagnostic)) => Err(diagnostic),
+        Err(ScanStartError::Internal(diagnostic)) => {
+            rescan_request::forget(volume_id);
+            Err(diagnostic)
+        }
     };
 
     // Re-lock to restore the manager as `Running`. If the instance vanished

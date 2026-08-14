@@ -427,6 +427,10 @@ which reaches the frontend as `StartOutcome::DeferredUntilSearchEnds` and become
 - **The walk that blocked it runs it**, from `cover::release_ground`, in an order that is the whole trick: the branch
   set, then the claim, then the owed scan. Fired before the claim goes, the scan would see this very walk's ground and
   defer itself again, forever.
+- **The request is recorded BEFORE the attempt**, and dropped again by an attempt that got somewhere. Recording it on
+  the way out of a `GroundBeingWalked` refusal reads more naturally and has a hole: the walk can end between the guard
+  answering and the request landing, and its `run_if_owed` would carry nothing out, leaving a promise waiting on a walk
+  that already finished.
 - **❌ Nothing assumes the coast is clear.** The fire re-asks both guards by going through `force_scan`, so a second
   walk still holding ground re-defers the request behind ITS ending. That's what makes a truncating scan under a live
   walk unreachable however many walks are in flight

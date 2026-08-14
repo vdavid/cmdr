@@ -82,11 +82,12 @@ static OWED: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(|| Mutex::new(Hash
 
 /// Remember that this volume is owed a full walk. Idempotent: a second click
 /// describes the same work.
+///
+/// `force_scan` records the request BEFORE it tries to start, and [`forget`]s it
+/// again when the attempt got somewhere, so a walk ending mid-attempt always finds
+/// the request rather than racing it.
 pub(in crate::indexing) fn remember(volume_id: &str) {
-    let inserted = OWED.lock_ignore_poison().insert(volume_id.to_string());
-    if inserted {
-        log::info!("Rescan request: '{volume_id}' is owed a scan once the search walk on it ends");
-    }
+    OWED.lock_ignore_poison().insert(volume_id.to_string());
 }
 
 /// Take the request, if there is one. Taking is what running it looks like, so a
@@ -100,12 +101,11 @@ fn is_owed(volume_id: &str) -> bool {
     OWED.lock_ignore_poison().contains(volume_id)
 }
 
-/// Drop what a volume was owed, because it stopped indexing. Called from the one
-/// teardown choke point every stop path goes through.
+/// Drop what a volume was owed: its scan started, or it stopped indexing. Every
+/// teardown path funnels through `stop_indexing`, which is why the tie lives
+/// there rather than in each of them.
 pub(in crate::indexing) fn forget(volume_id: &str) {
-    if OWED.lock_ignore_poison().remove(volume_id) {
-        log::info!("Rescan request: '{volume_id}' stopped indexing, so the scan it was owed is dropped");
-    }
+    OWED.lock_ignore_poison().remove(volume_id);
 }
 
 /// Run the walk this volume is owed, now that a cover walk has let its ground go.
