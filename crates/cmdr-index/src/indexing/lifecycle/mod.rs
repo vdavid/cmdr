@@ -36,6 +36,7 @@ pub(crate) mod partial_agg;
 /// gate the whole crate's test target fails to build on Linux.
 #[cfg(all(test, target_os = "macos"))]
 mod phased_bench;
+pub(crate) mod phases;
 pub(crate) mod progress_reporter;
 pub(crate) mod rescan_request;
 pub(crate) mod scan_completion;
