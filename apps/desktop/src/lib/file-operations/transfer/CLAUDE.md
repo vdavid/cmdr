@@ -48,6 +48,9 @@ counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`
   orphaned preview). DETAILS § Scan.
 - **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its auto-confirm (MCP) path must NEVER
   silently overwrite.
+- **ONE map from an MCP `onConflict` name to a policy** (`conflict-policy.ts`), shared with the `dialog confirm` path.
+  ❌ Never a second copy: the two that predated it had drifted on the conditional names and both were unreachable, and
+  an unmapped name silently becomes `skip` — "ask me about each file" turning into "skip every file".
 
 Rollback's limits on a move, `handleCancel`'s `confirmed` guard, `archive_needs_password` interception, the
 `data-scan-state` and `data-conflict-state` E2E markers, pane refresh after a move, flows, the phase catalog

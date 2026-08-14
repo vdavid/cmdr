@@ -5,7 +5,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
     AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_await_operation_start, mcp_round_trip,
-    refuse_while_dialog_blocks, wait_for_ack,
+    refuse_while_dialog_blocks, validate_conflict_policy, wait_for_ack,
 };
 use crate::pluralize::pluralize;
 
@@ -102,10 +102,8 @@ pub async fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
     let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
 
-    if auto_confirm && !["skip_all", "overwrite_all", "rename_all"].contains(&on_conflict) {
-        return Err(ToolError::invalid_params(
-            "onConflict must be 'skip_all', 'overwrite_all', or 'rename_all'",
-        ));
+    if auto_confirm {
+        validate_conflict_policy(on_conflict)?;
     }
 
     if auto_confirm {
@@ -144,10 +142,8 @@ pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
     let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
 
-    if auto_confirm && !["skip_all", "overwrite_all", "rename_all"].contains(&on_conflict) {
-        return Err(ToolError::invalid_params(
-            "onConflict must be 'skip_all', 'overwrite_all', or 'rename_all'",
-        ));
+    if auto_confirm {
+        validate_conflict_policy(on_conflict)?;
     }
 
     if auto_confirm {

@@ -34,6 +34,7 @@ import { transferOpLabel } from './transfer-op-label'
 import { createTransferPaneEffects } from './transfer-pane-effects'
 import { createAdoptedOperation } from './adopted-operation.svelte'
 import { createArchivePasswordFlow } from './archive-password-flow.svelte'
+import { conflictPolicyFromMcpName } from '$lib/file-operations/transfer/conflict-policy'
 import type { TransferDialogPropsData } from './transfer-operations'
 import type { TransferOperationType, ConflictResolution, WriteOperationError } from '../types'
 import type {
@@ -706,30 +707,17 @@ export function createDialogState(deps: DialogStateDeps) {
     /** Programmatically confirm an open dialog (for MCP confirm action). */
     confirmOpenDialog(dialogType: string, onConflict?: string) {
       if (dialogType === 'transfer-confirmation' && showTransferDialog && transferDialogProps) {
-        // The MCP `onConflict` names, mapped onto the dialog's own radio values.
-        // `stop` is the one that decides nothing: the operation asks per file
-        // and parks on each clash until somebody answers it (the MCP
-        // `resolve_conflict` tool, or the prompt on screen). Without it every
-        // programmatic transfer settles its clashes upfront, and the per-file
-        // prompt is unreachable from anything but a human hand.
-        const conflictMap: Partial<Record<string, ConflictResolution>> = {
-          stop: 'stop',
-          skip_all: 'skip',
-          overwrite_all: 'overwrite',
-          rename_all: 'rename',
-          overwrite_smaller_all: 'overwrite_smaller',
-          overwrite_older_all: 'overwrite_older',
-        }
-        // A policy the backend accepted but this map doesn't know would quietly
+        // A policy the backend accepted but the map doesn't know would quietly
         // become `skip`, so an agent that asked to be asked per file would
         // instead watch every clash get skipped. Say so; the backend validates
         // the name, so this can only fire when the two lists have drifted.
-        if (onConflict !== undefined && conflictMap[onConflict] === undefined) {
+        const mapped = conflictPolicyFromMcpName(onConflict)
+        if (onConflict !== undefined && mapped === undefined) {
           log.warn('Unknown conflict policy {onConflict} on a programmatic confirm; falling back to skip', {
             onConflict,
           })
         }
-        const resolution: ConflictResolution = (onConflict ? conflictMap[onConflict] : undefined) ?? 'skip'
+        const resolution: ConflictResolution = mapped ?? 'skip'
         this.handleTransferConfirm(
           transferDialogProps.destinationPath,
           transferDialogProps.destVolumeId,

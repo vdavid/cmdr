@@ -90,6 +90,43 @@ impl From<tauri::Error> for ToolError {
     }
 }
 
+/// Every conflict policy a transfer can be started or confirmed with, matching
+/// the radio buttons a person picks between.
+///
+/// `stop` is the one that isn't a bulk decision: it leaves the operation asking
+/// per file and parking on each clash until somebody answers it (`resolve_conflict`).
+/// Without it, every programmatic transfer settled all its clashes upfront, and
+/// the per-file prompt was reachable only by hand — which is where a wedging bug
+/// sat unfound for months.
+///
+/// ONE list, shared by `copy` / `move` (`file_ops.rs`) and `dialog confirm`
+/// (`dialogs.rs`), and mirrored once on the frontend
+/// (`$lib/file-operations/transfer/conflict-policy.ts`). ❌ Don't grow a second
+/// copy: the two frontend maps that predated this one had drifted on the
+/// conditional names, and a policy the backend accepts but the map doesn't know
+/// silently becomes `skip` — "ask me about each file" turning into "skip every
+/// file" over somebody's data.
+pub(super) const CONFLICT_POLICIES: &[&str] = &[
+    "stop",
+    "skip_all",
+    "overwrite_all",
+    "rename_all",
+    "overwrite_smaller_all",
+    "overwrite_older_all",
+];
+
+/// Rejects a conflict policy no surface knows, naming the ones that exist.
+pub(super) fn validate_conflict_policy(policy: &str) -> Result<(), ToolError> {
+    if CONFLICT_POLICIES.contains(&policy) {
+        Ok(())
+    } else {
+        Err(ToolError::invalid_params(format!(
+            "onConflict must be one of: {} (got '{policy}')",
+            CONFLICT_POLICIES.join(", ")
+        )))
+    }
+}
+
 /// Refuses a tool that would START a file operation while a dialog is up.
 ///
 /// The gate runs BEFORE the tool dispatches, so the agent gets the reason at once

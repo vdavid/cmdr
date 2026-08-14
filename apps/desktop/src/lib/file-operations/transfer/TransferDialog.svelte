@@ -6,6 +6,7 @@
     import type { SortColumn, SortOrder, ConflictResolution, TransferOperationType } from '$lib/file-explorer/types'
     import { validateDirectoryPath } from '$lib/utils/filename-validation'
     import { createTransferDestExistsCheck } from './transfer-dest-exists.svelte'
+    import { conflictPolicyFromMcpName } from './conflict-policy'
     import CompressLevelControl from './CompressLevelControl.svelte'
     import CompressEstimateLine from './CompressEstimateLine.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
@@ -165,17 +166,12 @@
     // handler silently awaits is how a click reads as "nothing happened".
     let confirmPending = $state(false)
 
-    // Map MCP onConflict string to ConflictResolution, or default to "ask for each"
-    const autoConfirmConflictMap: Record<string, ConflictResolution> = {
-        skip_all: 'skip',
-        overwrite_all: 'overwrite',
-        rename_all: 'rename',
-        overwrite_all_smaller: 'overwrite_smaller',
-        overwrite_all_older: 'overwrite_older',
-    }
+    // "Ask for each" unless an auto-confirming caller named a policy. The map is
+    // shared with the `dialog confirm` path (`conflict-policy.ts`); the two used
+    // to keep private copies that had drifted on the conditional names.
     let conflictPolicy = $state<ConflictResolution>(
-        autoConfirm && autoConfirmOnConflict ? (autoConfirmConflictMap[autoConfirmOnConflict] ?? 'skip') : 'stop',
-    ) // Default to "ask for each" unless auto-confirming
+        (autoConfirm ? conflictPolicyFromMcpName(autoConfirmOnConflict) : undefined) ?? 'stop',
+    )
 
     // Filter to only actual volumes (not favorites)
     const actualVolumes = $derived(volumes.filter((v) => v.category !== 'favorite' && v.category !== 'network'))

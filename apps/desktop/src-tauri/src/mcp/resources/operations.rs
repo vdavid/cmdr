@@ -95,6 +95,14 @@ pub(crate) fn build_operations_yaml(rows: &[OperationRow], now_ms: u64) -> Strin
                 crate::redact::redact_line(destination)
             ));
         }
+        // Why a retained `failed` row stopped. The typed variant's own name, the
+        // same one the frontend renders its wording from — ❌ never a sentence.
+        // Without it an agent reads `status: failed` and has to guess between a
+        // vanished source, a full disk, and a permission refusal, which decide
+        // completely different next moves.
+        if let Some(error) = &row.snapshot.error {
+            yaml.push_str(&format!("    error: {}\n", error_line(error)));
+        }
         // Live progress: present for running / paused, absent for queued (the
         // status cache has no entry until the op is admitted and starts work).
         if let Some(op) = &row.progress {
@@ -185,6 +193,20 @@ fn progress_line(op: &OperationStatus) -> String {
         return "scanning".to_string();
     }
     parts.join(", ")
+}
+
+/// The failure's typed variant name (`source_not_found`, `insufficient_space`,
+/// `permission_denied`), taken from its own serde tag so a renamed variant can't
+/// leave a hand-written string behind.
+///
+/// The TAG only, deliberately: the payload's paths already ride the row as
+/// `source:` / `destination:`, and its `message` fields carry raw OS text that
+/// would need its own redaction pass. What an agent decides on is the class.
+fn error_line(error: &crate::file_system::write_operations::WriteOperationError) -> String {
+    serde_json::to_value(error)
+        .ok()
+        .and_then(|v| v.get("type").and_then(|t| t.as_str()).map(str::to_string))
+        .unwrap_or_else(|| "unknown".to_string())
 }
 
 /// Serde-rendered enum name (`copy`, `rolling_back`), lowercased as a fallback

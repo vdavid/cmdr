@@ -55,6 +55,14 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
   indicator reads source → destination — the same "from → to" the queue row the user just came from shows. ❌ Never gate
   the whole indicator on `direction`: a dialog that named neither end of the transfer is worse than one that names both
   without pointing at a pane.
+- **`conflict-policy.ts` is the ONE map from an MCP `onConflict` name to a conflict policy**, read by both programmatic
+  entries: `TransferDialog.svelte` (a `copy` / `move` with `autoConfirm`, which confirms itself on mount) and
+  `pane/dialog-state.svelte.ts` (`dialog confirm` on an already-open one). They each used to carry a private copy, and
+  the copies had drifted — one spelled the conditional policies `overwrite_all_smaller`, the other
+  `overwrite_smaller_all` — with neither spelling reachable through any tool, so nothing surfaced it. The drift matters
+  because the fallback is silent: a name the map doesn't know becomes `skip`, so a caller asking to be asked per file
+  would instead watch every clash get skipped. The backend validates the name against one list
+  (`mcp/executor/mod.rs::CONFLICT_POLICIES`), and both callers now log a name this map has never heard of.
 - **`ScanPhaseBody.svelte` is shared by the progress dialog and the queue row** (`comfortable` and `compact` densities),
   so a change to it lands on both surfaces.
 - **`transfer-complete-toast.ts::composeTransferCompleteToast` splits TOP-LEVEL items by type only** ("Moved 1 file and

@@ -12,8 +12,8 @@ pub fn copy_schema() -> Value {
             },
             "onConflict": {
                 "type": "string",
-                "enum": ["skip_all", "overwrite_all", "rename_all"],
-                "description": "Conflict resolution policy for clashing FILES (only when autoConfirm is true). Folders always merge: a source folder landing on a same-named dest folder merges into it, and this policy governs the files inside. Default: skip_all"
+                "enum": ["stop", "skip_all", "overwrite_all", "rename_all", "overwrite_smaller_all", "overwrite_older_all"],
+                "description": "Conflict resolution policy for clashing FILES (only when autoConfirm is true). Folders always merge: a source folder landing on a same-named dest folder merges into it, and this policy governs the files inside. 'stop' decides nothing upfront: the operation asks per file and parks until you answer each clash with resolve_conflict (watch cmdr://state operations for the pendingConflict block). overwrite_smaller_all / overwrite_older_all overwrite only when the destination is strictly smaller / strictly older, and skip otherwise. Default: skip_all"
             }
         },
         "required": []
@@ -30,8 +30,8 @@ pub fn move_schema() -> Value {
             },
             "onConflict": {
                 "type": "string",
-                "enum": ["skip_all", "overwrite_all", "rename_all"],
-                "description": "Conflict resolution policy for clashing FILES (only when autoConfirm is true). Folders always merge: a source folder landing on a same-named dest folder merges into it, and this policy governs the files inside. Default: skip_all"
+                "enum": ["stop", "skip_all", "overwrite_all", "rename_all", "overwrite_smaller_all", "overwrite_older_all"],
+                "description": "Conflict resolution policy for clashing FILES (only when autoConfirm is true). Folders always merge: a source folder landing on a same-named dest folder merges into it, and this policy governs the files inside. 'stop' decides nothing upfront: the operation asks per file and parks until you answer each clash with resolve_conflict (watch cmdr://state operations for the pendingConflict block). overwrite_smaller_all / overwrite_older_all overwrite only when the destination is strictly smaller / strictly older, and skip otherwise. Default: skip_all"
             }
         },
         "required": []

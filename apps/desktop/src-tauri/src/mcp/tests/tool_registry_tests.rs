@@ -477,30 +477,39 @@ fn test_resolve_conflict_schema_and_gate() {
 }
 
 #[test]
-fn test_transfer_confirmation_offers_the_stop_policy() {
-    // Without `stop` in this enum, every agent-driven transfer settles its
-    // clashes upfront and the per-file prompt is unreachable from automation —
-    // which is how a wedging bug in it survived for months.
+fn test_every_way_to_start_a_transfer_offers_the_same_conflict_policies() {
+    // Without `stop`, an agent-driven transfer settles its clashes upfront and
+    // the per-file prompt is unreachable from automation — which is how a
+    // wedging bug in it survived for months. And ONE list across the three
+    // tools: the two frontend maps that predated this had drifted on the
+    // conditional names, and neither spelling was reachable, so nobody noticed.
     let tools = get_all_tools();
-    let schema = &tool(&tools, "dialog").input_schema;
-    let policies = schema
-        .get("properties")
-        .unwrap()
-        .get("onConflict")
-        .unwrap()
-        .get("enum")
-        .unwrap()
-        .as_array()
-        .unwrap();
-    for policy in [
-        "stop",
-        "skip_all",
-        "overwrite_all",
-        "rename_all",
-        "overwrite_smaller_all",
-        "overwrite_older_all",
-    ] {
-        assert!(policies.contains(&json!(policy)), "missing policy '{policy}'");
+    for tool_name in ["dialog", "copy", "move"] {
+        let policies = tool(&tools, tool_name)
+            .input_schema
+            .get("properties")
+            .unwrap()
+            .get("onConflict")
+            .unwrap()
+            .get("enum")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .clone();
+        for policy in [
+            "stop",
+            "skip_all",
+            "overwrite_all",
+            "rename_all",
+            "overwrite_smaller_all",
+            "overwrite_older_all",
+        ] {
+            assert!(
+                policies.contains(&json!(policy)),
+                "{tool_name} is missing policy '{policy}'"
+            );
+        }
+        assert_eq!(policies.len(), 6, "{tool_name}: policy list differs from the rest");
     }
 }
 

@@ -2,8 +2,8 @@
 //! join of registry membership/status and the live progress cache).
 
 use crate::file_system::write_operations::{
-    ConflictId, LifecycleStatus, OperationSnapshot, OperationStatus, WriteConflictEvent, WriteOperationPhase,
-    WriteOperationType,
+    ConflictId, LifecycleStatus, OperationSnapshot, OperationStatus, WriteConflictEvent, WriteOperationError,
+    WriteOperationPhase, WriteOperationType,
 };
 use crate::mcp::resources::operations::{OperationRow, build_operations_yaml};
 
@@ -175,6 +175,35 @@ fn a_size_the_backend_could_not_read_says_unknown_rather_than_zero() {
     let yaml = build_operations_yaml(&rows, 12_000);
     assert!(yaml.contains("destinationSize: unknown"), "yaml: {yaml}");
     assert!(!yaml.contains("destinationSize: 0 B"), "yaml: {yaml}");
+}
+
+#[test]
+fn a_retained_failure_says_why_it_stopped() {
+    // A `failed` row with no reason leaves an agent guessing between a vanished
+    // source, a full disk, and a permission refusal — three completely different
+    // next moves. The typed variant name, ❌ never a sentence.
+    let mut failed = snapshot("op-1", LifecycleStatus::Failed);
+    failed.error = Some(WriteOperationError::SourceNotFound {
+        path: "/src/photos/gone.raw".to_string(),
+    });
+    let rows = vec![OperationRow {
+        snapshot: failed,
+        progress: None,
+        pending_conflict: None,
+    }];
+    let yaml = build_operations_yaml(&rows, 12_000);
+    assert!(yaml.contains("status: failed"), "yaml: {yaml}");
+    assert!(yaml.contains("error: source_not_found"), "yaml: {yaml}");
+}
+
+#[test]
+fn a_live_operation_carries_no_error_line() {
+    let rows = vec![OperationRow {
+        snapshot: snapshot("op-1", LifecycleStatus::Running),
+        progress: None,
+        pending_conflict: None,
+    }];
+    assert!(!build_operations_yaml(&rows, 12_000).contains("error:"));
 }
 
 #[test]

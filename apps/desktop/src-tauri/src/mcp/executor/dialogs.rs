@@ -37,7 +37,7 @@ use crate::window_events::{
 
 use super::{
     AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, snapshot_generation,
-    snapshot_window_count, validate_path_exists, wait_for_ack,
+    snapshot_window_count, validate_conflict_policy, validate_path_exists, wait_for_ack,
 };
 
 /// Execute the unified dialog command.
@@ -318,23 +318,6 @@ async fn execute_generic_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_typ
     Ok(json!(format!("OK: Closed {dialog_type} dialog")))
 }
 
-/// The conflict policies the transfer dialog can be confirmed with, matching the
-/// radio buttons a person picks between.
-///
-/// `stop` is the one that isn't a bulk decision: it leaves the operation asking
-/// per file, which is the ONLY way to reach the per-file clash prompt. Without
-/// it every agent-driven transfer decided all its clashes upfront, so nothing
-/// automated could reach — or test — the state a person reaches by leaving the
-/// dialog on "Ask for each". Answer those clashes with `resolve_conflict`.
-const CONFLICT_POLICIES: &[&str] = &[
-    "stop",
-    "skip_all",
-    "overwrite_all",
-    "rename_all",
-    "overwrite_smaller_all",
-    "overwrite_older_all",
-];
-
 /// Execute dialog confirm action.
 /// Programmatically confirms an already-open dialog.
 async fn execute_dialog_confirm<R: Runtime>(
@@ -345,12 +328,7 @@ async fn execute_dialog_confirm<R: Runtime>(
     match dialog_type {
         "transfer-confirmation" => {
             let conflict_policy = on_conflict.unwrap_or("skip_all");
-            if !CONFLICT_POLICIES.contains(&conflict_policy) {
-                return Err(ToolError::invalid_params(format!(
-                    "onConflict must be one of: {}",
-                    CONFLICT_POLICIES.join(", ")
-                )));
-            }
+            validate_conflict_policy(conflict_policy)?;
             let pre_gen = snapshot_generation(app);
             app.emit(
                 "mcp-confirm-dialog",
