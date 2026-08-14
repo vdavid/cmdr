@@ -314,6 +314,29 @@ concurrent suite can answer for this run; `recordPlaywrightTests` additionally s
 this run's Playwright started, which covers a recycled pid landing on a leftover the sweep hasn't collected. The
 duration flagger needs no such guard, since it only runs on the success path.
 
+**Example queries.** Use `sqlite3` (ships with macOS) rather than `awk` or `cut`: a `test_id` contains commas, quoted
+per RFC 4180, and every field-splitting one-liner gets those rows wrong. Importing the whole file takes well under a
+second. `check` is a keyword, so it needs the double quotes.
+
+Which tests cost the most red runs:
+
+```sh
+sqlite3 -column -header :memory: '.import --csv ~/cmdr-test-log.csv t' \
+  "select test_id, count(*) as red_runs from t
+   where status in ('fail','timeout','leak','flaky') group by 1 order by 2 desc limit 15"
+```
+
+Which are slowest (worst single attempt ever seen, and how often it ran):
+
+```sh
+sqlite3 -column -header :memory: '.import --csv ~/cmdr-test-log.csv t' \
+  "select \"check\", test_id, round(max(cast(duration_s as real)),1) as worst_s, count(*) as runs
+   from t where duration_s <> 'N/A' group by 1,2 order by 3 desc limit 15"
+```
+
+Narrow either to a window with `and timestamp >= '2026-08-01'`, or to one lane with `and "check" = 'rust-tests'`.
+Remember what "absent" means here: fast, or never ran. Never "passed".
+
 **Disabled by `--no-log` and `--ci`**, like the check-level log, so CI runners don't write a log nobody reads.
 
 Example queries (the log is plain CSV; `duration_s` can be `N/A`, so cast defensively):
