@@ -566,3 +566,31 @@ async fn register_with_no_predecessor_just_registers() {
 
     manager.unregister(volume_id);
 }
+
+/// The reason the fallback log can't just print `UpgradeFailure`.
+///
+/// `UpgradeFailure` crosses IPC to pick the network-error copy, and the auth case
+/// never reaches that surface (it goes to `CredentialsNeeded` instead), so it has
+/// no auth variant and folds a rejected password into `Unexpected`. That's what
+/// made a stale Keychain password read as a flaky server in the log while the
+/// share sat silently on the kernel mount.
+///
+/// If someone gives `UpgradeFailure` an auth variant, this fails: fold the auth
+/// branch of `log_direct_connect_failure` back into the generic one at the same
+/// time, so there's one classification rather than two that can disagree.
+#[test]
+fn an_auth_rejection_is_invisible_to_upgrade_failure_so_the_log_asks_is_auth_error_itself() {
+    let rejected = smb2::Error::Auth {
+        message: "STATUS_LOGON_FAILURE during SessionSetup".to_string(),
+    };
+
+    assert!(
+        crate::network::smb_util::is_auth_error(&rejected),
+        "a rejected password must be recognizable as auth, or the log can't name it"
+    );
+    assert_eq!(
+        UpgradeFailure::from_smb_error(&rejected),
+        UpgradeFailure::Unexpected,
+        "UpgradeFailure has no auth variant; the fallback log must not use it to describe an auth failure"
+    );
+}

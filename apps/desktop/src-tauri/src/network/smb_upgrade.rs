@@ -73,6 +73,53 @@ impl UpgradeFailure {
     }
 }
 
+/// Where a failed direct connection leaves the user, which is what decides how
+/// loud the log is about it.
+enum DirectConnectOutcome {
+    /// Nobody will be asked anything: the share stays on the macOS kernel mount
+    /// for the rest of the session, at kernel-mount speed and without the direct
+    /// session's control surface. Always a WARN, because nothing else in the app
+    /// will ever mention it.
+    StaysOnKernelMount,
+    /// The caller gets the failure and surfaces it. Auth here is ordinary flow
+    /// (the "Connect directly" screen prompts for credentials), so it's an INFO.
+    SurfacedToCaller,
+}
+
+/// Writes down why a direct smb2 connection didn't happen, naming the auth case.
+///
+/// **Why it's a function and not two `warn!`s.** Both upgrade paths end here, so
+/// the log answers "why is this share on the slow path" the same way whichever
+/// path ran. And it names auth, which neither used to: `UpgradeFailure` has no
+/// auth variant (it crosses IPC to drive the network-error copy; the auth case is
+/// handled by `CredentialsNeeded` instead), so the auto path printed `Unexpected`
+/// for a `STATUS_LOGON_FAILURE`, and the manual path printed nothing at all.
+/// A stale Keychain password therefore looked exactly like a flaky server, and
+/// the share sat silently on the kernel mount at a fraction of the speed.
+fn log_direct_connect_failure(server: &str, share: &str, err: &smb2::Error, outcome: DirectConnectOutcome) {
+    let auth = crate::network::smb_util::is_auth_error(err);
+    match (outcome, auth) {
+        (DirectConnectOutcome::StaysOnKernelMount, true) => log::warn!(
+            target: "smb_fallback",
+            "{server}/{share} rejected our credentials ({err}), so it stays on the macOS kernel mount: slower, and Cmdr can't manage the connection. Fix the saved password for this share to get the direct connection back."
+        ),
+        (DirectConnectOutcome::StaysOnKernelMount, false) => log::warn!(
+            target: "smb_fallback",
+            "Couldn't establish an smb2 connection for {server}/{share} ({:?}): {err}. Staying on the macOS kernel mount.",
+            UpgradeFailure::from_smb_error(err)
+        ),
+        (DirectConnectOutcome::SurfacedToCaller, true) => log::info!(
+            target: "smb_fallback",
+            "{server}/{share} rejected our credentials ({err}); asking for new ones."
+        ),
+        (DirectConnectOutcome::SurfacedToCaller, false) => log::warn!(
+            target: "smb_fallback",
+            "Couldn't establish an smb2 connection for {server}/{share} ({:?}): {err}",
+            UpgradeFailure::from_smb_error(err)
+        ),
+    }
+}
+
 /// Result of an SMB volume upgrade attempt.
 #[derive(serde::Serialize, specta::Type)]
 #[serde(tag = "status", rename_all = "camelCase", rename_all_fields = "camelCase")]
@@ -310,13 +357,7 @@ pub(crate) async fn register_smb_volume(
             // Log-only path: nothing here reaches a person, so the raw error is
             // exactly what we want (it's the diagnostic). The volume stays on the
             // OS mount, which still works, just slower.
-            log::warn!(
-                "Couldn't establish an smb2 connection for {}/{} ({:?}): {}. Staying on the OS mount.",
-                server,
-                share,
-                UpgradeFailure::from_smb_error(&e),
-                e
-            );
+            log_direct_connect_failure(server, share, &e, DirectConnectOutcome::StaysOnKernelMount);
         }
     }
 }
@@ -386,19 +427,13 @@ pub(crate) async fn try_smb_upgrade(
             Ok(())
         }
         Err(e) => {
+            // The raw error stays in the log where it's useful; the caller gets the
+            // typed reason and the frontend writes the sentence.
+            log_direct_connect_failure(&resolved_server, share, &e, DirectConnectOutcome::SurfacedToCaller);
             if is_auth_error(&e) {
                 Err(UpgradeError::Auth)
             } else {
                 let reason = UpgradeFailure::from_smb_error(&e);
-                // The raw error stays in the log where it's useful; the caller
-                // gets the typed reason and the frontend writes the sentence.
-                log::warn!(
-                    "Couldn't establish an smb2 connection for {}/{} ({:?}): {}",
-                    resolved_server,
-                    share,
-                    reason,
-                    e
-                );
                 Err(UpgradeError::Network {
                     reason,
                     display_name: display,
