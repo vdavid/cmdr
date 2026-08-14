@@ -120,6 +120,10 @@
   "@queue.chip.ariaLabel": {
     "sourceHash": "3ff7a01"
   },
+  "queue.chip.scanningAriaLabel": "{label}, wird durchsucht. Öffne die Vorgangswarteschlange.",
+  "@queue.chip.scanningAriaLabel": {
+    "sourceHash": "791fc9f"
+  },
   "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} Objekt} other { · {countText} Objekte}}{hasDestination, select, yes { · nach {destination}} other {}} · {percentText} %{hasDetail, select, yes { · {detail}} other {}}",
   "@queue.chip.tooltip": {
     "sourceHash": "6680100"

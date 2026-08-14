@@ -119,6 +119,10 @@
   "@queue.chip.ariaLabel": {
     "sourceHash": "3ff7a01"
   },
+  "queue.chip.scanningAriaLabel": "{label}，正在扫描。打开操作队列。",
+  "@queue.chip.scanningAriaLabel": {
+    "sourceHash": "791fc9f"
+  },
   "queue.chip.tooltip": "{label}{count, plural, =0 {} other { · 共 {countText} 个项目}}{hasDestination, select, yes { · 目标：“{destination}”} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
   "@queue.chip.tooltip": {
     "sourceHash": "6680100"

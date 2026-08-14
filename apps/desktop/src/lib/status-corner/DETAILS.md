@@ -75,12 +75,15 @@ without a modal in front of it, and clicking it opens (or raises) the queue wind
 An operation that is still counting reaches the corner like any other running one, but `barFraction` can only ever
 return 0 for it: bytes and files both have `total == 0` through the whole scan, by design (finding the totals is what
 the scan is for). A bar at 0% for minutes is not honest progress, so the chip swaps it for a `<Spinner>`, and the
-tooltip and spoken label become `fileOperations.shared.scanningTooltip` ("Scanning…") rather than `queue.chip.tooltip`,
-whose `· {percentText}%` clause would be the dishonest part. The visible label stays the verb.
+tooltip becomes `fileOperations.shared.scanningTooltip` ("Scanning…") rather than `queue.chip.tooltip`, whose
+`· {percentText}%` clause would be the dishonest part. The visible label stays the verb.
 
-⚠️ Reusing an existing key costs one thing worth naming: the scanning aria-label drops `queue.chip.ariaLabel`'s "Open
-the operation queue" tail. The chip is still a `<button>`, so the affordance is announced by role; if that reads thin in
-practice, the fix is a new catalog key, not a percentage.
+The SPOKEN label is its own key, `queue.chip.scanningAriaLabel` ("{label}, scanning. Open the operation queue."), not
+the tooltip's string. It's `queue.chip.ariaLabel` with the percentage swapped for the state word, so the scan state
+gives up exactly the dishonest part and keeps the two that matter: the visible verb, which voice control needs to press
+the chip by the word a person can see on it (WCAG 2.5.3), and the closing promise naming what pressing it does. ❌ Don't
+re-collapse the two labels into one key to save a string: the tooltip is read, the aria label is spoken, and they
+legitimately want different sentences. `OperationChip.a11y.test.ts` pins both halves.
 
 ### The failure state
 

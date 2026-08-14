@@ -333,7 +333,11 @@ describe('OperationChip', () => {
 
     expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Copying')
     expect(target.querySelector('[role="progressbar"]'), 'no bar while the totals are unknown').toBeNull()
-    expect(chip()?.getAttribute('aria-label')).toBe('Scanning…')
+    // The spoken label keeps BOTH things the sighted chip has: the visible verb
+    // (WCAG 2.5.3 — voice-control users say the word they can see) and the
+    // promise that pressing this opens the queue. The percentage is the only
+    // part the scan state drops, because it's the only dishonest one.
+    expect(chip()?.getAttribute('aria-label')).toBe('Copying, scanning. Open the operation queue.')
   })
 
   it('goes back to a real bar once the operation starts writing', () => {

@@ -119,6 +119,10 @@
   "@queue.chip.ariaLabel": {
     "sourceHash": "3ff7a01"
   },
+  "queue.chip.scanningAriaLabel": "{label}, söker igenom. Öppna åtgärdskön.",
+  "@queue.chip.scanningAriaLabel": {
+    "sourceHash": "791fc9f"
+  },
   "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} objekt} other { · {countText} objekt}}{hasDestination, select, yes { · till {destination}} other {}} · {percentText} %{hasDetail, select, yes { · {detail}} other {}}",
   "@queue.chip.tooltip": {
     "sourceHash": "6680100"

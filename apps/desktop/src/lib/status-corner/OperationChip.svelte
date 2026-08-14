@@ -146,11 +146,16 @@
         })
     })
 
+    /** The scan state gets its OWN spoken label, not the tooltip's "Scanning…":
+     *  it drops the percentage (the one dishonest part) but keeps what the
+     *  sighted chip has — the visible verb, which voice control needs to press
+     *  the chip by name (WCAG 2.5.3), and the promise that pressing it opens
+     *  the queue, which is the chip's whole affordance. */
     const ariaLabel = $derived(
         chipState?.kind === 'failure'
             ? failedText
             : isScanning
-              ? scanningText
+              ? tString('queue.chip.scanningAriaLabel', { label: chipLabel })
               : tString('queue.chip.ariaLabel', { label: chipLabel, percentText }),
     )
 

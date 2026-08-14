@@ -1976,6 +1976,7 @@ export type MessageKey =
   | 'queryUi.size.unit.bytes'
   | 'queue.chip.ariaLabel'
   | 'queue.chip.failed'
+  | 'queue.chip.scanningAriaLabel'
   | 'queue.chip.tooltip'
   | 'queue.empty.body'
   | 'queue.empty.title'

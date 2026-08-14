@@ -119,6 +119,10 @@
   "@queue.chip.ariaLabel": {
     "sourceHash": "3ff7a01"
   },
+  "queue.chip.scanningAriaLabel": "{label}, đang quét. Mở hàng đợi thao tác.",
+  "@queue.chip.scanningAriaLabel": {
+    "sourceHash": "791fc9f"
+  },
   "queue.chip.tooltip": "{label}{count, plural, =0 {} other { · {countText} mục}}{hasDestination, select, yes { · vào {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
   "@queue.chip.tooltip": {
     "sourceHash": "6680100"

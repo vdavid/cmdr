@@ -60,9 +60,21 @@ function snapshot(status: OperationSnapshot['status']): OperationSnapshot {
   }
 }
 
-function renderChip(status: OperationSnapshot['status']): HTMLElement {
+/** Still counting: both totals are 0 for the whole walk, so there's no bar and
+ *  no honest percentage, and the chip names itself a different way. */
+const scanningProgress: WriteProgressEvent = {
+  ...runningProgress,
+  phase: 'scanning',
+  filesDone: 900,
+  filesTotal: 0,
+  bytesDone: 0,
+  bytesTotal: 0,
+  etaSeconds: null,
+}
+
+function renderChip(status: OperationSnapshot['status'], progress: WriteProgressEvent = runningProgress): HTMLElement {
   store?._testApplySnapshot([snapshot(status)])
-  store?._testApplyProgress(runningProgress)
+  store?._testApplyProgress(progress)
   const target = document.createElement('div')
   document.body.appendChild(target)
   mount(OperationChip, { target })
@@ -96,6 +108,17 @@ describe('OperationChip a11y', () => {
   it('paused has no violations', async () => {
     const target = renderChip('paused')
     expect(target.querySelector('.chip-label')?.textContent).toBe('Paused')
+    await expectNoA11yViolations(target)
+  })
+
+  it('scanning is named with the verb it shows and the queue it opens', async () => {
+    const target = renderChip('running', scanningProgress)
+    const chip = target.querySelector('.operation-chip')
+    // The two things the sighted chip offers and a percentage-free label could
+    // silently drop: the visible word voice control presses it by (WCAG 2.5.3),
+    // and the affordance that says what pressing it does.
+    expect(chip?.getAttribute('aria-label')).toContain(target.querySelector('.chip-label')?.textContent ?? '')
+    expect(chip?.getAttribute('aria-label')).toContain('Open the operation queue')
     await expectNoA11yViolations(target)
   })
 })
