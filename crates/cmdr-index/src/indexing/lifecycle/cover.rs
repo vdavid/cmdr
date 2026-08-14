@@ -51,7 +51,7 @@ use crate::indexing::scanner::{CoveredEntry, ScanError, ScanSummary, WalkHeartbe
 use crate::indexing::store::IndexStore;
 use crate::indexing::volume::IndexVolumeKind;
 use crate::indexing::writer::IndexWriter;
-use cmdr_fs::pluralize::pluralize;
+use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 /// How many batches may sit between the walk and its consumer.
 ///
@@ -358,7 +358,7 @@ fn walk_frontier(
 
     log::debug!(
         "Cover: {} over {}{}",
-        pluralize(outcome.entries_found, "entry"),
+        pluralize_with(outcome.entries_found, "entry", "entries"),
         pluralize(outcome.roots_covered as u64, "frontier root"),
         if outcome.cancelled { " (cancelled)" } else { "" },
     );

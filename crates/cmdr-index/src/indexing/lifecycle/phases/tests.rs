@@ -1039,7 +1039,7 @@ fn how_long_home_takes() {
     let _ = writeln!(
         out,
         "{}; the early signal arrived {}",
-        cmdr_fs::pluralize::pluralize(entries, "entry"),
+        cmdr_fs::pluralize::pluralize_with(entries, "entry", "entries"),
         match home_covered {
             Some(at) => format!("{at:?} in"),
             None => "never".to_string(),

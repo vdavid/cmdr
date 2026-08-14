@@ -386,3 +386,16 @@ nothing outside `~/Library`, which moves the media and importance kick **39 seco
 priority roots (the fake host answers none), so home was walked with no ordering at all and `~/projects-git` (2.4M
 entries) dominated it. With the real host answering, the folders the user opens are covered in the first tenths of a
 second, exactly as the arms above measured.
+
+## The built machine, in the real app, 2026-08-15
+
+`pnpm dev` on a fresh data directory, the real `AppHostPolicy` answering, David's real `/`. A **debug** build, so the
+wall clock is ❌ not comparable to the release arms above — what it confirms is that the whole path runs end to end.
+
+- `Startup: covering 'root' in phases (no completed scan on record)` at T+0.0 s, first walk at **T+0.01 s**.
+- `Phases: 'root' has covered home` at **T+98 s** (the early media and importance kick).
+- `Phases: 'root' is covered end to end` at **T+146 s**, and the run reported **6,071,094 entries in 166.8 s** — the
+  last 21 s being the completion sequence's `PayLedgerIfUnpaid` full aggregate plus the flush before the branch
+  collapse.
+- 922 MB index, one `ScanStarted`, no truncate, and the reporter's `ComputePartialAggregates(Sql)` ticking throughout
+  with `1/2 hot paths resolved` — mid-scan sizes landing on the folder the pane was showing.

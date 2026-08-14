@@ -310,6 +310,9 @@ impl Machine {
     /// One phase: stitch down to its root, then walk what its frontier still
     /// names, one root at a time.
     fn run_phase(&self, phase: &Phase, queue: &mut PhaseQueue) {
+        // The ORDER is the whole feature, so a support bundle has to show it. A
+        // dozen lines per first index, and none after that.
+        log::info!("Phases: covering {} ({:?})", phase.path.display(), phase.rank);
         set_phase_for(
             self.events.as_ref(),
             &self.volume_id,
@@ -564,7 +567,11 @@ impl Machine {
         log::info!(
             "Phases: '{}' covered {} in {:.1}s",
             self.volume_id,
-            cmdr_fs::pluralize::pluralize(self.progress.entries_scanned.load(Ordering::Relaxed), "entry"),
+            cmdr_fs::pluralize::pluralize_with(
+                self.progress.entries_scanned.load(Ordering::Relaxed),
+                "entry",
+                "entries"
+            ),
             self.started_at.elapsed().as_secs_f64(),
         );
     }
