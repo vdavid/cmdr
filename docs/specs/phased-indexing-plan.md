@@ -1,6 +1,30 @@
 # Phased, priority-driven drive indexing
 
-Status: plan, not started. Branch: `worktree-phased-indexing`.
+Status: **the benchmark gate is resolved and David said build it** (2026-08-14). `M0`, `M1`, and the `Abandoned` cause
+with its heal have shipped to `main`; the phase machine and everything after it are what remains. Branch:
+`worktree-david+phased-machine`.
+
+**The gate, and why it passed after reading as a fail.** Measured, the phased shape came in at 4.70× the bulk build,
+against a 1.5× bar. The decomposition is what settled it, and it is the number to keep in mind while building:
+
+- **The walking itself is at parity**: 41 s of real walking against the bulk build's whole 38.1 s run, once the
+  wasted-effort bug below is gone. Many small walks keep the machine as busy as one whole-volume walk. The plan's join
+  rule (one root at a time, check the queue between) costs nothing measurable.
+- **69% of the gap was one bug**, not phasing: a directory failing to list with a non-permission errno kept no cause, so
+  every later phase re-offered it and re-paid the timeouts (1,497 `ETIMEDOUT` directories inside a wedged MTP mount on
+  the measured machine). **Shipped as `UnreadableCause::Abandoned`**, and it was live in the shipped build, making every
+  search scoped above `~/Library` re-pay them.
+- **The rest is flush cadence.** One `cover()` call per frontier root ends with a blocking writer flush, so with ~1,500
+  roots the walker and the writer never overlap: 37.5 s of the arm is the walker standing still. Draining once per phase
+  recovers ~30 s of it. **This is a required part of the machine, ❌ not a later tuning pass.**
+- **The stitch and the coverage queries cost 0.2 s combined**, 0.1% of the arm, with zero `NotVirgin` refusals across
+  every arm. The machinery this plan spends its design effort on is free.
+
+Full evidence: `docs/notes/phased-vs-bulk-index-2026-08-14.md`.
+
+**The product decision, in David's words**: a new user seeing real sizes on the folders they care about within the first
+second is worth roughly half a minute more on the total, and image-indexing speed is explicitly not what this is for.
+Build it correctly, solidly, and elegantly rather than quickly.
 
 Turn first-run drive indexing from "one full scan of `/`, all or nothing, a few minutes before anything is useful" into
 "the folders this user actually cares about are indexed within seconds, and the rest of the drive fills in behind them".
@@ -531,9 +555,11 @@ guardrails live in `apps/desktop/src/lib/file-explorer/pane/first-run-layout.ts`
 in `docs/architecture-patterns.md` § Persistence. One piece of its test list was deliberately skipped and is still worth
 writing: **a Playwright E2E over a first run with `CMDR_MOCK_FDA`**.
 
-- **M0** — the pre-existing bugs this plan would otherwise make routine.
-- **M1** — priority-root computation plus the host seam.
-- **M2** — the stitch plus the phase machine, gated on a benchmark.
+- **M0** — ✅ **shipped**: the pre-existing bugs this plan would otherwise make routine.
+- **M1** — ✅ **shipped**: priority-root computation plus the host seam. `HostPolicy::priority_roots(volume_id)` is
+  live and has no consumer yet; the phase machine is it.
+- **M2** — the stitch plus the phase machine. ✅ The benchmark gate is passed, and `UnreadableCause::Abandoned` with
+  its retry heal (item 7's machinery) shipped ahead of it, so completion's durable signal already exists.
 - **M3** — launch, resume, and every path that would truncate.
 - **M4** — events, status, and the hourglass UI.
 - **M5** — surfaces, copy, kill switch.
@@ -711,7 +737,15 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
 4. **Each phase step**: `coverage(volume_id, root, Listing)` for the frontier; empty ⇒ skip; otherwise walk its roots
    one at a time. The walk marks, aggregates, and claims its own ground.
 5. **Visits enter through `HostPolicy::open_listings()`**, rate-limited per the seam's contract.
-6. **One root, one `cover()` call, join before the next.** Preemption is out of scope.
+6. **One root, one `cover()` call, join before the next.** Preemption is out of scope. Measured: this costs nothing
+   (41 s of real walking against a 38.1 s whole-volume walk), so ❌ don't revisit it for speed.
+
+   ⚠️ **But the writer flush must NOT stay per-root.** A blocking flush at the end of every `cover()` call is 37.5 s of
+   the walker standing still over ~1,500 roots, and it is the entire remaining gap once the abandoned-ground fix is in.
+   **Batch the drain to roughly once per phase** (the plan's own "small groups, ❌ never one" rule applies to the DRAIN,
+   while the `cover()` call stays per-root so the queue keeps its check points). Expect a larger writer backlog and say
+   what that costs in memory. Two places still need a real flush and ❌ must not be batched away: the stitch's
+   upsert-then-`MarkDirsListed` sequence, and the completion sequence's step 1 / step 7 ordering.
 7. **Completion is derived, not remembered — but "empty frontier" alone is not a terminating rule.** `abandoned_ground`
    is per-walk and in-memory, so it can't answer "was anything abandoned in a previous session?"; the durable signal is
    that an abandoned directory is never marked listed, so it re-enters the frontier.
