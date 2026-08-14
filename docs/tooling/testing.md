@@ -129,8 +129,8 @@ against handler attachment under parallel-shard load; this path doesn't.
 ### Virtual MTP device
 
 Feature flag `virtual-mtp`. Pure-Rust MTP device backed by `/tmp/cmdr-mtp-e2e-fixtures-<pid>/` under the checker (the
-bare path is the manual-dev default; see `virtual-mtp.md` § "Custom backing dir"). Lets MTP tests run without
-real hardware. Helpers in `apps/desktop/test/e2e-shared/mtp-fixtures.ts` and `mcp-client.ts`. In `beforeEach`, pause the
+bare path is the manual-dev default; see `virtual-mtp.md` § "Custom backing dir"). Lets MTP tests run without real
+hardware. Helpers in `apps/desktop/test/e2e-shared/mtp-fixtures.ts` and `mcp-client.ts`. In `beforeEach`, pause the
 watcher (`pause_virtual_mtp_watcher`), recreate fixtures, then sync the object tree with `rescan_virtual_mtp`. The
 watcher stays PAUSED for the test body so late FSEvents from the wipe+recreate can't remove freshly rescanned handles;
 only the one test that verifies the live-watch pipeline resumes it. See `src-tauri/src/mtp/DETAILS.md` § "Virtual device

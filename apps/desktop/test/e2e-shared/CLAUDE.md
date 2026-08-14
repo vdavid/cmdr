@@ -13,9 +13,8 @@ binary launches (fixture creation, port-file reads, MCP client setup) lives here
 - **`port-file.ts`**: reads `<data_dir>/mcp.port` and `<data_dir>/tauri-mcp.port`. `resolveMcpPort(dataDir)` follows the
   canonical precedence and never falls back to legacy ports.
 - **`mcp-client.ts`**: lightweight MCP client wrapping `fetch` to the Cmdr MCP server (tool calls, resource reads).
-- **`mtp-fixtures.ts`**: virtual MTP backing-dir composition, at the run's `MTP_FIXTURE_ROOT`
-  (`CMDR_MTP_FIXTURE_ROOT`, matching the app's `CMDR_VIRTUAL_MTP`). One root per run, shared by its shards, so the MTP
-  shard runs serialized.
+- **`mtp-fixtures.ts`**: virtual MTP backing-dir composition, at the run's `MTP_FIXTURE_ROOT` (`CMDR_MTP_FIXTURE_ROOT`,
+  matching the app's `CMDR_VIRTUAL_MTP`). One root per run, shared by its shards, so the MTP shard runs serialized.
 - **`smb-fixtures.ts`**: SMB virtual-host fixtures, injected into the running Tauri process via the `smb-e2e` feature.
 
 ## Must-knows

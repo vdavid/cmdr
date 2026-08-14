@@ -48,14 +48,14 @@ disproportionately longer on Linux than macOS — the highest-payoff targets.
 
 ## Flags
 
-| Flag             | Default                                                                                             | Effect                                                       |
-| ---------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `--macos`        | `/tmp/cmdr-e2e-report-mtp-*.json,/tmp/cmdr-e2e-report-nonmtp1-*.json,/tmp/cmdr-e2e-report-nonmtp2-*.json` | Comma-separated macOS report paths or globs (newest match) |
-| `--linux`        | `/tmp/cmdr-e2e-report-linux-*.json`                                                                 | Linux report path or glob (newest match)                     |
-| `--sort`         | `ratio`                                                                                             | `ratio` (linux/macos), `linux`, `macos`, or `delta` (ms)     |
-| `--top`          | `0`                                                                                                 | Show only the top N rows (0 = all)                           |
-| `--min-linux-ms` | `0`                                                                                                 | Hide tests faster than this on Linux (filter the cheap tail) |
-| `--format`       | `md`                                                                                                | `md` or `csv`                                                |
+| Flag             | Default                                                                                                   | Effect                                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `--macos`        | `/tmp/cmdr-e2e-report-mtp-*.json,/tmp/cmdr-e2e-report-nonmtp1-*.json,/tmp/cmdr-e2e-report-nonmtp2-*.json` | Comma-separated macOS report paths or globs (newest match)   |
+| `--linux`        | `/tmp/cmdr-e2e-report-linux-*.json`                                                                       | Linux report path or glob (newest match)                     |
+| `--sort`         | `ratio`                                                                                                   | `ratio` (linux/macos), `linux`, `macos`, or `delta` (ms)     |
+| `--top`          | `0`                                                                                                       | Show only the top N rows (0 = all)                           |
+| `--min-linux-ms` | `0`                                                                                                       | Hide tests faster than this on Linux (filter the cheap tail) |
+| `--format`       | `md`                                                                                                      | `md` or `csv`                                                |
 
 ## Examples
 

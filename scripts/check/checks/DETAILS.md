@@ -317,10 +317,10 @@ is the whole contract, and the fix for over-budget is to trim a doc, not to bump
 The E2E suites were hard-won down to under 2 s per test; `e2e-durations.go` defends that. After a successful E2E run,
 both E2E checks (`desktop-e2e-playwright`, `desktop-e2e-linux`) call `applyE2EDurationWarnings`, which parses the run's
 Playwright JSON reports (`/tmp/cmdr-e2e-report-{mtp,nonmtp1,nonmtp2}-<pid>.json` for the macOS shards,
-`/tmp/cmdr-e2e-report-linux-<pid>.json` for Docker — the same files `scripts/e2e-test-timings` reads) and flags every test
-whose worst single attempt exceeded `e2eSlowTestThresholdMs` (2000). **Warn-only by contract**: a slow test converts the
-check's green `OK` into a yellow `warn` line but never fails the suite, and a failed E2E run skips the analysis entirely
-(the failure output stays focused).
+`/tmp/cmdr-e2e-report-linux-<pid>.json` for Docker — the same files `scripts/e2e-test-timings` reads) and flags every
+test whose worst single attempt exceeded `e2eSlowTestThresholdMs` (2000). **Warn-only by contract**: a slow test
+converts the check's green `OK` into a yellow `warn` line but never fails the suite, and a failed E2E run skips the
+analysis entirely (the failure output stays focused).
 
 **Decision**: the analysis is embedded in the two E2E checks, not registered as a separate check with `DependsOn`.
 **Why**: the JSON reports are per-run `/tmp` artifacts. Dependencies outside the selected run set count as satisfied, so
@@ -421,12 +421,12 @@ The JSON report and the MTP backing dir came last, and they were the expensive t
 - **The report is the run's evidence.** `e2e-test-log.go` turns it into the per-test log, `e2e-durations.go` flags slow
   specs from it, and `e2e-flaky.go` counts retry-passes out of it. At a fixed path, a concurrent suite answered all
   three questions about a run it never took part in, and the per-test log recorded the wrong run's names under this
-  run's timestamp — instrumentation quietly lying, which is worse than no instrumentation. Nothing reads it from a
-  known path any more: the lane hands readers the path, and `scripts/e2e-test-timings` takes the newest glob match.
-- **The MTP backing dir is wiped at MTP-shard startup and between tests.** Shared machine-wide, a starting suite
-  deleted the tree a running suite's MTP spec was asserting against, and the victim reported a missing file it had
-  created itself. The app takes the run's root from `CMDR_VIRTUAL_MTP` and `mtp-fixtures.ts` from
-  `CMDR_MTP_FIXTURE_ROOT`, so both sides of a spec agree on one path per run.
+  run's timestamp — instrumentation quietly lying, which is worse than no instrumentation. Nothing reads it from a known
+  path any more: the lane hands readers the path, and `scripts/e2e-test-timings` takes the newest glob match.
+- **The MTP backing dir is wiped at MTP-shard startup and between tests.** Shared machine-wide, a starting suite deleted
+  the tree a running suite's MTP spec was asserting against, and the victim reported a missing file it had created
+  itself. The app takes the run's root from `CMDR_VIRTUAL_MTP` and `mtp-fixtures.ts` from `CMDR_MTP_FIXTURE_ROOT`, so
+  both sides of a spec agree on one path per run.
 
 Still shared, and deliberately: the fixture hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`) is content-addressed and
 built by tmp-dir + atomic rename, so sharing is the point and a torn read is structurally impossible; per-worktree

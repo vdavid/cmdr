@@ -15,10 +15,13 @@ The device id and volume id are built and parsed in ONE place so the scheme can'
 The `virtual-mtp` feature compiles in `virtual_device.rs`; whether the device actually registers at startup is decided at
 runtime by `activate_from_env_if_requested()` (called from `lib.rs`). It registers when **either** `CMDR_E2E_MODE=1` (an
 E2E run) **or** `CMDR_VIRTUAL_MTP` is set (the dev opt-in), and never when `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP` is set (the
-override non-MTP E2E shards use to avoid racing the shared backing dir). So a `virtual-mtp`-compiled binary launched with
+override non-MTP E2E shards use to avoid racing the run's backing dir). So a `virtual-mtp`-compiled binary launched with
 none of those env vars stays inert and matches a plain build; the dev opt-in is purely additive to the E2E path.
-`CMDR_VIRTUAL_MTP=<dir>` backs it with a custom dir. The fixture tree mirrors `test/e2e-shared/mtp-fixtures.ts`. The
-gating logic (`decide_startup_root`) is pure and unit-tested in `virtual_device.rs::tests`.
+`CMDR_VIRTUAL_MTP=<dir>` backs it with a custom dir, which is how the Playwright checker gives each RUN its own
+`/tmp/cmdr-mtp-e2e-fixtures-<pid>` (the MTP shard wipes whatever root it's handed, so a machine-wide one let a starting
+suite delete a running suite's tree mid-spec). The specs read the same path from `CMDR_MTP_FIXTURE_ROOT`, and the fixture
+tree mirrors `test/e2e-shared/mtp-fixtures.ts`. The gating logic (`decide_startup_root`) is pure and unit-tested in
+`virtual_device.rs::tests`.
 
 **Build `VirtualDeviceConfig` with `..Default::default()`** and state only the fields this fixture actually cares
 about. mtp-rs 0.26 added `Default` precisely so a new field doesn't break us: every prior field addition was a compile

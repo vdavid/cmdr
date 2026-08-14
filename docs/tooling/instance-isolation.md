@@ -288,7 +288,7 @@ fixed at the same time).
 | `/tmp/cmdr-e2e-data-<instance>/`                         | Go checker   | per-run                                            | per-shard data dir                                                              |
 | `/tmp/tauri-playwright-<instance>.sock`                  | Tauri plugin | per-run                                            | per-shard Playwright IPC socket                                                 |
 | `/tmp/cmdr-mtp-e2e-fixtures-<pid>/`                      | Go checker   | per-run                                            | the run's virtual MTP backing dir                                               |
-| `/tmp/cmdr-e2e-report-<shard>-<pid>.json`                | Playwright   | swept after a week                                 | the run's per-test evidence (per-test log, durations, flakes)                    |
+| `/tmp/cmdr-e2e-report-<shard>-<pid>.json`                | Playwright   | swept after a week                                 | the run's per-test evidence (per-test log, durations, flakes)                   |
 | `/tmp/cmdr-e2e-results-<shard>-<pid>/`                   | Playwright   | swept after a week                                 | the run's recordings and error contexts                                         |
 | `/tmp/cmdr-e2e-playwright-<shard>-<ts>-<pid>.log`        | Go checker   | swept after a week                                 | the run's per-shard app + test log                                              |
 
