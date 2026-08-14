@@ -105,13 +105,11 @@ Serial pre-check floor: 99.6 ms for 500 files (199 µs/file) = 19% of the fastes
 David measured SMB→SMB on real hardware (2026-08-12, ~2.8 MB average files, each concurrency level against its own
 never-read directory so page cache couldn't inflate it):
 
-| concurrency | rate    | ms/file |
-| ----------: | ------- | ------: |
-|           1 | 4 MB/s  |     519 |
-|           4 | 10 MB/s |     224 |
-|           8 | 10 MB/s |     218 |
-|          16 | 9 MB/s  |     328 |
-|          24 | 8 MB/s  |     273 |
+- **Concurrency 1**: 4 MB/s, 519 ms/file
+- **Concurrency 4**: 10 MB/s, 224 ms/file
+- **Concurrency 8**: 10 MB/s, 218 ms/file
+- **Concurrency 16**: 9 MB/s, 328 ms/file
+- **Concurrency 24**: 8 MB/s, 273 ms/file
 
 **The useful window is 4-8 and it degrades past it.** That is the number to design against; the loopback table above
 agrees on the first half (nearly all the win is in place by 4) and is silent on the second half by construction, because
