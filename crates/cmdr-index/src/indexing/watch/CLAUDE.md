@@ -42,6 +42,8 @@ plus the event loop that turns its stream into index writes.
   never walks outside them and never routes a shallow anchor to the whole-volume scanner. Gate:
   `master::branch_watch_allowed` (master switch + `user_disabled` only) — a vetoed drive's walked ground stays covered
   but stops being kept current.
+- **`AfterWalk::Forget` means "the loop already answers for this ground", ❌ not "no branch watcher is up".** A failed or
+  vetoed watcher still leaves ground a walk COVERED, and dropping its entry erases the only record of that.
 - **Linux watches the BRANCHES, macOS the volume root.** `notify`'s recursive mode costs one inotify watch per directory
   against `max_user_watches`; an FSEvents stream costs nothing per directory and its volume-rooted `sinceWhen` is what
   replays a branch covered last session.

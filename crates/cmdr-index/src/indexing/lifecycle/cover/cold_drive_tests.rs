@@ -588,6 +588,10 @@ fn clearing_a_drives_index_drops_the_branches_with_the_coverage() {
 /// the moment the app stops. ❌ Not "re-walked" — the walk marked those
 /// directories listed, so the frontier never offers them again; they are
 /// covered-but-stale, which Decision 5 trusts.
+///
+/// The veto takes the WATCHER, not the record. What a walk covered is a fact
+/// about the index, and dropping it would leave the next session unable to tell
+/// walked ground from ground nobody ever asked about.
 #[test]
 fn a_vetoed_drive_is_walked_and_left_unwatched() {
     let drive = ColdDrive::new("cover-branch-veto-test");
@@ -595,20 +599,29 @@ fn a_vetoed_drive_is_walked_and_left_unwatched() {
     std::fs::write(drive.tree.path().join("scope/found.txt"), "x").expect("file");
     drop(IndexStore::open(&drive.db_path()).expect("open store"));
     IndexStore::set_user_disabled(&drive.db_path(), true).expect("mark user_disabled");
+    let scope = drive.path("scope");
 
-    let outcome = drive.cover(&drive.path("scope"));
+    let outcome = drive.cover(&scope);
     assert_eq!(outcome.roots_covered, 1, "the search still got its answer");
 
     assert!(
-        crate::indexing::watch::branches::live_for(drive.volume_id)
-            .branch_paths()
-            .is_empty(),
+        !crate::indexing::lifecycle::state::is_watching_for_test(drive.volume_id),
         "and nothing is watching it: the veto stops everything that runs uninvited"
     );
     assert_eq!(
+        crate::indexing::watch::branches::live_for(drive.volume_id).branch_paths(),
+        [scope],
+        "while what the walk covered is still written down"
+    );
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(10),
+        "the walk's branch to reach the database",
+        || drive.persisted_branches().is_some(),
+    );
+    assert_eq!(
         drive.persisted_branches(),
-        None,
-        "with nothing written down for a later session to resume either"
+        Some("/scope".to_string()),
+        "on the drive's own database, so a later session knows this ground was walked"
     );
 }
 

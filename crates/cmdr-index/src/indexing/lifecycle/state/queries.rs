@@ -103,6 +103,19 @@ pub(crate) fn awaits_its_first_scan(volume_id: &str) -> bool {
     completed.is_none()
 }
 
+/// Whether anything is watching this volume's filesystem right now.
+///
+/// The one observable difference between "covered and kept current" and "covered
+/// but unwatched", which the branch set deliberately no longer says.
+#[cfg(test)]
+pub(crate) fn is_watching_for_test(volume_id: &str) -> bool {
+    use cmdr_fs::ignore_poison::IgnorePoison;
+    match INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| &i.phase) {
+        Some(IndexPhase::Running(mgr)) => mgr.is_watching(),
+        _ => false,
+    }
+}
+
 /// Check whether a volume's index is active (initializing or running).
 pub fn is_active(volume_id: &str) -> bool {
     INDEX_REGISTRY

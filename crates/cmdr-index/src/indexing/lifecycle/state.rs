@@ -59,6 +59,8 @@ pub use auto_start::{should_auto_start, should_auto_start_indexing};
 pub(crate) use freshness_bridge::{
     apply_freshness_event, apply_freshness_event_on, bump_current_epoch_for, get_freshness,
 };
+#[cfg(test)]
+pub(crate) use queries::is_watching_for_test;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use queries::registered_mtp_volume_ids_for_device;
 pub(crate) use queries::{

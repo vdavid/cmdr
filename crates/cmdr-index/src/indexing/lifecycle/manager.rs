@@ -367,6 +367,13 @@ impl IndexManager {
         IndexPathSpace::for_volume(self.kind, &self.volume_root, self.inodes_trustworthy)
     }
 
+    /// Whether a filesystem watcher is up for this volume, over the whole volume
+    /// or over the branches a search walked.
+    #[cfg(test)]
+    pub(super) fn is_watching(&self) -> bool {
+        self.drive_watcher.is_some()
+    }
+
     /// Resume from an existing index or start a fresh full scan.
     ///
     /// **macOS (with event replay support):**

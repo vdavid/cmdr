@@ -120,6 +120,14 @@ frontier never offers them again).
 `start_scan` retires the branch set (`branches::clear`) because a scanned volume answers for every path. A walk on a
 whole-watched volume registers its branches only to buffer for the walk's duration (`AfterWalk::Forget`).
 
+**`AfterWalk::Forget` asks whether the LOOP already answers for the ground, ❌ never whether a branch watcher is up**
+(`IndexManager::after_walk`). The two differ in exactly the cases that matter: a `DriveWatcher::start_branches` failure
+is non-fatal and logged, and a vetoed drive never gets a watcher at all, yet both leave ground that IS covered.
+Forgetting there dropped the persisted set and with it the only record that anything walked that ground — a record M3.3
+of `docs/specs/phased-indexing-plan.md` needs to tell a phased partial index from a legacy one. So the set persists
+whenever the volume isn't whole-watched, and covered-but-unwatched is a state the index states honestly: the epoch bump
+on the next resume is what stops those rows reading as current.
+
 **Local volumes only.** This is a local-filesystem watcher, so a share or a phone gets no branch watch: its walked
 branches are exactly as stale as its scanned index, which loads Stale on every launch anyway. ⚠️ Known gap: SMB's own
 change-notify translator (`../transports/smb/`) writes through the volume's writer unfiltered, so a cover walk on a

@@ -269,15 +269,22 @@ impl IndexManager {
     /// What a finished cover walk leaves on this volume's branch set, and what it
     /// takes to write that down.
     ///
-    /// A volume with a whole-volume watcher already answers for the ground, so it
-    /// keeps no branch bookkeeping and persists nothing: its branches existed only
-    /// to buffer events for the walk's duration.
+    /// `Forget` for exactly one shape: a volume whose loop already answers for
+    /// every path. Its watcher covers the ground with or without a branch entry,
+    /// so the entry would be a second, staler description of it, and its branches
+    /// existed only to buffer events for the walk's duration.
+    ///
+    /// ❌ Not "no branch watcher is up". A `start_branches` failure is non-fatal
+    /// and a vetoed drive never gets a watcher at all, and in both cases the
+    /// ground IS covered — forgetting it erases the only record that we walked it,
+    /// and leaves a later session unable to tell walked ground from ground nobody
+    /// ever asked about. Covered-but-unwatched is an honest state; the epoch bump
+    /// on the next resume is what keeps those rows from reading as current.
     pub(in crate::indexing::lifecycle) fn after_walk(&self) -> (AfterWalk, Option<(IndexPathSpace, IndexWriter)>) {
-        if self.branch_watched {
-            (AfterWalk::Watch, Some((self.path_space(), self.writer.clone())))
-        } else {
-            (AfterWalk::Forget, None)
+        if self.drive_watcher.is_some() && !self.branch_watched {
+            return (AfterWalk::Forget, None);
         }
+        (AfterWalk::Watch, Some((self.path_space(), self.writer.clone())))
     }
 
     /// The event id a (re)started watcher may replay from: the stored one, unless
