@@ -132,7 +132,10 @@ provider-egress question and `CONSENT_COPY_VERSION` are unchanged by this tier.
   adapter over `commands::indexing` (`enable_drive_index` / `disable_drive_index` / `rescan_drive_index` /
   `forget_drive_index`) — no FE dispatch, no invented ack (the `connect_to_server` precedent). `enable`/`rescan` map the
   typed `EnableIndexingOutcome` to honest text and carry the ordering contract (below); `disable`/`forget` map
-  `Result<(), String>` directly. Because the generic executor can't supply the concrete `AppHandle` that
+  `Result<(), String>` directly. `DeferredUntilSearchEnds` returns straight away, saying the scan is waiting on the
+  search that's walking the drive: the index remembers the request and runs it when that walk ends (model:
+  `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The one walk a volume remembers), so the freshness the
+  ordering contract waits for isn't going to move yet and waiting for it would just burn the budget and then lie. Because the generic executor can't supply the concrete `AppHandle` that
   `enable`/`rescan` need, they route through handle-free `*_via_handle` wrappers backed by a startup-cached handle
   (`set_app_handle` in `setup()`). Status is NOT an action — it lives in `cmdr://indexing`.
 - Queue (1): `queue` (`action` = `pause` | `resume` | `cancel` | `pause_all` | `resume_all`; `operationId` for the

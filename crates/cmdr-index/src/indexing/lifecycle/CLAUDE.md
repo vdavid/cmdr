@@ -5,8 +5,8 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
 `state.rs` the registry + `IndexPhase` machine, with a job per file under `state/`, re-exported so `state::*` stays the
 one path; `manager.rs` (+ `manager/start.rs`) the per-volume coordinator; `network_scan.rs` the SMB/MTP trait scan;
 `scan_completion.rs`; `progress_reporter.rs` + `partial_agg.rs` the 500 ms progress pump; `cover.rs` the search-driven
-walk (bootstrap + ground-claiming rules in `cover/CLAUDE.md`); `rescan_request.rs` the typed scan-start
-refusal + the owed walk; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs`.
+walk (bootstrap + ground-claiming rules in `cover/CLAUDE.md`); `rescan_request.rs` the typed scan-start refusal + the
+owed walk; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs`.
 
 ## Must-knows
 

@@ -429,12 +429,12 @@ which reaches the frontend as `StartOutcome::DeferredUntilSearchEnds` and become
   defer itself again, forever.
 - **❌ Nothing assumes the coast is clear.** The fire re-asks both guards by going through `force_scan`, so a second
   walk still holding ground re-defers the request behind ITS ending. That's what makes a truncating scan under a live
-  walk unreachable however many walks are in flight (`cover::cold_drive_tests::a_remembered_rescan_waits_for_the_last_walk_out`).
+  walk unreachable however many walks are in flight
+  (`cover::cold_drive_tests::a_remembered_rescan_waits_for_the_last_walk_out`).
 - **One request per volume, memory only.** It carries nothing but "this volume wants a full walk", so a second click
   describes the same work and a set of volume ids is the whole state; quitting drops it. Every teardown path drops it
   too (`stop_indexing`, `clear_index`, `remove_instance_and_handles`), and the master switch going off drops it at fire
-  time, so a stopped drive is owed nothing
-  (`cover::cold_drive_tests::a_drive_that_stopped_indexing_is_owed_no_rescan`).
+  time, so a stopped drive is owed nothing (`cover::cold_drive_tests::a_drive_that_stopped_indexing_is_owed_no_rescan`).
 
 ### What the walk leaves watched
 
