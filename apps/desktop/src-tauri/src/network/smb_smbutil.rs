@@ -222,36 +222,42 @@ fn classify_smbutil_stderr(stderr: &str) -> SmbutilOutcome {
     }
 }
 
+/// How long `smbutil view` gets before it's stopped.
+///
+/// This is the LAST thing tried when smb2 couldn't list a host's shares, and the
+/// share browser's spinner is waiting on it. `smbutil` has no timeout flag and
+/// never gives up on its own against a server that accepted the connection and
+/// then went quiet, so this is the only thing standing between that server and a
+/// spinner that spins until the user closes the window. Set well above the ~1 s a
+/// working `smbutil` takes on a slow LAN: the generous number costs nothing on
+/// the healthy path and only decides how long a dead one is allowed to look
+/// alive.
+#[cfg(target_os = "macos")]
+const SMBUTIL_VIEW_LIMIT: std::time::Duration = std::time::Duration::from_secs(20);
+
 /// Runs smbutil view command and returns parsed shares.
 /// `use_guest` controls whether to use -G flag (guest access).
 #[cfg(target_os = "macos")]
 async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, ShareListError> {
-    use std::process::Command;
+    // C locale so `classify_smbutil_stderr` keeps matching English strings,
+    // whatever the user's system locale is.
+    let mut cmd = crate::subprocess::command_in_c_locale("smbutil");
+    cmd.arg("view").arg("-N");
+    if use_guest {
+        cmd.arg("-G");
+    }
+    // `url` is always passwordless (`//host` / `//host:port`): Cmdr never embeds
+    // credentials in the smbutil URL because the cleartext password would leak into the
+    // `ps`-readable argv, and `smbutil view` has no argv-free password channel. Authenticated
+    // share listing rides smb2 (and on Linux, smbclient's 0o600 `-A` authfile); guest and
+    // Keychain-backed listings both pass `-N` with no password. So nothing secret rides argv.
+    cmd.arg(url);
 
-    let url_owned = url.to_string();
-    let output = tokio::task::spawn_blocking(move || {
-        let mut cmd = Command::new("smbutil");
-        // Force English output so classify_smbutil_stderr always matches English strings,
-        // regardless of the user's system locale.
-        cmd.env("LC_ALL", "C").env("LANG", "C");
-        cmd.arg("view").arg("-N");
-        if use_guest {
-            cmd.arg("-G");
-        }
-        // `url_owned` is always passwordless (`//host` / `//host:port`): Cmdr never embeds
-        // credentials in the smbutil URL because the cleartext password would leak into the
-        // `ps`-readable argv, and `smbutil view` has no argv-free password channel. Authenticated
-        // share listing rides smb2 (and on Linux, smbclient's 0o600 `-A` authfile); guest and
-        // Keychain-backed listings both pass `-N` with no password. So nothing secret rides argv.
-        cmd.arg(&url_owned).output()
-    })
-    .await
-    .map_err(|e| ShareListError::ProtocolError {
-        message: format!("Failed to spawn smbutil: {}", e),
-    })?
-    .map_err(|e| ShareListError::ProtocolError {
-        message: format!("Failed to run smbutil: {}", e),
-    })?;
+    let output = crate::subprocess::output_within("smbutil view", SMBUTIL_VIEW_LIMIT, &mut cmd)
+        .await
+        .map_err(|e| ShareListError::ProtocolError {
+            message: format!("smbutil view didn't answer: {}", e),
+        })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);

@@ -102,7 +102,7 @@ mimalloc = "0.1"
 reqwest = { version = "0.13", features = ["json", "rustls", "stream", "multipart"], default-features = false }
 # MCP server
 axum = "0.8"
-tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros", "process"] }
 futures-util = "0.3"
 # tokio-util: provides `CancellationToken` for cooperative cancellation of streaming
 # AI suggestions (`ai/suggestions.rs::stream_folder_suggestions`). The `rt` feature

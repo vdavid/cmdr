@@ -8,7 +8,14 @@ use crate::network::smb_types::{ShareInfo, ShareListError};
 use log::{debug, warn};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use tokio::process::Command;
+
+/// How long `smbclient -L` gets before it's stopped.
+///
+/// The Linux twin of `SMBUTIL_VIEW_LIMIT`, and it exists for the same reason:
+/// `smbclient` waits on a quiet server indefinitely, and the share browser's
+/// spinner waits on `smbclient`.
+const SMBCLIENT_LIST_LIMIT: std::time::Duration = std::time::Duration::from_secs(20);
 
 /// Lists shares using `smbclient -L` and returns parsed disk shares.
 ///
@@ -26,60 +33,64 @@ pub async fn run_smbclient_list(
     let port_str = port.to_string();
     let creds_owned = credentials.map(|(u, p)| (u.to_string(), p.to_string()));
 
-    let output = tokio::task::spawn_blocking(move || {
-        // The auth file is created inside the blocking task and dropped at the end of it,
-        // so the secret-bearing file lives only for the duration of the smbclient call and
-        // is removed even if `cmd.output()` errors (tempfile's `Drop` unlinks it).
-        let auth_file = match &creds_owned {
-            Some((username, password)) => match write_smbclient_auth_file(username, password) {
-                Ok(file) => Some(file),
-                Err(e) => {
-                    return Err(std::io::Error::other(format!(
-                        "Failed to write smbclient auth file: {}",
-                        e
-                    )));
+    // The auth file lives exactly as long as this call: `tempfile`'s `Drop` unlinks
+    // it on the way out, whether smbclient answered, errored, or ran past its
+    // deadline.
+    let auth_file = match &creds_owned {
+        Some((username, password)) => match write_smbclient_auth_file(username, password) {
+            Ok(file) => Some(file),
+            Err(e) => {
+                return Err(ShareListError::ProtocolError {
+                    message: format!("Failed to write smbclient auth file: {}", e),
+                });
+            }
+        },
+        None => None,
+    };
+
+    let mut cmd = Command::new("smbclient");
+    cmd.arg("-L").arg(&server);
+    if port_str != "445" {
+        cmd.arg("-p").arg(&port_str);
+    }
+    match &auth_file {
+        Some(file) => {
+            cmd.arg("-A").arg(file.path());
+        }
+        None => {
+            cmd.arg("-N");
+        }
+    }
+
+    let output = crate::subprocess::output_within("smbclient -L", SMBCLIENT_LIST_LIMIT, &mut cmd)
+        .await
+        .map_err(|e| match e {
+            // `smbclient` missing is the common case on a fresh Linux box and has
+            // its own actionable answer, so it stays distinguishable from a
+            // server that went quiet.
+            crate::subprocess::SubprocessError::Spawn(io_err) => io_err,
+            crate::subprocess::SubprocessError::TimedOut { limit } => std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                format!("smbclient -L gave up after {limit:?}"),
+            ),
+        })
+        .map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                #[cfg(target_os = "linux")]
+                let install_command = super::linux_distro::smbclient_install_command();
+                #[cfg(not(target_os = "linux"))]
+                let install_command: Option<String> = None;
+
+                ShareListError::MissingDependency {
+                    message: "smbclient is not installed. It's needed to connect to this server.".to_string(),
+                    install_command,
                 }
-            },
-            None => None,
-        };
-
-        let mut cmd = Command::new("smbclient");
-        cmd.arg("-L").arg(&server);
-        if port_str != "445" {
-            cmd.arg("-p").arg(&port_str);
-        }
-        match &auth_file {
-            Some(file) => {
-                cmd.arg("-A").arg(file.path());
+            } else {
+                ShareListError::ProtocolError {
+                    message: format!("Failed to run smbclient: {}", e),
+                }
             }
-            None => {
-                cmd.arg("-N");
-            }
-        }
-        cmd.output()
-        // `auth_file` drops here, unlinking the temp file regardless of success or error.
-    })
-    .await
-    .map_err(|e| ShareListError::ProtocolError {
-        message: format!("Failed to spawn smbclient task: {}", e),
-    })?
-    .map_err(|e| {
-        if e.kind() == std::io::ErrorKind::NotFound {
-            #[cfg(target_os = "linux")]
-            let install_command = super::linux_distro::smbclient_install_command();
-            #[cfg(not(target_os = "linux"))]
-            let install_command: Option<String> = None;
-
-            ShareListError::MissingDependency {
-                message: "smbclient is not installed. It's needed to connect to this server.".to_string(),
-                install_command,
-            }
-        } else {
-            ShareListError::ProtocolError {
-                message: format!("Failed to run smbclient: {}", e),
-            }
-        }
-    })?;
+        })?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
