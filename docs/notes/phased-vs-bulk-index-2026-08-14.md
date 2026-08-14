@@ -351,7 +351,7 @@ measurement.
 
 **Fix 1 landed on 2026-08-14, as a shipped-build bug fix rather than as part of the phased plan.** A local walk records
 every directory it couldn't read as `UnreadableCause::Abandoned` (all three producers, including the `readdir`-errno one
-above), and a persisted per-volume 1 h → 4 h → 24 h backoff reopens that ground. Canonical write-ups:
+above), and a persisted per-volume 5 min → 1 h → 4 h → 24 h backoff reopens that ground. Canonical write-ups:
 `crates/cmdr-index/src/indexing/store/DETAILS.md` § "What coverage needs" and
 `crates/cmdr-index/src/indexing/writer/DETAILS.md` § "Retrying ground a walk gave up on".
 

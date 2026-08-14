@@ -8,7 +8,8 @@
 use super::*;
 use crate::indexing::store::{ROOT_ID, register_platform_case_collation};
 
-const HOUR: u64 = 60 * 60;
+const MINUTE: u64 = 60;
+const HOUR: u64 = 60 * MINUTE;
 
 /// An open index DB with `n` directories under the root, all marked abandoned.
 fn abandoned_index(marked: usize) -> (Connection, tempfile::TempDir) {
@@ -67,26 +68,34 @@ fn an_unarmed_volume_never_touches_entries() {
     );
 }
 
-/// The first retry waits an hour, and not a moment less.
+/// The first retry waits five minutes, and not a moment less.
+///
+/// Short on purpose, and for a different reason than the rest of the schedule: a
+/// one-off read failure puts a folder out of every search answer, and nothing a
+/// user can do brings it back (the verifier bails on an unlisted directory, and the
+/// frontier no longer offers it to a re-run search). Five minutes is how long that
+/// injustice may last.
 #[test]
-fn the_first_window_is_an_hour() {
+fn the_first_window_is_five_minutes() {
     let (conn, _dir) = abandoned_index(3);
     arm(&conn, 0).expect("arm");
 
-    assert_eq!(clear_if_due(&conn, HOUR - 1).expect("tick"), None, "not due yet");
+    assert_eq!(clear_if_due(&conn, 5 * MINUTE - 1).expect("tick"), None, "not due yet");
     assert_eq!(still_abandoned(&conn), 3, "and nothing was reopened early");
 
     assert_eq!(
-        clear_if_due(&conn, HOUR).expect("tick"),
+        clear_if_due(&conn, 5 * MINUTE).expect("tick"),
         Some(3),
-        "an hour on, the ground goes back in the frontier"
+        "five minutes on, the ground goes back in the frontier"
     );
     assert_eq!(still_abandoned(&conn), 0);
 }
 
-/// A mount that stays wedged costs less each time: 1 h, then 4 h, then 24 h, then
-/// 24 h forever. Without the growth a still-dead mount would be re-walked hourly at
-/// full stall-timeout price, which is the bug the mark exists to fix, slowed down.
+/// A mount that stays wedged costs less each time: 5 min, 1 h, 4 h, 24 h, then 24 h
+/// forever. The first step is the one-off-failure allowance; everything after it is
+/// the wedged-ground curve, and without the growth a still-dead mount would be
+/// re-walked every five minutes at full stall-timeout price — the bug the mark
+/// exists to fix, slowed down.
 #[test]
 fn a_mount_that_stays_wedged_backs_off_and_then_holds() {
     let (conn, _dir) = abandoned_index(1);
@@ -94,7 +103,7 @@ fn a_mount_that_stays_wedged_backs_off_and_then_holds() {
     arm(&conn, 0).expect("arm");
 
     let mut now = 0;
-    for window in [HOUR, 4 * HOUR, 24 * HOUR, 24 * HOUR] {
+    for window in [5 * MINUTE, HOUR, 4 * HOUR, 24 * HOUR, 24 * HOUR] {
         assert_eq!(
             clear_if_due(&conn, now + window - 1).expect("tick"),
             None,
@@ -132,11 +141,14 @@ fn a_healed_volume_disarms_and_the_next_problem_starts_over() {
     );
     assert_eq!(clear_if_due(&conn, 100 * HOUR).expect("tick"), None, "and then stops");
 
-    // Months later, a different mount goes wedged. It waits an hour, not a day.
+    // Months later, a different mount goes wedged. It gets the five-minute
+    // one-off-failure allowance back, not the old mount's 24-hour patience.
     let fresh = IndexStore::insert_entry_v2(&conn, ROOT_ID, "other", true, false, None, None, None, None).expect("row");
     IndexStore::mark_dirs_unreadable(&conn, &[fresh], Some(UnreadableCause::Abandoned)).expect("mark");
-    arm(&conn, 1_000 * HOUR).expect("arm");
-    assert_eq!(clear_if_due(&conn, 1_000 * HOUR + HOUR).expect("tick"), Some(1));
+    let months_on = 1_000 * HOUR;
+    arm(&conn, months_on).expect("arm");
+    assert_eq!(clear_if_due(&conn, months_on + 5 * MINUTE - 1).expect("tick"), None);
+    assert_eq!(clear_if_due(&conn, months_on + 5 * MINUTE).expect("tick"), Some(1));
 }
 
 /// A retry clears ONLY abandoned ground. A refusal is an answer the user has to
@@ -232,9 +244,9 @@ fn the_window_survives_a_reopen() {
     let conn = IndexStore::open_write_connection(&db_path).expect("reopen");
     register_platform_case_collation(&conn).expect("collation");
     assert_eq!(
-        clear_if_due(&conn, HOUR - 1).expect("tick"),
+        clear_if_due(&conn, 5 * MINUTE - 1).expect("tick"),
         None,
         "the window a previous session opened still holds"
     );
-    assert_eq!(clear_if_due(&conn, HOUR).expect("tick"), Some(1));
+    assert_eq!(clear_if_due(&conn, 5 * MINUTE).expect("tick"), Some(1));
 }

@@ -11,8 +11,20 @@
 //! walk over that scope pays the full failing read again — 15 s of stall timeout
 //! per directory on a wedged mount, and that mount is usually still wedged. A flat
 //! retry would re-pay that on every cycle, which is the bug this whole mechanism
-//! exists to stop, just at a slower cadence. So the window grows: **1 h, then 4 h,
-//! then 24 h**, per volume, persisted in that volume's `meta`.
+//! exists to stop, just at a slower cadence. So the window grows: **5 min, then
+//! 1 h, then 4 h, then 24 h**, per volume, persisted in that volume's `meta`.
+//!
+//! **The first step and the tail answer different questions**, which is why the gap
+//! between them is so wide. The tail is for genuinely wedged ground, where every
+//! retry costs a stall timeout per directory and the honest expectation is that
+//! nothing has changed. The first step is for a ONE-OFF read failure, where the mark
+//! is a small injustice: that folder is out of every search answer, and today
+//! nothing a user can do fixes it. Navigating into it doesn't, because an abandoned
+//! directory has `listed_epoch == 0` and `verify_directory` bails on it by design;
+//! re-running the search doesn't, because the frontier no longer offers it. Five
+//! minutes bounds that to something a person doesn't notice, and it costs ~nothing:
+//! clearing a cause does no disk work by itself, and the walk it enables only
+//! happens if somebody searches there anyway.
 //!
 //! ## Armed by the mark, disarmed by success
 //!
@@ -49,12 +61,17 @@ const RETRY_STEP_KEY: &str = "abandoned_retry_step";
 
 /// How long to wait before each successive retry. The last entry repeats forever.
 ///
-/// The first window is short because the common case that heals is a mount coming
-/// back within the hour (a phone reconnected, a NAS woken up); the last is long
-/// because the common case that does NOT heal is a File Provider domain for a
-/// device that isn't coming back this week, and each retry over one of those costs
-/// a stall timeout per directory.
-const BACKOFF: [Duration; 3] = [
+/// **The first entry is not the start of a curve, it's a different policy.** It
+/// exists to bound how long a ONE-OFF read failure can keep a folder out of search
+/// with nothing a user can do about it (see the module docs), so it's as short as
+/// it can be without churning: five minutes.
+///
+/// **The tail is the curve**, and it's for ground that is genuinely wedged — a File
+/// Provider domain for a device that isn't coming back this week. Each retry over
+/// one of those costs a stall timeout per directory to whoever searches next, and
+/// the honest expectation is that nothing has changed, so the gaps grow fast.
+const BACKOFF: [Duration; 4] = [
+    Duration::from_secs(5 * 60),
     Duration::from_secs(60 * 60),
     Duration::from_secs(4 * 60 * 60),
     Duration::from_secs(24 * 60 * 60),

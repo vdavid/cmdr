@@ -727,8 +727,8 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
      `EACCES` (the third one this plan originally missed, and 100% of what fires on David's machine), a watchdog
      timeout, and a give-up-pruned task through the new `DirVisitor::visit_pruned` hook.
    - `CoverageMap::abandoned`, a third list beside `permission_denied` and `declined`.
-   - `ClearAbandonedIfDue`, fired by the per-volume maintenance timer, clearing only `Abandoned` rows on a persisted 1 h
-     → 4 h → 24 h per-volume window that a mark arms and a retry finding nothing disarms.
+   - `ClearAbandonedIfDue`, fired by the per-volume maintenance timer, clearing only `Abandoned` rows on a persisted
+     5 min → 1 h → 4 h → 24 h per-volume window that a mark arms and a retry finding nothing disarms.
    - Search folds the index's abandoned list into `SearchRunCoverage::abandoned_ground`, so a run over a wedged mount
      can't report itself exhaustive now that the frontier no longer offers that ground.
 
@@ -745,6 +745,11 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
    **What this milestone still owes the heal**: the **user-visit trigger**, deliberately left out. It belongs on the
    machine's `open_listings` poll — ❌ never on `verify_directory`, since an abandoned directory has `listed_epoch == 0`
    and the verifier bails on it by design.
+
+   Its absence is why the backoff opens at **5 minutes** rather than an hour: with no visit trigger, a ONE-OFF read
+   failure puts a folder out of every search answer and NOTHING a user can do brings it back — not navigating in (the
+   verifier bails), not re-running the search (the frontier no longer offers it). Five minutes bounds that. Once the
+   visit trigger lands, that reason is gone and the first step can grow back toward the wedged-ground curve.
 
    ❌ **Don't use a "frontier didn't shrink across two passes" rule instead.** It has to compare sets rather than counts
    (a pass can legitimately grow the frontier by listing a root and exposing the abandoned directories inside it), it

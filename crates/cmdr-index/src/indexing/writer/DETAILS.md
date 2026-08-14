@@ -263,9 +263,17 @@ are `../store/DETAILS.md` § "What coverage needs".
 itself: the mark takes the directory out of the frontier, so no walk lists it, so nothing clears it.
 `ClearAbandonedIfDue` is the way back, and the policy behind it is `abandoned_retry.rs`.
 
-- **A per-volume window, persisted in `meta`, growing 1 h → 4 h → 24 h.** A cleared cause reopens the whole subtree, and
-  the next walk over it pays the failing reads again. ❌ Never a flat retry: on a mount that's still wedged that's a
-  stall timeout per directory every cycle, which is the bug the mark fixes, slowed down.
+- **A per-volume window, persisted in `meta`, growing 5 min → 1 h → 4 h → 24 h.** A cleared cause reopens the whole
+  subtree, and the next walk over it pays the failing reads again. ❌ Never a flat retry: on a mount that's still wedged
+  that's a stall timeout per directory every cycle, which is the bug the mark fixes, slowed down.
+- **The first step and the tail are two policies, not one curve**, and the gap between them is deliberate. The tail is
+  for genuinely wedged ground, where a retry costs a stall timeout per directory and nothing has changed. The first step
+  bounds a ONE-OFF read failure, where the mark is a small injustice: the folder is out of every search answer and
+  nothing a user can do brings it back — navigating in doesn't, since an abandoned directory has `listed_epoch == 0` and
+  `verify_directory` bails on it by design, and re-running the search doesn't, since the frontier no longer offers it.
+  Five minutes costs ~nothing, because clearing a cause does no disk work by itself and the walk it enables only happens
+  if somebody searches there. ⚠️ When the visit trigger lands (`docs/specs/phased-indexing-plan.md` item 7), the first
+  step's whole reason goes away and it can grow back.
 - **Armed by a `MarkDirsUnreadable { cause: Abandoned }` that commits, disarmed by a retry that clears nothing.** So an
   unarmed volume costs one `meta` read per 30 s maintenance tick and never touches `entries` — load-bearing, because
   `unreadable_cause` carries no index and a speculative clear is a full scan of every row on the volume. ❌ Re-arming an
