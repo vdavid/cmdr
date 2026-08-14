@@ -70,6 +70,26 @@ while a network scan contends for one share's SMB session, so browsing a local f
 costs nothing (one atomic load and one small map read) and it means a consumer picks its scope at the point where the
 reasoning is written down, rather than by choosing which function to call.
 
+### Why priority roots are a method here, and per volume
+
+Two things the index can't work out for itself are which folders matter to this user and where the user is looking right
+now. The second one needed no new door: `open_listings` already reports every directory a pane is showing. The first is
+`priority_roots(volume_id)`, and it lands on this trait rather than as an argument to a launch call for one reason: an
+answer frozen at launch goes stale the moment somebody edits their favorites or opens a tab, and re-plumbing it would
+mean a new call path per signal. Asked on demand, the host can answer from whatever it knows at that moment.
+
+**It is an order, and the index may conclude nothing else from it.** The paths carry no scope and no promise: the walk
+covers the whole volume either way, so a root that appears or disappears between two asks changes what the user gets
+first and nothing about what they eventually get. That is what makes a guess safe to act on.
+
+**Per volume, because every signal behind it is about one machine's layout.** A share must not inherit the boot drive's
+home folder, and a favorite pointing into a share is a folder on a different index. Passing the volume lets the host
+answer where it can and stay quiet where it can't, without the index having to route paths back to volumes.
+
+**The cost rule is `clearance`'s, one level relaxed.** It allocates, like `open_listings`, and a real host has to stat
+things to know a folder is there, so the contract is "cheap per ask, cached behind a short TTL host-side" rather than
+"free". The app's answer lives in `apps/desktop/src-tauri/src/priority/roots.rs`.
+
 ### Why the FDA gate isn't a method here
 
 The plan expected `fda_gate::is_fda_pending` to need a `HostPolicy` method, on the grounds that it's a runtime query. It
@@ -85,9 +105,9 @@ the rule where the FDA choice and the OS probe already live, and the back-edge i
 
 A query-only trait returning a `Copy` value gives a test nothing to manipulate, and the real signals live in
 process-global maps a test can nudge but never reset. So `FakeHostPolicy` carries setters — `note_foreground_activity`,
-`note_foreground_quiet`, `note_transfer_started`, `note_transfer_finished` — plus a call counter, and
-`ScanPacer::with_policy` takes one directly. The pacing tests no longer touch a global at all, which is also what makes
-them safe to run in parallel.
+`note_foreground_quiet`, `note_transfer_started`, `note_transfer_finished`, `note_open_listing`, `note_priority_root` —
+plus a call counter, and `ScanPacer::with_policy` takes one directly. The pacing tests no longer touch a global at all,
+which is also what makes them safe to run in parallel.
 
 The counter is not incidental: it's the evidence for the per-batch dispatch rule. With four directories of 250 files, a
 compliant walk asks 15 times; adding a single `clearance()` call to the per-entry loop takes it to 1,015 and the guard

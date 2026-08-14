@@ -99,6 +99,28 @@ pub trait HostPolicy: Send + Sync {
     /// Unlike [`clearance`](Self::clearance) this allocates, and it's asked on the
     /// scan-progress reporter's 500 ms tick. ❌ Not from anything faster.
     fn open_listings(&self) -> Vec<OpenListing>;
+
+    /// The folders on `volume_id` that matter most to this user, best guess first.
+    ///
+    /// The third "what has the user's attention" question, and the one that sets a
+    /// walk ORDER: an index that walks these before the rest of the volume is useful
+    /// minutes before it is complete. **Order is the whole payload.** Nothing is
+    /// promised about the paths beyond "walk them first": they carry no scope, so a
+    /// host that answers differently between two calls changes what gets indexed
+    /// first and never what gets indexed at all.
+    ///
+    /// The host owns which signals count (where the panes were last session, the
+    /// user's favorites, the standard home folders) and owes the index a list that
+    /// is deduplicated, free of paths below an earlier entry, and short. It is asked
+    /// per volume so a host can answer for the boot drive without a share's phases
+    /// inheriting somebody's home folder.
+    ///
+    /// Asked when the index needs it rather than once at startup, so an edited
+    /// favorites list or a new session's tabs land without a restart. So the same
+    /// cost rule as [`clearance`](Self::clearance) applies: cheap, ❌ no I/O on a
+    /// contended path and no blocking lock. A host that needs to stat things caches
+    /// its answer behind a short TTL.
+    fn priority_roots(&self, volume_id: &str) -> Vec<PathBuf>;
 }
 
 /// The host that never asks for anything: used until one is installed, and by every
@@ -112,6 +134,10 @@ impl HostPolicy for AlwaysClear {
     }
 
     fn open_listings(&self) -> Vec<OpenListing> {
+        Vec::new()
+    }
+
+    fn priority_roots(&self, _volume_id: &str) -> Vec<PathBuf> {
         Vec::new()
     }
 }
@@ -157,6 +183,8 @@ pub struct FakeHostPolicy {
     calls: std::sync::atomic::AtomicUsize,
     /// What [`HostPolicy::open_listings`] reports.
     open_listings: std::sync::RwLock<Vec<OpenListing>>,
+    /// What [`HostPolicy::priority_roots`] reports, per volume, in the order noted.
+    priority_roots: std::sync::RwLock<Vec<(String, PathBuf)>>,
 }
 
 #[cfg(any(test, feature = "testing"))]
@@ -198,6 +226,15 @@ impl FakeHostPolicy {
         self
     }
 
+    /// This user cares about `path` on `volume_id`, after everything noted so far.
+    pub fn note_priority_root(&self, volume_id: impl Into<String>, path: impl Into<PathBuf>) -> &Self {
+        use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+        self.priority_roots
+            .write_ignore_poison()
+            .push((volume_id.into(), path.into()));
+        self
+    }
+
     /// How many clearance questions this host has been asked.
     pub fn call_count(&self) -> usize {
         self.calls.load(std::sync::atomic::Ordering::SeqCst)
@@ -209,6 +246,16 @@ impl HostPolicy for FakeHostPolicy {
     fn open_listings(&self) -> Vec<OpenListing> {
         use cmdr_fs::ignore_poison::RwLockIgnorePoison;
         self.open_listings.read_ignore_poison().clone()
+    }
+
+    fn priority_roots(&self, volume_id: &str) -> Vec<PathBuf> {
+        use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+        self.priority_roots
+            .read_ignore_poison()
+            .iter()
+            .filter(|(id, _)| id == volume_id)
+            .map(|(_, path)| path.clone())
+            .collect()
     }
 
     fn clearance(&self, _volume_id: &str, _idle_threshold: Duration) -> WorkClearance {
@@ -304,5 +351,34 @@ mod tests {
     #[test]
     fn an_uninstalled_policy_reports_no_open_listings() {
         assert!(current().open_listings().is_empty());
+    }
+
+    /// No host to ask means no opinion on order, which leaves a walk to take the
+    /// volume in whatever order it would have used anyway. Every test binary and
+    /// dev tool runs this way.
+    #[test]
+    fn an_uninstalled_policy_reports_no_priority_roots() {
+        assert!(current().priority_roots("root").is_empty());
+    }
+
+    /// The roots half of the fake: order survives, and a volume only ever hears
+    /// about its own roots (a share must not inherit the boot drive's home folder).
+    #[test]
+    fn the_fake_reports_its_priority_roots_in_order_per_volume() {
+        let fake = FakeHostPolicy::shared();
+        assert!(fake.priority_roots("root").is_empty(), "nothing noted yet");
+
+        fake.note_priority_root("root", "/Users/david/Downloads")
+            .note_priority_root("smb-naspi", "/Volumes/naspi/media")
+            .note_priority_root("root", "/Users/david");
+
+        assert_eq!(
+            fake.priority_roots("root"),
+            vec![PathBuf::from("/Users/david/Downloads"), PathBuf::from("/Users/david"),]
+        );
+        assert_eq!(
+            fake.priority_roots("smb-naspi"),
+            vec![PathBuf::from("/Volumes/naspi/media")]
+        );
     }
 }

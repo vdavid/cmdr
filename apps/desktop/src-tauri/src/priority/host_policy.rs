@@ -7,12 +7,13 @@
 //! pure adapters: the priority order, the scopes, and the signals all still live
 //! in this module's siblings.
 
+use std::path::PathBuf;
 use std::time::Duration;
 
 use cmdr_fs::volume::host::activity::UserActivity;
 use cmdr_index::host::policy::{HostPolicy, OpenListing, WorkClearance};
 
-use super::{foreground, transfers};
+use super::{foreground, roots, transfers};
 
 /// Answers the index from the app's real priority signals.
 pub struct AppHostPolicy;
@@ -34,6 +35,10 @@ impl HostPolicy for AppHostPolicy {
                 path: listing.path,
             })
             .collect()
+    }
+
+    fn priority_roots(&self, volume_id: &str) -> Vec<PathBuf> {
+        roots::priority_roots(volume_id)
     }
 }
 

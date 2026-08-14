@@ -1,15 +1,18 @@
 # Priority (`src/priority/`)
 
-The per-volume priority signals background work yields to. ONE transport-generic order: **interactive > transfers >
-indexing** (drive indexing AND image enrichment). This module owns the SIGNALS and pure decisions; consumers compose
-them at their own loop boundaries.
+Who gets the volume, and which of its folders come first. The per-volume signals background work yields to (ONE
+transport-generic order: **interactive > transfers > indexing**, drive indexing AND image enrichment), plus the walk
+order the drive index takes a volume in. This module owns the SIGNALS and pure decisions; consumers compose them at
+their own loop boundaries.
 
 ## Module map
 
 - `foreground.rs`: last-interactive-activity timestamps, app-wide + per volume. Written by the hot listing IPC.
 - `transfers.rs`: per-volume gauge of user-initiated write ops (copy/move/delete/trash/drag-out).
+- `roots.rs`: which folders matter to this user, ranked, for the index's phased walk. Last session's tabs, favorites,
+  the standard home folders, cloud roots, then `$HOME`.
 - `host_policy.rs`: `AppHostPolicy` (the index subsystems' `HostPolicy`) and `AppUserActivity` (a storage backend's
-  narrower per-volume question), both answering from the two signals above. Installed once in `setup()`.
+  narrower per-volume question), answering from the signals above. Installed once in `setup()`.
 
 ## Must-knows
 
@@ -27,5 +30,12 @@ them at their own loop boundaries.
   they're app code.
 - **Indexing yields must keep forward progress structural**: throttle-to-one or pause-with-resume, ❌ never a gate that
   can stop work with no wake-up path (see `indexing/network_scanner/scan_pace.rs`'s never-zero budget).
+- **Priority roots are a walk ORDER, never a scope.** Dropping one changes what gets indexed first and never what gets
+  indexed, which is what makes ranking on guesses safe. ❌ Don't grow a setting, a promise, or a skip out of them.
+- **❌ Never stat a path here while the FDA gate is pending and `tcc_paths::is_potentially_tcc_restricted` says a gate
+  covers it.** Even `Path::exists()` stacks a system popup on our onboarding modal. Assume it's there, exactly as
+  `volumes::get_favorites` does; ❌ don't hand-roll a second rule.
+- **❌ Nothing in `roots.rs` may `statfs`** (so no `path_is_on_network_mount`, no space query): a wedged share answers in
+  minutes, and the index asks this on its own thread. The in-memory `mount_id_for_path` registry lookup is the way.
 
 Design, the full consumer wiring, and decisions: `DETAILS.md`.
