@@ -4,6 +4,10 @@ Every test observed failing without a product defect behind it, with the evidenc
 stated confidence. Written as the input to a de-flaking pass whose goal is that each of these becomes structurally
 unable to flake, so it says WHERE the evidence came from rather than asking anyone to re-measure.
 
+Its run-level companion is `e2e-flake-remeasured-2026-08-14.md`, measured six days later from the two CSV logs (so,
+unlike the `/tmp`-derived counts here, re-derivable). Read it before treating any ranking below as a quarantine list:
+the current red rate is the suite's WIDTH, and over the instrumented window no E2E test failed twice.
+
 **This is a living ledger.** The de-flaking pass ran on 2026-08-08 and marked every entry below. Legend:
 
 - ✅ **Fixed** — a named defect with a landed remedy, plus how it was proved.

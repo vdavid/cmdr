@@ -55,6 +55,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   six `rust-tests` contention verdicts, with a cause hypothesis and confidence per entry, plus the structural levers a
   de-flaking pass should reach for. ⚠️ Its E2E counts come from `/tmp` logs that age out, so they can't be re-derived.
 
+- `e2e-flake-remeasured-2026-08-14.md` — the run-level companion: what the widely-quoted "the E2E lane fails 60% of the
+  time" is worth now that the fixed-MCP-port and shared-`/tmp` bugs are fixed. Read it before quarantining anything —
+  it's the evidence that the red rate is the suite's WIDTH rather than a few offenders (14 failures, 14 distinct tests,
+  zero repeats), that the concurrency bugs were worth about one point of it, and that the post-fix sample is still too
+  small to quote a new number. Carries the queries and the sample size that would settle it.
+
 - `silent-inertness-hunt-2026-08-08.md` — a sweep for mechanisms that look active but aren't reaching their subject
   (inert guards, tests that can't touch their code, unanswerable questions turned into facts). Carries the two
   capability flags a backend answers wrongly today, the shared `volume::conformance` assertions added to fence the
