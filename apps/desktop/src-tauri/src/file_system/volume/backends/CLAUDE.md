@@ -5,56 +5,49 @@ checklist: `../CLAUDE.md` + `../DETAILS.md`.
 
 ## Module map
 
-- `local_posix.rs`, `archive.rs` (re-export of `crates/cmdr-archive`: zip/tar/7z), `mtp/` (macOS and Linux only),
-  `smb/` + `smb_watcher.rs`. Both remote backends split by concern: the whole `impl Volume` in `volume_impl` (a trait
-  impl can't span files), bytes in `streams`, error classification in `mapping`. `InMemoryVolume` rides with the trait
-  in `cmdr-fs`.
+- `local_posix.rs`, `archive.rs` (re-export of `crates/cmdr-archive`: zip/tar/7z), `mtp/`, `smb/` + `smb_watcher.rs`.
+  Both remote backends split by concern: `volume_impl` (the whole `impl Volume`, since one can't span files), `streams`
+  (bytes), `mapping` (error classification). `InMemoryVolume` rides with the trait in `cmdr-fs`.
 
 ## SMB must-knows
 
 - **The watcher runs on a DEDICATED session, never a clone of the main connection**: stacked CHANGE_NOTIFY long-polls
   wedge Samba.
-- **The watcher never reconnects itself; on death it kicks the ONE reconnect path** (`spawn_watcher_death_reconnect` →
-  `do_attempt_reconnect`), which respawns it AND resumes the index. ❌ No second reconnect loop. It's canceled by
-  `on_unmount` / `do_attempt_reconnect`, never by a pane close.
+- **The watcher never reconnects itself; on death it kicks the ONE reconnect path** (`spawn_watcher_death_reconnect`),
+  which respawns it AND resumes the index. ❌ No second reconnect loop, and ❌ never cancel it on a pane close.
 - **Background bulk work uses the refcounted pool of extra sessions** (`smb/scan_pool.rs`; ksmbd serializes per
-  connection, 4 ≈ 3.8×). Dead members retry on siblings, never the MAIN session.
+  connection, 4 ≈ 3.8×). Dead members retry on siblings, ❌ never the MAIN session.
 - **`SmbVolume` is a per-mount-root instance over a shared `Arc<SmbVolumeInner>`**, so `rerooted` moves a share to
   another of its mounts for one allocation. ❌ A promotion must never call `on_superseded` / `on_unmount` on the
   instance it replaces: they act on the SHARED session. `DETAILS.md` § "Re-rooting a share".
-- **`paths_are_os_visible()` tracks the MOUNT, not the backend kind**: the registry latches it off through
-  `note_root_mount_gone` when no live root survives. ❌ Never hardcode it back to `true` — smb2 keeps browsing a share
-  whose mount is gone, so the drag it breaks fails silently.
+- **`paths_are_os_visible()` tracks the MOUNT, not the backend kind** (latched off by `note_root_mount_gone` when no
+  live root survives). ❌ Never hardcode it to `true`: smb2 keeps browsing a share whose mount is gone, so the drag it
+  breaks fails silently.
 - **A replaced volume is SUPERSEDED, never unmounted**: `on_superseded` retires the id-scoped parts and leaves
   `state` / `tree` / `client` alone for the transfers still holding an `Arc`. Tearing the session down here once killed
-  a live NAS copy. ❌ Don't reinstate it.
-- **`write_from_stream` uses a cloned `Connection` + owned `FileWriter`**, never a borrowed one holding the client
-  mutex across the upload (the QNAP deadlock). Error paths must `abort()` then delete the partial, or the handle leaks
-  and corrupt bytes linger at the user's destination name.
-- **An unreachable request fails instead of hanging** (20 s to the socket, then 30 s of server silence; the watcher's
-  session too). ❌ Never read a missed keepalive as death.
+  a live NAS copy.
+- **`write_from_stream` uses a cloned `Connection` + owned `FileWriter`**, ❌ never a borrowed one holding the client
+  mutex across the upload (the QNAP deadlock). Error paths must `abort()` then delete the partial, or corrupt bytes
+  linger at the user's destination name.
+- **An unreachable request fails instead of hanging** (20 s to connect, 30 s of server silence, watcher session
+  included). ❌ Never read a missed keepalive as death.
 - **`to_smb_path` matches the root by COMPONENT and `NotFound`s anything outside it**; guessing sent real requests to
-  the wrong place. A volume-relative path is the CALLER's to `root_anchored` (`../CLAUDE.md`). Post-mutation patches
-  take `display_path_for`.
-- **Watcher filenames need NFC→NFD normalizing and ❌ nothing else**: smb2 ≥ 0.18 already decodes separators, so a `\`
-  in a filename is part of its NAME, and re-normalizing loses that entry forever.
-- **Auto-upgrade is gated on `network.directSmbConnection`** and no-ops with no SMB mounts (no macOS Local Network
-  prompt). Drive INDEXING lives in `src/indexing/`.
+  the wrong place. Anchoring a volume-relative path is the CALLER's job (`../CLAUDE.md`).
+- **Watcher filenames need NFC→NFD normalizing and ❌ nothing else**: smb2 already decodes separators, so a `\` in a
+  filename is part of its NAME, and re-normalizing loses that entry forever.
 
 ## Local and MTP must-knows
 
-- **`list_directory` must feed `on_progress`; ❌ never `_on_progress`.** It's the pane's only "Loaded N files..."
-  signal, so dropping it strands a big folder on "Opening folder...". `../../listing/DETAILS.md` § "Local listing
-  progress".
-- **So must a copy SCAN** (`scan_for_copy_batch_with_progress`; SMB threads a `ScanTicker` through its recursion). It's
-  the transfer dialog's only climbing counter, AND the scan watchdog reads it as proof the device is answering: a
-  backend that scans in silence eventually gets cut off as unresponsive
-  (`write_operations/DETAILS.md` § "Bounding the scan").
+- **`list_directory` must feed `on_progress`; ❌ never `_on_progress`.** It's the pane's only "Loaded N files…" signal,
+  so dropping it strands a big folder on "Opening folder…". `../../listing/DETAILS.md` § "Local listing progress".
+- **So must a copy SCAN** (`scan_for_copy_batch_with_progress`; SMB threads a `ScanTicker` through its recursion): it's
+  the transfer dialog's only climbing counter, AND the scan watchdog reads it as proof the device is answering, so a
+  silent backend gets cut off as unresponsive (`write_operations/DETAILS.md` § "Bounding the scan").
 - **`LocalPosixVolume::write_from_stream` `sync_data`s each file** (+ best-effort parent-dir fsync) before returning:
   every cross-volume copy landing on local disk flows through it, and a bare `flush()` loses data on eject or sleep.
-- **`MtpVolume::get_metadata` lists the entire parent directory** (MTP has no single-file stat). Avoid in hot paths.
-- **`MtpReadStream` reads in bounded windows, freeing the session between them**; don't re-add a `Drop`/cancel.
-  **`read_range` takes `read_range_direct`, NOT a read session**: archive extraction issues one per 256 KiB.
+- **`MtpVolume::get_metadata` lists the entire parent directory** (MTP has no single-file stat): avoid it in hot paths.
+- **`MtpReadStream` reads in bounded windows, freeing the session between them**; ❌ don't re-add a `Drop`/cancel, and
+  `read_range` takes `read_range_direct`, ❌ not a read session (archive extraction issues one per 256 KiB).
 
 Per-backend decisions, the scan pool, supersede-vs-unmount, and the SMB auto-upgrade / reconnect lifecycles:
 `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

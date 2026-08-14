@@ -11,6 +11,12 @@ it. Anything that relaunches the app against a live data dir (an updater path, a
 harness) must let the old process exit, or wait out the lock's ~5 s retry window. Mechanism, rationale, and
 the retry-window callers: `docs/tooling/instance-isolation.md` § Instance lock.
 
+## Which Apple APIs skip the main-thread rule
+
+`CLAUDE.md` requires an `objc2::MainThreadMarker` for AppKit/Cocoa main-thread-only calls. These are thread-safe and
+carry no such requirement, so demanding a marker for them would be busywork: NSURL resource values, `NSFileManager`,
+`NSUserDefaults`, LaunchServices, Keychain, IOKit, and Mach.
+
 ## Where the app answers a subsystem's seams (`index_host.rs`, `volume_host.rs`)
 
 Two subsystems live below the app and can't reach it: the index (`crates/cmdr-index/`) and storage backends
