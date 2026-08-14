@@ -72,9 +72,13 @@ what makes it safe to rank on signals that are cheap, incomplete, and occasional
   searchable. Its cloud children are separate candidates and stay.
 - **Dedupe and descendant-drop are one test**: a path that `starts_with` an accepted root is either that root again or
   sits inside it. Paths are normalized through `components()` first, so `~/Documents` and `~/Documents/` are one root.
-- **Another volume's ground is not ours to schedule**, decided by the volume manager's in-memory `mount_id_for_path`
-  (a favorite on a share belongs to that share's index). ❌ Never a `statfs` probe: it can block for a minute or two on a
-  wedged mount, and this runs on the index's thread.
+- **Another volume's ground is not ours to schedule** (a favorite on a share belongs to that share's index), decided by
+  two guards that both run before any filesystem call. The volume manager's in-memory `mount_id_for_path` catches every
+  mount Cmdr has registered, wherever it sits. The `/Volumes`- and `/Network`-style path prefixes (`/media`, `/mnt`,
+  `/run/media`, `/net` off macOS) catch the rest: the registry only knows what the app registered, and registration can
+  lag or never happen, so without the prefix rule a favorite on an unregistered wedged share would reach `is_dir()` and
+  block the index's thread for minutes. ❌ Never a `statfs` probe (`path_is_on_network_mount`, a space query) to answer
+  this: that IS the call that blocks. Residual gap, accepted: a mount at an unusual path that Cmdr hasn't registered.
 - **A cap of 24**, so somebody with 200 favorites doesn't turn the first phase into a whole-drive walk.
 
 **The TCC rule.** While the Full Disk Access decision is pending, a path `tcc_paths::is_potentially_tcc_restricted`

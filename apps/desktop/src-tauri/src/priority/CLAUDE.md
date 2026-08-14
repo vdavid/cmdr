@@ -35,7 +35,9 @@ their own loop boundaries.
 - **❌ Never stat a path here while the FDA gate is pending and `tcc_paths::is_potentially_tcc_restricted` says a gate
   covers it.** Even `Path::exists()` stacks a system popup on our onboarding modal. Assume it's there, exactly as
   `volumes::get_favorites` does; ❌ don't hand-roll a second rule.
-- **❌ Nothing in `roots.rs` may `statfs`** (so no `path_is_on_network_mount`, no space query): a wedged share answers in
-  minutes, and the index asks this on its own thread. The in-memory `mount_id_for_path` registry lookup is the way.
+- **❌ Nothing in `roots.rs` may touch another volume**, not even a `stat`: a wedged share answers in minutes and the
+  index asks this on its own thread. Two guards, both before any filesystem call: the `/Volumes`-style path prefixes
+  (which catch a mount Cmdr never registered) and the in-memory `mount_id_for_path` lookup. ❌ Never `statfs`
+  (`path_is_on_network_mount`, a space query) to decide it.
 
 Design, the full consumer wiring, and decisions: `DETAILS.md`.
