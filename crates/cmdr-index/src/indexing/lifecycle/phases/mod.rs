@@ -193,6 +193,14 @@ pub(crate) fn start(context: MachineContext) -> PhaseHandle {
         freshness: context.freshness,
     };
 
+    // Where the user is looking RIGHT NOW, before the first phase reads anything.
+    // The reporter's first tick is half a second away, and the folder somebody has
+    // open at the moment indexing starts is the single best guess there is.
+    handle.visits.note(
+        &crate::indexing::host::policy::current().open_listings(),
+        &machine.volume_id,
+    );
+
     // The machine's OWN 500 ms pump, for the machine's whole lifetime rather than
     // one walk's. Three things ride it and stop together without it: the
     // `index-scan-progress` event stream, mid-scan partial aggregation (which is
@@ -223,6 +231,17 @@ pub(crate) fn start(context: MachineContext) -> PhaseHandle {
     handle
 }
 
+/// This machine's home directory. A test drives a synthetic one, because the home
+/// phase and its early signal are the whole reason the machine has an order at all
+/// and a real `$HOME` is never inside a temp tree.
+fn home_dir() -> Option<PathBuf> {
+    #[cfg(test)]
+    if let Some(home) = tests::home_override() {
+        return Some(home);
+    }
+    dirs::home_dir()
+}
+
 /// The driver, which owns its thread for the whole run.
 struct Machine {
     started_at: Instant,
@@ -250,6 +269,13 @@ impl Machine {
             }
             self.run_phase(&phase, &mut queue);
         }
+        // ⚠️ Once more with nothing left to walk. A phase whose frontier is ALREADY
+        // empty walks nothing and drains nothing, so a run that only had to confirm
+        // what a previous session covered would never reach a stock-take — and a
+        // volume killed between its last walk and its stamp would stay unmarked
+        // forever, re-running the machine on every launch to discover the same
+        // thing.
+        self.take_stock();
         self.finish();
     }
 
@@ -277,7 +303,7 @@ impl Machine {
     /// This machine's home directory, when it is on the volume being covered.
     /// `None` for an external drive, and for a machine with no home at all.
     fn home_on_this_volume(&self) -> Option<PathBuf> {
-        let home = dirs::home_dir()?;
+        let home = home_dir()?;
         home.starts_with(&self.volume_root).then_some(home)
     }
 

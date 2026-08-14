@@ -143,7 +143,9 @@ impl HostPolicy for AlwaysClear {
     }
 }
 
-static INSTALLED: OnceLock<Arc<dyn HostPolicy>> = OnceLock::new();
+/// The installed policy. A `RwLock` rather than a `OnceLock` so a test can swap it
+/// (see [`install_for_test`]); production writes it exactly once.
+static INSTALLED: std::sync::RwLock<Option<Arc<dyn HostPolicy>>> = std::sync::RwLock::new(None);
 
 /// A [`set_host_policy`] call that arrived after one was already installed.
 #[derive(Debug)]
@@ -153,7 +155,13 @@ pub struct HostPolicyAlreadySet;
 /// startup. A second call keeps the first policy, so a late caller can't change the
 /// answer under a scan that's already pacing itself against it.
 pub(crate) fn set_host_policy(policy: Arc<dyn HostPolicy>) -> Result<(), HostPolicyAlreadySet> {
-    INSTALLED.set(policy).map_err(|_| HostPolicyAlreadySet)
+    use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+    let mut slot = INSTALLED.write_ignore_poison();
+    if slot.is_some() {
+        return Err(HostPolicyAlreadySet);
+    }
+    *slot = Some(policy);
+    Ok(())
 }
 
 /// The installed host policy, or [`AlwaysClear`] when nothing was installed.
@@ -161,11 +169,41 @@ pub(crate) fn set_host_policy(policy: Arc<dyn HostPolicy>) -> Result<(), HostPol
 /// Prefer capturing the result once, where a piece of work is set up (the way
 /// `ScanPacer` does), over calling this deep inside a loop.
 pub(crate) fn current() -> Arc<dyn HostPolicy> {
-    if let Some(installed) = INSTALLED.get() {
+    use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+    if let Some(installed) = INSTALLED.read_ignore_poison().as_ref() {
         return Arc::clone(installed);
     }
     static FALLBACK: OnceLock<Arc<dyn HostPolicy>> = OnceLock::new();
     Arc::clone(FALLBACK.get_or_init(|| Arc::new(AlwaysClear)))
+}
+
+/// Swap in `policy` for the duration of one test, restoring whatever was there
+/// when the returned guard drops.
+///
+/// The slot is process-wide, so anything using this must hold `handle::test_lock`
+/// first: nextest runs a process per test, but a plain `cargo test` doesn't, and
+/// two tests swapping the same slot concurrently would see each other's answers.
+#[cfg(any(test, feature = "testing"))]
+#[must_use = "the policy is restored when the guard drops"]
+pub fn install_for_test(policy: Arc<dyn HostPolicy>) -> TestPolicyGuard {
+    use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+    let previous = INSTALLED.write_ignore_poison().replace(policy);
+    TestPolicyGuard { previous }
+}
+
+/// Restores the previously-installed policy on drop, including on a panic, so one
+/// failing test can't leave every later one looking at its fake answers.
+#[cfg(any(test, feature = "testing"))]
+pub struct TestPolicyGuard {
+    previous: Option<Arc<dyn HostPolicy>>,
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl Drop for TestPolicyGuard {
+    fn drop(&mut self) {
+        use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+        *INSTALLED.write_ignore_poison() = self.previous.take();
+    }
 }
 
 /// A controllable host for tests: set the signals, count the questions.

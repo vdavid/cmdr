@@ -622,6 +622,52 @@ fn the_verifier_leaves_an_unlisted_directory_alone() {
     writer.shutdown();
 }
 
+/// Ground a cover walk is covering RIGHT NOW is the walk's, and a listing of it
+/// must write nothing.
+///
+/// Two writers of one name allocate different ids, and `INSERT OR IGNORE` drops
+/// one and orphans its whole subtree — a data-safety bug, not a performance one.
+/// The verifier consults neither the claim nor `WatchScope::may_walk`, so what
+/// protects it is the durable fact that nothing has listed the directory yet.
+/// Walking-while-browsing is the central behavior of phased indexing, so this
+/// fires constantly rather than never.
+#[test]
+fn a_listing_of_ground_a_walk_is_covering_writes_nothing() {
+    let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
+    let fs_root = test_tempdir();
+    fs::create_dir_all(fs_root.path().join("claimed/inner")).unwrap();
+    fs::write(fs_root.path().join("claimed/file.txt"), "hello").unwrap();
+
+    let (writer, db_path, _db_dir) = setup_writer_mid_coverage();
+    ensure_path_in_db(&db_path, &fs_root.path().join("claimed"), &writer);
+    install_read_pool(&db_path);
+
+    // A real walk, holding a real claim on that ground for the whole assertion.
+    let walk = crate::indexing::lifecycle::cover::start(
+        crate::indexing::lifecycle::cover::CoverContext {
+            volume_id: crate::ROOT_VOLUME_ID.to_string(),
+            writer: writer.clone(),
+            space: IndexPathSpace::root(),
+            kind: crate::indexing::volume::IndexVolumeKind::Local,
+            flush: crate::indexing::lifecycle::cover::FlushOnFinish::default(),
+        },
+        vec![fs_root.path().join("claimed").to_string_lossy().into_owned()],
+        crate::indexing::read::coverage::CoverageDimension::Listing,
+        CancellationToken::new(),
+    );
+
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let paths = rt.block_on(verify_root(&fs_root.path().join("claimed"), &writer));
+    assert!(
+        paths.is_empty(),
+        "the walk owns this ground; a listing of it corrects nothing: {paths:?}"
+    );
+
+    drop(walk);
+    remove_read_pool();
+    writer.shutdown();
+}
+
 /// The other side of the bail's scoping, and the reason it isn't unconditional. A
 /// directory the reconcile cost budget SKIPPED also has a row with
 /// `listed_epoch == 0` and no cause. On a volume whose scan completed, no walk is

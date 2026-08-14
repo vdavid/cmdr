@@ -326,6 +326,47 @@ mod tests {
         assert!(buffered.leaves.is_empty(), "a downgrade records no search leaves");
     }
 
+    /// The case a phased first index makes ROUTINE rather than rare: a subtree
+    /// whose ancestors are listed but whose depths haven't been walked yet, so
+    /// `min_subtree_epoch` is `0` and the index holds a LOWER BOUND on its leaves.
+    /// Stamping `full` over that would record a search scope missing every file the
+    /// walker hasn't reached, silently.
+    ///
+    /// ⚠️ Distinct from the stale case above (`0 < min < current`), and it has to
+    /// stay distinct: a volume is now partially covered for minutes at a time on
+    /// every first run.
+    #[test]
+    fn a_partially_covered_subtree_downgrades_rather_than_claiming_full() {
+        let (_dir, _conn, photos_id) = index_with_subtree(3, false);
+        // What a walk that hasn't got here yet leaves: rows, and no coverage claim.
+        {
+            let db = _dir.path().join("index.sqlite");
+            let wconn = IndexStore::open_write_connection(&db).expect("write conn");
+            IndexStore::upsert_dir_stats_by_id(
+                &wconn,
+                &[cmdr_index::store::DirStatsById {
+                    entry_id: photos_id,
+                    recursive_logical_size: 0,
+                    recursive_physical_size: 0,
+                    recursive_file_count: 3,
+                    recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
+                }],
+            )
+            .expect("upsert dir stats");
+        }
+        let conn = IndexStore::open_read_connection(&_dir.path().join("index.sqlite")).expect("read conn");
+        let buffered = enumerate_from_id(&conn, photos_id, SEARCH_LEAF_CAP);
+        assert_eq!(
+            buffered.coverage,
+            SearchCoverage::TopLevelOnly,
+            "a subtree nothing has walked to the bottom of must never claim full coverage"
+        );
+        assert_eq!(buffered.reason, Some(SearchCoverageReason::IndexStale));
+        assert!(buffered.leaves.is_empty(), "a downgrade records no search leaves");
+    }
+
     #[test]
     fn over_cap_downgrades_with_the_capped_reason() {
         // 5 leaves against a cap of 4 ⇒ over cap ⇒ top-level only, `capped`.
