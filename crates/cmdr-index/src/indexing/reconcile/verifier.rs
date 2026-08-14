@@ -139,6 +139,38 @@ pub(crate) fn invalidate() {
 
 // ── Core verification ────────────────────────────────────────────────
 
+/// Whether this directory belongs to a walk that hasn't got here yet, in which
+/// case the verifier leaves it alone.
+///
+/// Two facts have to hold together. **Nothing has listed the directory**
+/// (`listed_epoch == 0`), so its rows are a lower bound rather than its contents,
+/// and diffing them would treat every name on disk as new — writing children under
+/// a directory nothing marked, which is precisely the non-virgin node that sends a
+/// later cover walk down the serial repair path, and running a full recursive
+/// `scan_subtree` per new subdirectory to get there. **And the volume still has a
+/// frontier**, meaning no scan has completed on it, so a walk genuinely is coming.
+///
+/// ⚠️ The second half is what keeps this from swallowing a repair nobody else
+/// makes. A directory the reconcile cost budget SKIPPED has the same
+/// `listed_epoch == 0` and no cause; on a volume whose scan completed, no walk is
+/// coming for it and this pass is the only thing that heals it.
+///
+/// This restores exactly the behavior uncovered ground had before the stitch gave
+/// every frontier root a row: back then the verifier bailed because there was no
+/// row to resolve. Being a property of the DATABASE rather than a runtime flag is
+/// the point — it holds between launch and the first walk, and while drive
+/// indexing is off, where no flag would be set.
+fn is_the_walks_to_cover(conn: &rusqlite::Connection, dir_id: i64) -> bool {
+    let listed = IndexStore::get_listed_epoch_by_id(conn, dir_id)
+        .ok()
+        .flatten()
+        .unwrap_or(0);
+    if listed > 0 {
+        return false;
+    }
+    IndexStore::get_meta(conn, "scan_completed_at").ok().flatten().is_none()
+}
+
 struct DiskEntry {
     name: String,
     is_dir: bool,
@@ -179,6 +211,9 @@ async fn verify_and_correct(
             Ok(Some(id)) => id,
             _ => return None,
         };
+        if is_the_walks_to_cover(conn, parent_id) {
+            return None;
+        }
         match IndexStore::list_children_on(parent_id, conn) {
             Ok(entries) => Some((parent_id, entries)),
             Err(_) => Some((parent_id, Vec::new())),

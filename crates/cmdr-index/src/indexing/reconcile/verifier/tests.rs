@@ -23,12 +23,29 @@ fn test_tempdir() -> tempfile::TempDir {
         .expect("create temp dir")
 }
 
+/// A writer over an index whose scan COMPLETED, which is the volume every test
+/// below is about: the verifier is the per-navigation repair on a drive nothing is
+/// walking any more. A volume with an unfinished frontier is a different case, and
+/// `the_verifier_leaves_an_unlisted_directory_alone` owns it.
 fn setup_writer() -> (IndexWriter, std::path::PathBuf, tempfile::TempDir) {
+    let (writer, db_path, dir) = setup_writer_mid_coverage();
+    mark_scan_completed(&db_path);
+    (writer, db_path, dir)
+}
+
+/// The same, over an index no scan has finished — a volume whose phases are still
+/// covering it.
+fn setup_writer_mid_coverage() -> (IndexWriter, std::path::PathBuf, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create temp dir");
     let db_path = dir.path().join("test-index.db");
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).expect("spawn writer");
     (writer, db_path, dir)
+}
+
+fn mark_scan_completed(db_path: &Path) {
+    let conn = IndexStore::open_write_connection(db_path).expect("write connection");
+    IndexStore::update_meta(&conn, "scan_completed_at", "1").expect("stamp the completion marker");
 }
 
 /// Install a root ReadPool so verify_and_correct can read the DB.
@@ -563,6 +580,75 @@ fn verify_concurrent_limit() {
     drop(state);
 
     invalidate();
+}
+
+/// The data-safety half of the stitch. A stitch gives every frontier root a ROW,
+/// which is what used to make the verifier no-op on uncovered ground; with a row
+/// there, it would resolve the directory, find no indexed children, treat every
+/// name on disk as new, and run a full recursive `scan_subtree` per new
+/// subdirectory — on the verifier task, for every folder the user opens ahead of
+/// the walker, leaving exactly the non-virgin nodes the stitch exists to prevent.
+///
+/// The durable gate is the epoch, not a runtime flag: nothing has listed this
+/// directory, so the walk owns it.
+#[test]
+fn the_verifier_leaves_an_unlisted_directory_alone() {
+    let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
+    let fs_root = test_tempdir();
+    fs::create_dir(fs_root.path().join("subdir")).unwrap();
+    fs::write(fs_root.path().join("subdir/deep.txt"), "hello").unwrap();
+    fs::write(fs_root.path().join("file.txt"), "hello").unwrap();
+
+    // A stitched frontier root: it has a row, and nothing has listed it.
+    let (writer, db_path, _db_dir) = setup_writer_mid_coverage();
+    let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
+    install_read_pool(&db_path);
+
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let paths = rt.block_on(verify_root(fs_root.path(), &writer));
+
+    writer.flush_blocking().unwrap();
+    assert!(
+        paths.is_empty(),
+        "an unlisted directory is the walk's to cover, so the verifier reports nothing: {paths:?}"
+    );
+    assert_eq!(
+        list_db_children_on(&db_path, parent_id).len(),
+        0,
+        "and it writes nothing, so the walk still finds virgin ground"
+    );
+
+    remove_read_pool();
+    writer.shutdown();
+}
+
+/// The other side of the bail's scoping, and the reason it isn't unconditional. A
+/// directory the reconcile cost budget SKIPPED also has a row with
+/// `listed_epoch == 0` and no cause. On a volume whose scan completed, no walk is
+/// coming for it, so the per-navigation verifier is the only thing that heals it.
+#[test]
+fn the_verifier_still_heals_a_skipped_dir_on_a_completed_volume() {
+    let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
+    let fs_root = test_tempdir();
+    fs::write(fs_root.path().join("file.txt"), "hello").unwrap();
+
+    let (writer, db_path, _db_dir) = setup_writer();
+    let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
+    install_read_pool(&db_path);
+
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let paths = rt.block_on(verify_root(fs_root.path(), &writer));
+
+    writer.flush_blocking().unwrap();
+    assert!(!paths.is_empty(), "a completed volume's skipped directory still heals");
+    assert_eq!(
+        list_db_children_on(&db_path, parent_id).len(),
+        1,
+        "the file the skip left out is written"
+    );
+
+    remove_read_pool();
+    writer.shutdown();
 }
 
 #[test]
