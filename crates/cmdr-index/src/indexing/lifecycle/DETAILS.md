@@ -406,11 +406,35 @@ both as well — the trait half has the same doors and the slowest walks):
 
 Without the second, a coalesced shallow anchor, a journal-gap fallback, or the manual button sends `TruncateData` +
 `BumpCurrentEpoch` while the walk is still inserting: the walk's rows land in a blanked database, its ids lose to
-`INSERT OR IGNORE`, and everything hanging off them is orphaned. The refusal is the whole recovery — the scan is not
-queued, so whoever asked for it asks again (a walk is seconds to minutes, and every trigger recurs). ⚠️ That includes
-the enable path: turning drive indexing on for a volume a search is walking right now refuses the first scan, and the
-next trigger takes it. Regression anchor:
+`INSERT OR IGNORE`, and everything hanging off them is orphaned.
+
+**Both refusals are TYPED** (`rescan_request::ScanStartError`: `AlreadyScanning`, `GroundBeingWalked`, `Internal`).
+Their wording used to be the only thing separating them, which the project's hard rule forbids classifying on, and which
+left a caller nothing to branch on but prose. Regression anchor:
 `cover::cold_drive_tests::a_truncating_rescan_refuses_while_a_search_cover_walk_is_live`.
+
+### The one walk a volume remembers
+
+An AUTOMATIC trigger needs nothing more than the refusal: a journal gap and a coalesced anchor both recur on their own,
+and nobody is watching a button for them. `manager::perform_registry_rescan` therefore logs and moves on.
+
+A MANUAL one is different. A cover walk holds ground for seconds to minutes, the person who clicked "Rescan now" (or
+"Turn on indexing" on a volume a search built an index for) can't see when it lets go, and telling them to click again
+puts the scheduling on the one participant who can't observe the schedule. So `state::force_scan` — the entry point
+behind both buttons — records a `GroundBeingWalked` refusal in `rescan_request` and answers `RescanOutcome::Deferred`,
+which reaches the frontend as `StartOutcome::DeferredUntilSearchEnds` and becomes a toast that promises the scan.
+
+- **The walk that blocked it runs it**, from `cover::release_ground`, in an order that is the whole trick: the branch
+  set, then the claim, then the owed scan. Fired before the claim goes, the scan would see this very walk's ground and
+  defer itself again, forever.
+- **❌ Nothing assumes the coast is clear.** The fire re-asks both guards by going through `force_scan`, so a second
+  walk still holding ground re-defers the request behind ITS ending. That's what makes a truncating scan under a live
+  walk unreachable however many walks are in flight (`cover::cold_drive_tests::a_remembered_rescan_waits_for_the_last_walk_out`).
+- **One request per volume, memory only.** It carries nothing but "this volume wants a full walk", so a second click
+  describes the same work and a set of volume ids is the whole state; quitting drops it. Every teardown path drops it
+  too (`stop_indexing`, `clear_index`, `remove_instance_and_handles`), and the master switch going off drops it at fire
+  time, so a stopped drive is owed nothing
+  (`cover::cold_drive_tests::a_drive_that_stopped_indexing_is_owed_no_rescan`).
 
 ### What the walk leaves watched
 

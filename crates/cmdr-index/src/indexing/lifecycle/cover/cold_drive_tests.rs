@@ -759,7 +759,7 @@ fn a_rescan_refused_under_a_walk_runs_when_the_walk_ends() {
     assert_eq!(drive.scans_started(), 0, "so nothing truncates while the walk writes");
 
     // The walk ends, through the one path `cover::start`'s thread ends one with.
-    super::release_ground(drive.volume_id, claim);
+    release_ground(drive.volume_id, claim);
 
     cmdr_fs::testing::wait_until(
         std::time::Duration::from_secs(10),

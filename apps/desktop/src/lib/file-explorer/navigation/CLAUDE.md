@@ -33,8 +33,9 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   favorites, `network` / `search-results`, or disk images). State→color/menu: the pure `drive-index-status.ts`;
   freshness stays live via `drive-index-manager`'s event subscriptions (NOT polling). The manager owns ONLY
   freshness/menu facts; LIVE progress comes from `index-state` via `getVolumeActivity`; don't reintroduce a manager-side
-  progress map. The badge is a `<button>` (axe rejects `role="img"`); a refused enable/rescan is classified by typed
-  variant, never text. Coalesced sweep signals ride in the TOOLTIP, never the dot's color. **While the MASTER switch is
+  progress map. The badge is a `<button>` (axe rejects `role="img"`); an enable/rescan answers by typed variant, never
+  text (`driveIndexActionFeedback`, its `error` leg included). Coalesced sweep signals ride in the TOOLTIP, never the
+  dot's color. **While the MASTER switch is
   off (`getDriveIndexingEnabled()`), `driveIndexMenuActions` returns NOTHING** and the menu shows one note: the backend
   refuses every start then, so per-drive actions would promise work that can't happen (model:
   `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md`). DETAILS § Drive index freshness badge.

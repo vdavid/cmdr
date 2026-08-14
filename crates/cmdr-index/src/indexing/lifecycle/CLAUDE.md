@@ -2,11 +2,11 @@
 
 How a per-volume index is born, lives, transitions, and dies. Every invariant here holds PER volume id.
 
-`state.rs` the registry + `IndexPhase` machine, with a job per file under `state/` (start, teardown, scan control,
-queries, freshness bridge, failure supervisor) re-exported so `state::*` stays the one path; `manager.rs` (+
-`manager/start.rs`) the per-volume coordinator; `network_scan.rs` the SMB/MTP trait scan; `scan_completion.rs`;
-`progress_reporter.rs` + `partial_agg.rs` the 500 ms progress pump; `cover.rs` the search-driven walk, with its
-bootstrap and ground-claiming rules in `cover/CLAUDE.md`; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs`.
+`state.rs` the registry + `IndexPhase` machine, with a job per file under `state/`, re-exported so `state::*` stays the
+one path; `manager.rs` (+ `manager/start.rs`) the per-volume coordinator; `network_scan.rs` the SMB/MTP trait scan;
+`scan_completion.rs`; `progress_reporter.rs` + `partial_agg.rs` the 500 ms progress pump; `cover.rs` the search-driven
+walk (bootstrap + ground-claiming rules in `cover/CLAUDE.md`); `rescan_request.rs` the typed scan-start
+refusal + the owed walk; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs`.
 
 ## Must-knows
 
@@ -16,22 +16,24 @@ bootstrap and ground-claiming rules in `cover/CLAUDE.md`; `freshness.rs`, `failu
   `lifecycle::state`: reads would wait on the lock teardown holds.
 - **Withdraw the read handles BEFORE the drain, and before any DB file goes.** Withdrawal IS the read-skip, so `Failed`
   needs no read-path case.
-- **The phase MACHINE is here; the phase EVENT is not.** Fire it via `events::set_phase_for`.
+- **The phase MACHINE is here; the phase EVENT is not**: fire it via `events::set_phase_for`.
 - **`start_indexing` is lock-first**: reserve the slot before building `IndexManager`, or two starts race two writers on
   one DB. ❌ Never hold `INDEX_REGISTRY` across a blocking or re-entrant manager call.
 - **A manual rescan routes by the TYPED kind** (`rescan_scanner_for_kind`). ❌ Never `start_scan` a trait-scanned
   volume: it walks nothing and falsely completes.
-- **A cover walk reuses the RUNNING writer, or stands one up** (`Activation::WriterOnly`: DB, epoch, writer, read
-  handles, ❌ no scan or watcher), and EVICTS an index whose coverage this build refuses. ⚠️ A volume mid-SCAN isn't
-  walked.
+
+- **A cover walk reuses the RUNNING writer, or stands one up** (`Activation::WriterOnly`, ❌ no scan or watcher), and
+  EVICTS an index whose coverage this build refuses. ⚠️ A volume mid-SCAN isn't walked.
 - **`CoverOutcome::abandoned_ground` is independent of every other field**, so ❌ any caller reporting completeness must
   consult it.
 - **Every scan entry asks TWO single-flight questions** (`start_scan`, `start_volume_scan`): `mgr.scanning` AND
   `cover::ground_being_walked`. A search walk sets no flag, and truncating under one blanks rows it's still writing. ❌
-  Don't collapse them into one.
+  Don't collapse them or classify them by text (both are `ScanStartError`). A MANUAL rescan they refuse is REMEMBERED
+  (`rescan_request`) and run by the walk from `cover::release_ground` (claim first, THEN the scan) via `force_scan`,
+  re-asking both.
 - **A walk RELEASES its branch whatever the registry phase** (`finish_branch_coverage` reaches the set directly). ❌
-  Never behind `with_running_manager`: a walk ending inside a rescan's `ShuttingDown` window would hold that ground,
-  buffering its events, forever.
+  Never behind `with_running_manager`: a walk ending inside a rescan's `ShuttingDown` window would hold that ground
+  forever.
 - **A walk stops through the CALLER's token and flushes its writer before reporting**, cancel included.
 - **`IndexVolumeKind` is a capability model**: branch on the axis, not the variant. `has_event_journal()` gates journal
   replay, ❌ not `last_event_id.is_some()`.
