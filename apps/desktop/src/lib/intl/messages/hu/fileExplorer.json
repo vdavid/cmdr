@@ -1389,6 +1389,14 @@
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "sourceHash": "0cf83a1"
   },
+  "fileExplorer.navigation.driveIndex.deferredRescan": "A Cmdr épp keres itt: {name}. Az újbóli átvizsgálás elindul, amint ez befejeződik.",
+  "@fileExplorer.navigation.driveIndex.deferredRescan": {
+    "sourceHash": "4e0f748"
+  },
+  "fileExplorer.navigation.driveIndex.deferredEnable": "A Cmdr épp keres itt: {name}. Az indexelés elindul, amint ez befejeződik.",
+  "@fileExplorer.navigation.driveIndex.deferredEnable": {
+    "sourceHash": "b27d24c"
+  },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "A Cmdr most nem tudja indexelni ezt: {name}. Csatlakoztasd újra a meghajtót, és próbáld újra.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"

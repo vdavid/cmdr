@@ -1398,6 +1398,14 @@
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "sourceHash": "0cf83a1"
   },
+  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr durchsucht {name} gerade. Der erneute Scan startet, sobald das fertig ist.",
+  "@fileExplorer.navigation.driveIndex.deferredRescan": {
+    "sourceHash": "4e0f748"
+  },
+  "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr durchsucht {name} gerade. Die Indizierung startet, sobald das fertig ist.",
+  "@fileExplorer.navigation.driveIndex.deferredEnable": {
+    "sourceHash": "b27d24c"
+  },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr kann {name} gerade nicht indizieren. Verbinde das Laufwerk erneut und versuche es erneut.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"

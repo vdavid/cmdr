@@ -348,6 +348,15 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
+  "search.coverage.toast.deferredUntilSearchEnds": "Cmdr is already searching {drive}. Indexing starts as soon as that finishes.",
+  "@search.coverage.toast.deferredUntilSearchEnds": {
+    "description": "Toast shown when the coverage note''s Index this drive button can''t start the scan yet because a search is walking the same drive. Cmdr remembers the request and runs it when the search finishes, so this is a promise, not a refusal. Avoid the words ''error'' and ''failed''.",
+    "placeholders": {
+      "drive": "the drive''s display name (e.g. Backups)"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
   "search.coverage.toast.notStarted": "Cmdr can''t index {drive} right now. You can try again from the drive menu.",
   "@search.coverage.toast.notStarted": {
     "description": "Toast shown when the coverage note's Index this drive button doesn't go through (the share needs reconnecting or credentials). Points at the drive menu in the breadcrumb, which offers the same action with fuller guidance. Avoid the words 'error' and 'failed'.",

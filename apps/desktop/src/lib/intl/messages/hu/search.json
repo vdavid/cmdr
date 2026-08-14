@@ -191,6 +191,10 @@
   "@search.coverage.toast.indexingOff": {
     "sourceHash": "abfe24b"
   },
+  "search.coverage.toast.deferredUntilSearchEnds": "A Cmdr már keres itt: {drive}. Az indexelés elindul, amint ez befejeződik.",
+  "@search.coverage.toast.deferredUntilSearchEnds": {
+    "sourceHash": "d62392a"
+  },
   "search.coverage.toast.notStarted": "A Cmdr most nem tudja indexelni ezt: {drive}. Újra megpróbálhatod a meghajtó menüjéből.",
   "@search.coverage.toast.notStarted": {
     "sourceHash": "a08fe4a"

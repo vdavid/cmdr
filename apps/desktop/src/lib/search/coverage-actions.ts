@@ -27,6 +27,12 @@ export async function indexUncoveredDrive(volumeId: string, driveName: string): 
     const res = await enableDriveIndex(volumeId)
     if (res.status === 'ok' && res.data.status === 'started') {
       addToast(tString('search.coverage.toast.started', { drive }), { level: 'info' })
+    } else if (res.status === 'ok' && res.data.status === 'deferred_until_search_ends') {
+      // A search is walking this very drive, so the scan can't truncate under it
+      // yet. The backend remembers the request and runs it when the walk ends, so
+      // this is a promise: the "can't index right now" answer below would be the
+      // opposite of true.
+      addToast(tString('search.coverage.toast.deferredUntilSearchEnds', { drive }), { level: 'info' })
     } else if (res.status === 'ok' && res.data.status === 'indexing_disabled') {
       addToast(tString('search.coverage.toast.indexingOff'), { level: 'info' })
     } else {

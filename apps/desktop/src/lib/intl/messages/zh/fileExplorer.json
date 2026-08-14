@@ -1388,6 +1388,14 @@
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "sourceHash": "0cf83a1"
   },
+  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr 正在搜索 {name}。重新扫描会在搜索结束后立即开始。",
+  "@fileExplorer.navigation.driveIndex.deferredRescan": {
+    "sourceHash": "4e0f748"
+  },
+  "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr 正在搜索 {name}。索引会在搜索结束后立即开始。",
+  "@fileExplorer.navigation.driveIndex.deferredEnable": {
+    "sourceHash": "b27d24c"
+  },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr 现在无法为 {name} 建立索引。请重新连接驱动器，然后重试。",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"

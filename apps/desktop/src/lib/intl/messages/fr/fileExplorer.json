@@ -1397,6 +1397,14 @@
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "sourceHash": "0cf83a1"
   },
+  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr est en train de parcourir {name}. La nouvelle analyse démarrera dès que ce sera terminé.",
+  "@fileExplorer.navigation.driveIndex.deferredRescan": {
+    "sourceHash": "4e0f748"
+  },
+  "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr est en train de parcourir {name}. L''indexation démarrera dès que ce sera terminé.",
+  "@fileExplorer.navigation.driveIndex.deferredEnable": {
+    "sourceHash": "b27d24c"
+  },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr ne peut pas indexer {name} pour le moment. Reconnectez le disque et réessayez.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"

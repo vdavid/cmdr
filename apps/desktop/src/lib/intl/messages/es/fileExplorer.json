@@ -1393,6 +1393,14 @@
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "sourceHash": "0cf83a1"
   },
+  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr está buscando en {name} ahora mismo. El nuevo análisis empezará en cuanto termine.",
+  "@fileExplorer.navigation.driveIndex.deferredRescan": {
+    "sourceHash": "4e0f748"
+  },
+  "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr está buscando en {name} ahora mismo. La indexación empezará en cuanto termine.",
+  "@fileExplorer.navigation.driveIndex.deferredEnable": {
+    "sourceHash": "b27d24c"
+  },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr no puede indexar {name} ahora mismo. Vuelve a conectar la unidad e inténtalo de nuevo.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"

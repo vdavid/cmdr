@@ -191,6 +191,10 @@
   "@search.coverage.toast.indexingOff": {
     "sourceHash": "abfe24b"
   },
+  "search.coverage.toast.deferredUntilSearchEnds": "Cmdr 已经在搜索 {drive}。索引会在搜索结束后立即开始。",
+  "@search.coverage.toast.deferredUntilSearchEnds": {
+    "sourceHash": "d62392a"
+  },
   "search.coverage.toast.notStarted": "Cmdr 目前无法为 {drive} 建立索引。你可以从驱动器菜单再试一次。",
   "@search.coverage.toast.notStarted": {
     "sourceHash": "a08fe4a"

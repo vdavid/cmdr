@@ -191,6 +191,10 @@
   "@search.coverage.toast.indexingOff": {
     "sourceHash": "abfe24b"
   },
+  "search.coverage.toast.deferredUntilSearchEnds": "Cmdr đã đang tìm kiếm trong {drive}. Việc lập chỉ mục sẽ bắt đầu ngay khi xong.",
+  "@search.coverage.toast.deferredUntilSearchEnds": {
+    "sourceHash": "d62392a"
+  },
   "search.coverage.toast.notStarted": "Cmdr không thể lập chỉ mục {drive} lúc này. Bạn có thể thử lại từ menu ổ đĩa.",
   "@search.coverage.toast.notStarted": {
     "sourceHash": "a08fe4a"

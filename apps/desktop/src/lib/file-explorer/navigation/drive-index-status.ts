@@ -7,7 +7,7 @@
 // state→copy contracts are unit-testable without mounting a component.
 
 import type { MessageKey } from '$lib/intl/keys.gen'
-import type { Freshness, SmbIndexGateReason, VolumeIndexStatus } from '$lib/ipc/bindings'
+import type { EnableIndexingOutcome, Freshness, SmbIndexGateReason, VolumeIndexStatus } from '$lib/ipc/bindings'
 
 /**
  * The five visible badge states. `disabled` is gray (no live index); `failed` is
@@ -205,6 +205,59 @@ export function driveIndexCoalescedNote(status: VolumeIndexStatus, nowSeconds: n
     count,
     hours,
     remaining: hoursAtLeastOne(secondsToSweep),
+  }
+}
+
+/** What the badge menu owes the user after an enable or a rescan. */
+export type DriveIndexActionFeedback =
+  /** The badge itself shows what happened, so a toast would be noise. */
+  | { kind: 'silent' }
+  /** Say this, at this level. */
+  | { kind: 'toast'; key: MessageKey; level: 'info' | 'error' }
+  /** A typed SMB refusal the caller routes: `credentials_needed` goes to the
+   *  reconnect flow, everything else to `driveIndexRefusalMessageKey`. */
+  | { kind: 'refusal'; reason: SmbIndexGateReason }
+
+/**
+ * What to tell the user about an enable or rescan, from the TYPED outcome alone.
+ *
+ * Pure, so the whole contract is unit-testable: the component runs the answer, it
+ * doesn't work one out. Two of these matter more than they look:
+ *
+ * - **`deferred_until_search_ends`** is a promise, not a refusal. A search walking
+ *   the same drive blocks the truncating scan, so the backend remembers the request
+ *   and runs it when the walk ends. Silence here is what made "Rescan now" look
+ *   like a dead button.
+ * - **`status: 'error'`** reaches the caller as a VALUE. `typedError` rethrows only
+ *   real `Error` instances, and a Rust `Err(String)` isn't one, so a `catch` never
+ *   sees it and an unhandled branch means a click that says nothing at all.
+ */
+export function driveIndexActionFeedback(
+  action: 'enable' | 'rescan',
+  result: { status: 'ok'; data: EnableIndexingOutcome } | { status: 'error'; error: string },
+): DriveIndexActionFeedback {
+  if (result.status === 'error') {
+    return { kind: 'toast', key: 'fileExplorer.navigation.driveIndex.refusedGeneric', level: 'error' }
+  }
+  switch (result.data.status) {
+    case 'started':
+      return { kind: 'silent' }
+    case 'deferred_until_search_ends':
+      return {
+        kind: 'toast',
+        key:
+          action === 'enable'
+            ? 'fileExplorer.navigation.driveIndex.deferredEnable'
+            : 'fileExplorer.navigation.driveIndex.deferredRescan',
+        level: 'info',
+      }
+    // The master switch went off between the menu opening and the click (or the
+    // action came from MCP). Say so rather than leaving a click that quietly did
+    // nothing.
+    case 'indexing_disabled':
+      return { kind: 'toast', key: 'fileExplorer.navigation.driveIndex.refusedIndexingOff', level: 'info' }
+    case 'refused':
+      return { kind: 'refusal', reason: result.data.reason }
   }
 }
 

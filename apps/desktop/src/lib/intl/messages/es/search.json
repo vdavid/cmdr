@@ -191,6 +191,10 @@
   "@search.coverage.toast.indexingOff": {
     "sourceHash": "abfe24b"
   },
+  "search.coverage.toast.deferredUntilSearchEnds": "Cmdr ya está buscando en {drive}. La indexación empezará en cuanto termine.",
+  "@search.coverage.toast.deferredUntilSearchEnds": {
+    "sourceHash": "d62392a"
+  },
   "search.coverage.toast.notStarted": "Cmdr no puede indexar {drive} ahora mismo. Puedes intentarlo de nuevo desde el menú de la unidad.",
   "@search.coverage.toast.notStarted": {
     "sourceHash": "a08fe4a"

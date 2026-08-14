@@ -74,7 +74,11 @@
     import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelte'
     import DriveIndexBadge from './DriveIndexBadge.svelte'
     import ImageIndexDriveBadge from './ImageIndexDriveBadge.svelte'
-    import { driveIndexRefusalMessageKey, type DriveIndexMenuAction } from './drive-index-status'
+    import {
+        driveIndexActionFeedback,
+        driveIndexRefusalMessageKey,
+        type DriveIndexMenuAction,
+    } from './drive-index-status'
     import type { SmbIndexGateReason } from '$lib/ipc/bindings'
     import { maybePromptFirstConnect } from '$lib/indexing/first-connect-trigger'
     import { silenceDrive } from '$lib/indexing/drive-index-prefs'
@@ -721,20 +725,18 @@
             } else if (action === 'disable' || action === 'stop') {
                 await disableDriveIndex(vid)
             } else {
-                // enable | rescan: both return an EnableIndexingOutcome.
+                // enable | rescan: both return an EnableIndexingOutcome, and what
+                // it's worth telling the user is the pure, unit-tested
+                // `driveIndexActionFeedback` — this only carries the answer out.
                 const res =
                     action === 'enable'
                         ? await enableDriveIndex(vid)
                         : await rescanDriveIndex(vid)
-                if (res.status === 'ok' && res.data.status === 'refused') {
-                    handleIndexRefusal(vid, name, res.data.reason)
-                } else if (res.status === 'ok' && res.data.status === 'indexing_disabled') {
-                    // The master switch went off between the menu opening and the
-                    // click (or the action came from MCP). Say so rather than
-                    // leaving a click that quietly did nothing.
-                    addToast(tString('fileExplorer.navigation.driveIndex.refusedIndexingOff', { name }), {
-                        level: 'info',
-                    })
+                const feedback = driveIndexActionFeedback(action, res)
+                if (feedback.kind === 'refusal') {
+                    handleIndexRefusal(vid, name, feedback.reason)
+                } else if (feedback.kind === 'toast') {
+                    addToast(tString(feedback.key, { name }), { level: feedback.level })
                 }
             }
         } catch (e) {

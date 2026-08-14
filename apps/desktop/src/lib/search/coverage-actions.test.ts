@@ -72,6 +72,19 @@ describe('indexUncoveredDrive', () => {
     expect(toast().level).toBe('warn')
   })
 
+  it('promises the scan when a live search is what stands in its way, rather than warning it did not start', async () => {
+    // The backend remembers the request and runs it when the walk ends, so the
+    // button did what it says. Reporting it as "can't index right now" would be
+    // the opposite of true.
+    enableDriveIndexMock.mockResolvedValue({ status: 'ok', data: { status: 'deferred_until_search_ends' } })
+    await indexUncoveredDrive('smb-naspi', 'Naspolya')
+
+    expect(toast()).toEqual({
+      message: tString('search.coverage.toast.deferredUntilSearchEnds', { drive: 'Naspolya' }),
+      level: 'info',
+    })
+  })
+
   it('falls back to a generic drive name when the drive is not in the volume list', async () => {
     enableDriveIndexMock.mockResolvedValue({ status: 'ok', data: { status: 'started' } })
     await indexUncoveredDrive('smb-gone', '')

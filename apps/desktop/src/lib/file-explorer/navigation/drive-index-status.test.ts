@@ -7,6 +7,7 @@ import {
   driveIndexMenuLabelKey,
   driveIndexDuration,
   driveIndexRefusalMessageKey,
+  driveIndexActionFeedback,
   driveIndexCoalescedNote,
   hasLastScanFacts,
 } from './drive-index-status'
@@ -181,6 +182,59 @@ describe('driveIndexRefusalMessageKey', () => {
     expect(driveIndexRefusalMessageKey('indexing_disabled')).toBe(
       'fileExplorer.navigation.driveIndex.refusedIndexingOff',
     )
+  })
+})
+
+describe('driveIndexActionFeedback', () => {
+  it('says nothing when the scan started: the badge already shows it', () => {
+    expect(driveIndexActionFeedback('rescan', { status: 'ok', data: { status: 'started' } })).toEqual({
+      kind: 'silent',
+    })
+  })
+
+  it('promises the scan when a live search is what stands in its way, in the words of the button pressed', () => {
+    expect(
+      driveIndexActionFeedback('rescan', { status: 'ok', data: { status: 'deferred_until_search_ends' } }),
+    ).toEqual({
+      kind: 'toast',
+      key: 'fileExplorer.navigation.driveIndex.deferredRescan',
+      level: 'info',
+    })
+    expect(
+      driveIndexActionFeedback('enable', { status: 'ok', data: { status: 'deferred_until_search_ends' } }),
+    ).toEqual({
+      kind: 'toast',
+      key: 'fileExplorer.navigation.driveIndex.deferredEnable',
+      level: 'info',
+    })
+  })
+
+  it('points at the master switch when it is what refused', () => {
+    expect(driveIndexActionFeedback('enable', { status: 'ok', data: { status: 'indexing_disabled' } })).toEqual({
+      kind: 'toast',
+      key: 'fileExplorer.navigation.driveIndex.refusedIndexingOff',
+      level: 'info',
+    })
+  })
+
+  it('hands a typed per-drive refusal back for the caller to route', () => {
+    expect(
+      driveIndexActionFeedback('enable', {
+        status: 'ok',
+        data: { status: 'refused', reason: 'credentials_needed' },
+      }),
+    ).toEqual({ kind: 'refusal', reason: 'credentials_needed' })
+  })
+
+  it('speaks up when the command comes back with an error, which reaches the caller as a value, not a throw', () => {
+    // `typedError` rethrows only real `Error` instances, so a Rust `Err(String)`
+    // lands here as `{ status: 'error' }`. Left unhandled it was a click that did
+    // nothing and said nothing.
+    expect(driveIndexActionFeedback('rescan', { status: 'error', error: 'boom' })).toEqual({
+      kind: 'toast',
+      key: 'fileExplorer.navigation.driveIndex.refusedGeneric',
+      level: 'error',
+    })
   })
 })
 
