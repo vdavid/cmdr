@@ -222,12 +222,7 @@ pub(crate) fn start(
             // The claim lives as long as the walk and no longer, so its ground
             // frees up on the completion path, the cancel path, and a panic alike.
             let outcome = walk_frontier(&context, claim.mine(), &sender, &walk_cancel, &walk_heartbeat);
-            // Whatever the outcome: a cancelled walk still marked every directory
-            // it read, so that ground needs watching exactly as much as a completed
-            // walk's does. Runs after the walk's own flush, so the rows the released
-            // events land on are the rows the walk wrote.
-            super::state::finish_branch_coverage(&context.volume_id, claim.mine());
-            drop(claim);
+            release_ground(&context.volume_id, claim);
             outcome
         })
         .unwrap_or_else(|e| {
@@ -249,6 +244,28 @@ pub(crate) fn start(
         deferred,
         heartbeat,
     }
+}
+
+/// Everything a finished walk owes the volume, in the one order that works.
+///
+/// 1. **The branch set first.** Whatever the outcome, a cancelled walk still
+///    marked every directory it read, so that ground needs watching exactly as
+///    much as a completed walk's does. It runs after the walk's own flush, so the
+///    rows the released events land on are the rows the walk wrote.
+/// 2. **Then the claim**, which is what frees the ground for anything else.
+/// 3. **Then the rescan this walk made someone wait for**, which is why the order
+///    matters at all: fired before the claim went, the scan would ask the guard,
+///    see this very walk's ground, and defer itself again.
+///
+/// ❌ Not folded into `state::finish_branch_coverage` (which several tests and the
+/// shutdown-window path call on their own) and ❌ not hung off `Claim`'s `Drop`:
+/// the claim is a lock-level primitive that tests take and release freely, and a
+/// scan spawning out of a destructor is a side effect nobody reading `Claim` would
+/// expect.
+fn release_ground(volume_id: &str, claim: Claim) {
+    super::state::finish_branch_coverage(volume_id, claim.mine());
+    drop(claim);
+    super::rescan_request::run_if_owed(volume_id);
 }
 
 /// Walk every frontier root in turn, on the walk thread.

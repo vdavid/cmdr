@@ -15,6 +15,7 @@ use cmdr_fs::volume::InMemoryVolume;
 
 use super::test_support::{SameNameSiblings, Share, Tree, drain};
 use super::*;
+use crate::indexing::lifecycle::rescan_request::RescanOutcome;
 
 // ── The scoped walk ──────────────────────────────────────────────────
 
@@ -285,9 +286,10 @@ fn a_truncating_rescan_of_a_share_refuses_while_a_cover_walk_is_live() {
     assert_eq!(rows.len(), 1, "precondition: the walk's rows are in");
 
     let walking = Claim::take(volume_id, vec![share.path("scope")]);
-    assert!(
-        crate::indexing::lifecycle::state::force_scan(volume_id).is_err(),
-        "a rescan refuses while a walk holds ground on the share"
+    assert_eq!(
+        crate::indexing::lifecycle::state::force_scan(volume_id),
+        Ok(RescanOutcome::Deferred),
+        "a rescan waits for the walk holding ground on the share, and says so in a variant"
     );
     assert_eq!(
         share.child_ids(&share.path("scope")),
@@ -296,7 +298,11 @@ fn a_truncating_rescan_of_a_share_refuses_while_a_cover_walk_is_live() {
     );
 
     drop(walking);
-    crate::indexing::lifecycle::state::force_scan(volume_id).expect("and once the walk ends the rescan runs");
+    assert_eq!(
+        crate::indexing::lifecycle::state::force_scan(volume_id),
+        Ok(RescanOutcome::Started),
+        "and once the walk ends the rescan runs"
+    );
 }
 
 // ── Same-name siblings (MTP) ─────────────────────────────────────────

@@ -13,6 +13,7 @@ use crate::indexing::events::{
     RescanReason, ScanRunKind, emit_rescan_notification, set_phase_for,
 };
 use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
+use crate::indexing::lifecycle::rescan_request::ScanStartError;
 use crate::indexing::reconcile::local_reconcile;
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner::{self, ScanConfig};
@@ -465,7 +466,9 @@ impl IndexManager {
                          The app likely hasn't run for a long time."
                     ),
                 );
-                return self.start_scan("stale index: journal gap too large");
+                return self
+                    .start_scan("stale index: journal gap too large")
+                    .map_err(|e| e.to_string());
             }
 
             let gap = current_id.saturating_sub(last_event_id);
@@ -501,7 +504,7 @@ impl IndexManager {
         } else {
             "fresh scan"
         };
-        self.start_scan(trigger)
+        self.start_scan(trigger).map_err(|e| e.to_string())
     }
 
     /// Force a (re)scan of this volume, routed to the RIGHT scanner by the typed
@@ -516,7 +519,7 @@ impl IndexManager {
     /// walked nothing in ~2 ms and falsely marked the index complete (the
     /// real-hardware "rescan does nothing to the NAS" bug). Classifies by the
     /// typed `kind`, never a volume-id substring.
-    pub fn force_rescan(&mut self, scan_trigger: &str) -> Result<(), String> {
+    pub fn force_rescan(&mut self, scan_trigger: &str) -> Result<(), ScanStartError> {
         match rescan_scanner_for_kind(self.kind) {
             RescanScanner::VolumeTrait => {
                 self.start_volume_scan(super::network_scan::NetworkScanMode::Auto, scan_trigger)

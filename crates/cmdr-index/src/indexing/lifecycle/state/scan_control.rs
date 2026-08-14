@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use super::{INDEX_REGISTRY, IndexInstance, IndexPhase};
+use crate::indexing::lifecycle::rescan_request::{self, RescanOutcome, ScanStartError};
 use crate::indexing::reconcile::verifier;
 
 /// Flip a Running volume's "a full scan is in flight" flag, so a test can pin
@@ -89,7 +90,23 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
     });
 }
 
-/// Force a fresh full scan for a volume (for debug/manual trigger).
+/// Force a fresh full scan for a volume: the manual entry point behind "Rescan
+/// now" and behind an enable that finds a volume still awaiting its first scan.
+///
+/// This is where a refused request becomes a REMEMBERED one. A cover walk holds
+/// ground for seconds to minutes, and the person who clicked the button can't see
+/// when it lets go, so a `GroundBeingWalked` refusal is recorded
+/// (`rescan_request`) and reported as [`RescanOutcome::Deferred`]; the walk that
+/// blocked it runs it on its way out. ❌ Nothing here decides the coast is clear:
+/// the guard below is asked again at that moment, so a second walk still holding
+/// ground defers it once more instead of truncating under one.
+///
+/// A scan that's ALREADY running answers `Started`, because it is: the caller
+/// wanted a full walk on this volume and one is in flight.
+///
+/// The other automatic rescan door, `manager::perform_registry_rescan`, remembers
+/// nothing on purpose. Its triggers (a journal gap, a coalesced shallow anchor)
+/// recur on their own, and nobody is watching a button for them.
 ///
 /// Takes the `Running` manager OUT of the registry under the lock (publishing a
 /// transient `ShuttingDown`), DROPS the guard, then runs `start_scan` — whose
@@ -102,7 +119,7 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
 /// the self-deadlock from the freshness firing (now fixed via the manager's own
 /// freshness `Arc`). `start_scan`'s spawned tasks capture their own clones and
 /// never re-resolve the manager in the registry, so it's safe to run detached.
-pub fn force_scan(volume_id: &str) -> Result<(), String> {
+pub fn force_scan(volume_id: &str) -> Result<RescanOutcome, String> {
     // Take the manager out under the lock (transient `ShuttingDown`), so the
     // blocking rescan prelude runs WITHOUT holding the registry lock.
     let mut mgr = {
@@ -125,7 +142,14 @@ pub fn force_scan(volume_id: &str) -> Result<(), String> {
     // root (`start_volume_scan`). Calling `start_scan` unconditionally here ran
     // the local guarded walker over a network mount — walking nothing and falsely
     // marking the index complete — so a NAS "Rescan now" indexed zero entries.
-    let result = mgr.force_rescan("manual start");
+    let result = match mgr.force_rescan("manual start") {
+        Ok(()) | Err(ScanStartError::AlreadyScanning) => Ok(RescanOutcome::Started),
+        Err(ScanStartError::GroundBeingWalked) => {
+            rescan_request::remember(volume_id);
+            Ok(RescanOutcome::Deferred)
+        }
+        Err(ScanStartError::Internal(diagnostic)) => Err(diagnostic),
+    };
 
     // Re-lock to restore the manager as `Running`. If the instance vanished
     // while we were detached (a concurrent `stop_indexing`/`clear_index` swapped
@@ -141,6 +165,10 @@ pub fn force_scan(volume_id: &str) -> Result<(), String> {
             drop(reg);
             log::info!("force_scan: '{volume_id}' was torn down during scan start; shutting down the manager");
             mgr.shutdown();
+            // Whatever we just promised, this volume stopped indexing while we
+            // were detached; a request left behind would rescan a drive nobody
+            // is indexing any more.
+            rescan_request::forget(volume_id);
             result
         }
     }

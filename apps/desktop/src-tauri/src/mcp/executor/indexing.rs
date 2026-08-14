@@ -54,11 +54,20 @@ pub async fn execute_indexing(params: &Value) -> ToolResult {
                     // volume that can't index yet is a typed refusal, surfaced
                     // as an honest error rather than a false OK.
                     #[cfg(any(target_os = "macos", target_os = "linux"))]
-                    if let EnableIndexingOutcome::Refused { reason } = started {
+                    if let EnableIndexingOutcome::Refused { reason } = &started {
                         return Err(ToolError::internal(format!("Can't index {volume_id}: {reason}")));
                     }
-                    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-                    let _ = started; // `Started` is the only variant off macOS/Linux
+
+                    // A search is walking this drive, so the walk we asked for is
+                    // REMEMBERED rather than running: the index starts it when that
+                    // walk ends. Say so and return, since the freshness this waits
+                    // for isn't going to move yet.
+                    if matches!(started, EnableIndexingOutcome::DeferredUntilSearchEnds) {
+                        return Ok(json!(format!(
+                            "OK: {action} indexing for {volume_id} is waiting for the search walking it; \
+                             it starts on its own when that walk ends"
+                        )));
+                    }
 
                     wait_for_scan_departure(volume_id, pre).await;
                     let status = freshness_token(crate::index_host::index().volume_status(volume_id).freshness);

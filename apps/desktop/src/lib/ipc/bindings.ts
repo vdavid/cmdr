@@ -4494,6 +4494,13 @@ export type EnableIndexingOutcome =
   // Indexing started (a scan is now running or resuming) for the volume.
   | { status: 'started' }
   /**
+   *  A search is walking this drive right now, so the full walk can't run yet.
+   *  The index remembers the request and runs it when the walk ends, so the FE
+   *  says "soon", ❌ never "nothing happened" — this is the variant that stops
+   *  "Rescan now" from looking like a dead button.
+   */
+  | { status: 'deferred_until_search_ends' }
+  /**
    *  The master drive-indexing switch is off, so no drive may index. Transport-
    *  neutral (the master switch outranks every per-transport gate), so the FE
    *  gets ONE shape to recognize whichever drive was asked for.

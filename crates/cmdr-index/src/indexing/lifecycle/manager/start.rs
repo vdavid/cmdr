@@ -47,7 +47,9 @@ impl IndexManager {
                     RescanReason::WatcherStartFailed,
                     format!("DriveWatcher failed to start for replay: {e}"),
                 );
-                return self.start_scan("watcher failed to start for replay");
+                return self
+                    .start_scan("watcher failed to start for replay")
+                    .map_err(|e| e.to_string());
             }
         }
 
@@ -321,9 +323,9 @@ impl IndexManager {
     /// 3. Start the full scan
     /// 4. On scan completion: replay buffered events, switch to live mode
     /// 5. Live events processed continuously until shutdown
-    pub fn start_scan(&mut self, scan_trigger: &str) -> Result<(), String> {
+    pub fn start_scan(&mut self, scan_trigger: &str) -> Result<(), ScanStartError> {
         if self.scanning.load(Ordering::Relaxed) {
-            return Err("Scan already running".to_string());
+            return Err(ScanStartError::AlreadyScanning);
         }
 
         // The same single-flight question asked of the OTHER kind of walk. A
@@ -335,7 +337,7 @@ impl IndexManager {
         // counts an ancestor, so any live claim answers.
         let whole_volume = vec![self.volume_root.to_string_lossy().to_string()];
         if !cover::ground_being_walked(&self.volume_id, &whole_volume).is_empty() {
-            return Err("A search walk is covering ground on this volume".to_string());
+            return Err(ScanStartError::GroundBeingWalked);
         }
 
         // The completeness gate for reconcile-vs-truncate (see `local_rescan_reconciles`):

@@ -15,6 +15,8 @@
 //! - [`progress_reporter`]: the 500 ms scan-progress + partial-aggregation pump
 //!   both scan paths spawn alongside their scan. [`partial_agg`]: its pure
 //!   send-decision and hot-path collection.
+//! - [`rescan_request`]: what a scan start answers when it can't run, and the one
+//!   walk a volume remembers it owes.
 
 pub(crate) mod cover;
 pub(crate) mod failure;
@@ -35,5 +37,6 @@ pub(crate) mod partial_agg;
 #[cfg(all(test, target_os = "macos"))]
 mod phased_bench;
 pub(crate) mod progress_reporter;
+pub(crate) mod rescan_request;
 pub(crate) mod scan_completion;
 pub(crate) mod state;

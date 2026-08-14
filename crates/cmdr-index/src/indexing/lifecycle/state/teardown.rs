@@ -34,6 +34,9 @@ pub fn stop_indexing(volume_id: &str) -> Result<(), String> {
     // deletes the database, so the persisted copy goes too; a stopped one keeps
     // it, and the next start reads it back.
     crate::indexing::watch::branches::forget(volume_id);
+    // And a volume that stopped indexing is owed no walk either, however it
+    // stopped (the user, the master switch, the memory watchdog).
+    crate::indexing::lifecycle::rescan_request::forget(volume_id);
 
     // Take the instance out under the lock, publish `ShuttingDown`, then release
     // the lock BEFORE the blocking drain. `mgr.shutdown()` blocks up to 5 s
@@ -159,6 +162,9 @@ pub(super) fn remove_instance_and_handles(volume_id: &str) {
         // deletes the database, so the persisted copy goes too; a stopped one keeps
         // it, and the next start reads it back.
         crate::indexing::watch::branches::forget(volume_id);
+        // And a volume that stopped indexing is owed no walk either, however it
+        // stopped (the user, the master switch, the memory watchdog).
+        crate::indexing::lifecycle::rescan_request::forget(volume_id);
         pool
     };
     if let Some(pool) = pool {
@@ -185,6 +191,9 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
     // deletes the database, so the persisted copy goes too; a stopped one keeps
     // it, and the next start reads it back.
     crate::indexing::watch::branches::forget(volume_id);
+    // And a volume that stopped indexing is owed no walk either, however it
+    // stopped (the user, the master switch, the memory watchdog).
+    crate::indexing::lifecycle::rescan_request::forget(volume_id);
 
     // Take the instance out under the lock, publish `ShuttingDown`, then release
     // the lock BEFORE the blocking drain (same reasoning as `stop_indexing`: the

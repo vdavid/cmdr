@@ -74,12 +74,30 @@ pub enum StartOutcome {
     /// The volume is indexing: a scan is running, resuming, or was already
     /// active.
     Started,
+    /// A search is walking this volume right now, so the full walk can't run yet:
+    /// it would blank the rows that walk is still writing. The index REMEMBERS the
+    /// request and runs it when the walk ends, so this is a "soon", not a "no" —
+    /// a host that says nothing here leaves a button that looks broken.
+    DeferredUntilSearchEnds,
     /// The master drive-indexing switch is off, so no volume may index. Nothing
     /// is wrong with this one.
     IndexingDisabled,
     /// A share couldn't be indexed yet, for a typed reason the host can act on
     /// (sign in, reconnect, or just show the state honestly).
     Refused(crate::SmbIndexGateReason),
+}
+
+/// The lifecycle's answer to a manual rescan, in the vocabulary a host speaks.
+///
+/// The two enums stay separate because they answer different questions: the
+/// lifecycle's is "did the walk start", the handle's is "what do I tell the person
+/// who asked". This is the one place they meet.
+fn started_or_deferred(outcome: crate::indexing::lifecycle::rescan_request::RescanOutcome) -> StartOutcome {
+    use crate::indexing::lifecycle::rescan_request::RescanOutcome;
+    match outcome {
+        RescanOutcome::Started => StartOutcome::Started,
+        RescanOutcome::Deferred => StartOutcome::DeferredUntilSearchEnds,
+    }
 }
 
 /// Whose live watching lost continuity.
@@ -181,7 +199,7 @@ impl Index {
             // request for the very walk this call is asking for, so route it to
             // the scan instead — which is what a first full walk is.
             if state::awaits_its_first_scan(volume_id) && crate::indexing::lifecycle::master::master_enabled() {
-                state::force_scan(volume_id)?;
+                return Ok(started_or_deferred(state::force_scan(volume_id)?));
             }
             return Ok(StartOutcome::Started);
         }
@@ -230,8 +248,7 @@ impl Index {
     /// yet is started, since its first walk is the rescan.
     pub async fn rescan_volume(&self, volume_id: &str) -> Result<StartOutcome, IndexError> {
         if state::is_active(volume_id) {
-            state::force_scan(volume_id)?;
-            return Ok(StartOutcome::Started);
+            return Ok(started_or_deferred(state::force_scan(volume_id)?));
         }
         self.start_volume(volume_id).await
     }

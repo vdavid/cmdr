@@ -17,6 +17,7 @@ use std::sync::atomic::Ordering;
 use super::manager::{IndexManager, ScanCalibration};
 use crate::indexing::events::{ActivityPhase, DEBUG_STATS, IndexEvent, ScanRunKind, set_phase_for};
 use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
+use crate::indexing::lifecycle::rescan_request::ScanStartError;
 use crate::indexing::network_scanner::VolumeScanError;
 use crate::indexing::store::IndexStore;
 use crate::indexing::volume::IndexVolumeKind;
@@ -153,6 +154,7 @@ impl IndexManager {
             self.volume_id
         );
         self.start_volume_scan(NetworkScanMode::Auto, "startup scan (no completion marker)")
+            .map_err(|e| e.to_string())
     }
 
     /// A short label for this volume kind, for diagnostics. Only `Smb`/`Mtp`
@@ -180,12 +182,16 @@ impl IndexManager {
     /// completion task fires `ScanCompleted` ⇒ Fresh and writes the meta marker;
     /// on cancel/error the partial is discarded by RESETTING the volume to gray
     /// (removing the registry instance), per D-interrupted.
-    pub(super) fn start_volume_scan(&mut self, mode: NetworkScanMode, scan_trigger: &str) -> Result<(), String> {
+    pub(super) fn start_volume_scan(
+        &mut self,
+        mode: NetworkScanMode,
+        scan_trigger: &str,
+    ) -> Result<(), ScanStartError> {
         use crate::indexing::scanner::{ScanHandle, ScanProgress};
         use std::sync::atomic::AtomicBool;
 
         if self.scanning.load(Ordering::Relaxed) {
-            return Err("Scan already running".to_string());
+            return Err(ScanStartError::AlreadyScanning);
         }
 
         // And the same question of the other kind of walk, for the same reason as
@@ -194,7 +200,7 @@ impl IndexManager {
         // that walk is the slowest we have, so this window is the widest.
         let whole_volume = vec![self.volume_root.to_string_lossy().to_string()];
         if !super::cover::ground_being_walked(&self.volume_id, &whole_volume).is_empty() {
-            return Err("A search walk is covering ground on this volume".to_string());
+            return Err(ScanStartError::GroundBeingWalked);
         }
 
         // Resolve the live volume handle by id. Gone ⇒ the share unmounted; bail
