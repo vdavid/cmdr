@@ -130,8 +130,22 @@ async fn list_shares_smb2(
     // smb2's config timeout: slightly shorter so its typed Error::Timeout fires first
     let connect_timeout = timeout.saturating_sub(Duration::from_secs(2));
 
-    // Try guest access first, then authenticated
-    let (shares, auth_mode) = match try_list_shares_as_guest(hostname, ip_address, port, connect_timeout).await {
+    // Try guest access first, then authenticated. BOTH attempts take the outer
+    // timeout: smb2's config timeout covers the TCP connect only, so a server that
+    // completes the handshake and then never answers `NetShareEnum` hangs the
+    // attempt for as long as anyone waits. The authenticated leg below has always
+    // been wrapped; the guest leg runs first and is what an unauthenticated browse
+    // reaches.
+    let guest_attempt = tokio::time::timeout(
+        outer_timeout,
+        try_list_shares_as_guest(hostname, ip_address, port, connect_timeout),
+    )
+    .await
+    .unwrap_or_else(|_| {
+        warn!("Guest share listing on {hostname}:{port} gave up after {outer_timeout:?}");
+        Err(smb2::Error::Timeout)
+    });
+    let (shares, auth_mode) = match guest_attempt {
         Ok(shares) => {
             debug!("Guest access succeeded, got {} shares", shares.len());
             (shares, AuthMode::GuestAllowed)
