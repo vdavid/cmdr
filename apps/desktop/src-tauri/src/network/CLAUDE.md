@@ -41,13 +41,11 @@ background: `docs/notes/smb-auth-flow-redesign.md`.
   Local-Network-prompt gate). One `UpgradePass` at a time, since `ensure_network_discovery_started` fires on every user
   networking action. Acting on a stale decision replaced a healthy volume three times in 15 s, once mid-copy.
   `file_system/volume/backends/DETAILS.md` § "Every upgrade decides at ACT time".
-- **Every SMB subprocess takes a deadline**: `smbutil view` / `smbclient -L` never give up on a server that goes quiet
-  mid-call, and the share browser's spinner waits on them. Route through `crate::subprocess::output_within`, ❌ never a
-  bare `Command::output()` and ❌ never `tokio::time::timeout` around `spawn_blocking` (that leaks the child AND the
-  pool thread). `DETAILS.md` § "Every SMB subprocess runs under a deadline".
-- **A failed direct connect logs through `log_direct_connect_failure`** (target `smb_fallback`), which asks
-  `is_auth_error` itself: `UpgradeFailure` has NO auth variant, so describing an auth failure with it prints
-  `Unexpected` and a rejected password reads as a flaky server while the share sits silently on the kernel mount.
+- **Every SMB subprocess takes a deadline** via `crate::subprocess::output_within`: `smbutil`/`smbclient` never give up
+  on a server gone quiet, and a spinner waits on them. ❌ Not a bare `Command::output()`, ❌ not `tokio::time::timeout`
+  around `spawn_blocking` (leaks the child AND the pool thread).
+- **A failed direct connect logs via `log_direct_connect_failure`** (target `smb_fallback`), which calls
+  `is_auth_error` itself: `UpgradeFailure` has NO auth variant, so it prints `Unexpected` for a rejected password.
 - **A refused/unreachable TCP connect is NOT a protocol error**: `classify_error` maps those io kinds to
   `HostUnreachable`, so an offline server skips the CLI fallback.
 
