@@ -35,4 +35,7 @@ pub mod foreground;
 /// The adapter that answers the index subsystems' `HostPolicy` question from the
 /// signals above. Installed once at startup; the index never reaches this module.
 pub mod host_policy;
+/// Which folders matter to this user, ordered best guess first: the schedule the
+/// drive index walks a volume in. A guess from signals we already have, never a scope.
+pub mod roots;
 pub mod transfers;
