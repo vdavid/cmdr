@@ -131,8 +131,8 @@ pub(super) fn validate_conflict_policy(policy: &str) -> Result<(), ToolError> {
 ///
 /// The gate runs BEFORE the tool dispatches, so the agent gets the reason at once
 /// instead of waiting out the ack budget for a dialog that will never appear. The
-/// blocking dialog's id rides in `data.blockingDialog` as well as in the sentence:
-/// the agent acts on it to decide what to close.
+/// blocking dialog's id rides in `data.blockingDialog`, which is what the agent
+/// acts on to decide what to close.
 ///
 /// ❌ Scope is STARTING an operation. `queue`, `operations_rollback`, `dialog`, and
 /// everything else that steers or answers a running one stays open, which is
@@ -149,9 +149,12 @@ pub(super) fn refuse_while_dialog_blocks<R: Runtime>(app: &AppHandle<R>, verb: &
 
 /// The refusal itself: a sentence a human can read in the agent's transcript, plus
 /// the blocking dialog's id as a typed `data.blockingDialog` the agent acts on.
+///
+/// ❌ Don't spell the recovery out in the sentence too (which tool, which id). Two
+/// copies of one fact drift, and the typed field is the copy callers branch on.
 pub(super) fn dialog_block_error(verb: &str, blocking: &str) -> ToolError {
     ToolError::invalid_params(format!(
-        "Can't {verb}: the {blocking} dialog is open, so nothing new can start. Close it first (the dialog tool's close action, id {blocking}), then try again."
+        "Can't {verb}: the {blocking} dialog is open, so nothing new can start. Close it first, then try again."
     ))
     .with_data(json!({ "blockingDialog": blocking }))
 }

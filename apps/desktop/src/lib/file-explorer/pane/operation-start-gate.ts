@@ -30,16 +30,18 @@ import type { SoftDialogId } from '$lib/ui/dialog-registry'
 const log = getAppLogger('fileExplorer')
 
 /**
- * The refusal an agent reads. It names the dialog and the one action that clears
- * it, so a capable agent recovers in one step instead of retrying into the same
- * wall or waiting out a round-trip timeout.
+ * The refusal an agent reads. It says what's in the way and what clears it, so a
+ * capable agent recovers in one step instead of retrying into the same wall or
+ * waiting out a round-trip timeout.
  *
  * ⚠️ The identity travels as the typed `blockedBy` field beside this sentence,
  * never only inside it: the repo's `no-error-string-match` rule applies to a
- * message an agent parses just as it does to one our own code would.
+ * message an agent parses just as it does to one our own code would. Which is
+ * also why the sentence stops at "close it": naming the tool and repeating the id
+ * would be a second copy of what `blockedBy` already carries, free to drift.
  */
 export function mcpOperationBlockedMessage(blockedBy: SoftDialogId): string {
-  return `The ${blockedBy} dialog is open, so nothing new can start. Close it first (the dialog tool's close action, id ${blockedBy}), then try again.`
+  return `The ${blockedBy} dialog is open, so nothing new can start. Close it first, then try again.`
 }
 
 /**
