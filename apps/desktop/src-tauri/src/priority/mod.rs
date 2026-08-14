@@ -30,6 +30,11 @@
 //!
 //! Writers are hot paths (one atomic store / small map write); readers poll at
 //! their loop boundaries. No scheduler, no queues: signals in, decisions out.
+//!
+//! Beside "who gets the volume" sits the smaller question of which of its folders
+//! come first: [`roots`] ranks the ones this user cares about, which is the order
+//! the drive index walks a volume in. An order and nothing else, so a wrong guess
+//! costs a few minutes of scheduling and never a file that goes unindexed.
 
 pub mod foreground;
 /// The adapter that answers the index subsystems' `HostPolicy` question from the

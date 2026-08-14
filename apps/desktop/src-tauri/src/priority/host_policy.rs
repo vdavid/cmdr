@@ -1,11 +1,12 @@
-//! The app's answers to "may background work run right now?", for the two
-//! subsystems that can't reach `crate::priority` to work it out themselves.
+//! The app's answers to "may background work run right now?" and "which folders
+//! matter to this user?", for the two subsystems that can't reach `crate::priority`
+//! to work them out themselves.
 //!
 //! The index subsystems live in a crate of their own and ask through
 //! `indexing::host::policy::HostPolicy`; a storage backend asks the narrower
 //! `cmdr_fs::volume::host::activity::UserActivity`. Both implementations here are
-//! pure adapters: the priority order, the scopes, and the signals all still live
-//! in this module's siblings.
+//! pure adapters: the priority order, the scopes, the signals, and the walk order
+//! all still live in this module's siblings.
 
 use std::path::PathBuf;
 use std::time::Duration;
