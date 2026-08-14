@@ -329,8 +329,7 @@ here and they want opposite answers:
 
 So the open question is where the boundary sits, and specifically whether the abort path should UNWIND the marks it made
 before it tripped or never make them until the walk proves it survived. That's a design decision with its own tests over
-the SMB fixtures, ❌ not a five-line change. Tracked as `docs/specs/phased-indexing-plan.md` § "M6 — Follow-ups, not
-blockers" item 5.
+the SMB fixtures, ❌ not a five-line change. It's deliberately still open, and this section is the record of it.
 
 ## Reconcile
 

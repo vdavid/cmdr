@@ -104,7 +104,8 @@ pub trait HostPolicy: Send + Sync {
     ///
     /// The third "what has the user's attention" question, and the one that sets a
     /// walk ORDER: an index that walks these before the rest of the volume is useful
-    /// minutes before it is complete. **Order is the whole payload.** Nothing is
+    /// minutes before it is complete. ⚠️ Nothing in the crate asks yet — today's walk
+    /// takes a volume as one bulk scan. **Order is the whole payload.** Nothing is
     /// promised about the paths beyond "walk them first": they carry no scope, so a
     /// host that answers differently between two calls changes what gets indexed
     /// first and never what gets indexed at all.

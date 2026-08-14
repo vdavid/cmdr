@@ -406,7 +406,7 @@ impl BranchWatch {
     #[allow(
         dead_code,
         reason = "no caller in the crate: what collapses the set today is absorption as walks finish. This is the \
-                  explicit form, for the phase boundaries in docs/specs/phased-indexing-plan.md."
+                  explicit form, for a caller that covers a whole subtree in pieces and can say so once it's done."
     )]
     pub(crate) fn collapse_to(&self, root: &str, space: &IndexPathSpace, writer: &IndexWriter) {
         self.state.lock_ignore_poison().insert(root);

@@ -1,16 +1,17 @@
 # Priority (`src/priority/`)
 
 Who gets the volume, and which of its folders come first. The per-volume signals background work yields to (ONE
-transport-generic order: **interactive > transfers > indexing**, drive indexing AND image enrichment), plus the walk
-order the drive index takes a volume in. This module owns the SIGNALS and pure decisions; consumers compose them at
-their own loop boundaries.
+transport-generic order: **interactive > transfers > indexing**, drive indexing AND image enrichment), plus a ranked
+walk order a piecewise volume walk could take. This module owns the SIGNALS and pure decisions; consumers compose them
+at their own loop boundaries.
 
 ## Module map
 
 - `foreground.rs`: last-interactive-activity timestamps, app-wide + per volume. Written by the hot listing IPC.
 - `transfers.rs`: per-volume gauge of user-initiated write ops (copy/move/delete/trash/drag-out).
-- `roots.rs`: which folders matter to this user, ranked, for the index's phased walk. Last session's tabs, favorites,
-  the standard home folders, cloud roots, then `$HOME`.
+- `roots.rs`: which folders matter to this user, ranked, for a walk that takes a volume in pieces. Last session's tabs,
+  favorites, the standard home folders, cloud roots, then `$HOME`. ⚠️ **No caller yet** — the seam is wired and tested,
+  the walk that would ask isn't built.
 - `host_policy.rs`: `AppHostPolicy` (the index subsystems' `HostPolicy`) and `AppUserActivity` (a storage backend's
   narrower per-volume question), answering from the signals above. Installed once in `setup()`.
 

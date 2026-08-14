@@ -81,8 +81,8 @@ it, a resume restoring it, an explicit `collapse_to`. A walk finishing absorbs w
 was live. Two reasons, and the second is a correctness one:
 
 - `deepest_containing` scans the whole set once per event on the live hot path, and a set that only ever grows makes
-  every event pay for branches that can't change the answer. The phases in `docs/specs/phased-indexing-plan.md` would
-  put 50–150 entries there.
+  every event pay for branches that can't change the answer. A volume covered as a sequence of walks rather than one
+  scan would put 50–150 entries there.
 - A settled descendant entry under a branch a walk is covering RIGHT NOW is the deepest match, so its events would
   PROCESS live while the walk writes the same names — the two-writer collision the buffering exists to prevent, arriving
   through the set itself.
@@ -146,10 +146,10 @@ whole-watched volume registers its branches only to buffer for the walk's durati
 **`AfterWalk::Forget` asks whether the LOOP already answers for the ground, ❌ never whether a branch watcher is up**
 (`IndexManager::after_walk`). The two differ in exactly the cases that matter: a `DriveWatcher::start_branches` failure
 is non-fatal and logged, and a vetoed drive never gets a watcher at all, yet both leave ground that IS covered.
-Forgetting there dropped the persisted set and with it the only record that anything walked that ground — a record M3.3
-of `docs/specs/phased-indexing-plan.md` needs to tell a phased partial index from a legacy one. So the set persists
-whenever the volume isn't whole-watched, and covered-but-unwatched is a state the index states honestly: the epoch bump
-on the next resume is what stops those rows reading as current.
+Forgetting there dropped the persisted set and with it the only record that anything walked that ground — the one thing
+that tells a partial index somebody's searches built apart from one nothing ever walked. So the set persists whenever
+the volume isn't whole-watched, and covered-but-unwatched is a state the index states honestly: the epoch bump on the
+next resume is what stops those rows reading as current.
 
 **Local volumes only.** This is a local-filesystem watcher, so a share or a phone gets no branch watch: its walked
 branches are exactly as stale as its scanned index, which loads Stale on every launch anyway. ⚠️ Known gap: SMB's own

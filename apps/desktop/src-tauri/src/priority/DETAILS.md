@@ -37,8 +37,12 @@ cancellation machinery for no behavior we need. The priority order is enforced b
 
 ## The walk order (`roots.rs`)
 
-The drive index walks a volume in phases, and the ranked list here is the schedule. Everything about it follows from one
-property: **it is an order and nothing else.** The walk covers the whole volume either way, so a root that appears,
+⚠️ **Read this whole section as a description of a seam, not of behavior.** Today's drive index walks a volume as one
+bulk scan and never asks for an order; `HostPolicy::priority_roots` is wired end to end and covered by tests, and the
+walk that would act on it isn't built. Nothing here changes what a user sees until a caller arrives.
+
+The ranked list is the schedule a walk that took a volume in pieces would follow. Everything about it follows from one
+property: **it is an order and nothing else.** Such a walk covers the whole volume either way, so a root that appears,
 disappears, or turns out to be a bad guess costs a few minutes of ordering and never a file that goes unindexed. That is
 what makes it safe to rank on signals that are cheap, incomplete, and occasionally wrong.
 
@@ -92,7 +96,7 @@ directory; a later ask picks them up. `volumes::get_favorites` follows the same 
 duplicate.
 
 **Why a TTL cache rather than a snapshot at launch.** The seam's contract is "recomputed when asked", so an edited
-favorites list or a new tab lands without a restart. But the phase machine asks at root boundaries, which can be
+favorites list or a new tab lands without a restart. But a caller asking once per walk boundary asks in bursts that can be
 milliseconds apart, and an answer costs a couple of dozen stats plus a small file read. Ten seconds is short enough that
 a change lands within a few phases and long enough that the walk never pays for the question. The lock is held across
 the computation on purpose: a burst of asks then produces one answer instead of a stampede of identical stat storms.

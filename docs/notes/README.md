@@ -21,7 +21,7 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing as the evidence behind a decision that would otherwise look arbitrary:**
 
-- `phased-vs-bulk-index-2026-08-14.md` — the measurement gate in `docs/specs/phased-indexing-plan.md`: covering a real
+- `phased-vs-bulk-index-2026-08-14.md` — the measurement gate the phased-indexing plan set for itself: covering a real
   `/` as phased cover walks costs 4.70× today's bulk build against a 1.5× bar, 69% of it one fixable bug (a `readdir`
   failing with a non-permission errno is re-offered by every later phase, and slows searches in the shipped build too),
   and 1.79× with that and the writer drain fixed. Also **settles what a first scan really costs** — 39.1 s over 6.07M

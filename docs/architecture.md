@@ -153,9 +153,10 @@ All under `apps/desktop/src-tauri/src/`.
 - `settings/`: Settings persistence (tauri-plugin-store)
 - `priority/`: Who gets the volume, and which of its folders come first. The per-volume signals background work yields
   to (interactive > transfers > indexing): `foreground` activity timestamps + the `transfers` gauge, composed by drive
-  indexing's scan pacing and media enrichment's pass gate; plus `roots`, the ranked walk order the drive index takes a
-  volume in (last session's tabs, favorites, standard home folders, cloud roots, `$HOME`), answered through the
-  `HostPolicy::priority_roots` seam. See its `apps/desktop/src-tauri/src/priority/CLAUDE.md`
+  indexing's scan pacing and media enrichment's pass gate; plus `roots`, a ranked walk order for a volume walked in
+  pieces (last session's tabs, favorites, standard home folders, cloud roots, `$HOME`), answered through the
+  `HostPolicy::priority_roots` seam — wired and tested, with no caller yet. See its
+  `apps/desktop/src-tauri/src/priority/CLAUDE.md`
 - `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
   (`operation-log.db`), the foundation for rollback, indexed name search, and a future undo. Single writer thread, a
   forward-migration ladder (not delete-and-recreate) and retention discipline, interned dir prefixes + per-item rows,

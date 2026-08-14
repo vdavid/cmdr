@@ -1,8 +1,11 @@
 # Phased cover walks against one bulk build, 2026-08-14
 
-The measurement gate in `docs/specs/phased-indexing-plan.md` before the phase machine gets written: what does covering a
+The measurement gate the phased-indexing plan set for itself before its phase machine got written: what does covering a
 real `/` as a sequence of stitched cover walks cost against today's truncate-and-bulk-build, and does it buy the thing
-it is for, which is `~/Downloads` being searchable in seconds.
+it is for, which is `~/Downloads` being searchable in seconds. The bar was **1.5× the bulk build's wall clock**, and the
+plan prepared two answers for going over it: accept the slower full coverage, or drop the whole-drive phase and cover
+`$HOME` plus the priority roots only. The plan lives under `docs/specs/`, which gets wiped periodically, so everything
+needed to read this note is repeated here.
 
 **The baseline is 39.1 s, not the 145–193 s two in-repo sources claim.** That was checked the only way worth trusting:
 by running the real app. A release Cmdr on a throwaway data dir indexed this `/` in **39.1 s (6,072,728 entries, 603,559
@@ -132,7 +135,7 @@ accumulator and finishes with one `ComputeAllAggregates` over 6M rows; the phase
 405–412 MB against 586 MB, roughly half the phys footprint. The exception is the last arm, whose per-phase drains let a
 6M-row backlog build up in the writer queue (808 MB) — a real cost of batching drains, not a free lunch.
 
-## Where the 4.8× actually goes
+## Where the 4.7× actually goes
 
 Depth 2, probe-free, the arm as the plan describes it (184.5 s):
 
@@ -224,7 +227,7 @@ own and it is the whole remaining gap once the re-offer problem is fixed.
 
 ### Not parallelism, mostly
 
-Walking four frontier roots at once brings the unfixed arm to 103.9 s (2.73×), which looks like parallelism starvation.
+Walking four frontier roots at once brings the unfixed arm to 103.9 s (2.66×), which looks like parallelism starvation.
 It mostly isn't: the win comes from the barren roots' stall timeouts overlapping each other. Once the barren roots are
 gone the real walking is **41 s against the bulk build's whole 38.1 s run**, so one root at a time keeps the machine
 about as busy as one whole-volume walk does. **The plan's join rule costs nothing measurable and does not need
@@ -248,8 +251,9 @@ walk ended rather than probed. At depth 2 the priority roots land at **19.9 ms, 
 
 **Read both halves.** Phasing turns the worst priority root from 26.6 s into 0.1 s, a 250× improvement on exactly the
 thing the plan exists for. It also pushes `home_covered_at` from 39 s to 88 s at best, and 154 s as specified. The
-plan's own open question was "whether `~/Library`'s size makes `home_covered_at` late enough to want the M1 refinement".
-It does: `~/Library` is walked as part of the `$HOME` phase in every arm, and it is what `$HOME` waits for.
+plan's own open question was whether `~/Library`'s size makes `home_covered_at` late enough to want `~/Library` split
+out of the `$HOME` phase and walked on its own. It does: `~/Library` is walked as part of the `$HOME` phase in every
+arm, and it is what `$HOME` waits for.
 
 ## Depth 1 against depth 2 (plan decision 13)
 
@@ -323,9 +327,10 @@ Three of the four costs the plan worried about are free (stitch 0.2 s, coverage 
 join rule ~0 s), and the two that aren't are both fixable without changing the design:
 
 1. **Record ground a walk could not read**, so no later phase re-offers it. 183.7 s → 82.1 s (**2.10×**). This is a bug
-   worth fixing on its own merits, alongside M0's four, and it is not phasing-specific: it makes every search scoped
-   above a dead mount pay the timeouts again, today, in the shipped build. It wants one `UnreadableCause::Abandoned`
-   covering all three producers, and it obliges the plan's `ClearUnreadableCause` backoff to ship with it.
+   worth fixing on its own merits, alongside the four pre-existing indexing bugs the plan pulled out in front of itself,
+   and it is not phasing-specific: it makes every search scoped above a dead mount pay the timeouts again, today, in the
+   shipped build. It wants one `UnreadableCause::Abandoned` covering all three producers, and it obliges the plan's
+   `ClearUnreadableCause` backoff to ship with it.
 2. **Drain the writer once per phase rather than once per frontier root** (the plan's own "batch into small groups").
    82.1 s → 70.1 s (**1.79×**).
 

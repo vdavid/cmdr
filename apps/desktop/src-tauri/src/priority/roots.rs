@@ -1,10 +1,16 @@
 //! Which folders matter to this user, ordered best guess first.
 //!
-//! The index walks a volume in phases, and this is the schedule: the order here
-//! is what the user gets first, so `~/Downloads` answers a search while the rest
-//! of the drive is still being walked. Answers the index's
-//! `HostPolicy::priority_roots` seam through
-//! [`AppHostPolicy`](crate::priority::host_policy::AppHostPolicy).
+//! Answers the index's `HostPolicy::priority_roots` seam through
+//! [`AppHostPolicy`](crate::priority::host_policy::AppHostPolicy), for a walk that
+//! takes a volume in pieces: the order here is what the user would get first, so
+//! `~/Downloads` answers a search while the rest of the drive is still being
+//! walked.
+//!
+//! ⚠️ **Nothing consumes it yet.** Today's drive index walks a volume as one bulk
+//! scan and never asks, so this whole module is answered-but-unread: the seam is
+//! wired end to end and exercised by tests, and the walk that would act on it isn't
+//! built. So ❌ don't read a behavior claim into anything below; a change here
+//! changes no user-visible thing until a caller arrives.
 //!
 //! **Order is the only payload.** Nothing here is a scope or a promise: a root
 //! that drops off the list changes what gets indexed FIRST, never what gets
@@ -36,9 +42,9 @@ const APP_STATUS_FILE_NAME: &str = "app-status.json";
 /// phased indexing exists to avoid.
 const MAX_ROOTS: usize = 24;
 
-/// How long a computed answer is reused. The seam is asked at phase boundaries,
-/// which can be milliseconds apart, and computing an answer stats a couple of dozen
-/// paths. Short enough that an edited favorites list or a new tab lands within a few
+/// How long a computed answer is reused. A walk taking a volume in pieces asks at
+/// each boundary, which can be milliseconds apart, and computing an answer stats a
+/// couple of dozen paths. Short enough that an edited favorites list or a new tab lands within a few
 /// phases, long enough that the walk never pays for the question.
 const CACHE_TTL: Duration = Duration::from_secs(10);
 
@@ -87,7 +93,7 @@ pub fn priority_roots(volume_id: &str) -> Vec<PathBuf> {
 
 /// The ranked answer, recomputed at most once per [`CACHE_TTL`].
 ///
-/// The seam is asked at phase boundaries, which can be milliseconds apart, and an
+/// A caller asking once per walk boundary asks in bursts milliseconds apart, and an
 /// answer costs a couple of dozen stats plus a small file read. The lock is held
 /// across the computation so a burst of asks produces one answer rather than a
 /// stampede of identical walks of the same paths; nothing else contends for it.

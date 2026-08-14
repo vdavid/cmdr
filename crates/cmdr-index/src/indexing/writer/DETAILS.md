@@ -272,8 +272,9 @@ itself: the mark takes the directory out of the frontier, so no walk lists it, s
   nothing a user can do brings it back — navigating in doesn't, since an abandoned directory has `listed_epoch == 0` and
   `verify_directory` bails on it by design, and re-running the search doesn't, since the frontier no longer offers it.
   Five minutes costs ~nothing, because clearing a cause does no disk work by itself and the walk it enables only happens
-  if somebody searches there. ⚠️ When the visit trigger lands (`docs/specs/phased-indexing-plan.md` item 7), the first
-  step's whole reason goes away and it can grow back.
+  if somebody searches there. ⚠️ If something ever walks reopened ground on its own (a visit into it, a phase machine
+  driving coverage on a schedule) rather than waiting for the next search, the first step's whole reason goes away and
+  it can grow back.
 - **Armed by a `MarkDirsUnreadable { cause: Abandoned }` that commits, disarmed by a retry that clears nothing.** So an
   unarmed volume costs one `meta` read per 30 s maintenance tick and never touches `entries` — load-bearing, because
   `unreadable_cause` carries no index and a speculative clear is a full scan of every row on the volume. ❌ Re-arming an
