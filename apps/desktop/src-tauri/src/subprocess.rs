@@ -94,6 +94,10 @@ pub async fn output_within(what: &str, limit: Duration, command: &mut Command) -
 /// Every tool whose stdout or stderr gets parsed goes through here. Without it a
 /// Swedish `LANG` silently changes what the parser sees, and the parser fails in
 /// a way that reads like the server being broken.
+///
+/// macOS-only, because its one caller is: the `smbutil` share-listing fallback.
+/// Linux reaches SMB through `gio`, which doesn't route through here yet.
+#[cfg(target_os = "macos")]
 pub fn command_in_c_locale(program: &str) -> Command {
     let mut command = Command::new(program);
     command.env("LC_ALL", "C").env("LANG", "C");
