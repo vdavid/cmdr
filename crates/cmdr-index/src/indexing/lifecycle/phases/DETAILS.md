@@ -72,18 +72,18 @@ index and the next pass asks again.
 walker standing still over ~1,500 roots. `CoverContext::flush` carries who owes the drain. ⚠️ A walk that defers it
 still flushes when its ground BUFFERED live events: those are replayed the moment the branch is finished, and the loop
 resolves their paths through a read connection, so against uncommitted rows every one would look like a change under a
-missing parent. Two sequences still need a real flush and ❌ must not be batched away: the stitch's upsert-then-mark, and
-the completion sequence's stamp-before-collapse. The cost is a larger writer backlog — bounded by the same
+missing parent. Two sequences still need a real flush and ❌ must not be batched away: the stitch's upsert-then-mark,
+and the completion sequence's stamp-before-collapse. The cost is a larger writer backlog — bounded by the same
 `InsertEntriesV2` batching a full scan already runs at, and measured at no change in peak RSS (408 MB either way).
 
 ## Completion, derived rather than remembered
 
-"The frontier under this root is empty", read off the database. It survives a relaunch, needs no in-session
-bookkeeping, and can't drift from what was actually covered. Ground no walk could read doesn't hold it open: the walk
-records it as `UnreadableCause::Abandoned`, which takes it out of the frontier and into a list of its own, with a
-persisted per-volume backoff offering it again later. ❌ Don't replace this with "the frontier didn't shrink across two
-passes": it has to compare sets rather than counts, never terminates on a drive somebody is writing to, and re-pays a
-full walk on every launch.
+"The frontier under this root is empty", read off the database. It survives a relaunch, needs no in-session bookkeeping,
+and can't drift from what was actually covered. Ground no walk could read doesn't hold it open: the walk records it as
+`UnreadableCause::Abandoned`, which takes it out of the frontier and into a list of its own, with a persisted per-volume
+backoff offering it again later. ❌ Don't replace this with "the frontier didn't shrink across two passes": it has to
+compare sets rather than counts, never terminates on a drive somebody is writing to, and re-pays a full walk on every
+launch.
 
 ⚠️ The machine takes stock once more after its phase loop, with nothing left to walk. A phase whose frontier is ALREADY
 empty walks nothing and drains nothing, so a run that only had to CONFIRM what a previous session covered would
@@ -102,9 +102,9 @@ connection, and step 3 is minutes of writer-thread work.
 5. the shallow-sweep ledger (`record_sweep_completed` + both meta keys), or the first shallow anchor after completion
    triggers a full sweep nobody asked for;
 6. freshness ⇒ `Fresh` plus the terminal events, in the order the frontend's `resetAggregation()` handshake expects;
-7. **flush again**, then collapse the branch set to the volume root. ⚠️ Collapse before the stamp is visible and there is
-   a window where the volume is neither branch-confined nor marked complete, and one coalesced shallow anchor inside it
-   truncates the index that just finished.
+7. **flush again**, then collapse the branch set to the volume root. ⚠️ Collapse before the stamp is visible and there
+   is a window where the volume is neither branch-confined nor marked complete, and one coalesced shallow anchor inside
+   it truncates the index that just finished.
 
 The sequence fires on the absent→present transition only. Re-running it would rewrite `SHALLOW_SWEEP_AT_KEY` and push
 the 24-hour window forward every time.
@@ -117,18 +117,18 @@ the 24-hour window forward every time.
 `lifecycle_bus` channel, which the media and importance schedulers watch alongside `ScanCompleted`, and
 `ready_volumes_with_kind` admits a home-covered volume so a relaunch mid-coverage still wires them.
 
-⚠️ **`~/Library` is walked LAST inside the home phase and the signal doesn't wait for it.** Measured on David's real home
-(2026-08-15, release, 5,230,809 entries): home minus `~/Library` covered in **43.1 s**, all of home in **82.5 s**. So it
-is 48% of home's wall clock, and deferring it moves the early kick 39 s earlier. It stays entirely in scope; only the
-ORDER and the signal change. Linux has no single equivalent pile, so it has none.
+⚠️ **`~/Library` is walked LAST inside the home phase and the signal doesn't wait for it.** Measured on David's real
+home (2026-08-15, release, 5,230,809 entries): home minus `~/Library` covered in **43.1 s**, all of home in **82.5 s**.
+So it is 48% of home's wall clock, and deferring it moves the early kick 39 s earlier. It stays entirely in scope; only
+the ORDER and the signal change. Linux has no single equivalent pile, so it has none.
 
 ## What the machine reports, and what refuses against it
 
 - **`working`** — a phase queued or running. What EVERY scan entry refuses against (`start_scan`,
-  `awaits_its_first_scan`) and what `get_status` reports as `scanning`. ⚠️ ❌ Never the narrower "a walk is running": that
-  goes false between frontier roots, and the stitch produces 50–150 of them per phase, so a truncating rescan timed into
-  one of those gaps would blank a half-built index and the search dialog's "building your index" state would flicker at
-  root cadence.
+  `awaits_its_first_scan`) and what `get_status` reports as `scanning`. ⚠️ ❌ Never the narrower "a walk is running":
+  that goes false between frontier roots, and the stitch produces 50–150 of them per phase, so a truncating rescan timed
+  into one of those gaps would blank a half-built index and the search dialog's "building your index" state would
+  flicker at root cadence.
 - **`walking`** — a walk is reading the disk right now. Feeds the verifier's `scanning` argument only; between roots
   there is nothing to race.
 - ❌ Never `mgr.scanning`: `cover_context_for` returns `None` while it is true, so the machine's own `cover()` calls
@@ -163,4 +163,3 @@ stitch not working. The stamp's own precondition carries across as `entry_count 
 "only after a truncate" it never stamps a fresh install, read as "always" it blesses rows written under an older policy,
 and both misreadings are silent. A STALE fingerprint gets its own arm: truncate once, re-stamp, and drop the completion
 markers and the branch set with the rows they describe.
-

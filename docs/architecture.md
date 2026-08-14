@@ -239,8 +239,8 @@ are ordinary members.
   of its folders matter — behind one `Index` handle the host builds and holds. Tauri-free: everything it needs from an
   application arrives through the traits in `host/`, and everything it reports leaves through an `EventSink`. Three
   subsystems inside, each with its own docs. Crate-level rules and the public surface: `crates/cmdr-index/CLAUDE.md`
-  - `indexing/`: background drive indexing (SQLite, a guarded parallel walker, FSEvents), recursive directory sizes.
-    A volume's FIRST index arrives in phases, in the order its owner cares about, add-only so a quit loses nothing
+  - `indexing/`: background drive indexing (SQLite, a guarded parallel walker, FSEvents), recursive directory sizes. A
+    volume's FIRST index arrives in phases, in the order its owner cares about, add-only so a quit loses nothing
     (`crates/cmdr-index/src/indexing/lifecycle/phases/CLAUDE.md`); a completed one replays or rescans as before.
     Per-volume registry (one index DB per drive, not just local) with a per-volume freshness model (Fresh/Stale/gray);
     SMB and MTP drives index too and stay live via smb2 `CHANGE_NOTIFY` / PTP events, with an "admittedly stale" model

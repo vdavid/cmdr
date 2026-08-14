@@ -6,8 +6,8 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
 one path; `manager.rs` (+ `manager/start.rs`) the per-volume coordinator; `network_scan.rs` the SMB/MTP trait scan;
 `scan_completion.rs`; `progress_reporter.rs` + `partial_agg.rs` the 500 ms progress pump; `cover.rs` the search-driven
 walk (bootstrap + ground-claiming rules in `cover/CLAUDE.md`); `phases/` (+ `manager/phased.rs`) the first index, in
-pieces; `rescan_request.rs` the typed scan-start refusal + the owed walk; `freshness.rs`,
-`failure.rs`, `master.rs`, `lifecycle_bus.rs`.
+pieces; `rescan_request.rs` the typed scan-start refusal + the owed walk; `freshness.rs`, `failure.rs`, `master.rs`,
+`lifecycle_bus.rs`.
 
 ## Must-knows
 
@@ -38,8 +38,8 @@ pieces; `rescan_request.rs` the typed scan-start refusal + the owed walk; `fresh
 - **A walk RELEASES its branch whatever the registry phase** (`finish_branch_coverage` reaches the set directly). ❌
   Never behind `with_running_manager`: a walk ending inside a rescan's `ShuttingDown` window would hold that ground
   forever.
-- **A walk stops through the CALLER's token and flushes before reporting**, cancel included — unless the caller took
-  the drain (`CoverContext::flush`). ⚠️ It flushes anyway when its ground buffered live events.
+- **A walk stops through the CALLER's token and flushes before reporting**, cancel included — unless the caller took the
+  drain (`CoverContext::flush`). ⚠️ It flushes anyway when its ground buffered live events.
 - **`IndexVolumeKind` is a capability model**: branch on the axis, not the variant. `has_event_journal()` gates journal
   replay, ❌ not `last_event_id.is_some()`.
 - **Freshness has ONE total transition table** (`Freshness::on`); no journal ⇒ Stale on launch. `..._on` vs

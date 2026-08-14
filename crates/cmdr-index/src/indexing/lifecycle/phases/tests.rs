@@ -982,6 +982,11 @@ fn how_long_home_takes() {
     let _home_override = set_home_override(home.clone());
 
     let db_path = data.path().join("index-phased-measure.db");
+    // Written the way `phased_bench` writes its numbers: `writeln!` to a stderr
+    // handle, so a measurement harness can report without the `print_stdout` lint
+    // that keeps production code on the logger.
+    use std::io::Write;
+    let mut out = std::io::stderr();
     let started = std::time::Instant::now();
     crate::indexing::host::runtime::block_on(index.start_volume("phased-measure")).expect("indexing starts");
 
@@ -994,24 +999,33 @@ fn how_long_home_takes() {
         };
         if home_covered.is_none() && meta(super::HOME_COVERED_AT_KEY).is_some() {
             home_covered = Some(started.elapsed());
-            println!("home covered (minus the deferred folder) after {:?}", started.elapsed());
+            let _ = writeln!(
+                out,
+                "home covered (minus the deferred folder) after {:?}",
+                started.elapsed()
+            );
         }
         if meta("scan_completed_at").is_some() {
-            println!("all of {} covered after {:?}", home.display(), started.elapsed());
+            let _ = writeln!(out, "all of {} covered after {:?}", home.display(), started.elapsed());
             break;
         }
         if started.elapsed() > std::time::Duration::from_secs(600) {
-            println!("gave up after 10 minutes");
+            let _ = writeln!(out, "gave up after 10 minutes");
             break;
         }
+        // allowed-test-sleep: the sampler IS the measurement. It watches two markers
+        // land at different moments over minutes, which is the number this prints;
+        // a wait-on-one-condition helper can't see the first one go by.
         std::thread::sleep(std::time::Duration::from_millis(200));
     }
     let entries = IndexStore::open_read_connection(&db_path)
         .ok()
         .and_then(|conn| IndexStore::get_entry_count(&conn).ok())
         .unwrap_or(0);
-    println!(
-        "{entries} entries; the early signal arrived {}",
+    let _ = writeln!(
+        out,
+        "{}; the early signal arrived {}",
+        cmdr_fs::pluralize::pluralize(entries, "entry"),
         match home_covered {
             Some(at) => format!("{at:?} in"),
             None => "never".to_string(),

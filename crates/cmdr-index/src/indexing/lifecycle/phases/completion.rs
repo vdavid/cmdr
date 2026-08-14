@@ -4,7 +4,7 @@
 //! this root is empty", read straight off the database — so it survives a
 //! relaunch, needs no in-session bookkeeping, and can't drift from what was
 //! actually covered. Ground no walk could read doesn't hold it open: a walk
-//! records a directory it gave up on as [`UnreadableCause::Abandoned`], which
+//! records a directory it gave up on as `UnreadableCause::Abandoned`, which
 //! takes it out of the frontier and into a list of its own, and a persisted
 //! per-volume backoff offers it again later.
 //!
@@ -215,7 +215,7 @@ fn write_the_calibration(machine: &Machine) {
         let _ = machine.writer.send(WriteMessage::UpdateMeta {
             // A phased first index runs the same walker a full scan does, so its
             // numbers belong in the same bucket.
-            key: ScanCalibrationKind::FullWalk.meta_key(&key),
+            key: ScanCalibrationKind::FullWalk.meta_key(key),
             value: value.clone(),
         });
         let _ = machine.writer.send(WriteMessage::UpdateMeta {

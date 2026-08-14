@@ -16,8 +16,8 @@ where the user is looking; `completion.rs` the two stamps and what completing ow
 - **A phased start prepares its database through writer MESSAGES**, ❌ never a second write connection. No
   `EXCLUSION_POLICY_KEY` stamp ⇒ every coverage query answers "walk everything" and nothing EVER converges, silently.
   The stamp's condition is `entry_count <= 1 || we-just-truncated`; both misreadings are silent.
-- **Completion is DERIVED**: "the frontier under this root is empty". ❌ Never remembered, and ❌ never a
-  "didn't shrink twice" rule. Abandoned ground leaves the frontier, so one wedged directory can't hold it open.
+- **Completion is DERIVED**: "the frontier under this root is empty". ❌ Never remembered, and ❌ never a "didn't shrink
+  twice" rule. Abandoned ground leaves the frontier, so one wedged directory can't hold it open.
 - **The completion ORDER is enforced by a flush**, stamp before collapse. Collapse the branch set first and one shallow
   anchor in that window truncates the index that just finished.
 - **`working` (a phase queued or running) is what scan entries refuse against; `walking` (reading the disk now) is only

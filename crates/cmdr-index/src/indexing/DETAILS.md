@@ -83,10 +83,10 @@ Navigation verification (after enrichment):
   |-- trigger_verification(path) -> dedup/debounce -> ReadPool DB snapshot vs read_dir disk snapshot -> corrections
 ```
 
-Which area owns each stage: the phased first index → `lifecycle/phases/DETAILS.md`; scan discovery → `scanner/DETAILS.md` (local) and `network_scanner/DETAILS.md` (SMB/MTP);
-live change ingestion → `watch/DETAILS.md`; resync → `reconcile/DETAILS.md`; persistence + size compute →
-`writer/DETAILS.md` + `aggregator/DETAILS.md`; serving sizes → `read/DETAILS.md`; path mapping → `paths/DETAILS.md`;
-lifecycle of it all → `lifecycle/DETAILS.md`.
+Which area owns each stage: the phased first index → `lifecycle/phases/DETAILS.md`; scan discovery →
+`scanner/DETAILS.md` (local) and `network_scanner/DETAILS.md` (SMB/MTP); live change ingestion → `watch/DETAILS.md`;
+resync → `reconcile/DETAILS.md`; persistence + size compute → `writer/DETAILS.md` + `aggregator/DETAILS.md`; serving
+sizes → `read/DETAILS.md`; path mapping → `paths/DETAILS.md`; lifecycle of it all → `lifecycle/DETAILS.md`.
 
 ## Cross-cutting patterns
 

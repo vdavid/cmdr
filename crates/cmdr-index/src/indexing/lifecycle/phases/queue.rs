@@ -56,7 +56,7 @@ impl PhaseQueue {
             return;
         }
         self.pending.push(Phase { rank, path });
-        self.pending.sort_by(|a, b| a.rank.cmp(&b.rank));
+        self.pending.sort_by_key(|a| a.rank);
     }
 
     /// The next phase to run, best-ranked first and first-queued within a rank

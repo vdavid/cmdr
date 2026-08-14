@@ -556,8 +556,8 @@ in `docs/architecture-patterns.md` § Persistence. One piece of its test list wa
 writing: **a Playwright E2E over a first run with `CMDR_MOCK_FDA`**.
 
 - **M0** — ✅ **shipped**: the pre-existing bugs this plan would otherwise make routine.
-- **M1** — ✅ **shipped**: priority-root computation plus the host seam. `HostPolicy::priority_roots(volume_id)` is
-  live and has no consumer yet; the phase machine is it.
+- **M1** — ✅ **shipped**: priority-root computation plus the host seam. `HostPolicy::priority_roots(volume_id)` is live
+  and has no consumer yet; the phase machine is it.
 - **M2** — ✅ **built**: the stitch plus the phase machine. Two things the plan didn't have: a phase whose frontier is
   already empty needs an explicit final stock-take (a run that only CONFIRMS a previous session's coverage would never
   stamp), and the per-root writer flush lives inside `cover.rs` rather than the machine, so batching the drain needed a
@@ -739,8 +739,8 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
 4. **Each phase step**: `coverage(volume_id, root, Listing)` for the frontier; empty ⇒ skip; otherwise walk its roots
    one at a time. The walk marks, aggregates, and claims its own ground.
 5. **Visits enter through `HostPolicy::open_listings()`**, rate-limited per the seam's contract.
-6. **One root, one `cover()` call, join before the next.** Preemption is out of scope. Measured: this costs nothing
-   (41 s of real walking against a 38.1 s whole-volume walk), so ❌ don't revisit it for speed.
+6. **One root, one `cover()` call, join before the next.** Preemption is out of scope. Measured: this costs nothing (41
+   s of real walking against a 38.1 s whole-volume walk), so ❌ don't revisit it for speed.
 
    ⚠️ **But the writer flush must NOT stay per-root.** A blocking flush at the end of every `cover()` call is 37.5 s of
    the walker standing still over ~1,500 roots, and it is the entire remaining gap once the abandoned-ground fix is in.
@@ -748,6 +748,7 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
    while the `cover()` call stays per-root so the queue keeps its check points). Expect a larger writer backlog and say
    what that costs in memory. Two places still need a real flush and ❌ must not be batched away: the stitch's
    upsert-then-`MarkDirsListed` sequence, and the completion sequence's step 1 / step 7 ordering.
+
 7. **Completion is derived, not remembered — but "empty frontier" alone is not a terminating rule.** `abandoned_ground`
    is per-walk and in-memory, so it can't answer "was anything abandoned in a previous session?"; the durable signal is
    that an abandoned directory is never marked listed, so it re-enters the frontier.

@@ -11,7 +11,7 @@
 //!
 //! ## The shape of a run
 //!
-//! 1. Ask the host which folders matter to this user ([`HostPolicy::priority_roots`],
+//! 1. Ask the host which folders matter to this user (`HostPolicy::priority_roots`,
 //!    an ORDER and nothing else), then `$HOME`, then the volume root.
 //! 2. Stitch down to each phase root, ask for its frontier, and walk those roots
 //!    one at a time, checking the visit queue in between.
