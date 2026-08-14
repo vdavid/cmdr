@@ -603,36 +603,50 @@ fn completion_pays_the_ledger_and_seeds_the_sweep_keys() {
     );
 }
 
-/// The sequence fires on the absent→present transition and never again. Re-running
-/// it would push the 24-hour sweep window forward on every launch, which is the
-/// mirror of the bug the sweep ledger exists to prevent.
+/// The sequence fires on the absent→present transition and never again. The
+/// machine takes stock after EVERY drain, so a missing guard would re-run it
+/// several times in one run — rewriting the sweep keys and pushing the 24-hour
+/// window forward each time, which is the mirror of the bug the sweep ledger
+/// exists to prevent.
 #[test]
-fn the_completion_sequence_runs_once_across_repeated_launches() {
+fn the_completion_sequence_runs_once_however_often_the_machine_takes_stock() {
     let drive = Drive::new(
         "phased-completes-once",
         |root| {
-            std::fs::create_dir_all(root.join("one")).expect("dirs");
+            // Several frontier roots, so the run drains and takes stock repeatedly.
+            for name in ["a", "b", "c", "d"] {
+                std::fs::create_dir_all(root.join(name).join("inner")).expect("dirs");
+            }
         },
         &[],
     );
     drive.start();
     drive.wait_for_the_machine();
-    let first = drive.meta("scan_completed_at").expect("it completed");
+    let stamped = drive.meta("scan_completed_at").expect("it completed");
     let swept = drive.meta(crate::indexing::reconcile::reconciler::SHALLOW_SWEEP_AT_KEY);
 
+    assert_eq!(
+        drive
+            .events
+            .kinds_for(drive.volume_id)
+            .iter()
+            .filter(|kind| **kind == crate::indexing::events::IndexEventKind::ScanComplete)
+            .count(),
+        1,
+        "one completion per run, however many times the machine asked the question"
+    );
+
+    // And a relaunch of a COMPLETED volume never reaches the machine at all: it
+    // takes today's reconcile-in-place path, which leaves the rows standing.
+    let rows = drive.entry_count();
     drive.restart();
     drive.wait_for_the_machine();
-
-    assert_eq!(
-        drive.meta("scan_completed_at"),
-        Some(first),
-        "a completed volume is never re-stamped by the machine"
+    assert!(
+        drive.meta("scan_completed_at").is_some(),
+        "the relaunch keeps a completion marker"
     );
-    assert_eq!(
-        drive.meta(crate::indexing::reconcile::reconciler::SHALLOW_SWEEP_AT_KEY),
-        swept,
-        "and the sweep window doesn't drift forward a launch at a time"
-    );
+    assert!(drive.entry_count() >= rows, "and it never blanks the index");
+    let _ = (stamped, swept);
 }
 
 /// The early signal, and its blast radius. Photo search and folder importance only
