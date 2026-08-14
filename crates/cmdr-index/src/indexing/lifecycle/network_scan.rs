@@ -188,6 +188,15 @@ impl IndexManager {
             return Err("Scan already running".to_string());
         }
 
+        // And the same question of the other kind of walk, for the same reason as
+        // `start_scan`: a search-driven cover walk sets no flag, it holds a claim,
+        // and a truncate under one blanks rows it is still writing. Over the wire
+        // that walk is the slowest we have, so this window is the widest.
+        let whole_volume = vec![self.volume_root.to_string_lossy().to_string()];
+        if !super::cover::ground_being_walked(&self.volume_id, &whole_volume).is_empty() {
+            return Err("A search walk is covering ground on this volume".to_string());
+        }
+
         // Resolve the live volume handle by id. Gone ⇒ the share unmounted; bail
         // so the caller resets to gray rather than scanning nothing.
         let volume = crate::indexing::host::volumes::current()

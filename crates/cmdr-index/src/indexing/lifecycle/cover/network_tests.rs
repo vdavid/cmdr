@@ -267,6 +267,38 @@ fn a_walk_over_ground_an_earlier_walk_touched_keeps_its_rows() {
     );
 }
 
+/// The truncate door on this half of the walk, and the same refusal:
+/// `start_volume_scan`'s single-flight guard reads `mgr.scanning`, which a
+/// search-driven walk never sets — it holds a claim.
+///
+/// A NAS "Rescan now" landing mid-walk would `TruncateData` + `BumpCurrentEpoch`
+/// under a walk that is still writing rows over the wire, which is the slowest
+/// walk we have and so the widest window. The local half carries the epoch
+/// assertion (`cold_drive_tests`); what this pins is that the trait scanner asks
+/// the same question.
+#[test]
+fn a_truncating_rescan_of_a_share_refuses_while_a_cover_walk_is_live() {
+    let volume_id = "cover-share-truncate-guard-test";
+    let share = Share::new(volume_id, |t| vec![t.dir("scope"), t.file("scope/found.txt", 2)]);
+    share.cover(&share.path("scope"));
+    let rows = share.child_ids(&share.path("scope"));
+    assert_eq!(rows.len(), 1, "precondition: the walk's rows are in");
+
+    let walking = Claim::take(volume_id, vec![share.path("scope")]);
+    assert!(
+        crate::indexing::lifecycle::state::force_scan(volume_id).is_err(),
+        "a rescan refuses while a walk holds ground on the share"
+    );
+    assert_eq!(
+        share.child_ids(&share.path("scope")),
+        rows,
+        "so the walk's rows keep the ids it wrote them under"
+    );
+
+    drop(walking);
+    crate::indexing::lifecycle::state::force_scan(volume_id).expect("and once the walk ends the rescan runs");
+}
+
 // ── Same-name siblings (MTP) ─────────────────────────────────────────
 
 /// Two children with one name: the walk keeps the first and says so, instead of

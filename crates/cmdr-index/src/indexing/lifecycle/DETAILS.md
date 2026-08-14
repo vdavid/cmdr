@@ -385,7 +385,8 @@ the size of the subtree; each batch already carries up to 2 000 entries.
 
 ### The two single-flight questions a scan has to ask
 
-`start_scan` refuses for two independent reasons, and each catches a walk the other can't see:
+`start_scan` refuses for two independent reasons, and each catches a walk the other can't see (`start_volume_scan` asks
+both as well — the trait half has the same doors and the slowest walks):
 
 - **`mgr.scanning`** — the volume's own full scan. Set by `start_scan`, cleared by the completion handler.
 - **`cover::ground_being_walked(volume_id, &[volume_root])`** — a search-driven cover walk. It sets no flag at all: it

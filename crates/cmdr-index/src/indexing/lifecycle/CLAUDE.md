@@ -26,8 +26,9 @@ bootstrap and ground-claiming rules in `cover/CLAUDE.md`; `freshness.rs`, `failu
   walked.
 - **`CoverOutcome::abandoned_ground` is independent of every other field**, so ❌ any caller reporting completeness must
   consult it.
-- **`start_scan` asks TWO single-flight questions**: `mgr.scanning` AND `cover::ground_being_walked`. A search walk sets
-  no flag, and truncating under one blanks rows it's still writing. ❌ Don't collapse them into one.
+- **Every scan entry asks TWO single-flight questions** (`start_scan`, `start_volume_scan`): `mgr.scanning` AND
+  `cover::ground_being_walked`. A search walk sets no flag, and truncating under one blanks rows it's still writing. ❌
+  Don't collapse them into one.
 - **A walk RELEASES its branch whatever the registry phase** (`finish_branch_coverage` reaches the set directly). ❌
   Never behind `with_running_manager`: a walk ending inside a rescan's `ShuttingDown` window would hold that ground,
   buffering its events, forever.
