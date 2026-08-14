@@ -68,6 +68,12 @@ seconds, and no stitch depth fixes that (`docs/notes/phased-vs-bulk-index-2026-0
 **Ground another walk holds is left to it.** A live search's walk is not ours to serialize; its rows land in the same
 index and the next pass asks again.
 
+⚠️ **A walk can also fail to START.** `force_scan` publishes a transient `ShuttingDown` for the whole of its scan-start
+prelude, and `cover_context_for` hands a context out only from a `Running` manager — so a rescan racing the machine
+makes that root's walk report "did not run". Bounded, and deliberately not worked around: the pass budget re-asks once,
+and the volume-root phase re-offers whatever is still frontier. ❌ Don't build a retry loop around it; a caller that
+hammers `force_scan` can starve the machine, and the answer to that is not to hammer it.
+
 **The writer drains once per phase, ❌ not once per root.** A blocking flush at the end of every walk was 37.5 s of the
 walker standing still over ~1,500 roots. `CoverContext::flush` carries who owes the drain. ⚠️ A walk that defers it
 still flushes when its ground BUFFERED live events: those are replayed the moment the branch is finished, and the loop

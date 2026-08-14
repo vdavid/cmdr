@@ -459,46 +459,55 @@ fn a_changed_exclusion_fingerprint_rebuilds_a_phased_index() {
 }
 
 /// A truncating rescan under the machine would blank rows it is still writing and
-/// make the sizes the user has been watching appear vanish again. ⚠️ The guard has
-/// to hold BETWEEN frontier roots too, where no walk is running — the stitch
-/// produces 50–150 roots per phase, so those gaps are most of the run.
+/// make the sizes the user has been watching appear vanish again. `start_scan`'s
+/// own reconcile-or-truncate predicate is what makes it a TRUNCATE: the index has
+/// rows and no `scan_completed_at`, which is "a partial that never finished".
+///
+/// ⚠️ The guard has to hold BETWEEN frontier roots too, where no walk is running —
+/// the stitch produces 50–150 roots per phase, so those gaps are most of the run.
+/// That is why it asks whether the machine has WORK, not whether a walk is live.
 #[test]
 fn start_scan_refuses_while_a_phase_is_active() {
     let drive = Drive::new(
         "phased-refuses-rescan",
         |root| {
-            for name in ["a", "b", "c", "d", "e"] {
-                std::fs::create_dir_all(root.join(name).join("inner")).expect("dirs");
+            // Enough ground that the machine is provably still working a moment
+            // after it is handed the volume; the assertion below says so out loud
+            // rather than passing vacuously if that ever stops being true.
+            for outer in 0..20 {
+                for inner in 0..20 {
+                    std::fs::create_dir_all(root.join(format!("d{outer}/e{inner}"))).expect("dirs");
+                }
             }
         },
         &[],
     );
     drive.start();
 
-    // Asked repeatedly for the whole run, so at least some of the asks land in the
-    // gaps between roots rather than inside a walk.
-    let mut refusals = 0;
-    while drive.index.status(drive.volume_id).is_ok_and(|status| status.scanning) {
-        if !matches!(
-            crate::indexing::lifecycle::state::force_scan(drive.volume_id),
-            Ok(crate::indexing::lifecycle::rescan_request::RescanOutcome::Started)
-        ) {
-            refusals += 1;
-        }
-        // A rescan that DID start would announce itself, which is the failure this
-        // test exists to catch.
-        assert!(
-            drive.scans_started() <= 1,
-            "❌ a second run started while the machine was covering the volume"
-        );
-        std::thread::yield_now();
-    }
-    let _ = refusals;
+    // The machine holds the volume from the moment it is handed over until it has
+    // nothing queued, so this is a refusal rather than a race.
+    assert!(
+        drive.index.status(drive.volume_id).is_ok_and(|status| status.scanning),
+        "precondition: the machine has work the moment the volume is handed to it"
+    );
+    let epoch = drive.current_epoch();
+    let outcome = crate::indexing::lifecycle::state::force_scan(drive.volume_id);
+    assert!(outcome.is_ok(), "the request is answered, not an error: {outcome:?}");
+    // The durable evidence, and the one that doesn't race the machine's own
+    // event: every `start_scan` bumps `current_epoch` before it walks, so an
+    // unchanged epoch means no second run got past the guard.
+    assert_eq!(
+        drive.current_epoch(),
+        epoch,
+        "❌ a second run started over the top of the machine, which would have truncated the index"
+    );
+
     drive.wait_for_the_machine();
     assert!(
         drive.frontier(&drive.path("")).is_empty(),
         "and the machine finished what it was doing"
     );
+    assert_eq!(drive.scans_started(), 1, "one run, start to finish");
 }
 
 /// The bounded-progress rule, and the reason completion can be a pure function of
