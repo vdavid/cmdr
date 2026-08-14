@@ -73,8 +73,13 @@ walker standing still over ~1,500 roots. `CoverContext::flush` carries who owes 
 still flushes when its ground BUFFERED live events: those are replayed the moment the branch is finished, and the loop
 resolves their paths through a read connection, so against uncommitted rows every one would look like a change under a
 missing parent. Two sequences still need a real flush and ❌ must not be batched away: the stitch's upsert-then-mark,
-and the completion sequence's stamp-before-collapse. The cost is a larger writer backlog — bounded by the same
-`InsertEntriesV2` batching a full scan already runs at, and measured at no change in peak RSS (408 MB either way).
+and the completion sequence's stamp-before-collapse. **What that costs is memory, and it is not free.** Measured over a real `/`
+(`docs/notes/phased-vs-bulk-index-2026-08-14.md`): draining per root peaks at **411 MB resident / 254 MB phys
+footprint**; draining per phase peaks at **773 MB / 613 MB**, because a 6M-row backlog builds up in the writer queue
+during the volume-root phase. That buys 12 s of the 82 s arm (1.79× against 2.10×). It is the same peak today's bulk
+build already carries (772 MB / 634 MB, which holds the whole aggregation accumulator instead), so phasing does not
+raise the high-water mark the app is already sized for — it just stops being the arm that lowers it. ⚠️ The 16 GB memory
+watchdog is nowhere near either number; if that ever changes, the knob is the phase boundary, not the flush.
 
 ## Completion, derived rather than remembered
 
