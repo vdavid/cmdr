@@ -142,7 +142,7 @@ fn a_quiet_store_is_read_once_however_often_it_is_asked() {
     // blocking pool. Pointer equality is the proof no second read happened: a re-read
     // would build a new map behind a new `Arc`.
     let volume = "cache-quiet";
-    clear_cache_for_test();
+    clear_cache_for_test(volume);
     let dir = store_with(volume, 1, &[("/photos", 0.9), ("/docs", 0.2)]);
 
     let first = importance_scores(dir.path(), volume, None).expect("scored");
@@ -156,7 +156,7 @@ fn a_delta_lands_without_going_back_to_the_store() {
     // A delta is applied in place, so the map moves without a re-read. Proven by
     // patching in a folder the STORE has never held: only the delta can put it there.
     let volume = "cache-delta";
-    clear_cache_for_test();
+    clear_cache_for_test(volume);
     let dir = store_with(volume, 1, &[("/photos", 0.9)]);
     importance_scores(dir.path(), volume, None).expect("scored");
 
@@ -169,7 +169,7 @@ fn a_delta_lands_without_going_back_to_the_store() {
 #[test]
 fn a_full_pass_makes_the_next_read_see_the_new_table() {
     let volume = "cache-reload";
-    clear_cache_for_test();
+    clear_cache_for_test(volume);
     let dir = store_with(volume, 1, &[("/old", 0.9)]);
     assert_eq!(
         importance_scores(dir.path(), volume, None).expect("scored").get("/old"),
@@ -188,7 +188,7 @@ fn a_full_pass_makes_the_next_read_see_the_new_table() {
 fn an_unscored_volume_reads_none_so_the_gate_falls_back_to_overrides() {
     // Load-bearing: `None` sends the coverage gates to override-only. Caching a map for
     // an unscored volume would silently widen coverage instead.
-    clear_cache_for_test();
+    clear_cache_for_test("never-scored");
     let dir = tempfile::tempdir().expect("temp dir");
     assert!(importance_scores(dir.path(), "never-scored", None).is_none());
 }
@@ -196,7 +196,7 @@ fn an_unscored_volume_reads_none_so_the_gate_falls_back_to_overrides() {
 #[test]
 fn the_threshold_projection_is_memoized_and_follows_the_scores() {
     let volume = "cache-projection";
-    clear_cache_for_test();
+    clear_cache_for_test(volume);
     let dir = store_with(volume, 1, &[("/high", 0.9), ("/low", 0.2)]);
 
     let first = importance_scores(dir.path(), volume, Some(0.5)).expect("scored");
@@ -224,7 +224,7 @@ fn a_threshold_read_answers_from_a_cold_cache_too() {
     // gets enriched. (The same reason the projection step never `?`s on the entry, which
     // it re-looks-up after releasing the lock.)
     let volume = "cache-cold-threshold";
-    clear_cache_for_test();
+    clear_cache_for_test(volume);
     let dir = store_with(volume, 1, &[("/high", 0.9), ("/low", 0.1)]);
 
     let projected = importance_scores(dir.path(), volume, Some(0.5)).expect("a scored volume is never 'unscored'");

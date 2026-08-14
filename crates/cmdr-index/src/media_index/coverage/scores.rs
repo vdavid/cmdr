@@ -255,12 +255,17 @@ pub fn importance_scores(data_dir: &Path, volume_id: &str, at_least: Option<f64>
     Some(projection)
 }
 
-/// Drop every cached entry. Test-only, and deliberately NOT re-exported from
-/// `coverage`: every caller is inside this crate, so widening it would spend one of
-/// the crate's capped public items (`index-crate-isolation`) on nothing.
+/// Drop ONE volume's cached entry, so a test starts from a cold cache for its own
+/// volume. Test-only, and deliberately NOT re-exported from `coverage`: every caller
+/// is inside this crate, so widening it would spend one of the crate's capped public
+/// items (`index-crate-isolation`) on nothing.
+///
+/// ❌ Per volume, never the whole map: these tests run in parallel against one
+/// process-wide cache, and clearing all of it dropped a sibling test's entry between
+/// its patch and its read.
 #[cfg(test)]
-fn clear_cache_for_test() {
-    CACHE.lock_ignore_poison().clear();
+fn clear_cache_for_test(volume_id: &str) {
+    CACHE.lock_ignore_poison().remove(volume_id);
 }
 
 #[cfg(test)]
