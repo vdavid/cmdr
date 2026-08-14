@@ -17,11 +17,12 @@
 //!   read, something below it wasn't. It is itself covered ground; descend into
 //!   its child directories and classify each.
 //! - `listed_epoch == 0 && unreadable_cause != 0` ⇒ **unreadable**. Nothing is
-//!   coming for this subtree, and the cause says which kind of nothing: a walk
-//!   tried and was refused (permission denied), or no walk will read it at all (a
-//!   NAS snapshot directory, whose per-snapshot tree is the one thing the network
-//!   scanner refuses on purpose). Not frontier, reported rather than silently
-//!   dropped, and reported in two lists rather than one — they reach the user as
+//!   coming for this subtree right now, and the cause says which kind of nothing:
+//!   a walk tried and was refused (permission denied), no walk will read it at all
+//!   (a NAS snapshot directory, whose per-snapshot tree is the one thing the
+//!   network scanner refuses on purpose), or a walk tried and gave up (a wedged
+//!   mount, a vanished directory). Not frontier, reported rather than silently
+//!   dropped, and reported in three lists rather than one — they reach the user as
 //!   different sentences, and only the first is something they can act on.
 //! - `listed_epoch == 0` ⇒ **frontier**. Cut here and hand the subtree to the walk.
 //!
@@ -148,6 +149,21 @@ pub struct CoverageMap {
     /// [`permission_denied`](Self::permission_denied): "grant Full Disk Access"
     /// over a snapshot folder is advice that does nothing.
     pub declined: Vec<String>,
+    /// Directories a walk tried and gave up on: a read that timed out, one that
+    /// failed with an errno that isn't permission denied, or a task the walker's
+    /// consecutive-failure budget pruned unread. The TEMPORARY half, and the
+    /// reason it has a list of its own rather than joining either neighbour:
+    /// nothing here is the user's to fix (so ❌ never
+    /// [`permission_denied`](Self::permission_denied), which offers Full Disk
+    /// Access), and Cmdr WILL come back to it (so ❌ never
+    /// [`declined`](Self::declined), which is a permanent policy). The retry rides
+    /// a persisted per-volume backoff (`writer/abandoned_retry.rs`), and any
+    /// successful listing clears the cause on the spot.
+    ///
+    /// ⚠️ A caller reporting how complete its answer is has to consult this: these
+    /// subtrees are no longer in [`frontier`](Self::frontier), so nothing else in
+    /// the answer hints that they were skipped.
+    pub abandoned: Vec<String>,
     /// Which state of the index this answer describes. Honor the answer only while
     /// the snapshot you're serving the covered half from still matches.
     pub token: CoverageToken,
@@ -226,6 +242,7 @@ pub(crate) fn coverage_on_volume(
         frontier: vec![normalized.clone()],
         permission_denied: Vec::new(),
         declined: Vec::new(),
+        abandoned: Vec::new(),
         token: CoverageToken::UNINDEXED,
         being_walked: Vec::new(),
     };
@@ -274,16 +291,19 @@ pub(crate) fn coverage_for_scope(
     let mut frontier = Vec::new();
     let mut permission_denied = Vec::new();
     let mut declined = Vec::new();
+    let mut abandoned = Vec::new();
     let token = walk_coverage(conn, scope_index_path, scope_path, &mut |verdict, path| match verdict {
         Verdict::Frontier => frontier.push(path.to_string()),
         Verdict::Unreadable(UnreadableCause::Denied) => permission_denied.push(path.to_string()),
         Verdict::Unreadable(UnreadableCause::Declined) => declined.push(path.to_string()),
+        Verdict::Unreadable(UnreadableCause::Abandoned) => abandoned.push(path.to_string()),
         Verdict::Covered | Verdict::Listed => {}
     })?;
     Ok(CoverageMap {
         frontier,
         permission_denied,
         declined,
+        abandoned,
         token,
         // Filled by `Index::coverage`, which sits above the walks: this half is a
         // read of one database, and who is walking right now is process state.

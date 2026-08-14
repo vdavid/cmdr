@@ -229,6 +229,12 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
                   still_covering: Vec<String>,
                   capped: bool,
                   abandoned_ground: bool| SearchRunCoverage {
+        // Ground a walk gave up on reaches this two ways and BOTH have to count.
+        // The flag is what THIS walk gave up on; `unreadable.abandoned` is what any
+        // walk gave up on durably, which is precisely why the frontier stopped
+        // offering it and this run never went there. Without the second half a
+        // search over a wedged mount would report itself exhaustive.
+        abandoned_ground: abandoned_ground || !unreadable.abandoned.is_empty(),
         // A scope the INDEX couldn't resolve isn't a gap once the walk has been
         // to it: the walk is the probe, and it just answered. Only a walk that
         // ran to the end proves it, so anything short leaves the signal
@@ -248,7 +254,6 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         permission_denied: unreadable.permission_denied,
         declined: unreadable.declined,
         still_covering,
-        abandoned_ground,
         capped,
         target_volume_id: target.volume_id.clone(),
         // Stamped by the stream on the way out (`ResultStream::finish`), which is

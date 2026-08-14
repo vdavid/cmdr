@@ -162,6 +162,23 @@ impl IndexStore {
         })
     }
 
+    /// Clear the mark from every directory carrying exactly `cause`, returning how
+    /// many rows that was. The other causes are left alone.
+    ///
+    /// The heal for [`UnreadableCause::Abandoned`]: a wedged mount that came back
+    /// has no successful listing to clear its own mark (nothing walks a directory
+    /// the frontier stopped offering), so something has to reopen the ground.
+    /// ❌ Never call it for `Denied` or `Declined`: those are answers, not
+    /// timeouts, and re-offering them re-pays the same refusal on every search.
+    ///
+    /// ⚠️ `unreadable_cause` carries no index, so this is a full table scan — 6M
+    /// rows on a boot disk. Call it only when something is known to be marked; the
+    /// backoff in `writer/abandoned_retry.rs` is what makes sure of that.
+    pub fn clear_unreadable_cause(conn: &Connection, cause: UnreadableCause) -> Result<usize, IndexStoreError> {
+        let mut stmt = conn.prepare_cached("UPDATE entries SET unreadable_cause = 0 WHERE unreadable_cause = ?1")?;
+        Ok(stmt.execute(params![UnreadableCause::to_stored(Some(cause))])?)
+    }
+
     /// Why nothing is coming for this entry's contents, or `None` when something
     /// still might. The outer `None` means the entry doesn't exist.
     pub fn get_unreadable_cause_by_id(

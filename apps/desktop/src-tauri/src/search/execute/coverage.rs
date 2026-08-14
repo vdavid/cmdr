@@ -17,7 +17,7 @@ use crate::search::live::CoverageKind;
 use crate::search::query;
 use crate::search::volumes::{self, VolumeLoad};
 
-/// Directories nothing is going to walk, split by WHOSE refusal it was: the two
+/// Directories nothing is going to walk, split by WHOSE refusal it was: the three
 /// are different sentences on screen, and only the first is one the user can act
 /// on (`crates/cmdr-index`'s `UnreadableCause`).
 #[derive(Default)]
@@ -26,6 +26,9 @@ pub(super) struct UnreadableGround {
     pub(super) permission_denied: Vec<String>,
     /// No walk will read it: a NAS snapshot tree.
     pub(super) declined: Vec<String>,
+    /// A walk tried and gave up (a wedged mount, a vanished directory). Cmdr comes
+    /// back to it on a backoff, so it's neither the user's to fix nor permanent.
+    pub(super) abandoned: Vec<String>,
 }
 
 impl UnreadableGround {
@@ -33,11 +36,16 @@ impl UnreadableGround {
     fn extend(&mut self, map: &cmdr_index::CoverageMap) {
         self.permission_denied.extend(map.permission_denied.iter().cloned());
         self.declined.extend(map.declined.iter().cloned());
+        self.abandoned.extend(map.abandoned.iter().cloned());
     }
 
     /// One order, no duplicates, however many scopes contributed.
     fn settle(&mut self) {
-        for list in [&mut self.permission_denied, &mut self.declined] {
+        for list in [
+            &mut self.permission_denied,
+            &mut self.declined,
+            &mut self.abandoned,
+        ] {
             list.sort_unstable();
             list.dedup();
         }

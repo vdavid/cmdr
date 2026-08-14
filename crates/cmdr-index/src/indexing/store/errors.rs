@@ -11,10 +11,11 @@
 /// read this" — which is what every ordinary row carries and what a successful
 /// listing restores (`mark_dirs_listed` clears the column).
 ///
-/// It's a CAUSE rather than a flag because the two reach the user as different
-/// sentences: one is a permission they can grant, the other is a decision Cmdr
-/// made for them. Telling them apart from the paths alone would mean matching
-/// folder names, which would break the moment a NAS vendor renamed a directory.
+/// It's a CAUSE rather than a flag because the three reach the user as different
+/// sentences: one is a permission they can grant, one is a decision Cmdr made for
+/// them, and one is ground Cmdr will come back to. Telling them apart from the
+/// paths alone would mean matching folder names, which would break the moment a
+/// NAS vendor renamed a directory.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnreadableCause {
     /// A walk tried to read it and the OS refused (permission denied). The
@@ -26,6 +27,19 @@ pub enum UnreadableCause {
     /// refuse on purpose (44 TB reported on a 10 TB volume). Nothing for the user
     /// to fix; it's recorded so a short answer can say why it's short.
     Declined,
+    /// A walk tried and gave up: the read timed out, or it failed with an errno
+    /// that isn't permission denied, or the walker's consecutive-failure budget
+    /// pruned the task unread. The TEMPORARY case — the ground is offered again
+    /// once the retry backoff clears the cause (`writer/abandoned_retry.rs`), and
+    /// any successful listing heals it immediately.
+    ///
+    /// One variant for all three producers on purpose: nothing downstream branches
+    /// on which fired, and every consumer (the coverage verdict, completion, the
+    /// heal) wants the same answer from each. ❌ Don't split it by errno either —
+    /// `ETIMEDOUT` on a wedged mount and `ENOENT` on a directory that vanished
+    /// mid-walk both want "stop offering this", and the vanished row is the
+    /// watcher's to delete anyway.
+    Abandoned,
 }
 
 impl UnreadableCause {
@@ -35,6 +49,7 @@ impl UnreadableCause {
             None => 0,
             Some(Self::Denied) => 1,
             Some(Self::Declined) => 2,
+            Some(Self::Abandoned) => 3,
         }
     }
 
@@ -46,6 +61,7 @@ impl UnreadableCause {
         match stored {
             0 => None,
             2 => Some(Self::Declined),
+            3 => Some(Self::Abandoned),
             _ => Some(Self::Denied),
         }
     }

@@ -503,6 +503,62 @@ fn a_declined_dir_is_reported_apart_from_a_refused_one() {
     );
 }
 
+/// Ground a walk GAVE UP on is reported apart from both of its neighbours.
+///
+/// It shares "not the user's to fix" with a declined snapshot tree and "a walk did
+/// try" with a refusal, and it is neither: Cmdr comes back to it on a backoff. So
+/// it needs a bucket of its own, or the answer either offers Full Disk Access for a
+/// wedged mount or calls a temporary hole a permanent policy.
+#[test]
+fn abandoned_ground_is_reported_apart_from_refused_and_declined_ground() {
+    let (conn, _dir) = open_temp_index();
+    let mnt = insert_dir(&conn, ROOT_ID, "mnt");
+    let wedged = insert_dir(&conn, mnt, "phone");
+    let snapshots = insert_dir(&conn, mnt, "@eaDir");
+    let locked = insert_dir(&conn, mnt, "private");
+    let _fine = insert_dir(&conn, mnt, "photos");
+
+    list_and_aggregate(&conn, &[ROOT_ID, mnt], 2);
+    IndexStore::mark_dirs_unreadable(&conn, &[wedged], Some(UnreadableCause::Abandoned)).expect("mark abandoned");
+    IndexStore::mark_dirs_unreadable(&conn, &[snapshots], Some(UnreadableCause::Declined)).expect("mark declined");
+    IndexStore::mark_dirs_unreadable(&conn, &[locked], Some(UnreadableCause::Denied)).expect("mark denied");
+
+    let map = coverage(&conn, "/");
+    assert_eq!(
+        map.abandoned,
+        vec!["/mnt/phone".to_string()],
+        "a wedged mount is its own kind of nothing"
+    );
+    assert_eq!(map.declined, vec!["/mnt/@eaDir".to_string()]);
+    assert_eq!(
+        map.permission_denied,
+        vec!["/mnt/private".to_string()],
+        "❌ never here: this list offers Full Disk Access, which does nothing for a timeout"
+    );
+    assert_eq!(
+        map.frontier,
+        vec!["/mnt/photos".to_string()],
+        "and the abandoned dir is no longer handed to every later search"
+    );
+
+    // What the retry backoff does: clear the cause, and the ground is offered again
+    // with no rebuild.
+    let cleared = IndexStore::clear_unreadable_cause(&conn, UnreadableCause::Abandoned).expect("clear");
+    assert_eq!(cleared, 1, "only the abandoned row");
+    let reopened = coverage(&conn, "/");
+    assert_eq!(
+        reopened.frontier,
+        vec!["/mnt/phone".to_string(), "/mnt/photos".to_string()],
+        "the retry reopens exactly the ground it gave up on"
+    );
+    assert_eq!(
+        reopened.declined,
+        vec!["/mnt/@eaDir".to_string()],
+        "❌ and clears nothing else"
+    );
+    assert_eq!(reopened.permission_denied, vec!["/mnt/private".to_string()]);
+}
+
 /// Files never reach the frontier: coverage is a property of directories, and a
 /// listed directory's files arrived with the listing.
 #[test]
