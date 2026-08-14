@@ -51,16 +51,25 @@ The inode is what the live rename pre-pass matches against.
 App startup
   |-- init(): register IndexManagerState in Tauri
   |-- start_indexing(): create IndexManager, open SQLite, spawn writer thread
-  |-- resume_or_scan(): existing index + journal? -> replay; incomplete/none -> fresh scan
-  |                     (macOS FSEvents journal replay; Linux always full rescan)
+  |-- resume_or_scan(): completed index + journal? -> replay; completed, no journal -> rescan in place;
+  |                     never completed -> COVER IN PHASES (the first index; there is no first full scan)
   |
-Full scan (start_scan):
+Covering in phases (lifecycle/phases/), a volume with no scan_completed_at:
+  |-- prepare the DB through writer messages (epoch, volume_path, the exclusion-policy stamp)
+  |-- per phase (host's priority roots, then $HOME, then the volume root):
+  |     stitch down to the root -> coverage() names the frontier -> one cover() per root, joined,
+  |     the visit queue checked between -> drain the writer once -> take stock
+  |-- add-only throughout, so a quit keeps every row; the next launch resumes from the frontier
+  |-- completion is DERIVED ("the frontier is empty"): stamp, calibration, ledger heal, sweep keys,
+  |     freshness + terminal events, flush, then collapse the branch set
+  |
+Full scan (start_scan), now only a RESCAN of a completed index or a forced rebuild:
   |-- capture prior-scan calibration BEFORE truncating (for two-tier progress)
   |-- DeleteMeta(scan_completed_at) + Truncate entries/dir_stats
   |-- start the watcher (buffers events), guarded parallel walk -> InsertEntriesV2 -> writer -> SQLite
   |-- partial-agg passes every ~5 s (growing sizes) + progress events every 500 ms
   |-- on UNcancelled complete: persist meta, replay buffered events, compute all aggregates, go live
-  |     (a cancelled scan writes NO meta -> heals to a fresh scan on restart)
+  |     (a cancelled scan writes NO meta -> heals on restart)
   |
 Live mode:
   |-- FSEvents / inotify -> reconciler (resolve path -> entry id) -> Upsert/Move/Delete -> writer -> SQLite
@@ -74,7 +83,7 @@ Navigation verification (after enrichment):
   |-- trigger_verification(path) -> dedup/debounce -> ReadPool DB snapshot vs read_dir disk snapshot -> corrections
 ```
 
-Which area owns each stage: scan discovery → `scanner/DETAILS.md` (local) and `network_scanner/DETAILS.md` (SMB/MTP);
+Which area owns each stage: the phased first index → `lifecycle/phases/DETAILS.md`; scan discovery → `scanner/DETAILS.md` (local) and `network_scanner/DETAILS.md` (SMB/MTP);
 live change ingestion → `watch/DETAILS.md`; resync → `reconcile/DETAILS.md`; persistence + size compute →
 `writer/DETAILS.md` + `aggregator/DETAILS.md`; serving sizes → `read/DETAILS.md`; path mapping → `paths/DETAILS.md`;
 lifecycle of it all → `lifecycle/DETAILS.md`.

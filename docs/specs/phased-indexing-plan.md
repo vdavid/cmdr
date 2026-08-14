@@ -1,8 +1,8 @@
 # Phased, priority-driven drive indexing
 
-Status: **the benchmark gate is resolved and David said build it** (2026-08-14). `M0`, `M1`, and the `Abandoned` cause
-with its heal have shipped to `main`; the phase machine and everything after it are what remains. Branch:
-`worktree-david+phased-machine`.
+Status: **`M0`, `M1`, the `Abandoned` cause with its heal, and `M2` (the stitch plus the phase machine) are built**;
+`M3` onward remain. Branch: `worktree-david+phased-machine`. What M2 shipped, and where it now lives:
+`crates/cmdr-index/src/indexing/lifecycle/phases/CLAUDE.md` + its `DETAILS.md`.
 
 **The gate, and why it passed after reading as a fail.** Measured, the phased shape came in at 4.70× the bulk build,
 against a 1.5× bar. The decomposition is what settled it, and it is the number to keep in mind while building:
@@ -558,8 +558,10 @@ writing: **a Playwright E2E over a first run with `CMDR_MOCK_FDA`**.
 - **M0** — ✅ **shipped**: the pre-existing bugs this plan would otherwise make routine.
 - **M1** — ✅ **shipped**: priority-root computation plus the host seam. `HostPolicy::priority_roots(volume_id)` is
   live and has no consumer yet; the phase machine is it.
-- **M2** — the stitch plus the phase machine. ✅ The benchmark gate is passed, and `UnreadableCause::Abandoned` with
-  its retry heal (item 7's machinery) shipped ahead of it, so completion's durable signal already exists.
+- **M2** — ✅ **built**: the stitch plus the phase machine. Two things the plan didn't have: a phase whose frontier is
+  already empty needs an explicit final stock-take (a run that only CONFIRMS a previous session's coverage would never
+  stamp), and the per-root writer flush lives inside `cover.rs` rather than the machine, so batching the drain needed a
+  knob on `CoverContext` plus a safety flush when the released ground buffered live events.
 - **M3** — launch, resume, and every path that would truncate.
 - **M4** — events, status, and the hourglass UI.
 - **M5** — surfaces, copy, kill switch.

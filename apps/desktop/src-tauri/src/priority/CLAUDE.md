@@ -10,8 +10,8 @@ at their own loop boundaries.
 - `foreground.rs`: last-interactive-activity timestamps, app-wide + per volume. Written by the hot listing IPC.
 - `transfers.rs`: per-volume gauge of user-initiated write ops (copy/move/delete/trash/drag-out).
 - `roots.rs`: which folders matter to this user, ranked, for a walk that takes a volume in pieces. Last session's tabs,
-  favorites, the standard home folders, cloud roots, then `$HOME`. ⚠️ **No caller yet** — the seam is wired and tested,
-  the walk that would ask isn't built.
+  favorites, the standard home folders, cloud roots, then `$HOME`. Read by the index's phase machine at each phase
+  boundary, so an edited favorites list lands without a restart.
 - `host_policy.rs`: `AppHostPolicy` (the index subsystems' `HostPolicy`) and `AppUserActivity` (a storage backend's
   narrower per-volume question), answering from the signals above. Installed once in `setup()`.
 

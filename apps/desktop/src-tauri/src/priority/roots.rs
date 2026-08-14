@@ -6,11 +6,8 @@
 //! `~/Downloads` answers a search while the rest of the drive is still being
 //! walked.
 //!
-//! ⚠️ **Nothing consumes it yet.** Today's drive index walks a volume as one bulk
-//! scan and never asks, so this whole module is answered-but-unread: the seam is
-//! wired end to end and exercised by tests, and the walk that would act on it isn't
-//! built. So ❌ don't read a behavior claim into anything below; a change here
-//! changes no user-visible thing until a caller arrives.
+//! The index's phase machine asks at each phase boundary, so an edited favorites
+//! list or a new session's tabs land without a restart.
 //!
 //! **Order is the only payload.** Nothing here is a scope or a promise: a root
 //! that drops off the list changes what gets indexed FIRST, never what gets

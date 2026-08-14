@@ -31,6 +31,9 @@ Three mechanisms resync the index after the initial scan: the event-triggered `r
   forever. ❌ Not the NULL alone; `nlink == 1` restores a real size.
 - **Cost budget scores read latency as a FRACTION of slow reads, never a total.** A skipped dir is one we NEVER listed:
   ❌ never diff it with an empty listing, ❌ never stamp its `listed_epoch` (`0` absorbs up to `~`/`/`).
+- **The verifier BAILS on `listed_epoch == 0` while the volume has no `scan_completed_at`**: a walk owns that ground,
+  and diffing a lower bound `scan_subtree`s every name on disk. ⚠️ Both halves: on a COMPLETED volume a SKIPPED dir
+  still heals here.
 - **The verifier's pool, writer, and space must name ONE volume** (all off the instance). ❌ Never read via root's
   `get_read_pool()`: a mount-absolute path misses root's index, and the pass goes inert on SMB/MTP/external.
 - **Verification's two teeth** (`verify_affected_dirs`, in `../watch/`): a `count_children_capped` probe + a `read_dir`

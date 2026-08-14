@@ -5,8 +5,9 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
 `state.rs` the registry + `IndexPhase` machine, with a job per file under `state/`, re-exported so `state::*` stays the
 one path; `manager.rs` (+ `manager/start.rs`) the per-volume coordinator; `network_scan.rs` the SMB/MTP trait scan;
 `scan_completion.rs`; `progress_reporter.rs` + `partial_agg.rs` the 500 ms progress pump; `cover.rs` the search-driven
-walk (bootstrap + ground-claiming rules in `cover/CLAUDE.md`); `rescan_request.rs` the typed scan-start refusal + the
-owed walk; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs`.
+walk (bootstrap + ground-claiming rules in `cover/CLAUDE.md`); `phases/` (+ `manager/phased.rs`) the first index, in
+pieces; `rescan_request.rs` the typed scan-start refusal + the owed walk; `freshness.rs`,
+`failure.rs`, `master.rs`, `lifecycle_bus.rs`.
 
 ## Must-knows
 
@@ -26,6 +27,9 @@ owed walk; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs`.
   EVICTS an index whose coverage this build refuses. ⚠️ A volume mid-SCAN isn't walked.
 - **`CoverOutcome::abandoned_ground` is independent of every other field**, so ❌ any caller reporting completeness must
   consult it.
+- **No `scan_completed_at` ⇒ COVERED in phases, ❌ never bulk-scanned** (`phases/CLAUDE.md`). ⚠️ A COMPLETED volume
+  reaches today's reconcile arm FIRST, else a finished external drive reads as never indexed. Every scan entry then
+  refuses while the machine has WORK, ❌ not merely while a walk runs (it stops between roots, 50–150 per phase).
 - **Every scan entry asks TWO single-flight questions** (`start_scan`, `start_volume_scan`): `mgr.scanning` AND
   `cover::ground_being_walked`. A search walk sets no flag, and truncating under one blanks rows it's still writing. ❌
   Don't collapse them or classify them by text (both are `ScanStartError`). A MANUAL rescan they refuse is REMEMBERED
@@ -34,7 +38,8 @@ owed walk; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs`.
 - **A walk RELEASES its branch whatever the registry phase** (`finish_branch_coverage` reaches the set directly). ❌
   Never behind `with_running_manager`: a walk ending inside a rescan's `ShuttingDown` window would hold that ground
   forever.
-- **A walk stops through the CALLER's token and flushes its writer before reporting**, cancel included.
+- **A walk stops through the CALLER's token and flushes before reporting**, cancel included — unless the caller took
+  the drain (`CoverContext::flush`). ⚠️ It flushes anyway when its ground buffered live events.
 - **`IndexVolumeKind` is a capability model**: branch on the axis, not the variant. `has_event_journal()` gates journal
   replay, ❌ not `last_event_id.is_some()`.
 - **Freshness has ONE total transition table** (`Freshness::on`); no journal ⇒ Stale on launch. `..._on` vs

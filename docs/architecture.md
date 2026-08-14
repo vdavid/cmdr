@@ -155,7 +155,7 @@ All under `apps/desktop/src-tauri/src/`.
   to (interactive > transfers > indexing): `foreground` activity timestamps + the `transfers` gauge, composed by drive
   indexing's scan pacing and media enrichment's pass gate; plus `roots`, a ranked walk order for a volume walked in
   pieces (last session's tabs, favorites, standard home folders, cloud roots, `$HOME`), answered through the
-  `HostPolicy::priority_roots` seam — wired and tested, with no caller yet. See its
+  `HostPolicy::priority_roots` seam and consumed by the index's phase machine. See its
   `apps/desktop/src-tauri/src/priority/CLAUDE.md`
 - `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
   (`operation-log.db`), the foundation for rollback, indexed name search, and a future undo. Single writer thread, a
@@ -240,6 +240,8 @@ are ordinary members.
   application arrives through the traits in `host/`, and everything it reports leaves through an `EventSink`. Three
   subsystems inside, each with its own docs. Crate-level rules and the public surface: `crates/cmdr-index/CLAUDE.md`
   - `indexing/`: background drive indexing (SQLite, a guarded parallel walker, FSEvents), recursive directory sizes.
+    A volume's FIRST index arrives in phases, in the order its owner cares about, add-only so a quit loses nothing
+    (`crates/cmdr-index/src/indexing/lifecycle/phases/CLAUDE.md`); a completed one replays or rescans as before.
     Per-volume registry (one index DB per drive, not just local) with a per-volume freshness model (Fresh/Stale/gray);
     SMB and MTP drives index too and stay live via smb2 `CHANGE_NOTIFY` / PTP events, with an "admittedly stale" model
     on launch and disconnect. See `crates/cmdr-index/src/indexing/CLAUDE.md`

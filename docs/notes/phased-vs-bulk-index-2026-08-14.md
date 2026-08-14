@@ -366,3 +366,23 @@ compare the drain knob against ~2.10×.
 
 ❌ Nothing else here has been acted on: the drain batching, the phase machine, and the gate call itself are all still
 open.
+
+## Follow-up, 2026-08-15: what the built machine measures on a real home folder
+
+The arms above ran on a throwaway harness. This one is the shipped phase machine (`lifecycle/phases/`), driven through
+the public handle over David's actual `$HOME` into a temp index, release build
+(`indexing::lifecycle::phases::tests::how_long_home_takes`, `#[ignore]`d).
+
+- **home minus `~/Library` covered: 43.1 s**
+- **all of home covered: 82.5 s**
+- 5,230,809 entries.
+
+So `~/Library` is **48% of home's coverage wall clock**, and the plan's open question — whether it is enough of home to
+want splitting out of the early signal — is answered yes. `home_covered_at` now fires when the home frontier holds
+nothing outside `~/Library`, which moves the media and importance kick **39 seconds earlier** on this machine.
+`~/Library` stays entirely in scope; only the walk ORDER inside the home phase and the signal's condition change.
+
+⚠️ Read the 43.1 s as "all of home except one folder", ❌ not as time-to-first-useful-folder. This run installed no
+priority roots (the fake host answers none), so home was walked with no ordering at all and `~/projects-git` (2.4M
+entries) dominated it. With the real host answering, the folders the user opens are covered in the first tenths of a
+second, exactly as the arms above measured.
