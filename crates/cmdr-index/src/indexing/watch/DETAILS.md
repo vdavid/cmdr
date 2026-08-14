@@ -91,12 +91,12 @@ was live. Two reasons, and the second is a correctness one:
 events it holds. Settled entries are always safe, because a branch only buffers while a walk covers it.
 
 **`collapse_to(root)` mutates the set the running loop is READING**, in place, and then persists. The live loop and its
-reconciler each captured an `Arc<BranchWatch>` at `ensure_branch_watch`. ❌ Never express a collapse as `branches::clear`
-plus a begin/finish pair: `clear` calls `forget`, so `live_for` mints a brand-new set nobody is reading — the persisted
-meta would say `["/"]` while the loop filtered against the stale entries for the rest of the session, and
-`is_branch_confined` would read that same stale `Arc` and keep the shallow sweep disabled until the next launch. It
-fails silently and only at runtime. (`start_scan`'s `clear` is safe only because the loop is torn down and replaced in
-the same breath.) Anchor: `branches::tests::the_branch_collapse_is_visible_to_the_running_live_loop`.
+reconciler each captured an `Arc<BranchWatch>` at `ensure_branch_watch`. ❌ Never express a collapse as
+`branches::clear` plus a begin/finish pair: `clear` calls `forget`, so `live_for` mints a brand-new set nobody is
+reading — the persisted meta would say `["/"]` while the loop filtered against the stale entries for the rest of the
+session, and `is_branch_confined` would read that same stale `Arc` and keep the shallow sweep disabled until the next
+launch. It fails silently and only at runtime. (`start_scan`'s `clear` is safe only because the loop is torn down and
+replaced in the same breath.) Anchor: `branches::tests::the_branch_collapse_is_visible_to_the_running_live_loop`.
 
 **A coalesced sweep above the branches is RE-ANCHORED onto them, never dropped.** FSEvents reports "a lot changed under
 here" at a shallower path than the branch; a plain prefix test would lose every change inside covered ground behind one

@@ -495,7 +495,7 @@ fn the_branch_collapse_is_visible_to_the_running_live_loop() {
 
     assert_eq!(
         scope.branches().branch_paths(),
-        [root.clone()],
+        [root.as_str()],
         "the loop's own set is the one that collapsed"
     );
     assert!(
