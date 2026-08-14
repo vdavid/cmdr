@@ -60,7 +60,10 @@ what makes it safe to rank on signals that are cheap, incomplete, and occasional
 4. **Cloud roots**: every File Provider domain under `~/Library/CloudStorage`, then `~/Dropbox`, then iCloud Drive.
    After the local ones deliberately: a File Provider read can stall, and a stall must not delay `~/Downloads`. The
    domains are sorted, because `read_dir` order is arbitrary and a schedule that reshuffles between asks is one nobody
-   can debug.
+   can debug. **Known limit**: ordering only protects the WALK. Listing `~/Library/CloudStorage` and stat-ing a domain
+   root are local metadata reads (macOS keeps domain roots materialized; the stalls are on unmaterialized file
+   CONTENTS), but if one ever did hang, it would hang the whole answer, local roots included. If that shows up, the fix
+   belongs where the seam is consulted, not here.
 5. **`$HOME`**, last, sweeping up whatever the guesses missed. Last is load-bearing: first, and every later root would
    be a descendant of it and get dropped, collapsing the whole schedule into one undifferentiated walk.
 

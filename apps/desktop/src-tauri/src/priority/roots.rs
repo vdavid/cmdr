@@ -305,6 +305,10 @@ fn normalized(path: &Path) -> Option<PathBuf> {
 /// that half entirely; a later ask (the answer is recomputed, not frozen) picks the
 /// domains up once the decision is in. The domains are sorted because `read_dir` order
 /// is arbitrary, and a walk order that reshuffles between asks is one nobody can debug.
+///
+/// Every entry is offered as a candidate rather than filtered to directories here:
+/// `consider` settles it with the one `is_dir()` it does anyway, which also follows a
+/// symlinked domain the way a walk would.
 fn cloud_roots(home: &Path, fda_pending: bool) -> Vec<PathBuf> {
     let mut roots = Vec::new();
 
@@ -312,11 +316,7 @@ fn cloud_roots(home: &Path, fda_pending: bool) -> Vec<PathBuf> {
     if !(fda_pending && tcc_paths::is_potentially_tcc_restricted(&cloud_storage))
         && let Ok(entries) = fs::read_dir(&cloud_storage)
     {
-        let mut domains: Vec<PathBuf> = entries
-            .flatten()
-            .map(|entry| entry.path())
-            .filter(|path| path.is_dir())
-            .collect();
+        let mut domains: Vec<PathBuf> = entries.flatten().map(|entry| entry.path()).collect();
         domains.sort();
         roots.extend(domains);
     }
