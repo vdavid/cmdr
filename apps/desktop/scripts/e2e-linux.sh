@@ -519,7 +519,12 @@ else
     # runner user). Mounting at a root-owned non-sticky path sidesteps the
     # sysctl. Locally (OrbStack maps the host uid to container root) both
     # paths work, which is why this only ever failed in CI.
-    LINUX_E2E_JSON_REPORT="/tmp/cmdr-e2e-report-linux.json"
+    #
+    # The Go checker passes a run-scoped host path (CMDR_E2E_HOST_JSON_REPORT,
+    # `/tmp/cmdr-e2e-report-linux-<pid>.json`) so a suite running in another worktree
+    # can't overwrite this run's evidence. The fallback is for a hand-run
+    # `pnpm test:e2e:linux`, which nothing reads back automatically.
+    LINUX_E2E_JSON_REPORT="${CMDR_E2E_HOST_JSON_REPORT:-/tmp/cmdr-e2e-report-linux.json}"
     CONTAINER_E2E_JSON_REPORT="/e2e-report/cmdr-e2e-report-linux.json"
     : > "$LINUX_E2E_JSON_REPORT"
 

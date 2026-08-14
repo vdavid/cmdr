@@ -9,8 +9,17 @@
 import fs from 'fs'
 import path from 'path'
 
-// Must match Rust constant at src-tauri/src/mtp/virtual_device.rs::MTP_FIXTURE_ROOT
-export const MTP_FIXTURE_ROOT = '/tmp/cmdr-mtp-e2e-fixtures'
+/**
+ * The virtual MTP device's backing directory, which the specs assert against directly.
+ *
+ * The Go checker hands every shard of a run the same run-scoped root
+ * (`CMDR_MTP_FIXTURE_ROOT`, matching the `CMDR_VIRTUAL_MTP` path it gives the app), so a
+ * suite starting in another worktree can't wipe the tree a running MTP spec is asserting
+ * against. The fallback is the app's own default when nobody sets it: a manual
+ * `CMDR_VIRTUAL_MTP=1 pnpm dev` session, or a direct `npx tsx` run of this file. It must
+ * stay in step with `src-tauri/src/mtp/virtual_device.rs::MTP_FIXTURE_ROOT`.
+ */
+export const MTP_FIXTURE_ROOT = process.env.CMDR_MTP_FIXTURE_ROOT?.trim() || '/tmp/cmdr-mtp-e2e-fixtures'
 
 const fixtureLayout = {
   directories: ['internal/Documents', 'internal/DCIM', 'internal/DCIM/Burst', 'internal/Music', 'readonly/photos'],

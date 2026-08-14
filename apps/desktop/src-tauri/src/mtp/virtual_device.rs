@@ -27,8 +27,14 @@ pub const VIRTUAL_MTP_ENV: &str = "CMDR_VIRTUAL_MTP";
 /// so it can be accessed from Tauri commands (which run on arbitrary threads).
 static WATCHER_GUARD: Mutex<Option<WatcherGuard>> = Mutex::new(None);
 
-/// Root directory for the virtual device's backing files.
-/// The TypeScript E2E fixture helper references the same path; see
+/// Default root directory for the virtual device's backing files, used by a manual
+/// `CMDR_VIRTUAL_MTP=1` dev session.
+///
+/// The Playwright lane does NOT use it: it passes a run-scoped path
+/// (`/tmp/cmdr-mtp-e2e-fixtures-<pid>`) through `CMDR_VIRTUAL_MTP`, because the MTP shard
+/// wipes its backing dir and two suites sharing one root is one suite deleting the other's
+/// tree mid-spec. The TypeScript fixture helper takes the same path from
+/// `CMDR_MTP_FIXTURE_ROOT` and falls back to this constant; see
 /// `test/e2e-shared/mtp-fixtures.ts`.
 pub const MTP_FIXTURE_ROOT: &str = "/tmp/cmdr-mtp-e2e-fixtures";
 

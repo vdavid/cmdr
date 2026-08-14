@@ -316,8 +316,8 @@ is the whole contract, and the fix for over-budget is to trim a doc, not to bump
 
 The E2E suites were hard-won down to under 2 s per test; `e2e-durations.go` defends that. After a successful E2E run,
 both E2E checks (`desktop-e2e-playwright`, `desktop-e2e-linux`) call `applyE2EDurationWarnings`, which parses the run's
-Playwright JSON reports (`/tmp/cmdr-e2e-report-{mtp,nonmtp1,nonmtp2}.json` for the macOS shards,
-`/tmp/cmdr-e2e-report-linux.json` for Docker — the same files `scripts/e2e-test-timings` reads) and flags every test
+Playwright JSON reports (`/tmp/cmdr-e2e-report-{mtp,nonmtp1,nonmtp2}-<pid>.json` for the macOS shards,
+`/tmp/cmdr-e2e-report-linux-<pid>.json` for Docker — the same files `scripts/e2e-test-timings` reads) and flags every test
 whose worst single attempt exceeded `e2eSlowTestThresholdMs` (2000). **Warn-only by contract**: a slow test converts the
 check's green `OK` into a yellow `warn` line but never fails the suite, and a failed E2E run skips the analysis entirely
 (the failure output stays focused).
@@ -399,11 +399,14 @@ config — so isolation applies everywhere, with no CI split. Manual `pnpm test:
 
 ## Nothing a shard owns is shared between runs
 
-**Decision**: every live resource in `planShards` is scoped to the RUN, not to the shard name. The MCP ports come from
-the OS (`reserveMcpPorts` binds `127.0.0.1:0` once per shard, holding every listener open until the last is reserved, so
-the kernel can't hand the same port back twice), and the Playwright output dir carries the pid alongside the socket
-path, data dir, fixture dir, and instance ID that already did. The pre-flight no longer kills whoever holds a port; it
-only removes its own pid-scoped socket file.
+**Decision**: every resource an E2E run touches is scoped to the RUN, not to the shard name. The MCP ports come from the
+OS (`reserveMcpPorts` binds `127.0.0.1:0` once per shard, holding every listener open until the last is reserved, so the
+kernel can't hand the same port back twice); everything else carries the pid: socket path, data dir, fixture dir,
+instance ID, Playwright output dir, JSON report, shard log, build log, the Linux lane's report, and the run's virtual
+MTP backing dir. The pre-flight no longer kills whoever holds a port; it only removes its own pid-scoped socket file.
+
+A timestamp is NOT a scope. Two suites can start in the same second, and `os.Create` on a shard log truncates whatever
+the other run was writing, so the timestamped paths carry the pid too.
 
 **Why**: two suites run at once whenever two worktrees are busy, which is most of the time. The MCP port used to be
 `9429 + shard offset`, and the pre-flight SIGTERM'd whatever was listening on it — so a suite starting at 16:03:30
@@ -413,12 +416,29 @@ no crash report to say the app had been signalled. It reads exactly like a produ
 output dir moved for the second half of that cost: the concurrent suite had already overwritten the failing run's
 recordings and error contexts, so the only pictures of the failure were of the run that passed.
 
-Still shared, and still worth knowing: the fixture hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`, content-addressed,
-so sharing is the point), the virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures`, global by the app's design), and
-the JSON report path (`/tmp/cmdr-e2e-report-<shard>.json`, which `scripts/e2e-test-timings` and `e2e-test-log.go` both
-read back from a fixed location).
+The JSON report and the MTP backing dir came last, and they were the expensive two:
 
-`TestPlanShardsSharesNothingBetweenConcurrentRuns` pins the whole rule against two plans from different pids.
+- **The report is the run's evidence.** `e2e-test-log.go` turns it into the per-test log, `e2e-durations.go` flags slow
+  specs from it, and `e2e-flaky.go` counts retry-passes out of it. At a fixed path, a concurrent suite answered all
+  three questions about a run it never took part in, and the per-test log recorded the wrong run's names under this
+  run's timestamp — instrumentation quietly lying, which is worse than no instrumentation. Nothing reads it from a
+  known path any more: the lane hands readers the path, and `scripts/e2e-test-timings` takes the newest glob match.
+- **The MTP backing dir is wiped at MTP-shard startup and between tests.** Shared machine-wide, a starting suite
+  deleted the tree a running suite's MTP spec was asserting against, and the victim reported a missing file it had
+  created itself. The app takes the run's root from `CMDR_VIRTUAL_MTP` and `mtp-fixtures.ts` from
+  `CMDR_MTP_FIXTURE_ROOT`, so both sides of a spec agree on one path per run.
+
+Still shared, and deliberately: the fixture hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`) is content-addressed and
+built by tmp-dir + atomic rename, so sharing is the point and a torn read is structurally impossible; per-worktree
+copies would cost 170 MB each and buy nothing. The `smblease` lease dir is machine-wide for the same kind of reason.
+
+Reports, logs, and recordings deliberately OUTLIVE their run (they're what a post-mortem reads), so age collects them
+instead: `sweepStaleE2EArtifacts` runs at the start of both E2E lanes and removes run-scoped leftovers older than a
+week. The patterns are narrow on purpose — `e2e-tmp-sweep.go` must never match `cmdr-e2e-fixtures-cache` or a hand-made
+`cmdr-e2e-data-<name>`, and `TestE2EArtifactIsSweepable` pins both directions.
+
+`TestPlanShardsSharesNothingBetweenConcurrentRuns` pins the whole rule against two plans from different pids that share
+a timestamp.
 
 ## The Playwright lane's binary is fingerprinted, because its build isn't incremental
 

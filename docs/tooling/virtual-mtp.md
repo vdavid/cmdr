@@ -44,7 +44,8 @@ See `instance-isolation.md` for what `--worktree` separates (data dir, Vite / MC
 ## Custom backing dir
 
 `CMDR_VIRTUAL_MTP=1` (or `true` / `yes` / `on`) uses the default `/tmp/cmdr-mtp-e2e-fixtures/` root. Pass a path instead
-to back the device with your own directory tree:
+to back the device with your own directory tree (this is how the Playwright checker gives each run its own
+`/tmp/cmdr-mtp-e2e-fixtures-<pid>/`, since the MTP shard wipes whatever root it's given):
 
 ```bash
 CMDR_VIRTUAL_MTP=/tmp/my-android-mock pnpm dev

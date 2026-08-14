@@ -35,7 +35,7 @@ func TestShardInstanceIDFormat(t *testing.T) {
 // planShards must compose the per-shard CMDR_INSTANCE_ID alongside the data dir and ports,
 // and the MTP lane is shard 0 (sequential). Pinning both invariants here catches a future
 // refactor that drops the instance ID or reshuffles the MTP lane out of position 0 (the MTP
-// shard MUST run alone because `/tmp/cmdr-mtp-e2e-fixtures` is shared across instances).
+// shard MUST run alone because the run's MTP backing dir is shared across its instances).
 func TestPlanShardsAssignsInstanceIDs(t *testing.T) {
 	t.Parallel()
 
@@ -71,11 +71,16 @@ func TestPlanShardsAssignsInstanceIDs(t *testing.T) {
 // share is one run reaching into the other's. That is not theoretical — a fixed MCP
 // port once let a starting run SIGTERM a running one's app mid-test, and the 38
 // failures that followed read exactly like a product bug.
+//
+// The two plans share a timestamp on purpose. Only the pid separates one run from
+// another: two suites starting in the same second is a coin flip nobody should have to
+// win, so a path whose only variable part is the clock counts as shared.
 func TestPlanShardsSharesNothingBetweenConcurrentRuns(t *testing.T) {
 	t.Parallel()
 
-	first := planShards("", 1700000000, 4242, []int{40001, 40002, 40003})
-	second := planShards("", 1700000042, 4343, []int{40004, 40005, 40006})
+	const sameSecond = int64(1700000000)
+	first := planShards("", sameSecond, 4242, []int{40001, 40002, 40003})
+	second := planShards("", sameSecond, 4343, []int{40004, 40005, 40006})
 
 	for i := range first {
 		a, b := first[i], second[i]
@@ -85,6 +90,13 @@ func TestPlanShardsSharesNothingBetweenConcurrentRuns(t *testing.T) {
 			"dataDir":    {a.dataDir, b.dataDir},
 			"logFile":    {a.logFile, b.logFile},
 			"outputDir":  {a.outputDir, b.outputDir},
+			// The report is the run's evidence: the per-test log, the duration
+			// allowlist, and the flake warning are all read back out of it. A shared
+			// one means a run can be judged on another run's results.
+			"jsonReport": {a.jsonReport, b.jsonReport},
+			// Wiped and recreated at MTP-shard startup. Shared, a starting run
+			// deletes the tree a running one's MTP specs are asserting against.
+			"mtpFixtureRoot": {a.mtpFixtureRoot, b.mtpFixtureRoot},
 		}
 		for field, pair := range owned {
 			if pair[0] == pair[1] {
@@ -94,6 +106,26 @@ func TestPlanShardsSharesNothingBetweenConcurrentRuns(t *testing.T) {
 		if a.mcpPort == b.mcpPort {
 			t.Errorf("shard %q: both runs got mcpPort = %d", a.name, a.mcpPort)
 		}
+	}
+}
+
+// Every shard of ONE run backs onto the same MTP root (the MTP shard owns it and the
+// others are told to keep their hands off it), so run-scoping must not accidentally
+// hand each shard its own.
+func TestPlanShardsGivesOneRunOneMtpRoot(t *testing.T) {
+	t.Parallel()
+
+	shards := planShards("", 1700000000, 4242, []int{40001, 40002, 40003})
+	for _, s := range shards[1:] {
+		if s.mtpFixtureRoot != shards[0].mtpFixtureRoot {
+			t.Errorf("shard %q backs onto %q, want the run's single root %q",
+				s.name, s.mtpFixtureRoot, shards[0].mtpFixtureRoot)
+		}
+	}
+	// mtp-fixtures.ts refuses to delete a root outside this prefix, so a value it
+	// would reject leaves the MTP shard unable to reset between tests.
+	if !strings.HasPrefix(shards[0].mtpFixtureRoot, "/tmp/cmdr-mtp-") {
+		t.Errorf("mtpFixtureRoot = %q, want a /tmp/cmdr-mtp- prefix", shards[0].mtpFixtureRoot)
 	}
 }
 

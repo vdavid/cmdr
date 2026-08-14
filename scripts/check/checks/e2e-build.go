@@ -171,7 +171,10 @@ func reuseOrBuildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int
 	buildCmd.Dir = desktopDir
 	buildOutput, err := RunCommand(buildCmd, true)
 	if err != nil {
-		buildLog := fmt.Sprintf("/tmp/cmdr-e2e-playwright-build-%d.log", timestamp)
+		// Same run-scoping as the shard logs: the timestamp alone lets two suites
+		// starting in the same second write one file, and the error below points a
+		// person at it.
+		buildLog := fmt.Sprintf("/tmp/cmdr-e2e-playwright-build-%d-%d.log", timestamp, os.Getpid())
 		appendToLogFile(buildLog, buildOutput)
 		return "", fmt.Errorf("tauri build failed (log: %s)\n%s", buildLog, indentOutput(buildOutput))
 	}

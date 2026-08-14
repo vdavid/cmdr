@@ -10,11 +10,17 @@ import (
 	"time"
 )
 
-// linuxE2EReportPath is where the Linux Docker run's Playwright JSON report
-// lands on the host: `apps/desktop/scripts/e2e-linux.sh` sets
-// CMDR_E2E_JSON_REPORT inside the container and bind-mounts the file through
-// to this path. Keep the two in sync.
-const linuxE2EReportPath = "/tmp/cmdr-e2e-report-linux.json"
+// linuxE2EReportPath is where this run's Playwright JSON report lands on the host.
+// `apps/desktop/scripts/e2e-linux.sh` takes the path from CMDR_E2E_HOST_JSON_REPORT,
+// truncates it, and bind-mounts it into the container as CMDR_E2E_JSON_REPORT.
+//
+// Run-scoped for the same reason the macOS shards' reports are: the report is what
+// the per-test log, the duration flagger, and the flake warning all read back, and a
+// fixed path lets a suite in another worktree answer those questions about a run it
+// never took part in.
+func linuxE2EReportPath(pid int) string {
+	return fmt.Sprintf("/tmp/cmdr-e2e-report-linux-%d.json", pid)
+}
 
 // RunDesktopE2ELinux runs Playwright E2E tests against the real Tauri app in Docker.
 func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
@@ -34,11 +40,15 @@ func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 	// before running; OrbStack will remount it automatically when next needed.
 	unmountOrbStackNFS()
 
+	sweepStaleE2EArtifacts(time.Now())
+
 	timestamp := time.Now().Unix()
 	logFile := fmt.Sprintf("/tmp/cmdr-e2e-linux-%d.log", timestamp)
+	reportPath := linuxE2EReportPath(os.Getpid())
 
 	cmd := exec.Command("pnpm", "test:e2e:linux")
 	cmd.Dir = filepath.Join(ctx.RootDir, "apps", "desktop")
+	cmd.Env = append(os.Environ(), "CMDR_E2E_HOST_JSON_REPORT="+reportPath)
 	runStart := time.Now()
 	output, err := RunCommand(cmd, true)
 
@@ -46,7 +56,7 @@ func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 	appendToLogFile(logFile, output)
 
 	// Before the verdict, so a red run records WHICH specs went red (`test-log.go`).
-	recordPlaywrightTests(ctx, []string{linuxE2EReportPath}, runStart)
+	recordPlaywrightTests(ctx, []string{reportPath}, runStart)
 
 	if err != nil {
 		summary := extractE2ETestOutput(output)
@@ -62,10 +72,10 @@ func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 		result = Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests")))
 	}
 	// Warn-only duration flagging from the JSON report the run just wrote.
-	result = applyE2EDurationWarnings(ctx, result, []string{linuxE2EReportPath}, "linux")
+	result = applyE2EDurationWarnings(ctx, result, []string{reportPath}, "linux")
 	// This lane runs with `CI=true`, so `retries: 1` is live here: a rescued spec would
 	// otherwise be reported as a clean pass. See `e2e-flaky.go`.
-	return applyE2EFlakyWarning(result, []string{linuxE2EReportPath}), nil
+	return applyE2EFlakyWarning(result, []string{reportPath}), nil
 }
 
 // unmountOrbStackNFS unmounts OrbStack's reverse NFS mount (~/OrbStack) if present.

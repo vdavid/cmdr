@@ -241,10 +241,9 @@ its own isolated `CMDR_DATA_DIR` with its own Unix socket and MCP port (asked of
 `e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`). The instance ID drives the macOS Keychain
 `SERVICE_NAME` suffix (`Cmdr-e2e-<short>-<pid>`) so two parallel shards can never collide on credentials, and reshapes
 the Dock label into `Cmdr (E2E <short>)` so cleanup scripts can target with `pgrep -f 'Cmdr (E2E '`. One shard is
-dedicated to MTP specs (serialized; the virtual MTP backing dir at `/tmp/cmdr-mtp-e2e-fixtures` is shared by every Tauri
-instance). Stale processes on each port are killed before starting. Per-shard logs go to
-`/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`. See `docs/tooling/instance-isolation.md` § "How E2E gets isolated
-per shard".
+dedicated to MTP specs (serialized; the run's virtual MTP backing dir at `/tmp/cmdr-mtp-e2e-fixtures-<pid>` is shared by
+every Tauri instance in that run). Per-shard logs go to `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>-<pid>.log`, and a
+week-old leftover is swept at lane start. See `docs/tooling/instance-isolation.md` § "How E2E gets isolated per shard".
 
 `RUST_LOG` is forwarded to the app (via inherited `os.Environ()`), so trace-level output is one shell-prefix away:
 
@@ -310,10 +309,10 @@ lane a record came from), each lane calls `ctx.RecordTests(...)` BEFORE its pass
 no failure, no note. The contention re-run (`checks/rust-test-contention.go`) is deliberately NOT recorded either, or a
 starved test would look like it ran twice as often as it did.
 
-**And it never invents a result.** The Playwright report paths are fixed (`/tmp/cmdr-e2e-report-<shard>.json`), so a run
-that dies before writing one leaves the previous run's file sitting there; `recordPlaywrightTests` skips any report
-older than the moment this run's Playwright started. The duration flagger needs no such guard, since it only runs on the
-success path.
+**And it never invents a result.** Report paths are run-scoped (`/tmp/cmdr-e2e-report-<shard>-<pid>.json`), so no
+concurrent suite can answer for this run; `recordPlaywrightTests` additionally skips any report older than the moment
+this run's Playwright started, which covers a recycled pid landing on a leftover the sweep hasn't collected. The
+duration flagger needs no such guard, since it only runs on the success path.
 
 **Disabled by `--no-log` and `--ci`**, like the check-level log, so CI runners don't write a log nobody reads.
 

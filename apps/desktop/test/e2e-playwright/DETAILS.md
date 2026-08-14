@@ -44,9 +44,10 @@ matches `playwright.config.ts`'s `/mtp(-[a-z-]+)?\.spec\.ts$/`) plus 2 non-MTP l
 `--shard X/2`. Each shard gets its own Tauri instance with a distinct `CMDR_DATA_DIR`, MCP port (asked of the OS per
 run), Unix socket path, and `CMDR_INSTANCE_ID` of the form `e2e-<short>-<pid>` (`e2e-mtp-12345`, `e2e-nonmtp1-12345`).
 The instance ID drives the macOS Keychain `SERVICE_NAME` suffix so two parallel shards can never collide on credentials,
-and reshapes the Dock label to `Cmdr (E2E <short>)` for easy `pgrep` cleanup. The MTP shard runs alone because the
-virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures`) is shared by every Tauri instance. Running MTP specs from two
-shards at once would corrupt it. Per-shard logs go to `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`.
+and reshapes the Dock label to `Cmdr (E2E <short>)` for easy `pgrep` cleanup. The MTP shard runs alone because the run's
+virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures-<pid>`, handed to the app as `CMDR_VIRTUAL_MTP` and to the specs as
+`CMDR_MTP_FIXTURE_ROOT`) is shared by every Tauri instance in the run. Running MTP specs from two shards at once would
+corrupt it. Per-shard logs go to `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>-<pid>.log`.
 
 The socket path is overridable via the `CMDR_PLAYWRIGHT_SOCKET` env var (read in `src-tauri/src/lib.rs` and passed to
 `tauri_plugin_playwright::init_with_config`). When unset, the plugin falls back to `/tmp/tauri-playwright.sock` so
@@ -164,10 +165,11 @@ MCP port (fixed since; `scripts/check/checks/DETAILS.md` § "Nothing a shard own
 `pkill -f 'target.*Cmdr'` reaches every shard of a running checker suite just as well. The hand-launch recipe above
 kills a recorded pid for exactly this reason.
 
-Two `/tmp` paths still belong to a shard NAME rather than a run, so a concurrent suite overwrites them: the fixture
-hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`) and the JSON report (`/tmp/cmdr-e2e-report-<shard>.json`). Recordings
-and error contexts are run-scoped (`/tmp/cmdr-e2e-results-<shard>-<pid>/`), so a post-mortem reads the pictures of the
-run it's investigating — check the pid against the failing run's log before trusting a frame.
+Every `/tmp` path a run writes carries its pid, so a post-mortem reads the evidence of the run it's investigating:
+recordings and error contexts (`/tmp/cmdr-e2e-results-<shard>-<pid>/`), the JSON report
+(`/tmp/cmdr-e2e-report-<shard>-<pid>.json`), and the shard log. Match the pid against the failing run's log before
+trusting a frame. The one shared path left is the fixture hardlink cache (`/tmp/cmdr-e2e-fixtures-cache/`), which is
+content-addressed and atomically built, so sharing it is the point.
 
 ## Running on Linux (Docker)
 

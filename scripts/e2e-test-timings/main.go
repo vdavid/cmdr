@@ -1,11 +1,17 @@
 // Command e2e-test-timings reads Playwright JSON reports from one or more E2E
 // runs (macOS and/or Linux) and emits a per-test timing comparison.
 //
-// macOS sharded run produces three JSON files at /tmp/cmdr-e2e-report-{mtp,
-// nonmtp1,nonmtp2}.json (set by scripts/check/checks/desktop-svelte-e2e-playwright.go's
-// planShards). The Linux docker run produces /tmp/cmdr-e2e-report-linux.json
-// (set by apps/desktop/scripts/e2e-linux.sh). Both follow Playwright's standard
-// JSON reporter shape.
+// A macOS sharded run produces three JSON files at /tmp/cmdr-e2e-report-{mtp,
+// nonmtp1,nonmtp2}-<pid>.json (set by
+// scripts/check/checks/desktop-svelte-e2e-playwright.go's planShards); the Linux
+// docker run produces /tmp/cmdr-e2e-report-linux-<pid>.json (set by
+// apps/desktop/scripts/e2e-linux.sh). Both follow Playwright's standard JSON
+// reporter shape.
+//
+// The pid is what keeps two concurrent suites from overwriting each other's
+// evidence, so the default paths are globs and each resolves to its NEWEST match:
+// "the run I just did" without anyone having to know its pid. Pass --macos /
+// --linux explicit paths to compare an older pair.
 //
 // The comparison joins macOS shards' tests on `{spec}::{describe chain}::{title}`
 // and matches them against the Linux run. Output is a markdown or CSV table
@@ -21,6 +27,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 // playwrightReport is the relevant subset of Playwright's JSON reporter
@@ -68,10 +75,10 @@ func (r row) ratio() float64 {
 }
 
 func main() {
-	macPaths := flag.String("macos", "/tmp/cmdr-e2e-report-mtp.json,/tmp/cmdr-e2e-report-nonmtp1.json,/tmp/cmdr-e2e-report-nonmtp2.json",
-		"comma-separated macOS report paths")
-	linuxPath := flag.String("linux", "/tmp/cmdr-e2e-report-linux.json",
-		"Linux report path")
+	macPaths := flag.String("macos", "/tmp/cmdr-e2e-report-mtp-*.json,/tmp/cmdr-e2e-report-nonmtp1-*.json,/tmp/cmdr-e2e-report-nonmtp2-*.json",
+		"comma-separated macOS report paths or globs (a glob takes its newest match)")
+	linuxPath := flag.String("linux", "/tmp/cmdr-e2e-report-linux-*.json",
+		"Linux report path or glob (a glob takes its newest match)")
 	sortBy := flag.String("sort", "ratio", "sort by: ratio | linux | macos | delta")
 	top := flag.Int("top", 0, "show only the top N rows (0 = all)")
 	format := flag.String("format", "md", "output format: md | csv")
@@ -86,12 +93,20 @@ func main() {
 		if p == "" {
 			continue
 		}
-		if err := loadInto(rows, p, true); err != nil {
+		resolved, err := newestMatch(p)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warn: %v\n", err)
+			continue
+		}
+		if err := loadInto(rows, resolved, true); err != nil {
 			fmt.Fprintf(os.Stderr, "warn: %v\n", err)
 		}
 	}
 	if *linuxPath != "" {
-		if err := loadInto(rows, *linuxPath, false); err != nil {
+		resolved, err := newestMatch(*linuxPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warn: %v\n", err)
+		} else if err := loadInto(rows, resolved, false); err != nil {
 			fmt.Fprintf(os.Stderr, "warn: %v\n", err)
 		}
 	}
@@ -119,6 +134,33 @@ func main() {
 	default:
 		emitMarkdown(list)
 	}
+}
+
+// newestMatch resolves one --macos / --linux entry to a single report file. A plain
+// path passes through untouched (so an explicit older report still works); a glob
+// resolves to its most recently modified match, which is the run that just finished.
+func newestMatch(pattern string) (string, error) {
+	if !strings.ContainsAny(pattern, "*?[") {
+		return pattern, nil
+	}
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return "", fmt.Errorf("bad pattern %q: %w", pattern, err)
+	}
+	newest, newestMod := "", time.Time{}
+	for _, m := range matches {
+		info, err := os.Stat(m)
+		if err != nil || info.IsDir() {
+			continue
+		}
+		if newest == "" || info.ModTime().After(newestMod) {
+			newest, newestMod = m, info.ModTime()
+		}
+	}
+	if newest == "" {
+		return "", fmt.Errorf("no report matches %q", pattern)
+	}
+	return newest, nil
 }
 
 // loadInto parses a Playwright JSON report and merges per-test rows into the

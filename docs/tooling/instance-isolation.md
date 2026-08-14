@@ -227,13 +227,16 @@ shards: one MTP shard (serialized) plus two non-MTP shards split by `--shard X/2
 - `CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures-<instance>-<ts>/` (created with hardlinks from the shared cache).
 - `CMDR_E2E_MODE=1`, `CMDR_MOCK_FDA=granted`.
 
-Two concurrent `pnpm check desktop-e2e-playwright` runs from two worktrees never collide on data dir, ports, sockets,
-fixture roots, Keychain, or processes (the Dock label `Cmdr (E2E <kind>)` lets `pgrep -f 'Cmdr (E2E '` target only the
-right ones).
+- `CMDR_VIRTUAL_MTP=/tmp/cmdr-mtp-e2e-fixtures-<pid>/` on the MTP shard, and `CMDR_MTP_FIXTURE_ROOT` (the same path) on
+  every shard's Playwright process, so the app and the specs agree on where the backing dir is.
 
-The MTP shard always runs alone because the virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures/`) is shared by every
-Tauri instance (the virtual device is wired into the same path globally). Running MTP specs from two shards at once
-would corrupt that backing dir.
+Two concurrent `pnpm check desktop-e2e-playwright` runs from two worktrees never collide on data dir, ports, sockets,
+fixture roots, Keychain, processes (the Dock label `Cmdr (E2E <kind>)` lets `pgrep -f 'Cmdr (E2E '` target only the
+right ones), MTP backing dir, JSON reports, recordings, or logs. The one thing they DO share is the fixture hardlink
+cache, which is content-addressed and atomically built.
+
+The MTP shard always runs alone because the run's virtual MTP backing dir is shared by every Tauri instance IN THAT RUN.
+Running MTP specs from two shards at once would corrupt it.
 
 ## Debug recipes
 
@@ -284,6 +287,14 @@ fixed at the same time).
 | `/tmp/cmdr-e2e-fixtures-<instance>-<ts>/`                | Node         | per-run                                            | per-shard fixture root                                                          |
 | `/tmp/cmdr-e2e-data-<instance>/`                         | Go checker   | per-run                                            | per-shard data dir                                                              |
 | `/tmp/tauri-playwright-<instance>.sock`                  | Tauri plugin | per-run                                            | per-shard Playwright IPC socket                                                 |
+| `/tmp/cmdr-mtp-e2e-fixtures-<pid>/`                      | Go checker   | per-run                                            | the run's virtual MTP backing dir                                               |
+| `/tmp/cmdr-e2e-report-<shard>-<pid>.json`                | Playwright   | swept after a week                                 | the run's per-test evidence (per-test log, durations, flakes)                    |
+| `/tmp/cmdr-e2e-results-<shard>-<pid>/`                   | Playwright   | swept after a week                                 | the run's recordings and error contexts                                         |
+| `/tmp/cmdr-e2e-playwright-<shard>-<ts>-<pid>.log`        | Go checker   | swept after a week                                 | the run's per-shard app + test log                                              |
+
+The last three deliberately outlive their run: they're what a post-mortem reads. `sweepStaleE2EArtifacts`
+(`scripts/check/checks/e2e-tmp-sweep.go`) collects them at the start of the next E2E lane once they're a week old, which
+is also why the patterns there never match `cmdr-e2e-fixtures-cache` or a hand-made `cmdr-e2e-data-<name>`.
 
 ## Precedence rules
 
@@ -340,6 +351,9 @@ of the per-resource derivation paths. Future regressions are caught by re-runnin
      `/tmp/cmdr-e2e-fixtures-cache/`.
    - `ls /tmp/cmdr-e2e-data-*` shows distinct data dirs per shard.
    - `ls /tmp/tauri-playwright-*.sock` shows distinct sockets per shard.
+   - `ls -d /tmp/cmdr-mtp-e2e-fixtures-*` shows one backing dir per RUN (not per shard, and not one shared).
+   - `ls /tmp/cmdr-e2e-report-*.json /tmp/cmdr-e2e-playwright-*.log`: every name ends in a pid, and the two runs' pids
+     differ.
    - `lsof -i -P | grep Cmdr | grep LISTEN`: every line bound to `127.0.0.1`, distinct ports per shard.
    - `pgrep -fl 'Cmdr (E2E '`: process labels are distinct per shard.
 4. Open TextEdit before starting the runs with some content in your real clipboard. After both runs finish, `pbpaste`

@@ -17,9 +17,13 @@ import (
 
 // Parallel sharding: one Tauri instance per shard, plus a sequential MTP shard.
 // Each shard owns its own Unix socket, MCP port, data dir, and fixture dir so
-// the instances don't clobber each other. The MTP shard runs alone because
-// the virtual MTP backing dir (/tmp/cmdr-mtp-e2e-fixtures) is shared by every
-// Tauri instance; running MTP tests in two shards at once would corrupt it.
+// the instances don't clobber each other. The MTP shard runs alone because the
+// run's virtual MTP backing dir is shared by every Tauri instance IN THE RUN;
+// running MTP tests in two shards at once would corrupt it.
+//
+// Everything a run owns carries its pid, so two suites (two worktrees checking at
+// once, which is the normal case) never touch the same path. `checks/DETAILS.md`
+// § "Nothing a shard owns is shared between runs" is the canonical list.
 const (
 	socketTimeout    = 60 * time.Second
 	processKillGrace = 3 * time.Second
@@ -51,6 +55,9 @@ type shardSpec struct {
 	// contexts. Run-scoped, so a concurrent suite can't overwrite the evidence of
 	// a failure while someone is reading it.
 	outputDir string
+	// mtpFixtureRoot backs the virtual MTP device. One per RUN, not per shard: the
+	// MTP shard wipes and recreates it while the others are told to leave it alone.
+	mtpFixtureRoot string
 	// For non-mtp shards, Playwright's --shard arg ("1/2", "2/2"). Empty for mtp.
 	playwrightShard string
 }
@@ -91,6 +98,14 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 	shards := planShards(desktopDir, timestamp, pid, mcpPorts)
+
+	// Deferred first, so it runs LAST: the apps have to be stopped before their
+	// backing dir goes. The data dirs and fixture trees clean themselves up the
+	// same way; the reports and logs deliberately survive for post-mortems and are
+	// aged out by sweepStaleE2EArtifacts instead.
+	defer os.RemoveAll(shards[0].mtpFixtureRoot)
+
+	sweepStaleE2EArtifacts(time.Now())
 
 	cleanupFixtures, err := allocateShardFixtures(desktopDir, shards)
 	if err != nil {
@@ -260,6 +275,17 @@ func reserveMcpPorts(count int) ([]int, error) {
 	return ports, nil
 }
 
+// mtpFixtureRootForRun is the backing directory for this run's virtual MTP device.
+//
+// Run-scoped, because the MTP shard WIPES it at startup and between tests. Shared,
+// a suite starting while another is mid-MTP-spec deletes the tree that spec is
+// asserting against, and the victim reports a missing file it created itself.
+// `mtp-fixtures.ts` reads the same path out of `CMDR_MTP_FIXTURE_ROOT`, and the app
+// out of `CMDR_VIRTUAL_MTP`; the prefix is what that helper's delete guard allows.
+func mtpFixtureRootForRun(pid int) string {
+	return fmt.Sprintf("/tmp/cmdr-mtp-e2e-fixtures-%d", pid)
+}
+
 // planShards builds the per-shard plan. Shard 0 is the MTP lane; shards
 // 1..N are the non-MTP lanes, split by Playwright's --shard X/N.
 //
@@ -267,31 +293,40 @@ func reserveMcpPorts(count int) ([]int, error) {
 func planShards(_ string, timestamp int64, pid int, mcpPorts []int) []shardSpec {
 	shards := make([]shardSpec, 0, nonMtpShards+1)
 
+	// Everything below carries the pid. The timestamp alone doesn't scope a path:
+	// two suites can start in the same second, and `os.Create` on a log truncates
+	// whatever the other run was writing to.
 	mkLog := func(name string) string {
-		return fmt.Sprintf("/tmp/cmdr-e2e-playwright-%s-%d.log", name, timestamp)
+		return fmt.Sprintf("/tmp/cmdr-e2e-playwright-%s-%d-%d.log", name, timestamp, pid)
 	}
+	// The report is the run's evidence: `e2e-test-log.go` turns it into the per-test
+	// log, `e2e-durations.go` flags slow specs from it, and `e2e-flaky.go` counts
+	// retry-passes out of it. A fixed path let a concurrent suite answer all three
+	// questions about a run it never took part in. Readers take the path from here,
+	// and `scripts/e2e-test-timings` picks the newest match.
 	mkJSON := func(name string) string {
-		return fmt.Sprintf("/tmp/cmdr-e2e-report-%s.json", name)
+		return fmt.Sprintf("/tmp/cmdr-e2e-report-%s-%d.json", name, pid)
 	}
-	// Run-scoped, unlike the JSON report: `scripts/e2e-test-timings` and
-	// `e2e-test-log.go` both read the report back from its fixed path, while
-	// nothing but a person reads the recordings — and a concurrent suite
-	// overwriting them takes away the only picture of what a failure looked like.
+	// Playwright's recordings and error contexts: the only picture of what a failure
+	// looked like, and a concurrent suite overwriting them takes it away.
 	mkOutputDir := func(name string) string {
 		return fmt.Sprintf("/tmp/cmdr-e2e-results-%s-%d", name, pid)
 	}
 
+	mtpRoot := mtpFixtureRootForRun(pid)
+
 	// MTP shard (sequential lane)
 	shards = append(shards, shardSpec{
-		name:       "mtp",
-		kind:       "mtp",
-		instanceID: shardInstanceID("mtp", pid),
-		socketPath: fmt.Sprintf("/tmp/tauri-playwright-mtp-%d.sock", pid),
-		mcpPort:    mcpPorts[0],
-		dataDir:    fmt.Sprintf("/tmp/cmdr-e2e-data-mtp-%d", pid),
-		logFile:    mkLog("mtp"),
-		jsonReport: mkJSON("mtp"),
-		outputDir:  mkOutputDir("mtp"),
+		name:           "mtp",
+		kind:           "mtp",
+		instanceID:     shardInstanceID("mtp", pid),
+		socketPath:     fmt.Sprintf("/tmp/tauri-playwright-mtp-%d.sock", pid),
+		mcpPort:        mcpPorts[0],
+		dataDir:        fmt.Sprintf("/tmp/cmdr-e2e-data-mtp-%d", pid),
+		logFile:        mkLog("mtp"),
+		jsonReport:     mkJSON("mtp"),
+		outputDir:      mkOutputDir("mtp"),
+		mtpFixtureRoot: mtpRoot,
 	})
 
 	// Non-MTP shards
@@ -308,6 +343,7 @@ func planShards(_ string, timestamp int64, pid int, mcpPorts []int) []shardSpec 
 			logFile:         mkLog(shortName),
 			jsonReport:      mkJSON(shortName),
 			outputDir:       mkOutputDir(name),
+			mtpFixtureRoot:  mtpRoot,
 			playwrightShard: fmt.Sprintf("%d/%d", i, nonMtpShards),
 		})
 	}
@@ -360,8 +396,11 @@ func runShard(desktopDir string, s shardSpec) shardResult {
 		"CMDR_E2E_SHARD_KIND="+s.kind,
 		"CMDR_E2E_JSON_REPORT="+s.jsonReport,
 		"CMDR_E2E_OUTPUT_DIR="+s.outputDir,
+		// The MTP specs assert against the backing dir directly (mtp-fixtures.ts),
+		// so the Playwright process has to agree with the app about where it is.
+		"CMDR_MTP_FIXTURE_ROOT="+s.mtpFixtureRoot,
 	)
-	// Only the MTP shard is allowed to wipe the shared virtual MTP backing
+	// Only the MTP shard is allowed to wipe this run's virtual MTP backing
 	// directory in globalSetup. The non-MTP shards must skip it to avoid
 	// stomping on the MTP shard's mid-run state.
 	if s.kind != "mtp" {
@@ -476,11 +515,14 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		// floor rather than an average: 30 levels can't finish in under three seconds.
 		"CMDR_E2E_WALK_THROTTLE_MS=100",
 	)
-	// Only the MTP shard registers the virtual MTP device. Non-MTP shards skip
-	// the startup wipe-and-recreate of the shared backing dir
-	// (/tmp/cmdr-mtp-e2e-fixtures), which would otherwise race with the MTP
-	// shard's setup and corrupt its in-memory device state.
-	if s.kind != "mtp" {
+	// Only the MTP shard registers the virtual MTP device, at THIS run's backing
+	// dir. Non-MTP shards skip the startup wipe-and-recreate, which would
+	// otherwise race with the MTP shard's setup and corrupt its in-memory device
+	// state. A path value (rather than `1`) is what points the app away from the
+	// machine-wide default: see `virtual_device.rs::decide_startup_root`.
+	if s.kind == "mtp" {
+		cmd.Env = append(cmd.Env, "CMDR_VIRTUAL_MTP="+s.mtpFixtureRoot)
+	} else {
 		cmd.Env = append(cmd.Env, "CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP=1")
 	}
 	cmd.Stdout = lf

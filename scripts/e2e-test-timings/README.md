@@ -19,17 +19,21 @@ pnpm check --include-slow
 
 This produces, on the host:
 
-| Report                              | Source                                                      |
-| ----------------------------------- | ----------------------------------------------------------- |
-| `/tmp/cmdr-e2e-report-mtp.json`     | macOS playwright check, MTP shard                           |
-| `/tmp/cmdr-e2e-report-nonmtp1.json` | macOS playwright check, non-MTP shard 1                     |
-| `/tmp/cmdr-e2e-report-nonmtp2.json` | macOS playwright check, non-MTP shard 2                     |
-| `/tmp/cmdr-e2e-report-linux.json`   | Linux docker check (bind-mounted from inside the container) |
+| Report                                    | Source                                                      |
+| ----------------------------------------- | ----------------------------------------------------------- |
+| `/tmp/cmdr-e2e-report-mtp-<pid>.json`     | macOS playwright check, MTP shard                           |
+| `/tmp/cmdr-e2e-report-nonmtp1-<pid>.json` | macOS playwright check, non-MTP shard 1                     |
+| `/tmp/cmdr-e2e-report-nonmtp2-<pid>.json` | macOS playwright check, non-MTP shard 2                     |
+| `/tmp/cmdr-e2e-report-linux-<pid>.json`   | Linux docker check (bind-mounted from inside the container) |
 
-The macOS paths are set by `scripts/check/checks/desktop-svelte-e2e-playwright.go`'s `planShards`. The Linux path is set
-by `apps/desktop/scripts/e2e-linux.sh` via `CMDR_E2E_JSON_REPORT` + a bind mount of the same path so the container's
-report writes through to the host. `playwright.config.ts`'s reporter declares both `list` (for the check's live output)
-and `json` (for this script) so a single suite run produces both.
+`<pid>` is the check runner's, so two suites running in different worktrees keep their evidence apart. The defaults
+below are globs and each resolves to its newest match, which is the run that just finished; name explicit paths to
+compare an older pair.
+
+The macOS paths are set by `scripts/check/checks/desktop-svelte-e2e-playwright.go`'s `planShards`. The Linux path comes
+from the Go check as `CMDR_E2E_HOST_JSON_REPORT`, which `apps/desktop/scripts/e2e-linux.sh` bind-mounts into the
+container as `CMDR_E2E_JSON_REPORT` so the report writes through to the host. `playwright.config.ts`'s reporter declares
+both `list` (for the check's live output) and `json` (for this script) so a single suite run produces both.
 
 ## Usage
 
@@ -46,8 +50,8 @@ disproportionately longer on Linux than macOS — the highest-payoff targets.
 
 | Flag             | Default                                                                                             | Effect                                                       |
 | ---------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `--macos`        | `/tmp/cmdr-e2e-report-mtp.json,/tmp/cmdr-e2e-report-nonmtp1.json,/tmp/cmdr-e2e-report-nonmtp2.json` | Comma-separated macOS report paths                           |
-| `--linux`        | `/tmp/cmdr-e2e-report-linux.json`                                                                   | Linux report path                                            |
+| `--macos`        | `/tmp/cmdr-e2e-report-mtp-*.json,/tmp/cmdr-e2e-report-nonmtp1-*.json,/tmp/cmdr-e2e-report-nonmtp2-*.json` | Comma-separated macOS report paths or globs (newest match) |
+| `--linux`        | `/tmp/cmdr-e2e-report-linux-*.json`                                                                 | Linux report path or glob (newest match)                     |
 | `--sort`         | `ratio`                                                                                             | `ratio` (linux/macos), `linux`, `macos`, or `delta` (ms)     |
 | `--top`          | `0`                                                                                                 | Show only the top N rows (0 = all)                           |
 | `--min-linux-ms` | `0`                                                                                                 | Hide tests faster than this on Linux (filter the cheap tail) |

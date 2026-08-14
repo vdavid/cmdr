@@ -91,11 +91,12 @@ func collectSuiteRecords(s e2eJSONSuite, file string, describe []string, out *[]
 // exit status, and instrumentation must never colour it.
 //
 // `runStart` is when this run's Playwright processes were launched, and a report
-// older than that is the PREVIOUS run's. The paths are fixed (`/tmp/cmdr-e2e-report-<shard>.json`),
-// so a run that dies before writing one leaves yesterday's file sitting there,
-// and recording it would invent a green result under today's timestamp. The
-// duration flagger needs no such guard: it only runs on the success path, where
-// the report was definitely just written.
+// older than that is not this run's. Report paths are run-scoped
+// (`/tmp/cmdr-e2e-report-<shard>-<pid>.json`), so this is the second lock on the
+// same door: it also catches the day a recycled pid lands on a week-old report that
+// the sweep hasn't collected, where recording it would invent a green result under
+// today's timestamp. The duration flagger needs no such guard: it only runs on the
+// success path, where the report was definitely just written.
 func recordPlaywrightTests(ctx *CheckContext, reportPaths []string, runStart time.Time) {
 	var records []TestRecord
 	for _, path := range reportPaths {

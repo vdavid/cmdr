@@ -6,7 +6,8 @@
  * full Cmdr stack: UI → Tauri IPC → MTP Volume trait → virtual device.
  *
  * Requires the app to be built with `--features playwright-e2e,virtual-mtp`.
- * The virtual device uses a backing directory at /tmp/cmdr-mtp-e2e-fixtures/.
+ * The virtual device's backing directory is `MTP_FIXTURE_ROOT` (run-scoped under
+ * /tmp/cmdr-mtp-e2e-fixtures-<pid>/ when the checker launches the suite).
  */
 
 import fs from 'fs'
