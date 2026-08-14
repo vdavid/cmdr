@@ -639,10 +639,18 @@ export const commands = {
   /**
    *  Pauses every currently-running operation. Backs the queue window's global
    *  "Pause all".
+   *
+   *  Returns the per-outcome counts for the whole sweep, so a caller never has to
+   *  assume it worked. An empty running set and three parked copies are different
+   *  answers.
    */
-  pauseAll: () => __TAURI_INVOKE<void>('pause_all'),
-  // Resumes every currently-paused operation. Backs "Resume all".
-  resumeAll: () => __TAURI_INVOKE<void>('resume_all'),
+  pauseAll: () => __TAURI_INVOKE<PauseAllOutcome>('pause_all'),
+  /**
+   *  Resumes every currently-paused operation. Backs "Resume all".
+   *
+   *  Returns the sweep's counts, like [`pause_all`].
+   */
+  resumeAll: () => __TAURI_INVOKE<PauseAllOutcome>('resume_all'),
   /**
    *  Drops one retained failure from the snapshot (the queue row's Dismiss, and
    *  the foreground error dialog's close path). Dismissal is always explicit: a
@@ -7139,6 +7147,34 @@ export type PathVolumeResolution = {
 }
 
 export type PatternType = 'glob' | 'regex'
+
+/**
+ *  What a whole `pause_all` / `resume_all` sweep did: one count per
+ *  [`PauseOutcome`] it collected. Shared by both directions, for the reason
+ *  `PauseOutcome` is.
+ *
+ *  A sweep touches several operations, so "it worked" isn't a thing it can
+ *  truthfully say. A caller that assumes one tells its user (or its agent) the
+ *  device is free when a scan is still running or the set was empty all along,
+ *  which is the whole reason the per-operation outcome exists.
+ */
+export type PauseAllOutcome = {
+  // Operations that flipped right now.
+  applied: number
+  /**
+   *  Operations still scanning, whose request is latched for the moment the
+   *  write starts.
+   */
+  deferred: number
+  // Operations already sitting where the caller wants them.
+  alreadyInState: number
+  /**
+   *  Operations the sweep couldn't touch. From a sweep this is the settle
+   *  race alone: the snapshot named them, and they finished before the call
+   *  landed.
+   */
+  notApplicable: number
+}
 
 /**
  *  What a pause or resume request actually did, so every caller can say so

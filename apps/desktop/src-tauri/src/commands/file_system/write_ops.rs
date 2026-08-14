@@ -7,8 +7,8 @@ use crate::file_system::write_operations::{
     resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
 };
 use crate::file_system::{
-    OperationEventSink, OperationSnapshot, OperationStatus, OperationSummary, PauseOutcome, SortColumn, SortOrder,
-    TauriEventSink, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
+    OperationEventSink, OperationSnapshot, OperationStatus, OperationSummary, PauseAllOutcome, PauseOutcome,
+    SortColumn, SortOrder, TauriEventSink, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
     cancel_all_write_operations as ops_cancel_all_write_operations, cancel_operation as ops_cancel_operation,
     cancel_operations as ops_cancel_operations, cancel_write_operation as ops_cancel_write_operation,
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
@@ -437,17 +437,23 @@ pub fn resume_operation(operation_id: String) -> PauseOutcome {
 
 /// Pauses every currently-running operation. Backs the queue window's global
 /// "Pause all".
+///
+/// Returns the per-outcome counts for the whole sweep, so a caller never has to
+/// assume it worked. An empty running set and three parked copies are different
+/// answers.
 #[tauri::command]
 #[specta::specta]
-pub fn pause_all() {
-    ops_pause_all();
+pub fn pause_all() -> PauseAllOutcome {
+    ops_pause_all()
 }
 
 /// Resumes every currently-paused operation. Backs "Resume all".
+///
+/// Returns the sweep's counts, like [`pause_all`].
 #[tauri::command]
 #[specta::specta]
-pub fn resume_all() {
-    ops_resume_all();
+pub fn resume_all() -> PauseAllOutcome {
+    ops_resume_all()
 }
 
 /// Drops one retained failure from the snapshot (the queue row's Dismiss, and

@@ -127,6 +127,61 @@ pub enum PauseOutcome {
     NotApplicable,
 }
 
+/// What a whole `pause_all` / `resume_all` sweep did: one count per
+/// [`PauseOutcome`] it collected. Shared by both directions, for the reason
+/// `PauseOutcome` is.
+///
+/// A sweep touches several operations, so "it worked" isn't a thing it can
+/// truthfully say. A caller that assumes one tells its user (or its agent) the
+/// device is free when a scan is still running or the set was empty all along,
+/// which is the whole reason the per-operation outcome exists.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct PauseAllOutcome {
+    /// Operations that flipped right now.
+    pub applied: usize,
+    /// Operations still scanning, whose request is latched for the moment the
+    /// write starts.
+    pub deferred: usize,
+    /// Operations already sitting where the caller wants them.
+    pub already_in_state: usize,
+    /// Operations the sweep couldn't touch. From a sweep this is the settle
+    /// race alone: the snapshot named them, and they finished before the call
+    /// landed.
+    pub not_applicable: usize,
+}
+
+impl PauseAllOutcome {
+    /// How many operations the sweep asked about.
+    pub fn total(self) -> usize {
+        self.applied + self.deferred + self.already_in_state + self.not_applicable
+    }
+
+    /// Whether the caller's intent now holds for at least one operation, either
+    /// right now (`Applied`) or at the first byte written (`Deferred`).
+    pub fn took_effect_anywhere(self) -> bool {
+        self.applied + self.deferred > 0
+    }
+}
+
+/// Folding the per-operation outcomes into the sweep's answer. Keeping the
+/// aggregation here (rather than inline in the loop) is what makes it testable
+/// without touching the process-global manager.
+impl FromIterator<PauseOutcome> for PauseAllOutcome {
+    fn from_iter<I: IntoIterator<Item = PauseOutcome>>(outcomes: I) -> Self {
+        let mut totals = Self::default();
+        for outcome in outcomes {
+            match outcome {
+                PauseOutcome::Applied => totals.applied += 1,
+                PauseOutcome::Deferred => totals.deferred += 1,
+                PauseOutcome::AlreadyInState => totals.already_in_state += 1,
+                PauseOutcome::NotApplicable => totals.not_applicable += 1,
+            }
+        }
+        totals
+    }
+}
+
 /// What the manager needs to know about an op to register, schedule, and
 /// surface it. The deferred start is held separately so the descriptor stays
 /// cheaply cloneable for the `operations-changed` snapshot.
@@ -1120,17 +1175,19 @@ pub fn resume_operation(operation_id: &str) -> PauseOutcome {
 /// Pauses every currently-Running operation. Backs `pause_all` (the queue
 /// window's global Pause all). Snapshots the running set first so the iteration
 /// is stable.
-pub fn pause_all() {
-    for id in manager().running_ids() {
-        pause_operation(&id);
-    }
+///
+/// Reports the whole sweep as a [`PauseAllOutcome`], for the reason
+/// [`pause_operation`] reports its own: an empty running set, a scan still
+/// walking, and three parked copies are three different answers, and a caller
+/// that can't tell them apart says "paused" to all three.
+pub fn pause_all() -> PauseAllOutcome {
+    manager().running_ids().iter().map(|id| pause_operation(id)).collect()
 }
 
-/// Resumes every currently-Paused operation. Backs `resume_all` (Resume all).
-pub fn resume_all() {
-    for id in manager().paused_ids() {
-        resume_operation(&id);
-    }
+/// Resumes every currently-Paused operation. Backs `resume_all` (Resume all),
+/// and reports the sweep the way [`pause_all`] does.
+pub fn resume_all() -> PauseAllOutcome {
+    manager().paused_ids().iter().map(|id| resume_operation(id)).collect()
 }
 
 /// Drops one retained failure and re-broadcasts the snapshot. Backs

@@ -146,7 +146,11 @@ provider-egress question and `CONSENT_COPY_VERSION` are unchanged by this tier.
   that says the operation is still scanning and pauses the moment it starts writing, `AlreadyInState` is an OK for a
   repeated request (the intent holds, so a retrying agent isn't refused), and `NotApplicable` is a refusal —
   a QUEUED operation is the everyday case there, since pause deliberately leaves one alone, and "OK: Paused …" for it
-  would send the agent on believing the queue had stopped. Gate `IfRollback`: pause/resume/plain-cancel are `Open` (transient runtime actions on a
+  would send the agent on believing the queue had stopped. The SWEEPS answer the same way, from a `PauseAllOutcome`'s
+  counts (`pause_all_reply` / `resume_all_reply`, sharing one assembler so the two directions can't drift): an empty set
+  reads "Nothing to pause: no operation is running", a mixed sweep names how many flipped, how many are still scanning,
+  how many were already there, and how many finished before the request reached them. ❌ Never collapse a sweep to a
+  flat "OK: Paused every running operation" — that sentence is true of a sweep that touched nothing. Gate `IfRollback`: pause/resume/plain-cancel are `Open` (transient runtime actions on a
   crash-safe pipeline), but `rollback: true` deletes already-copied files, so it needs the token. Discover ids + status
   in `cmdr://state` `operations:`. `connect_to_server` (add a manual SMB server by address, checks TCP reachability), `remove_manual_server` (remove a manually-added server by host ID), `upgrade_smb_to_direct` (upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O; thin wrapper over the existing manual "Connect directly" Tauri command — tries Keychain creds, returns a typed result mirroring `UpgradeResult`)
 - Conflicts (1): `resolve_conflict` (`operationId` + `conflictId` + `resolution` = `skip` | `overwrite` | `rename` |

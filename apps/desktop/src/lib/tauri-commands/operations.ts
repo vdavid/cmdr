@@ -46,12 +46,14 @@ export async function resumeOperation(operationId: string): Promise<void> {
   await commands.resumeOperation(operationId)
 }
 
-/** Pause every running operation. */
+/** Pause every running operation. Its `PauseAllOutcome` counts are dropped for
+ *  the same reason `pauseOperation`'s single outcome is: the queue window renders
+ *  the live statuses. The MCP `queue` tool reads them. */
 export async function pauseAll(): Promise<void> {
   await commands.pauseAll()
 }
 
-/** Resume every paused operation. */
+/** Resume every paused operation. Its counts are dropped like `pauseAll`'s. */
 export async function resumeAll(): Promise<void> {
   await commands.resumeAll()
 }

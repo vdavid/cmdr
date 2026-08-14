@@ -556,6 +556,49 @@ async fn set_paused_is_noop_for_queued_or_absent_ops() {
     let _ = a_rel_tx.send(());
 }
 
+/// The sweep's answer is a FOLD of the per-operation outcomes, so it can be
+/// checked without running `pause_all()` — which, against a process-global
+/// manager, would park a sibling test's operation.
+#[test]
+fn a_sweep_counts_every_outcome_it_collected() {
+    let totals: PauseAllOutcome = [
+        PauseOutcome::Applied,
+        PauseOutcome::Deferred,
+        PauseOutcome::Applied,
+        PauseOutcome::AlreadyInState,
+        PauseOutcome::NotApplicable,
+    ]
+    .into_iter()
+    .collect();
+
+    assert_eq!(totals.applied, 2);
+    assert_eq!(totals.deferred, 1);
+    assert_eq!(totals.already_in_state, 1);
+    assert_eq!(totals.not_applicable, 1);
+    assert_eq!(totals.total(), 5);
+    assert!(totals.took_effect_anywhere());
+}
+
+#[test]
+fn a_sweep_over_nothing_is_distinguishable_from_one_that_worked() {
+    // The whole point: "no operation was running" must not read like "paused".
+    let empty: PauseAllOutcome = std::iter::empty().collect();
+    assert_eq!(empty, PauseAllOutcome::default());
+    assert_eq!(empty.total(), 0);
+    assert!(!empty.took_effect_anywhere());
+
+    // Nor may "they were all already paused", which changed nothing either.
+    let no_ops: PauseAllOutcome = [PauseOutcome::AlreadyInState, PauseOutcome::NotApplicable]
+        .into_iter()
+        .collect();
+    assert!(!no_ops.took_effect_anywhere());
+    assert_eq!(no_ops.total(), 2);
+
+    // A latched pause DID take effect, just not yet.
+    let latched: PauseAllOutcome = [PauseOutcome::Deferred].into_iter().collect();
+    assert!(latched.took_effect_anywhere());
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn single_op_with_free_lanes_behaves_like_immediate_spawn() {
     // The common case: nothing else running, the op spawns at once and settles

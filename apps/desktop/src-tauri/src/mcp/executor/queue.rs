@@ -17,9 +17,10 @@ use serde_json::{Value, json};
 use super::{ToolError, ToolResult};
 use crate::file_system::write_operations::LifecycleStatus;
 use crate::file_system::{
-    OperationSnapshot, PauseOutcome, cancel_operation, cancel_operations, cancel_write_operation, list_operations,
-    pause_all, pause_operation, resume_all, resume_operation,
+    OperationSnapshot, PauseAllOutcome, PauseOutcome, cancel_operation, cancel_operations, cancel_write_operation,
+    list_operations, pause_all, pause_operation, resume_all, resume_operation,
 };
+use crate::pluralize::pluralize;
 
 pub async fn execute_queue(params: &Value) -> ToolResult {
     let action = params
@@ -28,14 +29,8 @@ pub async fn execute_queue(params: &Value) -> ToolResult {
         .ok_or_else(|| ToolError::invalid_params("Missing 'action' parameter"))?;
 
     match action {
-        "pause_all" => {
-            pause_all();
-            Ok(json!("OK: Paused every running operation."))
-        }
-        "resume_all" => {
-            resume_all();
-            Ok(json!("OK: Resumed every paused operation."))
-        }
+        "pause_all" => Ok(json!(pause_all_reply(pause_all()))),
+        "resume_all" => Ok(json!(resume_all_reply(resume_all()))),
         "pause" => {
             let id = require_operation_id(params)?;
             require_operation_exists(&id)?;
@@ -75,6 +70,116 @@ fn pause_reply(operation_id: &str, outcome: PauseOutcome) -> ToolResult {
             "Operation {operation_id} isn't running, so there's nothing to pause: it's queued or already over. See cmdr://state operations for its current status."
         ))),
     }
+}
+
+/// The words that differ between the two sweeps. Everything else about the
+/// answer (which counts get said, and in what order) is shared, so the two can't
+/// drift into telling different stories about the same manager.
+struct SweepWords {
+    /// What the sweep did to the ones it flipped: "Paused" / "Resumed".
+    did: &'static str,
+    /// The request, as a noun: "pause" / "resume".
+    request: &'static str,
+    /// Why there was nothing to sweep at all.
+    nothing_there: &'static str,
+    /// What a latched request means, said in full.
+    still_scanning: &'static str,
+    /// The state an already-there operation was in: "paused" / "running".
+    already: &'static str,
+}
+
+const PAUSE_WORDS: SweepWords = SweepWords {
+    did: "Paused",
+    request: "pause",
+    nothing_there: "no operation is running",
+    still_scanning: "so the pause lands the moment writing starts",
+    already: "paused",
+};
+
+const RESUME_WORDS: SweepWords = SweepWords {
+    did: "Resumed",
+    request: "resume",
+    nothing_there: "no operation is paused",
+    still_scanning: "so nothing was parked; any pause waiting to take effect is now withdrawn",
+    already: "running",
+};
+
+/// The agent-facing answer to `pause_all`, from what the sweep actually did.
+///
+/// A sweep has no single verdict to report, so it reports the counts. "Nothing
+/// was running", "three parked", and "one is still scanning" are three different
+/// situations, and an agent told a flat "Paused every running operation" for all
+/// three goes on to act on a queue that may never have stopped.
+fn pause_all_reply(outcome: PauseAllOutcome) -> String {
+    sweep_reply(outcome, &PAUSE_WORDS)
+}
+
+/// The mirror of [`pause_all_reply`] for `resume_all`.
+fn resume_all_reply(outcome: PauseAllOutcome) -> String {
+    sweep_reply(outcome, &RESUME_WORDS)
+}
+
+fn sweep_reply(outcome: PauseAllOutcome, words: &SweepWords) -> String {
+    if outcome.total() == 0 {
+        return format!(
+            "OK: Nothing to {}: {}. See cmdr://state operations.",
+            words.request, words.nothing_there
+        );
+    }
+
+    let mut sentences: Vec<String> = Vec::new();
+    if outcome.applied > 0 {
+        sentences.push(format!(
+            "{} {}.",
+            words.did,
+            pluralize(outcome.applied as u64, "operation")
+        ));
+    }
+    if outcome.deferred > 0 {
+        sentences.push(format!(
+            "{} {} still scanning, {}.",
+            pluralize(outcome.deferred as u64, "operation"),
+            is_are(outcome.deferred),
+            words.still_scanning
+        ));
+    }
+    if outcome.already_in_state > 0 {
+        sentences.push(format!(
+            "{} {} already {}.",
+            pluralize(outcome.already_in_state as u64, "operation"),
+            was_were(outcome.already_in_state),
+            words.already
+        ));
+    }
+    if outcome.not_applicable > 0 {
+        sentences.push(format!(
+            "{} finished before the {} reached {}.",
+            pluralize(outcome.not_applicable as u64, "operation"),
+            words.request,
+            it_them(outcome.not_applicable)
+        ));
+    }
+
+    // Nothing flipped and nothing is latched: whatever the counts say, the queue
+    // is exactly where it was, and the answer has to open by saying so.
+    let opener = if outcome.took_effect_anywhere() {
+        String::new()
+    } else {
+        format!("Nothing to {}: ", words.request)
+    };
+    format!("OK: {opener}{}", sentences.join(" "))
+}
+
+fn is_are(count: usize) -> &'static str {
+    if count == 1 { "is" } else { "are" }
+}
+
+fn was_were(count: usize) -> &'static str {
+    if count == 1 { "was" } else { "were" }
+}
+
+fn it_them(count: usize) -> &'static str {
+    if count == 1 { "it" } else { "them" }
 }
 
 /// The mirror of [`pause_reply`] for resume. A resume during a scan withdraws a
@@ -118,7 +223,7 @@ fn execute_cancel(params: &Value) -> ToolResult {
             ));
         }
         cancel_operations(&ids);
-        let summary = crate::pluralize::pluralize(ids.len() as u64, "operation");
+        let summary = pluralize(ids.len() as u64, "operation");
         return Ok(json!(format!("OK: Cancelled {summary} (kept already-copied files).")));
     }
 
@@ -284,6 +389,90 @@ mod tests {
         let text = reply.as_str().expect("the reply is a string");
         assert!(text.contains("still scanning"), "got {text}");
         assert!(text.contains("starts writing"), "got {text}");
+    }
+
+    // ── The sweeps (`pause_all` / `resume_all`) ───────────────────────────────
+    //
+    // The sweep versions can't be driven end-to-end from a test: the manager is
+    // process-global, so a real `pause_all()` here would park a sibling test's
+    // operation. What IS testable is everything that decides the answer: the
+    // fold from per-operation outcomes into counts (`PauseAllOutcome`, tested in
+    // `write_operations/manager/tests.rs`) and the wording below.
+
+    /// The defect this closes: an empty sweep used to answer "OK: Paused every
+    /// running operation", and an agent acting on that believes the device went
+    /// quiet.
+    #[test]
+    fn a_sweep_that_touched_nothing_never_claims_it_paused_anything() {
+        let text = pause_all_reply(PauseAllOutcome::default());
+        assert!(!text.contains("Paused"), "got {text}");
+        assert!(text.contains("Nothing to pause"), "got {text}");
+
+        let text = resume_all_reply(PauseAllOutcome::default());
+        assert!(!text.contains("Resumed"), "got {text}");
+        assert!(text.contains("Nothing to resume"), "got {text}");
+    }
+
+    #[test]
+    fn a_sweep_counts_what_it_paused() {
+        let text = pause_all_reply(PauseAllOutcome {
+            applied: 3,
+            ..PauseAllOutcome::default()
+        });
+        assert!(text.contains("Paused 3 operations"), "got {text}");
+    }
+
+    /// A latched pause is the one an agent would otherwise misread: the
+    /// operation stays `Running` in `cmdr://state` until its scan ends.
+    #[test]
+    fn a_sweep_says_which_ones_are_still_scanning() {
+        let text = pause_all_reply(PauseAllOutcome {
+            applied: 1,
+            deferred: 2,
+            ..PauseAllOutcome::default()
+        });
+        assert!(text.contains("Paused 1 operation"), "got {text}");
+        assert!(text.contains("2 operations"), "got {text}");
+        assert!(text.contains("still scanning"), "got {text}");
+    }
+
+    /// A settle race is the only way a sweep meets `NotApplicable`, and saying
+    /// so beats a count the agent can't reconcile with `cmdr://state`.
+    #[test]
+    fn a_sweep_owns_up_to_the_ones_that_got_away() {
+        let text = pause_all_reply(PauseAllOutcome {
+            applied: 1,
+            not_applicable: 1,
+            ..PauseAllOutcome::default()
+        });
+        assert!(text.contains("finished"), "got {text}");
+    }
+
+    /// Every sweep reply names the intent that now holds, so nothing reads as a
+    /// bare "done" (`docs/style-guide.md`: no "error" / "failed" either).
+    #[test]
+    fn no_sweep_reply_uses_the_words_this_app_refuses() {
+        let shapes = [
+            PauseAllOutcome::default(),
+            PauseAllOutcome {
+                applied: 2,
+                deferred: 1,
+                already_in_state: 1,
+                not_applicable: 1,
+            },
+            PauseAllOutcome {
+                already_in_state: 4,
+                ..PauseAllOutcome::default()
+            },
+        ];
+        for shape in shapes {
+            for text in [pause_all_reply(shape), resume_all_reply(shape)] {
+                let lowered = text.to_lowercase();
+                assert!(!lowered.contains("error"), "got {text}");
+                assert!(!lowered.contains("failed"), "got {text}");
+                assert!(text.starts_with("OK: "), "got {text}");
+            }
+        }
     }
 
     #[test]

@@ -79,9 +79,9 @@ pub use write_operations::{
 // and `OperationsChanged` are reached directly via `write_operations::` (the IPC
 // event registration and snapshot field), so they don't need a re-export here.
 pub use write_operations::{
-    OperationSnapshot, PauseOutcome, cancel_operation, cancel_operations, dismiss_all_failed_operations,
-    dismiss_failed_operation, init_operation_event_emitter, list_operations, pause_all, pause_operation, resume_all,
-    resume_operation,
+    OperationSnapshot, PauseAllOutcome, PauseOutcome, cancel_operation, cancel_operations,
+    dismiss_all_failed_operations, dismiss_failed_operation, init_operation_event_emitter, list_operations, pause_all,
+    pause_operation, resume_all, resume_operation,
 };
 // Re-export volume copy types and functions
 /// Copy/move INTO a zip routing (the command layer routes an archive destination
