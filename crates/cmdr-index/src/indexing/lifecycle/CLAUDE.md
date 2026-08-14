@@ -26,6 +26,8 @@ bootstrap and ground-claiming rules in `cover/CLAUDE.md`; `freshness.rs`, `failu
   walked.
 - **`CoverOutcome::abandoned_ground` is independent of every other field**, so ❌ any caller reporting completeness must
   consult it.
+- **`start_scan` asks TWO single-flight questions**: `mgr.scanning` AND `cover::ground_being_walked`. A search walk sets
+  no flag, and truncating under one blanks rows it's still writing. ❌ Don't collapse them into one.
 - **A walk stops through the CALLER's token and flushes its writer before reporting**, cancel included.
 - **`IndexVolumeKind` is a capability model**: branch on the axis, not the variant. `has_event_journal()` gates journal
   replay, ❌ not `last_event_id.is_some()`.

@@ -131,6 +131,13 @@ impl ColdDrive {
             .is_some()
     }
 
+    /// The epoch the drive's rows are being written against. A truncating rescan
+    /// bumps it, so it reads as "something blanked this index" from outside.
+    fn current_epoch(&self) -> u64 {
+        let conn = IndexStore::open_read_connection(&self.db_path()).expect("read connection");
+        IndexStore::read_current_epoch(&conn).expect("current epoch")
+    }
+
     /// What the drive's own database says it walked, as stored (index-relative).
     fn persisted_branches(&self) -> Option<String> {
         let conn = IndexStore::open_read_connection(&self.db_path()).ok()?;
@@ -652,6 +659,54 @@ fn a_share_or_a_phone_walks_over_the_trait_and_never_locally() {
 }
 
 // ── One writer per database ──────────────────────────────────────────
+
+/// The other direction of the same rule, and the sharper one: a volume a walk is
+/// covering isn't TRUNCATED under it.
+///
+/// `start_scan`'s single-flight guard reads `mgr.scanning`, which a search-driven
+/// walk never sets — it holds a claim instead. Left there, a rescan through any
+/// door (the manual button, a journal-gap fallback, a coalesced shallow anchor)
+/// sends `TruncateData` + `BumpCurrentEpoch` while the walk is still writing:
+/// the walk's rows land in a database that was blanked underneath them, and
+/// everything it attributed to an id the truncate dropped is orphaned.
+#[test]
+fn a_truncating_rescan_refuses_while_a_search_cover_walk_is_live() {
+    let drive = ColdDrive::new("cover-truncate-guard-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    std::fs::write(drive.tree.path().join("scope/found.txt"), "x").expect("file");
+    let scope = drive.path("scope");
+
+    drive.cover(&scope);
+    assert!(
+        drive.is_indexed(&drive.path("scope/found.txt")),
+        "precondition: the walk's rows are in"
+    );
+    let epoch = drive.current_epoch();
+
+    // The hold a walk keeps for as long as it runs, taken directly so the window
+    // is deterministic rather than a race against a walk of two files.
+    let walking = Claim::take(drive.volume_id, vec![scope.clone()]);
+
+    assert!(
+        crate::indexing::lifecycle::state::force_scan(drive.volume_id).is_err(),
+        "a rescan refuses while a walk holds ground on the volume"
+    );
+    assert_eq!(
+        drive.scans_started(),
+        0,
+        "so no scan announced itself, which is also where the truncate would have been sent from"
+    );
+    assert_eq!(
+        drive.current_epoch(),
+        epoch,
+        "and the epoch the walk's rows carry is untouched: a bump under a live walk renders \
+         everything it just wrote as stale"
+    );
+
+    drop(walking);
+    crate::indexing::lifecycle::state::force_scan(drive.volume_id)
+        .expect("and the moment the walk ends the rescan runs");
+}
 
 /// A volume whose own full scan is running isn't walked at all.
 ///

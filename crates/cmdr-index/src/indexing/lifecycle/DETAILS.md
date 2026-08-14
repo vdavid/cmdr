@@ -383,6 +383,23 @@ joining, so a caller that stopped reading can't deadlock against a walk parked o
 **The channel is bounded at eight batches.** A consumer that falls behind slows the walk rather than growing a queue to
 the size of the subtree; each batch already carries up to 2 000 entries.
 
+### The two single-flight questions a scan has to ask
+
+`start_scan` refuses for two independent reasons, and each catches a walk the other can't see:
+
+- **`mgr.scanning`** — the volume's own full scan. Set by `start_scan`, cleared by the completion handler.
+- **`cover::ground_being_walked(volume_id, &[volume_root])`** — a search-driven cover walk. It sets no flag at all: it
+  holds a CLAIM (`cover/live.rs`), and `cover_context_for` refuses only NEW walks, so nothing else stops a rescan
+  arriving mid-walk. The volume root as the frontier asks about the whole volume, since `overlaps` counts an ancestor.
+
+Without the second, a coalesced shallow anchor, a journal-gap fallback, or the manual button sends `TruncateData` +
+`BumpCurrentEpoch` while the walk is still inserting: the walk's rows land in a blanked database, its ids lose to
+`INSERT OR IGNORE`, and everything hanging off them is orphaned. The refusal is the whole recovery — the scan is not
+queued, so whoever asked for it asks again (a walk is seconds to minutes, and every trigger recurs). ⚠️ That includes
+the enable path: turning drive indexing on for a volume a search is walking right now refuses the first scan, and the
+next trigger takes it. Regression anchor:
+`cover::cold_drive_tests::a_truncating_rescan_refuses_while_a_search_cover_walk_is_live`.
+
 ### What the walk leaves watched
 
 A walk that covered ground and left nothing watching it is a snapshot of a folder taken once, which is what the plan's

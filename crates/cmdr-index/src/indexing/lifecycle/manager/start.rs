@@ -7,6 +7,7 @@
 //! them; everything after either one starts is the same live-event machinery.
 
 use super::*;
+use crate::indexing::lifecycle::cover;
 use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::watch::branches::{self, AfterWalk, WatchScope};
 use crate::indexing::watch::event_loop::{LiveConfig, run_live_event_loop};
@@ -320,6 +321,18 @@ impl IndexManager {
     pub fn start_scan(&mut self, scan_trigger: &str) -> Result<(), String> {
         if self.scanning.load(Ordering::Relaxed) {
             return Err("Scan already running".to_string());
+        }
+
+        // The same single-flight question asked of the OTHER kind of walk. A
+        // search-driven cover walk never sets `scanning` — it holds a claim on the
+        // ground it is covering — so without this a rescan would truncate and bump
+        // the epoch underneath a walk that is still inserting rows, and the walk's
+        // ids would lose to `INSERT OR IGNORE` and orphan whatever hung off them.
+        // The volume root as the frontier asks about the whole volume: `overlaps`
+        // counts an ancestor, so any live claim answers.
+        let whole_volume = vec![self.volume_root.to_string_lossy().to_string()];
+        if !cover::ground_being_walked(&self.volume_id, &whole_volume).is_empty() {
+            return Err("A search walk is covering ground on this volume".to_string());
         }
 
         // The completeness gate for reconcile-vs-truncate (see `local_rescan_reconciles`):
