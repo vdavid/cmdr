@@ -9,18 +9,18 @@ re-measures it and reports what the data can and can't support.
 1. **The 60% was right for its window.** Over 2026-07-19..2026-08-12 the lane failed **59.1%** of runs (110 of 186).
    `desktop-e2e-linux` failed **33.6%** (38 of 113). Nobody was exaggerating.
 2. **Post-fix, the sample is far too small to quote a new rate.** Both fixes were in for exactly **one** logged
-   `desktop-e2e-playwright` run. Even counting from the first of them, it's six. Anyone quoting today's rate as a
-   number is reading noise.
+   `desktop-e2e-playwright` run. Even counting from the first of them, it's six. Anyone quoting today's rate as a number
+   is reading noise.
 3. **The concurrency bugs were real, and they were never the main cause.** Their fingerprint is visible: a run
-   overlapping another run of the SAME lane failed much more often (Linux 64.7% against 26.6%, p≈0.002). But only ~9%
-   of runs overlapped, so removing that effect moves the aggregate by about a point, not by forty.
-4. **The red rate is a BREADTH effect, and quarantining can't touch it.** Over the instrumented window: 14 test
-   failures across 10 red runs, spread over 10 different specs, with **zero test failing twice**. A per-test failure
-   rate of 0.17% over 281 tests predicts a ~38% red-run rate all by itself, which is what we see. There's no top
-   offender to quarantine because there's no top offender.
+   overlapping another run of the SAME lane failed much more often (Linux 64.7% against 26.6%, p≈0.002). But only ~9% of
+   runs overlapped, so removing that effect moves the aggregate by about a point, not by forty.
+4. **The red rate is a BREADTH effect, and quarantining can't touch it.** Over the instrumented window: 14 test failures
+   across 10 red runs, spread over 10 different specs, with **zero test failing twice**. A per-test failure rate of
+   0.17% over 281 tests predicts a ~38% red-run rate all by itself, which is what we see. There's no top offender to
+   quarantine because there's no top offender.
 5. **Directionally it does look better** (41.4% against 59.1% since 2026-08-12 18:07), but that comparison is p≈0.07,
-   and the window also contains several unrelated de-flaking commits. Encouraging, not established.
-   § "How to tell in a week" says what would settle it.
+   and the window also contains several unrelated de-flaking commits. Encouraging, not established. § "How to tell in a
+   week" says what would settle it.
 
 ## What was fixed, and when
 
@@ -67,8 +67,8 @@ Pre-2026-08-13 16:28:
 
 What that says:
 
-- **Linux: the effect is unambiguous** — 26.6% → 64.7%, z≈3.09, p≈0.002. Concurrent same-lane runs more than doubled
-  its red rate.
+- **Linux: the effect is unambiguous** — 26.6% → 64.7%, z≈3.09, p≈0.002. Concurrent same-lane runs more than doubled its
+  red rate.
 - **Playwright: not distinguishable** — 56.7% → 68.4%, z≈1.04, p≈0.30. With 19 overlapped runs and a base rate already
   above half, the effect (if it's the same one) has nowhere to show.
 - **Control**: classifying by overlap with the OTHER E2E lane instead (CPU contention, but no shared port and no shared
@@ -78,8 +78,8 @@ What that says:
 **What this is worth.** Only 21 of 212 playwright runs and 17 of 129 Linux runs overlapped a same-lane run. So even
 taking the effect at face value, removing it takes playwright's aggregate from 57.8% to about its solo rate of 56.0%.
 **The concurrency bugs cost roughly one point of the macOS lane's red rate.** They mattered a great deal for Linux, and
-for whoever's afternoon went into a green branch reporting 38 failures it didn't cause, and they were worth fixing.
-They are not why this lane goes red.
+for whoever's afternoon went into a green branch reporting 38 failures it didn't cause, and they were worth fixing. They
+are not why this lane goes red.
 
 ## What actually fails: breadth, not offenders
 
@@ -89,14 +89,14 @@ Twelve red playwright runs, of two very different shapes:
 
 - **Two whole-shard collapses** (46 failures across 13 specs; 38 across 8), both before the port fix. A run where a
   third of a shard dies is one dead app, not per-test flake, and folding it into a ranking swamps everything.
-- **Ten ordinary red runs, 14 test failures total.** 14 failures, **14 distinct tests**, 10 distinct specs. Not one
-  test failed twice outside a collapse, and no failing test recurred in the next run.
+- **Ten ordinary red runs, 14 test failures total.** 14 failures, **14 distinct tests**, 10 distinct specs. Not one test
+  failed twice outside a collapse, and no failing test recurred in the next run.
 
 That last fact is the finding. The specs involved were `app`, `focus-trap`, `ask-cmdr`, `operation-queue` (×3), `mtp`
 (×3), `indexing`, `search-modes`, `search-recent`, `file-operations`, `archive-browsing`. Ten specs, one failure each.
 
-**So arithmetic, not a hit list, explains the red rate.** 14 failures over roughly 29 × 281 ≈ 8,150 test executions is
-a per-test failure rate of **0.17%** (95% CI ~0.09%–0.29%). A run is red if ANY of its 281 tests fails:
+**So arithmetic, not a hit list, explains the red rate.** 14 failures over roughly 29 × 281 ≈ 8,150 test executions is a
+per-test failure rate of **0.17%** (95% CI ~0.09%–0.29%). A run is red if ANY of its 281 tests fails:
 
 ```
 1 − (1 − 0.0017)^281 = 38%
@@ -118,9 +118,9 @@ macOS lane doesn't, bar two `test.describe.configure({ retries: 1 })` carve-outs
 - **macOS logged zero `flaky` rows in the whole window, and structurally almost cannot log one.** "Rank the top
   offenders by retry-pass" has no macOS answer. That's the config, not a clean suite.
 - **Linux logged 10 retry-passes over 18 runs**, led by
-  `search-recent.spec.ts::Search dialog: recent searches::Open-in-pane persists the query to the backend recent-search
-  store` (4), then one each in `app`, `archive-browsing`, `conflict-copy`, `conflict-move`, `dialog-inset`,
-  `dialog-resize`. Same shape as the macOS failures: spread, barely repeating.
+  `search-recent.spec.ts::Search dialog: recent searches::Open-in-pane persists the query to the backend recent-search store`
+  (4), then one each in `app`, `archive-browsing`, `conflict-copy`, `conflict-move`, `dialog-inset`, `dialog-resize`.
+  Same shape as the macOS failures: spread, barely repeating.
 
 **The two lanes' red rates are therefore not comparable**, and 41.4% against 11.1% is mostly this. macOS reports an
 UNRETRIED rate. The zero-retry local default is deliberate (a real race should surface immediately rather than be
@@ -164,13 +164,13 @@ sqlite3 -column -header :memory: '.import --csv ~/cmdr-check-log.csv c' \
 one-liner mangles exactly the rows you care about. `scripts/check/DETAILS.md` § "The per-test log" has more recipes.
 
 **The bar for calling it.** Against the fixed 59.1% baseline, distinguishing a true 41% at 80% power and α=0.05 needs
-about **60 post-fix runs**. At the recent cadence (~8 playwright runs a day) that's roughly **8 days**, so the
-run-level question answers itself around 2026-08-22 with nobody doing anything except letting the log fill. Don't run
-the lane to feed this: concurrent E2E runs on one machine contend for CPU and pollute the signal they're measuring.
+about **60 post-fix runs**. At the recent cadence (~8 playwright runs a day) that's roughly **8 days**, so the run-level
+question answers itself around 2026-08-22 with nobody doing anything except letting the log fill. Don't run the lane to
+feed this: concurrent E2E runs on one machine contend for CPU and pollute the signal they're measuring.
 
-**What would overturn § "breadth, not offenders":** a single test appearing in three or more red runs. That's the
-signal that a specific test rather than the suite's width is driving the rate, and the point where quarantining becomes
-the right tool instead of the wrong one.
+**What would overturn § "breadth, not offenders":** a single test appearing in three or more red runs. That's the signal
+that a specific test rather than the suite's width is driving the rate, and the point where quarantining becomes the
+right tool instead of the wrong one.
 
 ## Related
 

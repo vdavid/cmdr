@@ -364,10 +364,10 @@ for (check, test), s in sorted(worst.items(), key=lambda kv: -kv[1])[:15]:
 ```
 
 A failure RATE needs the run count as its denominator, which lives in the other log: count the rows for that check in
-`~/cmdr-check-log.csv` over the same window. Before quoting an E2E rate, read `docs/notes/e2e-flake-remeasured-2026-08-14.md`:
-it's the worked version of exactly that query, and it names the three traps (a run-level rate is dominated by the
-suite's width rather than by any test, the macOS lane's zero-retry config makes its rate incomparable to Linux's, and a
-few days of runs can't distinguish 41% from 59%).
+`~/cmdr-check-log.csv` over the same window. Before quoting an E2E rate, read
+`docs/notes/e2e-flake-remeasured-2026-08-14.md`: it's the worked version of exactly that query, and it names the three
+traps (a run-level rate is dominated by the suite's width rather than by any test, the macOS lane's zero-retry config
+makes its rate incomparable to Linux's, and a few days of runs can't distinguish 41% from 59%).
 
 ## Input fingerprint cache
 
