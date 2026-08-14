@@ -34,9 +34,9 @@ Ordered by how much each survives a disappointing benchmark, because that is the
    impressions. Spending the machine on ground nobody asked for _first_ violates "respect the user's resources".
 5. **The wow moment arrives late.** Real folder sizes take minutes, spread evenly over a drive the user mostly doesn't
    care about. Sized honestly, this is the weakest of the five: the folders it is about total 4,735 entries (under a
-   second), and mid-scan partial aggregation already punches the folders a pane is showing through the depth cap every
-   5 s (`lifecycle/partial_agg.rs`). What ordering adds is that the punch has something to find, since a folder nobody
-   has walked yet aggregates to nothing.
+   second), and mid-scan partial aggregation already punches the folders a pane is showing through the depth cap every 5
+   s (`lifecycle/partial_agg.rs`). What ordering adds is that the punch has something to find, since a folder nobody has
+   walked yet aggregates to nothing.
 
 **Why not also narrow the default scope to home**, which an earlier draft proposed: measured on David's machine
 (2026-08-14, boot volume, 5,191,189 entries, 768 MB index, full walk 193 s), everything outside `$HOME` is 800,441
@@ -562,14 +562,14 @@ risky milestone gets smaller, and a beta build gets safer immediately even if ev
    inside that window never decrements `walks`, so `may_walk` stays false for that ground permanently, every event for
    it buffers and is never promoted, and it is never absorbed. Make finish idempotent and independent of the registry
    phase. Test: **`a_walk_that_finishes_while_the_manager_is_shutting_down_still_releases_its_branch`**.
-3. **A failed watcher silently erases the record of what we covered.** `finish_branch_coverage` uses
-   `AfterWalk::Forget` whenever `mgr.branch_watched` is false (`manager/start.rs:275-283`), so a non-fatal
-   `DriveWatcher::start_branches` failure drops the persisted branch set. Decouple persisting from `branch_watched`:
-   treat a failed watcher as "covered but unwatched", which the epoch bump on the next resume already makes honest.
-   This is also what M3.3's discriminator depends on, so it is load-bearing later as well.
-4. **Branches never collapse downward.** `finish_covering` only removes the path being finished when an ancestor
-   already exists, so siblings accumulate and every event pays an O(branches) `deepest_containing` scan on the live hot
-   path. Make absorption a property of the set itself: on insert, drop every strict descendant, leaving any entry with
+3. **A failed watcher silently erases the record of what we covered.** `finish_branch_coverage` uses `AfterWalk::Forget`
+   whenever `mgr.branch_watched` is false (`manager/start.rs:275-283`), so a non-fatal `DriveWatcher::start_branches`
+   failure drops the persisted branch set. Decouple persisting from `branch_watched`: treat a failed watcher as "covered
+   but unwatched", which the epoch bump on the next resume already makes honest. This is also what M3.3's discriminator
+   depends on, so it is load-bearing later as well.
+4. **Branches never collapse downward.** `finish_covering` only removes the path being finished when an ancestor already
+   exists, so siblings accumulate and every event pays an O(branches) `deepest_containing` scan on the live hot path.
+   Make absorption a property of the set itself: on insert, drop every strict descendant, leaving any entry with
    `walks > 0` alone until it finishes. Add the crate-internal `collapse_to(root)` that mutates the **shared**
    `BranchWatch` in place and then `persist()`s (❌ never `branches::clear` plus a begin/finish pair, which mints a new
    `BranchWatch` the running live loop isn't reading). Test both, including
@@ -592,10 +592,9 @@ A new module **inside the existing `apps/desktop/src-tauri/src/priority/`** (whi
 `host_policy.rs`, beside `foreground.rs` and `transfers.rs`, with its own `C+D.md` pair), exposing one function: the
 ordered, deduplicated, existence-checked roots. ❌ Not a new sibling module: "which folders have the user's attention"
 is the question `priority/` already exists to answer, and a sibling would split it across two doc pairs. It is called
-from `AppHostPolicy::priority_roots`, so the answer is recomputed
-when asked rather than frozen at launch. Keep it cheap: the seam is asked at phase boundaries, but the trait's contract
-is "don't do I/O, don't take a contended lock" for its other method, so cache the answer behind a short TTL rather than
-stat-ing a dozen paths per call.
+from `AppHostPolicy::priority_roots`, so the answer is recomputed when asked rather than frozen at launch. Keep it
+cheap: the seam is asked at phase boundaries, but the trait's contract is "don't do I/O, don't take a contended lock"
+for its other method, so cache the answer behind a short TTL rather than stat-ing a dozen paths per call.
 
 1. **Last session's tab paths**, most recently active first, from `app-status.json`. Empty on a true first run. The
    strongest signal there is: it is literally where the user was.
@@ -670,9 +669,9 @@ thing the plan is for. Capture, per arm:
 time-to-first-root numbers in hand, because they are what the decision is about.
 
 **What "re-decide" means, decided in advance so the gate is decidable rather than a stop sign.** The honest comparison
-isn't wall-clock parity: full coverage is background work already paced by the `clearance` seam, so 1.5× of 193 s is
-290 s of politely-throttled walking against a permanent gain in interrupt-survival and a minutes-earlier photo search.
-The two prepared answers, in order of preference:
+isn't wall-clock parity: full coverage is background work already paced by the `clearance` seam, so 1.5× of 193 s is 290
+s of politely-throttled walking against a permanent gain in interrupt-survival and a minutes-earlier photo search. The
+two prepared answers, in order of preference:
 
 - **Accept the slower full coverage** when time-to-first-root and time-to-`home_covered_at` both land where the plan
   wants them. Reasons 1 and 2 in "Why" don't depend on the ratio at all, and the extra minutes are invisible unless the
@@ -780,11 +779,11 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
 9. **Own a `ScanProgressReporter` for the phased run** (see the full-scan audit above) and **feed the live status
    shape** (`ScanCalibration`-equivalent counters) throughout, or the per-drive row, progress bar, ETA, and mid-scan
    partial aggregation stay dead for the whole first index. The reporter's lifetime is the machine's, ❌ not one walk's:
-   it must survive the gaps between roots, or the tick dies 50–150 times per phase. Drive `get_status`'s `scanning` field from **"the machine has
-   queued work"**, ❌ never by setting `mgr.scanning` (that would make the machine's own `cover()` calls fail) and ❌
-   never from `phase_active` directly: it goes false between roots, and the stitch yields 50–150 roots many of which
-   finish in milliseconds, so the search dialog's "building your index" state and the per-drive row would flicker at
-   root cadence.
+   it must survive the gaps between roots, or the tick dies 50–150 times per phase. Drive `get_status`'s `scanning`
+   field from **"the machine has queued work"**, ❌ never by setting `mgr.scanning` (that would make the machine's own
+   `cover()` calls fail) and ❌ never from `phase_active` directly: it goes false between roots, and the stitch yields
+   50–150 roots many of which finish in milliseconds, so the search dialog's "building your index" state and the
+   per-drive row would flicker at root cadence.
 
    **Decide the progress shape here rather than in M4.** A phased walk has no knowable total until the `/` phase, and
    the design principles forbid a progress bar parked at 100% and require a distinct state when the quantifiable part
@@ -890,8 +889,7 @@ it.
    killed build has no phase machine to resume into: a phased partial (rows, no `scan_completed_at`, non-empty branch
    set) must route to today's truncating rebuild when the switch is off. That is the right answer (self-healing, and the
    user asked for the old behavior), but it is an unstated cell in a table whose whole point is that a wrong cell costs
-   a wasted rescan or a silently stale index. Test:
-   **`the_kill_switch_routes_a_phased_partial_to_the_legacy_rebuild`**.
+   a wasted rescan or a silently stale index. Test: **`the_kill_switch_routes_a_phased_partial_to_the_legacy_rebuild`**.
 
 **Tests:** integration tests for launch over an index in each state (nothing, partially covered by phases, partially
 covered by a legacy interrupted scan, fully covered, fully covered but stale), asserting which of {phases, replay,
@@ -953,10 +951,9 @@ debounce so work finishing inside a second never flashes anything.
    `/opt` still shows `<dir>`.
 
 **Tests:** Rust unit tests for the debounce (in the backend layer that owns it) and TS unit tests for the bidirectional
-predicate (both genuinely **test-first**); a
-component test that a row inside _and_ a row above a walking branch show the hourglass while an unrelated row doesn't; a
-measurer test that reserved width matches the renderer; and an E2E that the corner appears during a phase — **a post-hoc
-pin, not a red→green step**, gated on M3.
+predicate (both genuinely **test-first**); a component test that a row inside _and_ a row above a walking branch show
+the hourglass while an unrelated row doesn't; a measurer test that reserved width matches the renderer; and an E2E that
+the corner appears during a phase — **a post-hoc pin, not a red→green step**, gated on M3.
 
 **Docs:** `indexing/CLAUDE.md` + `DETAILS.md`, `file-explorer/views/DETAILS.md` (size state and the measurer contract).
 
@@ -1069,8 +1066,8 @@ Recorded with the reasoning, because the reasoning is what an implementer needs 
 ## Decisions (David + lead review, 2026-08-14, second pass)
 
 11. **The pre-existing bugs ship first, as M0.** Four defects that are latent today and routine under phases. They cost
-    nothing to separate, they make the risky milestone smaller, and they are worth having in a beta build even if the
-    M2 gate sends everything after them back to the drawing board.
+    nothing to separate, they make the risky milestone smaller, and they are worth having in a beta build even if the M2
+    gate sends everything after them back to the drawing board.
 12. **The phase machine owns a `ScanProgressReporter`.** Without it the 500 ms tick dies with `start_scan`, taking the
     progress event stream, mid-scan partial aggregation, and the only legal home for the `open_listings` poll with it.
 13. **Interleaving granularity is a stitch DEPTH, not preemption.** Stitch two levels under the `$HOME` and `/` phase
