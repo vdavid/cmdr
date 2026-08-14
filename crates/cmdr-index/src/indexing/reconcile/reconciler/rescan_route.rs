@@ -17,7 +17,7 @@
 
 use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
@@ -149,11 +149,10 @@ pub(in crate::indexing) const SHALLOW_SWEEP_AT_KEY: &str = "shallow_sweep_at";
 /// `meta` key mirroring [`SweepRecord::coalesced_since_sweep`].
 pub(in crate::indexing) const SHALLOW_COALESCED_KEY: &str = "shallow_coalesced_since_sweep";
 
-/// Now, in UNIX seconds. A pre-1970 clock reads as 0 (which only makes the next
-/// shallow anchor sweep, never starve).
-pub(in crate::indexing) fn now_unix() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs())
-}
+/// Now, in UNIX seconds, from the one place every persisted timestamp gets it. A
+/// pre-1970 clock reads as 0, which only makes the next shallow anchor sweep, never
+/// starve.
+pub(in crate::indexing) use crate::indexing::store::now_unix;
 
 /// Whether the min-interval has elapsed. Pure, so the window is one testable
 /// decision. A `last` in the FUTURE (a backwards clock jump, or an index DB

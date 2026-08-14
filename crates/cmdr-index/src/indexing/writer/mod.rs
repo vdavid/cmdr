@@ -16,11 +16,12 @@ use tokio::sync::oneshot;
 
 use crate::indexing::IndexFailureSignal;
 use crate::indexing::events::EventSink;
-use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError, UnreadableCause};
+use crate::indexing::store::{self, EntryRow, IndexStore, IndexStoreError, UnreadableCause};
 #[cfg(test)]
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
+mod abandoned_retry;
 mod aggregation;
 mod batch;
 mod deferred_repair;
@@ -340,6 +341,19 @@ pub enum WriteMessage {
     /// later successful listing (Full Disk Access granted) heals it with no
     /// rebuild. Like `MarkDirsListed`, no generation bump.
     MarkDirsUnreadable { ids: Vec<i64>, cause: UnreadableCause },
+    /// The maintenance timer's periodic nudge to reopen ground a walk gave up on.
+    ///
+    /// Clears every [`UnreadableCause::Abandoned`] cause IF this volume's retry
+    /// window has elapsed, and no-ops otherwise. The whole decision runs on the
+    /// writer thread because every input to it lives in this database
+    /// (`abandoned_retry.rs`): the window's own state, and whether there is
+    /// anything left to clear at all. A caller deciding on a read connection would
+    /// race the writes that move the window, and it would have to pay a full
+    /// `entries` scan just to ask. ❌ Never send a plain "clear it" instead — a
+    /// cleared cause reopens the frontier, so an ungated retry re-pays a wedged
+    /// mount's stall timeouts on every cycle. Like `MarkDirsListed`, no generation
+    /// bump.
+    ClearAbandonedIfDue,
     /// Bump the volume's `current_epoch` by one and persist it (a continuity
     /// break: reconnect/rescan, watcher death, overflow, disconnect, or a
     /// launch-loading-Stale). A scan/reconcile only STAMPS `listed_epoch` with
@@ -1427,6 +1441,28 @@ fn process_message(
             // No MutationTracker::bump(), same reasoning as MarkDirsListed.
             if let Err(e) = IndexStore::mark_dirs_unreadable(conn, &ids, Some(cause)) {
                 signal.note(&e, &format!("mark_dirs_unreadable (count={})", ids.len()));
+            }
+            // Abandoned ground is the only kind Cmdr retries, so it's the only kind
+            // that opens a retry window. Armed HERE rather than by the walk, so the
+            // window and the rows it speaks for commit through one connection in one
+            // order.
+            if cause == UnreadableCause::Abandoned
+                && let Err(e) = abandoned_retry::arm(conn, store::now_unix())
+            {
+                signal.note(&e, "arm the abandoned-ground retry");
+            }
+        }
+        WriteMessage::ClearAbandonedIfDue => {
+            // No MutationTracker::bump(), same reasoning as MarkDirsListed.
+            match abandoned_retry::clear_if_due(conn, store::now_unix()) {
+                Ok(Some(cleared)) if cleared > 0 => log::info!(
+                    "Index writer: reopening {} given up on, so the next walk over them tries again",
+                    pluralize(cleared as u64, "dir")
+                ),
+                Ok(_) => {}
+                Err(e) => {
+                    signal.note(&e, "clear abandoned ground");
+                }
             }
         }
         WriteMessage::BumpCurrentEpoch => {

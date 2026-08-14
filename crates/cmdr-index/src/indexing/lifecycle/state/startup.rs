@@ -259,9 +259,15 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
             spawn_failure_supervisor(Arc::clone(&events), volume_id.to_string(), failure_signal);
 
             // Periodic DB maintenance every 30 s: reclaim free pages from
-            // deletes/rescans (`IncrementalVacuum`) AND truncate the WAL file
-            // so its high-water mark doesn't sit on disk (`WalCheckpoint`).
-            // Both stop automatically when the writer channel closes.
+            // deletes/rescans (`IncrementalVacuum`), truncate the WAL file so its
+            // high-water mark doesn't sit on disk (`WalCheckpoint`), and offer back
+            // any ground a walk gave up on whose retry window has elapsed
+            // (`ClearAbandonedIfDue`). All stop automatically when the writer
+            // channel closes.
+            //
+            // The last one is a 30 s TICK, not a 30 s policy: the window it consults
+            // is hours long, per volume, and persisted, so a tick that isn't due
+            // costs one `meta` read (`writer/abandoned_retry.rs`).
             crate::indexing::host::runtime::spawn(async move {
                 loop {
                     tokio::time::sleep(Duration::from_secs(30)).await;
@@ -269,6 +275,9 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
                         break;
                     }
                     if writer_for_maintenance.send(WriteMessage::WalCheckpoint).is_err() {
+                        break;
+                    }
+                    if writer_for_maintenance.send(WriteMessage::ClearAbandonedIfDue).is_err() {
                         break;
                     }
                 }

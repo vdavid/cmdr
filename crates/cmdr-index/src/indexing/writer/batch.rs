@@ -79,6 +79,7 @@ pub(super) fn role(msg: &WriteMessage) -> BatchRole {
         | WriteMessage::PropagateMinSubtreeEpoch(_)
         | WriteMessage::MarkDirsListed { .. }
         | WriteMessage::MarkDirsUnreadable { .. }
+        | WriteMessage::ClearAbandonedIfDue
         | WriteMessage::UpdateLastEventId(_)
         | WriteMessage::UpdateMeta { .. }
         | WriteMessage::DeleteMeta(_)

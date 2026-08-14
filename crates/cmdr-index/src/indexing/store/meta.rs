@@ -7,6 +7,19 @@ use rusqlite::{Connection, OptionalExtension, params};
 #[cfg(test)]
 use super::{ROOT_ID, reconstruct_path_from_map, reset_schema};
 
+/// Now, in UNIX seconds. A pre-1970 clock reads as 0.
+///
+/// Wall-clock rather than `Instant` for every policy `meta` persists a timestamp
+/// for: `Instant` on macOS is `mach_absolute_time`, which doesn't tick while the
+/// machine sleeps (a laptop's "day" would really be 32 hours), and it can't be
+/// restored from disk at all. Lives here because this is where those timestamps
+/// land; the windows measured against it are their own modules'.
+pub(in crate::indexing) fn now_unix() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
+}
+
 impl IndexStore {
     /// Set a meta key-value pair.
     pub fn update_meta(conn: &Connection, key: &str, value: &str) -> Result<(), IndexStoreError> {

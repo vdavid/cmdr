@@ -45,6 +45,8 @@ mod schema;
 mod dir_tree;
 pub(crate) use dir_tree::{ARENA_FULL, DirTree};
 
+pub(in crate::indexing) use meta::now_unix;
+
 pub use collation::{normalize_for_comparison, register_platform_case_collation};
 pub use errors::{IndexFailure, IndexStoreError, UnreadableCause};
 pub(crate) use paths::resolve_path_under;
