@@ -26,20 +26,46 @@ use crate::indexing::volume::{IndexVolumeKind, VolumeId};
 /// snapshot is how the sweeps find those volumes; wiring their subscriptions is NOT
 /// enough on its own, so each scheduler pairs this with an explicit startup enqueue
 /// (media's `kick_all_ready_passes`, importance's `enqueue_initial_full_pass_if_unscored`).
+/// ⚠️ A volume being covered in PHASES is admitted on its home-coverage marker
+/// too, and is deliberately NOT `Fresh` while it is: the drive genuinely isn't
+/// covered yet. Without this the early media kick works on the first run and never
+/// again — a relaunch mid-coverage would wire nothing for a home-covered volume,
+/// and the signal it publishes would have no subscriber.
 pub(crate) fn ready_volumes_with_kind() -> Vec<(VolumeId, IndexVolumeKind)> {
-    let reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
-    reg.iter()
-        .filter(|(_, instance)| {
-            instance
-                .signals
-                .freshness
-                .lock()
-                .ok()
-                .and_then(|f| *f)
-                .is_some_and(|f| f == Freshness::Fresh)
-        })
-        .map(|(vid, instance)| (vid.clone(), instance.kind))
+    // Snapshot under the lock, decide off it: reading a marker is SQLite work, and
+    // nothing that touches a database belongs under the lifecycle lock.
+    let candidates: Vec<(VolumeId, IndexVolumeKind, bool)> = {
+        let reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
+        reg.iter()
+            .map(|(vid, instance)| {
+                let fresh = instance
+                    .signals
+                    .freshness
+                    .lock()
+                    .ok()
+                    .and_then(|f| *f)
+                    .is_some_and(|f| f == Freshness::Fresh);
+                (vid.clone(), instance.kind, fresh)
+            })
+            .collect()
+    };
+    candidates
+        .into_iter()
+        .filter(|(vid, _, fresh)| *fresh || has_covered_home(vid))
+        .map(|(vid, kind, _)| (vid, kind))
         .collect()
+}
+
+/// Whether a volume has covered the user's home folder, whatever the rest of the
+/// drive is doing.
+fn has_covered_home(volume_id: &str) -> bool {
+    let Ok(db_path) = super::resolved_index_db_path(volume_id) else {
+        return false;
+    };
+    IndexStore::open_read_connection(&db_path)
+        .and_then(|conn| IndexStore::get_meta(&conn, crate::indexing::lifecycle::phases::HOME_COVERED_AT_KEY))
+        .unwrap_or(None)
+        .is_some()
 }
 
 /// Snapshot every registered volume id. Used by the global memory watchdog to
@@ -89,8 +115,12 @@ pub(crate) fn awaits_its_first_scan(volume_id: &str) -> bool {
         let Ok(reg) = INDEX_REGISTRY.lock() else { return false };
         match reg.get(volume_id).map(|i| &i.phase) {
             // `Initializing` is a start already in flight, and a scanning manager
-            // is a walk already running: neither needs another.
-            Some(IndexPhase::Running(mgr)) if !mgr.scanning.load(Ordering::Relaxed) => mgr.db_path().to_path_buf(),
+            // is a walk already running: neither needs another. A volume the phase
+            // machine still has work for is the third shape of the same thing — it
+            // is being walked whole, in pieces.
+            Some(IndexPhase::Running(mgr)) if !mgr.scanning.load(Ordering::Relaxed) && !mgr.phases_have_work() => {
+                mgr.db_path().to_path_buf()
+            }
             _ => return false,
         }
     };

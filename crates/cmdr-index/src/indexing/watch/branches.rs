@@ -469,6 +469,20 @@ impl BranchWatch {
         }
     }
 
+    /// Whether any of `paths`' branches is holding events for the walk covering it.
+    ///
+    /// What a walk that deferred its writer drain asks before releasing ground:
+    /// those events are replayed the moment the branch is finished, and the loop
+    /// resolves their paths through a read connection, so they need the walk's rows
+    /// committed first.
+    pub(crate) fn any_buffered(&self, paths: &[String]) -> bool {
+        let state = self.state.lock_ignore_poison();
+        state
+            .branches
+            .iter()
+            .any(|branch| !branch.buffered.is_empty() && paths.iter().any(|path| branch.contains(path)))
+    }
+
     /// Whether a walk is covering `path` (or the branch it sits in) right now.
     pub(crate) fn is_being_walked(&self, path: &Path) -> bool {
         let path = path.to_string_lossy();

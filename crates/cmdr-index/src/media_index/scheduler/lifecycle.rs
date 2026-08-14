@@ -331,20 +331,33 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
         }
     });
 
+    // Home coverage rides alongside the completion: photo search only needs the
+    // user's own folders, and on a phased first index that lands minutes before the
+    // drive does. A volume walked whole never fires it.
     let sub_scheduler = Arc::clone(&scheduler);
     let sub_volume = volume_id.clone();
     let mut rx = lifecycle_bus::subscribe(&volume_id);
+    let mut home_rx = lifecycle_bus::subscribe_home_covered(&volume_id);
     crate::indexing::host::runtime::spawn(async move {
         // Observe the retained value EDGE-triggered: `borrow_and_update` marks it
         // seen, so a later `changed()` fires only on a NEW completion, never on a
         // re-read of the retained `Completed`. This is the data-safety property —
         // GC (inside the pass) never runs off a stale retained `Completed`.
-        if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) {
+        if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) || *home_rx.borrow_and_update()
+        {
             spawn_pass(Arc::clone(&sub_scheduler), sub_volume.clone(), pass_kind);
         }
-        while rx.changed().await.is_ok() {
-            if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) {
-                spawn_pass(Arc::clone(&sub_scheduler), sub_volume.clone(), pass_kind);
+        loop {
+            let woken = tokio::select! {
+                changed = rx.changed() => changed
+                    .is_ok()
+                    .then(|| matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. })),
+                changed = home_rx.changed() => changed.is_ok().then(|| *home_rx.borrow_and_update()),
+            };
+            match woken {
+                None => break,
+                Some(true) => spawn_pass(Arc::clone(&sub_scheduler), sub_volume.clone(), pass_kind),
+                Some(false) => {}
             }
         }
     });

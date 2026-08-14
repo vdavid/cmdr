@@ -220,6 +220,10 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
         // writer is the only thing that will write through it.
         Activation::WriterOnly => Ok(()),
     };
+    // Read before the manager moves into the registry: a volume the phase machine
+    // is about to cover needs its branches back first, exactly like a search-built
+    // one, and then the machine started on the far side of that.
+    let phased = manager.awaits_its_phases();
 
     // Clone the writer before moving manager into the registry, so we can hand
     // it to the maintenance timer if startup succeeds.
@@ -247,10 +251,21 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
             log::info!("start_indexing: done, '{volume_id}' IndexManager is Running");
 
             // A search-built index is the one shape that has coverage and no
-            // watcher, so this is where its walked branches come back under one.
-            if activation == Activation::WriterOnly {
+            // watcher, so this is where its walked branches come back under one. A
+            // phased volume is the second: it comes back partially covered, and
+            // without this its covered ground would be unwatched for the rest of the
+            // session with no epoch bump to admit it.
+            if activation == Activation::WriterOnly || phased {
                 resume_branch_watch(volume_id);
             }
+            // ⚠️ ORDER. The machine's first walk starts a watcher of its own, and
+            // `ensure_branch_watch` returns early when one is already running — so a
+            // machine started before the line above would take the `resuming = true`
+            // path with it, and the epoch bump for a gap too wide to replay would
+            // never fire. Last session's covered rows would then render as CURRENT
+            // when nothing verified them. ❌ Moving `branches::resumed_for` earlier is
+            // not an equivalent fix: it restores the branch set but not the bump.
+            with_running_manager(volume_id, |mgr| mgr.start_phases());
 
             // Watch for a fatal storage failure: if the writer trips its signal, the
             // supervisor fails this volume (stop + `Failed` phase) instead of letting

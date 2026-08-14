@@ -161,18 +161,34 @@ fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: Ind
     // Subscribe to the scan bus for this volume; a subscription retains the last
     // state, so a ScanCompleted fired before this line is still observed
     // (late-subscriber replay). Recompute on each completion.
+    //
+    // And to home coverage, which is the EARLY half of the same signal: a volume
+    // covered in phases reaches "home is walked" minutes before it reaches "the
+    // drive is walked", and home is all this needs. A volume walked whole never
+    // fires it, so nothing changes there.
     let sub_scheduler = Arc::clone(&scheduler);
     let sub_volume = volume_id.clone();
     let mut rx = lifecycle_bus::subscribe(&volume_id);
+    let mut home_rx = lifecycle_bus::subscribe_home_covered(&volume_id);
     crate::indexing::host::runtime::spawn(async move {
-        // Observe the retained value first (covers a completion before subscribe,
+        // Observe the retained values first (covers a signal fired before subscribe,
         // and a sweep-ready volume that already loaded Completed).
-        if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) {
+        if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) || *home_rx.borrow_and_update()
+        {
             spawn_recompute(Arc::clone(&sub_scheduler), sub_volume.clone(), available);
         }
-        while rx.changed().await.is_ok() {
-            if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) {
-                spawn_recompute(Arc::clone(&sub_scheduler), sub_volume.clone(), available);
+        loop {
+            let woken = tokio::select! {
+                changed = rx.changed() => changed
+                    .is_ok()
+                    .then(|| matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. })),
+                changed = home_rx.changed() => changed.is_ok().then(|| *home_rx.borrow_and_update()),
+            };
+            match woken {
+                // A sender is gone, which for a process-global bus means shutdown.
+                None => break,
+                Some(true) => spawn_recompute(Arc::clone(&sub_scheduler), sub_volume.clone(), available),
+                Some(false) => {}
             }
         }
     });

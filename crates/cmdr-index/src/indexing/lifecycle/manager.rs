@@ -82,6 +82,15 @@ pub(crate) struct IndexManager {
     /// drive a scan without self-deadlocking on a registry re-lock. External
     /// (volume-id-only) callers still use `state::apply_freshness_event`.
     pub(super) freshness: Arc<std::sync::Mutex<Option<super::freshness::Freshness>>>,
+    /// The running phase machine, when this volume is being covered in pieces
+    /// rather than walked whole. Its flags are what every scan entry refuses
+    /// against and what `get_status` reports; see `phases::PhaseHandle`.
+    pub(super) phases: Option<super::phases::PhaseHandle>,
+    /// `resume_or_scan` decided this volume gets the phase machine, but the walk
+    /// can't start yet: it has to wait for `resume_branch_watch`, or last session's
+    /// covered ground comes back watched-but-never-epoch-bumped, rendering as
+    /// current when nothing verified it (`state/startup.rs`).
+    pub(super) phases_pending: bool,
     /// Calibration for the in-flight scan, captured in `start_scan`: the prior
     /// completed scan's totals (read from meta before truncating) plus the
     /// scanned volume's used bytes (fetched once). A plain field is enough —
@@ -355,6 +364,8 @@ impl IndexManager {
             events,
             scanning: Arc::new(AtomicBool::new(false)),
             freshness,
+            phases: None,
+            phases_pending: false,
             scan_calibration: None,
         })
     }
@@ -476,35 +487,29 @@ impl IndexManager {
             return self.start_replay(last_event_id, heal_pending);
         }
 
-        // No journal replay: a (re)scan brings the index current. A populated DB
-        // reconciles in place (which (re)starts the `DriveWatcher`), an empty DB
-        // fresh-scans. This is the path a `LocalExternal` volume ALWAYS takes (it
-        // has a stored event id but no journal), plus every non-journaled/no-replay
-        // case for the boot disk.
+        // No journal replay, and a COMPLETED index: a rescan brings it current, in
+        // place (which (re)starts the `DriveWatcher`). This is the path a
+        // `LocalExternal` volume ALWAYS takes (it has a stored event id but no
+        // journal), plus every non-journaled/no-replay case for the boot disk. ❌
+        // The phased answer below must never swallow it: a completed external drive
+        // would be treated as a volume that had never been indexed.
         if status.scan_completed_at.is_some() {
             log::info!("Startup: rescan of the existing index (no journal replay)");
-        } else if status.last_event_id.is_some() {
-            emit_rescan_notification(
-                self.events.as_ref(),
-                &self.volume_id,
-                RescanReason::IncompletePreviousScan,
-                "Index DB exists but scan_completed_at is not set. Previous scan likely didn't \
-                 finish."
-                    .to_string(),
-            );
-        } else {
-            log::info!("Startup: fresh scan (no existing index)");
+            return self.start_scan("rescan of existing index").map_err(|e| e.to_string());
         }
 
-        // Determine the trigger string for the scan phase
-        let trigger = if status.last_event_id.is_some() && status.scan_completed_at.is_none() {
-            "incomplete previous scan"
-        } else if status.scan_completed_at.is_some() {
-            "rescan of existing index"
-        } else {
-            "fresh scan"
-        };
-        self.start_scan(trigger).map_err(|e| e.to_string())
+        // Nothing has ever completed here, so the phase machine builds it: the
+        // folders this user cares about first, then home, then the rest of the
+        // drive, add-only the whole way. ❌ It only REGISTERS the intent — the first
+        // walk has to wait for `resume_branch_watch` (`state/startup.rs`), or last
+        // session's covered ground comes back watched and never epoch-bumped,
+        // rendering as current when nothing verified it.
+        log::info!(
+            "Startup: covering '{}' in phases (no completed scan on record)",
+            self.volume_id
+        );
+        self.register_a_phased_start();
+        Ok(())
     }
 
     /// Force a (re)scan of this volume, routed to the RIGHT scanner by the typed
@@ -531,6 +536,10 @@ impl IndexManager {
     /// Stop the active full scan and watcher.
     pub fn stop_scan(&mut self) {
         set_phase_for(self.events.as_ref(), &self.volume_id, ActivityPhase::Idle, "stopped");
+
+        // A volume covered in phases has no `ScanHandle` to cancel; stopping it is
+        // stopping the machine. Covered ground stays covered and watched.
+        self.stop_phases();
 
         if let Some(ref handle) = self.scan_handle {
             handle.cancel();
@@ -571,12 +580,20 @@ impl IndexManager {
 
         let db_file_size = self.store.db_file_size().ok();
 
-        let snap = self.scan_handle.as_ref().map(|h| h.progress.snapshot());
+        // A phased run has no `ScanHandle`; its counters live on the machine, and
+        // its `scanning` is "the machine has work", never "a walk is running right
+        // now" (which goes false between frontier roots, 50-150 times a phase).
+        let snap = self
+            .scan_handle
+            .as_ref()
+            .map(|h| h.progress.snapshot())
+            .or_else(|| self.phases.as_ref().map(|phases| phases.progress().snapshot()));
         let counters = live_scan_counters(snap, self.scan_calibration);
+        let scanning = self.scanning.load(Ordering::Relaxed) || self.phases_have_work();
 
         Ok(IndexStatusResponse {
             initialized: true,
-            scanning: self.scanning.load(Ordering::Relaxed),
+            scanning,
             entries_scanned: counters.entries_scanned,
             dirs_found: counters.dirs_found,
             bytes_scanned: counters.bytes_scanned,
@@ -674,6 +691,7 @@ impl IndexManager {
         //    child operation under it (subtree verifications, a reconcile walk).
         //    Unlike `stop_scan`, this is terminal: no later scan starts here.
         self.volume_cancel.cancel();
+        self.stop_phases();
         self.scan_handle = None;
         self.scanning.store(false, Ordering::Relaxed);
 
@@ -707,6 +725,7 @@ impl IndexManager {
     }
 }
 
+mod phased;
 mod start;
 
 #[cfg(test)]

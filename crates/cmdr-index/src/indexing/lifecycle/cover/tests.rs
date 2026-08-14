@@ -76,6 +76,7 @@ impl Fixture {
             writer: self.writer.clone(),
             space: IndexPathSpace::root(),
             kind: IndexVolumeKind::Local,
+            flush: FlushOnFinish::default(),
         }
     }
 

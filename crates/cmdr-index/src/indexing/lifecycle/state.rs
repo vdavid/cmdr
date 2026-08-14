@@ -263,6 +263,7 @@ pub(crate) fn cover_context_for(volume_id: &str) -> Option<crate::indexing::life
                 // whether the walk reads a disk or a `Volume`, and a kind resolved
                 // anywhere else could name a different volume than the writer does.
                 kind: mgr.kind,
+                flush: crate::indexing::lifecycle::cover::FlushOnFinish::default(),
             })
         }
         _ => None,
@@ -303,6 +304,14 @@ pub(crate) fn finish_branch_coverage(volume_id: &str, paths: &[String]) {
     if let Some((space, writer)) = record {
         branches.persist(&space, &writer);
     }
+}
+
+/// Whether any of the ground a walk is about to release is holding live events
+/// for it. A walk that left its drain to the caller asks this before releasing:
+/// the release replays them, and they resolve against committed rows or not at
+/// all.
+pub(crate) fn branch_coverage_buffered_events(volume_id: &str, paths: &[String]) -> bool {
+    branches::live_for(volume_id).any_buffered(paths)
 }
 
 /// Run something against a volume's `Running` manager, or nothing if it has

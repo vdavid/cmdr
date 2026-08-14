@@ -328,6 +328,18 @@ impl IndexManager {
             return Err(ScanStartError::AlreadyScanning);
         }
 
+        // The same question asked of the third kind of walk. A volume being covered
+        // in phases is being walked whole, in pieces, and this call would send
+        // `TruncateData` + `BumpCurrentEpoch` over the top of it — blanking rows the
+        // machine wrote and destroying the sizes the user has been watching appear.
+        //
+        // ⚠️ "The machine has WORK", ❌ never "a walk is running": the walking flag
+        // goes false between frontier roots, and the stitch produces 50–150 of them
+        // per phase, so a gap-timed rescan would slip straight through.
+        if self.phases_have_work() {
+            return Err(ScanStartError::AlreadyScanning);
+        }
+
         // The same single-flight question asked of the OTHER kind of walk. A
         // search-driven cover walk never sets `scanning` — it holds a claim on the
         // ground it is covering — so without this a rescan would truncate and bump

@@ -110,6 +110,24 @@ pub(crate) fn drive_index_should_run(master_on: bool, db_path: &Path, is_root: b
     is_root || IndexStore::persisted_scan_completed(db_path)
 }
 
+/// Whether a drive may be WALKED in the background right now: asked per phase and
+/// per frontier root, so turning drive indexing off stops the walking rather than
+/// only the next launch.
+///
+/// ❌ Not `drive_index_should_run`, whose `persisted_scan_completed` arm means "a
+/// scan finished on this drive once". A volume being covered has by definition
+/// never finished one, so asking that would mean an external drive somebody just
+/// turned on never gets its first index. The per-drive opt-IN was answered by
+/// whoever started the volume; what is left to ask is the master switch and the
+/// sticky veto.
+///
+/// It asks the same two facts [`branch_watch_allowed`] does, and stays a separate
+/// question because walking and watching cost wildly different things: a per-drive
+/// knob that ever splits them splits them here.
+pub(crate) fn background_walk_allowed(master_on: bool, db_path: &Path) -> bool {
+    master_on && !IndexStore::user_disabled(db_path)
+}
+
 /// Whether a drive may WATCH the branches a search walk covered on it.
 ///
 /// The looser of the two gates, and deliberately so. Watching a walked branch is

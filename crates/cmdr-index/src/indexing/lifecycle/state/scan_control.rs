@@ -70,7 +70,12 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
         {
             let writer = mgr.writer.clone();
             let events = Arc::clone(&mgr.events);
-            let scanning = mgr.scanning.load(Ordering::Relaxed);
+            // A phase walk suppresses the verifier exactly as a full scan does. The
+            // durable half of that protection is the verifier's own `listed_epoch`
+            // bail; this is the concurrency half, and it asks "is a walk reading the
+            // disk right now" rather than "does the machine have work" — between
+            // roots there is nothing to race.
+            let scanning = mgr.scanning.load(Ordering::Relaxed) || mgr.phases_are_walking();
             // The volume's path space, taken off the SAME instance the writer came
             // from. The verifier reads `volume_id`'s index and writes `mgr.writer`,
             // so the two must name one volume: routing the read through root's pool

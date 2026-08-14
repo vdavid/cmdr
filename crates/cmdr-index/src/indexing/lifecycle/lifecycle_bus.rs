@@ -151,6 +151,41 @@ pub(crate) fn subscribe_dirs_changed(volume_id: &str) -> watch::Receiver<DirsCha
     with_dir_sender(volume_id, |sender| sender.subscribe())
 }
 
+/// The per-volume home-coverage senders. Separate from [`BUS`] for the same
+/// lifecycle-independence reason, and separate from `ScanState` because it answers
+/// a different question: "may the expensive passes start?" rather than "is this
+/// volume complete?". Folding it into `ScanState` would make every consumer of a
+/// completion handle a half-completion.
+static HOME_BUS: LazyLock<Mutex<HashMap<String, watch::Sender<bool>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+
+fn with_home_sender<T>(volume_id: &str, f: impl FnOnce(&watch::Sender<bool>) -> T) -> T {
+    let mut bus = HOME_BUS.lock_ignore_poison();
+    let sender = bus
+        .entry(volume_id.to_string())
+        .or_insert_with(|| watch::channel(false).0);
+    f(sender)
+}
+
+/// A volume has covered the user's home folder.
+///
+/// The early half of the same story `publish_scan_completed` tells: photo search
+/// and folder importance only need `$HOME`, and on a first run waiting for the
+/// whole drive is minutes of the most visibly valuable feature sitting idle. It
+/// says nothing about freshness — the volume is genuinely incomplete — so ❌ don't
+/// wire anything else to it.
+pub(crate) fn publish_home_covered(volume_id: &str) {
+    // `send_replace` for the same reason the scan bus uses it: the retained value
+    // has to move even with no receivers, or a signal fired before the schedulers
+    // subscribe is lost.
+    with_home_sender(volume_id, |sender| sender.send_replace(true));
+}
+
+/// Subscribe to a volume's home-coverage signal. The receiver carries the last
+/// value, so a subscription created after the signal still sees it.
+pub(crate) fn subscribe_home_covered(volume_id: &str) -> watch::Receiver<bool> {
+    with_home_sender(volume_id, |sender| sender.subscribe())
+}
+
 /// Get (or lazily create) the `watch::Sender` for a volume, running `f` with it.
 ///
 /// Centralizes the create-if-absent so `publish` and `subscribe` can't diverge

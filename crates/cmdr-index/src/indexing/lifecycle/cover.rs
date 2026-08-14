@@ -174,6 +174,38 @@ pub(crate) struct CoverContext {
     /// walk branches on per kind; everything downstream of a discovered entry is
     /// identical.
     pub kind: IndexVolumeKind,
+    /// Who commits what the walk wrote before anyone reads it.
+    pub flush: FlushOnFinish,
+}
+
+/// Who waits for the writer once a walk ends.
+///
+/// The default is the walk itself, which is what a caller that asks a coverage
+/// question the moment its walk returns needs — a search, above all: the marks
+/// matter more than the rows, because a directory the walk gave up on carries its
+/// cause in the same batch, and an uncommitted batch reads as "still uncovered".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) enum FlushOnFinish {
+    /// Block until the writer has everything, before reporting.
+    #[default]
+    BeforeReporting,
+    /// Report immediately, leaving the drain to the caller.
+    ///
+    /// For a caller running MANY walks in a row: a blocking flush per walk means
+    /// the walker and the writer never overlap, which measured 37.5 s of standing
+    /// still over ~1,500 frontier roots
+    /// (`docs/notes/phased-vs-bulk-index-2026-08-14.md`). ⚠️ Taking this OWES the
+    /// drain before reading coverage back or reporting anything as complete.
+    LeftToTheCaller,
+}
+
+impl CoverContext {
+    /// Hand the post-walk drain to the caller. See [`FlushOnFinish::LeftToTheCaller`]
+    /// for what taking it owes.
+    pub(crate) fn leaving_the_flush_to_the_caller(mut self) -> Self {
+        self.flush = FlushOnFinish::LeftToTheCaller;
+        self
+    }
 }
 
 /// Start walking `frontier` on the volume `context` describes.
@@ -310,7 +342,17 @@ fn walk_frontier(
     // and a caller that asks what's still uncovered the moment the walk ends
     // would otherwise be told "nothing", one search too early. It's the last
     // thing the walk does, so nothing waits on the queue that didn't have to.
-    if let Err(e) = context.writer.flush_blocking() {
+    //
+    // A caller running many walks in a row takes that drain over (a flush per walk
+    // stops the walker and the writer overlapping at all) — except when this walk's
+    // ground BUFFERED live events while it ran. Those are released the moment the
+    // branch is finished, a few lines below, and the loop that replays them
+    // resolves paths through a read connection: against rows still sitting in the
+    // writer's batch, every one of them would look like a change under a missing
+    // parent.
+    let owed = context.flush == FlushOnFinish::BeforeReporting
+        || super::state::branch_coverage_buffered_events(&context.volume_id, frontier);
+    if owed && let Err(e) = context.writer.flush_blocking() {
         log::warn!("Cover: the walk's last rows may not have landed: {e}");
     }
 

@@ -49,6 +49,12 @@ pub(crate) struct ScanProgressReporter {
     /// by `InsertEntriesV2`), `Sql` for a reconcile rescan (maps empty, recompute
     /// from committed rows).
     partial_agg_source: AggSource,
+    /// Where the phase machine hears about folders the user opened, when one is
+    /// running. This tick is the ONLY legal home for that poll: `open_listings`
+    /// allocates and its contract says "asked on the scan-progress reporter's 500 ms
+    /// tick, ❌ not from anything faster", and frontier-root boundaries are far
+    /// faster than that — many finish in milliseconds.
+    visits: Option<Arc<super::phases::VisitLog>>,
     /// Tick counter; gates partial-aggregation passes via `partial_agg`.
     tick: u64,
 }
@@ -71,8 +77,15 @@ impl ScanProgressReporter {
             events,
             volume_id,
             partial_agg_source,
+            visits: None,
             tick: 0,
         }
+    }
+
+    /// Also poll where the user is looking, for the phase machine's queue.
+    pub(crate) fn noting_visits(mut self, visits: Arc<super::phases::VisitLog>) -> Self {
+        self.visits = Some(visits);
+        self
     }
 
     /// Do one tick's work: report progress, then (on an interval tick with a
@@ -95,11 +108,20 @@ impl ScanProgressReporter {
         // do zero extra work — which also makes disabling the feature a single
         // call-site toggle.
         self.tick += 1;
-        if partial_agg::should_send_partial_agg(self.tick, self.writer.queue_depth()) {
+        // One ask serves both consumers, and the tick rate IS the seam's contract.
+        let aggregating = partial_agg::should_send_partial_agg(self.tick, self.writer.queue_depth());
+        let listings = if aggregating || self.visits.is_some() {
             // Take the cheap, owned listing snapshot first and let its read lock
             // drop before any path work; don't hold a cross-subsystem lock through
             // normalization.
-            let listings = crate::indexing::host::policy::current().open_listings();
+            crate::indexing::host::policy::current().open_listings()
+        } else {
+            Vec::new()
+        };
+        if let Some(visits) = self.visits.as_ref() {
+            visits.note(&listings, &self.volume_id);
+        }
+        if aggregating {
             let hot_paths = partial_agg::collect_hot_paths(&listings, &self.volume_id);
             // Map the firmlink-normalized absolute hot paths into the volume's
             // index-relative space so the writer's `resolve_path_under(ROOT_ID, ..)`

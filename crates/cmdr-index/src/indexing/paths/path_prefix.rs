@@ -35,6 +35,13 @@ pub(crate) fn is_strict_descendant(path: &str, prefix: &str) -> bool {
 /// (re-canonicalized). Used ONLY as a grouping key for removal-storm detection —
 /// never as a rescan anchor (the anchor is the group's deepest common ancestor,
 /// which may reach deeper than this cap).
+/// Whether `path` IS `prefix` or sits under it, component-aware. The inclusive
+/// half of [`is_strict_descendant`], for a caller asking "is this inside that
+/// folder", where the folder itself counts.
+pub(crate) fn is_at_or_under(path: &str, prefix: &str) -> bool {
+    path == prefix || is_strict_descendant(path, prefix)
+}
+
 pub(crate) fn capped_prefix(path: &str, max_depth: usize) -> String {
     let comps = components(path);
     if comps.is_empty() {
