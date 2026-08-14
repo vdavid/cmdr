@@ -27,6 +27,11 @@ three levels, each closing a case the one above it can't see.
    which is what `Index::coverage` reports as `CoverageMap::being_walked`: a caller can then tell that a walk would get
    it nothing BEFORE committing to one, and wait for the walk that holds the ground instead of answering empty.
 
+**The claim is also what keeps a rescan off a live walk.** `start_scan` asks `ground_being_walked` over the whole volume
+and refuses while anything answers, because a search walk sets no `scanning` flag and a truncate under one blanks rows
+it is still writing. That rule is canonical in `../DETAILS.md` § "The two single-flight questions a scan has to ask";
+what matters here is that the claim, not a flag, is the thing being read.
+
 The deferred caller loses nothing durable: the other walk's rows land in the same index, and Decision 12 makes them
 visible to the very next query — which is exactly how Decision 11 already says a superseded query recovers its
 predecessor's ground, from the index rather than from a replay. ❌ Don't replace this with a shared-subscriber fan-out
