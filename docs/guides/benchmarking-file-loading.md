@@ -1,182 +1,104 @@
 # Benchmarking file loading performance
 
-How to measure and analyze directory loading performance in Cmdr.
+How to measure where the time goes when Cmdr opens a directory.
 
-## Overview
+The instrumentation is a **unified timeline**: both the Rust backend and the Svelte frontend emit timestamped events,
+and the frontend's go to Rust over IPC (`benchmark_log`) so everything lands in ONE stderr stream in chronological
+order. Each side resets its own epoch when a navigation starts, so timestamps are relative to that navigation.
 
-The app has built-in performance instrumentation that creates a **unified timeline** across Rust backend and TypeScript
-frontend. When enabled, both sides emit timestamped events to stderr that appear **interleaved in chronological order**.
-
-FE events are sent to Rust via IPC to appear in the same output stream as Rust events.
-
-## Quick start
+## Running one
 
 ```bash
-# Run the app with benchmarking enabled
-RUSTY_COMMANDER_BENCHMARK=1 VITE_BENCHMARK=1 pnpm tauri dev 2>&1 | tee benchmark.log
+# From the repo root. Add `--worktree <slug>` when running from a worktree.
+RUSTY_COMMANDER_BENCHMARK=1 VITE_BENCHMARK=1 pnpm dev 2>&1 | tee benchmark.log
 ```
 
-Then navigate to a test directory in the app. The **unified** timeline events will appear in the terminal with both `FE`
-and `RUST` events interleaved.
-
-## Test data setup
-
-Use the test data generator (see `docs/guides/generating-test-files.md`):
+Then navigate to the directory you want to measure and pull the timeline out:
 
 ```bash
-# Creates folders with 1000, 5000, 20000, and 50000 files
-go run scripts/test-data-generator/main.go
+grep '\[TIMELINE\]' benchmark.log > timeline.txt
 ```
 
-Test folders are created at `_ignored/test-data/folder with XXXXX files`.
+⚠️ Use `pnpm dev` from the repo root, ❌ never `cargo tauri dev`: the wrapper is what picks the dev data dir and port
+(`apps/desktop/CLAUDE.md`). It runs the app with `stdio: 'inherit'`, which is why the timeline reaches your terminal.
 
-## Running a benchmark
-
-### Step 1: Start the app with benchmarking enabled
+Before starting, make sure no dev session is already holding this worktree's data dir:
 
 ```bash
-cd /path/to/cmdr
-
-# Stop any dev session already holding this worktree's data dir. ❌ Never widen this
-# to `pkill -f cmdr`: every checkout lives under a path containing "cmdr", so that
-# reaches every Cmdr on the machine, E2E shards included. See
+# ❌ Never widen this to `pkill -f cmdr`: every checkout lives under a path containing
+# "cmdr", so that reaches every Cmdr on the machine, E2E shards included. See
 # `apps/desktop/test/e2e-playwright/DETAILS.md` § "Running on macOS" for why no argv
-# pattern can single one out, and prefer killing a pid you started.
+# pattern can single one out.
 pgrep -fl "$PWD/.*/Cmdr"   # look first; kill only the pid you recognize
-
-# Start with benchmarking enabled
-RUSTY_COMMANDER_BENCHMARK=1 VITE_BENCHMARK=1 pnpm tauri dev 2>&1 | tee benchmark.log
 ```
 
-### Step 2: Navigate to the test directory
+Test directories big enough to measure: `docs/guides/generating-test-files.md`.
 
-In the app, navigate to your test data folder (like `_ignored/test-data/20k-files`).
+## The two enable flags
 
-### Step 3: Extract and analyze the timeline
+- `RUSTY_COMMANDER_BENCHMARK=1` turns on the Rust side (read in `benchmark.rs::init_benchmarking`, called from
+  `lib.rs`'s setup hook). It also gates the `benchmark_log` command the frontend sends through.
+- `VITE_BENCHMARK=1` turns on the frontend side (read through `import.meta.env`, so it's baked in at dev-server start).
 
-```bash
-# Extract timeline events from the log
-grep '\[TIMELINE\]' benchmark.log | sort -t'|' -k1 -n > timeline.txt
-```
+They're independent, and you want both: with only one, half the timeline is missing. The frontend side also has a
+runtime escape hatch, `window.__BENCHMARK__ = true` in the DevTools console, for when the dev server is already up.
 
-## Understanding the timeline
+## Reading the timeline
 
-The timeline shows events from both Rust (RUST) and Frontend (FE) with microsecond timestamps:
+Events carry a side tag (`FE` / `RUST`) and microseconds since that side's epoch:
 
 ```
 [TIMELINE]          0μs | FE   | EPOCH_RESET
 [TIMELINE]        123μs | FE   | loadDirectory CALLED = /path/to/folder
-[TIMELINE]        456μs | FE   | IPC listDirectoryStartSession CALL
+[TIMELINE]        456μs | FE   | IPC listDirectoryStart CALL
 [TIMELINE]        500μs | RUST | EPOCH_RESET
-[TIMELINE]        502μs | RUST | list_directory_start CALLED = /path/to/folder
-[TIMELINE]        510μs | RUST | list_directory_core START
-[TIMELINE]        520μs | RUST | readdir START
-[TIMELINE]       5000μs | RUST | readdir END, count = 20000
-[TIMELINE]       5100μs | RUST | stat_loop START
-[TIMELINE]     150000μs | RUST | stat_loop END, entries = 20000
-[TIMELINE]     150100μs | RUST | sort START
-[TIMELINE]     180000μs | RUST | sort END
-[TIMELINE]     180500μs | RUST | list_directory_start RETURNING
-[TIMELINE]     181000μs | FE   | IPC listDirectoryStartSession RETURNED, totalCount = 20000
-[TIMELINE]     181500μs | FE   | fileStore.setFiles START
-[TIMELINE]     182000μs | FE   | fileStore.setFiles END, count = 5001
-[TIMELINE]     182500μs | FE   | loading = false (UI can render)
+[TIMELINE]        502μs | RUST | list_directory_start_streaming CALLED = /path/to/folder
+[TIMELINE]        900μs | RUST | list_directory_start_streaming RETURNING
+[TIMELINE]       1000μs | FE   | IPC listDirectoryStart RETURNED = <listingId>
+[TIMELINE]       1100μs | RUST | read_directory_with_progress START
+[TIMELINE]      40000μs | RUST | read_dir COMPLETE, entries = 20000
+[TIMELINE]      41000μs | RUST | sort START
+[TIMELINE]      70000μs | RUST | sort END
+[TIMELINE]      71000μs | RUST | read_directory_with_progress COMPLETE, read_dir_time_ms = 39
+[TIMELINE]      75000μs | FE   | listing-complete received, totalCount = 20000
+[TIMELINE]      75500μs | FE   | loading = false (UI can render)
 ```
 
-## Key metrics to watch
+The shape to expect: `list_directory_start_streaming` returns a `listingId` almost immediately, and the real work runs
+behind it, so the interesting gap is between `RETURNING` and `listing-complete received`. A cancelled navigation shows
+one of the `read_directory_with_progress CANCELLED (…)` events instead of `COMPLETE`, naming the point it bailed.
 
-- **`readdir START/END`**: Time to enumerate directory entries
-- **`stat_loop START/END`**: Time to stat() all files
-- **`sort START/END`**: Time to sort entries
-- **`IPC ... CALL/RETURNED`**: Round-trip time for Tauri IPC
-- **`fileStore.setFiles`**: Time to populate the store
-- **`loading = false`**: When UI can first render
-- **`get_extended_metadata_batch`**: Time for macOS metadata (Phase 2)
+The non-streaming core (`list_directory_core START`, `readdir START/END`, `stat_loop START/END`, `sort START/END`,
+`list_directory_core END`, in `listing/reading.rs`) emits its own events when that path runs. macOS extended metadata
+appears separately as `get_extended_metadata_batch START/END, count`.
 
-## Typical performance breakdown (measured 2024-12-30)
+## What to look at
 
-### 20,000 files (warm filesystem cache)
+- **When does the user see files?** → `loading = false (UI can render)`, measured from the FE `EPOCH_RESET`.
+- **Where is the time?** → compare `read_dir COMPLETE` (enumerate + stat), `sort END`, and the gap between the Rust
+  `COMPLETE` and the FE `listing-complete received` (that gap is IPC and store population).
+- **Is extended metadata in the way?** → check whether `get_extended_metadata_batch` lands before or after
+  `loading = false`. It shouldn't block it.
+- **Did the navigation even finish?** → a `CANCELLED` event means a second navigation superseded this one, and the
+  numbers below it describe nothing.
 
-- **readdir**: ~15ms
-- **stat loop**: ~110ms
-- **sort**: ~42ms
-- **IPC serialization + return**: ~200ms
-- **Total to first render**: **~365ms**
-- **Extended metadata (5k batch, async)**: ~68ms
+## Nothing in the output?
 
-### 50,000 files (warm filesystem cache)
-
-- **readdir**: ~35ms
-- **stat loop**: ~285ms
-- **sort**: ~115ms
-- **IPC serialization + return**: ~460ms
-- **Total to first render**: **~900ms**
-- **Extended metadata (5k batch, async)**: ~70ms
-
-Note: Cold cache can be 3-4x slower due to disk I/O.
-
-## Environment variables
-
-| Variable                      | Side     | Purpose                                 |
-| ----------------------------- | -------- | --------------------------------------- |
-| `RUSTY_COMMANDER_BENCHMARK=1` | Rust     | Enable Rust-side timeline logging       |
-| `VITE_BENCHMARK=1`            | Frontend | Enable TypeScript-side timeline logging |
-
-Both must be set for a complete timeline. They're independent, so you can enable just one side if needed.
-
-## Runtime toggle (TypeScript only)
-
-You can also enable benchmarking at runtime from the browser console:
-
-```javascript
-window.__BENCHMARK__ = true
-```
-
-Then navigate to a directory to see the timeline in the console.
-
-## Analyzing results
-
-### Quick summary script
-
-```bash
-# Show timeline with relative timestamps
-grep '\[TIMELINE\]' benchmark.log | head -50
-
-# Find total time to first render
-grep 'loading = false' benchmark.log
-
-# Show extended metadata timing
-grep 'extended_metadata' benchmark.log
-```
-
-### Key questions to answer
-
-1. **How long until the user sees files?** → Look for `loading = false`
-2. **Where is the bottleneck?** → Compare `readdir`, `stat_loop`, `sort`, IPC times
-3. **Is extended metadata blocking?** → Check if it appears before or after `loading = false`
-
-## Troubleshooting
-
-### No timeline output
-
-- Ensure both env vars are set: `RUSTY_COMMANDER_BENCHMARK=1 VITE_BENCHMARK=1`
-- Check that you're capturing stderr: `2>&1 | tee benchmark.log`
-- The Rust side only logs on macOS (for extended metadata)
-
-### Timestamps don't align
-
-- FE and Rust have independent epochs that reset on each navigation
-- Compare relative times within each side, not absolute values
-- Both should reset to ~0 when navigating to a new folder
-
-### Missing frontend events
-
-- Open browser DevTools console (F12) to see FE logs
-- Or check the Tauri dev server output
+- Both env vars set, and stderr captured (`2>&1 | tee benchmark.log`).
+- Frontend events are ALSO `console.log`ed, so DevTools shows the FE half even when the Rust half is off. If DevTools
+  has them and the terminal doesn't, `RUSTY_COMMANDER_BENCHMARK` isn't set on the app process.
+- Timestamps that "don't align" across sides are expected: each side keeps its own epoch and resets it per navigation.
+  Compare within a side, or compare the ORDER across them.
 
 ## Code locations
 
-- Rust: `src-tauri/src/benchmark.rs`
-- TypeScript: `src/lib/benchmark.ts`
-- File loading: `src-tauri/src/file_system/listing/operations.rs`
-- Frontend: `src/lib/file-explorer/pane/FilePane.svelte`
+- `apps/desktop/src-tauri/src/benchmark.rs`: the Rust emitter (`log_event`, `log_event_value`, `reset_epoch`).
+- `apps/desktop/src/lib/benchmark.ts`: the frontend emitter, forwarding through `benchmarkLog`.
+- `apps/desktop/src-tauri/src/file_system/listing/streaming.rs` and `reading.rs`: the instrumented backend paths.
+- `apps/desktop/src/lib/file-explorer/pane/listing-loader.ts`: the instrumented frontend path.
+
+## Recording a result
+
+A measurement worth keeping goes in `docs/notes/` (see its `README.md`), dated and with the machine and directory size
+named. ❌ Don't leave numbers in this guide: a how-to outlives the shape of the pipeline it measured, and stale figures
+here read as current.
