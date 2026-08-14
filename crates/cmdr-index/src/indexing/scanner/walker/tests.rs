@@ -106,6 +106,10 @@ struct Recorded {
     read_ok: BTreeSet<PathBuf>,
     /// Paths reported via visit_read_error, with whether it was a timeout.
     errors: Vec<(PathBuf, bool)>,
+    /// Paths reported via `visit_pruned`: tasks the give-up budget dropped unread.
+    /// Kept APART from `errors`, which counts reads actually attempted — the
+    /// give-up budget's whole job is to keep that number small.
+    pruned: BTreeSet<PathBuf>,
     /// Every id assigned to a child (to assert uniqueness).
     assigned_ids: Vec<i64>,
 }
@@ -147,6 +151,12 @@ impl DirVisitor for RecordingVisitor {
         rec.id_to_path.insert(dir.id, dir.path.clone());
         rec.errors
             .push((dir.path.clone(), matches!(err, WalkReadError::TimedOut)));
+    }
+
+    fn visit_pruned(&self, dir: &DirTask) {
+        let mut rec = self.rec.lock().unwrap_or_else(|e| e.into_inner());
+        rec.id_to_path.insert(dir.id, dir.path.clone());
+        rec.pruned.insert(dir.path.clone());
     }
 }
 
@@ -747,11 +757,26 @@ fn gives_up_on_a_dead_subtree_and_keeps_walking_a_healthy_sibling() {
     );
 
     // Honest-stale: no dead child is marked read (they either erred or were pruned;
-    // none is completed/known). The pruned majority are neither read nor even
-    // error-reported — left silently unknown, exactly as a dir the scan never reached.
+    // none is completed/known).
     assert!(
         !rec.read_ok.iter().any(|p| p.parent() == Some(Path::new("/r/dead"))),
         "no dead child may be marked read (honest-stale, never false-complete)",
+    );
+
+    // But no dead child is left SILENT either. A pruned task is dropped unread, so
+    // this hook is the only mention that directory ever gets — without it the
+    // visitor can't record it, and it sits in the coverage frontier forever, handed
+    // to every later search at full timeout cost.
+    let unmentioned: Vec<_> = dead_names
+        .iter()
+        .map(|n| PathBuf::from(format!("/r/dead/{n}")))
+        .filter(|p| !rec.pruned.contains(p) && !rec.errors.iter().any(|(e, _)| e == p))
+        .collect();
+    assert!(
+        unmentioned.is_empty(),
+        "every dead child must be either probed or reported pruned, {} weren't: {:?}",
+        unmentioned.len(),
+        &unmentioned[..unmentioned.len().min(5)],
     );
 
     // The healthy sibling is fully walked despite the dead subtree flooding the queue.

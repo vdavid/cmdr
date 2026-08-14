@@ -831,8 +831,16 @@ fn scan_summary_total_physical_bytes_equals_final_counter() {
     assert!(summary.total_physical_bytes > 0, "scan should sum some physical bytes");
 }
 
+/// A read that stalls past the watchdog leaves the directory honestly unlisted AND
+/// records why, so the coverage frontier stops handing it to every later search.
+///
+/// Both halves matter. Without the mark the dir stays plain `listed_epoch = 0`,
+/// which is indistinguishable from ground nothing has reached yet, so every search
+/// scoped above it re-pays the full stall timeout — forever, since a walk that
+/// times out again changes nothing. The cause is `Abandoned` rather than `Denied`:
+/// a hung mount is not a permission anybody can grant.
 #[test]
-fn timed_out_dir_is_not_marked_listed() {
+fn a_timed_out_dir_is_marked_abandoned_and_never_marked_listed() {
     use crate::indexing::scanner::walker::{RawDirEntry, RawFileType, ReadDirFn, ReadProgress};
     use std::collections::HashMap;
 
@@ -935,6 +943,20 @@ fn timed_out_dir_is_not_marked_listed() {
     // The healthy sibling and root ARE marked at the current epoch.
     assert_eq!(listed_epoch(ok_id), epoch_now, "healthy dir marked at current epoch");
     assert_eq!(listed_epoch(ROOT_ID), epoch_now, "root marked at current epoch");
+
+    // And the hung dir carries the cause, so the frontier stops offering it.
+    let cause = |id: i64| {
+        IndexStore::get_unreadable_cause_by_id(&conn, id)
+            .expect("read the cause")
+            .expect("row")
+    };
+    assert_eq!(
+        cause(slow_id),
+        Some(UnreadableCause::Abandoned),
+        "a stalled read is ground Cmdr gave up on, ❌ not a permission the user can grant"
+    );
+    assert_eq!(cause(ok_id), None, "❌ nothing the walk actually read may be condemned");
+    assert_eq!(cause(ROOT_ID), None);
 }
 
 #[test]

@@ -175,14 +175,20 @@ fn a_cancelled_walk_leaves_durable_partial_coverage() {
 }
 
 /// Convergence has a second failure mode, and it needs no cancellation: a folder
-/// the walk CAN'T READ stays `listed_epoch = 0` forever, so it re-enters the
-/// frontier on every single search and that part of the scope never converges.
+/// the walk CAN'T READ stays `listed_epoch = 0`, so it re-enters the frontier on
+/// every single search and that part of the scope never converges.
 ///
-/// The schema carries the column for exactly this. The walk is its only
-/// writer, and stamps it only for PERMISSION DENIED — the durable,
-/// user-fixable case. Any other read error might be transient (a dead mount
-/// coming back, a storm passing), and pinning those would stop the retry that
-/// heals them.
+/// The schema carries the column for exactly this, and the walk is its only writer.
+/// Every failed read gets a cause, split by WHOSE problem it is: permission denied
+/// is the durable, user-fixable refusal; any other errno is ground Cmdr gave up on
+/// and will retry on a backoff.
+///
+/// ⚠️ Leaving the non-permission case uncaused is what made a wedged mount cost a
+/// full stall timeout on every search, forever: 1,497 `ETIMEDOUT` directories
+/// inside one disconnected phone mount on David's machine
+/// (`docs/notes/phased-vs-bulk-index-2026-08-14.md`). "It might heal" was true and
+/// still left the retry re-paying full price and never converging; the backoff in
+/// `writer/abandoned_retry.rs` is what buys the retry back at a price worth paying.
 #[test]
 fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
     let (writer, db_path, _db_dir) = setup_writer();
@@ -190,13 +196,15 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
     let a = root.join("A");
     let denied = a.join("denied");
     let flaky = a.join("flaky");
+    let healthy = a.join("healthy");
     seed_chain(&db_path, &a, &writer);
 
     let cancel = CancellationToken::new();
     let reader = MockTree::new()
         // `flaky` is declared as a child but has no listing, so its read fails
-        // with a plain not-found — the transient shape.
-        .dir_at(a.clone(), vec![dir("denied"), dir("flaky")])
+        // with a plain not-found — the non-permission errno shape.
+        .dir_at(a.clone(), vec![dir("denied"), dir("flaky"), dir("healthy")])
+        .dir_at(healthy.clone(), level(None))
         .denied_at(denied.clone())
         .reader(&cancel);
 
@@ -220,8 +228,13 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
     );
     assert_eq!(
         unreadable_flag(&flaky),
+        Some(UnreadableCause::Abandoned),
+        "any other errno is ground Cmdr gave up on: recorded, so it stops costing a read per search"
+    );
+    assert_eq!(
+        unreadable_flag(&healthy),
         None,
-        "any other read error might heal, so leave it retriable"
+        "❌ and a folder the walk actually read is never condemned"
     );
 
     let mut map = coverage_for_scope(
@@ -233,16 +246,106 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
     .expect("coverage");
     map.frontier.sort();
     map.permission_denied.sort();
-    assert_eq!(
-        map.frontier,
-        vec![flaky.to_string_lossy().to_string()],
-        "only the retriable folder is offered to the next walk"
+    map.abandoned.sort();
+    assert!(
+        map.frontier.is_empty(),
+        "nothing is offered to the next walk: every folder here was either read or recorded, got {:?}",
+        map.frontier
     );
     assert_eq!(
         map.permission_denied,
         vec![denied.to_string_lossy().to_string()],
-        "and the unreadable one is reported to the user instead of walked again"
+        "and the refusal is reported to the user instead of walked again"
     );
+    assert_eq!(
+        map.abandoned,
+        vec![flaky.to_string_lossy().to_string()],
+        "❌ never in `permission_denied`: offering Full Disk Access for a dead mount is advice that does nothing"
+    );
+}
+
+/// The regression anchor for the trap that made a benchmark arm look 2× faster
+/// while silently indexing 1.28M fewer entries: a mark computed BEFORE the walk's
+/// own `MarkDirsListed` has landed condemns everything the walk listed but hasn't
+/// stamped yet. It reads exactly like a win, and the only evidence is an entry
+/// count that is quietly short.
+///
+/// So: over a tree where one folder fails and the rest are fine, recording the
+/// failure must cost the walk NOTHING. Every folder that was read stays listed at
+/// the current epoch with no cause, every file it holds is in the index, and the
+/// coverage answer is complete except for the one folder that really did fail.
+///
+/// What makes that structurally true rather than lucky: the marks ride the writer
+/// channel behind the rows and the `MarkDirsListed` that stamp them
+/// (`insert_visitor.rs`'s `Pending`, then `send_unreadable_marks` after
+/// `visitor.finish()`), and the condemned ids are only ever the ones a read failed
+/// on — never "whatever is still unlisted".
+#[test]
+fn marking_abandoned_ground_costs_no_coverage() {
+    let (writer, db_path, _db_dir) = setup_writer();
+    let root = PathBuf::from(TREE_ROOT);
+    let a = root.join("A");
+    let b = a.join("B");
+    let c = b.join("C");
+    let wedged = b.join("wedged");
+    seed_chain(&db_path, &a, &writer);
+
+    let cancel = CancellationToken::new();
+    let reader = MockTree::new()
+        .dir_at(a.clone(), level(Some("B")))
+        // `wedged` has no listing, so its read fails with a non-permission errno.
+        .dir_at(b.clone(), {
+            let mut children = level(Some("C"));
+            children.push(dir("wedged"));
+            children
+        })
+        .dir_at(c.clone(), level(None))
+        .reader(&cancel);
+
+    cover_subtree_with_reader(&a, &IndexPathSpace::root(), &writer, None, &cancel, reader, None).expect("walk A");
+    writer.flush_blocking().expect("flush");
+    writer.shutdown();
+
+    let conn = IndexStore::open_read_connection(&db_path).expect("read connection");
+    let epoch = IndexStore::read_current_epoch(&conn).expect("epoch");
+    let row = |path: &Path| {
+        let id = crate::indexing::store::resolve_path(&conn, &path.to_string_lossy())
+            .expect("resolve")
+            .expect("row");
+        let listed: u64 = conn
+            .query_row("SELECT listed_epoch FROM entries WHERE id = ?1", [id], |r| r.get(0))
+            .expect("listed_epoch");
+        let cause = IndexStore::get_unreadable_cause_by_id(&conn, id)
+            .expect("cause")
+            .expect("row");
+        (listed, cause)
+    };
+
+    for read_folder in [&a, &b, &c] {
+        assert_eq!(
+            row(read_folder),
+            (epoch, None),
+            "{} was read, so the mark must leave it listed and uncondemned",
+            read_folder.display()
+        );
+    }
+    assert_eq!(row(&wedged), (0, Some(UnreadableCause::Abandoned)));
+
+    // 30 files across A, B, and C — the count that would have gone quietly short.
+    let files: u64 = conn
+        .query_row("SELECT COUNT(*) FROM entries WHERE is_directory = 0", [], |r| r.get(0))
+        .expect("count files");
+    assert_eq!(files, 30, "every file the walk read is still in the index");
+
+    let map = coverage_for_scope(
+        &conn,
+        &a.to_string_lossy(),
+        &a.to_string_lossy(),
+        CoverageDimension::Listing,
+    )
+    .expect("coverage");
+    assert!(map.frontier.is_empty(), "nothing to re-walk, got {:?}", map.frontier);
+    assert_eq!(map.abandoned, vec![wedged.to_string_lossy().to_string()]);
 }
 
 // ── 2. A walk never removes a row it did not write ───────────────────

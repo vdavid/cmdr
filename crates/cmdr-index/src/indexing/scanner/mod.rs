@@ -40,7 +40,7 @@ mod live_emit;
 pub(in crate::indexing) use live_emit::{EMIT_INTERVAL, EmitPacer};
 
 mod insert_visitor;
-use insert_visitor::InsertVisitor;
+use insert_visitor::{InsertVisitor, UnreadableIds};
 
 mod walker;
 use walker::{
@@ -92,18 +92,26 @@ mod tests;
 /// (mirrors `network_scanner`).
 const MARK_CHUNK: usize = 10_000;
 
-/// Stamp the directories this walk was refused, so the coverage frontier stops
+/// Stamp the directories this walk couldn't read, so the coverage frontier stops
 /// offering them to every later search. A no-op when empty.
 ///
-/// Always [`UnreadableCause::Denied`]: the local walker only ever marks a
-/// permission-denied read (`insert_visitor.rs`), and a timeout stays retriable.
-fn send_unreadable_marks(ids: &[i64], writer: &IndexWriter) {
-    for chunk in ids.chunks(MARK_CHUNK) {
-        if let Err(e) = writer.send(WriteMessage::MarkDirsUnreadable {
-            ids: chunk.to_vec(),
-            cause: UnreadableCause::Denied,
-        }) {
-            log::warn!("Scanner: failed to send MarkDirsUnreadable: {e}");
+/// One message per cause: a refusal is the user's to fix and stands until they do,
+/// while abandoned ground is Cmdr's to retry on the backoff in
+/// `writer/abandoned_retry.rs`. Which ids land in which is decided in
+/// `insert_visitor.rs`.
+fn send_unreadable_marks(ids: &UnreadableIds, writer: &IndexWriter) {
+    let batches = [
+        (&ids.denied, UnreadableCause::Denied),
+        (&ids.abandoned, UnreadableCause::Abandoned),
+    ];
+    for (ids, cause) in batches {
+        for chunk in ids.chunks(MARK_CHUNK) {
+            if let Err(e) = writer.send(WriteMessage::MarkDirsUnreadable {
+                ids: chunk.to_vec(),
+                cause,
+            }) {
+                log::warn!("Scanner: failed to send MarkDirsUnreadable: {e}");
+            }
         }
     }
 }
@@ -875,9 +883,11 @@ fn run_scan(
     }
 
     // Directories the walk found it can't read stop re-entering the frontier.
-    // After the marks, so a directory that failed once and then succeeded on a
-    // retry within the same walk ends up listed rather than pinned unreadable —
-    // and `mark_dirs_listed` clears the flag anyway, whichever order they land in.
+    // After `visitor.finish()` above, so every `MarkDirsListed` this walk earned is
+    // already ahead of these on the writer channel: a directory that failed once
+    // and then succeeded on a retry within the same walk ends up listed rather than
+    // pinned unreadable — and `mark_dirs_listed` clears the cause anyway, whichever
+    // order they land in.
     send_unreadable_marks(&visitor.take_unreadable_ids(), writer);
 
     let snap = progress.snapshot();

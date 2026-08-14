@@ -342,7 +342,13 @@ impl<V: DirVisitor + 'static> Engine<V> {
             // failure budget). Skip the read entirely — no probe, no per-dir log,
             // the dir left unlisted (honest-stale). This is what replaces the
             // per-descendant abandon flood with one give-up line.
+            //
+            // The visitor still hears about it: this is the only mention a pruned
+            // directory ever gets, and without it nothing can record that Cmdr gave
+            // up here, so it sits in the coverage frontier and every later search
+            // pays to rediscover the same dead mount.
             if scheduled.budget.is_given_up() {
+                self.visitor.visit_pruned(&scheduled.task);
                 self.complete_one();
                 continue;
             }

@@ -97,9 +97,26 @@ pub(super) struct InsertVisitor {
     seen_inodes: Mutex<HashSet<u64>>,
     /// First writer-send error, surfaced as the scan result.
     send_error: Mutex<Option<String>>,
-    /// Directories whose read failed with permission denied, so the frontier
-    /// stops offering them on every later search.
-    unreadable_ids: Mutex<Vec<i64>>,
+    /// Directories this walk couldn't read, by cause, so the frontier stops
+    /// offering them on every later search.
+    unreadable_ids: Mutex<UnreadableIds>,
+}
+
+/// The ids one walk condemned, split by the sentence they turn into.
+///
+/// `pub(super)` so the scan driver can send one mark message per cause.
+///
+/// Two lists rather than a `Vec<(i64, UnreadableCause)>` because the marks go out
+/// as one message per cause over a batch of ids, and because the split is the
+/// decision worth being able to read at a glance: a refusal is the user's to fix
+/// and permanent until they do, while abandoned ground is Cmdr's to retry.
+#[derive(Default)]
+pub(super) struct UnreadableIds {
+    /// Reads the OS refused (permission denied).
+    pub(super) denied: Vec<i64>,
+    /// Reads that timed out, failed with any other errno, or were pruned unread by
+    /// the walker's consecutive-failure budget.
+    pub(super) abandoned: Vec<i64>,
 }
 
 impl InsertVisitor {
@@ -136,7 +153,7 @@ impl InsertVisitor {
             }),
             seen_inodes: Mutex::new(HashSet::new()),
             send_error: Mutex::new(None),
-            unreadable_ids: Mutex::new(Vec::new()),
+            unreadable_ids: Mutex::new(UnreadableIds::default()),
         }
     }
 
@@ -226,10 +243,17 @@ impl InsertVisitor {
         }
     }
 
-    /// The directories this walk found it can't read, for the caller to stamp
-    /// once the walk is over.
-    pub(super) fn take_unreadable_ids(&self) -> Vec<i64> {
-        std::mem::take(&mut *self.unreadable_ids.lock_ignore_poison())
+    /// The directories this walk found it can't read, by cause, for the caller to
+    /// stamp once the walk is over.
+    ///
+    /// ⚠️ The caller stamps them AFTER [`finish`](Self::finish), so every
+    /// `MarkDirsListed` this walk earned is already ahead of them on the writer
+    /// channel. ❌ Never derive the list from "what is still unlisted" instead:
+    /// that condemns everything the walk read but hasn't stamped yet, which reads
+    /// as a speed-up and shows up only as a quietly short entry count
+    /// (`marking_abandoned_ground_costs_no_coverage`).
+    pub(super) fn take_unreadable_ids(&self) -> UnreadableIds {
+        std::mem::take(&mut self.unreadable_ids.lock_ignore_poison())
     }
 }
 
@@ -403,27 +427,42 @@ impl DirVisitor for InsertVisitor {
         self.emit(discovered);
     }
 
+    /// Record every directory whose contents this walk couldn't get, with the cause
+    /// that says whose problem it is.
+    ///
+    /// ⚠️ Every case gets a cause, and that is the point. Leaving the
+    /// non-permission errno uncaused (as "it might be transient, so let it be
+    /// retried") left the directory indistinguishable from ground nothing had
+    /// reached yet, so the coverage frontier handed it to EVERY later search and
+    /// each one re-paid the same failing read. On a machine with a disconnected
+    /// mount that is a full stall timeout per directory per search, forever, with
+    /// nothing ever converging. The retry lives in `writer/abandoned_retry.rs`
+    /// instead, where it costs one attempt per backoff window rather than one per
+    /// search.
     fn visit_read_error(&self, dir: &DirTask, err: &WalkReadError) {
         match err {
-            WalkReadError::Io(e) => {
+            WalkReadError::Io(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
                 // Surface TCC-restricted paths so the sidebar can show the "limited
                 // by macOS" styling. The host filters to known TCC prefixes.
-                if e.kind() == std::io::ErrorKind::PermissionDenied {
-                    self.writer
-                        .events()
-                        .emit(IndexEvent::PathAccessDenied { path: dir.path.clone() });
-                    // Remember it, so the coverage frontier stops handing this
-                    // directory to every later search. Permission denied is the
-                    // durable, user-fixable case; any other I/O error might be
-                    // transient, so those stay plain unlisted and get retried.
-                    self.unreadable_ids.lock_ignore_poison().push(dir.id);
-                }
+                self.writer
+                    .events()
+                    .emit(IndexEvent::PathAccessDenied { path: dir.path.clone() });
+                self.unreadable_ids.lock_ignore_poison().denied.push(dir.id);
                 log::debug!("Scanner: skipping errored dir {}: {e}", dir.path.display());
             }
-            // Timeouts are already logged by the walker watchdog; left unmarked.
-            // NOT unreadable: a stalled read is a dead mount or a storm, both of
-            // which heal, and pinning them would make the walk stop retrying.
-            WalkReadError::TimedOut => {}
+            WalkReadError::Io(e) => {
+                self.unreadable_ids.lock_ignore_poison().abandoned.push(dir.id);
+                log::debug!("Scanner: skipping errored dir {}: {e}", dir.path.display());
+            }
+            // Already logged by the walker watchdog, so no line here.
+            WalkReadError::TimedOut => self.unreadable_ids.lock_ignore_poison().abandoned.push(dir.id),
         }
+    }
+
+    /// A task the give-up budget dropped unread. No log line (one give-up line
+    /// covers the whole subtree), and the same cause as a read that failed: from a
+    /// search's side these are identical, ground this walk didn't get.
+    fn visit_pruned(&self, dir: &DirTask) {
+        self.unreadable_ids.lock_ignore_poison().abandoned.push(dir.id);
     }
 }

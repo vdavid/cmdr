@@ -203,10 +203,11 @@ fn phased_four_roots_at_a_time() {
 /// What the phased shape costs once a walk that gave up on ground says so, so no
 /// later phase's frontier offers that ground again.
 ///
-/// The mechanism already exists — `MarkDirsUnreadable` is what a denied or declined
-/// directory gets — and nothing sends it for a directory the walker ABANDONED. On a
-/// machine with a stalled File Provider domain that turns every later phase into a
-/// re-run of the same timeouts.
+/// This arm models what the shipped walk now does for itself
+/// (`UnreadableCause::Abandoned`), from the phase driver's side: whatever a phase
+/// left unlisted under its own root gets one `MarkDirsUnreadable` after the phase's
+/// drain. It stays here because the arm measures the phased shape's re-offer cost,
+/// which is a property of the driver rather than of the walk.
 #[test]
 #[ignore = "benchmark over the real boot volume; run manually with --nocapture"]
 fn phased_marking_ground_the_walk_gave_up_on() {
@@ -622,7 +623,7 @@ impl Bench {
         self.marked_abandoned.fetch_add(ids.len() as u64, Ordering::Relaxed);
         let _ = self.writer.send(WriteMessage::MarkDirsUnreadable {
             ids,
-            cause: UnreadableCause::Denied,
+            cause: UnreadableCause::Abandoned,
         });
     }
 

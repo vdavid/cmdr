@@ -183,6 +183,17 @@ pub trait DirVisitor: Send + Sync {
     /// visitor's own bookkeeping (logging, denial recording).
     fn visit_read_error(&self, dir: &DirTask, err: &WalkReadError);
 
+    /// A directory this walk will never read: its subtree was given up after
+    /// [`WalkConfig::give_up_after`] consecutive failed reads, so the task was
+    /// dropped from the queue unread.
+    ///
+    /// Nothing was tried, so there's no error to report — and that's exactly why
+    /// the hook exists: a pruned task gets no other mention anywhere, so a visitor
+    /// recording ground nothing can read would silently miss the whole pruned
+    /// majority of a dead mount. ❌ Don't log per call; killing that flood is what
+    /// the budget is for. Defaults to nothing, like the other bookkeeping hooks.
+    fn visit_pruned(&self, _dir: &DirTask) {}
+
     /// A worker thread failed to spawn, so the walk runs with less parallelism.
     /// The engine carries on either way (the remaining workers still drain the
     /// queue); how loudly to report it is the visitor's call, so this defaults to
