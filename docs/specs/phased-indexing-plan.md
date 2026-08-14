@@ -20,14 +20,23 @@ audit), `apps/desktop/src/lib/indexing/CLAUDE.md`, `apps/desktop/src-tauri/src/f
 
 ## Why
 
-1. **The wow moment is missing.** A new user opens Cmdr, and the one thing that makes it feel unlike Finder (real folder
-   sizes, instant search) takes minutes to arrive, spread evenly over a drive they mostly don't care about.
-2. **We index the wrong things first.** `/System`, `/Library`, and Xcode caches get walked with the same priority as
+Ordered by how much each survives a disappointing benchmark, because that is the order in which they'd be defended.
+
+1. **An interrupted first scan currently loses everything.** Quit mid-scan and the next launch truncates and starts
+   over. Coverage walks are add-only, so a phased index survives quits, crashes, and mount hiccups. Independent of
+   ordering, and the one reason that holds even if phased coverage turns out slower.
+2. **Photo search and folder importance wait for `/` when they only need `$HOME`.** Both start off `Freshness::Fresh`,
+   which today means the whole drive. On a first run that is minutes of the most visibly valuable feature sitting idle
+   while `/System` is walked. `home_covered_at` is the smallest possible fix and the largest user-visible one.
+3. **We index the wrong things first.** `/System`, `/Library`, and Xcode caches get walked with the same priority as
    `~/Downloads`. The user is looking at their own files.
-3. **The cost lands at the worst moment.** First launch is also onboarding, the AI model download, and first
+4. **The cost lands at the worst moment.** First launch is also onboarding, the AI model download, and first
    impressions. Spending the machine on ground nobody asked for _first_ violates "respect the user's resources".
-4. **An interrupted first scan currently loses everything.** Quit mid-scan and the next launch truncates and starts
-   over. Coverage walks are add-only, so a phased index survives quits, crashes, and mount hiccups.
+5. **The wow moment arrives late.** Real folder sizes take minutes, spread evenly over a drive the user mostly doesn't
+   care about. Sized honestly, this is the weakest of the five: the folders it is about total 4,735 entries (under a
+   second), and mid-scan partial aggregation already punches the folders a pane is showing through the depth cap every
+   5 s (`lifecycle/partial_agg.rs`). What ordering adds is that the punch has something to find, since a folder nobody
+   has walked yet aggregates to nothing.
 
 **Why not also narrow the default scope to home**, which an earlier draft proposed: measured on David's machine
 (2026-08-14, boot volume, 5,191,189 entries, 768 MB index, full walk 193 s), everything outside `$HOME` is 800,441
@@ -227,7 +236,16 @@ cover **nothing** while reporting `roots_covered: 0`.
   correct — a search somebody typed outranks background phasing — but the plan may not claim a single-walker invariant,
   and the benchmark's browsing arm must include a search.
 - **A frontier root can be huge.** The wait is bounded by the largest child of the phase root, not by a small subtree:
-  `~/Library` is 1.44M entries on David's machine, `~/projects-git` 1.58M.
+  `~/Library` is 1.44M entries on David's machine, `~/projects-git` 1.58M. So "whatever they open gets indexed next" can
+  mean "in 40 seconds", on exactly the machines where it matters most.
+
+  **The knob for this is the stitch, not preemption.** The stitch already turns a directory into a list of smaller
+  frontier roots, so give it a DEPTH and apply it one level deeper on an oversized root: stitching `~/Library` itself
+  makes `~/Library/Caches` (423k) a frontier root instead of `~/Library` (1.44M), cutting the worst-case wait by roughly
+  3×. Same mechanism, no new concept, and the branch collapse already absorbs the extra branches. **Decide the trigger
+  from the benchmark, ❌ not from a guess**: the machine can't cheaply know a root's size in advance, so the rule is
+  "stitch depth 2 under the `$HOME` and `/` phase roots, depth 1 elsewhere" unless the numbers say otherwise. Cost is a
+  handful more `readdir`s per phase.
 
 ### What a full scan does that cover walks don't (and what we owe each one)
 
@@ -239,6 +257,15 @@ Audited end to end against `manager/start.rs::start_scan` + `lifecycle/scan_comp
 - **`ScanCalibration` capture and the live counters.** `scan_calibration` is set only in `start_scan`, and `get_status`
   derives its counters from it plus a live `ScanHandle`. Without it, `status()` reports `scanning: false` with zero
   counters for the entire first index, so the per-drive row, progress bar, and ETA are dead.
+- **⚠️ `ScanProgressReporter`, and everything hanging off its 500 ms tick.** It is spawned only by a scan path
+  (`lifecycle/manager.rs`, `network_scan.rs`) and its loop ends when the completion handler sets `scan_done`, so under
+  phases it never runs. Three things stop together: the `index-scan-progress` event stream, **mid-scan partial
+  aggregation** (`ComputePartialAggregates` with hot paths collected from `open_listings`, `lifecycle/partial_agg.rs`),
+  and the only tick the `open_listings` seam permits a caller to use (`host/policy.rs:93-100`). Losing partial
+  aggregation hurts precisely where this plan is weakest: a folder INSIDE a frontier root still being walked gets no
+  size until that root finishes, and a frontier root can be 1.58M entries. **The phase machine spawns its own reporter**
+  (phase-scoped `scan_done`, `AggSource::Sql`, since a cover walk leaves the accumulator maps empty), which also gives
+  the visit poll its natural home and satisfies the seam's rate limit by construction.
 - **Events**: `ScanStarted`, `ScanComplete`, `AggregationComplete`, `DirsUpdated["/"]`. The frontend's
   `resetAggregation()` handshake depends on their ordering (`scan_completion.rs:208-211`).
 - **`writer.set_expected_total_entries`** — the writer's flushing-progress denominator.
@@ -503,6 +530,7 @@ guardrails live in `apps/desktop/src/lib/file-explorer/pane/first-run-layout.ts`
 in `docs/architecture-patterns.md` § Persistence. One piece of its test list was deliberately skipped and is still worth
 writing: **a Playwright E2E over a first run with `CMDR_MOCK_FDA`**.
 
+- **M0** — the pre-existing bugs this plan would otherwise make routine.
 - **M1** — priority-root computation plus the host seam.
 - **M2** — the stitch plus the phase machine, gated on a benchmark.
 - **M3** — launch, resume, and every path that would truncate.
@@ -510,9 +538,48 @@ writing: **a Playwright E2E over a first run with `CMDR_MOCK_FDA`**.
 - **M5** — surfaces, copy, kill switch.
 - **M6** — follow-ups.
 
-M1 touches nothing M2 depends on, so it can run alongside M2's benchmark if an agent is idle. Everything after M2 is
-strictly sequential. **M4's unit tests stand alone, but its end-to-end assertion can't run until M3 lands**, because the
-surfaces it fixes only misbehave once the phase machine is real.
+M0 and M1 touch nothing M2 depends on. Everything after M2 is strictly sequential. **M4's unit tests stand alone, but
+its end-to-end assertion can't run until M3 lands**, because the surfaces it fixes only misbehave once the phase machine
+is real.
+
+---
+
+## M0 — The pre-existing bugs, first and on their own
+
+**Intent:** four defects that exist on `main` today, are latent only because cover walks are rare, and become routine
+the moment phases ship. Each is correct on its own merits and none needs the phase machine, so they land first: the
+risky milestone gets smaller, and a beta build gets safer immediately even if everything after this is re-decided.
+
+1. **A truncating rescan can fire under a live search cover walk.** `start_scan`'s single-flight guard reads
+   `mgr.scanning`, which a search-driven `Index::cover` never sets, so a coalesced shallow anchor can send
+   `TruncateData` + `BumpCurrentEpoch` while a walk holds a claim and is still writing. Gate `start_scan` on
+   `cover::ground_being_walked(volume_id, &[volume_root])` being non-empty as well (`cover/live.rs:126`, `:176-190`;
+   `overlaps` counts an ancestor). Test: **`a_truncating_rescan_refuses_while_a_search_cover_walk_is_live`**.
+   **Test-first** — a truncate under a live walk is the worst failure in this whole plan's blast radius.
+2. **A walk that finishes while the manager is shutting down leaks its branch forever.** `begin_branch_coverage` /
+   `finish_branch_coverage` both go through `with_running_manager` (`lifecycle/state.rs:275-294`), and `force_scan` /
+   `perform_registry_rescan` `mem::replace` the phase with `ShuttingDown` for the whole of `start_scan`. A walk ending
+   inside that window never decrements `walks`, so `may_walk` stays false for that ground permanently, every event for
+   it buffers and is never promoted, and it is never absorbed. Make finish idempotent and independent of the registry
+   phase. Test: **`a_walk_that_finishes_while_the_manager_is_shutting_down_still_releases_its_branch`**.
+3. **A failed watcher silently erases the record of what we covered.** `finish_branch_coverage` uses
+   `AfterWalk::Forget` whenever `mgr.branch_watched` is false (`manager/start.rs:275-283`), so a non-fatal
+   `DriveWatcher::start_branches` failure drops the persisted branch set. Decouple persisting from `branch_watched`:
+   treat a failed watcher as "covered but unwatched", which the epoch bump on the next resume already makes honest.
+   This is also what M3.3's discriminator depends on, so it is load-bearing later as well.
+4. **Branches never collapse downward.** `finish_covering` only removes the path being finished when an ancestor
+   already exists, so siblings accumulate and every event pays an O(branches) `deepest_containing` scan on the live hot
+   path. Make absorption a property of the set itself: on insert, drop every strict descendant, leaving any entry with
+   `walks > 0` alone until it finishes. Add the crate-internal `collapse_to(root)` that mutates the **shared**
+   `BranchWatch` in place and then `persist()`s (❌ never `branches::clear` plus a begin/finish pair, which mints a new
+   `BranchWatch` the running live loop isn't reading). Test both, including
+   **`the_branch_collapse_is_visible_to_the_running_live_loop`**.
+
+**Not in M0:** the verifier's `listed_epoch == 0` bail. It is a no-op until the stitch gives frontier roots a row, and
+its scoping ("bail while the frontier is unfinished, keep today's behavior once `scan_completed_at` is stamped") is only
+testable against a phased volume, so it ships with the stitch in M2 as the plan says.
+
+**Docs:** the guardrail lines these four earn in `lifecycle/CLAUDE.md`, with the why in `lifecycle/DETAILS.md`.
 
 ---
 
@@ -521,8 +588,11 @@ surfaces it fixes only misbehave once the phase machine is real.
 **Intent:** guess the user's important folders from signals we already have, cheaply, with no new permissions and no
 network. Ordered best-signal-first, because the order _is_ the schedule.
 
-A new app-side module (`apps/desktop/src-tauri/src/indexing_priority/`) exposing one function: the ordered,
-deduplicated, existence-checked roots. It is called from `AppHostPolicy::priority_roots`, so the answer is recomputed
+A new module **inside the existing `apps/desktop/src-tauri/src/priority/`** (which already holds `AppHostPolicy` in
+`host_policy.rs`, beside `foreground.rs` and `transfers.rs`, with its own `C+D.md` pair), exposing one function: the
+ordered, deduplicated, existence-checked roots. ❌ Not a new sibling module: "which folders have the user's attention"
+is the question `priority/` already exists to answer, and a sibling would split it across two doc pairs. It is called
+from `AppHostPolicy::priority_roots`, so the answer is recomputed
 when asked rather than frozen at launch. Keep it cheap: the seam is asked at phase boundaries, but the trait's contract
 is "don't do I/O, don't take a contended lock" for its other method, so cache the answer behind a short TTL rather than
 stat-ing a dozen paths per call.
@@ -563,8 +633,8 @@ pending** by reusing `restricted_paths::tcc_paths::is_potentially_tcc_restricted
 **Tests:** pure-function unit tests over a synthetic home (ordering, dedupe, descendant-drop, cap, missing paths, empty
 first run, both platform seeds). **Test-first**: pure logic, many branches.
 
-**Docs:** a `CLAUDE.md` + `DETAILS.md` pair for the new module (the checker enforces pairs), plus a line in
-`docs/architecture.md`.
+**Docs:** extend `priority/CLAUDE.md` + `priority/DETAILS.md` (no new pair, since the module lands inside an existing
+documented directory), plus a line in `docs/architecture.md`.
 
 ---
 
@@ -598,6 +668,21 @@ thing the plan is for. Capture, per arm:
 
 **Gate: if (b) is more than roughly 1.5× (a) to full coverage, stop and re-decide with David** — with the
 time-to-first-root numbers in hand, because they are what the decision is about.
+
+**What "re-decide" means, decided in advance so the gate is decidable rather than a stop sign.** The honest comparison
+isn't wall-clock parity: full coverage is background work already paced by the `clearance` seam, so 1.5× of 193 s is
+290 s of politely-throttled walking against a permanent gain in interrupt-survival and a minutes-earlier photo search.
+The two prepared answers, in order of preference:
+
+- **Accept the slower full coverage** when time-to-first-root and time-to-`home_covered_at` both land where the plan
+  wants them. Reasons 1 and 2 in "Why" don't depend on the ratio at all, and the extra minutes are invisible unless the
+  user is watching the badge.
+- **Stop and take reasons 1 and 2 only**, which is a real, much smaller product: the phase machine walking `$HOME` and
+  the priority roots, with today's bulk build never running because completion still comes from the frontier. ❌ Not
+  "priority walks first, then today's truncating `start_scan`": the truncate makes the sizes the user just watched
+  appear vanish again, which is worse than never showing them.
+
+❌ Neither answer is "keep going and hope". Write the numbers down, then pick.
 
 **The gate runs on a throwaway harness, ❌ not on M2's deliverable**: the stitch, a hardcoded root list, and a loop. No
 queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise the milestone is gated on itself.
@@ -692,8 +777,10 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
    **`home_covered_at` has its own, much smaller sequence**: stamp it, publish the early signal, nothing else. Same
    once-only rule.
 
-9. **Feed the live status shape** (`ScanCalibration`-equivalent counters) throughout, or the per-drive row, progress
-   bar, and ETA stay dead for the whole first index. Drive `get_status`'s `scanning` field from **"the machine has
+9. **Own a `ScanProgressReporter` for the phased run** (see the full-scan audit above) and **feed the live status
+   shape** (`ScanCalibration`-equivalent counters) throughout, or the per-drive row, progress bar, ETA, and mid-scan
+   partial aggregation stay dead for the whole first index. The reporter's lifetime is the machine's, ❌ not one walk's:
+   it must survive the gaps between roots, or the tick dies 50–150 times per phase. Drive `get_status`'s `scanning` field from **"the machine has
    queued work"**, ❌ never by setting `mgr.scanning` (that would make the machine's own `cover()` calls fail) and ❌
    never from `phase_active` directly: it goes false between roots, and the stitch yields 50–150 roots many of which
    finish in milliseconds, so the search dialog's "building your index" state and the per-drive row would flicker at
@@ -734,6 +821,8 @@ queue, no completion rule, no status plumbing, no `Abandoned` cause. Otherwise t
   **`a_relaunch_mid_coverage_still_wires_the_media_subscriptions`** (the `ready_volumes_with_kind` admission).
 - **`enabling_indexing_for_a_search_walked_drive_still_indexes_it`** — the shipped behavior `awaits_its_first_scan`
   protects.
+- **`partial_aggregation_still_fires_between_frontier_roots`** — the reporter outliving individual walks, which is what
+  keeps sizes appearing inside a root still being walked.
 - `phases_run_in_order`, and a covered root is skipped without a walk.
 - `a_visited_root_is_taken_between_frontier_roots` without cancelling anything.
 - `rows_survive_a_stopped_and_restarted_machine` (row count only grows), and the restart joins before starting.
@@ -791,6 +880,18 @@ it.
 6. **Existing installs.** A volume with `scan_completed_at` set replays or reconciles exactly as today and the phase
    machine never runs — nobody loses anything, and there is no settings backfill to get wrong. A volume without it takes
    item 3's discriminator.
+7. **The kill switch lands HERE, not in M5.** This is a big behavioral change shipping into an open beta, and the thing
+   worth being able to undo is launch routing, which changes in this milestone. A switch that arrives two milestones
+   later protects nothing in between. One flag, read at startup, restoring the bulk-build path, so a bad week is a
+   restart rather than a rollback. ❌ **An env var is not enough**: a beta user launching from the Dock never sees one.
+   Use a `defaults write` key or a hidden setting, and say who is expected to flip it.
+
+   ⚠️ **It needs its own row in item 3's routing table**, because the discriminator reads the persisted branch set and a
+   killed build has no phase machine to resume into: a phased partial (rows, no `scan_completed_at`, non-empty branch
+   set) must route to today's truncating rebuild when the switch is off. That is the right answer (self-healing, and the
+   user asked for the old behavior), but it is an unstated cell in a table whose whole point is that a wrong cell costs
+   a wasted rescan or a silently stale index. Test:
+   **`the_kill_switch_routes_a_phased_partial_to_the_legacy_rebuild`**.
 
 **Tests:** integration tests for launch over an index in each state (nothing, partially covered by phases, partially
 covered by a legacy interrupted scan, fully covered, fully covered but stale), asserting which of {phases, replay,
@@ -828,10 +929,14 @@ debounce so work finishing inside a second never flashes anything.
    - **three consumers must move together**: `views/FullList.svelte` (two call sites), `views/measure-column-widths.ts`,
      and `selection/SelectionInfo.svelte`. The measurer is the dangerous one: the size column reserves width for the
      glyph, so a per-row renderer against a per-volume measurer clips it on exactly the rows that show it.
-5. **The 1-second debounce lives in the publisher**, not the rows: `index-state.svelte.ts` exposes a branch only after
-   it has been walking 1 s continuously, and drops it immediately on the terminal event. One timer per branch, owned by
-   the module, cleared in `destroyIndexState`. ❌ No timers in rows (a `$derived` can't hold one; a per-row interval is
-   a per-row leak).
+5. **The 1-second debounce lives in the BACKEND**, in the app's Tauri indexing layer that already relays index events,
+   ❌ not in `index-state.svelte.ts` and ❌ never in the rows. It is a rule ("don't announce a walk that finishes inside
+   a second"), and rules belong where they are unit-testable in Rust, in line with the house split of smart backend /
+   thin frontend. The backend holds one timer per branch and emits the branch-started event only after 1 s of continuous
+   walking, emitting the terminal event immediately. The frontend then renders exactly what it is told: no timers, no
+   suppression logic, no `destroyIndexState` cleanup to get wrong. ❌ Don't put the timer in `cmdr-index` itself: the
+   crate reports what it is doing, and how long the UI waits before believing it is a presentation decision the app
+   owns. Test it in Rust (fires after 1 s, suppressed entirely under 1 s, terminal event always delivered).
 6. **The surfaces that assume a full scan** — deliverables here, not follow-ups:
    - **Search dialog index-build progress** (`search-lifecycle.svelte.ts` derives from `isVolumeScanning(root)` +
      `getEntriesScanned()`): the "building your index, N files" state never appears during the first index otherwise.
@@ -847,7 +952,8 @@ debounce so work finishing inside a second never flashes anything.
    moment" claim; it deserves an explicit acceptance pass, including the mixed state where home has exact sizes and
    `/opt` still shows `<dir>`.
 
-**Tests:** unit tests for the debounce publisher and the bidirectional predicate (both genuinely **test-first**); a
+**Tests:** Rust unit tests for the debounce (in the backend layer that owns it) and TS unit tests for the bidirectional
+predicate (both genuinely **test-first**); a
 component test that a row inside _and_ a row above a walking branch show the hourglass while an unrelated row doesn't; a
 measurer test that reserved width matches the renderer; and an E2E that the corner appears during a phase — **a post-hoc
 pin, not a red→green step**, gated on M3.
@@ -859,8 +965,8 @@ pin, not a red→green step**, gated on M3.
 ## M5 — Surfaces, copy, kill switch
 
 **Every user-facing string here is a DRAFT for David** (principle 4). They go through the message catalog with `@key`
-descriptions, ❌ never hardcoded, and **11 locales ship** — budget the translation pass rather than discovering it at
-the end.
+descriptions, ❌ never hardcoded, and **10 locales ship** (`de`, `en`, `es`, `fr`, `hu`, `nl`, `pt`, `sv`, `vi`, `zh`;
+verified 2026-08-14) — budget the translation pass rather than discovering it at the end.
 
 1. **The phase labels**, in `IndexingDriveRow` / `IndexingStatusBody` — ❌ not
    `settings/sections/DriveIndexingSection.svelte`, which has three switches and no per-drive rows. Draft: **"Indexing
@@ -879,13 +985,13 @@ the end.
 5. **`stop` and `forget` against a phase queue** (`driveIndexMenuActions('scanning')` offers both). **Decided**: `stop`
    cancels the running walk and clears the queue, leaving covered ground covered and watched, and leaves the branch set
    in place so the next launch resumes instead of rebuilding; `forget` keeps today's meaning.
-6. **A kill switch.** This is a big behavioral change to ship into an open beta: one flag that restores the bulk-build
-   path, so a bad week is a restart rather than a rollback. ❌ **An env var is not enough**: a beta user launching from
-   the Dock never sees one. Use a `defaults write` key or a hidden setting read at startup, and say who is expected to
-   flip it.
+6. **The kill switch shipped in M3.** Only its user-facing surface belongs here: whether it needs any UI at all (it
+   doesn't, if it's a `defaults write` key), and the one-line note in the beta feedback channel telling users it exists.
 7. **Measure it.** Anonymous analytics are live and this change's justification is a user-experience claim, so make it
-   falsifiable: time to `home_covered_at`, time to `scan_completed_at`, and how often a first run is interrupted before
-   completing (the case the old design lost entirely).
+   falsifiable: time to `home_covered_at`, time to `scan_completed_at`, how often a first run is interrupted before
+   completing (the case the old design lost entirely), and **time from launch to the first honest size on a folder the
+   user actually opened**, which is the wow-moment claim itself and the only one of the four nobody can currently
+   answer.
 8. **Unrelated, found while measuring**: `onboarding.stepOptional.indexing.descCost` promises "a 300 MB index on your
    drive". Actual on David's machine: 768 MB for the boot index, plus 70 MB importance and 31 MB media. Worth
    correcting.
@@ -926,6 +1032,10 @@ the end.
    whole-drive scan, so they hit sooner. Watch for it in the benchmark's browsing arm.
 10. **The early media kick misfiring** ⇒ `home_covered_at` driving exactly one subscriber and nothing else, plus the
     `ready_volumes_with_kind` admission test so it survives a relaunch mid-coverage.
+11. **The 500 ms tick disappearing with `start_scan`** ⇒ the phase machine owning a `ScanProgressReporter` for the
+    machine's lifetime. It fails quietly and looks like three unrelated bugs (dead progress events, no mid-scan sizes, a
+    visit poll with nowhere legal to run), which is why it is called out in the full-scan audit rather than left to be
+    discovered.
 
 ## Decisions (David, 2026-08-13, revised 2026-08-14)
 
@@ -955,6 +1065,21 @@ Recorded with the reasoning, because the reasoning is what an implementer needs 
 9. **The verifier bails on `listed_epoch == 0` while the frontier is unfinished**, ❌ never marks. The mark is M6.
 10. **One worktree, one effort, for the indexing work.** The milestones are an execution order, ❌ not shippable slices.
     The first-run startup state was the exception: it was self-contained, so it shipped ahead of the indexing work.
+
+## Decisions (David + lead review, 2026-08-14, second pass)
+
+11. **The pre-existing bugs ship first, as M0.** Four defects that are latent today and routine under phases. They cost
+    nothing to separate, they make the risky milestone smaller, and they are worth having in a beta build even if the
+    M2 gate sends everything after them back to the drawing board.
+12. **The phase machine owns a `ScanProgressReporter`.** Without it the 500 ms tick dies with `start_scan`, taking the
+    progress event stream, mid-scan partial aggregation, and the only legal home for the `open_listings` poll with it.
+13. **Interleaving granularity is a stitch DEPTH, not preemption.** Stitch two levels under the `$HOME` and `/` phase
+    roots so a user-visited root waits behind `~/Library/Caches`, not behind `~/Library`. Preemption stays out of scope.
+14. **The hourglass debounce lives in the backend**, in the app's Tauri indexing layer: it is a rule, and rules are
+    testable in Rust. The frontend renders what it is told. (❌ Not in `cmdr-index`: the crate reports what it is doing;
+    how long the UI waits before believing it is the app's presentation decision.)
+15. **The kill switch ships with M3**, the milestone that changes launch routing, and it gets its own row in the routing
+    table.
 
 Remaining assumption to confirm during execution, ❌ not a blocker: whether `~/Library`'s size makes `home_covered_at`
 late enough to want the M1 refinement.
