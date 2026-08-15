@@ -108,15 +108,36 @@ export interface MountedFullList {
   rowNames: () => string[]
   /** The rendered rows showing the size-updating hourglass, by filename. */
   hourglassRowNames: () => string[]
-  /** Runs the microtask + effect rounds an IPC-fed re-render needs. */
-  settle: () => Promise<void>
+  /**
+   * Drives effects and IPC promises until `until` holds, throwing `reason` if it
+   * never does. Use it after a `layout.resize` / `layout.scroll`, and phrase
+   * `reason` as a noun phrase: it completes "timed out waiting for …".
+   */
+  settle: (until: () => boolean, reason: string) => Promise<void>
 }
 
-async function settle(): Promise<void> {
-  for (let round = 0; round < 4; round++) {
-    await tick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+/** One round of "let Svelte's effects run and pending promises resolve". */
+async function flush(): Promise<void> {
+  await tick()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
+/**
+ * Flushes until `until` holds, and THROWS when it never does.
+ *
+ * ❌ Not a fixed number of rounds. The number of hops between a mount and the
+ * first painted row is an implementation detail (an effect, an IPC promise, the
+ * re-render it triggers), so a guessed count silently renders fewer rows — or
+ * none — the day one is added, which puts every spec built on this straight back
+ * into passing over an empty DOM. The bound below is a runaway backstop, far
+ * above the real cost; it's the condition that decides.
+ */
+async function settleUntil(until: () => boolean, reason: string): Promise<void> {
+  for (let round = 0; round < 50; round++) {
+    if (until()) return
+    await flush()
   }
+  throw new Error(`mountFullList: timed out waiting for ${reason}`)
 }
 
 /** Mounts a `FullList` over a measured surface and waits for its first fetch. */
@@ -150,18 +171,36 @@ export async function mountFullList(options: MountFullListOptions = {}): Promise
       ...options.props,
     },
   })
-  await settle()
 
   const rows = () => [...target.querySelectorAll<HTMLElement>('.file-entry')]
+  const rowNames = () => rows().map((row) => row.dataset.filename ?? '')
+
+  // The FIRST BACKEND ENTRY has to be on screen before the spec asserts anything,
+  // or it's about to run over an empty DOM. ❌ Not "some row rendered": the `..`
+  // row is synthetic and paints immediately, so on a `hasParent` listing that
+  // condition holds a full IPC round-trip before any real entry arrives. At mount
+  // the window starts at index 0, so `entries[0]` is always in it (given a
+  // viewport tall enough for two rows). An empty listing has nothing to wait for —
+  // the empty-state branch renders instead — so it only needs the effects to run.
+  if (entries.length > 0) {
+    const firstName = entries[0].name
+    await settleUntil(
+      () => rowNames().includes(firstName),
+      `the first entry (${firstName}) to render — is the viewport tall enough for it?`,
+    )
+  } else {
+    await flush()
+  }
+
   return {
     target,
     layout,
     rows,
-    rowNames: () => rows().map((row) => row.dataset.filename ?? ''),
+    rowNames,
     hourglassRowNames: () =>
       rows()
         .filter((row) => row.querySelector('.size-updating') !== null)
         .map((row) => row.dataset.filename ?? ''),
-    settle,
+    settle: settleUntil,
   }
 }

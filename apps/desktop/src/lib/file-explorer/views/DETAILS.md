@@ -459,6 +459,13 @@ throw. A spec written without a viewport therefore asserts against an empty DOM 
 `(start, count)` range asked for, fills in the twelve required props, and returns `rowNames()` / `hourglassRowNames()` /
 `settle()` plus the `layout` handle for resizing and scrolling mid-test.
 
+It also refuses to hand back a list that never rendered: on a listing with entries it waits for the FIRST BACKEND ENTRY
+and throws naming it, so the original bug now fails at the mount instead of at no point at all (pinned by
+`test-full-list.test.ts`). ❌ The wait is a condition, never a count of flush rounds — the number of hops from mount to
+first painted row is an implementation detail, and a guessed count puts every spec back over an empty DOM the day one is
+added. ❌ And not "some row rendered" either: the `..` row is synthetic and paints immediately, a full IPC round-trip
+before any real entry. `settle(until, reason)` applies the same rule to a mid-test `resize` / `scroll`.
+
 What it renders is what the app renders: nothing in the window math is stubbed, only the measurement feeding it. A 400
 px surface at the 20 px test row height renders 20 rows plus buffer, and `layout.scroll(…, 200)` lands on the row
 production lands on, gutter correction included. Pixel geometry is NOT faithful — `getBoundingClientRect` and
