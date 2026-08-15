@@ -3,9 +3,9 @@
 How a per-volume index is born, lives, transitions, and dies. Every invariant here holds PER volume id.
 
 `state.rs` the registry + `IndexPhase` machine (a job per file under `state/`, re-exported so `state::*` is the one
-path); `manager.rs` the coordinator (`launch_route.rs` the launch table); `cover.rs` the search-driven walk (bootstrap and
-claiming under `cover/`); `phases/` the first index. The other leaves are one job each;
-`DETAILS.md` § Module structure names them.
+path); `manager.rs` the coordinator (`launch_route.rs` the launch table); `cover.rs` the search-driven walk (bootstrap
+and claiming under `cover/`); `phases/` the first index. The other leaves are one job each; `DETAILS.md` § Module
+structure names them.
 
 ## Must-knows
 
@@ -39,8 +39,8 @@ claiming under `cover/`); `phases/` the first index. The other leaves are one jo
   `apply_freshness_event` is LOCK DISCIPLINE, not style.
 - **A fatal storage error STOPS + FAILS the index, ❌ never retries**; recovery is a rebuild.
 - **TWO switches, master wins, and both gate BACKGROUND work only.** `indexing.enabled` hard-gates
-  `Activation::IndexTheVolume`; master-off goes through `stop_indexing`, which ❌ must never write per-drive intent. ⚠️ A
-  search walk is carved out of both switches AND `user_disabled`; ❌ don't "fix" that into a refusal.
+  `Activation::IndexTheVolume`; master-off goes through `stop_indexing`, which ❌ must never write per-drive intent. ⚠️
+  A search walk is carved out of both switches AND `user_disabled`; ❌ don't "fix" that into a refusal.
 - **Per-drive intent is the `user_enabled`/`user_disabled` pair, written when the user ASKS** (`start_volume`, BEFORE
   dispatching). ❌ Never infer it from `scan_completed_at`: absent through a first index AND every rescan.
 - **Defer `root` auto-start**: scanning `/` stacks TCC popups, so FDA gates ONLY `root`, ❌ never `set_master_enabled`.

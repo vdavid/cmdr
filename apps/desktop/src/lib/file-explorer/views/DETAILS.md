@@ -7,11 +7,11 @@ invariants and gotchas live in `CLAUDE.md`.
 
 ### Components
 
-Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: the opening
-paragraph of `CLAUDE.md`. Column shrink-wrapping, the column header, prefetch, cache invalidation, icon and tag-dot passes, the date column,
-and `showExtensionInName` are all in § "Key decisions" below; the Git status column is in `../git/DETAILS.md`, and
-`formatSizeForDisplay`'s bytes / dynamic / forced-unit modes in `../selection/DETAILS.md`. Three things live here
-because nothing else carries them:
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: the opening paragraph
+of `CLAUDE.md`. Column shrink-wrapping, the column header, prefetch, cache invalidation, icon and tag-dot passes, the
+date column, and `showExtensionInName` are all in § "Key decisions" below; the Git status column is in
+`../git/DETAILS.md`, and `formatSizeForDisplay`'s bytes / dynamic / forced-unit modes in `../selection/DETAILS.md`.
+Three things live here because nothing else carries them:
 
 **The size column's content state (`full-list-utils.ts::getDirSizeDisplayState`).** One pure function of
 `{recursiveSize, complete, stale, updating}` returns `'dir' | 'scanning' | 'lower-bound' | 'size' | 'size-stale'` (the

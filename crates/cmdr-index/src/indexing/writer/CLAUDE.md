@@ -14,7 +14,8 @@ search-generation bump. Other areas point here.
   `ReadPool`, ❌ never here. Priority: `UpdateDirStats` before `InsertEntries`.
 - **The writer owns the shared `Arc<AtomicI64>` ID counter; ❌ never allocate from `MAX(id)`** (uncommitted inserts sit
   in the channel, so a read double-assigns). A drifted counter SELF-HEALS on a PK conflict (extended `1555` →
-  `fetch_max` + retry). ❌ Never extend the heal to UNIQUE `2067`: that retry IS the duplicate row the constraint blocks.
+  `fetch_max` + retry). ❌ Never extend the heal to UNIQUE `2067`: that retry IS the duplicate row the constraint
+  blocks.
 - **A fatal storage error STOPS + FAILS the index, ❌ never retries** (one incident: 12,700 warnings in 8 min). Typed
   via `IndexFailureSignal`, ❌ never a message substring; `BUSY`/`LOCKED` stay retried.
 - **`dir_stats` ledger, four hard rules:** (1) ❌ never clamp a negative delta — it's drift, escalate to

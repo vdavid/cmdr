@@ -211,8 +211,8 @@ the ORDER and the signal change. Linux has no single equivalent pile, so it has 
 - **The reporter's lifetime is the MACHINE's**, not a walk's, or the 500 ms tick would die and restart 50–150 times a
   phase, taking the progress stream, mid-scan partial aggregation, and the `open_listings` visit poll with it. A walk
   over one frontier root usually finishes well inside the reporter's first sleep, so a per-walk pump would tick almost
-  never. `tests::interleaving::the_progress_pump_outlives_the_walks_it_reports_on` anchors it by holding a between-roots gap open from
-  inside the event sink and counting what still arrives.
+  never. `tests::interleaving::the_progress_pump_outlives_the_walks_it_reports_on` anchors it by holding a between-roots
+  gap open from inside the event sink and counting what still arrives.
 
 ## Where the app's answers enter
 
@@ -260,7 +260,8 @@ phase root, and writes the same value where `get_status` reads it.
 (`IndexStatusResponse::coverage_phase`) is what a window that reloaded mid-run reads, alongside `walked_roots` and
 `scan_run_kind`, which recover the same way: the last phase of a first index is the rest of the drive, so a joiner with
 only the event would sit with no header until the run ended. It reports `None` once the machine has no work left, ❌
-never the phase it finished on. Anchored by `tests::interleaving::a_window_joining_mid_run_reads_the_running_phase_off_the_status`.
+never the phase it finished on. Anchored by
+`tests::interleaving::a_window_joining_mid_run_reads_the_running_phase_off_the_status`.
 
 ❌ **The phase is not the host's to derive.** An app-side home path can disagree with `IndexPathSpace` about firmlinks,
 which works on one machine and mislabels on another, so the crate classifies and the host only chooses words. ❌ Nor can

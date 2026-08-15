@@ -44,8 +44,8 @@ full-tree rescan-in-place; `verifier.rs` the per-navigation `read_dir` diff.
 - **A rescan anchor holds the hourglass ONLY while walking or queued-AND-eligible** (`rescan_hold.rs`). ❌ No
   unconditional hold at enqueue: a resting anchor puts "size updating" on `~` and `/`. ❌ Don't drop the pick-time hold
   either; it leaves no unheld-write window.
-- **Depth-split `MustScanSubDirs`**: SHALLOW (`depth ≤ 2`) → visible scanner, NO hourglass hold, never `pending_rescans`;
-  DEEP (`≥ 3`) → throttled drain. A shallow anchor sweeps at most ONCE A DAY, boot disk only; coalesced anchors are
-  counted, the badge stays GREEN, and the window is wall-clock and persisted.
+- **Depth-split `MustScanSubDirs`**: SHALLOW (`depth ≤ 2`) → visible scanner, NO hourglass hold, never
+  `pending_rescans`; DEEP (`≥ 3`) → throttled drain. A shallow anchor sweeps at most ONCE A DAY, boot disk only;
+  coalesced anchors are counted, the badge stays GREEN, and the window is wall-clock and persisted.
 
 Full depth: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

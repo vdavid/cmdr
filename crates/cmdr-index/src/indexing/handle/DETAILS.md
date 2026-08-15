@@ -153,10 +153,9 @@ host's.
 ⚠️ **Which of the check's counters a new item spends is not a choice, so read the right one before assuming headroom.**
 `index-crate-isolation` counts `SubsystemItems` in the modules it can REACH by walking `pub mod` declarations from
 `lib.rs`, which for this crate is `importance` and `media_index` and nothing else. `indexing` is private, so everything
-it promises arrives as a `pub use` here and counts as a ROOT PROMISE — including every value an event carries, whose
-one sane home is `indexing/events/payload.rs` beside `ScanRunKind` (anywhere else makes the event envelope import its
-own parent). A grant of "one item" for such a type is `RootPromises` moving by one and the other three counters staying
-put.
+it promises arrives as a `pub use` here and counts as a ROOT PROMISE — including every value an event carries, whose one
+sane home is `indexing/events/payload.rs` beside `ScanRunKind` (anywhere else makes the event envelope import its own
+parent). A grant of "one item" for such a type is `RootPromises` moving by one and the other three counters staying put.
 
 ### Folded (the interesting ones)
 
