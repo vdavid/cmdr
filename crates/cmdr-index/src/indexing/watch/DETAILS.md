@@ -48,7 +48,7 @@ post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.
 ## Watching what a search walked
 
 A volume the user turned indexing on for is walked whole and watched whole. A volume a SEARCH walked
-(`../lifecycle/cover.rs`, `Activation::WriterOnly`) has a few covered branches and nothing else, and it starts with no
+(`../lifecycle/cover/`, `Activation::WriterOnly`) has a few covered branches and nothing else, and it starts with no
 watcher at all — a `DriveWatcher` is created only by `start_scan` and `start_replay`. `branches.rs` is what gives that
 shape a live loop, and it's the whole of why walk-written coverage carries no expiry (plan Decision 9): a walked branch
 is kept as current as an indexed drive's rows, so nothing has to be re-walked and nothing has to age out.

@@ -4,7 +4,7 @@ Serve recursive sizes, index status, and coverage back to the app. Everything he
 (lock-free thread-local connections), NEVER the lifecycle registry lock.
 
 `enrichment.rs` the `ReadPool` type + `enrich_entries_with_index[_on_volume]`; `coverage.rs` the search frontier and
-`CoverageToken` (read-only — the WALK is `../lifecycle/cover.rs`); `queries.rs` the IPC read surface, no registry
+`CoverageToken` (read-only — the WALK is `../lifecycle/cover/`); `queries.rs` the IPC read surface, no registry
 mutation; `expected_totals.rs` progress denominators; `pending_sizes.rs` the "size updating" hourglass; `handles.rs` the
 volume-keyed handle tables.
 

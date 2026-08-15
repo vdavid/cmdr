@@ -362,7 +362,7 @@ reports `still_covering`, which is true for it.
 The partition covers the frontier ROOT itself, not only what's inside it. A walk reports a directory's contents, so a
 frontier root the index had no row for would be the one entry neither half emits — and a scope root matches its own
 query as readily as anything under it (the arena's include filter passes an entry that IS an include root). So
-`cover.rs` emits a root it had to materialize, once, before its listing. A root the index already held belongs to the
+`lifecycle/cover/` emits a root it had to materialize, once, before its listing. A root the index already held belongs to the
 covered half instead, which is why it isn't emitted twice.
 
 ### Decision 12: the arena and the coverage answer have to be in step
@@ -447,7 +447,7 @@ frontend ships it as the `coverage` prop on `search_used` (`analytics/DETAILS.md
 Nothing branches on it, which is why it's a field on the coverage report rather than a second signal.
 ### Known gaps, both narrow
 
-- **A non-virgin frontier root's rows don't stream.** The local repair path (`cover.rs::repair_non_virgin`) writes
+- **A non-virgin frontier root's rows don't stream.** The local repair path (`lifecycle/cover/mod.rs::repair_non_virgin`) writes
   through the serial reconcile, which takes no live consumer, so rows it ADDS appear on the next query rather than this
   one. Rare (it takes an FSEvents verification pass writing children under a directory nothing listed), and the arena
   mark is what makes "the next query" true.

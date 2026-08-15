@@ -9,7 +9,7 @@
 //!   WHICH drives index while the master is on.
 //!
 //! **Both govern BACKGROUND work only, never a user-initiated read.** A
-//! search-driven coverage walk (`Activation::WriterOnly`, `lifecycle/cover.rs`)
+//! search-driven coverage walk (`Activation::WriterOnly`, `lifecycle/cover/`)
 //! runs with either switch off, because searching a folder Cmdr hasn't indexed IS
 //! reading it, and the person asking is right there. Refusing wouldn't save them
 //! work; it would hand them a search that silently omits files. What the switches

@@ -1,8 +1,61 @@
-# Cover-walk internals details
+# Cover-walk details
 
-Standing a walk up (`bootstrap.rs`) and keeping two walks off the same ground (`live.rs`). Read this before any
-non-trivial work here: editing, planning, reorganizing, or advising. The walk itself, its outcome type, and the registry
-it activates through are `../CLAUDE.md` and `../DETAILS.md`.
+The walk itself (`mod.rs`), standing one up (`bootstrap.rs`), and keeping two walks off the same ground (`live.rs`).
+Read this before any non-trivial work here: editing, planning, reorganizing, or advising. What the registry and the
+phase machine owe a walk, and what a walk owes them back, is `../DETAILS.md`.
+
+## What the walk does
+
+`../../read/coverage.rs` says which folders under a scope nothing has listed; this walks them. Every row goes into the
+volume's real index through its ONE writer (Decision 2 of `docs/specs/unindexed-search-plan.md`), so the work outlives
+the search that paid for it and the next search over the same ground walks less.
+
+**Which ground, and which walk reads it** (`Ground`). Every volume kind falls in one of two halves, and that is the ONE
+per-kind branch in the whole coverage concept: a local filesystem is read by the guarded walker, and everything else — a
+share, a phone, whatever backend comes next — through its `Volume` (`../../network_scanner/DETAILS.md` § "The scoped
+cover walk"). Downstream of a discovered entry the two are identical: same writer, same epochs, same `dir_stats`, same
+frontier query, same descent rule. `Ground::under` resolves the half from the kind on the registry instance the writer
+came from, and answers `None` when a trait-scanned volume has been ejected since the coverage answer.
+
+**Two primitives on the local half, and which one runs.** A frontier node is virgin ground by definition, so this is a
+bulk add and the parallel guarded walker wins outright — 3.2–5.8x over the serial reconcile with identical row counts on
+four real trees (`docs/notes/cover-walk-primitive-2026-08-05.md`). The serial reconcile is kept as the REPAIR path, for
+the one case the parallel walker can't take: a frontier node the index already holds rows under (`ScanError::NotVirgin`,
+see `../../scanner/DETAILS.md` § "Three scan roots"). It compares by name and writes only differences, which is exactly
+that case's shape. The trait half needs no such split — it is add-only per directory, so it simply takes the case. ❌ No
+path ever deletes: covering is add-only work.
+
+**What it costs to cover a whole volume this way**, measured over a real 6.06M-entry `/` against today's
+truncate-and-bulk-build: `docs/notes/phased-vs-bulk-index-2026-08-14.md`. Two findings a caller planning many walks over
+one volume needs. First, the shallow stitch and the frontier query are free (0.2 s and 5 ms across 1,496 walks), so the
+cost is never in the bookkeeping. Second, and load-bearing: a directory a walk couldn't read must be RECORDED, or every
+later walk over an ancestor scope offers it again and pays the failing read again — 101 s of 147 s of walk time on a
+machine with 76 such directories. The walk does that for itself now (`UnreadableCause::Abandoned`,
+`../../scanner/DETAILS.md` § "Ground the walk couldn't read"), so a caller planning many walks needs no bookkeeping of
+its own. ❌ Don't reach for `WalkHeartbeat::abandoned_count` if you ever need the signal in-process: it counts stall
+timeouts and consecutive-failure pruning, and read zero for every walk in every arm of that measurement — the failing
+`readdir` case, which was 100% of what fired, never touched it.
+
+**The backend's scan session brackets the WHOLE frontier**, not each root: over SMB that's a pool of extra connections
+(`begin_scan_session` / `end_scan_session`), and opening one per frontier root would pay the setup repeatedly inside one
+walk. ❌ Nothing between the two calls may return early — `walk_frontier` keeps the loop in a helper for exactly that
+reason, so a cancelled walk can't leave the pool standing.
+
+**Terminal states.** `CoverOutcome.cancelled` separates "the index answers for this scope now" from "somebody stopped
+us", which are different phases in the UI. Neither is a failure: a cancelled walk still left every directory it read
+marked, so the next walk resumes rather than restarts. One frontier root that can't be walked doesn't stop the others —
+it stays frontier, and the next `coverage` call names it again.
+
+**Ownership and cancellation.** `cover_context_for` matches `IndexPhase::Running` only, so a walk reuses the volume's
+existing writer and never stands a second one up (two writers on one DB race the id counter and the accumulator maps).
+Cancel through the `CancellationToken` the caller passed to `Index::cover`, never through the handle: the handle owns a
+`Receiver` and so can't be shared with the thread that decides to stop it (a closing dialog, a quitting app), which is
+why `CoverWalk` has no `cancel` of its own. DROPPING the handle does not stop the walk either (Decision 11 — walking is
+coverage work, matching is query work, so a superseded query keeps its walk). `finish` drops the batch channel BEFORE
+joining, so a caller that stopped reading can't deadlock against a walk parked on a full one.
+
+**The channel is bounded at eight batches.** A consumer that falls behind slows the walk rather than growing a queue to
+the size of the subtree; each batch already carries up to 2 000 entries.
 
 ## One writer per database, and one walk per patch of ground
 
@@ -115,7 +168,7 @@ on — parenting under a file id orphans everything below), a path that isn't a 
 never descended into, so a walk rooted below one would attribute another directory's contents to it).
 
 A root the chain had to CREATE is also emitted to the walk's consumer, once, ahead of its listing
-(`cover.rs::emit_root`, counted in `entries_found` / `dirs_found` so what a consumer saw and what the walk added stay
+(`mod.rs::emit_root`, counted in `entries_found` / `dirs_found` so what a consumer saw and what the walk added stay
 one number). Why: a walk reports a directory's CONTENTS, and a reader of the index answers for rows the index already
 held, so a row this walk invented is one nobody else will ever report — which made a search scoped to a folder answer
 with that folder over an indexed drive and not over an unindexed one. ❌ The ancestors above it are NOT emitted: the

@@ -212,7 +212,7 @@ commit to a walk taking NOTHING can tell the difference between "nobody has been
 and wait rather than answer empty (`search/DETAILS.md` § The shape).
 
 Read `docs/specs/unindexed-search-plan.md` § "The core mechanism" for the product intent this serves. The WALK half —
-what actually fills a frontier in, and why it may never delete — is `../lifecycle/DETAILS.md` § "The cover walk".
+what actually fills a frontier in, and why it may never delete — is `../lifecycle/cover/DETAILS.md`.
 
 ### The descent rule
 

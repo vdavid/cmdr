@@ -3,9 +3,9 @@
 How a per-volume index is born, lives, transitions, and dies. Every invariant here holds PER volume id.
 
 `state.rs` the registry + `IndexPhase` machine (a job per file under `state/`, re-exported so `state::*` is the one
-path); `manager.rs` the coordinator (`launch_route.rs` the launch table); `cover.rs` the search-driven walk (bootstrap
-and claiming under `cover/`); `phases/` the first index. The other leaves are one job each; `DETAILS.md` § Module
-structure names them.
+path); `manager.rs` the coordinator (`launch_route.rs` the launch table); `cover/` the search-driven walk, which carries
+its own `CLAUDE.md`; `phases/` the first index. The other leaves are one job each; `DETAILS.md` § Module structure names
+them.
 
 ## Must-knows
 
@@ -26,14 +26,6 @@ structure names them.
   machine having WORK, ❌ not merely walking. ❌ Don't collapse them or classify them by text (both are
   `ScanStartError`). A MANUAL rescan they refuse on a COMPLETED volume is REMEMBERED (`rescan_request`) and fired from
   `cover::release_ground`, claim first.
-- **A cover walk reuses the RUNNING writer or stands one up** (`Activation::WriterOnly`, ❌ no scan or watcher), and
-  EVICTS an index whose coverage this build refuses. ⚠️ A volume mid-SCAN isn't walked.
-- **A walk stops through the CALLER's token and flushes before reporting**, cancel included, unless the caller took the
-  drain. ⚠️ A walk that took NO ground runs none of it (`cover/CLAUDE.md`).
-  **`CoverOutcome::abandoned_ground` is independent of every other field**: ❌ any caller reporting completeness must
-  consult it.
-- **A walk RELEASES its branch whatever the registry phase** (`finish_branch_coverage` reaches the set directly), ❌
-  never behind `with_running_manager` — a walk ending in a `ShuttingDown` window would hold that ground forever.
 - **`IndexVolumeKind` is a capability model**: branch on the axis, not the variant. `has_event_journal()` gates journal
   replay, ❌ not `last_event_id.is_some()`.
 - **Freshness has ONE total transition table** (`Freshness::on`); no journal ⇒ Stale on launch. `..._on` vs

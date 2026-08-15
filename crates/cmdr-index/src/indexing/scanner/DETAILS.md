@@ -72,7 +72,7 @@ children, and ancestors (critical for Docker E2E performance).
 
 This walker covers a frontier node only when the volume's ground is a local filesystem. Everything the index reaches
 through a `Volume` instead — a share, a phone, a future backend — is covered by `../network_scanner/`'s scoped walk,
-which its driver (`../lifecycle/cover.rs`, `Ground`) picks by volume kind. Nothing else about coverage forks: same
+which its driver (`../lifecycle/cover/`, `Ground`) picks by volume kind. Nothing else about coverage forks: same
 writer, same epochs, same frontier query, same descent rule. The one place the two walks genuinely differ is
 `ScanError::NotVirgin` — the trait walk compares each directory's names against the index instead of refusing, because
 there an indexed query is free next to the network round trip that produced the listing, while here it would sit in the
@@ -140,7 +140,7 @@ child directory, which does mark it. So a frontier node can sit above genuinely-
 the fresh row is silently skipped, the walk keeps attributing that directory's children to the id it just lost, and the
 whole subtree below it is orphaned — quieter and worse than a constraint error. So `run_scan` checks
 `count_children_capped(root_id, .., 1)` on the same connection it resolves the root with, and a non-empty root is
-`ScanError::NotVirgin` rather than a walk. `lifecycle/cover.rs` takes that case to the serial reconcile, which compares
+`ScanError::NotVirgin` rather than a walk. `lifecycle/cover/` takes that case to the serial reconcile, which compares
 by name and writes only differences.
 
 ## Marks ride with their rows

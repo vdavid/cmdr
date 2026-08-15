@@ -80,7 +80,7 @@ window. Same tree: **3.92 ms**. Pinned by
   shortfall. The walk survives it (that is what the guarded walker exists for), but the subtree stays frontier and
   re-enters every search until the mount responds. The walk's exclusion policy and the branch watch both touch this.
 - **If the serial reconcile stops being the repair path.** It is still used, for a frontier node the index already holds
-  rows under, where the parallel walker's fresh ids would collide (`lifecycle/cover.rs`). If that case is ever closed
+  rows under, where the parallel walker's fresh ids would collide (`lifecycle/cover/`). If that case is ever closed
   another way, the serial path leaves the cover story entirely.
 - **On network volumes.** Neither number here transfers: SMB and MTP walk over the `Volume` trait, where the wire is the
   bottleneck, and the parallelism question is a different one.

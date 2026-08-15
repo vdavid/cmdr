@@ -24,7 +24,7 @@ Sizes come from `FileEntry.size` (SMB stat); since SMB has no separate physical 
 and inode is `None`. Symlinks contribute no size (matching the local scanner's `du`-style omission).
 
 No walk here names a backend, which is what makes the coverage concept work on a future one for free:
-`lifecycle/cover.rs` picks between "read the disk" and "ask the `Volume`", and everything downstream of a discovered
+`lifecycle/cover/` picks between "read the disk" and "ask the `Volume`", and everything downstream of a discovered
 entry — ids, writer, epochs, `dir_stats`, the frontier query, the descent rule — is identical either way.
 
 Three disciplines for network round trips (in `list_one_directory`, and in `stat_one_directory`, which the cover walk's
@@ -258,7 +258,7 @@ an empty root.
 
 `cover_volume_subtree(volume, root, space, writer, emit, cancel, pacer)` is the search-driven half of the coverage
 concept over the `Volume` trait: it covers ONE frontier node that `Index::coverage` named, feeding the entries it finds
-to a live consumer while filling the index. Its driver is `lifecycle/cover.rs`, which picks between it and the local
+to a live consumer while filling the index. Its driver is `lifecycle/cover/`, which picks between it and the local
 guarded walker by volume kind and owns the frontier loop, the claims, and the session bracket. It keeps every round-trip
 discipline above (cancel per round trip, `LIST_TIMEOUT` racing the JOIN handle, autoreleasepool, typed-disconnect and
 consecutive-failure backstops, `ScanPacer`, the NAS system-dir skip) and diverges from the two whole-volume walks in

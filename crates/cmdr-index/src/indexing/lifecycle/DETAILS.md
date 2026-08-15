@@ -63,15 +63,12 @@ concurrently without corrupting each other. Every invariant below holds independ
   heal latch. If the rebuild can't start (share unmounted, scan already running) we log and keep serving the existing
   index; nothing stamps the DB until a rebuild actually truncates, so the next load re-arms. Triggers, name list, and
   the stamp are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
-- **cover.rs** (+ `cover/bootstrap.rs`, `cover/live.rs`, and four test files split by harness: `cover/tests.rs` over a
-  temp tree with an index, `cover/cold_drive_tests.rs` over a drive with none through the public handle,
-  `cover/network_tests.rs` over the `Volume` trait, `cover/bench.rs` for the `#[ignore]`d primitive measurement) — the
-  SEARCH-driven walk, the write half of the coverage concept whose read half is `../read/coverage.rs`. `Index::cover`
-  resolves a `CoverContext` (the volume, its writer, its path space, its kind) here, spawns one Utility-QoS thread, and
-  walks each frontier root the coverage answer named — through the local guarded walker or the volume's own `Volume`,
-  whichever the kind calls for (`Ground`). `bootstrap` is everything that has to exist first: an index on a volume that
-  has none, and an `entries` row for a path the index has never seen. `live` is which roots are already being walked.
-  Detail below.
+- **cover/** — the SEARCH-driven walk, the write half of the coverage concept whose read half is `../read/coverage.rs`.
+  `Index::cover` resolves a `CoverContext` (the volume, its writer, its path space, its kind) in `cover/mod.rs`, spawns
+  one Utility-QoS thread, and walks each frontier root the coverage answer named — through the local guarded walker or
+  the volume's own `Volume`, whichever the kind calls for (`Ground`). It owns a `CLAUDE.md` + `DETAILS.md` pair of its
+  own; everything about the walk, its bootstrap, its claims, and its four test harnesses is canonical there. What the
+  registry side of it owes is below.
 - **scan_completion.rs** — the post-scan handler: the vanished-volume abort and the LOCAL failure→Stale arm (below).
 - **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) +
   `initial_freshness_on_launch`.
@@ -422,58 +419,11 @@ reconciler's failing-resolve churn is bounded to at most one batch after the tri
 loop's `resolve_path` failing fatally while the writer never writes) is still not independently detected — in practice
 live processing always writes, so the writer trips.
 
-## The cover walk (`cover.rs`) — filling in what a search can't answer for
+## What a cover walk asks of the lifecycle
 
-`../read/coverage.rs` says which folders under a scope nothing has listed; this walks them. Every row goes into the
-volume's real index through its ONE writer (Decision 2 of `docs/specs/unindexed-search-plan.md`), so the work outlives
-the search that paid for it and the next search over the same ground walks less.
-
-**Which ground, and which walk reads it** (`Ground`). Every volume kind falls in one of two halves, and that is the ONE
-per-kind branch in the whole coverage concept: a local filesystem is read by the guarded walker, and everything else — a
-share, a phone, whatever backend comes next — through its `Volume` (`../network_scanner/DETAILS.md` § "The scoped cover
-walk"). Downstream of a discovered entry the two are identical: same writer, same epochs, same `dir_stats`, same
-frontier query, same descent rule. `Ground::under` resolves the half from the kind on the registry instance the writer
-came from, and answers `None` when a trait-scanned volume has been ejected since the coverage answer.
-
-**Two primitives on the local half, and which one runs.** A frontier node is virgin ground by definition, so this is a
-bulk add and the parallel guarded walker wins outright — 3.2–5.8x over the serial reconcile with identical row counts on
-four real trees (`docs/notes/cover-walk-primitive-2026-08-05.md`). The serial reconcile is kept as the REPAIR path, for
-the one case the parallel walker can't take: a frontier node the index already holds rows under (`ScanError::NotVirgin`,
-see `../scanner/DETAILS.md` § "Three scan roots"). It compares by name and writes only differences, which is exactly
-that case's shape. The trait half needs no such split — it is add-only per directory, so it simply takes the case. ❌ No
-path ever deletes: covering is add-only work.
-
-**What it costs to cover a whole volume this way**, measured over a real 6.06M-entry `/` against today's
-truncate-and-bulk-build: `docs/notes/phased-vs-bulk-index-2026-08-14.md`. Two findings a caller planning many walks over
-one volume needs. First, the shallow stitch and the frontier query are free (0.2 s and 5 ms across 1,496 walks), so the
-cost is never in the bookkeeping. Second, and load-bearing: a directory a walk couldn't read must be RECORDED, or every
-later walk over an ancestor scope offers it again and pays the failing read again — 101 s of 147 s of walk time on a
-machine with 76 such directories. The walk does that for itself now (`UnreadableCause::Abandoned`,
-`../scanner/DETAILS.md` § "Ground the walk couldn't read"), so a caller planning many walks needs no bookkeeping of its
-own. ❌ Don't reach for `WalkHeartbeat::abandoned_count` if you ever need the signal in-process: it counts stall
-timeouts and consecutive-failure pruning, and read zero for every walk in every arm of that measurement — the failing
-`readdir` case, which was 100% of what fired, never touched it.
-
-**The backend's scan session brackets the WHOLE frontier**, not each root: over SMB that's a pool of extra connections
-(`begin_scan_session` / `end_scan_session`), and opening one per frontier root would pay the setup repeatedly inside one
-walk. ❌ Nothing between the two calls may return early — `walk_frontier` keeps the loop in a helper for exactly that
-reason, so a cancelled walk can't leave the pool standing.
-
-**Terminal states.** `CoverOutcome.cancelled` separates "the index answers for this scope now" from "somebody stopped
-us", which are different phases in the UI. Neither is a failure: a cancelled walk still left every directory it read
-marked, so the next walk resumes rather than restarts. One frontier root that can't be walked doesn't stop the others —
-it stays frontier, and the next `coverage` call names it again.
-
-**Ownership and cancellation.** `cover_context_for` matches `IndexPhase::Running` only, so a walk reuses the volume's
-existing writer and never stands a second one up (two writers on one DB race the id counter and the accumulator maps).
-Cancel through the `CancellationToken` the caller passed to `Index::cover`, never through the handle: the handle owns a
-`Receiver` and so can't be shared with the thread that decides to stop it (a closing dialog, a quitting app), which is
-why `CoverWalk` has no `cancel` of its own. DROPPING the handle does not stop the walk either (Decision 11 — walking is
-coverage work, matching is query work, so a superseded query keeps its walk). `finish` drops the batch channel BEFORE
-joining, so a caller that stopped reading can't deadlock against a walk parked on a full one.
-
-**The channel is bounded at eight batches.** A consumer that falls behind slows the walk rather than growing a queue to
-the size of the subtree; each batch already carries up to 2 000 entries.
+The walk itself, its `Ground` branch, its `CoverOutcome`, and what it costs are `cover/DETAILS.md`. What belongs here
+is the registry side: the doors a scan has to ask before it can truncate under one, the rescan a walk makes someone
+wait for, and the branch set a walk leaves watched.
 
 ### The two single-flight questions a scan has to ask
 
@@ -558,8 +508,6 @@ canonical in `../watch/DETAILS.md` § "Watching what a search walked"; what belo
   retires the branch set outright, so a volume is branch-watched or whole-watched and never both.
 - **A resume is the `WriterOnly` arm of `start_indexing_for`**, not a launch pass: an unregistered volume answers
   neither sizes nor coverage questions, so the first moment that coverage can be read is the moment its index comes up.
-
-What a walk needs standing up first, and how two walks stay off one patch of ground: `cover/DETAILS.md`.
 
 ## Vanished-volume scan abort (`scan_completion.rs`)
 
