@@ -88,11 +88,10 @@ pub(crate) struct IndexManager {
     /// rather than walked whole. Its flags are what every scan entry refuses
     /// against and what `get_status` reports; see `phases::PhaseHandle`.
     pub(super) phases: Option<phases::PhaseHandle>,
-    /// `resume_or_scan` decided this volume gets the phase machine, but the walk
-    /// can't start yet: it has to wait for `resume_branch_watch`, or last session's
-    /// covered ground comes back watched-but-never-epoch-bumped, rendering as
-    /// current when nothing verified it (`state/startup.rs`).
-    pub(super) phases_pending: bool,
+    /// Where this volume sits between "the launch route handed it to the phase
+    /// machine" and "the machine is running". See [`phased::PendingPhases`]: every
+    /// state but `No` counts as WORK, the window off the registry lock included.
+    pub(super) pending_phases: phased::PendingPhases,
     /// Calibration for the in-flight scan, captured in `start_scan`: the prior
     /// completed scan's totals (read from meta before truncating) plus the
     /// scanned volume's used bytes (fetched once). A plain field is enough —
@@ -372,7 +371,7 @@ impl IndexManager {
             scanning: Arc::new(AtomicBool::new(false)),
             freshness,
             phases: None,
-            phases_pending: false,
+            pending_phases: phased::PendingPhases::No,
             scan_calibration: None,
         })
     }

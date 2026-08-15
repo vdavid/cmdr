@@ -140,6 +140,14 @@ sites. Both rescan doors hold the manager out under a transient `ShuttingDown` f
 `cover_context_for` hands a context out only from a `Running` manager — start the machine in there and every one of its
 first walks reports "did not run". At launch the ordering has a second reason (`state/startup.rs`).
 
+⚠️ **And the standing-up itself runs off the lock too**, in two short `with_running_manager` windows with
+`PhaseStart::run` between them. The start reads scan calibration off SQLite, asks the host for its open listings, and
+spawns the reporter and the driver, while that driver's first act is to come back through the same lock for a write
+context — so under the guard its first walk would wait on the whole prelude. Same discipline as `force_scan` below, and
+the reason `with_running_manager`'s "non-blocking work only" holds. `PendingPhases` is what keeps the volume reading as
+busy across the gap, and a manager that went away in it hands the machine back to be stopped rather than leaving it
+walking with nothing holding it (`manager/phased.rs`).
+
 ⚠️ **A master off→on only brings back drives `drives_to_resume` names**, and its per-drive intent is
 `persisted_scan_completed` — which a drive part way through its FIRST index doesn't have. So an external drive covered
 in phases is forgotten by a master-switch cycle, exactly as one interrupted mid-bulk-scan always was. The boot disk is

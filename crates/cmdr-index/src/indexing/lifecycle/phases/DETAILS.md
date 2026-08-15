@@ -137,11 +137,16 @@ the ORDER and the signal change. Linux has no single equivalent pile, so it has 
 
 ## What the machine reports, and what refuses against it
 
-- **`working`** — a phase queued or running. What EVERY scan entry refuses against (`start_scan`,
+- **`working`** — a phase queued or running. Half of what EVERY scan entry refuses against (`start_scan`,
   `awaits_its_first_scan`) and what `get_status` reports as `scanning`. ⚠️ ❌ Never the narrower "a walk is running":
   that goes false between frontier roots, and the stitch produces 50–150 of them per phase, so a truncating rescan timed
   into one of those gaps would blank a half-built index and the search dialog's "building your index" state would
   flicker at root cadence.
+- **`IndexManager::pending_phases`** — the other half, and the one nobody would think to write down. There is no handle
+  to ask `working` between the launch route handing the volume over and the machine's handle landing on the manager, so
+  `phases_have_work` answers from this instead: `Owed` from `register_a_phased_start` until the start is taken,
+  `BeingStarted` for as long as `PhaseStart::run` is standing the machine up off the registry lock. That second window
+  has a driver thread already walking in it (`manager/phased.rs`).
 - **`walking`** — a walk is reading the disk right now. Feeds the verifier's `scanning` argument only; between roots
   there is nothing to race.
 - ❌ Never `mgr.scanning`: `cover_context_for` returns `None` while it is true, so the machine's own `cover()` calls

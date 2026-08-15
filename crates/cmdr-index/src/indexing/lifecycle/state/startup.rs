@@ -329,8 +329,33 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
 /// prelude — start the machine from in there and every one of its first walks
 /// reports "did not run", systematically rather than as the bounded race
 /// `phases/DETAILS.md` describes.
+///
+/// Two SHORT lock windows with the standing-up between them, the same
+/// take-it-out-then-do-the-slow-part discipline `force_scan` follows: the start
+/// reads calibration off the database, asks the host where the user is looking,
+/// and spawns two threads, and the first thing the driver does is come back
+/// through this very lock. Under the guard that first walk would wait on us.
 pub(in crate::indexing::lifecycle) fn start_pending_phases(volume_id: &str) {
-    with_running_manager(volume_id, |mgr| mgr.start_phases());
+    let mut start = None;
+    with_running_manager(volume_id, |mgr| start = mgr.take_the_phase_start());
+    let Some(start) = start else {
+        return;
+    };
+
+    // Guard released: stand the machine up off the lock.
+    let mut started = Some(start.run());
+    with_running_manager(volume_id, |mgr| {
+        started = mgr.hold_the_started_phases(started.take().expect("a machine to hand over"));
+    });
+
+    // Still here means the volume was torn down (or restarted) while its machine
+    // was being stood up, so nothing holds it any more. Its token is a child of
+    // the volume's, so a teardown has already stopped the walking; this is what
+    // ends the reporter with it.
+    if let Some(orphan) = started {
+        log::info!("start_pending_phases: '{volume_id}' went away while its phases were starting; stopping them");
+        orphan.stop();
+    }
 }
 
 /// Bring a volume's walk-covered branches back under a watcher, on the instance

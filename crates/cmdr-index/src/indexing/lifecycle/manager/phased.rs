@@ -24,6 +24,28 @@ use crate::indexing::lifecycle::phases::{self, MachineContext};
 use crate::indexing::scanner::{exclusion_policy_stamp_message, index_predates_exclusion_policy};
 use crate::indexing::watch::branches;
 
+/// Where a volume sits between "the launch route handed it to the phase machine"
+/// and "the machine is running".
+///
+/// ⚠️ **Every state but `No` counts as WORK** (`phases_have_work`), the window
+/// [`PhaseStart::run`] spends off the registry lock included. The driver thread
+/// can already be walking in there while `phases` is still `None`, and a scan
+/// entry that read "no work" would truncate the index underneath it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::indexing::lifecycle) enum PendingPhases {
+    /// Nothing owed: this volume was never the machine's, or its machine is the
+    /// `phases` handle.
+    No,
+    /// The machine covers this volume and nothing has started it yet. The start
+    /// waits for `resume_branch_watch`, or last session's covered ground comes
+    /// back watched-but-never-epoch-bumped, rendering as current when nothing
+    /// verified it (`state/startup.rs`).
+    Owed,
+    /// `state::start_pending_phases` is standing the machine up right now, off
+    /// the registry lock.
+    BeingStarted,
+}
+
 /// Whether the index a phased start finds is one the machine can add to.
 ///
 /// The launch route decides this (`manager/launch_route.rs`); every other entry
@@ -88,7 +110,7 @@ impl IndexManager {
                 self.volume_id
             );
         }
-        self.phases_pending = true;
+        self.pending_phases = PendingPhases::Owed;
     }
 
     /// Drop an index the machine can't honestly add to, so the phases fill a clean
@@ -204,58 +226,71 @@ impl IndexManager {
 
     /// Whether `resume_or_scan` handed this volume to the phase machine.
     pub(in crate::indexing::lifecycle) fn awaits_its_phases(&self) -> bool {
-        self.phases_pending
+        self.pending_phases == PendingPhases::Owed
     }
 
-    /// Start the machine, if `resume_or_scan` said this volume is its to cover.
+    /// Take the pending phase start off this manager, if it has one: everything
+    /// standing the machine up needs, cloned off the handles the manager already
+    /// holds.
     ///
-    /// Called after `resume_branch_watch`, never before: that is where a resumed
-    /// volume's covered ground gets its watcher back AND, when the journal gap is
-    /// too wide to replay, the epoch bump that makes those rows render as stale.
-    /// The machine's first walk starts a watcher of its own, and
-    /// `ensure_branch_watch` declines when one is already running — so an earlier
-    /// start would take the bump with it.
-    pub(in crate::indexing::lifecycle) fn start_phases(&mut self) {
-        if !self.phases_pending {
-            return;
+    /// ⚠️ **Cheap by contract.** `state::start_pending_phases` calls this with
+    /// `INDEX_REGISTRY` held, so ❌ nothing here may read a database, ask the host
+    /// anything, or spawn. That is [`PhaseStart::run`]'s job, on the far side of
+    /// the guard.
+    pub(in crate::indexing::lifecycle) fn take_the_phase_start(&mut self) -> Option<PhaseStart> {
+        if self.pending_phases != PendingPhases::Owed {
+            return None;
         }
-        self.phases_pending = false;
-
-        // The static half of the progress shape, for a late-joining window. ❌ No
-        // `volume_used_bytes`: a phased run has no knowable total until its last
-        // phase, and the design principles forbid a progress bar parked at 100%, so
-        // the tier this feeds stays "phase, live count, elapsed" throughout.
-        let calibration_set = IndexStore::read_scan_calibration_set(self.store.read_conn()).unwrap_or_else(|e| {
-            log::warn!("Phases: couldn't read prior scan calibration: {e}");
-            crate::indexing::store::ScanCalibrationSet::default()
-        });
-        let run_kind = ScanRunKind::classify(false, calibration_set.any.total_entries);
-        self.scan_calibration = Some(ScanCalibration {
-            prior: calibration_set.for_kind(run_kind.calibration_kind()),
-            volume_used_bytes: None,
-            run_kind,
-        });
-
-        self.phases = Some(phases::start(MachineContext {
-            volume_id: self.volume_id.clone(),
-            volume_root: self.volume_root.clone(),
-            space: self.path_space(),
-            writer: self.writer.clone(),
-            events: Arc::clone(&self.events),
-            freshness: Arc::clone(&self.freshness),
-            cancel: self.volume_cancel.child_token(),
-        }));
+        self.pending_phases = PendingPhases::BeingStarted;
+        Some(PhaseStart {
+            db_path: self.writer.db_path(),
+            context: MachineContext {
+                volume_id: self.volume_id.clone(),
+                volume_root: self.volume_root.clone(),
+                space: self.path_space(),
+                writer: self.writer.clone(),
+                events: Arc::clone(&self.events),
+                freshness: Arc::clone(&self.freshness),
+                cancel: self.volume_cancel.child_token(),
+            },
+        })
     }
 
-    /// Whether the machine still has work: a phase queued, or one running.
+    /// Take the machine [`PhaseStart::run`] built, and stop reporting the start as
+    /// pending.
+    ///
+    /// Hands the machine BACK when this manager isn't the one that asked for it: a
+    /// stop and a fresh start can both land in the window off the lock, and
+    /// overwriting the new manager's machine would leave the old one walking with
+    /// nothing able to stop it. The caller stops what it gets back.
+    pub(in crate::indexing::lifecycle) fn hold_the_started_phases(
+        &mut self,
+        started: StartedPhases,
+    ) -> Option<StartedPhases> {
+        if self.pending_phases != PendingPhases::BeingStarted {
+            return Some(started);
+        }
+        self.pending_phases = PendingPhases::No;
+        self.scan_calibration = Some(started.calibration);
+        self.phases = Some(started.handle);
+        None
+    }
+
+    /// Whether the machine still has work: the start owed or in flight, a phase
+    /// queued, or one running.
     ///
     /// ⚠️ The question every scan entry asks, and ❌ never "is a walk running right
     /// now". A walk's flag goes false between frontier roots, and the stitch
     /// deliberately produces 50–150 of them per phase; a truncating rescan landing
     /// in one of those gaps blanks an index the machine is half way through
     /// building.
+    ///
+    /// ⚠️ The pending state is half the answer, and ❌ not a nicety. Between the
+    /// launch route handing this volume over and the machine's handle landing
+    /// there is no handle to ask, and the second half of that window has a driver
+    /// thread already walking in it ([`PendingPhases`]).
     pub(in crate::indexing::lifecycle) fn phases_have_work(&self) -> bool {
-        self.phases.as_ref().is_some_and(|phases| phases.has_work())
+        self.pending_phases != PendingPhases::No || self.phases.as_ref().is_some_and(|phases| phases.has_work())
     }
 
     /// Whether a phase walk is reading the disk right now. What suppresses the
@@ -267,9 +302,63 @@ impl IndexManager {
     /// Stop covering this volume. Whatever is covered stays covered and watched,
     /// and the next launch picks the rest up.
     pub(in crate::indexing::lifecycle) fn stop_phases(&mut self) {
-        self.phases_pending = false;
+        self.pending_phases = PendingPhases::No;
         if let Some(phases) = self.phases.as_ref() {
             phases.stop();
         }
+    }
+}
+
+/// A phase-machine start, lifted off its manager and waiting for the registry
+/// lock to be released.
+pub(in crate::indexing::lifecycle) struct PhaseStart {
+    /// Where the calibration is read from. The manager's own read connection is
+    /// behind the lock this start exists to get out from under.
+    db_path: PathBuf,
+    context: MachineContext,
+}
+
+impl PhaseStart {
+    /// Stand the machine up, and hand back what its manager holds on to.
+    ///
+    /// ⚠️ **Everything blocking about a start is here**, and it runs with NO
+    /// registry lock held: the calibration read, the host's `open_listings` ask
+    /// inside `phases::start`, the reporter, and the driver thread. That thread's
+    /// first act is to resolve a write context THROUGH the registry
+    /// (`cover::context_for_walk`), so a start under the lock would make its first
+    /// walk wait on us for as long as the slowest of those takes.
+    pub(in crate::indexing::lifecycle) fn run(self) -> StartedPhases {
+        // The static half of the progress shape, for a late-joining window. ❌ No
+        // `volume_used_bytes`: a phased run has no knowable total until its last
+        // phase, and the design principles forbid a progress bar parked at 100%, so
+        // the tier this feeds stays "phase, live count, elapsed" throughout.
+        let calibration_set = IndexStore::open_read_connection(&self.db_path)
+            .and_then(|conn| IndexStore::read_scan_calibration_set(&conn))
+            .unwrap_or_else(|e| {
+                log::warn!("Phases: couldn't read prior scan calibration: {e}");
+                crate::indexing::store::ScanCalibrationSet::default()
+            });
+        let run_kind = ScanRunKind::classify(false, calibration_set.any.total_entries);
+        StartedPhases {
+            calibration: ScanCalibration {
+                prior: calibration_set.for_kind(run_kind.calibration_kind()),
+                volume_used_bytes: None,
+                run_kind,
+            },
+            handle: phases::start(self.context),
+        }
+    }
+}
+
+/// A running phase machine on its way back to the manager that asked for it.
+pub(in crate::indexing::lifecycle) struct StartedPhases {
+    handle: phases::PhaseHandle,
+    calibration: ScanCalibration,
+}
+
+impl StartedPhases {
+    /// Stop a machine whose manager went away while it was being stood up.
+    pub(in crate::indexing::lifecycle) fn stop(&self) {
+        self.handle.stop();
     }
 }
