@@ -11,9 +11,9 @@ with the index it finds" holds the whole routing table.
 
 **The shape of a run.** Ask the host which folders matter to this user (`HostPolicy::priority_roots`, an ORDER and
 nothing else), then `$HOME`, then the volume root. Per phase: stitch down to its root, ask for its frontier, walk those
-roots in groups with the visit queue checked between them, drain, take stock. `MAX_PASSES_PER_PHASE` re-asks once
-after the drain (a root can expose new ground while it is being walked); past that whatever is left is this session's
-loss and the next launch asks again. ❌ That is a PASS budget, never a completion rule.
+roots in groups with the visit queue checked between them, drain, take stock. `MAX_PASSES_PER_PHASE` re-asks once after
+the drain (a root can expose new ground while it is being walked); past that whatever is left is this session's loss and
+the next launch asks again. ❌ That is a PASS budget, never a completion rule.
 
 ## The stitch, and why phases would silently degrade without it
 
@@ -62,11 +62,11 @@ a completed volume the verifier is the only thing that heals it.
 ## Interleaving without preemption
 
 One `cover()` call per GROUP of frontier roots, joined before the next starts. Measured, the join costs nothing (41 s of
-real walking against a whole-volume walk's 38.1 s), and the gaps between calls are what give the queue its check
-points — ❌ handing one call a whole phase's frontier looks cheaper but the cancel check inside `cover` is not a point
-the machine can consult a queue at. Preemption is out of scope: a root the user opens waits for the running walk, which
-on a big folder is tens of seconds, and no stitch depth fixes that (`docs/notes/phased-vs-bulk-index-2026-08-14.md`
-§ depth 1 against depth 2).
+real walking against a whole-volume walk's 38.1 s), and the gaps between calls are what give the queue its check points
+— ❌ handing one call a whole phase's frontier looks cheaper but the cancel check inside `cover` is not a point the
+machine can consult a queue at. Preemption is out of scope: a root the user opens waits for the running walk, which on a
+big folder is tens of seconds, and no stitch depth fixes that (`docs/notes/phased-vs-bulk-index-2026-08-14.md` § depth 1
+against depth 2).
 
 **How big a group is, is measured rather than predicted** (`grouping.rs`). A frontier root is virgin ground by
 definition, so nothing in the index says how much is under it: the only honest estimate is what the last group cost per
@@ -91,9 +91,9 @@ which under 0.2 ms was reading the disk. Where the rest went, from counters held
   its drain to the caller, so its rows and marks were still in the writer's queue. Now: after a drain, which is where
   `run_phase` already asks.
 - **The branch set: most of the remainder.** `begin_covering` / `finish_covering` scan a `Vec` per path and re-sort it,
-  and every comparison went through `is_strict_descendant`, which allocated two `Vec`s to compare two paths. Over
-  10,000 branches that was ~59 s of the run. The comparison is allocation-free now (2.9× off that arm), and the scans
-  remain — see below.
+  and every comparison went through `is_strict_descendant`, which allocated two `Vec`s to compare two paths. Over 10,000
+  branches that was ~59 s of the run. The comparison is allocation-free now (2.9× off that arm), and the scans remain —
+  see below.
 - **The `cover()` round trip itself: ~2.4 ms per root** (a claim, a branch bracket, a walk thread, a bootstrap read
   connection), now divided by the group size.
 

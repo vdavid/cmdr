@@ -289,7 +289,9 @@ fn build_tree(root: &Path, dir_budget: usize) {
     let mut out = std::io::stderr();
     let _ = writeln!(
         &mut out,
-        "  built a tree of {dirs} dirs and {files} files in {:.1?}",
+        "  built a tree of {} and {} in {:.1?}",
+        cmdr_fs::pluralize::pluralize(dirs as u64, "dir"),
+        cmdr_fs::pluralize::pluralize(files as u64, "file"),
         started.elapsed()
     );
 }
