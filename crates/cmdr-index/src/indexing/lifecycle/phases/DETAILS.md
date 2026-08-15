@@ -157,7 +157,10 @@ the ORDER and the signal change. Linux has no single equivalent pile, so it has 
   `writer.set_expected_total_entries` is left unset (its only consumer is flushing-progress, which degrades to no
   percentage rather than a wrong one).
 - **The reporter's lifetime is the MACHINE's**, not a walk's, or the 500 ms tick would die and restart 50–150 times a
-  phase, taking the progress stream, mid-scan partial aggregation, and the `open_listings` visit poll with it.
+  phase, taking the progress stream, mid-scan partial aggregation, and the `open_listings` visit poll with it. A walk
+  over one frontier root usually finishes well inside the reporter's first sleep, so a per-walk pump would tick almost
+  never. `tests::the_progress_pump_outlives_the_walks_it_reports_on` anchors it by holding a between-roots gap open from
+  inside the event sink and counting what still arrives.
 
 ## Where the app's answers enter
 

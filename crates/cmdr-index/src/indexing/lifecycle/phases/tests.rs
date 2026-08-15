@@ -193,6 +193,27 @@ impl Drive {
         priority: &[&str],
         indexing_enabled: bool,
     ) -> Self {
+        let recorder = std::sync::Arc::new(crate::indexing::events::RecordingSink::new());
+        let sink = std::sync::Arc::clone(&recorder) as std::sync::Arc<dyn crate::indexing::events::EventSink>;
+        Self::assembled(volume_id, build, host_says, priority, indexing_enabled, sink, recorder)
+    }
+
+    /// The whole fixture, with the sink the volume reports THROUGH given apart
+    /// from the recorder a test reads back. Everything above hands in the recorder
+    /// for both; a test that needs to act from inside an `emit` wraps it.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the fixture's whole surface in one place; the constructors above are the ones tests call"
+    )]
+    fn assembled(
+        volume_id: &'static str,
+        build: impl FnOnce(&Path),
+        host_says: impl FnOnce(&crate::indexing::host::policy::FakeHostPolicy, &Path),
+        priority: &[&str],
+        indexing_enabled: bool,
+        sink: std::sync::Arc<dyn crate::indexing::events::EventSink>,
+        events: std::sync::Arc<crate::indexing::events::RecordingSink>,
+    ) -> Self {
         let serialized = crate::indexing::handle::test_lock();
         let data = tempfile::tempdir().expect("index data dir");
         let tree = tempfile::Builder::new()
@@ -215,12 +236,11 @@ impl Drive {
             host.note_priority_root(volume_id, tree.path().join(root));
         }
         host_says(&host, tree.path());
-        let events = std::sync::Arc::new(crate::indexing::events::RecordingSink::new());
         let (index, installed) = crate::indexing::handle::Index::builder()
             .data_dir(data.path())
             .volumes(std::sync::Arc::clone(&volumes) as std::sync::Arc<_>)
             .host(host as std::sync::Arc<_>)
-            .events(std::sync::Arc::clone(&events) as std::sync::Arc<dyn crate::indexing::events::EventSink>)
+            .events(sink)
             .indexing_enabled(Some(indexing_enabled))
             .install_for_test();
 
@@ -1175,6 +1195,144 @@ fn the_progress_pump_reports_and_polls_where_the_user_is_looking() {
         "and the machine hears where the user is looking"
     );
     writer.shutdown();
+}
+
+/// The same pump, over a REAL machine run, answering the question the isolated
+/// test above can't: whose lifetime is it?
+///
+/// It is the machine's, and everything riding the 500 ms tick depends on that —
+/// the progress stream, the `open_listings` poll, and mid-scan partial
+/// aggregation, which is what makes a size appear for the folder somebody is
+/// looking at while the walker is deep inside a different frontier root. One
+/// reporter per walk would die and restart 50–150 times a phase and tick almost
+/// never: a walk over a frontier root usually finishes in milliseconds, well
+/// inside the reporter's first sleep.
+///
+/// The gap between two frontier roots is where that difference shows, so the test
+/// holds one open from inside the sink and watches what still arrives.
+#[test]
+fn the_progress_pump_outlives_the_walks_it_reports_on() {
+    let recorder = std::sync::Arc::new(crate::indexing::events::RecordingSink::new());
+    let watcher = std::sync::Arc::new(PauseBetweenWalks::new(
+        "phased-pump-outlives",
+        std::sync::Arc::clone(&recorder),
+    ));
+    let drive = Drive::assembled(
+        "phased-pump-outlives",
+        |root| {
+            // Three frontier roots under the volume root, so there are two gaps
+            // between walks and the first one has walks after it.
+            for name in ["a", "b", "c"] {
+                std::fs::create_dir_all(root.join(name).join("inner")).expect("dirs");
+            }
+        },
+        |_, _| {},
+        &[],
+        true,
+        std::sync::Arc::clone(&watcher) as std::sync::Arc<dyn crate::indexing::events::EventSink>,
+        recorder,
+    );
+
+    drive.start();
+    drive.wait_for_the_machine();
+
+    assert!(
+        watcher.held_a_gap_open(),
+        "precondition: a walk ended and this test held the moment after it open"
+    );
+    assert!(
+        watcher.ticks_in_the_gap() > 0,
+        "❌ the pump died with the walk it was reporting on: nothing ticked in {:?} between frontier roots, \
+         so nothing would refresh the size of the folder the user is looking at until the run ends",
+        THE_GAP
+    );
+    assert!(
+        watcher.walks_after_the_gap() > 0,
+        "and the gap was BETWEEN frontier roots, not after the last one"
+    );
+}
+
+/// How long one between-walks gap is held open. Three of the reporter's 500 ms
+/// ticks fit, so a machine-lifetime pump lands at least two of them here however
+/// the sleeps happen to line up.
+const THE_GAP: std::time::Duration = std::time::Duration::from_millis(1_500);
+
+/// Holds the machine still in the gap after its FIRST walk, and counts what
+/// arrives while it waits.
+///
+/// The machine emits on its own thread, synchronously, so blocking inside `emit`
+/// IS a between-frontier-roots moment: the walk has finished, `walking` is already
+/// false, and the next walk can't start until this returns. Anything whose
+/// lifetime was that walk is gone by now; anything whose lifetime is the machine
+/// keeps going, and that is what the counters below tell apart.
+struct PauseBetweenWalks {
+    volume_id: &'static str,
+    recorder: std::sync::Arc<crate::indexing::events::RecordingSink>,
+    /// Set while the gap is being held open, so a tick landing in it is counted.
+    holding: std::sync::atomic::AtomicBool,
+    /// One gap is enough, and holding every one of them would only make the test
+    /// slower.
+    held: std::sync::atomic::AtomicBool,
+    ticks: std::sync::atomic::AtomicUsize,
+    walks_after: std::sync::atomic::AtomicUsize,
+}
+
+impl PauseBetweenWalks {
+    fn new(volume_id: &'static str, recorder: std::sync::Arc<crate::indexing::events::RecordingSink>) -> Self {
+        Self {
+            volume_id,
+            recorder,
+            holding: std::sync::atomic::AtomicBool::new(false),
+            held: std::sync::atomic::AtomicBool::new(false),
+            ticks: std::sync::atomic::AtomicUsize::new(0),
+            walks_after: std::sync::atomic::AtomicUsize::new(0),
+        }
+    }
+
+    fn held_a_gap_open(&self) -> bool {
+        self.held.load(Ordering::Relaxed)
+    }
+
+    /// Progress events that arrived while no walk was running.
+    fn ticks_in_the_gap(&self) -> usize {
+        self.ticks.load(Ordering::Relaxed)
+    }
+
+    /// Walks that started after the gap, which is what makes it a gap rather than
+    /// the end of the run.
+    fn walks_after_the_gap(&self) -> usize {
+        self.walks_after.load(Ordering::Relaxed)
+    }
+}
+
+impl crate::indexing::events::EventSink for PauseBetweenWalks {
+    fn emit(&self, event: crate::indexing::events::IndexEvent) {
+        use crate::indexing::events::IndexEventKind;
+        let mine = event.volume_id() == Some(self.volume_id);
+        let kind = event.kind();
+        self.recorder.emit(event);
+        if !mine {
+            return;
+        }
+        match kind {
+            IndexEventKind::ScanProgress if self.holding.load(Ordering::Relaxed) => {
+                self.ticks.fetch_add(1, Ordering::Relaxed);
+            }
+            IndexEventKind::CoverageBranchStarted if self.held.load(Ordering::Relaxed) => {
+                self.walks_after.fetch_add(1, Ordering::Relaxed);
+            }
+            IndexEventKind::CoverageBranchEnded if !self.held.swap(true, Ordering::Relaxed) => {
+                self.holding.store(true, Ordering::Relaxed);
+                // allowed-test-sleep: the gap IS the thing under test. Nothing the
+                // machine does between two frontier roots can be waited on, because
+                // the property is that something keeps happening while it does
+                // nothing at all.
+                std::thread::sleep(THE_GAP);
+                self.holding.store(false, Ordering::Relaxed);
+            }
+            _ => {}
+        }
+    }
 }
 
 // ── The home a test drives ───────────────────────────────────────────
