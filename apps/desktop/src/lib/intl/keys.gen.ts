@@ -1949,6 +1949,7 @@ export type MessageKey =
   | 'queryUi.results.live.scanningAria'
   | 'queryUi.results.live.stop'
   | 'queryUi.results.live.stopTooltip'
+  | 'queryUi.results.live.waitingForAnotherWalk'
   | 'queryUi.results.live.walking'
   | 'queryUi.results.loadingIndex'
   | 'queryUi.results.noMatchHeading'

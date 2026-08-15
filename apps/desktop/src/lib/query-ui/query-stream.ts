@@ -21,11 +21,15 @@ import type { SearchResultEntry } from '$lib/tauri-commands'
 /**
  * Which part of a live run produced an update.
  *
- * Three honest waits rather than one spinner: working out what's already covered can
- * mean a multi-second index load, reading the index is fast, and the walk is
- * unbounded.
+ * Four honest waits rather than one spinner: working out what's already covered can
+ * mean a multi-second index load, being queued behind another run's walk is somebody
+ * else's clock entirely, reading the index is fast, and the walk is unbounded.
+ *
+ * The run says which one it's in; ❌ nothing here infers it. A run queued behind
+ * another walk has no walk of its own, so `waitingForAnotherWalk` must never render
+ * as walking — that is what put "0 folders scanned" under a sentence about walking.
  */
-export type QueryStreamPhase = 'resolvingCoverage' | 'readingIndex' | 'walking'
+export type QueryStreamPhase = 'resolvingCoverage' | 'waitingForAnotherWalk' | 'readingIndex' | 'walking'
 
 /** A batch of rows, plus where the run has got to. */
 export interface QueryStreamProgress {
@@ -138,6 +142,7 @@ export interface LiveRunView {
 /** The spinner label for a run with nothing to show yet. One sentence per phase. */
 export function livePhaseLabel(phase: QueryStreamPhase): string {
   if (phase === 'resolvingCoverage') return tString('queryUi.results.live.resolvingCoverage')
+  if (phase === 'waitingForAnotherWalk') return tString('queryUi.results.live.waitingForAnotherWalk')
   if (phase === 'readingIndex') return tString('queryUi.results.live.readingIndex')
   return tString('queryUi.results.live.walking')
 }

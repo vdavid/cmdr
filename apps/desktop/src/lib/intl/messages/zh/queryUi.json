@@ -240,6 +240,10 @@
   "@queryUi.results.live.resolvingCoverage": {
     "sourceHash": "07b501d"
   },
+  "queryUi.results.live.waitingForAnotherWalk": "正在等待另一次扫描读完这些文件夹…",
+  "@queryUi.results.live.waitingForAnotherWalk": {
+    "sourceHash": "21163fe"
+  },
   "queryUi.results.live.readingIndex": "正在读取已建立索引的部分…",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "5a048c9"

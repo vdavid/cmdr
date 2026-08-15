@@ -246,6 +246,10 @@ pub(crate) struct ResultStream<'a> {
     hidden_by_excludes: u32,
     current_path: Option<String>,
     last_emit: Instant,
+    /// The phase of the last event that went out, so the terminal event can say
+    /// the phase the run was actually IN rather than guess one from how the walk
+    /// ended. A run that never walked must not sign off as "walking".
+    last_phase: SearchPhase,
 }
 
 impl<'a> ResultStream<'a> {
@@ -264,6 +268,9 @@ impl<'a> ResultStream<'a> {
             hidden_by_excludes: 0,
             current_path: None,
             last_emit: Instant::now(),
+            // Every run starts here (`run_live_blocking` announces it first), so a
+            // run that ends before saying anything else ends honestly.
+            last_phase: SearchPhase::ResolvingCoverage,
         }
     }
 
@@ -368,6 +375,7 @@ impl<'a> ResultStream<'a> {
 
     fn emit(&mut self, phase: SearchPhase, entries: Vec<SearchResultEntry>) {
         self.last_emit = Instant::now();
+        self.last_phase = phase;
         if !self.run.wants_events() {
             return;
         }
@@ -393,9 +401,13 @@ impl<'a> ResultStream<'a> {
             coverage.walk = WalkEnding::Cancelled;
         }
         coverage.hidden_by_excludes = self.hidden_by_excludes;
+        // The phase the run was in when it stopped. ❌ Never "it didn't end as
+        // `NothingToWalk`, so call it walking": a run the drive refused, or one
+        // stopped before its walk began, never walked, and its last word saying
+        // otherwise is what put "0 folders scanned" under a walking sentence.
         self.flush(match coverage.walk {
             WalkEnding::NothingToWalk => SearchPhase::ReadingIndex,
-            _ => SearchPhase::Walking,
+            _ => self.last_phase,
         });
         if !self.run.wants_events() {
             return;
@@ -543,9 +555,16 @@ pub(crate) fn drive_walk(
         };
     }
 
+    // What this walk is actually doing, said ONCE up front rather than waited for:
+    // a run learns it has moved on from the arena at the moment it does, and the
+    // stream's own record of the phase is right from the first turn.
+    let phase = walk_phase(attempted_roots);
+    stream.announce(phase);
+
     pump(
         &rx,
         attempted_roots,
+        phase,
         judge,
         stream,
         &WalkPulse {
@@ -553,6 +572,21 @@ pub(crate) fn drive_walk(
             current_dir,
         },
     )
+}
+
+/// What a walk is doing, from the ground it actually took.
+///
+/// A walk that took NONE isn't walking. Every root it asked for was already
+/// another walk's, so the run is queued behind that walk, reading what it
+/// writes — and "0 folders scanned" under "looking through folders that aren't
+/// indexed yet" is the shape of that lie. Pure, because which sentence a person
+/// reads for minutes hangs on it.
+fn walk_phase(attempted_roots: usize) -> SearchPhase {
+    if attempted_roots == 0 {
+        SearchPhase::WaitingForAnotherWalk
+    } else {
+        SearchPhase::Walking
+    }
 }
 
 /// The two live readings the run takes off its walk between batches.
@@ -589,9 +623,13 @@ fn forward(walk: CoverWalk, tx: &SyncSender<WalkMsg>) {
 }
 
 /// The run's own loop: take batches, flush on the interval, stop when asked.
+///
+/// `phase` is what this walk is doing, decided by its caller from the ground it
+/// took, so every event the loop emits says the same true thing.
 fn pump(
     rx: &Receiver<WalkMsg>,
     attempted_roots: usize,
+    phase: SearchPhase,
     judge: &WalkJudge<'_>,
     stream: &mut ResultStream<'_>,
     pulse: &WalkPulse,
@@ -609,7 +647,7 @@ fn pump(
                 // superseded run, whose walk is still writing.
                 volumes::mark_walked_behind(&stream.run.volume_id);
                 judge.consume(batch, stream);
-                stream.flush_if_due(SearchPhase::Walking);
+                stream.flush_if_due(phase);
             }
             Ok(WalkMsg::Ended(ended)) => {
                 outcome = Some(ended);
@@ -617,7 +655,7 @@ fn pump(
             }
             // Nothing arrived, so nothing new to say — but a row found 99 ms ago
             // has waited long enough, and a cancel is checked at the top.
-            Err(RecvTimeoutError::Timeout) => stream.flush_if_due(SearchPhase::Walking),
+            Err(RecvTimeoutError::Timeout) => stream.flush_if_due(phase),
             // The reader thread went away without a verdict.
             Err(RecvTimeoutError::Disconnected) => break,
         }

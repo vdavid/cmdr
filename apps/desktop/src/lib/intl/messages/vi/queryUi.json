@@ -242,6 +242,10 @@
   "@queryUi.results.live.resolvingCoverage": {
     "sourceHash": "07b501d"
   },
+  "queryUi.results.live.waitingForAnotherWalk": "Đang đợi một lượt duyệt khác của các thư mục này...",
+  "@queryUi.results.live.waitingForAnotherWalk": {
+    "sourceHash": "21163fe"
+  },
   "queryUi.results.live.readingIndex": "Đang đọc phần đã lập chỉ mục...",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "5a048c9"

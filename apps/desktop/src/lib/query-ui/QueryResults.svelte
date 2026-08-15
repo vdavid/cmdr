@@ -44,6 +44,7 @@
         liveStatusLine,
         liveWalkProgress,
         type LiveRunView,
+        type QueryStreamPhase,
     } from './query-stream'
     import type { SearchMode } from './query-filter-state.svelte'
 
@@ -221,11 +222,14 @@
 
     /**
      * A live run with nothing to render yet, which is when the content area belongs to
-     * the phase spinner: no rows for a list search, and the first phase for a
-     * count-only one (its "0 so far" is meaningless until coverage is resolved).
+     * the phase spinner: no rows for a list search, and the phases before any counting
+     * has happened for a count-only one (its "0 so far" is meaningless until the run
+     * has ground of its own to count over).
      */
+    const countOnlyHasNothingToShow = (phase: QueryStreamPhase): boolean =>
+        phase === 'resolvingCoverage' || phase === 'waitingForAnotherWalk'
     const liveWaiting = $derived(
-        live !== null && streaming && (countOnly ? live.phase === 'resolvingCoverage' : results.length === 0),
+        live !== null && streaming && (countOnly ? countOnlyHasNothingToShow(live.phase) : results.length === 0),
     )
 
     // True only when the `{:else}` branch below actually renders option rows. `role="listbox"`

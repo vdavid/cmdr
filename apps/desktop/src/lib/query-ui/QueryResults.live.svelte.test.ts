@@ -88,9 +88,9 @@ function mountWith(props: Partial<typeof baseProps>): HTMLDivElement {
 const statusText = (t: HTMLElement): string =>
   (t.querySelector('.status-bar')?.textContent ?? '').replace(/\s+/g, ' ').trim()
 
-describe('the three phases, while there is nothing to show yet', () => {
+describe('the four phases, while there is nothing to show yet', () => {
   it('names each wait rather than showing one anonymous spinner', async () => {
-    const labels = ['resolvingCoverage', 'readingIndex', 'walking'] as const
+    const labels = ['resolvingCoverage', 'waitingForAnotherWalk', 'readingIndex', 'walking'] as const
     const seen = new Set<string>()
     for (const phase of labels) {
       const target = mountWith({ live: liveView({ phase }) })
@@ -100,13 +100,25 @@ describe('the three phases, while there is nothing to show yet', () => {
       expect(label).not.toBe('')
       seen.add(label)
     }
-    expect(seen.size).toBe(3)
+    expect(seen.size).toBe(4)
   })
 
   it('says the walking phase is about folders that are not indexed', async () => {
     const target = mountWith({ live: liveView({ phase: 'walking' }) })
     await tick()
     expect(target.querySelector('.loading-label')?.textContent).toContain("aren't indexed yet")
+  })
+
+  it('does not promise a walk for a run that is queued behind another one', async () => {
+    // The run holds no ground: no folder of its own is being read. Saying otherwise is
+    // what put "0 folders scanned" under a sentence about walking, for as long as the
+    // other walk took.
+    const target = mountWith({ live: liveView({ phase: 'waitingForAnotherWalk' }) })
+    await tick()
+    const label = target.querySelector('.loading-label')?.textContent ?? ''
+    expect(label).not.toBe('')
+    expect(label).not.toContain("aren't indexed yet")
+    expect(statusText(target)).not.toContain('folders scanned')
   })
 })
 
@@ -245,13 +257,16 @@ describe('count-only stops claiming a total it does not have', () => {
     expect(summary).not.toContain('so far')
   })
 
-  it('waits for the first phase to pass before showing a count at all', async () => {
+  it('waits for the run to have ground of its own before showing a count at all', async () => {
     // "0 results so far" while Cmdr is still working out what it covers is noise, not
-    // information.
-    const target = mountWith({ countOnly: true, live: liveView({ phase: 'resolvingCoverage' }) })
-    await tick()
-    expect(target.querySelector('.count-only-summary')).toBeFalsy()
-    expect(target.querySelector('.spinner')).toBeTruthy()
+    // information — and so is the same zero while the run is queued behind somebody
+    // else's walk, having counted nothing yet either.
+    for (const phase of ['resolvingCoverage', 'waitingForAnotherWalk'] as const) {
+      const target = mountWith({ countOnly: true, live: liveView({ phase }) })
+      await tick()
+      expect(target.querySelector('.count-only-summary')).toBeFalsy()
+      expect(target.querySelector('.spinner')).toBeTruthy()
+    }
   })
 })
 

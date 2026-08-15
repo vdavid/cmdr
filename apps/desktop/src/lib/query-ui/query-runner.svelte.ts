@@ -239,7 +239,11 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
   function finishLiveRun(config: QueryDialogConfig<E>, source: QueryStreamSource, end: QueryStreamEnd): void {
     dropLiveSubscription()
     live = {
-      phase: live?.phase ?? 'walking',
+      // The phase the RUN last reported, never a guess: a run that ended without
+      // ever walking must not sign off as walking. The fallback is the phase every
+      // run starts in, for the case where a terminal update arrives with no
+      // progress update before it.
+      phase: live?.phase ?? 'resolvingCoverage',
       matchCount: end.matchCount,
       dirsFound: live?.dirsFound ?? 0,
       currentPath: null,

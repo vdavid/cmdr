@@ -424,7 +424,9 @@ fn wait_for_the_other_walk(volume_id: &str, scopes: &[String], run: &LiveRun, st
     log::debug!("Live search: '{volume_id}' is being walked by another search; waiting for it");
     loop {
         // Say so every turn: the run is working, and this is the phase it's in.
-        stream.announce(SearchPhase::ResolvingCoverage);
+        // ❌ Not `ResolvingCoverage` — coverage is resolved, and the answer was
+        // "somebody else has this ground". What's left is their clock, not ours.
+        stream.announce(SearchPhase::WaitingForAnotherWalk);
         std::thread::sleep(OTHER_WALK_POLL);
         if run.is_cancelled() || !every_frontier_root_is_another_walks(&coverage_of(volume_id, scopes)) {
             return;

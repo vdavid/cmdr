@@ -25,6 +25,35 @@ knob: it says how much of the walk to wait for, never whether to walk. The MCP r
 above the results (`mcp/executor/search.rs::coverage_note`), including the two unreadable lists.
 
 
+## What a run says it's doing
+
+`SearchPhase` is the run's own statement of what it's spending time on, and every one of its four values is checkable
+against something the run actually did. A person watching a search that finds nothing for a minute has only this
+sentence to tell "slow" from "stuck", so a phase that's inferred rather than known is worse than no phase at all.
+
+- **`ResolvingCoverage`** — asking the index what it can't answer for, and building the arena that answer is honored
+  against (`../DETAILS.md` § Decision 12). Announced first by every run, which is also why it's the fallback everywhere
+  else.
+- **`WaitingForAnotherWalk`** — coverage IS resolved, and the answer was that a walk in flight already holds this run's
+  ground. One walk per patch of ground (`lifecycle/cover/live.rs`), so the run can only wait for that walk and read what
+  it wrote. Two places reach it, and they're the same situation seen from either side of `Index::cover`:
+  `wait_for_the_other_walk` (the run has nothing to show, so it waits rather than answering empty) and
+  `walk_phase(attempted_roots)` when a walk came back holding NO roots (the run had index rows to show, so it goes on,
+  reporting `still_covering`).
+- **`ReadingIndex`** — scanning the arena. Fast, and the only phase whose wait nobody notices.
+- **`Walking`** — reading folders the index doesn't cover, this run's own. Unbounded, and the only phase that may put
+  "N folders scanned" on screen, because it's the only one where a folder of this run's is being read.
+
+**The terminal event repeats the run's LAST phase**, ❌ never a phase derived from `WalkEnding` (only `NothingToWalk`
+forces `ReadingIndex`, which is what that ending means). Deriving it read "anything but `NothingToWalk` ⇒ walking", so a
+run the drive refused, a run stopped before its walk began, and a run queued behind somebody else's walk all signed off
+as walking. `ResultStream` keeps `last_phase` for exactly this.
+
+The frontend renders the phase and ❌ never derives one (`query-ui/query-stream.ts`): `livePhaseLabel` has a branch per
+value, `liveWalkProgress` shows the folder count for `walking` alone, and a count-only run holds its "0 so far" back
+through both of the phases where it has counted nothing yet.
+
+
 ## Terminal states
 
 `WalkEnding` is typed because three of the four leave the list incomplete and the copy differs:

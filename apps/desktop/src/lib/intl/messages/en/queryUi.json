@@ -367,6 +367,12 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
+  "queryUi.results.live.waitingForAnotherWalk": "Waiting for another scan of these folders...",
+  "@queryUi.results.live.waitingForAnotherWalk": {
+    "description": "Label under a spinner while a search waits for another scan that is already reading the folders it needs. Only one scan may read a folder at a time, so this search can do nothing but wait for that one and then read what it found. It is NOT reading any folder itself, so avoid wording that says it is looking through folders. Ends with '...' (three dots).",
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
+  },
   "queryUi.results.live.readingIndex": "Reading what's already indexed...",
   "@queryUi.results.live.readingIndex": {
     "description": "Label under a spinner while a search reads the part of the folder the app has already indexed, before it starts looking through the rest. Ends with '...' (three dots).",

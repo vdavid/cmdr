@@ -8052,12 +8052,22 @@ export type SearchMode = {
 /**
  *  Which part of a live search produced an event.
  *
- *  Three honest waits rather than one spinner: resolving coverage can mean a
- *  multi-second arena load, reading the index is fast, and the walk is unbounded.
+ *  Four honest waits rather than one spinner: resolving coverage can mean a
+ *  multi-second arena load, being queued behind another walk is somebody else's
+ *  clock entirely, reading the index is fast, and the walk is unbounded.
  */
 export type SearchPhase =
   // Asking the index what it can't answer for yet, and loading its arena.
   | 'resolvingCoverage'
+  /**
+   *  Coverage IS resolved, and every bit of uncovered ground this run needs is
+   *  already held by a walk in flight. One walk per patch of ground
+   *  (`lifecycle/cover/live.rs`), so all this run can do is wait for that one and
+   *  read what it wrote. ❌ Not [`Walking`](Self::Walking): no folder of this
+   *  run's is being read, and saying otherwise puts "0 folders scanned" under a
+   *  sentence about walking.
+   */
+  | 'waitingForAnotherWalk'
   // Scanning the arena: the half the index already covers.
   | 'readingIndex'
   // Walking the ground the index doesn't cover, live.

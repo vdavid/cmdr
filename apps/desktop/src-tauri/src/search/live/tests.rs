@@ -141,7 +141,14 @@ fn drive(
 
     let mut stream = ResultStream::new(run, sink.as_ref(), query);
     stream.add_indexed(indexed, indexed_total, 0);
-    let walked = pump(&rx, 1, &judged.judge(), &mut stream, &WalkPulse::default());
+    let walked = pump(
+        &rx,
+        1,
+        SearchPhase::Walking,
+        &judged.judge(),
+        &mut stream,
+        &WalkPulse::default(),
+    );
     let coverage = SearchRunCoverage {
         walk: walked.ending,
         kind: CoverageKind::Live,
@@ -276,7 +283,14 @@ fn a_query_refined_mid_walk_drops_the_batches_and_keeps_the_walk() {
     });
 
     let mut stream = ResultStream::new(&first, sink.as_ref(), &q);
-    let walked = pump(&rx, 1, &judged.judge(), &mut stream, &WalkPulse::default());
+    let walked = pump(
+        &rx,
+        1,
+        SearchPhase::Walking,
+        &judged.judge(),
+        &mut stream,
+        &WalkPulse::default(),
+    );
     let ending = walked.ending;
     feeder.join().expect("the feeder thread");
 
@@ -505,7 +519,7 @@ fn progress_follows_the_walk_rather_than_the_batches_it_emits() {
     drop(tx);
 
     let mut stream = ResultStream::new(&run, sink.as_ref(), &q);
-    pump(&rx, 1, &judged.judge(), &mut stream, &pulse);
+    pump(&rx, 1, SearchPhase::Walking, &judged.judge(), &mut stream, &pulse);
     stream.finish(SearchRunCoverage {
         walk: WalkEnding::Completed,
         kind: CoverageKind::Live,
@@ -565,7 +579,15 @@ fn cancelling_stops_the_run_promptly_and_ends_it_as_cancelled() {
 
     let started = Instant::now();
     let mut stream = ResultStream::new(&run, sink.as_ref(), &q);
-    let ending = pump(&rx, 1, &judged.judge(), &mut stream, &WalkPulse::default()).ending;
+    let ending = pump(
+        &rx,
+        1,
+        SearchPhase::Walking,
+        &judged.judge(),
+        &mut stream,
+        &WalkPulse::default(),
+    )
+    .ending;
     let elapsed = started.elapsed();
     stream.finish(SearchRunCoverage {
         walk: ending,
@@ -657,7 +679,15 @@ fn a_walk_that_left_a_root_uncovered_reads_as_interrupted() {
 
     let mut stream = ResultStream::new(&run, sink.as_ref(), &q);
     // Two roots taken, one covered.
-    let ending = pump(&rx, 2, &judged.judge(), &mut stream, &WalkPulse::default()).ending;
+    let ending = pump(
+        &rx,
+        2,
+        SearchPhase::Walking,
+        &judged.judge(),
+        &mut stream,
+        &WalkPulse::default(),
+    )
+    .ending;
     assert_eq!(ending, WalkEnding::Interrupted);
 }
 
@@ -816,4 +846,22 @@ fn closing_the_dialog_leaves_an_agents_search_running() {
     );
     deregister("run-close-dialog");
     deregister("run-close-agent");
+}
+
+// ── What a walk says it's doing ──────────────────────────────────────
+
+#[test]
+fn a_walk_that_took_ground_says_it_is_walking() {
+    assert_eq!(walk_phase(1), SearchPhase::Walking);
+    assert_eq!(walk_phase(9), SearchPhase::Walking);
+}
+
+#[test]
+fn a_walk_that_took_no_ground_says_it_is_waiting_for_the_one_that_has_it() {
+    // The run asked for its frontier and got none of it: every root was already
+    // another walk's. It reads what that walk writes and reports `still_covering`,
+    // and until this it said "looking through folders that aren't indexed yet"
+    // over "0 folders scanned" the whole time — a sentence about a walk of its
+    // own, which it never had.
+    assert_eq!(walk_phase(0), SearchPhase::WaitingForAnotherWalk);
 }

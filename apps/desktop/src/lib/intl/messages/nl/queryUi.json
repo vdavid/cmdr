@@ -243,6 +243,10 @@
   "@queryUi.results.live.resolvingCoverage": {
     "sourceHash": "07b501d"
   },
+  "queryUi.results.live.waitingForAnotherWalk": "Wachten op een andere doorloop van deze mappen...",
+  "@queryUi.results.live.waitingForAnotherWalk": {
+    "sourceHash": "21163fe"
+  },
   "queryUi.results.live.readingIndex": "Lezen wat er al geïndexeerd is...",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "5a048c9"

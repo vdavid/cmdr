@@ -136,8 +136,16 @@ describe('liveWalkProgress and livePhaseLabel', () => {
   })
 
   it('gives each phase its own honest sentence', () => {
-    const labels = (['resolvingCoverage', 'readingIndex', 'walking'] as const).map(livePhaseLabel)
-    expect(new Set(labels).size).toBe(3)
+    const labels = (['resolvingCoverage', 'waitingForAnotherWalk', 'readingIndex', 'walking'] as const).map(
+      livePhaseLabel,
+    )
+    expect(new Set(labels).size).toBe(4)
     expect(labels.every((l) => l.length > 0)).toBe(true)
+  })
+
+  it('never counts folders for a run that is queued behind another walk', () => {
+    // The run holds no ground, so it is scanning nothing. "0 folders scanned" beside a
+    // sentence about waiting reads as a stuck walk.
+    expect(liveWalkProgress(view({ phase: 'waitingForAnotherWalk', dirsFound: 0 }))).toBe('')
   })
 })

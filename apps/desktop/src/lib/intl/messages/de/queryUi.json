@@ -243,6 +243,10 @@
   "@queryUi.results.live.resolvingCoverage": {
     "sourceHash": "07b501d"
   },
+  "queryUi.results.live.waitingForAnotherWalk": "Warten auf einen anderen Suchlauf für diese Ordner …",
+  "@queryUi.results.live.waitingForAnotherWalk": {
+    "sourceHash": "21163fe"
+  },
   "queryUi.results.live.readingIndex": "Bereits Indiziertes wird gelesen …",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "5a048c9"

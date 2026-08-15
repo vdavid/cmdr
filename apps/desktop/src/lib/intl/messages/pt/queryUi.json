@@ -242,6 +242,10 @@
   "@queryUi.results.live.resolvingCoverage": {
     "sourceHash": "07b501d"
   },
+  "queryUi.results.live.waitingForAnotherWalk": "Aguardando outra passagem por estas pastas...",
+  "@queryUi.results.live.waitingForAnotherWalk": {
+    "sourceHash": "21163fe"
+  },
   "queryUi.results.live.readingIndex": "Lendo o que já está indexado...",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "5a048c9"

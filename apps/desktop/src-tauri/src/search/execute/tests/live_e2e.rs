@@ -567,9 +567,12 @@ fn a_run_whose_whole_scope_another_walk_claimed_waits_for_it_rather_than_answeri
     let sink = Arc::clone(&watched);
     let searcher = std::thread::spawn(move || search_watched("claim-race", &searched_scope, "txt", &sink));
 
-    // Wait until it has asked about the ground more than once — which only a run
-    // that is WAITING for it does. A run that answered instead reaches its
-    // terminal event here and never announces coverage twice.
+    // Wait until it has said so more than once — which only a run that is WAITING
+    // for the ground does. A run that answered instead reaches its terminal event
+    // here and never announces the wait at all.
+    //
+    // The phase is `WaitingForAnotherWalk`, ❌ not `ResolvingCoverage`: coverage
+    // IS resolved by now, and the answer was "somebody else has this ground".
     cmdr_fs::testing::wait_until(
         std::time::Duration::from_secs(10),
         "the run to wait for the ground another walk is covering",
@@ -578,7 +581,7 @@ fn a_run_whose_whole_scope_another_walk_claimed_waits_for_it_rather_than_answeri
                 .progress
                 .lock_ignore_poison()
                 .iter()
-                .filter(|event| event.phase == SearchPhase::ResolvingCoverage)
+                .filter(|event| event.phase == SearchPhase::WaitingForAnotherWalk)
                 .count()
                 > 1
         },
@@ -598,6 +601,11 @@ fn a_run_whose_whole_scope_another_walk_claimed_waits_for_it_rather_than_answeri
         "the run that waited answers with what the other walk wrote, not with nothing"
     );
     assert_eq!(answer.match_count, 2);
+    assert!(
+        !answer.phases.contains(&SearchPhase::Walking),
+        "and never claimed to be walking, having walked nothing: {:?}",
+        answer.phases
+    );
 
     volumes::forget_volume_for_test(VOLUME_ID);
     let _ = index.forget_volume(VOLUME_ID);
