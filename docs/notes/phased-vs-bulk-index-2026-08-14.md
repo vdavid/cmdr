@@ -555,9 +555,9 @@ Three runs of each arm, interleaved so neither owns a quieter half of the evenin
 Apple M3 Max, 16 cores, 64 GB, internal SSD, macOS 26.5.2. Branch `worktree-david+remeasure` at `ab0c8adab`. **Full Disk
 Access granted**; 12 directories came back permission-denied in every bulk arm.
 
-- **Page cache: warm.** A release Cmdr had been live on this `/` all day and the machine had been up 18 days. The three
-  bulk arms agree within 5%, and the first of them was the first walk of the session. Reboot-fresh is still the one
-  bound this note has never closed.
+- **Page cache: warm.** David's release Cmdr was running on this `/` throughout, and the machine had been up 18 days.
+  The three bulk arms agree within 5%, and the first of them was the first walk of the session. Reboot-fresh is still
+  the one bound this note has never closed.
 - **No wedged mount.** Zero directories were recorded `Abandoned` in any phased run, against the 76 that drove the 4.70×
   arm. These are the typical-machine numbers.
 - Two SMB shares and a mounted DMG sat under `/Volumes` throughout; the boot-disk exclusion tier keeps every walk off
@@ -612,8 +612,9 @@ The trade the decision was made on is now materially better on both sides of the
 - The cost side went from "`home_covered_at` moves 39 s → 88 s" through 47.3–50.8 s to **42.5–44.1 s**, which is the
   bulk build's own full-coverage time. The early media and importance kick is no longer late in any sense worth arguing
   about.
-- Full coverage is **1.75×** against a 1.5× bar. Still over it, and still an overshoot rather than a rounding error, but
-  30 seconds of politely-paced background walking rather than the minute the gate was arguing about.
+- Full coverage is **1.75×** against a 1.5× bar. Still over it, and still an overshoot rather than a rounding error.
+  What it buys back is small in absolute terms: the gap is **30.5 s** of politely-paced background walking, against
+  37–40 s this morning.
 
 ❌ Nothing here changes the recommendation or its reasoning. It makes the first prepared answer (accept the slower full
 coverage) cheaper than it was when David took it.
