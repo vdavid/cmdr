@@ -136,6 +136,18 @@ var surfaceGuardedCrates = []struct {
 		// out the next boundary. Nothing else is owed to the concept: what each phase
 		// is CALLED is the host's, and a second type here needs the same argument this
 		// one got.
+		//
+		// ⚠️ WHICH BUCKET a grant lands in is not a choice, so read the right counter
+		// before assuming you have headroom. `SubsystemItems` counts `pub` items in the
+		// modules this walk can REACH, and it reaches them from `pub mod` declarations
+		// in `lib.rs` — for `cmdr-index` that is `importance` and `media_index`, and
+		// nothing else. `indexing` is a private module, so everything a host can name
+		// from it arrives as a `pub use` in `lib.rs` and counts as a ROOT PROMISE. A
+		// value an event carries has one sane home, `indexing/events/payload.rs` beside
+		// `ScanRunKind` and `ActivityPhase` (anywhere else makes the event envelope
+		// import its own parent), so a new payload enum ALWAYS spends a root promise.
+		// A grant of "one item" for one of those is this line moving by one, and the
+		// three counters below staying put.
 		HandleType: "Index",
 		Ceilings: surfaceCeilings{
 			RootPromises:   51,
