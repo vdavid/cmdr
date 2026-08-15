@@ -1,6 +1,6 @@
 //! Reconciler tests, split by theme. This module holds what every theme needs:
 //! the event builders, the FSEvents flag sets, and the writer/DB fixtures
-//! (`setup_test_writer` and friends, which `rescan_settle.rs` also imports).
+//! (`setup_test_writer` and friends, which `rescan/settle.rs` also imports).
 //! The themes are the sibling modules below.
 
 use super::*;

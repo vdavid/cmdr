@@ -100,7 +100,7 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
 /// Scope, deliberately stated: this pins that the live path CONSULTS the window
 /// and that a coalesced anchor goes nowhere. It does NOT pin the window's length
 /// — it fires both events in the same second, which the old 45 s cooldown would
-/// have coalesced too. The length is pinned by `rescan_route`'s unit tests, which
+/// have coalesced too. The length is pinned by `rescan::route`'s unit tests, which
 /// inject the clock; `route_shallow_to_scanner` reads the wall clock directly, so
 /// a day-long window can't be exercised here without injecting a clock through
 /// the live path.

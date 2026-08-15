@@ -8,7 +8,7 @@
 //! silent forever; a churning one names the totals and the top anchors by cost,
 //! because "which folder" is the whole diagnostic value.
 //!
-//! Shape follows [`super::rescan_throttle`]: the accumulate/threshold/format
+//! Shape follows [`super::throttle`]: the accumulate/threshold/format
 //! engine is pure and clock-injected, so every rule is unit-tested without a
 //! logger, a clock, or a filesystem. The impure part is the three thin fns at the
 //! bottom, which own the global, the clock, and the `log::info!`.

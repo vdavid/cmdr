@@ -4,9 +4,9 @@ Three mechanisms resync the index after the initial scan: the event-triggered `r
 (rescan-in-place), and the per-navigation `verifier`. Guardrails only below; `DETAILS.md` holds the measurements,
 incidents, and constants behind every one.
 
-`reconciler.rs` + `reconciler/` the event path (`diff_dir_against_db`, `reconcile_subtree`, `BulkReconcileGuard`, and
-the `rescan*` family: route, throttle, settle, hold, churn); `local_reconcile.rs` + `local_reconcile/` the serial
-full-tree rescan-in-place; `verifier.rs` the per-navigation `read_dir` diff.
+`reconciler.rs` + `reconciler/` the event path (`diff_dir_against_db`, `reconcile_subtree`, `BulkReconcileGuard`), with
+the rescan SCHEDULER under `reconciler/rescan/` behind its own `CLAUDE.md`; `local_reconcile.rs` + `local_reconcile/`
+the serial full-tree rescan-in-place; `verifier.rs` the per-navigation `read_dir` diff.
 
 ## Must-knows
 
@@ -35,17 +35,5 @@ full-tree rescan-in-place; `verifier.rs` the per-navigation `read_dir` diff.
   `get_read_pool()`: the pass goes inert on SMB/MTP/external.
 - **Verification's two teeth** (`verify_affected_dirs`, in `../watch/`): a `count_children_capped` probe + a `read_dir`
   iteration cap. ❌ A declined dir keeps claiming exact (owned debt), never `listed_epoch = 0`.
-- **Per-subtree rescan throttle is COST-PROPORTIONAL** (window scaled off `walk_cost`, clamped), and cost is duration
-  MINUS writer wait, else one saturated writer over-throttles every anchor. `gc` measures each record against its OWN
-  window.
-- **A brand-new anchor SETTLES before it walks** (`rescan_settle.rs`), from BIRTHTIME, reading INELIGIBLE while queued
-  and holding nothing. ❌ No stat inside the pure throttle (the call site passes a deadline in), ❌ no mtime; a missing
-  birthtime FAILS OPEN.
-- **A rescan anchor holds the hourglass ONLY while walking or queued-AND-eligible** (`rescan_hold.rs`). ❌ No
-  unconditional hold at enqueue: a resting anchor puts "size updating" on `~` and `/`. ❌ Don't drop the pick-time hold
-  either; it leaves no unheld-write window.
-- **Depth-split `MustScanSubDirs`**: SHALLOW (`depth ≤ 2`) → visible scanner, NO hourglass hold, never
-  `pending_rescans`; DEEP (`≥ 3`) → throttled drain. A shallow anchor sweeps at most ONCE A DAY, boot disk only;
-  coalesced anchors are counted, the badge stays GREEN, and the window is wall-clock and persisted.
 
 Full depth: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

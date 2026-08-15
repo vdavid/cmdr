@@ -45,11 +45,6 @@ use cmdr_fs::pluralize::pluralize;
 
 mod escalation;
 mod rescan;
-mod rescan_churn;
-mod rescan_hold;
-mod rescan_route;
-mod rescan_settle;
-mod rescan_throttle;
 mod throttle;
 use crate::indexing::paths::path_prefix::compute_parent_path;
 use escalation::resolve_escalation_anchor;
@@ -57,16 +52,16 @@ use escalation::resolve_escalation_anchor;
 /// `manager::resume_or_scan` reseeds it from `meta` at index start,
 /// `scan_completion` restarts it whenever a full walk finishes, and `queries`
 /// reads the record for the volume status surface.
-pub(in crate::indexing) use rescan_route::{
+pub(in crate::indexing) use rescan::route::{
     SHALLOW_COALESCED_KEY, SHALLOW_RESCAN_MIN_INTERVAL, SHALLOW_SWEEP_AT_KEY, now_unix, record_sweep_completed,
     seed_from_meta, sweep_record,
 };
-use rescan_throttle::RescanThrottle;
+use rescan::throttle::RescanThrottle;
 use throttle::{Throttle, ThrottleOutcome};
 
 /// How the reconciler asks for a VISIBLE scanner rescan when a shallow/root-scale
 /// `MustScanSubDirs` anchor should take the `start_scan` path instead of the
-/// invisible reconcile hold (see [`rescan_route`]). Defaults to [`Self::Registry`]
+/// invisible reconcile hold (see [`rescan::route`]). Defaults to [`Self::Registry`]
 /// on every production reconciler, so the two live-loop construction sites
 /// (`scan_completion`, `event_loop::replay`) need no extra wiring.
 pub(in crate::indexing) enum ScanTrigger {
@@ -241,7 +236,7 @@ pub struct EventReconciler {
     /// folder's size stays bounded-fresh without re-walking continuously. Shared with
     /// spawned rescan tasks (which record each completion); consulted at pick time,
     /// at enqueue time, and on the sweep tick — the last two derive the hourglass
-    /// hold from it ([`rescan_hold`]). Its trailing re-kick rides the same sweep tick
+    /// hold from it (`rescan/hold.rs`). Its trailing re-kick rides the same sweep tick
     /// as `throttle`, via [`EventReconciler::sweep_rescan_throttle`].
     rescan_throttle: Arc<Mutex<RescanThrottle>>,
     /// Per-file throttle for live upserts (leading + trailing, 60 s window). Only
@@ -259,7 +254,7 @@ pub struct EventReconciler {
     volume_id: String,
     /// How a shallow/root-scale `MustScanSubDirs` anchor requests the visible
     /// scanner path. `Registry` in production (spawns `perform_registry_rescan`);
-    /// tests inject `Disabled`/`Recording`. See [`ScanTrigger`] and [`rescan_route`].
+    /// tests inject `Disabled`/`Recording`. See [`ScanTrigger`] and [`rescan::route`].
     scan_trigger: ScanTrigger,
     /// The volume's stop signal, handed down by whoever built this reconciler.
     /// Every detached subtree walk takes a `child_token()` of it, so tearing the
@@ -279,7 +274,7 @@ pub struct EventReconciler {
 ///
 /// It travels as one value because the drain re-enters itself: a seven-argument
 /// call repeated at four sites is where a mismatched pair sneaks in. It lives
-/// HERE rather than beside the drain in `rescan.rs` because `EventReconciler`'s
+/// HERE rather than beside the drain in `rescan/` because `EventReconciler`'s
 /// own method returns it: naming a `rescan` type in this module's signatures
 /// would import the child back into the parent, and that direction closes a
 /// cycle through `lifecycle::manager`.

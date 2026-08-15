@@ -11,19 +11,26 @@
 //! leaving throttled ones queued for the sweep tick's re-kick.
 //!
 //! The "size updating" hourglass a rescan holds is decided in
-//! [`super::rescan_hold`], which tracks the same eligibility: a queued-but-resting
+//! [`hold`], which tracks the same eligibility: a queued-but-resting
 //! anchor holds nothing.
 
-use super::rescan_churn;
-use super::rescan_hold::{
+mod churn;
+mod hold;
+// `route` and `throttle` are `pub(super)`: `reconciler.rs` re-exports the sweep
+// record from one and holds a `RescanThrottle` field of the other. The rest of
+// the scheduler is private to this module.
+pub(super) mod route;
+mod settle;
+pub(super) mod throttle;
+
+use self::hold::{
     adopt_picked_holds, hold_if_eligible, reconcile_with_eligibility, release_and_emit_completion, release_rescan_hold,
 };
-use super::rescan_route::{self, RescanRoute};
-use super::rescan_settle;
-use super::rescan_throttle::RescanThrottle;
+use self::route::{RescanRoute, SHALLOW_COALESCED_KEY, SHALLOW_SWEEP_AT_KEY, now_unix};
+use self::throttle::RescanThrottle;
 use super::{
-    DEBUG_STATS, EventReconciler, IndexStore, IndexWriter, ReconcileSummary, RescanDrain, SHALLOW_COALESCED_KEY,
-    SHALLOW_SWEEP_AT_KEY, ScanTrigger, WriteMessage, now_unix, reconcile_subtree,
+    DEBUG_STATS, EventReconciler, IndexStore, IndexWriter, ReconcileSummary, RescanDrain, ScanTrigger, WriteMessage,
+    reconcile_subtree,
 };
 use crate::indexing::lifecycle::manager;
 use crate::indexing::paths::path_prefix;
@@ -48,7 +55,7 @@ impl EventReconciler {
         }
     }
 
-    /// Route a `MustScanSubDirs` anchor by depth (see [`rescan_route`]). The single
+    /// Route a `MustScanSubDirs` anchor by depth (see [`route`]). The single
     /// entry point for the two feeders the churn-resilience fix targets — the live
     /// path (`process_live_event`) and the post-replay handoff (`event_loop::replay`):
     ///
@@ -59,7 +66,7 @@ impl EventReconciler {
     /// - **Deep/narrow** anchor: keep the throttled `reconcile_subtree` drain, which
     ///   is exactly what it's good at.
     pub(in crate::indexing) fn route_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
-        match rescan_route::classify(path_prefix::depth(&path.to_string_lossy())) {
+        match route::classify(path_prefix::depth(&path.to_string_lossy())) {
             RescanRoute::Scanner => self.route_shallow_to_scanner(path, writer),
             RescanRoute::Reconcile => self.queue_must_scan_sub_dirs(path, writer),
         }
@@ -77,17 +84,17 @@ impl EventReconciler {
     /// stays green — once-a-day sweeping is the DESIGNED operating state, not a
     /// fault, and a fault colour shown all day trains people to ignore it.
     ///
-    /// The window is boot-disk-only ([`rescan_route::min_interval_for`]); a
+    /// The window is boot-disk-only ([`route::min_interval_for`]); a
     /// mount-rooted external drive keeps the short cooldown. See
-    /// `rescan_route::SHALLOW_RESCAN_MIN_INTERVAL` for the measurements.
+    /// `route::SHALLOW_RESCAN_MIN_INTERVAL` for the measurements.
     fn route_shallow_to_scanner(&mut self, anchor: PathBuf, writer: &IndexWriter) {
         DEBUG_STATS.record_must_scan(&anchor.to_string_lossy());
-        let (action, record) = rescan_route::decide_shallow_anchor(
+        let (action, record) = route::decide_shallow_anchor(
             &self.volume_id,
             now_unix(),
-            rescan_route::min_interval_for(self.space.is_boot_disk()),
+            route::min_interval_for(self.space.is_boot_disk()),
         );
-        if action == rescan_route::ShallowAnchorAction::Coalesce {
+        if action == route::ShallowAnchorAction::Coalesce {
             log::info!(
                 "MustScanSubDirs: shallow anchor {} inside the sweep window; coalescing ({} since the last sweep)",
                 anchor.display(),
@@ -104,7 +111,7 @@ impl EventReconciler {
         // Stamp the TRIGGER time, not only the completion: `start_scan` deletes
         // `scan_completed_at` before walking, so without this an interrupted sweep
         // would leave the window looking permanently expired and we'd sweep on every
-        // launch. See `rescan_route::SweepRecord::last_sweep_unix`.
+        // launch. See `route::SweepRecord::last_sweep_unix`.
         if let Some(at) = record.last_sweep_unix {
             let _ = writer.send(WriteMessage::UpdateMeta {
                 key: SHALLOW_SWEEP_AT_KEY.to_string(),
@@ -152,25 +159,25 @@ impl EventReconciler {
         // Stat the anchor for its birthtime BEFORE it's queued or held: a subtree
         // created seconds ago is still being written (an updater unpacking a
         // bundle), and walking it indexes rows for data that's usually deleted
-        // before we finish. See `rescan_settle`.
-        rescan_settle::note_settle_deadline(&self.rescan_throttle, &path, Instant::now());
+        // before we finish. See `settle`.
+        settle::note_settle_deadline(&self.rescan_throttle, &path, Instant::now());
         // A signal for an anchor that may not walk yet is one walk the throttle or
         // the settle delay just absorbed. Counted HERE, on the real signal path, and
         // deliberately not in `requeue_rescan`: a removal storm re-queues thousands
-        // of times for one scope and would drown the number. See `rescan_churn`.
+        // of times for one scope and would drown the number. See `churn`.
         if !self
             .rescan_throttle
             .lock_ignore_poison()
             .is_eligible(&path, Instant::now())
         {
-            rescan_churn::record_held_back();
+            churn::record_held_back();
         }
         // A signal that lands mid-walk waits for the single-flight drain. Counted
         // here and not in `enqueue_rescan` for the same reason as `held_back`: a
         // removal storm re-queues one scope thousands of times, and folding those
         // in would turn a queue-pressure number into a storm detector.
         if self.rescan_active.load(Ordering::Relaxed) {
-            rescan_churn::record_queued_while_active();
+            churn::record_queued_while_active();
         }
         self.enqueue_rescan(path, writer);
     }
@@ -194,7 +201,7 @@ impl EventReconciler {
         // Hold the rescan-root hourglass on THIS volume's tracker (it survives the
         // writer-drain clear) only while a walk is in flight or imminent — a
         // throttled anchor stays quiet. Set-insert, so a re-queue of the already-held
-        // active path is a no-op. See `rescan_hold`'s invariant for the full lifecycle.
+        // active path is a no-op. See `hold`'s invariant for the full lifecycle.
         hold_if_eligible(&self.volume_id, &path, &self.rescan_throttle, Instant::now());
 
         if self.rescan_active.load(Ordering::Relaxed) {
@@ -202,7 +209,7 @@ impl EventReconciler {
             // dirs), so consecutive-line dedup never fires and this was ~4,000
             // lines an hour on an ordinary build machine, a quarter of the whole
             // log. What a reader needs from it is the RATE, and that rides
-            // `rescan_churn`'s 15-minute line as `queued behind a running rescan`,
+            // `churn`'s 15-minute line as `queued behind a running rescan`,
             // which is in the bundle. The paths themselves are still one
             // `RUST_LOG=cmdr_lib::indexing::reconcile=trace` away, and
             // `DEBUG_STATS.record_must_scan` keeps the recent ones in memory.
@@ -234,7 +241,7 @@ impl EventReconciler {
     /// drain so an anchor that was held back because its window hadn't elapsed
     /// reconciles once it has: this is what guarantees a hard-churning subtree
     /// re-walks every window and never starves. Also re-derives each queued
-    /// anchor's hourglass hold from its current eligibility (see `rescan_hold`), and
+    /// anchor's hourglass hold from its current eligibility (see `hold`), and
     /// garbage-collects throttle records for anchors no longer pending, so the map
     /// stays bounded by the count of actively-churning subtrees.
     pub(in crate::indexing) fn sweep_rescan_throttle(&mut self, writer: &IndexWriter) {
@@ -244,13 +251,13 @@ impl EventReconciler {
             let now = Instant::now();
             throttle.gc(&pending, now);
             // The in-flight walk is out of `pending`, but a storm can re-queue it;
-            // pass it so its hold survives (`rescan_hold`'s no-unheld-write rule).
+            // pass it so its hold survives (`hold`'s no-unheld-write rule).
             let active = self.active_rescan_path.lock_ignore_poison().clone();
             reconcile_with_eligibility(&self.volume_id, &pending, active.as_ref(), &throttle, now);
         }
         // Close the churn window when it's due. Without a tick, a burst followed by
         // silence would sit unreported until the next reconcile, hours later.
-        rescan_churn::poll_window();
+        churn::poll_window();
         self.kick_pending_rescans(writer);
     }
 
@@ -314,7 +321,7 @@ impl EventReconciler {
     /// re-queued anchor drains immediately instead of lingering in
     /// `pending_rescans` — they queue brand-new temp dirs, which the settle delay
     /// would otherwise hold back past the test's budget. Cadence itself is covered
-    /// by `rescan_throttle`'s unit tests.
+    /// by `throttle`'s unit tests.
     #[cfg(test)]
     pub(in crate::indexing) fn disable_rescan_throttle_for_test(&self) {
         let mut throttle = self.rescan_throttle.lock_ignore_poison();
@@ -429,7 +436,7 @@ pub(super) fn start_next_rescan(drain: RescanDrain, writer: &IndexWriter) {
 
     // Debug, not info: this is one line per walk, thousands a day, and it's paired
     // with a completion line that carries the duration. The info-level signal for
-    // the drain as a whole is [`rescan_churn`]'s 15-minute aggregate.
+    // the drain as a whole is [`churn`]'s 15-minute aggregate.
     log::debug!("MustScanSubDirs: reconcile starting for {}", path.display());
 
     // Kept for the rare spawn-failure handler below (the closure moves `path`).
@@ -483,7 +490,7 @@ pub(super) fn start_next_rescan(drain: RescanDrain, writer: &IndexWriter) {
                     // Feed the 15-minute aggregate that replaces this line at info.
                     // Only a walk that finished is counted: a failed one measured
                     // nothing, so it would report as free churn.
-                    rescan_churn::record_reconcile(&path, walk_cost, summary.added + summary.removed + summary.updated);
+                    churn::record_reconcile(&path, walk_cost, summary.added + summary.removed + summary.updated);
                     (summary.escalation, walk_cost)
                 }
                 Err(e) => {
@@ -503,7 +510,7 @@ pub(super) fn start_next_rescan(drain: RescanDrain, writer: &IndexWriter) {
                 // Same settle question as any other enqueue: the missing chain is
                 // often missing precisely BECAUSE it was created seconds ago, and
                 // that is the subtree we don't want to walk yet.
-                rescan_settle::note_settle_deadline(&throttle_for_task, &anchor, Instant::now());
+                settle::note_settle_deadline(&throttle_for_task, &anchor, Instant::now());
                 hold_if_eligible(&volume_id_for_task, &anchor, &throttle_for_task, Instant::now());
                 pending_for_task.lock_ignore_poison().insert(anchor);
             }
@@ -570,7 +577,7 @@ const RECONCILE_SLOW_SECS: u64 = 10;
 ///
 /// An ordinary reconcile is DEBUG. There are thousands a day and most of them
 /// change nothing, so at info they buried the two lines that mattered. The
-/// info-level answer to "are we reconciling too much?" is [`rescan_churn`]'s
+/// info-level answer to "are we reconciling too much?" is [`churn`]'s
 /// 15-minute aggregate, which one line can actually carry.
 ///
 /// A long reconcile is only newsworthy if the walk itself was slow. Time parked on

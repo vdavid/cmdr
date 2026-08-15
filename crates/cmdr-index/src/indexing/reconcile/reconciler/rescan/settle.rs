@@ -6,7 +6,7 @@
 //! and walking the subtree immediately indexes rows for data that is gone before
 //! the walk finishes.
 //!
-//! The [`super::rescan_throttle`] can't catch this: its signal is REPETITION, and
+//! The [`super::throttle`] can't catch this: its signal is REPETITION, and
 //! every one of these paths is unique, so no anchor ever reaches a second strike.
 //! The signal here is YOUTH. An anchor whose directory was created less than
 //! [`NEW_SUBTREE_SETTLE_DELAY`] ago is not walked yet; it stays queued and becomes
@@ -29,7 +29,7 @@
 //! Failing open is the only safe direction: a missing birthtime must never stall
 //! an anchor.
 
-use super::rescan_throttle::RescanThrottle;
+use super::throttle::RescanThrottle;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use std::path::Path;
 use std::sync::Mutex;
@@ -37,7 +37,7 @@ use std::time::{Duration, Instant, SystemTime};
 
 // Used only by `tests` below, via `use super::*`.
 #[cfg(test)]
-use super::{IndexPathSpace, reconcile_subtree};
+use super::super::{IndexPathSpace, reconcile_subtree};
 #[cfg(test)]
 use tokio_util::sync::CancellationToken;
 
@@ -80,8 +80,8 @@ fn remaining_settle(age: Duration, delay: Duration) -> Option<Duration> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::tests::{ensure_path_in_db, non_excluded_tempdir, setup_test_writer};
     use super::*;
+    use crate::indexing::reconcile::reconciler::tests::{ensure_path_in_db, non_excluded_tempdir, setup_test_writer};
 
     /// The case that pays for this module: a directory created a moment ago waits
     /// out (nearly) the whole delay before anything walks it.

@@ -37,7 +37,7 @@
 //!   forever. A debounce (wait for quiet) would starve a never-quiet anchor, so we
 //!   don't debounce.
 //!
-//! Unlike the per-file [`super::throttle`], this carries no payload, no
+//! Unlike the per-file [`throttle`](super::super::throttle), this carries no payload, no
 //! significant-change bypass, and no Downloads exemption: a single growing file is
 //! always handled by the per-file live path, never by a subtree re-walk, so there
 //! is nothing here to bypass for. The whole surface is "may this anchor re-walk
@@ -47,7 +47,7 @@
 //! every rule below is deterministically unit-tested; it makes no filesystem,
 //! logging, or clock calls.
 
-use super::rescan_settle::NEW_SUBTREE_SETTLE_DELAY;
+use super::settle::NEW_SUBTREE_SETTLE_DELAY;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -82,7 +82,7 @@ pub(in crate::indexing) struct RescanThrottle {
     floor: Duration,
     ceiling: Duration,
     /// The policy the enqueue call site reads before stat-ing an anchor (see
-    /// [`super::rescan_settle`]). A `Duration`, so the engine stays pure: the
+    /// [`super::settle`]). A `Duration`, so the engine stays pure: the
     /// syscall and the clock both live at the call site.
     settle_delay: Duration,
     /// Each anchor's last completion. Absent = never walked (eligible on the
@@ -131,7 +131,7 @@ impl RescanThrottle {
 
     /// Record that `path` is a brand-new directory that may not be walked until
     /// `deadline`. Data in, exactly like `now` and `walk_cost`: the `stat` that
-    /// produced it happened at the call site ([`super::rescan_settle`]).
+    /// produced it happened at the call site ([`super::settle`]).
     pub(in crate::indexing) fn note_settle_deadline(&mut self, path: &Path, deadline: Instant) {
         self.settling.insert(path.to_path_buf(), deadline);
     }

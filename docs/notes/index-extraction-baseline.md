@@ -162,8 +162,8 @@ named risk for exactly this, so it was measured rather than assumed.
 
 **Structurally, the runtime can't matter.** All seven `set_current_thread_qos` call sites sit at the top of a
 **dedicated** `std::thread::Builder::spawn` body — `scanner/mod.rs`, `scanner/walker/mod.rs` (worker and watchdog),
-`writer/mod.rs`, `reconcile/local_reconcile.rs` (reader and walk), `reconcile/reconciler/rescan.rs`. Those threads are
-created by index code and aren't tokio's to schedule; a tokio task that starts one is just the caller. macOS QoS is
+`writer/mod.rs`, `reconcile/local_reconcile.rs` (reader and walk), `reconcile/reconciler/rescan/mod.rs`. Those threads
+are created by index code and aren't tokio's to schedule; a tokio task that starts one is just the caller. macOS QoS is
 per-thread and set explicitly here, so nothing is inherited from whoever spawned the task either.
 
 **Measured anyway, in-process** (2026-07-31, macOS 26.5.2, `pnpm dev` build, full fresh scan of `/` plus a reconcile).

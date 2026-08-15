@@ -31,7 +31,7 @@ scan must never outrank the webview for CPU.
 
 **The runtime a task is spawned onto has no bearing on QoS.** The seven `set_current_thread_qos` call sites all sit at
 the top of a **dedicated** `std::thread::Builder::spawn` body — `scanner/mod.rs`, `scanner/walker/mod.rs` (worker and
-watchdog), `writer/mod.rs`, `reconcile/local_reconcile.rs` (reader and walk), and `reconcile/reconciler/rescan.rs`.
+watchdog), `writer/mod.rs`, `reconcile/local_reconcile.rs` (reader and walk), and `reconcile/reconciler/rescan/mod.rs`.
 Those threads are created by index code and are not tokio's to schedule; a tokio task that starts one is just the
 caller. macOS QoS is per-thread and set explicitly here, so nothing is inherited from whoever spawned the task either.
 

@@ -13,7 +13,7 @@ the offline analysis that turns a collection window into the three answers Spike
 The instrumentation writes no index state, sends no writer messages, and changes no behaviour. It is off unless
 `CMDR_CHURN_SPIKE` is set, so a normal run pays nothing.
 
-**Not the same thing as the reconcile churn line.** `reconcile/reconciler/rescan_churn.rs` is always on and emits one
+**Not the same thing as the reconcile churn line.** `reconcile/reconciler/rescan/churn.rs` is always on and emits one
 INFO line per 15 minutes when the RECONCILER is doing too much work. It measures completed subtree reconciles (walk
 cost, row deltas), not FSEvents, and it can't answer any of the three questions below. This spike stays as it is; the
 two coexist. See `crates/cmdr-index/src/indexing/reconcile/DETAILS.md`.
@@ -58,9 +58,9 @@ silent then — that is the instrument being honest, not broken. Three checks te
 - `Replay event loop: stopped` — the post-replay live loop exited.
 
 The trap, seen for real on 2026-07-20: a cold start with a journal gap can replay a `MustScanSubDirs` event whose anchor
-is shallow (`/`, `/System`). `reconciler/rescan.rs` routes a shallow anchor to the **visible scanner**, which stops the
-replay watcher, ends the post-replay live loop within seconds, and starts a full reconcile rescan of the volume. That
-rescan runs for many minutes, and no churn is recorded until it completes and live mode restarts. The log says so
+is shallow (`/`, `/System`). `reconciler/rescan/mod.rs` routes a shallow anchor to the **visible scanner**, which stops
+the replay watcher, ends the post-replay live loop within seconds, and starts a full reconcile rescan of the volume.
+That rescan runs for many minutes, and no churn is recorded until it completes and live mode restarts. The log says so
 plainly (`routing shallow anchor /System to the visible scanner` → `Replay event loop: stopped` →
 `local scan: reconcile rescan`), but only if you look for it.
 
@@ -175,7 +175,7 @@ comma in a path can't shift columns.
 ## Where the code lives
 
 - `crates/cmdr-index/src/indexing/watch/churn_monitor.rs` — the aggregator, pure and clock-injected (same shape as
-  `reconcile/reconciler/rescan_throttle.rs`), with its unit tests in `churn_monitor/tests.rs`.
+  `reconcile/reconciler/rescan/throttle.rs`), with its unit tests in `churn_monitor/tests.rs`.
 - `crates/cmdr-index/src/indexing/watch/event_loop/live.rs` — the single call site, inside `process_live_batch`, before
   the batch drains. It lives there rather than at a loop's flush tick because **there are two live loops**: `live.rs`'s
   `run_live_event_loop` (post-scan) and `replay.rs` Phase 3 (post-journal-replay, the cold-start route). Both funnel

@@ -47,7 +47,7 @@ output: of 46 `CACHEDIR.TAG` roots, 31 weren't build output at all, and `~/.carg
 `.venv` are ~189 000 rows of dependency SOURCE, where "nobody wants to search this" is a weak claim. Churn is the honest
 signal: it excludes write-once caches like `~/.cargo/registry` by construction, and it matches the founding constraint
 of the whole resource effort, which is recognize and throttle. The machinery already exists and only logs today:
-`crates/cmdr-index/src/indexing/reconcile/reconciler/rescan_churn.rs`, and
+`crates/cmdr-index/src/indexing/reconcile/reconciler/rescan/churn.rs`, and
 `crates/cmdr-index/src/indexing/watch/churn_monitor.rs` already rolls up the ancestor chain.
 
 **2. `CACHEDIR.TAG` needs a PREFIX test, not first-line equality.** The standard specifies the first 43 bytes. Of 31

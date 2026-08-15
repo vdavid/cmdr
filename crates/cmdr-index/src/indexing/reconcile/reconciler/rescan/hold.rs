@@ -12,7 +12,7 @@
 //! walk now.** The hold means "unprocessed index writes in flight or imminent" —
 //! nothing weaker.
 //!
-//! An anchor resting out its [`super::rescan_throttle`] window is neither: its last
+//! An anchor resting out its [`super::throttle`] window is neither: its last
 //! walk completed, its aggregate is consistent, and the next walk is up to
 //! `RESCAN_THROTTLE_MAX_WINDOW` away. It stays quiet. An anchor that is eligible and
 //! merely waiting behind the single-flight active walk DOES hold: its walk is
@@ -39,8 +39,8 @@
 //! the walk records its completion the anchor is ineligible, but `active_rescan_path`
 //! names it until the task itself releases, so the sweep keeps skipping it.
 
-use super::rescan_throttle::RescanThrottle;
-use super::{IndexWriter, WriteMessage};
+use super::super::{IndexWriter, WriteMessage};
+use super::throttle::RescanThrottle;
 use crate::indexing::paths::path_prefix::collect_ancestor_paths;
 use crate::indexing::read::pending_sizes;
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -51,7 +51,7 @@ use std::time::Instant;
 
 // Used only by `tests` below, via `use super::*`.
 #[cfg(test)]
-use super::{EventReconciler, IndexPathSpace, IndexStore};
+use super::super::{EventReconciler, IndexPathSpace, IndexStore};
 #[cfg(test)]
 use std::time::Duration;
 

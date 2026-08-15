@@ -1,5 +1,5 @@
-use super::super::rescan_settle::NEW_SUBTREE_SETTLE_DELAY;
-use super::super::rescan_throttle::RESCAN_THROTTLE_WINDOW;
+use super::settle::NEW_SUBTREE_SETTLE_DELAY;
+use super::throttle::RESCAN_THROTTLE_WINDOW;
 use super::*;
 
 fn summary(duration: Duration, writer_wait: Duration) -> ReconcileSummary {
@@ -93,7 +93,7 @@ fn a_slow_walk_that_was_not_waiting_still_warns() {
 
 /// The ordinary case is DEBUG: one line per walk, thousands a day, and most of
 /// them `+0 -0 ~0`. The signal that a reader needs at info is the 15-minute
-/// aggregate ([`super::rescan_churn`]), not the per-walk line. Content is
+/// aggregate ([`super::churn`]), not the per-walk line. Content is
 /// unchanged, so `RUST_LOG` still gives the full picture.
 #[test]
 fn a_quick_reconcile_stays_out_of_the_way() {
