@@ -154,6 +154,24 @@ In `apps/desktop/test/e2e-playwright/helpers.ts`. The condition-based wait for t
 await pollUntil(tauriPage, async () => tauriPage.isVisible('.error-pane'), 5000)
 ```
 
+### `emitBackendEvent`: drive UI that reacts to a backend event
+
+In `apps/desktop/test/e2e-playwright/helpers/core.ts`. Emits a Tauri event into the running app in the shape the Rust
+side emits it: `emitBackendEvent(tauriPage, 'index-phase-changed', { volumeId, phase: 'scanning' })`. Tauri's event
+plugin broadcasts an emit to every listener including the webview it came from, so the frontend's `listen()` receives it
+exactly as it receives the backend's own. `dispatchMenuCommand` is one line on top of it.
+
+Reach for it whenever the UI under test reacts to something the backend announces (indexing phases, walked branches,
+freshness, aggregation progress) and reproducing that for real would mean racing the work. The event name and payload
+come from `src/lib/ipc/bindings.ts`, both generated from Rust, so a renamed event or a changed field surfaces as the
+spec going red instead of silent drift — which is most of what such a spec is for, since the state machine behind the UI
+is already unit-tested.
+
+Two rules, both in the helper's doc comment: only for events **nothing in Rust listens to** (these are one-way
+announcements; emitting one the backend consumes would drive real work from a test), and **undo it before the test
+ends** — the app is shared by every spec in the shard, so emit the terminal event and prefer a synthetic id nothing real
+can claim. Worked example: `indexing-status-corner.spec.ts`.
+
 ### `dispatchMenuCommand`: bypass keyboard simulation
 
 In `apps/desktop/test/e2e-playwright/helpers.ts`. Triggers a registry command directly via the `execute-command` Tauri

@@ -44,6 +44,9 @@ work into it that a unit test would cover.
 - **Wait for UI state to change in E2E**: `expect.poll(async () => …, { timeout }).toBeTruthy()` (preferred — wait fuses
   with assertion); `expect(await pollUntil(...)).toBe(true)` for the few non-Playwright contexts. **Never** bare
   `await pollUntil(...)` (silent timeout) or `await sleep(N)` (flaky)
+- **UI that reacts to a backend event** (indexing phases, walked branches, freshness): E2E spec driving
+  `emitBackendEvent(tauriPage, '<event>', payload)`. **Never** a timing-based assertion against the real work — emit the
+  terminal event to clean up, and use an id nothing real can claim
 - **Cross-component flow (return-focus, dialog stack, navigation)**: E2E (Playwright)
 - **Storage volume operation (MTP, SMB)**: Integration test against a virtual fixture (virtual-mtp feature, Docker SMB
   containers)

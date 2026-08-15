@@ -76,10 +76,39 @@ export function mapKey(key: string): string {
  * await dispatchMenuCommand(tauriPage, 'edit.copy')   // Cmd+C-equivalent
  */
 export async function dispatchMenuCommand(tauriPage: PageLike, commandId: string): Promise<void> {
-  const id = JSON.stringify(commandId)
+  await emitBackendEvent(tauriPage, 'execute-command', { commandId })
+}
+
+/**
+ * Emits a Tauri event into the running app, in the shape the Rust side emits it.
+ *
+ * Tauri's event plugin broadcasts an emit to every listener including the
+ * webview it came from, so a `listen('some-event')` registered by the frontend
+ * receives this exactly as it receives the backend's own. That makes any UI
+ * driven by a backend event testable WITHOUT racing the work that would
+ * normally produce it — which is the difference between pinning "the corner
+ * hourglass lights up during an index phase" and waiting on a real index and
+ * hoping to catch it mid-flight.
+ *
+ * `event` is the wire name from `src/lib/ipc/bindings.ts` (`events.*` maps each
+ * typed helper to its string), and `payload` is that event's generated type.
+ * Both are generated from Rust, so a renamed event or a changed field surfaces
+ * as this spec going red rather than as silent drift.
+ *
+ * ⚠️ Two rules for a synthetic event:
+ *
+ * - **Only for events nothing in Rust listens to.** These are one-way
+ *   backend → frontend announcements; emitting one the backend also consumes
+ *   would drive real work from a test.
+ * - **Undo it before the test ends.** The app is shared by every spec in the
+ *   shard, so state a synthetic event creates outlives the test that made it.
+ *   Emit the terminal event that clears it, and prefer a synthetic id (a volume
+ *   id no real drive has) so nothing real is disturbed either way.
+ */
+export async function emitBackendEvent(tauriPage: PageLike, event: string, payload: unknown): Promise<void> {
+  const args = JSON.stringify({ event, payload })
   await tauriPage.evaluate(`(function(){
-        var invoke = window.__TAURI_INTERNALS__.invoke;
-        invoke('plugin:event|emit', { event: 'execute-command', payload: { commandId: ${id} } });
+        window.__TAURI_INTERNALS__.invoke('plugin:event|emit', ${args});
     })()`)
 }
 

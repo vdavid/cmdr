@@ -90,7 +90,7 @@ function unpatchMetrics(): void {
   if (!originalMetrics) return
   for (const [metric, original] of originalMetrics) {
     if (original) Object.defineProperty(HTMLElement.prototype, metric, original)
-    else delete (HTMLElement.prototype as Record<string, unknown>)[metric]
+    else Reflect.deleteProperty(HTMLElement.prototype, metric)
   }
   originalMetrics = null
 }

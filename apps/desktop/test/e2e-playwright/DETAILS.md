@@ -318,6 +318,31 @@ Two drop SHAPES, both modeled:
   Covered by `drag-drop-entry.spec.ts` (local) and `mtp-drag-drop-entry.spec.ts` (MTP self-drag + the external-drop
   variant + read-only).
 
+## Synthetic backend events
+
+`emitBackendEvent(tauriPage, '<event>', payload)` (helpers/core.ts) emits a Tauri event into the running app in the
+shape the Rust side emits it. Tauri's event plugin broadcasts an emit to every listener including the webview it came
+from, so the frontend's `listen()` receives it exactly as it receives the backend's own. `dispatchMenuCommand` is one
+line on top of it, and was the only user for a long time.
+
+It exists so a UI driven by a backend announcement can be pinned WITHOUT racing the work that would normally produce it.
+The corner hourglass is the worked example (`indexing-status-corner.spec.ts`): announcing a phased run for a synthetic
+drive lights it in milliseconds, where waiting on a real index and hoping to catch it mid-flight is both slow and racy.
+What such a spec uniquely covers is the WIRE — listeners registered at startup, the event name and payload contract from
+`bindings.ts` (generated from Rust, so drift on either side goes red here), and the surface actually mounting and
+rendering. The state machine behind it belongs in unit tests, which is where it already lives.
+
+Two rules:
+
+- **Only for events nothing in Rust listens to.** These are one-way backend → frontend announcements. Emitting one the
+  backend also consumes would drive real work from a test, which is a different thing entirely.
+- **Undo it before the test ends.** The app is SHARED by every spec in the shard, so state a synthetic event creates
+  outlives the test that made it — a leaked synthetic drive sits in the next spec's corner tooltip, and the leak guard
+  doesn't watch for it. Emit the terminal event (for indexing, `index-phase-changed` with `live` clears activity,
+  aggregation, phase, walked ground, and the run-shape facts in one go), from the test AND from an `afterEach` for the
+  path where the test fails partway. Prefer an id no real thing can claim, so a leak can't be mistaken for the app's own
+  state and can't disturb it.
+
 ## Multi-window testing
 
 The viewer (label `viewer-<timestamp>`) and settings (label `settings`) UIs run in their own Tauri `WebviewWindow` in
