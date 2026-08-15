@@ -208,6 +208,13 @@ and walks: a `QueryStreamProgress` (phase, batch, counts, `capped`), a `QueryStr
 `walked`, `capped`), and a `QueryStreamSource` (`start` → teardown, `cancel`, optional `rankOnCompletion`). That's what
 keeps Search's vocabulary out of the shared dialog while the state writes stay where the ownership contract puts them.
 
+**The phase is RENDERED, ❌ never derived.** `QueryStreamPhase` has one value per thing a run can be doing, and each
+maps to one sentence (`livePhaseLabel`) — so a new phase means a new branch and a new catalog key, ❌ never a fallback
+onto a neighbouring phase's sentence. Two rules ride on getting that right: `liveWalkProgress` reports folders scanned
+for `walking` ALONE (any other phase showing "0 folders scanned" reads as a stuck walk), and a count-only run holds its
+"0 so far" back through every phase where it has counted nothing yet. The phases themselves, and which of the run's
+states produce them, are the backend's: `src-tauri/src/search/live/DETAILS.md` § What a run says it's doing.
+
 **The generation guard is the load-bearing one.** The runner mints the run id and hands it to `start`, so no update can
 arrive against an id it hasn't seen. Superseding a run does NOT cancel the work behind it (Decision 11), so the previous
 run's batches keep arriving; every callback checks the id first and drops anything else. Without it, a refined query
