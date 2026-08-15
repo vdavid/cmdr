@@ -27,10 +27,9 @@ owes. The start itself is `../manager/phased.rs`.
   per phase and taking stock per DRAIN, ❌ never per root. ❌ Never a whole frontier in one call (the cancel check isn't
   a queue check point), ❌ never a fixed size (big roots ⇒ minutes deaf to the user), and per root the stock-take
   re-asks a whole-volume descent about a database the unflushed walk hasn't moved: 75% of a resume.
-- **The phase is a typed `CoveragePhase` on ONE event, and the same value on the status response** (a transition-only
-  signal leaves a reloaded window blank for the rest of the run). ❌ Never read the phase off the branch events:
-  frontier roots, one level down, debounced. ❌ Never derive it host-side either: an app-side home path can disagree
-  with `IndexPathSpace` about firmlinks. ❌ Not one-shot: an interlude announces itself, so the outer phase re-announces
+- **The phase is a typed `CoveragePhase` on ONE event AND on the status response** (transition-only leaves a reloaded
+  window blank for the rest of the run). ❌ Never off the branch events (frontier roots, one level down, debounced), ❌
+  never derived host-side (firmlinks). ❌ Not one-shot: an interlude announces itself, so the outer phase re-announces
   (the coverage event alone, ❌ never a second `set_phase_for`) or the header names the folder the user opened for the
   rest of it.
 - **Every walk is bracketed by `CoverageBranchStarted` / `CoverageBranchEnded`**, and the end fires on EVERY exit path,

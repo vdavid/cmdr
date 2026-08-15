@@ -24,10 +24,9 @@ the phase-transition emitter.
   `DEBUG_STATS.set_phase` directly. It does BOTH in one call — the global phase ring AND the per-volume phase-changed
   report — so the two can't drift. Spawned tasks capture a cloned sink / `volume_id`, never re-resolving the manager in
   the registry.
-- **Both phase events fire only on TRANSITIONS**, so a frontend that joins mid-scan (window reload) learns neither from
-  them. The ACTIVITY phase is backfilled from scan/aggregation activity, and `VolumeIndexStatus` deliberately carries
-  none; the drive's COVERAGE phase rides `IndexStatusResponse::coverage_phase` instead, because its last phase is the
-  rest of the drive and a reloaded window would otherwise have no header until the run ended.
+- **Both phase events fire only on TRANSITIONS**, so a window reload learns neither from them. The ACTIVITY phase is
+  backfilled from scan/aggregation activity (`VolumeIndexStatus` carries none, deliberately); the COVERAGE phase rides
+  `IndexStatusResponse::coverage_phase`, since its last phase runs to the end of the run.
 - **Network scans emit only `Scanning → Live`** (no distinct `Aggregating` / `Reconciling`), and `saving_entries` never
   fires for network (entries insert inline). Don't fake either by calling local-only helpers on the network path; the FE
   drives the "compute folder sizes" step off the aggregation events instead.
@@ -40,8 +39,8 @@ the phase-transition emitter.
 
 ## Module map
 
-- `payload.rs` — the five values an event carries: `ScanRunKind`, `CoveragePhase` (which is also the phase queue's
-  ranking), `RescanReason`, `ActivityPhase`, `MemoryWatchdogAction`. The bottom of the subtree.
+- `payload.rs` — the five values an event carries: `ScanRunKind`, `CoveragePhase` (also the phase queue's ranking),
+  `RescanReason`, `ActivityPhase`, `MemoryWatchdogAction`. The bottom of the subtree.
 - `sink.rs` — `IndexEvent` + `IndexEventKind`, the `EventSink` trait, `NoopEventSink`, `Diagnostic`, `IndexErrorReport`,
   `MediaEnrichTerminalReason`, and the test `RecordingSink`.
 - `mod.rs` — the IPC response types, `PhaseRecord`, `DebugStats`, `set_phase_for`, `emit_rescan_notification`, and
