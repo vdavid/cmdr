@@ -4,30 +4,13 @@
  */
 
 import { vi } from 'vitest'
+import { TestResizeObserver } from '$lib/test-layout'
 
-// ResizeObserver is not available in jsdom
-// This mock allows components that use ResizeObserver to run in tests
-class ResizeObserverMock {
-  callback: ResizeObserverCallback
-
-  constructor(callback: ResizeObserverCallback) {
-    this.callback = callback
-  }
-
-  observe() {
-    // No-op in tests
-  }
-
-  unobserve() {
-    // No-op in tests
-  }
-
-  disconnect() {
-    // No-op in tests
-  }
-}
-
-vi.stubGlobal('ResizeObserver', ResizeObserverMock)
+// ResizeObserver is not available in the test DOM. This one lets components
+// that use it mount, and stays silent until a test drives a resize through
+// `installLayoutMock().resize()` (`$lib/test-layout`) — there is no layout
+// engine here, so nothing else could ever make it fire.
+vi.stubGlobal('ResizeObserver', TestResizeObserver)
 
 // Mock Tauri event API to handle both static and dynamic imports
 vi.mock('@tauri-apps/api/event', () => ({

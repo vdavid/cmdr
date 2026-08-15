@@ -35,6 +35,9 @@ work into it that a unit test would cover.
 - **`#[tauri::command]` boundary**: vitest IPC contract test using `installIpcMock()` from
   `apps/desktop/src/lib/ipc/test-helpers.ts`
 - **Frontend component logic**: vitest + svelte-testing-library in `*.test.ts`
+- **A component that sizes itself from its container** (either file-list view, `ShareBrowser`, `NetworkBrowser`):
+  `installLayoutMock()` from `$lib/test-layout`, and for `FullList` the ready-made `mountFullList()`. **Never** assert
+  on rows without one — see § "A component that measures itself, rendering nothing"
 - **Component-level a11y (ARIA, labels, focus order)**: tier-3 a11y test in `*.a11y.test.ts`
 - **Keyboard shortcut opens a dialog**: E2E spec, use `dispatchMenuCommand(tauriPage, 'file.copy')`. **Never** synthetic
   F-key press unless the test exists to verify the keyboard pathway
@@ -400,6 +403,22 @@ not just that the row count held.
 
 **How to spot the next one:** if flipping the production logic to a `return;`/no-op would still pass the test, the test
 proves nothing. Pair every "writes nothing" assertion with a "visited everything" one.
+
+### ❌ A component that measures itself, rendering nothing
+
+**The rule:** a component that sizes itself from its container needs a viewport before any assertion about its contents
+means anything. Give it one with `installLayoutMock()` (`$lib/test-layout`), and assert the rows you expect are ON
+SCREEN before asserting something isn't on them.
+
+**Why:** happy-dom has no layout engine, so `clientHeight` is `0` for every element. `FullList` and `BriefList` feed
+that straight to the virtual-window math, which yields a zero-row window — so the list renders NOTHING, with no error
+and no warning. Every negative assertion then passes for free: `FullList.ext-in-name-header.test.ts` counted zero
+`.col-ext` cells over zero rows for months, and the a11y suite ran axe against an empty listbox while claiming to cover
+a populated list. It also reads as an unfixable wall from the inside, because the symptom (an empty DOM) looks the same
+as a broken mock, and the component's data path swallows its own throws.
+
+**How to spot the next one:** if the spec's subject is a row, a column, a cell, or an item, assert the count first. Zero
+rendered items and a passing test is the signature.
 
 ## Sanctioned slow-test exceptions
 

@@ -93,6 +93,28 @@ typed-error variant discrimination. **Doesn't** simulate the Tauri permission ga
 `__TAURI_INTERNALS__.invoke` upstream of the gate), so it can't catch permission-config drift. Use for destructive /
 cross-window / multi-positional-arg commands; skip for thin getters.
 
+### `installLayoutMock()`: a viewport for components that measure themselves
+
+In `apps/desktop/src/lib/test-layout.ts`. happy-dom has no layout engine, so every `clientHeight` / `clientWidth` /
+`offsetWidth` / `offsetHeight` reads back `0`. `installLayoutMock({ '<selector>': { clientHeight: 400 } })` hands those
+four metrics a number for the elements a test names, leaves every other element reading the environment's own `0`, and
+restores itself when the test finishes. The returned handle also drives change: `resize(selector, box)` updates the box
+AND notifies the `ResizeObserver`s watching matching elements (which is how Svelte's `bind:clientHeight` family
+re-reads), and `scroll(selector, top)` sets `scrollTop` before dispatching the `scroll` event the component listens for.
+
+Reach for it whenever a component sizes itself from its container: both file-list views, `ShareBrowser`,
+`NetworkBrowser`. Without it a virtualized list computes a zero-row window and renders NOTHING, with no error — so a
+spec asserting "no Ext cell" or "no hourglass" passes against an empty DOM. See `../testing.md` § "A component that
+measures itself, rendering nothing".
+
+It supplies measurements, it doesn't compute them: `getBoundingClientRect`, `scrollHeight`, and everything else stay at
+the environment's zeros, so pixel geometry (drag auto-scroll, hit-testing) still belongs in Playwright. What it does
+give is faithful for the window math, because that math is unchanged — a 100 px surface over 20 px rows renders the same
+five rows the app renders, and scrolling to 200 px lands on the same row through the same gutter correction.
+
+The global `ResizeObserver` stub (`src/test-setup.ts`) is the same class, and stays silent for every spec that doesn't
+call `resize()`: nothing measures anything here, so a resize can only come from a test.
+
 ### `stryker-mutator` (mutation testing for TS)
 
 Not in package.json: install ad-hoc: `pnpm add -D -w @stryker-mutator/core @stryker-mutator/typescript-checker`. Fast on
