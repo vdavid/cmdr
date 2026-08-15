@@ -57,6 +57,11 @@ pub(super) struct CoverageQuestion {
     /// The token each answer carried. All of them have to match the arena's for
     /// the covered half to be trustworthy (Decision 12).
     pub(super) tokens: Vec<CoverageToken>,
+    /// When the LAST of those reads finished, so an arena can say it was built
+    /// after all of them. Stamped at the end rather than the start on purpose: it
+    /// under-claims the question's age, which costs a rebuild rather than serving
+    /// an answer the arena can't back (Decision 12).
+    pub(super) answered_at: std::time::Instant,
     /// The frontier roots another walk is covering as this was read. This run
     /// can't have them: one walk per patch of ground, or the two orphan each
     /// other's subtrees.
@@ -69,6 +74,7 @@ pub(super) fn coverage_of(volume_id: &str, scopes: &[String]) -> CoverageQuestio
         frontier: Vec::new(),
         unreadable: UnreadableGround::default(),
         tokens: Vec::new(),
+        answered_at: std::time::Instant::now(),
         being_walked: Vec::new(),
     };
     for scope in scopes {
@@ -89,6 +95,7 @@ pub(super) fn coverage_of(volume_id: &str, scopes: &[String]) -> CoverageQuestio
             }
         }
     }
+    question.answered_at = std::time::Instant::now();
     question.frontier.sort_unstable();
     question.frontier.dedup();
     question.being_walked.sort_unstable();
@@ -155,20 +162,21 @@ pub(super) enum AfterAnotherWalk {
 /// symptom is silent: the same query, run again, prunes the ground it just walked
 /// and returns FEWER results than the first time.
 ///
-/// So: reload when the tokens disagree AND a walk is what put them out of step.
-/// Both halves earn their keep. Without the token, every query after any walk
-/// would pay a full arena rebuild. Without the walk mark, a boot disk — whose
-/// background indexer moves the token several times a second — would rebuild in
-/// front of nearly every search, which is the regression `volumes::get_loaded`
-/// documents removing once already. What's left uncovered is ordinary index lag,
-/// which search has always had.
-pub(super) fn arena_for_coverage(volume_id: &str, tokens: &[CoverageToken], after: AfterAnotherWalk) -> VolumeLoad {
+/// So: rebuild when the arena can't honor the answer ([`LoadedVolume::honors`])
+/// AND a walk is what put them out of step. Both halves earn their keep. Without
+/// the freshness test, every query after any walk would pay a full arena rebuild.
+/// Without the walk mark, a boot disk — whose background indexer moves the token
+/// several times a second — would rebuild in front of nearly every search, which
+/// is the regression `volumes::get_loaded` documents removing once already. What's
+/// left uncovered is ordinary index lag, which search has always had.
+pub(super) fn arena_for_coverage(volume_id: &str, question: &CoverageQuestion, after: AfterAnotherWalk) -> VolumeLoad {
     let load = volumes::ensure_volume(volume_id);
     let VolumeLoad::Loaded(ref loaded) = load else {
         return load;
     };
-    if tokens.iter().all(|token| *token == loaded.coverage_token) {
-        // Exactly the rows the answer was computed against.
+    if loaded.honors(question.answered_at, &question.tokens) {
+        // Either the rows the answer was computed against, or a superset of them
+        // read after it. The mark is spent on THIS arena either way.
         volumes::take_walked_behind(volume_id);
         return load;
     }

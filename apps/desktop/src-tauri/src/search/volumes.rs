@@ -79,6 +79,17 @@ pub(crate) fn forget_volume_for_test(volume_id: &str) {
     take_walked_behind(volume_id);
 }
 
+/// Every arena this process has built, so a test can pin how many one search pays
+/// for. An arena is seconds of work and hundreds of MB, so "how many" is a
+/// property worth asserting rather than inferring from a stopwatch.
+#[cfg(test)]
+static ARENAS_BUILT: AtomicU64 = AtomicU64::new(0);
+
+#[cfg(test)]
+pub(crate) fn arenas_built_for_test() -> u64 {
+    ARENAS_BUILT.load(Ordering::Relaxed)
+}
+
 // ── Loaded volume state ──────────────────────────────────────────────
 
 /// A loaded volume's search state: the in-memory arena plus everything a search
@@ -108,6 +119,33 @@ pub(crate) struct LoadedVolume {
     /// wrote rows behind the arena breaks that promise silently
     /// (`docs/specs/unindexed-search-plan.md` Decision 12).
     pub(crate) coverage_token: CoverageToken,
+    /// When this arena's load STARTED, read before the token and the rows. The
+    /// causal half of the same question: an answer taken before this instant saw
+    /// only rows committed before this load read anything.
+    load_started_at: std::time::Instant,
+}
+
+impl LoadedVolume {
+    /// Whether this arena may serve a coverage answer taken at `answered_at` and
+    /// carrying `tokens` (Decision 12).
+    ///
+    /// Two independent ways it can, and both are needed:
+    ///
+    /// - **It was built after the answer was taken.** Every row that answer calls
+    ///   covered was committed before this load read a thing, so the arena holds
+    ///   them whatever else landed meanwhile. The same property a rebuild
+    ///   manufactures, observed instead of paid for — which is what keeps a COLD
+    ///   volume to ONE arena on a drive whose first index moves the token faster
+    ///   than an arena takes to build.
+    /// - **Its token IS the answer's**, so the two describe the same rows outright.
+    ///   This is the one that still holds for a WARM arena, which the clock can say
+    ///   nothing good about.
+    ///
+    /// ❌ Never order two tokens instead: `CoverageToken` is a watermark, equality
+    /// only (`cmdr-index`'s `read/DETAILS.md` § "The freshness token").
+    pub(crate) fn honors(&self, answered_at: std::time::Instant, tokens: &[CoverageToken]) -> bool {
+        self.load_started_at >= answered_at || tokens.iter().all(|token| *token == self.coverage_token)
+    }
 }
 
 /// The outcome of loading a volume's index.
@@ -304,9 +342,13 @@ fn usable_mount_root(root: String) -> Option<String> {
 /// from `index-{volume_id}.db` on disk), loads the arena, reads the mount root, and
 /// loads the volume's importance weights into `WEIGHTS`.
 fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -> VolumeLoad {
-    // Taken BEFORE the rows, so a write racing this load makes the arena look
+    #[cfg(test)]
+    ARENAS_BUILT.fetch_add(1, Ordering::Relaxed);
+
+    // Both taken BEFORE the rows, so a write racing this load makes the arena look
     // older than it is rather than newer. Under-claiming costs a reload; the
     // other way round would serve a coverage answer the arena can't back.
+    let load_started_at = std::time::Instant::now();
     let coverage_token = index().coverage_token(volume_id);
 
     let (pool, mount_root, generation) = if volume_id == ROOT_VOLUME_ID {
@@ -342,6 +384,7 @@ fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -
         mount_root,
         generation,
         coverage_token,
+        load_started_at,
     }))
 }
 

@@ -354,7 +354,7 @@ fn groundwork(
 ) -> Result<Groundwork, (SearchRunError, String)> {
     let question = coverage_of(&target.volume_id, scopes);
 
-    let loaded = match arena_for_coverage(&target.volume_id, &question.tokens, after) {
+    let loaded = match arena_for_coverage(&target.volume_id, &question, after) {
         VolumeLoad::Loaded(loaded) => Some(loaded),
         // Not an error and not a gap any more: a volume with no index is exactly
         // what the walk stands one up for. Nothing is covered, so the frontier

@@ -374,15 +374,41 @@ returns FEWER results than the first time. `execute/tests/live_e2e.rs` pins it (
 
 Two mechanisms, both load-bearing:
 
-- **The order.** Coverage is asked BEFORE the arena is loaded, so an arena loaded after it holds every row it calls
-  covered, whatever else landed meanwhile. A reload therefore fixes the mismatch in one pass rather than racing it.
-- **The walk mark plus the token.** `volumes::mark_walked_behind` is set when a walk STARTS (not on its first batch: the
-  local repair path for a non-virgin frontier root writes through the serial reconcile, which has no live consumer, so
-  it writes rows it never emits). The reload runs only when the mark is set AND the arena's token disagrees with the
-  coverage answer's. Without the token, every query after any walk pays a full rebuild; without the mark, a boot disk
-  — whose background indexer moves the token several times a second — would rebuild in front of nearly every search,
-  the regression `volumes::get_loaded` documents removing once already. What's left uncovered is ordinary index lag,
-  which search has always had.
+- **The order.** Coverage is asked BEFORE the arena is loaded, so an arena whose load STARTED after the answer was taken
+  holds every row it calls covered, whatever else landed meanwhile. That is the actual invariant, and it is causal: the
+  answer read rows committed before it returned, and the load reads rows after that.
+- **The walk mark plus the freshness test.** `volumes::mark_walked_behind` is set when a walk starts and again on every
+  batch (`live::drive_walk`), so a walk still running re-marks whatever a query consumed. The rebuild runs only when the
+  mark is set AND the arena can't honor the answer. Without the freshness test, every query after any walk pays a full
+  rebuild; without the mark, a boot disk — whose background indexer moves the token several times a second — would
+  rebuild in front of nearly every search, the regression `volumes::get_loaded` documents removing once already. What's
+  left uncovered is ordinary index lag, which search has always had.
+
+**Two ways an arena honors an answer** (`LoadedVolume::honors`), and the second exists because the first can't see a
+cold load:
+
+- Its **token** is the answer's, so the two describe the same rows outright. This is the only thing that can be said for
+  a WARM arena, which was built before the question was asked.
+- Its **load started after the answer was taken**, so it holds a superset of what the answer calls covered. `Instant`,
+  not the token: `CoverageToken` is a watermark, comparable for equality only (`cmdr-index`'s `read/DETAILS.md`
+  § "The freshness token"), so it can say "something changed" but never "this one is newer". Both stamps are read
+  BEFORE the rows they describe, so each can only under-claim, and under-claiming costs a rebuild rather than serving an
+  answer the arena can't back.
+
+Why the second one matters: a token moves on any write, including the ones that land during the seconds an arena takes
+to build. On a drive being indexed for the first time that is constant, so a COLD load — one already reading the
+database after the answer, and honorable on arrival — read as "out of step" and was thrown away for a second, identical
+build. Every first search of a session paid for two arenas (measured 2.0 s + 2.1 s over a 6 M-entry root index,
+2026-08-15). `live_e2e.rs::a_cold_arena_is_built_once_even_though_the_index_moved_while_it_loaded` pins the count;
+`a_warm_arena_a_walk_wrote_behind_is_rebuilt_before_it_answers` pins that the protection survived, and step 4 of
+`a_drive_with_no_index_is_walked_live_then_read_back_from_what_the_walk_wrote` still fails with an empty list if the
+rebuild goes.
+
+**Known narrow hole, pre-existing:** `ensure_volume` single-flights per volume, so a caller can be handed an arena
+another thread was ALREADY building when the answer was taken. The freshness test catches that and rebuilds — but the
+rebuild itself can be donated the same way, and its result is served unchecked. It takes a search landing inside the
+dialog's own pre-load window on a volume a walk is writing to. Closing it needs a load primitive that can promise "built
+by this call", which is a bigger change than it's worth so far.
 
 ### Decision 11: superseding is not cancelling
 

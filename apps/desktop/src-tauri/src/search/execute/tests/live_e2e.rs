@@ -23,6 +23,7 @@ use cmdr_fs::volume::{InMemoryVolume, Volume};
 use cmdr_index::testing::host::{FakeVolumeProvider, test_lock};
 use cmdr_index::{CoverageDimension, Index, NoopEventSink};
 
+use super::super::coverage::{AfterAnotherWalk, arena_for_coverage, coverage_of};
 use super::super::live_run::run_live_blocking;
 use super::*;
 use crate::ignore_poison::IgnorePoison;
@@ -267,6 +268,135 @@ fn settled(ending: &AnswerEnding) -> &SearchRunCoverage {
         AnswerEnding::Settled(coverage) => coverage,
         other => panic!("the run was expected to settle, and reported {other:?}"),
     }
+}
+
+// ── How many arenas one coverage answer costs (Decision 12) ──────────
+
+/// Cover one root to the end, so its rows are in the index and the volume's token
+/// has moved. The stand-in for whatever wrote behind an arena: a drive's own
+/// phased first index, or another search's walk.
+fn cover_to_completion(index: &Index, root: &str) {
+    let walk = index
+        .cover(
+            VOLUME_ID,
+            vec![root.to_string()],
+            CoverageDimension::Listing,
+            tokio_util::sync::CancellationToken::new(),
+        )
+        .expect("the drive is walkable");
+    while walk.next_batch().is_some() {}
+    assert!(!walk.finish().cancelled, "the walk ran to the end");
+}
+
+/// A volume with `a` already covered, ready for a second walk to move its token.
+/// Returns the index, its guards, and the mount root.
+fn drive_with_a_covered(data: &std::path::Path) -> (Index, impl Sized, String) {
+    let root = format!("{MOUNT_PREFIX}/{VOLUME_ID}");
+    let provider = FakeVolumeProvider::shared();
+    provider.register(VOLUME_ID, drive(&root)).mark_network(&root);
+    let (index, installed) = Index::builder()
+        .data_dir(data)
+        .volumes(Arc::clone(&provider) as Arc<_>)
+        .events(NoopEventSink::shared())
+        .install_for_test();
+    cover_to_completion(&index, &format!("{root}/a"));
+    (index, installed, root)
+}
+
+#[test]
+fn a_cold_arena_is_built_once_even_though_the_index_moved_while_it_loaded() {
+    // A coverage answer needs an arena holding every row it calls covered, and
+    // there are two ways to have one: the same rows (equal tokens), or an arena
+    // built AFTER the answer was taken. `ensure_volume` on a cold volume gives the
+    // second — it reads the database once the answer is already in hand — so the
+    // arena it hands back is honorable on arrival.
+    //
+    // The token can't see that. It's a watermark, and any write between the answer
+    // and the load moves it, so a cold load whose own seconds overlapped a walk
+    // read as "out of step" and was thrown away for a second, identical build. On
+    // a drive being indexed for the first time the token moves several times a
+    // second, so that was every first search of a session, paying twice.
+    let _serialized = test_lock();
+    let _one_run_at_a_time = live::test_registry_lock();
+    let data = tempfile::tempdir().expect("index data dir");
+    let _search_data = volumes::install_data_dir_for_test(data.path());
+    let (index, _installed, root) = drive_with_a_covered(data.path());
+
+    // Nothing warm, and the answer is taken before anything loads it.
+    volumes::forget_volume_for_test(VOLUME_ID);
+    let question = coverage_of(VOLUME_ID, std::slice::from_ref(&root));
+
+    // Then a walk writes rows and moves the token, exactly as a first index does
+    // while the arena underneath it is still loading.
+    cover_to_completion(&index, &format!("{root}/b"));
+    volumes::mark_walked_behind(VOLUME_ID);
+
+    let before = volumes::arenas_built_for_test();
+    let load = arena_for_coverage(VOLUME_ID, &question, AfterAnotherWalk::No);
+    assert_eq!(
+        volumes::arenas_built_for_test() - before,
+        1,
+        "one arena, not two: the one a cold load builds is already newer than the answer"
+    );
+
+    let VolumeLoad::Loaded(loaded) = load else {
+        panic!("the volume has an index to load");
+    };
+    assert_eq!(
+        loaded.coverage_token,
+        index.coverage_token(VOLUME_ID),
+        "and it is the current state of the index, so nothing the answer calls covered is missing from it"
+    );
+
+    volumes::forget_volume_for_test(VOLUME_ID);
+    let _ = index.forget_volume(VOLUME_ID);
+}
+
+#[test]
+fn a_warm_arena_a_walk_wrote_behind_is_rebuilt_before_it_answers() {
+    // The other half of Decision 12, and the reason the check can't simply go: a
+    // WARM arena predates its answer, so nothing about when it was built says it
+    // holds the rows the answer calls covered. Here a walk writes behind it, and
+    // it has to be rebuilt — once — before the answer may be honored against it.
+    let _serialized = test_lock();
+    let _one_run_at_a_time = live::test_registry_lock();
+    let data = tempfile::tempdir().expect("index data dir");
+    let _search_data = volumes::install_data_dir_for_test(data.path());
+    let (index, _installed, root) = drive_with_a_covered(data.path());
+
+    volumes::forget_volume_for_test(VOLUME_ID);
+    let VolumeLoad::Loaded(warm) = volumes::ensure_volume(VOLUME_ID) else {
+        panic!("the volume has an index to load");
+    };
+
+    // A walk writes behind that arena, and only THEN is the answer taken.
+    cover_to_completion(&index, &format!("{root}/b"));
+    volumes::mark_walked_behind(VOLUME_ID);
+    let question = coverage_of(VOLUME_ID, std::slice::from_ref(&root));
+
+    let before = volumes::arenas_built_for_test();
+    let load = arena_for_coverage(VOLUME_ID, &question, AfterAnotherWalk::No);
+    assert_eq!(
+        volumes::arenas_built_for_test() - before,
+        1,
+        "the stale arena is rebuilt, and once"
+    );
+
+    let VolumeLoad::Loaded(loaded) = load else {
+        panic!("the volume still has an index to load");
+    };
+    assert_ne!(
+        loaded.coverage_token, warm.coverage_token,
+        "and what comes back is not the arena the walk wrote behind"
+    );
+    assert_eq!(
+        loaded.coverage_token,
+        index.coverage_token(VOLUME_ID),
+        "it is the state the answer describes"
+    );
+
+    volumes::forget_volume_for_test(VOLUME_ID);
+    let _ = index.forget_volume(VOLUME_ID);
 }
 
 #[test]
