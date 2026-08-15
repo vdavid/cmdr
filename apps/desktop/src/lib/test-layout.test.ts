@@ -50,14 +50,20 @@ describe('installLayoutMock', () => {
   })
 
   it('restores the environment getters', () => {
+    const describeClientHeight = () => Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight')
+    const original = describeClientHeight()
     const surface = div('surface')
+
     const layout = installLayoutMock({ '.surface': { clientHeight: 400 } })
     expect(surface.clientHeight).toBe(400)
+    expect(describeClientHeight()).not.toEqual(original)
 
     layout.restore()
 
+    // The environment's own getter is back, by identity — not a look-alike that
+    // happens to answer 0 while still routing through the harness.
     expect(surface.clientHeight).toBe(0)
-    expect(Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight')?.get).toBeTypeOf('function')
+    expect(describeClientHeight()).toEqual(original)
   })
 
   it('resize reports the new size and notifies observers watching a matching element', () => {
