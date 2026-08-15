@@ -47,7 +47,7 @@ const noopUnlisten = () => {}
 // reloaded window catches up on a run already in progress. Defaults to "not
 // scanning" (a no-op backfill); a test that IS a reload sets its own answer
 // before `initIndexState`.
-const backfill = vi.hoisted(() => ({ status: { scanning: false } as Partial<IndexStatusResponse> }))
+const backfill = vi.hoisted((): { status: Partial<IndexStatusResponse> } => ({ status: { scanning: false } }))
 
 // Mock the typed event wrappers: capture the ones the tests drive, no-op the rest.
 vi.mock('$lib/tauri-commands', () => ({
