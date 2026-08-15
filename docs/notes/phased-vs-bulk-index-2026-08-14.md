@@ -660,12 +660,15 @@ here says which is the number a user waits, so ❌ don't quote them interchangea
 decision: both say `~/Library` is worth deferring.
 
 ⚠️ **The first of the two `home_bench` runs never completed**, giving up at its 10-minute patience with the early signal
-in hand at 38.4 s and **5,421,448 entries**, 267k MORE than the run that finished in 76.6 s. The most likely cause is
-that another agent was building in a sibling worktree under `~/projects-git` throughout it, and a tree that grows while
-it is walked keeps refilling the frontier that completion is waiting to empty. **That is a hypothesis, ❌ not a
-diagnosis**: nobody has reproduced it deliberately. Worth knowing before reading a single slow `home_bench` run as a
-regression, and worth an hour if someone wants to know whether sustained churn under a scope can hold completion open
-indefinitely.
+in hand at 38.4 s and **5,421,448 entries**, 267k MORE than the run that finished in 76.6 s. **Followed up and answered
+in `docs/notes/churn-against-completion-2026-08-15.md`**: churn under a walked scope really can cost a first index its
+completion marker, but it takes ~200 new folders a second sustained and the next launch settles the drive in ~2 s, so it
+can't hold one open indefinitely. That run itself stays undiagnosed — what made it unanswerable was that `home_bench`
+watched only the marker and so couldn't tell a machine that gave up from one still working, which is fixed. ❌ Don't
+read a single slow `home_bench` run as a regression; read the line it now prints.
+
+A same-evening re-run for comparison, other agents building in sibling worktrees throughout: **73.0 s over 5,153,947
+entries, early signal at 34.4 s.**
 
 ### Would I stake a decision on these numbers?
 

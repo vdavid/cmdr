@@ -49,6 +49,10 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   path-keyed `BTreeMap` (87× off registering a 2,500-root frontier, up to 1,231× off a single live event), plus the two
   questions whose cost has to stay bounded by the PATH rather than by the set. Read it before touching
   `watch/branches.rs`: three separate efforts named this as a suspect and none of them measured it.
+- `churn-against-completion-2026-08-15.md` — whether a drive somebody is writing to can stop its first index from ever
+  finishing (no: it takes ~200 new folders a second sustained to cost one session's completion marker, and the next
+  launch settles the drive in ~2 s). Read it before treating a slow first index on a busy machine as a regression, or
+  before proposing a bigger pass budget: it weighs the three ways to close the gap and says why none was taken.
 - `search-arena-row-2026-08-06.md` — what shrinking `SearchEntry` from 56 to 40 bytes actually bought (−92 MiB of arena,
   measured two ways), that it cost no scan latency, and the A/B method for comparing two builds on a machine running
   other work.

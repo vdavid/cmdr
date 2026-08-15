@@ -69,6 +69,23 @@ fn how_long_home_takes() {
             let _ = writeln!(out, "all of {} covered after {:?}", home.display(), started.elapsed());
             break;
         }
+        // ⚠️ Watch the MACHINE, not only the marker. The stock-take that stamps runs
+        // before the machine reports itself idle, so a machine that has stopped
+        // without the marker will never write one — and this loop would otherwise
+        // sit out its whole patience and record a run that ended in 90 s as one that
+        // took ten minutes. That is exactly how one run got filed with no
+        // explanation (`docs/notes/churn-against-completion-2026-08-15.md`).
+        if !index.status("phased-measure").is_ok_and(|status| status.scanning) {
+            let _ = writeln!(
+                out,
+                "the machine stopped after {:?} with nothing marking {} done; \
+                 {} still needs walking, so something was written under it while it ran",
+                started.elapsed(),
+                home.display(),
+                cmdr_fs::pluralize::pluralize(frontier_len(&db_path, &home), "frontier root"),
+            );
+            break;
+        }
         if started.elapsed() > std::time::Duration::from_secs(600) {
             let _ = writeln!(out, "gave up after 10 minutes");
             break;
@@ -92,4 +109,17 @@ fn how_long_home_takes() {
         }
     );
     let _ = index.forget_volume("phased-measure");
+}
+
+/// What the index still says it hasn't walked, straight off the database file. The
+/// number that says whether a machine that stopped unmarked ran out of ground or
+/// ran out of passes.
+fn frontier_len(db_path: &Path, home: &Path) -> u64 {
+    let Ok(conn) = IndexStore::open_read_connection(db_path) else {
+        return 0;
+    };
+    let home = home.to_string_lossy();
+    coverage_for_scope(&conn, "/", &home, CoverageDimension::Listing)
+        .map(|map| map.frontier.len() as u64)
+        .unwrap_or(0)
 }

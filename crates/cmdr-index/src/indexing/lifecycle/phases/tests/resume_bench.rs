@@ -256,7 +256,10 @@ impl Arm {
 ///
 /// Deterministic (a fixed-seed LCG), so both arms walk the same shape and two runs
 /// of the bench are comparable.
-fn build_tree(root: &Path, dir_budget: usize) {
+///
+/// Shared with `churn_bench` next door, which measures a different question over
+/// the same shape.
+pub(super) fn build_tree(root: &Path, dir_budget: usize) {
     let started = Instant::now();
     let mut random = Lcg::seeded(0x5EED);
     let mut queue = std::collections::VecDeque::from([(root.to_path_buf(), 0usize)]);

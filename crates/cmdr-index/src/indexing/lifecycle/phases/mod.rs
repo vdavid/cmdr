@@ -741,5 +741,31 @@ impl Machine {
             ),
             self.started_at.elapsed().as_secs_f64(),
         );
+        self.say_what_was_left_behind();
+    }
+
+    /// Say so when the machine stops with ground still on the frontier.
+    ///
+    /// ⚠️ Without this the two endings are indistinguishable in a log: a volume
+    /// that finished and one that ran out of passes while somebody wrote to it
+    /// both end on the line above and an idle phase. The second leaves the drive
+    /// unmarked until the next launch, and a support bundle has to be able to say
+    /// which happened — a bench couldn't, and one unexplained run was the cost
+    /// (`docs/notes/churn-against-completion-2026-08-15.md`).
+    ///
+    /// Only asked once a run is over, so it costs one coverage query per first
+    /// index.
+    fn say_what_was_left_behind(&self) {
+        let left = self.frontier_under(&self.volume_root);
+        if left.is_empty() {
+            return;
+        }
+        log::info!(
+            "Phases: '{}' stops with {} still to walk, so nothing marks it complete yet; \
+             the next launch picks them up (first: {})",
+            self.volume_id,
+            cmdr_fs::pluralize::pluralize(left.len() as u64, "folder"),
+            left.first().map(String::as_str).unwrap_or("-"),
+        );
     }
 }

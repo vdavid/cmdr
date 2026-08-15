@@ -192,6 +192,10 @@ mod resume_bench;
 /// What covering a REAL home folder costs. `#[ignore]`d.
 mod home_bench;
 
+/// Whether a tree somebody is writing to can keep completion from firing.
+/// `#[ignore]`d.
+mod churn_bench;
+
 // ── A drive the machine covers, end to end ───────────────────────────
 
 /// A local drive with no index, driven through the PUBLIC handle so the whole

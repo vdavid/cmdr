@@ -144,6 +144,22 @@ empty walks nothing and drains nothing, so a run that only had to CONFIRM what a
 otherwise never reach a stock-take — and a volume killed between its last walk and its stamp would stay unmarked
 forever, re-running the machine every launch to rediscover the same thing.
 
+**What churn under a walked scope costs, and what it doesn't.** A folder created on ground the watcher already covers
+gets a row nothing has listed, which is frontier by the descent rule — so the volume is marked done only if some
+stock-take catches the frontier empty, and that is a RACE against the watcher's next batch. Measured
+(`docs/notes/churn-against-completion-2026-08-15.md`, `tests::churn_bench`): 20 and 60 new folders a second never cost a
+completion over six trials, a 2,000-folder burst is absorbed by the pass that follows it, and it takes **~200 new
+folders a second sustained** to lose the marker — after which **the next launch settles the drive in ~2 s**, writing
+still going, because a resume's frontier is a few hundred tiny roots. ⚠️ So churn can cost a SESSION's completion and ❌
+can't hold a drive open indefinitely, which is the limit the derived rule accepts in exchange for never claiming ground
+nobody walked. The options for closing it, and why none was taken, are in the note. Nothing re-triggers the machine
+in-session, so the wait is the next launch or a manual "Rescan now"; `Machine::finish` logs the frontier it stopped
+with, ❌ never leaving the two endings indistinguishable in a support bundle.
+
+⚠️ **A bench over this has to watch the MACHINE, not the marker.** The stock-take stamps before `finish` reports the
+machine idle, so one that stopped unmarked will never write one — a marker-only poll can't tell that apart from a slow
+run and sits out its whole patience. That cost one `home_bench` run its explanation; both benches watch the machine now.
+
 **What a completed volume owes, in the one order that works.** The order is enforced by a FLUSH, not by the numbering:
 the read it protects (`local_rescan_reconciles` asking `get_index_status()` inside `start_scan`) goes through a read
 connection, and step 3 is minutes of writer-thread work.
