@@ -11,7 +11,7 @@ with the index it finds" holds the whole routing table.
 
 **The shape of a run.** Ask the host which folders matter to this user (`HostPolicy::priority_roots`, an ORDER and
 nothing else), then `$HOME`, then the volume root. Per phase: stitch down to its root, ask for its frontier, walk those
-roots one at a time with the visit queue checked between them, drain, take stock. `MAX_PASSES_PER_PHASE` re-asks once
+roots in groups with the visit queue checked between them, drain, take stock. `MAX_PASSES_PER_PHASE` re-asks once
 after the drain (a root can expose new ground while it is being walked); past that whatever is left is this session's
 loss and the next launch asks again. ❌ That is a PASS budget, never a completion rule.
 
@@ -61,11 +61,52 @@ a completed volume the verifier is the only thing that heals it.
 
 ## Interleaving without preemption
 
-One `cover()` call per frontier root, joined before the next starts. Measured, the join costs nothing (41 s of real
-walking against a whole-volume walk's 38.1 s), and it is what gives the queue its check points — ❌ handing one call a
-whole phase's frontier looks cheaper but the cancel check inside `cover` is not a point the machine can consult a queue
-at. Preemption is out of scope: a root the user opens waits for the running walk, which on a big folder is tens of
-seconds, and no stitch depth fixes that (`docs/notes/phased-vs-bulk-index-2026-08-14.md` § depth 1 against depth 2).
+One `cover()` call per GROUP of frontier roots, joined before the next starts. Measured, the join costs nothing (41 s of
+real walking against a whole-volume walk's 38.1 s), and the gaps between calls are what give the queue its check
+points — ❌ handing one call a whole phase's frontier looks cheaper but the cancel check inside `cover` is not a point
+the machine can consult a queue at. Preemption is out of scope: a root the user opens waits for the running walk, which
+on a big folder is tens of seconds, and no stitch depth fixes that (`docs/notes/phased-vs-bulk-index-2026-08-14.md`
+§ depth 1 against depth 2).
+
+**How big a group is, is measured rather than predicted** (`grouping.rs`). A frontier root is virgin ground by
+definition, so nothing in the index says how much is under it: the only honest estimate is what the last group cost per
+root. So the machine starts at one root, and each group is as many as the previous one's pace says fit inside a
+one-second interleaving budget, never growing more than 4× per step and never past 16. Big roots therefore keep it at
+one, which is what an uninterrupted run is made of, and the two-entry roots an interrupted one leaves behind let it grow
+to the cap. ❌ A fixed group size can't work in either direction: 16 roots of `~/Library`'s size is minutes of deafness
+to where the user is looking, and one root apiece is the cost measured below.
+
+## What a resume costs
+
+An interrupted phase leaves its frontier as thousands of DEEP, TINY roots (the stitch descends as it goes, so the deeper
+a walk got, the smaller what it left). Nothing is lost, but the per-root costs that vanish into the noise at ~1,500
+roots are the whole bill at ten thousand — and they are paid per root, not per entry, so quitting later makes it worse.
+
+Measured by `tests::resume_bench` (release, a 100,170-entry synthetic tree, quit once 60% of its rows were indexed,
+2026-08-15): **185.0 s to resume, against 2.0 s to cover the same tree uninterrupted** — 22.1 ms per frontier root, of
+which under 0.2 ms was reading the disk. Where the rest went, from counters held in the machine for the measurement:
+
+- **A stock-take per root: 75%.** Completion is a coverage descent over the whole volume, which gets more expensive the
+  more of the drive is covered, and it ran after every root. It could not even see what that root did — the walk leaves
+  its drain to the caller, so its rows and marks were still in the writer's queue. Now: after a drain, which is where
+  `run_phase` already asks.
+- **The branch set: most of the remainder.** `begin_covering` / `finish_covering` scan a `Vec` per path and re-sort it,
+  and every comparison went through `is_strict_descendant`, which allocated two `Vec`s to compare two paths. Over
+  10,000 branches that was ~59 s of the run. The comparison is allocation-free now (2.9× off that arm), and the scans
+  remain — see below.
+- **The `cover()` round trip itself: ~2.4 ms per root** (a claim, a branch bracket, a walk thread, a bootstrap read
+  connection), now divided by the group size.
+
+**After: 26.0 s, 2.6 ms per root** (same method, same day, 20% MORE frontier roots in the resumed run). An uninterrupted
+run is unchanged: its roots are big, so the group stays at one and the stock-take was already dominated by walking.
+
+⚠️ **The branch set is the next lever, and it is quadratic.** `watch/branches.rs` holds branches in a `Vec` and answers
+"which branch holds this path" by scanning it, while a phased run adds one entry per covered frontier root. At the
+~1,500 roots an uninterrupted real `/` produces that is ~1 s; at 10,000 it was 20 s even after the allocation fix, and
+it also taxes the live event path (`deepest_containing` runs per event). Keying the set by path (a `BTreeMap`, whose
+range query answers "everything under this path" directly and keeps itself ordered) would take the scans to `log n` and
+delete the re-sorts. ❌ Not done here: it is a different module with its own event-buffering invariants, and the resume
+it would speed up is already 7× cheaper.
 
 **Ground another walk holds is left to it.** A live search's walk is not ours to serialize; its rows land in the same
 index and the next pass asks again.

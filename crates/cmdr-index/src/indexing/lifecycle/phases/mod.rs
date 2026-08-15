@@ -1,5 +1,5 @@
-//! Covering a volume in the order its owner cares about, one frontier root at a
-//! time.
+//! Covering a volume in the order its owner cares about, a few frontier roots at
+//! a time.
 //!
 //! There is no first full scan. The whole drive is the LAST phase of the same
 //! mechanism the user's own folders go through: `coverage` names what a scope
@@ -14,17 +14,26 @@
 //! 1. Ask the host which folders matter to this user (`HostPolicy::priority_roots`,
 //!    an ORDER and nothing else), then `$HOME`, then the volume root.
 //! 2. Stitch down to each phase root, ask for its frontier, and walk those roots
-//!    one at a time, checking the visit queue in between.
+//!    in groups, checking the visit queue between them.
 //! 3. After each drain, ask the database whether anything is complete. Completion
 //!    is derived, never remembered: "the frontier under this root is empty".
 //!
-//! ## Three rules that are easy to get wrong
+//! ## Four rules that are easy to get wrong
 //!
-//! - **One `cover()` call per frontier root**, joined before the next starts.
+//! - **One `cover()` call per GROUP of frontier roots**, joined before the next
+//!   starts, with the group sized from what the last one cost (`grouping.rs`).
 //!   Measured, the join costs nothing (41 s of real walking against a whole-volume
-//!   walk's 38.1 s), and it is what gives the queue its check points. ❌ Don't hand
-//!   one call a whole phase's frontier to save the per-root bookkeeping: the check
-//!   inside `cover` is not a point the machine can consult a queue at.
+//!   walk's 38.1 s), and the gap between calls is where the visit queue gets
+//!   consulted. ❌ Never one call for a whole phase's frontier: the check inside
+//!   `cover` is not a point the machine can consult a queue at, and a group that
+//!   runs for minutes is deaf to where the user is looking.
+//! - **Take stock after a DRAIN, ❌ not after every root.** Completion is read off
+//!   the database, and until the drain the roots just walked are still in the
+//!   writer's queue — so a stock-take per root asks an expensive question (a
+//!   coverage descent over the whole volume, which grows with how much is already
+//!   covered) about a database that hasn't moved. Over a resumed run's thousands
+//!   of small roots that was three quarters of the wall clock
+//!   (`docs/notes/phased-vs-bulk-index-2026-08-14.md`).
 //! - **The writer drains once per phase, not once per root.** A blocking flush at
 //!   the end of every walk was 37.5 s of the walker standing still over ~1,500
 //!   roots (`docs/notes/phased-vs-bulk-index-2026-08-14.md`). Two sequences still
@@ -55,6 +64,7 @@ use crate::indexing::store::IndexStore;
 use crate::indexing::writer::{AggSource, IndexWriter};
 
 mod completion;
+mod grouping;
 mod queue;
 mod stitch;
 mod visits;
@@ -65,6 +75,7 @@ pub(crate) use visits::VisitLog;
 #[cfg(test)]
 mod tests;
 
+use grouping::Grouping;
 use queue::{Phase, PhaseQueue, Rank};
 
 /// How many times a phase re-asks for its frontier after draining.
@@ -381,7 +392,7 @@ impl Machine {
     }
 
     /// One phase: stitch down to its root, then walk what its frontier still
-    /// names, one root at a time.
+    /// names, in groups, taking stock either side of the drain.
     fn run_phase(&self, phase: &Phase, queue: &mut PhaseQueue) {
         // The ORDER is the whole feature, so a support bundle has to show it. A
         // dozen lines per first index, and none after that.
@@ -456,11 +467,18 @@ impl Machine {
         }
     }
 
-    /// Walk each root in turn, consulting the visit queue between them. Reports
-    /// whether anything was covered.
+    /// Walk the frontier in groups, consulting the visit queue between them.
+    /// Reports whether anything was covered.
+    ///
+    /// How big a group is comes from what the last one cost (`grouping.rs`): big
+    /// roots keep it at one, and the tiny ones an interrupted run leaves behind let
+    /// it grow, so the per-call cost stops being the whole cost. The visit check
+    /// sits between GROUPS, which is what the sizing rule keeps short.
     fn walk_all(&self, roots: &[String], phase: &Phase, queue: &mut PhaseQueue) -> bool {
         let mut covered = false;
-        for root in roots {
+        let mut grouping = Grouping::new();
+        let mut rest = roots;
+        while !rest.is_empty() {
             if !self.may_run() {
                 return covered;
             }
@@ -471,8 +489,11 @@ impl Machine {
             if phase.rank > Rank::VisitedRoot && self.take_a_visit(queue) {
                 self.announce_the_phase(phase);
             }
-            covered |= self.walk_one(root);
-            self.take_stock();
+            let (group, remaining) = rest.split_at(grouping.roots().min(rest.len()));
+            rest = remaining;
+            let started = Instant::now();
+            covered |= self.walk_group(group);
+            grouping.note(group.len(), started.elapsed());
         }
         covered
     }
@@ -504,11 +525,14 @@ impl Machine {
         true
     }
 
-    /// Cover one frontier root and say whether it actually ran.
+    /// Cover a group of frontier roots in one walk, and say whether it covered
+    /// anything.
     ///
-    /// Ground another walk on this volume already holds (a live search) is left to
-    /// it: its rows land in the same index, and the next pass asks again.
-    fn walk_one(&self, root: &str) -> bool {
+    /// The group is one claim, one branch bracket, one walk thread, and one
+    /// backend session; inside it the walk takes the roots one at a time. Ground
+    /// another walk on this volume already holds (a live search) is left to it:
+    /// its rows land in the same index, and the next pass asks again.
+    fn walk_group(&self, roots: &[String]) -> bool {
         let context = match cover::context_for_walk(&self.volume_id) {
             Ok(context) => context.leaving_the_flush_to_the_caller(),
             Err(e) => {
@@ -517,22 +541,21 @@ impl Machine {
             }
         };
         self.walking.store(true, Ordering::Relaxed);
-        self.note_walked_roots(vec![root.to_string()]);
+        self.note_walked_roots(roots.to_vec());
         // The ground is the walker's from here to `finish`, and the host is told
         // both ends: a folder's size can move under the user for exactly this
         // long, and the pair is what lets a listing say so per row instead of
         // marking the whole drive in flux for the whole run.
         self.events.emit(IndexEvent::CoverageBranchStarted {
             volume_id: self.volume_id.clone(),
-            roots: vec![root.to_string()],
+            roots: roots.to_vec(),
         });
         let walk = cover::start(
             context,
-            vec![root.to_string()],
+            roots.to_vec(),
             CoverageDimension::Listing,
             self.cancel.child_token(),
         );
-        let mine = walk.covered_by_another_walk().is_empty();
         // Draining the batches is what keeps the live entry counter honest: the
         // walk's own heartbeat counts directories, and a phased run has no total to
         // measure itself against, so the counter IS the progress.
@@ -547,9 +570,13 @@ impl Machine {
         // that stopped, and nothing later would take it off.
         self.events.emit(IndexEvent::CoverageBranchEnded {
             volume_id: self.volume_id.clone(),
-            roots: vec![root.to_string()],
+            roots: roots.to_vec(),
         });
-        mine && outcome.roots_covered > 0
+        // ⚠️ What the walk COVERED, ❌ not "no root was left to another walk": a
+        // group can hold one root a live search is already walking and a dozen
+        // nobody is, and reading the whole group as uncovered would end the phase's
+        // pass with ground still on the frontier.
+        outcome.roots_covered > 0
     }
 
     /// Record what is under the walker, for the status a mid-run reload reads.

@@ -3,9 +3,9 @@
 The volume's first index, in the order its owner cares about: the host's folders, then `$HOME`, then the drive. Every
 walk is add-only and resumable, so a quit keeps what it bought. There is no first full scan.
 
-`mod.rs` the driver (its own `Utility` thread) + `PhaseHandle`; `stitch.rs`; `queue.rs` the ranked order; `visits.rs`
-where the user is looking; `completion.rs` the two stamps and what completing owes. The start itself is
-`../manager/phased.rs`.
+`mod.rs` the driver (its own `Utility` thread) + `PhaseHandle`; `stitch.rs`; `queue.rs` the ranked order;
+`grouping.rs` how many roots one walk takes; `visits.rs` where the user is looking; `completion.rs` the two stamps and
+what completing owes. The start itself is `../manager/phased.rs`.
 
 ## Must-knows
 
@@ -24,8 +24,12 @@ where the user is looking; `completion.rs` the two stamps and what completing ow
   every hourglass lit until the next launch.
 - **`working` (a phase queued or running) is what scan entries refuse against; `walking` (reading the disk now) is only
   the verifier's.** ❌ Never `mgr.scanning`: `cover_context_for` returns `None` under it, so our own walks would fail.
-- **One `cover()` per frontier root, joined**, with the drain batched to once per phase. ❌ Don't hand one call a whole
-  frontier: the cancel check inside `cover` is not a queue check point.
+- **One `cover()` per GROUP of frontier roots, joined**, the group sized from what the last one cost (`grouping.rs`),
+  with the drain batched to once per phase. ❌ Never one call for a whole frontier: the cancel check inside `cover` is
+  not a queue check point. ❌ And never a FIXED group size: a group of big roots is minutes of deafness to where the
+  user is looking.
+- **Stock is taken after a DRAIN, ❌ never per root.** Per root it re-asks a whole-volume coverage descent that grows
+  with how much is covered, about a database the unflushed walk hasn't moved: 75% of a resumed run's wall clock.
 - **The three `*CoverageStarted` VARIANTS are the phase contract** (a payload enum costs a capped surface item). ❌
   Never read the phase off the branch events: frontier roots, one level down, debounced. ❌ Not one-shot either: an
   interlude is a phase and announces itself, so the outer one re-announces (the coverage event alone, ❌ never a second

@@ -1212,6 +1212,55 @@ fn a_relaunch_with_no_replayable_journal_bumps_the_epoch() {
     );
 }
 
+/// Frontier roots that cost nothing are walked several to a `cover()` call.
+///
+/// The sizing RULE is `grouping.rs`'s own tests; this is the wiring, and the
+/// property that pays for it: a resumed run's frontier is thousands of roots
+/// holding two entries each, and one call apiece meant the claim, the branch
+/// bracket, and the walk thread WERE the cost (185 s against 26 s over the
+/// benchmark's tree, `tests::resume_bench`). ⚠️ It has to stay a wiring test —
+/// asserting a particular group SIZE would pin the machine's speed on whatever
+/// hardware runs the suite.
+#[test]
+fn tiny_frontier_roots_are_walked_several_to_a_call() {
+    let drive = Drive::new(
+        "phased-groups",
+        |root| {
+            for index in 0..40 {
+                std::fs::create_dir_all(root.join(format!("tiny-{index:02}"))).expect("dirs");
+                std::fs::write(root.join(format!("tiny-{index:02}/leaf.txt")), "x").expect("file");
+            }
+        },
+        &[],
+    );
+
+    drive.start();
+    drive.wait_for_the_machine();
+
+    let biggest_group = drive
+        .events
+        .events()
+        .into_iter()
+        .filter_map(|event| match event {
+            crate::indexing::events::IndexEvent::CoverageBranchStarted { volume_id, roots }
+                if volume_id == drive.volume_id =>
+            {
+                Some(roots.len())
+            }
+            _ => None,
+        })
+        .max()
+        .unwrap_or(0);
+    assert!(
+        biggest_group > 1,
+        "roots this cheap are walked in groups, not one call each"
+    );
+    assert!(
+        drive.frontier(&drive.path("")).is_empty(),
+        "and grouping them covers the drive exactly as walking them one at a time did"
+    );
+}
+
 /// A folder the user has open when indexing starts is covered as its own phase,
 /// ahead of the rest of the drive. The rank ORDER itself is pinned by the queue's
 /// own tests; this is the wiring: the poll reaches the machine, and the machine

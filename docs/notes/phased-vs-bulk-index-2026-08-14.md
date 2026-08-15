@@ -445,9 +445,47 @@ retired in **3 ms combined**, straight into the `/` phase. Entry counts only gro
 
 **But the remainder cost 445.2 s for 473,547 entries**, against 27 s for the whole `/` phase in an uninterrupted run. An
 interrupted phase leaves its frontier as thousands of DEEP, TINY roots (the stitch descends as it goes), and each one
-pays a full serial `cover()` round trip for two or three entries: measured at **~9 frontier roots per second**, with
-`Cover: 0 entries over 1 frontier root` recurring every ~30 ms. Nothing is lost and nothing is wrong, but "quit and come
-back" is far more expensive than the uninterrupted path, and it gets worse the later the quit lands.
+was measured at **~9 frontier roots per second**, with `Cover: 0 entries over 1 frontier root` recurring every ~30 ms.
+Nothing is lost and nothing is wrong, but "quit and come back" is far more expensive than the uninterrupted path, and it
+gets worse the later the quit lands.
+
+### What that per-root cost actually was, and what it is now (2026-08-15)
+
+The `cover()` round trip was the suspect above. Measured, it was the smallest of three per-root costs. The arm is
+`indexing::lifecycle::phases::tests::resume_bench`, which drives the REAL machine (handle, registry, phase driver,
+reporter, event sink) twice over one synthetic 100,170-entry tree — once uninterrupted, once quitting at 60% of its rows
+and timing only the relaunch. Release build, 2026-08-15:
+
+```sh
+CMDR_PHASES_TEST_TREE_DIR=/private/tmp cargo test -p cmdr-index --release --lib -- \
+  --ignored --nocapture --exact indexing::lifecycle::phases::tests::resume_bench::resume_cost
+```
+
+- **Resuming, before: 185.0 s** over 8,377 frontier roots (22.1 ms each).
+- **Resuming, after: 26.0 s** over 10,017 frontier roots (2.6 ms each) — 20% more ground, 7.1× less time.
+- **The same tree uninterrupted: 2.0 s before, 1.9 s after.** Its roots are big, so the group stays at one and nothing
+  about that arm changes.
+
+The split came from temporary counters inside the machine, on the before-build (the tree quit at 60% left 10,667
+frontier roots holding 38,876 entries between them):
+
+- **19.3 s / 75% — a stock-take after every root.** Completion is a coverage descent over the whole volume, and it gets
+  more expensive the more of the drive is covered, which is exactly why a later quit hurt more. Worse, it could not see
+  the root it followed: the walk leaves its drain to the caller, so those rows and marks were still in the writer's
+  queue. It now runs after a drain, where `run_phase` already asked.
+- **59.4 s of a 66.9 s run (a later build, with the stock-take already fixed) — the branch set.** 20.0 s registering
+  branches, 39.4 s releasing them, and 0.2 s persisting them, so it was the in-memory `Vec` work rather than the
+  database. Every comparison ran `is_strict_descendant`, which allocated two `Vec`s to compare two paths; making it
+  allocation-free took that arm to 20.5 s. The rest is a `Vec` scanned per path, and it is quadratic in the number of
+  branches — the next lever, written up in `crates/cmdr-index/src/indexing/lifecycle/phases/DETAILS.md` § "What a resume
+  costs".
+- **~2.4 ms per root — the `cover()` round trip itself** (claim, branch bracket, walk thread, bootstrap read
+  connection), now divided by the group size (`grouping.rs`: as many roots as the last group's pace says fit in a
+  one-second interleaving budget, capped at 16, and back to one root the moment roots cost real time).
+
+⚠️ **This tree is a stress case, deliberately.** Its quit left 10,000 frontier roots over 50,002 directories (20%);
+David's real `/` left ~4,000 over 603,000 (0.7%). The per-root costs are the same ones; the branch set's quadratic term
+is the part the real drive feels far less of today.
 
 ### What a user sees, and the two defects it exposed
 
