@@ -8,9 +8,9 @@
     "sourceHash": "5e291d7",
     "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
   },
-  "indexing.scan.label": "Analizando tu unidad...",
+  "indexing.scan.label": "Indexando tu unidad...",
   "@indexing.scan.label": {
-    "sourceHash": "e7d6d6a"
+    "sourceHash": "3758d47"
   },
   "indexing.scan.counters": "{entriesText} ítems, {dirsText} dirs",
   "@indexing.scan.counters": {
@@ -32,6 +32,10 @@
   "indexing.run.rescan": "Nuevo análisis completo",
   "@indexing.run.rescan": {
     "sourceHash": "f8cd103"
+  },
+  "indexing.run.firstIndex": "Primer índice",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
   },
   "indexing.run.changeCheck": "Comprobación de cambios",
   "@indexing.run.changeCheck": {
@@ -72,6 +76,10 @@
   "indexing.step.findFilesFirstScan": "Es el primer análisis, así que puede tardar un rato",
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesPhased": "Es la primera pasada, así que tarda un rato. Tus carpetas se pueden buscar en cuanto Cmdr llega a ellas.",
+  "@indexing.step.findFilesPhased": {
+    "sourceHash": "dbeb379"
   },
   "indexing.step.findFilesChangeCheck": "Se está comparando cada carpeta con el índice. Los tamaños de tus carpetas siguen visibles mientras tanto.",
   "@indexing.step.findFilesChangeCheck": {

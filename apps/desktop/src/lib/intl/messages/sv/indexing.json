@@ -8,9 +8,9 @@
     "sourceHash": "5e291d7",
     "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
   },
-  "indexing.scan.label": "Söker igenom din enhet...",
+  "indexing.scan.label": "Indexerar din enhet ...",
   "@indexing.scan.label": {
-    "sourceHash": "e7d6d6a"
+    "sourceHash": "3758d47"
   },
   "indexing.scan.counters": "{entriesText} poster, {dirsText} kat.",
   "@indexing.scan.counters": {
@@ -32,6 +32,10 @@
   "indexing.run.rescan": "Fullständig ny genomsökning",
   "@indexing.run.rescan": {
     "sourceHash": "f8cd103"
+  },
+  "indexing.run.firstIndex": "Första indexeringen",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
   },
   "indexing.run.changeCheck": "Kontroll av ändringar",
   "@indexing.run.changeCheck": {
@@ -72,6 +76,10 @@
   "indexing.step.findFilesFirstScan": "Första genomsökningen, det kan ta en stund",
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesPhased": "Det här är första varvet, så det tar en stund. Dina mappar går att söka i så fort Cmdr når fram till dem.",
+  "@indexing.step.findFilesPhased": {
+    "sourceHash": "dbeb379"
   },
   "indexing.step.findFilesChangeCheck": "Varje mapp jämförs mot indexet. Dina mappstorlekar syns hela tiden medan det pågår.",
   "@indexing.step.findFilesChangeCheck": {

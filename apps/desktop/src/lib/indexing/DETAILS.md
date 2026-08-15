@@ -169,13 +169,21 @@ far we are. The accepted gap: after a reload landing mid-RECONCILE (no scan, no 
 step shows not-yet-active — but in that window the surface isn't rendered at all (no live entry), so it falls back to
 the badge's static "Scanning your drive…" text.
 
-**Run-kind header.** Above the step list the body renders what KIND of run this checklist is — "First full scan" / "Full
-rescan" / "Checking for changes" / "Quick update" (`indexing.run.*`) — via the pure
-`deriveRunLabel(runKind, scanRunKind)` (`indexing-steps.ts`): replay ⇒ update, otherwise the backend's `ScanRunKind`
-maps 1:1, and an unknown kind (mid-scan reload) renders NO header rather than a guessed one. The wrapper reads
-`getVolumeScanRunKind` and passes it down (the body stays presentational). On the badge surface (drive heading off) this
-line doubles as the block's header, answering "is this a full reindex, a change check, or a roll-on?" right in the
-tooltip.
+**Run-kind header.** Above the step list the body renders what KIND of run this checklist is — "First index" / "First
+full scan" / "Full rescan" / "Checking for changes" / "Quick update" (`indexing.run.*`) — via the pure
+`deriveRunLabel(runKind, scanRunKind)` (`indexing-steps.ts`): replay ⇒ update, a PHASED run ⇒ its own `firstIndex`
+header, otherwise the backend's `ScanRunKind` maps 1:1, and an unknown kind (mid-scan reload) renders NO header rather
+than a guessed one.
+
+⚠️ **The phased arm comes before the `ScanRunKind` map, and has to.** A phased run IS `first_scan` by the backend's own
+answer, so without its own arm the header reads "First full scan" over the one run that never makes a full pass — and it
+is the arm that still answers after a mid-scan reload, which every other run kind spends headerless. Same shape one
+level down: `activeStepHintKey` checks `coveredInPhases` BEFORE the rough-first-scan tier, since a phased run matches
+both and the plain hint would promise a wait with nothing arriving during it. The generic badge fallback
+(`indexing.scan.label`) needs no branch at all: it says "Indexing your drive..." rather than "Scanning", which is true
+of a walk in pieces and of one pass alike. The wrapper reads `getVolumeScanRunKind` and passes it down (the body stays
+presentational). On the badge surface (drive heading off) this line doubles as the block's header, answering "is this a
+full reindex, a change check, or a roll-on?" right in the tooltip.
 
 **The change check's own copy.** A `change_check` run swaps one step label and adds one hint, because it behaves
 differently in the way the user actually feels:

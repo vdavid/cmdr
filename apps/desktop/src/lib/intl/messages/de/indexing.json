@@ -8,9 +8,9 @@
     "sourceHash": "5e291d7",
     "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
   },
-  "indexing.scan.label": "Laufwerk wird durchsucht …",
+  "indexing.scan.label": "Dein Laufwerk wird indiziert ...",
   "@indexing.scan.label": {
-    "sourceHash": "e7d6d6a"
+    "sourceHash": "3758d47"
   },
   "indexing.scan.counters": "{entriesText} Einträge, {dirsText} Ordner",
   "@indexing.scan.counters": {
@@ -32,6 +32,10 @@
   "indexing.run.rescan": "Erneuter vollständiger Durchlauf",
   "@indexing.run.rescan": {
     "sourceHash": "f8cd103"
+  },
+  "indexing.run.firstIndex": "Erste Indizierung",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
   },
   "indexing.run.changeCheck": "Prüfung auf Änderungen",
   "@indexing.run.changeCheck": {
@@ -72,6 +76,10 @@
   "indexing.step.findFilesFirstScan": "Erster Durchlauf, das kann eine Weile dauern",
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesPhased": "Das erste Mal, deshalb dauert es etwas. Deine Ordner werden durchsuchbar, sobald Cmdr sie erreicht.",
+  "@indexing.step.findFilesPhased": {
+    "sourceHash": "dbeb379"
   },
   "indexing.step.findFilesChangeCheck": "Jeder Ordner wird mit dem Index verglichen. Deine Ordnergrößen bleiben währenddessen sichtbar.",
   "@indexing.step.findFilesChangeCheck": {

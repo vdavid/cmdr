@@ -8,9 +8,9 @@
     "sourceHash": "5e291d7",
     "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
   },
-  "indexing.scan.label": "Meghajtó átvizsgálása…",
+  "indexing.scan.label": "A meghajtód indexelése...",
   "@indexing.scan.label": {
-    "sourceHash": "e7d6d6a"
+    "sourceHash": "3758d47"
   },
   "indexing.scan.counters": "{entriesText} bejegyzés, {dirsText} mappa",
   "@indexing.scan.counters": {
@@ -32,6 +32,10 @@
   "indexing.run.rescan": "Teljes újbóli átvizsgálás",
   "@indexing.run.rescan": {
     "sourceHash": "f8cd103"
+  },
+  "indexing.run.firstIndex": "Első indexelés",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
   },
   "indexing.run.changeCheck": "Változások ellenőrzése",
   "@indexing.run.changeCheck": {
@@ -72,6 +76,10 @@
   "indexing.step.findFilesFirstScan": "Első átvizsgálás, ez eltarthat egy ideig",
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesPhased": "Ez az első kör, úgyhogy eltart egy ideig. A mappáid akkor válnak kereshetővé, amikor a Cmdr odaér hozzájuk.",
+  "@indexing.step.findFilesPhased": {
+    "sourceHash": "dbeb379"
   },
   "indexing.step.findFilesChangeCheck": "Minden mappa összevetése az indexszel. A mappaméretek közben végig láthatók maradnak.",
   "@indexing.step.findFilesChangeCheck": {

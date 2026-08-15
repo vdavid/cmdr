@@ -8,9 +8,9 @@
     "sourceHash": "5e291d7",
     "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
   },
-  "indexing.scan.label": "正在扫描你的驱动器…",
+  "indexing.scan.label": "正在为你的驱动器建立索引…",
   "@indexing.scan.label": {
-    "sourceHash": "e7d6d6a"
+    "sourceHash": "3758d47"
   },
   "indexing.scan.counters": "{entriesText} 个条目，{dirsText} 个目录",
   "@indexing.scan.counters": {
@@ -32,6 +32,10 @@
   "indexing.run.rescan": "完整重新扫描",
   "@indexing.run.rescan": {
     "sourceHash": "f8cd103"
+  },
+  "indexing.run.firstIndex": "首次建立索引",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
   },
   "indexing.run.changeCheck": "检查更改",
   "@indexing.run.changeCheck": {
@@ -72,6 +76,10 @@
   "indexing.step.findFilesFirstScan": "首次扫描，可能需要一些时间",
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesPhased": "这是第一遍，所以要花点时间。Cmdr 走到哪个文件夹，那个文件夹就能搜了。",
+  "@indexing.step.findFilesPhased": {
+    "sourceHash": "dbeb379"
   },
   "indexing.step.findFilesChangeCheck": "正在将每个文件夹与索引逐一比对。期间你的文件夹大小会一直显示。",
   "@indexing.step.findFilesChangeCheck": {

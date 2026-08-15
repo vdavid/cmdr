@@ -24,7 +24,7 @@ afterAll(() => {
 describe('indexing catalog parity (en)', () => {
   it('resolves the scan labels and counters', () => {
     expect(tString('indexing.status.ariaLabel')).toBe('Drive indexing status')
-    expect(tString('indexing.scan.label')).toBe('Scanning your drive...')
+    expect(tString('indexing.scan.label')).toBe('Indexing your drive...')
     expect(tString('indexing.scan.counters', { entriesText: '12,345', dirsText: '678' })).toBe(
       '12,345 entries, 678 dirs',
     )
@@ -39,6 +39,9 @@ describe('indexing catalog parity (en)', () => {
     expect(tString('indexing.step.catchUp')).toBe('Catch up on recent changes')
     expect(tString('indexing.step.updateIndex')).toBe('Update index')
     expect(tString('indexing.step.findFilesFirstScan')).toBe('First scan, so this can take a while')
+    expect(tString('indexing.step.findFilesPhased')).toBe(
+      'First time through, so this takes a while. Your folders become searchable as Cmdr reaches them.',
+    )
     expect(tString('indexing.step.statusDone')).toBe('Done')
     expect(tString('indexing.step.statusActive')).toBe('In progress')
     expect(tString('indexing.step.statusPending')).toBe('Not started')

@@ -172,7 +172,7 @@
         switch (active?.kind) {
             case 'findFiles':
                 return {
-                    hintKey: activeStepHintKey('findFiles', scanRunKind, scanRough),
+                    hintKey: activeStepHintKey('findFiles', scanRunKind, scanRough, coveredInPhases),
                     subLine: scanDetailLine,
                     progress: scanRough ? null : scanProgress,
                     eta: windowedEta,

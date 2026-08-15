@@ -8,9 +8,9 @@
     "sourceHash": "5e291d7",
     "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
   },
-  "indexing.scan.label": "Đang quét ổ đĩa của bạn...",
+  "indexing.scan.label": "Đang lập chỉ mục ổ đĩa của bạn...",
   "@indexing.scan.label": {
-    "sourceHash": "e7d6d6a"
+    "sourceHash": "3758d47"
   },
   "indexing.scan.counters": "{entriesText} mục, {dirsText} thư mục",
   "@indexing.scan.counters": {
@@ -32,6 +32,10 @@
   "indexing.run.rescan": "Quét lại toàn bộ",
   "@indexing.run.rescan": {
     "sourceHash": "f8cd103"
+  },
+  "indexing.run.firstIndex": "Lập chỉ mục lần đầu",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
   },
   "indexing.run.changeCheck": "Kiểm tra thay đổi",
   "@indexing.run.changeCheck": {
@@ -72,6 +76,10 @@
   "indexing.step.findFilesFirstScan": "Lần quét đầu tiên nên có thể mất một lúc",
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesPhased": "Đây là lượt đầu tiên nên sẽ hơi lâu. Các thư mục của bạn tìm kiếm được ngay khi Cmdr chạy tới chúng.",
+  "@indexing.step.findFilesPhased": {
+    "sourceHash": "dbeb379"
   },
   "indexing.step.findFilesChangeCheck": "Đang so sánh từng thư mục với chỉ mục. Kích thước thư mục của bạn vẫn hiển thị trong lúc này.",
   "@indexing.step.findFilesChangeCheck": {

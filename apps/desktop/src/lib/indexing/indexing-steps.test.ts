@@ -133,8 +133,14 @@ describe('deriveSteps — a drive covered in phases', () => {
     expect(steps.map((s) => s.status)).toEqual(['done'])
   })
 
-  it('keeps the run-kind header, which is the backend answer either way', () => {
-    expect(deriveRunLabel('phased', 'first_scan')).toBe('firstScan')
+  it('gets its own header, ❌ never the full-scan one it would inherit from the backend', () => {
+    // A phased run IS `first_scan` by `ScanRunKind`, so without its own arm the
+    // header would read "First full scan" over the one run that never makes a
+    // full pass.
+    expect(deriveRunLabel('phased', 'first_scan')).toBe('firstIndex')
+    // And it holds even when a mid-run reload lost the backend's answer, which
+    // is the window every other run kind has no header at all in.
+    expect(deriveRunLabel('phased', undefined)).toBe('firstIndex')
   })
 })
 
@@ -228,6 +234,16 @@ describe('activeStepHintKey — the reassuring sub-line under the active step', 
     expect(activeStepHintKey('findFiles', 'first_scan', true)).toBe('indexing.step.findFilesFirstScan')
     expect(activeStepHintKey('findFiles', 'first_scan', false)).toBeNull()
     expect(activeStepHintKey('findFiles', undefined, true)).toBe('indexing.step.findFilesFirstScan')
+  })
+
+  it('tells a phased run what it buys, ❌ never the plain first-scan wait', () => {
+    // A phased run is a first scan by `ScanRunKind` AND rough, so both of the
+    // conditions above match it. Its own hint has to win, or the one run that
+    // hands folders back as it goes promises a wait with nothing arriving.
+    expect(activeStepHintKey('findFiles', 'first_scan', true, true)).toBe('indexing.step.findFilesPhased')
+    expect(activeStepHintKey('findFiles', undefined, false, true)).toBe('indexing.step.findFilesPhased')
+    // A change check still outranks it: that pass is not a first index at all.
+    expect(activeStepHintKey('findFiles', 'change_check', true, true)).toBe('indexing.step.findFilesChangeCheck')
   })
 
   it('hints on the find-files step only', () => {

@@ -55,8 +55,12 @@ export type AggregationSubPhase = 'saving_entries' | 'loading' | 'sorting' | 'co
 export type IndexRunKind = 'local' | 'network' | 'replay' | 'phased'
 
 /** The run-kind header above the checklist: what KIND of run this is, answering
- *  "is this a full scan, a change check, or a quick roll-on?" at a glance. */
-export type IndexRunLabel = 'firstScan' | 'rescan' | 'changeCheck' | 'update'
+ *  "is this a full scan, a change check, or a quick roll-on?" at a glance.
+ *
+ *  `firstIndex` is the phased one and is deliberately NOT called a scan: it
+ *  covers the drive folder by folder in the order their owner cares about, so
+ *  "First full scan" would promise the one thing it never does. */
+export type IndexRunLabel = 'firstIndex' | 'firstScan' | 'rescan' | 'changeCheck' | 'update'
 
 /**
  * Derive the run-kind header for one volume's checklist, or `null` when the scan
@@ -69,6 +73,10 @@ export type IndexRunLabel = 'firstScan' | 'rescan' | 'changeCheck' | 'update'
  */
 export function deriveRunLabel(runKind: IndexRunKind, scanRunKind: ScanRunKind | undefined): IndexRunLabel | null {
   if (runKind === 'replay') return 'update'
+  // A phased run has its own header whatever the backend calls the run: it IS a
+  // first scan by `ScanRunKind`, and calling it a full one would describe a pass
+  // this drive never makes.
+  if (runKind === 'phased') return 'firstIndex'
   if (scanRunKind == null) return null
   return scanRunKindToLabel[scanRunKind]
 }
@@ -81,6 +89,7 @@ const scanRunKindToLabel: Record<ScanRunKind, IndexRunLabel> = {
 
 /** The user-facing label key for each run-kind header (resolved via `tString` at render). */
 export const runLabelToLabelKey: Record<IndexRunLabel, MessageKey> = {
+  firstIndex: 'indexing.run.firstIndex',
   firstScan: 'indexing.run.firstScan',
   rescan: 'indexing.run.rescan',
   changeCheck: 'indexing.run.changeCheck',
@@ -191,19 +200,26 @@ export const stepKindToLabelKey: Record<IndexStepKind, MessageKey> = {
 /**
  * The reassuring sub-line under the ACTIVE step, or `null` when it needs none.
  *
- * Only the find-files step has one, and the two cases answer different worries:
- * a change check is slow but leaves folder sizes on screen (say so, or a
- * 20-minute bar looks like something is wrong), while a first scan has no
- * trustworthy estimate at all (say that instead of showing a stuck-looking
- * count).
+ * Only the find-files step has one, and the three cases answer different
+ * worries: a change check is slow but leaves folder sizes on screen (say so, or
+ * a 20-minute bar looks like something is wrong), a phased first index is slow
+ * but hands the drive back in pieces as it goes (which is the whole point, and
+ * invisible unless it's said), and a plain first scan has no trustworthy
+ * estimate at all (say that instead of showing a stuck-looking count).
+ *
+ * ❌ The phased case is checked BEFORE the rough-first-scan one: a phased run is
+ * a first scan by the backend's own `ScanRunKind`, so the plain hint would win
+ * and promise a wait with nothing arriving during it.
  */
 export function activeStepHintKey(
   step: IndexStepKind,
   scanRunKind: ScanRunKind | undefined,
   roughFirstScan: boolean,
+  coveredInPhases = false,
 ): MessageKey | null {
   if (step !== 'findFiles') return null
   if (scanRunKind === 'change_check') return 'indexing.step.findFilesChangeCheck'
+  if (coveredInPhases) return 'indexing.step.findFilesPhased'
   return roughFirstScan ? 'indexing.step.findFilesFirstScan' : null
 }
 

@@ -14,9 +14,9 @@
     "screenshot": "indexing-checklist.png"
   },
 
-  "indexing.scan.label": "Scanning your drive...",
+  "indexing.scan.label": "Indexing your drive...",
   "@indexing.scan.label": {
-    "description": "Generic scanning fallback shown on the drive''s badge for ANY scan (first or repeat) before live progress activity arrives. The trailing '...' signals ongoing work; keep it.",
+    "description": "Generic fallback shown on the drive''s badge for ANY indexing run (a first index covered folder by folder, a full scan, or a repeat check) before live progress activity arrives. It says ''indexing'' rather than ''scanning'' because a first index no longer makes one pass over the drive. The trailing '...' signals ongoing work; keep it.",
     "screenshot": "indexing-status.png"
   },
 
@@ -46,6 +46,12 @@
     "placeholders": {
       "eta": "the formatted time-remaining phrase, e.g. '2m left'"
     }
+  },
+
+  "indexing.run.firstIndex": "First index",
+  "@indexing.run.firstIndex": {
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr is building this drive''s first index by covering it folder by folder, in the order their owner is likely to care about, rather than in one pass. Deliberately not called a scan: it hands the drive back in pieces as it goes, so ''First full scan'' would promise the one thing it never does. Short noun phrase, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.run.firstScan": "First full scan",
@@ -106,6 +112,12 @@
     "placeholders": {
       "countText": "number of files and folders found so far, already formatted (e.g. 171,607)"
     },
+    "screenshot": "indexing-checklist.png"
+  },
+
+  "indexing.step.findFilesPhased": "First time through, so this takes a while. Your folders become searchable as Cmdr reaches them.",
+  "@indexing.step.findFilesPhased": {
+    "description": "Reassuring sub-line under the active ''Find files'' checklist step while Cmdr builds a drive''s first index folder by folder. Two short sentences: the first sets the expectation that it is slow, the second says the payoff that makes the wait different from a plain first scan — the drive comes back in pieces, so searching and folder sizes start working before the whole thing is done. Calm and friendly; sentence case; no trailing period on the second sentence. ''Cmdr'' is the product name and stays as-is.",
     "screenshot": "indexing-checklist.png"
   },
 
