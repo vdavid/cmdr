@@ -24,6 +24,11 @@ where the user is looking; `completion.rs` the two stamps and what completing ow
   the verifier's.** ❌ Never `mgr.scanning`: `cover_context_for` returns `None` under it, so our own walks would fail.
 - **One `cover()` per frontier root, joined**, with the drain batched to once per phase. ❌ Don't hand one call a whole
   frontier: the cancel check inside `cover` is not a queue check point.
+- **Every walk is bracketed by `CoverageBranchStarted` / `CoverageBranchEnded`**, and the end fires on EVERY exit path,
+  cancels included: a listing marks rows in flux on the start and has nothing else to take that back. The run announces
+  itself once with `ScanStarted { covered_in_phases: true }`, which is how a host tells this from a walk that takes the
+  volume whole. ❌ No debounce here — how long the UI waits before believing a walk is the app's call
+  (`events/index_mapping/walk_announcer.rs`).
 - **`home_covered_at` drives exactly ONE subscriber** (the media + importance early kick) and ❌ nothing else — not
   freshness, not the badge, not rescan routing. `~/Library` goes last in its phase and the signal doesn't wait for it.
 - **Ask the host through the seams it already has**: `priority_roots` (an ORDER, never a scope) and `open_listings` on

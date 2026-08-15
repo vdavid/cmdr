@@ -20,10 +20,11 @@ the same idea from the other direction: it now sits in `sink.rs` beside the `Ind
 The index subsystems say what happened; the app decides what a human sees. A subsystem builds an `IndexEvent` and hands
 it to an injected `EventSink`. Nothing here names a wire format, an event name, or a sentence.
 
-`IndexEvent` has 17 variants. Fifteen become frontend events (`ScanStarted`, `ScanProgress`, `ScanComplete`,
-`ScanAborted`, `DirsUpdated`, `ReplayProgress`, `ReplayComplete`, `RescanScheduled`, `AggregationProgress`,
-`AggregationComplete`, `MemoryWarning`, `FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`,
-`MediaEnrichTerminal`). Two reach the host's own machinery instead:
+`IndexEvent` has 19 variants. Seventeen become frontend events (`ScanStarted`, `CoverageBranchStarted`,
+`CoverageBranchEnded`, `ScanProgress`, `ScanComplete`, `ScanAborted`, `DirsUpdated`, `ReplayProgress`,
+`ReplayComplete`, `RescanScheduled`, `AggregationProgress`, `AggregationComplete`, `MemoryWarning`,
+`FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`, `MediaEnrichTerminal`). Two reach the host's own machinery
+instead:
 
 - **`Error { report: IndexErrorReport }`** — a failure worth an error report, described by what broke rather than by the
   sentence someone would write about it: `MemoryWatchdog` (action, footprint, limit, escalation, the breakdown),
@@ -33,6 +34,12 @@ it to an injected `EventSink`. Nothing here names a wire format, an event name, 
   The backtrace is still the failure's, not the mapper's — `emit` is a synchronous call from the failing code.
 - **`PathAccessDenied { path }`** — the scanner hit an OS denial. The app decides whether it's TCC-restricted and worth
   the sidebar's "limited by macOS" styling.
+
+**The coverage-branch pair brackets one walk over one branch**, and only a run that announced itself with
+`ScanStarted { covered_in_phases: true }` emits it. The end goes out on every exit path (covered, left to another walk,
+cancelled), because a consumer that marked rows in flux on the start has nothing else to take that back. ❌ The crate
+does NOT decide how long a walk has to run before it's worth announcing — that's the host's presentation call, and it
+lives in the app's `events/index_mapping/walk_announcer.rs`.
 
 `IndexEventKind` is the payload-free twin, so a test can assert the SHAPE of a stream
 (`[ScanStarted, ScanProgress, ScanComplete]`) without spelling out fields. Its `ALL` array is complete by construction,

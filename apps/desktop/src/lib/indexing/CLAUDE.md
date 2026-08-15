@@ -42,9 +42,19 @@ API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or `codeg
   the second step's wording, and the find-files hint. DETAILS § Run-kind header.
 - **Scan progress has two tiers** (`computeScanProgress`): each tier uses a specific counter as BOTH numerator and ETA
   window sample — don't mix them (swapping counter and denominator ships wrong ETAs). Tiers + clamps: DETAILS.md.
-- **`getEntriesScanned` stays `root`-only** (SearchDialog's index-build progress). The per-folder size hourglass is
-  PER-VOLUME (`isVolumeScanning` / `isVolumeAggregating`), so a scan on drive B never flags drive A. Only the corner
-  hourglass is global (`isAnyVolumeIndexing()`); don't reintroduce a global `isScanning()`.
+- **`getEntriesScanned` stays `root`-only** (SearchDialog's index-build progress). Only the corner hourglass is global
+  (`isAnyVolumeIndexing()`); don't reintroduce a global `isScanning()`.
+- **The per-folder size hourglass keys on GROUND BEING WALKED, ❌ never "the volume is scanning".** A drive covered in
+  phases is "scanning" for its whole first index (146 s measured) while only one branch at a time can move a size, so
+  the volume-wide flag put an hourglass on every row for the whole run. `getWalkedGround(volumeId)` +
+  `isPathAffectedByWalk` (in `walked-ground.ts`) is the per-row answer, and the test is **bidirectional**: the roll-up
+  repairs the ancestor chain, so a walk BELOW a row moves that row too. Four consumers must move together — `FullList`,
+  `BriefList`, `SelectionInfo`, and `views/measure-column-widths.ts`, which takes the pane's own per-row function so
+  reserved width and drawn glyph can't disagree.
+- **The walked-ground map is written when the GROUND moves, never per progress tick**: a `.set` per tick would re-run
+  the membership `$derived` for every visible row twice a second. Walk counters stay on `activity`.
+- **A phased run's checklist is ONE step** (`IndexRunKind: 'phased'`, from `isVolumeCoveredInPhases`): it writes sizes as
+  it walks, so the save / compute / catch-up steps never separately happen and would sit pending for the whole run.
 - **The indicator is a focusable, hoverable icon** (`role="img"`, `tabindex="0"`), not `pointer-events: none`; detail
   lives in a hover/focus tooltip carrying the live label + ETA via `aria-describedby`. Not `role="status"` (a live
   region is wrong for a focusable hover target).

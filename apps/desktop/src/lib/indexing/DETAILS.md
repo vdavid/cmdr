@@ -77,6 +77,9 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
   create/replace the volume's `activity` entry (`phase: 'scanning'`, `scanStartedAt = Date.now()`, stash the
   calibration), and stamp the volume's `scanRunKind` from the payload. The prior totals are the backend's PER-KIND
   calibration (a change check is timed off the last change check), so the tier-1 ETA no longer mixes the two walks.
+  `coveredInPhases` seeds the volume's walked ground: `false` marks the WHOLE drive in flux for the run (a full rebuild,
+  every SMB/MTP scan, and nothing else follows), `true` marks nothing until a branch event names ground. The same field
+  rides `get_index_status`, so a mid-run window reload recovers it instead of falling back to the whole drive.
 - **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update that volume's counters
   (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
 - **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry.
@@ -86,6 +89,13 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
   leaves a stuck "scanning" row in the corner and the badge tooltip. Carries no completion facts (it isn't a finished
   index). The badge dot color is handled separately by the manager's freshness subscription. Emitted by
   `network_scan.rs`'s disconnect (→ Stale) and cancel/fail (→ not-indexed) arms.
+- **`index-coverage-branch-started`** (`{ volumeId, roots }`): a branch of this drive went under the walker, so the
+  folder sizes inside it (and above it) can move. Replaces the volume's walked-ground roots. Already debounced by one
+  second in the backend (`events/index_mapping/walk_announcer.rs`), which is why the frontend holds no timers: a walk
+  that finishes inside a second sends nothing at all.
+- **`index-coverage-branch-ended`** (`{ volumeId, roots }`): SUBTRACTS those roots from the volume's walked ground.
+  Subtract rather than clear, so a later overlap can't take an unrelated branch's hourglass with it. Never held back,
+  and the terminal scan events drop the volume's entry outright.
 - **`index-rescan-notification`** (`{ volumeId, reason, details }`): show an info toast with a reason-specific message.
 - **`index-replay-progress`** (`{ volumeId, eventsProcessed, estimatedTotal }`): create/replace the volume's `activity`
   entry as `phase: 'replaying'`, update counters.
