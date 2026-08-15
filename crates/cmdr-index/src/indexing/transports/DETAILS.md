@@ -37,12 +37,12 @@ hold, and the master switch outranks both per-drive ones:
 
 - **The master drive-indexing switch is on** (`indexing.enabled`). Canonical model: `../lifecycle/DETAILS.md` § The two
   indexing switches. Missing this check is what let a NAS re-index itself at every launch despite the setting being off.
-- **The user turned this share ON** — the sticky `user_enabled` meta marker, read off a short-lived READ-ONLY
-  connection (never the delete-and-recreate `open`). A never-enabled share has no such DB, so it's never indexed
-  uninvited; a share whose FIRST index the disconnect interrupted does come back, which is the point. `Index::start_volume`
-  writes it for every transport, so ❌ nothing SMB-side records intent. (`persisted_scan_completed` is the third arm,
-  for indexes enabled before the marker existed. ❌ Never read it as the enable: it's absent all through a first index
-  and all through every rescan.)
+- **The user turned this share ON** — the sticky `user_enabled` meta marker, read off a short-lived READ-ONLY connection
+  (never the delete-and-recreate `open`). A never-enabled share has no such DB, so it's never indexed uninvited; a share
+  whose FIRST index the disconnect interrupted does come back, which is the point. `Index::start_volume` writes it for
+  every transport, so ❌ nothing SMB-side records intent. (`persisted_scan_completed` is the third arm, for indexes
+  enabled before the marker existed. ❌ Never read it as the enable: it's absent all through a first index and all
+  through every rescan.)
 - **The user hasn't turned indexing OFF** — the sticky `user_disabled` meta marker is absent. `disable_drive_index`
   KEEPS the DB (so a re-enable resumes fast) but writes this marker via `state::disable_drive_index_persist_intent`, so
   a reconnect never turns back on what the user turned off. Re-enabling withdraws it in the same write that records the

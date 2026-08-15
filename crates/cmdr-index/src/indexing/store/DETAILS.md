@@ -15,9 +15,9 @@ Four leaf layers carry no `IndexStore` methods at all:
 
 - `schema.rs`: `SCHEMA_VERSION`, the `meta` key constants (`CURRENT_EPOCH_KEY`, `LEDGER_HEAL_KEY`,
   `SYSTEM_DIR_EXCLUSIONS_KEY`, `EXCLUSION_POLICY_KEY`, `USER_ENABLED_KEY` / `USER_DISABLED_KEY`), `ROOT_ID` /
-  `ROOT_PARENT_ID`, the table DDL (integer-keyed
-  entries with `name_folded` on all platforms, `inode` for hardlink dedup, `dir_stats` by entry_id, `meta`),
-  `create_tables` / `ensure_root_sentinel` / `reset_schema`, and `apply_pragmas`.
+  `ROOT_PARENT_ID`, the table DDL (integer-keyed entries with `name_folded` on all platforms, `inode` for hardlink
+  dedup, `dir_stats` by entry_id, `meta`), `create_tables` / `ensure_root_sentinel` / `reset_schema`, and
+  `apply_pragmas`.
 - `errors.rs`: `IndexStoreError` and its SQLite classification (fatal / transient / corruption / primary-key conflict),
   the typed `IndexFailure` the `Failed` phase carries, and `UnreadableCause`.
 - `paths.rs`: `resolve_scan_root`, `resolve_path`, `resolve_path_under`, `reconstruct_path`,
