@@ -303,15 +303,21 @@ impl Lcg {
         Self(seed)
     }
 
-    /// A number in `0..=max`, skewed towards the small end so most directories are
-    /// small and a few are wide.
+    /// A number in `0..=max`, weighted towards the wide end so a breadth-first
+    /// tree keeps growing to its budget instead of dying out at depth three.
     fn upto(&mut self, max: u64) -> u64 {
-        self.0 = self.0.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        self.0 = self
+            .0
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         let roll = (self.0 >> 33) % (max + 1);
         // Two rolls, taking the larger: same range, weighted towards the wide end,
         // which is what keeps a breadth-first tree growing to its budget instead of
         // dying out at depth three.
-        self.0 = self.0.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        self.0 = self
+            .0
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         roll.max((self.0 >> 33) % (max + 1))
     }
 }
