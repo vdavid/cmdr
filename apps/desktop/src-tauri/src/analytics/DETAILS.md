@@ -143,6 +143,8 @@ stream); the fourth is the frontend's, because only it knows what is on screen.
   running on that drive?). Fires on the first window of rows carrying a real `recursiveSize`, at most once per launch.
   This is the wow moment itself: not "the index finished", which nobody watches, but "I opened a folder and it told me
   how big it is". `covering` is what keeps a machine indexed weeks ago from drowning the measurement in zeroes.
+  ⚠️ Full-list mode only (Brief mode has no size column), so its denominator is launches that opened a folder in Full
+  mode, ❌ not launches.
 
 **The interruption rate is a RATIO, not an event.** How often a first index never finishes is
 `1 - first_index_completed / first_index_started`. ❌ Don't add a terminal "interrupted" event: a run that ends with the

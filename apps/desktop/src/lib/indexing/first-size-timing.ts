@@ -15,6 +15,12 @@
  *
  * Fires at most ONCE per launch, and goes inert the moment it has: everything
  * after the first hit is one boolean. ❌ Nothing here carries a path or a name.
+ *
+ * ⚠️ **Full-list mode only**, because it is fed by `full-list-cache.svelte.ts` and
+ * Brief mode has no size column to read. A session spent entirely in Brief mode
+ * therefore reports nothing rather than reporting a wrong number, which is the
+ * right failure — but it means the event's denominator is launches that opened a
+ * folder in Full mode, ❌ not launches.
  */
 
 import { trackEvent } from '$lib/tauri-commands'

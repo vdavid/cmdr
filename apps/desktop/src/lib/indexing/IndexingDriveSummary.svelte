@@ -10,6 +10,7 @@
     import {
         getVolumePhase,
         getVolumeScanRunKind,
+        isVolumeCoveredInPhases,
         type VolumeIndexActivity,
         type AggregationActivity,
     } from './index-state.svelte'
@@ -36,8 +37,18 @@
 
     const phase = $derived(getVolumePhase(activity.volumeId))
     const isNetwork = $derived(isNetworkIndexRun(activity.volumeId, getVolumes()))
+    // Same ladder the expanded row uses, phased arm included: a run covered in
+    // pieces produces ONE step, and the four-step local list would leave three of
+    // them pending for the whole run.
+    const coveredInPhases = $derived(isVolumeCoveredInPhases(activity.volumeId))
     const runKind = $derived<IndexRunKind>(
-        activity.phase === 'replaying' ? 'replay' : isNetwork ? 'network' : 'local',
+        activity.phase === 'replaying'
+            ? 'replay'
+            : coveredInPhases
+              ? 'phased'
+              : isNetwork
+                ? 'network'
+                : 'local',
     )
     const aggSubPhase = $derived(aggregation?.phase as AggregationSubPhase | undefined)
     // The run kind only picks the step LABELS here (a change check updates the
