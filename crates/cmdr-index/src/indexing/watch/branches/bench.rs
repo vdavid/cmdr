@@ -46,7 +46,7 @@ fn branch_set_cost() {
     );
     for &width in WIDTHS {
         let paths = frontier(width);
-        let watch = BranchWatch::with_branches(Vec::new());
+        let watch = BranchWatch::default();
 
         let start = Instant::now();
         watch.begin_covering(&paths);
@@ -64,54 +64,88 @@ fn branch_set_cost() {
         );
     }
 
-    let _ = writeln!(&mut out, "\n── admitting {CHURN_EVENTS} events ──");
-    let _ = writeln!(
-        &mut out,
-        "{:>9}  {:>12}  {:>10}  {:>28}",
-        "branches", "elapsed", "µs/event", "events/s"
-    );
-    for &width in WIDTHS {
-        let (elapsed, admitted) = admission_cost(width);
+    for landing in [Landing::InsideABranch, Landing::OutsideEveryBranch] {
+        let _ = writeln!(&mut out, "\n── admitting {CHURN_EVENTS} events {} ──", landing.describe());
         let _ = writeln!(
             &mut out,
-            "{width:>9}  {elapsed:>12.2?}  {:>10.2}  {:>28.0}",
-            elapsed.as_secs_f64() * 1e6 / CHURN_EVENTS as f64,
-            CHURN_EVENTS as f64 / elapsed.as_secs_f64(),
+            "{:>9}  {:>12}  {:>10}  {:>28}",
+            "branches", "elapsed", "µs/event", "events/s"
         );
-        assert_eq!(admitted, CHURN_EVENTS, "every event should have been processed");
+        for &width in WIDTHS {
+            let elapsed = admission_cost(width, landing);
+            let _ = writeln!(
+                &mut out,
+                "{width:>9}  {elapsed:>12.2?}  {:>10.2}  {:>28.0}",
+                elapsed.as_secs_f64() * 1e6 / CHURN_EVENTS as f64,
+                CHURN_EVENTS as f64 / elapsed.as_secs_f64(),
+            );
+        }
     }
 }
 
-/// One `admit` per event against a settled set of `width` branches, with the
-/// events spread evenly over them: the shape a churn burst has once a phase's
-/// walks have finished and the volume is being kept current.
-fn admission_cost(width: usize) -> (Duration, usize) {
+/// Where a churn burst's events land relative to the covered ground. Both are
+/// the live hot path, and on a branch-watched volume the second is the common
+/// one: most of a drive is ground no walk went near.
+#[derive(Clone, Copy)]
+enum Landing {
+    InsideABranch,
+    OutsideEveryBranch,
+}
+
+impl Landing {
+    fn describe(self) -> &'static str {
+        match self {
+            Self::InsideABranch => "inside the branches",
+            Self::OutsideEveryBranch => "outside every branch",
+        }
+    }
+}
+
+/// One `admit` per event against a settled set of `width` branches: the shape a
+/// churn burst has once a phase's walks have finished and the volume is being
+/// kept current.
+fn admission_cost(width: usize, landing: Landing) -> Duration {
     let paths = frontier(width);
-    let watch = BranchWatch::with_branches(Vec::new());
+    let watch = BranchWatch::default();
     watch.begin_covering(&paths);
     watch.finish_covering(&paths, AfterWalk::Watch);
 
     // Built up front so the loop times admission and not string formatting.
     let events: Vec<FsChangeEvent> = (0..CHURN_EVENTS)
-        .map(|i| FsChangeEvent {
-            path: format!("{}/churn-{i}.o", paths[i % paths.len()]),
-            event_id: i as u64,
-            flags: FsEventFlags {
-                item_modified: true,
-                item_is_file: true,
-                ..FsEventFlags::default()
-            },
+        .map(|i| {
+            let inside = &paths[i % paths.len()];
+            let path = match landing {
+                Landing::InsideABranch => format!("{inside}/churn-{i}.o"),
+                // Same depth and the same long shared prefix, one component off
+                // the covered ground.
+                Landing::OutsideEveryBranch => inside.replace("/dist/", "/untouched/"),
+            };
+            FsChangeEvent {
+                path,
+                event_id: i as u64,
+                flags: FsEventFlags {
+                    item_modified: true,
+                    item_is_file: true,
+                    ..FsEventFlags::default()
+                },
+            }
         })
         .collect();
 
-    let mut admitted = 0;
+    let expected = match landing {
+        Landing::InsideABranch => Admission::Process(Vec::new()),
+        Landing::OutsideEveryBranch => Admission::Discarded,
+    };
+    let mut seen = 0;
     let start = Instant::now();
     for event in events {
-        if let Admission::Process(events) = watch.admit(event, Reach::CoveredBranches) {
-            admitted += events.len();
+        if std::mem::discriminant(&watch.admit(event, Reach::CoveredBranches)) == std::mem::discriminant(&expected) {
+            seen += 1;
         }
     }
-    (start.elapsed(), admitted)
+    let elapsed = start.elapsed();
+    assert_eq!(seen, CHURN_EVENTS, "every event should have taken the arm being measured");
+    elapsed
 }
 
 /// `count` disjoint frontier roots, deep and sharing long prefixes: the shape a
