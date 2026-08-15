@@ -261,8 +261,8 @@ concept over the `Volume` trait: it covers ONE frontier node that `Index::covera
 to a live consumer while filling the index. Its driver is `lifecycle/cover/`, which picks between it and the local
 guarded walker by volume kind and owns the frontier loop, the claims, and the session bracket. It keeps every round-trip
 discipline above (cancel per round trip, `LIST_TIMEOUT` racing the JOIN handle, autoreleasepool, typed-disconnect and
-consecutive-failure backstops, `ScanPacer`, the NAS system-dir skip) and diverges from the two whole-volume walks in
-exactly four places, all of them consequences of a person having asked:
+consecutive-failure backstops, `ScanPacer`, the NAS system-dir skip) and diverges from the two whole-volume walks in the
+places below, all of them consequences of a person having asked:
 
 - **Scoped root.** The root resolves through `space.index_relative` + `resolve_scan_root(.., false)` to its own entry
   id, never `ROOT_ID`, and the BFS carries `(path, id)` pairs the way the reconcile walk does.
@@ -300,36 +300,74 @@ exactly four places, all of them consequences of a person having asked:
 - **No empty-root refusal.** `VolumeScanError::EmptyRoot` exists because a share that lists empty is a glitch, and a
   false "complete" strands the whole index. An empty FOLDER is an ordinary thing to search, and refusing to mark it
   would hand it back to every later search forever, so the cover walk marks it listed and moves on.
+- **A directory it couldn't read is stamped `Abandoned`, but only once the share proves it was still there.** The
+  section below is the whole rule; it's the one divergence that exists because a SHARE can fail the way a directory
+  does, rather than because a person asked.
 
-Tests live with the driver (`lifecycle/cover/network_tests.rs`), over an `InMemoryVolume`, because what they pin is the
-walk's contract with a backend rather than anything SMB- or MTP-specific.
+Tests live with the driver, over an `InMemoryVolume`, because what they pin is the walk's contract with a backend rather
+than anything SMB- or MTP-specific: `lifecycle/cover/network_tests.rs` for the walk, and
+`lifecycle/cover/network_give_up_tests.rs` for what it does with a directory it couldn't read.
 
-### A failed listing leaves no cause (known bug)
+### A failed listing is held until the share answers again
 
-⚠️ **A directory whose listing FAILS is left plain unlisted with no `unreadable_cause`** (the `Err(err)` arm of the BFS
-loop). So `coverage_for_scope` puts it back in the frontier, and every later search over an ancestor scope hands it to a
-walk that re-pays the same failing listing, forever, with nothing converging. On a NAS that went to sleep this fires
-more readily than the local equivalent does.
+A directory whose listing FAILS (the `Err(err)` arm of the BFS loop) is eventually stamped
+`unreadable_cause = Abandoned`, which takes it off the coverage frontier and puts it on the persisted per-volume retry
+backoff. Without a cause it would stay frontier, and every later search over an ancestor scope would hand it to a walk
+that re-pays the same failing listing, forever, with nothing converging — over a share that is up to `LIST_TIMEOUT` (120
+s) per directory per search, eight times what the local walker pays for the identical mistake (the local half measured
+1,497 `ETIMEDOUT` directories at 101 s of a 147 s walk, `docs/notes/phased-vs-bulk-index-2026-08-14.md`). The cause, the
+writer message, the arming, and the coverage bucket are all shared with the local walker and needed nothing new for this
+side; the canonical description of the three causes is `../store/DETAILS.md` § "What coverage needs".
 
-**This is the same defect the LOCAL walker had until 2026-08-14**, where it was measured at 101 s of a 147 s walk on a
-machine with a wedged mount (`docs/notes/phased-vs-bulk-index-2026-08-14.md`). The local half was fixed with
-`UnreadableCause::Abandoned` plus a retry backoff; the cause, the writer message (`ClearAbandonedIfDue`), the arming,
-and the coverage bucket are all shared and need nothing new to serve this side. The canonical description of the three
-causes is `../store/DETAILS.md` § "What coverage needs".
+⚠️ **The mark is NOT written when the failure happens, because at that moment the walk can't tell whose failure it is.**
+Two different things wear one shape in that arm and they want opposite answers:
 
-❌ **It was deliberately NOT ported, because a mechanical port would be wrong.** Two different failures wear one shape
-here and they want opposite answers:
+- **One directory that won't list** while the share is otherwise healthy. `Abandoned` is right: stop offering it, retry
+  it on the backoff.
+- **The share itself going away**, which fails listings one directory at a time through the SAME arm. Marking those
+  would condemn every directory the walk had queued — potentially thousands — for a disconnect that heals the moment the
+  NAS wakes up, and a hole that big is worse than the re-paid listing the mark exists to save. The abandoned ground
+  would then be invisible to search until a retry window that grows to 24 h reopened it.
 
-- **One directory that won't list** while the share is otherwise healthy. That's the local case, and `Abandoned` is
-  right: stop offering it, retry it on the backoff.
-- **The share itself going away**, which reaches the same `Err` arm and only becomes distinguishable after
-  `CONSECUTIVE_FAILURE_ABORT` failures in a row (`VolumeScanError::ConsecutiveFailures`). Marking those `Abandoned`
-  would condemn every directory the walk touched on the way down — potentially thousands — for a disconnect that heals
-  the moment the NAS wakes up. ❌ Never.
+**Decision/Why the boundary is "the share answered again", not "the walk survived".** A give-up is HELD in
+`CoverWrites::unproven` and only joins `abandoned` when a LATER listing succeeds — that success is the share answering
+after this directory wouldn't, which is the only evidence available that the failure was the directory's. Two things
+fall out of it:
 
-So the open question is where the boundary sits, and specifically whether the abort path should UNWIND the marks it made
-before it tripped or never make them until the walk proves it survived. That's a design decision with its own tests over
-the SMB fixtures, ❌ not a five-line change. It's deliberately still open, and this section is the record of it.
+- **Nothing branches on how the walk ended.** `finish` stamps exactly the proven set on every exit — clean, cancel,
+  unlistable root, typed disconnect, consecutive-failure abort — and drops whatever is unproven. ❌ Don't add an
+  exit-path case here; a new one would silently disagree with the others.
+- **A share can go away without the walk ever concluding it did.** A small scope's queue runs dry after a handful of
+  failures, so the walk ends REPORTING the scope covered over a share that isn't there. A rule keyed on the abort would
+  write off every one of those directories, and `a_share_that_goes_away_with_little_left_to_walk_gives_up_on_nothing` is
+  the test that rules it out. Cancelling is the same shape: a stalled search is one a person stops long before the
+  backstop has seen 32 failures.
+
+A walk that DOES conclude the share went away (a typed `DeviceDisconnected`, or `CONSECUTIVE_FAILURE_ABORT`) calls
+`share_went_away`, which drops the PROVEN give-ups too: under the concurrency pump a success can return after a failure
+purely because it was already on the wire when the session dropped, so up to a budget's worth of "proof" is suspect the
+moment the share is.
+
+**Decision/Why hold rather than mark-and-unwind.** Marking as the walk goes and deleting the marks on an abort costs
+everything holding costs (the walk remembers the same ids either way) plus a repair path: a second writer message that a
+crash, a dead writer, or a new exit path can skip, leaving the database holding exactly the damage the rule exists to
+prevent, at exactly the moment the app is least healthy. It would also make the condemned share readable by a search
+running concurrently with the walk, since coverage reads through its own connection. Holding has no window to be wrong
+in, and a killed process writes nothing — "we learned nothing" is the honest default, and the failed directories stay
+frontier exactly as they do today.
+
+**Decision/Why a share's permission denial is `Abandoned` and not `Denied`.** `VolumeError::PermissionDenied` from a
+share is a server-side ACL, and `Denied`'s whole meaning downstream is "the user can fix this by granting Full Disk
+Access" — advice that does nothing over SMB. The cost of the softer answer is one round trip per backoff window
+(converging on 24 h) against a folder that will keep refusing, which is negligible. This matches `../store/DETAILS.md`'s
+"one `Abandoned` for all three producers, ❌ don't split by errno".
+
+**Why the tests run over an `InMemoryVolume` and not the Docker SMB fixtures.** `smb-consumer-flaky` cycles 5 s up / 5 s
+down on its own schedule, so a test over it can neither place a disconnect at a chosen point in the walk nor tell a
+"nothing was marked" pass from a run that never hit the down window; and the `cmdr-index` crate has no SMB backend at
+all (the Docker servers are reached only from the app crate). What these tests pin is the walk's contract with A
+backend, which is why `going_away_after` fails with an untyped `IoError` rather than `DeviceDisconnected`: the typed
+variant has its own arm and would prove nothing about the one that matters.
 
 ## Reconcile
 

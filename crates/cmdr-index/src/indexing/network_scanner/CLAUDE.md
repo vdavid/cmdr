@@ -22,9 +22,10 @@ the per-volume paced listing budget, `system_dirs.rs` the non-recursed NAS dirs 
   needs neither the virgin-root nor the empty-root refusal. `DETAILS.md` § "The scoped cover walk".
 - **This scanner NEVER writes `scan_completed_at`**; the completion handler does, on a clean finish only and never on an
   empty root: a false "complete" permanently strands the index.
-- ⚠️ **KNOWN BUG: a failed listing gets no `unreadable_cause`**, so every later search re-pays it (the local walker's
-  fixed twin). ❌ Don't port `Abandoned` mechanically: a whole-share disconnect reaches the same arm and would condemn
-  thousands of dirs. `DETAILS.md` § "A failed listing leaves no cause".
+- **A failed listing is HELD, and becomes `Abandoned` only once a LATER listing succeeds.** A share dropping its session
+  fails dirs one at a time through the same arm, and marking there would condemn thousands for a disconnect that heals
+  on wake. ❌ Never mark at the point of failure, ❌ never branch on how the walk ended: `finish` stamps the proven set
+  on every exit and drops the rest. `DETAILS.md` § "A failed listing is held until the share answers again".
 - **The listing budget is PACED per volume, not constant** (`scan_pace.rs`, all three walks): browsing the share or a
   transfer on it drops it 64 → 1, so higher-priority work isn't queued behind the walk. ❌ Never let it reach 0 —
   one-at-a-time is what makes forward progress structural. Signals arrive once per top-up, ❌ never per entry.

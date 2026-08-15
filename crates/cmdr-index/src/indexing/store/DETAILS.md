@@ -101,10 +101,12 @@ machine, 101 s of a 147 s walk (`docs/notes/phased-vs-bulk-index-2026-08-14.md`)
 converged, because nothing about the next walk was different. Recording it and retrying on a backoff is the same retry
 at a price worth paying.
 
-**One `Abandoned` for all three producers**, because nothing downstream branches on which fired: the coverage verdict,
+**One `Abandoned` for every producer**, because nothing downstream branches on which fired: the coverage verdict,
 completion, and the heal all want the same answer from each. ❌ Don't split by errno either — `ETIMEDOUT` on a wedged
 mount and `ENOENT` on a directory that vanished mid-walk both want "stop offering this", and the vanished row is the
-watcher's to delete anyway.
+watcher's to delete anyway. The three local producers are above; the fourth is the trait-scanned cover walk, whose
+failed listing carries the same cause under one extra condition, because on a share the SHARE can fail the way a
+directory does (`../network_scanner/DETAILS.md` § "A failed listing is held until the share answers again").
 
 The local walk stamps the column with `MarkDirsUnreadable`, one message per cause, sent AFTER `visitor.finish()` so
 every `MarkDirsListed` it earned is already ahead of it on the writer channel. `mark_dirs_listed` CLEARS the column in
