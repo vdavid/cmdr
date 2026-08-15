@@ -6,7 +6,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
-use super::state::{INDEX_REGISTRY, IndexPhase};
+use super::phases;
+use super::state::{INDEX_REGISTRY, IndexPhase, start_pending_phases};
 use crate::indexing::IndexPathSpace;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, EventSink, IndexDebugStatusResponse, IndexEvent, IndexStatusResponse, PhaseRecord,
@@ -19,6 +20,7 @@ use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner::{self, ScanConfig};
 use crate::indexing::store::IndexStore;
 use crate::indexing::volume::IndexVolumeKind;
+use crate::indexing::watch::branches;
 use crate::indexing::watch::event_loop::{JOURNAL_GAP_THRESHOLD, ReplayConfig, run_replay_event_loop};
 use crate::indexing::watch::watcher::{self, DriveWatcher};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
@@ -85,7 +87,7 @@ pub(crate) struct IndexManager {
     /// The running phase machine, when this volume is being covered in pieces
     /// rather than walked whole. Its flags are what every scan entry refuses
     /// against and what `get_status` reports; see `phases::PhaseHandle`.
-    pub(super) phases: Option<super::phases::PhaseHandle>,
+    pub(super) phases: Option<phases::PhaseHandle>,
     /// `resume_or_scan` decided this volume gets the phase machine, but the walk
     /// can't start yet: it has to wait for `resume_branch_watch`, or last session's
     /// covered ground comes back watched-but-never-epoch-bumped, rendering as
@@ -283,8 +285,10 @@ pub(in crate::indexing) async fn perform_registry_rescan(volume_id: &str, trigge
         }
     };
 
-    // Guard released: run the blocking-prelude scan start off the lock.
-    if let Err(ref e) = mgr.start_scan(trigger) {
+    // Guard released: run the blocking-prelude scan start off the lock. The same
+    // door "Rescan now" goes through, so a volume the machine is still building
+    // has its phases restarted rather than its half-built index truncated.
+    if let Err(ref e) = mgr.cover_or_scan(trigger) {
         log::warn!("Scanner rescan for '{volume_id}' failed to start: {e}");
     }
 
@@ -302,6 +306,9 @@ pub(in crate::indexing) async fn perform_registry_rescan(volume_id: &str, trigge
     match reg.get_mut(volume_id) {
         Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
             instance.phase = IndexPhase::Running(mgr);
+            drop(reg);
+            // On the far side of the restore, for the reason that function names.
+            start_pending_phases(volume_id);
         }
         _ => {
             drop(reg);
@@ -386,19 +393,15 @@ impl IndexManager {
         self.drive_watcher.is_some()
     }
 
-    /// Resume from an existing index or start a fresh full scan.
+    /// Do whatever this volume's own index says it needs at launch: replay its
+    /// journal, walk it whole, or hand it to the phase machine.
     ///
-    /// **macOS (with event replay support):**
-    /// If an existing index exists (`scan_completed_at` is set in meta) and we have a
-    /// stored `last_event_id`, start the FSEvents watcher with `sinceWhen = last_event_id`
-    /// to replay the journal. If the journal is unavailable, fall back to a full scan.
-    ///
-    /// **Linux (no event replay):**
-    /// Always does a full scan on startup. The existing index DB is kept as-is for
-    /// instant enrichment; the scan overwrites stale entries. The watcher starts
-    /// alongside the scan for live events.
-    ///
-    /// **No existing index:** Full scan via `start_scan()`.
+    /// This reads the facts and pays for the answer; the answer itself is
+    /// [`launch_route`](launch_route::launch_route), where the whole routing table
+    /// lives as a table. Everything before the routing call is preparation every
+    /// arm needs (the sweep-window seed, the ledger-heal latch), and its PLACEMENT
+    /// is constrained: it sits below the `is_trait_scanned` early return, or a
+    /// share and a phone get routed into a local phase machine.
     pub fn resume_or_scan(&mut self) -> Result<(), String> {
         // SMB and MTP volumes have no event journal, so there's nothing to
         // replay: a persisted index loaded Stale on launch (already seeded by
@@ -448,68 +451,91 @@ impl IndexManager {
             let _ = self.writer.send(WriteMessage::ArmLedgerHealLatch);
         }
 
-        // Replay the FSEvents journal ONLY for a volume that actually has one —
-        // gated on the kind, never on a stored event id (see
-        // `should_replay_journal` for the load-bearing why).
-        if should_replay_journal(
+        // Journal replay is gated on the KIND, never on a stored event id (see
+        // `should_replay_journal` for the load-bearing why). The gap pre-check
+        // rides along: replaying tens of millions of events is slower than a fresh
+        // walk, so a stored id the journal has run far past is no longer a
+        // replayable one. (The watcher channel's overflow detection is the
+        // secondary net.)
+        let last_event_id = stored_event_id.unwrap_or(0);
+        let journal_replayable = should_replay_journal(
             self.kind,
             watcher::supports_event_replay(),
             status.scan_completed_at.is_some(),
             stored_event_id,
-        ) {
-            let last_event_id = stored_event_id.unwrap_or(0);
-
-            // Pre-check: compare stored event ID with current system event ID.
-            // If the gap is too large, skip replay entirely. Replaying tens of
-            // millions of events is slower than a fresh scan. The watcher channel
-            // (32K capacity) has overflow detection as a secondary safety net.
-            let current_id = watcher::current_event_id();
-            if current_id > 0 && current_id > last_event_id + JOURNAL_GAP_THRESHOLD {
-                let gap = current_id - last_event_id;
-                emit_rescan_notification(
-                    self.events.as_ref(),
-                    &self.volume_id,
-                    RescanReason::StaleIndex,
-                    format!(
-                        "Stored last_event_id={last_event_id}, current system \
-                         event_id={current_id}, gap={gap} \
-                         (threshold={JOURNAL_GAP_THRESHOLD}). \
-                         The app likely hasn't run for a long time."
-                    ),
-                );
-                return self
-                    .start_scan("stale index: journal gap too large")
-                    .map_err(|e| e.to_string());
-            }
-
-            let gap = current_id.saturating_sub(last_event_id);
-            log::info!("Startup: cold-start replay (last_event_id={last_event_id}, current={current_id}, gap={gap})",);
-            return self.start_replay(last_event_id, heal_pending);
-        }
-
-        // No journal replay, and a COMPLETED index: a rescan brings it current, in
-        // place (which (re)starts the `DriveWatcher`). This is the path a
-        // `LocalExternal` volume ALWAYS takes (it has a stored event id but no
-        // journal), plus every non-journaled/no-replay case for the boot disk. ❌
-        // The phased answer below must never swallow it: a completed external drive
-        // would be treated as a volume that had never been indexed.
-        if status.scan_completed_at.is_some() {
-            log::info!("Startup: rescan of the existing index (no journal replay)");
-            return self.start_scan("rescan of existing index").map_err(|e| e.to_string());
-        }
-
-        // Nothing has ever completed here, so the phase machine builds it: the
-        // folders this user cares about first, then home, then the rest of the
-        // drive, add-only the whole way. ❌ It only REGISTERS the intent — the first
-        // walk has to wait for `resume_branch_watch` (`state/startup.rs`), or last
-        // session's covered ground comes back watched and never epoch-bumped,
-        // rendering as current when nothing verified it.
-        log::info!(
-            "Startup: covering '{}' in phases (no completed scan on record)",
-            self.volume_id
         );
-        self.register_a_phased_start();
-        Ok(())
+        let current_id = if journal_replayable {
+            watcher::current_event_id()
+        } else {
+            0
+        };
+        let journal_gap_too_wide = current_id > 0 && current_id > last_event_id + JOURNAL_GAP_THRESHOLD;
+
+        let route = launch_route::launch_route(&launch_route::IndexOnDisk {
+            scan_completed: status.scan_completed_at.is_some(),
+            has_rows: IndexStore::get_entry_count(read_conn).is_ok_and(|count| count > 1),
+            has_covered_branches: branches::any_persisted(read_conn),
+            journal_replayable,
+            journal_gap_too_wide,
+            phased_first_index: phases::phased_first_index(),
+        });
+
+        match route {
+            launch_route::LaunchRoute::ReplayTheJournal => {
+                let gap = current_id.saturating_sub(last_event_id);
+                log::info!(
+                    "Startup: cold-start replay (last_event_id={last_event_id}, current={current_id}, gap={gap})"
+                );
+                self.start_replay(last_event_id, heal_pending)
+            }
+            launch_route::LaunchRoute::ScanTheVolume => {
+                let trigger = if journal_gap_too_wide {
+                    let gap = current_id.saturating_sub(last_event_id);
+                    emit_rescan_notification(
+                        self.events.as_ref(),
+                        &self.volume_id,
+                        RescanReason::StaleIndex,
+                        format!(
+                            "Stored last_event_id={last_event_id}, current system \
+                             event_id={current_id}, gap={gap} \
+                             (threshold={JOURNAL_GAP_THRESHOLD}). \
+                             The app likely hasn't run for a long time."
+                        ),
+                    );
+                    "stale index: journal gap too large"
+                } else if status.scan_completed_at.is_some() {
+                    // A COMPLETED index with no journal to replay: the walk brings
+                    // it current in place (and (re)starts the `DriveWatcher`). This
+                    // is the path a `LocalExternal` volume ALWAYS takes, plus every
+                    // non-journaled case for the boot disk.
+                    "rescan of existing index"
+                } else {
+                    // Only reachable with the phased-first-index switch off, which
+                    // is what "restore the bulk-build path" means.
+                    "incomplete previous scan"
+                };
+                log::info!("Startup: walking '{}' whole ({trigger})", self.volume_id);
+                self.start_scan(trigger).map_err(|e| e.to_string())
+            }
+            launch_route::LaunchRoute::CoverInPhases | launch_route::LaunchRoute::RebuildThenCoverInPhases => {
+                // Nothing has ever completed here, so the phase machine builds it:
+                // the folders this user cares about first, then home, then the rest
+                // of the drive, add-only the whole way. ❌ It only REGISTERS the
+                // intent — the first walk has to wait for `resume_branch_watch`
+                // (`state/startup.rs`), or last session's covered ground comes back
+                // watched and never epoch-bumped, rendering as current when nothing
+                // verified it.
+                log::info!(
+                    "Startup: covering '{}' in phases (no completed scan on record)",
+                    self.volume_id
+                );
+                self.register_a_phased_start(match route {
+                    launch_route::LaunchRoute::RebuildThenCoverInPhases => PhasedStart::RebuildFirst,
+                    _ => PhasedStart::KeepTheRows,
+                });
+                Ok(())
+            }
+        }
     }
 
     /// Force a (re)scan of this volume, routed to the RIGHT scanner by the typed
@@ -529,8 +555,65 @@ impl IndexManager {
             RescanScanner::VolumeTrait => {
                 self.start_volume_scan(super::network_scan::NetworkScanMode::Auto, scan_trigger)
             }
-            RescanScanner::LocalWalker => self.start_scan(scan_trigger),
+            RescanScanner::LocalWalker => self.cover_or_scan(scan_trigger),
         }
+    }
+
+    /// Put this volume back in sync by walking it WHOLE: the phase machine while
+    /// its first index is still being built, today's full (re)scan once one has
+    /// completed.
+    ///
+    /// **The one door every "walk this volume" caller goes through**, and the
+    /// reason a truncating scan can no longer land on a half-built index. Four
+    /// callers reach it, and each was its own way to blank one: the per-drive
+    /// "Turn on indexing for this drive" button and the FDA-deny start (both
+    /// through `start_volume` → `awaits_its_first_scan` → `force_scan`), "Rescan
+    /// now" itself, and `perform_registry_rescan` (a coalesced shallow
+    /// `MustScanSubDirs`, a replay that couldn't roll forward, an ingestion
+    /// backlog). ❌ Don't add a fifth caller that reaches past this into
+    /// `start_scan`.
+    ///
+    /// A rescan during the phased window RESTARTS the machine rather than
+    /// truncating: whatever is covered stays covered, and the queue is rebuilt
+    /// from the host's current answers plus a coverage query per root, so it picks
+    /// up folders the user has come to care about since. A machine that already
+    /// has work is left alone — the walk the caller asked for is in flight, which
+    /// is what [`ScanStartError::AlreadyScanning`] means everywhere else.
+    ///
+    /// ⚠️ It only REGISTERS the phased start. The machine is started by
+    /// `state::start_pending_phases` once the manager is back in the registry as
+    /// `Running`; see that function for why starting it from in here would make
+    /// every one of its first walks report "did not run".
+    pub(in crate::indexing) fn cover_or_scan(&mut self, scan_trigger: &str) -> Result<(), ScanStartError> {
+        if !self.first_index_is_the_machines() {
+            return self.start_scan(scan_trigger);
+        }
+        if self.phases_have_work() {
+            return Err(ScanStartError::AlreadyScanning);
+        }
+        log::info!(
+            "'{}' has no completed scan, so '{scan_trigger}' restarts its phases instead of rebuilding it",
+            self.volume_id
+        );
+        self.register_a_phased_start(PhasedStart::KeepTheRows);
+        Ok(())
+    }
+
+    /// Whether this volume's first index is still the phase machine's to build:
+    /// a locally-walked volume, no completed scan on record, and the
+    /// phased-first-index switch on.
+    ///
+    /// ❌ Not `awaits_its_first_scan`, which is a REGISTRY question with its own
+    /// two documented shapes and is deliberately left alone
+    /// (`state/queries.rs`) — re-keying it would make the per-drive enable button
+    /// a silent no-op on the volumes it was written to serve.
+    fn first_index_is_the_machines(&self) -> bool {
+        phases::phased_first_index()
+            && self.kind.uses_local_scanner()
+            && self
+                .store
+                .get_index_status()
+                .is_ok_and(|status| status.scan_completed_at.is_none())
     }
 
     /// Stop the active full scan and watcher.
@@ -725,8 +808,11 @@ impl IndexManager {
     }
 }
 
+mod launch_route;
 mod phased;
 mod start;
+
+pub(in crate::indexing::lifecycle) use phased::PhasedStart;
 
 #[cfg(test)]
 mod tests;

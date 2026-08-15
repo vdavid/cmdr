@@ -32,7 +32,7 @@ use crate::media_index::gate::IndexScope;
 use crate::media_index::network::config::NetworkEnrichConfig;
 
 /// Everything the index needs from the product.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct IndexConfig {
     /// Where every index database lives. One directory for the drive index, the
     /// media index, and the importance index, resolved once by the app so dev,
@@ -40,6 +40,27 @@ pub struct IndexConfig {
     pub data_dir: PathBuf,
     /// The media index's user-controlled policy.
     pub media: MediaConfig,
+    /// Whether a drive's first index is covered folder by folder, in the order
+    /// its owner cares about, or built by one bulk scan.
+    ///
+    /// **On unless the product says otherwise**, and the one field here nobody is
+    /// expected to change: it's the escape hatch for the phased first index, so a
+    /// bad week costs a relaunch rather than a rollback. Read once at startup; ❌
+    /// don't live-apply it, since a volume half way through being covered has no
+    /// meaningful answer to "what if we had built you the other way".
+    pub phased_first_index: bool,
+}
+
+impl Default for IndexConfig {
+    /// What a test binary, a bench, or a tool gets: no data dir, no media policy,
+    /// and the shipping first-index behavior.
+    fn default() -> Self {
+        Self {
+            data_dir: PathBuf::default(),
+            media: MediaConfig::default(),
+            phased_first_index: true,
+        }
+    }
 }
 
 /// The media index's share of [`IndexConfig`]: what the user turned on, how wide,
@@ -97,6 +118,7 @@ pub(crate) fn set_config(config: IndexConfig) {
     gate::set_parallelism(config.media.parallelism);
     gate::set_semantic_search_enabled(config.media.semantic_search_enabled);
     network::config::set_config(config.media.network);
+    crate::indexing::lifecycle::phases::set_phased_first_index(config.phased_first_index);
 
     *DATA_DIR.write_ignore_poison() = Some(config.data_dir);
 }

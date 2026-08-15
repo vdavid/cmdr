@@ -122,6 +122,21 @@ pub(crate) fn clear(volume_id: &str, writer: &IndexWriter) {
     let _ = writer.send(WriteMessage::DeleteMeta(COVERED_BRANCHES_KEY.to_string()));
 }
 
+/// Whether this volume's database remembers any ground a walk covered on it.
+///
+/// The one durable difference between a volume the phase machine was part way
+/// through and a first BULK scan somebody interrupted: `start_scan` clears the set
+/// before it walks, so an interrupted bulk build has none while a phased (or
+/// search-walked) volume does. That is what `launch_route` discriminates on, and
+/// it is asked at launch, before [`resumed_for`] has loaded anything into memory —
+/// so it reads the database rather than the in-memory set.
+pub(crate) fn any_persisted(conn: &rusqlite::Connection) -> bool {
+    IndexStore::get_meta(conn, COVERED_BRANCHES_KEY)
+        .ok()
+        .flatten()
+        .is_some_and(|stored| stored.lines().any(|line| !line.trim().is_empty()))
+}
+
 /// Read the persisted branches back as absolute paths for this volume's space.
 fn load_branches(space: &IndexPathSpace, conn: &rusqlite::Connection) -> Vec<Branch> {
     let Ok(Some(stored)) = IndexStore::get_meta(conn, COVERED_BRANCHES_KEY) else {

@@ -90,6 +90,65 @@ const DEFERRED_HOME_FOLDER: Option<&str> = Some("Library");
 #[cfg(not(target_os = "macos"))]
 const DEFERRED_HOME_FOLDER: Option<&str> = None;
 
+/// Whether a drive's first index is covered in phases, the way this module does
+/// it, or built by one bulk scan the way it was before.
+///
+/// **The escape hatch.** Covering in phases changes how every never-completed
+/// volume is launched, and that lands in an open beta. Off, `launch_route` sends
+/// each of those volumes back through `start_scan`, so a bad week costs a relaunch
+/// rather than a rollback. Who flips it and how: `../DETAILS.md` § "The escape
+/// hatch".
+///
+/// Read at startup and never live-applied: the app answers it once, from the
+/// product's own settings, and hands the answer over with the rest of
+/// `IndexConfig`. Defaults ON so a host that configures nothing (a unit test, a
+/// bench, a tool) gets the shipping behavior.
+static PHASED_FIRST_INDEX: AtomicBool = AtomicBool::new(true);
+
+/// Mirror the product's phased-first-index switch into the process. Called from
+/// the config seam; nothing else writes it.
+pub(crate) fn set_phased_first_index(enabled: bool) {
+    PHASED_FIRST_INDEX.store(enabled, Ordering::Relaxed);
+    if !enabled {
+        log::info!(
+            target: "indexing::phases",
+            "Phased first index is OFF: a drive with no completed scan is built by one bulk scan",
+        );
+    }
+}
+
+/// Whether a never-completed volume is the phase machine's to cover. Every launch
+/// and every full-walk entry point asks this before it routes.
+pub(crate) fn phased_first_index() -> bool {
+    PHASED_FIRST_INDEX.load(Ordering::Relaxed)
+}
+
+/// Set the switch for one test and put it back on drop, so a test that turns it
+/// off doesn't leak that into whichever test runs next in the same binary.
+///
+/// Process-wide, like every other seam a test handle installs: hold
+/// `handle::test_lock()` first.
+#[cfg(any(test, feature = "testing"))]
+#[must_use = "the switch is restored when the guard drops"]
+pub(crate) fn install_for_test(enabled: bool) -> PhasedFirstIndexGuard {
+    PhasedFirstIndexGuard {
+        previous: PHASED_FIRST_INDEX.swap(enabled, Ordering::Relaxed),
+    }
+}
+
+/// Restores the phased-first-index switch on drop.
+#[cfg(any(test, feature = "testing"))]
+pub(crate) struct PhasedFirstIndexGuard {
+    previous: bool,
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl Drop for PhasedFirstIndexGuard {
+    fn drop(&mut self) {
+        PHASED_FIRST_INDEX.store(self.previous, Ordering::Relaxed);
+    }
+}
+
 /// What the rest of the lifecycle can ask of a machine that is running.
 ///
 /// Held by the volume's `IndexManager`; every field is shared with the driver

@@ -27,14 +27,17 @@ pieces; `rescan_request.rs` the typed scan-start refusal + the owed walk; `fresh
   EVICTS an index whose coverage this build refuses. ⚠️ A volume mid-SCAN isn't walked.
 - **`CoverOutcome::abandoned_ground` is independent of every other field**, so ❌ any caller reporting completeness must
   consult it.
-- **No `scan_completed_at` ⇒ COVERED in phases, ❌ never bulk-scanned** (`phases/CLAUDE.md`). ⚠️ A COMPLETED volume
-  reaches today's reconcile arm FIRST, else a finished external drive reads as never indexed. Every scan entry then
-  refuses while the machine has WORK, ❌ not merely while a walk runs (it stops between roots, 50–150 per phase).
+- **No `scan_completed_at` ⇒ COVERED in phases, ❌ never bulk-scanned**; the launch table is one pure function
+  (`manager/launch_route.rs`), and every other "walk it whole" door goes through `cover_or_scan`, ❌ never straight to
+  `start_scan`. ⚠️ A COMPLETED volume takes today's replay/reconcile arm FIRST, else a finished external drive reads as
+  never indexed; an EMPTY persisted branch set is a legacy interrupted bulk scan ⇒ rebuild. Start the machine via
+  `state::start_pending_phases`, OUTSIDE a registry-held window.
 - **Every scan entry asks TWO single-flight questions** (`start_scan`, `start_volume_scan`): `mgr.scanning` AND
-  `cover::ground_being_walked`. A search walk sets no flag, and truncating under one blanks rows it's still writing. ❌
-  Don't collapse them or classify them by text (both are `ScanStartError`). A MANUAL rescan they refuse is REMEMBERED
-  (`rescan_request`) and run by the walk from `cover::release_ground` (claim first, THEN the scan) via `force_scan`,
-  re-asking both.
+  `cover::ground_being_walked`, plus the machine having WORK (❌ not merely walking). A search walk sets no flag, and
+  truncating under one blanks rows it's still writing. ❌ Don't collapse them or classify them by text (both are
+  `ScanStartError`). On a COMPLETED volume a MANUAL rescan they refuse is REMEMBERED (`rescan_request`) and run by the
+  walk from `cover::release_ground` (claim first, THEN the scan); ❌ nothing defers before the first index finishes,
+  since restarting the phases can't truncate.
 - **A walk RELEASES its branch whatever the registry phase** (`finish_branch_coverage` reaches the set directly). ❌
   Never behind `with_running_manager`: a walk ending inside a rescan's `ShuttingDown` window would hold that ground
   forever.

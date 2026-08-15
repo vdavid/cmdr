@@ -74,7 +74,7 @@ pub use scan_control::{force_scan, stop_scan, trigger_verification};
 #[cfg(test)]
 pub(crate) use scan_control::{set_scanning_for_test, while_shutting_down_for_test};
 pub use startup::start_indexing;
-pub(in crate::indexing::lifecycle) use startup::{Activation, start_indexing_for};
+pub(in crate::indexing::lifecycle) use startup::{Activation, start_indexing_for, start_pending_phases};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use startup::{
     start_indexing_for_local_external_inner, start_indexing_for_mtp_inner, start_indexing_for_smb_inner,

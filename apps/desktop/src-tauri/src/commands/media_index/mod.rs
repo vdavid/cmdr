@@ -94,6 +94,9 @@ pub(crate) fn index_config_from(
     use cmdr_index::media_index::gate;
     IndexConfig {
         data_dir,
+        // Not a settings key: the escape hatch for the phased first index is a user
+        // default, read once per launch (`crate::index_host::phased_first_index`).
+        phased_first_index: crate::index_host::phased_first_index(),
         media: MediaConfig {
             enabled: settings.image_index_enabled == Some(true),
             // The scope, with the pre-setting fallback applied: an install that already

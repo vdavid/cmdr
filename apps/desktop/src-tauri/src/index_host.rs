@@ -71,6 +71,59 @@ pub fn install(app: &AppHandle) {
     }
 }
 
+/// The user default that turns the phased first index off, read once per launch.
+///
+/// The escape hatch for the phased first index (`cmdr_index`'s
+/// `lifecycle/phases/DETAILS.md` § "The escape hatch"). Flip it with
+///
+/// ```text
+/// defaults write com.veszelovszki.cmdr PhasedFirstIndex -bool false
+/// ```
+///
+/// and relaunch; `defaults delete com.veszelovszki.cmdr PhasedFirstIndex` puts it
+/// back. It's a user default rather than a settings key on purpose: it's for a bad
+/// week, so it has to be one line somebody can paste into Terminal without opening
+/// a JSON file or launching the app, and it has to be flippable while the thing
+/// it's guarding against is happening. Absent means on.
+static PHASED_FIRST_INDEX: OnceLock<bool> = OnceLock::new();
+
+/// Whether this launch covers a drive's first index in phases.
+///
+/// Read ONCE and cached: every media-policy setter re-pushes `IndexConfig`, and a
+/// value that could change between those pushes would mean a volume half way
+/// through being covered suddenly gets the other behavior.
+pub(crate) fn phased_first_index() -> bool {
+    *PHASED_FIRST_INDEX.get_or_init(read_phased_first_index_default)
+}
+
+#[cfg(target_os = "macos")]
+fn read_phased_first_index_default() -> bool {
+    use objc2_foundation::{NSString, NSUserDefaults};
+
+    // `boolForKey:` can't tell "absent" from "false", so ask for the OBJECT and
+    // treat only an explicit `false` as off. An absent key is the shipping default.
+    let key = NSString::from_str("PhasedFirstIndex");
+    let defaults = NSUserDefaults::standardUserDefaults();
+    if defaults.objectForKey(&key).is_none() {
+        return true;
+    }
+    let enabled = defaults.boolForKey(&key);
+    if !enabled {
+        log::warn!(
+            target: "indexing",
+            "PhasedFirstIndex is off in user defaults: a drive with no completed scan gets the bulk first scan",
+        );
+    }
+    enabled
+}
+
+/// Nothing to read: the escape hatch is a macOS user default, and macOS is where
+/// the beta this protects is running.
+#[cfg(not(target_os = "macos"))]
+fn read_phased_first_index_default() -> bool {
+    true
+}
+
 /// This app's index.
 ///
 /// Built by [`install`] at the top of `setup()`. A test binary, a bench, or a

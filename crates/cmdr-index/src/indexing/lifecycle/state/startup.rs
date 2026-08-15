@@ -265,7 +265,7 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
             // never fire. Last session's covered rows would then render as CURRENT
             // when nothing verified them. ❌ Moving `branches::resumed_for` earlier is
             // not an equivalent fix: it restores the branch set but not the bump.
-            with_running_manager(volume_id, |mgr| mgr.start_phases());
+            start_pending_phases(volume_id);
 
             // Watch for a fatal storage failure: if the writer trips its signal, the
             // supervisor fails this volume (stop + `Failed` phase) instead of letting
@@ -317,6 +317,20 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     }
 
     Ok(())
+}
+
+/// Start the phase machine on a volume whose manager registered one, if it did.
+///
+/// ⚠️ **ORDER, and it is the same rule at all three call sites.** The machine's
+/// walks resolve their write context THROUGH the registry
+/// (`cover::cover_context_for` hands one out only from a `Running` manager), so it
+/// can only start once the manager is back in it. The two rescan doors hold the
+/// manager OUT under a transient `ShuttingDown` for the whole of their scan-start
+/// prelude — start the machine from in there and every one of its first walks
+/// reports "did not run", systematically rather than as the bounded race
+/// `phases/DETAILS.md` describes.
+pub(in crate::indexing::lifecycle) fn start_pending_phases(volume_id: &str) {
+    with_running_manager(volume_id, |mgr| mgr.start_phases());
 }
 
 /// Bring a volume's walk-covered branches back under a watcher, on the instance

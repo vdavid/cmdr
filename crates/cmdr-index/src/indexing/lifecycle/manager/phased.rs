@@ -20,6 +20,20 @@ use crate::indexing::lifecycle::phases::{self, MachineContext};
 use crate::indexing::scanner::{exclusion_policy_stamp_message, index_predates_exclusion_policy};
 use crate::indexing::watch::branches;
 
+/// Whether the index a phased start finds is one the machine can add to.
+///
+/// The launch route decides this ([`launch_route`](super::launch_route)); every
+/// other entry point keeps what is there, because by then the launch has already
+/// answered.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::indexing::lifecycle) enum PhasedStart {
+    /// Add to what is already there. Every never-completed index except the one
+    /// below: a fresh install, a phased partial, a volume a search walked.
+    KeepTheRows,
+    /// Throw the index away first. Rows nothing can account for.
+    RebuildFirst,
+}
+
 impl IndexManager {
     /// Note that this volume is the phase machine's, and give its database what a
     /// walk needs before anything walks it.
@@ -32,15 +46,20 @@ impl IndexManager {
     /// stitch not working. `prepare_database_for_a_walk` runs only for a
     /// `WriterOnly` start and `start_scan`'s stamp only on its non-reconcile branch,
     /// and a phased start is neither.
-    pub(super) fn register_a_phased_start(&mut self) {
-        let truncated = self.rebuild_if_this_build_cant_trust_the_index();
+    pub(in crate::indexing::lifecycle) fn register_a_phased_start(&mut self, start: PhasedStart) {
+        let truncated = self.rebuild_if_the_machine_cant_add_to_this_index(start);
         let empty = IndexStore::get_entry_count(self.store.read_conn()).is_ok_and(|count| count <= 1);
 
-        // The epoch every directory a walk lists is stamped with. Only when there is
-        // nothing to make stale: `BumpCurrentEpoch` seeds an absent key (there is no
-        // seed-only message), but on a partially covered index it would ALSO mark
-        // every row a previous session covered as stale, for nothing.
-        if truncated || empty {
+        // The epoch every directory a walk lists is stamped with. Sent to SEED an
+        // absent key (there is no seed-only message) and after a truncate, and ❌
+        // never otherwise: on a partially covered index it would mark every row a
+        // previous session covered as stale for nothing, and on a volume a search
+        // walk is writing to RIGHT NOW it would make that walk's fresh rows read as
+        // stale the moment it lands them (the walk read the old epoch on its own
+        // connection when it started).
+        let epoch_unseeded = IndexStore::get_meta(self.store.read_conn(), crate::indexing::store::CURRENT_EPOCH_KEY)
+            .is_ok_and(|value| value.is_none());
+        if truncated || epoch_unseeded {
             let _ = self.writer.send(WriteMessage::BumpCurrentEpoch);
         }
         // What lets a reader prefix this index's mount-relative paths back to
@@ -69,27 +88,39 @@ impl IndexManager {
         self.phases_pending = true;
     }
 
-    /// Drop an index whose coverage this build refuses to trust, so the phases fill
-    /// a clean one instead of walking on top of it forever.
+    /// Drop an index the machine can't honestly add to, so the phases fill a clean
+    /// one instead of walking on top of it forever. Reports whether it truncated.
     ///
-    /// The exclusion-policy stamp records which policy an index's rows were written
-    /// under, and a mismatch means NOTHING in it counts as covered. A full scan
-    /// repairs that by truncating and re-stamping; during the phased window nothing
-    /// would, so the index would be stranded — every phase re-walking the whole
-    /// scope and never re-stamping. Reports whether it truncated.
+    /// Two reasons, and both are silent if left alone:
+    ///
+    /// - **The launch found rows nothing can account for** ([`PhasedStart::RebuildFirst`]).
+    ///   The rows are real, but with no branch set nothing records which ground they
+    ///   cover — so nothing watches it and nothing bumps the epoch for it, and
+    ///   resuming into it would render last session's sizes as CURRENT with nothing
+    ///   having verified them.
+    /// - **The exclusion policy changed.** The stamp records which policy an index's
+    ///   rows were written under, and a mismatch means NOTHING in it counts as
+    ///   covered. A full scan repairs that by truncating and re-stamping; during the
+    ///   phased window nothing else would, so the index would be stranded — every
+    ///   phase re-walking the whole scope and never re-stamping.
     ///
     /// The completion markers go with the rows they describe: they are claims about
     /// an index that no longer exists.
-    fn rebuild_if_this_build_cant_trust_the_index(&mut self) -> bool {
-        let stale = IndexStore::get_entry_count(self.store.read_conn()).is_ok_and(|count| count > 1)
-            && index_predates_exclusion_policy(self.store.read_conn());
-        if !stale {
+    fn rebuild_if_the_machine_cant_add_to_this_index(&mut self, start: PhasedStart) -> bool {
+        let populated = IndexStore::get_entry_count(self.store.read_conn()).is_ok_and(|count| count > 1);
+        let why = if !populated {
+            None
+        } else if start == PhasedStart::RebuildFirst {
+            Some("it has rows but no record of which ground they cover")
+        } else if index_predates_exclusion_policy(self.store.read_conn()) {
+            Some("it predates this build's exclusion policy, so nothing in it counts as covered")
+        } else {
+            None
+        };
+        let Some(why) = why else {
             return false;
-        }
-        log::info!(
-            "Phases: '{}' predates this build's exclusion policy, so nothing in it counts as covered; rebuilding it",
-            self.volume_id
-        );
+        };
+        log::info!("Phases: rebuilding '{}': {why}", self.volume_id);
         let _ = self.writer.send(WriteMessage::TruncateData);
         for key in ["scan_completed_at", phases::HOME_COVERED_AT_KEY] {
             let _ = self.writer.send(WriteMessage::DeleteMeta(key.to_string()));

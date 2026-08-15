@@ -28,6 +28,10 @@ where the user is looking; `completion.rs` the two stamps and what completing ow
   freshness, not the badge, not rescan routing. `~/Library` goes last in its phase and the signal doesn't wait for it.
 - **Ask the host through the seams it already has**: `priority_roots` (an ORDER, never a scope) and `open_listings` on
   the reporter's tick. ❌ Not `verify_directory`, which fires for the opposite pane and every refresh.
+- **A rescan before full coverage RESTARTS the phases**, ❌ never truncates and ❌ never errors. Every door goes through
+  `cover_or_scan`; the deferred-rescan mechanism answers for COMPLETED volumes only, so the two never overlap.
+- **The escape hatch is `defaults write com.veszelovszki.cmdr PhasedFirstIndex -bool false`** + relaunch, arriving as
+  `IndexConfig::phased_first_index`. Off, a phased partial takes today's TRUNCATING rebuild; that's the intended row.
 
 Depth on every bullet, plus the measurements behind the flush batching and the `~/Library` decision: `DETAILS.md`. Read
 it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -78,6 +78,70 @@ concurrently without corrupting each other. Every invariant below holds independ
 - **failure.rs** — `IndexFailureSignal`, the one-shot per-volume fatal-storage-error signal.
 - **lifecycle_bus.rs** — the neutral scan-completed / registration / dirs-changed pub/sub.
 
+## What a launch does with the index it finds (the routing table)
+
+`manager/launch_route.rs` is one pure function over the facts a launch reads off a volume's own database, and
+`resume_or_scan` does what it says. It is separate from the side effects on purpose: **a wrong cell costs either a wasted
+full rescan or a silently stale index, and both are invisible until somebody reports something strange.** The unit tests
+beside it ARE the table.
+
+An SMB share and an MTP phone never reach it: `resume_or_scan` routes `is_trait_scanned()` to `resume_or_scan_network`
+first. For everything the local guarded walker reads, in the order the function asks:
+
+- **journal replayable, gap too wide** ⇒ `start_scan("stale index: journal gap too large")`. Unchanged, and reachable
+  ONLY on a volume that completed a scan, since replaying at all requires one — so ❌ no volume being covered in phases
+  can take it. Its phased counterpart is `ensure_branch_watch`'s conditional epoch bump: a resume that can't replay the
+  gap keeps the rows and says they're stale (`a_relaunch_with_no_replayable_journal_bumps_the_epoch`).
+- **journal replayable** ⇒ `start_replay`. An install that already finished its first index loses nothing.
+- **`scan_completed_at` set** ⇒ `start_scan("rescan of existing index")`, which reconciles in place. ⚠️ This is the path
+  a `LocalExternal` drive takes at EVERY mount (`has_event_journal()` is `Local`-only) and the Linux boot disk's normal
+  launch. ❌ The phased answers must never swallow it, or a finished external drive is treated as one nobody indexed.
+- **phased first index switched off** ⇒ `start_scan("incomplete previous scan")`. The escape hatch's own row: with no
+  phase machine to resume into, a phased partial takes today's truncating rebuild. Self-healing, and what the person who
+  flipped it asked for. ❌ It never costs a COMPLETED volume its replay: the switch restores the BUILD path, not a
+  rescan of everything already indexed. Shape and who flips it: `phases/DETAILS.md` § "The escape hatch".
+- **rows, and no record of which ground they cover** ⇒ truncate, then the phase machine. This is the discriminator, and
+  it is **the persisted branch set** (`branches::any_persisted`): `start_scan` clears the set before a whole-volume walk,
+  so a first BULK scan somebody interrupted has none while a phased (or search-walked) volume does. Resuming into rows
+  nothing accounts for would leave that ground unwatched and un-epoch-bumped, rendering last session's sizes as CURRENT
+  with nothing having verified them.
+- **anything else** ⇒ the phase machine, adding to what is there. A fresh install, a phased partial, a volume a search
+  walked.
+
+Two more truncate decisions sit one level below and are ❌ NOT part of this table: `start_scan`'s own
+reconcile-vs-truncate rule (`local_rescan_reconciles`), and `register_a_phased_start`'s exclusion-policy rebuild (an
+index whose rows were written under a policy this build doesn't apply counts as covering nothing).
+
+### Every other way a full walk starts
+
+`IndexManager::cover_or_scan` is the ONE door for "walk this volume whole", and it asks the same first question the table
+does: no completed scan ⇒ the phase machine, otherwise `start_scan`. ❌ Don't add a caller that reaches past it into
+`start_scan`. Four reach it, and each was its own way to blank a half-built index:
+
+- **"Rescan now"** and **"Turn on indexing for this drive"**, both through `state::force_scan`. The enable arrives via
+  `Index::start_volume` → `awaits_its_first_scan`; ❌ don't re-key that predicate to fix this (it's shared, and both
+  shapes it serves have rows, so a row-count key would make the button a silent no-op on exactly them).
+- **The FDA-deny launch** (`start_indexing_after_fda_decision` → `start_volume`), which is the same call.
+- **`manager::perform_registry_rescan`**: a coalesced shallow `MustScanSubDirs`, a replay that couldn't roll forward, an
+  ingestion backlog.
+
+During the phased window a rescan RESTARTS the machine: the queue is recomputed from the host's current answers plus a
+coverage query per root, so it picks up folders the user has come to care about since, and covered ground stays covered.
+A machine that already has work is left alone (`AlreadyScanning`, which `force_scan` reports as `Started` — the walk the
+caller asked for is in flight).
+
+⚠️ **The machine is started from OUTSIDE the registry-held window**, by `state::start_pending_phases`, at all three
+sites. Both rescan doors hold the manager out under a transient `ShuttingDown` for the whole scan-start prelude, and
+`cover_context_for` hands a context out only from a `Running` manager — start the machine in there and every one of its
+first walks reports "did not run". At launch the ordering has a second reason (`state/startup.rs`).
+
+⚠️ **A master off→on only brings back drives `drives_to_resume` names**, and its per-drive intent is
+`persisted_scan_completed` — which a drive part way through its FIRST index doesn't have. So an external drive covered in
+phases is forgotten by a master-switch cycle, exactly as one interrupted mid-bulk-scan always was. The boot disk is
+`is_root` and always resumes. Closing it needs a persisted "the user enabled this drive" marker that doesn't exist yet;
+❌ don't use the branch set as a proxy, since a drive somebody only SEARCHED has one too and auto-indexing it is exactly
+what the veto forbids.
+
 ## The per-volume registry
 
 ```
@@ -408,12 +472,23 @@ Without the second, a coalesced shallow anchor, a journal-gap fallback, or the m
 `BumpCurrentEpoch` while the walk is still inserting: the walk's rows land in a blanked database, its ids lose to
 `INSERT OR IGNORE`, and everything hanging off them is orphaned.
 
+A third question is asked ABOVE these two, in `cover_or_scan`: whether this volume's first index is the phase machine's
+at all (§ "Every other way a full walk starts"). A volume with no completed scan never reaches `start_scan`, so these two
+guard the volumes that do.
+
 **Both refusals are TYPED** (`rescan_request::ScanStartError`: `AlreadyScanning`, `GroundBeingWalked`, `Internal`).
 Their wording used to be the only thing separating them, which the project's hard rule forbids classifying on, and which
 left a caller nothing to branch on but prose. Regression anchor:
 `cover::cold_drive_tests::a_truncating_rescan_refuses_while_a_search_cover_walk_is_live`.
 
 ### The one walk a volume remembers
+
+⚠️ **Its domain is a volume that HAS a completed scan** (or one with the escape hatch off) — the volumes whose "Rescan
+now" is still a truncating or reconciling full walk. A volume with no completion marker is the phase machine's, the
+machine composes with a live cover walk by design (ground another walk holds is left to it), and so there is nothing to
+wait for: the request is served immediately and reported as `Started`. **The two mechanisms answer for disjoint index
+states**; ❌ neither supersedes the other, and ❌ don't "fix" the phased route into a deferral. Anchor:
+`cover::cold_drive_tests::a_rescan_during_the_phased_window_starts_the_machine_under_a_live_walk`.
 
 An AUTOMATIC trigger needs nothing more than the refusal: a journal gap and a coalesced anchor both recur on their own,
 and nobody is watching a button for them. `manager::perform_registry_rescan` therefore logs and moves on.

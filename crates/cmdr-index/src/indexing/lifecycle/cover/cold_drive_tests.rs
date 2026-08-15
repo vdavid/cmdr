@@ -139,6 +139,18 @@ impl ColdDrive {
         IndexStore::read_current_epoch(&conn).expect("current epoch")
     }
 
+    /// Mark this drive's index as one whose scan completed.
+    ///
+    /// What makes a "Rescan now" on it a full (re)scan rather than a phased build,
+    /// and so the shape the deferred-rescan mechanism answers for: a drive that IS
+    /// indexed, with a search walk live over a hole in it. A drive with no
+    /// completion marker is the phase machine's, and the machine composes with a
+    /// live walk instead of waiting for one.
+    fn mark_scan_completed(&self) {
+        let conn = IndexStore::open_write_connection(&self.db_path()).expect("write conn");
+        IndexStore::update_meta(&conn, "scan_completed_at", "1700000000").expect("stamp scan_completed_at");
+    }
+
     /// What the drive's own database says it walked, as stored (index-relative).
     fn persisted_branches(&self) -> Option<String> {
         let conn = IndexStore::open_read_connection(&self.db_path()).ok()?;
@@ -283,18 +295,27 @@ fn a_second_walk_reuses_the_index_the_first_one_stood_up() {
     );
 }
 
-/// Turning indexing on for a drive a search already walked runs the full scan
-/// the person asked for, instead of no-opping against the index the walk left.
+/// Turning indexing on for a drive a search already walked indexes the whole
+/// drive, instead of no-opping against the index the walk left — and it does it
+/// WITHOUT throwing that index away.
 ///
 /// A walk registers an instance with no scan and no watcher behind it, so a bare
 /// "this volume is already active" would swallow the request for exactly those.
 /// A first scan someone stopped leaves the same shape, and had the same problem.
+///
+/// The second half is the truncate door. This is the path the per-drive "Turn on
+/// indexing for this drive" button takes, and the one the FDA-deny start takes on
+/// launch (`start_indexing_after_fda_decision` → `start_volume`), and it used to
+/// reach `force_scan` → `start_scan` → `TruncateData` — on precisely the volumes
+/// that have covered ground worth keeping. ❌ Don't re-key `awaits_its_first_scan`
+/// to close it: it's shared, and it exists for two shapes that both have rows.
+/// The routing lives one level down, in `cover_or_scan`.
 #[tokio::test(flavor = "multi_thread")]
 #[allow(
     clippy::await_holding_lock,
     reason = "the fixture holds the process-wide seams for the whole test; holding it across the await IS the point"
 )]
-async fn turning_indexing_on_after_a_walk_still_scans_the_drive() {
+async fn turning_indexing_on_after_a_walk_covers_the_drive_without_truncating_it() {
     let drive = ColdDrive::new("cover-cold-then-enable-test");
     std::fs::create_dir_all(drive.tree.path().join("walked")).expect("dirs");
     std::fs::create_dir_all(drive.tree.path().join("never-walked")).expect("dirs");
@@ -305,12 +326,20 @@ async fn turning_indexing_on_after_a_walk_still_scans_the_drive() {
         !drive.coverage(&volume_root).frontier.is_empty(),
         "precondition: one walked folder leaves the rest of the drive uncovered"
     );
+    let epoch_the_walk_wrote_against = drive.current_epoch();
 
     drive
         .index
         .start_volume(drive.volume_id)
         .await
         .expect("the drive starts indexing");
+
+    assert_eq!(
+        drive.current_epoch(),
+        epoch_the_walk_wrote_against,
+        "❌ the enable must not truncate what the search walked: every truncating (re)scan bumps \
+         the epoch before it walks, so a bump here IS the door being open"
+    );
 
     // Waited on the DURABLE completion marker, not on the coverage answer: a walk
     // marks its directories listed well before `scan_completed_at` reaches the
@@ -737,6 +766,11 @@ fn a_share_or_a_phone_walks_over_the_trait_and_never_locally() {
 /// A walk lasts seconds to minutes, so "ask again later" is a burden on the one
 /// person who can't tell when later is. The user clicked a button that says
 /// "Rescan now"; the button owes them a scan.
+///
+/// ⚠️ On an INDEXED drive, which is the mechanism's whole domain: a drive with no
+/// completed scan is the phase machine's, and a rescan there restarts the phases
+/// straight away rather than waiting for anything
+/// (`a_rescan_during_the_phased_window_starts_the_machine_under_a_live_walk`).
 #[test]
 fn a_rescan_refused_under_a_walk_runs_when_the_walk_ends() {
     let drive = ColdDrive::new("cover-deferred-rescan-test");
@@ -745,6 +779,7 @@ fn a_rescan_refused_under_a_walk_runs_when_the_walk_ends() {
     let scope = drive.path("scope");
 
     drive.cover(&scope);
+    drive.mark_scan_completed();
 
     // The ground a walk holds for as long as it runs, taken directly so the window
     // is deterministic rather than a race against a walk of two files.
@@ -781,6 +816,7 @@ fn a_remembered_rescan_waits_for_the_last_walk_out() {
     std::fs::create_dir_all(drive.tree.path().join("elsewhere")).expect("dirs");
     let scope = drive.path("scope");
     drive.cover(&scope);
+    drive.mark_scan_completed();
 
     let first = Claim::take(drive.volume_id, vec![scope.clone()]);
     let second = Claim::take(drive.volume_id, vec![drive.path("elsewhere")]);
@@ -819,6 +855,7 @@ fn a_drive_that_stopped_indexing_is_owed_no_rescan() {
     std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
     let scope = drive.path("scope");
     drive.cover(&scope);
+    drive.mark_scan_completed();
 
     let walking = Claim::take(drive.volume_id, vec![scope.clone()]);
     assert_eq!(
@@ -866,6 +903,10 @@ fn a_truncating_rescan_refuses_while_a_search_cover_walk_is_live() {
         drive.is_indexed(&drive.path("scope/found.txt")),
         "precondition: the walk's rows are in"
     );
+    // An INDEXED drive, which is what makes "Rescan now" here a full (re)scan and
+    // so a truncate risk at all. The never-scanned shape is the phase machine's,
+    // and the test below covers it.
+    drive.mark_scan_completed();
     let epoch = drive.current_epoch();
 
     // The hold a walk keeps for as long as it runs, taken directly so the window
@@ -895,6 +936,56 @@ fn a_truncating_rescan_refuses_while_a_search_cover_walk_is_live() {
         Ok(RescanOutcome::Started),
         "and the moment the walk ends the rescan runs"
     );
+}
+
+/// The truncate door the "Rescan now" button used to be, and where the two
+/// mechanisms meet.
+///
+/// A drive a search walked has rows and no `scan_completed_at`, which is exactly
+/// what `start_scan` reads as "a partial that never finished" and TRUNCATES. It is
+/// now the phase machine's instead: the button starts the machine, which adds to
+/// what the walk covered and leaves ground another walk is holding to that walk.
+///
+/// So the request is served immediately rather than deferred. ❌ Nothing here
+/// competes with the deferred-rescan mechanism: that one exists because a
+/// truncating scan can't run under a live walk, and this route never truncates, so
+/// the two answer for disjoint index states. `../DETAILS.md` § "Rescan now, and
+/// what it means before the first index finishes".
+#[test]
+fn a_rescan_during_the_phased_window_starts_the_machine_under_a_live_walk() {
+    let drive = ColdDrive::new("cover-phased-rescan-under-walk-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    std::fs::write(drive.tree.path().join("scope/found.txt"), "x").expect("file");
+    let scope = drive.path("scope");
+
+    drive.cover(&scope);
+    let walked_row = drive.path("scope/found.txt");
+    assert!(drive.is_indexed(&walked_row), "precondition: the walk's rows are in");
+    assert!(
+        crate::indexing::lifecycle::state::force_scan(drive.volume_id).is_ok(),
+        "precondition: this drive has no completed scan, so it is the machine's"
+    );
+    let epoch = drive.current_epoch();
+
+    // A second walk is live on the volume, holding ground.
+    let walking = Claim::take(drive.volume_id, vec![scope.clone()]);
+
+    assert_eq!(
+        crate::indexing::lifecycle::state::force_scan(drive.volume_id),
+        Ok(RescanOutcome::Started),
+        "the machine takes the volume straight away; it has no reason to wait for a walk it composes with"
+    );
+    assert_eq!(
+        drive.current_epoch(),
+        epoch,
+        "❌ and nothing truncated: every truncating (re)scan bumps the epoch before it walks"
+    );
+    assert!(
+        drive.is_indexed(&walked_row),
+        "❌ nor did the rows the search walk earned go anywhere"
+    );
+
+    drop(walking);
 }
 
 /// A volume whose own full scan is running isn't walked at all.

@@ -5,7 +5,9 @@ Read this before any non-trivial work in `lifecycle/phases/`. Must-know guardrai
 **A volume with no completed scan is covered, ❌ not scanned.** `resume_or_scan`'s third answer, beside journal replay
 and `start_scan`, taking only the no-`scan_completed_at` case. There is no first full scan any more: the whole drive is
 the LAST phase of the same `coverage`/`cover` mechanism a search-driven walk uses, so a quit keeps every second it
-bought instead of truncating and starting over.
+bought instead of truncating and starting over. That is true of every OTHER way a full walk starts too (the buttons, the
+automatic rescans), which is what keeps a half-built index from being blanked: `../DETAILS.md` § "What a launch does with
+the index it finds" holds the whole routing table.
 
 **The shape of a run.** Ask the host which folders matter to this user (`HostPolicy::priority_roots`, an ORDER and
 nothing else), then `$HOME`, then the volume root. Per phase: stitch down to its root, ask for its frontier, walk those
@@ -159,6 +161,34 @@ when the machine needs it, so an edited favorites list or a new session's tabs l
 `HostPolicy::open_listings` is polled on the reporter's tick (the seam's own rate limit) plus once at machine start, so
 the folder somebody has open when indexing begins gets its turn immediately rather than half a second later. ❌ Not
 `Index::verify_directory`, which fires for the opposite pane, MCP listings, and every refresh.
+
+## The escape hatch
+
+One flag, read at startup, restoring the bulk-build path. Covering in phases changes how every never-completed volume is
+launched and it ships into an open beta, so a bad week has to cost a relaunch rather than a rollback.
+
+- **Flip it**: `defaults write com.veszelovszki.cmdr PhasedFirstIndex -bool false`, then relaunch.
+  `defaults delete com.veszelovszki.cmdr PhasedFirstIndex` puts it back. Absent means on.
+- **Who flips it**: David, or a beta user David hands that line to. It's a user default rather than a settings key
+  precisely so it's one pasteable line that needs no JSON editing and works while the app won't start properly; ❌ an
+  env var is not enough, since somebody launching from the Dock never sees one. macOS only, which is where the beta is.
+- **How it gets here**: the app reads it once (`index_host::phased_first_index`, cached in a `OnceLock` because every
+  media-policy setter re-pushes `IndexConfig`) and hands it over as `IndexConfig::phased_first_index`; `set_config`
+  mirrors it into this module's atomic. ❌ Don't live-apply it: a volume half way through being covered has no
+  meaningful answer to "what if we had built you the other way".
+- **What it changes**: `launch_route` sends every never-completed volume back through `start_scan`, and `cover_or_scan`
+  does the same for every rescan door. A phased partial therefore takes today's TRUNCATING rebuild, which is the right
+  answer (self-healing, and the behavior that was asked for) and the row of the table nobody would otherwise write down.
+  `../DETAILS.md` § "What a launch does with the index it finds".
+- It has no UI, and needs none.
+
+## Rescan now, and what it means before the first index finishes
+
+A rescan of a volume the machine is still building RESTARTS the phases: covered ground stays covered, and the queue is
+recomputed from the host's current answers plus a coverage query per root, so it picks up folders the user has come to
+care about since. ❌ Never an error, and ❌ never a truncate. After full coverage "Rescan now" keeps today's meaning
+exactly. The doors this closes, and how it sits beside the deferred-rescan mechanism (they answer for disjoint index
+states, so neither supersedes the other), are canonical in `../DETAILS.md` § "Every other way a full walk starts".
 
 ## The database is prepared for a walk through writer MESSAGES
 

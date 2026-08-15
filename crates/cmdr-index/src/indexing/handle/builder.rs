@@ -141,6 +141,17 @@ impl IndexBuilder {
     /// have been moved read the handle's fields, and everything below them still
     /// resolves a slot. Installing both keeps the two consistent, and the slot
     /// half disappears as the internals get threaded.
+    /// The configuration this build will apply: the one the host handed over, or
+    /// one carrying just the data dir. Derived in ONE place so the test install's
+    /// restore guards are taken against exactly what [`install`](Self::install) is
+    /// about to push.
+    fn effective_config(&self) -> IndexConfig {
+        self.config.clone().unwrap_or_else(|| IndexConfig {
+            data_dir: self.data_dir.clone().unwrap_or_default(),
+            ..IndexConfig::default()
+        })
+    }
+
     fn install(self) -> Index {
         use crate::indexing::host;
 
@@ -165,10 +176,7 @@ impl IndexBuilder {
             log::warn!(target: "indexing", "index host policy was already set; keeping the first one");
         }
 
-        let config = self.config.clone().unwrap_or_else(|| IndexConfig {
-            data_dir: self.data_dir.clone().unwrap_or_default(),
-            ..IndexConfig::default()
-        });
+        let config = self.effective_config();
         if !config.data_dir.as_os_str().is_empty() {
             host::config::set_config(config.clone());
         }
@@ -217,6 +225,13 @@ impl IndexBuilder {
                     crate::indexing::lifecycle::state::should_auto_start(enabled),
                 )
             }),
+            // Taken unconditionally, unlike the master switch above: the value
+            // `install` pushes is the one every builder carries (its own or the
+            // default), so a test that never mentions it still leaves the switch as
+            // it found it.
+            phased_first_index: Some(crate::indexing::lifecycle::phases::install_for_test(
+                self.effective_config().phased_first_index,
+            )),
         };
         let mut builder = self;
         // The runtime slot is a one-shot and a test binary's fallback is already
@@ -248,6 +263,7 @@ pub struct TestInstallGuard {
     events: Option<crate::indexing::host::events::TestSinkGuard>,
     policy: Option<crate::indexing::host::policy::TestPolicyGuard>,
     master: Option<crate::indexing::lifecycle::master::MasterSwitchGuard>,
+    phased_first_index: Option<crate::indexing::lifecycle::phases::PhasedFirstIndexGuard>,
 }
 
 /// Restores the process's index claim on drop.

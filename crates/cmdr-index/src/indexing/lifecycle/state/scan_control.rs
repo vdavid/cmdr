@@ -177,6 +177,11 @@ pub fn force_scan(volume_id: &str) -> Result<RescanOutcome, String> {
     match reg.get_mut(volume_id) {
         Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
             instance.phase = IndexPhase::Running(mgr);
+            drop(reg);
+            // A volume with no completed scan had its PHASES restarted rather than
+            // its index truncated, and the machine starts here — on the far side of
+            // the registry restore, never inside the window above.
+            super::startup::start_pending_phases(volume_id);
             result
         }
         _ => {
