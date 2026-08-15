@@ -706,6 +706,8 @@ mod bench;
 #[cfg(test)]
 mod cold_drive_tests;
 #[cfg(test)]
+mod network_give_up_tests;
+#[cfg(test)]
 mod network_tests;
 #[cfg(test)]
 mod test_support;

@@ -1,9 +1,9 @@
 //! Helpers the cover test files share.
 //!
 //! Two kinds of thing live here. `drain` is what every one of them does to a
-//! walk. The rest is the `Volume`-trait scaffolding `network_tests.rs` runs on: a
-//! share driven through the public handle, and the hand-rolled backends that
-//! record, stall, double, or refuse. They're here rather than beside the tests
+//! walk. The rest is the `Volume`-trait scaffolding `network_tests.rs` and
+//! `network_give_up_tests.rs` run on: a share driven through the public handle,
+//! and the hand-rolled backends that record, stall, double, refuse, or go away. They're here rather than beside the tests
 //! because they're ~350 lines of `Pin<Box<dyn Future>>` ceremony that says nothing
 //! about what any single test is checking.
 //!
@@ -13,8 +13,8 @@
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::IgnorePoison;
