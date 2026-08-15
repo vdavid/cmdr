@@ -13,10 +13,11 @@
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
 
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::{InMemoryVolume, ListingProgress, Volume, VolumeError};
 
 use super::*;
@@ -126,12 +127,17 @@ impl Share {
             .expect("the volume answers for its own coverage")
     }
 
+    /// Whether this share's index has a window open to retry the ground its walks
+    /// gave up on.
+    pub(super) fn retry_window_is_open(&self) -> bool {
+        crate::indexing::writer::retry_window_is_open(&self.read_connection())
+    }
+
     /// The ids of everything the index holds under an absolute path, sorted. Read
     /// straight off the database, because the point of the tests that use it is
     /// which ROWS survived a second walk.
     pub(super) fn child_ids(&self, absolute: &str) -> Vec<i64> {
-        let db_path = self._data.path().join(format!("index-{}.db", self.volume_id));
-        let conn = IndexStore::open_read_connection(&db_path).expect("read connection");
+        let conn = self.read_connection();
         let relative = absolute.strip_prefix(&self.root).unwrap_or(absolute);
         let Some(id) = crate::indexing::store::resolve_path(&conn, relative).expect("resolve") else {
             return Vec::new();
@@ -143,6 +149,12 @@ impl Share {
             .collect();
         ids.sort_unstable();
         ids
+    }
+
+    /// A read connection to this share's own index database.
+    fn read_connection(&self) -> rusqlite::Connection {
+        let db_path = self._data.path().join(format!("index-{}.db", self.volume_id));
+        IndexStore::open_read_connection(&db_path).expect("read connection")
     }
 
     /// Start a walk over one scope, with the token that stops it.
@@ -369,9 +381,20 @@ impl Volume for SameNameSiblings {
 
 /// A backend that refuses to list the paths it was given, and serves everything
 /// else from memory.
-struct RefusesToList {
+///
+/// The refusals are behind a lock so a test can lift them mid-run: a directory
+/// that starts answering again is how abandoned ground heals, and that needs one
+/// backend that says two different things over its life.
+pub(super) struct RefusesToList {
     inner: InMemoryVolume,
-    refused: Vec<PathBuf>,
+    refused: Mutex<Vec<PathBuf>>,
+}
+
+impl RefusesToList {
+    /// Answer everything from here on, as a share that woke up does.
+    pub(super) fn answer_everything(&self) {
+        self.refused.lock_ignore_poison().clear();
+    }
 }
 
 impl Volume for RefusesToList {
@@ -389,7 +412,7 @@ impl Volume for RefusesToList {
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Fut<'a, Result<Vec<FileEntry>, VolumeError>> {
-        if self.refused.iter().any(|refused| refused == path) {
+        if self.refused.lock_ignore_poison().iter().any(|refused| refused == path) {
             return Box::pin(async { Err(VolumeError::PermissionDenied("test: listing refused".into())) });
         }
         self.inner.list_directory(path, on_progress)
@@ -413,13 +436,94 @@ impl Share {
         build: impl FnOnce(&Tree) -> Vec<FileEntry>,
         refuse: &[&str],
     ) -> Self {
+        Self::refusing_for_now(volume_id, build, refuse).0
+    }
+
+    /// The same, handing the backend back so a test can lift the refusals partway
+    /// through and watch the ground heal.
+    pub(super) fn refusing_for_now(
+        volume_id: &'static str,
+        build: impl FnOnce(&Tree) -> Vec<FileEntry>,
+        refuse: &[&str],
+    ) -> (Self, Arc<RefusesToList>) {
         let refuse: Vec<String> = refuse.iter().map(|r| r.to_string()).collect();
+        let mut backend = None;
+        let share = Self::with_volume(volume_id, |root| {
+            let tree = Tree(root.to_string());
+            let volume = Arc::new(RefusesToList {
+                refused: Mutex::new(refuse.iter().map(|r| PathBuf::from(tree.path(r))).collect()),
+                inner: InMemoryVolume::with_entries("Share", build(&tree)).with_root(root),
+            });
+            backend = Some(Arc::clone(&volume));
+            volume as Arc<dyn Volume>
+        });
+        (share, backend.expect("the backend is built while registering"))
+    }
+
+    /// A share that answers `answers` listings and then goes away, failing every
+    /// one after that with the UNTYPED shape a dropped SMB session actually
+    /// produces.
+    ///
+    /// ⚠️ Untyped on purpose. `DeviceDisconnected` has its own arm in the walk and
+    /// stops it on the first failure, so a test built on it would prove nothing
+    /// about the arm that matters: a connection reset arrives as a plain `IoError`,
+    /// reaches the ordinary skip-this-directory branch, and is indistinguishable
+    /// there from one directory that won't list. That's the whole reason the
+    /// consecutive-failure backstop exists (~6,475 directories churned into empty
+    /// rows in about a second, in the reported bug).
+    pub(super) fn going_away_after(
+        volume_id: &'static str,
+        build: impl FnOnce(&Tree) -> Vec<FileEntry>,
+        answers: i64,
+    ) -> Self {
         Self::with_volume(volume_id, |root| {
             let tree = Tree(root.to_string());
-            Arc::new(RefusesToList {
-                refused: refuse.iter().map(|r| PathBuf::from(tree.path(r))).collect(),
+            Arc::new(GoesAway {
                 inner: InMemoryVolume::with_entries("Share", build(&tree)).with_root(root),
+                answers_left: AtomicI64::new(answers),
             })
         })
+    }
+}
+
+/// A backend that answers a fixed number of listings and then stops being there.
+struct GoesAway {
+    inner: InMemoryVolume,
+    answers_left: AtomicI64,
+}
+
+impl Volume for GoesAway {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Fut<'a, Result<Vec<FileEntry>, VolumeError>> {
+        if self.answers_left.fetch_sub(1, Ordering::SeqCst) <= 0 {
+            return Box::pin(async {
+                Err(VolumeError::IoError {
+                    message: "test: connection reset by peer".into(),
+                    raw_os_error: None,
+                })
+            });
+        }
+        self.inner.list_directory(path, on_progress)
+    }
+    fn get_metadata<'a>(&'a self, path: &'a Path) -> Fut<'a, Result<FileEntry, VolumeError>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a Path) -> Fut<'a, bool> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(&'a self, path: &'a Path) -> Fut<'a, Result<bool, VolumeError>> {
+        self.inner.is_directory(path)
     }
 }

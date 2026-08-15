@@ -22,6 +22,17 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 mod abandoned_retry;
+/// Whether this volume has a window open to retry the ground its walks gave up on
+/// (`abandoned_retry.rs`).
+///
+/// Exposed for the walks that have to prove their marks reach the backoff and not
+/// merely the column: a walk that wrote the cause some other way would condemn its
+/// ground once and never come back for it, which is invisible until a user notices
+/// a folder missing from search.
+#[cfg(test)]
+pub(in crate::indexing) fn retry_window_is_open(conn: &rusqlite::Connection) -> bool {
+    abandoned_retry::is_armed(conn)
+}
 mod aggregation;
 mod batch;
 mod deferred_repair;

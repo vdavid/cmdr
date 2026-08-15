@@ -167,6 +167,10 @@ pub(crate) async fn cover_volume_subtree(
         let entries = match result {
             Ok(entries) => {
                 consecutive_failures = 0;
+                // The share is answering. Every directory the walk has given up on
+                // so far failed while it was, so each of those failures was the
+                // DIRECTORY's and can be written down.
+                writes.share_answered();
                 entries
             }
             // The volume went away mid-walk. Stop rather than churning the queued
@@ -177,6 +181,7 @@ pub(crate) async fn cover_volume_subtree(
                     "network_scanner: device disconnected covering {}: {e}; keeping what the walk covered",
                     dir_path.display()
                 );
+                writes.share_went_away();
                 commit_scan_tx(writer, &mut tx_open)?;
                 writes.finish(root_id)?;
                 return Err(VolumeScanError::Volume(e));
@@ -198,13 +203,14 @@ pub(crate) async fn cover_volume_subtree(
                 // Ground this walk started and won't finish. THIS run's answer is a
                 // lower bound and has to say so.
                 //
-                // ⚠️ The dir also stays unlisted with NO `unreadable_cause`, so the
-                // frontier offers it again and every later search re-pays the same
-                // failing listing. That is a known bug, and the local walker's fixed
-                // twin (`UnreadableCause::Abandoned`). ❌ Don't port that fix
-                // mechanically: a whole-share disconnect reaches this same arm, and
-                // marking on it would condemn every directory the walk touched on
-                // the way down. `DETAILS.md` § "A failed listing leaves no cause".
+                // ⚠️ HELD, not recorded. On its own a failed listing doesn't say
+                // whose failure it is: a share dropping its session reaches this
+                // exact arm, one directory at a time, and marking on it would
+                // condemn every directory the walk had queued. What decides it is
+                // whether the share ANSWERS again afterwards, which only a later
+                // listing can show. `DETAILS.md` § "A failed listing is held until
+                // the share answers again".
+                writes.gave_up_on(dir_id);
                 heartbeat.abandoned(1);
                 log::debug!(
                     "network_scanner: skipping unlistable dir {} while covering (consecutive_failures={consecutive_failures}): {err}",
@@ -215,6 +221,7 @@ pub(crate) async fn cover_volume_subtree(
                         "network_scanner: {consecutive_failures} consecutive listing failures while covering \
                          (looks like a disconnect); stopping and keeping what the walk covered"
                     );
+                    writes.share_went_away();
                     commit_scan_tx(writer, &mut tx_open)?;
                     writes.finish(root_id)?;
                     return Err(VolumeScanError::ConsecutiveFailures {
@@ -417,7 +424,14 @@ struct CoverWrites<'a> {
     listed: Vec<i64>,
     /// Directories the walk deliberately won't read into. Stamped so the coverage
     /// frontier stops offering them to every later search.
-    unreadable: Vec<i64>,
+    declined: Vec<i64>,
+    /// Directories the walk gave up on and has evidence were the DIRECTORY's
+    /// problem: the share answered a later listing.
+    abandoned: Vec<i64>,
+    /// Give-ups with no such evidence yet. They join
+    /// [`abandoned`](Self::abandoned) the moment a listing succeeds, and are
+    /// dropped if none ever does.
+    unproven: Vec<i64>,
 }
 
 impl<'a> CoverWrites<'a> {
@@ -430,7 +444,9 @@ impl<'a> CoverWrites<'a> {
             emit_pacer: EmitPacer::new(),
             emit,
             listed: Vec::new(),
-            unreadable: Vec::new(),
+            declined: Vec::new(),
+            abandoned: Vec::new(),
+            unproven: Vec::new(),
         }
     }
 
@@ -461,7 +477,40 @@ impl<'a> CoverWrites<'a> {
     /// row still exists and stays navigable; what the mark says is that nothing is
     /// coming for its subtree, so the frontier must stop naming it.
     fn mark_unreadable(&mut self, dir_id: i64) {
-        self.unreadable.push(dir_id);
+        self.declined.push(dir_id);
+    }
+
+    /// A directory whose listing failed, held until the walk can say whose failure
+    /// it was.
+    ///
+    /// ⚠️ Two different things wear this one shape — a directory that won't answer
+    /// on a healthy share, and the share itself going away one directory at a time
+    /// — and they want opposite answers. So nothing is written here.
+    fn gave_up_on(&mut self, dir_id: i64) {
+        self.unproven.push(dir_id);
+    }
+
+    /// A listing succeeded, so the share is there: every give-up the walk is
+    /// holding failed against a share that answers, which makes each of them the
+    /// directory's own.
+    fn share_answered(&mut self) {
+        self.abandoned.append(&mut self.unproven);
+    }
+
+    /// The walk concluded the share went away. Nothing it thinks it learned about
+    /// individual directories survives that — the PROVEN give-ups included, since
+    /// the listings that proved them may have been on the wire when the session
+    /// dropped and returned out of order.
+    fn share_went_away(&mut self) {
+        let dropped = self.abandoned.len() + self.unproven.len();
+        if dropped > 0 {
+            log::debug!(
+                "network_scanner: the share went away, so the {} this walk couldn't read stay on the frontier rather than being written off",
+                cmdr_fs::pluralize::pluralize(dropped as u64, "dir")
+            );
+        }
+        self.abandoned.clear();
+        self.unproven.clear();
     }
 
     fn flush(&mut self) -> Result<(), VolumeScanError> {
@@ -488,25 +537,42 @@ impl<'a> CoverWrites<'a> {
         }
     }
 
-    /// Flush the last rows, stamp every directory the walk listed, and roll the
-    /// subtree up. Runs on EVERY exit path, cancel included.
+    /// Stamp one cause across the ids that earned it, in writer-sized chunks.
+    fn send_unreadable(&self, ids: Vec<i64>, cause: UnreadableCause) -> Result<(), VolumeScanError> {
+        for chunk in ids.chunks(MARK_CHUNK) {
+            self.writer
+                .send(WriteMessage::MarkDirsUnreadable {
+                    ids: chunk.to_vec(),
+                    cause,
+                })
+                .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    /// Flush the last rows, stamp every directory the walk listed or gave up on,
+    /// and roll the subtree up. Runs on EVERY exit path, cancel included.
+    ///
+    /// ⚠️ The exit path deliberately doesn't select what gets stamped, so a new one
+    /// can't quietly disagree with the others: what a give-up costs was decided
+    /// while the walk was running, by whether the share answered again. Whatever is
+    /// still unproven at this point is DROPPED, which is what makes a share going
+    /// away cost nothing — including when the process dies here instead, since
+    /// nothing has been written yet.
     fn finish(&mut self, root_id: i64) -> Result<(), VolumeScanError> {
         self.flush()?;
         // Let the consumer see the end of the walk rather than waiting on a channel
         // nothing will ever write to again.
         self.emit = None;
-        for chunk in std::mem::take(&mut self.unreadable).chunks(MARK_CHUNK) {
-            self.writer
-                .send(WriteMessage::MarkDirsUnreadable {
-                    ids: chunk.to_vec(),
-                    // Always `Declined` here: the trait walk marks exactly one
-                    // thing, a NAS system directory it won't descend into. A read
-                    // the SHARE refuses fails the listing instead, which leaves
-                    // the directory unlisted and retriable.
-                    cause: UnreadableCause::Declined,
-                })
-                .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
-        }
+        // `Declined` is a standing policy over a NAS system directory, `Abandoned`
+        // is ground Cmdr gave up on and will retry on the backoff
+        // (`../writer/abandoned_retry.rs`, armed by this very message). ❌ Never
+        // `Denied`: nobody refused us in either case, and a user offered Full Disk
+        // Access over a share is being sent to fix something that isn't broken.
+        let declined = std::mem::take(&mut self.declined);
+        let abandoned = std::mem::take(&mut self.abandoned);
+        self.send_unreadable(declined, UnreadableCause::Declined)?;
+        self.send_unreadable(abandoned, UnreadableCause::Abandoned)?;
         if self.listed.is_empty() {
             return Ok(());
         }

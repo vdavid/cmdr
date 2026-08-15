@@ -156,6 +156,13 @@ pub(super) fn clear_if_due(conn: &Connection, now: u64) -> Result<Option<usize>,
     Ok(Some(cleared))
 }
 
+/// Whether this volume has a window open, for the walks that have to prove their
+/// marks reach the backoff at all rather than just landing in the column.
+#[cfg(test)]
+pub(super) fn is_armed(conn: &Connection) -> bool {
+    read_window(conn).is_ok_and(|window| window.is_some())
+}
+
 fn read_window(conn: &Connection) -> Result<Option<RetryWindow>, IndexStoreError> {
     let Some(opened_at) = IndexStore::get_meta(conn, RETRY_AT_KEY)?.and_then(|v| v.parse().ok()) else {
         return Ok(None);
