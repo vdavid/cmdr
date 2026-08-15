@@ -721,6 +721,8 @@ export {
   onIndexScanProgress,
   onIndexScanComplete,
   onIndexScanAborted,
+  onIndexCoverageBranchStarted,
+  onIndexCoverageBranchEnded,
   onIndexPhaseChanged,
   onIndexAggregationProgress,
   onIndexAggregationComplete,

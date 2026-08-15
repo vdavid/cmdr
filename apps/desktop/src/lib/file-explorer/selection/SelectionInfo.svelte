@@ -28,7 +28,8 @@
         buildDirSizeTooltip,
         buildSelectionSizeTooltip,
     } from '../views/full-list-utils'
-    import { isVolumeScanning, isVolumeAggregating } from '$lib/indexing/index-state.svelte'
+    import { isVolumeScanning, isVolumeAggregating, getWalkedGround } from '$lib/indexing/index-state.svelte'
+    import { isPathAffectedByWalk } from '$lib/indexing/walked-ground'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { VolumeSpaceInfo } from '$lib/tauri-commands'
@@ -100,9 +101,14 @@
     // This pane's drive scanning state (used for the selection-summary stale
     // indicator). Scoped to `volumeId` so another drive's scan doesn't flag it.
     const scanning = $derived(isVolumeScanning(volumeId))
-    // Full index activity (scan OR aggregation) for the per-folder file-info
-    // readout, matching FullList. `scanning` alone misses the aggregation phase.
-    const indexing = $derived(isVolumeScanning(volumeId) || isVolumeAggregating(volumeId))
+    // Whether THIS folder's size is in flux, matching FullList row for row: its
+    // own ground being walked (tested both ways, since the roll-up repairs the
+    // ancestor chain), or the volume aggregating. ❌ Not "the volume is
+    // scanning": a phased first index has a drive scanning for minutes while
+    // only one branch at a time can move.
+    const indexing = $derived(
+        isVolumeAggregating(volumeId) || isPathAffectedByWalk(getWalkedGround(volumeId), entry?.path ?? ''),
+    )
 
     const sizeDisplayMode = $derived(getSizeDisplayMode())
     const sizeFormatOpts = $derived({

@@ -19,7 +19,6 @@ import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte
 import type { DirStats } from './file-list-utils'
 import {
   getDirSizeDisplayState,
-  isDirSizeUpdating,
   LOWER_BOUND_GLYPH,
   getDisplayExtension,
   getDisplaySize,
@@ -233,17 +232,21 @@ function sizeTextForEntry(
 function sizeIconSuffixForEntry(
   entry: FileEntry,
   sizeDisplayMode: 'smart' | 'logical' | 'physical',
-  indexing: boolean,
+  isSizeUpdating: (entry: FileEntry) => boolean,
   showSizeMismatchWarning: boolean,
 ): number {
   let suffix = 0
   if (entry.isDirectory) {
-    // FullList draws the hourglass whenever the dir's size is in flux (the
-    // orthogonal `isDirSizeUpdating`): any size-bearing state plus the `<dir>`
-    // placeholder (`'dir'`/`'scanning'`) show it. Reserve the icon width here so
-    // the shrink-wrapped column doesn't clip the glyph. Mirror the renderer.
-    const updating = isDirSizeUpdating(indexing, entry.recursiveSizePending)
-    if (updating) suffix += SIZE_ICON_WIDTH
+    // FullList draws the hourglass whenever the dir's size is in flux: any
+    // size-bearing state plus the `<dir>` placeholder (`'dir'`/`'scanning'`) show
+    // it. Reserve the icon width here so the shrink-wrapped column doesn't clip
+    // the glyph.
+    //
+    // ⚠️ The answer is PER ROW, and the caller passes the very function its size
+    // cell renders from. It has to be the same one: once a walk lights up some
+    // rows and not others, a per-volume answer here reserves width on the wrong
+    // ones and clips the glyph on exactly the rows that show it.
+    if (isSizeUpdating(entry)) suffix += SIZE_ICON_WIDTH
   }
   if (showSizeMismatchWarning) {
     const logical = entry.isDirectory ? entry.recursiveSize : entry.size
@@ -263,7 +266,11 @@ export function computeFullListColumnWidths(args: {
   parentDirStats?: DirStats | null
   formattedDate: (timestamp: number) => FormattedDate
   sizeDisplayMode: 'smart' | 'logical' | 'physical'
-  indexing: boolean
+  /** Whether THIS row's folder size is in flux, so the size cell draws an
+   *  hourglass after the text. ⚠️ Pass the same function the size cell renders
+   *  from (`isDirSizeUpdating` over the pane's walked ground), or the reserved
+   *  width and the drawn glyph disagree row by row. */
+  isSizeUpdating: (entry: FileEntry) => boolean
   showSizeMismatchWarning: boolean
   sortBy: SortColumn
   sizeFormatOpts: SizeFormatOpts
@@ -283,7 +290,7 @@ export function computeFullListColumnWidths(args: {
     parentDirStats,
     formattedDate,
     sizeDisplayMode,
-    indexing,
+    isSizeUpdating,
     showSizeMismatchWarning,
     sortBy,
     sizeFormatOpts,
@@ -331,7 +338,7 @@ export function computeFullListColumnWidths(args: {
     sizeIconSuffixMax,
     dateMax,
     sizeDisplayMode,
-    indexing,
+    isSizeUpdating,
     showSizeMismatchWarning,
     sizeFormatOpts,
     isRestricted,
@@ -376,7 +383,7 @@ interface FoldEntriesContext {
   sizeIconSuffixMax: number
   dateMax: number
   sizeDisplayMode: 'smart' | 'logical' | 'physical'
-  indexing: boolean
+  isSizeUpdating: (entry: FileEntry) => boolean
   showSizeMismatchWarning: boolean
   sizeFormatOpts: SizeFormatOpts
   isRestricted?: (path: string) => boolean
@@ -401,7 +408,7 @@ function foldEntries(
       ctx.sizeFormatOpts,
       ctx.isRestricted?.(entry.path) ?? false,
     )
-    const iconSuffix = sizeIconSuffixForEntry(entry, ctx.sizeDisplayMode, ctx.indexing, ctx.showSizeMismatchWarning)
+    const iconSuffix = sizeIconSuffixForEntry(entry, ctx.sizeDisplayMode, ctx.isSizeUpdating, ctx.showSizeMismatchWarning)
     const rowSize = (sizeText ? ctx.measureNum(sizeText) : 0) + iconSuffix
     if (rowSize > sizeMax) sizeMax = rowSize
     if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix

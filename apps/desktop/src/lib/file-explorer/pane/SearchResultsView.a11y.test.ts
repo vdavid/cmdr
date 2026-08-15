@@ -60,6 +60,7 @@ vi.mock('$lib/system-strings.svelte', () => ({
 vi.mock('$lib/indexing/index-state.svelte', () => ({
   isVolumeScanning: () => false,
   isVolumeAggregating: () => false,
+  getWalkedGround: () => ({ wholeVolume: false, roots: [] }),
 }))
 vi.mock('../git/status-column', () => ({
   fetchStatusMap: () => Promise.resolve(null),

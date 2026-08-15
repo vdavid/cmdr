@@ -9,6 +9,8 @@ import {
   events,
   type AggregationProgressEvent,
   type IndexAggregationCompleteEvent,
+  type IndexCoverageBranchEndedEvent,
+  type IndexCoverageBranchStartedEvent,
   type IndexDirUpdatedEvent,
   type IndexFreshnessChangedEvent,
   type IndexMemoryWarningEvent,
@@ -50,6 +52,30 @@ export function onIndexScanComplete(callback: (payload: IndexScanCompleteEvent) 
  */
 export function onIndexScanAborted(callback: (payload: IndexScanAbortedEvent) => void): Promise<UnlistenFn> {
   return events.indexScanAborted.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/**
+ * Fires when a branch of a drive goes under the walker, and the folder sizes
+ * inside it (and above it) can move until it's done. Already debounced by one
+ * second in the backend: a walk that finishes inside a second never sends one, so
+ * the frontend renders exactly what it's told and holds no timers of its own.
+ */
+export function onIndexCoverageBranchStarted(
+  callback: (payload: IndexCoverageBranchStartedEvent) => void,
+): Promise<UnlistenFn> {
+  return events.indexCoverageBranchStarted.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/** Fires when a branch stops being walked, on every exit path. Never held back,
+ *  so a row can't keep an hourglass for a walk that stopped. */
+export function onIndexCoverageBranchEnded(
+  callback: (payload: IndexCoverageBranchEndedEvent) => void,
+): Promise<UnlistenFn> {
+  return events.indexCoverageBranchEnded.listen((event) => {
     callback(event.payload)
   })
 }

@@ -37,7 +37,7 @@
         provisionalColumnWidth,
     } from './brief-column-widths.svelte'
     import { getDirStatsBatch } from '$lib/tauri-commands'
-    import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
+    import { buildDirSizeTooltip, hasSizeMismatch, isDirSizeUpdating } from './full-list-utils'
     import {
         getRowHeight,
         getSizeMismatchWarning,
@@ -49,7 +49,8 @@
     import { onDebouncedScaleChange } from '$lib/text-size.svelte'
     import { getSetting } from '$lib/settings/settings-store'
     import { formatNumber } from '../selection/selection-info-utils'
-    import { isVolumeScanning, isVolumeAggregating } from '$lib/indexing/index-state.svelte'
+    import { isVolumeAggregating, getWalkedGround } from '$lib/indexing/index-state.svelte'
+    import { isPathAffectedByWalk } from '$lib/indexing/walked-ground'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
     import Icon from '$lib/ui/Icon.svelte'
@@ -160,11 +161,25 @@
     // Recursive stats for the CURRENT directory (shown on the ".." row so that space isn't wasted).
     let parentDirStats = $state<DirStats | null>(null)
 
-    // Drive index state for THIS pane's volume: show the size hourglass while its
-    // own drive is scanning OR aggregating (sizes aren't ready until aggregation
-    // finishes). Scoped to `volumeId` so a scan on another drive doesn't light up
-    // this pane's folders.
-    const indexing = $derived(isVolumeScanning(volumeId) || isVolumeAggregating(volumeId))
+    // What this pane's drive is having walked right now, plus its aggregation.
+    // Both are per-volume, so another drive's work never lights up these rows.
+    const walkedGround = $derived(getWalkedGround(volumeId))
+    const aggregating = $derived(isVolumeAggregating(volumeId))
+
+    /**
+     * Whether THIS row's folder size is in flux. The one answer the size cell and
+     * the column measurer both read, so the glyph that gets drawn and the width
+     * reserved for it can't disagree.
+     *
+     * The walk test is bidirectional (`isPathAffectedByWalk`): the roll-up
+     * repairs the ancestor chain, so a walk below a row moves that row's size too.
+     */
+    const isSizeUpdating = $derived((file: FileEntry) =>
+        isDirSizeUpdating(
+            aggregating || isPathAffectedByWalk(walkedGround, file.path),
+            file.recursiveSizePending ?? false,
+        ),
+    )
 
     // ==== Layout constants ====
     // Row height is reactive based on UI density setting
@@ -756,7 +771,7 @@
             file.recursivePhysicalSize,
             file.recursiveFileCount ?? 0,
             file.recursiveDirCount ?? 0,
-            indexing,
+            isSizeUpdating(file),
             formatByteSize,
             formatNumber,
             file.recursiveSizeComplete,

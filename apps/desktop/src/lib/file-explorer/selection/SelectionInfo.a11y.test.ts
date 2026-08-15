@@ -14,6 +14,7 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 vi.mock('$lib/indexing/index-state.svelte', () => ({
   isVolumeScanning: () => false,
   isVolumeAggregating: () => false,
+  getWalkedGround: () => ({ wholeVolume: false, roots: [] }),
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({

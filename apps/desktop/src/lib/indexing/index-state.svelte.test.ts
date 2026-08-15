@@ -14,6 +14,8 @@ import type {
   ActivityPhase,
   AggregationProgressEvent,
   IndexAggregationCompleteEvent,
+  IndexCoverageBranchEndedEvent,
+  IndexCoverageBranchStartedEvent,
   IndexPhaseChangedEvent,
   IndexReplayProgressEvent,
   IndexScanAbortedEvent,
@@ -30,6 +32,8 @@ let scanProgressCb: ((p: IndexScanProgressEvent) => void) | undefined
 let scanAbortedCb: ((p: IndexScanAbortedEvent) => void) | undefined
 let phaseCb: ((p: IndexPhaseChangedEvent) => void) | undefined
 let replayProgressCb: ((p: IndexReplayProgressEvent) => void) | undefined
+let branchStartedCb: ((p: IndexCoverageBranchStartedEvent) => void) | undefined
+let branchEndedCb: ((p: IndexCoverageBranchEndedEvent) => void) | undefined
 
 const noopUnlisten = () => {}
 
@@ -46,6 +50,14 @@ vi.mock('$lib/tauri-commands', () => ({
   onIndexScanComplete: () => Promise.resolve(noopUnlisten),
   onIndexScanAborted: (cb: (p: IndexScanAbortedEvent) => void) => {
     scanAbortedCb = cb
+    return Promise.resolve(noopUnlisten)
+  },
+  onIndexCoverageBranchStarted: (cb: (p: IndexCoverageBranchStartedEvent) => void) => {
+    branchStartedCb = cb
+    return Promise.resolve(noopUnlisten)
+  },
+  onIndexCoverageBranchEnded: (cb: (p: IndexCoverageBranchEndedEvent) => void) => {
+    branchEndedCb = cb
     return Promise.resolve(noopUnlisten)
   },
   onIndexPhaseChanged: (cb: (p: IndexPhaseChangedEvent) => void) => {
@@ -89,8 +101,10 @@ import {
   isVolumeScanning,
   isVolumeAggregating,
   isAnyVolumeIndexing,
+  getWalkedGround,
   type AggregationActivity,
 } from './index-state.svelte'
+import { isPathAffectedByWalk } from './walked-ground'
 
 // Fire an aggregation-progress event through the captured callback.
 function emitProgress(volumeId: string, phase: string, current: number, total: number): void {
@@ -119,6 +133,8 @@ describe('index-state per-volume aggregation', () => {
     scanProgressCb = undefined
     scanAbortedCb = undefined
     phaseCb = undefined
+    branchStartedCb = undefined
+    branchEndedCb = undefined
     await initIndexState()
   })
 
@@ -315,12 +331,26 @@ describe('index-state per-volume scan run kind (the run-kind header fact)', () =
     scanProgressCb = undefined
     scanAbortedCb = undefined
     phaseCb = undefined
+    branchStartedCb = undefined
+    branchEndedCb = undefined
     await initIndexState()
   })
 
-  function emitStarted(volumeId: string, scanRunKind: ScanRunKind, priorTotalEntries: number | null = null): void {
+  function emitStarted(
+    volumeId: string,
+    scanRunKind: ScanRunKind,
+    priorTotalEntries: number | null = null,
+    coveredInPhases = false,
+  ): void {
     if (!scanStartedCb) throw new Error('scan-started callback not registered')
-    scanStartedCb({ volumeId, scanRunKind, priorTotalEntries, priorScanDurationMs: null, volumeUsedBytes: null })
+    scanStartedCb({
+      volumeId,
+      scanRunKind,
+      priorTotalEntries,
+      priorScanDurationMs: null,
+      volumeUsedBytes: null,
+      coveredInPhases,
+    })
   }
 
   it('takes the backend answer verbatim, including the case a prior-totals guess got wrong', () => {
@@ -423,5 +453,115 @@ describe('index-state scan-progress reactivity', () => {
 
     // Pre-fix this stops at [-1, 500]: the second set re-uses the same reference.
     expect(seen).toEqual([-1, 500, 9_500])
+  })
+})
+
+describe('index-state walked ground', () => {
+  beforeEach(async () => {
+    destroyIndexState()
+    scanStartedCb = undefined
+    scanProgressCb = undefined
+    scanAbortedCb = undefined
+    phaseCb = undefined
+    branchStartedCb = undefined
+    branchEndedCb = undefined
+    await initIndexState()
+  })
+
+  function emitStarted(volumeId: string, coveredInPhases: boolean): void {
+    if (!scanStartedCb) throw new Error('scan-started callback not registered')
+    scanStartedCb({
+      volumeId,
+      scanRunKind: 'first_scan',
+      priorTotalEntries: null,
+      priorScanDurationMs: null,
+      volumeUsedBytes: null,
+      coveredInPhases,
+    })
+  }
+
+  function startWalking(volumeId: string, root: string): void {
+    if (!branchStartedCb) throw new Error('coverage-branch-started callback not registered')
+    branchStartedCb({ volumeId, roots: [root] })
+  }
+
+  function stopWalking(volumeId: string, root: string): void {
+    if (!branchEndedCb) throw new Error('coverage-branch-ended callback not registered')
+    branchEndedCb({ volumeId, roots: [root] })
+  }
+
+  it('starts a phased run with nothing in flux, so no row lights up before a branch is named', () => {
+    emitStarted('root', true)
+
+    expect(getWalkedGround('root')).toEqual({ wholeVolume: false, roots: [] })
+    expect(isPathAffectedByWalk(getWalkedGround('root'), '/Users/someone')).toBe(false)
+  })
+
+  it('puts the whole drive in flux for a run that walks it whole', () => {
+    emitStarted('root', false)
+
+    expect(isPathAffectedByWalk(getWalkedGround('root'), '/anywhere')).toBe(true)
+  })
+
+  it('narrows to the branch under the walker, and lets go of it when it ends', () => {
+    emitStarted('root', true)
+
+    startWalking('root', '/Users/someone/Downloads')
+    expect(isPathAffectedByWalk(getWalkedGround('root'), '/Users/someone/Downloads/big')).toBe(true)
+    expect(isPathAffectedByWalk(getWalkedGround('root'), '/opt')).toBe(false)
+
+    stopWalking('root', '/Users/someone/Downloads')
+    expect(isPathAffectedByWalk(getWalkedGround('root'), '/Users/someone/Downloads/big')).toBe(false)
+  })
+
+  it('drops only the branch that ended', () => {
+    emitStarted('root', true)
+    if (!branchStartedCb || !branchEndedCb) throw new Error('coverage-branch callbacks not registered')
+
+    branchStartedCb({ volumeId: 'root', roots: ['/opt/one', '/opt/two'] })
+    branchEndedCb({ volumeId: 'root', roots: ['/opt/one'] })
+
+    expect(getWalkedGround('root').roots).toEqual(['/opt/two'])
+  })
+
+  it('never lets a branch event on one drive move another drive', () => {
+    emitStarted('root', true)
+    emitStarted('smb-nas', true)
+
+    startWalking('smb-nas', '/Users/someone/Downloads')
+
+    expect(isPathAffectedByWalk(getWalkedGround('root'), '/Users/someone/Downloads')).toBe(false)
+    expect(isPathAffectedByWalk(getWalkedGround('smb-nas'), '/Users/someone/Downloads')).toBe(true)
+  })
+
+  it("forgets a volume's ground when its run ends, on both terminal events", () => {
+    if (!scanAbortedCb) throw new Error('scan-aborted callback not registered')
+    emitStarted('root', true)
+    startWalking('root', '/Users/someone/Downloads')
+
+    scanAbortedCb({ volumeId: 'root' })
+
+    expect(getWalkedGround('root')).toEqual({ wholeVolume: false, roots: [] })
+  })
+
+  it('re-fires reactive consumers when the ground moves', () => {
+    emitStarted('root', true)
+
+    const seen: boolean[] = []
+    const cleanup = $effect.root(() => {
+      $effect(() => {
+        seen.push(isPathAffectedByWalk(getWalkedGround('root'), '/Users/someone/Downloads/big'))
+      })
+    })
+
+    flushSync()
+    startWalking('root', '/Users/someone/Downloads')
+    flushSync()
+    stopWalking('root', '/Users/someone/Downloads')
+    flushSync()
+
+    cleanup()
+
+    expect(seen).toEqual([false, true, false])
   })
 })

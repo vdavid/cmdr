@@ -123,6 +123,7 @@ describe('drive index manager — freshness status', () => {
       priorTotalEntries: null,
       priorScanDurationMs: null,
       volumeUsedBytes: null,
+      coveredInPhases: false,
     })
     await Promise.resolve()
     await Promise.resolve()

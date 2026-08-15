@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { FileEntry } from '../types'
 
 import { _setMeasureForTests, computeFullListColumnWidths } from './measure-column-widths'
+import { isDirSizeUpdating } from './full-list-utils'
+import { NO_WALKED_GROUND, isPathAffectedByWalk, walkedBranches, type WalkedGround } from '$lib/indexing/walked-ground'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import { formatSizeForDisplay } from '../selection/selection-info-utils'
 
@@ -42,11 +44,22 @@ function stubDate(text: string) {
   }
 }
 
+/** The pane's per-row answer, built the way `FullList` builds it. Nothing is in
+ *  flux unless a test says so. */
+const nothingUpdating = () => false
+
+/** The pane's per-row answer over some walked ground, byte for byte what
+ *  `FullList` hands both its size cell and this measurer. */
+const paneAnswer =
+  (ground: WalkedGround) =>
+  (file: FileEntry): boolean =>
+    isDirSizeUpdating(isPathAffectedByWalk(ground, file.path), file.recursiveSizePending ?? false)
+
 const baseArgs = {
   parentDirStats: null,
   formattedDate: (t: number) => stubDate(new Date(t * 1000).toISOString().slice(0, 19).replace('T', ' ')),
   sizeDisplayMode: 'smart' as const,
-  indexing: false,
+  isSizeUpdating: nothingUpdating,
   showSizeMismatchWarning: false,
   sortBy: 'name' as const,
   sizeFormatOpts: { unit: 'bytes' as const, format: 'binary' as const },
@@ -196,13 +209,13 @@ describe('computeFullListColumnWidths', () => {
     })
     const busy = computeFullListColumnWidths({
       ...baseArgs,
-      indexing: true,
+      isSizeUpdating: () => true,
       entries: [entry({ name: 'd', isDirectory: true, recursiveSize: 12345 })],
     })
     expect(busy.size).toBeGreaterThanOrEqual(idle.size)
   })
 
-  it('reserves icon width when a directory is per-dir pending without global indexing', () => {
+  it('reserves icon width when a directory is per-dir pending with no walk running', () => {
     _setMeasureForTests(fakeMeasure)
     const idle = computeFullListColumnWidths({
       ...baseArgs,
@@ -210,10 +223,45 @@ describe('computeFullListColumnWidths', () => {
     })
     const pending = computeFullListColumnWidths({
       ...baseArgs,
-      indexing: false,
+      isSizeUpdating: paneAnswer(NO_WALKED_GROUND),
       entries: [entry({ name: 'd', isDirectory: true, recursiveSize: 12345, recursiveSizePending: true })],
     })
-    expect(pending.size).toBeGreaterThanOrEqual(idle.size)
+    expect(pending.size).toBeGreaterThan(idle.size)
+  })
+
+  it('reserves the hourglass on the rows a walk touches, and only those', () => {
+    // The measurer and the size cell read the SAME per-row answer, so this is
+    // the parity that matters: a per-volume answer here would reserve width on
+    // every row and clip the glyph on exactly the rows that show it.
+    _setMeasureForTests(fakeMeasure)
+    const ground = walkedBranches(['/Users/someone/Downloads/big'])
+    const dir = (name: string, path: string) =>
+      entry({ name, path, isDirectory: true, recursiveSize: 12345 })
+
+    const untouched = computeFullListColumnWidths({
+      ...baseArgs,
+      isSizeUpdating: paneAnswer(NO_WALKED_GROUND),
+      entries: [dir('Documents', '/Users/someone/Documents')],
+    })
+    const elsewhere = computeFullListColumnWidths({
+      ...baseArgs,
+      isSizeUpdating: paneAnswer(ground),
+      entries: [dir('Documents', '/Users/someone/Documents')],
+    })
+    expect(elsewhere.size).toBe(untouched.size)
+
+    const above = computeFullListColumnWidths({
+      ...baseArgs,
+      isSizeUpdating: paneAnswer(ground),
+      entries: [dir('Downloads', '/Users/someone/Downloads')],
+    })
+    const inside = computeFullListColumnWidths({
+      ...baseArgs,
+      isSizeUpdating: paneAnswer(ground),
+      entries: [dir('big', '/Users/someone/Downloads/big')],
+    })
+    expect(above.size).toBeGreaterThan(untouched.size)
+    expect(inside.size).toBe(above.size)
   })
 
   it('reserves icon width for a scanning directory with no size yet', () => {
@@ -224,7 +272,7 @@ describe('computeFullListColumnWidths', () => {
     })
     const scanning = computeFullListColumnWidths({
       ...baseArgs,
-      indexing: true,
+      isSizeUpdating: () => true,
       entries: [entry({ name: 'd', isDirectory: true, recursiveSize: undefined })],
     })
     // The `<dir>` placeholder text is the same in both, but the scanning row also
