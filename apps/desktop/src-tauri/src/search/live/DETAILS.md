@@ -42,6 +42,12 @@ None of them can leave coverage claiming completeness: a directory is marked lis
 (`scanner/CLAUDE.md` § "Honest-stale, never false-complete"), so a walk cut off anywhere claims only what it read.
 App quit needs nothing beyond that — the process dies with the marks unwritten.
 
+**The fourth way short has no ending of its own**: `abandoned_ground` is true alongside any of the four, and
+`abandoned_locations` says how much of the drive it is — the given-up-on folders grouped by their parent
+(`abandoned_location_count`), ❌ never the folder count, since a mount that went to sleep marks every directory a walk
+had reached inside it. `0` with the flag true is real (this run's own walk gave up on ground it recorded no path for)
+and the note has words for it. Why it stays a count rather than a fourth list of paths: `../DETAILS.md` § The shape.
+
 
 ## What a live result carries, and what it can't
 

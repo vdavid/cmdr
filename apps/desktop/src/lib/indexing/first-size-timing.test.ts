@@ -10,9 +10,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { FileEntry } from '$lib/file-explorer/types'
 
-const trackEvent = vi.fn()
+const trackEvent = vi.fn<(name: string, props: Record<string, unknown>) => void>()
 vi.mock('$lib/tauri-commands', () => ({
-  trackEvent: (name: string, props: Record<string, unknown>) => trackEvent(name, props),
+  trackEvent: (name: string, props: Record<string, unknown>) => {
+    trackEvent(name, props)
+  },
 }))
 vi.mock('./index-state.svelte', () => ({
   isVolumeCoveredInPhases: () => true,
@@ -39,8 +41,9 @@ describe('noteRenderedFolderSizes', () => {
 
     expect(trackEvent).toHaveBeenCalledTimes(1)
     expect(trackEvent.mock.calls[0][0]).toBe('first_folder_size_shown')
-    expect(trackEvent.mock.calls[0][1]).toMatchObject({ covering: true })
-    expect(String(trackEvent.mock.calls[0][1].seconds_bucket)).not.toBe('')
+    const props = trackEvent.mock.calls[0][1]
+    expect(props).toMatchObject({ covering: true })
+    expect(String(props.seconds_bucket)).not.toBe('')
   })
 
   it('says nothing while every folder is still a placeholder', () => {
