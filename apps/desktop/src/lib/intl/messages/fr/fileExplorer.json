@@ -1355,6 +1355,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr n''a pas pu lire {count, plural, one {un endroit} many {{countText} endroits} other {{countText} endroits}} de ce disque, donc une recherche ici sera peut-être un peu incomplète.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
+    "sourceHash": "5369ab3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr n''a pas pu lire {count, plural, one {un endroit} many {{countText} endroits} other {{countText} endroits}} de ce disque, donc une recherche ici sera peut-être un peu incomplète. Il y revient tout seul.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
+    "sourceHash": "a74a60f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Activer l''indexation pour ce disque",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

@@ -208,6 +208,45 @@ export function driveIndexCoalescedNote(status: VolumeIndexStatus, nowSeconds: n
   }
 }
 
+/** The footnote a finished index owes when it couldn't read everything. */
+export interface DriveIndexUnreadableNote {
+  key: MessageKey
+  /** How many PLACES, for the plural branch. */
+  count: number
+}
+
+/**
+ * The "done, with holes" footnote, or `null` when there are none.
+ *
+ * A completed index can hold no rows for folders a walk was refused, ones Cmdr
+ * declines to read at all, and ones that stopped answering. Without this line
+ * "Indexed 2026-08-15" is quietly untrue for exactly the people least likely to
+ * find out another way — someone who never searches never sees search's coverage
+ * note, which is the only other place that says it.
+ *
+ * ❌ A footnote, never a warning: no error styling, no badge colour change,
+ * nothing asked of the reader. Whether Cmdr comes back to that ground on its own
+ * is the one distinction worth making here, and it picks the wording; WHICH of
+ * the three causes it was, and what to do about it, is search's note. A badge
+ * tooltip is not where somebody grants Full Disk Access.
+ *
+ * Only for a finished index: a drive still being covered hasn't reached that
+ * ground YET, which is a different sentence and the checklist is already saying
+ * it.
+ */
+export function driveIndexUnreadableNote(status: VolumeIndexStatus): DriveIndexUnreadableNote | null {
+  const count = status.unreadableLocations
+  if (count <= 0) return null
+  const state = driveIndexState(status)
+  if (state !== 'fresh' && state !== 'stale') return null
+  return {
+    key: status.unreadableRetried
+      ? 'fileExplorer.navigation.driveIndex.tooltipUnreadableRetried'
+      : 'fileExplorer.navigation.driveIndex.tooltipUnreadable',
+    count,
+  }
+}
+
 /** What the badge menu owes the user after an enable or a rescan. */
 export type DriveIndexActionFeedback =
   /** The badge itself shows what happened, so a toast would be noise. */

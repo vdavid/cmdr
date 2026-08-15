@@ -1357,6 +1357,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr kon {count, plural, one {één plek} other {{countText} plekken}} op deze schijf niet lezen, dus een zoekopdracht hier komt misschien iets tekort.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
+    "sourceHash": "5369ab3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr kon {count, plural, one {één plek} other {{countText} plekken}} op deze schijf niet lezen, dus een zoekopdracht hier komt misschien iets tekort. Cmdr komt er vanzelf op terug.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
+    "sourceHash": "a74a60f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Zet indexeren aan voor deze schijf",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

@@ -1354,6 +1354,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "O Cmdr não conseguiu ler {count, plural, one {um ponto} many {{countText} pontos} other {{countText} pontos}} deste disco, então uma busca aqui pode ficar um pouco curta.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
+    "sourceHash": "5369ab3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "O Cmdr não conseguiu ler {count, plural, one {um ponto} many {{countText} pontos} other {{countText} pontos}} deste disco, então uma busca aqui pode ficar um pouco curta. Ele volta a eles sozinho.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
+    "sourceHash": "a74a60f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Ativar indexação para este disco",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

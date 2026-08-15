@@ -354,6 +354,23 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
   actions (`enable`/`rescan`/`disable`/`stop`) call back to `VolumeBreadcrumb`'s `handleDriveIndexAction`, which runs
   the per-drive IPC. ❌ Don't put `role="img"` on the button (axe rejects it; the button role + label already convey
   it).
+- **A finished index says when it couldn't read everything** (`driveIndexUnreadableNote`, pure + unit-tested). A
+  completed walk can hold no rows for folders it was refused, ones Cmdr declines to read at all, and ones that stopped
+  answering, so "Indexed 2026-08-15" alone can be quietly untrue. A third tooltip paragraph names the count. Without it
+  the ONLY place that gap is stated is search's coverage note, which someone who never searches never sees — which is
+  exactly the person least likely to find out another way.
+  - **Places, ❌ never folders.** `VolumeIndexStatus.unreadableLocations` counts the directories grouped by parent
+    (`cmdr_fs::path_locations::location_count`, the same rule search's note uses so the two surfaces agree about a
+    drive). One sleeping mount marked 1,497 directories on a real machine, which the coverage descent cuts to 76 and the
+    grouping to about one; "1,497 folders" is true and unusable.
+  - **A footnote, ❌ not a warning.** The dot stays green, nothing is styled as a problem, and nothing is asked of the
+    reader. `unreadableRetried` picks the wording: ground that stopped answering is Cmdr's to retry and the copy says
+    so, which is what keeps the line from reading as a fault. ❌ Don't promise a retry otherwise — a refused or
+    deliberately-skipped folder never gets one. WHICH cause it was, and what (if anything) to do, is search's note: a
+    badge tooltip is not where somebody grants Full Disk Access.
+  - **Only for a settled drive** (`fresh` / `stale`). Ground a walker hasn't REACHED yet isn't ground it couldn't read,
+    and the checklist is already saying what's happening. The crate enforces the same gate on the way in, where it also
+    keeps the query cheap (`read/queries.rs`).
 - **Coalesced "macOS lost track of changes" signals ride in the TOOLTIP, never in the dot's color**
   (`driveIndexCoalescedNote`, pure + unit-tested). When `VolumeIndexStatus.coalescedSignalsSinceSweep > 0`, a second
   paragraph joins the state line (the tooltip is `white-space: pre-line`, so a `\n` renders) saying how many times macOS

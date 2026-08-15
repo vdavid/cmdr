@@ -330,7 +330,8 @@ the index alone and says nothing about reporting; `execute/live_run.rs` is the r
    skipped.
 
    What DOES cross is a COUNT, `abandoned_locations`: those paths grouped by their parent
-   (`live::events::abandoned_location_count`). ❌ Never a folder count — a wedged mount marked 1,497 directories on one
+   (`cmdr_fs::path_locations::location_count`, shared with the drive badge, which reports the same rule about a completed
+   index). ❌ Never a folder count — a wedged mount marked 1,497 directories on one
    real machine, which `coverage_for_scope` already cuts to 76 shallowest ancestors, and grouping those lands on the one
    place the user would recognize. `0` alongside `abandoned_ground` is a real state and the note handles it in words:
    this run's own walk gave up on ground it recorded no path for. ❌ Still not a fourth LIST on screen — the copy that

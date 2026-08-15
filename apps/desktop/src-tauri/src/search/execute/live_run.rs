@@ -238,7 +238,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         // How much of the drive that is, in places rather than folders. Only the
         // durable half has paths to count; a walk that gave up on ground it never
         // recorded leaves this 0, and the note says the honest thing over it.
-        abandoned_locations: live::events::abandoned_location_count(&unreadable.abandoned),
+        abandoned_locations: cmdr_fs::path_locations::location_count(&unreadable.abandoned),
         // A scope the INDEX couldn't resolve isn't a gap once the walk has been
         // to it: the walk is the probe, and it just answered. Only a walk that
         // ran to the end proves it, so anything short leaves the signal

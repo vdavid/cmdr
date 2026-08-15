@@ -1351,6 +1351,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr kunde inte läsa {count, plural, one {ett ställe} other {{countText} ställen}} på den här enheten, så en sökning här kan bli lite kort.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
+    "sourceHash": "5369ab3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr kunde inte läsa {count, plural, one {ett ställe} other {{countText} ställen}} på den här enheten, så en sökning här kan bli lite kort. Cmdr återkommer till dem av sig själv.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
+    "sourceHash": "a74a60f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Slå på indexering för den här enheten",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

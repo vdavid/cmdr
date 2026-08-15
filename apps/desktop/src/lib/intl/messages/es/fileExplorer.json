@@ -1351,6 +1351,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr no pudo leer {count, plural, one {un punto} many {{countText} puntos} other {{countText} puntos}} de esta unidad, así que una búsqueda aquí puede quedarse un poco corta.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
+    "sourceHash": "5369ab3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr no pudo leer {count, plural, one {un punto} many {{countText} puntos} other {{countText} puntos}} de esta unidad, así que una búsqueda aquí puede quedarse un poco corta. Vuelve a ellos por su cuenta.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
+    "sourceHash": "a74a60f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Activar la indexación de esta unidad",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

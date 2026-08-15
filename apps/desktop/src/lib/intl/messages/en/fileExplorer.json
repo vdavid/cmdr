@@ -1917,6 +1917,24 @@
       "hoursText": "the same hour count, already formatted for the reader (e.g. 18)"
     }
   },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr couldn''t read {count, plural, one {one spot} other {{countText} spots}} on this drive, so a search here may come back a little short.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
+    "description": "Footnote paragraph under a finished drive''s index tooltip, when some folders hold no rows because Cmdr was refused access or skips them on purpose. A ''spot'' is a group of folders that share a parent, not a folder count: one unreadable place can hold thousands of folders, and the number a reader recognizes is the place. It''s a footnote, not a warning: nothing is styled as a problem and nothing is asked of them, since the badge is not where someone grants a permission (search''s coverage note does that). Never use the words ''error'' or ''failed''.",
+    "placeholders": {
+      "count": "how many places couldn''t be read, as a raw number, used only to pick the plural branch",
+      "countText": "the same count, already formatted for the reader (e.g. 1,497)"
+    }
+  },
+
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr couldn''t read {count, plural, one {one spot} other {{countText} spots}} on this drive, so a search here may come back a little short. It comes back to them on its own.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
+    "description": "The variant of the footnote above for when at least one of those places stopped answering rather than being refused or deliberately skipped, which is the kind Cmdr retries by itself. Same first sentence; the second says so, which is what keeps the line from reading as something the user has to fix. Never use the words ''error'' or ''failed''.",
+    "placeholders": {
+      "count": "how many places couldn''t be read, as a raw number, used only to pick the plural branch",
+      "countText": "the same count, already formatted for the reader (e.g. 1,497)"
+    }
+  },
+
   "fileExplorer.navigation.driveIndex.menuEnable": "Turn on indexing for this drive",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "description": "Menu item to start indexing the drive (shown when indexing is off). Sentence case."

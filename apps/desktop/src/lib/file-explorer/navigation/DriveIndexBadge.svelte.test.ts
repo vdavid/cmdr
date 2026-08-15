@@ -79,6 +79,8 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
     scanCompletedAt: 1_750_000_000,
     scanDurationMs: 134_000,
     coalescedSignalsSinceSweep: 0,
+    unreadableLocations: 0,
+    unreadableRetried: false,
     nextSweepDueAt: null,
     ...overrides,
   }
@@ -292,5 +294,55 @@ describe('DriveIndexBadge coalesced-signal note', () => {
     // running scan cleared the marker the "in the last N hours" window reads.
     expect(label).not.toContain('next full check')
     expect(label).not.toContain('in the last')
+  })
+})
+
+describe('DriveIndexBadge "done, with holes" footnote', () => {
+  it('says nothing extra when a finished index read everything', () => {
+    const label = ariaLabel(render(makeStatus({ freshness: 'fresh' })).target)
+    expect(label).not.toContain("couldn't read")
+  })
+
+  it('counts places, in the plural, with thousands separators', () => {
+    // The number that made this worth doing: 1,497 marked directories on a real
+    // machine are the places a reader would recognize, not the folder count.
+    const label = ariaLabel(
+      render(makeStatus({ freshness: 'fresh', unreadableLocations: 1497, unreadableRetried: false })).target,
+    )
+    expect(label).toContain("Cmdr couldn't read 1,497 spots on this drive")
+    expect(label).toContain('a search here may come back a little short')
+  })
+
+  it('reads in the singular for one place, and says Cmdr comes back to it', () => {
+    const label = ariaLabel(
+      render(makeStatus({ freshness: 'fresh', unreadableLocations: 1, unreadableRetried: true })).target,
+    )
+    expect(label).toContain("Cmdr couldn't read one spot on this drive")
+    expect(label).toContain('It comes back to them on its own.')
+  })
+
+  it('promises no retry for ground nothing will come back to', () => {
+    const label = ariaLabel(
+      render(makeStatus({ freshness: 'fresh', unreadableLocations: 2, unreadableRetried: false })).target,
+    )
+    expect(label).not.toContain('comes back to them on its own')
+  })
+
+  it('sits alongside the coalesced-signal note when both are true', () => {
+    const nowSeconds = Math.floor(Date.now() / 1000)
+    const label = ariaLabel(
+      render(
+        makeStatus({
+          freshness: 'fresh',
+          coalescedSignalsSinceSweep: 2,
+          scanCompletedAt: nowSeconds - (24 * 3600 - 60),
+          nextSweepDueAt: nowSeconds + 6 * 3600,
+          unreadableLocations: 4,
+          unreadableRetried: true,
+        }),
+      ).target,
+    )
+    expect(label).toContain('macOS lost track of file system changes')
+    expect(label).toContain("Cmdr couldn't read 4 spots on this drive")
   })
 })

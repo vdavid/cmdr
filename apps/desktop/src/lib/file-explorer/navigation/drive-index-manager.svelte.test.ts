@@ -64,6 +64,8 @@ function status(volumeId: string, freshness: VolumeIndexStatus['freshness']): Vo
     scanCompletedAt: null,
     scanDurationMs: null,
     coalescedSignalsSinceSweep: 0,
+    unreadableLocations: 0,
+    unreadableRetried: false,
     nextSweepDueAt: null,
   }
 }

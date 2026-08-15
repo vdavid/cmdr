@@ -1033,6 +1033,8 @@ export type MessageKey =
   | 'fileExplorer.navigation.driveIndex.tooltipFreshNoScan'
   | 'fileExplorer.navigation.driveIndex.tooltipIndexingOff'
   | 'fileExplorer.navigation.driveIndex.tooltipStale'
+  | 'fileExplorer.navigation.driveIndex.tooltipUnreadable'
+  | 'fileExplorer.navigation.driveIndex.tooltipUnreadableRetried'
   | 'fileExplorer.navigation.ejectBusyTooltip'
   | 'fileExplorer.navigation.ejectVolumeAriaLabel'
   | 'fileExplorer.navigation.favoriteTooltip'

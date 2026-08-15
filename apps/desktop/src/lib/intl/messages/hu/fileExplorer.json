@@ -1349,6 +1349,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "A Cmdr {count, plural, one {egy helyet} other {{countText} helyet}} nem tudott elolvasni ezen a meghajtón, ezért egy keresés itt kicsit hiányos lehet.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
+    "sourceHash": "5369ab3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "A Cmdr {count, plural, one {egy helyet} other {{countText} helyet}} nem tudott elolvasni ezen a meghajtón, ezért egy keresés itt kicsit hiányos lehet. Magától visszatér rájuk.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
+    "sourceHash": "a74a60f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Indexelés bekapcsolása ehhez a meghajtóhoz",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

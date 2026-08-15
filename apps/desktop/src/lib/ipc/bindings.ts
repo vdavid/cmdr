@@ -9346,6 +9346,26 @@ export type VolumeIndexStatus = {
    */
   coalescedSignalsSinceSweep: number
   /**
+   *  How many PLACES a COMPLETED index holds no rows for: directories a walk was
+   *  refused, ones Cmdr declines to read at all, and ones that stopped
+   *  answering, grouped by parent. `0` while a volume is still being indexed,
+   *  which is the only honest answer there — the ground it hasn't reached YET
+   *  isn't ground it couldn't read.
+   *
+   *  ❌ Never a folder count: a mount that went to sleep marks every directory a
+   *  walk had reached inside it, and "1,497 folders" tells a reader nothing they
+   *  can picture. The grouping rule is `cmdr_fs::path_locations::location_count`,
+   *  shared with search's coverage note so the two surfaces agree about a drive.
+   */
+  unreadableLocations: number
+  /**
+   *  Whether any of that ground is the kind Cmdr comes back to on its own (a
+   *  directory that stopped answering), rather than one it was refused or
+   *  declines to read. The badge says so, which is what keeps the line a
+   *  footnote instead of a fault the reader has to act on.
+   */
+  unreadableRetried: boolean
+  /**
    *  Unix seconds when the next full sweep becomes due for this volume (the last
    *  sweep plus the volume's window). Lets the tooltip say "next full check in N
    *  hours" without duplicating the policy constant in the frontend. `None` until

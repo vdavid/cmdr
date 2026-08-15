@@ -23,6 +23,7 @@
         driveIndexMenuLabelKey,
         driveIndexDuration,
         driveIndexCoalescedNote,
+        driveIndexUnreadableNote,
         hasLastScanFacts,
         type DriveIndexMenuAction,
         type DriveIndexState,
@@ -116,6 +117,19 @@
         return tString(coalescedNote.key, params)
     })
 
+    // The "done, with holes" footnote: a finished index that holds no rows for
+    // some folders says so here, because search's coverage note is otherwise the
+    // only place it's said and someone who never searches never sees it.
+    const unreadableNote = $derived(driveIndexUnreadableNote(status))
+    const unreadableText = $derived(
+        unreadableNote
+            ? tString(unreadableNote.key, {
+                  count: unreadableNote.count,
+                  countText: formatInteger(unreadableNote.count),
+              })
+            : '',
+    )
+
     // The text tooltip per state. The `scanning` text is the static fallback for
     // the no-activity-yet window (the rich body replaces it once activity lands);
     // unified onto the `indexing.scan.*` family so both surfaces say the same.
@@ -142,9 +156,11 @@
         }
     })
 
-    // The coalesced note is its own paragraph under the state line (`.cmdr-tooltip`
-    // is `white-space: pre-line`, so a newline renders).
-    const tooltipText = $derived(coalescedText ? `${stateTooltipText}\n${coalescedText}` : stateTooltipText)
+    // Each note is its own paragraph under the state line (`.cmdr-tooltip` is
+    // `white-space: pre-line`, so a newline renders). Both can be true at once.
+    const tooltipText = $derived(
+        [stateTooltipText, coalescedText, unreadableText].filter((line) => line !== '').join('\n'),
+    )
 
     // The tooltip param: the rich DOM body while scanning with live activity,
     // else the text tooltip for this state. The template blanks it while the

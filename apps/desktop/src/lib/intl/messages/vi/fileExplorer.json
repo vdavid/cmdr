@@ -1349,6 +1349,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr không đọc được {count, plural, other {{countText} chỗ}} trên ổ đĩa này, nên kết quả tìm ở đây có thể hơi thiếu.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
+    "sourceHash": "5369ab3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr không đọc được {count, plural, other {{countText} chỗ}} trên ổ đĩa này, nên kết quả tìm ở đây có thể hơi thiếu. Cmdr sẽ tự quay lại với chúng.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
+    "sourceHash": "a74a60f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Bật lập chỉ mục cho ổ đĩa này",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

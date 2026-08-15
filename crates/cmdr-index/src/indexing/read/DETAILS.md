@@ -111,6 +111,22 @@ mutate registry state.
   The path form resolves the volume from a listing path (the always-visible active-drive badge); the id form is keyed by
   `volume.id` (the per-drive dropdown rows). Both return the same shape. `next_sweep_due_at` is computed here so the
   sweep-window length stays in the policy module (owned by `../reconcile/DETAILS.md`), not duplicated in the frontend.
+  It also carries `unreadable_locations` + `unreadable_retried`, so a finished index can admit it has holes (below).
+
+**What a COMPLETED index couldn't read** (`unreadable_ground`). A finished walk can hold no rows for directories it was
+refused (`Denied`), ones Cmdr declines to read at all (`Declined`), and ones that stopped answering (`Abandoned`), so
+"done" can mean "done, with holes" and the badge has to be able to say so. The status carries a COUNT of places
+(`cmdr_fs::path_locations::location_count` over all three lists — the same rule search's coverage note uses, so the two
+surfaces can't disagree about one drive) plus whether any of it is the retryable kind, which is the only distinction the
+badge makes: what to DO about a refusal is search's note, not a tooltip's job.
+
+⚠️ **The completion gate is what makes it affordable**, not just meaningful. The coverage descent stops at the first
+fully covered subtree, so on a complete index with no holes it answers at the volume root immediately, and with holes it
+walks only the ancestor chains leading to them (76 cut points on a real machine). On an INCOMPLETE index the frontier is
+most of the drive and this would be a full descent — on a call the badge makes on every scan and freshness event. ❌
+Don't lift the gate. A mount-rooted volume with no recorded `volume_path` reports nothing rather than falling back to
+`/`, which would answer for the boot disk instead.
+
 - `list_dir_children(path)` — the immediate children a directory's rows describe, for the agent's `list_dir` tool. ⚠️ It
   answers `None` for a directory that has a ROW but no LISTING (`listed_epoch == 0`), not just for one with no row: rows
   sit under an unlisted directory routinely (FSEvents verification upserts children without marking their parent listed,

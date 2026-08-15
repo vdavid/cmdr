@@ -9,6 +9,7 @@ import {
   driveIndexRefusalMessageKey,
   driveIndexActionFeedback,
   driveIndexCoalescedNote,
+  driveIndexUnreadableNote,
   hasLastScanFacts,
 } from './drive-index-status'
 
@@ -21,6 +22,8 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
     scanCompletedAt: 1_750_000_000,
     scanDurationMs: 134_000,
     coalescedSignalsSinceSweep: 0,
+    unreadableLocations: 0,
+    unreadableRetried: false,
     nextSweepDueAt: null,
     ...overrides,
   }
@@ -361,5 +364,41 @@ describe('driveIndexCoalescedNote', () => {
     expect(
       driveIndexCoalescedNote(makeStatus({ coalescedSignalsSinceSweep: 4, scanCompletedAt: null }), NOW),
     ).toBeNull()
+  })
+})
+
+describe('driveIndexUnreadableNote — "done, with holes"', () => {
+  it('says nothing when a finished index read everything', () => {
+    expect(driveIndexUnreadableNote(makeStatus({ unreadableLocations: 0 }))).toBeNull()
+  })
+
+  it('counts PLACES and says Cmdr comes back when the ground is the retryable kind', () => {
+    // The distinction that keeps this a footnote rather than a fault: a folder
+    // that stopped answering is Cmdr's to retry, and saying so is the reason not
+    // to offer the reader an action.
+    expect(driveIndexUnreadableNote(makeStatus({ unreadableLocations: 3, unreadableRetried: true }))).toEqual({
+      key: 'fileExplorer.navigation.driveIndex.tooltipUnreadableRetried',
+      count: 3,
+    })
+  })
+
+  it('drops the retry sentence for ground nothing will come back to', () => {
+    // Refused, or skipped on purpose. Promising a retry there would be a promise
+    // Cmdr never keeps.
+    expect(driveIndexUnreadableNote(makeStatus({ unreadableLocations: 1, unreadableRetried: false }))).toEqual({
+      key: 'fileExplorer.navigation.driveIndex.tooltipUnreadable',
+      count: 1,
+    })
+  })
+
+  it('speaks for a stale index too, which is a finished one going out of date', () => {
+    expect(driveIndexUnreadableNote(makeStatus({ freshness: 'stale', unreadableLocations: 2 }))).not.toBeNull()
+  })
+
+  it('stays quiet while a drive is still being indexed', () => {
+    // ❌ Ground the walker hasn't REACHED yet is not ground it couldn't read, and
+    // the checklist is already saying what's happening.
+    expect(driveIndexUnreadableNote(makeStatus({ freshness: 'scanning', unreadableLocations: 5 }))).toBeNull()
+    expect(driveIndexUnreadableNote(makeStatus({ enabled: false, freshness: null, unreadableLocations: 5 }))).toBeNull()
   })
 })

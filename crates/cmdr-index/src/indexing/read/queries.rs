@@ -9,6 +9,7 @@
 
 use std::sync::atomic::Ordering;
 
+use super::coverage::{self, CoverageDimension};
 use super::enrichment::get_read_pool_for;
 use super::pending_sizes::get_pending_sizes_for;
 use crate::indexing::events::{DEBUG_STATS, IndexDebugStatusResponse, IndexStatusResponse, VolumeIndexStatus};
@@ -39,16 +40,25 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
 
     // Pull the persisted last-scan facts from the status response (best-effort;
     // a not-indexed volume yields `None`s).
-    let (scan_completed_at, scan_duration_ms) = get_status(volume_id)
+    let (scan_completed_at, scan_duration_ms, volume_path) = get_status(volume_id)
         .ok()
         .and_then(|s| s.index_status)
         .map(|st| {
             (
                 st.scan_completed_at.and_then(|v| v.parse::<u64>().ok()),
                 st.scan_duration_ms.and_then(|v| v.parse::<u64>().ok()),
+                st.volume_path,
             )
         })
-        .unwrap_or((None, None));
+        .unwrap_or((None, None, None));
+
+    // What a FINISHED index couldn't read, so "done" can't quietly mean "done,
+    // with holes". Gated on completion for two reasons that happen to agree: it
+    // is the only state where the question means anything, and it is the only
+    // state where the answer is cheap (below).
+    let unreadable = scan_completed_at
+        .map(|_| unreadable_ground(volume_id, volume_path.as_deref()))
+        .unwrap_or_default();
 
     // The shallow-anchor sweep bookkeeping (how many "macOS lost track of changes"
     // signals we coalesced since the last sweep, and when the next one is due).
@@ -77,6 +87,58 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
         scan_duration_ms,
         coalesced_signals_since_sweep: sweep.coalesced_since_sweep,
         next_sweep_due_at,
+        unreadable_locations: unreadable.locations,
+        unreadable_retried: unreadable.retried,
+    }
+}
+
+/// Ground a completed index holds no rows for, summarized for a badge.
+#[derive(Default)]
+struct UnreadableGround {
+    /// How many PLACES that is, folders grouped by parent.
+    locations: u32,
+    /// Whether any of it is the kind Cmdr comes back to on its own (a directory
+    /// that stopped answering), as opposed to one it was refused or declines to
+    /// read at all. It is the only one of the three with a next step, and saying
+    /// so is what stops the line reading as a fault the user has to fix.
+    retried: bool,
+}
+
+/// Ask a COMPLETED volume what it couldn't read.
+///
+/// ⚠️ **The completion gate is what makes this affordable**, not just meaningful.
+/// The coverage descent stops at the first fully covered subtree, so on a
+/// complete index with no holes it answers at the volume root and returns
+/// immediately; with holes it walks only the ancestor chains leading to them (76
+/// cut points on a real machine). On an INCOMPLETE index the frontier is most of
+/// the drive, and this would be a full descent on a call the badge makes on every
+/// scan and freshness event. ❌ Don't lift the gate.
+fn unreadable_ground(volume_id: &str, volume_path: Option<&str>) -> UnreadableGround {
+    let root = if volume_id == ROOT_VOLUME_ID {
+        "/"
+    } else {
+        match volume_path {
+            Some(path) => path,
+            // A mount-rooted volume that never recorded where it was mounted has
+            // no scope to ask about; saying nothing beats guessing `/`, which
+            // would answer for the boot disk instead.
+            None => return UnreadableGround::default(),
+        }
+    };
+    let Ok(map) = coverage::coverage_on_volume(volume_id, root, CoverageDimension::Listing) else {
+        return UnreadableGround::default();
+    };
+    let retried = !map.abandoned.is_empty();
+    // All three causes count toward the same sentence: whatever the reason, those
+    // files aren't in the index and a search here is honestly narrow. Which of the
+    // three it was, and what (if anything) to do about it, is search's coverage
+    // note — a badge tooltip is not where somebody grants Full Disk Access.
+    let mut unread = map.permission_denied;
+    unread.extend(map.declined);
+    unread.extend(map.abandoned);
+    UnreadableGround {
+        locations: cmdr_fs::path_locations::location_count(&unread),
+        retried,
     }
 }
 
