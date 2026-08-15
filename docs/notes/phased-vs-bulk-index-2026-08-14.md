@@ -371,7 +371,7 @@ open.
 
 The arms above ran on a throwaway harness. This one is the shipped phase machine (`lifecycle/phases/`), driven through
 the public handle over David's actual `$HOME` into a temp index, release build
-(`indexing::lifecycle::phases::tests::how_long_home_takes`, `#[ignore]`d).
+(`indexing::lifecycle::phases::tests::home_bench::how_long_home_takes`, `#[ignore]`d).
 
 - **home minus `~/Library` covered: 43.1 s**
 - **all of home covered: 82.5 s**

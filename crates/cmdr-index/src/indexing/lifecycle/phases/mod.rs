@@ -92,7 +92,7 @@ const MAX_PASSES_PER_PHASE: usize = 2;
 ///
 /// `~/Library` is 27.7% of a real boot index and 48% of home's coverage wall
 /// clock, so deferring it moves the early media kick 39 s earlier (measured by
-/// `tests::how_long_home_takes`; the numbers and their conditions live in
+/// `tests::home_bench::how_long_home_takes`; the numbers and their conditions live in
 /// `../DETAILS.md` § "The early home signal", ❌ not restated at each use). It
 /// stays in scope — search over it is occasionally what someone wants — but it
 /// goes last inside its phase, and the early home signal doesn't wait for it.

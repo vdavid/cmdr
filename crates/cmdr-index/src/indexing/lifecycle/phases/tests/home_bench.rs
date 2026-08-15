@@ -13,7 +13,7 @@ use super::*;
 ///
 /// ```sh
 /// cargo test -p cmdr-index --release --lib -- --ignored --nocapture \
-///   indexing::lifecycle::phases::tests::how_long_home_takes
+///   indexing::lifecycle::phases::tests::home_bench::how_long_home_takes
 /// ```
 #[test]
 #[ignore = "walks a real home folder; run it explicitly"]

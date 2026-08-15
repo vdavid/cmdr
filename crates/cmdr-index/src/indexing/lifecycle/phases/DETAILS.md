@@ -169,7 +169,7 @@ it, so `AggregationComplete` fired ahead of them left the corner hourglass, an h
 panes, and the step checklist frozen at "Saving folder sizes… 99%" for the rest of the session; only a relaunch cleared
 it. A full scan already orders it this way (`../scan_completion.rs`), and the frontend holds the same line from its end
 (`apps/desktop/src/lib/indexing/CLAUDE.md`). Anchored by
-`tests::nothing_aggregates_after_the_volume_says_aggregation_is_done`.
+`tests::completion::nothing_aggregates_after_the_volume_says_aggregation_is_done`.
 
 The sequence fires on the absent→present transition only. Re-running it would rewrite `SHALLOW_SWEEP_AT_KEY` and push
 the 24-hour window forward every time.
@@ -211,7 +211,7 @@ the ORDER and the signal change. Linux has no single equivalent pile, so it has 
 - **The reporter's lifetime is the MACHINE's**, not a walk's, or the 500 ms tick would die and restart 50–150 times a
   phase, taking the progress stream, mid-scan partial aggregation, and the `open_listings` visit poll with it. A walk
   over one frontier root usually finishes well inside the reporter's first sleep, so a per-walk pump would tick almost
-  never. `tests::the_progress_pump_outlives_the_walks_it_reports_on` anchors it by holding a between-roots gap open from
+  never. `tests::interleaving::the_progress_pump_outlives_the_walks_it_reports_on` anchors it by holding a between-roots gap open from
   inside the event sink and counting what still arrives.
 
 ## Where the app's answers enter
@@ -260,7 +260,7 @@ phase root, and writes the same value where `get_status` reads it.
 (`IndexStatusResponse::coverage_phase`) is what a window that reloaded mid-run reads, alongside `walked_roots` and
 `scan_run_kind`, which recover the same way: the last phase of a first index is the rest of the drive, so a joiner with
 only the event would sit with no header until the run ended. It reports `None` once the machine has no work left, ❌
-never the phase it finished on. Anchored by `tests::a_window_joining_mid_run_reads_the_running_phase_off_the_status`.
+never the phase it finished on. Anchored by `tests::interleaving::a_window_joining_mid_run_reads_the_running_phase_off_the_status`.
 
 ❌ **The phase is not the host's to derive.** An app-side home path can disagree with `IndexPathSpace` about firmlinks,
 which works on one machine and mislabels on another, so the crate classifies and the host only chooses words. ❌ Nor can
@@ -277,7 +277,7 @@ way back the header names that folder for the rest of the outer phase — observ
 use most" for two minutes while the machine walked `/`. `walk_all` therefore re-announces whenever `take_a_visit`
 reports it actually ran one. ⚠️ The re-announcement is the COVERAGE event alone, ❌ never `set_phase_for` as well: the
 activity phase is `Scanning` throughout, so a second `PhaseChanged` would carry no news and would inflate the app-wide
-debug timeline. Anchored by `tests::the_outer_phase_says_so_again_after_a_visited_root_interrupts_it`.
+debug timeline. Anchored by `tests::completion::the_outer_phase_says_so_again_after_a_visited_root_interrupts_it`.
 
 ## Stop and Forget, against a half-covered drive
 
