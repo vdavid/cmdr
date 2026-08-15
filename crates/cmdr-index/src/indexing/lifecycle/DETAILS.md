@@ -132,8 +132,8 @@ caller asked for is in flight).
 
 ⚠️ **`perform_registry_rescan` stops the watcher and the live loop on its way in**, because the full scan it used to
 reach started fresh ones. The machine starts a watcher too, but only from a walk's `begin_branch_coverage` — so
-`cover_or_scan`'s phased arm calls `ensure_branch_watch(false)` itself, or a volume whose frontier is already empty takes
-stock, completes, and spends the rest of the session with nothing watching ground it serves as covered.
+`cover_or_scan`'s phased arm calls `ensure_branch_watch(false)` itself, or a volume whose frontier is already empty
+takes stock, completes, and spends the rest of the session with nothing watching ground it serves as covered.
 
 ⚠️ **The machine is started from OUTSIDE the registry-held window**, by `state::start_pending_phases`, at all three
 sites. Both rescan doors hold the manager out under a transient `ShuttingDown` for the whole scan-start prelude, and
