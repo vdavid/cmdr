@@ -230,7 +230,7 @@ fn coverage_line(snap: &VolumeIndexingSnapshot) -> Option<String> {
         .map(|n| format!("{} entries covered so far", format_number(n)))
         .unwrap_or_else(|| "still counting".to_string());
     Some(format!(
-        "building folder by folder, in the order this user's folders matter; {covered}.          Search answers for what is covered and the rest arrives as the walk reaches it"
+        "building folder by folder, in the order this user's folders matter; {covered}. Search answers for what is covered and the rest arrives as the walk reaches it"
     ))
 }
 
