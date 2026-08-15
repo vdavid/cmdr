@@ -72,7 +72,6 @@
     "crates/cmdr-fs/src/volume/in_memory.rs": 902,
     "crates/cmdr-fs/src/volume/mod.rs": 1210,
     "crates/cmdr-index/src/indexing/aggregator/mod.rs": 810,
-    "crates/cmdr-index/src/indexing/lifecycle/cover/cold_drive_tests.rs": 1214,
     "crates/cmdr-index/src/indexing/lifecycle/phased_bench.rs": 1415,
     "crates/cmdr-index/src/indexing/reconcile/local_reconcile/tests.rs": 817,
     "crates/cmdr-index/src/indexing/reconcile/reconciler.rs": 1634,

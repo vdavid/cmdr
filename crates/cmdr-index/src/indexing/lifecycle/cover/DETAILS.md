@@ -167,12 +167,12 @@ guesses in three cases: a chain running through a FILE row (the stale file→dir
 on — parenting under a file id orphans everything below), a path that isn't a directory any more, and a symlink (stored,
 never descended into, so a walk rooted below one would attribute another directory's contents to it).
 
-A root the chain had to CREATE is also emitted to the walk's consumer, once, ahead of its listing
-(`mod.rs::emit_root`, counted in `entries_found` / `dirs_found` so what a consumer saw and what the walk added stay
-one number). Why: a walk reports a directory's CONTENTS, and a reader of the index answers for rows the index already
-held, so a row this walk invented is one nobody else will ever report — which made a search scoped to a folder answer
-with that folder over an indexed drive and not over an unindexed one. ❌ The ancestors above it are NOT emitted: the
-frontier is cut inside whoever's scope asked for the walk, so anything above the root is outside it.
+A root the chain had to CREATE is also emitted to the walk's consumer, once, ahead of its listing (`mod.rs::emit_root`,
+counted in `entries_found` / `dirs_found` so what a consumer saw and what the walk added stay one number). Why: a walk
+reports a directory's CONTENTS, and a reader of the index answers for rows the index already held, so a row this walk
+invented is one nobody else will ever report — which made a search scoped to a folder answer with that folder over an
+indexed drive and not over an unindexed one. ❌ The ancestors above it are NOT emitted: the frontier is cut inside
+whoever's scope asked for the walk, so anything above the root is outside it.
 
 ## Where a cover test goes
 
@@ -183,7 +183,12 @@ pays for a whole fixture it doesn't use.
   the disk. Frontier materialization, the non-virgin repair, claims, and cancellation live here.
 - `cold_drive_tests.rs` — the `ColdDrive` harness: a drive with NO index, driven through the public `Index` handle so
   the walk runs the real activation. Bootstrap, freshness, branches, and the two switches are here, because those are
-  only observable from outside.
+  only observable from outside. The harness stays in the parent and the tests sit in `cold_drive_tests/`, by subject:
+  `activation.rs` (the index a walk stands up, and what a later enable does to it), `switches.rs` (both indexing
+  switches govern background work only), `intent.rs` (only a user's ask writes per-drive intent), `branches.rs` (what
+  the walk leaves watched and every path that releases it), `walkable.rs` (which drives can be walked, and by which
+  walker), `rescans.rs` (the rescan a live walk defers and later fires). A new test goes in the subject it asserts
+  about; a fixture more than one subject needs goes up into the parent.
 - `network_tests.rs` — the `Volume`-trait half, over an `InMemoryVolume` and the hand-rolled backends in
   `test_support.rs`. Touches no disk at all.
 - `bench.rs` — the `#[ignore]`d parallel-vs-serial primitive measurement

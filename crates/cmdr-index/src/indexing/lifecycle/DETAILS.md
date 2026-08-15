@@ -421,9 +421,9 @@ live processing always writes, so the writer trips.
 
 ## What a cover walk asks of the lifecycle
 
-The walk itself, its `Ground` branch, its `CoverOutcome`, and what it costs are `cover/DETAILS.md`. What belongs here
-is the registry side: the doors a scan has to ask before it can truncate under one, the rescan a walk makes someone
-wait for, and the branch set a walk leaves watched.
+The walk itself, its `Ground` branch, its `CoverOutcome`, and what it costs are `cover/DETAILS.md`. What belongs here is
+the registry side: the doors a scan has to ask before it can truncate under one, the rescan a walk makes someone wait
+for, and the branch set a walk leaves watched.
 
 ### The two single-flight questions a scan has to ask
 
@@ -446,7 +446,7 @@ two guard the volumes that do.
 **Both refusals are TYPED** (`rescan_request::ScanStartError`: `AlreadyScanning`, `GroundBeingWalked`, `Internal`).
 Their wording used to be the only thing separating them, which the project's hard rule forbids classifying on, and which
 left a caller nothing to branch on but prose. Regression anchor:
-`cover::cold_drive_tests::a_truncating_rescan_refuses_while_a_search_cover_walk_is_live`.
+`cover::cold_drive_tests::rescans::a_truncating_rescan_refuses_while_a_search_cover_walk_is_live`.
 
 ### The one walk a volume remembers
 
@@ -455,7 +455,7 @@ now" is still a truncating or reconciling full walk. A volume with no completion
 machine composes with a live cover walk by design (ground another walk holds is left to it), and so there is nothing to
 wait for: the request is served immediately and reported as `Started`. **The two mechanisms answer for disjoint index
 states**; ❌ neither supersedes the other, and ❌ don't "fix" the phased route into a deferral. Anchor:
-`cover::cold_drive_tests::a_rescan_during_the_phased_window_starts_the_machine_under_a_live_walk`.
+`cover::cold_drive_tests::rescans::a_rescan_during_the_phased_window_starts_the_machine_under_a_live_walk`.
 
 An AUTOMATIC trigger needs nothing more than the refusal: a journal gap and a coalesced anchor both recur on their own,
 and nobody is watching a button for them. `manager::perform_registry_rescan` therefore logs and moves on.
@@ -476,11 +476,12 @@ which reaches the frontend as `StartOutcome::DeferredUntilSearchEnds` and become
 - **❌ Nothing assumes the coast is clear.** The fire re-asks both guards by going through `force_scan`, so a second
   walk still holding ground re-defers the request behind ITS ending. That's what makes a truncating scan under a live
   walk unreachable however many walks are in flight
-  (`cover::cold_drive_tests::a_remembered_rescan_waits_for_the_last_walk_out`).
+  (`cover::cold_drive_tests::rescans::a_remembered_rescan_waits_for_the_last_walk_out`).
 - **One request per volume, memory only.** It carries nothing but "this volume wants a full walk", so a second click
   describes the same work and a set of volume ids is the whole state; quitting drops it. Every teardown path drops it
   too (`stop_indexing`, `clear_index`, `remove_instance_and_handles`), and the master switch going off drops it at fire
-  time, so a stopped drive is owed nothing (`cover::cold_drive_tests::a_drive_that_stopped_indexing_is_owed_no_rescan`).
+  time, so a stopped drive is owed nothing
+  (`cover::cold_drive_tests::rescans::a_drive_that_stopped_indexing_is_owed_no_rescan`).
 
 ### What the walk leaves watched
 
@@ -502,7 +503,7 @@ canonical in `../watch/DETAILS.md` § "Watching what a search walked"; what belo
   start. So finish reaches the set through `branches::live_for` and only ASKS the manager (when there is one) what to
   leave behind; routing the release itself through `with_running_manager` left the branch at `walks > 0` for the rest of
   the session — its events buffered and never promoted, `may_walk` false for that ground, and never absorbed. Anchor:
-  `cover::cold_drive_tests::a_walk_that_finishes_while_the_manager_is_shutting_down_still_releases_its_branch`.
+  `cover::cold_drive_tests::branches::a_walk_that_finishes_while_the_manager_is_shutting_down_still_releases_its_branch`.
 - **`ensure_branch_watch` starts the watcher** for a volume that has none — the `WriterOnly` shape, the only one with
   coverage and no watcher. A scanned volume declines it (`branch_watched` says which of the two is up), and `start_scan`
   retires the branch set outright, so a volume is branch-watched or whole-watched and never both.
@@ -613,7 +614,7 @@ drive the user can see. The veto keeps real teeth anyway, and this is where they
 (`master::branch_watch_allowed`), so what a search walked there stays covered and served but stops being kept current
 the moment the app stops. ❌ It is NOT re-walked — the walk marked those directories listed, so the frontier never
 offers them again and Decision 5 trusts them as covered-but-stale. ❌ Don't turn either switch back into a gate on
-`WriterOnly`; `cover::cold_drive_tests::a_search_walks_a_drive_with_the_master_switch_off` guards it, and
+`WriterOnly`; `cover::cold_drive_tests::switches::a_search_walks_a_drive_with_the_master_switch_off` guards it, and
 `a_vetoed_drive_is_walked_and_left_unwatched` guards the other half.
 
 Enforcement is one choke point: `start_indexing_for`, which all four transports funnel through, refuses an

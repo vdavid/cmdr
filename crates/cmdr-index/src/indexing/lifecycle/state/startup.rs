@@ -124,7 +124,7 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     // means nothing indexes UNINVITED; a person searching a folder invited exactly
     // this read, and refusing it would only make their search quietly wrong. ❌
     // Don't collapse this back into a bare `master_enabled()` check; the test
-    // `cover::cold_drive_tests::a_search_walks_a_drive_with_the_master_switch_off` is there to
+    // `cover::cold_drive_tests::switches::a_search_walks_a_drive_with_the_master_switch_off` is there to
     // catch it.
     if activation == Activation::IndexTheVolume && !master::master_enabled() {
         log::info!("start_indexing: refusing '{volume_id}' ({kind:?}), drive indexing is off in settings");

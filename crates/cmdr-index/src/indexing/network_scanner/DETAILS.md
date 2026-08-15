@@ -23,9 +23,9 @@ stays here on the serial network BFS; the parallel local walker dropped it in fa
 Sizes come from `FileEntry.size` (SMB stat); since SMB has no separate physical size or inode, physical mirrors logical
 and inode is `None`. Symlinks contribute no size (matching the local scanner's `du`-style omission).
 
-No walk here names a backend, which is what makes the coverage concept work on a future one for free:
-`lifecycle/cover/` picks between "read the disk" and "ask the `Volume`", and everything downstream of a discovered
-entry — ids, writer, epochs, `dir_stats`, the frontier query, the descent rule — is identical either way.
+No walk here names a backend, which is what makes the coverage concept work on a future one for free: `lifecycle/cover/`
+picks between "read the disk" and "ask the `Volume`", and everything downstream of a discovered entry — ids, writer,
+epochs, `dir_stats`, the frontier query, the descent rule — is identical either way.
 
 Three disciplines for network round trips (in `list_one_directory`, and in `stat_one_directory`, which the cover walk's
 chain materialization uses for a single path):

@@ -389,8 +389,8 @@ as a lower bound. The guard's own activations are NOT answerable this way, so th
 
 ## Where the serial walk was chosen, and where it wasn't (the search cover walk)
 
-`../lifecycle/cover/` had this exact choice to make for a search-driven walk over a coverage frontier, and it went
-both ways:
+`../lifecycle/cover/` had this exact choice to make for a search-driven walk over a coverage frontier, and it went both
+ways:
 
 - **NOT chosen for the frontier itself.** A frontier node is virgin ground by definition, so this is a bulk add — the
   workload the parallel walker is for. Measured on four real trees from 368 to 1,202,613 entries: 3.2–5.8x faster,
