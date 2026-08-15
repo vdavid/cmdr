@@ -46,7 +46,8 @@ commands, and notable non-obvious placements.
 - **`indexing.ts`**: drive-indexing commands (status reads `getIndexStatus` / `getVolumeIndexStatusById`, lifecycle
   `enable/disable/forget/rescan/clearDriveIndex`) plus the event listeners: typed `on*` wrappers over the `tauri-specta`
   `events.index*` helpers (scan/replay/aggregation progress + complete, rescan notification, dir-updated, memory
-  warning).
+  warning, the coverage-branch pair, and `onIndexCoveragePhaseStarted` — which phase of a first index is running, as the
+  backend classified it).
 - **`ai.ts`**: AI lifecycle event listeners
   (`onAi{DownloadProgress,Starting,ServerReady,Verifying,Installing,InstallComplete,Extracting}`) over the `events.ai*`
   helpers.
