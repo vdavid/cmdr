@@ -375,6 +375,13 @@ impl<'a> ResultStream<'a> {
 
     fn emit(&mut self, phase: SearchPhase, entries: Vec<SearchResultEntry>) {
         self.last_emit = Instant::now();
+        // One line per CHANGE, never per event: a run emits ten a second, and what
+        // a reader of a bundle needs is the sentence the dialog was showing and
+        // when it changed. This is the trail for "the app said it was walking and
+        // nothing was walking".
+        if phase != self.last_phase {
+            log::debug!("Live search: run '{}' is now in phase {phase:?}", self.run.run_id);
+        }
         self.last_phase = phase;
         if !self.run.wants_events() {
             return;
