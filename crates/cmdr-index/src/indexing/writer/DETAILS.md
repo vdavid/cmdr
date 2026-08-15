@@ -627,3 +627,9 @@ saturated for 19 of those seconds"). `IndexWriter::send` (via `send_blocking_wit
 wait to a thread-local probe: `send` tries a non-blocking enqueue FIRST (only a genuinely parked send costs anything to
 measure) and the message comes back on `Full` so nothing is lost. The reconcile side arms the probe and reports the span
 (see `../reconcile/DETAILS.md`). Thread-local because each producer walks on its own thread.
+
+Cover walks report the same split, for the same reason. `walk_frontier` arms the probe at its start and its summary line
+carries both numbers (`Cover: … in 5.8s (5.8s of it waiting on the writer)`). Without them the line reads as a slow
+walk, which is how a wait that was entirely the queue went unexplained for a while
+(`docs/notes/cover-no-ground-block-2026-08-15.md`). ⚠️ A producer that reports a duration without the split sends its
+reader hunting in the wrong subsystem; add the probe rather than the line.

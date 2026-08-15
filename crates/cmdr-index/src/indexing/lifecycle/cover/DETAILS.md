@@ -38,6 +38,26 @@ predecessor's ground, from the index rather than from a replay. ❌ Don't replac
 to get live batches for the shared ground; it needs per-subscriber filtering and per-subscriber completion (one root is
 done while the walk moves on to the next), and there is no second consumer today to shape either against.
 
+### A claim that takes nothing makes no walk
+
+When the claim leaves EVERY requested root to another walk, `cover::start` hands back a `CoverWalk` with no thread
+behind it (`CoverWalk::took_no_ground`): the batch channel is closed on arrival, so `next_batch` is `None` at once, and
+`finish` answers with a zero `CoverOutcome` that is NOT `cancelled` — nothing ran, and nothing stopped it.
+
+That is a correctness-of-reporting fix, not a saved thread. A walk thread runs `walk_frontier` whatever its frontier
+holds, and `walk_frontier`'s tail commits the writer, because a search-driven walk takes
+`FlushOnFinish::BeforeReporting` (the marks matter more than the rows). The writer is one thread behind one bounded
+queue per database, so that commit parks behind everything already queued — during a drive's first index, behind the
+first index. Measured in the app: `Cover: 0 entries over 0 frontier roots in 5.8s (5.8s of it waiting on the writer)`,
+with `Index::cover` itself returning in 33-104 µs and `CoverWalk::finish` eating the whole wait. The search that asked
+showed "0 matches so far" for all of it, and only afterwards reached the phase that says whose walk it is queued behind.
+Full measurement: `docs/notes/cover-no-ground-block-2026-08-15.md`.
+
+So the rule is a shape, not a special case: **everything a walk owes on the way out is owed for the ground it took**.
+Nothing is skipped by taking this path — an empty claim frees no ground, so there is no branch set to finish and no
+`rescan_request::run_if_owed` to fire (the walk that holds the ground runs it when IT lets go). ❌ Don't add work to
+`start` or `walk_frontier` that a no-ground request would still owe; put it where the ground is.
+
 ## What has to exist before a walk can run (`bootstrap.rs`)
 
 A walk needs a database with a writer behind it, an epoch to stamp listed directories with, and an `entries` row to

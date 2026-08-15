@@ -174,6 +174,53 @@ fn the_scan_session_is_paired_on_the_completed_and_the_cancelled_walk() {
     );
 }
 
+/// A walk that gets NONE of the ground it asked for runs nothing at all: no
+/// session, no listing, and an answer on the spot.
+///
+/// This is the promptness the search dialog hangs on. A walk with no ground used
+/// to go through the whole of `walk_frontier` anyway, and its tail commits the
+/// writer — which parks behind everything already queued. Behind a drive's first
+/// index that measured 4.5-5.8 s in the app on a warm boot disk (and 35 s on a
+/// cold one), all of it spent committing nothing, and the search that asked said
+/// "0 matches" for the whole wait instead of naming the walk it's queued behind.
+///
+/// The session counter is what makes it checkable without timing anything: the
+/// backend is opened at the top of `walk_frontier` and the commit is at the
+/// bottom, so a walk that never opened one never reached either.
+#[test]
+fn a_walk_that_gets_no_ground_opens_no_session_and_answers_on_the_spot() {
+    let (share, volume) = Share::instrumented(
+        "cover-share-no-ground-test",
+        |t| vec![t.dir("scope"), t.file("scope/one.txt", 4)],
+        None,
+    );
+    let scope = share.path("scope");
+
+    // Somebody else's live walk, stood in for by its claim — the same stand-in
+    // `a_walk_leaves_ground_another_walk_is_covering_to_it` uses, and for the same
+    // reason: a real first walk over a fixture this small can finish before the
+    // second one starts.
+    let held = Claim::take("cover-share-no-ground-test", vec![scope.clone()]);
+
+    let (walk, _cancel) = share.walk(&scope);
+    assert_eq!(
+        walk.covered_by_another_walk(),
+        std::slice::from_ref(&scope),
+        "every root it asked for is the other walk's"
+    );
+    let (entries, outcome) = drain(walk);
+
+    assert!(entries.is_empty(), "nothing to emit: it read nothing");
+    assert_eq!(outcome, CoverOutcome::nothing(false), "and nothing to report");
+    assert_eq!(
+        volume.sessions(),
+        (0, 0),
+        "the backend is never opened for a walk with nowhere to go"
+    );
+
+    drop(held);
+}
+
 // ── Pacing ───────────────────────────────────────────────────────────
 
 /// The walk overlaps its round trips, and never past the pacer's budget.

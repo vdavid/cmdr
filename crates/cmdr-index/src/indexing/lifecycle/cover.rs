@@ -89,6 +89,22 @@ pub struct CoverOutcome {
     pub abandoned_ground: bool,
 }
 
+impl CoverOutcome {
+    /// What a walk that read nothing reports. `cancelled` says whether anyone
+    /// stopped it, which is the one thing the three no-work paths disagree on: a
+    /// walk that took no ground was never stopped, a walk whose thread wouldn't
+    /// spawn or wouldn't join never got the chance to finish.
+    fn nothing(cancelled: bool) -> Self {
+        Self {
+            entries_found: 0,
+            dirs_found: 0,
+            roots_covered: 0,
+            cancelled,
+            abandoned_ground: false,
+        }
+    }
+}
+
 /// A running walk over a frontier.
 ///
 /// Take batches off it until [`next_batch`](Self::next_batch) reports `None`,
@@ -103,12 +119,34 @@ pub struct CoverOutcome {
 /// caller keeps a clone of.
 pub struct CoverWalk {
     batches: Receiver<Vec<CoveredEntry>>,
-    thread: JoinHandle<CoverOutcome>,
+    /// `None` for a walk that took no ground: there was nothing to spawn a thread
+    /// for. See [`took_no_ground`](CoverWalk::took_no_ground).
+    thread: Option<JoinHandle<CoverOutcome>>,
     deferred: Vec<String>,
     heartbeat: WalkHeartbeat,
 }
 
 impl CoverWalk {
+    /// The handle for a request whose every frontier root belongs to a walk
+    /// already running (and for the degenerate empty frontier): no thread, no
+    /// batches, and [`finish`](Self::finish) answers on the spot.
+    ///
+    /// ⚠️ Its promptness is the point, not an optimization. A spawned thread runs
+    /// `walk_frontier` whatever its frontier holds, and that function's tail commits
+    /// the writer — which parks behind everything already queued. Behind a drive's
+    /// first index that is seconds of waiting to commit nothing, and the search that
+    /// asked stays silent for all of it instead of saying whose walk it's behind.
+    fn took_no_ground(deferred: Vec<String>) -> Self {
+        let (sender, batches) = sync_channel(1);
+        drop(sender);
+        Self {
+            batches,
+            thread: None,
+            deferred,
+            heartbeat: WalkHeartbeat::new(),
+        }
+    }
+
     /// The next batch of entries, blocking until one arrives. `None` once the
     /// walk has ended, for whatever reason.
     pub fn next_batch(&self) -> Option<Vec<CoveredEntry>> {
@@ -154,13 +192,12 @@ impl CoverWalk {
     pub fn finish(self) -> CoverOutcome {
         let CoverWalk { batches, thread, .. } = self;
         drop(batches);
-        thread.join().unwrap_or(CoverOutcome {
-            entries_found: 0,
-            dirs_found: 0,
-            roots_covered: 0,
-            cancelled: true,
-            abandoned_ground: false,
-        })
+        let Some(thread) = thread else {
+            // Nothing ran and nothing stopped it: the ground was already somebody
+            // else's when this walk asked for it.
+            return CoverOutcome::nothing(false);
+        };
+        thread.join().unwrap_or_else(|_| CoverOutcome::nothing(true))
     }
 }
 
@@ -231,6 +268,21 @@ pub(crate) fn start(
     let claim = Claim::take(&context.volume_id, frontier);
     let deferred = claim.deferred().to_vec();
 
+    // Every root belongs to a walk already running, so there is no walk to make.
+    // ❌ Don't spawn one anyway: a thread with no ground still runs `walk_frontier`
+    // to the end, which opens a backend session, commits the writer, and hands the
+    // volume's rescan request on — all of it on behalf of nothing. The commit is
+    // what hurts, because it parks behind every batch already queued, and the
+    // caller's `finish` waits for it: 4.5-5.8 s behind a boot disk's first index in
+    // the app, and 35 s on a cold one, spent to commit nothing
+    // (`docs/notes/cover-no-ground-block-2026-08-15.md`).
+    //
+    // Nothing is owed on the way out either: the claim took no ground, so no ground
+    // is freed, and whoever holds it runs the rescan when THEY let go.
+    if claim.mine().is_empty() {
+        return CoverWalk::took_no_ground(deferred);
+    }
+
     // Tell the volume's watcher what this walk is about to cover, BEFORE it reads
     // anything. Two things follow from that order: a change landing in the ground
     // the walk has already passed waits rather than racing the walk's own ids, and
@@ -261,18 +313,12 @@ pub(crate) fn start(
             // A machine that can't spawn a thread has a bigger problem than this
             // walk; report nothing covered rather than pretending otherwise.
             log::warn!("Cover: couldn't spawn the walk thread: {e}");
-            std::thread::spawn(|| CoverOutcome {
-                entries_found: 0,
-                dirs_found: 0,
-                roots_covered: 0,
-                cancelled: true,
-                abandoned_ground: false,
-            })
+            std::thread::spawn(|| CoverOutcome::nothing(true))
         });
 
     CoverWalk {
         batches,
-        thread,
+        thread: Some(thread),
         deferred,
         heartbeat,
     }
@@ -314,18 +360,17 @@ fn walk_frontier(
     cancel: &CancellationToken,
     heartbeat: &WalkHeartbeat,
 ) -> CoverOutcome {
+    let started = std::time::Instant::now();
+    // Arm the writer-wait probe, so the line at the end can say how much of this
+    // walk was the queue rather than the disk (`writer/wait_probe.rs`).
+    crate::indexing::writer::wait_probe::take();
+
     let Some(ground) = Ground::under(context) else {
         log::warn!(
             "Cover: '{}' isn't reachable right now, so nothing is walked",
             context.volume_id
         );
-        return CoverOutcome {
-            entries_found: 0,
-            dirs_found: 0,
-            roots_covered: 0,
-            cancelled: true,
-            abandoned_ground: false,
-        };
+        return CoverOutcome::nothing(true);
     };
 
     ground.open_session();
@@ -356,11 +401,17 @@ fn walk_frontier(
         log::warn!("Cover: the walk's last rows may not have landed: {e}");
     }
 
+    // Both numbers, always: a walk parked on a saturated writer queue and a walk
+    // reading a slow disk take the same wall time and want different fixes, and
+    // without the split the line blames the walker for the queue.
+    let waited = crate::indexing::writer::wait_probe::take();
     log::debug!(
-        "Cover: {} over {}{}",
+        "Cover: {} over {}{} in {:.1?} ({:.1?} of it waiting on the writer)",
         pluralize_with(outcome.entries_found, "entry", "entries"),
         pluralize(outcome.roots_covered as u64, "frontier root"),
         if outcome.cancelled { " (cancelled)" } else { "" },
+        started.elapsed(),
+        waited,
     );
     outcome
 }

@@ -29,8 +29,9 @@ structure names them.
 - **A cover walk reuses the RUNNING writer or stands one up** (`Activation::WriterOnly`, ❌ no scan or watcher), and
   EVICTS an index whose coverage this build refuses. ⚠️ A volume mid-SCAN isn't walked.
 - **A walk stops through the CALLER's token and flushes before reporting**, cancel included, unless the caller took the
-  drain. **`CoverOutcome::abandoned_ground` is independent of every other field**: ❌ any caller reporting completeness
-  must consult it.
+  drain. ⚠️ A walk that took NO ground runs none of it (`cover/CLAUDE.md`).
+  **`CoverOutcome::abandoned_ground` is independent of every other field**: ❌ any caller reporting completeness must
+  consult it.
 - **A walk RELEASES its branch whatever the registry phase** (`finish_branch_coverage` reaches the set directly), ❌
   never behind `with_running_manager` — a walk ending in a `ShuttingDown` window would hold that ground forever.
 - **`IndexVolumeKind` is a capability model**: branch on the axis, not the variant. `has_event_journal()` gates journal

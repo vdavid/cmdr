@@ -39,6 +39,10 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 - `cover-walk-primitive-2026-08-05.md` — parallel walker against serial reconcile over four real trees, the decision it
   settled for search-driven walks, and what the published "the parallel walk gives up ~10% of rows" caveat actually
   turned out to be.
+- `cover-no-ground-block-2026-08-15.md` — what a cover walk that got NO ground used to cost (4.5-5.8 s in the app, 100%
+  of it parked on the writer queue, 35 s on a cold drive), measured with the writer-wait split the `Cover:` line now
+  carries. Read it before putting work back into `cover::start` or `walk_frontier`, and for the one cost it names but
+  does not settle: `begin_branch_coverage` registering thousands of frontier roots one at a time.
 - `search-arena-row-2026-08-06.md` — what shrinking `SearchEntry` from 56 to 40 bytes actually bought (−92 MiB of arena,
   measured two ways), that it cost no scan latency, and the A/B method for comparing two builds on a machine running
   other work.
