@@ -562,9 +562,15 @@ writing: **a Playwright E2E over a first run with `CMDR_MOCK_FDA`**.
   already empty needs an explicit final stock-take (a run that only CONFIRMS a previous session's coverage would never
   stamp), and the per-root writer flush lives inside `cover.rs` rather than the machine, so batching the drain needed a
   knob on `CoverContext` plus a safety flush when the released ground buffered live events.
-- **M3** — launch, resume, and every path that would truncate.
-- **M4** — events, status, and the hourglass UI.
-- **M5** — surfaces, copy, kill switch.
+- **M3** — ✅ **built**: launch, resume, every path that would truncate, and the kill switch.
+- **M4** — ✅ **built**: events, status, and the hourglass UI.
+- **M5** — ✅ **built**: surfaces, copy, analytics. Two things the plan didn't have. The phase label needed a signal of
+  its own (`IndexEvent::CoveragePhaseStarted`): the coverage-branch events name frontier roots one level BELOW the phase
+  root, so `~/Library` and `~/Downloads` are indistinguishable from outside, and they are debounced besides. And the
+  crate reports that phase by its ROOT rather than by a rank, with the app labelling it — a rank enum would have cost an
+  `index-isolation` ceiling raise, and the app is what answered `priority_roots` in the first place. The interruption
+  rate is a RATIO of started to completed rather than a terminal event, since a run that ends with the process has no
+  moment left to report in.
 - **M6** — follow-ups.
 
 M0 and M1 touch nothing M2 depends on. Everything after M2 is strictly sequential. **M4's unit tests stand alone, but
