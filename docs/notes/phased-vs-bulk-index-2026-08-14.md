@@ -399,3 +399,72 @@ wall clock is ❌ not comparable to the release arms above — what it confirms 
   collapse.
 - 922 MB index, one `ScanStarted`, no truncate, and the reporter's `ComputePartialAggregates(Sql)` ticking throughout
   with `1/2 hot paths resolved` — mid-scan sizes landing on the folder the pane was showing.
+
+## The built machine, RELEASE build, real `/`, 2026-08-15
+
+The number the gate was missing: the shipped machine, with its `take_stock()` after every frontier root, over the real
+`/`. **Release build** (`pnpm build --no-bundle --target aarch64-apple-darwin`), launched straight from an FDA-granted
+shell on a throwaway `CMDR_DATA_DIR`, with `CMDR_SECRET_STORE=file`. Same machine and same morning as the baseline
+below, so the ratio is between two measurements taken an hour apart rather than across days.
+
+**Machine state: page cache warm.** A release Cmdr had been live on this `/` for the previous 11 hours, and the boot
+volume held ~6.06M entries throughout. Both arms below ran in that state, and the bulk arm reproduced 2026-08-14's
+38.5–39.1 s to within 2%, so the state is comparable to every number above. **This machine has no wedged mount today**:
+zero directories were recorded `Abandoned` in any run, against the 76 that drove the 4.70× arm. So these are the
+"typical machine" numbers, not the dead-mount ones.
+
+Two phased runs, differing only in whether a frontend was alive (the first launch's window sat behind a keychain prompt,
+so it reported no open listings; the second had both panes open and was driven through the MCP):
+
+- **A, no frontend**: home covered **T+50.8 s**, volume covered end to end **T+77.9 s**, whole run **90.1 s**,
+  6,063,158 entries / 603,686 dirs, 915 MB index.
+- **B, live frontend**: home covered **T+47.3 s**, volume covered end to end **T+75.8 s**, whole run **91.5 s**,
+  6,063,253 entries / 603,059 dirs.
+
+The whole-run figure is coverage plus the completion sequence's `ComputeAllAggregates` (11.7 s and 15.3 s). **A live
+frontend costs nothing measurable**, which is the browsing arm's answer confirmed in the app.
+
+**The same-morning baseline is 38.4 s.** `bulk_build_with_the_full_post_scan_sequence` under
+`CMDR_PHASE_BENCH_NO_PROBE=1`: 38.4 s, 6,063,491 entries, 603,055 `dir_stats` rows, 14 dirs denied. That arm already
+carries its own `ComputeAllAggregates`, so it is the all-in number on its side.
+
+- **Coverage to coverage: 75.8–77.9 s against 38.4 s = 1.97–2.03×.**
+- **All-in, each side including its final full aggregate: 90.1–91.5 s against 38.4 s = 2.35–2.38×.**
+
+**`take_stock()` is not separately measurable, and it is bounded at under 8 seconds.** The harness's best arm (marking +
+drain batched per phase) read 70.1 s; the shipped machine reads 75.8–77.9 s over ~1,500 frontier roots, and that ~6–8 s
+covers `take_stock` plus everything else the harness leaves out (the `IndexManager`, the progress reporter, the event
+sink and its IPC, the watcher, freshness, and the frontend). The predicted 1.79× and the measured ~2.0× differ by that
+same margin.
+
+### Resuming an interrupted run is correct and slow
+
+Quitting mid-`/`-phase and relaunching resumes rather than truncating, and covered ground is skipped in milliseconds:
+`Startup: covering 'root' in phases (no completed scan on record)`, then the home and `/Applications` priority roots
+retired in **3 ms combined**, straight into the `/` phase. Entry counts only grow.
+
+**But the remainder cost 445.2 s for 473,547 entries**, against 27 s for the whole `/` phase in an uninterrupted run. An
+interrupted phase leaves its frontier as thousands of DEEP, TINY roots (the stitch descends as it goes), and each one
+pays a full serial `cover()` round trip for two or three entries: measured at **~9 frontier roots per second**, with
+`Cover: 0 entries over 1 frontier root` recurring every ~30 ms. Nothing is lost and nothing is wrong, but "quit and come
+back" is far more expensive than the uninterrupted path, and it gets worse the later the quit lands.
+
+### What a user sees, and the two defects it exposed
+
+The product claim holds, with a caveat about which folders and when. On a fresh index with the panes on `~` and
+`~/Downloads`: at **T+7 s** only the folder the pane is standing on has a real size (`Downloads 1017.45 MB`) while its
+siblings still read `<dir>`; by **T+16 s** most of home carries real sizes, with `..` showing `≥ 50.35 GB` and an
+hourglass. The per-folder hourglass is exactly right: at T+11 s only `go` (the root being walked) and `..` (its
+ancestor) carry one. Walks shorter than `ANNOUNCE_AFTER` (1 s) correctly show none.
+
+Two defects surfaced that the tests do not cover, both in the host-side surfaces rather than the machine:
+
+- **The aggregation step freezes at 99% when the phases complete**, and the corner hourglass plus every per-row size
+  hourglass stay on for the rest of the session (observed 3m45s with the backend silent; a relaunch clears it). The
+  likely mechanism is ordering: `run_the_completion_sequence` queues `PayLedgerIfUnpaid` at step 3 and emits
+  `ScanComplete` + `AggregationComplete` at step 6, so the frontend takes its terminal event BEFORE the 11–15 s full
+  aggregate streams its progress, and nothing closes the step the late ticks reopen.
+- **The phase header is a one-shot with no re-assertion.** A root the user opens mid-run rides the priority variant by
+  design (`phase_started_event`), but nothing re-emits the outer phase's event when the interlude ends, so the header
+  stays on "Indexing the folders you use most" for the rest of the run. In the same window the run-kind header reverts
+  to "First full scan" with the four-step bulk checklist, which is what `indexing.run.firstIndex` exists to prevent.

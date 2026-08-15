@@ -148,6 +148,11 @@ the reason `with_running_manager`'s "non-blocking work only" holds. `PendingPhas
 busy across the gap, and a manager that went away in it hands the machine back to be stopped rather than leaving it
 walking with nothing holding it (`manager/phased.rs`).
 
+📌 **Follow-up, not yet done:** `resume_branch_watch` (`state/startup.rs`) bends the same contract, running
+`IndexStore::open_read_connection` plus `branches::resumed_for` inside its `with_running_manager` window. It's far
+lighter than the phase start was (one read connection, one persisted branch set) and nothing has been observed waiting
+on it, so it's a cleanup rather than a bug: move the read outside the window the way `PhaseStart::run` does.
+
 ⚠️ **A master off→on only brings back drives `drives_to_resume` names**, and its per-drive intent is
 `persisted_scan_completed` — which a drive part way through its FIRST index doesn't have. So an external drive covered
 in phases is forgotten by a master-switch cycle, exactly as one interrupted mid-bulk-scan always was. The boot disk is
