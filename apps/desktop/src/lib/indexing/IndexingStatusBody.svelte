@@ -60,17 +60,27 @@
         /** A network (SMB/MTP) volume: its checklist omits the Save-the-file-list
          *  and Catch-up steps (they don't run for an inline network scan). */
         isNetwork: boolean
+        /** A drive being covered branch by branch: its checklist collapses to the
+         *  one step that happens, since sizes land as the walk goes rather than in
+         *  a separate pass afterwards. */
+        coveredInPhases: boolean
         /** What kind of run this is (from `getVolumeScanRunKind`), for the
          *  run-kind header and the per-step copy. `undefined` when unknown (a
          *  mid-scan reload): the header is omitted rather than guessed. */
         scanRunKind?: ScanRunKind
     }
 
-    const { activity, aggregation, now, windowedEta, phase, isNetwork, scanRunKind }: Props = $props()
+    const { activity, aggregation, now, windowedEta, phase, isNetwork, coveredInPhases, scanRunKind }: Props = $props()
 
     // ── Steps ─────────────────────────────────────────────────────────
     const runKind = $derived<IndexRunKind>(
-        activity.phase === 'replaying' ? 'replay' : isNetwork ? 'network' : 'local',
+        activity.phase === 'replaying'
+            ? 'replay'
+            : coveredInPhases
+              ? 'phased'
+              : isNetwork
+                ? 'network'
+                : 'local',
     )
     const aggSubPhase = $derived(aggregation?.phase as AggregationSubPhase | undefined)
     const steps = $derived(deriveSteps({ runKind, phase, aggregationSubPhase: aggSubPhase, scanRunKind }))

@@ -57,7 +57,15 @@ function render(props: {
   document.body.appendChild(target)
   mount(IndexingStatusBody, {
     target,
-    props: { aggregation: undefined, now: Date.now(), windowedEta: null, phase: undefined, isNetwork: false, ...props },
+    props: {
+      aggregation: undefined,
+      now: Date.now(),
+      windowedEta: null,
+      phase: undefined,
+      isNetwork: false,
+      coveredInPhases: false,
+      ...props,
+    },
   })
   flushSync()
   return target

@@ -47,6 +47,7 @@ fn base_snapshot(volume_id: &str, kind: &'static str) -> VolumeIndexingSnapshot 
         activity_phase: ActivityPhase::Live,
         phase_duration_ms: 0,
         scanning: false,
+        covered_in_phases: false,
         entries_scanned: 0,
         dirs_found: 0,
         bytes_scanned: 0,
@@ -58,6 +59,29 @@ fn base_snapshot(volume_id: &str, kind: &'static str) -> VolumeIndexingSnapshot 
         scan_duration_ms: None,
         debug: None,
     }
+}
+
+/// A drive being covered in phases answers a different question than one being
+/// walked whole: its index is usable NOW for the ground already covered, and an
+/// agent deciding whether to search has to be able to tell the two apart.
+#[test]
+fn a_drive_covered_in_phases_says_what_it_has_rather_than_where_a_pipeline_is() {
+    let mut root = base_snapshot("root", "local");
+    root.freshness = Some(Freshness::Scanning);
+    root.activity_phase = ActivityPhase::Scanning;
+    root.scanning = true;
+    root.covered_in_phases = true;
+    root.entries_scanned = 96_400;
+    root.db_entry_count = Some(412_900);
+    root.scan_completed_at = None;
+
+    let text = build_indexing_text(std::slice::from_ref(&root), 1_000_000);
+    assert!(text.contains("coverage: building folder by folder"), "got: {text}");
+    assert!(text.contains("412,900 entries covered so far"), "got: {text}");
+    // ❌ No four-step pipeline: a phased run never takes three of those steps, and
+    // showing them permanently pending reads as a stuck scan.
+    assert!(!text.contains("steps:"), "got: {text}");
+    assert!(text.contains("last scan: none yet"), "got: {text}");
 }
 
 #[test]

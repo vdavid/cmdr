@@ -22,6 +22,7 @@
     import {
         getVolumePhase,
         getVolumeScanRunKind,
+        isVolumeCoveredInPhases,
         type VolumeIndexActivity,
         type AggregationActivity,
     } from './index-state.svelte'
@@ -182,6 +183,7 @@
     // body stays presentational, taking both as props.
     const phase = $derived(getVolumePhase(activity.volumeId))
     const isNetwork = $derived(isNetworkIndexRun(activity.volumeId, getVolumes()))
+    const coveredInPhases = $derived(isVolumeCoveredInPhases(activity.volumeId))
     // What kind of run this is, for the run-kind header and the per-step copy.
     // Read here in the stateful wrapper (like `phase`); the body stays
     // presentational.
@@ -192,7 +194,16 @@
     {#if showHeading}
         <span class="drive-heading">{tString('indexing.drive.heading', { name: driveName })}</span>
     {/if}
-    <IndexingStatusBody {activity} {aggregation} {now} {windowedEta} {phase} {isNetwork} {scanRunKind} />
+    <IndexingStatusBody
+        {activity}
+        {aggregation}
+        {now}
+        {windowedEta}
+        {phase}
+        {isNetwork}
+        {coveredInPhases}
+        {scanRunKind}
+    />
 </div>
 
 <style>

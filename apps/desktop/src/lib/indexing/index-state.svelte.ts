@@ -287,6 +287,16 @@ export function getWalkedGround(volumeId: string): WalkedGround {
   return walkedGround.get(volumeId) ?? NO_WALKED_GROUND
 }
 
+/** Whether this volume's run covers the drive branch by branch rather than
+ *  walking it whole. Reactive. Read off the walked-ground entry, which is the
+ *  same fact under a different question: an entry that isn't whole-volume IS a
+ *  phased run. Drives the step checklist, which otherwise offers three steps a
+ *  phased run never takes. */
+export function isVolumeCoveredInPhases(volumeId: string): boolean {
+  const ground = walkedGround.get(volumeId)
+  return ground !== undefined && !ground.wholeVolume
+}
+
 export function getEntriesScanned(): number {
   const r = root()
   return r?.phase === 'scanning' ? r.entriesScanned : 0

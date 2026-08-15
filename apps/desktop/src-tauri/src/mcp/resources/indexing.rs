@@ -39,6 +39,11 @@ pub(crate) struct VolumeIndexingSnapshot {
     pub phase_duration_ms: u64,
     /// Whether a scan is running (drives the "scan progress" line).
     pub scanning: bool,
+    /// Whether the running walk covers the drive branch by branch rather than
+    /// taking it whole. Changes the answer to "can I trust search here?": a
+    /// phased run's index answers for everything it has covered so far, and grows
+    /// as it goes, rather than being unusable until it finishes.
+    pub covered_in_phases: bool,
     pub entries_scanned: u64,
     pub dirs_found: u64,
     pub bytes_scanned: u64,
@@ -85,6 +90,10 @@ pub(crate) struct VolumeIndexingDebug {
 /// a volume is scanning so an agent can see where a scan is. Network volumes
 /// (SMB/MTP) emit only `Scanning → Live` phase events, so the middle steps flip
 /// to done together at `Live` — honest, not a bug.
+///
+/// ❌ Not rendered for a drive covered in phases: it writes sizes as it walks, so
+/// there is no separate aggregate and no catch-up pass, and three permanently
+/// pending steps would read as a stuck scan.
 const PIPELINE_STEPS: [&str; 4] = ["Scan", "Aggregate sizes", "Reconcile", "Go live"];
 
 /// The pipeline-step index a phase corresponds to (`Scan` = 0 … `Go live` = 3).
@@ -208,6 +217,23 @@ fn scan_progress_line(snap: &VolumeIndexingSnapshot) -> Option<String> {
     Some(line)
 }
 
+/// What a phased run has covered so far, in the terms an agent asking "can I
+/// trust search on this volume?" needs: the index answers for the ground already
+/// walked and keeps growing, which is a different answer from "no scan has
+/// finished, so there's nothing here".
+fn coverage_line(snap: &VolumeIndexingSnapshot) -> Option<String> {
+    if !snap.covered_in_phases {
+        return None;
+    }
+    let covered = snap
+        .db_entry_count
+        .map(|n| format!("{} entries covered so far", format_number(n)))
+        .unwrap_or_else(|| "still counting".to_string());
+    Some(format!(
+        "building folder by folder, in the order this user's folders matter; {covered}.          Search answers for what is covered and the rest arrives as the walk reaches it"
+    ))
+}
+
 /// The `last scan: …` line: relative age plus the scan's duration, or `none yet`.
 fn last_scan_line(snap: &VolumeIndexingSnapshot, now_unix_s: u64) -> String {
     match snap.scan_completed_at {
@@ -244,8 +270,13 @@ fn push_volume_summary(lines: &mut Vec<String>, snap: &VolumeIndexingSnapshot, n
         lines.push(format!("  scan progress: {progress}"));
     }
 
-    // The step checklist, only while scanning (it answers "where is the scan?").
-    if snap.freshness == Some(Freshness::Scanning) {
+    if let Some(coverage) = coverage_line(snap) {
+        lines.push(format!("  coverage: {coverage}"));
+    }
+
+    // The step checklist, only while scanning a volume whole (it answers "where is
+    // the scan?"). A phased run has no such pipeline to be somewhere in.
+    if snap.freshness == Some(Freshness::Scanning) && !snap.covered_in_phases {
         let current = phase_step_index(&snap.activity_phase);
         lines.push("  steps:".to_string());
         for (i, step) in PIPELINE_STEPS.iter().enumerate() {
@@ -401,6 +432,7 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
         activity_phase,
         phase_duration_ms,
         scanning,
+        covered_in_phases,
         entries_scanned,
         dirs_found,
         bytes_scanned,
@@ -413,6 +445,7 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
             d.activity_phase.clone(),
             d.phase_duration_ms,
             d.base.scanning,
+            d.base.covered_in_phases,
             d.base.entries_scanned,
             d.base.dirs_found,
             d.base.bytes_scanned,
@@ -421,7 +454,7 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
             d.live_dir_count,
             d.base.db_file_size,
         ),
-        None => (ActivityPhase::Idle, 0, false, 0, 0, 0, None, None, None, None),
+        None => (ActivityPhase::Idle, 0, false, false, 0, 0, 0, None, None, None, None),
     };
 
     let debug = if with_debug {
@@ -453,6 +486,7 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
         activity_phase,
         phase_duration_ms,
         scanning,
+        covered_in_phases,
         entries_scanned,
         dirs_found,
         bytes_scanned,

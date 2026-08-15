@@ -111,6 +111,33 @@ describe('deriveSteps — local full scan', () => {
   })
 })
 
+describe('deriveSteps — a drive covered in phases', () => {
+  it('shows the one step that happens, not three that never separately do', () => {
+    // A phased run writes sizes as it walks, so there is no separate save, no
+    // separate size computation, and no catch-up pass. Offering those three would
+    // leave them pending for the whole run and then flip them to done together.
+    const steps = deriveSteps({
+      runKind: 'phased',
+      phase: 'scanning',
+      aggregationSubPhase: undefined,
+      scanRunKind: 'first_scan',
+    })
+
+    expect(steps.map((s) => s.kind)).toEqual(['findFiles'])
+    expect(steps[0].status).toBe('active')
+  })
+
+  it('marks it done on the terminal transition', () => {
+    const steps = deriveSteps({ runKind: 'phased', phase: 'live', aggregationSubPhase: undefined })
+
+    expect(steps.map((s) => s.status)).toEqual(['done'])
+  })
+
+  it('keeps the run-kind header, which is the backend answer either way', () => {
+    expect(deriveRunLabel('phased', 'first_scan')).toBe('firstScan')
+  })
+})
+
 describe('deriveSteps — network scan (SMB/MTP)', () => {
   it('lists only find files and compute folder sizes (no save, no catch up)', () => {
     const steps = deriveSteps({ runKind: 'network', phase: 'scanning', aggregationSubPhase: undefined })

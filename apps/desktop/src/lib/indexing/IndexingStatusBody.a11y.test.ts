@@ -55,6 +55,7 @@ const baseProps = {
   windowedEta: null,
   phase: undefined as ActivityPhase | undefined,
   isNetwork: false,
+  coveredInPhases: false,
 }
 
 async function mountBody(props: Record<string, unknown>): Promise<HTMLDivElement> {

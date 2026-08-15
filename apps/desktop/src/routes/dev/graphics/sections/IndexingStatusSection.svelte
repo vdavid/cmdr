@@ -45,6 +45,9 @@
         aggregation: AggregationActivity | undefined
         phase: ActivityPhase | undefined
         isNetwork: boolean
+        /** The drive is being covered branch by branch, so the checklist shows the
+         *  one step that happens rather than three that never separately do. */
+        coveredInPhases?: boolean
         windowedEta: string | null
         driveName: string
         /** Set only where the tile is ABOUT the run kind (it adds the run-kind
@@ -54,6 +57,23 @@
 
     // Each state names the drive it's plausibly about, so the heading reads true.
     const STATES: State[] = [
+        {
+            id: 'find-files-phased',
+            caption: 'Local · covering the drive in phases (one step, count + elapsed, no bar)',
+            activity: scan({
+                entriesScanned: 96_400,
+                dirsFound: 8_900,
+                bytesScanned: 41_000_000_000,
+                scanStartedAt: NOW - 62_000,
+            }),
+            aggregation: undefined,
+            phase: 'scanning',
+            isNetwork: false,
+            coveredInPhases: true,
+            windowedEta: null,
+            driveName: 'Macintosh HD',
+            scanRunKind: 'first_scan',
+        },
         {
             id: 'find-files-first',
             caption: 'Local · find files (first scan, no calibration → count + elapsed, no bar)',
@@ -254,6 +274,7 @@
                         windowedEta={s.windowedEta}
                         phase={s.phase}
                         isNetwork={s.isNetwork}
+                        coveredInPhases={s.coveredInPhases ?? false}
                         scanRunKind={s.scanRunKind}
                     />
                 </div>

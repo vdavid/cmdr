@@ -10,6 +10,9 @@
  *   - a NETWORK (SMB/MTP) scan inserts entries inline during the walk and emits
  *     no top-level Aggregating/Reconciling phase, so its Save and Catch-up steps
  *     never appear (find files → compute folder sizes only),
+ *   - a PHASED first index collapses to the single find-files step: it covers the
+ *     drive branch by branch, writing sizes as it goes, so there is no separate
+ *     save, no separate size computation, and no catch-up pass to show,
  *   - an event-log roll-on (replay) collapses to a single Update-index step.
  *
  * State is derived from a "furthest reached" index across the available signals
@@ -49,7 +52,7 @@ export interface IndexStep {
 export type AggregationSubPhase = 'saving_entries' | 'loading' | 'sorting' | 'computing' | 'writing'
 
 /** Which family of steps a volume's pipeline produces. */
-export type IndexRunKind = 'local' | 'network' | 'replay'
+export type IndexRunKind = 'local' | 'network' | 'replay' | 'phased'
 
 /** The run-kind header above the checklist: what KIND of run this is, answering
  *  "is this a full scan, a change check, or a quick roll-on?" at a glance. */
@@ -106,6 +109,10 @@ const LOCAL_STEPS: readonly IndexStepKind[] = ['findFiles', 'saveFileList', 'com
  *  update. Same order and same state machine as `LOCAL_STEPS`. */
 const CHANGE_CHECK_STEPS: readonly IndexStepKind[] = ['findFiles', 'updateFileList', 'computeFolderSizes', 'catchUp']
 const NETWORK_STEPS: readonly IndexStepKind[] = ['findFiles', 'computeFolderSizes']
+/** A phased first index has one observable step. The other three would sit
+ *  pending for the whole run and then flip to done together, which reads as three
+ *  things going wrong rather than one thing working. */
+const PHASED_STEPS: readonly IndexStepKind[] = ['findFiles']
 const REPLAY_STEPS: readonly IndexStepKind[] = ['updateIndex']
 
 /** True once the pipeline has finished (the volume left the active steps). */
@@ -158,6 +165,9 @@ export function deriveSteps(input: StepDerivationInput): IndexStep[] {
   }
   if (input.runKind === 'network') {
     return statusesFromReached(NETWORK_STEPS, networkReachedIndex(input))
+  }
+  if (input.runKind === 'phased') {
+    return statusesFromReached(PHASED_STEPS, isTerminalPhase(input.phase) ? PHASED_STEPS.length : 0)
   }
   const order = input.scanRunKind === 'change_check' ? CHANGE_CHECK_STEPS : LOCAL_STEPS
   return statusesFromReached(order, localReachedIndex(input))
