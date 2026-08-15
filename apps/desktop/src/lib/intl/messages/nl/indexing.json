@@ -25,26 +25,6 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.run.firstScan": "Eerste volledige scan",
-  "@indexing.run.firstScan": {
-    "sourceHash": "bb804db"
-  },
-  "indexing.run.rescan": "Volledige herscan",
-  "@indexing.run.rescan": {
-    "sourceHash": "f8cd103"
-  },
-  "indexing.run.firstIndex": "Eerste index",
-  "@indexing.run.firstIndex": {
-    "sourceHash": "4de62ce"
-  },
-  "indexing.run.changeCheck": "Controleren op wijzigingen",
-  "@indexing.run.changeCheck": {
-    "sourceHash": "9b43638"
-  },
-  "indexing.run.update": "Snelle update",
-  "@indexing.run.update": {
-    "sourceHash": "97ac3e3"
-  },
   "indexing.phase.priorityFolders": "De mappen die je het meest gebruikt worden geïndexeerd",
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
@@ -56,6 +36,26 @@
   "indexing.phase.wholeDrive": "De rest van de schijf wordt geïndexeerd",
   "@indexing.phase.wholeDrive": {
     "sourceHash": "1e1d606"
+  },
+  "indexing.run.firstIndex": "Eerste index",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
+  },
+  "indexing.run.firstScan": "Eerste volledige scan",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Volledige herscan",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.changeCheck": "Controleren op wijzigingen",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
+  "indexing.run.update": "Snelle update",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
   },
   "indexing.step.findFiles": "Bestanden zoeken",
   "@indexing.step.findFiles": {
@@ -85,13 +85,13 @@
   "@indexing.summary.found": {
     "sourceHash": "fe3038e"
   },
-  "indexing.step.findFilesFirstScan": "Eerste scan, dit kan even duren",
-  "@indexing.step.findFilesFirstScan": {
-    "sourceHash": "5e9ea25"
-  },
   "indexing.step.findFilesPhased": "Dit is de eerste ronde, dus het duurt even. Je mappen worden doorzoekbaar zodra Cmdr erbij is.",
   "@indexing.step.findFilesPhased": {
     "sourceHash": "dbeb379"
+  },
+  "indexing.step.findFilesFirstScan": "Eerste scan, dit kan even duren",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
   },
   "indexing.step.findFilesChangeCheck": "Elke map wordt met de index vergeleken. Je mapgroottes blijven ondertussen zichtbaar.",
   "@indexing.step.findFilesChangeCheck": {

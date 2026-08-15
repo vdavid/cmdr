@@ -25,26 +25,6 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.run.firstScan": "Quét toàn bộ lần đầu",
-  "@indexing.run.firstScan": {
-    "sourceHash": "bb804db"
-  },
-  "indexing.run.rescan": "Quét lại toàn bộ",
-  "@indexing.run.rescan": {
-    "sourceHash": "f8cd103"
-  },
-  "indexing.run.firstIndex": "Lập chỉ mục lần đầu",
-  "@indexing.run.firstIndex": {
-    "sourceHash": "4de62ce"
-  },
-  "indexing.run.changeCheck": "Kiểm tra thay đổi",
-  "@indexing.run.changeCheck": {
-    "sourceHash": "9b43638"
-  },
-  "indexing.run.update": "Cập nhật nhanh",
-  "@indexing.run.update": {
-    "sourceHash": "97ac3e3"
-  },
   "indexing.phase.priorityFolders": "Đang lập chỉ mục những thư mục bạn dùng nhiều nhất",
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
@@ -56,6 +36,26 @@
   "indexing.phase.wholeDrive": "Đang lập chỉ mục phần còn lại của ổ đĩa",
   "@indexing.phase.wholeDrive": {
     "sourceHash": "1e1d606"
+  },
+  "indexing.run.firstIndex": "Lập chỉ mục lần đầu",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
+  },
+  "indexing.run.firstScan": "Quét toàn bộ lần đầu",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Quét lại toàn bộ",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.changeCheck": "Kiểm tra thay đổi",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
+  "indexing.run.update": "Cập nhật nhanh",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
   },
   "indexing.step.findFiles": "Tìm tệp",
   "@indexing.step.findFiles": {
@@ -85,13 +85,13 @@
   "@indexing.summary.found": {
     "sourceHash": "fe3038e"
   },
-  "indexing.step.findFilesFirstScan": "Lần quét đầu tiên nên có thể mất một lúc",
-  "@indexing.step.findFilesFirstScan": {
-    "sourceHash": "5e9ea25"
-  },
   "indexing.step.findFilesPhased": "Đây là lượt đầu tiên nên sẽ hơi lâu. Các thư mục của bạn tìm kiếm được ngay khi Cmdr chạy tới chúng.",
   "@indexing.step.findFilesPhased": {
     "sourceHash": "dbeb379"
+  },
+  "indexing.step.findFilesFirstScan": "Lần quét đầu tiên nên có thể mất một lúc",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
   },
   "indexing.step.findFilesChangeCheck": "Đang so sánh từng thư mục với chỉ mục. Kích thước thư mục của bạn vẫn hiển thị trong lúc này.",
   "@indexing.step.findFilesChangeCheck": {

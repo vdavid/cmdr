@@ -25,26 +25,6 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.run.firstScan": "Erster vollständiger Durchlauf",
-  "@indexing.run.firstScan": {
-    "sourceHash": "bb804db"
-  },
-  "indexing.run.rescan": "Erneuter vollständiger Durchlauf",
-  "@indexing.run.rescan": {
-    "sourceHash": "f8cd103"
-  },
-  "indexing.run.firstIndex": "Erste Indizierung",
-  "@indexing.run.firstIndex": {
-    "sourceHash": "4de62ce"
-  },
-  "indexing.run.changeCheck": "Prüfung auf Änderungen",
-  "@indexing.run.changeCheck": {
-    "sourceHash": "9b43638"
-  },
-  "indexing.run.update": "Schnelle Aktualisierung",
-  "@indexing.run.update": {
-    "sourceHash": "97ac3e3"
-  },
   "indexing.phase.priorityFolders": "Deine meistgenutzten Ordner werden indiziert",
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
@@ -56,6 +36,26 @@
   "indexing.phase.wholeDrive": "Der Rest des Laufwerks wird indiziert",
   "@indexing.phase.wholeDrive": {
     "sourceHash": "1e1d606"
+  },
+  "indexing.run.firstIndex": "Erste Indizierung",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
+  },
+  "indexing.run.firstScan": "Erster vollständiger Durchlauf",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Erneuter vollständiger Durchlauf",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.changeCheck": "Prüfung auf Änderungen",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
+  "indexing.run.update": "Schnelle Aktualisierung",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
   },
   "indexing.step.findFiles": "Dateien finden",
   "@indexing.step.findFiles": {
@@ -85,13 +85,13 @@
   "@indexing.summary.found": {
     "sourceHash": "fe3038e"
   },
-  "indexing.step.findFilesFirstScan": "Erster Durchlauf, das kann eine Weile dauern",
-  "@indexing.step.findFilesFirstScan": {
-    "sourceHash": "5e9ea25"
-  },
   "indexing.step.findFilesPhased": "Das erste Mal, deshalb dauert es etwas. Deine Ordner werden durchsuchbar, sobald Cmdr sie erreicht.",
   "@indexing.step.findFilesPhased": {
     "sourceHash": "dbeb379"
+  },
+  "indexing.step.findFilesFirstScan": "Erster Durchlauf, das kann eine Weile dauern",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
   },
   "indexing.step.findFilesChangeCheck": "Jeder Ordner wird mit dem Index verglichen. Deine Ordnergrößen bleiben währenddessen sichtbar.",
   "@indexing.step.findFilesChangeCheck": {

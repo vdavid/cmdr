@@ -25,26 +25,6 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.run.firstScan": "Première analyse complète",
-  "@indexing.run.firstScan": {
-    "sourceHash": "bb804db"
-  },
-  "indexing.run.rescan": "Nouvelle analyse complète",
-  "@indexing.run.rescan": {
-    "sourceHash": "f8cd103"
-  },
-  "indexing.run.firstIndex": "Premier index",
-  "@indexing.run.firstIndex": {
-    "sourceHash": "4de62ce"
-  },
-  "indexing.run.changeCheck": "Recherche des changements",
-  "@indexing.run.changeCheck": {
-    "sourceHash": "9b43638"
-  },
-  "indexing.run.update": "Mise à jour rapide",
-  "@indexing.run.update": {
-    "sourceHash": "97ac3e3"
-  },
   "indexing.phase.priorityFolders": "Indexation des dossiers que vous utilisez le plus",
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
@@ -56,6 +36,26 @@
   "indexing.phase.wholeDrive": "Indexation du reste du disque",
   "@indexing.phase.wholeDrive": {
     "sourceHash": "1e1d606"
+  },
+  "indexing.run.firstIndex": "Premier index",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
+  },
+  "indexing.run.firstScan": "Première analyse complète",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Nouvelle analyse complète",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.changeCheck": "Recherche des changements",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
+  "indexing.run.update": "Mise à jour rapide",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
   },
   "indexing.step.findFiles": "Trouver les fichiers",
   "@indexing.step.findFiles": {
@@ -85,13 +85,13 @@
   "@indexing.summary.found": {
     "sourceHash": "fe3038e"
   },
-  "indexing.step.findFilesFirstScan": "Première analyse, cela peut prendre un moment",
-  "@indexing.step.findFilesFirstScan": {
-    "sourceHash": "5e9ea25"
-  },
   "indexing.step.findFilesPhased": "C''est le premier passage, donc ça prend un moment. Vos dossiers deviennent consultables au fur et à mesure que Cmdr les atteint.",
   "@indexing.step.findFilesPhased": {
     "sourceHash": "dbeb379"
+  },
+  "indexing.step.findFilesFirstScan": "Première analyse, cela peut prendre un moment",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
   },
   "indexing.step.findFilesChangeCheck": "Chaque dossier est comparé à l''index. La taille de vos dossiers reste visible pendant ce temps.",
   "@indexing.step.findFilesChangeCheck": {

@@ -25,26 +25,6 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.run.firstScan": "首次完整扫描",
-  "@indexing.run.firstScan": {
-    "sourceHash": "bb804db"
-  },
-  "indexing.run.rescan": "完整重新扫描",
-  "@indexing.run.rescan": {
-    "sourceHash": "f8cd103"
-  },
-  "indexing.run.firstIndex": "首次建立索引",
-  "@indexing.run.firstIndex": {
-    "sourceHash": "4de62ce"
-  },
-  "indexing.run.changeCheck": "检查更改",
-  "@indexing.run.changeCheck": {
-    "sourceHash": "9b43638"
-  },
-  "indexing.run.update": "快速更新",
-  "@indexing.run.update": {
-    "sourceHash": "97ac3e3"
-  },
   "indexing.phase.priorityFolders": "正在为你最常用的文件夹建立索引",
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
@@ -56,6 +36,26 @@
   "indexing.phase.wholeDrive": "正在为驱动器的其余部分建立索引",
   "@indexing.phase.wholeDrive": {
     "sourceHash": "1e1d606"
+  },
+  "indexing.run.firstIndex": "首次建立索引",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
+  },
+  "indexing.run.firstScan": "首次完整扫描",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "完整重新扫描",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.changeCheck": "检查更改",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
+  "indexing.run.update": "快速更新",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
   },
   "indexing.step.findFiles": "查找文件",
   "@indexing.step.findFiles": {
@@ -85,13 +85,13 @@
   "@indexing.summary.found": {
     "sourceHash": "fe3038e"
   },
-  "indexing.step.findFilesFirstScan": "首次扫描，可能需要一些时间",
-  "@indexing.step.findFilesFirstScan": {
-    "sourceHash": "5e9ea25"
-  },
   "indexing.step.findFilesPhased": "这是第一遍，所以要花点时间。Cmdr 走到哪个文件夹，那个文件夹就能搜了。",
   "@indexing.step.findFilesPhased": {
     "sourceHash": "dbeb379"
+  },
+  "indexing.step.findFilesFirstScan": "首次扫描，可能需要一些时间",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
   },
   "indexing.step.findFilesChangeCheck": "正在将每个文件夹与索引逐一比对。期间你的文件夹大小会一直显示。",
   "@indexing.step.findFilesChangeCheck": {
