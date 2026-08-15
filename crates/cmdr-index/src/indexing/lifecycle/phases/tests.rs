@@ -152,6 +152,10 @@ fn next_fixture_id() -> u64 {
     NEXT.fetch_add(1, Ordering::Relaxed)
 }
 
+/// The two drive-menu actions a user can reach a half-covered volume with.
+/// Their own file, over this file's `Drive` fixture.
+mod menu_actions;
+
 // ── A drive the machine covers, end to end ───────────────────────────
 
 /// A local drive with no index, driven through the PUBLIC handle so the whole

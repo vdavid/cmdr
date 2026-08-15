@@ -190,6 +190,24 @@ care about since. ❌ Never an error, and ❌ never a truncate. After full cover
 exactly. The doors this closes, and how it sits beside the deferred-rescan mechanism (they answer for disjoint index
 states, so neither supersedes the other), are canonical in `../DETAILS.md` § "Every other way a full walk starts".
 
+## Stop and Forget, against a half-covered drive
+
+The drive badge offers both while a drive is scanning (`driveIndexMenuActions('scanning')`), and they sit either side of
+the persisted branch set, which is the one fact `launch_route` reads to tell a phased partial from an interrupted bulk
+scan.
+
+- **Stop** (`Index::disable_volume`) cancels the running walk and clears the queue through `PhaseHandle::stop`, keeps
+  the database, and leaves the branch set on it. `stop_indexing`'s `branches::forget` drops the IN-MEMORY set only. So
+  the next launch routes `CoverInPhases` and adds to what this session bought. ❌ Getting this wrong turns a resume into
+  a rebuild, and the user's own action is what costs them every folder covered so far.
+- **Forget** (`Index::forget_volume`) keeps today's meaning: the database goes, and the branch set inside it goes with
+  the coverage it describes, so the next launch is a clean first index.
+
+⚠️ One window is deliberately not resumable: the branch set is written as each walk FINISHES
+(`finish_branch_coverage`), so a stop taken inside the very first walk leaves the stitch's rows with nothing recording
+what ground they cover. The next launch rebuilds them, by the same rule that throws away an interrupted bulk scan. Tests:
+`tests/menu_actions.rs`.
+
 ## The database is prepared for a walk through writer MESSAGES
 
 `prepare_database_for_a_walk` runs only for an `Activation::WriterOnly` start, on its own write connection, before any
