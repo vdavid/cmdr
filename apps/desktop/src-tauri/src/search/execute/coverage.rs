@@ -162,7 +162,8 @@ pub(super) enum AfterAnotherWalk {
 /// symptom is silent: the same query, run again, prunes the ground it just walked
 /// and returns FEWER results than the first time.
 ///
-/// So: rebuild when the arena can't honor the answer ([`LoadedVolume::honors`])
+/// So: rebuild when the arena can't honor the answer
+/// ([`LoadedVolume::honors`](crate::search::volumes::LoadedVolume::honors))
 /// AND a walk is what put them out of step. Both halves earn their keep. Without
 /// the freshness test, every query after any walk would pay a full arena rebuild.
 /// Without the walk mark, a boot disk — whose background indexer moves the token
