@@ -8,26 +8,37 @@
 
 use std::collections::HashSet;
 
-/// Split an absolute path into its non-empty components. `/` yields an empty
-/// slice; `/a/b` yields `["a", "b"]`.
-fn components(path: &str) -> Vec<&str> {
-    path.split('/').filter(|c| !c.is_empty()).collect()
+/// Walk an absolute path's non-empty components. `/` yields nothing; `/a/b`
+/// yields `"a"`, `"b"`.
+///
+/// ⚠️ An iterator, ❌ not a `Vec`: the branch set compares one path against every
+/// branch it holds, on the live event path and once per frontier root a walk
+/// covers. Two heap allocations per comparison made that the single most expensive
+/// thing about resuming an interrupted index (`lifecycle/phases/DETAILS.md`
+/// § "What a resume costs"). Callers that genuinely need a slice collect it
+/// themselves.
+fn components(path: &str) -> impl Iterator<Item = &str> {
+    path.split('/').filter(|c| !c.is_empty())
 }
 
 /// Number of path components. `/` is 0, `/a/b` is 2. Used to sort shallow-first.
 pub(crate) fn depth(path: &str) -> usize {
-    components(path).len()
+    components(path).count()
 }
 
 /// Whether `path` is a STRICT descendant of `prefix` (a proper sub-path, never
 /// equal). Component-aware: `/a/b/c` is a descendant of `/a/b`, but `/a/bc` is
 /// not. The root `/` is an ancestor of everything but itself.
 pub(crate) fn is_strict_descendant(path: &str, prefix: &str) -> bool {
-    let (pc, xc) = (components(path), components(prefix));
-    if pc.len() <= xc.len() {
-        return false;
+    let mut walked = components(path);
+    for expected in components(prefix) {
+        if walked.next() != Some(expected) {
+            return false;
+        }
     }
-    pc[..xc.len()] == xc[..]
+    // Every one of the prefix's components matched, so what decides it is whether
+    // the path has anything left: equal paths are ❌ not descendants.
+    walked.next().is_some()
 }
 
 /// Whether `path` IS `prefix` or sits under it, component-aware. The inclusive
@@ -43,7 +54,7 @@ pub(crate) fn is_at_or_under(path: &str, prefix: &str) -> bool {
 /// never as a rescan anchor (the anchor is the group's deepest common ancestor,
 /// which may reach deeper than this cap).
 pub(crate) fn capped_prefix(path: &str, max_depth: usize) -> String {
-    let comps = components(path);
+    let comps: Vec<&str> = components(path).collect();
     if comps.is_empty() {
         return "/".to_string();
     }
@@ -57,10 +68,9 @@ pub(crate) fn capped_prefix(path: &str, max_depth: usize) -> String {
 pub(crate) fn deepest_common_ancestor<'a>(paths: impl IntoIterator<Item = &'a str>) -> Option<String> {
     let mut iter = paths.into_iter();
     let first = iter.next()?;
-    let mut common: Vec<&str> = components(first);
+    let mut common: Vec<&str> = components(first).collect();
     for path in iter {
-        let comps = components(path);
-        let shared = common.iter().zip(comps.iter()).take_while(|(a, b)| a == b).count();
+        let shared = common.iter().zip(components(path)).take_while(|(a, b)| *a == b).count();
         common.truncate(shared);
         if common.is_empty() {
             break;
