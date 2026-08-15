@@ -6,8 +6,8 @@ Read this before any non-trivial work in `lifecycle/phases/`. Must-know guardrai
 and `start_scan`, taking only the no-`scan_completed_at` case. There is no first full scan any more: the whole drive is
 the LAST phase of the same `coverage`/`cover` mechanism a search-driven walk uses, so a quit keeps every second it
 bought instead of truncating and starting over. That is true of every OTHER way a full walk starts too (the buttons, the
-automatic rescans), which is what keeps a half-built index from being blanked: `../DETAILS.md` § "What a launch does with
-the index it finds" holds the whole routing table.
+automatic rescans), which is what keeps a half-built index from being blanked: `../DETAILS.md` § "What a launch does
+with the index it finds" holds the whole routing table.
 
 **The shape of a run.** Ask the host which folders matter to this user (`HostPolicy::priority_roots`, an ORDER and
 nothing else), then `$HOME`, then the volume root. Per phase: stitch down to its root, ask for its frontier, walk those

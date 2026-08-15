@@ -559,63 +559,6 @@ impl IndexManager {
         }
     }
 
-    /// Put this volume back in sync by walking it WHOLE: the phase machine while
-    /// its first index is still being built, today's full (re)scan once one has
-    /// completed.
-    ///
-    /// **The one door every "walk this volume" caller goes through**, and the
-    /// reason a truncating scan can no longer land on a half-built index. Four
-    /// callers reach it, and each was its own way to blank one: the per-drive
-    /// "Turn on indexing for this drive" button and the FDA-deny start (both
-    /// through `start_volume` → `awaits_its_first_scan` → `force_scan`), "Rescan
-    /// now" itself, and `perform_registry_rescan` (a coalesced shallow
-    /// `MustScanSubDirs`, a replay that couldn't roll forward, an ingestion
-    /// backlog). ❌ Don't add a fifth caller that reaches past this into
-    /// `start_scan`.
-    ///
-    /// A rescan during the phased window RESTARTS the machine rather than
-    /// truncating: whatever is covered stays covered, and the queue is rebuilt
-    /// from the host's current answers plus a coverage query per root, so it picks
-    /// up folders the user has come to care about since. A machine that already
-    /// has work is left alone — the walk the caller asked for is in flight, which
-    /// is what [`ScanStartError::AlreadyScanning`] means everywhere else.
-    ///
-    /// ⚠️ It only REGISTERS the phased start. The machine is started by
-    /// `state::start_pending_phases` once the manager is back in the registry as
-    /// `Running`; see that function for why starting it from in here would make
-    /// every one of its first walks report "did not run".
-    pub(in crate::indexing) fn cover_or_scan(&mut self, scan_trigger: &str) -> Result<(), ScanStartError> {
-        if !self.first_index_is_the_machines() {
-            return self.start_scan(scan_trigger);
-        }
-        if self.phases_have_work() {
-            return Err(ScanStartError::AlreadyScanning);
-        }
-        log::info!(
-            "'{}' has no completed scan, so '{scan_trigger}' restarts its phases instead of rebuilding it",
-            self.volume_id
-        );
-        self.register_a_phased_start(PhasedStart::KeepTheRows);
-        Ok(())
-    }
-
-    /// Whether this volume's first index is still the phase machine's to build:
-    /// a locally-walked volume, no completed scan on record, and the
-    /// phased-first-index switch on.
-    ///
-    /// ❌ Not `awaits_its_first_scan`, which is a REGISTRY question with its own
-    /// two documented shapes and is deliberately left alone
-    /// (`state/queries.rs`) — re-keying it would make the per-drive enable button
-    /// a silent no-op on the volumes it was written to serve.
-    fn first_index_is_the_machines(&self) -> bool {
-        phases::phased_first_index()
-            && self.kind.uses_local_scanner()
-            && self
-                .store
-                .get_index_status()
-                .is_ok_and(|status| status.scan_completed_at.is_none())
-    }
-
     /// Stop the active full scan and watcher.
     pub fn stop_scan(&mut self) {
         set_phase_for(self.events.as_ref(), &self.volume_id, ActivityPhase::Idle, "stopped");

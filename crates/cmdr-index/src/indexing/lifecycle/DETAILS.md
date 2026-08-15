@@ -81,9 +81,9 @@ concurrently without corrupting each other. Every invariant below holds independ
 ## What a launch does with the index it finds (the routing table)
 
 `manager/launch_route.rs` is one pure function over the facts a launch reads off a volume's own database, and
-`resume_or_scan` does what it says. It is separate from the side effects on purpose: **a wrong cell costs either a wasted
-full rescan or a silently stale index, and both are invisible until somebody reports something strange.** The unit tests
-beside it ARE the table.
+`resume_or_scan` does what it says. It is separate from the side effects on purpose: **a wrong cell costs either a
+wasted full rescan or a silently stale index, and both are invisible until somebody reports something strange.** The
+unit tests beside it ARE the table.
 
 An SMB share and an MTP phone never reach it: `resume_or_scan` routes `is_trait_scanned()` to `resume_or_scan_network`
 first. For everything the local guarded walker reads, in the order the function asks:
@@ -101,10 +101,10 @@ first. For everything the local guarded walker reads, in the order the function 
   flipped it asked for. ❌ It never costs a COMPLETED volume its replay: the switch restores the BUILD path, not a
   rescan of everything already indexed. Shape and who flips it: `phases/DETAILS.md` § "The escape hatch".
 - **rows, and no record of which ground they cover** ⇒ truncate, then the phase machine. This is the discriminator, and
-  it is **the persisted branch set** (`branches::any_persisted`): `start_scan` clears the set before a whole-volume walk,
-  so a first BULK scan somebody interrupted has none while a phased (or search-walked) volume does. Resuming into rows
-  nothing accounts for would leave that ground unwatched and un-epoch-bumped, rendering last session's sizes as CURRENT
-  with nothing having verified them.
+  it is **the persisted branch set** (`branches::any_persisted`): `start_scan` clears the set before a whole-volume
+  walk, so a first BULK scan somebody interrupted has none while a phased (or search-walked) volume does. Resuming into
+  rows nothing accounts for would leave that ground unwatched and un-epoch-bumped, rendering last session's sizes as
+  CURRENT with nothing having verified them.
 - **anything else** ⇒ the phase machine, adding to what is there. A fresh install, a phased partial, a volume a search
   walked.
 
@@ -114,9 +114,9 @@ index whose rows were written under a policy this build doesn't apply counts as 
 
 ### Every other way a full walk starts
 
-`IndexManager::cover_or_scan` is the ONE door for "walk this volume whole", and it asks the same first question the table
-does: no completed scan ⇒ the phase machine, otherwise `start_scan`. ❌ Don't add a caller that reaches past it into
-`start_scan`. Four reach it, and each was its own way to blank a half-built index:
+`IndexManager::cover_or_scan` is the ONE door for "walk this volume whole", and it asks the same first question the
+table does: no completed scan ⇒ the phase machine, otherwise `start_scan`. ❌ Don't add a caller that reaches past it
+into `start_scan`. Four reach it, and each was its own way to blank a half-built index:
 
 - **"Rescan now"** and **"Turn on indexing for this drive"**, both through `state::force_scan`. The enable arrives via
   `Index::start_volume` → `awaits_its_first_scan`; ❌ don't re-key that predicate to fix this (it's shared, and both
@@ -136,8 +136,8 @@ sites. Both rescan doors hold the manager out under a transient `ShuttingDown` f
 first walks reports "did not run". At launch the ordering has a second reason (`state/startup.rs`).
 
 ⚠️ **A master off→on only brings back drives `drives_to_resume` names**, and its per-drive intent is
-`persisted_scan_completed` — which a drive part way through its FIRST index doesn't have. So an external drive covered in
-phases is forgotten by a master-switch cycle, exactly as one interrupted mid-bulk-scan always was. The boot disk is
+`persisted_scan_completed` — which a drive part way through its FIRST index doesn't have. So an external drive covered
+in phases is forgotten by a master-switch cycle, exactly as one interrupted mid-bulk-scan always was. The boot disk is
 `is_root` and always resumes. Closing it needs a persisted "the user enabled this drive" marker that doesn't exist yet;
 ❌ don't use the branch set as a proxy, since a drive somebody only SEARCHED has one too and auto-indexing it is exactly
 what the veto forbids.
@@ -473,8 +473,8 @@ Without the second, a coalesced shallow anchor, a journal-gap fallback, or the m
 `INSERT OR IGNORE`, and everything hanging off them is orphaned.
 
 A third question is asked ABOVE these two, in `cover_or_scan`: whether this volume's first index is the phase machine's
-at all (§ "Every other way a full walk starts"). A volume with no completed scan never reaches `start_scan`, so these two
-guard the volumes that do.
+at all (§ "Every other way a full walk starts"). A volume with no completed scan never reaches `start_scan`, so these
+two guard the volumes that do.
 
 **Both refusals are TYPED** (`rescan_request::ScanStartError`: `AlreadyScanning`, `GroundBeingWalked`, `Internal`).
 Their wording used to be the only thing separating them, which the project's hard rule forbids classifying on, and which
