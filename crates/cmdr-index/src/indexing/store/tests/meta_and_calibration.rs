@@ -80,24 +80,38 @@ fn drive_index_intent_markers_are_mutually_exclusive() {
 }
 
 /// A first-ever enable has no index database yet, so recording the choice creates
-/// one.
+/// one — and it works just as well against a FILE that exists with nothing in it.
 ///
-/// Without this the marker would land only once a scan had built the file, which
-/// is exactly the window it exists to survive: quit or unplug before then and the
-/// drive is forgotten.
+/// Both halves matter. Without the first, the marker would land only once a scan
+/// had built the file, which is exactly the window it exists to survive: quit or
+/// unplug before then and the drive is forgotten. The second is the state a real
+/// enable actually met (the write failed with "no such table: meta" on a real
+/// drive's first enable), so ❌ don't reintroduce a "does the file exist" branch:
+/// a path can carry a database that isn't one yet.
 #[test]
-fn a_first_ever_enable_creates_the_database_it_records_into() {
+fn a_first_ever_enable_records_into_whatever_is_or_isnt_at_the_path() {
     let dir = tempfile::tempdir().expect("temp dir");
-    let db_path = dir.path().join("index-smb-never-indexed.db");
 
-    IndexStore::set_drive_index_intent(&db_path, true).expect("record the enable");
+    for (case, db_path) in [
+        ("no file at all", dir.path().join("index-smb-never-indexed.db")),
+        ("an empty file", dir.path().join("index-smb-empty-file.db")),
+    ] {
+        if case == "an empty file" {
+            std::fs::write(&db_path, b"").expect("an empty database file");
+        }
 
-    assert!(db_path.exists(), "the marker needs a database to live in");
-    assert!(IndexStore::user_enabled(&db_path), "and the choice is on record");
-    assert!(
-        !IndexStore::persisted_scan_completed(&db_path),
-        "nothing has scanned this drive yet: intent and completion are separate facts"
-    );
+        IndexStore::set_drive_index_intent(&db_path, true).expect("record the enable");
+
+        assert!(db_path.exists(), "{case}: the marker needs a database to live in");
+        assert!(IndexStore::user_enabled(&db_path), "{case}: the choice is on record");
+        assert!(
+            !IndexStore::persisted_scan_completed(&db_path),
+            "{case}: nothing has scanned this drive yet, and intent is a separate fact"
+        );
+        // And the index the enable is about to build opens on top of it cleanly.
+        drop(IndexStore::open(&db_path).expect("the recorded database is a usable index"));
+        assert!(IndexStore::user_enabled(&db_path), "{case}: which keeps the choice");
+    }
 }
 
 #[test]

@@ -233,11 +233,15 @@ impl IndexStore {
     /// left every non-SMB transport re-enabling a drive without clearing its veto,
     /// which a later master-switch cycle then read as "the user turned this off".
     ///
-    /// Creates the database when the enable is the volume's first ever, because the
-    /// choice has to outlive the first index rather than wait for it. ❌ Never
-    /// reopens an existing file: `open` deletes and recreates on a schema mismatch,
-    /// and throwing a real index away to write one marker is not a trade this call
-    /// gets to make.
+    /// Builds the tables first, because the enable comes BEFORE anything has built
+    /// this volume's index: the path may hold nothing, or a file that isn't a
+    /// database yet. `create_tables` is idempotent, so an index full of rows is
+    /// untouched and a fresh one gets its `schema_version` from the next
+    /// [`Self::open`]. ❌ Don't gate it on the file existing (a real drive's first
+    /// enable met an empty file and the write failed with "no such table"), and ❌
+    /// don't reach for `open` to create it: `open` deletes and recreates on a schema
+    /// mismatch, and throwing a real index away to write one marker is not a trade
+    /// this call gets to make.
     ///
     /// Opens a short-lived write connection. Called mid-scan on the one path where a
     /// search already stood a writer up, which is safe for a single `meta` row: it
@@ -246,15 +250,13 @@ impl IndexStore {
     /// ❌ Don't queue it through the writer instead — the marker's whole job is to
     /// survive a crash mid-first-index, and the writer's backlog IS that window.
     pub(crate) fn set_drive_index_intent(db_path: &Path, enabled: bool) -> Result<(), IndexStoreError> {
-        if !db_path.exists() {
-            drop(Self::open(db_path)?);
-        }
         let (set, cleared) = if enabled {
             (USER_ENABLED_KEY, USER_DISABLED_KEY)
         } else {
             (USER_DISABLED_KEY, USER_ENABLED_KEY)
         };
         let conn = Self::open_write_connection(db_path)?;
+        create_tables(&conn)?;
         Self::update_meta(&conn, set, "1")?;
         conn.execute("DELETE FROM meta WHERE key = ?1", params![cleared])?;
         Ok(())
