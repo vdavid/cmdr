@@ -446,3 +446,26 @@ per-row `contain: layout paint` either (it backfires: one retained backing store
 GPU/compositor-memory investigation — findings, the reclaimable-not-a-leak conclusion, the measurement methodology and
 its gotchas, and kick-off context for any future high-memory report — is in
 `docs/notes/high-memory-gpu-compositor-investigation-2026-07.md`.
+
+## Unit-testing a view
+
+Both views compute their virtual window from the scroll surface's measured `clientHeight`, and the unit-test DOM
+(happy-dom) has no layout engine, so that height is `0` and the window is zero rows wide. The list then renders no rows
+at all — no error, no warning, and the data path can't complain either, because `fetchVisibleRange` swallows every
+throw. A spec written without a viewport therefore asserts against an empty DOM and passes.
+
+`mountFullList()` (`test-full-list.ts`) closes that. It installs a measured surface through `installLayoutMock()`
+(`$lib/test-layout`, the generic mechanism), points `getFileRange` at an in-memory entry array serving the exact
+`(start, count)` range asked for, fills in the twelve required props, and returns `rowNames()` / `hourglassRowNames()` /
+`settle()` plus the `layout` handle for resizing and scrolling mid-test.
+
+What it renders is what the app renders: nothing in the window math is stubbed, only the measurement feeding it. A 400
+px surface at the 20 px test row height renders 20 rows plus buffer, and `layout.scroll(…, 200)` lands on the row
+production lands on, gutter correction included. Pixel geometry is NOT faithful — `getBoundingClientRect` and
+`scrollHeight` stay at zero — so drag auto-scroll, hit-testing, and anything reading a rect belong in Playwright.
+
+The module stand-ins live one file over, in `test-file-list-mocks.ts`, and that separation is load-bearing: a `vi.mock`
+factory that reaches back into a module the mounted component also imports deadlocks the run (the spec's top-level
+import is mid-flight when the factory awaits it). Keep the mocks file free of component imports. Its other job is
+completeness — one missing export or one absent numeric setting (which turns the fetch range into `NaN`) empties the
+list silently, which is the same wrong-reason pass in a different costume.

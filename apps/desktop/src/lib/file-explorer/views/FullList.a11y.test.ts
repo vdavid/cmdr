@@ -1,202 +1,92 @@
 /**
  * Tier 3 a11y tests for `FullList.svelte`.
  *
- * Virtual-scrolling vertical file list with full metadata columns.
- * Like `BriefList`, we stub Tauri IPC, reactive settings, indexing, and
- * the icon cache. Tests cover empty state (with a safe cursor), and a
- * populated list.
+ * Virtual-scrolling vertical file list with full metadata columns. Tests cover
+ * the empty state (with a safe cursor) and a populated list. The populated cases
+ * mount through `mountFullList` (`test-full-list.ts`) so axe sees real `option`
+ * rows rather than an empty listbox.
  */
 
-import { describe, it, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import FullList from './FullList.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
-import type { FileEntry } from '../types'
+import { dirEntry, fileEntry, mountFullList } from './test-full-list'
+import { installLayoutMock } from '$lib/test-layout'
 
-vi.mock('$lib/tauri-commands', () => ({
-  getFileRange: vi.fn(() => Promise.resolve([] as FileEntry[])),
-  getDirStatsBatch: vi.fn(() => Promise.resolve({})),
-}))
+vi.mock('$lib/tauri-commands', async () => (await import('./test-file-list-mocks')).tauriCommandsMock())
+vi.mock('$lib/icon-cache', async () => (await import('./test-file-list-mocks')).iconCacheMock())
+vi.mock('$lib/indexing/index-state.svelte', async () =>
+  (await import('./test-file-list-mocks')).indexStateMock({ getWalkedGround: () => ['/root/src'] }),
+)
+vi.mock('$lib/settings/reactive-settings.svelte', async () =>
+  (await import('./test-file-list-mocks')).reactiveSettingsMock(),
+)
+vi.mock('$lib/settings/settings-store', async () => (await import('./test-file-list-mocks')).settingsStoreMock())
 
-vi.mock('$lib/icon-cache', async () => {
-  const { writable } = await import('svelte/store')
-  return {
-    getCachedIcon: () => undefined,
-    iconCacheVersion: writable(0),
-    iconCacheCleared: writable(0),
-    prefetchIcons: vi.fn(),
-  }
-})
-
-vi.mock('$lib/indexing/index-state.svelte', () => ({
-  isVolumeScanning: () => false,
-  isVolumeAggregating: () => false,
-  getWalkedGround: () => [],
-}))
-
-vi.mock('$lib/settings/reactive-settings.svelte', () => ({
-  getRowHeight: () => 20,
-  getIconSize: () => 16,
-  getIsCompactDensity: () => false,
-  getIsCmdrGold: () => false,
-  getUseAppIconsForDocuments: () => true,
-  formatDateTime: (t: number | undefined) => (t ? '2025-03-14 10:30' : ''),
-  formattedDate: (t: number | undefined) =>
-    t
-      ? {
-          text: '2025-03-14 10:30',
-          segments: [
-            { text: '2025', ageClass: 'age-fresh' as const },
-            { text: '-', ageClass: null },
-            { text: '03', ageClass: null },
-            { text: '-', ageClass: null },
-            { text: '14', ageClass: null },
-            { text: ' ', ageClass: null },
-            { text: '10', ageClass: null },
-            { text: ':', ageClass: null },
-            { text: '30', ageClass: null },
-          ],
-        }
-      : { text: '', segments: [] },
-  formatFileSize: (n: number) => `${String(n)} B`,
-  getSizeDisplayMode: () => 'smart',
-  getSizeMismatchWarning: () => false,
-  getStripedRows: () => false,
-  getShowExtensionInName: () => false,
-  getShowTags: () => false,
-  getFileSizeUnit: () => 'bytes',
-  getFileSizeFormat: () => 'binary',
-}))
-
-vi.mock('$lib/settings/settings-store', () => ({
-  getSetting: (key: string) => {
-    if (key === 'advanced.virtualizationBufferRows') return 20
-    return undefined
-  },
-}))
+/** An empty listing still gets a measured surface: the empty-state branch is
+ *  about having no ENTRIES, not about having no room to show them. */
+async function mountEmpty(props: { cursorIndex: number; isFocused?: boolean }): Promise<HTMLElement> {
+  installLayoutMock({ '[data-file-list-surface]': { clientHeight: 400, clientWidth: 800, offsetWidth: 800 } })
+  const target = document.createElement('div')
+  document.body.appendChild(target)
+  mount(FullList, {
+    target,
+    props: {
+      listingId: 'l1',
+      volumeId: 'root',
+      totalCount: 0,
+      includeHidden: false,
+      isFocused: true,
+      hasParent: false,
+      parentPath: '',
+      currentPath: '/root',
+      sortBy: 'name',
+      sortOrder: 'ascending',
+      onSelect: () => {},
+      onNavigate: () => {},
+      ...props,
+    },
+  })
+  await tick()
+  return target
+}
 
 describe('FullList a11y', () => {
   // Pins the `aria-activedescendant` gate: the cursor exists but no row is
   // rendered, so the attribute must be absent rather than name a missing id.
   it('empty folder with cursor at 0 has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(FullList, {
-      target,
-      props: {
-        listingId: 'l1',
-        volumeId: 'root',
-        totalCount: 0,
-        includeHidden: false,
-        cursorIndex: 0,
-        isFocused: true,
-        hasParent: false,
-        parentPath: '',
-        currentPath: '/root',
-        sortBy: 'name',
-        sortOrder: 'ascending',
-        onSelect: () => {},
-        onNavigate: () => {},
-      },
-    })
-    await tick()
+    const target = await mountEmpty({ cursorIndex: 0 })
+    expect(target.querySelector('[role="listbox"]')?.getAttribute('aria-activedescendant')).toBeNull()
     await expectNoA11yViolations(target)
   })
 
   // Pins the empty-state text staying OUTSIDE the listbox: an empty listbox
   // passes `aria-required-children`, one holding a non-option child does not.
   it('empty folder with no cursor has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(FullList, {
-      target,
-      props: {
-        listingId: 'l1',
-        volumeId: 'root',
-        totalCount: 0,
-        includeHidden: false,
-        cursorIndex: -1,
-        isFocused: true,
-        hasParent: false,
-        parentPath: '',
-        currentPath: '/root',
-        sortBy: 'name',
-        sortOrder: 'ascending',
-        onSelect: () => {},
-        onNavigate: () => {},
-      },
-    })
-    await tick()
+    const target = await mountEmpty({ cursorIndex: -1 })
+    expect(target.querySelector('.empty-folder-message')).toBeTruthy()
     await expectNoA11yViolations(target)
   })
 
-  it('populated (with parent entry + cached row) has no a11y violations', async () => {
-    const mockEntries: FileEntry[] = [
-      {
-        name: 'report.md',
-        path: '/root/report.md',
-        isDirectory: false,
-        isSymlink: false,
-        size: 2048,
-        modifiedAt: 1710000000,
-        iconId: 'ext:md',
-        permissions: 420,
-        owner: 'test',
-        group: 'staff',
-        extendedMetadataLoaded: false,
-      },
-    ]
-    const { getFileRange } = await import('$lib/tauri-commands')
-    vi.mocked(getFileRange).mockResolvedValue(mockEntries)
-
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(FullList, {
-      target,
-      props: {
-        listingId: 'l2',
-        volumeId: 'root',
-        totalCount: 1,
-        includeHidden: false,
-        cursorIndex: 0,
-        isFocused: true,
-        hasParent: true,
-        parentPath: '/root/..',
-        currentPath: '/root',
-        sortBy: 'name',
-        sortOrder: 'ascending',
-        onSelect: () => {},
-        onNavigate: () => {},
-      },
+  it('populated (parent row, a walked folder, and a file) has no a11y violations', async () => {
+    const list = await mountFullList({
+      entries: [dirEntry({ name: 'src' }), fileEntry({ name: 'report.md', iconId: 'ext:md', size: 2048 })],
+      props: { hasParent: true, parentPath: '/root/..', totalCount: 3 },
     })
-    await tick()
-    await new Promise((r) => setTimeout(r, 0))
-    await tick()
-    await expectNoA11yViolations(target)
+    // `..` plus the two entries, one of them wearing the size-updating hourglass
+    // — so axe is checking the row chrome, not an empty listbox.
+    expect(list.rowNames()).toEqual(['..', 'src', 'report.md'])
+    expect(list.hourglassRowNames()).toEqual(['src'])
+    await expectNoA11yViolations(list.target)
   })
 
   it('unfocused pane has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(FullList, {
-      target,
-      props: {
-        listingId: 'l3',
-        volumeId: 'root',
-        totalCount: 0,
-        includeHidden: false,
-        cursorIndex: -1,
-        isFocused: false,
-        hasParent: false,
-        parentPath: '',
-        currentPath: '/root',
-        sortBy: 'name',
-        sortOrder: 'ascending',
-        onSelect: () => {},
-        onNavigate: () => {},
-      },
+    const list = await mountFullList({
+      entries: [fileEntry({ name: 'report.md' })],
+      props: { isFocused: false, cursorIndex: -1 },
     })
-    await tick()
-    await expectNoA11yViolations(target)
+    expect(list.rowNames()).toEqual(['report.md'])
+    await expectNoA11yViolations(list.target)
   })
 })

@@ -40,6 +40,9 @@ pixel-accurate width measurement via `@chenglou/pretext`, and the `*-utils.ts` t
   `rawWidths.length`, make `capPx` a fetch trigger, or bail silently.
 - **Index-size refresh (`refresh_listing_index_sizes`) refetches column widths through the existing `cacheGeneration`
   reset path**; a separate trigger double-fetches.
+- **A unit test asserting on ROWS must mount through `mountFullList()` (`test-full-list.ts`).** Without a measured
+  surface the virtual window is zero rows wide and the list renders nothing, silently, so every negative assertion
+  passes for free. Assert the rows are on screen before asserting what isn't on them.
 - **`listing.showExtensionInName` must stay in lockstep across the renderer and the measurer**: on, `gridTemplate` drops
   the Ext track and `computeFullListColumnWidths` returns `ext: 0`, so changing one side drifts every column. ❌ Don't
   "clean up" `FullListHeader`'s `.header-name-ext` split: it's the only way left to CLICK sort-by-extension in that

@@ -115,6 +115,19 @@ five rows the app renders, and scrolling to 200 px lands on the same row through
 The global `ResizeObserver` stub (`src/test-setup.ts`) is the same class, and stays silent for every spec that doesn't
 call `resize()`: nothing measures anything here, so a resize can only come from a test.
 
+### `mountFullList()` + the file-list mocks
+
+In `apps/desktop/src/lib/file-explorer/views/test-full-list.ts` (mounting, entry fixtures) and `test-file-list-mocks.ts`
+(the module stand-ins). `mountFullList({ entries })` gives a real `FullList` a measured surface, a `getFileRange` that
+serves the `(start, count)` range it's asked for, and the twelve required props, then hands back `rowNames()` /
+`hourglassRowNames()` / `layout` / `settle()`. The mock factories are spread into the spec's own `vi.mock` calls (the
+only form Vitest hoists) and cover every export the listing path touches.
+
+Both halves exist because `FullList`'s data path fails silently: `fetchVisibleRange` swallows every throw, so one
+missing mock export or one absent numeric setting (`NaN` fetch range) empties the list with no complaint. ⚠️ The mocks
+file must not import a component — a `vi.mock` factory reaching back into a module the component imports deadlocks the
+run.
+
 ### `stryker-mutator` (mutation testing for TS)
 
 Not in package.json: install ad-hoc: `pnpm add -D -w @stryker-mutator/core @stryker-mutator/typescript-checker`. Fast on
