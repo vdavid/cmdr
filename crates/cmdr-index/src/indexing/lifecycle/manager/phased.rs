@@ -172,6 +172,16 @@ impl IndexManager {
             self.volume_id
         );
         self.register_a_phased_start(PhasedStart::KeepTheRows);
+        // ⚠️ `perform_registry_rescan` stops the watcher and the live loop before it
+        // calls this, expecting the full scan it used to reach to start fresh ones.
+        // The machine starts a watcher too, but only from a walk's
+        // `begin_branch_coverage` — so a volume whose frontier is already empty
+        // would take stock, complete, and spend the rest of the session with
+        // NOTHING watching ground it serves as covered. Idempotent: it declines
+        // when a watcher is already up or nothing is covered yet. ❌ Not
+        // `resuming`: this is the same session, so there is no gap to admit and a
+        // bump here would mark rows stale that nothing happened to.
+        self.ensure_branch_watch(false);
         Ok(())
     }
 

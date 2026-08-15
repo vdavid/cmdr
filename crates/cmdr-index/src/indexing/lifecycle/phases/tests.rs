@@ -995,6 +995,13 @@ fn an_automatic_rescan_restarts_the_phases_instead_of_truncating() {
         drive.ghost_survived("covered/inner", "last-session.txt"),
         "❌ and the rows the machine had already covered are still there"
     );
+    // The door stops the watcher and the live loop on its way in, expecting the
+    // full scan it used to reach to start fresh ones. This volume's frontier is
+    // already empty, so no walk runs and nothing else would put one back.
+    assert!(
+        crate::indexing::lifecycle::state::is_watching_for_test(drive.volume_id),
+        "❌ covered ground the drive still serves must not be left with nothing watching it"
+    );
 }
 
 /// The escape hatch's own row, which is the one nobody would write down. With the
