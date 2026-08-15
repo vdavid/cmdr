@@ -19,9 +19,11 @@ HOW live changes arrive.
   freshly rebuilt index. The excluded dir's OWN row still updates: its change arrives under its parent.
 - **MTP gates BEFORE resolving** (`buffer_mtp_handle_if_scanning`): during a scan it buffers the RAW handle (zero device
   I/O); resolving ahead of the scanning check timed out on the contended device (the livelock).
-- **Reconnect AUTO-RESUMES an SMB index only when the MASTER switch is on AND a scan completed AND `user_disabled` is
-  unset** (`resume_smb_index_if_enabled` → `master::drive_index_should_run`, on the PERSISTED state, never the live
-  registry). The master switch outranks per-drive intent; never gate a BACKGROUND start on the per-drive markers alone.
+- **Reconnect AUTO-RESUMES an SMB index only when the MASTER switch is on AND the share carries the user's enable AND
+  `user_disabled` is unset** (`resume_smb_index_if_enabled` → `master::drive_index_should_run`, on the PERSISTED state,
+  never the live registry). A share whose FIRST index the drop interrupted still comes back, since intent is recorded
+  at the enable; ❌ nothing here writes intent, `Index::start_volume` does it for every transport. The master switch
+  outranks per-drive intent; never gate a BACKGROUND start on the per-drive markers alone.
   ⚠️ Both switches govern background work only: a search-driven walk (`Activation::WriterOnly`) runs with either off,
   because it's a read the user asked for and it starts no scan and no watcher (`../lifecycle/DETAILS.md`). The sticky
   `user_disabled` marker is written ONLY at the explicit disable command, NEVER inside `stop_indexing` (which also runs

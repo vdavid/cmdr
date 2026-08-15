@@ -52,7 +52,10 @@ pub use errors::{IndexFailure, IndexStoreError, UnreadableCause};
 pub(crate) use paths::resolve_path_under;
 pub use paths::{resolve_path, resolve_scan_root};
 pub use schema::ROOT_ID;
-pub(crate) use schema::{CURRENT_EPOCH_KEY, EXCLUSION_POLICY_KEY, LEDGER_HEAL_KEY, SYSTEM_DIR_EXCLUSIONS_KEY};
+pub(crate) use schema::{
+    CURRENT_EPOCH_KEY, EXCLUSION_POLICY_KEY, LEDGER_HEAL_KEY, SYSTEM_DIR_EXCLUSIONS_KEY, USER_DISABLED_KEY,
+    USER_ENABLED_KEY,
+};
 // Store-internal, reached by the submodules above through their `use super::*`.
 #[cfg(test)]
 use collation::platform_case_compare;

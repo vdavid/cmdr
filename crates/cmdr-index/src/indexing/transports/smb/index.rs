@@ -151,8 +151,7 @@ pub async fn start_indexing_for_smb(volume_id: String) -> Result<(), SmbIndexGat
     }
 
     // Refuse BEFORE the os_mount upgrade: with the master switch off we must not
-    // even open an smb2 session, let alone clear the drive's `user_disabled` marker
-    // below (that would silently rewrite per-drive intent from a refused start).
+    // even open an smb2 session for a share nothing is allowed to index.
     if !master::master_enabled() {
         log::info!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' refused, drive indexing is off in settings");
         return Err(SmbIndexGateReason::IndexingDisabled);
@@ -160,25 +159,21 @@ pub async fn start_indexing_for_smb(volume_id: String) -> Result<(), SmbIndexGat
 
     let mount_root = ensure_direct_smb(&volume_id).await?;
 
-    // (Re-)enabling clears any sticky `user_disabled` marker, so this reflects the
-    // user's current intent and future reconnects auto-resume again. Safe here: the
-    // early `is_active` return means no writer thread is running for this volume yet,
-    // so the brief write connection can't contend (`SQLITE_BUSY`). Only touch an
-    // existing DB — a first-ever enable has no marker to clear. Reached by both the
-    // manual enable command and the auto-resume hook; on the latter the marker is
-    // already absent (the resume gate required it), so this is a no-op there.
+    // Per-drive intent is NOT written here: `Index::start_volume` records it for
+    // every transport before it dispatches, so a share and a phone answer the resume
+    // gate the same way. The other entry point into this function is the auto-resume
+    // hook, which acts on intent already on disk and must not rewrite it.
+    //
+    // Heal `volume_path` for an SMB index written before that meta existed (only the
+    // local scan-completion path wrote it), so search can strip the mount root off
+    // scope paths without the volume being mounted. No rescan needed, and safe here:
+    // the early `is_active` return means no writer thread is running for this volume
+    // yet, so the brief write connection can't contend (`SQLITE_BUSY`).
     if let Ok(db_path) = state::resolved_index_db_path(&volume_id)
         && db_path.exists()
+        && let Err(e) = crate::indexing::store::IndexStore::set_volume_path(&db_path, &mount_root.to_string_lossy())
     {
-        if let Err(e) = crate::indexing::store::IndexStore::set_user_disabled(&db_path, false) {
-            log::warn!(target: "indexing::smb_index", "start_indexing_for_smb: clearing user_disabled for '{volume_id}' failed: {e}");
-        }
-        // Heal `volume_path` for an SMB index written before that meta existed (only
-        // the local scan-completion path wrote it), so search can strip the mount
-        // root off scope paths without the volume being mounted. No rescan needed.
-        if let Err(e) = crate::indexing::store::IndexStore::set_volume_path(&db_path, &mount_root.to_string_lossy()) {
-            log::warn!(target: "indexing::smb_index", "start_indexing_for_smb: healing volume_path for '{volume_id}' failed: {e}");
-        }
+        log::warn!(target: "indexing::smb_index", "start_indexing_for_smb: healing volume_path for '{volume_id}' failed: {e}");
     }
 
     // The direct gate passed: start the per-volume index over the Volume trait.
@@ -203,20 +198,20 @@ pub async fn start_indexing_for_smb(volume_id: String) -> Result<(), SmbIndexGat
 /// shared master-switch-plus-per-drive-intent gate (`master::drive_index_should_run`)
 /// applied to this share's persisted DB.
 ///
-/// Three facts compose, and the master switch wins over both per-drive ones: the
-/// user turning drive indexing off in settings must stop a NAS re-index at every
-/// reconnect, however the share's own markers read.
+/// The master switch wins over per-drive intent: the user turning drive indexing
+/// off in settings must stop a NAS re-index at every reconnect, however the share's
+/// own markers read.
 ///
-/// The two per-drive facts are separate on purpose: `disable_drive_index` KEEPS
-/// the DB (with its completed-scan marker) on disk so a re-enable resumes fast
-/// rather than rescanning, but writes the sticky `user_disabled` marker to record
-/// intent, so a reconnect never turns back on what the user turned off. Enabling
-/// (`start_indexing_for_smb`) clears the marker; `forget_drive_index` deletes the
-/// whole DB.
+/// Per-drive intent is the pair of sticky markers `Index::start_volume` and
+/// `disable_drive_index` write. A disable KEEPS the DB (with its completed-scan
+/// marker) on disk so a re-enable resumes fast rather than rescanning, and records
+/// the veto so a reconnect never turns back on what the user turned off;
+/// `forget_drive_index` deletes the whole DB, so intent goes with it.
 pub(crate) fn smb_index_was_enabled(volume_id: &str) -> bool {
     match state::resolved_index_db_path(volume_id) {
-        // An SMB share is opt-IN (`is_root: false`), so it needs a completed scan
-        // on record before any reconnect resumes it.
+        // An SMB share is opt-IN (`is_root: false`), so it needs the user's enable
+        // (or, on an index that predates the marker, a completed scan) on record
+        // before any reconnect resumes it.
         Ok(db_path) => master::drive_index_should_run(master::master_enabled(), &db_path, false),
         Err(e) => {
             log::debug!(target: "indexing::smb_index", "resume gate: can't resolve db path for '{volume_id}': {e}");
@@ -233,8 +228,10 @@ pub(crate) fn smb_index_was_enabled(volume_id: &str) -> bool {
 /// by hand.
 ///
 /// Fire-and-forget and idempotent:
-/// - No-op unless a persisted index DB with a completed scan exists
-///   (`smb_index_was_enabled`) — never indexes a never-enabled share.
+/// - No-op unless the share's persisted index DB records the user's enable
+///   (`smb_index_was_enabled`) — never indexes a never-enabled share. A share whose
+///   FIRST index the disconnect interrupted does come back, which is the point: it
+///   has the enable on record even though no scan ever completed on it.
 /// - No-op if the index is already active.
 /// - Spawns off-thread, so a caller fires it AFTER the session install completes
 ///   and OUTSIDE any lock (per `indexing/CLAUDE.md`): `start_indexing_for_smb` is
@@ -323,6 +320,68 @@ mod tests {
                 assert_eq!(i == j, a == b, "{a:?} vs {b:?} equality must track identity");
             }
         }
+    }
+
+    // ── The reconnect auto-resume gate ────────────────────────────────────
+
+    /// Install a data dir for one test so `smb_index_was_enabled` can resolve a
+    /// share's database path, and hand the body that path.
+    ///
+    /// The data dir is a process-wide seam, so this holds the handle's test lock
+    /// for the whole body and restores the previous dir on the way out.
+    fn with_share_db(volume_id: &str, body: impl FnOnce(&std::path::Path)) {
+        let _serialized = crate::indexing::handle::test_lock();
+        let dir = tempfile::tempdir().expect("temp dir");
+        let (_index, _installed) = crate::indexing::handle::Index::builder()
+            .data_dir(dir.path())
+            .install_for_test();
+        let db_path = state::resolved_index_db_path(volume_id).expect("the data dir is installed");
+        body(&db_path);
+    }
+
+    #[test]
+    fn a_share_whose_first_index_was_interrupted_resumes_on_reconnect() {
+        // The one a user hits without touching a single setting: they turn indexing on
+        // for a NAS share, the first index is minutes long, and the share drops part
+        // way through. Nothing completed, so a gate reading completion left the share
+        // dark until they noticed and re-enabled it by hand.
+        with_share_db("smb-first-index-interrupted-test", |db_path| {
+            IndexStore::set_drive_index_intent(db_path, true).expect("record the enable");
+
+            assert!(
+                !IndexStore::persisted_scan_completed(db_path),
+                "precondition: the first index never finished",
+            );
+            assert!(
+                smb_index_was_enabled("smb-first-index-interrupted-test"),
+                "a share the user turned on resumes when it comes back, finished or not",
+            );
+        });
+    }
+
+    #[test]
+    fn a_share_nobody_turned_on_never_resumes_on_reconnect() {
+        // The opt-in half. A share with a database but no enable — one a search walked,
+        // or one whose enable was withdrawn — must stay dark however often it
+        // reconnects.
+        with_share_db("smb-never-enabled-test", |db_path| {
+            assert!(
+                !smb_index_was_enabled("smb-never-enabled-test"),
+                "no database at all ⇒ nothing to resume",
+            );
+
+            drop(IndexStore::open(db_path).expect("open store"));
+            assert!(
+                !smb_index_was_enabled("smb-never-enabled-test"),
+                "a database nobody enabled is not a request to index the share",
+            );
+
+            IndexStore::set_drive_index_intent(db_path, false).expect("record a disable");
+            assert!(
+                !smb_index_was_enabled("smb-never-enabled-test"),
+                "and an explicit off stays off",
+            );
+        });
     }
 
     // ── Freshness call sites (the live-watch wiring) ──────────────────────

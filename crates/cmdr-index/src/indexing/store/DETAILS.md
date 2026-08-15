@@ -14,7 +14,8 @@ the `IndexStore` struct + `with_savepoint`, the data types (`EntryRow`, `DirStat
 Four leaf layers carry no `IndexStore` methods at all:
 
 - `schema.rs`: `SCHEMA_VERSION`, the `meta` key constants (`CURRENT_EPOCH_KEY`, `LEDGER_HEAL_KEY`,
-  `SYSTEM_DIR_EXCLUSIONS_KEY`, `EXCLUSION_POLICY_KEY`), `ROOT_ID` / `ROOT_PARENT_ID`, the table DDL (integer-keyed
+  `SYSTEM_DIR_EXCLUSIONS_KEY`, `EXCLUSION_POLICY_KEY`, `USER_ENABLED_KEY` / `USER_DISABLED_KEY`), `ROOT_ID` /
+  `ROOT_PARENT_ID`, the table DDL (integer-keyed
   entries with `name_folded` on all platforms, `inode` for hardlink dedup, `dir_stats` by entry_id, `meta`),
   `create_tables` / `ensure_root_sentinel` / `reset_schema`, and `apply_pragmas`.
 - `errors.rs`: `IndexStoreError` and its SQLite classification (fatal / transient / corruption / primary-key conflict),
@@ -27,7 +28,10 @@ The `impl IndexStore` block is divided into four more sibling files (each `impl 
 `mod.rs`, pulling shared items via `use super::*`):
 
 - `connection.rs`: open/recreate, connection factories, DB-size + status reads, the `pub(super)` `read_meta_value`
-  helper.
+  helper, and the per-drive intent probes (`user_enabled` / `user_disabled` / `set_drive_index_intent`). The setter
+  writes the two markers as a PAIR and creates the database when an enable is a drive's first ever; the model that
+  explains why is `../lifecycle/DETAILS.md` § The two indexing switches. ⚠️ It's the one short-lived write connection
+  here that can run while a writer thread is live, which is safe for a single `meta` row and documented at the call.
 - `entries.rs`: entry-tree reads and writes — child listings, lookups by id / inode / component, insert / update /
   rename / move / delete, counts, `get_next_id`. Whole-index consumers get three shapes, in descending cost:
   `all_entries` (every row, hundreds of MB on a NAS), `all_directories` (folders only, as full `EntryRow`s), and the

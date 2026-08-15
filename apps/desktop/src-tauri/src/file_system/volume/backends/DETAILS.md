@@ -143,9 +143,9 @@ hooks close that, both funneling through the ONE reconnect path (`do_attempt_rec
 - **`indexing::resume_smb_index_if_enabled(volume_id)`** fires at every session-install success — `do_attempt_reconnect`
   (in-place reconnect), `register_smb_volume` (launch/auto-upgrade), and `try_smb_upgrade` (manual "Connect directly").
   It's fire-and-forget (spawns, so it never starts the async indexer under `reconnect_lock` / a registry lock), a no-op
-  if the index is already active, and gated on the PERSISTED per-volume state — resume ONLY when a completed scan is
-  recorded AND the user hasn't turned indexing off (the sticky `user_disabled` marker; `disable_drive_index` keeps the DB
-  for fast re-enable but records intent). Registering flows through the indexing lifecycle registration bus, so the media
+  if the index is already active, and gated on the PERSISTED per-volume state — resume ONLY when the share carries the
+  user's enable AND they haven't turned indexing off (the sticky `user_disabled` marker; `disable_drive_index` keeps the
+  DB for fast re-enable but records intent). Registering flows through the indexing lifecycle registration bus, so the media
   scheduler resumes enrichment with no scheduler changes. The resumed index loads Stale (we weren't watching while
   disconnected); a rescan restores Fresh. Canonical detail lives in `indexing/DETAILS.md` § "SMB indexing and the
   freshness model"; this bullet is the volume-side trigger map.

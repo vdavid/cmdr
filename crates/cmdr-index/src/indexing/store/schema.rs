@@ -26,6 +26,26 @@ pub(super) const SCHEMA_VERSION: &str = "16";
 /// "Honest sizes" model in `indexing/DETAILS.md`.
 pub(crate) const CURRENT_EPOCH_KEY: &str = "current_epoch";
 
+/// Meta key recording that the user turned drive indexing ON for this volume.
+///
+/// The positive half of per-drive intent, and the reason a drive interrupted part
+/// way through its FIRST index still comes back: completion can't stand in for the
+/// choice, because `scan_completed_at` is absent both before a first scan finishes
+/// and for the whole of every later rescan. Written when a start is asked for, not
+/// when one finishes. Only presence matters (the value is a marker).
+pub(crate) const USER_ENABLED_KEY: &str = "user_enabled";
+
+/// Meta key recording that the user turned drive indexing OFF for this volume.
+///
+/// The negative half, and an unconditional veto: a reconnect must never turn back
+/// on what the user turned off. Written ONLY by the explicit disable command,
+/// never by a teardown that happens to stop an index (eject, unmount, the master
+/// switch, the memory watchdog).
+///
+/// Exactly one of the two is ever present: `IndexStore::set_drive_index_intent`
+/// writes them as a pair.
+pub(crate) const USER_DISABLED_KEY: &str = "user_disabled";
+
 /// Meta key marking that this DB's `dir_stats` are known to agree with `entries`:
 /// a full aggregate rebuilt them and nothing has knowingly drifted them since.
 /// Present ⇒ a later launch skips the heal; absent ⇒ the aggregates are UNPAID

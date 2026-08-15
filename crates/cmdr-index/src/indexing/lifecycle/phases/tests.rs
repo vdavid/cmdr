@@ -1044,12 +1044,11 @@ fn a_legacy_interrupted_partial_is_thrown_away_and_rebuilt() {
 /// always went to `start_scan`, which reads rows-without-a-completion-marker as a
 /// partial that never finished and blanks it.
 ///
-/// ⚠️ Only the BOOT DISK comes back through `drives_to_resume` while its first
-/// index is unfinished; an external drive's per-drive intent is
-/// `persisted_scan_completed`, which a drive mid-first-index doesn't have yet.
-/// That gap predates the phases (the same drive interrupted mid-bulk-scan was
-/// forgotten identically) and is called out in `../DETAILS.md`. What is under test
-/// here is the routing a resume takes once it happens.
+/// The drive also has to be OFFERED the resume, which is the second half here: an
+/// external drive part way through its first index has no completion marker, so
+/// `drives_to_resume` used to leave it behind and the switch coming back on was
+/// where a half-built index went to be forgotten. The enable the user gave it is
+/// what brings it back.
 #[test]
 fn a_master_switch_cycle_resumes_the_phases_instead_of_rebuilding() {
     let drive = Drive::new(
@@ -1068,6 +1067,10 @@ fn a_master_switch_cycle_resumes_the_phases_instead_of_rebuilding() {
     drive.forget_the_completion_marker();
 
     drive.index.set_indexing_enabled(true);
+    assert!(
+        drive.index.drives_to_resume().iter().any(|id| id == drive.volume_id),
+        "the switch coming back on must offer the drive the user turned on, unfinished first index and all"
+    );
     drive.start();
     drive.wait_for_the_machine();
 

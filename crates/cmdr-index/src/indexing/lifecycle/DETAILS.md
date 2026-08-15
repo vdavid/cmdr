@@ -153,12 +153,11 @@ walking with nothing holding it (`manager/phased.rs`).
 lighter than the phase start was (one read connection, one persisted branch set) and nothing has been observed waiting
 on it, so it's a cleanup rather than a bug: move the read outside the window the way `PhaseStart::run` does.
 
-⚠️ **A master off→on only brings back drives `drives_to_resume` names**, and its per-drive intent is
-`persisted_scan_completed` — which a drive part way through its FIRST index doesn't have. So an external drive covered
-in phases is forgotten by a master-switch cycle, exactly as one interrupted mid-bulk-scan always was. The boot disk is
-`is_root` and always resumes. Closing it needs a persisted "the user enabled this drive" marker that doesn't exist yet;
-❌ don't use the branch set as a proxy, since a drive somebody only SEARCHED has one too and auto-indexing it is exactly
-what the veto forbids.
+⚠️ **A master off→on only brings back drives `drives_to_resume` names**, which is why per-drive intent is recorded from
+the user's ENABLE (`user_enabled`) and never inferred from a completed scan: a drive part way through its first index —
+or part way through any later rescan — has no completion marker, and inferring intent from one forgot it in exactly
+those windows. ❌ Don't use the branch set as a proxy either: a drive somebody only SEARCHED has one too, and
+auto-indexing it is precisely what the opt-in forbids. See § The two indexing switches.
 
 ## The per-volume registry
 
@@ -636,10 +635,28 @@ Canonical model; everywhere else points here. Two switches decide whether a volu
   hard gate: off ⇒ nothing indexes on its own, anywhere. Seeded in `lib.rs` setup BEFORE `indexing::init` (which is what
   unblocks the handle-free SMB reconnect resume, so a late seed lets a NAS re-index itself), then live-applied by
   `set_indexing_enabled` per the settings live-apply rule.
-- The **per-drive intent** lives on each volume's own index DB, as two meta markers read by
-  `master::drive_index_should_run`: the sticky `user_disabled` (an unconditional veto) and `scan_completed_at`. The boot
-  disk is opt-OUT (`is_root`: it indexes unless disabled); every external drive is opt-IN, so it needs a completed scan
-  on record before anything resumes it uninvited.
+- The **per-drive intent** lives on each volume's own index DB, as a PAIR of sticky meta markers read by
+  `master::drive_index_should_run`: `user_enabled` (the opt-in) and `user_disabled` (an unconditional veto). They're
+  written together by `IndexStore::set_drive_index_intent`, so at most one ever holds and a re-enable can't leave a
+  stale veto behind it. The boot disk is opt-OUT (`is_root`: it indexes unless disabled); every external drive is
+  opt-IN.
+
+  **Intent is recorded when the user ASKS, not when a scan finishes.** `Index::start_volume` writes the enable before it
+  dispatches to any transport, which is the one place every per-drive enable in the app passes through and the one a
+  search-driven walk never does (a walk goes through `Activation::WriterOnly`). Before it, not after, for two reasons:
+  the same write lifts a previous veto, which the phase machine and the branch watcher ask about
+  (`master::background_walk_allowed`) while the walk it's about to trigger is already running; and a first index that
+  dies part way through is the case the marker exists for, so it has to be on disk before the walk. A first-ever enable
+  has no database yet, so the write creates one.
+
+  `scan_completed_at` stays as a THIRD arm of the predicate, and only that: it means "a scan finished here once", which
+  is absent all through a first index and again all through every rescan (`start_scan` deletes it before it walks).
+  Reading intent off it alone is what forgot a drive interrupted mid-first-index, and what dropped a drive from every
+  master toggle or reconnect that landed mid-rescan. ❌ Don't drop the arm — every index enabled before the marker
+  existed carries only this fact — and ❌ don't reach for it as the enable.
+
+  Turning a drive off writes the veto (`state::disable_drive_index_persist_intent`, after the drain) and withdraws the
+  enable; "Forget this drive" deletes the database, so intent goes with it.
 
 **Both switches govern BACKGROUND work only, never a user-initiated read** (Decision 13). A search-driven coverage walk
 runs with the master off and on a `user_disabled` drive alike: it stands up a writer and nothing else, so no scan is

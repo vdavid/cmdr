@@ -42,6 +42,39 @@ pub(in crate::indexing::lifecycle) enum Activation {
     WriterOnly,
 }
 
+/// Record that the user turned drive indexing ON for this volume, on the volume's
+/// own index DB, BEFORE anything starts walking it.
+///
+/// The positive half of per-drive intent, and the mirror of
+/// [`disable_drive_index_persist_intent`](super::disable_drive_index_persist_intent).
+/// Completion can't carry this fact: `scan_completed_at` is absent all through a
+/// first index and again all through every rescan, so a drive read through
+/// completion alone is forgotten by any master-switch cycle or reconnect that lands
+/// in either window. `master::drive_index_should_run` reads what this writes.
+///
+/// ⚠️ Written BEFORE the start, not after it. Two reasons, both load-bearing: it
+/// also lifts a previous veto, which the phase machine and the branch watcher ask
+/// about while the walk this call is about to trigger is already running
+/// (`master::background_walk_allowed`); and a first index that dies part way
+/// through is precisely the case the marker exists for, so it has to be on disk
+/// before the walk, not after it.
+///
+/// ❌ Not reached by a search-driven coverage walk, which is the whole reason the
+/// marker can be trusted: a walk goes through `Activation::WriterOnly` and never
+/// through `Index::start_volume`, so a drive somebody only searched carries no
+/// enable. Best-effort (a failure means the drive is remembered the old way, by its
+/// completed scan; logged).
+pub(crate) fn record_drive_index_enabled(volume_id: &str) {
+    match resolved_index_db_path(volume_id) {
+        Ok(db_path) => {
+            if let Err(e) = IndexStore::set_drive_index_intent(&db_path, true) {
+                log::warn!("record_drive_index_enabled('{volume_id}'): recording the enable failed: {e}");
+            }
+        }
+        Err(e) => log::debug!("record_drive_index_enabled('{volume_id}'): can't resolve db path: {e}"),
+    }
+}
+
 /// Create the IndexManager for the root volume and auto-start indexing
 /// (resume from existing index or fresh scan).
 ///

@@ -111,24 +111,28 @@ pub(crate) fn reset_to_not_indexed(volume_id: &str) {
 }
 
 /// Turn indexing OFF for a drive at the user's explicit request: stop it (DB kept
-/// on disk for a fast re-enable), then persist the sticky `user_disabled` marker so
-/// a later reconnect doesn't auto-resume what the user turned off.
+/// on disk for a fast re-enable), then persist the sticky veto so nothing resumes
+/// what the user turned off.
 ///
-/// This is the ONLY caller that writes the marker — deliberately NOT `stop_indexing`
+/// This is the ONLY caller that writes the veto — deliberately NOT `stop_indexing`
 /// itself, which also runs on eject, unmount, an interrupted network scan
 /// (`reset_to_not_indexed`), and the memory watchdog; marking there would suppress
-/// auto-resume after a transient teardown, not a real user disable. The marker is
-/// consumed only by the SMB auto-resume gate (`smb_index::smb_index_was_enabled`);
-/// root/MTP/local-external have no auto-resume path that reads it. The write runs
-/// AFTER the drain, so no writer thread contends. Writing the marker is best-effort
-/// (a failure only means a future reconnect might re-resume; logged).
+/// auto-resume after a transient teardown, not a real user disable. The write also
+/// withdraws the enable marker `record_drive_index_enabled` left, so the two halves
+/// of per-drive intent stay one fact. It runs AFTER the drain, so no writer thread
+/// contends, and it's best-effort (a failure only means a future reconnect might
+/// re-resume; logged).
+///
+/// ⚠️ Guarded on the DB existing, so a drive nobody ever indexed isn't given one
+/// just to record that it stays off: absent markers already read as "off" for every
+/// drive but the boot disk.
 pub fn disable_drive_index_persist_intent(volume_id: &str) -> Result<(), String> {
     stop_indexing(volume_id)?;
     if let Ok(db_path) = resolved_index_db_path(volume_id)
         && db_path.exists()
-        && let Err(e) = IndexStore::set_user_disabled(&db_path, true)
+        && let Err(e) = IndexStore::set_drive_index_intent(&db_path, false)
     {
-        log::warn!("disable_drive_index_persist_intent('{volume_id}'): marking user_disabled failed: {e}");
+        log::warn!("disable_drive_index_persist_intent('{volume_id}'): recording the disable failed: {e}");
     }
     Ok(())
 }

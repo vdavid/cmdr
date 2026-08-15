@@ -37,17 +37,19 @@ hold, and the master switch outranks both per-drive ones:
 
 - **The master drive-indexing switch is on** (`indexing.enabled`). Canonical model: `../lifecycle/DETAILS.md` § The two
   indexing switches. Missing this check is what let a NAS re-index itself at every launch despite the setting being off.
-- **A completed scan is recorded** — `IndexStore::persisted_scan_completed(db_path)`, a `scan_completed_at` marker read
-  off a short-lived READ-ONLY connection (never the delete-and-recreate `open`). A never-enabled share has no such DB,
-  so it's never indexed uninvited.
+- **The user turned this share ON** — the sticky `user_enabled` meta marker, read off a short-lived READ-ONLY
+  connection (never the delete-and-recreate `open`). A never-enabled share has no such DB, so it's never indexed
+  uninvited; a share whose FIRST index the disconnect interrupted does come back, which is the point. `Index::start_volume`
+  writes it for every transport, so ❌ nothing SMB-side records intent. (`persisted_scan_completed` is the third arm,
+  for indexes enabled before the marker existed. ❌ Never read it as the enable: it's absent all through a first index
+  and all through every rescan.)
 - **The user hasn't turned indexing OFF** — the sticky `user_disabled` meta marker is absent. `disable_drive_index`
   KEEPS the DB (so a re-enable resumes fast) but writes this marker via `state::disable_drive_index_persist_intent`, so
-  a reconnect never turns back on what the user turned off. Enabling (`start_indexing_for_smb`, both the manual command
-  and the auto-resume hook) clears it; `forget_drive_index` deletes the whole DB. **The marker is written ONLY at the
-  explicit user-disable command, NEVER inside `stop_indexing`** (which also runs on eject, unmount, an interrupted
-  network scan, and the memory watchdog — marking there would suppress resume after a transient teardown, and the master
-  switch going off would silently erase per-drive intent). Its consumers are this SMB gate and
-  `master::drives_to_resume`.
+  a reconnect never turns back on what the user turned off. Re-enabling withdraws it in the same write that records the
+  enable; `forget_drive_index` deletes the whole DB. **The marker is written ONLY at the explicit user-disable command,
+  NEVER inside `stop_indexing`** (which also runs on eject, unmount, an interrupted network scan, and the memory
+  watchdog — marking there would suppress resume after a transient teardown, and the master switch going off would
+  silently erase per-drive intent). Its consumers are this SMB gate and `master::drives_to_resume`.
 
 The resumed index loads Stale: we weren't watching while disconnected, so a rescan — not the reconnect — restores Fresh.
 

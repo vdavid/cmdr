@@ -3,7 +3,7 @@
 
 use super::{
     IndexStatus, IndexStore, IndexStoreError, SCHEMA_VERSION, ScanCalibration, ScanCalibrationKind, ScanCalibrationSet,
-    apply_pragmas, create_tables, register_platform_case_collation,
+    USER_DISABLED_KEY, USER_ENABLED_KEY, apply_pragmas, create_tables, register_platform_case_collation,
 };
 use rusqlite::{Connection, params};
 use std::path::Path;
@@ -165,13 +165,16 @@ impl IndexStore {
 
     /// Whether the persisted index DB at `db_path` records a completed scan.
     ///
-    /// The on-connect auto-resume gate: a `scan_completed_at` marker means the
-    /// user previously enabled indexing for this volume AND a scan finished, so
-    /// a reconnect should resume it. Deliberately a READ-ONLY probe — never the
-    /// delete-and-recreate `open` path — so merely checking a schema-mismatched
-    /// or locked DB never mutates it. A missing file, an unreadable/locked DB, or
-    /// an absent marker all read `false` (a never-enabled share is never
-    /// auto-indexed on connect).
+    /// ⚠️ Exactly that, and nothing about what the user wants. `scan_completed_at`
+    /// is absent for the whole of a first index AND for the whole of every rescan
+    /// (`start_scan` deletes it before it walks), so it can't answer "did the user
+    /// turn this drive on" — [`Self::user_enabled`] does. Auto-resume reads both
+    /// through `master::drive_index_should_run`, where this arm covers the indexes
+    /// enabled before the marker existed.
+    ///
+    /// Deliberately a READ-ONLY probe — never the delete-and-recreate `open` path —
+    /// so merely checking a schema-mismatched or locked DB never mutates it. A
+    /// missing file, an unreadable/locked DB, or an absent marker all read `false`.
     pub fn persisted_scan_completed(db_path: &Path) -> bool {
         if !db_path.exists() {
             return false;
@@ -188,38 +191,72 @@ impl IndexStore {
         }
     }
 
+    /// Whether the user explicitly turned indexing ON for this volume (the sticky
+    /// [`USER_ENABLED_KEY`] marker).
+    ///
+    /// The fact [`Self::persisted_scan_completed`] can't stand in for: it's written
+    /// when the user asks for the drive, so a first index that never finished, and a
+    /// completed index whose rescan is in flight right now, both still read as
+    /// enabled. A missing file / unreadable DB / absent marker all read `false`.
+    /// READ-ONLY probe.
+    pub(crate) fn user_enabled(db_path: &Path) -> bool {
+        Self::intent_marker(db_path, USER_ENABLED_KEY)
+    }
+
     /// Whether the user explicitly turned indexing OFF for this volume (the sticky
-    /// `user_disabled` meta marker). Persisted intent that survives a reconnect: the
+    /// [`USER_DISABLED_KEY`] marker). Persisted intent that survives a reconnect: the
     /// DB stays on disk for a fast re-enable, but this flag stops the SMB auto-resume
     /// gate from turning back on something the user turned off. A missing file /
     /// unreadable DB / absent marker all read `false`. READ-ONLY probe.
     pub fn user_disabled(db_path: &Path) -> bool {
+        Self::intent_marker(db_path, USER_DISABLED_KEY)
+    }
+
+    /// Read one of the two sticky per-drive intent markers.
+    fn intent_marker(db_path: &Path, key: &str) -> bool {
         if !db_path.exists() {
             return false;
         }
         match Self::open_read_connection(db_path) {
-            Ok(conn) => Self::read_meta_value(&conn, "user_disabled").ok().flatten().as_deref() == Some("1"),
+            Ok(conn) => Self::read_meta_value(&conn, key).ok().flatten().as_deref() == Some("1"),
             Err(e) => {
-                log::debug!("user_disabled({}): read open failed: {e}", db_path.display());
+                log::debug!("{key}({}): read open failed: {e}", db_path.display());
                 false
             }
         }
     }
 
-    /// Set or clear the sticky `user_disabled` marker on the volume's index DB.
+    /// Record the user's per-drive indexing choice on the volume's own index DB:
+    /// stamp one marker and DELETE the other, so the two can never both hold.
     ///
-    /// Opens a short-lived write connection, so it's safe ONLY when no writer thread
-    /// is live for this volume — call it after `stop_indexing` (disable) or before a
-    /// start (re-enable), never mid-scan (a second writer risks `SQLITE_BUSY`).
-    /// Clearing DELETEs the key (absent = not disabled). The caller guards on the DB
-    /// existing; a volume with no persisted index has nothing to resume anyway.
-    pub fn set_user_disabled(db_path: &Path, disabled: bool) -> Result<(), IndexStoreError> {
-        let conn = Self::open_write_connection(db_path)?;
-        if disabled {
-            Self::update_meta(&conn, "user_disabled", "1")?;
-        } else {
-            conn.execute("DELETE FROM meta WHERE key = ?1", params!["user_disabled"])?;
+    /// Writing the pair in one call is what keeps intent a single fact. Splitting it
+    /// left every non-SMB transport re-enabling a drive without clearing its veto,
+    /// which a later master-switch cycle then read as "the user turned this off".
+    ///
+    /// Creates the database when the enable is the volume's first ever, because the
+    /// choice has to outlive the first index rather than wait for it. ❌ Never
+    /// reopens an existing file: `open` deletes and recreates on a schema mismatch,
+    /// and throwing a real index away to write one marker is not a trade this call
+    /// gets to make.
+    ///
+    /// Opens a short-lived write connection. Called mid-scan on the one path where a
+    /// search already stood a writer up, which is safe for a single `meta` row: it
+    /// carries none of the id-counter or accumulator state the single-writer rule
+    /// protects, and `busy_timeout` (5 s) absorbs the writer's batch transactions.
+    /// ❌ Don't queue it through the writer instead — the marker's whole job is to
+    /// survive a crash mid-first-index, and the writer's backlog IS that window.
+    pub(crate) fn set_drive_index_intent(db_path: &Path, enabled: bool) -> Result<(), IndexStoreError> {
+        if !db_path.exists() {
+            drop(Self::open(db_path)?);
         }
+        let (set, cleared) = if enabled {
+            (USER_ENABLED_KEY, USER_DISABLED_KEY)
+        } else {
+            (USER_DISABLED_KEY, USER_ENABLED_KEY)
+        };
+        let conn = Self::open_write_connection(db_path)?;
+        Self::update_meta(&conn, set, "1")?;
+        conn.execute("DELETE FROM meta WHERE key = ?1", params![cleared])?;
         Ok(())
     }
 
@@ -228,8 +265,8 @@ impl IndexStore {
     /// The search loader reads this to strip the mount root off scope paths (a
     /// non-root index is mount-relative). Older SMB indexes never wrote it (only the
     /// local scan-completion path did), so `start_indexing_for_smb` heals an existing
-    /// DB with this on the next registration — no rescan. Same short-lived-write
-    /// safety as [`Self::set_user_disabled`]: call it only when no writer thread is live.
+    /// DB with this on the next registration — no rescan. ⚠️ Short-lived write
+    /// connection: call it only when no writer thread is live for this volume.
     pub fn set_volume_path(db_path: &Path, volume_path: &str) -> Result<(), IndexStoreError> {
         let conn = Self::open_write_connection(db_path)?;
         Self::update_meta(&conn, "volume_path", volume_path)?;

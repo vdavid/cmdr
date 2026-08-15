@@ -38,20 +38,23 @@ fn persisted_scan_completed_reflects_the_marker() {
     );
 }
 
-/// The sticky `user_disabled` marker round-trips and, combined with a completed
-/// scan, gates auto-resume: set ⇒ suppress resume even with a completed scan;
-/// cleared ⇒ resume again. This is what makes "turn off indexing for this drive"
-/// survive a reconnect (the DB stays on disk for a fast re-enable, but the marker
-/// records intent).
+/// The two per-drive intent markers round-trip and stay mutually exclusive: each
+/// write stamps one and clears the other, so the DB never says both "the user
+/// turned this on" and "the user turned this off".
+///
+/// That pairing is the point. Enabling a drive that was disabled has to lift the
+/// veto, and disabling one has to withdraw the enable, or a later master-switch
+/// cycle reads whichever stale marker survived.
 #[test]
-fn user_disabled_marker_gates_auto_resume() {
+fn drive_index_intent_markers_are_mutually_exclusive() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("index-smb-test.db");
 
-    // Absent DB / marker ⇒ not disabled.
+    // Absent DB ⇒ the user has said nothing either way.
     assert!(!IndexStore::user_disabled(&db_path), "no DB ⇒ not disabled");
+    assert!(!IndexStore::user_enabled(&db_path), "no DB ⇒ not enabled");
 
-    // A completed scan with no marker is eligible to auto-resume.
+    // A completed scan with no marker: an index from before intent was recorded.
     let store = IndexStore::open(&db_path).expect("open store");
     drop(store);
     let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
@@ -60,17 +63,41 @@ fn user_disabled_marker_gates_auto_resume() {
     assert!(IndexStore::persisted_scan_completed(&db_path));
     assert!(!IndexStore::user_disabled(&db_path), "fresh index isn't user-disabled");
 
-    // Turn indexing off ⇒ marker set ⇒ no auto-resume (even though a scan completed).
-    IndexStore::set_user_disabled(&db_path, true).expect("set marker");
-    assert!(IndexStore::user_disabled(&db_path), "marker must persist");
+    // Turn indexing off ⇒ vetoed, and the completed-scan fact is untouched (the DB
+    // stays on disk for a fast re-enable).
+    IndexStore::set_drive_index_intent(&db_path, false).expect("record the disable");
+    assert!(IndexStore::user_disabled(&db_path), "the veto must persist");
+    assert!(!IndexStore::user_enabled(&db_path), "and it withdraws any enable");
     assert!(
         IndexStore::persisted_scan_completed(&db_path),
         "the completed-scan fact is untouched by the disable marker (DB preserved for fast resume)"
     );
 
-    // Re-enable ⇒ marker cleared ⇒ eligible again.
-    IndexStore::set_user_disabled(&db_path, false).expect("clear marker");
-    assert!(!IndexStore::user_disabled(&db_path), "re-enable clears the marker");
+    // Turn it back on ⇒ the veto is lifted and the enable is on record.
+    IndexStore::set_drive_index_intent(&db_path, true).expect("record the enable");
+    assert!(!IndexStore::user_disabled(&db_path), "re-enable clears the veto");
+    assert!(IndexStore::user_enabled(&db_path), "and records the choice");
+}
+
+/// A first-ever enable has no index database yet, so recording the choice creates
+/// one.
+///
+/// Without this the marker would land only once a scan had built the file, which
+/// is exactly the window it exists to survive: quit or unplug before then and the
+/// drive is forgotten.
+#[test]
+fn a_first_ever_enable_creates_the_database_it_records_into() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = dir.path().join("index-smb-never-indexed.db");
+
+    IndexStore::set_drive_index_intent(&db_path, true).expect("record the enable");
+
+    assert!(db_path.exists(), "the marker needs a database to live in");
+    assert!(IndexStore::user_enabled(&db_path), "and the choice is on record");
+    assert!(
+        !IndexStore::persisted_scan_completed(&db_path),
+        "nothing has scanned this drive yet: intent and completion are separate facts"
+    );
 }
 
 #[test]

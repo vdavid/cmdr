@@ -21,10 +21,11 @@
 //! these two).
 //!
 //! Flipping the master off stops every running index through `stop_indexing`,
-//! which by design never writes the sticky `user_disabled` marker
-//! (`transports/CLAUDE.md`). So per-drive intent survives the master toggle, and
-//! flipping the master back on restores exactly the drives the user had chosen
-//! rather than turning on everything.
+//! which by design never writes per-drive intent (`transports/CLAUDE.md`). So the
+//! choice survives the master toggle, and flipping the master back on restores
+//! exactly the drives the user had chosen rather than turning on everything —
+//! including a drive whose first index the toggle interrupted, because intent is
+//! recorded when the user asks rather than when a scan finishes.
 //!
 //! The master value lives in a process-wide atomic rather than being re-read from
 //! `settings.json` per call: the settings loader is a launch-time reader, and the
@@ -94,12 +95,21 @@ impl Drop for MasterSwitchGuard {
 /// Pure in the master value (passed in, not read) so the composition is testable
 /// without touching the process-wide atomic, which would race parallel tests.
 ///
-/// Per-drive intent is two facts on the DB:
-/// - `user_disabled` (sticky, written ONLY by the explicit disable command) vetoes
+/// Per-drive intent is a pair of sticky markers on the DB, written together
+/// (`IndexStore::set_drive_index_intent`) so at most one ever holds:
+/// - `user_disabled` (written ONLY by the explicit disable command) vetoes
 ///   unconditionally: a reconnect must never turn back on what the user turned off.
-/// - `persisted_scan_completed` is the "the user enabled this drive and it finished
-///   at least once" signal. External drives are opt-IN, so they need it; the boot
-///   disk (`is_root`) is opt-OUT and indexes by default, so it doesn't.
+/// - `user_enabled` (written by `Index::start_volume`, before it starts anything)
+///   is the drive's opt-IN. External drives need it; the boot disk (`is_root`) is
+///   opt-OUT and indexes by default, so it doesn't.
+///
+/// ⚠️ `persisted_scan_completed` is the THIRD arm and it is not interchangeable
+/// with the second: it means "a scan finished here once", which is absent all
+/// through a first index and again all through every rescan (`start_scan` deletes
+/// the marker before it walks). Reading intent off it alone forgot a drive in
+/// exactly those windows. It stays because every index enabled before the marker
+/// existed carries only this fact; ❌ don't drop it, and ❌ don't reach for it as
+/// the enable.
 pub(crate) fn drive_index_should_run(master_on: bool, db_path: &Path, is_root: bool) -> bool {
     if !master_on {
         return false;
@@ -107,7 +117,7 @@ pub(crate) fn drive_index_should_run(master_on: bool, db_path: &Path, is_root: b
     if IndexStore::user_disabled(db_path) {
         return false;
     }
-    is_root || IndexStore::persisted_scan_completed(db_path)
+    is_root || IndexStore::user_enabled(db_path) || IndexStore::persisted_scan_completed(db_path)
 }
 
 /// Whether a drive may be WALKED in the background right now: asked per phase and
@@ -150,8 +160,9 @@ pub(crate) fn branch_watch_allowed(master_on: bool, db_path: &Path) -> bool {
 /// per-drive intent says yes.
 ///
 /// This is what makes the master switch RESTORE per-drive choices instead of
-/// re-enabling everything: a drive the user never turned on (no completed scan on
-/// record) or explicitly turned off (`user_disabled`) isn't in the list. The
+/// re-enabling everything: a drive the user never turned on, or explicitly turned
+/// off, isn't in the list, and one they turned on is — however far its first index
+/// got before the switch went off. The
 /// caller routes each id through the normal per-drive enable, so each transport's
 /// own gate (the direct-smb2 upgrade, MTP device presence) still applies.
 pub(crate) fn drives_to_resume() -> Vec<String> {
@@ -184,11 +195,21 @@ mod tests {
     /// A DB that looks exactly like an external drive the user enabled and whose
     /// first scan completed: the state the SMB auto-resume gate acts on.
     fn enabled_external_db(dir: &Path) -> std::path::PathBuf {
-        let db_path = dir.join("index-smb-192-168-1-111-445-naspi.db");
-        drop(IndexStore::open(&db_path).expect("open store"));
+        let db_path = enabled_but_never_finished_db(dir);
         let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
         IndexStore::update_meta(&conn, "scan_completed_at", "1700000000").expect("stamp scan_completed_at");
         drop(conn);
+        db_path
+    }
+
+    /// The same drive with no completed scan on record: either its first index is
+    /// still running (or was interrupted), or a rescan is in flight right now —
+    /// `start_scan` deletes `scan_completed_at` before it walks, so a drive that
+    /// finished yesterday looks like this for the whole of today's rescan.
+    fn enabled_but_never_finished_db(dir: &Path) -> std::path::PathBuf {
+        let db_path = dir.join("index-smb-192-168-1-111-445-naspi.db");
+        drop(IndexStore::open(&db_path).expect("open store"));
+        IndexStore::set_drive_index_intent(&db_path, true).expect("record the enable");
         db_path
     }
 
@@ -231,7 +252,7 @@ mod tests {
         // re-enable a drive the user explicitly turned off.
         let dir = tempfile::tempdir().expect("temp dir");
         let db_path = enabled_external_db(dir.path());
-        IndexStore::set_user_disabled(&db_path, true).expect("mark user_disabled");
+        IndexStore::set_drive_index_intent(&db_path, false).expect("record the disable");
 
         assert!(
             !drive_index_should_run(true, &db_path, false),
@@ -240,18 +261,101 @@ mod tests {
     }
 
     #[test]
-    fn an_external_drive_that_never_finished_a_scan_is_not_resumed() {
-        // Opt-in: a share the user never enabled (no DB) or whose first scan never
-        // finished must never be indexed uninvited.
+    fn an_external_drive_nobody_turned_on_is_not_resumed() {
+        // Opt-in, and this half of it is the guarantee the veto rests on: a share the
+        // user never enabled — no DB at all, or a DB a search walk left behind with
+        // no enable on it — must never be indexed uninvited.
         let dir = tempfile::tempdir().expect("temp dir");
         let missing = dir.path().join("index-smb-never-enabled.db");
         assert!(!drive_index_should_run(true, &missing, false), "no DB ⇒ never resumed");
 
-        let started = dir.path().join("index-smb-half-enabled.db");
-        drop(IndexStore::open(&started).expect("open store"));
+        let walked = dir.path().join("index-smb-only-searched.db");
+        drop(IndexStore::open(&walked).expect("open store"));
         assert!(
-            !drive_index_should_run(true, &started, false),
-            "no completed scan ⇒ not resumed",
+            !drive_index_should_run(true, &walked, false),
+            "an index with neither an enable nor a completed scan is nobody's request",
+        );
+    }
+
+    #[test]
+    fn an_external_drive_whose_first_index_was_interrupted_is_resumed() {
+        // The other half, and the bug this marker fixes: the user turned this drive
+        // on, and the first index never got to finish (they quit, the NAS dropped, the
+        // master switch went off and came back). Reading intent off `scan_completed_at`
+        // forgot the drive in exactly that window — the one where the user is most
+        // likely to be waiting for the index they asked for.
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = enabled_but_never_finished_db(dir.path());
+
+        assert!(
+            !IndexStore::persisted_scan_completed(&db_path),
+            "precondition: nothing has completed a scan on this drive",
+        );
+        assert!(
+            drive_index_should_run(true, &db_path, false),
+            "an enabled drive resumes whether or not a scan ever finished on it",
+        );
+    }
+
+    #[test]
+    fn a_drive_whose_rescan_is_in_flight_is_still_resumed() {
+        // Same absent marker, a different story, and the reason completion could never
+        // carry intent: `start_scan` DELETES `scan_completed_at` before it walks. So a
+        // drive that completed yesterday reads as never-completed for the whole of
+        // today's rescan, and anything asking mid-rescan (a master toggle, a reconnect)
+        // would drop it.
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = enabled_external_db(dir.path());
+        let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
+        conn.execute("DELETE FROM meta WHERE key = 'scan_completed_at'", [])
+            .expect("clear the completion marker, as a scan start does");
+        drop(conn);
+
+        assert!(
+            drive_index_should_run(true, &db_path, false),
+            "a rescan in flight must not read as a drive nobody turned on",
+        );
+    }
+
+    #[test]
+    fn turning_a_drive_off_withdraws_the_enable() {
+        // The two markers are one fact. A disable that only wrote the veto would leave
+        // the enable behind it, and any later re-read of intent would find both.
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = enabled_but_never_finished_db(dir.path());
+
+        IndexStore::set_drive_index_intent(&db_path, false).expect("record the disable");
+        assert!(
+            !drive_index_should_run(true, &db_path, false),
+            "a drive the user turned off stays off",
+        );
+
+        IndexStore::set_drive_index_intent(&db_path, true).expect("record the re-enable");
+        assert!(
+            drive_index_should_run(true, &db_path, false),
+            "and turning it back on works, without waiting for a scan to finish",
+        );
+    }
+
+    #[test]
+    fn an_index_that_predates_the_enable_marker_still_resumes() {
+        // Every drive enabled before intent was recorded carries only its completed
+        // scan. ❌ Don't drop the completion arm: it's what stops this change from
+        // silently un-enabling every drive already in the field.
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("index-smb-shipped-before.db");
+        drop(IndexStore::open(&db_path).expect("open store"));
+        let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
+        IndexStore::update_meta(&conn, "scan_completed_at", "1700000000").expect("stamp scan_completed_at");
+        drop(conn);
+
+        assert!(
+            !IndexStore::user_enabled(&db_path),
+            "precondition: an index from before the marker existed",
+        );
+        assert!(
+            drive_index_should_run(true, &db_path, false),
+            "a completed scan still means the user had this drive on",
         );
     }
 

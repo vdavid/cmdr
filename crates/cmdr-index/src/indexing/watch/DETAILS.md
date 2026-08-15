@@ -134,7 +134,7 @@ rather than current. ❌ Never on the walk path — a bump right after a walk wo
 second ago.
 
 **Two switches, one gate** (`master::branch_watch_allowed`): the master switch and the sticky per-drive `user_disabled`
-veto. NOT `persisted_scan_completed` — that means "the user turned this drive on for background indexing", which is
+veto. NOT the `user_enabled` opt-in — that means "the user turned this drive on for background indexing", which is
 exactly what someone searching an unindexed drive did not do. A vetoed drive gets no watcher, so its walked ground stays
 covered and served but stops being kept current; it is NOT re-walked (the walk marked those directories listed, so the
 frontier never offers them again).

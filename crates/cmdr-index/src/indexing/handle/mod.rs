@@ -191,6 +191,12 @@ impl Index {
     /// reports [`StartOutcome::Started`], so calling this twice is safe; one whose
     /// index died is rebuilt from scratch, because the index is a disposable
     /// cache.
+    ///
+    /// This is also where the drive's own database learns that the user turned it
+    /// on. Every per-drive enable in the app arrives here, whatever the transport,
+    /// and a search-driven walk never does — so the marker written here means "the
+    /// user asked for this drive" and nothing else. `state::record_drive_index_enabled`
+    /// says why it's written before the start rather than after it.
     pub async fn start_volume(&self, volume_id: &str) -> Result<StartOutcome, IndexError> {
         if state::is_active(volume_id) {
             // Active isn't the same as indexed: a search-driven walk leaves a
@@ -199,6 +205,7 @@ impl Index {
             // request for the very walk this call is asking for, so route it to
             // the scan instead — which is what a first full walk is.
             if state::awaits_its_first_scan(volume_id) && crate::indexing::lifecycle::master::master_enabled() {
+                state::record_drive_index_enabled(volume_id);
                 return Ok(started_or_deferred(state::force_scan(volume_id)?));
             }
             return Ok(StartOutcome::Started);
@@ -211,9 +218,12 @@ impl Index {
         }
         // A failed index can't resume in place (its writer and manager are torn
         // down while the instance stays registered), so the retry is a rebuild.
+        // Ordered before the record below, because the rebuild deletes the database
+        // the marker lives in.
         if state::is_failed(volume_id) {
             self.forget_volume(volume_id)?;
         }
+        state::record_drive_index_enabled(volume_id);
 
         if volume_id == crate::ROOT_VOLUME_ID {
             state::start_indexing()?;
