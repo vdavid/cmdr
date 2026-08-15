@@ -553,4 +553,5 @@ export function destroyIndexState(): void {
   scanRunKind.clear()
   walkedGround.clear()
   coveredInPhases.clear()
+  coveragePhase.clear()
 }

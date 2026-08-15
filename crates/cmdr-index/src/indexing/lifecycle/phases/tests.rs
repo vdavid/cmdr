@@ -677,8 +677,7 @@ fn the_completion_sequence_runs_once_however_often_the_machine_takes_stock() {
     );
     drive.start();
     drive.wait_for_the_machine();
-    let stamped = drive.meta("scan_completed_at").expect("it completed");
-    let swept = drive.meta(crate::indexing::reconcile::reconciler::SHALLOW_SWEEP_AT_KEY);
+    drive.meta("scan_completed_at").expect("it completed");
 
     assert_eq!(
         drive
@@ -706,7 +705,6 @@ fn the_completion_sequence_runs_once_however_often_the_machine_takes_stock() {
         || drive.meta("scan_completed_at").is_some(),
     );
     assert!(drive.entry_count() >= rows, "and it never blanks the index");
-    let _ = (stamped, swept);
 }
 
 /// The early signal, and its blast radius. Photo search and folder importance only

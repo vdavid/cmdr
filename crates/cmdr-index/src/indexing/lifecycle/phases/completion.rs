@@ -57,11 +57,11 @@ pub(super) fn take_stock(machine: &Machine) {
 /// Whether home has nothing left to walk except the one folder it deliberately
 /// waits behind.
 ///
-/// ⚠️ The exception is the whole point. `~/Library` is 27.7% of a real boot index
-/// and 82% of home's coverage wall clock, so waiting for it would push the early
-/// media kick from ~16 s to ~88 s — past the moment a full scan would have
-/// finished the same work. It stays in scope and the phase still walks it; the
-/// signal simply doesn't wait for it.
+/// ⚠️ The exception is the whole point. `~/Library` is roughly half of home's
+/// coverage wall clock on a real machine, so waiting for it puts the early media
+/// kick tens of seconds later for nothing. It stays in scope and the phase still
+/// walks it; the signal simply doesn't wait for it. The measurement and what
+/// would change it: `DETAILS.md` § "The early home signal".
 fn home_is_covered_now(machine: &Machine) -> bool {
     let Some(home) = machine.home_on_this_volume() else {
         return false;

@@ -79,12 +79,13 @@ const MAX_PASSES_PER_PHASE: usize = 2;
 
 /// The folder inside home that every other home root would otherwise wait behind.
 ///
-/// `~/Library` is 27.7% of a real boot index and 72.8 s of an 88.4 s home
-/// coverage, against under six seconds for everything else in home
-/// (`docs/notes/phased-vs-bulk-index-2026-08-14.md`). It stays in scope — search
-/// over it is occasionally what someone wants — but it goes last inside its phase,
-/// and the early home signal doesn't wait for it. Linux has no single equivalent
-/// pile, so it has none.
+/// `~/Library` is 27.7% of a real boot index and 48% of home's coverage wall
+/// clock, so deferring it moves the early media kick 39 s earlier (measured by
+/// `tests::how_long_home_takes`; the numbers and their conditions live in
+/// `../DETAILS.md` § "The early home signal", ❌ not restated at each use). It
+/// stays in scope — search over it is occasionally what someone wants — but it
+/// goes last inside its phase, and the early home signal doesn't wait for it.
+/// Linux has no single equivalent pile, so it has none.
 #[cfg(target_os = "macos")]
 const DEFERRED_HOME_FOLDER: Option<&str> = Some("Library");
 #[cfg(not(target_os = "macos"))]

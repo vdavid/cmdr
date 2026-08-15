@@ -1,7 +1,8 @@
 # Phased, priority-driven drive indexing
 
-Status: **`M0`, `M1`, the `Abandoned` cause with its heal, and `M2` (the stitch plus the phase machine) are built**;
-`M3` onward remain. Branch: `worktree-david+phased-machine`. What M2 shipped, and where it now lives:
+Status: **`M0` through `M5` are built**, plus the `Abandoned` cause with its heal; only `M6` (follow-ups) is left. Branch:
+`worktree-david+phased-machine`. Per-milestone notes, including the two shapes the plan didn't have, are in the
+milestone map below. Where the machine now lives:
 `crates/cmdr-index/src/indexing/lifecycle/phases/CLAUDE.md` + its `DETAILS.md`.
 
 **The gate, and why it passed after reading as a fail.** Measured, the phased shape came in at 4.70× the bulk build,
