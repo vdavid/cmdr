@@ -415,9 +415,9 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Schaltest du das aus, bekommst du für die Größen nur <code>&lt;DIR&gt;</code>. Der Preis ist ein 300-MB-Index auf deinem Laufwerk, aber keine zusätzliche CPU- oder Speichernutzung nach den ersten 2&ndash;3 Minuten beim ersten Start der App oder nach langer Zeit. Angesichts des Nutzens ist das eine günstige Funktion.",
+  "onboarding.stepOptional.indexing.descCost": "Schaltest du das aus, bekommst du für die Größen nur <code>&lt;DIR&gt;</code>. Der Preis ist rund 1 GB Index auf deinem Laufwerk bei ein paar Millionen Dateien, aber keine zusätzliche CPU- oder Speichernutzung nach den ersten 2&ndash;3 Minuten beim ersten Start der App oder nach langer Zeit. Angesichts des Nutzens ist das eine günstige Funktion.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "197ffd2"
+    "sourceHash": "739f4f8"
   },
   "onboarding.stepOptional.updates.title": "Automatische Updates",
   "@onboarding.stepOptional.updates.title": {

@@ -417,9 +417,9 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Als je dit uitzet, krijg je alleen <code>&lt;DIR&gt;</code> voor de groottes. De kostenpost is een index van 300 MB op je schijf, maar geen extra CPU- of geheugengebruik na de eerste 2&ndash;3 minuten nadat je de app voor het eerst start, of na lange tijd opnieuw start. Het is een goedkope functie gezien de voordelen.",
+  "onboarding.stepOptional.indexing.descCost": "Als je dit uitzet, krijg je alleen <code>&lt;DIR&gt;</code> voor de groottes. De kostenpost is ongeveer 1 GB index op je schijf bij een paar miljoen bestanden, maar geen extra CPU- of geheugengebruik na de eerste 2&ndash;3 minuten nadat je de app voor het eerst start, of na lange tijd opnieuw start. Het is een goedkope functie gezien de voordelen.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "197ffd2"
+    "sourceHash": "739f4f8"
   },
   "onboarding.stepOptional.updates.title": "Automatische updates",
   "@onboarding.stepOptional.updates.title": {

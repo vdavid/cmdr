@@ -415,9 +415,9 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Om du stänger av det här får du bara <code>&lt;DIR&gt;</code> för storlekarna. Kostnaden är ett index på 300 MB på din enhet, men ingen extra CPU- eller minnesanvändning efter de första 2&ndash;3 minuterna av att du först startar appen, eller startar den efter lång tid. Det är en billig funktion med tanke på fördelarna.",
+  "onboarding.stepOptional.indexing.descCost": "Om du stänger av det här får du bara <code>&lt;DIR&gt;</code> för storlekarna. Kostnaden är runt 1 GB index på din enhet för ett par miljoner filer, men ingen extra CPU- eller minnesanvändning efter de första 2&ndash;3 minuterna av att du först startar appen, eller startar den efter lång tid. Det är en billig funktion med tanke på fördelarna.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "197ffd2"
+    "sourceHash": "739f4f8"
   },
   "onboarding.stepOptional.updates.title": "Automatiska uppdateringar",
   "@onboarding.stepOptional.updates.title": {

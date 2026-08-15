@@ -415,9 +415,9 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Si vous désactivez ceci, vous n''obtenez que <code>&lt;DIR&gt;</code> à la place des tailles. Le coût est un index de 300 Mo sur votre disque, mais aucune utilisation supplémentaire de CPU ou de mémoire après les 2&ndash;3 premières minutes du premier démarrage de l''app, ou d''un démarrage après une longue période. C''est une fonctionnalité peu coûteuse au vu des bénéfices.",
+  "onboarding.stepOptional.indexing.descCost": "Si vous désactivez ceci, vous n''obtenez que <code>&lt;DIR&gt;</code> à la place des tailles. Le coût est d''environ 1 Go d''index sur votre disque pour quelques millions de fichiers, mais aucune utilisation supplémentaire de CPU ou de mémoire après les 2&ndash;3 premières minutes du premier démarrage de l''app, ou d''un démarrage après une longue période. C''est une fonctionnalité peu coûteuse au vu des bénéfices.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "197ffd2"
+    "sourceHash": "739f4f8"
   },
   "onboarding.stepOptional.updates.title": "Mises à jour automatiques",
   "@onboarding.stepOptional.updates.title": {

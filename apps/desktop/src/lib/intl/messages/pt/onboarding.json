@@ -415,9 +415,9 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Se você desativar isto, só recebe <code>&lt;DIR&gt;</code> no lugar dos tamanhos. O custo é um índice de 300 MB no seu disco, mas nenhum uso extra de CPU ou memória depois dos primeiros 2&ndash;3 minutos da primeira vez que você abre o app, ou de abri-lo após muito tempo. É um recurso barato considerando os benefícios.",
+  "onboarding.stepOptional.indexing.descCost": "Se você desativar isto, só recebe <code>&lt;DIR&gt;</code> no lugar dos tamanhos. O custo é cerca de 1 GB de índice no seu disco para alguns milhões de arquivos, mas nenhum uso extra de CPU ou memória depois dos primeiros 2&ndash;3 minutos da primeira vez que você abre o app, ou de abri-lo após muito tempo. É um recurso barato considerando os benefícios.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "197ffd2"
+    "sourceHash": "739f4f8"
   },
   "onboarding.stepOptional.updates.title": "Atualizações automáticas",
   "@onboarding.stepOptional.updates.title": {

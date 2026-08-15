@@ -76,7 +76,11 @@ deprioritized. The conclusion holds for a different reason on that machine: the 
 on a disk with a huge `/opt` or `/Library`), or a resource-constrained target where 115 MB of index matters. Re-measure
 before assuming; the query above is cheap.
 
-## Unrelated finding, worth fixing
+## Unrelated finding, fixed
 
-`onboarding.stepOptional.indexing.descCost` tells the user the cost is "a 300 MB index on your drive". Measured here:
-768 MB for the boot index alone, inside a 4.1 GB data directory.
+`onboarding.stepOptional.indexing.descCost` used to tell the user the cost was "a 300 MB index on your drive". It now
+says around 1 GB for a few million files. Re-measured on David's machine (`ls -l` over the prod data dir,
+`~/Library/Application Support/com.veszelovszki.cmdr/`, database plus its `-wal` and `-shm` sidecars, 2026-08-15): the
+boot file index is **947.6 MB** over **6,154,077 entries** (623,939 of them folders), importance adds **71.2 MB**, and
+the image index another **31.5 MB**, for **1.05 GB** all told. That's ~154 MB of file index per million entries, so the
+number tracks how many files someone has and not how big their drive is, which is what the copy now says.

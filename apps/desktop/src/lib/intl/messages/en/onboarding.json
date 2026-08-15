@@ -643,9 +643,9 @@
     "screenshot": "onboarding-optional.png"
   },
 
-  "onboarding.stepOptional.indexing.descCost": "If you turn this off, you only get <code>&lt;DIR&gt;</code> for the sizes. The cost is a 300 MB index on your drive, but no extra CPU or memory use after the first 2&ndash;3 minutes of you first starting the app, or starting it after a long time. It''s a cheap feature considering the benefits.",
+  "onboarding.stepOptional.indexing.descCost": "If you turn this off, you only get <code>&lt;DIR&gt;</code> for the sizes. The cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2&ndash;3 minutes of you first starting the app, or starting it after a long time. It''s a cheap feature considering the benefits.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "description": "Explains the trade-off of disabling indexing (folders show a placeholder instead of a size) and its cost (disk space, brief startup work). <code> wraps the literal placeholder text \"<DIR>\" shown for folder sizes; the \"&lt;\" and \"&gt;\" are HTML entities for \"<\" and \">\" and must stay as written. \"&ndash;\" is an en dash for the range \"2-3\" and must stay as written. \"300 MB\" is the index size; \"CPU\" is the processor; both stay as-is.",
+    "description": "Explains the trade-off of disabling indexing (folders show a placeholder instead of a size) and its cost (disk space, brief startup work). <code> wraps the literal placeholder text \"<DIR>\" shown for folder sizes; the \"&lt;\" and \"&gt;\" are HTML entities for \"<\" and \">\" and must stay as written. \"&ndash;\" is an en dash for the range \"2-3\" and must stay as written. \"1 GB\" is the index size and it scales with how many files the user has, not with the size of the drive; \"CPU\" is the processor; both stay as-is.",
     "screenshot": "onboarding-optional.png"
   },
 

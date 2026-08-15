@@ -416,9 +416,9 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Ha ezt kikapcsolod, a méretek helyett csak <code>&lt;DIR&gt;</code> jelenik meg. Az ára egy 300 MB-os index a meghajtódon, de nincs extra CPU- vagy memóriahasználat, miután lefutott az app első indításakor (vagy hosszú szünet utáni indításkor) az első 2&ndash;3 perc. Az előnyökhöz képest olcsó funkció.",
+  "onboarding.stepOptional.indexing.descCost": "Ha ezt kikapcsolod, a méretek helyett csak <code>&lt;DIR&gt;</code> jelenik meg. Az ára nagyjából 1 GB index a meghajtódon néhány millió fájl esetén, de nincs extra CPU- vagy memóriahasználat, miután lefutott az app első indításakor (vagy hosszú szünet utáni indításkor) az első 2&ndash;3 perc. Az előnyökhöz képest olcsó funkció.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "197ffd2"
+    "sourceHash": "739f4f8"
   },
   "onboarding.stepOptional.updates.title": "Automatikus frissítések",
   "@onboarding.stepOptional.updates.title": {

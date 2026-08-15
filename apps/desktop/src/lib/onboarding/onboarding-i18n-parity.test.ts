@@ -337,7 +337,7 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
       'Real-time folder sizes for your whole drive. You always know how much stuff you have in each folder.',
     )
     expect(renderRich('onboarding.stepOptional.indexing.descCost', ['code'])).toBe(
-      "If you turn this off, you only get <code>&lt;DIR&gt;</code> for the sizes. The cost is a 300 MB index on your drive, but no extra CPU or memory use after the first 2&ndash;3 minutes of you first starting the app, or starting it after a long time. It's a cheap feature considering the benefits.",
+      "If you turn this off, you only get <code>&lt;DIR&gt;</code> for the sizes. The cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2&ndash;3 minutes of you first starting the app, or starting it after a long time. It's a cheap feature considering the benefits.",
     )
     expect(tString('onboarding.stepOptional.updates.title')).toBe('Automatic updates')
     expect(tString('onboarding.stepOptional.updates.desc')).toBe(

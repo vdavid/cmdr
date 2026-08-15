@@ -416,9 +416,9 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "如果你关掉这一项，文件夹大小就只显示 <code>&lt;DIR&gt;</code>。代价是在驱动器上占用 300 MB 的索引，但除了首次启动应用、或长时间未用后再启动时的头 2&ndash;3 分钟，之后不会额外占用 CPU 或内存。考虑到它带来的好处，这点开销很划算。",
+  "onboarding.stepOptional.indexing.descCost": "如果你关掉这一项，文件夹大小就只显示 <code>&lt;DIR&gt;</code>。代价是在驱动器上占用约 1 GB 的索引（按几百万个文件计），但除了首次启动应用、或长时间未用后再启动时的头 2&ndash;3 分钟，之后不会额外占用 CPU 或内存。考虑到它带来的好处，这点开销很划算。",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "197ffd2"
+    "sourceHash": "739f4f8"
   },
   "onboarding.stepOptional.updates.title": "自动更新",
   "@onboarding.stepOptional.updates.title": {
