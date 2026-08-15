@@ -93,7 +93,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `first_index_started` / `first_index_home_covered` / `first_index_completed` (backend, `first_index.rs`): no props on
   the first, a `duration_bucket` on the other two. See below.
 - `first_folder_size_shown` (frontend, `$lib/indexing/first-size-timing.ts`, once per launch): `seconds_bucket` +
-  `covering` bool. ⚠️ Its denominator is NOT launches; see below before reading a rate off it.
+  `covering` bool. See below for its population.
 
 ## The search events, in detail
 
@@ -144,15 +144,15 @@ stream); the fourth is the frontend's, because only it knows what is on screen.
   This is the wow moment itself: not "the index finished", which nobody watches, but "I opened a folder and it told me
   how big it is". `covering` is what keeps a machine indexed weeks ago from drowning the measurement in zeroes.
 
-  ⚠️ **Read its denominator before you read a rate off it: it is NOT launches.** The event is fed from the FULL-LIST
-  view's cache (`views/full-list-cache.svelte.ts`), so a session spent entirely in Brief mode never fires it, and one
-  that never opens a folder at all can't either. The population is therefore **launches that opened a folder in Full
-  list mode**. That is the right failure — reporting nothing beats reporting a wrong time — but it means
-  `first_folder_size_shown / first_index_started` is NOT "how often the wow moment landed", and nothing in the numbers
-  themselves says so. Compare buckets WITHIN the event (`covering: true` against `covering: false`), which is the
-  comparison the claim actually rests on and which the missing sessions don't bias. Brief mode carries the same sizes
-  and the same `updateIndexSizesInPlace` refresh, so extending the hook to `BriefList.svelte` would close the gap; it
-  is deliberately not done, so the denominator is one documented thing rather than two undocumented ones.
+  **Its population is launches that opened a folder**, in either list mode: both `views/full-list-cache.svelte.ts` and
+  `views/BriefList.svelte` call the hook, at the two points in each where rows the user is looking at gain sizes. A
+  launch that never opens a folder can't fire it, which is the one exclusion and an honest one — there was no moment to
+  measure. ❌ If a call site is ever dropped, the population narrows to "launches in the OTHER mode" and nothing in the
+  numbers says so, so say it here.
+
+  The comparison the claim rests on is WITHIN the event: `covering: true` (a first index was running on that drive)
+  against `covering: false` (the index was already there). That is what makes the wow moment falsifiable, and it needs
+  no cross-event denominator at all.
 
 **The interruption rate is a RATIO, not an event.** How often a first index never finishes is
 `1 - first_index_completed / first_index_started`. ❌ Don't add a terminal "interrupted" event: a run that ends with the

@@ -65,6 +65,17 @@ describe('noteRenderedFolderSizes', () => {
 
     expect(trackEvent).not.toHaveBeenCalled()
   })
+
+  it('takes rows from whichever list mode is on screen', () => {
+    // Both `full-list-cache.svelte.ts` and `BriefList.svelte` call this, and they
+    // have to: a hook in only one makes the population "launches in THAT mode",
+    // which reads as "launches" to anyone who doesn't know. Nothing here is
+    // mode-aware, which is what keeps that true — this pins that it takes any
+    // caller's rows.
+    noteRenderedFolderSizes([dir(4096)], 'smb-nas')
+
+    expect(trackEvent).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('secondsBucket', () => {

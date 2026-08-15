@@ -51,6 +51,7 @@
     import { formatNumber } from '../selection/selection-info-utils'
     import { isVolumeAggregating, getWalkedGround } from '$lib/indexing/index-state.svelte'
     import { isPathAffectedByWalk } from '$lib/indexing/walked-ground'
+    import { noteRenderedFolderSizes } from '$lib/indexing/first-size-timing'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
     import Icon from '$lib/ui/Icon.svelte'
@@ -303,6 +304,7 @@
         if (cachedEntries.length === 0 && !hasParent) return
         void updateIndexSizesInPlace(cachedEntries, hasParent ? currentPath : undefined).then((stats) => {
             parentDirStats = stats
+            noteRenderedFolderSizes(cachedEntries, volumeId)
         })
     }
 
@@ -344,6 +346,7 @@
             if (result) {
                 cachedEntries = result.entries
                 cachedRange = result.range
+                noteRenderedFolderSizes(cachedEntries, volumeId)
             }
         } catch {
             // Silently ignore fetch errors
