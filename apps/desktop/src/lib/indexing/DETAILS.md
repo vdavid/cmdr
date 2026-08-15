@@ -84,10 +84,10 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
   (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
 - **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry
   and its walked ground. ⚠️ Only what the WALK owns: the run-shape facts (`scanRunKind`, `coveredInPhases`,
-  `coveragePhase`) deliberately outlive it and expire on the terminal phase transition below. A first index spends
-  12–19 s computing the drive's final folder sizes after this event, and clearing them here collapsed the checklist to
-  the LOCAL four-step shape under a "First full scan" header for that whole window — the one thing
-  `indexing.run.firstIndex` exists to prevent.
+  `coveragePhase`) deliberately outlive it and expire on the terminal phase transition below. A first index spends 12–19
+  s computing the drive's final folder sizes after this event, and clearing them here collapsed the checklist to the
+  LOCAL four-step shape under a "First full scan" header for that whole window — the one thing `indexing.run.firstIndex`
+  exists to prevent.
 - **`index-scan-aborted`** (`{ volumeId }`): a scan ended WITHOUT completing — a network (SMB/MTP) disconnect/cancel/
   timeout, or a local external drive whose root became unlistable because the volume was yanked mid-scan — so no
   `index-scan-complete` fires. Remove the volume's `activity` AND `aggregation` entries — otherwise the partial scan
@@ -120,12 +120,11 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
   until the machine stops, ~19 s past `index-scan-complete` on a first index; the ledger heal streams aggregation ticks
   through the same window), so every one of those ticks re-creates the entry that was just removed and nothing else
   would close it again. The pipeline ending is the one fact those streams can't contradict. So a present `phase` entry
-  always means "this
-  volume is at this step right now" — the spine of the step checklist, and the only signal for the reconcile step.
-  Per-volume, unlike the global debug-window phase timeline. Fires only on transitions, so after a mid-scan reload the
-  current phase is unknown until the next transition; the reconcile step is briefly unobservable then (accepted —
-  `index-phase-changed` is transition-only and `VolumeIndexStatus` carries no phase by design; see the backend
-  `indexing/DETAILS.md`). Branch on the typed `ActivityPhase` variant, never the wording.
+  always means "this volume is at this step right now" — the spine of the step checklist, and the only signal for the
+  reconcile step. Per-volume, unlike the global debug-window phase timeline. Fires only on transitions, so after a
+  mid-scan reload the current phase is unknown until the next transition; the reconcile step is briefly unobservable
+  then (accepted — `index-phase-changed` is transition-only and `VolumeIndexStatus` carries no phase by design; see the
+  backend `indexing/DETAILS.md`). Branch on the typed `ActivityPhase` variant, never the wording.
 
 ### Aggregation is per-volume
 

@@ -416,8 +416,8 @@ zero directories were recorded `Abandoned` in any run, against the 76 that drove
 Two phased runs, differing only in whether a frontend was alive (the first launch's window sat behind a keychain prompt,
 so it reported no open listings; the second had both panes open and was driven through the MCP):
 
-- **A, no frontend**: home covered **T+50.8 s**, volume covered end to end **T+77.9 s**, whole run **90.1 s**,
-  6,063,158 entries / 603,686 dirs, 915 MB index.
+- **A, no frontend**: home covered **T+50.8 s**, volume covered end to end **T+77.9 s**, whole run **90.1 s**, 6,063,158
+  entries / 603,686 dirs, 915 MB index.
 - **B, live frontend**: home covered **T+47.3 s**, volume covered end to end **T+75.8 s**, whole run **91.5 s**,
   6,063,253 entries / 603,059 dirs.
 

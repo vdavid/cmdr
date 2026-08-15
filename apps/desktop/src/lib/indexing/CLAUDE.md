@@ -28,14 +28,11 @@ API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or `codeg
   `-aggregation-complete`). An aborting network scan fires no completion, so `index-scan-aborted { volumeId }` drops
   that volume's activity + aggregation — else it leaves a stuck "scanning" row. Don't clear off
   `index-freshness-changed` (not subscribed here).
-- **The terminal PHASE (`live`/`idle`) is the backstop every other terminal event needs.** Both live streams outlive
-  their own terminal event — the 500 ms progress pump runs until the machine stops (~19 s past `-scan-complete` on a
-  first index), and the ledger heal streams aggregation ticks through the same window — so each tick re-creates the
-  entry that was just removed and nothing else would ever close it (a lit corner hourglass, an hourglass on every folder
-  row, a frozen checklist, all session). The pipeline ending therefore clears `activity`, `aggregation`, and the walked
-  ground, beside the run-shape facts. ❌ Conversely `-scan-complete` clears only what the WALK owns: dropping
-  `coveredInPhases` / `coveragePhase` there reverted the checklist to the bulk four-step shape under a "First full scan"
-  header for that whole window.
+- **The terminal PHASE (`live`/`idle`) is the backstop the others need**, clearing `activity` + `aggregation` + walked
+  ground beside the run-shape facts: both live streams outlive their own terminal event (~19 s on a first index), and
+  every late tick re-creates an entry nothing else would close again. ❌ `-scan-complete` clears only what the WALK
+  owns: dropping `coveredInPhases`/`coveragePhase` there reverts the checklist to the bulk shape under a "First full
+  scan" header. DETAILS § the ten-event table.
 - **Image indexing is a SECOND publisher here** (`media-enrich-state.svelte.ts`): `media-enrich-progress` drives a
   per-volume row, `media-enrich-terminal` clears or re-voices it paused. The corner gate ORs `isAnyVolumeEnriching()`
   (active only). Same `index-state` discipline. DETAILS § Image-enrichment publisher.
