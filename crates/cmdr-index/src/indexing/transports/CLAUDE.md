@@ -21,13 +21,12 @@ HOW live changes arrive.
   I/O); resolving ahead of the scanning check timed out on the contended device (the livelock).
 - **Reconnect AUTO-RESUMES an SMB index only when the MASTER switch is on AND the share carries the user's enable AND
   `user_disabled` is unset** (`resume_smb_index_if_enabled` → `master::drive_index_should_run`, on the PERSISTED state,
-  never the live registry). A share whose FIRST index the drop interrupted still comes back, since intent is recorded at
-  the enable; ❌ nothing here writes intent, `Index::start_volume` does it for every transport. The master switch
-  outranks per-drive intent; never gate a BACKGROUND start on the per-drive markers alone. ⚠️ Both switches govern
-  background work only: a search-driven walk (`Activation::WriterOnly`) runs with either off, because it's a read the
-  user asked for and it starts no scan and no watcher (`../lifecycle/DETAILS.md`). The sticky `user_disabled` marker is
-  written ONLY at the explicit disable command, NEVER inside `stop_indexing` (which also runs on eject, unmount, an
-  interrupted scan, the memory watchdog, and the master switch going off).
+  never the live registry). ❌ Nothing here writes intent; `Index::start_volume` does. ❌ Never gate a BACKGROUND start
+  on the per-drive markers alone. ⚠️ Both switches govern background work only: a search-driven walk
+  (`Activation::WriterOnly`) runs with either off, because it's a read the user asked for and it starts no scan and no
+  watcher (`../lifecycle/DETAILS.md`). The sticky `user_disabled` marker is written ONLY at the explicit disable
+  command, NEVER inside `stop_indexing` (which also runs on eject, unmount, an interrupted scan, the memory watchdog,
+  and the master switch going off).
 - **FAT/exFAT `LocalExternal` drives store `inode: None`** (via `IndexPathSpace::trust_inode`): a reused derived inode
   false-matches the local rename pre-pass and corrupts `dir_stats`. `classify` decides local-external vs
   SMB-fall-through from TYPED facts (a live smb2 session, or a network fs-type), never a volume-id/path substring.

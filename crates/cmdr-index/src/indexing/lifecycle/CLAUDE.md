@@ -53,11 +53,9 @@ pieces; `rescan_request.rs` the typed scan-start refusal + the owed walk; `fresh
   `Activation::IndexTheVolume`, the choke point all four transports share; master-off goes through `stop_indexing`,
   which ❌ must never write per-drive intent. ⚠️ A search walk is carved out of both switches AND `user_disabled`; ❌
   don't "fix" that into a refusal.
-- **Per-drive intent is the `user_enabled`/`user_disabled` PAIR, written when the user asks.** `start_volume` records
-  the enable BEFORE it dispatches (it also lifts the veto the phase machine reads mid-walk, and a first index that dies
-  is the case it exists for); `disable_..._persist_intent` writes the veto after the drain. ❌ Never infer intent from
-  `scan_completed_at` — absent all through a first index AND every rescan — though the predicate keeps it for indexes
-  that predate the marker.
+- **Per-drive intent is the `user_enabled`/`user_disabled` pair, written when the user ASKS.** `start_volume` records
+  the enable BEFORE dispatching (it lifts the veto the phase machine reads mid-walk). ❌ Never infer it from
+  `scan_completed_at`: absent through a first index AND every rescan.
 - **Defer `root` auto-start**: scanning `/` stacks TCC popups, so FDA gates ONLY `root`, ❌ never `set_master_enabled`.
 - **The lifecycle bus is neutral and one-way** (`watch` + `send_replace`, so a pre-subscribe `ScanCompleted` survives).
   `publish_dirs_changed` takes ORIGIN dirs, ❌ never their ancestor closure: consumers expand DOWNWARD, and one ancestor
