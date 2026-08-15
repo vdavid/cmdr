@@ -145,6 +145,20 @@ impl Tree {
     }
 }
 
+/// Where a fixture's temp tree is built.
+///
+/// The CWD by default: `/tmp` is excluded on Linux and is a symlink on macOS, and
+/// both would fight the path space. `CMDR_PHASES_TEST_TREE_DIR` moves it, which is
+/// what the resume benchmark next door needs — its tree holds six figures of
+/// directories, and building that inside the repository would hand every watcher
+/// and indexer on the machine a tree the size of the repo many times over. ⚠️ Point
+/// it at a path with no symlink in it (`/private/tmp`, ❌ not `/tmp`).
+fn tree_parent() -> PathBuf {
+    std::env::var("CMDR_PHASES_TEST_TREE_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+}
+
 /// A fresh volume id per fixture, so parallel tests never look like each other's
 /// in-flight walk.
 fn next_fixture_id() -> u64 {
@@ -155,6 +169,11 @@ fn next_fixture_id() -> u64 {
 /// The two drive-menu actions a user can reach a half-covered volume with.
 /// Their own file, over this file's `Drive` fixture.
 mod menu_actions;
+
+/// What resuming an interrupted run costs, measured against covering the same
+/// ground in one go. `#[ignore]`d, and the only thing in here that is a benchmark
+/// rather than a test.
+mod resume_bench;
 
 // ── A drive the machine covers, end to end ───────────────────────────
 
@@ -218,7 +237,7 @@ impl Drive {
         let data = tempfile::tempdir().expect("index data dir");
         let tree = tempfile::Builder::new()
             .prefix("cmdr-phased-drive-")
-            .tempdir_in(std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+            .tempdir_in(tree_parent())
             .expect("temp tree");
         build(tree.path());
 
