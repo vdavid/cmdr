@@ -23,6 +23,7 @@ import type {
   IndexScanCompleteEvent,
   IndexScanProgressEvent,
   IndexScanStartedEvent,
+  IndexStatusResponse,
   CoveragePhase,
   ScanRunKind,
 } from '$lib/ipc/bindings'
@@ -46,7 +47,7 @@ const noopUnlisten = () => {}
 // reloaded window catches up on a run already in progress. Defaults to "not
 // scanning" (a no-op backfill); a test that IS a reload sets its own answer
 // before `initIndexState`.
-const backfill = vi.hoisted(() => ({ status: { scanning: false } }))
+const backfill = vi.hoisted(() => ({ status: { scanning: false } as Partial<IndexStatusResponse> }))
 
 // Mock the typed event wrappers: capture the ones the tests drive, no-op the rest.
 vi.mock('$lib/tauri-commands', () => ({
