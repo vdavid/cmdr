@@ -27,7 +27,10 @@ where the user is looking; `completion.rs` the two stamps and what completing ow
 - **One `cover()` per frontier root, joined**, with the drain batched to once per phase. ❌ Don't hand one call a whole
   frontier: the cancel check inside `cover` is not a queue check point.
 - **The three `*CoverageStarted` VARIANTS are the phase contract** (a payload enum costs a capped surface item). ❌
-  Never read the phase off the branch events: frontier roots, one level down, debounced.
+  Never read the phase off the branch events: frontier roots, one level down, debounced. A phase re-announces itself
+  when a visited-root interlude ends, ❌ it isn't one-shot: the interlude IS a phase and announces itself, so the header
+  would otherwise name the folder the user opened for the rest of the outer phase. The coverage event alone there, ❌
+  never a second `set_phase_for`.
 - **Every walk is bracketed by `CoverageBranchStarted` / `CoverageBranchEnded`**, and the end fires on EVERY exit path,
   cancels included: a listing marks rows in flux on the start and has nothing else to take that back. A whole-volume
   scan reports the same way, naming the volume root, so ❌ nothing downstream branches on the kind of run.

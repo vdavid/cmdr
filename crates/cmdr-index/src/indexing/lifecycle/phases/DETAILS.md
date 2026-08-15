@@ -226,6 +226,18 @@ another.
 `Rank::VisitedRoot` rides the priority variant. A folder the user opened mid-run answers the same question the host's
 own list answers, less well, and nothing renders it differently — ❌ so no fourth variant for a label nobody shows.
 
+**A phase announces itself again when an interlude ends, ❌ not only when it starts.** A visited root IS a phase: it is
+ranked, queued, and run through `run_phase`, so it emits its own variant. Without a re-announcement on the way back the
+header names that folder for the rest of the outer phase — observed sitting on "Indexing the folders you use most" for
+two minutes while the machine walked `/`. `walk_all` therefore re-announces whenever `take_a_visit` reports it actually
+ran one. ⚠️ The re-announcement is the COVERAGE event alone, ❌ never `set_phase_for` as well: the activity phase is
+`Scanning` throughout, so a second `PhaseChanged` would carry no news and would inflate the app-wide debug timeline.
+Anchored by `tests::the_outer_phase_says_so_again_after_a_visited_root_interrupts_it`.
+
+⚠️ **A host that joins late has no phase at all until the next boundary**, because the event is transition-only and
+`VolumeIndexStatus` carries no phase (a payload for it would cost a public item against a capped surface). The checklist
+falls back to its run-kind label there, which is the intended degradation.
+
 ❌ The phase can't be read off `CoverageBranchStarted`: those name frontier roots one level BELOW the phase root, so
 `~/Library` and `~/Downloads` are indistinguishable, and they are debounced, so a boundary would lag or be skipped.
 App-side the three fold back into one frontend event whose `label` discriminates

@@ -457,14 +457,20 @@ siblings still read `<dir>`; by **T+16 s** most of home carries real sizes, with
 hourglass. The per-folder hourglass is exactly right: at T+11 s only `go` (the root being walked) and `..` (its
 ancestor) carry one. Walks shorter than `ANNOUNCE_AFTER` (1 s) correctly show none.
 
-Two defects surfaced that the tests do not cover, both in the host-side surfaces rather than the machine:
+Three defects surfaced that the tests did not cover, all in the host-side surfaces rather than the machine. All three
+are fixed; the mechanisms are recorded here because the measurement is what pinned them, and the guardrails live in
+`crates/cmdr-index/src/indexing/lifecycle/phases/DETAILS.md` and `apps/desktop/src/lib/indexing/CLAUDE.md`.
 
-- **The aggregation step freezes at 99% when the phases complete**, and the corner hourglass plus every per-row size
-  hourglass stay on for the rest of the session (observed 3m45s with the backend silent; a relaunch clears it). The
-  likely mechanism is ordering: `run_the_completion_sequence` queues `PayLedgerIfUnpaid` at step 3 and emits
-  `ScanComplete` + `AggregationComplete` at step 6, so the frontend takes its terminal event BEFORE the 11–15 s full
-  aggregate streams its progress, and nothing closes the step the late ticks reopen.
-- **The phase header is a one-shot with no re-assertion.** A root the user opens mid-run rides the priority variant by
-  design (`phase_started_event`), but nothing re-emits the outer phase's event when the interlude ends, so the header
-  stays on "Indexing the folders you use most" for the rest of the run. In the same window the run-kind header reverts
-  to "First full scan" with the four-step bulk checklist, which is what `indexing.run.firstIndex` exists to prevent.
+- **The aggregation step froze at 99% when the phases completed**, and the corner hourglass plus every per-row size
+  hourglass stayed on for the rest of the session (observed 3m45s with the backend silent; only a relaunch cleared it).
+  Reproduced and timed on 2026-08-15 in a debug build over the real `/`: the completion sequence ran at 07:27:07.714,
+  and `PayLedgerIfUnpaid`'s `ComputeAllAggregates(Sql)` ran from 07:27:07.756 to 07:27:26.594 — **18.8 s of progress
+  ticks arriving after `AggregationComplete`**, each re-creating the frontend's `aggregation` entry with nothing left to
+  remove it. The terminal report now waits for the flush that aggregate runs inside.
+- **The run-kind header reverted to "First full scan" with the four-step bulk checklist** for that same window, because
+  `index-scan-complete` dropped `coveredInPhases` and `coveragePhase` — the run-shape facts the phased checklist is
+  composed from. They now expire with the pipeline, like `scanRunKind` beside them.
+- **The phase header was a one-shot with no re-assertion.** A root the user opens mid-run rides the priority variant by
+  design (`phase_started_event`), and nothing re-emitted the outer phase's event when the interlude ended, so the header
+  sat on "Indexing the folders you use most" for two minutes while the machine walked `/`. `walk_all` now re-announces
+  the phase it is in whenever an interlude actually ran.

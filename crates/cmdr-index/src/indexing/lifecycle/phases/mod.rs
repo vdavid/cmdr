@@ -392,8 +392,7 @@ impl Machine {
             ActivityPhase::Scanning,
             &format!("covering {}", phase.path.display()),
         );
-        self.events
-            .emit(Self::phase_started_event(phase, self.volume_id.clone()));
+        self.announce_the_phase(phase);
         stitch::down_to(&self.space, &self.writer, &phase.path);
 
         for pass in 0..MAX_PASSES_PER_PHASE {
@@ -402,14 +401,14 @@ impl Machine {
                 break;
             }
             let (first, deferred) = self.order(frontier);
-            let mut covered = self.walk_all(&first, phase.rank, queue);
+            let mut covered = self.walk_all(&first, phase, queue);
             // The drain and the check that follows it are why the deferred roots
             // are split out at all: everything else in this phase is covered at
             // this moment, so a phase root whose only remaining ground is the
             // deferred pile can already say so.
             self.drain();
             self.take_stock();
-            covered |= self.walk_all(&deferred, phase.rank, queue);
+            covered |= self.walk_all(&deferred, phase, queue);
             self.drain();
             self.take_stock();
             if !covered {
@@ -424,7 +423,20 @@ impl Machine {
         }
     }
 
-    /// Say which phase is starting, so a host can name it.
+    /// Say which phase is running, so a host can name it.
+    ///
+    /// ⚠️ Called again after a visited-root interlude ends, ❌ not only when a
+    /// phase starts: the interlude announces ITSELF (it is a phase, ranked and
+    /// run like any other), and without this the header would name the folder the
+    /// user opened for the rest of the outer phase — "Indexing the folders you use
+    /// most" while the machine walks the whole drive. Idempotent: a host maps the
+    /// variant to one label and re-announcing the same phase changes nothing.
+    fn announce_the_phase(&self, phase: &Phase) {
+        self.events
+            .emit(Self::phase_started_event(phase, self.volume_id.clone()));
+    }
+
+    /// Which phase this is, as the event a host reads it off.
     ///
     /// ⚠️ The phase is the VARIANT, ❌ never a field: this crate's public surface
     /// is capped with no headroom, a payload enum would be a new public item, and
@@ -446,7 +458,7 @@ impl Machine {
 
     /// Walk each root in turn, consulting the visit queue between them. Reports
     /// whether anything was covered.
-    fn walk_all(&self, roots: &[String], rank: Rank, queue: &mut PhaseQueue) -> bool {
+    fn walk_all(&self, roots: &[String], phase: &Phase, queue: &mut PhaseQueue) -> bool {
         let mut covered = false;
         for root in roots {
             if !self.may_run() {
@@ -454,9 +466,10 @@ impl Machine {
             }
             // A root the user just opened outranks home and the whole volume, and
             // never the priority roots — those are already the best answer to the
-            // same question.
-            if rank > Rank::VisitedRoot {
-                self.take_a_visit(queue);
+            // same question. An interlude that ran announced itself, so this phase
+            // has to say what it is again on the way back.
+            if phase.rank > Rank::VisitedRoot && self.take_a_visit(queue) {
+                self.announce_the_phase(phase);
             }
             covered |= self.walk_one(root);
             self.take_stock();
@@ -465,16 +478,18 @@ impl Machine {
     }
 
     /// Run one root the user opened while we were walking, as its own small phase.
+    /// Reports whether one actually ran, which is what the caller owes a
+    /// re-announcement for.
     ///
     /// ❌ It doesn't check the visit queue itself: a nested check would let a
     /// browsing user push the phase that is actually running arbitrarily far down,
     /// and one root per boundary is already faster than anyone can browse.
-    fn take_a_visit(&self, queue: &mut PhaseQueue) {
+    fn take_a_visit(&self, queue: &mut PhaseQueue) -> bool {
         let Some(visited) = self.visits.take() else {
-            return;
+            return false;
         };
         if queue.already_done(&visited) {
-            return;
+            return false;
         }
         let phase = Phase {
             rank: Rank::VisitedRoot,
@@ -486,6 +501,7 @@ impl Machine {
         );
         self.run_phase(&phase, queue);
         queue.mark_done(&phase.path);
+        true
     }
 
     /// Cover one frontier root and say whether it actually ran.

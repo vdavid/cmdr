@@ -766,6 +766,57 @@ fn nothing_aggregates_after_the_volume_says_aggregation_is_done() {
     );
 }
 
+/// The phase header is the ORDER made visible, and the order is the whole
+/// feature. A folder the user opens mid-run is covered as its own phase and
+/// announces itself, so without a re-assertion afterwards the header names that
+/// interlude for the rest of the run — "Indexing the folders you use most" while
+/// the machine is actually walking the whole drive.
+#[test]
+fn the_outer_phase_says_so_again_after_a_visited_root_interrupts_it() {
+    use crate::indexing::events::IndexEventKind;
+
+    let drive = Drive::with_host(
+        "phased-phase-reasserts",
+        |root| {
+            for name in ["a", "b", "zzz-visited"] {
+                std::fs::create_dir_all(root.join(name).join("inner")).expect("dirs");
+            }
+        },
+        |host, root| {
+            host.note_open_listing("phased-phase-reasserts", root.join("zzz-visited"));
+        },
+        &[],
+        true,
+    );
+    drive.start();
+    drive.wait_for_the_machine();
+
+    let announced: Vec<IndexEventKind> = drive
+        .events
+        .kinds_for(drive.volume_id)
+        .into_iter()
+        .filter(|kind| {
+            matches!(
+                kind,
+                IndexEventKind::PriorityCoverageStarted
+                    | IndexEventKind::HomeCoverageStarted
+                    | IndexEventKind::WholeVolumeCoverageStarted
+            )
+        })
+        .collect();
+
+    assert!(
+        announced.contains(&IndexEventKind::PriorityCoverageStarted),
+        "the folder the user is looking at really did earn a phase of its own, \
+         or there is no interlude here to re-assert after ({announced:?})"
+    );
+    assert_eq!(
+        announced.last(),
+        Some(&IndexEventKind::WholeVolumeCoverageStarted),
+        "and the last thing announced is what the machine is actually walking ({announced:?})"
+    );
+}
+
 /// The early signal, and its blast radius. Photo search and folder importance only
 /// need `$HOME`; waiting for the rest of the drive is minutes of the most visibly
 /// valuable feature sitting idle on a first run. ⚠️ It says nothing about
