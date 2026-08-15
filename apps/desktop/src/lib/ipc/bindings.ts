@@ -5516,11 +5516,22 @@ export type IndexStatusResponse = {
   /**
    *  Whether the running walk covers the volume branch by branch rather than
    *  walking it whole. The same answer [`IndexEvent::ScanStarted`] carries,
-   *  repeated here so a host that joined mid-run (a window reload) recovers it
-   *  instead of treating the whole volume as in flux. Read it only while
-   *  [`scanning`](Self::scanning) is true.
+   *  repeated here so a host that joined mid-run (a window reload) recovers
+   *  which family of pipeline steps this run produces instead of showing three
+   *  that will never happen. Read it only while [`scanning`](Self::scanning) is
+   *  true.
    */
   coveredInPhases: boolean
+  /**
+   *  The ground under the walker right now, absolute in the volume's own path
+   *  space: the volume root for a run that walks it whole, the frontier roots
+   *  being covered for a phased one, and empty between them.
+   *
+   *  Here for the same reason as the field above: a host that joined mid-run
+   *  rebuilds exactly what the coverage-branch events would have told it,
+   *  rather than inferring it from the kind of run and getting the whole drive.
+   */
+  walkedRoots: string[]
   // Files and directories the current walk has recorded so far.
   entriesScanned: number
   // Directories among them, the tier-1 progress numerator.

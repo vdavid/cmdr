@@ -34,11 +34,22 @@ it to an injected `EventSink`. Nothing here names a wire format, an event name, 
 - **`PathAccessDenied { path }`** — the scanner hit an OS denial. The app decides whether it's TCC-restricted and worth
   the sidebar's "limited by macOS" styling.
 
-**The coverage-branch pair brackets one walk over one branch**, and only a run that announced itself with
-`ScanStarted { covered_in_phases: true }` emits it. The end goes out on every exit path (covered, left to another walk,
-cancelled), because a consumer that marked rows in flux on the start has nothing else to take that back. ❌ The crate
-does NOT decide how long a walk has to run before it's worth announcing — that's the host's presentation call, and it
-lives in the app's `events/index_mapping/walk_announcer.rs`.
+**The coverage-branch pair brackets one walk over one branch, and every kind of run emits it.** A phase names the
+frontier root it is covering; a walk that takes the volume whole names the volume root
+(`announce_whole_volume_walk`). That equivalence is the point: `/` is at or above every path on the volume, so a
+consumer's bidirectional membership test matches every row through the same predicate that matches `~/Downloads` to the
+rows inside and above it — with no sentinel value, and nothing anywhere that branches on which kind of run is running.
+
+A phase emits both ends itself, on every exit path (covered, left to another walk, cancelled), because a consumer that
+marked rows in flux on the start has nothing else to take that back. A whole-volume walk emits only the START: its end
+is the run's own terminal event, and the host closes a volume's open ground there, which is the one path that also
+covers an abort. ❌ The crate does NOT decide how long a walk has to run before it's worth announcing — that's the
+host's presentation call, in the app's `events/index_mapping/walk_announcer.rs`.
+
+`ScanStarted { covered_in_phases }` survives that collapse with ONE consumer left: which family of pipeline steps the
+run produces (a phased run takes one of the four, and three permanently-pending steps read as a stuck scan). ❌ It is
+not an input to anything about folder sizes, and ❌ nothing may re-derive it from the walked ground, which is empty
+between branches and would flip the checklist's shape mid-run.
 
 `IndexEventKind` is the payload-free twin, so a test can assert the SHAPE of a stream
 (`[ScanStarted, ScanProgress, ScanComplete]`) without spelling out fields. Its `ALL` array is complete by construction,

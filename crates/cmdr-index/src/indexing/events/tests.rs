@@ -232,3 +232,45 @@ fn close_phase_with_stats_attaches_to_current_phase_only() {
     assert!(history[0].stats.is_empty());
     assert_eq!(history[1].stats, vec![("entries".to_string(), "1234".to_string())]);
 }
+
+/// A walk that takes a volume whole reports its ground in the SAME shape a
+/// phase's branch does, so a host runs one membership test over one list of
+/// paths and never has to ask which kind of run this is.
+///
+/// The volume root is what makes that work: every path on the volume is at or
+/// under it, so a consumer's bidirectional test matches every row without a
+/// sentinel value or a mode flag.
+#[test]
+fn a_whole_volume_walk_reports_the_volume_root_as_its_ground() {
+    use crate::indexing::events::{RecordingSink, announce_whole_volume_walk};
+
+    let sink = RecordingSink::new();
+    announce_whole_volume_walk(&sink, "root", "/".to_string());
+
+    assert_eq!(
+        sink.events(),
+        vec![IndexEvent::CoverageBranchStarted {
+            volume_id: "root".to_string(),
+            roots: vec!["/".to_string()],
+        }],
+    );
+}
+
+/// The end of a whole-volume walk is NOT emitted here, and that is deliberate:
+/// the host closes a volume's open ground on the run's terminal event, which is
+/// the only thing that covers the paths that abort rather than complete. A
+/// remembered end here would be one more place to forget it.
+#[test]
+fn a_whole_volume_walk_leaves_its_end_to_the_run_that_owns_it() {
+    use crate::indexing::events::{RecordingSink, announce_whole_volume_walk};
+
+    let sink = RecordingSink::new();
+    announce_whole_volume_walk(&sink, "smb-nas", "/Volumes/nas".to_string());
+
+    assert!(
+        !sink
+            .events()
+            .iter()
+            .any(|e| e.kind() == IndexEventKind::CoverageBranchEnded),
+    );
+}

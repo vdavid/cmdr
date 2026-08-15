@@ -15,7 +15,9 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use super::manager::{IndexManager, ScanCalibration};
-use crate::indexing::events::{ActivityPhase, DEBUG_STATS, IndexEvent, ScanRunKind, set_phase_for};
+use crate::indexing::events::{
+    ActivityPhase, DEBUG_STATS, IndexEvent, ScanRunKind, announce_whole_volume_walk, set_phase_for,
+};
 use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
 use crate::indexing::lifecycle::rescan_request::ScanStartError;
 use crate::indexing::network_scanner::VolumeScanError;
@@ -324,9 +326,17 @@ impl IndexManager {
             prior_total_entries: prior.total_entries,
             prior_scan_duration_ms: prior.scan_duration_ms,
             volume_used_bytes,
-            // A trait scan takes the share whole; nothing here covers in phases.
+            // A trait scan takes the share whole, so the checklist shows the
+            // network family of steps rather than the phased one.
             covered_in_phases: false,
         });
+        // The ground: the whole share, reported the same way a phase reports its
+        // branch.
+        announce_whole_volume_walk(
+            self.events.as_ref(),
+            &self.volume_id,
+            self.volume_root.to_string_lossy().into_owned(),
+        );
         set_phase_for(
             self.events.as_ref(),
             &self.volume_id,

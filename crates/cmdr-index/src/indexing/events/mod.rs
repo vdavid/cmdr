@@ -61,10 +61,19 @@ pub struct IndexStatusResponse {
     pub scanning: bool,
     /// Whether the running walk covers the volume branch by branch rather than
     /// walking it whole. The same answer [`IndexEvent::ScanStarted`] carries,
-    /// repeated here so a host that joined mid-run (a window reload) recovers it
-    /// instead of treating the whole volume as in flux. Read it only while
-    /// [`scanning`](Self::scanning) is true.
+    /// repeated here so a host that joined mid-run (a window reload) recovers
+    /// which family of pipeline steps this run produces instead of showing three
+    /// that will never happen. Read it only while [`scanning`](Self::scanning) is
+    /// true.
     pub covered_in_phases: bool,
+    /// The ground under the walker right now, absolute in the volume's own path
+    /// space: the volume root for a run that walks it whole, the frontier roots
+    /// being covered for a phased one, and empty between them.
+    ///
+    /// Here for the same reason as the field above: a host that joined mid-run
+    /// rebuilds exactly what the coverage-branch events would have told it,
+    /// rather than inferring it from the kind of run and getting the whole drive.
+    pub walked_roots: Vec<String>,
     /// Files and directories the current walk has recorded so far.
     pub entries_scanned: u64,
     /// Directories among them, the tier-1 progress numerator.
@@ -393,6 +402,28 @@ pub(super) fn emit_rescan_notification(events: &dyn EventSink, volume_id: &str, 
         volume_id: volume_id.to_string(),
         reason,
         details: Diagnostic(details),
+    });
+}
+
+/// Report that a walk of the WHOLE volume is under way, as the same ground
+/// report a cover walk makes.
+///
+/// A run that takes the volume whole IS a walk of the volume root, so a host
+/// tracking what is under the walker hears about it in the same shape it hears
+/// about one phase's branch. That's what lets a listing run ONE membership test
+/// over one list of paths, with no second kind of run to branch on: a root of
+/// `/` matches every row on the volume through the same predicate that matches
+/// `~/Downloads` to the rows inside and above it.
+///
+/// ⚠️ Emit this beside every `ScanStarted` that walks a volume whole. Without it
+/// the ground goes unreported and every folder on the drive looks settled while
+/// it's being rebuilt. ❌ There is no matching end to remember here: the host
+/// closes a volume's open ground on the run's terminal event, which is what
+/// makes this safe on the paths that abort rather than complete.
+pub(super) fn announce_whole_volume_walk(events: &dyn EventSink, volume_id: &str, volume_root: String) {
+    events.emit(IndexEvent::CoverageBranchStarted {
+        volume_id: volume_id.to_string(),
+        roots: vec![volume_root],
     });
 }
 

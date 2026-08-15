@@ -8,7 +8,7 @@ import type { FileEntry } from '../types'
 
 import { _setMeasureForTests, computeFullListColumnWidths } from './measure-column-widths'
 import { isDirSizeUpdating } from './full-list-utils'
-import { NO_WALKED_GROUND, isPathAffectedByWalk, walkedBranches, type WalkedGround } from '$lib/indexing/walked-ground'
+import { NO_WALKED_GROUND, isPathAffectedByWalk, type WalkedGround } from '$lib/indexing/walked-ground'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import { formatSizeForDisplay } from '../selection/selection-info-utils'
 
@@ -234,7 +234,7 @@ describe('computeFullListColumnWidths', () => {
     // the parity that matters: a per-volume answer here would reserve width on
     // every row and clip the glyph on exactly the rows that show it.
     _setMeasureForTests(fakeMeasure)
-    const ground = walkedBranches(['/Users/someone/Downloads/big'])
+    const ground = (['/Users/someone/Downloads/big'])
     const dir = (name: string, path: string) => entry({ name, path, isDirectory: true, recursiveSize: 12345 })
 
     const untouched = computeFullListColumnWidths({

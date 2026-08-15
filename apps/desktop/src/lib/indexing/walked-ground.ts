@@ -2,36 +2,21 @@
  * What ground on one volume is under a walker right now, and whether a given row
  * is affected by it.
  *
- * Two shapes, because there are two kinds of run. A whole-volume walk (a full
- * rebuild, and every SMB/MTP scan) puts every folder on the drive in flux for its
- * whole length and announces no branches. A phased first index covers the drive
- * branch by branch and says which branch, so only the ground it names is in flux
- * and the rest of the drive keeps its settled sizes.
+ * One shape for every kind of run: a list of absolute roots the backend says it
+ * is walking. A run that takes the volume whole announces the volume root, so
+ * `/` matches every row on the drive through the same predicate that matches
+ * `~/Downloads` to the rows inside and above it. There is no second kind of run
+ * to branch on here, and no sentinel: an empty list means nothing is moving.
  *
  * Pure and rune-free so the predicate is unit-tested on its own; the live state
  * that feeds it is `index-state.svelte.ts`.
  */
 
-/** The ground under a walker on one volume. */
-export interface WalkedGround {
-  /** A walk is taking the volume whole, so every path on it is affected. */
-  readonly wholeVolume: boolean
-  /** The branch roots under the walker, absolute in the volume's path space. */
-  readonly roots: readonly string[]
-}
+/** The roots under a walker on one volume, absolute in its own path space. */
+export type WalkedGround = readonly string[]
 
 /** Nothing on this volume is being walked. */
-export const NO_WALKED_GROUND: WalkedGround = { wholeVolume: false, roots: [] }
-
-/** A run that takes the volume whole. */
-export function wholeVolumeWalked(): WalkedGround {
-  return { wholeVolume: true, roots: [] }
-}
-
-/** A phased run, with the branches currently under the walker. */
-export function walkedBranches(roots: readonly string[]): WalkedGround {
-  return { wholeVolume: false, roots }
-}
+export const NO_WALKED_GROUND: WalkedGround = []
 
 /**
  * Whether this row's folder size can move while the walk runs.
@@ -48,9 +33,8 @@ export function walkedBranches(roots: readonly string[]): WalkedGround {
  * spelling because they read the same rows.
  */
 export function isPathAffectedByWalk(ground: WalkedGround, path: string): boolean {
-  if (ground.wholeVolume) return true
   const row = normalize(path)
-  return ground.roots.some((root) => {
+  return ground.some((root) => {
     const branch = normalize(root)
     return isAtOrUnder(row, branch) || isAtOrUnder(branch, row)
   })

@@ -51,7 +51,9 @@ API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or `codeg
 - **Directory sizes are HONEST: unknown (`<dir>`) ≠ empty (`0 bytes`) ≠ lower-bound (`≥`).** `getDirSizeDisplayState`
   (`views/full-list-utils.ts`) is the single source of truth. The hourglass on top keys on GROUND BEING WALKED
   (`getWalkedGround` + `isPathAffectedByWalk`), ❌ never "the volume is scanning" (a phased index scans for minutes
-  while one branch moves), and tests BOTH ways since the roll-up repairs ancestors. Both travel in lockstep through
+  while one branch moves), and tests BOTH ways since the roll-up repairs ancestors. Every run announces its ground (a
+  whole-volume walk names the volume root), so ❌ nothing here is seeded or branches on the kind of run. Both travel in
+  lockstep through
   `FullList` / `BriefList` / `SelectionInfo` / `measure-column-widths`; ❌ never write that map per progress tick.
   Rendering + sort: DETAILS.md.
 

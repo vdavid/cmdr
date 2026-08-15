@@ -95,6 +95,7 @@ fn disabled_status_response() -> IndexStatusResponse {
         initialized: false,
         scanning: false,
         covered_in_phases: false,
+        walked_roots: Vec::new(),
         entries_scanned: 0,
         dirs_found: 0,
         bytes_scanned: 0,
@@ -122,8 +123,9 @@ pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
                 initialized: true,
                 scanning: true,
                 // Nothing has been routed yet, so nothing knows how this volume
-                // will be covered.
+                // will be covered, and nothing is under a walker.
                 covered_in_phases: false,
+                walked_roots: Vec::new(),
                 entries_scanned: 0,
                 dirs_found: 0,
                 bytes_scanned: 0,
@@ -181,6 +183,7 @@ pub fn get_debug_status(volume_id: &str) -> Result<IndexDebugStatusResponse, Str
                 initialized: true,
                 scanning: true,
                 covered_in_phases: false,
+                walked_roots: Vec::new(),
                 entries_scanned: 0,
                 dirs_found: 0,
                 bytes_scanned: 0,

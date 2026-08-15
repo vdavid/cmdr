@@ -7,6 +7,7 @@
 //! them; everything after either one starts is the same live-event machinery.
 
 use super::*;
+use crate::indexing::events::announce_whole_volume_walk;
 use crate::indexing::lifecycle::cover;
 use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::watch::branches::{self, AfterWalk, WatchScope};
@@ -517,10 +518,18 @@ impl IndexManager {
             prior_total_entries: calibration.prior.total_entries,
             prior_scan_duration_ms: calibration.prior.scan_duration_ms,
             volume_used_bytes: calibration.volume_used_bytes,
-            // This walk takes the volume whole, so every folder on it is in flux
-            // for the run's whole length and no branch events follow.
+            // Which family of steps the checklist shows. This walk takes the
+            // volume whole, so it runs the four-step pipeline.
             covered_in_phases: false,
         });
+        // And the ground it covers, which is all of it. The listing tests one
+        // list of walked roots either way; nothing downstream knows there are two
+        // kinds of run.
+        announce_whole_volume_walk(
+            self.events.as_ref(),
+            &self.volume_id,
+            self.volume_root.to_string_lossy().into_owned(),
+        );
 
         set_phase_for(
             self.events.as_ref(),

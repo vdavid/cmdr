@@ -22,15 +22,11 @@ const idx = vi.hoisted(() => ({
   aggregatingVolume: null as string | null,
   walkingVolume: null as string | null,
   walkedRoots: [] as string[],
-  wholeVolume: false,
 }))
 vi.mock('$lib/indexing/index-state.svelte', () => ({
   isVolumeScanning: (volumeId: string) => idx.scanningVolume === volumeId,
   isVolumeAggregating: (volumeId: string) => idx.aggregatingVolume === volumeId,
-  getWalkedGround: (volumeId: string) =>
-    idx.walkingVolume === volumeId
-      ? { wholeVolume: idx.wholeVolume, roots: idx.walkedRoots }
-      : { wholeVolume: false, roots: [] },
+  getWalkedGround: (volumeId: string) => (idx.walkingVolume === volumeId ? idx.walkedRoots : []),
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
@@ -92,7 +88,6 @@ beforeEach(() => {
   idx.aggregatingVolume = null
   idx.walkingVolume = null
   idx.walkedRoots = []
-  idx.wholeVolume = false
 })
 
 /** Put `roots` under the walker on `volumeId`. */
@@ -138,11 +133,10 @@ describe('SelectionInfo Brief file-info dir size state', () => {
     expect(t.querySelector('.stale-indicator')).toBeNull()
   })
 
-  it('lights every folder up while a run takes the volume whole', async () => {
-    // A full rebuild and every SMB/MTP scan announce no branches and blank the
-    // sizes for their whole length, so there the whole-volume answer is honest.
-    idx.walkingVolume = 'root'
-    idx.wholeVolume = true
+  it('lights every folder up while a run walks the volume whole', async () => {
+    // A full rebuild and every SMB/MTP scan announce the VOLUME ROOT as their one
+    // walked root, so the same predicate lights every row without a special case.
+    walking('root', ['/'])
     const t = mountFileInfo(makeDir())
     await tick()
     expect(t.querySelector('.stale-indicator')).not.toBeNull()

@@ -490,17 +490,25 @@ describe('index-state walked ground', () => {
     branchEndedCb({ volumeId, roots: [root] })
   }
 
-  it('starts a phased run with nothing in flux, so no row lights up before a branch is named', () => {
+  it('starts a run with nothing in flux, whatever kind of run it is', () => {
+    // ❌ Nothing is seeded from the scan-started event: the ground arrives on the
+    // coverage-branch events, so there is no window where the frontend guesses
+    // which kind of run this is and marks the wrong thing.
     emitStarted('root', true)
-
-    expect(getWalkedGround('root')).toEqual({ wholeVolume: false, roots: [] })
     expect(isPathAffectedByWalk(getWalkedGround('root'), '/Users/someone')).toBe(false)
+
+    emitStarted('smb-nas', false)
+    expect(isPathAffectedByWalk(getWalkedGround('smb-nas'), '/Volumes/nas/photos')).toBe(false)
   })
 
-  it('puts the whole drive in flux for a run that walks it whole', () => {
+  it('puts the whole drive in flux when the run announces the volume root', () => {
+    // What a whole-volume walk announces. One shape, one predicate: no sentinel
+    // and no second kind of run for a row to branch on.
     emitStarted('root', false)
+    startWalking('root', '/')
 
     expect(isPathAffectedByWalk(getWalkedGround('root'), '/anywhere')).toBe(true)
+    expect(isPathAffectedByWalk(getWalkedGround('root'), '/')).toBe(true)
   })
 
   it('narrows to the branch under the walker, and lets go of it when it ends', () => {
@@ -521,7 +529,7 @@ describe('index-state walked ground', () => {
     branchStartedCb({ volumeId: 'root', roots: ['/opt/one', '/opt/two'] })
     branchEndedCb({ volumeId: 'root', roots: ['/opt/one'] })
 
-    expect(getWalkedGround('root').roots).toEqual(['/opt/two'])
+    expect(getWalkedGround('root')).toEqual(['/opt/two'])
   })
 
   it('never lets a branch event on one drive move another drive', () => {
@@ -541,7 +549,7 @@ describe('index-state walked ground', () => {
 
     scanAbortedCb({ volumeId: 'root' })
 
-    expect(getWalkedGround('root')).toEqual({ wholeVolume: false, roots: [] })
+    expect(getWalkedGround('root')).toEqual([])
   })
 
   it('re-fires reactive consumers when the ground moves', () => {

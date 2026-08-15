@@ -617,10 +617,22 @@ impl IndexManager {
         let counters = live_scan_counters(snap, self.scan_calibration);
         let scanning = self.scanning.load(Ordering::Relaxed) || self.phases_have_work();
 
+        // What the walker holds right now. A whole-volume run holds the volume
+        // root (the same ground it announced at start), a phased one holds the
+        // frontier root it is on, and neither holds anything between walks. The
+        // events are what a live frontend follows; this answers the same question
+        // for one that just reloaded.
+        let walked_roots = match self.phases.as_ref() {
+            Some(phases) if phases.has_work() => phases.walked_roots(),
+            _ if self.scanning.load(Ordering::Relaxed) => vec![self.volume_root.to_string_lossy().into_owned()],
+            _ => Vec::new(),
+        };
+
         Ok(IndexStatusResponse {
             initialized: true,
             scanning,
             covered_in_phases: self.phases_have_work(),
+            walked_roots,
             entries_scanned: counters.entries_scanned,
             dirs_found: counters.dirs_found,
             bytes_scanned: counters.bytes_scanned,

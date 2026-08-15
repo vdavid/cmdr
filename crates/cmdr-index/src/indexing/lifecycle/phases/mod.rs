@@ -169,6 +169,10 @@ pub(crate) struct PhaseHandle {
     working: Arc<AtomicBool>,
     /// The counters the progress reporter emits and `get_status` reports.
     progress: Arc<ScanProgress>,
+    /// The frontier roots under the walker right now, for the status response a
+    /// mid-run window reload reads. Empty between walks, which is the honest
+    /// answer: nothing is moving.
+    walked_roots: Arc<std::sync::Mutex<Vec<String>>>,
     /// Where the visit poll writes what the user opened.
     visits: Arc<VisitLog>,
     /// Stops the driver, and (through `done`) the reporter with it.
@@ -193,6 +197,12 @@ impl PhaseHandle {
     /// The live counters, for `get_status`.
     pub(crate) fn progress(&self) -> &Arc<ScanProgress> {
         &self.progress
+    }
+
+    /// The ground under the walker right now, for `get_status`.
+    pub(crate) fn walked_roots(&self) -> Vec<String> {
+        use cmdr_fs::ignore_poison::IgnorePoison;
+        self.walked_roots.lock_ignore_poison().clone()
     }
 
     /// Stop the machine: the running walk sees the token, the driver stops
@@ -231,6 +241,7 @@ pub(crate) fn start(context: MachineContext) -> PhaseHandle {
         // refuse exactly as one arriving mid-phase does.
         working: Arc::new(AtomicBool::new(true)),
         progress: Arc::new(ScanProgress::new()),
+        walked_roots: Arc::new(std::sync::Mutex::new(Vec::new())),
         visits: Arc::new(VisitLog::new()),
         cancel: context.cancel.clone(),
         done: Arc::new(AtomicBool::new(false)),
@@ -241,6 +252,7 @@ pub(crate) fn start(context: MachineContext) -> PhaseHandle {
         walking: Arc::clone(&handle.walking),
         working: Arc::clone(&handle.working),
         progress: Arc::clone(&handle.progress),
+        walked_roots: Arc::clone(&handle.walked_roots),
         visits: Arc::clone(&handle.visits),
         done: Arc::clone(&handle.done),
         cancel: context.cancel,
@@ -307,6 +319,7 @@ struct Machine {
     walking: Arc<AtomicBool>,
     working: Arc<AtomicBool>,
     progress: Arc<ScanProgress>,
+    walked_roots: Arc<std::sync::Mutex<Vec<String>>>,
     visits: Arc<VisitLog>,
     done: Arc<AtomicBool>,
     cancel: CancellationToken,
@@ -465,6 +478,7 @@ impl Machine {
             }
         };
         self.walking.store(true, Ordering::Relaxed);
+        self.note_walked_roots(vec![root.to_string()]);
         // The ground is the walker's from here to `finish`, and the host is told
         // both ends: a folder's size can move under the user for exactly this
         // long, and the pair is what lets a listing say so per row instead of
@@ -488,6 +502,7 @@ impl Machine {
         }
         let outcome = walk.finish();
         self.walking.store(false, Ordering::Relaxed);
+        self.note_walked_roots(Vec::new());
         // ⚠️ Unconditional, on every exit path (covered, left to another walk,
         // cancelled). A missed end leaves a row wearing an hourglass for a walk
         // that stopped, and nothing later would take it off.
@@ -496,6 +511,13 @@ impl Machine {
             roots: vec![root.to_string()],
         });
         mine && outcome.roots_covered > 0
+    }
+
+    /// Record what is under the walker, for the status a mid-run reload reads.
+    /// The EVENTS are what the UI follows; this is the same fact, pullable.
+    fn note_walked_roots(&self, roots: Vec<String>) {
+        use cmdr_fs::ignore_poison::IgnorePoison;
+        *self.walked_roots.lock_ignore_poison() = roots;
     }
 
     /// Fold one batch of discovered entries into the live counters.

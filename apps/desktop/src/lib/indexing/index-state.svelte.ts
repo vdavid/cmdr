@@ -37,7 +37,7 @@ import {
   type UnlistenFn,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
-import { NO_WALKED_GROUND, walkedBranches, wholeVolumeWalked, type WalkedGround } from './walked-ground'
+import { NO_WALKED_GROUND, type WalkedGround } from './walked-ground'
 import { tString } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { ScanRunKind } from '$lib/ipc/bindings'
@@ -170,17 +170,23 @@ const phase = new SvelteMap<string, ActivityPhase>()
 // omitted rather than guessed.
 const scanRunKind = new SvelteMap<string, ScanRunKind>()
 
-// Per-volume ground under a walker, keyed by volume id. A whole-volume run
-// (a full rebuild, every SMB/MTP scan) puts one entry in at scan start covering
-// the drive; a phased first index puts an empty one in and the coverage-branch
-// events fill it as each branch goes under the walker. Removed on the run's
-// terminal event, so a present entry always means "a walk is running here".
+// Per-volume ground under a walker, keyed by volume id, fed by the
+// coverage-branch events alone. Every kind of run announces its ground the same
+// way: a whole-volume walk names the volume root, a phased one names the branch
+// it is on. So there is nothing here to seed and no kind of run to branch on —
+// no entry, or an empty one, means nothing is moving.
 //
 // ⚠️ Written only when the GROUND changes, never on a progress tick. A `.set`
 // per tick would re-run the membership `$derived` for every visible row twice a
 // second, which is the whole reason walk counters live on `activity` instead.
 // Reactive: reading it re-renders the rows whose size can move.
 const walkedGround = new SvelteMap<string, WalkedGround>()
+
+// Per-volume: does this run cover the drive branch by branch? The backend's own
+// answer, kept for the whole pipeline like `scanRunKind` beside it, because the
+// checklist has to keep showing the right family of steps after the live scan
+// entry is gone. Cleared on the same terminal events.
+const coveredInPhases = new SvelteMap<string, boolean>()
 
 // Monotonic counter bumped by every scan/replay event. Prevents the
 // `get_index_status` IPC response (which can arrive late) from overwriting state
@@ -283,13 +289,13 @@ export function getWalkedGround(volumeId: string): WalkedGround {
 }
 
 /** Whether this volume's run covers the drive branch by branch rather than
- *  walking it whole. Reactive. Read off the walked-ground entry, which is the
- *  same fact under a different question: an entry that isn't whole-volume IS a
- *  phased run. Drives the step checklist, which otherwise offers three steps a
- *  phased run never takes. */
+ *  walking it whole. Reactive. The BACKEND's answer, off `index-scan-started`
+ *  and recovered from the status response on reload, ❌ never inferred from the
+ *  ground being walked: that is empty between branches and would flip the
+ *  checklist's shape mid-run. Its one consumer is the step checklist, which
+ *  otherwise offers three steps a phased run never takes. */
 export function isVolumeCoveredInPhases(volumeId: string): boolean {
-  const ground = walkedGround.get(volumeId)
-  return ground !== undefined && !ground.wholeVolume
+  return coveredInPhases.get(volumeId) === true
 }
 
 export function getEntriesScanned(): number {
@@ -325,10 +331,10 @@ export async function initIndexState(): Promise<void> {
     // The backend's own classification of this run, stashed for the run-kind
     // header and the per-step copy.
     scanRunKind.set(payload.volumeId, payload.scanRunKind)
-    // And what it will do to folder sizes. A run that covers in phases says
-    // which branch it's on as it goes; one that doesn't is walking the whole
-    // drive, so every folder on it is in flux until it finishes.
-    walkedGround.set(payload.volumeId, payload.coveredInPhases ? walkedBranches([]) : wholeVolumeWalked())
+    // Which family of steps this run produces, for the checklist. ❌ Nothing
+    // about the size hourglass: the ground under the walker arrives on its own
+    // events, whichever kind of run this is.
+    coveredInPhases.set(payload.volumeId, payload.coveredInPhases)
   })
   unlistenHandles.push(unlistenStarted)
 
@@ -357,6 +363,7 @@ export async function initIndexState(): Promise<void> {
     // by the volumeId-stamped aggregation events below.
     activity.delete(payload.volumeId)
     walkedGround.delete(payload.volumeId)
+    coveredInPhases.delete(payload.volumeId)
   })
   unlistenHandles.push(unlistenComplete)
 
@@ -374,11 +381,12 @@ export async function initIndexState(): Promise<void> {
     phase.delete(payload.volumeId)
     scanRunKind.delete(payload.volumeId)
     walkedGround.delete(payload.volumeId)
+    coveredInPhases.delete(payload.volumeId)
   })
   unlistenHandles.push(unlistenAborted)
 
   const unlistenBranchStarted = await onIndexCoverageBranchStarted((payload) => {
-    walkedGround.set(payload.volumeId, walkedBranches(payload.roots))
+    walkedGround.set(payload.volumeId, payload.roots)
   })
   unlistenHandles.push(unlistenBranchStarted)
 
@@ -388,8 +396,11 @@ export async function initIndexState(): Promise<void> {
     // whole set; subtracting rather than clearing means a later overlap can't
     // take an unrelated branch's hourglass off with it.
     const current = walkedGround.get(payload.volumeId)
-    if (current === undefined || current.wholeVolume) return
-    walkedGround.set(payload.volumeId, walkedBranches(current.roots.filter((root) => !payload.roots.includes(root))))
+    if (current === undefined) return
+    walkedGround.set(
+      payload.volumeId,
+      current.filter((root) => !payload.roots.includes(root)),
+    )
   })
   unlistenHandles.push(unlistenBranchEnded)
 
@@ -400,8 +411,9 @@ export async function initIndexState(): Promise<void> {
     // discriminant, never message wording.
     if (payload.phase === 'live' || payload.phase === 'idle') {
       phase.delete(payload.volumeId)
-      // The pipeline ended, so the run-kind header's fact expires with it.
+      // The pipeline ended, so the run-shape facts expire with it.
       scanRunKind.delete(payload.volumeId)
+      coveredInPhases.delete(payload.volumeId)
     } else {
       phase.set(payload.volumeId, payload.phase)
     }
@@ -486,10 +498,11 @@ export async function initIndexState(): Promise<void> {
       // calibration the started event used, so the run-kind header and the
       // per-step copy recover on reload too.
       if (res.data.scanRunKind != null) scanRunKind.set(ROOT_VOLUME_ID, res.data.scanRunKind)
-      // Same recovery for what the run does to folder sizes. A phased run's next
-      // branch event lands within seconds and names the ground precisely; until
-      // then an empty set is the honest answer, not "the whole drive".
-      walkedGround.set(ROOT_VOLUME_ID, res.data.coveredInPhases ? walkedBranches([]) : wholeVolumeWalked())
+      // Same recovery for the ground and the step family: the response carries
+      // exactly what the branch events would have said, so a reloaded window
+      // rebuilds the map rather than inferring it from the kind of run.
+      walkedGround.set(ROOT_VOLUME_ID, res.data.walkedRoots)
+      coveredInPhases.set(ROOT_VOLUME_ID, res.data.coveredInPhases)
     }
   } catch {
     // Indexing not initialized or unavailable: no-op
@@ -515,4 +528,5 @@ export function destroyIndexState(): void {
   phase.clear()
   scanRunKind.clear()
   walkedGround.clear()
+  coveredInPhases.clear()
 }
