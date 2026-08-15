@@ -20,8 +20,8 @@ the same idea from the other direction: it now sits in `sink.rs` beside the `Ind
 The index subsystems say what happened; the app decides what a human sees. A subsystem builds an `IndexEvent` and hands
 it to an injected `EventSink`. Nothing here names a wire format, an event name, or a sentence.
 
-`IndexEvent` has 23 variants. Twenty become frontend events (`ScanStarted`, `CoverageBranchStarted`,
-`CoverageBranchEnded`, the three `*CoverageStarted` phase variants, `ScanProgress`, `ScanComplete`, `ScanAborted`,
+`IndexEvent` has 21 variants. Eighteen become frontend events (`ScanStarted`, `CoverageBranchStarted`,
+`CoverageBranchEnded`, `CoveragePhaseStarted`, `ScanProgress`, `ScanComplete`, `ScanAborted`,
 `DirsUpdated`, `ReplayProgress`, `ReplayComplete`, `RescanScheduled`, `AggregationProgress`, `AggregationComplete`,
 `MemoryWarning`, `FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`, `MediaEnrichTerminal`). Three reach the
 host's own machinery instead:
@@ -39,24 +39,21 @@ host's own machinery instead:
   (`lifecycle/phases/completion.rs`). The app routes it `Destination::AnalyticsOnly` and nothing renders it, since what
   a user sees is the size that appears, not the marker.
 
-**The three `*CoverageStarted` variants ARE the phase contract**, and the discriminant lives in the VARIANT rather than
-in a `phase` field on one of them. That is a deliberate trade with a price attached: a payload enum would be a new
-public item against a surface `index-crate-isolation` caps with no headroom, and raising that cap needs David's say-so,
-while a variant costs nothing (the counter reads module-level `pub` declarations). ❌ Don't "tidy" them into one variant
-carrying an enum without knowing that. The order they describe lives here and nowhere else, so a host never has to hold
-a second idea of which folders come first — or of `IndexPathSpace`, where an app-side home path can disagree about
-firmlinks and mislabel on somebody else's machine.
+**`CoveragePhaseStarted` carries a typed `CoveragePhase`**, one of the crate's own public values (`payload.rs`), and
+that enum's declaration order IS the schedule the phase queue runs. The order lives there and nowhere else, so a host
+never has to hold a second idea of which folders come first — or of `IndexPathSpace`, where an app-side home path can
+disagree about firmlinks and mislabel on somebody else's machine. `VisitedRoot` is one of the four: a folder the user
+opened mid-run is a phase like any other, ranked, queued, and run, so the crate reports it as itself and the host
+decides whether to word it apart (today it doesn't).
 
-`Rank::VisitedRoot` rides `PriorityCoverageStarted`: a folder the user opened mid-run answers the same question the
-host's own list answers, and nothing renders it differently. ❌ Don't mint a fourth variant for a label nobody shows.
+**The event names the PHASE root; the branch pair names the frontier roots one level down.** The two are not
+interchangeable: a host reading the phase off the branch events couldn't tell `~/Library` (the home phase) from
+`~/Downloads` (a priority root), and the branch events are debounced besides, so the answer would lag a phase boundary
+or skip it.
 
-**They name the PHASE root; the branch pair names the frontier roots one level down.** The two are not interchangeable:
-a host reading the phase off the branch events couldn't tell `~/Library` (the home phase) from `~/Downloads` (a priority
-root), and the branch events are debounced besides, so the answer would lag a phase boundary or skip it.
-
-App-side the three fold back into ONE frontend event (`index-coverage-phase-started`) whose `label` discriminates, so
-the frontend takes one listener and one piece of state. That fold is the single documented exception to the
-one-name-per-event rule, and `index_mapping/tests.rs` pins both halves of it.
+**It fires on TRANSITIONS, so it can't be the only door.** A host that joined mid-run reads the running phase off
+`IndexStatusResponse::coverage_phase`, which answers the same question for a window that reloaded inside a phase — on
+the whole-volume phase, the next boundary is the end of the run.
 
 **The coverage-branch pair brackets one walk over one branch, and every kind of run emits it.** A phase names the
 frontier root it is covering; a walk that takes the volume whole names the volume root (`announce_whole_volume_walk`).

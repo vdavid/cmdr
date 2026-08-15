@@ -125,9 +125,20 @@ var surfaceGuardedCrates = []struct {
 		//     `forget_volume`, reaching those same unregistered databases.
 		//
 		// The concept is closed: measuring and clearing is all of it.
+		//
+		// Raised again on 2026-08-15, with David's say-so, for ONE item:
+		// `CoveragePhase`, which phase of a drive's first index is running.
+		// `RootPromises` 50 -> 51. The index owns the order and the path space that
+		// classifies a root into it, so a host re-deriving the phase from that root
+		// would need its own idea of firmlinks: right on one machine, wrong on the
+		// next. It rides one event variant and the status response, which is what lets
+		// a window that reloaded mid-index name the running phase instead of waiting
+		// out the next boundary. Nothing else is owed to the concept: what each phase
+		// is CALLED is the host's, and a second type here needs the same argument this
+		// one got.
 		HandleType: "Index",
 		Ceilings: surfaceCeilings{
-			RootPromises:   50,
+			RootPromises:   51,
 			HandleMethods:  40,
 			PublicModules:  17,
 			SubsystemItems: 156,

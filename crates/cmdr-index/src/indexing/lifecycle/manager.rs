@@ -632,6 +632,14 @@ impl IndexManager {
             scanning,
             covered_in_phases: self.phases_have_work(),
             walked_roots,
+            // Same question again, for the header rather than the hourglass:
+            // which phase is running. Read only while the machine has work, so a
+            // finished run reports nothing rather than the phase it ended on.
+            coverage_phase: self
+                .phases
+                .as_ref()
+                .filter(|phases| phases.has_work())
+                .and_then(|phases| phases.coverage_phase()),
             entries_scanned: counters.entries_scanned,
             dirs_found: counters.dirs_found,
             bytes_scanned: counters.bytes_scanned,

@@ -252,37 +252,32 @@ states, so neither supersedes the other), are canonical in `../DETAILS.md` § "E
 
 ## Saying which phase is running
 
-The order is the whole feature, so it has to reach the status surface. `Machine::phase_started_event` emits one of three
-typed variants per phase — `PriorityCoverageStarted`, `HomeCoverageStarted`, `WholeVolumeCoverageStarted` — each naming
-the phase root.
+The order is the whole feature, so it has to reach the status surface. `Machine::announce_the_phase` emits
+`CoveragePhaseStarted` carrying a typed `CoveragePhase` (the crate's own public value, `events/payload.rs`) plus the
+phase root, and writes the same value where `get_status` reads it.
 
-**The variants ARE the contract, and that shape was chosen with a price in front of it.** The obvious design is one
-variant carrying a `phase` enum; that enum would be a new public item against a surface `index-crate-isolation` caps
-with no headroom (`SubsystemItems`, 156, measured), and raising a ceiling needs David's explicit say-so. The counter
-reads module-level `pub` declarations, so a VARIANT costs nothing and a payload enum costs one. ❌ Don't "tidy" these
-into one variant carrying an enum without knowing that, and ❌ don't push the classification host-side either: an
-app-side home path can disagree with `IndexPathSpace` about firmlinks, which works on one machine and mislabels on
-another.
+**Two doors, because one of them is transition-only.** The EVENT is what a live frontend follows. The STATUS response
+(`IndexStatusResponse::coverage_phase`) is what a window that reloaded mid-run reads, alongside `walked_roots` and
+`scan_run_kind`, which recover the same way: the last phase of a first index is the rest of the drive, so a joiner with
+only the event would sit with no header until the run ended. It reports `None` once the machine has no work left, ❌
+never the phase it finished on. Anchored by `tests::a_window_joining_mid_run_reads_the_running_phase_off_the_status`.
 
-`Rank::VisitedRoot` rides the priority variant. A folder the user opened mid-run answers the same question the host's
-own list answers, less well, and nothing renders it differently — ❌ so no fourth variant for a label nobody shows.
+❌ **The phase is not the host's to derive.** An app-side home path can disagree with `IndexPathSpace` about firmlinks,
+which works on one machine and mislabels on another, so the crate classifies and the host only chooses words. ❌ Nor can
+it be read off `CoverageBranchStarted`: those name frontier roots one level BELOW the phase root, so `~/Library` and
+`~/Downloads` are indistinguishable, and they are debounced, so a boundary would lag or be skipped.
 
-**A phase announces itself again when an interlude ends, ❌ not only when it starts.** A visited root IS a phase: it is
-ranked, queued, and run through `run_phase`, so it emits its own variant. Without a re-announcement on the way back the
-header names that folder for the rest of the outer phase — observed sitting on "Indexing the folders you use most" for
-two minutes while the machine walked `/`. `walk_all` therefore re-announces whenever `take_a_visit` reports it actually
-ran one. ⚠️ The re-announcement is the COVERAGE event alone, ❌ never `set_phase_for` as well: the activity phase is
-`Scanning` throughout, so a second `PhaseChanged` would carry no news and would inflate the app-wide debug timeline.
-Anchored by `tests::the_outer_phase_says_so_again_after_a_visited_root_interrupts_it`.
+`CoveragePhase::VisitedRoot` is a phase of its own rather than a flavour of the priority phase: it is ranked, queued,
+and run through `run_phase` like any other. Nothing renders it apart today (the frontend maps it to the priority-folders
+header, `apps/desktop/src/lib/indexing/indexing-steps.ts`), which is a wording decision the host can revisit without the
+crate changing.
 
-⚠️ **A host that joins late has no phase at all until the next boundary**, because the event is transition-only and
-`VolumeIndexStatus` carries no phase (a payload for it would cost a public item against a capped surface). The checklist
-falls back to its run-kind label there, which is the intended degradation.
-
-❌ The phase can't be read off `CoverageBranchStarted`: those name frontier roots one level BELOW the phase root, so
-`~/Library` and `~/Downloads` are indistinguishable, and they are debounced, so a boundary would lag or be skipped.
-App-side the three fold back into one frontend event whose `label` discriminates
-(`apps/desktop/src-tauri/src/events/CLAUDE.md`).
+**A phase announces itself again when an interlude ends, ❌ not only when it starts.** Without a re-announcement on the
+way back the header names that folder for the rest of the outer phase — observed sitting on "Indexing the folders you
+use most" for two minutes while the machine walked `/`. `walk_all` therefore re-announces whenever `take_a_visit`
+reports it actually ran one. ⚠️ The re-announcement is the COVERAGE event alone, ❌ never `set_phase_for` as well: the
+activity phase is `Scanning` throughout, so a second `PhaseChanged` would carry no news and would inflate the app-wide
+debug timeline. Anchored by `tests::the_outer_phase_says_so_again_after_a_visited_root_interrupts_it`.
 
 ## Stop and Forget, against a half-covered drive
 

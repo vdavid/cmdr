@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 import { mount, flushSync } from 'svelte'
 import IndexingStatusBody from './IndexingStatusBody.svelte'
 import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
-import type { ActivityPhase, CoveragePhaseLabel, ScanRunKind } from '$lib/ipc/bindings'
+import type { ActivityPhase, CoveragePhase, ScanRunKind } from '$lib/ipc/bindings'
 
 function scanActivity(overrides: Partial<VolumeIndexActivity> = {}): VolumeIndexActivity {
   return {
@@ -52,7 +52,7 @@ function render(props: {
   phase?: ActivityPhase | undefined
   isNetwork?: boolean
   coveredInPhases?: boolean
-  coveragePhase?: CoveragePhaseLabel
+  coveragePhase?: CoveragePhase
   scanRunKind?: ScanRunKind
 }) {
   const target = document.createElement('div')
@@ -187,7 +187,7 @@ describe('IndexingStatusBody checklist', () => {
 
 describe('IndexingStatusBody header during a first index covered in phases', () => {
   /** A phased run, with the backend's own `first_scan` kind on it. */
-  function phased(coveragePhase?: CoveragePhaseLabel) {
+  function phased(coveragePhase?: CoveragePhase) {
     return render({
       activity: scanActivity({ priorTotalEntries: null }),
       phase: 'scanning',
@@ -198,9 +198,10 @@ describe('IndexingStatusBody header during a first index covered in phases', () 
   }
 
   it('says which phase is running, so the ORDER is what the user reads', () => {
-    expect(header(phased('priorityFolders'))).toBe('Indexing the folders you use most')
+    expect(header(phased('priorityRoot'))).toBe('Indexing the folders you use most')
+    expect(header(phased('visitedRoot'))).toBe('Indexing the folders you use most')
     expect(header(phased('home'))).toBe('Indexing the rest of your home folder')
-    expect(header(phased('wholeDrive'))).toBe('Indexing the rest of the drive')
+    expect(header(phased('wholeVolume'))).toBe('Indexing the rest of the drive')
   })
 
   it('falls back to the run-kind header before any phase has been announced', () => {

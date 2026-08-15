@@ -188,17 +188,20 @@ full scan" / "Full rescan" / "Checking for changes" / "Quick update" (`indexing.
 header, otherwise the backend's `ScanRunKind` maps 1:1, and an unknown kind (mid-scan reload) renders NO header rather
 than a guessed one.
 
-**A phased run's header is the PHASE, when one has been announced.** `index-coverage-phase-started` carries a
-`CoveragePhaseLabel` the backend supplies: the crate emits one of three typed `*CoverageStarted` variants and
-`apps/desktop/src-tauri/src/events/index_mapping.rs` maps each to its label, so nothing on this side re-derives which
-phase is running. It's stored per volume by `getVolumeCoveragePhase` and preferred by the body's header. The order IS
-the feature, so what someone watching a first index reads is "Indexing the folders you use most" → "the rest of your
-home folder" → "the rest of the drive". ❌ Never both headers at once: they answer the same question at two zoom levels,
-and stacking them reads as two runs. ❌ And never "Indexing your folders" → "your home folder", which is a subset
-followed by its superset and reads as the scope narrowing.
+**A phased run's header is the PHASE, when one has been announced.** `index-coverage-phase-started` carries the typed
+`CoveragePhase` the backend classified (the crate owns the order and the path space behind it), so ❌ nothing on this
+side re-derives which phase is running. It's stored per volume by `getVolumeCoveragePhase` and preferred by the body's
+header; `coveragePhaseToLabelKey` (`indexing-steps.ts`) is the ONLY place a phase becomes words, and it maps the two
+priority-ish phases (`priorityRoot`, `visitedRoot`) to one header, because a folder someone opened mid-run doesn't need
+a wording of its own. The order IS the feature, so what someone watching a first index reads is "Indexing the folders
+you use most" → "the rest of your home folder" → "the rest of the drive". ❌ Never both headers at once: they answer the
+same question at two zoom levels, and stacking them reads as two runs. ❌ And never "Indexing your folders" → "your home
+folder", which is a subset followed by its superset and reads as the scope narrowing.
 
-The label is `undefined` before the first phase event and after a mid-run reload, which is exactly what the run-kind
-fallback below is for.
+A window that reloads mid-run refills the phase from `get_index_status`'s `coveragePhase` (root volume; the same
+backfill that recovers `walkedRoots` and `scanRunKind`), so a reload inside the whole-drive phase renders its header
+straight away rather than waiting out the run. It stays `undefined` when no phase has been reached yet, which is what
+the run-kind fallback below is for.
 
 ⚠️ **The phased arm comes before the `ScanRunKind` map, and has to.** A phased run IS `first_scan` by the backend's own
 answer, so without its own arm the header reads "First full scan" over the one run that never makes a full pass — and it

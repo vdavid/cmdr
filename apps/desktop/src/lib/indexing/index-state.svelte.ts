@@ -19,7 +19,7 @@
  */
 
 import { SvelteMap } from 'svelte/reactivity'
-import type { ActivityPhase, CoveragePhaseLabel } from '$lib/ipc/bindings'
+import type { ActivityPhase, CoveragePhase } from '$lib/ipc/bindings'
 import {
   getIndexStatus,
   onIndexAggregationComplete,
@@ -191,10 +191,10 @@ const coveredInPhases = new SvelteMap<string, boolean>()
 
 // Per-volume: which phase of a first index is running, as the BACKEND classified
 // it. One write per phase (three or four a run), so unlike the walked ground
-// there is nothing here to be careful about on a tick. `undefined` before the
-// first phase event and after a mid-run reload, which is why the checklist keeps
-// its own header fallback rather than rendering nothing.
-const coveragePhase = new SvelteMap<string, CoveragePhaseLabel>()
+// there is nothing here to be careful about on a tick. A window that reloaded
+// mid-run refills it from the status response, so `undefined` means only that no
+// phase has been reached yet; the checklist's own header fallback covers that.
+const coveragePhase = new SvelteMap<string, CoveragePhase>()
 
 // Monotonic counter bumped by every scan/replay event. Prevents the
 // `get_index_status` IPC response (which can arrive late) from overwriting state
@@ -307,10 +307,11 @@ export function isVolumeCoveredInPhases(volumeId: string): boolean {
 }
 
 /** Which phase of this volume's first index is running, or `undefined` when
- *  nothing has said yet (before the first phase event, or after a mid-run
- *  reload). Reactive. The checklist's header prefers it and falls back to its
- *  own run-kind label, so a missing answer costs detail, never a blank. */
-export function getVolumeCoveragePhase(volumeId: string): CoveragePhaseLabel | undefined {
+ *  nothing has said yet (no phase reached, or a non-root volume whose reload
+ *  backfill hasn't happened). Reactive. The checklist's header prefers it and
+ *  falls back to its own run-kind label, so a missing answer costs detail,
+ *  never a blank. */
+export function getVolumeCoveragePhase(volumeId: string): CoveragePhase | undefined {
   return coveragePhase.get(volumeId)
 }
 
@@ -409,7 +410,7 @@ export async function initIndexState(): Promise<void> {
   unlistenHandles.push(unlistenAborted)
 
   const unlistenCoveragePhase = await onIndexCoveragePhaseStarted((payload) => {
-    coveragePhase.set(payload.volumeId, payload.label)
+    coveragePhase.set(payload.volumeId, payload.phase)
   })
   unlistenHandles.push(unlistenCoveragePhase)
 
@@ -544,6 +545,10 @@ export async function initIndexState(): Promise<void> {
       // rebuilds the map rather than inferring it from the kind of run.
       walkedGround.set(ROOT_VOLUME_ID, res.data.walkedRoots)
       coveredInPhases.set(ROOT_VOLUME_ID, res.data.coveredInPhases)
+      // And the header with them: the phase event is transition-only, and the
+      // last phase of a first index is the rest of the drive, so a window that
+      // reloaded inside it would otherwise wait out the whole run for a label.
+      if (res.data.coveragePhase != null) coveragePhase.set(ROOT_VOLUME_ID, res.data.coveragePhase)
     }
   } catch {
     // Indexing not initialized or unavailable: no-op

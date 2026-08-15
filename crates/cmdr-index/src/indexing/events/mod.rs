@@ -23,7 +23,7 @@ use super::store::{IndexFailure, IndexStatus};
 pub(crate) mod payload;
 pub(crate) mod sink;
 
-pub use payload::{ActivityPhase, MemoryWatchdogAction, RescanReason, ScanRunKind};
+pub use payload::{ActivityPhase, CoveragePhase, MemoryWatchdogAction, RescanReason, ScanRunKind};
 
 #[cfg(any(test, feature = "testing"))]
 pub use sink::RecordingSink;
@@ -74,6 +74,13 @@ pub struct IndexStatusResponse {
     /// rebuilds exactly what the coverage-branch events would have told it,
     /// rather than inferring it from the kind of run and getting the whole drive.
     pub walked_roots: Vec<String>,
+    /// Which phase of a first index is running, for the same reason as the two
+    /// fields above: [`IndexEvent::CoveragePhaseStarted`] fires on TRANSITIONS,
+    /// so a host that joined mid-run (a window reload) would otherwise have no
+    /// phase to name until the next boundary, which on a whole-volume phase is
+    /// the rest of the run. `None` for a run that walks the volume whole, and
+    /// between the machine's phases.
+    pub coverage_phase: Option<CoveragePhase>,
     /// Files and directories the current walk has recorded so far.
     pub entries_scanned: u64,
     /// Directories among them, the tier-1 progress numerator.

@@ -295,6 +295,23 @@ impl Drive {
             .frontier
     }
 
+    /// The phases this drive announced, in order. The order IS the feature, so
+    /// most phase tests assert on this sequence rather than on event kinds.
+    fn announced_phases(&self) -> Vec<crate::indexing::events::CoveragePhase> {
+        self.events
+            .events()
+            .into_iter()
+            .filter_map(|event| match event {
+                crate::indexing::events::IndexEvent::CoveragePhaseStarted { volume_id, phase, .. }
+                    if volume_id == self.volume_id =>
+                {
+                    Some(phase)
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
     fn meta(&self, key: &str) -> Option<String> {
         let conn = IndexStore::open_read_connection(&self.db_path()).ok()?;
         IndexStore::get_meta(&conn, key).ok().flatten()
@@ -792,7 +809,7 @@ fn nothing_aggregates_after_the_volume_says_aggregation_is_done() {
 /// the machine is actually walking the whole drive.
 #[test]
 fn the_outer_phase_says_so_again_after_a_visited_root_interrupts_it() {
-    use crate::indexing::events::IndexEventKind;
+    use crate::indexing::events::CoveragePhase;
 
     let drive = Drive::with_host(
         "phased-phase-reasserts",
@@ -810,28 +827,16 @@ fn the_outer_phase_says_so_again_after_a_visited_root_interrupts_it() {
     drive.start();
     drive.wait_for_the_machine();
 
-    let announced: Vec<IndexEventKind> = drive
-        .events
-        .kinds_for(drive.volume_id)
-        .into_iter()
-        .filter(|kind| {
-            matches!(
-                kind,
-                IndexEventKind::PriorityCoverageStarted
-                    | IndexEventKind::HomeCoverageStarted
-                    | IndexEventKind::WholeVolumeCoverageStarted
-            )
-        })
-        .collect();
+    let announced = drive.announced_phases();
 
     assert!(
-        announced.contains(&IndexEventKind::PriorityCoverageStarted),
+        announced.contains(&CoveragePhase::VisitedRoot),
         "the folder the user is looking at really did earn a phase of its own, \
          or there is no interlude here to re-assert after ({announced:?})"
     );
     assert_eq!(
         announced.last(),
-        Some(&IndexEventKind::WholeVolumeCoverageStarted),
+        Some(&CoveragePhase::WholeVolume),
         "and the last thing announced is what the machine is actually walking ({announced:?})"
     );
 }
@@ -1417,6 +1422,115 @@ fn the_progress_pump_outlives_the_walks_it_reports_on() {
 /// ticks fit, so a machine-lifetime pump lands at least two of them here however
 /// the sleeps happen to line up.
 const THE_GAP: std::time::Duration = std::time::Duration::from_millis(1_500);
+
+/// A window that reloads mid-index joins a run already in progress, and the phase
+/// event is transition-only: on the whole-volume phase the next one is the end of
+/// the run, so a status response that can't name the running phase leaves that
+/// window with no header for minutes.
+///
+/// Asked from INSIDE the announcement, which is the only moment the answer is
+/// known to be checkable: the machine emits synchronously on its own thread, so
+/// while `emit` runs the phase it just announced is the phase it is on.
+#[test]
+fn a_window_joining_mid_run_reads_the_running_phase_off_the_status() {
+    let recorder = std::sync::Arc::new(crate::indexing::events::RecordingSink::new());
+    let asker = std::sync::Arc::new(AsksTheStatusOnEveryPhase::new(
+        "phased-status-phase",
+        std::sync::Arc::clone(&recorder),
+    ));
+    let drive = Drive::assembled(
+        "phased-status-phase",
+        |root| {
+            for name in ["a", "b"] {
+                std::fs::create_dir_all(root.join(name).join("inner")).expect("dirs");
+            }
+        },
+        |_, _| {},
+        &["a"],
+        true,
+        std::sync::Arc::clone(&asker) as std::sync::Arc<dyn crate::indexing::events::EventSink>,
+        recorder,
+    );
+
+    drive.start();
+    drive.wait_for_the_machine();
+
+    let answers = asker.answers();
+    assert!(
+        answers.len() >= 2,
+        "precondition: this drive runs several phases, or the check below proves little ({answers:?})"
+    );
+    for (announced, from_status) in &answers {
+        assert_eq!(
+            from_status.as_ref(),
+            Some(announced),
+            "a window joining here would render the wrong phase, or none at all ({answers:?})"
+        );
+    }
+    assert_eq!(
+        drive
+            .index
+            .status(drive.volume_id)
+            .expect("the volume answers for its own status")
+            .coverage_phase,
+        None,
+        "and a machine with no work left reports no phase rather than the one it ended on"
+    );
+}
+
+/// Asks the status response which phase is running, from inside each phase
+/// announcement, and keeps both answers side by side.
+struct AsksTheStatusOnEveryPhase {
+    volume_id: &'static str,
+    recorder: std::sync::Arc<crate::indexing::events::RecordingSink>,
+    answers: std::sync::Mutex<
+        Vec<(
+            crate::indexing::events::CoveragePhase,
+            Option<crate::indexing::events::CoveragePhase>,
+        )>,
+    >,
+}
+
+impl AsksTheStatusOnEveryPhase {
+    fn new(volume_id: &'static str, recorder: std::sync::Arc<crate::indexing::events::RecordingSink>) -> Self {
+        Self {
+            volume_id,
+            recorder,
+            answers: std::sync::Mutex::new(Vec::new()),
+        }
+    }
+
+    fn answers(
+        &self,
+    ) -> Vec<(
+        crate::indexing::events::CoveragePhase,
+        Option<crate::indexing::events::CoveragePhase>,
+    )> {
+        use cmdr_fs::ignore_poison::IgnorePoison;
+        self.answers.lock_ignore_poison().clone()
+    }
+}
+
+impl crate::indexing::events::EventSink for AsksTheStatusOnEveryPhase {
+    fn emit(&self, event: crate::indexing::events::IndexEvent) {
+        use cmdr_fs::ignore_poison::IgnorePoison;
+        let announced = match &event {
+            crate::indexing::events::IndexEvent::CoveragePhaseStarted { volume_id, phase, .. }
+                if volume_id == self.volume_id =>
+            {
+                Some(*phase)
+            }
+            _ => None,
+        };
+        self.recorder.emit(event);
+        if let Some(announced) = announced {
+            let from_status = crate::indexing::read::queries::get_status(self.volume_id)
+                .ok()
+                .and_then(|status| status.coverage_phase);
+            self.answers.lock_ignore_poison().push((announced, from_status));
+        }
+    }
+}
 
 /// Holds the machine still in the gap after its FIRST walk, and counts what
 /// arrives while it waits.

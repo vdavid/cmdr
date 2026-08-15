@@ -23,7 +23,7 @@ import type {
   IndexScanCompleteEvent,
   IndexScanProgressEvent,
   IndexScanStartedEvent,
-  CoveragePhaseLabel,
+  CoveragePhase,
   ScanRunKind,
 } from '$lib/ipc/bindings'
 
@@ -42,8 +42,15 @@ let coveragePhaseCb: ((p: IndexCoveragePhaseStartedEvent) => void) | undefined
 
 const noopUnlisten = () => {}
 
+// `initIndexState` asks `getIndexStatus()` for the root backfill, which is how a
+// reloaded window catches up on a run already in progress. Defaults to "not
+// scanning" (a no-op backfill); a test that IS a reload sets its own answer
+// before `initIndexState`.
+const backfill = vi.hoisted(() => ({ status: { scanning: false } }))
+
 // Mock the typed event wrappers: capture the ones the tests drive, no-op the rest.
 vi.mock('$lib/tauri-commands', () => ({
+  getIndexStatus: () => Promise.resolve({ status: 'ok', data: backfill.status }),
   onIndexScanStarted: (cb: (p: IndexScanStartedEvent) => void) => {
     scanStartedCb = cb
     return Promise.resolve(noopUnlisten)
@@ -92,11 +99,9 @@ vi.mock('$lib/tauri-commands', () => ({
   onIndexReplayComplete: () => Promise.resolve(noopUnlisten),
 }))
 
-// `initIndexState` calls `commands.getIndexStatus()` for the root backfill.
-// Return "not scanning" so the backfill is a no-op.
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    getIndexStatus: () => Promise.resolve({ status: 'ok', data: { scanning: false } }),
+    getIndexStatus: () => Promise.resolve({ status: 'ok', data: backfill.status }),
   },
 }))
 
@@ -594,38 +599,83 @@ describe('which phase of a first index is running', () => {
     await initIndexState()
   })
 
-  function emitPhase(volumeId: string, label: CoveragePhaseLabel): void {
+  function emitPhase(volumeId: string, phase: CoveragePhase): void {
     if (!coveragePhaseCb) throw new Error('coverage-phase-started callback not registered')
-    coveragePhaseCb({ volumeId, label })
+    coveragePhaseCb({ volumeId, phase })
   }
 
   it('has no answer until the backend gives one, so the header can fall back', () => {
     expect(getVolumeCoveragePhase('root')).toBeUndefined()
   })
 
-  it('carries the backend label through, and moves on with the run', () => {
-    emitPhase('root', 'priorityFolders')
-    expect(getVolumeCoveragePhase('root')).toBe('priorityFolders')
+  it('carries the backend phase through, and moves on with the run', () => {
+    emitPhase('root', 'priorityRoot')
+    expect(getVolumeCoveragePhase('root')).toBe('priorityRoot')
 
     emitPhase('root', 'home')
     expect(getVolumeCoveragePhase('root')).toBe('home')
 
-    emitPhase('root', 'wholeDrive')
-    expect(getVolumeCoveragePhase('root')).toBe('wholeDrive')
+    emitPhase('root', 'wholeVolume')
+    expect(getVolumeCoveragePhase('root')).toBe('wholeVolume')
   })
 
   it('is per volume, like every other index fact', () => {
     emitPhase('root', 'home')
-    emitPhase('smb-nas', 'wholeDrive')
+    emitPhase('smb-nas', 'wholeVolume')
 
     expect(getVolumeCoveragePhase('root')).toBe('home')
-    expect(getVolumeCoveragePhase('smb-nas')).toBe('wholeDrive')
+    expect(getVolumeCoveragePhase('smb-nas')).toBe('wholeVolume')
   })
 
   it('expires with the run, so a finished drive keeps no stale header', () => {
     emitPhase('root', 'home')
     if (!phaseCb) throw new Error('phase-changed callback not registered')
     phaseCb({ volumeId: 'root', phase: 'live' })
+
+    expect(getVolumeCoveragePhase('root')).toBeUndefined()
+  })
+})
+
+/**
+ * A window that reloads mid-index misses every event that already fired, and the
+ * phase event is transition-only. The whole-drive phase is minutes long, so
+ * without the status response the header would sit blank for the rest of the run.
+ */
+describe('which phase is running, for a window that joined mid-run', () => {
+  beforeEach(() => {
+    destroyIndexState()
+    backfill.status = { scanning: false }
+  })
+
+  it('renders the running phase straight away, with the rest of the run shape', async () => {
+    backfill.status = {
+      scanning: true,
+      coveredInPhases: true,
+      walkedRoots: ['/Users/someone/Downloads'],
+      coveragePhase: 'priorityRoot',
+      entriesScanned: 1_000,
+      dirsFound: 100,
+      bytesScanned: 2_000,
+      scanRunKind: 'first_scan',
+    }
+    await initIndexState()
+
+    expect(getVolumeCoveragePhase('root')).toBe('priorityRoot')
+    expect(isVolumeCoveredInPhases('root')).toBe(true)
+  })
+
+  it('leaves the header to its run-kind fallback when no phase has been reached yet', async () => {
+    backfill.status = {
+      scanning: true,
+      coveredInPhases: true,
+      walkedRoots: [],
+      coveragePhase: null,
+      entriesScanned: 0,
+      dirsFound: 0,
+      bytesScanned: 0,
+      scanRunKind: 'first_scan',
+    }
+    await initIndexState()
 
     expect(getVolumeCoveragePhase('root')).toBeUndefined()
   })
@@ -661,7 +711,7 @@ describe('index-state after the walk ends but before the run does', () => {
       volumeUsedBytes: null,
       coveredInPhases: true,
     })
-    coveragePhaseCb({ volumeId: 'root', label: 'wholeDrive' })
+    coveragePhaseCb({ volumeId: 'root', phase: 'wholeVolume' })
   }
 
   function finishTheWalk(): void {
@@ -677,7 +727,7 @@ describe('index-state after the walk ends but before the run does', () => {
     // four-step shape and the header read "First full scan" — the one thing the
     // phased run's own header exists to prevent.
     expect(isVolumeCoveredInPhases('root')).toBe(true)
-    expect(getVolumeCoveragePhase('root')).toBe('wholeDrive')
+    expect(getVolumeCoveragePhase('root')).toBe('wholeVolume')
     expect(getVolumeScanRunKind('root')).toBe('first_scan')
   })
 

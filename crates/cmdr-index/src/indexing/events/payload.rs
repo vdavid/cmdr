@@ -63,6 +63,38 @@ impl ScanRunKind {
     }
 }
 
+/// Which phase of a drive's first index is running: what the machine covers
+/// next, in the order its owner cares about.
+///
+/// Ordered best-first, which is what `#[derive(Ord)]` gives from the declaration
+/// order, and that order IS the schedule the phase queue runs
+/// (`../lifecycle/phases/queue.rs`). It's described here and nowhere else: a host
+/// re-deriving it from the phase root would have to hold its own idea of
+/// `IndexPathSpace`, firmlinks included, which works on one machine and mislabels
+/// on another.
+///
+/// ⚠️ A phase is announced when it starts AND again when a visited-root interlude
+/// hands it back, so the same value can arrive twice in a row. What a host CALLS
+/// each phase is the host's own decision; this crate produces no user-facing
+/// words.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum CoveragePhase {
+    /// A folder the host said this user cares about, through
+    /// `HostPolicy::priority_roots`. The best signal there is (last session's
+    /// tabs, their favorites, the folders they keep things in), so nothing
+    /// displaces it.
+    PriorityRoot,
+    /// A folder the user opened while the machine was running. The same question
+    /// the host's own list answers, answered less well, so it outranks everything
+    /// below and nothing above.
+    VisitedRoot,
+    /// The rest of `$HOME`, after the folders above it.
+    Home,
+    /// The rest of the drive, which is the last phase.
+    WholeVolume,
+}
+
 /// Why a full rescan was triggered instead of incremental replay.
 /// Sent to the frontend as `index-rescan-notification` so the UI can show
 /// a transparent, user-friendly toast.

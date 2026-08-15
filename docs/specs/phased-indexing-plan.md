@@ -567,11 +567,11 @@ writing: **a Playwright E2E over a first run with `CMDR_MOCK_FDA`**.
 - **M4** — ✅ **built**: events, status, and the hourglass UI.
 - **M5** — ✅ **built**: surfaces, copy, analytics. Two things the plan didn't have. The phase label needed a signal of
   its own: the coverage-branch events name frontier roots one level BELOW the phase root, so `~/Library` and
-  `~/Downloads` are indistinguishable from outside, and they are debounced besides. And that signal is THREE typed
-  variants (`PriorityCoverageStarted` / `HomeCoverageStarted` / `WholeVolumeCoverageStarted`) rather than one carrying a
-  phase enum: the enum would have been a new public item against a surface capped with no headroom, and a variant costs
-  nothing. The interruption rate is a RATIO of started to completed rather than a terminal event, since a run that ends
-  with the process has no moment left to report in.
+  `~/Downloads` are indistinguishable from outside, and they are debounced besides. That signal is `CoveragePhaseStarted`
+  carrying a public `CoveragePhase`, which also rides the status response so a window reloading mid-index names the
+  running phase instead of waiting out the next boundary (the enum cost the one surface item David granted for it). The
+  interruption rate is a RATIO of started to completed rather than a terminal event, since a run that ends with the
+  process has no moment left to report in.
 - **M6** — follow-ups.
 
 M0 and M1 touch nothing M2 depends on. Everything after M2 is strictly sequential. **M4's unit tests stand alone, but

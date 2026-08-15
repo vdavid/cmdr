@@ -4175,25 +4175,39 @@ export type CoverageKind =
   | 'mixed'
 
 /**
- *  Which phase of a drive's first index is running, in the terms its owner would
- *  recognize. One label per rendered header.
+ *  Which phase of a drive's first index is running: what the machine covers
+ *  next, in the order its owner cares about.
  *
- *  It lives HERE rather than with the subsystem, and it is the one value on a
- *  payload that does: the crate's three `*CoverageStarted` variants already carry
- *  the discriminant, and what a header CALLS each one is a presentation decision,
- *  which by this module's own rule stays app-side. It also keeps the crate's
- *  capped public surface out of it (`index-crate-isolation`).
+ *  Ordered best-first, which is what `#[derive(Ord)]` gives from the declaration
+ *  order, and that order IS the schedule the phase queue runs
+ *  (`../lifecycle/phases/queue.rs`). It's described here and nowhere else: a host
+ *  re-deriving it from the phase root would have to hold its own idea of
+ *  `IndexPathSpace`, firmlinks included, which works on one machine and mislabels
+ *  on another.
+ *
+ *  ⚠️ A phase is announced when it starts AND again when a visited-root interlude
+ *  hands it back, so the same value can arrive twice in a row. What a host CALLS
+ *  each phase is the host's own decision; this crate produces no user-facing
+ *  words.
  */
-export type CoveragePhaseLabel =
+export type CoveragePhase =
   /**
-   *  Folders this user cares about: ones the app named up front, and ones they
-   *  opened while the walk was running.
+   *  A folder the host said this user cares about, through
+   *  `HostPolicy::priority_roots`. The best signal there is (last session's
+   *  tabs, their favorites, the folders they keep things in), so nothing
+   *  displaces it.
    */
-  | 'priorityFolders'
-  // The rest of their home folder, after the folders above it.
+  | 'priorityRoot'
+  /**
+   *  A folder the user opened while the machine was running. The same question
+   *  the host's own list answers, answered less well, so it outranks everything
+   *  below and nothing above.
+   */
+  | 'visitedRoot'
+  // The rest of `$HOME`, after the folders above it.
   | 'home'
   // The rest of the drive, which is the last phase.
-  | 'wholeDrive'
+  | 'wholeVolume'
 
 /**
  *  The live preview behind the importance slider: across the ENABLED volumes in
@@ -5218,18 +5232,20 @@ export type IndexCoverageBranchStartedEvent = {
 /**
  *  A drive's first index moved on to its next phase.
  *
- *  The phases run in the order their owner cares about, so the label is what the
- *  status surface says a first index is doing right now: their own folders, then
- *  the rest of home, then the rest of the drive. ⚠️ The crate's three phase
- *  variants deliberately fold into this ONE wire event: the payload's `label`
- *  discriminates, so the frontend takes one listener and one piece of state
- *  rather than three of each.
+ *  The phases run in the order their owner cares about, so this is what the status
+ *  surface says a first index is doing right now: their own folders, then the rest
+ *  of home, then the rest of the drive. The crate classifies (it holds the path
+ *  space the classification needs); what a header CALLS each phase is the
+ *  frontend's message catalog.
  */
 export type IndexCoveragePhaseStartedEvent = {
   // The volume being covered.
   volumeId: string
-  // Which phase it is, in the terms its owner would recognize.
-  label: CoveragePhaseLabel
+  /**
+   *  Which phase it is. A window that joined mid-run reads the same value off
+   *  `get_index_status`, so both doors answer in one vocabulary.
+   */
+  phase: CoveragePhase
 }
 
 /**
@@ -5571,6 +5587,15 @@ export type IndexStatusResponse = {
    *  rather than inferring it from the kind of run and getting the whole drive.
    */
   walkedRoots: string[]
+  /**
+   *  Which phase of a first index is running, for the same reason as the two
+   *  fields above: [`IndexEvent::CoveragePhaseStarted`] fires on TRANSITIONS,
+   *  so a host that joined mid-run (a window reload) would otherwise have no
+   *  phase to name until the next boundary, which on a whole-volume phase is
+   *  the rest of the run. `None` for a run that walks the volume whole, and
+   *  between the machine's phases.
+   */
+  coveragePhase: CoveragePhase | null
   // Files and directories the current walk has recorded so far.
   entriesScanned: number
   // Directories among them, the tier-1 progress numerator.

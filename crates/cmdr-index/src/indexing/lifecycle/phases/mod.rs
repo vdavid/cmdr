@@ -54,7 +54,7 @@ use std::time::Instant;
 use tokio_util::sync::CancellationToken;
 
 use crate::indexing::IndexPathSpace;
-use crate::indexing::events::{ActivityPhase, EventSink, IndexEvent, ScanRunKind, set_phase_for};
+use crate::indexing::events::{ActivityPhase, CoveragePhase, EventSink, IndexEvent, ScanRunKind, set_phase_for};
 use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
 use crate::indexing::lifecycle::{cover, master};
@@ -76,7 +76,7 @@ pub(crate) use visits::VisitLog;
 mod tests;
 
 use grouping::Grouping;
-use queue::{Phase, PhaseQueue, Rank};
+use queue::{Phase, PhaseQueue};
 
 /// How many times a phase re-asks for its frontier after draining.
 ///
@@ -185,6 +185,11 @@ pub(crate) struct PhaseHandle {
     /// mid-run window reload reads. Empty between walks, which is the honest
     /// answer: nothing is moving.
     walked_roots: Arc<std::sync::Mutex<Vec<String>>>,
+    /// The phase the machine is on, for that same status response. ⚠️ Unlike the
+    /// ground above, it does NOT empty between walks: the phase a machine is part
+    /// way through is what is running, whether or not a walk is reading the disk
+    /// this millisecond.
+    coverage_phase: Arc<std::sync::Mutex<Option<CoveragePhase>>>,
     /// Where the visit poll writes what the user opened.
     visits: Arc<VisitLog>,
     /// Stops the driver, and (through `done`) the reporter with it.
@@ -215,6 +220,13 @@ impl PhaseHandle {
     pub(crate) fn walked_roots(&self) -> Vec<String> {
         use cmdr_fs::ignore_poison::IgnorePoison;
         self.walked_roots.lock_ignore_poison().clone()
+    }
+
+    /// Which phase the machine is on, for `get_status`. `None` before the first
+    /// one is announced.
+    pub(crate) fn coverage_phase(&self) -> Option<CoveragePhase> {
+        use cmdr_fs::ignore_poison::IgnorePoison;
+        *self.coverage_phase.lock_ignore_poison()
     }
 
     /// Stop the machine: the running walk sees the token, the driver stops
@@ -254,6 +266,7 @@ pub(crate) fn start(context: MachineContext) -> PhaseHandle {
         working: Arc::new(AtomicBool::new(true)),
         progress: Arc::new(ScanProgress::new()),
         walked_roots: Arc::new(std::sync::Mutex::new(Vec::new())),
+        coverage_phase: Arc::new(std::sync::Mutex::new(None)),
         visits: Arc::new(VisitLog::new()),
         cancel: context.cancel.clone(),
         done: Arc::new(AtomicBool::new(false)),
@@ -265,6 +278,7 @@ pub(crate) fn start(context: MachineContext) -> PhaseHandle {
         working: Arc::clone(&handle.working),
         progress: Arc::clone(&handle.progress),
         walked_roots: Arc::clone(&handle.walked_roots),
+        coverage_phase: Arc::clone(&handle.coverage_phase),
         visits: Arc::clone(&handle.visits),
         done: Arc::clone(&handle.done),
         cancel: context.cancel,
@@ -332,6 +346,7 @@ struct Machine {
     working: Arc<AtomicBool>,
     progress: Arc<ScanProgress>,
     walked_roots: Arc<std::sync::Mutex<Vec<String>>>,
+    coverage_phase: Arc<std::sync::Mutex<Option<CoveragePhase>>>,
     visits: Arc<VisitLog>,
     done: Arc<AtomicBool>,
     cancel: CancellationToken,
@@ -375,12 +390,12 @@ impl Machine {
     fn initial_queue(&self) -> PhaseQueue {
         let mut queue = PhaseQueue::new();
         for root in crate::indexing::host::policy::current().priority_roots(&self.volume_id) {
-            queue.push(Rank::PriorityRoot, root);
+            queue.push(CoveragePhase::PriorityRoot, root);
         }
         if let Some(home) = self.home_on_this_volume() {
-            queue.push(Rank::Home, home);
+            queue.push(CoveragePhase::Home, home);
         }
-        queue.push(Rank::WholeVolume, self.volume_root.clone());
+        queue.push(CoveragePhase::WholeVolume, self.volume_root.clone());
         queue
     }
 
@@ -396,7 +411,7 @@ impl Machine {
     fn run_phase(&self, phase: &Phase, queue: &mut PhaseQueue) {
         // The ORDER is the whole feature, so a support bundle has to show it. A
         // dozen lines per first index, and none after that.
-        log::info!("Phases: covering {} ({:?})", phase.path.display(), phase.rank);
+        log::info!("Phases: covering {} ({:?})", phase.path.display(), phase.kind);
         set_phase_for(
             self.events.as_ref(),
             &self.volume_id,
@@ -434,37 +449,23 @@ impl Machine {
         }
     }
 
-    /// Say which phase is running, so a host can name it.
+    /// Say which phase is running, so a host can name it: to whoever is listening
+    /// now through the event, and to whoever joins later through the handle.
     ///
     /// ⚠️ Called again after a visited-root interlude ends, ❌ not only when a
     /// phase starts: the interlude announces ITSELF (it is a phase, ranked and
     /// run like any other), and without this the header would name the folder the
     /// user opened for the rest of the outer phase — "Indexing the folders you use
     /// most" while the machine walks the whole drive. Idempotent: a host maps the
-    /// variant to one label and re-announcing the same phase changes nothing.
+    /// phase to one label and re-announcing the same one changes nothing.
     fn announce_the_phase(&self, phase: &Phase) {
-        self.events
-            .emit(Self::phase_started_event(phase, self.volume_id.clone()));
-    }
-
-    /// Which phase this is, as the event a host reads it off.
-    ///
-    /// ⚠️ The phase is the VARIANT, ❌ never a field: this crate's public surface
-    /// is capped with no headroom, a payload enum would be a new public item, and
-    /// raising that cap needs David's say-so. The order is described here and
-    /// nowhere else — a host re-deriving it from paths would have to hold its own
-    /// idea of `IndexPathSpace`, firmlinks included.
-    ///
-    /// A root the user opened mid-run rides the priority variant: it answers the
-    /// same question the host's own list answers, less well, and nothing renders
-    /// it differently. ❌ Don't mint a fourth variant for a label nobody shows.
-    fn phase_started_event(phase: &Phase, volume_id: String) -> IndexEvent {
-        let root = phase.path.to_string_lossy().into_owned();
-        match phase.rank {
-            Rank::PriorityRoot | Rank::VisitedRoot => IndexEvent::PriorityCoverageStarted { volume_id, root },
-            Rank::Home => IndexEvent::HomeCoverageStarted { volume_id, root },
-            Rank::WholeVolume => IndexEvent::WholeVolumeCoverageStarted { volume_id, root },
-        }
+        use cmdr_fs::ignore_poison::IgnorePoison;
+        *self.coverage_phase.lock_ignore_poison() = Some(phase.kind);
+        self.events.emit(IndexEvent::CoveragePhaseStarted {
+            volume_id: self.volume_id.clone(),
+            phase: phase.kind,
+            root: phase.path.to_string_lossy().into_owned(),
+        });
     }
 
     /// Walk the frontier in groups, consulting the visit queue between them.
@@ -486,7 +487,7 @@ impl Machine {
             // never the priority roots — those are already the best answer to the
             // same question. An interlude that ran announced itself, so this phase
             // has to say what it is again on the way back.
-            if phase.rank > Rank::VisitedRoot && self.take_a_visit(queue) {
+            if phase.kind > CoveragePhase::VisitedRoot && self.take_a_visit(queue) {
                 self.announce_the_phase(phase);
             }
             let (group, remaining) = rest.split_at(grouping.roots().min(rest.len()));
@@ -513,7 +514,7 @@ impl Machine {
             return false;
         }
         let phase = Phase {
-            rank: Rank::VisitedRoot,
+            kind: CoveragePhase::VisitedRoot,
             path: visited,
         };
         log::debug!(

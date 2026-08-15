@@ -28,8 +28,8 @@ use cmdr_index::AggregationPhase;
 use cmdr_index::Freshness;
 use cmdr_index::media_index::events::MediaEnrichTerminalReason;
 use cmdr_index::{
-    ActivityPhase, Diagnostic, EventSink, IndexErrorReport, IndexEvent, IndexEventKind, MemoryWatchdogAction,
-    RescanReason, ScanRunKind,
+    ActivityPhase, CoveragePhase, Diagnostic, EventSink, IndexErrorReport, IndexEvent, IndexEventKind,
+    MemoryWatchdogAction, RescanReason, ScanRunKind,
 };
 
 use walk_announcer::WalkAnnouncer;
@@ -72,42 +72,22 @@ pub struct IndexScanStartedEvent {
     pub covered_in_phases: bool,
 }
 
-/// Which phase of a drive's first index is running, in the terms its owner would
-/// recognize. One label per rendered header.
-///
-/// It lives HERE rather than with the subsystem, and it is the one value on a
-/// payload that does: the crate's three `*CoverageStarted` variants already carry
-/// the discriminant, and what a header CALLS each one is a presentation decision,
-/// which by this module's own rule stays app-side. It also keeps the crate's
-/// capped public surface out of it (`index-crate-isolation`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum CoveragePhaseLabel {
-    /// Folders this user cares about: ones the app named up front, and ones they
-    /// opened while the walk was running.
-    PriorityFolders,
-    /// The rest of their home folder, after the folders above it.
-    Home,
-    /// The rest of the drive, which is the last phase.
-    WholeDrive,
-}
-
 /// A drive's first index moved on to its next phase.
 ///
-/// The phases run in the order their owner cares about, so the label is what the
-/// status surface says a first index is doing right now: their own folders, then
-/// the rest of home, then the rest of the drive. ⚠️ The crate's three phase
-/// variants deliberately fold into this ONE wire event: the payload's `label`
-/// discriminates, so the frontend takes one listener and one piece of state
-/// rather than three of each.
+/// The phases run in the order their owner cares about, so this is what the status
+/// surface says a first index is doing right now: their own folders, then the rest
+/// of home, then the rest of the drive. The crate classifies (it holds the path
+/// space the classification needs); what a header CALLS each phase is the
+/// frontend's message catalog.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[tauri_specta(event_name = "index-coverage-phase-started")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexCoveragePhaseStartedEvent {
     /// The volume being covered.
     pub volume_id: String,
-    /// Which phase it is, in the terms its owner would recognize.
-    pub label: CoveragePhaseLabel,
+    /// Which phase it is. A window that joined mid-run reads the same value off
+    /// `get_index_status`, so both doors answer in one vocabulary.
+    pub phase: CoveragePhase,
 }
 
 /// A branch of a drive went under the walker, and the folder sizes inside it (and
@@ -394,11 +374,6 @@ pub enum Destination {
     AnalyticsOnly,
 }
 
-/// The one wire event the three phase variants fold into.
-fn coverage_phase(volume_id: String, label: CoveragePhaseLabel) -> IndexCoveragePhaseStartedEvent {
-    IndexCoveragePhaseStartedEvent { volume_id, label }
-}
-
 /// Emit `payload` if there's an app to emit it to, and report its wire name.
 fn to_frontend<E>(app: Option<&AppHandle>, payload: E) -> Destination
 where
@@ -482,19 +457,12 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
                 duration_ms,
             },
         ),
-        // The phase order is the crate's, described once in its queue; this is
-        // only what each phase is CALLED. ❌ Don't re-derive the phase from the
-        // root here: an app-side home path can disagree with `IndexPathSpace`
+        // The phase travels as the crate classified it. ❌ Don't re-derive it from
+        // the root here: an app-side home path can disagree with `IndexPathSpace`
         // about firmlinks, which would work on one machine and mislabel on
         // another.
-        IndexEvent::PriorityCoverageStarted { volume_id, .. } => {
-            to_frontend(app, coverage_phase(volume_id, CoveragePhaseLabel::PriorityFolders))
-        }
-        IndexEvent::HomeCoverageStarted { volume_id, .. } => {
-            to_frontend(app, coverage_phase(volume_id, CoveragePhaseLabel::Home))
-        }
-        IndexEvent::WholeVolumeCoverageStarted { volume_id, .. } => {
-            to_frontend(app, coverage_phase(volume_id, CoveragePhaseLabel::WholeDrive))
+        IndexEvent::CoveragePhaseStarted { volume_id, phase, .. } => {
+            to_frontend(app, IndexCoveragePhaseStartedEvent { volume_id, phase })
         }
         IndexEvent::HomeCovered { .. } => Destination::AnalyticsOnly,
         IndexEvent::ScanAborted { volume_id } => to_frontend(app, IndexScanAbortedEvent { volume_id }),

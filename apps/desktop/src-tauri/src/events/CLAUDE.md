@@ -24,19 +24,18 @@ all live on this side of the boundary.
 - **`IndexEvent::Error` is the index's only path to a shipped error report** (a subsystem can't invoke the crate-root
   `log_error!` macro). The English sentence is written here because that's what a human reads; the subsystem ships the
   numbers. The backtrace is still the failure's — `emit` is a synchronous call from the failing code.
-- **Payload structs live here; the values they carry don't.** `ScanRunKind`, `RescanReason`, `ActivityPhase`,
-  `Freshness`, `AggregationPhase`, `MediaEnrichTerminalReason`, and `IndexFailure` keep their `specta::Type` derives
-  with their subsystems. A schema derive on a value is fine there; a presentation decision isn't. `CoveragePhaseLabel`
-  lives HERE by that same rule: the crate's three `*CoverageStarted` variants carry the discriminant, and what a header
-  CALLS each phase is presentation.
-- **The three phase variants fold into ONE wire event** (`index-coverage-phase-started`), whose `label` tells them
-  apart. The single documented exception to one-name-per-event; `tests.rs` pins both halves (shared name, distinct
-  labels). ❌ Don't fold anything else in without that pair.
+- **Payload structs live here; the values they carry don't.** `ScanRunKind`, `CoveragePhase`, `RescanReason`,
+  `ActivityPhase`, `Freshness`, `AggregationPhase`, `MediaEnrichTerminalReason`, and `IndexFailure` keep their
+  `specta::Type` derives with their subsystems. A schema derive on a value is fine there; a presentation decision
+  isn't — and there is no presentation type for the drive-index phase on this side: what each phase is CALLED is a
+  message key in the frontend's catalog (`src/lib/indexing/indexing-steps.ts`).
+- **One event, one wire name, no exceptions.** `every_event_maps_to_a_destination_with_a_non_empty_name` checks every
+  routed name is unique, and ❌ nothing is excused from it: an exclusion there would hide exactly the collision it is
+  written to catch.
 
 ## Module map
 
-- `index_mapping.rs` — the 18 payload structs, `route`, `CoveragePhaseLabel`, the error-report rendering, and
-  `TauriEventSink`.
+- `index_mapping.rs` — the 18 payload structs, `route`, the error-report rendering, and `TauriEventSink`.
   `index_mapping/walk_announcer.rs` — the one-second hold on the coverage-branch pair (below).
 - `volume_mapping.rs` — `TauriVolumeEvents`, which turns a storage backend's typed connection transitions into
   `VolumeConnectionChanged`, mapping `cmdr-fs`'s `VolumeConnection` onto `network`'s wire enum in the one match where

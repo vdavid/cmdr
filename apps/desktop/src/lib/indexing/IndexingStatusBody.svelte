@@ -34,7 +34,7 @@
         type IndexStepStatus,
     } from './indexing-steps'
     import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
-    import type { ActivityPhase, CoveragePhaseLabel, ScanRunKind } from '$lib/ipc/bindings'
+    import type { ActivityPhase, CoveragePhase, ScanRunKind } from '$lib/ipc/bindings'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
@@ -72,7 +72,7 @@
          * `undefined` before the first phase event and after a mid-run reload,
          * which the run-kind label covers.
          */
-        coveragePhase?: CoveragePhaseLabel
+        coveragePhase?: CoveragePhase
         /** What kind of run this is (from `getVolumeScanRunKind`), for the
          *  run-kind header and the per-step copy. `undefined` when unknown (a
          *  mid-scan reload): the header is omitted rather than guessed. */

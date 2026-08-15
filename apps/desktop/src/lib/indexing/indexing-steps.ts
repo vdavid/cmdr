@@ -27,7 +27,7 @@
  * Kept pure and component-free so the risky state logic is unit-tested without
  * mounting (see `indexing-steps.test.ts`).
  */
-import type { ActivityPhase, CoveragePhaseLabel, ScanRunKind } from '$lib/ipc/bindings'
+import type { ActivityPhase, CoveragePhase, ScanRunKind } from '$lib/ipc/bindings'
 import type { MessageKey } from '$lib/intl/keys.gen'
 
 /** A checklist step's stable identity. Each maps to one user-facing label. */
@@ -104,10 +104,14 @@ export const runLabelToLabelKey: Record<IndexRunLabel, MessageKey> = {
  * then narrowing, which is the opposite of what is happening. Each label says
  * what is left instead, so the sequence only ever moves outward.
  */
-export const coveragePhaseToLabelKey: Record<CoveragePhaseLabel, MessageKey> = {
-  priorityFolders: 'indexing.phase.priorityFolders',
+export const coveragePhaseToLabelKey: Record<CoveragePhase, MessageKey> = {
+  priorityRoot: 'indexing.phase.priorityFolders',
+  // A folder someone opened mid-run answers the same question their favorites
+  // do, so it reads under the same header: a fourth wording for "and this one
+  // too" would be noise in a line that is already changing under them.
+  visitedRoot: 'indexing.phase.priorityFolders',
   home: 'indexing.phase.home',
-  wholeDrive: 'indexing.phase.wholeDrive',
+  wholeVolume: 'indexing.phase.wholeDrive',
 }
 
 export interface StepDerivationInput {

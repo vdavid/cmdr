@@ -24,9 +24,10 @@ the phase-transition emitter.
   `DEBUG_STATS.set_phase` directly. It does BOTH in one call — the global phase ring AND the per-volume phase-changed
   report — so the two can't drift. Spawned tasks capture a cloned sink / `volume_id`, never re-resolving the manager in
   the registry.
-- **The phase event fires only on TRANSITIONS**, so a frontend that joins mid-scan (window reload) can't learn the
-  current phase from it (the FE backfills from scan/aggregation activity). `VolumeIndexStatus` deliberately carries no
-  current phase.
+- **Both phase events fire only on TRANSITIONS**, so a frontend that joins mid-scan (window reload) learns neither from
+  them. The ACTIVITY phase is backfilled from scan/aggregation activity, and `VolumeIndexStatus` deliberately carries
+  none; the drive's COVERAGE phase rides `IndexStatusResponse::coverage_phase` instead, because its last phase is the
+  rest of the drive and a reloaded window would otherwise have no header until the run ended.
 - **Network scans emit only `Scanning → Live`** (no distinct `Aggregating` / `Reconciling`), and `saving_entries` never
   fires for network (entries insert inline). Don't fake either by calling local-only helpers on the network path; the FE
   drives the "compute folder sizes" step off the aggregation events instead.
@@ -34,13 +35,13 @@ the phase-transition emitter.
   `FullRebuild` / `ChangeCheck`, from `ScanRunKind::classify` at each scan-start funnel). Don't let the FE re-derive it
   from `prior_total_entries`: that disagrees on a populated index whose last scan never completed. Its
   `calibration_kind()` also picks the per-kind ETA bucket (`../store/`).
-- **The typed data an event carries stays here, the envelope doesn't.** The four `payload.rs` enums keep their
+- **The typed data an event carries stays here, the envelope doesn't.** The five `payload.rs` enums keep their
   `specta::Type` derives: a schema derive on a value is fine, a presentation decision isn't.
 
 ## Module map
 
-- `payload.rs` — the four values an event carries: `ScanRunKind`, `RescanReason`, `ActivityPhase`,
-  `MemoryWatchdogAction`. The bottom of the subtree.
+- `payload.rs` — the five values an event carries: `ScanRunKind`, `CoveragePhase` (which is also the phase queue's
+  ranking), `RescanReason`, `ActivityPhase`, `MemoryWatchdogAction`. The bottom of the subtree.
 - `sink.rs` — `IndexEvent` + `IndexEventKind`, the `EventSink` trait, `NoopEventSink`, `Diagnostic`, `IndexErrorReport`,
   `MediaEnrichTerminalReason`, and the test `RecordingSink`.
 - `mod.rs` — the IPC response types, `PhaseRecord`, `DebugStats`, `set_phase_for`, `emit_rescan_notification`, and

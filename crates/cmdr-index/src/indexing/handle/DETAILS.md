@@ -143,6 +143,12 @@ and David's decision is that there is no cap for now (`docs/specs/unindexed-sear
 wire format. Expanding the glob was step one of the audit for a reason: the surface wasn't readable from the file that
 is supposed to BE the surface.
 
+A fifteenth joined them later, with David's say-so and a ceiling raise to match (50 → 51 root promises): **`CoveragePhase`**,
+which phase of a drive's first index is running. It has to be the crate's because the crate owns both the order and the
+`IndexPathSpace` that classifies a root into it; a host deriving it from the phase root would need its own idea of
+firmlinks, right on one machine and wrong on the next. It rides one event variant and `IndexStatusResponse`, which is
+what lets a reloaded window name the running phase. What each phase is CALLED stays the host's.
+
 ### Folded (the interesting ones)
 
 - **`is_active` + `master_enabled` + `is_failed` + `clear_index` + `is_mtp_volume_id` + `start_indexing` +
