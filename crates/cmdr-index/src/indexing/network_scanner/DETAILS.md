@@ -350,6 +350,15 @@ A walk that DOES conclude the share went away (a typed `DeviceDisconnected`, or 
 purely because it was already on the wire when the session dropped, so up to a budget's worth of "proof" is suspect the
 moment the share is.
 
+**What the rule deliberately does NOT catch**, so nobody reads more into it than it claims: a share that is intermittent
+at the level of individual REQUESTS — an overloaded server refusing some listings and serving others — produces failures
+with successes after them, and those get marked. That's undecidable from one listing (it is exactly what a healthy share
+with one bad directory looks like), and marked is the better of the two answers: the hole is reported through
+`CoverageMap::abandoned` and reopened on the backoff, where not marking is a silently-short answer that re-pays a 120 s
+listing on every search and never converges. A NAS merely going to SLEEP doesn't reach this at all — a listing that
+waits out a disk spin-up succeeds, it just takes seconds, and `LIST_TIMEOUT` is 120 s. What fails is the session
+DROPPING, which kills every listing at once and leaves no successes to prove anything.
+
 **Decision/Why hold rather than mark-and-unwind.** Marking as the walk goes and deleting the marks on an abort costs
 everything holding costs (the walk remembers the same ids either way) plus a repair path: a second writer message that a
 crash, a dead writer, or a new exit path can skip, leaving the database holding exactly the damage the rule exists to
