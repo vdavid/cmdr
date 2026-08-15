@@ -6,6 +6,7 @@
 //! suppressed in dev/CI builds unless explicitly forced for integration tests.
 
 mod config_shape;
+pub(crate) mod first_index;
 pub mod posthog;
 pub mod volume_sink;
 

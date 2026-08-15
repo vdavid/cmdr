@@ -20,10 +20,10 @@ the same idea from the other direction: it now sits in `sink.rs` beside the `Ind
 The index subsystems say what happened; the app decides what a human sees. A subsystem builds an `IndexEvent` and hands
 it to an injected `EventSink`. Nothing here names a wire format, an event name, or a sentence.
 
-`IndexEvent` has 19 variants. Seventeen become frontend events (`ScanStarted`, `CoverageBranchStarted`,
+`IndexEvent` has 20 variants. Seventeen become frontend events (`ScanStarted`, `CoverageBranchStarted`,
 `CoverageBranchEnded`, `ScanProgress`, `ScanComplete`, `ScanAborted`, `DirsUpdated`, `ReplayProgress`, `ReplayComplete`,
 `RescanScheduled`, `AggregationProgress`, `AggregationComplete`, `MemoryWarning`, `FreshnessChanged`, `PhaseChanged`,
-`MediaEnrichProgress`, `MediaEnrichTerminal`). Two reach the host's own machinery instead:
+`MediaEnrichProgress`, `MediaEnrichTerminal`). Three reach the host's own machinery instead:
 
 - **`Error { report: IndexErrorReport }`** — a failure worth an error report, described by what broke rather than by the
   sentence someone would write about it: `MemoryWatchdog` (action, footprint, limit, escalation, the breakdown),
@@ -33,6 +33,10 @@ it to an injected `EventSink`. Nothing here names a wire format, an event name, 
   The backtrace is still the failure's, not the mapper's — `emit` is a synchronous call from the failing code.
 - **`PathAccessDenied { path }`** — the scanner hit an OS denial. The app decides whether it's TCC-restricted and worth
   the sidebar's "limited by macOS" styling.
+- **`HomeCovered { volume_id }`** — the user's home folder stopped needing a walk. A REPORT, so a host can time the
+  moment their own files started answering; the marker behind it still drives exactly one subscriber INSIDE the crate
+  (`lifecycle/phases/completion.rs`). The app routes it `Destination::AnalyticsOnly` and nothing renders it, since what
+  a user sees is the size that appears, not the marker.
 
 **The coverage-branch pair brackets one walk over one branch, and every kind of run emits it.** A phase names the
 frontier root it is covering; a walk that takes the volume whole names the volume root

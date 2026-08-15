@@ -349,6 +349,11 @@ pub enum Destination {
     ErrorReport,
     /// The restricted-path set behind the sidebar's "limited by macOS" styling.
     RestrictedPaths,
+    /// Nothing but the anonymous first-index measurements, which the sink takes
+    /// off this same stream before routing (`analytics/first_index.rs`). The
+    /// frontend has no use for it: what it renders is the size that appears, not
+    /// the marker behind it.
+    AnalyticsOnly,
 }
 
 /// Emit `payload` if there's an app to emit it to, and report its wire name.
@@ -434,6 +439,7 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
                 duration_ms,
             },
         ),
+        IndexEvent::HomeCovered { .. } => Destination::AnalyticsOnly,
         IndexEvent::ScanAborted { volume_id } => to_frontend(app, IndexScanAbortedEvent { volume_id }),
         IndexEvent::DirsUpdated { paths } => to_frontend(app, IndexDirUpdatedEvent { paths }),
         IndexEvent::ReplayProgress {
@@ -647,6 +653,10 @@ impl EventSink for TauriEventSink {
             }
             _ => {}
         }
+        // What a phased first index actually delivers, timed off this same
+        // stream. Before the routing, so an event the routing consumes is still
+        // ours to read.
+        crate::analytics::first_index::observe(&event);
         // allowed-discarded-outcome: `Destination` says where an event went, and exists so a test can assert it without an app. The production sink is the end of the line: nobody above it asks.
         route(event, Some(&self.app));
     }

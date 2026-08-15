@@ -422,3 +422,18 @@ placeholder.
 `known_dir_size` returns `None` (sorts LAST, by name, regardless of order) for an unknown dir — either incomplete + size
 0 (the `<dir>` placeholder) or a not-yet-enriched `None`; a genuinely-empty `0 bytes` and a lower-bound both return
 their known numeric value and sort by it. Don't re-conflate unknown with exact-0 in the comparator.
+
+## The wow-moment clock (`first-size-timing.ts`)
+
+The whole reason a drive is covered in the order its owner cares about is that a folder they open answers with a real
+size in seconds instead of minutes. Nothing was timing that, because the moment lives on screen.
+
+`noteRenderedFolderSizes(entries, volumeId)` is called from `views/full-list-cache.svelte.ts` at the two points where
+rows the user is looking at gain sizes: after a window fetch lands, and after `updateIndexSizesInPlace` resolves an
+`index-dir-updated` refresh. It fires `first_folder_size_shown` on the first window carrying a real `recursiveSize`,
+then goes inert for the rest of the launch (every later call is one boolean read). Props are a `seconds_bucket` since
+the frontend booted plus `covering` (was a phased first index running on that drive?) — ❌ never a path or a name.
+
+`covering` is what makes the number readable at all: on a machine indexed weeks ago the size is there before the window
+paints, and without the split those zeroes bury the cohort the claim is about. The other three first-index numbers are
+the backend's (`src-tauri/src/analytics/DETAILS.md` § The first-index events); this one can only be measured here.

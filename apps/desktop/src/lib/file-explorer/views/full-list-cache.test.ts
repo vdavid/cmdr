@@ -63,6 +63,7 @@ let props: Props
 function makeCache() {
   const deps: FullListCacheDeps = {
     listingId: () => props.listingId,
+    volumeId: () => 'root',
     totalCount: () => props.totalCount,
     includeHidden: () => props.includeHidden,
     hasParent: () => props.hasParent,

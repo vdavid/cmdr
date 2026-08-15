@@ -39,10 +39,14 @@ fn every_event_maps_to_a_destination_with_a_non_empty_name() {
                 assert!(!name.is_empty(), "{kind:?} maps to an empty Tauri event name");
                 wire_names.push(name);
             }
-            // The two that reach the host's own machinery instead of the frontend.
-            Destination::ErrorReport | Destination::RestrictedPaths => {
+            // The three that reach the host's own machinery instead of the
+            // frontend: two feedback pipelines and the anonymous measurements.
+            Destination::ErrorReport | Destination::RestrictedPaths | Destination::AnalyticsOnly => {
                 assert!(
-                    matches!(kind, IndexEventKind::Error | IndexEventKind::PathAccessDenied),
+                    matches!(
+                        kind,
+                        IndexEventKind::Error | IndexEventKind::PathAccessDenied | IndexEventKind::HomeCovered
+                    ),
                     "{kind:?} is a frontend event, so it needs a wire name"
                 );
             }

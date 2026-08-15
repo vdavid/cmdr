@@ -173,6 +173,17 @@ pub enum IndexEvent {
         /// The roots that were under the walker.
         roots: Vec<String>,
     },
+    /// The user's home folder on this volume stopped needing a walk, which is
+    /// the moment their own files become searchable and sizeable.
+    ///
+    /// A REPORT, ❌ not a second driver: the marker behind it still drives
+    /// exactly one subscriber inside the crate (the early media and importance
+    /// kick). This exists so a host can time the moment, which is the whole
+    /// user-facing claim covering a drive in phases makes.
+    HomeCovered {
+        /// The volume whose home folder is covered.
+        volume_id: String,
+    },
     /// The running scan's moving counters, emitted on the reporter's tick.
     ScanProgress {
         /// The volume being scanned.
@@ -330,6 +341,8 @@ pub enum IndexEventKind {
     CoverageBranchStarted,
     /// [`IndexEvent::CoverageBranchEnded`].
     CoverageBranchEnded,
+    /// [`IndexEvent::HomeCovered`].
+    HomeCovered,
     /// [`IndexEvent::ScanProgress`].
     ScanProgress,
     /// [`IndexEvent::ScanComplete`].
@@ -371,10 +384,11 @@ impl IndexEventKind {
     /// exhaustive, so a new variant doesn't compile until it has a slot, and the
     /// slot doesn't compile until this array has room for it. That's what makes
     /// the host's completeness test meaningful.
-    pub const ALL: [Self; 19] = [
+    pub const ALL: [Self; 20] = [
         Self::ScanStarted,
         Self::CoverageBranchStarted,
         Self::CoverageBranchEnded,
+        Self::HomeCovered,
         Self::ScanProgress,
         Self::ScanComplete,
         Self::ScanAborted,
@@ -405,22 +419,23 @@ impl IndexEventKind {
             Self::ScanStarted => const { Self::slot(0) },
             Self::CoverageBranchStarted => const { Self::slot(1) },
             Self::CoverageBranchEnded => const { Self::slot(2) },
-            Self::ScanProgress => const { Self::slot(3) },
-            Self::ScanComplete => const { Self::slot(4) },
-            Self::ScanAborted => const { Self::slot(5) },
-            Self::DirsUpdated => const { Self::slot(6) },
-            Self::ReplayProgress => const { Self::slot(7) },
-            Self::ReplayComplete => const { Self::slot(8) },
-            Self::RescanScheduled => const { Self::slot(9) },
-            Self::AggregationProgress => const { Self::slot(10) },
-            Self::AggregationComplete => const { Self::slot(11) },
-            Self::MemoryWarning => const { Self::slot(12) },
-            Self::FreshnessChanged => const { Self::slot(13) },
-            Self::PhaseChanged => const { Self::slot(14) },
-            Self::MediaEnrichProgress => const { Self::slot(15) },
-            Self::MediaEnrichTerminal => const { Self::slot(16) },
-            Self::Error => const { Self::slot(17) },
-            Self::PathAccessDenied => const { Self::slot(18) },
+            Self::HomeCovered => const { Self::slot(3) },
+            Self::ScanProgress => const { Self::slot(4) },
+            Self::ScanComplete => const { Self::slot(5) },
+            Self::ScanAborted => const { Self::slot(6) },
+            Self::DirsUpdated => const { Self::slot(7) },
+            Self::ReplayProgress => const { Self::slot(8) },
+            Self::ReplayComplete => const { Self::slot(9) },
+            Self::RescanScheduled => const { Self::slot(10) },
+            Self::AggregationProgress => const { Self::slot(11) },
+            Self::AggregationComplete => const { Self::slot(12) },
+            Self::MemoryWarning => const { Self::slot(13) },
+            Self::FreshnessChanged => const { Self::slot(14) },
+            Self::PhaseChanged => const { Self::slot(15) },
+            Self::MediaEnrichProgress => const { Self::slot(16) },
+            Self::MediaEnrichTerminal => const { Self::slot(17) },
+            Self::Error => const { Self::slot(18) },
+            Self::PathAccessDenied => const { Self::slot(19) },
         }
     }
 
@@ -458,6 +473,7 @@ impl IndexEvent {
             Self::ScanStarted { .. } => IndexEventKind::ScanStarted,
             Self::CoverageBranchStarted { .. } => IndexEventKind::CoverageBranchStarted,
             Self::CoverageBranchEnded { .. } => IndexEventKind::CoverageBranchEnded,
+            Self::HomeCovered { .. } => IndexEventKind::HomeCovered,
             Self::ScanProgress { .. } => IndexEventKind::ScanProgress,
             Self::ScanComplete { .. } => IndexEventKind::ScanComplete,
             Self::ScanAborted { .. } => IndexEventKind::ScanAborted,
@@ -488,6 +504,7 @@ impl IndexEvent {
             Self::ScanStarted { volume_id, .. }
             | Self::CoverageBranchStarted { volume_id, .. }
             | Self::CoverageBranchEnded { volume_id, .. }
+            | Self::HomeCovered { volume_id }
             | Self::ScanProgress { volume_id, .. }
             | Self::ScanComplete { volume_id, .. }
             | Self::ScanAborted { volume_id }
@@ -564,6 +581,9 @@ pub fn one_of_every_kind() -> Vec<IndexEvent> {
         IndexEvent::CoverageBranchEnded {
             volume_id: "root".into(),
             roots: vec!["/Users/someone/Downloads".into()],
+        },
+        IndexEvent::HomeCovered {
+            volume_id: "root".into(),
         },
         IndexEvent::ScanProgress {
             volume_id: "root".into(),

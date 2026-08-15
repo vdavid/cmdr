@@ -93,6 +93,12 @@ fn stamp_home(machine: &Machine) {
     }
     log::info!("Phases: '{}' has covered home", machine.volume_id);
     lifecycle_bus::publish_home_covered(&machine.volume_id);
+    // The host hears about it too, so the moment the user's own files became
+    // searchable can be measured. ❌ Still one SUBSCRIBER: this is a report, and
+    // nothing inside the crate acts on it.
+    machine.events.emit(IndexEvent::HomeCovered {
+        volume_id: machine.volume_id.clone(),
+    });
 }
 
 // ── The volume ───────────────────────────────────────────────────────

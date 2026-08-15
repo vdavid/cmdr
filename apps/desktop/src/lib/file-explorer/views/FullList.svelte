@@ -192,6 +192,7 @@
      */
     const cache = createFullListCache({
         listingId: () => listingId,
+        volumeId: () => volumeId,
         totalCount: () => totalCount,
         includeHidden: () => includeHidden,
         hasParent: () => hasParent,

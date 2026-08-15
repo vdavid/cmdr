@@ -24,6 +24,7 @@
 
 import type { FileEntry } from '../types'
 import { getDirStatsBatch } from '$lib/tauri-commands'
+import { noteRenderedFolderSizes } from '$lib/indexing/first-size-timing'
 import {
   createParentEntry,
   getEntryAt as getEntryAtUtil,
@@ -39,6 +40,8 @@ import {
 /** Live reads of `FullList`'s props. One getter per prop; see the ❌ note above. */
 export interface FullListCacheDeps {
   listingId: () => string
+  /** The volume this listing is on, for the first-honest-size measurement. */
+  volumeId: () => string
   totalCount: () => number
   includeHidden: () => boolean
   hasParent: () => boolean
@@ -144,6 +147,7 @@ export function createFullListCache(deps: FullListCacheDeps): FullListCache {
       if (result) {
         entries = result.entries
         range = result.range
+        noteRenderedFolderSizes(entries, deps.volumeId())
       }
     } catch {
       // Silently ignore fetch errors
@@ -238,6 +242,7 @@ export function createFullListCache(deps: FullListCacheDeps): FullListCache {
       if (entries.length === 0 && !hasParent) return
       void updateIndexSizesInPlace(entries, hasParent ? deps.currentPath() : undefined).then((stats) => {
         parentDirStats = stats
+        noteRenderedFolderSizes(entries, deps.volumeId())
       })
     },
 

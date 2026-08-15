@@ -1,15 +1,16 @@
 # Analytics (beta usage stats)
 
 Anonymous beta usage analytics. A background loop posts `/heartbeat` (daily-active signal + a PII-free config snapshot)
-on launch and hourly. PostHog feature events ride the SAME consent gate and the SAME install id. The two install ids
-live in the neutral [`crate::install_id`] module (not here), so the crash and error reporters depend on them without
-pulling in `analytics`.
+hourly and on launch. PostHog feature events ride the SAME consent gate and the SAME install id. The two install ids
+live in the neutral [`crate::install_id`] module, so the crash and error reporters use them without pulling in
+`analytics`.
 
 ## Files
 
 - `mod.rs`: heartbeat loop, consent gate, payload struct, fire-and-forget send, and the helpers `posthog` reuses.
+- `first_index.rs`: what a phased first index delivers, off the event stream.
 - `posthog.rs`: the `capture` path, the debug-build PII net, the build-time key.
-- `volume_sink.rs`: `PostHogVolumeAnalytics`, the storage backends' counter seam, feeding `capture` and its gates.
+- `volume_sink.rs`: `PostHogVolumeAnalytics`, the storage backends' counter seam, feeding `capture`.
 - `config_shape.rs`: the config-shape builder and `CATEGORICAL_STRING_KEYS` allowlist (the ONE place the PII-free rule
   lives), shared by the heartbeat `config` and the PostHog `$set`.
 
@@ -47,5 +48,5 @@ pulling in `analytics`.
 - **Name events after the UI** (project rule): user-facing vocabulary (`pane_navigated`, `search_used`), categorical
   props (`volume_kind`, `mode`). Events are an OPEN set: adding one is a one-liner.
 
-Full details (wiring, id storage, heartbeat payload, PostHog `/capture/` body and key mechanism, the starter event set
-and where each fires, how to add an event): `DETAILS.md`.
+Full details (wiring, id storage, heartbeat payload, the `/capture/` body, the event set and where each fires, how to
+add one, and the first-index events): `DETAILS.md`.

@@ -90,6 +90,10 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `settings_opened` (frontend, `command-handlers/app-dialog-handlers.ts` `app.settings`): no props.
 - `error_encountered` (backend, `listing/streaming.rs` `TauriListingEventSink::emit_error`): `category` enum (from the
   ListingError); never the path/message/provider.
+- `first_index_started` / `first_index_home_covered` / `first_index_completed` (backend, `first_index.rs`): no props on
+  the first, a `duration_bucket` on the other two. See below.
+- `first_folder_size_shown` (frontend, `$lib/indexing/first-size-timing.ts`, once per launch): `seconds_bucket` +
+  `covering` bool. See below.
 
 ## The search events, in detail
 
@@ -122,3 +126,29 @@ counted. That's why the run clock starts on the coverage callback's `null` (a ru
 `search_cta_used` when it's pressed, both carrying the same `cta` enum (`indexDrive` / `fullDiskAccess`), so conversion
 is a ratio per CTA. It can't be one prop on `search_used`: the Full Disk Access offer depends on a TCC probe that
 answers AFTER the run does, so an offer counted at settle time would miss every late one and put the rate over 100%.
+
+## The first-index events, in detail
+
+Covering a drive in phases is justified by a user-experience claim, so the four numbers that can falsify it ride the
+same pipeline as everything else. Three are backend (`first_index.rs`, off the index's own `IndexEvent`
+stream); the fourth is the frontend's, because only it knows what is on screen.
+
+- **`first_index_started`** — a run announced itself with `covered_in_phases`. It is the DENOMINATOR, and that is its
+  whole job.
+- **`first_index_home_covered`** — `duration_bucket` (`<10s` / `10-30s` / `30s-2m` / `2-5m` / `5m+`) since that start,
+  off the `IndexEvent::HomeCovered` report. The claim is that a user's own files answer in seconds, so the first two
+  buckets are where it lives or dies.
+- **`first_index_completed`** — `duration_bucket` (`<1m` / `1-3m` / `3-10m` / `10-30m` / `30m+`) since that start.
+- **`first_folder_size_shown`** — `seconds_bucket` since the frontend booted, plus `covering` (was a phased first index
+  running on that drive?). Fires on the first window of rows carrying a real `recursiveSize`, at most once per launch.
+  This is the wow moment itself: not "the index finished", which nobody watches, but "I opened a folder and it told me
+  how big it is". `covering` is what keeps a machine indexed weeks ago from drowning the measurement in zeroes.
+
+**The interruption rate is a RATIO, not an event.** How often a first index never finishes is
+`1 - first_index_completed / first_index_started`. ❌ Don't add a terminal "interrupted" event: a run that ends with the
+process (a quit, a crash, a power cut) has no moment left to report in, so anything counted at the end under-counts
+exactly the case being measured — and that case is the one the truncate-and-rebuild design lost entirely.
+
+**A phased run is told from every other run by the clock's own presence.** `first_index.rs` keeps a per-volume start
+`Instant` only for a run that announced `covered_in_phases`, so the `ScanComplete` of a change check on an
+already-indexed drive finds no clock and counts as nothing.
