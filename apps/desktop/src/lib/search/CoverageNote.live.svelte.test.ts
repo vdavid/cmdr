@@ -85,6 +85,24 @@ describe('a live run that came back short', () => {
     expect(text).toContain(tString('search.coverage.walk.abandoned'))
   })
 
+  it('puts the gave-up-on footnote UNDER the two lists it belongs beside', () => {
+    // The family reads in order of what it asks of you: refused (grant access),
+    // declined (nothing to grant), gave up (nothing at all, Cmdr retries). A
+    // footnote over the top of its own lists reads as the headline instead.
+    const text = noteText(
+      liveNote({
+        permissionDenied: ['/Users/me/Documents'],
+        declined: ['/Volumes/naspi/@eaDir'],
+        abandonedGround: true,
+        abandonedLocations: 2,
+      }),
+    )
+    const denied = text.indexOf(tString('search.coverage.denied', { count: 1 }))
+    const gaveUp = text.indexOf(tString('search.coverage.walk.abandonedCount', { count: 2, countText: '2' }))
+    expect(denied).toBeGreaterThanOrEqual(0)
+    expect(gaveUp).toBeGreaterThan(denied)
+  })
+
   it('stays quiet about a walk that covered its ground', () => {
     expect(noteText(liveNote({}))).toBe('')
   })

@@ -107,14 +107,6 @@
         {#if walkMessage}
             <p class="message">{walkMessage}</p>
         {/if}
-        {#if note.live?.abandonedGround}
-            <!-- The third way a run comes back short, and the quiet one: the walk
-                 reached the end of its frontier having given up on folders along
-                 the way. Its own line, because it's true alongside a cancel or a
-                 disconnect rather than instead of one, and a FOOTNOTE rather than a
-                 warning: nothing is wrong and nothing is asked of the reader. -->
-            <p class="message secondary">{abandonedMessage}</p>
-        {/if}
         {#if note.live && note.live.permissionDenied.length > 0}
             <!-- A folder somebody refused us. Its own sentence, and the only one of
                  the two with a way out: on macOS that's Full Disk Access, offered
@@ -147,6 +139,16 @@
                     <li>{path}</li>
                 {/each}
             </ul>
+        {/if}
+        {#if note.live?.abandonedGround}
+            <!-- The third way a run comes back short, and the quiet one: the walk
+                 reached the end of its frontier having given up on folders along
+                 the way. It sits UNDER the two lists rather than over them, as the
+                 footnote to that family: it's true alongside a cancel or a
+                 disconnect rather than instead of one, and unlike its neighbours it
+                 asks nothing of the reader — Cmdr comes back to this ground on its
+                 own. -->
+            <p class="message secondary">{abandonedMessage}</p>
         {/if}
         {#if note.live && note.live.stillCovering.length > 0}
             <p class="message">
