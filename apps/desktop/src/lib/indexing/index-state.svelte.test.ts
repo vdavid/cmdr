@@ -16,11 +16,13 @@ import type {
   IndexAggregationCompleteEvent,
   IndexCoverageBranchEndedEvent,
   IndexCoverageBranchStartedEvent,
+  IndexCoveragePhaseStartedEvent,
   IndexPhaseChangedEvent,
   IndexReplayProgressEvent,
   IndexScanAbortedEvent,
   IndexScanProgressEvent,
   IndexScanStartedEvent,
+  CoveragePhaseLabel,
   ScanRunKind,
 } from '$lib/ipc/bindings'
 
@@ -34,6 +36,7 @@ let phaseCb: ((p: IndexPhaseChangedEvent) => void) | undefined
 let replayProgressCb: ((p: IndexReplayProgressEvent) => void) | undefined
 let branchStartedCb: ((p: IndexCoverageBranchStartedEvent) => void) | undefined
 let branchEndedCb: ((p: IndexCoverageBranchEndedEvent) => void) | undefined
+let coveragePhaseCb: ((p: IndexCoveragePhaseStartedEvent) => void) | undefined
 
 const noopUnlisten = () => {}
 
@@ -58,6 +61,10 @@ vi.mock('$lib/tauri-commands', () => ({
   },
   onIndexCoverageBranchEnded: (cb: (p: IndexCoverageBranchEndedEvent) => void) => {
     branchEndedCb = cb
+    return Promise.resolve(noopUnlisten)
+  },
+  onIndexCoveragePhaseStarted: (cb: (p: IndexCoveragePhaseStartedEvent) => void) => {
+    coveragePhaseCb = cb
     return Promise.resolve(noopUnlisten)
   },
   onIndexPhaseChanged: (cb: (p: IndexPhaseChangedEvent) => void) => {
@@ -102,6 +109,7 @@ import {
   isVolumeAggregating,
   isAnyVolumeIndexing,
   getWalkedGround,
+  getVolumeCoveragePhase,
   type AggregationActivity,
 } from './index-state.svelte'
 import { isPathAffectedByWalk } from './walked-ground'
@@ -571,5 +579,48 @@ describe('index-state walked ground', () => {
     cleanup()
 
     expect(seen).toEqual([false, true, false])
+  })
+})
+
+describe('which phase of a first index is running', () => {
+  beforeEach(async () => {
+    destroyIndexState()
+    await initIndexState()
+  })
+
+  function emitPhase(volumeId: string, label: CoveragePhaseLabel): void {
+    if (!coveragePhaseCb) throw new Error('coverage-phase-started callback not registered')
+    coveragePhaseCb({ volumeId, label })
+  }
+
+  it('has no answer until the backend gives one, so the header can fall back', () => {
+    expect(getVolumeCoveragePhase('root')).toBeUndefined()
+  })
+
+  it('carries the backend label through, and moves on with the run', () => {
+    emitPhase('root', 'priorityFolders')
+    expect(getVolumeCoveragePhase('root')).toBe('priorityFolders')
+
+    emitPhase('root', 'home')
+    expect(getVolumeCoveragePhase('root')).toBe('home')
+
+    emitPhase('root', 'wholeDrive')
+    expect(getVolumeCoveragePhase('root')).toBe('wholeDrive')
+  })
+
+  it('is per volume, like every other index fact', () => {
+    emitPhase('root', 'home')
+    emitPhase('smb-nas', 'wholeDrive')
+
+    expect(getVolumeCoveragePhase('root')).toBe('home')
+    expect(getVolumeCoveragePhase('smb-nas')).toBe('wholeDrive')
+  })
+
+  it('expires with the run, so a finished drive keeps no stale header', () => {
+    emitPhase('root', 'home')
+    if (!phaseCb) throw new Error('phase-changed callback not registered')
+    phaseCb({ volumeId: 'root', phase: 'live' })
+
+    expect(getVolumeCoveragePhase('root')).toBeUndefined()
   })
 })

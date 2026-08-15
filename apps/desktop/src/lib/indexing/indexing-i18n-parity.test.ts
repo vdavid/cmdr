@@ -48,6 +48,14 @@ describe('indexing catalog parity (en)', () => {
     expect(tString('indexing.summary.found', { countText: '171,607' })).toBe('171,607 found')
   })
 
+  it('resolves the phase headers, each saying what is LEFT rather than what is included', () => {
+    // ❌ Never "your folders" → "your home folder": the first is a subset of the
+    // second, so the pair reads as the scope narrowing.
+    expect(tString('indexing.phase.priorityFolders')).toBe('Indexing the folders you use most')
+    expect(tString('indexing.phase.home')).toBe('Indexing the rest of your home folder')
+    expect(tString('indexing.phase.wholeDrive')).toBe('Indexing the rest of the drive')
+  })
+
   it('resolves the compute-step sub-phase labels (folder-worded)', () => {
     expect(tString('indexing.aggregation.loading')).toBe('Loading folders...')
     expect(tString('indexing.aggregation.sorting')).toBe('Sorting folders...')

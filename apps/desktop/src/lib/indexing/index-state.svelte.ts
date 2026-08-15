@@ -19,13 +19,14 @@
  */
 
 import { SvelteMap } from 'svelte/reactivity'
-import type { ActivityPhase } from '$lib/ipc/bindings'
+import type { ActivityPhase, CoveragePhaseLabel } from '$lib/ipc/bindings'
 import {
   getIndexStatus,
   onIndexAggregationComplete,
   onIndexAggregationProgress,
   onIndexCoverageBranchEnded,
   onIndexCoverageBranchStarted,
+  onIndexCoveragePhaseStarted,
   onIndexPhaseChanged,
   onIndexReplayComplete,
   onIndexReplayProgress,
@@ -188,6 +189,13 @@ const walkedGround = new SvelteMap<string, WalkedGround>()
 // entry is gone. Cleared on the same terminal events.
 const coveredInPhases = new SvelteMap<string, boolean>()
 
+// Per-volume: which phase of a first index is running, as the BACKEND classified
+// it. One write per phase (three or four a run), so unlike the walked ground
+// there is nothing here to be careful about on a tick. `undefined` before the
+// first phase event and after a mid-run reload, which is why the checklist keeps
+// its own header fallback rather than rendering nothing.
+const coveragePhase = new SvelteMap<string, CoveragePhaseLabel>()
+
 // Monotonic counter bumped by every scan/replay event. Prevents the
 // `get_index_status` IPC response (which can arrive late) from overwriting state
 // an event already set, for the `root` backfill below.
@@ -298,6 +306,14 @@ export function isVolumeCoveredInPhases(volumeId: string): boolean {
   return coveredInPhases.get(volumeId) === true
 }
 
+/** Which phase of this volume's first index is running, or `undefined` when
+ *  nothing has said yet (before the first phase event, or after a mid-run
+ *  reload). Reactive. The checklist's header prefers it and falls back to its
+ *  own run-kind label, so a missing answer costs detail, never a blank. */
+export function getVolumeCoveragePhase(volumeId: string): CoveragePhaseLabel | undefined {
+  return coveragePhase.get(volumeId)
+}
+
 export function getEntriesScanned(): number {
   const r = root()
   return r?.phase === 'scanning' ? r.entriesScanned : 0
@@ -364,6 +380,7 @@ export async function initIndexState(): Promise<void> {
     activity.delete(payload.volumeId)
     walkedGround.delete(payload.volumeId)
     coveredInPhases.delete(payload.volumeId)
+    coveragePhase.delete(payload.volumeId)
   })
   unlistenHandles.push(unlistenComplete)
 
@@ -382,8 +399,14 @@ export async function initIndexState(): Promise<void> {
     scanRunKind.delete(payload.volumeId)
     walkedGround.delete(payload.volumeId)
     coveredInPhases.delete(payload.volumeId)
+    coveragePhase.delete(payload.volumeId)
   })
   unlistenHandles.push(unlistenAborted)
+
+  const unlistenCoveragePhase = await onIndexCoveragePhaseStarted((payload) => {
+    coveragePhase.set(payload.volumeId, payload.label)
+  })
+  unlistenHandles.push(unlistenCoveragePhase)
 
   const unlistenBranchStarted = await onIndexCoverageBranchStarted((payload) => {
     walkedGround.set(payload.volumeId, payload.roots)
@@ -414,6 +437,7 @@ export async function initIndexState(): Promise<void> {
       // The pipeline ended, so the run-shape facts expire with it.
       scanRunKind.delete(payload.volumeId)
       coveredInPhases.delete(payload.volumeId)
+      coveragePhase.delete(payload.volumeId)
     } else {
       phase.set(payload.volumeId, payload.phase)
     }

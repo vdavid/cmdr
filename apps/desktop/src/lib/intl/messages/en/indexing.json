@@ -48,6 +48,24 @@
     }
   },
 
+  "indexing.phase.priorityFolders": "Indexing the folders you use most",
+  "@indexing.phase.priorityFolders": {
+    "description": "Header at the top of the drive-indexing checklist during the FIRST phase of a drive''s first index, while Cmdr covers the folders this person is most likely to want first (their downloads, documents, desktop, and anything they just opened). The three phase headers are read in sequence, so each one says what is still to come rather than what is included: ''your folders'' followed by ''your home folder'' would read as the scope widening and then narrowing. Short phrase, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
+  },
+
+  "indexing.phase.home": "Indexing the rest of your home folder",
+  "@indexing.phase.home": {
+    "description": "Header at the top of the drive-indexing checklist during the SECOND phase of a drive''s first index, once the folders from the first phase are done and Cmdr moves on to everything else in the user''s home folder. ''The rest of'' is load-bearing: it tells the reader the earlier folders are already finished. Short phrase, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
+  },
+
+  "indexing.phase.wholeDrive": "Indexing the rest of the drive",
+  "@indexing.phase.wholeDrive": {
+    "description": "Header at the top of the drive-indexing checklist during the LAST phase of a drive''s first index, once home is done and Cmdr covers everything else on the drive (applications, system folders, anything outside the home folder). ''The rest of'' again says the earlier phases are finished. Short phrase, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
+  },
+
   "indexing.run.firstIndex": "First index",
   "@indexing.run.firstIndex": {
     "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr is building this drive''s first index by covering it folder by folder, in the order their owner is likely to care about, rather than in one pass. Deliberately not called a scan: it hands the drive back in pieces as it goes, so ''First full scan'' would promise the one thing it never does. Short noun phrase, sentence case, no trailing period.",

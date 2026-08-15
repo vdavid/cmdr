@@ -45,6 +45,18 @@
   "@indexing.run.update": {
     "sourceHash": "97ac3e3"
   },
+  "indexing.phase.priorityFolders": "Indexerar mapparna du använder mest",
+  "@indexing.phase.priorityFolders": {
+    "sourceHash": "09dd19d"
+  },
+  "indexing.phase.home": "Indexerar resten av din hemmapp",
+  "@indexing.phase.home": {
+    "sourceHash": "8c31671"
+  },
+  "indexing.phase.wholeDrive": "Indexerar resten av enheten",
+  "@indexing.phase.wholeDrive": {
+    "sourceHash": "1e1d606"
+  },
   "indexing.step.findFiles": "Hitta filer",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"

@@ -173,6 +173,31 @@ pub enum IndexEvent {
         /// The roots that were under the walker.
         roots: Vec<String>,
     },
+    /// A coverage phase started, naming the root it is about to cover.
+    ///
+    /// The phases are an ORDER, and the order is the whole feature, so a host
+    /// that wants to say which one is running needs to be told. It names the
+    /// PHASE root, ❌ not the frontier roots
+    /// [`CoverageBranchStarted`](Self::CoverageBranchStarted) carries: those are
+    /// one level down, so `~/Library` and `~/Downloads` are indistinguishable
+    /// from outside, and they are debounced besides.
+    ///
+    /// ❌ The crate does not classify the phase for the host. The host is what
+    /// ANSWERED `HostPolicy::priority_roots`, so which of its own answers this
+    /// is, is its question; naming it here would be a second description of the
+    /// order that can disagree with the queue.
+    CoveragePhaseStarted {
+        /// The volume being covered.
+        volume_id: String,
+        /// The root of the phase, absolute in the volume's own path space.
+        root: String,
+        /// The volume's own root, in that same space, so a host can tell the
+        /// LAST phase (the whole drive) from every earlier one without holding a
+        /// second idea of where this volume is mounted. A phase the user
+        /// triggered by opening a folder can land on any volume, so ❌ "the boot
+        /// volume's phases are the interesting ones" is not a rule that holds.
+        volume_root: String,
+    },
     /// The user's home folder on this volume stopped needing a walk, which is
     /// the moment their own files become searchable and sizeable.
     ///
@@ -341,6 +366,8 @@ pub enum IndexEventKind {
     CoverageBranchStarted,
     /// [`IndexEvent::CoverageBranchEnded`].
     CoverageBranchEnded,
+    /// [`IndexEvent::CoveragePhaseStarted`].
+    CoveragePhaseStarted,
     /// [`IndexEvent::HomeCovered`].
     HomeCovered,
     /// [`IndexEvent::ScanProgress`].
@@ -384,10 +411,11 @@ impl IndexEventKind {
     /// exhaustive, so a new variant doesn't compile until it has a slot, and the
     /// slot doesn't compile until this array has room for it. That's what makes
     /// the host's completeness test meaningful.
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 21] = [
         Self::ScanStarted,
         Self::CoverageBranchStarted,
         Self::CoverageBranchEnded,
+        Self::CoveragePhaseStarted,
         Self::HomeCovered,
         Self::ScanProgress,
         Self::ScanComplete,
@@ -419,23 +447,24 @@ impl IndexEventKind {
             Self::ScanStarted => const { Self::slot(0) },
             Self::CoverageBranchStarted => const { Self::slot(1) },
             Self::CoverageBranchEnded => const { Self::slot(2) },
-            Self::HomeCovered => const { Self::slot(3) },
-            Self::ScanProgress => const { Self::slot(4) },
-            Self::ScanComplete => const { Self::slot(5) },
-            Self::ScanAborted => const { Self::slot(6) },
-            Self::DirsUpdated => const { Self::slot(7) },
-            Self::ReplayProgress => const { Self::slot(8) },
-            Self::ReplayComplete => const { Self::slot(9) },
-            Self::RescanScheduled => const { Self::slot(10) },
-            Self::AggregationProgress => const { Self::slot(11) },
-            Self::AggregationComplete => const { Self::slot(12) },
-            Self::MemoryWarning => const { Self::slot(13) },
-            Self::FreshnessChanged => const { Self::slot(14) },
-            Self::PhaseChanged => const { Self::slot(15) },
-            Self::MediaEnrichProgress => const { Self::slot(16) },
-            Self::MediaEnrichTerminal => const { Self::slot(17) },
-            Self::Error => const { Self::slot(18) },
-            Self::PathAccessDenied => const { Self::slot(19) },
+            Self::CoveragePhaseStarted => const { Self::slot(3) },
+            Self::HomeCovered => const { Self::slot(4) },
+            Self::ScanProgress => const { Self::slot(5) },
+            Self::ScanComplete => const { Self::slot(6) },
+            Self::ScanAborted => const { Self::slot(7) },
+            Self::DirsUpdated => const { Self::slot(8) },
+            Self::ReplayProgress => const { Self::slot(9) },
+            Self::ReplayComplete => const { Self::slot(10) },
+            Self::RescanScheduled => const { Self::slot(11) },
+            Self::AggregationProgress => const { Self::slot(12) },
+            Self::AggregationComplete => const { Self::slot(13) },
+            Self::MemoryWarning => const { Self::slot(14) },
+            Self::FreshnessChanged => const { Self::slot(15) },
+            Self::PhaseChanged => const { Self::slot(16) },
+            Self::MediaEnrichProgress => const { Self::slot(17) },
+            Self::MediaEnrichTerminal => const { Self::slot(18) },
+            Self::Error => const { Self::slot(19) },
+            Self::PathAccessDenied => const { Self::slot(20) },
         }
     }
 
@@ -473,6 +502,7 @@ impl IndexEvent {
             Self::ScanStarted { .. } => IndexEventKind::ScanStarted,
             Self::CoverageBranchStarted { .. } => IndexEventKind::CoverageBranchStarted,
             Self::CoverageBranchEnded { .. } => IndexEventKind::CoverageBranchEnded,
+            Self::CoveragePhaseStarted { .. } => IndexEventKind::CoveragePhaseStarted,
             Self::HomeCovered { .. } => IndexEventKind::HomeCovered,
             Self::ScanProgress { .. } => IndexEventKind::ScanProgress,
             Self::ScanComplete { .. } => IndexEventKind::ScanComplete,
@@ -504,6 +534,7 @@ impl IndexEvent {
             Self::ScanStarted { volume_id, .. }
             | Self::CoverageBranchStarted { volume_id, .. }
             | Self::CoverageBranchEnded { volume_id, .. }
+            | Self::CoveragePhaseStarted { volume_id, .. }
             | Self::HomeCovered { volume_id }
             | Self::ScanProgress { volume_id, .. }
             | Self::ScanComplete { volume_id, .. }
@@ -581,6 +612,11 @@ pub fn one_of_every_kind() -> Vec<IndexEvent> {
         IndexEvent::CoverageBranchEnded {
             volume_id: "root".into(),
             roots: vec!["/Users/someone/Downloads".into()],
+        },
+        IndexEvent::CoveragePhaseStarted {
+            volume_id: "root".into(),
+            root: "/Users/someone".into(),
+            volume_root: "/".into(),
         },
         IndexEvent::HomeCovered {
             volume_id: "root".into(),

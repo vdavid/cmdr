@@ -24,6 +24,8 @@ where the user is looking; `completion.rs` the two stamps and what completing ow
   the verifier's.** ❌ Never `mgr.scanning`: `cover_context_for` returns `None` under it, so our own walks would fail.
 - **One `cover()` per frontier root, joined**, with the drain batched to once per phase. ❌ Don't hand one call a whole
   frontier: the cancel check inside `cover` is not a queue check point.
+- **A phase announces itself by ROOT** (`CoveragePhaseStarted`); the HOST labels it. ❌ Never off the branch events:
+  they name frontier roots one level down, and are debounced.
 - **Every walk is bracketed by `CoverageBranchStarted` / `CoverageBranchEnded`**, and the end fires on EVERY exit path,
   cancels included: a listing marks rows in flux on the start and has nothing else to take that back. A whole-volume
   scan reports the same way, naming the volume root, so ❌ nothing downstream branches on the kind of run.

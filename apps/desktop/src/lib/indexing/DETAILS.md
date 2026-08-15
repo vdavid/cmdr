@@ -175,6 +175,17 @@ full scan" / "Full rescan" / "Checking for changes" / "Quick update" (`indexing.
 header, otherwise the backend's `ScanRunKind` maps 1:1, and an unknown kind (mid-scan reload) renders NO header rather
 than a guessed one.
 
+**A phased run's header is the PHASE, when one has been announced.** `index-coverage-phase-started` carries a
+`CoveragePhaseLabel` the backend classified (`apps/desktop/src-tauri/src/events/index_mapping/coverage_phase.rs`),
+stored per volume by `getVolumeCoveragePhase` and preferred by the body's header over the run-kind label. The order IS
+the feature, so what someone watching a first index reads is "Indexing the folders you use most" → "the rest of your
+home folder" → "the rest of the drive". ❌ Never both headers at once: they answer the same question at two zoom levels,
+and stacking them reads as two runs. ❌ And never "Indexing your folders" → "your home folder", which is a subset
+followed by its superset and reads as the scope narrowing.
+
+The label is `undefined` before the first phase event and after a mid-run reload, which is exactly what the run-kind
+fallback below is for.
+
 ⚠️ **The phased arm comes before the `ScanRunKind` map, and has to.** A phased run IS `first_scan` by the backend's own
 answer, so without its own arm the header reads "First full scan" over the one run that never makes a full pass — and it
 is the arm that still answers after a mid-scan reload, which every other run kind spends headerless. Same shape one

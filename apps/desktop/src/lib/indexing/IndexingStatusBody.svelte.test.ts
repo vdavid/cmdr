@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 import { mount, flushSync } from 'svelte'
 import IndexingStatusBody from './IndexingStatusBody.svelte'
 import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
-import type { ActivityPhase, ScanRunKind } from '$lib/ipc/bindings'
+import type { ActivityPhase, CoveragePhaseLabel, ScanRunKind } from '$lib/ipc/bindings'
 
 function scanActivity(overrides: Partial<VolumeIndexActivity> = {}): VolumeIndexActivity {
   return {
@@ -51,6 +51,8 @@ function render(props: {
   windowedEta?: string | null
   phase?: ActivityPhase | undefined
   isNetwork?: boolean
+  coveredInPhases?: boolean
+  coveragePhase?: CoveragePhaseLabel
   scanRunKind?: ScanRunKind
 }) {
   const target = document.createElement('div')
@@ -69,6 +71,11 @@ function render(props: {
   })
   flushSync()
   return target
+}
+
+/** The header above the checklist, or `null` when it renders none. */
+function header(target: HTMLElement): string | null {
+  return target.querySelector('.run-kind')?.textContent ?? null
 }
 
 /** The text of every rendered step label, in order. */
@@ -175,5 +182,39 @@ describe('IndexingStatusBody checklist', () => {
     expect(stepLabels(target)).toEqual(['Update index'])
     expect(target.querySelector('.tooltip-detail')?.textContent).toContain('3,000')
     expect(target.querySelector('[role="progressbar"]')).not.toBeNull()
+  })
+})
+
+describe('IndexingStatusBody header during a first index covered in phases', () => {
+  /** A phased run, with the backend's own `first_scan` kind on it. */
+  function phased(coveragePhase?: CoveragePhaseLabel) {
+    return render({
+      activity: scanActivity({ priorTotalEntries: null }),
+      phase: 'scanning',
+      coveredInPhases: true,
+      coveragePhase,
+      scanRunKind: 'first_scan',
+    })
+  }
+
+  it('says which phase is running, so the ORDER is what the user reads', () => {
+    expect(header(phased('priorityFolders'))).toBe('Indexing the folders you use most')
+    expect(header(phased('home'))).toBe('Indexing the rest of your home folder')
+    expect(header(phased('wholeDrive'))).toBe('Indexing the rest of the drive')
+  })
+
+  it('falls back to the run-kind header before any phase has been announced', () => {
+    // The window between the run starting and its first phase event, and the one
+    // a mid-run reload lands in. ❌ Never blank, and ❌ never "First full scan".
+    expect(header(phased(undefined))).toBe('First index')
+  })
+
+  it('leaves a whole-volume scan on its own header', () => {
+    const target = render({
+      activity: scanActivity({ priorTotalEntries: 100_000 }),
+      phase: 'scanning',
+      scanRunKind: 'first_scan',
+    })
+    expect(header(target)).toBe('First full scan')
   })
 })

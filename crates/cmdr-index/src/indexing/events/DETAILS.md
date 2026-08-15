@@ -20,10 +20,11 @@ the same idea from the other direction: it now sits in `sink.rs` beside the `Ind
 The index subsystems say what happened; the app decides what a human sees. A subsystem builds an `IndexEvent` and hands
 it to an injected `EventSink`. Nothing here names a wire format, an event name, or a sentence.
 
-`IndexEvent` has 20 variants. Seventeen become frontend events (`ScanStarted`, `CoverageBranchStarted`,
-`CoverageBranchEnded`, `ScanProgress`, `ScanComplete`, `ScanAborted`, `DirsUpdated`, `ReplayProgress`, `ReplayComplete`,
-`RescanScheduled`, `AggregationProgress`, `AggregationComplete`, `MemoryWarning`, `FreshnessChanged`, `PhaseChanged`,
-`MediaEnrichProgress`, `MediaEnrichTerminal`). Three reach the host's own machinery instead:
+`IndexEvent` has 21 variants. Eighteen become frontend events (`ScanStarted`, `CoverageBranchStarted`,
+`CoverageBranchEnded`, `CoveragePhaseStarted`, `ScanProgress`, `ScanComplete`, `ScanAborted`, `DirsUpdated`,
+`ReplayProgress`, `ReplayComplete`, `RescanScheduled`, `AggregationProgress`, `AggregationComplete`, `MemoryWarning`,
+`FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`, `MediaEnrichTerminal`). Three reach the host's own machinery
+instead:
 
 - **`Error { report: IndexErrorReport }`** — a failure worth an error report, described by what broke rather than by the
   sentence someone would write about it: `MemoryWatchdog` (action, footprint, limit, escalation, the breakdown),
@@ -37,6 +38,13 @@ it to an injected `EventSink`. Nothing here names a wire format, an event name, 
   moment their own files started answering; the marker behind it still drives exactly one subscriber INSIDE the crate
   (`lifecycle/phases/completion.rs`). The app routes it `Destination::AnalyticsOnly` and nothing renders it, since what
   a user sees is the size that appears, not the marker.
+
+**`CoveragePhaseStarted` names the PHASE root; the branch pair names the frontier roots one level down.** The two are
+not interchangeable: a host that tried to read the phase off the branch events couldn't tell `~/Library` (the home
+phase) from `~/Downloads` (a priority root), and the branch events are debounced besides, so the answer would lag a
+phase boundary or skip it. ❌ The crate does not classify the phase — it sends the root and the volume root, and the
+HOST maps them, because the host is what answered `HostPolicy::priority_roots` in the first place. A second description
+of that order living here is a second thing to keep in step with the queue.
 
 **The coverage-branch pair brackets one walk over one branch, and every kind of run emits it.** A phase names the
 frontier root it is covering; a walk that takes the volume whole names the volume root (`announce_whole_volume_walk`).

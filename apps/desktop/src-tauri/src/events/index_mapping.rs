@@ -32,8 +32,10 @@ use cmdr_index::{
     RescanReason, ScanRunKind,
 };
 
+use coverage_phase::{CoveragePhaseLabel, label_for};
 use walk_announcer::WalkAnnouncer;
 
+mod coverage_phase;
 mod walk_announcer;
 
 #[cfg(test)]
@@ -70,6 +72,23 @@ pub struct IndexScanStartedEvent {
     /// walk puts every folder on the drive in flux for the run's whole length,
     /// while a phased run puts only the ground the branch events name in flux.
     pub covered_in_phases: bool,
+}
+
+/// A drive's first index moved on to its next phase.
+///
+/// The phases run in the order their owner cares about, so the label is what the
+/// status surface says a first index is doing right now: their own folders, then
+/// the rest of home, then the rest of the drive. Classified app-side from the
+/// roots the crate reports (`coverage_phase.rs`), because the app is what
+/// answered "which folders matter" in the first place.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-coverage-phase-started")]
+#[serde(rename_all = "camelCase")]
+pub struct IndexCoveragePhaseStartedEvent {
+    /// The volume being covered.
+    pub volume_id: String,
+    /// Which phase it is, in the terms its owner would recognize.
+    pub label: CoveragePhaseLabel,
 }
 
 /// A branch of a drive went under the walker, and the folder sizes inside it (and
@@ -437,6 +456,17 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
                 total_entries,
                 total_dirs,
                 duration_ms,
+            },
+        ),
+        IndexEvent::CoveragePhaseStarted {
+            volume_id,
+            root,
+            volume_root,
+        } => to_frontend(
+            app,
+            IndexCoveragePhaseStartedEvent {
+                volume_id,
+                label: label_for(&root, &volume_root, dirs::home_dir().as_deref()),
             },
         ),
         IndexEvent::HomeCovered { .. } => Destination::AnalyticsOnly,

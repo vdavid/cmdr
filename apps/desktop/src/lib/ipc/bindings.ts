@@ -3384,6 +3384,7 @@ export const events = {
   indexAggregationProgress: makeEvent<AggregationProgressEvent>('index-aggregation-progress'),
   indexCoverageBranchEnded: makeEvent<IndexCoverageBranchEndedEvent>('index-coverage-branch-ended'),
   indexCoverageBranchStarted: makeEvent<IndexCoverageBranchStartedEvent>('index-coverage-branch-started'),
+  indexCoveragePhaseStarted: makeEvent<IndexCoveragePhaseStartedEvent>('index-coverage-phase-started'),
   indexDirUpdated: makeEvent<IndexDirUpdatedEvent>('index-dir-updated'),
   indexFreshnessChanged: makeEvent<IndexFreshnessChangedEvent>('index-freshness-changed'),
   indexMemoryWarning: makeEvent<IndexMemoryWarningEvent>('index-memory-warning'),
@@ -4172,6 +4173,21 @@ export type CoverageKind =
   | 'live'
   // Part of the scope came from the index and part from the walk.
   | 'mixed'
+
+/**
+ *  Which phase of a drive's first index is running, in the terms its owner would
+ *  recognize. The frontend renders one label per variant.
+ */
+export type CoveragePhaseLabel =
+  /**
+   *  A folder this user cares about: one the app named up front, or one they
+   *  opened while the walk was running.
+   */
+  | 'priorityFolders'
+  // The rest of their home folder, after the folders above it.
+  | 'home'
+  // The rest of the drive, which is the last phase.
+  | 'wholeDrive'
 
 /**
  *  The live preview behind the importance slider: across the ENABLED volumes in
@@ -5191,6 +5207,22 @@ export type IndexCoverageBranchStartedEvent = {
   volumeId: string
   // The roots under the walker, absolute in the volume's own path space.
   roots: string[]
+}
+
+/**
+ *  A drive's first index moved on to its next phase.
+ *
+ *  The phases run in the order their owner cares about, so the label is what the
+ *  status surface says a first index is doing right now: their own folders, then
+ *  the rest of home, then the rest of the drive. Classified app-side from the
+ *  roots the crate reports (`coverage_phase.rs`), because the app is what
+ *  answered "which folders matter" in the first place.
+ */
+export type IndexCoveragePhaseStartedEvent = {
+  // The volume being covered.
+  volumeId: string
+  // Which phase it is, in the terms its owner would recognize.
+  label: CoveragePhaseLabel
 }
 
 /**

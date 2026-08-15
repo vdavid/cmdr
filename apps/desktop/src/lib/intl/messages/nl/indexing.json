@@ -45,6 +45,18 @@
   "@indexing.run.update": {
     "sourceHash": "97ac3e3"
   },
+  "indexing.phase.priorityFolders": "De mappen die je het meest gebruikt worden geïndexeerd",
+  "@indexing.phase.priorityFolders": {
+    "sourceHash": "09dd19d"
+  },
+  "indexing.phase.home": "De rest van je persoonlijke map wordt geïndexeerd",
+  "@indexing.phase.home": {
+    "sourceHash": "8c31671"
+  },
+  "indexing.phase.wholeDrive": "De rest van de schijf wordt geïndexeerd",
+  "@indexing.phase.wholeDrive": {
+    "sourceHash": "1e1d606"
+  },
   "indexing.step.findFiles": "Bestanden zoeken",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"

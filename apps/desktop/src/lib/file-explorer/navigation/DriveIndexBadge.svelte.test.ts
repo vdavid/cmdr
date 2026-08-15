@@ -197,7 +197,7 @@ describe('DriveIndexBadge scanning tooltip', () => {
     badgeActivity = undefined
     const { target } = render(makeStatus({ freshness: 'scanning' }))
     // Unified onto the indexing.scan.* family; no rich body host rendered.
-    expect(ariaLabel(target)).toContain('Scanning your drive')
+    expect(ariaLabel(target)).toContain('Indexing your drive')
     expect(target.querySelector('.scan-tooltip-body')).toBeNull()
   })
 

@@ -45,6 +45,18 @@
   "@indexing.run.update": {
     "sourceHash": "97ac3e3"
   },
+  "indexing.phase.priorityFolders": "正在为你最常用的文件夹建立索引",
+  "@indexing.phase.priorityFolders": {
+    "sourceHash": "09dd19d"
+  },
+  "indexing.phase.home": "正在为你个人文件夹的其余部分建立索引",
+  "@indexing.phase.home": {
+    "sourceHash": "8c31671"
+  },
+  "indexing.phase.wholeDrive": "正在为驱动器的其余部分建立索引",
+  "@indexing.phase.wholeDrive": {
+    "sourceHash": "1e1d606"
+  },
   "indexing.step.findFiles": "查找文件",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"

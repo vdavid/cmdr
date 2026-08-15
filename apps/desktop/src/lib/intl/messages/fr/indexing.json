@@ -45,6 +45,18 @@
   "@indexing.run.update": {
     "sourceHash": "97ac3e3"
   },
+  "indexing.phase.priorityFolders": "Indexation des dossiers que vous utilisez le plus",
+  "@indexing.phase.priorityFolders": {
+    "sourceHash": "09dd19d"
+  },
+  "indexing.phase.home": "Indexation du reste de votre dossier personnel",
+  "@indexing.phase.home": {
+    "sourceHash": "8c31671"
+  },
+  "indexing.phase.wholeDrive": "Indexation du reste du disque",
+  "@indexing.phase.wholeDrive": {
+    "sourceHash": "1e1d606"
+  },
   "indexing.step.findFiles": "Trouver les fichiers",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"

@@ -11,6 +11,7 @@ import {
   type IndexAggregationCompleteEvent,
   type IndexCoverageBranchEndedEvent,
   type IndexCoverageBranchStartedEvent,
+  type IndexCoveragePhaseStartedEvent,
   type IndexDirUpdatedEvent,
   type IndexFreshnessChangedEvent,
   type IndexMemoryWarningEvent,
@@ -66,6 +67,20 @@ export function onIndexCoverageBranchStarted(
   callback: (payload: IndexCoverageBranchStartedEvent) => void,
 ): Promise<UnlistenFn> {
   return events.indexCoverageBranchStarted.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/**
+ * Fires when a drive's first index moves on to its next phase, carrying the label
+ * for what it is covering now (their own folders, then the rest of home, then the
+ * rest of the drive). The backend classifies it; the frontend renders the label
+ * it is handed.
+ */
+export function onIndexCoveragePhaseStarted(
+  callback: (payload: IndexCoveragePhaseStartedEvent) => void,
+): Promise<UnlistenFn> {
+  return events.indexCoveragePhaseStarted.listen((event) => {
     callback(event.payload)
   })
 }

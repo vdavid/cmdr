@@ -23,6 +23,7 @@
         getVolumePhase,
         getVolumeScanRunKind,
         isVolumeCoveredInPhases,
+        getVolumeCoveragePhase,
         type VolumeIndexActivity,
         type AggregationActivity,
     } from './index-state.svelte'
@@ -184,6 +185,10 @@
     const phase = $derived(getVolumePhase(activity.volumeId))
     const isNetwork = $derived(isNetworkIndexRun(activity.volumeId, getVolumes()))
     const coveredInPhases = $derived(isVolumeCoveredInPhases(activity.volumeId))
+    // Which phase of a first index is running, when the backend has said. The
+    // header prefers it over the run-kind label, so a user watching a first index
+    // reads the order it runs in rather than one word for the whole thing.
+    const coveragePhase = $derived(getVolumeCoveragePhase(activity.volumeId))
     // What kind of run this is, for the run-kind header and the per-step copy.
     // Read here in the stateful wrapper (like `phase`); the body stays
     // presentational.
@@ -202,6 +207,7 @@
         {phase}
         {isNetwork}
         {coveredInPhases}
+        {coveragePhase}
         {scanRunKind}
     />
 </div>

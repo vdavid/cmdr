@@ -28,12 +28,13 @@
         stepKindToLabelKey,
         computeSubPhaseToLabelKey,
         runLabelToLabelKey,
+        coveragePhaseToLabelKey,
         type IndexRunKind,
         type AggregationSubPhase,
         type IndexStepStatus,
     } from './indexing-steps'
     import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
-    import type { ActivityPhase, ScanRunKind } from '$lib/ipc/bindings'
+    import type { ActivityPhase, CoveragePhaseLabel, ScanRunKind } from '$lib/ipc/bindings'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
@@ -64,13 +65,31 @@
          *  one step that happens, since sizes land as the walk goes rather than in
          *  a separate pass afterwards. */
         coveredInPhases: boolean
+        /**
+         * Which phase of a first index is running, when the backend has said.
+         * The header prefers it over the run-kind label, because the ORDER is the
+         * feature: someone watching wants to know their own folders come first.
+         * `undefined` before the first phase event and after a mid-run reload,
+         * which the run-kind label covers.
+         */
+        coveragePhase?: CoveragePhaseLabel
         /** What kind of run this is (from `getVolumeScanRunKind`), for the
          *  run-kind header and the per-step copy. `undefined` when unknown (a
          *  mid-scan reload): the header is omitted rather than guessed. */
         scanRunKind?: ScanRunKind
     }
 
-    const { activity, aggregation, now, windowedEta, phase, isNetwork, coveredInPhases, scanRunKind }: Props = $props()
+    const {
+        activity,
+        aggregation,
+        now,
+        windowedEta,
+        phase,
+        isNetwork,
+        coveredInPhases,
+        coveragePhase,
+        scanRunKind,
+    }: Props = $props()
 
     // ── Steps ─────────────────────────────────────────────────────────
     const runKind = $derived<IndexRunKind>(
@@ -88,6 +107,12 @@
     // changes" / "Quick update"), so the user can tell a full walk from a change
     // check from a quick roll-on at a glance.
     const runLabel = $derived(deriveRunLabel(runKind, scanRunKind))
+    // What the header actually says: the phase when one has been announced (the
+    // order is the feature), else the run-kind label. ❌ Not both — they answer
+    // the same question at two zoom levels, and stacking them reads as two runs.
+    const headerKey = $derived(
+        coveragePhase ? coveragePhaseToLabelKey[coveragePhase] : runLabel ? runLabelToLabelKey[runLabel] : null,
+    )
     const active = $derived(activeStep(steps))
     const activeLabel = $derived(active ? tString(stepKindToLabelKey[active.kind]) : '')
 
@@ -214,8 +239,8 @@
     )
 </script>
 
-{#if runLabel}
-    <span class="run-kind">{tString(runLabelToLabelKey[runLabel])}</span>
+{#if headerKey}
+    <span class="run-kind">{tString(headerKey)}</span>
 {/if}
 <ul class="step-list">
     {#each steps as step (step.kind)}

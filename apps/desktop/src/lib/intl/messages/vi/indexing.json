@@ -45,6 +45,18 @@
   "@indexing.run.update": {
     "sourceHash": "97ac3e3"
   },
+  "indexing.phase.priorityFolders": "Đang lập chỉ mục những thư mục bạn dùng nhiều nhất",
+  "@indexing.phase.priorityFolders": {
+    "sourceHash": "09dd19d"
+  },
+  "indexing.phase.home": "Đang lập chỉ mục phần còn lại trong thư mục nhà của bạn",
+  "@indexing.phase.home": {
+    "sourceHash": "8c31671"
+  },
+  "indexing.phase.wholeDrive": "Đang lập chỉ mục phần còn lại của ổ đĩa",
+  "@indexing.phase.wholeDrive": {
+    "sourceHash": "1e1d606"
+  },
   "indexing.step.findFiles": "Tìm tệp",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"

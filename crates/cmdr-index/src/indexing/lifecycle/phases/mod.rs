@@ -391,6 +391,15 @@ impl Machine {
             ActivityPhase::Scanning,
             &format!("covering {}", phase.path.display()),
         );
+        // The host is told which phase this is by its ROOT, ❌ not by a rank: it
+        // answered `priority_roots`, so which of its own answers this is, is its
+        // question. The branch events can't carry it — they name frontier roots
+        // one level down, and they are debounced.
+        self.events.emit(IndexEvent::CoveragePhaseStarted {
+            volume_id: self.volume_id.clone(),
+            root: phase.path.to_string_lossy().into_owned(),
+            volume_root: self.volume_root.to_string_lossy().into_owned(),
+        });
         stitch::down_to(&self.space, &self.writer, &phase.path);
 
         for pass in 0..MAX_PASSES_PER_PHASE {
