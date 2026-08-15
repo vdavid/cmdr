@@ -35,11 +35,9 @@ Virtual-scrolling file list components rendering 100k+ directories without DOM p
   `test/e2e-playwright/full-cursor-page-nav.spec.ts`; why in `DETAILS.md`.
 - **`getDirSizeDisplayState()` (`full-list-utils.ts`) is the single source of truth for a directory's size-column
   state**, consumed by both `FullList.svelte`'s size cell and `measure-column-widths.ts`. Re-inline the
-  dir/scanning/stale decision in either and the rendered text and pre-measured width drift.
-- **The size hourglass is decided PER ROW, and the measurer takes the pane's own function** (`isSizeUpdating(entry)`,
-  built from `getWalkedGround` + `isPathAffectedByWalk`), ❌ never a per-volume boolean: the size column reserves width
-  for the glyph, so a per-row renderer against a per-volume measurer clips exactly the rows that show it. The walk test
-  is bidirectional (a walk BELOW a row moves that row's size). `DETAILS.md` § the walked-ground input.
+  dir/scanning/stale decision in either and the rendered text and pre-measured width drift. Same for the hourglass on
+  top, which is PER ROW: the measurer takes the pane's own `isSizeUpdating(entry)`, ❌ never a per-volume flag, which
+  would clip the glyph on exactly the rows showing it. `DETAILS.md` § walked-ground input.
 - **Size and Modified render with `font-variant-numeric: tabular-nums`, which canvas/pretext can't measure.**
   `measure-column-widths.ts` substitutes the widest digit (`tabularize`) instead, so the two move together: drop tabular
   figures from a numeric column and drop its `tabularize` call too, or it over-reserves. Why: `DETAILS.md` § Gotchas.

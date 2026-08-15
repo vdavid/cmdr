@@ -21,10 +21,9 @@ The index subsystems say what happened; the app decides what a human sees. A sub
 it to an injected `EventSink`. Nothing here names a wire format, an event name, or a sentence.
 
 `IndexEvent` has 19 variants. Seventeen become frontend events (`ScanStarted`, `CoverageBranchStarted`,
-`CoverageBranchEnded`, `ScanProgress`, `ScanComplete`, `ScanAborted`, `DirsUpdated`, `ReplayProgress`,
-`ReplayComplete`, `RescanScheduled`, `AggregationProgress`, `AggregationComplete`, `MemoryWarning`,
-`FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`, `MediaEnrichTerminal`). Two reach the host's own machinery
-instead:
+`CoverageBranchEnded`, `ScanProgress`, `ScanComplete`, `ScanAborted`, `DirsUpdated`, `ReplayProgress`, `ReplayComplete`,
+`RescanScheduled`, `AggregationProgress`, `AggregationComplete`, `MemoryWarning`, `FreshnessChanged`, `PhaseChanged`,
+`MediaEnrichProgress`, `MediaEnrichTerminal`). Two reach the host's own machinery instead:
 
 - **`Error { report: IndexErrorReport }`** — a failure worth an error report, described by what broke rather than by the
   sentence someone would write about it: `MemoryWatchdog` (action, footprint, limit, escalation, the breakdown),

@@ -408,7 +408,12 @@ function foldEntries(
       ctx.sizeFormatOpts,
       ctx.isRestricted?.(entry.path) ?? false,
     )
-    const iconSuffix = sizeIconSuffixForEntry(entry, ctx.sizeDisplayMode, ctx.isSizeUpdating, ctx.showSizeMismatchWarning)
+    const iconSuffix = sizeIconSuffixForEntry(
+      entry,
+      ctx.sizeDisplayMode,
+      ctx.isSizeUpdating,
+      ctx.showSizeMismatchWarning,
+    )
     const rowSize = (sizeText ? ctx.measureNum(sizeText) : 0) + iconSuffix
     if (rowSize > sizeMax) sizeMax = rowSize
     if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix

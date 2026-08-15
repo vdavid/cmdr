@@ -273,7 +273,10 @@ mod tests {
 
         assert_eq!(
             recorder.kinds(),
-            vec![IndexEventKind::CoverageBranchStarted, IndexEventKind::CoverageBranchEnded],
+            vec![
+                IndexEventKind::CoverageBranchStarted,
+                IndexEventKind::CoverageBranchEnded
+            ],
             "the end rides out on the calling thread, with no wait of its own"
         );
     }
@@ -290,7 +293,10 @@ mod tests {
 
         assert_eq!(
             recorder.kinds(),
-            vec![IndexEventKind::CoverageBranchStarted, IndexEventKind::CoverageBranchEnded],
+            vec![
+                IndexEventKind::CoverageBranchStarted,
+                IndexEventKind::CoverageBranchEnded
+            ],
         );
     }
 

@@ -780,22 +780,22 @@ pub fn builder() -> Builder<tauri::Wry> {
             // via `event_name` because the struct names carry an `…Event` suffix
             // (or live in a differently-named module) that wouldn't kebab-case to
             // the existing wire string.
-            IndexScanStartedEvent,         // event_name = "index-scan-started"
-            IndexScanProgressEvent,        // event_name = "index-scan-progress"
-            IndexScanCompleteEvent,        // event_name = "index-scan-complete"
-            IndexScanAbortedEvent,         // event_name = "index-scan-aborted"
+            IndexScanStartedEvent,           // event_name = "index-scan-started"
+            IndexScanProgressEvent,          // event_name = "index-scan-progress"
+            IndexScanCompleteEvent,          // event_name = "index-scan-complete"
+            IndexScanAbortedEvent,           // event_name = "index-scan-aborted"
             IndexCoverageBranchStartedEvent, // event_name = "index-coverage-branch-started"
-            IndexCoverageBranchEndedEvent, // event_name = "index-coverage-branch-ended"
-            IndexPhaseChangedEvent,        // event_name = "index-phase-changed"
-            IndexDirUpdatedEvent,          // event_name = "index-dir-updated"
-            IndexReplayProgressEvent,      // event_name = "index-replay-progress"
-            IndexReplayCompleteEvent,      // event_name = "index-replay-complete"
-            IndexRescanNotificationEvent,  // event_name = "index-rescan-notification"
-            AggregationProgressEvent,      // event_name = "index-aggregation-progress"
-            IndexAggregationCompleteEvent, // event_name = "index-aggregation-complete" (payloadless)
-            IndexMemoryWarningEvent,       // event_name = "index-memory-warning"
-            IndexFreshnessChangedEvent,    // event_name = "index-freshness-changed"
-            SearchIndexReadyEvent,         // event_name = "search-index-ready"
+            IndexCoverageBranchEndedEvent,   // event_name = "index-coverage-branch-ended"
+            IndexPhaseChangedEvent,          // event_name = "index-phase-changed"
+            IndexDirUpdatedEvent,            // event_name = "index-dir-updated"
+            IndexReplayProgressEvent,        // event_name = "index-replay-progress"
+            IndexReplayCompleteEvent,        // event_name = "index-replay-complete"
+            IndexRescanNotificationEvent,    // event_name = "index-rescan-notification"
+            AggregationProgressEvent,        // event_name = "index-aggregation-progress"
+            IndexAggregationCompleteEvent,   // event_name = "index-aggregation-complete" (payloadless)
+            IndexMemoryWarningEvent,         // event_name = "index-memory-warning"
+            IndexFreshnessChangedEvent,      // event_name = "index-freshness-changed"
+            SearchIndexReadyEvent,           // event_name = "search-index-ready"
             // Live search (search/live/events.rs `TauriSearchEventSink`): one
             // progress stream plus one terminal event, every one stamped with the
             // run it belongs to.

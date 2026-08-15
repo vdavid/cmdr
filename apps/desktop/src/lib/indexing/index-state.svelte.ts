@@ -37,12 +37,7 @@ import {
   type UnlistenFn,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
-import {
-  NO_WALKED_GROUND,
-  walkedBranches,
-  wholeVolumeWalked,
-  type WalkedGround,
-} from './walked-ground'
+import { NO_WALKED_GROUND, walkedBranches, wholeVolumeWalked, type WalkedGround } from './walked-ground'
 import { tString } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { ScanRunKind } from '$lib/ipc/bindings'
@@ -394,10 +389,7 @@ export async function initIndexState(): Promise<void> {
     // take an unrelated branch's hourglass off with it.
     const current = walkedGround.get(payload.volumeId)
     if (current === undefined || current.wholeVolume) return
-    walkedGround.set(
-      payload.volumeId,
-      walkedBranches(current.roots.filter((root) => !payload.roots.includes(root))),
-    )
+    walkedGround.set(payload.volumeId, walkedBranches(current.roots.filter((root) => !payload.roots.includes(root))))
   })
   unlistenHandles.push(unlistenBranchEnded)
 

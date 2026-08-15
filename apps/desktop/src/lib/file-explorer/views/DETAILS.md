@@ -38,8 +38,8 @@ pre-measured column width agree: don't re-inline the decision in any of them.
 being walked whole (a full rebuild, every SMB/MTP scan), or an announced branch is at, under, or ABOVE this row. Above,
 because the roll-up repairs the ancestor chain, so walking `~/Downloads/big` moves the size shown for `~/Downloads` and
 `~`. ❌ Reading "the volume is scanning" here is the bug the per-row answer replaced: a drive covered in phases reports
-scanning for its whole first index while only one branch at a time can move anything, so every row wore an hourglass
-for minutes.
+scanning for its whole first index while only one branch at a time can move anything, so every row wore an hourglass for
+minutes.
 
 The consequence for `measure-column-widths.ts`: it takes the pane's own `isSizeUpdating(entry)` function rather than a
 per-volume boolean, and reserves `SIZE_ICON_WIDTH` for exactly the rows that answer true. ⚠️ Pass the same function the

@@ -44,23 +44,16 @@ API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or `codeg
   window sample — don't mix them (swapping counter and denominator ships wrong ETAs). Tiers + clamps: DETAILS.md.
 - **`getEntriesScanned` stays `root`-only** (SearchDialog's index-build progress). Only the corner hourglass is global
   (`isAnyVolumeIndexing()`); don't reintroduce a global `isScanning()`.
-- **The per-folder size hourglass keys on GROUND BEING WALKED, ❌ never "the volume is scanning".** A drive covered in
-  phases is "scanning" for its whole first index (146 s measured) while only one branch at a time can move a size, so
-  the volume-wide flag put an hourglass on every row for the whole run. `getWalkedGround(volumeId)` +
-  `isPathAffectedByWalk` (in `walked-ground.ts`) is the per-row answer, and the test is **bidirectional**: the roll-up
-  repairs the ancestor chain, so a walk BELOW a row moves that row too. Four consumers must move together — `FullList`,
-  `BriefList`, `SelectionInfo`, and `views/measure-column-widths.ts`, which takes the pane's own per-row function so
-  reserved width and drawn glyph can't disagree.
-- **The walked-ground map is written when the GROUND moves, never per progress tick**: a `.set` per tick would re-run
-  the membership `$derived` for every visible row twice a second. Walk counters stay on `activity`.
-- **A phased run's checklist is ONE step** (`IndexRunKind: 'phased'`, from `isVolumeCoveredInPhases`): it writes sizes as
-  it walks, so the save / compute / catch-up steps never separately happen and would sit pending for the whole run.
+- **A phased run's checklist is ONE step** (`IndexRunKind: 'phased'`): the other three never separately happen.
 - **The indicator is a focusable, hoverable icon** (`role="img"`, `tabindex="0"`), not `pointer-events: none`; detail
   lives in a hover/focus tooltip carrying the live label + ETA via `aria-describedby`. Not `role="status"` (a live
   region is wrong for a focusable hover target).
-- **Directory sizes are HONEST: unknown (the `<dir>` placeholder) ≠ empty (`0 bytes`) ≠ lower-bound (`≥`).**
-  `getDirSizeDisplayState` (`views/full-list-utils.ts`) is the single source of truth, consumed in lockstep by
-  `FullList` / `SelectionInfo` / `measure-column-widths`. Rendering + sort: DETAILS.md.
+- **Directory sizes are HONEST: unknown (`<dir>`) ≠ empty (`0 bytes`) ≠ lower-bound (`≥`).** `getDirSizeDisplayState`
+  (`views/full-list-utils.ts`) is the single source of truth. The hourglass on top keys on GROUND BEING WALKED
+  (`getWalkedGround` + `isPathAffectedByWalk`), ❌ never "the volume is scanning" (a phased index scans for minutes
+  while one branch moves), and tests BOTH ways since the roll-up repairs ancestors. Both travel in lockstep through
+  `FullList` / `BriefList` / `SelectionInfo` / `measure-column-widths`; ❌ never write that map per progress tick.
+  Rendering + sort: DETAILS.md.
 
 Full public API, the ten-event table, the step model, per-state tooltip content, ETA blending, honest-size rendering,
 dependencies, and tests: `DETAILS.md`. Read it before any non-trivial work here.

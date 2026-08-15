@@ -620,7 +620,6 @@ impl TauriEventSink {
         Self {
             app,
             announcer: WalkAnnouncer::new(Arc::new(move |event| {
-                // allowed-discarded-outcome: same as the emit path below — nobody above the production sink asks where an event went.
                 route(event, Some(&announcer_app));
             })),
         }

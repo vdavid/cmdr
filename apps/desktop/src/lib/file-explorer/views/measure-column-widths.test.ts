@@ -235,8 +235,7 @@ describe('computeFullListColumnWidths', () => {
     // every row and clip the glyph on exactly the rows that show it.
     _setMeasureForTests(fakeMeasure)
     const ground = walkedBranches(['/Users/someone/Downloads/big'])
-    const dir = (name: string, path: string) =>
-      entry({ name, path, isDirectory: true, recursiveSize: 12345 })
+    const dir = (name: string, path: string) => entry({ name, path, isDirectory: true, recursiveSize: 12345 })
 
     const untouched = computeFullListColumnWidths({
       ...baseArgs,
