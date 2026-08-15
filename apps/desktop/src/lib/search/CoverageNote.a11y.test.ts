@@ -18,6 +18,7 @@ function mountNote(note: Note | null, onIndexDrive: (() => void) | null) {
       note,
       driveName: 'Naspolya',
       isNetwork: true,
+      isIndexing: false,
       onIndexDrive,
       onSilenceDrive: () => {},
     },

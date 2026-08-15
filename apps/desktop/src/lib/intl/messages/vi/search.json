@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.indexing": "Cmdr vẫn đang lập chỉ mục {drive} và chưa tới các thư mục này, nên lượt tìm này đã bỏ qua chúng:",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "f5995ea"
+  },
   "search.coverage.unresolved": "{count, plural, other {Chỉ mục của Cmdr chưa bao gồm các thư mục sau, nên lần tìm kiếm này đã bỏ qua:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
@@ -150,6 +154,10 @@
   "search.coverage.walk.abandoned": "Vài thư mục ngừng phản hồi nên Cmdr bỏ qua chúng, và danh sách này có thể còn thiếu. Tìm lại sẽ thử lại những thư mục đó.",
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, other {{countText} chỗ trên ổ đĩa này đã ngừng phản hồi, nên Cmdr đi tiếp mà không có chúng và danh sách này có thể bị thiếu. Cmdr sẽ quay lại sau, và tìm lại một lần nữa cũng cho chúng thêm một cơ hội.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "2a79bc5"
   },
   "search.coverage.denied": "{count, plural, other {Cmdr không được phép xem bên trong những thư mục này, nên không có gì từ đó trong kết quả:}}",
   "@search.coverage.denied": {

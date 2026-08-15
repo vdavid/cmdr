@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.indexing": "Cmdr indexe encore {drive} et n''a pas encore atteint ces dossiers, donc cette recherche les a ignorés :",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "f5995ea"
+  },
   "search.coverage.unresolved": "{count, plural, one {L''index de Cmdr ne couvre pas encore ce dossier, la recherche l''a donc ignoré :} many {L''index de Cmdr ne couvre pas encore ces dossiers, la recherche les a donc ignorés :} other {L''index de Cmdr ne couvre pas encore ces dossiers, la recherche les a donc ignorés :}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
@@ -150,6 +154,10 @@
   "search.coverage.walk.abandoned": "Certains dossiers ont cessé de répondre, alors Cmdr est passé à la suite sans eux et cette liste est peut-être incomplète. Relancer la recherche leur redonne une chance.",
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, one {Un endroit de ce disque a cessé de répondre, donc Cmdr a continué sans lui et cette liste est peut-être incomplète. Cmdr y revient plus tard, et relancer la recherche lui donne une nouvelle chance.} many {{countText} endroits de ce disque ont cessé de répondre, donc Cmdr a continué sans eux et cette liste est peut-être incomplète. Cmdr y revient plus tard, et relancer la recherche leur donne une nouvelle chance.} other {{countText} endroits de ce disque ont cessé de répondre, donc Cmdr a continué sans eux et cette liste est peut-être incomplète. Cmdr y revient plus tard, et relancer la recherche leur donne une nouvelle chance.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "2a79bc5"
   },
   "search.coverage.denied": "{count, plural, one {Cmdr n''a pas eu l''autorisation de regarder dans ce dossier, rien de son contenu n''est donc dans les résultats :} many {Cmdr n''a pas eu l''autorisation de regarder dans ces dossiers, rien de leur contenu n''est donc dans les résultats :} other {Cmdr n''a pas eu l''autorisation de regarder dans ces dossiers, rien de leur contenu n''est donc dans les résultats :}}",
   "@search.coverage.denied": {

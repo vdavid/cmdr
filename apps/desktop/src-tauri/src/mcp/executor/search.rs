@@ -185,9 +185,17 @@ fn coverage_note(answer: &LiveAnswer, system_dirs_excluded: bool) -> Option<Stri
             });
         }
         if coverage.abandoned_ground {
-            notes.push(
-                "Note: the walk gave up on folders that stopped responding, so this list is a lower bound.".to_string(),
-            );
+            // The count is places, not folders: a mount that went to sleep marks
+            // every directory the walk had reached inside it, and an agent reading
+            // "1,497 folders" would conclude the drive is broken.
+            notes.push(if coverage.abandoned_locations > 0 {
+                format!(
+                    "Note: the walk gave up on {} that stopped responding, so this list is a lower bound. Cmdr retries them on its own.",
+                    cmdr_fs::pluralize::pluralize(u64::from(coverage.abandoned_locations), "place"),
+                )
+            } else {
+                "Note: the walk gave up on folders that stopped responding, so this list is a lower bound. Cmdr retries them on its own.".to_string()
+            });
         }
         match coverage.walk {
             search::WalkEnding::Interrupted => notes.push(
@@ -598,6 +606,7 @@ mod tests {
             still_covering: Vec::new(),
             unresolved_scopes: Vec::new(),
             abandoned_ground: false,
+            abandoned_locations: 0,
             capped: false,
             target_volume_id: volume.to_string(),
             hidden_by_excludes: 0,

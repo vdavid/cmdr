@@ -327,8 +327,15 @@ the index alone and says nothing about reporting; `execute/live_run.rs` is the r
    list.** `SearchRunCoverage` carries the other two as paths and folds this one into the `abandoned_ground` boolean,
    OR-ed with what this run's own walk gave up on. That fold is what keeps a search over a wedged mount honest: the
    index remembers that ground, so the frontier never offers it, so nothing else in the answer would hint that it was
-   skipped. Naming those folders on screen needs copy that exists for neither of the other two ("nothing for you to do,
-   Cmdr will try again"), which is David's call, ❌ not something to invent alongside the plumbing.
+   skipped.
+
+   What DOES cross is a COUNT, `abandoned_locations`: those paths grouped by their parent
+   (`live::events::abandoned_location_count`). ❌ Never a folder count — a wedged mount marked 1,497 directories on one
+   real machine, which `coverage_for_scope` already cuts to 76 shallowest ancestors, and grouping those lands on the one
+   place the user would recognize. `0` alongside `abandoned_ground` is a real state and the note handles it in words:
+   this run's own walk gave up on ground it recorded no path for. ❌ Still not a fourth LIST on screen — the copy that
+   ground needs ("nothing for you to do, Cmdr comes back to it") is a footnote under the two lists, not a third one
+   beside them.
 2. **Load the arena** — after step 1, deliberately (below).
 3. **The covered half** — `search_covered_half`, the identical engine pass `run_blocking` runs. The frontier is exactly
    the ground the arena has nothing to say about, so an unfiltered pass over the scope IS the covered half; nothing

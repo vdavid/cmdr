@@ -8,8 +8,11 @@
  *
  *   - **"Index this drive"** shows only for an UNCOVERED gap (an unresolved path sits on
  *     a drive that's already indexed, so there's nothing to turn on), only for a drive
- *     the live volume list can name, and never for one the user silenced. The NOTE still
- *     renders: silencing the offer doesn't make the gap untrue.
+ *     the live volume list can name, never for one the user silenced, and ❌ never while
+ *     that drive's first index is already running branch by branch: there is nothing to
+ *     turn on, and pressing it would restart the phases. The NOTE still renders (in its
+ *     own words for that case): silencing or withholding the offer doesn't make the gap
+ *     untrue.
  *   - **"Set up Full Disk Access"** shows only when a run was REFUSED a folder, this is
  *     macOS, and Cmdr doesn't have the permission yet. ❌ Never over `declined` (no
  *     permission opens a NAS snapshot tree, so it would send someone to System Settings
@@ -24,6 +27,7 @@ import { checkFullDiskAccessQuiet } from '$lib/tauri-commands'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
 import { isDriveSilenced, silenceDrive as silenceDrivePref } from '$lib/indexing/drive-index-prefs'
+import { isVolumeCoveredInPhases } from '$lib/indexing/index-state.svelte'
 import { offersFullDiskAccess, type CoverageNote } from './coverage-note'
 import { indexUncoveredDrive } from './coverage-actions'
 import { describeVolume } from './search-target-volume'
@@ -46,6 +50,8 @@ export interface CoverageCtaView {
   /** How to name the drive a gap belongs to, per the volume the BACKEND routed to. */
   readonly driveName: string
   readonly isNetwork: boolean
+  /** Whether that drive's first index is running right now, which the note speaks to. */
+  readonly isIndexing: boolean
   /** Turns indexing on for the uncovered drive, or `null` when nothing may be offered. */
   readonly indexDrive: (() => void) | null
   /** "Don't ask again" for this drive: the same persisted silence the first-connect prompt honors. */
@@ -63,8 +69,15 @@ export function createCoverageCta(deps: CoverageCtaDeps): CoverageCtaView {
    */
   const drive = $derived(describeVolume(getVolumes(), note?.volumeId ?? ''))
 
+  /**
+   * Whether this drive's first index is under way right now. It withholds the offer
+   * AND changes the note's own wording, so both read as one state rather than as an
+   * offer contradicting the sentence above it.
+   */
+  const isIndexing = $derived(note !== null && note.volumeId !== '' && isVolumeCoveredInPhases(note.volumeId))
+
   const ctaVolumeId = $derived(
-    note && note.uncoveredScopes.length > 0 && note.volumeId !== '' && !isDriveSilenced(note.volumeId)
+    note && note.uncoveredScopes.length > 0 && note.volumeId !== '' && !isDriveSilenced(note.volumeId) && !isIndexing
       ? note.volumeId
       : null,
   )
@@ -134,6 +147,9 @@ export function createCoverageCta(deps: CoverageCtaDeps): CoverageCtaView {
     },
     get isNetwork() {
       return drive.isNetwork
+    },
+    get isIndexing() {
+      return isIndexing
     },
     get indexDrive() {
       return indexDrive

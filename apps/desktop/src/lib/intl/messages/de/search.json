@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.indexing": "Cmdr indiziert {drive} noch und hat diese Ordner bisher nicht erreicht, deshalb hat die Suche sie übersprungen:",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "f5995ea"
+  },
   "search.coverage.unresolved": "{count, plural, one {Cmdrs Index enthält diesen Ordner noch nicht, deshalb hat die Suche ihn übersprungen:} other {Cmdrs Index enthält diese Ordner noch nicht, deshalb hat die Suche sie übersprungen:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
@@ -150,6 +154,10 @@
   "search.coverage.walk.abandoned": "Manche Ordner haben nicht mehr geantwortet, also ist Cmdr ohne sie weitergezogen und diese Liste ist womöglich unvollständig. Eine erneute Suche versucht es noch mal.",
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, one {Eine Stelle auf diesem Laufwerk hat nicht mehr geantwortet, also ist Cmdr ohne sie weitergegangen und diese Liste ist vielleicht kurz. Cmdr kommt später darauf zurück, und eine erneute Suche versucht es noch einmal.} other {{countText} Stellen auf diesem Laufwerk haben nicht mehr geantwortet, also ist Cmdr ohne sie weitergegangen und diese Liste ist vielleicht kurz. Cmdr kommt später darauf zurück, und eine erneute Suche versucht es noch einmal.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "2a79bc5"
   },
   "search.coverage.denied": "{count, plural, one {Cmdr durfte nicht in diesen Ordner hineinsehen, deshalb ist nichts daraus in den Ergebnissen:} other {Cmdr durfte nicht in diese Ordner hineinsehen, deshalb ist nichts daraus in den Ergebnissen:}}",
   "@search.coverage.denied": {

@@ -234,7 +234,7 @@ describe('computeFullListColumnWidths', () => {
     // the parity that matters: a per-volume answer here would reserve width on
     // every row and clip the glyph on exactly the rows that show it.
     _setMeasureForTests(fakeMeasure)
-    const ground = (['/Users/someone/Downloads/big'])
+    const ground = ['/Users/someone/Downloads/big']
     const dir = (name: string, path: string) => entry({ name, path, isDirectory: true, recursiveSize: 12345 })
 
     const untouched = computeFullListColumnWidths({

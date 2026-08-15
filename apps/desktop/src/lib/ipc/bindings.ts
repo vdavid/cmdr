@@ -8234,6 +8234,21 @@ export type SearchRunCoverage = {
    */
   abandonedGround: boolean
   /**
+   *  How many PLACES the walk gave up on, for a note that can say how much of
+   *  the drive this is about instead of leaving the reader to imagine it.
+   *
+   *  Folders grouped by their parent, ❌ never the raw folder count: a wedged
+   *  mount marked 1,497 directories on one real machine, which
+   *  `coverage_for_scope` already cuts to 76 shallowest ancestors, and grouping
+   *  those lands on the one place the user would recognize. Reporting 1,497
+   *  would be true and useless.
+   *
+   *  `0` with [`abandoned_ground`](Self::abandoned_ground) true is a real state
+   *  and the note handles it: this run's own walk gave up on ground it never
+   *  recorded a path for, so something was missed and nothing can say where.
+   */
+  abandonedLocations?: number
+  /**
    *  Whether the result cap was reached. The walk carries on past it (the count
    *  keeps rising), only the rows stop.
    */

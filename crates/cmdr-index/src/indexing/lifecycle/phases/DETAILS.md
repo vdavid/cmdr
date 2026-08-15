@@ -203,10 +203,9 @@ scan.
 - **Forget** (`Index::forget_volume`) keeps today's meaning: the database goes, and the branch set inside it goes with
   the coverage it describes, so the next launch is a clean first index.
 
-⚠️ One window is deliberately not resumable: the branch set is written as each walk FINISHES
-(`finish_branch_coverage`), so a stop taken inside the very first walk leaves the stitch's rows with nothing recording
-what ground they cover. The next launch rebuilds them, by the same rule that throws away an interrupted bulk scan. Tests:
-`tests/menu_actions.rs`.
+⚠️ One window is deliberately not resumable: the branch set is written as each walk FINISHES (`finish_branch_coverage`),
+so a stop taken inside the very first walk leaves the stitch's rows with nothing recording what ground they cover. The
+next launch rebuilds them, by the same rule that throws away an interrupted bulk scan. Tests: `tests/menu_actions.rs`.
 
 ## The database is prepared for a walk through writer MESSAGES
 

@@ -49,7 +49,20 @@ describe('coverageNoteFromRun', () => {
       declined: [],
       stillCovering: [],
       abandonedGround: true,
+      abandonedLocations: 0,
     })
+  })
+
+  it('carries how many places it gave up on, so the note can say how much this is about', () => {
+    const note = coverageNoteFromRun(runCoverage({ abandonedGround: true, abandonedLocations: 4 }))
+    expect(note?.live?.abandonedLocations).toBe(4)
+  })
+
+  it('reads a backend that says nothing about places as none known', () => {
+    // A run whose own walk gave up on ground it recorded no path for: something
+    // was missed and nothing can say where, which the note handles in words.
+    const note = coverageNoteFromRun(runCoverage({ abandonedGround: true, abandonedLocations: undefined }))
+    expect(note?.live?.abandonedLocations).toBe(0)
   })
 })
 
@@ -135,6 +148,7 @@ describe('offersFullDiskAccess', () => {
         declined: [],
         stillCovering: [],
         abandonedGround: false,
+        abandonedLocations: 0,
         ...live,
       },
     }

@@ -65,6 +65,33 @@ pub enum CoverageKind {
     Mixed,
 }
 
+/// How many PLACES a set of given-up-on directories amounts to.
+///
+/// Folders that share a parent are one place: a mount that stopped answering
+/// marks every directory the walk had reached inside it, and a note that said
+/// "1,497 folders" would be technically true and would tell the reader nothing
+/// they can act on or recognize. The input is already the shallowest marked
+/// ancestors (`coverage_for_scope` cuts there), so grouping by parent is the one
+/// step left between that and a number a person can picture.
+///
+/// The root's own parent is the root, which keeps a marked `/Volumes` and a
+/// marked `/opt` two places rather than folding them into one.
+pub(crate) fn abandoned_location_count(paths: &[String]) -> u32 {
+    let mut parents: Vec<&str> = paths
+        .iter()
+        .map(|path| {
+            let trimmed = path.strip_suffix('/').unwrap_or(path);
+            match trimmed.rfind('/') {
+                Some(0) | None => "/",
+                Some(cut) => &trimmed[..cut],
+            }
+        })
+        .collect();
+    parents.sort_unstable();
+    parents.dedup();
+    parents.len() as u32
+}
+
 /// What a live run could NOT answer for, gathered in one place so a terminal
 /// event says it once.
 ///
@@ -115,6 +142,20 @@ pub struct SearchRunCoverage {
     /// this ground on a backoff, which is a different sentence from "the drive went
     /// away".
     pub abandoned_ground: bool,
+    /// How many PLACES the walk gave up on, for a note that can say how much of
+    /// the drive this is about instead of leaving the reader to imagine it.
+    ///
+    /// Folders grouped by their parent, ❌ never the raw folder count: a wedged
+    /// mount marked 1,497 directories on one real machine, which
+    /// `coverage_for_scope` already cuts to 76 shallowest ancestors, and grouping
+    /// those lands on the one place the user would recognize. Reporting 1,497
+    /// would be true and useless.
+    ///
+    /// `0` with [`abandoned_ground`](Self::abandoned_ground) true is a real state
+    /// and the note handles it: this run's own walk gave up on ground it never
+    /// recorded a path for, so something was missed and nothing can say where.
+    #[serde(default)]
+    pub abandoned_locations: u32,
     /// Whether the result cap was reached. The walk carries on past it (the count
     /// keeps rising), only the rows stop.
     pub capped: bool,
@@ -308,5 +349,51 @@ impl SearchEventSink for TauriSearchEventSink {
 
     fn emit_error(&self, event: SearchErrorEvent) {
         let _ = event.emit(&self.app);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::abandoned_location_count;
+
+    fn count(paths: &[&str]) -> u32 {
+        abandoned_location_count(&paths.iter().map(|p| (*p).to_string()).collect::<Vec<_>>())
+    }
+
+    /// The case this exists for. A mount that stopped answering marks every
+    /// directory a walk had reached inside it, and the note has to say something
+    /// a person recognizes rather than a four-digit folder count.
+    #[test]
+    fn folders_under_one_parent_are_one_place() {
+        assert_eq!(
+            count(&[
+                "/Volumes/nas/photos/2019",
+                "/Volumes/nas/photos/2020",
+                "/Volumes/nas/photos/2021",
+            ]),
+            1
+        );
+    }
+
+    #[test]
+    fn folders_in_genuinely_different_places_stay_apart() {
+        assert_eq!(count(&["/Volumes/nas/photos/2019", "/opt/homebrew/cellar"]), 2);
+    }
+
+    #[test]
+    fn a_trailing_separator_is_the_same_folder() {
+        assert_eq!(count(&["/Volumes/nas/photos/2019/", "/Volumes/nas/photos/2019"]), 1);
+    }
+
+    /// Two top-level folders are two places, ❌ not one "everything is under `/`".
+    #[test]
+    fn top_level_folders_are_not_folded_together_by_the_root() {
+        assert_eq!(count(&["/Volumes", "/opt"]), 1, "both sit directly under the root");
+        assert_eq!(count(&["/Volumes/nas", "/opt/tools"]), 2);
+    }
+
+    #[test]
+    fn nothing_given_up_on_is_no_places() {
+        assert_eq!(count(&[]), 0);
     }
 }

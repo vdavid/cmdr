@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.indexing": "A Cmdr még indexeli a következőt: {drive}, és ezekhez a mappákhoz még nem ért el, ezért a keresés kihagyta őket:",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "f5995ea"
+  },
   "search.coverage.unresolved": "{count, plural, one {A Cmdr indexe még nem fedi le ezt a mappát, ezért a keresés kihagyta:} other {A Cmdr indexe még nem fedi le ezeket a mappákat, ezért a keresés kihagyta őket:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
@@ -150,6 +154,10 @@
   "search.coverage.walk.abandoned": "Néhány mappa nem válaszolt tovább, így a Cmdr nélkülük ment tovább, és ez a lista talán hiányos. Ha újra keresel, kapnak még egy esélyt.",
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, one {A meghajtó egyik helye nem válaszolt tovább, ezért a Cmdr nélküle ment tovább, és ez a lista rövidebb lehet a valósnál. A Cmdr később visszatér rá, és egy újabb keresés is ad neki még egy esélyt.} other {A meghajtó {countText} helye nem válaszolt tovább, ezért a Cmdr nélkülük ment tovább, és ez a lista rövidebb lehet a valósnál. A Cmdr később visszatér rájuk, és egy újabb keresés is ad nekik még egy esélyt.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "2a79bc5"
   },
   "search.coverage.denied": "{count, plural, one {A Cmdr nem kapott engedélyt, hogy belenézzen ebbe a mappába, ezért semmi sincs belőle a találatok között:} other {A Cmdr nem kapott engedélyt, hogy belenézzen ezekbe a mappákba, ezért semmi sincs belőlük a találatok között:}}",
   "@search.coverage.denied": {

@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.indexing": "O Cmdr ainda está indexando {drive} e não chegou a estas pastas, então esta busca as pulou:",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "f5995ea"
+  },
   "search.coverage.unresolved": "{count, plural, one {O índice do Cmdr ainda não cobre esta pasta, então a busca a ignorou:} many {O índice do Cmdr ainda não cobre estas pastas, então a busca as ignorou:} other {O índice do Cmdr ainda não cobre estas pastas, então a busca as ignorou:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
@@ -150,6 +154,10 @@
   "search.coverage.walk.abandoned": "Algumas pastas pararam de responder, então o Cmdr seguiu sem elas e esta lista pode estar curta. Buscar de novo dá outra chance a elas.",
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, one {Um ponto deste disco parou de responder, então o Cmdr seguiu sem ele e esta lista pode estar curta. O Cmdr volta a ele mais tarde, e buscar de novo dá outra chance.} many {{countText} pontos deste disco pararam de responder, então o Cmdr seguiu sem eles e esta lista pode estar curta. O Cmdr volta a eles mais tarde, e buscar de novo dá outra chance.} other {{countText} pontos deste disco pararam de responder, então o Cmdr seguiu sem eles e esta lista pode estar curta. O Cmdr volta a eles mais tarde, e buscar de novo dá outra chance.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "2a79bc5"
   },
   "search.coverage.denied": "{count, plural, one {O Cmdr não teve permissão para olhar dentro desta pasta, então nada dela está nos resultados:} many {O Cmdr não teve permissão para olhar dentro destas pastas, então nada delas está nos resultados:} other {O Cmdr não teve permissão para olhar dentro destas pastas, então nada delas está nos resultados:}}",
   "@search.coverage.denied": {

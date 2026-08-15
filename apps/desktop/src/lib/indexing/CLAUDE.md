@@ -53,9 +53,8 @@ API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or `codeg
   (`getWalkedGround` + `isPathAffectedByWalk`), ❌ never "the volume is scanning" (a phased index scans for minutes
   while one branch moves), and tests BOTH ways since the roll-up repairs ancestors. Every run announces its ground (a
   whole-volume walk names the volume root), so ❌ nothing here is seeded or branches on the kind of run. Both travel in
-  lockstep through
-  `FullList` / `BriefList` / `SelectionInfo` / `measure-column-widths`; ❌ never write that map per progress tick.
-  Rendering + sort: DETAILS.md.
+  lockstep through `FullList` / `BriefList` / `SelectionInfo` / `measure-column-widths`; ❌ never write that map per
+  progress tick. Rendering + sort: DETAILS.md.
 
 Full public API, the ten-event table, the step model, per-state tooltip content, ETA blending, honest-size rendering,
 dependencies, and tests: `DETAILS.md`. Read it before any non-trivial work here.

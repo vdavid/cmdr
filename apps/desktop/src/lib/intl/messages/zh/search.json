@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.indexing": "Cmdr 还在为 {drive} 建立索引，还没走到这些文件夹，所以这次搜索跳过了它们：",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "f5995ea"
+  },
   "search.coverage.unresolved": "{count, plural, other {Cmdr 的索引尚未覆盖以下文件夹，因此本次搜索跳过了：}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
@@ -150,6 +154,10 @@
   "search.coverage.walk.abandoned": "有些文件夹没再响应，Cmdr 就跳过它们继续了，所以这个列表可能不全。再搜一次会重新试试它们。",
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, other {这个驱动器上有 {countText} 处不再响应，Cmdr 就先跳过继续了，所以这个列表可能不全。Cmdr 稍后会回来处理，再搜一次也会重新试一遍。}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "2a79bc5"
   },
   "search.coverage.denied": "{count, plural, other {Cmdr 没有权限查看以下文件夹的内容，因此结果中没有其中的文件：}}",
   "@search.coverage.denied": {

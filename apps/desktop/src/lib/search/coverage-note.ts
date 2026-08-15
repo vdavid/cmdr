@@ -50,6 +50,14 @@ export interface LiveCoverage {
    * unlisted, so searching again retries them.
    */
   abandonedGround: boolean
+  /**
+   * How many PLACES that amounts to, folders grouped by their parent backend-side.
+   * `0` alongside `abandonedGround` is real: this run's own walk gave up on ground
+   * it recorded no path for, so the note says something was missed without saying
+   * where. ❌ Never a folder count — a wedged mount marks thousands, and the number
+   * would be true and useless.
+   */
+  abandonedLocations: number
 }
 
 /** What one run couldn't cover, ready to render. Absent when coverage was complete. */
@@ -119,6 +127,7 @@ export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote |
       declined: coverage.declined,
       stillCovering: coverage.stillCovering,
       abandonedGround: coverage.abandonedGround,
+      abandonedLocations: coverage.abandonedLocations ?? 0,
     },
   }
 }

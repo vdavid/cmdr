@@ -370,6 +370,7 @@
         note={coverage.note}
         driveName={coverage.driveName}
         isNetwork={coverage.isNetwork}
+        isIndexing={coverage.isIndexing}
         onIndexDrive={coverage.indexDrive}
         onSilenceDrive={coverage.silenceDrive}
         onGrantFullDiskAccess={coverage.grantFullDiskAccess}

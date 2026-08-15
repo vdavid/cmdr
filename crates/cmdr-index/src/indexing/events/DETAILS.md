@@ -39,10 +39,10 @@ it to an injected `EventSink`. Nothing here names a wire format, an event name, 
   a user sees is the size that appears, not the marker.
 
 **The coverage-branch pair brackets one walk over one branch, and every kind of run emits it.** A phase names the
-frontier root it is covering; a walk that takes the volume whole names the volume root
-(`announce_whole_volume_walk`). That equivalence is the point: `/` is at or above every path on the volume, so a
-consumer's bidirectional membership test matches every row through the same predicate that matches `~/Downloads` to the
-rows inside and above it — with no sentinel value, and nothing anywhere that branches on which kind of run is running.
+frontier root it is covering; a walk that takes the volume whole names the volume root (`announce_whole_volume_walk`).
+That equivalence is the point: `/` is at or above every path on the volume, so a consumer's bidirectional membership
+test matches every row through the same predicate that matches `~/Downloads` to the rows inside and above it — with no
+sentinel value, and nothing anywhere that branches on which kind of run is running.
 
 A phase emits both ends itself, on every exit path (covered, left to another walk, cancelled), because a consumer that
 marked rows in flux on the start has nothing else to take that back. A whole-volume walk emits only the START: its end

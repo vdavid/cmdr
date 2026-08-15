@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.indexing": "Cmdr todavía está indexando {drive} y aún no ha llegado a estas carpetas, así que la búsqueda las omitió:",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "f5995ea"
+  },
   "search.coverage.unresolved": "{count, plural, one {El índice de Cmdr aún no cubre esta carpeta, así que la búsqueda la omitió:} many {El índice de Cmdr aún no cubre estas carpetas, así que la búsqueda las omitió:} other {El índice de Cmdr aún no cubre estas carpetas, así que la búsqueda las omitió:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
@@ -150,6 +154,10 @@
   "search.coverage.walk.abandoned": "Algunas carpetas dejaron de responder, así que Cmdr siguió sin ellas y puede que esta lista se quede corta. Buscar de nuevo les da otra oportunidad.",
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, one {Un punto de esta unidad dejó de responder, así que Cmdr siguió sin él y esta lista puede quedarse corta. Cmdr vuelve a él más tarde, y buscar otra vez le da otra oportunidad.} many {{countText} puntos de esta unidad dejaron de responder, así que Cmdr siguió sin ellos y esta lista puede quedarse corta. Cmdr vuelve a ellos más tarde, y buscar otra vez les da otra oportunidad.} other {{countText} puntos de esta unidad dejaron de responder, así que Cmdr siguió sin ellos y esta lista puede quedarse corta. Cmdr vuelve a ellos más tarde, y buscar otra vez les da otra oportunidad.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "2a79bc5"
   },
   "search.coverage.denied": "{count, plural, one {Cmdr no tuvo permiso para mirar dentro de esta carpeta, así que no hay nada suyo en los resultados:} many {Cmdr no tuvo permiso para mirar dentro de estas carpetas, así que no hay nada suyo en los resultados:} other {Cmdr no tuvo permiso para mirar dentro de estas carpetas, así que no hay nada suyo en los resultados:}}",
   "@search.coverage.denied": {

@@ -238,6 +238,15 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
+  "search.coverage.uncovered.indexing": "Cmdr is still indexing {drive} and hasn''t reached these folders yet, so this search skipped:",
+  "@search.coverage.uncovered.indexing": {
+    "description": "The still-being-indexed version of search.coverage.uncovered.local, shown when the drive's very first index is running right now and hasn't got to the folder searched in. It replaces the ''this drive isn''t indexed'' wording, which would read as nothing happening while indexing is under way, and no ''Index this drive'' offer appears with it. A list of the skipped folder paths follows the colon, which is why the sentence ends open. Conversational; avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "drive": "the drive's display name (e.g. Macintosh HD), or the generic phrase from search.coverage.unnamedDrive"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
   "search.coverage.unresolved": "{count, plural, one {Cmdr''s index doesn''t cover this folder yet, so this search skipped it:} other {Cmdr''s index doesn''t cover these folders yet, so this search skipped them:}}",
   "@search.coverage.unresolved": {
     "description": "Note above the search results when the drive IS indexed but the folder searched in isn't in that index yet (a partly indexed drive, or a path that no longer exists). It deliberately says what Cmdr knows rather than claiming the folder doesn't exist, because both cases look the same from the index. A list of the skipped folder paths follows the colon.",
@@ -265,8 +274,18 @@
   },
   "search.coverage.walk.abandoned": "Some folders stopped answering, so Cmdr moved on without them and this list may be short. Searching again gives them another try.",
   "@search.coverage.walk.abandoned": {
-    "description": "Note above the search results, shown when the live walk finished but gave up on one or more folders on the way (a folder that stopped responding, or a subtree it pruned after too many failed reads). It exists so a short list isn't read as an exhaustive one. Cmdr doesn't know which folders, so none are listed. Avoid the words 'error' and 'failed'.",
+    "description": "Note above the search results, shown when the live walk finished but gave up on one or more folders on the way (a folder that stopped responding, or a subtree it pruned after too many failed reads) AND Cmdr can't say how many places that was; when it can, the counted search.coverage.walk.abandonedCount is shown instead. It exists so a short list isn't read as an exhaustive one. Cmdr doesn't know which folders, so none are listed. Avoid the words 'error' and 'failed'.",
     "placeholders": {},
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, one {One spot on this drive stopped answering, so Cmdr moved on without it and this list may be short. Cmdr comes back to it later, and searching again gives it another try.} other {{countText} spots on this drive stopped answering, so Cmdr moved on without them and this list may be short. Cmdr comes back to them later, and searching again gives them another try.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "description": "The counted version of search.coverage.walk.abandoned, shown when Cmdr knows how many places it gave up on. A ''spot'' is a group of folders that share a parent, not a folder count: a drive that goes to sleep can leave thousands of folders unread in one place, and the number the user recognizes is the place. It''s a footnote, not a warning: nothing is wrong and nothing is asked of them, which is why it says Cmdr retries on its own. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "count": "how many places stopped answering, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (e.g. 1,497)"
+    },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },

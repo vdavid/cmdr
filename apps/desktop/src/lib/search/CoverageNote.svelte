@@ -18,6 +18,7 @@
      */
     import Button from '$lib/ui/Button.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import type { CoverageNote } from './coverage-note'
 
     interface Props {
@@ -27,6 +28,14 @@
         driveName: string
         /** Network drives get their own voice: Cmdr never pushes them toward indexing. */
         isNetwork: boolean
+        /**
+         * The drive's FIRST index is running right now, branch by branch. It changes
+         * what an uncovered gap means: not "this drive isn't indexed" (which reads as
+         * nothing happening), but "the walker hasn't got here yet". The offer to index
+         * is withheld alongside it by `coverage-cta.svelte.ts`, since there is nothing
+         * to turn on and pressing it would restart the phases.
+         */
+        isIndexing: boolean
         /**
          * Offers indexing for that drive. `null` hides the actions entirely: the user
          * silenced this drive, or there's no drive to act on (an unresolved path on a
@@ -49,6 +58,7 @@
         note,
         driveName,
         isNetwork,
+        isIndexing,
         onIndexDrive,
         onSilenceDrive,
         onGrantFullDiskAccess = null,
@@ -57,11 +67,27 @@
     /** The drive's name, or a generic stand-in when it isn't in the live volume list. */
     const drive = $derived(driveName || tString('search.coverage.unnamedDrive'))
 
-    const uncoveredMessage = $derived(
-        isNetwork
-            ? tString('search.coverage.uncovered.network', { drive })
-            : tString('search.coverage.uncovered.local', { drive }),
-    )
+    const uncoveredMessage = $derived.by(() => {
+        if (isNetwork) return tString('search.coverage.uncovered.network', { drive })
+        if (isIndexing) return tString('search.coverage.uncovered.indexing', { drive })
+        return tString('search.coverage.uncovered.local', { drive })
+    })
+
+    /**
+     * The footnote for ground the walk gave up on. Counted in PLACES when the backend
+     * could group them, and count-free when it couldn't (this run's own walk gave up
+     * on ground it recorded no path for). Both say Cmdr comes back to it: that is the
+     * one fact separating this from the two lists above, and the reason it offers
+     * nothing.
+     */
+    const abandonedMessage = $derived.by(() => {
+        const locations = note?.live?.abandonedLocations ?? 0
+        if (locations === 0) return tString('search.coverage.walk.abandoned')
+        return tString('search.coverage.walk.abandonedCount', {
+            count: locations,
+            countText: formatNumber(locations),
+        })
+    })
 
     /**
      * Why a live run's list is a lower bound, in the run's own words. `''` for a walk
@@ -85,8 +111,9 @@
             <!-- The third way a run comes back short, and the quiet one: the walk
                  reached the end of its frontier having given up on folders along
                  the way. Its own line, because it's true alongside a cancel or a
-                 disconnect rather than instead of one. -->
-            <p class="message">{tString('search.coverage.walk.abandoned')}</p>
+                 disconnect rather than instead of one, and a FOOTNOTE rather than a
+                 warning: nothing is wrong and nothing is asked of the reader. -->
+            <p class="message secondary">{abandonedMessage}</p>
         {/if}
         {#if note.live && note.live.permissionDenied.length > 0}
             <!-- A folder somebody refused us. Its own sentence, and the only one of

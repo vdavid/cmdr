@@ -26,13 +26,14 @@ function liveNote(live: Partial<LiveCoverage>): Note {
       declined: [],
       stillCovering: [],
       abandonedGround: false,
+      abandonedLocations: 0,
       ...live,
     },
   }
 }
 
 /** Mounts the strip and hands back its text with the markup's whitespace collapsed. */
-function noteText(note: Note | null, onGrantFullDiskAccess: (() => void) | null = null): string {
+function noteText(note: Note | null, onGrantFullDiskAccess: (() => void) | null = null, isIndexing = false): string {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mount(CoverageNote, {
@@ -41,6 +42,7 @@ function noteText(note: Note | null, onGrantFullDiskAccess: (() => void) | null 
       note,
       driveName: 'Backups',
       isNetwork: false,
+      isIndexing,
       onIndexDrive: null,
       onSilenceDrive: () => {},
       onGrantFullDiskAccess,
@@ -68,6 +70,13 @@ describe('a live run that came back short', () => {
     // list is still a lower bound. Without this line it reads as exhaustive.
     const text = noteText(liveNote({ walk: 'completed', abandonedGround: true }))
     expect(text).toContain(tString('search.coverage.walk.abandoned'))
+  })
+
+  it('says how many PLACES it gave up on when it can, so a short list has a size', () => {
+    const text = noteText(liveNote({ walk: 'completed', abandonedGround: true, abandonedLocations: 3 }))
+    expect(text).toContain(tString('search.coverage.walk.abandonedCount', { count: 3, countText: '3' }))
+    // ❌ Never the count-free wording alongside the counted one.
+    expect(text).not.toContain(tString('search.coverage.walk.abandoned'))
   })
 
   it('says BOTH when a stopped walk had also given up on folders', () => {
@@ -115,5 +124,25 @@ describe('ground the run did not read', () => {
     const text = noteText(liveNote({ stillCovering: ['/Users/me/Music'] }))
     expect(text).toContain('/Users/me/Music')
     expect(text).toContain(tString('search.coverage.stillCovering', { count: 1 }))
+  })
+})
+
+describe('a drive whose first index is still running', () => {
+  /** An index-only run over a drive the walker hasn't reached yet. */
+  const uncovered: Note = {
+    uncoveredScopes: ['/Users/me/Projects'],
+    unresolvedScopes: [],
+    volumeId: 'root',
+  }
+
+  it('says the indexing is under way rather than that the drive is unindexed', () => {
+    const text = noteText(uncovered, null, true)
+    expect(text).toContain(tString('search.coverage.uncovered.indexing', { drive: 'Backups' }))
+    // ❌ Never the "hasn't indexed it yet" wording: it reads as nothing happening.
+    expect(text).not.toContain(tString('search.coverage.uncovered.local', { drive: 'Backups' }))
+  })
+
+  it('keeps the plain wording when nothing is indexing', () => {
+    expect(noteText(uncovered)).toContain(tString('search.coverage.uncovered.local', { drive: 'Backups' }))
   })
 })

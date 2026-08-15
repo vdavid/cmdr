@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.indexing": "Cmdr is {drive} nog aan het indexeren en heeft deze mappen nog niet bereikt, dus deze zoekopdracht sloeg ze over:",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "f5995ea"
+  },
   "search.coverage.unresolved": "{count, plural, one {De index van Cmdr bevat deze map nog niet, dus de zoekopdracht sloeg hem over:} other {De index van Cmdr bevat deze mappen nog niet, dus de zoekopdracht sloeg ze over:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
@@ -150,6 +154,10 @@
   "search.coverage.walk.abandoned": "Sommige mappen gaven geen antwoord meer, dus ging Cmdr zonder ze verder en is deze lijst mogelijk niet compleet. Opnieuw zoeken geeft ze nog een kans.",
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, one {Eén plek op deze schijf gaf geen antwoord meer, dus Cmdr ging zonder die plek verder en deze lijst is misschien kort. Cmdr komt er later op terug, en opnieuw zoeken geeft het nog een kans.} other {{countText} plekken op deze schijf gaven geen antwoord meer, dus Cmdr ging zonder die plekken verder en deze lijst is misschien kort. Cmdr komt er later op terug, en opnieuw zoeken geeft ze nog een kans.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "2a79bc5"
   },
   "search.coverage.denied": "{count, plural, one {Cmdr mocht niet in deze map kijken, dus er staat niets uit deze map in de resultaten:} other {Cmdr mocht niet in deze mappen kijken, dus er staat niets uit deze mappen in de resultaten:}}",
   "@search.coverage.denied": {
