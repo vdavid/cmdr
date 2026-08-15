@@ -296,6 +296,57 @@ fn a_share_that_goes_away_with_little_left_to_walk_gives_up_on_nothing() {
     );
 }
 
+/// A walk somebody stops partway KEEPS the give-ups it had already proved.
+///
+/// The positive counterpart to the two tests above, and the other half of "nothing
+/// branches on how the walk ended": a give-up the share answered after is evidence
+/// about a DIRECTORY, and a cancel says nothing about that evidence. Dropping it
+/// would be the same loss the whole coverage concept refuses on the rows — eight
+/// minutes of walking a NAS has to leave the frontier genuinely smaller.
+#[test]
+fn a_cancelled_walk_keeps_the_give_ups_it_proved() {
+    let (share, backend) = Share::refusing_for_now(
+        "cover-share-cancel-keeps-give-ups-test",
+        |t| {
+            vec![
+                t.dir("scope"),
+                t.dir("scope/closed"),
+                t.file("scope/closed/b.txt", 2),
+                t.dir("scope/open"),
+                t.dir("scope/open/deeper"),
+                // Three levels, so `deeper`'s success is behind BOTH children of the
+                // scope however the runtime orders them, and `held` is behind that.
+                t.dir("scope/open/deeper/held"),
+                t.file("scope/open/deeper/held/c.txt", 3),
+            ]
+        },
+        &["scope/closed"],
+    );
+    let scope = share.path("scope");
+    let closed = share.path("scope/closed");
+    backend.gate_at(&share.path("scope/open/deeper/held"));
+
+    let (walk, cancel) = share.walk(&scope);
+    backend.wait_for_the_gate();
+    cancel.cancel();
+    backend.release_the_gate();
+
+    let (_, outcome) = drain(walk);
+    assert!(outcome.cancelled, "it was stopped, and says so");
+
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(10),
+        "the cancelled walk's marks to become durable",
+        || share.coverage(&scope).abandoned == [closed.clone()],
+    );
+    assert_eq!(
+        share.coverage(&scope).abandoned,
+        [closed],
+        "the directory that wouldn't answer on an answering share is still written off, \
+         so the next search doesn't re-pay it"
+    );
+}
+
 /// A share's give-ups arm the retry backoff, exactly as a local drive's do.
 ///
 /// The ladder itself (5 min → 1 h → 4 h → 24 h, persisted per volume) is pinned in

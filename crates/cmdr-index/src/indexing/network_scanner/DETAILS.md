@@ -336,7 +336,9 @@ fall out of it:
 
 - **Nothing branches on how the walk ended.** `finish` stamps exactly the proven set on every exit — clean, cancel,
   unlistable root, typed disconnect, consecutive-failure abort — and drops whatever is unproven. ❌ Don't add an
-  exit-path case here; a new one would silently disagree with the others.
+  exit-path case here; a new one would silently disagree with the others. Both directions are pinned:
+  `a_cancelled_walk_keeps_the_give_ups_it_proved` (a cancel says nothing about evidence a walk already had) and the two
+  share-went-away tests.
 - **A share can go away without the walk ever concluding it did.** A small scope's queue runs dry after a handful of
   failures, so the walk ends REPORTING the scope covered over a share that isn't there. A rule keyed on the abort would
   write off every one of those directories, and `a_share_that_goes_away_with_little_left_to_walk_gives_up_on_nothing` is

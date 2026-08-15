@@ -388,12 +388,37 @@ impl Volume for SameNameSiblings {
 pub(super) struct RefusesToList {
     inner: InMemoryVolume,
     refused: Mutex<Vec<PathBuf>>,
+    /// The one listing that blocks until the test lets it go, same as
+    /// [`Instrumented`]'s. Here it's what makes a cancel land at a KNOWN point in
+    /// the walk, so "the walk had already proved this give-up" is a fact rather
+    /// than a race.
+    gate: Mutex<Option<PathBuf>>,
+    gate_reached: AtomicBool,
+    gate_released: tokio::sync::Notify,
 }
 
 impl RefusesToList {
     /// Answer everything from here on, as a share that woke up does.
     pub(super) fn answer_everything(&self) {
         self.refused.lock_ignore_poison().clear();
+    }
+
+    /// Hold the listing of `path` open until [`release_the_gate`](Self::release_the_gate).
+    pub(super) fn gate_at(&self, path: &str) {
+        *self.gate.lock_ignore_poison() = Some(PathBuf::from(path));
+    }
+
+    /// Block until the walk has reached the gated listing.
+    pub(super) fn wait_for_the_gate(&self) {
+        cmdr_fs::testing::wait_until(
+            std::time::Duration::from_secs(10),
+            "the walk to reach the gated dir",
+            || self.gate_reached.load(Ordering::SeqCst),
+        );
+    }
+
+    pub(super) fn release_the_gate(&self) {
+        self.gate_released.notify_one();
     }
 }
 
@@ -415,7 +440,14 @@ impl Volume for RefusesToList {
         if self.refused.lock_ignore_poison().iter().any(|refused| refused == path) {
             return Box::pin(async { Err(VolumeError::PermissionDenied("test: listing refused".into())) });
         }
-        self.inner.list_directory(path, on_progress)
+        let gated = self.gate.lock_ignore_poison().as_deref() == Some(path);
+        Box::pin(async move {
+            if gated {
+                self.gate_reached.store(true, Ordering::SeqCst);
+                self.gate_released.notified().await;
+            }
+            self.inner.list_directory(path, on_progress).await
+        })
     }
     fn get_metadata<'a>(&'a self, path: &'a Path) -> Fut<'a, Result<FileEntry, VolumeError>> {
         self.inner.get_metadata(path)
@@ -453,6 +485,9 @@ impl Share {
             let volume = Arc::new(RefusesToList {
                 refused: Mutex::new(refuse.iter().map(|r| PathBuf::from(tree.path(r))).collect()),
                 inner: InMemoryVolume::with_entries("Share", build(&tree)).with_root(root),
+                gate: Mutex::new(None),
+                gate_reached: AtomicBool::new(false),
+                gate_released: tokio::sync::Notify::new(),
             });
             backend = Some(Arc::clone(&volume));
             volume as Arc<dyn Volume>
