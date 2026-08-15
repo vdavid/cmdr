@@ -21,7 +21,9 @@ against a 1.5× bar. The decomposition is what settled it, and it is the number 
 - **The stitch and the coverage queries cost 0.2 s combined**, 0.1% of the arm, with zero `NotVirgin` refusals across
   every arm. The machinery this plan spends its design effort on is free.
 
-Full evidence: `docs/notes/phased-vs-bulk-index-2026-08-14.md`.
+Full evidence: `docs/notes/phased-vs-bulk-index-2026-08-14.md`. **The 4.70× above is the reading the gate call was made
+on, ❌ not what the built machine costs**: re-measured on 2026-08-15 evening it is **1.75×**, with `home_covered_at` at
+parity with the bulk build's whole run. Quote that note's last section.
 
 **The product decision, in David's words**: a new user seeing real sizes on the folders they care about within the first
 second is worth roughly half a minute more on the total, and image-indexing speed is explicitly not what this is for.
@@ -713,7 +715,12 @@ it to 1.79×, and neither changes the design: record ground a walk could not rea
 **✅ The first of those fixes has LANDED** (2026-08-14), as a shipped-build bug fix rather than part of this plan: a
 walk now records every directory it couldn't read as `UnreadableCause::Abandoned`, including the `readdir`-errno
 producer this plan originally missed (`ETIMEDOUT` from a wedged mount, 1,497 directories on David's machine). Details in
-item 7 below. So a re-measurement should start from ~2.10× rather than 4.70×, and the remaining gap is the writer drain.
+item 7 below.
+
+**Re-measured on the built machine, 2026-08-15 evening: 1.75×** (71.0 s to full coverage against a same-evening bulk
+baseline of 40.5 s, three runs of each arm, release build over the real `/`). `home_covered_at` lands at 42.5–44.1 s,
+which is parity with the bulk build's ENTIRE run, so the cost side of the trade this plan makes is now roughly free.
+Still over the 1.5× bar, and the gate call below stands unchanged; it is a cheaper version of the same call.
 
 **What "re-decide" means, decided in advance so the gate is decidable rather than a stop sign.** The honest comparison
 isn't wall-clock parity: full coverage is background work already paced by the `clearance` seam, so 1.5× of 193 s is 290

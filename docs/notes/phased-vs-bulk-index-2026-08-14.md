@@ -7,6 +7,12 @@ plan prepared two answers for going over it: accept the slower full coverage, or
 `$HOME` plus the priority roots only. The plan lives under `docs/specs/`, which gets wiped periodically, so everything
 needed to read this note is repeated here.
 
+⚠️ **The number to quote is 1.75×, and it is at the bottom of this note**, in "Re-measured on the shipped machine". Read
+the sections in order if you want the reasoning: this note is a decision's history, and every figure above that last
+section is the state of knowledge at the moment it was written, ❌ not the current cost. The gate, the 1.5× bar, the
+cost decomposition, and the finding that the walking was at parity all along are what the decision rests on, and none of
+them changed.
+
 **The baseline is 39.1 s, not the 145–193 s two in-repo sources claim.** That was checked the only way worth trusting:
 by running the real app. A release Cmdr on a throwaway data dir indexed this `/` in **39.1 s (6,072,728 entries, 603,559
 dirs)**, and the harness arm carrying the same post-scan sequence measured **39.1 s** for the same tree. The harness is
@@ -369,6 +375,8 @@ open.
 
 ## Follow-up, 2026-08-15: what the built machine measures on a real home folder
 
+⚠️ **Re-taken at the end of this note** (37.5 s / 76.6 s over 5.15M entries). The ratio it establishes is unchanged.
+
 The arms above ran on a throwaway harness. This one is the shipped phase machine (`lifecycle/phases/`), driven through
 the public handle over David's actual `$HOME` into a temp index, release build
 (`indexing::lifecycle::phases::tests::home_bench::how_long_home_takes`, `#[ignore]`d).
@@ -400,7 +408,11 @@ wall clock is ❌ not comparable to the release arms above — what it confirms 
 - 922 MB index, one `ScanStarted`, no truncate, and the reporter's `ComputePartialAggregates(Sql)` ticking throughout
   with `1/2 hot paths resolved` — mid-scan sizes landing on the folder the pane was showing.
 
-## The built machine, RELEASE build, real `/`, 2026-08-15
+## The built machine, RELEASE build, real `/`, 2026-08-15 morning
+
+⚠️ **Superseded by "Re-measured on the shipped machine" at the end of this note.** Three changes landed the same day
+that take cost out of the phased path and none out of the bulk path, so the 1.97–2.03× below is no longer what the
+machine costs. Kept because it is the first end-to-end reading of the shipped machine and the ratio's starting point.
 
 The number the gate was missing: the shipped machine, with its `take_stock()` after every frontier root, over the real
 `/`. **Release build** (`pnpm build --no-bundle --target aarch64-apple-darwin`), launched straight from an FDA-granted
@@ -457,9 +469,13 @@ reporter, event sink) twice over one synthetic 100,170-entry tree — once unint
 and timing only the relaunch. Release build, 2026-08-15:
 
 ```sh
-CMDR_PHASES_TEST_TREE_DIR=/private/tmp cargo test -p cmdr-index --release --lib -- \
-  --ignored --nocapture --exact indexing::lifecycle::phases::tests::resume_bench::resume_cost
+CMDR_RESUME_BENCH_DIRS=50000 CMDR_PHASES_TEST_TREE_DIR=/private/tmp \
+  cargo test -p cmdr-index --release --lib -- --ignored --nocapture --exact \
+  indexing::lifecycle::phases::tests::resume_bench::resume_cost
 ```
+
+⚠️ **Superseded**: the branch-set fix landed after this reading and took the same arm to **6.2 s**. See "Resuming an
+interrupted run, re-measured" at the end of this note.
 
 - **Resuming, before: 185.0 s** over 8,377 frontier roots (22.1 ms each).
 - **Resuming, after: 26.0 s** over 10,017 frontier roots (2.6 ms each) — 20% more ground, 7.1× less time.
@@ -512,3 +528,153 @@ are fixed; the mechanisms are recorded here because the measurement is what pinn
   design (`phase_started_event`), and nothing re-emitted the outer phase's event when the interlude ended, so the header
   sat on "Indexing the folders you use most" for two minutes while the machine walked `/`. `walk_all` now re-announces
   the phase it is in whenever an interlude actually ran.
+
+## Re-measured on the shipped machine, 2026-08-15 evening
+
+**The ratio is 1.75×, and `home_covered_at` is now at parity with the bulk build's whole run.** Three changes landed
+after the morning reading, all of which take cost out of the phased path and none out of the bulk path:
+
+- **The branch set stopped being quadratic** (`docs/notes/branch-set-cost-2026-08-15.md`). A phased run registers a
+  branch per covered frontier root, so it pays this constantly where a bulk build registers almost none: 490.8 ms → 5.65
+  ms to register a frontier at 2,500 branches, and 171 µs → 0.38 µs for a live event.
+- **A walk that takes no ground no longer runs a thread or commits the writer**
+  (`docs/notes/cover-no-ground-block-2026-08-15.md`).
+- **Resume grouping**: frontier roots are walked in adaptive groups instead of one `cover()` call each (`grouping.rs`),
+  which also shortens an uninterrupted run's tail.
+
+### Method and machine state
+
+Same method as the section above, so the two are comparable. Bulk arm:
+`indexing::lifecycle::phased_bench::bulk_build_with_the_full_post_scan_sequence` under `CMDR_PHASE_BENCH_NO_PROBE=1`,
+release, which carries its own `ComputeAllAggregates` and is therefore the all-in number on its side. Phased arm: the
+shipped machine in the release app (`pnpm build --no-bundle --target aarch64-apple-darwin`), launched from an
+FDA-granted shell on a throwaway `CMDR_DATA_DIR` with `CMDR_SECRET_STORE=file`, over the real `/`, timestamps read off
+the log between `Startup: covering 'root' in phases` and `Phases: 'root' has covered home` / `is covered end to end`.
+Three runs of each arm, interleaved so neither owns a quieter half of the evening.
+
+Apple M3 Max, 16 cores, 64 GB, internal SSD, macOS 26.5.2. Branch `worktree-david+remeasure` at `ab0c8adab`. **Full Disk
+Access granted**; 12 directories came back permission-denied in every bulk arm.
+
+- **Page cache: warm.** A release Cmdr had been live on this `/` all day and the machine had been up 18 days. The three
+  bulk arms agree within 5%, and the first of them was the first walk of the session. Reboot-fresh is still the one
+  bound this note has never closed.
+- **No wedged mount.** Zero directories were recorded `Abandoned` in any phased run, against the 76 that drove the 4.70×
+  arm. These are the typical-machine numbers.
+- Two SMB shares and a mounted DMG sat under `/Volumes` throughout; the boot-disk exclusion tier keeps every walk off
+  them.
+- **Not an idle machine, honestly.** David's production Cmdr was running, and another agent was building in a second
+  worktree during part of the evening. Both arms ran in that state and both repeated tightly, so it is noise the ratio
+  carries rather than a confounder that favours one side.
+- **The tree grew 2.9% since the morning**, to 6.24M entries and 628k directories, some of it this worktree's own
+  `target/`. Both arms walk the same tree, and the bulk baseline moved with it (38.4 s → 40.5 s), so the baseline itself
+  has not shifted.
+
+### Wall clock
+
+Bulk, three runs: **39.2 s, 41.4 s, 40.9 s** (mean **40.5 s**) over 6,239,238 / 6,239,373 / 6,241,425 entries. Peak
+resident 778 / 779 / 763 MB, peak phys footprint 645 / 650 / 627 MB.
+
+Phased, three runs of the shipped machine, each with a live frontend on `~` and `~/Downloads`:
+
+- **A**: home covered **T+44.0 s**, volume covered end to end **T+71.2 s**, whole run **83.2 s**, 6,238,933 entries, 988
+  MB index.
+- **B**: home **T+42.5 s**, covered **T+70.6 s**, whole run **81.9 s**, 6,239,001 entries, 957 MB index.
+- **C**: home **T+44.1 s**, covered **T+71.0 s**, whole run **82.5 s**, 6,242,040 entries, 958 MB index.
+
+- **Coverage to coverage: 70.6–71.2 s against 39.2–41.4 s = 1.71–1.82×, mean 1.75×** (morning: 1.97–2.03×).
+- **All-in, each side including its final full aggregate: 81.9–83.2 s against 40.5 s = 2.04×** (morning: 2.35–2.38×).
+- **`home_covered_at`: 42.5–44.1 s, which is 1.07× the bulk build's ENTIRE run** (morning: 47.3–50.8 s against 38.4 s,
+  1.23–1.32×).
+
+**Peak resident, phased: 927–987 MB**, sampled at 2 Hz off the app process. ⚠️ ❌ Don't read that against the bulk arm's
+763–779 MB as a regression: the bulk figure is a headless harness process, and the app's carries the frontend host, the
+IPC, the watcher, freshness, and everything else the harness leaves out. The two arms are comparable on wall clock, ❌
+not on memory. The 16 GB watchdog is nowhere near either.
+
+### Time to value, in the shipped app
+
+Read off the phase log, which reports when each root's walk starts, so each root's cost is the gap to the next line.
+Identical across all three runs to within 60 ms:
+
+- `/Applications` goes first and takes **2.57–2.61 s** (300k entries).
+- Then all seven `$HOME` priority roots, **4–430 ms each**, every one of them covered by **T+2.85–3.15 s**.
+- The bulk build reaches the same folders at **1.0–26.6 s** (probed pass, section above).
+
+So the worst priority root goes from 26.6 s to under 3.2 s in the app, against the harness's 120 ms. The difference is
+`/Applications`, which the shipped machine walks ahead of home and the harness did not have in front of it. Folder
+importance confirms the early kick lands: its first recompute ran **4.2 s after `home_covered_at`**, scoring 94,149 of
+435,964 folders in 4.20 s.
+
+### What the ratio bought, and what it still costs
+
+The trade the decision was made on is now materially better on both sides of the ledger:
+
+- The cost side went from "`home_covered_at` moves 39 s → 88 s" through 47.3–50.8 s to **42.5–44.1 s**, which is the
+  bulk build's own full-coverage time. The early media and importance kick is no longer late in any sense worth arguing
+  about.
+- Full coverage is **1.75×** against a 1.5× bar. Still over it, and still an overshoot rather than a rounding error, but
+  30 seconds of politely-paced background walking rather than the minute the gate was arguing about.
+
+❌ Nothing here changes the recommendation or its reasoning. It makes the first prepared answer (accept the slower full
+coverage) cheaper than it was when David took it.
+
+### Resuming an interrupted run, re-measured
+
+`indexing::lifecycle::phases::tests::resume_bench::resume_cost`, release, same synthetic tree as the 2026-08-15 reading
+above. ⚠️ **The recipe printed in that section does not reproduce its own numbers**: it needs
+`CMDR_RESUME_BENCH_DIRS=50000`, because the bench's default budget of 150,000 directories builds a tree three times the
+size the numbers were taken on.
+
+```sh
+CMDR_RESUME_BENCH_DIRS=50000 CMDR_PHASES_TEST_TREE_DIR=/private/tmp \
+  cargo test -p cmdr-index --release --lib -- --ignored --nocapture --exact \
+  indexing::lifecycle::phases::tests::resume_bench::resume_cost
+```
+
+On the 100,170-entry tree, quitting at 60% of its rows, two runs:
+
+- **6.2 s over 10,014 frontier roots (0.6 ms each)**, which is the same root count as the 26.0 s reading, so it is a
+  like-for-like **4.2×**.
+- **7.0 s over 16,214 frontier roots (0.4 ms each)** on a run whose quit left more behind.
+- Against **26.0 s / 2.6 ms per root** after the stock-take fix, and **185.0 s / 22.1 ms per root** before it. End to
+  end the resume is **26× cheaper** than when it was first measured.
+- **The uninterrupted arm is unchanged at 2.0 s**, as it was for every step of this: its roots are big, so the group
+  stays at one and nothing about that arm moves.
+
+At the bench's default 150,000-directory tree (300,205 entries, 3.4× the stress), the resume costs **23.0 s over 33,754
+frontier roots, 0.7 ms each**, against 7.0 s uninterrupted. The per-root cost barely rises with the root count, which is
+the quadratic term being gone.
+
+### `~/Library` re-measured, and one run that didn't finish
+
+`tests::home_bench` over David's real `$HOME`, release: **home minus `~/Library` at 37.5 s, all of home at 76.6 s**,
+5,154,650 entries. So `~/Library` is half of home's wall clock and deferring it still moves the early kick **39 s**
+earlier, which is the claim `phases/DETAILS.md` § "The early home signal" rests on, unchanged in substance from the 43.1
+s / 82.5 s reading it replaces.
+
+⚠️ **The app and this arm disagree about how big `~/Library` is, by 2×.** The three release-app runs above put **19–21
+s** between `home_covered_at` and the `/` phase starting, where this arm reads 39 s. They are not the same arm (the app
+walks `/` with priority roots installed; `home_bench` makes `$HOME` its own volume root and installs none), and nothing
+here says which is the number a user waits, so ❌ don't quote them interchangeably. Neither reading changes the
+decision: both say `~/Library` is worth deferring.
+
+⚠️ **The first of the two `home_bench` runs never completed**, giving up at its 10-minute patience with the early signal
+in hand at 38.4 s and **5,421,448 entries**, 267k MORE than the run that finished in 76.6 s. The most likely cause is
+that another agent was building in a sibling worktree under `~/projects-git` throughout it, and a tree that grows while
+it is walked keeps refilling the frontier that completion is waiting to empty. **That is a hypothesis, ❌ not a
+diagnosis**: nobody has reproduced it deliberately. Worth knowing before reading a single slow `home_bench` run as a
+regression, and worth an hour if someone wants to know whether sustained churn under a scope can hold completion open
+indefinitely.
+
+### Would I stake a decision on these numbers?
+
+**Yes, on the ratio.** The three phased runs span 0.8% (70.6–71.2 s) and agree on `home_covered_at` within 1.6 s. The
+bulk arm is the looser half at 5% (39.2–41.4 s), and it is the denominator, so the honest ratio is a range:
+**1.71–1.82×, and I would quote 1.75×**. Both arms indexed the same 6.24M entries to within 0.05%, so neither is
+skipping work.
+
+**Less so on the absolutes.** Everything above is one warm-cache machine that was not idle. The bulk figure is the one
+to re-take if a decision turns on the exact ratio, since it moves twice as much run to run as the phased one does.
+
+**Still open, as it has been since 2026-08-14**: nobody has taken a reboot-fresh baseline. It is the only input to this
+note that is a bound rather than a measurement.

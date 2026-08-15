@@ -21,13 +21,14 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing as the evidence behind a decision that would otherwise look arbitrary:**
 
-- `phased-vs-bulk-index-2026-08-14.md` — the measurement gate the phased-indexing plan set for itself: covering a real
-  `/` as phased cover walks costs 4.70× today's bulk build against a 1.5× bar, 69% of it one fixable bug (a `readdir`
-  failing with a non-permission errno is re-offered by every later phase, and slows searches in the shipped build too),
-  and 1.79× with that and the writer drain fixed. Also **settles what a first scan really costs** — 39.1 s over 6.07M
-  entries, confirmed by running the release app, against the 145–193 s two in-repo comments claimed — so read it before
-  quoting either of those. Carries the time-to-value numbers the decision is about, the depth-1-against-depth-2 answer,
-  and the one open confounder (a reboot-fresh page cache).
+- `phased-vs-bulk-index-2026-08-14.md` — the measurement gate the phased-indexing plan set for itself, and the running
+  record of what the phased shape costs. **The current number is 1.75×** (the shipped machine over a real `/`, against a
+  same-evening bulk baseline of 40.5 s), with `home_covered_at` at 42.5–44.1 s, which is parity with the bulk build's
+  entire run. It is in the last section; every earlier figure is the state of knowledge when it was written, so quote
+  the last section or nothing. The note also **settles what a first scan really costs** (39–41 s over 6.1–6.2M entries,
+  confirmed by running the release app, against the 145–193 s two in-repo comments claimed), and carries the cost
+  decomposition the gate call rests on, the time-to-value numbers, the depth-1-against-depth-2 answer, what a resume
+  costs, and the one open confounder (a reboot-fresh page cache).
 - `index-scope-measurement-2026-08-14.md` — what indexing outside `$HOME` actually costs (15.4% of the entries, ~30 s,
   ~115 MB, against `~/Library`'s 27.7% _inside_ home), and why phased indexing reorders the walk instead of narrowing
   it. Read it before anyone proposes a home-only default again; it names the conditions that would change the answer.
@@ -41,8 +42,13 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   turned out to be.
 - `cover-no-ground-block-2026-08-15.md` — what a cover walk that got NO ground used to cost (4.5-5.8 s in the app, 100%
   of it parked on the writer queue, 35 s on a cold drive), measured with the writer-wait split the `Cover:` line now
-  carries. Read it before putting work back into `cover::start` or `walk_frontier`, and for the one cost it names but
-  does not settle: `begin_branch_coverage` registering thousands of frontier roots one at a time.
+  carries. Read it before putting work back into `cover::start` or `walk_frontier`. The one cost it names without
+  settling, `begin_branch_coverage` registering thousands of frontier roots one at a time, is settled next door in
+  `branch-set-cost-2026-08-15.md`.
+- `branch-set-cost-2026-08-15.md` — what the branch set cost when it was a self-scanning `Vec` and what it costs as a
+  path-keyed `BTreeMap` (87× off registering a 2,500-root frontier, up to 1,231× off a single live event), plus the two
+  questions whose cost has to stay bounded by the PATH rather than by the set. Read it before touching
+  `watch/branches.rs`: three separate efforts named this as a suspect and none of them measured it.
 - `search-arena-row-2026-08-06.md` — what shrinking `SearchEntry` from 56 to 40 bytes actually bought (−92 MiB of arena,
   measured two ways), that it cost no scan latency, and the A/B method for comparing two builds on a machine running
   other work.

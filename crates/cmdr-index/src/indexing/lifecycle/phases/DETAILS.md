@@ -83,30 +83,28 @@ a walk got, the smaller what it left). Nothing is lost, but the per-root costs t
 roots are the whole bill at ten thousand — and they are paid per root, not per entry, so quitting later makes it worse.
 
 Measured by `tests::resume_bench` (release, a 100,170-entry synthetic tree, quit once 60% of its rows were indexed,
-2026-08-15): **185.0 s to resume, against 2.0 s to cover the same tree uninterrupted** — 22.1 ms per frontier root, of
-which under 0.2 ms was reading the disk. Where the rest went, from counters held in the machine for the measurement:
+2026-08-15): **6.2 s to resume over 10,014 frontier roots, 0.6 ms each, against 2.0 s to cover the same tree
+uninterrupted.** ⚠️ The bench's default tree is three times that size; pass `CMDR_RESUME_BENCH_DIRS=50000` to reproduce
+these numbers.
+
+It started at **185.0 s, 22.1 ms per root**, of which under 0.2 ms was reading the disk. Three costs made up that bill,
+and each is worth knowing because each is a shape a future change can reintroduce:
 
 - **A stock-take per root: 75%.** Completion is a coverage descent over the whole volume, which gets more expensive the
   more of the drive is covered, and it ran after every root. It could not even see what that root did — the walk leaves
   its drain to the caller, so its rows and marks were still in the writer's queue. Now: after a drain, which is where
   `run_phase` already asks.
-- **The branch set: most of the remainder.** `begin_covering` / `finish_covering` scan a `Vec` per path and re-sort it,
-  and every comparison went through `is_strict_descendant`, which allocated two `Vec`s to compare two paths. Over 10,000
-  branches that was ~59 s of the run. The comparison is allocation-free now (2.9× off that arm), and the scans remain —
-  see below.
+- **The branch set: most of the remainder**, ~59 s of the run at 10,000 branches. It was a `Vec` scanned per path and
+  re-sorted per insert, and a phased run adds one entry per covered frontier root, so the cost grew as the square of the
+  width. It is a `BTreeMap` keyed by path now, with both of its questions bounded by the PATH rather than by the set:
+  `docs/notes/branch-set-cost-2026-08-15.md`. ⚠️ **Keep it that way.** This also taxes the LIVE event path
+  (`deepest_containing` runs per event), where the old shape cost 339 µs an event at 2,500 branches against 0.5 µs now.
 - **The `cover()` round trip itself: ~2.4 ms per root** (a claim, a branch bracket, a walk thread, a bootstrap read
   connection), now divided by the group size.
 
-**After: 26.0 s, 2.6 ms per root** (same method, same day, 20% MORE frontier roots in the resumed run). An uninterrupted
-run is unchanged: its roots are big, so the group stays at one and the stock-take was already dominated by walking.
-
-⚠️ **The branch set is the next lever, and it is quadratic.** `watch/branches.rs` holds branches in a `Vec` and answers
-"which branch holds this path" by scanning it, while a phased run adds one entry per covered frontier root. At the
-~1,500 roots an uninterrupted real `/` produces that is ~1 s; at 10,000 it was 20 s even after the allocation fix, and
-it also taxes the live event path (`deepest_containing` runs per event). Keying the set by path (a `BTreeMap`, whose
-range query answers "everything under this path" directly and keeps itself ordered) would take the scans to `log n` and
-delete the re-sorts. ❌ Not done here: it is a different module with its own event-buffering invariants, and the resume
-it would speed up is already 7× cheaper.
+An uninterrupted run was never affected by any of it: its roots are big, so the group stays at one, the stock-take is
+dominated by walking, and the branch set stays narrow. It read 2.0 s before every one of these fixes and reads 2.0 s
+now.
 
 **Ground another walk holds is left to it.** A live search's walk is not ours to serialize; its rows land in the same
 index and the next pass asks again.
@@ -127,8 +125,10 @@ real `/` (`docs/notes/phased-vs-bulk-index-2026-08-14.md`): draining per root pe
 footprint**; draining per phase peaks at **773 MB / 613 MB**, because a 6M-row backlog builds up in the writer queue
 during the volume-root phase. That buys 12 s of the 82 s arm (1.79× against 2.10×). It is the same peak today's bulk
 build already carries (772 MB / 634 MB, which holds the whole aggregation accumulator instead), so phasing does not
-raise the high-water mark the app is already sized for — it just stops being the arm that lowers it. ⚠️ The 16 GB memory
-watchdog is nowhere near either number; if that ever changes, the knob is the phase boundary, not the flush.
+raise the high-water mark the app is already sized for — it just stops being the arm that lowers it. **In the shipped
+app the whole process peaks at 927–987 MB** covering a real `/` (three runs, 2026-08-15 evening), which is that backlog
+plus the frontend host and everything else a harness process doesn't carry. ⚠️ The 16 GB memory watchdog is nowhere near
+any of these numbers; if that ever changes, the knob is the phase boundary, not the flush.
 
 ## Completion, derived rather than remembered
 
@@ -182,10 +182,17 @@ the 24-hour window forward every time.
 `lifecycle_bus` channel, which the media and importance schedulers watch alongside `ScanCompleted`, and
 `ready_volumes_with_kind` admits a home-covered volume so a relaunch mid-coverage still wires them.
 
-⚠️ **`~/Library` is walked LAST inside the home phase and the signal doesn't wait for it.** Measured on David's real
-home (2026-08-15, release, 5,230,809 entries): home minus `~/Library` covered in **43.1 s**, all of home in **82.5 s**.
-So it is 48% of home's wall clock, and deferring it moves the early kick 39 s earlier. It stays entirely in scope; only
-the ORDER and the signal change. Linux has no single equivalent pile, so it has none.
+⚠️ **`~/Library` is walked LAST inside the home phase and the signal doesn't wait for it.** Measured by
+`tests::home_bench` on David's real home (2026-08-15 evening, release, 5,154,650 entries): home minus `~/Library`
+covered in **37.5 s**, all of home in **76.6 s**. So it is half of home's wall clock, and deferring it moves the early
+kick **39 s** earlier. It stays entirely in scope; only the ORDER and the signal change. Linux has no single equivalent
+pile, so it has none.
+
+⚠️ **The app sees a smaller `~/Library` than this arm does, and nobody has explained the gap.** Three release-app runs
+over the real `/` on the same evening put 19–21 s between `home_covered_at` and the `/` phase starting, against this
+arm's 39 s (`docs/notes/phased-vs-bulk-index-2026-08-14.md` § "Re-measured on the shipped machine"). The two differ in
+scope root and in whether priority roots are installed, so they are not the same arm. Both say the same thing about the
+decision, so ❌ don't read either as wrong; ⚠️ do quote the app's figure for what a user waits.
 
 ## What the machine reports, and what refuses against it
 
