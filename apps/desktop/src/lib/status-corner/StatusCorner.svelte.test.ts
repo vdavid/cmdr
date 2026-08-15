@@ -43,6 +43,7 @@ vi.mock('$lib/indexing/index-state.svelte', () => ({
   getActivePhaseVolumeIds: () => [],
   getVolumePhase: () => undefined,
   getVolumeScanRunKind: () => undefined,
+  isVolumeCoveredInPhases: () => false,
   placeholderActivity: (volumeId: string) => scanActivity(volumeId),
 }))
 
