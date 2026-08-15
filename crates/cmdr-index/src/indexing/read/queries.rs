@@ -94,6 +94,7 @@ fn disabled_status_response() -> IndexStatusResponse {
     IndexStatusResponse {
         initialized: false,
         scanning: false,
+        covered_in_phases: false,
         entries_scanned: 0,
         dirs_found: 0,
         bytes_scanned: 0,
@@ -120,6 +121,9 @@ pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
             Ok(IndexStatusResponse {
                 initialized: true,
                 scanning: true,
+                // Nothing has been routed yet, so nothing knows how this volume
+                // will be covered.
+                covered_in_phases: false,
                 entries_scanned: 0,
                 dirs_found: 0,
                 bytes_scanned: 0,
@@ -176,6 +180,7 @@ pub fn get_debug_status(volume_id: &str) -> Result<IndexDebugStatusResponse, Str
             let base = IndexStatusResponse {
                 initialized: true,
                 scanning: true,
+                covered_in_phases: false,
                 entries_scanned: 0,
                 dirs_found: 0,
                 bytes_scanned: 0,

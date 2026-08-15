@@ -50,10 +50,11 @@ use tauri_specta::{Builder, collect_events};
 
 use crate::commands::search::SearchIndexReadyEvent;
 use crate::events::index_mapping::{
-    AggregationProgressEvent, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexFreshnessChangedEvent,
-    IndexMemoryWarningEvent, IndexPhaseChangedEvent, IndexReplayCompleteEvent, IndexReplayProgressEvent,
-    IndexRescanNotificationEvent, IndexScanAbortedEvent, IndexScanCompleteEvent, IndexScanProgressEvent,
-    IndexScanStartedEvent, MediaEnrichProgressEvent, MediaEnrichTerminalEvent,
+    AggregationProgressEvent, IndexAggregationCompleteEvent, IndexCoverageBranchEndedEvent,
+    IndexCoverageBranchStartedEvent, IndexDirUpdatedEvent, IndexFreshnessChangedEvent, IndexMemoryWarningEvent,
+    IndexPhaseChangedEvent, IndexReplayCompleteEvent, IndexReplayProgressEvent, IndexRescanNotificationEvent,
+    IndexScanAbortedEvent, IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent,
+    MediaEnrichProgressEvent, MediaEnrichTerminalEvent,
 };
 use crate::file_system::git::watcher::GitStateChangedPayload;
 use crate::file_system::listing::streaming::{
@@ -783,6 +784,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             IndexScanProgressEvent,        // event_name = "index-scan-progress"
             IndexScanCompleteEvent,        // event_name = "index-scan-complete"
             IndexScanAbortedEvent,         // event_name = "index-scan-aborted"
+            IndexCoverageBranchStartedEvent, // event_name = "index-coverage-branch-started"
+            IndexCoverageBranchEndedEvent, // event_name = "index-coverage-branch-ended"
             IndexPhaseChangedEvent,        // event_name = "index-phase-changed"
             IndexDirUpdatedEvent,          // event_name = "index-dir-updated"
             IndexReplayProgressEvent,      // event_name = "index-replay-progress"

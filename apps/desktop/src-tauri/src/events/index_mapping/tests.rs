@@ -26,6 +26,10 @@ fn every_event_kind_has_a_sample_to_map() {
 
 #[test]
 fn every_event_maps_to_a_destination_with_a_non_empty_name() {
+    // The sample set includes an `Error`, and routing it for real is the point —
+    // which means this touches the auto-dispatcher's global state. Without the
+    // lock it lands a walker failure in the window the test below is asserting on.
+    let _guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let mut wire_names: Vec<&str> = Vec::new();
     for event in one_of_every_kind() {
         let kind = event.kind();

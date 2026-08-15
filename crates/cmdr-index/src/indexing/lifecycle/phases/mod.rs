@@ -465,6 +465,14 @@ impl Machine {
             }
         };
         self.walking.store(true, Ordering::Relaxed);
+        // The ground is the walker's from here to `finish`, and the host is told
+        // both ends: a folder's size can move under the user for exactly this
+        // long, and the pair is what lets a listing say so per row instead of
+        // marking the whole drive in flux for the whole run.
+        self.events.emit(IndexEvent::CoverageBranchStarted {
+            volume_id: self.volume_id.clone(),
+            roots: vec![root.to_string()],
+        });
         let walk = cover::start(
             context,
             vec![root.to_string()],
@@ -480,6 +488,13 @@ impl Machine {
         }
         let outcome = walk.finish();
         self.walking.store(false, Ordering::Relaxed);
+        // ⚠️ Unconditional, on every exit path (covered, left to another walk,
+        // cancelled). A missed end leaves a row wearing an hourglass for a walk
+        // that stopped, and nothing later would take it off.
+        self.events.emit(IndexEvent::CoverageBranchEnded {
+            volume_id: self.volume_id.clone(),
+            roots: vec![root.to_string()],
+        });
         mine && outcome.roots_covered > 0
     }
 
@@ -603,6 +618,10 @@ impl Machine {
             // knowable total until the volume-root phase, so the tier it feeds
             // stays "elapsed and a live count" until then, by design.
             volume_used_bytes: None,
+            // Which is also what this says: follow the branch events for what is
+            // under the walker, rather than reading the whole volume as in flux
+            // for the run's whole length.
+            covered_in_phases: true,
         });
         crate::indexing::lifecycle::state::apply_freshness_event_on(
             &self.freshness,

@@ -145,6 +145,33 @@ pub enum IndexEvent {
         prior_scan_duration_ms: Option<u64>,
         /// The volume's used bytes at scan start.
         volume_used_bytes: Option<u64>,
+        /// Whether this run covers the volume branch by branch rather than
+        /// walking it whole, so a host knows to follow
+        /// [`CoverageBranchStarted`](Self::CoverageBranchStarted) for which
+        /// ground is under the walker instead of treating the whole volume as
+        /// in flux for the run's whole length.
+        covered_in_phases: bool,
+    },
+    /// A branch of a volume is being walked, and it is the walker's for as long
+    /// as this holds.
+    ///
+    /// Paired with [`CoverageBranchEnded`](Self::CoverageBranchEnded), and only
+    /// ever emitted by a run that announced itself with `covered_in_phases`. The
+    /// pair brackets one walk; how long a host waits before believing it is the
+    /// host's to decide.
+    CoverageBranchStarted {
+        /// The volume being covered.
+        volume_id: String,
+        /// The roots under the walker, absolute in the volume's own path space.
+        roots: Vec<String>,
+    },
+    /// A branch stopped being walked, whether it was covered, left to another
+    /// walk, or cancelled. Always emitted, so nothing can stay marked in flux.
+    CoverageBranchEnded {
+        /// The volume being covered.
+        volume_id: String,
+        /// The roots that were under the walker.
+        roots: Vec<String>,
     },
     /// The running scan's moving counters, emitted on the reporter's tick.
     ScanProgress {
@@ -299,6 +326,10 @@ pub enum IndexEvent {
 pub enum IndexEventKind {
     /// [`IndexEvent::ScanStarted`].
     ScanStarted,
+    /// [`IndexEvent::CoverageBranchStarted`].
+    CoverageBranchStarted,
+    /// [`IndexEvent::CoverageBranchEnded`].
+    CoverageBranchEnded,
     /// [`IndexEvent::ScanProgress`].
     ScanProgress,
     /// [`IndexEvent::ScanComplete`].
@@ -340,8 +371,10 @@ impl IndexEventKind {
     /// exhaustive, so a new variant doesn't compile until it has a slot, and the
     /// slot doesn't compile until this array has room for it. That's what makes
     /// the host's completeness test meaningful.
-    pub const ALL: [Self; 17] = [
+    pub const ALL: [Self; 19] = [
         Self::ScanStarted,
+        Self::CoverageBranchStarted,
+        Self::CoverageBranchEnded,
         Self::ScanProgress,
         Self::ScanComplete,
         Self::ScanAborted,
@@ -370,22 +403,24 @@ impl IndexEventKind {
     const fn slot_of(self) -> usize {
         match self {
             Self::ScanStarted => const { Self::slot(0) },
-            Self::ScanProgress => const { Self::slot(1) },
-            Self::ScanComplete => const { Self::slot(2) },
-            Self::ScanAborted => const { Self::slot(3) },
-            Self::DirsUpdated => const { Self::slot(4) },
-            Self::ReplayProgress => const { Self::slot(5) },
-            Self::ReplayComplete => const { Self::slot(6) },
-            Self::RescanScheduled => const { Self::slot(7) },
-            Self::AggregationProgress => const { Self::slot(8) },
-            Self::AggregationComplete => const { Self::slot(9) },
-            Self::MemoryWarning => const { Self::slot(10) },
-            Self::FreshnessChanged => const { Self::slot(11) },
-            Self::PhaseChanged => const { Self::slot(12) },
-            Self::MediaEnrichProgress => const { Self::slot(13) },
-            Self::MediaEnrichTerminal => const { Self::slot(14) },
-            Self::Error => const { Self::slot(15) },
-            Self::PathAccessDenied => const { Self::slot(16) },
+            Self::CoverageBranchStarted => const { Self::slot(1) },
+            Self::CoverageBranchEnded => const { Self::slot(2) },
+            Self::ScanProgress => const { Self::slot(3) },
+            Self::ScanComplete => const { Self::slot(4) },
+            Self::ScanAborted => const { Self::slot(5) },
+            Self::DirsUpdated => const { Self::slot(6) },
+            Self::ReplayProgress => const { Self::slot(7) },
+            Self::ReplayComplete => const { Self::slot(8) },
+            Self::RescanScheduled => const { Self::slot(9) },
+            Self::AggregationProgress => const { Self::slot(10) },
+            Self::AggregationComplete => const { Self::slot(11) },
+            Self::MemoryWarning => const { Self::slot(12) },
+            Self::FreshnessChanged => const { Self::slot(13) },
+            Self::PhaseChanged => const { Self::slot(14) },
+            Self::MediaEnrichProgress => const { Self::slot(15) },
+            Self::MediaEnrichTerminal => const { Self::slot(16) },
+            Self::Error => const { Self::slot(17) },
+            Self::PathAccessDenied => const { Self::slot(18) },
         }
     }
 
@@ -421,6 +456,8 @@ impl IndexEvent {
     pub fn kind(&self) -> IndexEventKind {
         match self {
             Self::ScanStarted { .. } => IndexEventKind::ScanStarted,
+            Self::CoverageBranchStarted { .. } => IndexEventKind::CoverageBranchStarted,
+            Self::CoverageBranchEnded { .. } => IndexEventKind::CoverageBranchEnded,
             Self::ScanProgress { .. } => IndexEventKind::ScanProgress,
             Self::ScanComplete { .. } => IndexEventKind::ScanComplete,
             Self::ScanAborted { .. } => IndexEventKind::ScanAborted,
@@ -449,6 +486,8 @@ impl IndexEvent {
     pub fn volume_id(&self) -> Option<&str> {
         match self {
             Self::ScanStarted { volume_id, .. }
+            | Self::CoverageBranchStarted { volume_id, .. }
+            | Self::CoverageBranchEnded { volume_id, .. }
             | Self::ScanProgress { volume_id, .. }
             | Self::ScanComplete { volume_id, .. }
             | Self::ScanAborted { volume_id }
@@ -516,6 +555,15 @@ pub fn one_of_every_kind() -> Vec<IndexEvent> {
             prior_total_entries: Some(1),
             prior_scan_duration_ms: Some(2),
             volume_used_bytes: Some(3),
+            covered_in_phases: false,
+        },
+        IndexEvent::CoverageBranchStarted {
+            volume_id: "root".into(),
+            roots: vec!["/Users/someone/Downloads".into()],
+        },
+        IndexEvent::CoverageBranchEnded {
+            volume_id: "root".into(),
+            roots: vec!["/Users/someone/Downloads".into()],
         },
         IndexEvent::ScanProgress {
             volume_id: "root".into(),

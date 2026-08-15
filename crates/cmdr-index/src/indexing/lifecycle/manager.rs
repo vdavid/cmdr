@@ -620,6 +620,7 @@ impl IndexManager {
         Ok(IndexStatusResponse {
             initialized: true,
             scanning,
+            covered_in_phases: self.phases_have_work(),
             entries_scanned: counters.entries_scanned,
             dirs_found: counters.dirs_found,
             bytes_scanned: counters.bytes_scanned,

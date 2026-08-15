@@ -324,6 +324,8 @@ impl IndexManager {
             prior_total_entries: prior.total_entries,
             prior_scan_duration_ms: prior.scan_duration_ms,
             volume_used_bytes,
+            // A trait scan takes the share whole; nothing here covers in phases.
+            covered_in_phases: false,
         });
         set_phase_for(
             self.events.as_ref(),

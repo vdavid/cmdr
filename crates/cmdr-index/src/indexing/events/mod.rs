@@ -59,6 +59,12 @@ pub struct IndexStatusResponse {
     pub initialized: bool,
     /// Whether a walk is running right now.
     pub scanning: bool,
+    /// Whether the running walk covers the volume branch by branch rather than
+    /// walking it whole. The same answer [`IndexEvent::ScanStarted`] carries,
+    /// repeated here so a host that joined mid-run (a window reload) recovers it
+    /// instead of treating the whole volume as in flux. Read it only while
+    /// [`scanning`](Self::scanning) is true.
+    pub covered_in_phases: bool,
     /// Files and directories the current walk has recorded so far.
     pub entries_scanned: u64,
     /// Directories among them, the tier-1 progress numerator.

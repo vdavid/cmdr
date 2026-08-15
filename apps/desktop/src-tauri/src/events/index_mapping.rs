@@ -18,6 +18,8 @@
 //! derive on a value is fine there, a presentation decision isn't. Only the
 //! envelope lives here.
 
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_specta::Event;
@@ -26,8 +28,13 @@ use cmdr_index::AggregationPhase;
 use cmdr_index::Freshness;
 use cmdr_index::media_index::events::MediaEnrichTerminalReason;
 use cmdr_index::{
-    ActivityPhase, Diagnostic, EventSink, IndexErrorReport, IndexEvent, MemoryWatchdogAction, RescanReason, ScanRunKind,
+    ActivityPhase, Diagnostic, EventSink, IndexErrorReport, IndexEvent, IndexEventKind, MemoryWatchdogAction,
+    RescanReason, ScanRunKind,
 };
+
+use walk_announcer::WalkAnnouncer;
+
+mod walk_announcer;
 
 #[cfg(test)]
 mod tests;
@@ -58,6 +65,41 @@ pub struct IndexScanStartedEvent {
     /// The scanned volume's used bytes at scan start, the tier-2 (rough,
     /// first-scan) progress denominator. `None` when the space-info fetch failed.
     pub volume_used_bytes: Option<u64>,
+    /// Whether this run covers the drive branch by branch rather than walking it
+    /// whole. It decides what the per-folder size hourglass reads: a whole-volume
+    /// walk puts every folder on the drive in flux for the run's whole length,
+    /// while a phased run puts only the ground the branch events name in flux.
+    pub covered_in_phases: bool,
+}
+
+/// A branch of a drive went under the walker, and the folder sizes inside it (and
+/// above it, since the roll-up repairs the ancestor chain) can move until it's
+/// done.
+///
+/// Held back by one second app-side, so a walk that finishes inside a second never
+/// flashes anything (`walk_announcer.rs`). Only a run that announced itself with
+/// `coveredInPhases` sends these.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-coverage-branch-started")]
+#[serde(rename_all = "camelCase")]
+pub struct IndexCoverageBranchStartedEvent {
+    /// The volume being covered.
+    pub volume_id: String,
+    /// The roots under the walker, absolute in the volume's own path space.
+    pub roots: Vec<String>,
+}
+
+/// A branch stopped being walked, on every exit path (covered, left to another
+/// walk, or cancelled). Never held back, so a row can't keep an hourglass for a
+/// walk that stopped.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-coverage-branch-ended")]
+#[serde(rename_all = "camelCase")]
+pub struct IndexCoverageBranchEndedEvent {
+    /// The volume being covered.
+    pub volume_id: String,
+    /// The roots that were under the walker.
+    pub roots: Vec<String>,
 }
 
 /// The running scan's moving counters, on the reporter's 500 ms tick.
@@ -346,6 +388,7 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
             prior_total_entries,
             prior_scan_duration_ms,
             volume_used_bytes,
+            covered_in_phases,
         } => to_frontend(
             app,
             IndexScanStartedEvent {
@@ -354,8 +397,15 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
                 prior_total_entries,
                 prior_scan_duration_ms,
                 volume_used_bytes,
+                covered_in_phases,
             },
         ),
+        IndexEvent::CoverageBranchStarted { volume_id, roots } => {
+            to_frontend(app, IndexCoverageBranchStartedEvent { volume_id, roots })
+        }
+        IndexEvent::CoverageBranchEnded { volume_id, roots } => {
+            to_frontend(app, IndexCoverageBranchEndedEvent { volume_id, roots })
+        }
         IndexEvent::ScanProgress {
             volume_id,
             entries_scanned,
@@ -558,17 +608,46 @@ fn gb(bytes: u64) -> f64 {
 /// emits it, or routes it to the host machinery that isn't the frontend.
 pub struct TauriEventSink {
     app: AppHandle,
+    /// The one event pair this sink doesn't forward on sight. See
+    /// `walk_announcer.rs` for why a walk waits a second before it's news.
+    announcer: Arc<WalkAnnouncer>,
 }
 
 impl TauriEventSink {
     /// A sink emitting over `app`.
     pub fn new(app: AppHandle) -> Self {
-        Self { app }
+        let announcer_app = app.clone();
+        Self {
+            app,
+            announcer: WalkAnnouncer::new(Arc::new(move |event| {
+                // allowed-discarded-outcome: same as the emit path below — nobody above the production sink asks where an event went.
+                route(event, Some(&announcer_app));
+            })),
+        }
     }
 }
 
 impl EventSink for TauriEventSink {
     fn emit(&self, event: IndexEvent) {
+        match event.kind() {
+            // The debounced pair. `observe` forwards through `route` itself, on
+            // its own schedule.
+            IndexEventKind::CoverageBranchStarted | IndexEventKind::CoverageBranchEnded => {
+                self.announcer.observe(event);
+                return;
+            }
+            // A run's terminal events. The machine ends every branch it starts, so
+            // this normally finds nothing; it's here so no path can leave a volume
+            // holding an hourglass for a walk whose run is over. Before the
+            // terminal event, because the frontend drops the volume's branch state
+            // on it.
+            IndexEventKind::ScanComplete | IndexEventKind::ScanAborted => {
+                if let Some(volume_id) = event.volume_id() {
+                    self.announcer.run_ended(volume_id);
+                }
+            }
+            _ => {}
+        }
         // allowed-discarded-outcome: `Destination` says where an event went, and exists so a test can assert it without an app. The production sink is the end of the line: nobody above it asks.
         route(event, Some(&self.app));
     }

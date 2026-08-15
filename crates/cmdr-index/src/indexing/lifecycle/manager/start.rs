@@ -517,6 +517,9 @@ impl IndexManager {
             prior_total_entries: calibration.prior.total_entries,
             prior_scan_duration_ms: calibration.prior.scan_duration_ms,
             volume_used_bytes: calibration.volume_used_bytes,
+            // This walk takes the volume whole, so every folder on it is in flux
+            // for the run's whole length and no branch events follow.
+            covered_in_phases: false,
         });
 
         set_phase_for(

@@ -3382,6 +3382,8 @@ export const events = {
   globalShortcutFired: makeEvent<GlobalShortcutFired>('global-shortcut-fired'),
   indexAggregationComplete: makeEvent<IndexAggregationCompleteEvent>('index-aggregation-complete'),
   indexAggregationProgress: makeEvent<AggregationProgressEvent>('index-aggregation-progress'),
+  indexCoverageBranchEnded: makeEvent<IndexCoverageBranchEndedEvent>('index-coverage-branch-ended'),
+  indexCoverageBranchStarted: makeEvent<IndexCoverageBranchStartedEvent>('index-coverage-branch-started'),
   indexDirUpdated: makeEvent<IndexDirUpdatedEvent>('index-dir-updated'),
   indexFreshnessChanged: makeEvent<IndexFreshnessChangedEvent>('index-freshness-changed'),
   indexMemoryWarning: makeEvent<IndexMemoryWarningEvent>('index-memory-warning'),
@@ -5164,6 +5166,34 @@ export type IndexAggregationCompleteEvent = {
 }
 
 /**
+ *  A branch stopped being walked, on every exit path (covered, left to another
+ *  walk, or cancelled). Never held back, so a row can't keep an hourglass for a
+ *  walk that stopped.
+ */
+export type IndexCoverageBranchEndedEvent = {
+  // The volume being covered.
+  volumeId: string
+  // The roots that were under the walker.
+  roots: string[]
+}
+
+/**
+ *  A branch of a drive went under the walker, and the folder sizes inside it (and
+ *  above it, since the roll-up repairs the ancestor chain) can move until it's
+ *  done.
+ *
+ *  Held back by one second app-side, so a walk that finishes inside a second never
+ *  flashes anything (`walk_announcer.rs`). Only a run that announced itself with
+ *  `coveredInPhases` sends these.
+ */
+export type IndexCoverageBranchStartedEvent = {
+  // The volume being covered.
+  volumeId: string
+  // The roots under the walker, absolute in the volume's own path space.
+  roots: string[]
+}
+
+/**
  *  Extended debug status for the debug window. Includes live DB counts
  *  and MustScanSubDirs tracking.
  */
@@ -5430,6 +5460,13 @@ export type IndexScanStartedEvent = {
    *  first-scan) progress denominator. `None` when the space-info fetch failed.
    */
   volumeUsedBytes: number | null
+  /**
+   *  Whether this run covers the drive branch by branch rather than walking it
+   *  whole. It decides what the per-folder size hourglass reads: a whole-volume
+   *  walk puts every folder on the drive in flux for the run's whole length,
+   *  while a phased run puts only the ground the branch events name in flux.
+   */
+  coveredInPhases: boolean
 }
 
 /**
@@ -5476,6 +5513,14 @@ export type IndexStatusResponse = {
   initialized: boolean
   // Whether a walk is running right now.
   scanning: boolean
+  /**
+   *  Whether the running walk covers the volume branch by branch rather than
+   *  walking it whole. The same answer [`IndexEvent::ScanStarted`] carries,
+   *  repeated here so a host that joined mid-run (a window reload) recovers it
+   *  instead of treating the whole volume as in flux. Read it only while
+   *  [`scanning`](Self::scanning) is true.
+   */
+  coveredInPhases: boolean
   // Files and directories the current walk has recorded so far.
   entriesScanned: number
   // Directories among them, the tier-1 progress numerator.
