@@ -199,7 +199,9 @@ impl Branch {
         }
         if self.buffered.len() >= BRANCH_BUFFER_CAP {
             if !self.overflowed {
-                log::warn!("Branch watch: {path} filled its buffer while a walk covered it; it will be re-listed instead");
+                log::warn!(
+                    "Branch watch: {path} filled its buffer while a walk covered it; it will be re-listed instead"
+                );
             }
             self.overflowed = true;
             self.buffered.clear();
@@ -557,8 +559,8 @@ impl State {
     ///
     /// Absorption is a property of the SET, so it holds however a branch arrives:
     /// a walk registering one, a resume restoring one, an explicit collapse.
-    /// Watching `/a` covers `/a/b`, and keeping both makes every event pay a
-    /// longer `deepest_containing` scan for an answer that can't differ.
+    /// Watching `/a` covers `/a/b`, so keeping both would leave the set describing
+    /// the same ground twice, in two places that can then disagree.
     fn insert(&mut self, path: &str) -> bool {
         self.absorb_settled_under(path);
         if self.branches.contains_key(path) {
@@ -585,12 +587,13 @@ impl State {
         }
     }
 
-    /// The branch at `key`, alongside the key it's held under: `BTreeMap`'s
-    /// missing `get_key_value_mut`, spelled as the one-element range that is.
+    /// The branch at `key`, alongside the key it's held under. `BTreeMap` has no
+    /// `get_key_value_mut`, so this is the range starting at `key`, which yields
+    /// the same pair.
     ///
-    /// The key comes back because a branch doesn't carry a second copy of its own
-    /// path, and the caller needs to NAME it while handing it an event whose path
-    /// it may have borrowed the key from.
+    /// The key comes back because a branch carries no second copy of its own path,
+    /// and the caller needs to NAME it while handing it an event it may have
+    /// sliced the key out of.
     fn entry_mut(&mut self, key: &str) -> Option<(&str, &mut Branch)> {
         let from_key = (Bound::Included(key), Bound::Unbounded);
         let (path, branch) = self.branches.range_mut::<str, _>(from_key).next()?;

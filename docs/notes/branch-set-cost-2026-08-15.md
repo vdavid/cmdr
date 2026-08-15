@@ -40,13 +40,13 @@ walk went near), per event:
 - 2,500 branches: 338.74 µs before, 0.51 µs after (664x)
 - 5,000 branches: 676.91 µs before, 0.55 µs after (1231x)
 
-The outside case was the WORSE of the two, at twice the inside cost, because it paid two full scans: `deepest_containing`
-found nothing, and then the coalesced-sweep re-anchoring collected every strict descendant before checking whether the
-event was a sweep at all. Both scans are gone. The sweep flag is checked first, and the descendant collection is a range
-query.
+The outside case was the WORSE of the two, at twice the inside cost, because it paid two full scans:
+`deepest_containing` found nothing, and then the coalesced-sweep re-anchoring collected every strict descendant before
+checking whether the event was a sweep at all. Both scans are gone. The sweep flag is checked first, and the descendant
+collection is a range query.
 
-Read the before numbers as held-lock time on the live event path: at 2,500 branches a 20,000-event churn burst cost
-6.8 s of it, and now costs 10 ms.
+Read the before numbers as held-lock time on the live event path: at 2,500 branches a 20,000-event churn burst cost 6.8
+s of it, and now costs 10 ms.
 
 ## What changed
 

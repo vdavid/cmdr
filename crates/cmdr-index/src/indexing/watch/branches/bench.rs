@@ -21,6 +21,8 @@
 use std::io::Write;
 use std::time::{Duration, Instant};
 
+use cmdr_fs::pluralize::pluralize;
+
 use super::*;
 use crate::indexing::watch::watcher::FsEventFlags;
 
@@ -65,7 +67,12 @@ fn branch_set_cost() {
     }
 
     for landing in [Landing::InsideABranch, Landing::OutsideEveryBranch] {
-        let _ = writeln!(&mut out, "\n── admitting {CHURN_EVENTS} events {} ──", landing.describe());
+        let _ = writeln!(
+            &mut out,
+            "\n── admitting {} {} ──",
+            pluralize(CHURN_EVENTS as u64, "event"),
+            landing.describe()
+        );
         let _ = writeln!(
             &mut out,
             "{:>9}  {:>12}  {:>10}  {:>28}",
@@ -144,7 +151,10 @@ fn admission_cost(width: usize, landing: Landing) -> Duration {
         }
     }
     let elapsed = start.elapsed();
-    assert_eq!(seen, CHURN_EVENTS, "every event should have taken the arm being measured");
+    assert_eq!(
+        seen, CHURN_EVENTS,
+        "every event should have taken the arm being measured"
+    );
     elapsed
 }
 
