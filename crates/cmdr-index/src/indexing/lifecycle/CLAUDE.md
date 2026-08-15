@@ -3,8 +3,9 @@
 How a per-volume index is born, lives, transitions, and dies. Every invariant here holds PER volume id.
 
 `state.rs` the registry + `IndexPhase` machine (a job per file under `state/`, re-exported so `state::*` is the one
-path); `manager.rs` the coordinator (`launch_route.rs` the launch table); `cover.rs` the search-driven walk; `phases/`
-the first index. The other leaves are one job each; `DETAILS.md` § Module structure names them.
+path); `manager.rs` the coordinator (`launch_route.rs` the launch table); `cover.rs` the search-driven walk (bootstrap and
+claiming under `cover/`); `phases/` the first index. The other leaves are one job each;
+`DETAILS.md` § Module structure names them.
 
 ## Must-knows
 
@@ -20,7 +21,7 @@ the first index. The other leaves are one job each; `DETAILS.md` § Module struc
 - **No `scan_completed_at` ⇒ COVERED in phases, ❌ never bulk-scanned**; every "walk it whole" door goes through
   `cover_or_scan`, ❌ never straight to `start_scan`. ⚠️ A COMPLETED volume takes the replay/reconcile arm FIRST, and an
   EMPTY persisted branch set means a legacy interrupted bulk scan ⇒ rebuild. Start the machine via
-  `state::start_pending_phases`, OUTSIDE a registry-held window. A wrong cell in that table stays invisible for weeks.
+  `state::start_pending_phases`, OUTSIDE a registry-held window.
 - **Every scan entry asks TWO single-flight questions** (`mgr.scanning` AND `cover::ground_being_walked`), plus the
   machine having WORK, ❌ not merely walking. ❌ Don't collapse them or classify them by text (both are
   `ScanStartError`). A MANUAL rescan they refuse on a COMPLETED volume is REMEMBERED (`rescan_request`) and fired from
