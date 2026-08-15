@@ -238,7 +238,8 @@ impl IndexStore {
     /// database yet. `create_tables` is idempotent, so an index full of rows is
     /// untouched and a fresh one gets its `schema_version` from the next
     /// [`Self::open`]. ❌ Don't gate it on the file existing (a real drive's first
-    /// enable met an empty file and the write failed with "no such table"), and ❌
+    /// enable found a file already at the path with no tables in it, and the write
+    /// died on "no such table: meta" with nothing recorded), and ❌
     /// don't reach for `open` to create it: `open` deletes and recreates on a schema
     /// mismatch, and throwing a real index away to write one marker is not a trade
     /// this call gets to make.
