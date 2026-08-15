@@ -80,15 +80,27 @@ complete record, so the branch is dropped and queued as a `MustScanSubDirs` anch
 it, a resume restoring it, an explicit `collapse_to`. A walk finishing absorbs whatever settled underneath it while it
 was live. Two reasons, and the second is a correctness one:
 
-- `deepest_containing` scans the whole set once per event on the live hot path, and a set that only ever grows makes
-  every event pay for branches that can't change the answer. A volume covered as a sequence of walks rather than one
-  scan would put 50–150 entries there.
+- The set is the shortest description of the ground the volume watches branch by branch, and every entry it doesn't need
+  is one more thing to persist, restore, and reason about.
 - A settled descendant entry under a branch a walk is covering RIGHT NOW is the deepest match, so its events would
   PROCESS live while the walk writes the same names — the two-writer collision the buffering exists to prevent, arriving
   through the set itself.
 
 ❌ An entry with `walks > 0` is never absorbed: its buffer belongs to that walk, and dropping the entry would strand the
 events it holds. Settled entries are always safe, because a branch only buffers while a walk covers it.
+
+**The set is a `BTreeMap` keyed by path, and both of its questions are bounded by the PATH rather than by the set.**
+"What holds this?" (`deepest_containing`, once per event on the live hot path) walks the path's own ancestors via
+`self_and_ancestors`; "what sits under this?" (`absorb_settled_under`, and the sweep re-anchoring) is a range scan
+bounded by `descendant_range_prefix`. Both primitives live in `../paths/path_prefix.rs` and are component-aware, so
+`/vol/buildcache` never answers to a branch at `/vol/build`. Phased indexing registers an entry per frontier root, so a
+mid-phase set holds thousands: a container that scanned itself cost seconds of HELD LOCK per churn burst and made
+registering a wide frontier quadratic. Numbers before and after: `docs/notes/branch-set-cost-2026-08-15.md`.
+
+⚠️ The volume root is its OWN descendant-range prefix, so `State::descendants` also tests that the key is longer than
+the path it's under. Without it a branch at the volume root absorbs itself the moment its walk ends, and the volume
+silently stops watching everything it just covered. Anchor:
+`branches::tests::a_branch_at_the_volume_root_holds_everything_under_it`.
 
 **`collapse_to(root)` mutates the set the running loop is READING**, in place, and then persists. The live loop and its
 reconciler each captured an `Arc<BranchWatch>` at `ensure_branch_watch`. ❌ Never express a collapse as

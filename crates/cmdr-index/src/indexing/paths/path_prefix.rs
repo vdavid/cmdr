@@ -11,12 +11,11 @@ use std::collections::HashSet;
 /// Walk an absolute path's non-empty components. `/` yields nothing; `/a/b`
 /// yields `"a"`, `"b"`.
 ///
-/// ⚠️ An iterator, ❌ not a `Vec`: the branch set compares one path against every
-/// branch it holds, on the live event path and once per frontier root a walk
-/// covers. Two heap allocations per comparison made that the single most expensive
-/// thing about resuming an interrupted index (`lifecycle/phases/DETAILS.md`
-/// § "What a resume costs"). Callers that genuinely need a slice collect it
-/// themselves.
+/// ⚠️ An iterator, ❌ not a `Vec`: these helpers sit on the live event path, once
+/// per filesystem event. Two heap allocations per comparison made this the single
+/// most expensive thing about resuming an interrupted index
+/// (`lifecycle/phases/DETAILS.md` § "What a resume costs"). Callers that genuinely
+/// need a slice collect it themselves.
 fn components(path: &str) -> impl Iterator<Item = &str> {
     path.split('/').filter(|c| !c.is_empty())
 }
@@ -46,6 +45,46 @@ pub(crate) fn is_strict_descendant(path: &str, prefix: &str) -> bool {
 /// folder", where the folder itself counts.
 pub(crate) fn is_at_or_under(path: &str, prefix: &str) -> bool {
     path == prefix || is_strict_descendant(path, prefix)
+}
+
+/// `path` itself, then each of its ancestors, deepest first, ending at `/`.
+///
+/// The lookup half of [`is_strict_descendant`] for a caller holding a SORTED or
+/// keyed collection: instead of asking every entry whether it contains `path`,
+/// ask the collection for each of these in turn. A path is a handful of
+/// components deep however many entries the collection holds, so the answer stops
+/// costing what the collection is worth (the branch set, `watch/branches.rs`).
+///
+/// Borrows `path` and allocates nothing: every item is a slice of it.
+pub(crate) fn self_and_ancestors(path: &str) -> impl Iterator<Item = &str> {
+    let mut next = Some(path);
+    std::iter::from_fn(move || {
+        let current = next?;
+        next = match current.rfind('/') {
+            // `/a` -> `/`. The volume root is a branch like any other and
+            // contains everything, so the chain has to reach it.
+            Some(0) if current.len() > 1 => Some("/"),
+            Some(cut) if cut > 0 => Some(&current[..cut]),
+            // `/` (and anything relative) has nowhere left to go.
+            _ => None,
+        };
+        Some(current)
+    })
+}
+
+/// The string every strict descendant of `path` starts with, and nothing else
+/// does: `/a/b` becomes `/a/b/`, and the root is already its own.
+///
+/// The range half of [`is_strict_descendant`]: over keys held in sorted order,
+/// `range(prefix..).take_while(starts_with(prefix))` is exactly the descendants,
+/// found in the time they take to yield rather than the time the whole collection
+/// takes to scan. The trailing separator is what keeps it component-aware, so
+/// `/a/bc` never answers to `/a/b`.
+pub(crate) fn descendant_range_prefix(path: &str) -> String {
+    if path.ends_with('/') {
+        return path.to_string();
+    }
+    format!("{path}/")
 }
 
 /// The path truncated to at most `max_depth` leading components. `/a/b/c/d`
@@ -159,6 +198,37 @@ mod tests {
         assert!(!is_strict_descendant("/a/bc", "/a/b"));
         // An ancestor is not a descendant of its child.
         assert!(!is_strict_descendant("/a", "/a/b"));
+    }
+
+    #[test]
+    fn self_and_ancestors_walks_deepest_first_down_to_the_root() {
+        let chain: Vec<&str> = self_and_ancestors("/a/b/c").collect();
+        assert_eq!(chain, vec!["/a/b/c", "/a/b", "/a", "/"]);
+        // The root is its own only candidate, and never yielded twice.
+        assert_eq!(self_and_ancestors("/").collect::<Vec<_>>(), vec!["/"]);
+        assert_eq!(self_and_ancestors("/a").collect::<Vec<_>>(), vec!["/a", "/"]);
+        // Every step is a COMPONENT boundary, so `/a/bc` never yields `/a/b`.
+        assert!(!self_and_ancestors("/a/bc").any(|p| p == "/a/b"));
+        // The chain agrees with the predicate it stands in for: every entry after
+        // the path itself is a strict ancestor of it, and nothing is missed.
+        for candidate in self_and_ancestors("/a/b/c").skip(1) {
+            assert!(is_strict_descendant("/a/b/c", candidate), "{candidate}");
+        }
+    }
+
+    #[test]
+    fn descendant_range_prefix_bounds_a_sorted_scan() {
+        assert_eq!(descendant_range_prefix("/a/b"), "/a/b/");
+        assert_eq!(descendant_range_prefix("/"), "/");
+        // What the prefix is FOR: a `starts_with` test over sorted keys has to
+        // agree with the component-aware predicate, sibling traps included.
+        let prefix = descendant_range_prefix("/a/b");
+        for key in ["/a/b/c", "/a/b/c/d"] {
+            assert!(key.starts_with(&prefix) && is_strict_descendant(key, "/a/b"), "{key}");
+        }
+        for key in ["/a/b", "/a/bc", "/a", "/a/c"] {
+            assert!(!key.starts_with(&prefix) && !is_strict_descendant(key, "/a/b"), "{key}");
+        }
     }
 
     #[test]

@@ -30,9 +30,10 @@ is the canonical owner of `IndexPathSpace` and the read-side path transforms.
 
 - `routing.rs` — `volume_id_for_local_path` (path → owning volume), `IndexPathSpace`, `index_read_path[_pure]` +
   `mtp_index_relative_path`, `exclusion_scope_for_volume`.
-- `path_prefix.rs` — component-aware absolute-path prefix tests (`/a/bc` is never a child of `/a/b`), plus
-  `compute_parent_path`, `collect_ancestor_paths`, and `with_ancestor_closure` (origins → the recursive-size refresh
-  set).
+- `path_prefix.rs` — component-aware absolute-path prefix tests (`/a/bc` is never a child of `/a/b`): the predicates
+  (`is_strict_descendant`, `is_at_or_under`) and their lookup forms for a keyed collection (`self_and_ancestors`,
+  `descendant_range_prefix`), plus `compute_parent_path`, `collect_ancestor_paths`, and `with_ancestor_closure`
+  (origins → the recursive-size refresh set).
 
 Owned elsewhere: firmlink normalization (`/System/Volumes/Data/...` → `/...`, `/tmp` → `/private/tmp`) lives in
 `cmdr_fs::firmlinks`; the exclusion policy (`should_exclude`, `ExclusionScope`, pseudo-filesystem detection) lives in

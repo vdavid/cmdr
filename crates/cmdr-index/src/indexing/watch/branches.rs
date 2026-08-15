@@ -39,14 +39,27 @@
 //! different mount point still finds its branches. "Clear index" deletes the
 //! database, so the branch set goes with the coverage it describes, and a full
 //! scan drops it because a whole-watched volume has no use for branches.
+//!
+//! ## Why it's a map and not a list
+//!
+//! A phased index registers a branch per frontier root, so a mid-phase set runs
+//! to thousands of entries, and every one of them is asked about once per
+//! filesystem event. Keyed by path in sorted order, the two questions the set
+//! answers are bounded by the PATH rather than by the set: "what holds this?"
+//! walks the path's own ancestors (`self_and_ancestors`), and "what sits under
+//! this?" is a range scan (`descendant_range_prefix`). A list asked each entry in
+//! turn, which cost a mid-phase volume seconds of held lock per churn burst and
+//! made registering a wide frontier quadratic
+//! (`docs/notes/branch-set-cost-2026-08-15.md`).
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use std::ops::Bound;
 use std::path::Path;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use super::watcher::FsChangeEvent;
 use crate::indexing::IndexPathSpace;
-use crate::indexing::paths::path_prefix::is_strict_descendant;
+use crate::indexing::paths::path_prefix::{descendant_range_prefix, self_and_ancestors};
 use crate::indexing::store::IndexStore;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -79,10 +92,7 @@ fn watches() -> &'static Mutex<HashMap<String, Arc<BranchWatch>>> {
 /// the loop and the walker write the same names through one writer.
 pub(crate) fn live_for(volume_id: &str) -> Arc<BranchWatch> {
     let mut all = watches().lock_ignore_poison();
-    Arc::clone(
-        all.entry(volume_id.to_string())
-            .or_insert_with(|| Arc::new(BranchWatch::with_branches(Vec::new()))),
-    )
+    Arc::clone(all.entry(volume_id.to_string()).or_default())
 }
 
 /// This volume's set, restored from its own database.
@@ -138,7 +148,7 @@ pub(crate) fn any_persisted(conn: &rusqlite::Connection) -> bool {
 }
 
 /// Read the persisted branches back as absolute paths for this volume's space.
-fn load_branches(space: &IndexPathSpace, conn: &rusqlite::Connection) -> Vec<Branch> {
+fn load_branches(space: &IndexPathSpace, conn: &rusqlite::Connection) -> Vec<String> {
     let Ok(Some(stored)) = IndexStore::get_meta(conn, COVERED_BRANCHES_KEY) else {
         return Vec::new();
     };
@@ -147,7 +157,7 @@ fn load_branches(space: &IndexPathSpace, conn: &rusqlite::Connection) -> Vec<Bra
         .lines()
         .map(str::trim)
         .filter(|line| !line.is_empty())
-        .map(|relative| Branch::new(join_volume_relative(&volume_root, relative)))
+        .map(|relative| join_volume_relative(&volume_root, relative))
         .collect()
 }
 
@@ -160,10 +170,10 @@ fn join_volume_relative(volume_root: &str, relative: &str) -> String {
     format!("{trimmed_root}/{trimmed_relative}")
 }
 
-/// One patch of ground a search walk covered on this volume.
+/// One patch of ground a search walk covered on this volume. Its absolute path
+/// in this volume's space is the key it's held under.
+#[derive(Default)]
 struct Branch {
-    /// The absolute path, in this volume's space.
-    path: String,
     /// How many walks are covering it right now. Above zero its events buffer;
     /// a count rather than a flag because two searches can walk overlapping
     /// frontiers and the second must not un-buffer the first.
@@ -177,18 +187,27 @@ struct Branch {
 }
 
 impl Branch {
-    fn new(path: String) -> Self {
-        Self {
-            path,
-            walks: 0,
-            buffered: Vec::new(),
-            overflowed: false,
+    /// Buffer the event against this branch if a walk is covering it, or hand it
+    /// back to process. `path` is the branch's own, for the one line it logs.
+    fn take(&mut self, path: &str, event: FsChangeEvent) -> Admission {
+        if self.walks == 0 {
+            // Reached with no walk ⇒ the ground is covered either way: a
+            // `Forget`ted branch is gone from the set the moment its walk ends,
+            // so what's left here is ground the loop answers for. The admission
+            // rule's reach doesn't enter into it.
+            return Admission::Process(vec![event]);
         }
-    }
-
-    /// Whether `path` is this branch or sits under it.
-    fn contains(&self, path: &str) -> bool {
-        path == self.path || is_strict_descendant(path, &self.path)
+        if self.buffered.len() >= BRANCH_BUFFER_CAP {
+            if !self.overflowed {
+                log::warn!("Branch watch: {path} filled its buffer while a walk covered it; it will be re-listed instead");
+            }
+            self.overflowed = true;
+            self.buffered.clear();
+            self.buffered.shrink_to_fit();
+            return Admission::Buffered;
+        }
+        self.buffered.push(event);
+        Admission::Buffered
     }
 }
 
@@ -295,17 +314,21 @@ pub(crate) struct Promoted {
 
 /// One volume's branch set, shared between the walks that grow it and the live
 /// loop that reads it.
+#[derive(Default)]
 pub(crate) struct BranchWatch {
     state: Mutex<State>,
 }
 
 #[derive(Default)]
 struct State {
+    /// Keyed by absolute path, so the set stays sorted and both of its questions
+    /// are answered by lookups rather than by a scan.
+    ///
     /// Ancestor-minimal among SETTLED entries, and no more than that: a walk over
     /// a pocket inside an already-covered branch needs its own entry to buffer
     /// against, and deepest-match wins so it gets one. Every collapse is the same
     /// absorption rule firing, on insert and when a walk ends.
-    branches: Vec<Branch>,
+    branches: BTreeMap<String, Branch>,
     /// Released buffers waiting for the loop's next flush tick.
     promoted: Promoted,
     /// The highest event id this volume's stream has carried, including the
@@ -317,24 +340,20 @@ struct State {
 }
 
 impl BranchWatch {
-    fn with_branches(branches: Vec<Branch>) -> Self {
-        Self {
-            state: Mutex::new(State {
-                branches,
-                ..State::default()
-            }),
+    /// Add branches read back from the database, keeping whatever this session
+    /// already knows about.
+    fn restore(&self, restored: Vec<String>) {
+        let mut state = self.state.lock_ignore_poison();
+        for path in restored {
+            if state.deepest_containing(&path).is_none() {
+                state.insert(&path);
+            }
         }
     }
 
-    /// Add branches read back from the database, keeping whatever this session
-    /// already knows about.
-    fn restore(&self, restored: Vec<Branch>) {
-        let mut state = self.state.lock_ignore_poison();
-        for branch in restored {
-            if !state.branches.iter().any(|held| held.contains(&branch.path)) {
-                state.insert(&branch.path);
-            }
-        }
+    /// Whether anything at all is covered, without building the list to find out.
+    pub(crate) fn is_empty(&self) -> bool {
+        self.state.lock_ignore_poison().branches.is_empty()
     }
 
     /// A walk is about to cover `paths`. Their events buffer from this moment,
@@ -350,7 +369,7 @@ impl BranchWatch {
             if state.insert(path) {
                 added.push(path.clone());
             }
-            if let Some(branch) = state.branches.iter_mut().find(|b| b.path == *path) {
+            if let Some(branch) = state.branches.get_mut(path) {
                 branch.walks += 1;
             }
         }
@@ -368,10 +387,9 @@ impl BranchWatch {
     pub(crate) fn finish_covering(&self, paths: &[String], after: AfterWalk) {
         let mut state = self.state.lock_ignore_poison();
         for path in paths {
-            let Some(index) = state.branches.iter().position(|b| b.path == *path) else {
+            let Some(branch) = state.branches.get_mut(path) else {
                 continue;
             };
-            let branch = &mut state.branches[index];
             branch.walks = branch.walks.saturating_sub(1);
             if branch.walks > 0 {
                 continue;
@@ -388,17 +406,15 @@ impl BranchWatch {
             // already answers for it (a scanned volume) or a settled branch around
             // it does, and one that stays absorbs whatever settled underneath it
             // while it was live.
-            let covered_by_a_settled_branch = state
-                .branches
-                .iter()
-                .any(|other| other.path != *path && other.walks == 0 && other.contains(path));
+            let covered_by_a_settled_branch = self_and_ancestors(path)
+                .skip(1)
+                .any(|ancestor| state.branches.get(ancestor).is_some_and(|other| other.walks == 0));
             if after == AfterWalk::Forget || covered_by_a_settled_branch {
-                state.branches.remove(index);
+                state.branches.remove(path);
             } else {
                 state.absorb_settled_under(path);
             }
         }
-        state.branches.sort_by(|a, b| a.path.cmp(&b.path));
     }
 
     /// Collapse the set to `root`: one entry covering everything walked under it,
@@ -434,48 +450,27 @@ impl BranchWatch {
         let mut state = self.state.lock_ignore_poison();
         state.max_event_id_seen = state.max_event_id_seen.max(event.event_id);
 
-        if let Some(index) = state.deepest_containing(&event.path) {
-            return state.take(index, event, reach);
+        // The hot path, and the only one most events take: the deepest branch
+        // holding this path, found by asking about the path's own ancestors. The
+        // key borrow ends with the lookup, so the event is still free to move into
+        // the buffer.
+        if let Some(cut) = state.deepest_containing(&event.path)
+            && let Some((path, branch)) = state.entry_mut(&event.path[..cut])
+        {
+            return branch.take(path, event);
         }
 
         // Nothing holds this path itself. A coalesced sweep ABOVE the branches is
         // still about them, so it's re-anchored rather than dropped — on a
         // whole-watched volume too, where processing it as-is would send a
-        // reconcile straight through ground a walk is covering.
-        let under: Vec<usize> = (0..state.branches.len())
-            .filter(|&i| is_strict_descendant(&state.branches[i].path, &event.path))
-            .collect();
-        if event.flags.must_scan_sub_dirs && !under.is_empty() {
-            let mut process = Vec::new();
-            for &index in &under {
-                let anchored = FsChangeEvent {
-                    path: state.branches[index].path.clone(),
-                    event_id: event.event_id,
-                    flags: event.flags.clone(),
-                };
-                if let Admission::Process(mut events) = state.take(index, anchored, reach) {
-                    process.append(&mut events);
-                }
+        // reconcile straight through ground a walk is covering. Only a sweep asks
+        // this; ❌ don't hoist it, an ordinary event would pay for an answer it
+        // never reads.
+        if event.flags.must_scan_sub_dirs {
+            let under = state.descendants_of(&event.path);
+            if !under.is_empty() {
+                return state.re_anchor(&under, event, reach);
             }
-            // A whole-watched volume keeps the sweep it was handed as well: the
-            // branches under it get their own re-anchored copies, and the rest of
-            // the subtree is still this loop's to reconcile. If a walk is covering
-            // one of those branches, the sweep is HELD against it rather than
-            // dropped — reconciling it now would walk straight through the walk,
-            // and dropping it would lose the rest of the subtree it speaks for.
-            if reach == Reach::WholeVolume {
-                match under.iter().find(|&&i| state.branches[i].walks > 0) {
-                    Some(&walked) => {
-                        state.take(walked, event, reach);
-                    }
-                    None => process.push(event),
-                }
-            }
-            return if process.is_empty() {
-                Admission::Buffered
-            } else {
-                Admission::Process(process)
-            };
         }
 
         match reach {
@@ -492,20 +487,16 @@ impl BranchWatch {
     /// committed first.
     pub(crate) fn any_buffered(&self, paths: &[String]) -> bool {
         let state = self.state.lock_ignore_poison();
-        state
-            .branches
+        paths
             .iter()
-            .any(|branch| !branch.buffered.is_empty() && paths.iter().any(|path| branch.contains(path)))
+            .any(|path| state.holding(path).any(|branch| !branch.buffered.is_empty()))
     }
 
     /// Whether a walk is covering `path` (or the branch it sits in) right now.
     pub(crate) fn is_being_walked(&self, path: &Path) -> bool {
         let path = path.to_string_lossy();
         let state = self.state.lock_ignore_poison();
-        state
-            .branches
-            .iter()
-            .any(|branch| branch.walks > 0 && branch.contains(&path))
+        state.holding(&path).any(|branch| branch.walks > 0)
     }
 
     /// Take whatever finished walks released. The loop folds the events into its
@@ -519,7 +510,7 @@ impl BranchWatch {
     /// it would let a restart skip the very events we're holding.
     pub(crate) fn safe_event_id(&self) -> Option<u64> {
         let state = self.state.lock_ignore_poison();
-        if state.branches.iter().any(|b| !b.buffered.is_empty()) {
+        if state.branches.values().any(|b| !b.buffered.is_empty()) {
             return None;
         }
         (state.max_event_id_seen > 0).then_some(state.max_event_id_seen)
@@ -534,18 +525,13 @@ impl BranchWatch {
     pub(crate) fn covers(&self, anchor: &Path) -> bool {
         let path = anchor.to_string_lossy();
         let state = self.state.lock_ignore_poison();
-        state.branches.iter().any(|b| b.contains(&path))
+        state.deepest_containing(&path).is_some()
     }
 
     /// The covered branches, shallowest first. The persisted form and what tests
     /// assert against.
     pub(crate) fn branch_paths(&self) -> Vec<String> {
-        self.state
-            .lock_ignore_poison()
-            .branches
-            .iter()
-            .map(|b| b.path.clone())
-            .collect()
+        self.state.lock_ignore_poison().branches.keys().cloned().collect()
     }
 
     /// Write the set onto the volume's own database, so the next session finds
@@ -575,11 +561,10 @@ impl State {
     /// longer `deepest_containing` scan for an answer that can't differ.
     fn insert(&mut self, path: &str) -> bool {
         self.absorb_settled_under(path);
-        if self.branches.iter().any(|held| held.path == path) {
+        if self.branches.contains_key(path) {
             return false;
         }
-        self.branches.push(Branch::new(path.to_string()));
-        self.branches.sort_by(|a, b| a.path.cmp(&b.path));
+        self.branches.insert(path.to_string(), Branch::default());
         true
     }
 
@@ -590,44 +575,105 @@ impl State {
     /// same rule absorbs it when it finishes. Settled entries are safe to drop
     /// because a branch only buffers while `walks > 0`.
     fn absorb_settled_under(&mut self, path: &str) {
-        self.branches
-            .retain(|held| held.walks > 0 || !is_strict_descendant(&held.path, path));
+        let settled: Vec<String> = self
+            .descendants(path)
+            .filter(|(_, held)| held.walks == 0)
+            .map(|(key, _)| key.clone())
+            .collect();
+        for key in settled {
+            self.branches.remove(&key);
+        }
     }
 
-    /// The most specific branch holding `path`, so a pocket being walked inside a
-    /// live branch buffers rather than processes.
+    /// The branch at `key`, alongside the key it's held under: `BTreeMap`'s
+    /// missing `get_key_value_mut`, spelled as the one-element range that is.
+    ///
+    /// The key comes back because a branch doesn't carry a second copy of its own
+    /// path, and the caller needs to NAME it while handing it an event whose path
+    /// it may have borrowed the key from.
+    fn entry_mut(&mut self, key: &str) -> Option<(&str, &mut Branch)> {
+        let from_key = (Bound::Included(key), Bound::Unbounded);
+        let (path, branch) = self.branches.range_mut::<str, _>(from_key).next()?;
+        (path == key).then_some((path.as_str(), branch))
+    }
+
+    /// Every branch holding `path`, deepest first: the one that decides what
+    /// happens to an event, and the chain `is_being_walked` asks about.
+    fn holding<'a>(&'a self, path: &'a str) -> impl Iterator<Item = &'a Branch> {
+        self_and_ancestors(path).filter_map(|candidate| self.branches.get(candidate))
+    }
+
+    /// How much of `path` names the most specific branch holding it, so a pocket
+    /// being walked inside a live branch buffers rather than processes.
+    ///
+    /// A byte length rather than the key itself, so the caller can look the branch
+    /// up mutably and still own the path it sliced.
     fn deepest_containing(&self, path: &str) -> Option<usize> {
-        self.branches
-            .iter()
-            .enumerate()
-            .filter(|(_, branch)| branch.contains(path))
-            .max_by_key(|(_, branch)| branch.path.len())
-            .map(|(index, _)| index)
+        self_and_ancestors(path)
+            .find(|candidate| self.branches.contains_key(*candidate))
+            .map(str::len)
     }
 
-    /// Buffer the event against a branch under walk, or hand it back to process.
-    fn take(&mut self, index: usize, event: FsChangeEvent, reach: Reach) -> Admission {
-        let branch = &mut self.branches[index];
-        if branch.walks == 0 {
-            // A `Forget`ted branch is gone from the set the moment its walk ends,
-            // so reaching here with no walk means the ground is covered either way.
-            let _ = reach;
-            return Admission::Process(vec![event]);
-        }
-        if branch.buffered.len() >= BRANCH_BUFFER_CAP {
-            if !branch.overflowed {
-                log::warn!(
-                    "Branch watch: {} filled its buffer while a walk covered it; it will be re-listed instead",
-                    branch.path
-                );
+    /// Every branch strictly under `path`, shallowest first. A range scan, so it
+    /// costs what it yields rather than what the set holds.
+    fn descendants<'a>(&'a self, path: &str) -> impl Iterator<Item = (&'a String, &'a Branch)> {
+        let prefix = descendant_range_prefix(path);
+        // ⚠️ The root is its OWN range prefix, so without the length test a branch
+        // at the volume root absorbs itself the moment its walk ends, and the
+        // volume silently stops watching everything it just covered. Every strict
+        // descendant's key is longer than the path it sits under.
+        let self_len = path.len();
+        self.branches
+            .range(prefix.clone()..)
+            .take_while(move |(key, _)| key.starts_with(&prefix))
+            .filter(move |(key, _)| key.len() > self_len)
+    }
+
+    /// The keys of [`Self::descendants`], for a caller that goes on to mutate them.
+    fn descendants_of(&self, path: &str) -> Vec<String> {
+        self.descendants(path).map(|(key, _)| key.clone()).collect()
+    }
+
+    /// A coalesced sweep that landed ABOVE the branches `under` it, re-anchored
+    /// onto each of them.
+    fn re_anchor(&mut self, under: &[String], event: FsChangeEvent, reach: Reach) -> Admission {
+        let mut process = Vec::new();
+        for key in under {
+            let anchored = FsChangeEvent {
+                path: key.clone(),
+                event_id: event.event_id,
+                flags: event.flags.clone(),
+            };
+            if let Some((path, branch)) = self.entry_mut(key)
+                && let Admission::Process(mut events) = branch.take(path, anchored)
+            {
+                process.append(&mut events);
             }
-            branch.overflowed = true;
-            branch.buffered.clear();
-            branch.buffered.shrink_to_fit();
-            return Admission::Buffered;
         }
-        branch.buffered.push(event);
-        Admission::Buffered
+        // A whole-watched volume keeps the sweep it was handed as well: the
+        // branches under it get their own re-anchored copies, and the rest of the
+        // subtree is still this loop's to reconcile. If a walk is covering one of
+        // those branches, the sweep is HELD against it rather than dropped —
+        // reconciling it now would walk straight through the walk, and dropping it
+        // would lose the rest of the subtree it speaks for.
+        if reach == Reach::WholeVolume {
+            let walked = under
+                .iter()
+                .find(|key| self.branches.get(*key).is_some_and(|branch| branch.walks > 0));
+            match walked {
+                Some(key) => {
+                    if let Some((path, branch)) = self.entry_mut(key) {
+                        branch.take(path, event);
+                    }
+                }
+                None => process.push(event),
+            }
+        }
+        if process.is_empty() {
+            Admission::Buffered
+        } else {
+            Admission::Process(process)
+        }
     }
 }
 

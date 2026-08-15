@@ -19,6 +19,14 @@ use tokio_util::sync::CancellationToken;
 
 // ── Fixtures ─────────────────────────────────────────────────────────
 
+/// A set built from what the database holds, exactly the way `resumed_for` does
+/// it: a fresh set with the persisted branches restored into it.
+fn reloaded(space: &IndexPathSpace, conn: &rusqlite::Connection) -> BranchWatch {
+    let watch = BranchWatch::default();
+    watch.restore(load_branches(space, conn));
+    watch
+}
+
 /// A real tree on disk, a real index over it, and a real writer, so an admitted
 /// event writes rows and a discarded one provably doesn't.
 struct Fixture {
@@ -150,7 +158,7 @@ fn must_scan(path: &str, event_id: u64) -> FsChangeEvent {
 
 /// A watch over branches that are already covered (no walk in flight).
 fn live_watch(paths: &[&str]) -> WatchScope {
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     let owned: Vec<String> = paths.iter().map(|p| p.to_string()).collect();
     watch.begin_covering(&owned);
     watch.finish_covering(&owned, AfterWalk::Watch);
@@ -191,7 +199,7 @@ fn an_event_that_lands_mid_walk_is_not_lost() {
     let f = Fixture::new();
     let inside = f.create_file_in("covered", "arrived-mid-walk.txt");
     let branch = vec![f.path("covered")];
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     watch.begin_covering(&branch);
     let scope = WatchScope::Branches(Arc::clone(&watch));
 
@@ -236,7 +244,7 @@ fn a_pocket_walked_inside_a_live_branch_buffers_and_is_absorbed_when_it_ends() {
     // A cancelled walk leaves unwalked pockets inside a branch, so a later walk
     // covers one while the branch around it is live. Its events must buffer
     // against the POCKET, not process because the branch around it says live.
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     let branch = vec!["/vol/covered".to_string()];
     watch.begin_covering(&branch);
     watch.finish_covering(&branch, AfterWalk::Watch);
@@ -272,7 +280,7 @@ fn an_overflowing_buffer_asks_for_a_relist_instead_of_a_replay() {
     // Past the cap the buffer is no longer a complete record of what changed, so
     // replaying it would leave the branch subtly wrong with no signal. Re-listing
     // the branch is the honest recovery.
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     let branch = vec!["/vol/covered".to_string()];
     watch.begin_covering(&branch);
     for id in 0..(BRANCH_BUFFER_CAP as u64 + 5) {
@@ -306,7 +314,7 @@ fn escalation_is_confined_to_the_covered_branches() {
 fn the_journal_position_never_advances_past_a_held_event() {
     // The stored position is what a restart replays from, so advancing it past
     // an event we're still holding would drop that event on the floor.
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     let branch = vec!["/vol/covered".to_string()];
     watch.begin_covering(&branch);
 
@@ -324,11 +332,65 @@ fn the_journal_position_never_advances_past_a_held_event() {
     assert_eq!(watch.safe_event_id(), Some(41));
 }
 
+/// The set finds its answers by path arithmetic rather than by asking every
+/// entry, so a name that merely SHARES a prefix with a branch must not answer to
+/// it. `/vol/build` covering `/vol/buildcache` would buffer and process a whole
+/// tree nothing walked.
+#[test]
+fn a_sibling_that_shares_a_prefix_is_never_inside_the_branch() {
+    let scope = live_watch(&["/vol/build"]);
+    let watch = scope.branches();
+
+    assert!(watch.covers(Path::new("/vol/build/out")));
+    assert!(!watch.covers(Path::new("/vol/buildcache")));
+    assert!(!watch.covers(Path::new("/vol/buildcache/out")));
+    assert!(
+        matches!(
+            watch.admit(created_file("/vol/buildcache/x.o", 1), Reach::CoveredBranches),
+            Admission::Discarded
+        ),
+        "a prefix-sharing sibling is not our ground"
+    );
+
+    // The same boundary on the absorption side: covering `/vol/build` retires
+    // what is under it and leaves the sibling standing.
+    let sibling = vec!["/vol/buildcache".to_string()];
+    watch.begin_covering(&sibling);
+    watch.finish_covering(&sibling, AfterWalk::Watch);
+    let nested = vec!["/vol/build/out".to_string()];
+    watch.begin_covering(&nested);
+    watch.finish_covering(&nested, AfterWalk::Watch);
+    assert_eq!(
+        watch.branch_paths(),
+        vec!["/vol/build".to_string(), "/vol/buildcache".to_string()],
+        "the nested one is absorbed, the sibling is not"
+    );
+}
+
+/// A branch AT the volume root holds everything under it, and the set stays
+/// sorted however the branches arrived — that order is the persisted form.
+#[test]
+fn a_branch_at_the_volume_root_holds_everything_under_it() {
+    let scope = live_watch(&["/"]);
+    let watch = scope.branches();
+    assert!(watch.covers(Path::new("/")));
+    assert!(watch.covers(Path::new("/Users/someone/deep/inside")));
+
+    let out_of_order = vec!["/vol/z".to_string(), "/vol/a".to_string(), "/vol/m".to_string()];
+    let sorted = Arc::new(BranchWatch::default());
+    sorted.begin_covering(&out_of_order);
+    sorted.finish_covering(&out_of_order, AfterWalk::Watch);
+    assert_eq!(
+        sorted.branch_paths(),
+        vec!["/vol/a".to_string(), "/vol/m".to_string(), "/vol/z".to_string()]
+    );
+}
+
 /// Two searches can walk overlapping frontiers, so a branch counts its walks:
 /// the first one finishing must not un-buffer the second's ground.
 #[test]
 fn a_branch_two_walks_are_covering_stays_held_until_the_last_one_ends() {
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     let branch = vec!["/vol/covered".to_string()];
     watch.begin_covering(&branch);
     watch.begin_covering(&branch);
@@ -359,7 +421,7 @@ fn a_branch_two_walks_are_covering_stays_held_until_the_last_one_ends() {
 /// duration — and it has to do it without swallowing everything else.
 #[test]
 fn a_whole_watched_volume_holds_only_the_ground_its_walk_is_covering() {
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     let branch = vec!["/vol/hole".to_string()];
     watch.begin_covering(&branch);
     let scope = WatchScope::WholeVolume(Arc::clone(&watch));
@@ -400,7 +462,7 @@ fn a_whole_watched_volume_holds_only_the_ground_its_walk_is_covering() {
 /// subtree.
 #[test]
 fn a_whole_watched_sweep_above_a_live_branch_keeps_both_halves() {
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     let branch = vec!["/vol/covered".to_string()];
     watch.begin_covering(&branch);
     watch.finish_covering(&branch, AfterWalk::Watch);
@@ -431,7 +493,7 @@ fn an_ordinary_event_outside_the_branches_is_dropped_not_held() {
 /// scanned once per event on the live hot path.
 #[test]
 fn a_branch_absorbs_the_ones_it_covers_and_leaves_a_live_walk_alone() {
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     let settled = vec!["/vol/a/one".to_string(), "/vol/a/two".to_string()];
     watch.begin_covering(&settled);
     watch.finish_covering(&settled, AfterWalk::Watch);
@@ -509,7 +571,7 @@ fn the_branch_collapse_is_visible_to_the_running_live_loop() {
     f.writer.flush_blocking().expect("flush");
     let conn = IndexStore::open_read_connection(&f.db_path).expect("read connection");
     assert_eq!(
-        BranchWatch::with_branches(load_branches(&space, &conn)).branch_paths(),
+        reloaded(&space, &conn).branch_paths(),
         [root],
         "and the database says the same thing the loop is reading"
     );
@@ -522,7 +584,7 @@ fn the_branch_collapse_is_visible_to_the_running_live_loop() {
 fn the_branch_set_survives_a_restart_through_the_volumes_own_database() {
     let f = Fixture::new();
     let space = IndexPathSpace::root();
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     let branches = vec![f.path("one"), f.path("two")];
     watch.begin_covering(&branches);
     watch.finish_covering(&branches, AfterWalk::Watch);
@@ -530,7 +592,7 @@ fn the_branch_set_survives_a_restart_through_the_volumes_own_database() {
     f.writer.flush_blocking().expect("flush");
 
     let conn = IndexStore::open_read_connection(&f.db_path).expect("read connection");
-    let reloaded = BranchWatch::with_branches(load_branches(&space, &conn));
+    let reloaded = reloaded(&space, &conn);
 
     assert_eq!(reloaded.branch_paths(), branches, "the covered ground comes back");
 }
@@ -540,7 +602,7 @@ fn a_mount_rooted_drive_persists_branches_relative_to_its_mount() {
     // A drive that comes back at `/Volumes/Backup 1` must still find the branches
     // it covered at `/Volumes/Backup`, so the stored form is index-relative.
     let f = Fixture::new();
-    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let watch = Arc::new(BranchWatch::default());
     let branches = vec!["/Volumes/Backup/photos".to_string()];
     watch.begin_covering(&branches);
     watch.finish_covering(&branches, AfterWalk::Watch);
@@ -554,7 +616,7 @@ fn a_mount_rooted_drive_persists_branches_relative_to_its_mount() {
     assert_eq!(stored, "/photos", "stored without the mount root");
 
     let remounted = IndexPathSpace::mount_rooted("/Volumes/Backup 1");
-    let reloaded = BranchWatch::with_branches(load_branches(&remounted, &conn));
+    let reloaded = reloaded(&remounted, &conn);
     assert_eq!(reloaded.branch_paths(), ["/Volumes/Backup 1/photos"]);
 }
 

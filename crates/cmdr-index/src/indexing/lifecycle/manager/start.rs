@@ -166,7 +166,7 @@ impl IndexManager {
             return;
         }
         let branches = branches::live_for(&self.volume_id);
-        if branches.branch_paths().is_empty() {
+        if branches.is_empty() {
             return;
         }
         if !super::super::master::branch_watch_allowed(super::super::master::master_enabled(), self.db_path()) {
