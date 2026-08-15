@@ -20,11 +20,11 @@ the same idea from the other direction: it now sits in `sink.rs` beside the `Ind
 The index subsystems say what happened; the app decides what a human sees. A subsystem builds an `IndexEvent` and hands
 it to an injected `EventSink`. Nothing here names a wire format, an event name, or a sentence.
 
-`IndexEvent` has 21 variants. Eighteen become frontend events (`ScanStarted`, `CoverageBranchStarted`,
-`CoverageBranchEnded`, `CoveragePhaseStarted`, `ScanProgress`, `ScanComplete`, `ScanAborted`, `DirsUpdated`,
-`ReplayProgress`, `ReplayComplete`, `RescanScheduled`, `AggregationProgress`, `AggregationComplete`, `MemoryWarning`,
-`FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`, `MediaEnrichTerminal`). Three reach the host's own machinery
-instead:
+`IndexEvent` has 23 variants. Twenty become frontend events (`ScanStarted`, `CoverageBranchStarted`,
+`CoverageBranchEnded`, the three `*CoverageStarted` phase variants, `ScanProgress`, `ScanComplete`, `ScanAborted`,
+`DirsUpdated`, `ReplayProgress`, `ReplayComplete`, `RescanScheduled`, `AggregationProgress`, `AggregationComplete`,
+`MemoryWarning`, `FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`, `MediaEnrichTerminal`). Three reach the
+host's own machinery instead:
 
 - **`Error { report: IndexErrorReport }`** — a failure worth an error report, described by what broke rather than by the
   sentence someone would write about it: `MemoryWatchdog` (action, footprint, limit, escalation, the breakdown),
@@ -39,12 +39,24 @@ instead:
   (`lifecycle/phases/completion.rs`). The app routes it `Destination::AnalyticsOnly` and nothing renders it, since what
   a user sees is the size that appears, not the marker.
 
-**`CoveragePhaseStarted` names the PHASE root; the branch pair names the frontier roots one level down.** The two are
-not interchangeable: a host that tried to read the phase off the branch events couldn't tell `~/Library` (the home
-phase) from `~/Downloads` (a priority root), and the branch events are debounced besides, so the answer would lag a
-phase boundary or skip it. ❌ The crate does not classify the phase — it sends the root and the volume root, and the
-HOST maps them, because the host is what answered `HostPolicy::priority_roots` in the first place. A second description
-of that order living here is a second thing to keep in step with the queue.
+**The three `*CoverageStarted` variants ARE the phase contract**, and the discriminant lives in the VARIANT rather than
+in a `phase` field on one of them. That is a deliberate trade with a price attached: a payload enum would be a new
+public item against a surface `index-crate-isolation` caps with no headroom, and raising that cap needs David's say-so,
+while a variant costs nothing (the counter reads module-level `pub` declarations). ❌ Don't "tidy" them into one variant
+carrying an enum without knowing that. The order they describe lives here and nowhere else, so a host never has to hold
+a second idea of which folders come first — or of `IndexPathSpace`, where an app-side home path can disagree about
+firmlinks and mislabel on somebody else's machine.
+
+`Rank::VisitedRoot` rides `PriorityCoverageStarted`: a folder the user opened mid-run answers the same question the
+host's own list answers, and nothing renders it differently. ❌ Don't mint a fourth variant for a label nobody shows.
+
+**They name the PHASE root; the branch pair names the frontier roots one level down.** The two are not interchangeable:
+a host reading the phase off the branch events couldn't tell `~/Library` (the home phase) from `~/Downloads` (a priority
+root), and the branch events are debounced besides, so the answer would lag a phase boundary or skip it.
+
+App-side the three fold back into ONE frontend event (`index-coverage-phase-started`) whose `label` discriminates, so
+the frontend takes one listener and one piece of state. That fold is the single documented exception to the
+one-name-per-event rule, and `index_mapping/tests.rs` pins both halves of it.
 
 **The coverage-branch pair brackets one walk over one branch, and every kind of run emits it.** A phase names the
 frontier root it is covering; a walk that takes the volume whole names the volume root (`announce_whole_volume_walk`).

@@ -190,6 +190,28 @@ care about since. ❌ Never an error, and ❌ never a truncate. After full cover
 exactly. The doors this closes, and how it sits beside the deferred-rescan mechanism (they answer for disjoint index
 states, so neither supersedes the other), are canonical in `../DETAILS.md` § "Every other way a full walk starts".
 
+## Saying which phase is running
+
+The order is the whole feature, so it has to reach the status surface. `Machine::phase_started_event` emits one of three
+typed variants per phase — `PriorityCoverageStarted`, `HomeCoverageStarted`, `WholeVolumeCoverageStarted` — each naming
+the phase root.
+
+**The variants ARE the contract, and that shape was chosen with a price in front of it.** The obvious design is one
+variant carrying a `phase` enum; that enum would be a new public item against a surface `index-crate-isolation` caps
+with no headroom (`SubsystemItems`, 156, measured), and raising a ceiling needs David's explicit say-so. The counter
+reads module-level `pub` declarations, so a VARIANT costs nothing and a payload enum costs one. ❌ Don't "tidy" these
+into one variant carrying an enum without knowing that, and ❌ don't push the classification host-side either: an
+app-side home path can disagree with `IndexPathSpace` about firmlinks, which works on one machine and mislabels on
+another.
+
+`Rank::VisitedRoot` rides the priority variant. A folder the user opened mid-run answers the same question the host's
+own list answers, less well, and nothing renders it differently — ❌ so no fourth variant for a label nobody shows.
+
+❌ The phase can't be read off `CoverageBranchStarted`: those name frontier roots one level BELOW the phase root, so
+`~/Library` and `~/Downloads` are indistinguishable, and they are debounced, so a boundary would lag or be skipped.
+App-side the three fold back into one frontend event whose `label` discriminates
+(`apps/desktop/src-tauri/src/events/CLAUDE.md`).
+
 ## Stop and Forget, against a half-covered drive
 
 The drive badge offers both while a drive is scanning (`driveIndexMenuActions('scanning')`), and they sit either side of

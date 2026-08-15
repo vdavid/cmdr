@@ -32,10 +32,8 @@ use cmdr_index::{
     RescanReason, ScanRunKind,
 };
 
-use coverage_phase::{CoveragePhaseLabel, label_for};
 use walk_announcer::WalkAnnouncer;
 
-mod coverage_phase;
 mod walk_announcer;
 
 #[cfg(test)]
@@ -74,13 +72,34 @@ pub struct IndexScanStartedEvent {
     pub covered_in_phases: bool,
 }
 
+/// Which phase of a drive's first index is running, in the terms its owner would
+/// recognize. One label per rendered header.
+///
+/// It lives HERE rather than with the subsystem, and it is the one value on a
+/// payload that does: the crate's three `*CoverageStarted` variants already carry
+/// the discriminant, and what a header CALLS each one is a presentation decision,
+/// which by this module's own rule stays app-side. It also keeps the crate's
+/// capped public surface out of it (`index-crate-isolation`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum CoveragePhaseLabel {
+    /// Folders this user cares about: ones the app named up front, and ones they
+    /// opened while the walk was running.
+    PriorityFolders,
+    /// The rest of their home folder, after the folders above it.
+    Home,
+    /// The rest of the drive, which is the last phase.
+    WholeDrive,
+}
+
 /// A drive's first index moved on to its next phase.
 ///
 /// The phases run in the order their owner cares about, so the label is what the
 /// status surface says a first index is doing right now: their own folders, then
-/// the rest of home, then the rest of the drive. Classified app-side from the
-/// roots the crate reports (`coverage_phase.rs`), because the app is what
-/// answered "which folders matter" in the first place.
+/// the rest of home, then the rest of the drive. ⚠️ The crate's three phase
+/// variants deliberately fold into this ONE wire event: the payload's `label`
+/// discriminates, so the frontend takes one listener and one piece of state
+/// rather than three of each.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[tauri_specta(event_name = "index-coverage-phase-started")]
 #[serde(rename_all = "camelCase")]
@@ -375,6 +394,11 @@ pub enum Destination {
     AnalyticsOnly,
 }
 
+/// The one wire event the three phase variants fold into.
+fn coverage_phase(volume_id: String, label: CoveragePhaseLabel) -> IndexCoveragePhaseStartedEvent {
+    IndexCoveragePhaseStartedEvent { volume_id, label }
+}
+
 /// Emit `payload` if there's an app to emit it to, and report its wire name.
 fn to_frontend<E>(app: Option<&AppHandle>, payload: E) -> Destination
 where
@@ -458,17 +482,20 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
                 duration_ms,
             },
         ),
-        IndexEvent::CoveragePhaseStarted {
-            volume_id,
-            root,
-            volume_root,
-        } => to_frontend(
-            app,
-            IndexCoveragePhaseStartedEvent {
-                volume_id,
-                label: label_for(&root, &volume_root, dirs::home_dir().as_deref()),
-            },
-        ),
+        // The phase order is the crate's, described once in its queue; this is
+        // only what each phase is CALLED. ❌ Don't re-derive the phase from the
+        // root here: an app-side home path can disagree with `IndexPathSpace`
+        // about firmlinks, which would work on one machine and mislabel on
+        // another.
+        IndexEvent::PriorityCoverageStarted { volume_id, .. } => {
+            to_frontend(app, coverage_phase(volume_id, CoveragePhaseLabel::PriorityFolders))
+        }
+        IndexEvent::HomeCoverageStarted { volume_id, .. } => {
+            to_frontend(app, coverage_phase(volume_id, CoveragePhaseLabel::Home))
+        }
+        IndexEvent::WholeVolumeCoverageStarted { volume_id, .. } => {
+            to_frontend(app, coverage_phase(volume_id, CoveragePhaseLabel::WholeDrive))
+        }
         IndexEvent::HomeCovered { .. } => Destination::AnalyticsOnly,
         IndexEvent::ScanAborted { volume_id } => to_frontend(app, IndexScanAbortedEvent { volume_id }),
         IndexEvent::DirsUpdated { paths } => to_frontend(app, IndexDirUpdatedEvent { paths }),

@@ -4176,11 +4176,17 @@ export type CoverageKind =
 
 /**
  *  Which phase of a drive's first index is running, in the terms its owner would
- *  recognize. The frontend renders one label per variant.
+ *  recognize. One label per rendered header.
+ *
+ *  It lives HERE rather than with the subsystem, and it is the one value on a
+ *  payload that does: the crate's three `*CoverageStarted` variants already carry
+ *  the discriminant, and what a header CALLS each one is a presentation decision,
+ *  which by this module's own rule stays app-side. It also keeps the crate's
+ *  capped public surface out of it (`index-crate-isolation`).
  */
 export type CoveragePhaseLabel =
   /**
-   *  A folder this user cares about: one the app named up front, or one they
+   *  Folders this user cares about: ones the app named up front, and ones they
    *  opened while the walk was running.
    */
   | 'priorityFolders'
@@ -5214,9 +5220,10 @@ export type IndexCoverageBranchStartedEvent = {
  *
  *  The phases run in the order their owner cares about, so the label is what the
  *  status surface says a first index is doing right now: their own folders, then
- *  the rest of home, then the rest of the drive. Classified app-side from the
- *  roots the crate reports (`coverage_phase.rs`), because the app is what
- *  answered "which folders matter" in the first place.
+ *  the rest of home, then the rest of the drive. ⚠️ The crate's three phase
+ *  variants deliberately fold into this ONE wire event: the payload's `label`
+ *  discriminates, so the frontend takes one listener and one piece of state
+ *  rather than three of each.
  */
 export type IndexCoveragePhaseStartedEvent = {
   // The volume being covered.

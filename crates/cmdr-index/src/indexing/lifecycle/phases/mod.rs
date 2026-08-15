@@ -391,15 +391,8 @@ impl Machine {
             ActivityPhase::Scanning,
             &format!("covering {}", phase.path.display()),
         );
-        // The host is told which phase this is by its ROOT, ❌ not by a rank: it
-        // answered `priority_roots`, so which of its own answers this is, is its
-        // question. The branch events can't carry it — they name frontier roots
-        // one level down, and they are debounced.
-        self.events.emit(IndexEvent::CoveragePhaseStarted {
-            volume_id: self.volume_id.clone(),
-            root: phase.path.to_string_lossy().into_owned(),
-            volume_root: self.volume_root.to_string_lossy().into_owned(),
-        });
+        self.events
+            .emit(Self::phase_started_event(phase, self.volume_id.clone()));
         stitch::down_to(&self.space, &self.writer, &phase.path);
 
         for pass in 0..MAX_PASSES_PER_PHASE {
@@ -427,6 +420,26 @@ impl Machine {
                 self.report_a_vanished_volume_if_that_is_what_happened();
                 break;
             }
+        }
+    }
+
+    /// Say which phase is starting, so a host can name it.
+    ///
+    /// ⚠️ The phase is the VARIANT, ❌ never a field: this crate's public surface
+    /// is capped with no headroom, a payload enum would be a new public item, and
+    /// raising that cap needs David's say-so. The order is described here and
+    /// nowhere else — a host re-deriving it from paths would have to hold its own
+    /// idea of `IndexPathSpace`, firmlinks included.
+    ///
+    /// A root the user opened mid-run rides the priority variant: it answers the
+    /// same question the host's own list answers, less well, and nothing renders
+    /// it differently. ❌ Don't mint a fourth variant for a label nobody shows.
+    fn phase_started_event(phase: &Phase, volume_id: String) -> IndexEvent {
+        let root = phase.path.to_string_lossy().into_owned();
+        match phase.rank {
+            Rank::PriorityRoot | Rank::VisitedRoot => IndexEvent::PriorityCoverageStarted { volume_id, root },
+            Rank::Home => IndexEvent::HomeCoverageStarted { volume_id, root },
+            Rank::WholeVolume => IndexEvent::WholeVolumeCoverageStarted { volume_id, root },
         }
     }
 

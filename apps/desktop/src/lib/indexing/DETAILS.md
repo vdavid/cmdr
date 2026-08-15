@@ -176,8 +176,9 @@ header, otherwise the backend's `ScanRunKind` maps 1:1, and an unknown kind (mid
 than a guessed one.
 
 **A phased run's header is the PHASE, when one has been announced.** `index-coverage-phase-started` carries a
-`CoveragePhaseLabel` the backend classified (`apps/desktop/src-tauri/src/events/index_mapping/coverage_phase.rs`),
-stored per volume by `getVolumeCoveragePhase` and preferred by the body's header over the run-kind label. The order IS
+`CoveragePhaseLabel` the backend supplies: the crate emits one of three typed `*CoverageStarted` variants and
+`apps/desktop/src-tauri/src/events/index_mapping.rs` maps each to its label, so nothing on this side re-derives which
+phase is running. It's stored per volume by `getVolumeCoveragePhase` and preferred by the body's header. The order IS
 the feature, so what someone watching a first index reads is "Indexing the folders you use most" → "the rest of your
 home folder" → "the rest of the drive". ❌ Never both headers at once: they answer the same question at two zoom levels,
 and stacking them reads as two runs. ❌ And never "Indexing your folders" → "your home folder", which is a subset

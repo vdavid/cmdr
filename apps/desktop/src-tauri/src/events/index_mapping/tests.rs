@@ -33,11 +33,24 @@ fn every_event_maps_to_a_destination_with_a_non_empty_name() {
     let mut wire_names: Vec<&str> = Vec::new();
     for event in one_of_every_kind() {
         let kind = event.kind();
+        // The one DELIBERATE fold: the three phase variants are the crate's way
+        // of carrying a discriminant without a payload enum (which would cost an
+        // `index-crate-isolation` item), and they share one wire event whose
+        // `label` tells them apart. Excluded from the uniqueness check below,
+        // which is otherwise the thing that catches a real collision.
+        let folds_into_a_shared_event = matches!(
+            kind,
+            IndexEventKind::PriorityCoverageStarted
+                | IndexEventKind::HomeCoverageStarted
+                | IndexEventKind::WholeVolumeCoverageStarted
+        );
         // `None` suppresses the Tauri emit; every other arm runs for real.
         match route(event, None) {
             Destination::Frontend(name) => {
                 assert!(!name.is_empty(), "{kind:?} maps to an empty Tauri event name");
-                wire_names.push(name);
+                if !folds_into_a_shared_event {
+                    wire_names.push(name);
+                }
             }
             // The three that reach the host's own machinery instead of the
             // frontend: two feedback pipelines and the anonymous measurements.
@@ -60,6 +73,52 @@ fn every_event_maps_to_a_destination_with_a_non_empty_name() {
         wire_names.len(),
         "two events share one Tauri event name, so the frontend can't tell them apart"
     );
+}
+
+/// The fold the test above excuses, checked on its own terms: the three phase
+/// variants go out under ONE wire name, and the payload's `label` is what tells
+/// them apart. Without the second half the exclusion above would hide exactly the
+/// collision it is written to catch.
+#[test]
+fn the_three_coverage_phases_share_one_event_and_are_told_apart_by_its_label() {
+    use super::{CoveragePhaseLabel, IndexCoveragePhaseStartedEvent, coverage_phase};
+    use tauri_specta::Event as _;
+
+    let phases = one_of_every_kind()
+        .into_iter()
+        .filter(|event| {
+            matches!(
+                event.kind(),
+                IndexEventKind::PriorityCoverageStarted
+                    | IndexEventKind::HomeCoverageStarted
+                    | IndexEventKind::WholeVolumeCoverageStarted
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        phases.len(),
+        3,
+        "one sample per phase, or this proves less than it says"
+    );
+
+    for event in phases {
+        assert_eq!(
+            route(event, None),
+            Destination::Frontend(IndexCoveragePhaseStartedEvent::NAME),
+            "every phase goes out under the one wire name the frontend listens on"
+        );
+    }
+
+    let labels = [
+        CoveragePhaseLabel::PriorityFolders,
+        CoveragePhaseLabel::Home,
+        CoveragePhaseLabel::WholeDrive,
+    ]
+    .map(|label| coverage_phase("root".to_string(), label).label);
+    assert_eq!(labels[0], CoveragePhaseLabel::PriorityFolders);
+    assert_ne!(labels[0], labels[1]);
+    assert_ne!(labels[1], labels[2]);
+    assert_ne!(labels[0], labels[2]);
 }
 
 /// The subsystems can't invoke `log_error!` (a crate-root macro), so an

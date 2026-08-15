@@ -26,11 +26,17 @@ all live on this side of the boundary.
   numbers. The backtrace is still the failure's — `emit` is a synchronous call from the failing code.
 - **Payload structs live here; the values they carry don't.** `ScanRunKind`, `RescanReason`, `ActivityPhase`,
   `Freshness`, `AggregationPhase`, `MediaEnrichTerminalReason`, and `IndexFailure` keep their `specta::Type` derives
-  with their subsystems. A schema derive on a value is fine there; a presentation decision isn't.
+  with their subsystems. A schema derive on a value is fine there; a presentation decision isn't. `CoveragePhaseLabel`
+  lives HERE by that same rule: the crate's three `*CoverageStarted` variants carry the discriminant, and what a header
+  CALLS each phase is presentation.
+- **The three phase variants fold into ONE wire event** (`index-coverage-phase-started`), whose `label` tells them
+  apart. The single documented exception to one-name-per-event; `tests.rs` pins both halves (shared name, distinct
+  labels). ❌ Don't fold anything else in without that pair.
 
 ## Module map
 
-- `index_mapping.rs` — the 17 payload structs, `route`, the error-report rendering, and `TauriEventSink`.
+- `index_mapping.rs` — the 18 payload structs, `route`, `CoveragePhaseLabel`, the error-report rendering, and
+  `TauriEventSink`.
   `index_mapping/walk_announcer.rs` — the one-second hold on the coverage-branch pair (below).
 - `volume_mapping.rs` — `TauriVolumeEvents`, which turns a storage backend's typed connection transitions into
   `VolumeConnectionChanged`, mapping `cmdr-fs`'s `VolumeConnection` onto `network`'s wire enum in the one match where
