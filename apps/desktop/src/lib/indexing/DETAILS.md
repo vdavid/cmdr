@@ -82,7 +82,12 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
   rides `get_index_status`, so a mid-run window reload recovers it instead of falling back to the whole drive.
 - **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update that volume's counters
   (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
-- **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry.
+- **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry
+  and its walked ground. ⚠️ Only what the WALK owns: the run-shape facts (`scanRunKind`, `coveredInPhases`,
+  `coveragePhase`) deliberately outlive it and expire on the terminal phase transition below. A first index spends
+  12–19 s computing the drive's final folder sizes after this event, and clearing them here collapsed the checklist to
+  the LOCAL four-step shape under a "First full scan" header for that whole window — the one thing
+  `indexing.run.firstIndex` exists to prevent.
 - **`index-scan-aborted`** (`{ volumeId }`): a scan ended WITHOUT completing — a network (SMB/MTP) disconnect/cancel/
   timeout, or a local external drive whose root became unlistable because the volume was yanked mid-scan — so no
   `index-scan-complete` fires. Remove the volume's `activity` AND `aggregation` entries — otherwise the partial scan
@@ -102,11 +107,20 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
 - **`index-replay-complete`** (`{ volumeId, durationMs }`): remove the volume's replay entry.
 - **`index-aggregation-progress`** (`{ volumeId, phase, current, total }`): upsert the volume's `aggregation` entry
   (phase/progress, plus a `startedAt` ETA clock reset on each phase change).
-- **`index-aggregation-complete`** (`{ volumeId }`): remove that volume's `aggregation` entry.
+- **`index-aggregation-complete`** (`{ volumeId }`): remove that volume's `aggregation` entry. ⚠️ It is a CLAIM about
+  the writer, not a fact about the pipeline: a progress tick landing after it re-creates the entry, and only the
+  terminal phase transition below would ever take it away again. The backend orders its own terminal report after the
+  last aggregate for that reason (`lifecycle/phases/completion.rs`), and this end holds the same line from the other
+  side.
 - **`index-phase-changed`** (`{ volumeId, phase: ActivityPhase }`): the volume's top-level pipeline phase changed. Set
   the `phase` map entry for the active steps (`scanning` / `aggregating` / `reconciling` / `replaying`); DELETE it on
-  the terminal `live` / `idle` transitions (the pipeline ended, which also drops the volume's `scanRunKind`) and on
-  `index-scan-aborted` (the cancel/fail abort arm fires no phase event). So a present `phase` entry always means "this
+  the terminal `live` / `idle` transitions and on `index-scan-aborted` (the cancel/fail abort arm fires no phase event).
+  ⚠️ The terminal transition also drops the volume's `scanRunKind`, `coveredInPhases`, `coveragePhase`, `activity`,
+  `aggregation`, and walked ground: both live streams outlive their own terminal event (the 500 ms progress pump runs
+  until the machine stops, ~19 s past `index-scan-complete` on a first index; the ledger heal streams aggregation ticks
+  through the same window), so every one of those ticks re-creates the entry that was just removed and nothing else
+  would close it again. The pipeline ending is the one fact those streams can't contradict. So a present `phase` entry
+  always means "this
   volume is at this step right now" — the spine of the step checklist, and the only signal for the reconcile step.
   Per-volume, unlike the global debug-window phase timeline. Fires only on transitions, so after a mid-scan reload the
   current phase is unknown until the next transition; the reconcile step is briefly unobservable then (accepted —

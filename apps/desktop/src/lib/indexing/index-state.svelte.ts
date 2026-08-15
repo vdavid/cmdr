@@ -377,10 +377,15 @@ export async function initIndexState(): Promise<void> {
     eventVersion++
     // This volume's scan is done; aggregation follows on its writer, attributed
     // by the volumeId-stamped aggregation events below.
+    //
+    // ⚠️ Only what the WALK owns goes here. The run-shape facts (`scanRunKind`,
+    // `coveredInPhases`, `coveragePhase`) outlive it deliberately: a first index
+    // spends 12–19 s computing the drive's final folder sizes after this event,
+    // and dropping them here collapsed the checklist to the LOCAL four-step shape
+    // under a "First full scan" header for that whole window. They expire on the
+    // terminal phase transition below, with the pipeline itself.
     activity.delete(payload.volumeId)
     walkedGround.delete(payload.volumeId)
-    coveredInPhases.delete(payload.volumeId)
-    coveragePhase.delete(payload.volumeId)
   })
   unlistenHandles.push(unlistenComplete)
 
@@ -438,6 +443,18 @@ export async function initIndexState(): Promise<void> {
       scanRunKind.delete(payload.volumeId)
       coveredInPhases.delete(payload.volumeId)
       coveragePhase.delete(payload.volumeId)
+      // And so does every LIVE-PROGRESS entry, because each is fed by a stream
+      // that outlives its own terminal event: the 500 ms progress pump runs until
+      // the machine stops (~19 s past `index-scan-complete` on a first index,
+      // while the drive's final folder sizes are computed), and the ledger heal
+      // streams aggregation ticks through that same window. Every one of those
+      // ticks re-creates the entry its terminal event just removed, and nothing
+      // else would ever take it away again — a lit corner hourglass, an hourglass
+      // on every folder row, and a frozen checklist for the rest of the session.
+      // The pipeline ending is the one fact none of those streams can contradict.
+      activity.delete(payload.volumeId)
+      aggregation.delete(payload.volumeId)
+      walkedGround.delete(payload.volumeId)
     } else {
       phase.set(payload.volumeId, payload.phase)
     }

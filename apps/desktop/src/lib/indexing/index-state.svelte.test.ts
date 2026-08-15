@@ -20,6 +20,7 @@ import type {
   IndexPhaseChangedEvent,
   IndexReplayProgressEvent,
   IndexScanAbortedEvent,
+  IndexScanCompleteEvent,
   IndexScanProgressEvent,
   IndexScanStartedEvent,
   CoveragePhaseLabel,
@@ -31,6 +32,7 @@ let aggProgressCb: ((p: AggregationProgressEvent) => void) | undefined
 let aggCompleteCb: ((p: IndexAggregationCompleteEvent) => void) | undefined
 let scanStartedCb: ((p: IndexScanStartedEvent) => void) | undefined
 let scanProgressCb: ((p: IndexScanProgressEvent) => void) | undefined
+let scanCompleteCb: ((p: IndexScanCompleteEvent) => void) | undefined
 let scanAbortedCb: ((p: IndexScanAbortedEvent) => void) | undefined
 let phaseCb: ((p: IndexPhaseChangedEvent) => void) | undefined
 let replayProgressCb: ((p: IndexReplayProgressEvent) => void) | undefined
@@ -50,7 +52,10 @@ vi.mock('$lib/tauri-commands', () => ({
     scanProgressCb = cb
     return Promise.resolve(noopUnlisten)
   },
-  onIndexScanComplete: () => Promise.resolve(noopUnlisten),
+  onIndexScanComplete: (cb: (p: IndexScanCompleteEvent) => void) => {
+    scanCompleteCb = cb
+    return Promise.resolve(noopUnlisten)
+  },
   onIndexScanAborted: (cb: (p: IndexScanAbortedEvent) => void) => {
     scanAbortedCb = cb
     return Promise.resolve(noopUnlisten)
@@ -110,6 +115,7 @@ import {
   isAnyVolumeIndexing,
   getWalkedGround,
   getVolumeCoveragePhase,
+  isVolumeCoveredInPhases,
   type AggregationActivity,
 } from './index-state.svelte'
 import { isPathAffectedByWalk } from './walked-ground'
@@ -622,5 +628,92 @@ describe('which phase of a first index is running', () => {
     phaseCb({ volumeId: 'root', phase: 'live' })
 
     expect(getVolumeCoveragePhase('root')).toBeUndefined()
+  })
+})
+
+/**
+ * The window between "the walking stopped" and "the pipeline ended". A first
+ * index spends 12–19 seconds there computing the drive's final folder sizes, and
+ * everything the checklist needs to keep describing that run truthfully has to
+ * survive it.
+ */
+describe('index-state after the walk ends but before the run does', () => {
+  beforeEach(async () => {
+    destroyIndexState()
+    scanStartedCb = undefined
+    scanProgressCb = undefined
+    scanCompleteCb = undefined
+    aggProgressCb = undefined
+    aggCompleteCb = undefined
+    coveragePhaseCb = undefined
+    phaseCb = undefined
+    await initIndexState()
+  })
+
+  function startPhasedRun(): void {
+    if (!scanStartedCb) throw new Error('scan-started callback not registered')
+    if (!coveragePhaseCb) throw new Error('coverage-phase-started callback not registered')
+    scanStartedCb({
+      volumeId: 'root',
+      scanRunKind: 'first_scan',
+      priorTotalEntries: null,
+      priorScanDurationMs: null,
+      volumeUsedBytes: null,
+      coveredInPhases: true,
+    })
+    coveragePhaseCb({ volumeId: 'root', label: 'wholeDrive' })
+  }
+
+  function finishTheWalk(): void {
+    if (!scanCompleteCb) throw new Error('scan-complete callback not registered')
+    scanCompleteCb({ volumeId: 'root', totalEntries: 6_000_000, totalDirs: 600_000, durationMs: 90_000 })
+  }
+
+  it('keeps the run-shape facts the checklist is composed from', () => {
+    startPhasedRun()
+    finishTheWalk()
+
+    // Pre-fix both were dropped here, so the checklist fell back to the LOCAL
+    // four-step shape and the header read "First full scan" — the one thing the
+    // phased run's own header exists to prevent.
+    expect(isVolumeCoveredInPhases('root')).toBe(true)
+    expect(getVolumeCoveragePhase('root')).toBe('wholeDrive')
+    expect(getVolumeScanRunKind('root')).toBe('first_scan')
+  })
+
+  it('expires them with the PIPELINE, not with the walk', () => {
+    startPhasedRun()
+    finishTheWalk()
+    if (!phaseCb) throw new Error('phase-changed callback not registered')
+    phaseCb({ volumeId: 'root', phase: 'idle' })
+
+    expect(isVolumeCoveredInPhases('root')).toBe(false)
+    expect(getVolumeCoveragePhase('root')).toBeUndefined()
+    expect(getVolumeScanRunKind('root')).toBeUndefined()
+  })
+
+  it('lets the pipeline ending close what late ticks reopened', () => {
+    if (!scanProgressCb) throw new Error('scan-progress callback not registered')
+    startPhasedRun()
+    finishTheWalk()
+    emitComplete('root')
+
+    // Both streams outlive their own terminal event: the 500 ms progress pump
+    // runs until the machine stops, and the ledger heal streams aggregation ticks
+    // through the same window. Each tick re-creates the entry that was just
+    // removed, which is what left the corner hourglass and every folder row's
+    // hourglass lit for the rest of the session.
+    scanProgressCb({ volumeId: 'root', entriesScanned: 6_071_778, dirsFound: 603_382, bytesScanned: 0 })
+    emitProgress('root', 'writing', 99, 100)
+    expect(getVolumeActivity('root')).toBeDefined()
+    expect(isVolumeAggregating('root')).toBe(true)
+
+    if (!phaseCb) throw new Error('phase-changed callback not registered')
+    phaseCb({ volumeId: 'root', phase: 'idle' })
+
+    expect(getVolumeActivity('root')).toBeUndefined()
+    expect(isVolumeAggregating('root')).toBe(false)
+    expect(getVolumeAggregation('root')).toBeUndefined()
+    expect(isAnyVolumeIndexing()).toBe(false)
   })
 })
