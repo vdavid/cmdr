@@ -353,6 +353,12 @@ and stays in each `IndexingDriveRow` (so per-drive rates don't collide); it feed
 `computeWindowEta` / `blendEtas` / `formatEta`. Tier 1's prior-duration seed (`priorScanDurationMs − elapsed`,
 ms→seconds) covers the gap before the window has samples. Tier 2's ETA is prefixed "roughly".
 
+## The prompts this area owns
+
+Three FE-owned surfaces ask the user something about drive indexing, and all three keep their state on this side:
+`first-connect-trigger.ts` + `FirstConnectIndexToastContent` (offer to index a drive the moment it connects),
+`StaleDriveDialog.svelte` (below), and `drive-index-prefs.ts` (the persisted one-shots both read).
+
 ## The one-time stale dialog
 
 `StaleDriveDialog` mounts once app-wide (`routes/(main)/+page.svelte`) and self-opens off `index-freshness-changed`,
