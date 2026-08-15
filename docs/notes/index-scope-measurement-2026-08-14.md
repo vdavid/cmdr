@@ -82,5 +82,14 @@ before assuming; the query above is cheap.
 says around 1 GB for a few million files. Re-measured on David's machine (`ls -l` over the prod data dir,
 `~/Library/Application Support/com.veszelovszki.cmdr/`, database plus its `-wal` and `-shm` sidecars, 2026-08-15): the
 boot file index is **947.6 MB** over **6,154,077 entries** (623,939 of them folders), importance adds **71.2 MB**, and
-the image index another **31.5 MB**, for **1.05 GB** all told. That's ~154 MB of file index per million entries, so the
-number tracks how many files someone has and not how big their drive is, which is what the copy now says.
+the image index another **31.5 MB**. That's ~154 MB of file index per million entries, so the number tracks how many
+files someone has and not how big their drive is, which is what the copy now says.
+
+**What the quoted number covers, since three answers are defensible and the copy has to pick one.** The screen it sits
+on is the drive-indexing toggle, so it quotes what THAT switch costs on the boot disk: the file index plus importance,
+**1.02 GB**. Importance is derived from the drive index and has no switch of its own, so it belongs. The image index
+(31.5 MB) has its own setting and is left out; including it would round to the same 1 GB anyway. Two bigger numbers are
+deliberately NOT quoted, because neither follows from the toggle the user is looking at: a NAS index is opt-in per drive
+(**554 MB** here), and the whole data directory is **4.60 GB**, most of which is the operation log, the AI models, and
+caches this switch doesn't touch. If David would rather the copy quote the data directory, that number needs its own
+sentence, not this one — "the cost of turning drive indexing on" and "what Cmdr occupies in total" are different claims.
