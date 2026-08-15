@@ -205,10 +205,13 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
         );
     }
 
-    // Emit scan-complete first, then start the flushing phase.
-    // Order matters: the frontend's scan-complete handler calls
-    // resetAggregation(), so the saving_entries event must come
-    // after to avoid being immediately cleared.
+    // Emit scan-complete first: it says the WALK is over, and the flushing
+    // progress below belongs to the step after it.
+    //
+    // ⚠️ The aggregation terminal is the mirror image, and the flush between
+    // them is load-bearing: a progress tick arriving after it reopens a status
+    // step nothing would ever close again. Same rule, same reason, in
+    // `phases/completion.rs`.
     events.emit(IndexEvent::ScanComplete {
         volume_id: volume_id.clone(),
         total_entries: summary.total_entries,

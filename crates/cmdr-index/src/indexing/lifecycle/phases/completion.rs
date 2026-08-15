@@ -109,7 +109,7 @@ fn volume_is_covered_now(machine: &Machine) -> bool {
 
 /// Everything a completed volume owes, in the one order that works.
 ///
-/// **The order is enforced by a FLUSH, not by the numbering.** Steps 1–6 are
+/// **The order is enforced by a FLUSH, not by the numbering.** Steps 1–5 are
 /// writer MESSAGES; the collapse is in-process state. The read the whole ordering
 /// protects (`local_rescan_reconciles` asking `get_index_status()` inside
 /// `start_scan`) goes through a read connection, so it sees the stamp only once
@@ -120,6 +120,10 @@ fn volume_is_covered_now(machine: &Machine) -> bool {
 /// ⚠️ Collapse the branch set before the stamp is visible and there is a window
 /// where the volume is neither branch-confined nor marked complete, and one
 /// coalesced shallow anchor inside it truncates the index that just finished.
+///
+/// ⚠️ The same flush is why the two TERMINAL reports sit on either side of it:
+/// the walk is over when the walking stops (step 6), aggregation is over only
+/// once the ledger heal that step 3 queued has run (step 8).
 fn run_the_completion_sequence(machine: &Machine) {
     log::info!("Phases: '{}' is covered end to end", machine.volume_id);
 
@@ -160,21 +164,15 @@ fn run_the_completion_sequence(machine: &Machine) {
         value: "0".to_string(),
     });
 
-    // 6. The volume is Fresh, and the host hears the same three events in the same
-    //    order a full scan fires them: the frontend's `resetAggregation()`
-    //    handshake depends on `ScanComplete` arriving before the rest.
+    // 6. The walk is over, and the volume is Fresh. ⚠️ `ScanComplete` leads, the
+    //    same way a full scan fires it; the aggregation terminal is step 8,
+    //    because step 3 hasn't run yet.
     let entries = entry_count(machine);
     machine.events.emit(IndexEvent::ScanComplete {
         volume_id: machine.volume_id.clone(),
         total_entries: entries,
         total_dirs: machine.progress.dirs_found.load(Ordering::Relaxed),
         duration_ms: machine.started_at.elapsed().as_millis() as u64,
-    });
-    machine.events.emit(IndexEvent::AggregationComplete {
-        volume_id: machine.volume_id.clone(),
-    });
-    machine.events.emit(IndexEvent::DirsUpdated {
-        paths: vec![machine.space.volume_root_string()],
     });
     state::apply_freshness_event_on(
         &machine.freshness,
@@ -183,13 +181,29 @@ fn run_the_completion_sequence(machine: &Machine) {
         FreshnessEvent::ScanCompleted,
     );
 
-    // The flush the ordering rests on: everything above is committed before the
-    // collapse, including the full aggregate step 3 can start.
+    // 7. The flush the ordering rests on: everything above is committed before the
+    //    collapse, including the full aggregate step 3 can start.
     if let Err(e) = machine.writer.flush_blocking() {
         log::warn!("Phases: the completion sequence may not have landed: {e}");
     }
 
-    // 7. One branch covering the whole volume. Until now the set held one entry
+    // 8. Aggregation is over — and ❌ never before the flush above, which is what
+    //    step 3's full `ComputeAllAggregates` runs inside (18.8 s over a real `/`,
+    //    streaming a progress tick every ~1%). A status surface reopens on a tick
+    //    and only this event closes it, so a terminal fired ahead of them leaves
+    //    the corner hourglass, every folder row's size hourglass, and the step
+    //    checklist lit for the rest of the session. A full scan orders it the same
+    //    way, for the same reason (`../scan_completion.rs`).
+    machine.events.emit(IndexEvent::AggregationComplete {
+        volume_id: machine.volume_id.clone(),
+    });
+    // The sizes those aggregates just wrote are the final ones, so this is the
+    // refresh that puts them on screen.
+    machine.events.emit(IndexEvent::DirsUpdated {
+        paths: vec![machine.space.volume_root_string()],
+    });
+
+    // 9. One branch covering the whole volume. Until now the set held one entry
     //    per frontier root, and every live event pays an O(branches) scan to find
     //    its own. It also restores the shallow sweep: a branch set that covers the
     //    volume root stops being "branch-confined", which is safe at exactly this

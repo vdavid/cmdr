@@ -19,7 +19,9 @@ where the user is looking; `completion.rs` the two stamps and what completing ow
 - **Completion is DERIVED**: "the frontier under this root is empty". ❌ Never remembered, and ❌ never a "didn't shrink
   twice" rule. Abandoned ground leaves the frontier, so one wedged directory can't hold it open.
 - **The completion ORDER is enforced by a flush**, stamp before collapse. Collapse the branch set first and one shallow
-  anchor in that window truncates the index that just finished.
+  anchor in that window truncates the index that just finished. ❌ And never move `AggregationComplete` ahead of that
+  flush: the ledger heal streams progress THROUGH it (18.8 s over a real `/`), and a terminal event before those ticks
+  leaves the hourglasses and the checklist lit until the next launch.
 - **`working` (a phase queued or running) is what scan entries refuse against; `walking` (reading the disk now) is only
   the verifier's.** ❌ Never `mgr.scanning`: `cover_context_for` returns `None` under it, so our own walks would fail.
 - **One `cover()` per frontier root, joined**, with the drain batched to once per phase. ❌ Don't hand one call a whole

@@ -727,6 +727,45 @@ fn the_completion_sequence_runs_once_however_often_the_machine_takes_stock() {
     assert!(drive.entry_count() >= rows, "and it never blanks the index");
 }
 
+/// **What the user is left looking at.** The completion sequence queues the
+/// `dir_stats` ledger heal, and its full `ComputeAllAggregates` streams progress
+/// for as long as it runs (18.8 s over a real `/`). A status surface reopens on a
+/// progress tick and only a terminal event closes it, so a terminal fired BEFORE
+/// that aggregate leaves the corner hourglass, every folder row's size hourglass,
+/// and the step checklist lit for the rest of the session.
+#[test]
+fn nothing_aggregates_after_the_volume_says_aggregation_is_done() {
+    use crate::indexing::events::IndexEventKind;
+
+    let drive = Drive::new(
+        "phased-terminal-aggregation",
+        |root| {
+            for name in ["a", "b"] {
+                std::fs::create_dir_all(root.join(name).join("inner")).expect("dirs");
+            }
+        },
+        &[],
+    );
+    drive.start();
+    drive.wait_for_the_machine();
+
+    let kinds = drive.events.kinds_for(drive.volume_id);
+    let terminal = kinds
+        .iter()
+        .position(|kind| *kind == IndexEventKind::AggregationComplete)
+        .expect("a completed volume reports aggregation as done");
+    let last_tick = kinds
+        .iter()
+        .rposition(|kind| *kind == IndexEventKind::AggregationProgress)
+        .expect("the ledger heal really does stream progress, or this test proves nothing");
+
+    assert!(
+        last_tick < terminal,
+        "the terminal event is the LAST word on aggregation: a tick after it reopens a step \
+         nothing closes again (last tick at {last_tick}, terminal at {terminal})"
+    );
+}
+
 /// The early signal, and its blast radius. Photo search and folder importance only
 /// need `$HOME`; waiting for the rest of the drive is minutes of the most visibly
 /// valuable feature sitting idle on a first run. ⚠️ It says nothing about

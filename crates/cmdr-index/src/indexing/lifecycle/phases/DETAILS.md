@@ -114,10 +114,21 @@ connection, and step 3 is minutes of writer-thread work.
 4. `BackfillMissingDirStats`;
 5. the shallow-sweep ledger (`record_sweep_completed` + both meta keys), or the first shallow anchor after completion
    triggers a full sweep nobody asked for;
-6. freshness ⇒ `Fresh` plus the terminal events, in the order the frontend's `resetAggregation()` handshake expects;
-7. **flush again**, then collapse the branch set to the volume root. ⚠️ Collapse before the stamp is visible and there
-   is a window where the volume is neither branch-confined nor marked complete, and one coalesced shallow anchor inside
-   it truncates the index that just finished.
+6. `ScanComplete` (the WALK is over) plus freshness ⇒ `Fresh`;
+7. **flush again**, which is what step 3's full aggregate runs inside;
+8. `AggregationComplete` (aggregation is over) plus `DirsUpdated`, now that the sizes on screen are the final ones;
+9. collapse the branch set to the volume root. ⚠️ Collapse before the stamp is visible and there is a window where the
+   volume is neither branch-confined nor marked complete, and one coalesced shallow anchor inside it truncates the index
+   that just finished.
+
+⚠️ **The two terminal reports sit on either side of that flush, and swapping them is a shipped bug, not a tidy-up.**
+Step 3's `ComputeAllAggregates` streams a progress tick every ~1% for as long as it runs — **18.8 s over a real `/`**
+(debug build, 603,697 directories, 2026-08-15). A status surface reopens on a tick and only the terminal event closes
+it, so `AggregationComplete` fired ahead of them left the corner hourglass, an hourglass on every folder row in both
+panes, and the step checklist frozen at "Saving folder sizes… 99%" for the rest of the session; only a relaunch cleared
+it. A full scan already orders it this way (`../scan_completion.rs`), and the frontend holds the same line from its end
+(`apps/desktop/src/lib/indexing/CLAUDE.md`). Anchored by
+`tests::nothing_aggregates_after_the_volume_says_aggregation_is_done`.
 
 The sequence fires on the absent→present transition only. Re-running it would rewrite `SHALLOW_SWEEP_AT_KEY` and push
 the 24-hour window forward every time.
