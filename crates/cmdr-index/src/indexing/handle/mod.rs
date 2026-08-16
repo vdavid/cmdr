@@ -223,6 +223,15 @@ impl Index {
         if state::is_failed(volume_id) {
             self.forget_volume(volume_id)?;
         }
+        // ⚠️ **Before the transport dispatch below, deliberately.** A share that's
+        // asleep, off the network, or wanting credentials refuses at its own gate,
+        // and the user's "yes" has to survive that: the persisted marker is what
+        // `resume_smb_index_if_enabled` reads when the share comes back, so an
+        // after-success write would mean the choice was never recorded and the
+        // share stays dark until somebody notices and asks again. ❌ Don't tidy
+        // this into the success arms; `cover::cold_drive_tests::intent::
+        // turning_indexing_on_for_an_offline_share_records_the_choice_anyway`
+        // guards it, and `record_drive_index_enabled` carries the other two reasons.
         state::record_drive_index_enabled(volume_id);
 
         if volume_id == crate::ROOT_VOLUME_ID {

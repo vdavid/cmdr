@@ -40,7 +40,9 @@ hold, and the master switch outranks both per-drive ones:
 - **The user turned this share ON** — the sticky `user_enabled` meta marker, read off a short-lived READ-ONLY connection
   (never the delete-and-recreate `open`). A never-enabled share has no such DB, so it's never indexed uninvited; a share
   whose FIRST index the disconnect interrupted does come back, which is the point. `Index::start_volume` writes it for
-  every transport, so ❌ nothing SMB-side records intent. (`persisted_scan_completed` is the third arm, for indexes
+  every transport, so ❌ nothing SMB-side records intent. ⚠️ It writes it BEFORE the transport dispatch, which is what
+  makes enabling an UNREACHABLE share meaningful: the gate refuses (asleep, off the network, wanting credentials), the
+  choice stays on record, and this resume brings the share in when it reconnects. (`persisted_scan_completed` is the third arm, for indexes
   enabled before the marker existed. ❌ Never read it as the enable: it's absent all through a first index and all
   through every rescan.)
 - **The user hasn't turned indexing OFF** — the sticky `user_disabled` meta marker is absent. `disable_drive_index`

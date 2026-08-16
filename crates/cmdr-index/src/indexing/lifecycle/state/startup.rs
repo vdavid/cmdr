@@ -52,12 +52,17 @@ pub(in crate::indexing::lifecycle) enum Activation {
 /// completion alone is forgotten by any master-switch cycle or reconnect that lands
 /// in either window. `master::drive_index_should_run` reads what this writes.
 ///
-/// ⚠️ Written BEFORE the start, not after it. Two reasons, both load-bearing: it
+/// ⚠️ Written BEFORE the start, not after it. Three reasons, all load-bearing: it
 /// also lifts a previous veto, which the phase machine and the branch watcher ask
 /// about while the walk this call is about to trigger is already running
-/// (`master::background_walk_allowed`); and a first index that dies part way
-/// through is precisely the case the marker exists for, so it has to be on disk
-/// before the walk, not after it.
+/// (`master::background_walk_allowed`); a first index that dies part way through is
+/// precisely the case the marker exists for, so it has to be on disk before the
+/// walk, not after it; and it lands before the TRANSPORT DISPATCH, so enabling a
+/// share that's asleep, off the network, or waiting for credentials leaves the
+/// user's choice on record and the share indexes itself when it reconnects
+/// (`transports::smb::index::resume_smb_index_if_enabled` reads the persisted
+/// marker). ❌ An after-success write loses that third one silently: the refusal is
+/// the normal case for a NAS, and the user would have to notice and ask again.
 ///
 /// ❌ Not reached by a search-driven coverage walk, which is the whole reason the
 /// marker can be trusted: a walk goes through `Activation::WriterOnly` and never
