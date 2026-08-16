@@ -239,7 +239,7 @@ impl IndexManager {
     /// the manager is back in the registry.
     fn restart_the_phases(&mut self, why: &str) {
         log::info!(
-            "'{}' has no completed scan, so {why} restarts its phases instead of rebuilding it",
+            "'{}' has no completed scan, so the phases restart instead of rebuilding it (asked by {why})",
             self.volume_id
         );
         self.register_a_phased_start(PhasedStart::KeepTheRows);

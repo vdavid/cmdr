@@ -160,20 +160,20 @@ resume. Three things wire it, and each is one line:
   master switch, `report_a_vanished_volume_if_that_is_what_happened`) didn't run out of passes, and retrying a drive
   nothing is indexing any more would wake it every minute until the app quits.
 - **Reset** by the completion sequence and by every teardown path, beside `rescan_request::forget`.
-- **Nudged** by the volume's own 30 s maintenance tick in `state/startup.rs`, which already carries `ClearAbandonedIfDue`
-  for the same reason: a per-volume timer that dies with the writer channel, so ❌ nothing here invents a second
-  scheduling concept.
+- **Nudged** by the volume's own 30 s maintenance tick in `state/startup.rs`, which already carries
+  `ClearAbandonedIfDue` for the same reason: a per-volume timer that dies with the writer channel, so ❌ nothing here
+  invents a second scheduling concept.
 
 ⚠️ **An attempt goes through `state::resume_the_phases`, ❌ never `force_scan`.** They differ in exactly one arm and it
 is the dangerous one: on a volume that completed since the retry was scheduled, `force_scan` is a full truncating
 rescan. That is the right answer for a button and an unacceptable one for a background timer, so the retry's door can
 only ever restart the PHASES (`manager/phased.rs::cover_again`).
 
-⚠️ **A retry never runs alongside a working machine.** `cover_again` asks `phases_have_work` with the manager held OUT of
-the registry (`off_the_registry`, shared with `force_scan`), which is the same mutual exclusion every scan entry uses:
-`start_pending_phases` can't start one in that window, so the answer can't go stale before it's acted on. A refusal
-reschedules rather than spending the attempt, and the claim moves the window before the attempt runs, so retries can't
-stack either. Anchored by `phases/tests/retry.rs`, which fires a retry from inside a live walk.
+⚠️ **A retry never runs alongside a working machine.** `cover_again` asks `phases_have_work` with the manager held OUT
+of the registry (`off_the_registry`, shared with `force_scan`), which is the same mutual exclusion every scan entry
+uses: `start_pending_phases` can't start one in that window, so the answer can't go stale before it's acted on. A
+refusal reschedules rather than spending the attempt, and the claim moves the window before the attempt runs, so retries
+can't stack either. Anchored by `phases/tests/retry.rs`, which fires a retry from inside a live walk.
 
 📌 **Follow-up, not yet done:** `resume_branch_watch` (`state/startup.rs`) bends the same contract, running
 `IndexStore::open_read_connection` plus `branches::resumed_for` inside its `with_running_manager` window. It's far
@@ -197,9 +197,9 @@ replugging it. `drives_to_resume()` would name it, and nothing at launch calls t
 ⚠️ **That is a decision, not a missing line** (David, 2026-08-16): refreshing the index for a NON-BOOT drive stays the
 user's to trigger. A removable drive being plugged in is not a request to spend minutes of walking and disk on it — the
 common case is a drive attached to copy one file — while the boot disk is opt-OUT, always present, and the thing the
-whole feature is for. So ❌ don't wire `drives_to_resume` (or anything like it) into the launch path because it looks one
-line away; the drive keeps every row it covered (walks are add-only and resumable) and serves them, and the user's enable
-or "Rescan now" picks the rest up whenever they want it. Changing this needs David, not a tidy-up.
+whole feature is for. So ❌ don't wire `drives_to_resume` (or anything like it) into the launch path because it looks
+one line away; the drive keeps every row it covered (walks are add-only and resumable) and serves them, and the user's
+enable or "Rescan now" picks the rest up whenever they want it. Changing this needs David, not a tidy-up.
 
 ## The per-volume registry
 

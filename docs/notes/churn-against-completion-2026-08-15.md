@@ -88,8 +88,9 @@ quickly". A rule that declared completion with ground unwalked would be the wors
 
 What the limit costs, when it fires: the drive doesn't reach `Fresh` until something covers the rest, so the badge
 doesn't settle and the `scan_completed_at`-gated work (the calibration, the `dir_stats` ledger heal, the shallow-sweep
-ledger, rescan routing) waits. ⚠️ Coverage itself is unaffected — everything walked stays walked, sizes and search answer
-for it — and the early home signal has already fired, so photo search and folder importance are not waiting on this.
+ledger, rescan routing) waits. ⚠️ Coverage itself is unaffected — everything walked stays walked, sizes and search
+answer for it — and the early home signal has already fired, so photo search and folder importance are not waiting on
+this.
 
 Three options were weighed, and the second was built:
 
@@ -97,10 +98,11 @@ Three options were weighed, and the second was built:
   on exactly the machine that is already busy. ❌ Not taken.
 - **A backoff retry**: on stopping with a non-empty frontier, restart the phases after 1 / 5 / 15 minutes, the way
   abandoned ground already gets a persisted per-volume backoff. Each attempt is the ~2 s resume measured above, and it
-  converges the moment the writing pauses. ✅ **Built** (`crates/cmdr-index/src/indexing/lifecycle/completion_retry.rs`),
-  because a drive staying unmarked through a week-long session was judged unacceptable while the same drive settles in
-  two seconds at the next launch. In memory rather than persisted, since a relaunch already resumes; the cost is a map
-  entry per never-completed volume and the status surface saying "indexing" for two seconds per attempt.
+  converges the moment the writing pauses. ✅ **Built**
+  (`crates/cmdr-index/src/indexing/lifecycle/completion_retry.rs`), because a drive staying unmarked through a week-long
+  session was judged unacceptable while the same drive settles in two seconds at the next launch. In memory rather than
+  persisted, since a relaunch already resumes; the cost is a map entry per never-completed volume and the status surface
+  saying "indexing" for two seconds per attempt.
 - **Have the live reconciler LIST a directory it creates**, so new ground on a watched branch never becomes frontier at
   all. It would remove the case entirely and it is honest (we really did read it), but it trades a self-healing delay
   for a silent-miss risk on the highest-traffic path in the system: a directory that reads as covered and empty because

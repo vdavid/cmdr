@@ -150,16 +150,16 @@ stock-take catches the frontier empty, and that is a RACE against the watcher's 
 (`docs/notes/churn-against-completion-2026-08-15.md`, `tests::churn_bench`): 20 and 60 new folders a second never cost a
 completion over six trials, a 2,000-folder burst is absorbed by the pass that follows it, and it takes **~200 new
 folders a second sustained** to lose the marker — after which **a resume settles the drive in ~2 s**, writing still
-going, because a resume's frontier is a few hundred tiny roots. ⚠️ So churn can cost one PASS its completion and ❌ can't
-hold a drive open indefinitely, which is the limit the derived rule accepts in exchange for never claiming ground nobody
-walked.
+going, because a resume's frontier is a few hundred tiny roots. ⚠️ So churn can cost one PASS its completion and ❌
+can't hold a drive open indefinitely, which is the limit the derived rule accepts in exchange for never claiming ground
+nobody walked.
 
 **A machine that stops short asks for another go**, on a per-volume backoff of 1 min → 5 min → 15 min
-(`../completion_retry.rs`, wired in `../DETAILS.md` § "A first index that stopped short"). Each attempt is that same ~2 s
-resume, so the wait for a drive somebody is writing to hard is minutes rather than "until the next launch". ⚠️ It changes
-WHEN the marker lands and ❌ never what earns it: while the frontier is non-empty the drive genuinely isn't covered and
-the badge saying so is right. `Machine::finish` logs the frontier it stopped with either way, ❌ never leaving the two
-endings indistinguishable in a support bundle.
+(`../completion_retry.rs`, wired in `../DETAILS.md` § "A first index that stopped short"). Each attempt is that same ~2
+s resume, so the wait for a drive somebody is writing to hard is minutes rather than "until the next launch". ⚠️ It
+changes WHEN the marker lands and ❌ never what earns it: while the frontier is non-empty the drive genuinely isn't
+covered and the badge saying so is right. `Machine::finish` logs the frontier it stopped with either way, ❌ never
+leaving the two endings indistinguishable in a support bundle.
 
 ⚠️ **A bench over this has to watch the MACHINE, not the marker.** The stock-take stamps before `finish` reports the
 machine idle, so one that stopped unmarked will never write one — a marker-only poll can't tell that apart from a slow
