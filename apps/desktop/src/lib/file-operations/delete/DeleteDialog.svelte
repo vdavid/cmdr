@@ -74,8 +74,16 @@
         onCancel,
     }: Props = $props()
 
-    // User-facing toggle. Forced to permanent on volumes that don't support trash.
-    let isPermanent = $state(initialIsPermanent || !supportsTrash)
+    // The switch's own position. Forced to permanent on volumes that don't support trash.
+    let switchIsPermanent = $state(initialIsPermanent || !supportsTrash)
+    /** True while Shift is down. Held on the window, so it also catches a release outside the dialog. */
+    let shiftHeld = $state(false)
+    /** Shift-hold only upgrades a dialog that opened as a trash: on a Shift+F8 dialog the user is
+     *  still holding the key that opened it, so honouring the release would demote a delete they
+     *  deliberately asked for. Snapshot at open; neither input changes for the dialog's lifetime. */
+    const shiftUpgradesToPermanent = !initialIsPermanent && supportsTrash
+    // Shift only ever upgrades: a hold can't demote a permanent delete back to a trash.
+    const isPermanent = $derived(switchIsPermanent || (shiftUpgradesToPermanent && shiftHeld))
 
     const dialogTitle = $derived(generateDeleteTitle(sourceItems, isFromCursor))
     const abbreviatedPath = $derived(abbreviatePath(sourceFolderPath))
@@ -176,14 +184,40 @@
         previewId = result.previewId
     }
 
+    /** Any key event re-reads the modifier state, so a keyup we never saw (window switch,
+     *  a native menu eating it) self-heals on the next keystroke instead of leaving the
+     *  dialog stuck on "Delete permanently". */
+    function syncShiftState(event: KeyboardEvent) {
+        shiftHeld = event.shiftKey
+    }
+
+    /** Focus left the window: whatever Shift does now, we won't see it come back up. */
+    function releaseShift() {
+        shiftHeld = false
+    }
+
+    function watchShift() {
+        window.addEventListener('keydown', syncShiftState)
+        window.addEventListener('keyup', syncShiftState)
+        window.addEventListener('blur', releaseShift)
+    }
+
+    function unwatchShift() {
+        window.removeEventListener('keydown', syncShiftState)
+        window.removeEventListener('keyup', syncShiftState)
+        window.removeEventListener('blur', releaseShift)
+    }
+
     function cleanup() {
         for (const unlisten of unlisteners) {
             unlisten()
         }
         unlisteners = []
+        unwatchShift()
     }
 
     onMount(async () => {
+        if (shiftUpgradesToPermanent) watchShift()
         scanStarted = startScan()
 
         // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
@@ -388,10 +422,11 @@
     </div>
 
     <!-- Trash (on, the safe default) vs. permanent delete (off). Rides the footer
-         row so it reads as a modifier on the confirm button beside it. -->
+         row so it reads as a modifier on the confirm button beside it. Holding Shift
+         flips it too, for as long as the key is down. -->
     {#snippet footerLeading()}
         {#if supportsTrash}
-            <Switch checked={!isPermanent} onCheckedChange={(toTrash) => (isPermanent = !toTrash)}
+            <Switch checked={!isPermanent} onCheckedChange={(toTrash) => (switchIsPermanent = !toTrash)}
                 >{tString('fileOperations.delete.trashSwitch')}</Switch
             >
         {/if}

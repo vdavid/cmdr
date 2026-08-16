@@ -8,8 +8,8 @@ progress. Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_ope
 
 - **DeleteDialog.svelte**: confirmation dialog with file list (max 10 + overflow), live scan stats, symlink notice,
   no-trash warning, and a "Move to trash" switch in the footer row (`ModalDialog`'s `footerLeading`) that flips the
-  operation in-dialog, hidden on no-trash volumes where permanent is forced. Uses `ModalDialog` with `role="dialog"` for
-  trash, `role="alertdialog"` for permanent; the role flips reactively with the switch.
+  operation in-dialog, hidden on no-trash volumes where permanent is forced. The `ModalDialog` role flips with the mode:
+  `dialog` for trash, `alertdialog` for permanent.
 - **delete-dialog-utils.ts** (+ test): pure utilities `generateDeleteTitle()`, `abbreviatePath()`, `getSymlinkNotice()`,
   `countSymlinks()`.
 
@@ -18,6 +18,9 @@ progress. Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_ope
 - **F8/Shift+F8 just set the initial mode; the user can flip it in-dialog.** F8 preselects trash, Shift+F8 preselects
   permanent. `file.delete` / `file.deletePermanently` commands; `DualPaneExplorer.openDeleteDialog(permanent)` builds
   props from selection or cursor and looks up `supportsTrash` from the source `VolumeInfo`.
+- **Holding Shift over an F8 dialog upgrades it to permanent until release; Shift NEVER demotes**, and a Shift+F8 dialog
+  ignores the hold (the user is still holding the key that opened it). Keep `blur` clearing the hold, or a window switch
+  strands the dialog on "Delete permanently". DETAILS § Shift-hold upgrade.
 - **`data-scan-state` on `.scan-stats`** (`counting` | `done`) is the only "counting done" signal; there's no completion
   checkmark. Mirrors `TransferDialog`'s marker, which E2E polls.
 - **`DeleteDialog` must forward `sourceVolumeId` into `startScanPreview`.** Without it, an MTP delete runs

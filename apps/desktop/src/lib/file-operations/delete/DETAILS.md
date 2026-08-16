@@ -16,6 +16,23 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the flow and edge-case ca
 7. **Progress**: `TransferProgressDialog` shows items/bytes progress with cancel support.
 8. **Completion**: toast notification, both panes refreshed, 400 ms minimum display time.
 
+## Shift-hold upgrade
+
+**Decision**: on a dialog opened with F8, holding Shift reads as "permanent for as long as I hold it": the switch, the
+confirm button, and the `alertdialog` role all follow the key, and releasing it returns to trash. It makes the
+escalation one gesture instead of cancel-and-retry, and it matches what Shift already means on F8 itself.
+
+**Why it's gated to F8 dialogs** (`shiftUpgradesToPermanent = !initialIsPermanent && supportsTrash`, snapshotted at
+open): on a Shift+F8 dialog the user is still holding the key that opened it, so acting on that release would demote a
+permanent delete they deliberately asked for. Shift therefore only ever upgrades; it never demotes. The switch position
+(`switchIsPermanent`) stays separate from the effective `isPermanent`, so flipping the switch by hand outlives a Shift
+tap.
+
+**Why the window, not the dialog**: `keydown`/`keyup` are on `window`, and every event re-reads `event.shiftKey` rather
+than matching the key name, so a keyup we never saw (a window switch, a native menu eating it) self-heals on the next
+keystroke. `blur` clears the hold outright, since a Shift released outside the window never comes back to us. Tests:
+`DeleteDialog.shift-hold.svelte.test.ts`.
+
 ## Scan-preview detail
 
 The confirmation dialog starts a scan preview for deep file/dir/byte counts and shows running tallies, the current
