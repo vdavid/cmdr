@@ -165,6 +165,13 @@ pub(crate) fn branch_watch_allowed(master_on: bool, db_path: &Path) -> bool {
 /// got before the switch went off. The
 /// caller routes each id through the normal per-drive enable, so each transport's
 /// own gate (the direct-smb2 upgrade, MTP device presence) still applies.
+///
+/// ⚠️ **The master toggle is its ONE caller, and that is deliberate.** Nothing at
+/// LAUNCH calls this: only the boot disk starts there, so a local external drive
+/// or a phone whose first index was interrupted waits for the user rather than
+/// walking itself on every launch and every replug. ❌ Don't wire this into the
+/// launch path because it looks one line away — `DETAILS.md` § "What a launch
+/// deliberately does NOT start" is the decision and why.
 pub(crate) fn drives_to_resume() -> Vec<String> {
     let mut ids = vec![crate::ROOT_VOLUME_ID.to_string()];
     ids.extend(

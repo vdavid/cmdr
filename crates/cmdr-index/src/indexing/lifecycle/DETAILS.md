@@ -186,6 +186,21 @@ or part way through any later rescan — has no completion marker, and inferring
 those windows. ❌ Don't use the branch set as a proxy either: a drive somebody only SEARCHED has one too, and
 auto-indexing it is precisely what the opt-in forbids. See § The two indexing switches.
 
+### What a launch deliberately does NOT start
+
+**Only `root` starts at launch** (`Index::start_root_at_launch` → `state::start_indexing`). A share comes back on its
+own, but through its SESSION install rather than anything here: registering or reconnecting an smb2 session fires
+`resume_smb_index_if_enabled`, which acts on the share's persisted intent. A **local external drive or an MTP phone has
+no such hook**, so "quit half way through indexing a USB drive, relaunch" does not resume it, and neither does
+replugging it. `drives_to_resume()` would name it, and nothing at launch calls that.
+
+⚠️ **That is a decision, not a missing line** (David, 2026-08-16): refreshing the index for a NON-BOOT drive stays the
+user's to trigger. A removable drive being plugged in is not a request to spend minutes of walking and disk on it — the
+common case is a drive attached to copy one file — while the boot disk is opt-OUT, always present, and the thing the
+whole feature is for. So ❌ don't wire `drives_to_resume` (or anything like it) into the launch path because it looks one
+line away; the drive keeps every row it covered (walks are add-only and resumable) and serves them, and the user's enable
+or "Rescan now" picks the rest up whenever they want it. Changing this needs David, not a tidy-up.
+
 ## The per-volume registry
 
 ```
