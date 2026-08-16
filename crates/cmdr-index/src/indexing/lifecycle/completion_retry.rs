@@ -98,7 +98,7 @@ static WAITING: LazyLock<Mutex<HashMap<String, RetryWindow>>> = LazyLock::new(||
 /// again (the writing is still going), and re-arming there would pin the ladder at
 /// one minute forever and retry a busy drive every minute for as long as somebody
 /// is writing to it.
-pub(in crate::indexing) fn arm(volume_id: &str, now: u64) {
+pub(in crate::indexing::lifecycle) fn arm(volume_id: &str, now: u64) {
     WAITING
         .lock_ignore_poison()
         .entry(volume_id.to_string())
@@ -139,13 +139,13 @@ fn note_it_ran(volume_id: &str, now: u64) {
 /// The ladder resets here rather than growing forever, so a drive that finishes
 /// and is later written to hard again starts at a minute rather than a quarter of
 /// an hour.
-pub(in crate::indexing) fn forget(volume_id: &str) {
+pub(in crate::indexing::lifecycle) fn forget(volume_id: &str) {
     WAITING.lock_ignore_poison().remove(volume_id);
 }
 
 /// Whether this volume is waiting for another go, asked without spending it.
 #[cfg(test)]
-pub(in crate::indexing) fn is_waiting(volume_id: &str) -> bool {
+pub(in crate::indexing::lifecycle) fn is_waiting(volume_id: &str) -> bool {
     WAITING.lock_ignore_poison().contains_key(volume_id)
 }
 
@@ -155,7 +155,7 @@ pub(in crate::indexing) fn is_waiting(volume_id: &str) -> bool {
 /// A 30 s tick against windows of minutes: the granularity is the tick's, so an
 /// attempt lands up to half a minute late, which is a rounding error against the
 /// wait it ends. A volume with nothing waiting costs one map lookup.
-pub(in crate::indexing) fn nudge(volume_id: &str) {
+pub(in crate::indexing::lifecycle) fn nudge(volume_id: &str) {
     nudge_at(volume_id, crate::indexing::store::now_unix());
 }
 
