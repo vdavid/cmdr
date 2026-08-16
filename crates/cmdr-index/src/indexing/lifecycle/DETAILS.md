@@ -74,6 +74,10 @@ concurrently without corrupting each other. Every invariant below holds independ
   `initial_freshness_on_launch`.
 - **failure.rs** — `IndexFailureSignal`, the one-shot per-volume fatal-storage-error signal.
 - **lifecycle_bus.rs** — the neutral scan-completed / registration / dirs-changed pub/sub.
+- **completion_retry.rs** — the in-memory per-volume backoff (1 min → 5 min → 15 min, the last repeating) that offers
+  another coverage pass to a first index that stopped with ground still on its frontier. Armed by `Machine::finish`,
+  reset by the completion sequence and every teardown, and nudged by the volume's own 30 s maintenance tick. Canonical
+  there; § "A first index that stopped short" below is what the rest of the lifecycle owes it.
 
 ## What a launch does with the index it finds (the routing table)
 
@@ -144,6 +148,32 @@ context — so under the guard its first walk would wait on the whole prelude. S
 the reason `with_running_manager`'s "non-blocking work only" holds. `PendingPhases` is what keeps the volume reading as
 busy across the gap, and a manager that went away in it hands the machine back to be stopped rather than leaving it
 walking with nothing holding it (`manager/phased.rs`).
+
+### A first index that stopped short
+
+A machine that runs out of passes with ground still on its frontier leaves the drive unmarked (`phases/DETAILS.md` §
+"Completion, derived rather than remembered" for when and why). `completion_retry.rs` is what goes back for it: an
+in-memory per-volume backoff of **1 min → 5 min → 15 min**, the last step repeating, each attempt being the ordinary
+resume. Three things wire it, and each is one line:
+
+- **Armed** by `Machine::finish`, only when the machine wasn't CANCELLED. A machine somebody stopped (a teardown, the
+  master switch, `report_a_vanished_volume_if_that_is_what_happened`) didn't run out of passes, and retrying a drive
+  nothing is indexing any more would wake it every minute until the app quits.
+- **Reset** by the completion sequence and by every teardown path, beside `rescan_request::forget`.
+- **Nudged** by the volume's own 30 s maintenance tick in `state/startup.rs`, which already carries `ClearAbandonedIfDue`
+  for the same reason: a per-volume timer that dies with the writer channel, so ❌ nothing here invents a second
+  scheduling concept.
+
+⚠️ **An attempt goes through `state::resume_the_phases`, ❌ never `force_scan`.** They differ in exactly one arm and it
+is the dangerous one: on a volume that completed since the retry was scheduled, `force_scan` is a full truncating
+rescan. That is the right answer for a button and an unacceptable one for a background timer, so the retry's door can
+only ever restart the PHASES (`manager/phased.rs::cover_again`).
+
+⚠️ **A retry never runs alongside a working machine.** `cover_again` asks `phases_have_work` with the manager held OUT of
+the registry (`off_the_registry`, shared with `force_scan`), which is the same mutual exclusion every scan entry uses:
+`start_pending_phases` can't start one in that window, so the answer can't go stale before it's acted on. A refusal
+reschedules rather than spending the attempt, and the claim moves the window before the attempt runs, so retries can't
+stack either. Anchored by `phases/tests/retry.rs`, which fires a retry from inside a live walk.
 
 📌 **Follow-up, not yet done:** `resume_branch_watch` (`state/startup.rs`) bends the same contract, running
 `IndexStore::open_read_connection` plus `branches::resumed_for` inside its `with_running_manager` window. It's far

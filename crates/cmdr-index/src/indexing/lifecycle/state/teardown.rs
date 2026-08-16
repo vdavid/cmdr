@@ -35,8 +35,10 @@ pub fn stop_indexing(volume_id: &str) -> Result<(), String> {
     // it, and the next start reads it back.
     crate::indexing::watch::branches::forget(volume_id);
     // And a volume that stopped indexing is owed no walk either, however it
-    // stopped (the user, the master switch, the memory watchdog).
+    // stopped (the user, the master switch, the memory watchdog): neither the
+    // rescan it remembered nor the coverage pass its machine stopped short of.
     crate::indexing::lifecycle::rescan_request::forget(volume_id);
+    crate::indexing::lifecycle::completion_retry::forget(volume_id);
 
     // Take the instance out under the lock, publish `ShuttingDown`, then release
     // the lock BEFORE the blocking drain. `mgr.shutdown()` blocks up to 5 s
@@ -167,8 +169,10 @@ pub(super) fn remove_instance_and_handles(volume_id: &str) {
         // it, and the next start reads it back.
         crate::indexing::watch::branches::forget(volume_id);
         // And a volume that stopped indexing is owed no walk either, however it
-        // stopped (the user, the master switch, the memory watchdog).
+        // stopped (the user, the master switch, the memory watchdog): neither the
+        // rescan it remembered nor the coverage pass its machine stopped short of.
         crate::indexing::lifecycle::rescan_request::forget(volume_id);
+        crate::indexing::lifecycle::completion_retry::forget(volume_id);
         pool
     };
     if let Some(pool) = pool {
@@ -196,8 +200,10 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
     // it, and the next start reads it back.
     crate::indexing::watch::branches::forget(volume_id);
     // And a volume that stopped indexing is owed no walk either, however it
-    // stopped (the user, the master switch, the memory watchdog).
+    // stopped (the user, the master switch, the memory watchdog): neither the
+    // rescan it remembered nor the coverage pass its machine stopped short of.
     crate::indexing::lifecycle::rescan_request::forget(volume_id);
+    crate::indexing::lifecycle::completion_retry::forget(volume_id);
 
     // Take the instance out under the lock, publish `ShuttingDown`, then release
     // the lock BEFORE the blocking drain (same reasoning as `stop_indexing`: the

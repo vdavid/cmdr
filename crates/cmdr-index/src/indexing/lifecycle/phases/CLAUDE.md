@@ -16,7 +16,8 @@ Each of these fails SILENTLY when ignored; `DETAILS.md` has the incident behind 
 - **A phased start prepares its database through writer MESSAGES**, ❌ never a second write connection. No
   `EXCLUSION_POLICY_KEY` stamp ⇒ every coverage query answers "walk everything" and nothing EVER converges.
 - **Completion is DERIVED** ("the frontier under this root is empty"), ❌ never remembered, ❌ never a "didn't shrink
-  twice" rule. Abandoned ground leaves the frontier, so one wedged directory can't hold it open.
+  twice" rule. Abandoned ground leaves the frontier, so one wedged directory can't hold it open. A run that stops short
+  asks for another pass (`../completion_retry.rs`), which moves WHEN the marker lands, ❌ never what earns it.
 - **The completion ORDER is enforced by a flush, stamp before collapse**, and ❌ `AggregationComplete` never moves ahead
   of that flush: collapsing early lets a shallow anchor truncate the index that just finished, and a terminal ahead of
   the heal's progress ticks leaves every hourglass lit until relaunch.

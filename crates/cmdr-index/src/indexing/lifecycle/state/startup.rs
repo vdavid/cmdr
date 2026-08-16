@@ -306,16 +306,19 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
             // `fail_index` can tear the manager down out of the registry.
             spawn_failure_supervisor(Arc::clone(&events), volume_id.to_string(), failure_signal);
 
-            // Periodic DB maintenance every 30 s: reclaim free pages from
+            // Periodic per-volume maintenance every 30 s: reclaim free pages from
             // deletes/rescans (`IncrementalVacuum`), truncate the WAL file so its
-            // high-water mark doesn't sit on disk (`WalCheckpoint`), and offer back
-            // any ground a walk gave up on whose retry window has elapsed
-            // (`ClearAbandonedIfDue`). All stop automatically when the writer
-            // channel closes.
+            // high-water mark doesn't sit on disk (`WalCheckpoint`), offer back any
+            // ground a walk gave up on whose retry window has elapsed
+            // (`ClearAbandonedIfDue`), and offer another coverage pass to a first
+            // index that stopped with ground still on its frontier
+            // (`completion_retry`). All stop automatically when the writer channel
+            // closes, which is the volume going away.
             //
-            // The last one is a 30 s TICK, not a 30 s policy: the window it consults
-            // is hours long, per volume, and persisted, so a tick that isn't due
-            // costs one `meta` read (`writer/abandoned_retry.rs`).
+            // The last two are a 30 s TICK, not a 30 s policy: each consults a
+            // window of minutes to hours, per volume, so a tick that isn't due
+            // costs one `meta` read and one map lookup.
+            let volume_for_retry = volume_id.to_string();
             crate::indexing::host::runtime::spawn(async move {
                 loop {
                     tokio::time::sleep(Duration::from_secs(30)).await;
@@ -328,6 +331,7 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
                     if writer_for_maintenance.send(WriteMessage::ClearAbandonedIfDue).is_err() {
                         break;
                     }
+                    crate::indexing::lifecycle::completion_retry::nudge(&volume_for_retry);
                 }
             });
         }

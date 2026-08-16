@@ -775,7 +775,7 @@ mod launch_route;
 mod phased;
 mod start;
 
-pub(in crate::indexing::lifecycle) use phased::PhasedStart;
+pub(in crate::indexing::lifecycle) use phased::{PhaseResume, PhasedStart};
 
 #[cfg(test)]
 mod tests;

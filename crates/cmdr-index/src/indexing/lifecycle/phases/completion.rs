@@ -127,6 +127,12 @@ fn volume_is_covered_now(machine: &Machine) -> bool {
 fn run_the_completion_sequence(machine: &Machine) {
     log::info!("Phases: '{}' is covered end to end", machine.volume_id);
 
+    // Nothing is owed another pass any more. This is also where the retry ladder
+    // RESETS, so a drive that finishes now and is written to hard again next week
+    // waits a minute rather than the quarter of an hour this session climbed to
+    // (`../completion_retry.rs`).
+    crate::indexing::lifecycle::completion_retry::forget(&machine.volume_id);
+
     // 1. The completion marker, committed before anything long runs.
     let _ = machine.writer.send(WriteMessage::UpdateMeta {
         key: "scan_completed_at".to_string(),

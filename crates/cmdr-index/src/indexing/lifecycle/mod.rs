@@ -17,7 +17,10 @@
 //!   send-decision and hot-path collection.
 //! - [`rescan_request`]: what a scan start answers when it can't run, and the one
 //!   walk a volume remembers it owes.
+//! - [`completion_retry`]: the in-memory per-volume backoff that offers a first
+//!   index another pass when it stopped with ground still on its frontier.
 
+pub(crate) mod completion_retry;
 pub(crate) mod cover;
 pub(crate) mod failure;
 pub mod freshness;

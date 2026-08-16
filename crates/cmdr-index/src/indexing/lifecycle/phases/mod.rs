@@ -741,31 +741,46 @@ impl Machine {
             ),
             self.started_at.elapsed().as_secs_f64(),
         );
-        self.say_what_was_left_behind();
+        self.pick_the_leftovers_up_later();
     }
 
-    /// Say so when the machine stops with ground still on the frontier.
+    /// Say so when the machine stops with ground still on the frontier, and ask
+    /// for another go at it.
     ///
-    /// ⚠️ Without this the two endings are indistinguishable in a log: a volume
-    /// that finished and one that ran out of passes while somebody wrote to it
-    /// both end on the line above and an idle phase. The second leaves the drive
-    /// unmarked until the next launch, and a support bundle has to be able to say
-    /// which happened — a bench couldn't, and one unexplained run was the cost
+    /// ⚠️ Without the line the two endings are indistinguishable in a log: a
+    /// volume that finished and one that ran out of passes while somebody wrote to
+    /// it both end on the line above and an idle phase. The second leaves the
+    /// drive unmarked, and a support bundle has to be able to say which happened —
+    /// a bench couldn't, and one unexplained run was the cost
     /// (`docs/notes/churn-against-completion-2026-08-15.md`).
+    ///
+    /// The retry is the in-session half of the same fact: the next launch would
+    /// settle this drive in ~2 s, and `completion_retry` runs that resume on a
+    /// backoff instead of making somebody quit the app for it. ❌ Nothing here
+    /// marks anything complete: the frontier really isn't empty, and every surface
+    /// saying so stays right until a walk empties it.
     ///
     /// Only asked once a run is over, so it costs one coverage query per first
     /// index.
-    fn say_what_was_left_behind(&self) {
+    fn pick_the_leftovers_up_later(&self) {
         let left = self.frontier_under(&self.volume_root);
         if left.is_empty() {
             return;
         }
         log::info!(
-            "Phases: '{}' stops with {} still to walk, so nothing marks it complete yet; \
-             the next launch picks them up (first: {})",
+            "Phases: '{}' stops with {} still to walk, so nothing marks it complete yet (first: {})",
             self.volume_id,
             cmdr_fs::pluralize::pluralize(left.len() as u64, "folder"),
             left.first().map(String::as_str).unwrap_or("-"),
         );
+        // ⚠️ A machine somebody STOPPED didn't run out of passes: the volume is
+        // being torn down, the master switch went off, or the drive vanished
+        // (`report_a_vanished_volume_if_that_is_what_happened` cancels for exactly
+        // this reason). Scheduling a retry there would wake a drive nothing is
+        // indexing any more, every minute, until the app quits.
+        if self.cancel.is_cancelled() {
+            return;
+        }
+        crate::indexing::lifecycle::completion_retry::arm(&self.volume_id, crate::indexing::store::now_unix());
     }
 }

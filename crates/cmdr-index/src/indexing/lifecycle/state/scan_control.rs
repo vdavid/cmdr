@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use super::{INDEX_REGISTRY, IndexInstance, IndexPhase};
+use crate::indexing::lifecycle::manager::{IndexManager, PhaseResume};
 use crate::indexing::lifecycle::rescan_request::{self, RescanOutcome, ScanStartError};
 use crate::indexing::reconcile::verifier;
 
@@ -125,54 +126,120 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
 /// freshness `Arc`). `start_scan`'s spawned tasks capture their own clones and
 /// never re-resolve the manager in the registry, so it's safe to run detached.
 pub fn force_scan(volume_id: &str) -> Result<RescanOutcome, String> {
-    // Take the manager out under the lock (transient `ShuttingDown`), so the
-    // blocking rescan prelude runs WITHOUT holding the registry lock.
+    // The request is recorded BEFORE the attempt, and cleared by an attempt that
+    // got somewhere. Recording it after a `GroundBeingWalked` refusal reads more
+    // naturally and has a hole in it: the walk can end in the window between the
+    // guard answering and the request landing, and its `run_if_owed` would carry
+    // nothing out — leaving a promise waiting on a walk that already finished.
+    //
+    // `force_rescan` routes by the volume's TYPED kind: a `Local` volume runs the
+    // guarded walker (`start_scan`), an SMB/MTP volume walks the `Volume` trait from
+    // its share root (`start_volume_scan`). Calling `start_scan` unconditionally
+    // here ran the local guarded walker over a network mount — walking nothing and
+    // falsely marking the index complete — so a NAS "Rescan now" indexed zero
+    // entries.
+    let detached = off_the_registry(volume_id, |mgr| {
+        rescan_request::remember(volume_id);
+        match mgr.force_rescan("manual start") {
+            Ok(()) | Err(ScanStartError::AlreadyScanning) => {
+                rescan_request::forget(volume_id);
+                Ok(RescanOutcome::Started)
+            }
+            Err(ScanStartError::GroundBeingWalked) => {
+                log::info!("force_scan: '{volume_id}' is being walked; its scan runs when that walk ends");
+                Ok(RescanOutcome::Deferred)
+            }
+            Err(ScanStartError::Internal(diagnostic)) => {
+                rescan_request::forget(volume_id);
+                Err(diagnostic)
+            }
+        }
+    })?;
+    match detached {
+        Detached::Done(result) => result,
+        Detached::TornDownWhileAway(result) => {
+            log::info!("force_scan: '{volume_id}' was torn down during scan start; shutting down the manager");
+            // Whatever we just promised, this volume stopped indexing while we
+            // were detached; a request left behind would rescan a drive nobody
+            // is indexing any more.
+            rescan_request::forget(volume_id);
+            result
+        }
+    }
+}
+
+/// Ask a volume whose first index stopped short to carry on covering it, for the
+/// retry ladder in `../completion_retry.rs`.
+///
+/// A sibling of [`force_scan`] rather than a call into it, and the difference is
+/// the whole point: this can only ever restart the PHASES. `force_scan` on a
+/// volume that completed in the meantime is a full truncating rescan, which is a
+/// fine thing for a button and an unacceptable thing for a background timer.
+///
+/// Everything else is the same discipline: the manager comes out from under the
+/// registry lock for the blocking start, and the machine is stood up on the far
+/// side of the restore.
+pub(in crate::indexing::lifecycle) fn resume_the_phases(volume_id: &str) -> PhaseResume {
+    match off_the_registry(volume_id, IndexManager::cover_again) {
+        // A volume that isn't running has no machine to resume; whatever the
+        // retry was waiting for is gone.
+        Err(e) => {
+            log::debug!("Completion retry: '{volume_id}' has nothing to resume: {e}");
+            PhaseResume::NothingToCover
+        }
+        Ok(Detached::Done(outcome)) => outcome,
+        Ok(Detached::TornDownWhileAway(_)) => {
+            log::info!("Completion retry: '{volume_id}' was torn down mid-retry; shutting down the manager");
+            PhaseResume::NothingToCover
+        }
+    }
+}
+
+/// What became of the manager while `work` ran with it detached.
+enum Detached<T> {
+    /// `work` ran and the manager is back in the registry as `Running`.
+    Done(T),
+    /// `work` ran, but the volume was torn down while it was out, so the manager
+    /// was shut down instead of resurrecting a removed volume.
+    TornDownWhileAway(T),
+}
+
+/// Run `work` against a volume's manager with the manager held OUT of the
+/// registry under a published `ShuttingDown`, then put it back and start whatever
+/// phase machine `work` registered.
+///
+/// **The discipline every blocking scan start follows**, and the reason it isn't
+/// written twice: `work` does blocking I/O (`block_in_place(flush_blocking)`, a
+/// space-info query), and a blocking flush under the global registry lock freezes
+/// every concurrent registry user for ANY volume (the QA-observed UI freeze) on
+/// top of the self-deadlock a freshness event used to cause. Concurrent callers
+/// see `ShuttingDown` and proceed. `start_scan`'s spawned tasks capture their own
+/// clones and never re-resolve the manager, so running detached is safe.
+///
+/// ⚠️ **Holding the manager out is also the mutual exclusion** a caller asking
+/// "does this volume already have a machine?" depends on: `start_pending_phases`
+/// finds nothing to start while we are away, so an answer read in here can't go
+/// stale before it is acted on.
+fn off_the_registry<T>(volume_id: &str, work: impl FnOnce(&mut IndexManager) -> T) -> Result<Detached<T>, String> {
     let mut mgr = {
         let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
         let instance = reg.get_mut(volume_id).ok_or("Indexing not initialized")?;
         match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
             IndexPhase::Running(mgr) => mgr,
             other => {
-                // Not running (Initializing / ShuttingDown): nothing to force.
-                // Put the phase back and report not-initialized, as before.
+                // Not running (Initializing / ShuttingDown): nothing to work with.
+                // Put the phase back and report not-initialized.
                 instance.phase = other;
                 return Err("Indexing not initialized".to_string());
             }
         }
     };
 
-    // Guard released: run the (blocking-prelude) scan start off the lock.
-    // `force_rescan` routes by the volume's TYPED kind: a `Local` volume runs the
-    // guarded walker (`start_scan`), an SMB/MTP volume walks the `Volume` trait from its share
-    // root (`start_volume_scan`). Calling `start_scan` unconditionally here ran
-    // the local guarded walker over a network mount — walking nothing and falsely
-    // marking the index complete — so a NAS "Rescan now" indexed zero entries.
-    //
-    // The request is recorded BEFORE the attempt, and cleared by an attempt that
-    // got somewhere. Recording it after a `GroundBeingWalked` refusal reads more
-    // naturally and has a hole in it: the walk can end in the window between the
-    // guard answering and the request landing, and its `run_if_owed` would carry
-    // nothing out — leaving a promise waiting on a walk that already finished.
-    rescan_request::remember(volume_id);
-    let result = match mgr.force_rescan("manual start") {
-        Ok(()) | Err(ScanStartError::AlreadyScanning) => {
-            rescan_request::forget(volume_id);
-            Ok(RescanOutcome::Started)
-        }
-        Err(ScanStartError::GroundBeingWalked) => {
-            log::info!("force_scan: '{volume_id}' is being walked; its scan runs when that walk ends");
-            Ok(RescanOutcome::Deferred)
-        }
-        Err(ScanStartError::Internal(diagnostic)) => {
-            rescan_request::forget(volume_id);
-            Err(diagnostic)
-        }
-    };
+    let result = work(&mut mgr);
 
-    // Re-lock to restore the manager as `Running`. If the instance vanished
-    // while we were detached (a concurrent `stop_indexing`/`clear_index` swapped
-    // it out), respect that and shut our now-orphaned manager down instead of
-    // resurrecting a removed volume.
+    // Re-lock to restore the manager as `Running`. If the instance vanished while
+    // we were detached (a concurrent `stop_indexing`/`clear_index` swapped it
+    // out), respect that and shut our now-orphaned manager down.
     let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
     match reg.get_mut(volume_id) {
         Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
@@ -182,17 +249,12 @@ pub fn force_scan(volume_id: &str) -> Result<RescanOutcome, String> {
             // its index truncated, and the machine starts here — on the far side of
             // the registry restore, never inside the window above.
             super::startup::start_pending_phases(volume_id);
-            result
+            Ok(Detached::Done(result))
         }
         _ => {
             drop(reg);
-            log::info!("force_scan: '{volume_id}' was torn down during scan start; shutting down the manager");
             mgr.shutdown();
-            // Whatever we just promised, this volume stopped indexing while we
-            // were detached; a request left behind would rescan a drive nobody
-            // is indexing any more.
-            rescan_request::forget(volume_id);
-            result
+            Ok(Detached::TornDownWhileAway(result))
         }
     }
 }

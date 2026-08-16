@@ -179,6 +179,10 @@ mod completion;
 /// drive.
 mod relaunch;
 
+/// A run that stopped with ground still on its frontier, and the backoff that
+/// offers it another pass without waiting for a relaunch.
+mod retry;
+
 /// Staying responsive while walking: grouping, visits, and the progress pump.
 mod interleaving;
 

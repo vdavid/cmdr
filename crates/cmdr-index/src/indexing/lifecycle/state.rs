@@ -70,6 +70,7 @@ pub use queries::{is_active, is_failed};
 #[cfg(any(test, feature = "testing"))]
 pub use reservation::reserve_initializing_index_for_test;
 pub(crate) use reservation::{is_initializing_phase, try_reserve_initializing_phase};
+pub(in crate::indexing::lifecycle) use scan_control::resume_the_phases;
 pub use scan_control::{force_scan, stop_scan, trigger_verification};
 #[cfg(test)]
 pub(crate) use scan_control::{set_scanning_for_test, while_shutting_down_for_test};

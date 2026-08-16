@@ -46,6 +46,23 @@ pub(in crate::indexing::lifecycle) enum PendingPhases {
     BeingStarted,
 }
 
+/// What asking a half-covered volume to carry on covering did.
+///
+/// Typed rather than a bool because the three answers mean three different things
+/// to the retry ladder: one spends an attempt, one waits for the machine already
+/// walking, and one ends the ladder for good.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::indexing::lifecycle) enum PhaseResume {
+    /// The phases are registered and about to run.
+    Started,
+    /// A machine is already covering this volume, so nothing started. ⚠️ ❌ Never
+    /// a failure: the walk a retry wanted is in flight.
+    AlreadyWorking,
+    /// Nothing to cover: the volume completed, isn't registered, or its first
+    /// index was never the machine's.
+    NothingToCover,
+}
+
 /// Whether the index a phased start finds is one the machine can add to.
 ///
 /// The launch route decides this (`manager/launch_route.rs`); every other entry
@@ -189,8 +206,40 @@ impl IndexManager {
         if self.phases_have_work() {
             return Err(ScanStartError::AlreadyScanning);
         }
+        self.restart_the_phases(&format!("'{scan_trigger}'"));
+        Ok(())
+    }
+
+    /// Pick the phases back up on a volume whose machine stopped with ground still
+    /// on its frontier (`../completion_retry.rs`).
+    ///
+    /// The same restart [`cover_or_scan`](Self::cover_or_scan) runs, with the
+    /// full-scan arm removed rather than reordered: a volume that completed since
+    /// the retry was scheduled must be left alone, ❌ never sent to `start_scan`,
+    /// which would rebuild a finished index because a background timer fired.
+    ///
+    /// ⚠️ **A machine that still has work is what this refuses against**, and the
+    /// caller holds the manager out of the registry while it asks, so nothing can
+    /// start one in the gap. Two machines on one volume allocate different ids for
+    /// the same names and the loser takes its whole subtree with it.
+    pub(in crate::indexing::lifecycle) fn cover_again(&mut self) -> PhaseResume {
+        if !self.first_index_is_the_machines() {
+            return PhaseResume::NothingToCover;
+        }
+        if self.phases_have_work() {
+            return PhaseResume::AlreadyWorking;
+        }
+        self.restart_the_phases("a completion retry");
+        PhaseResume::Started
+    }
+
+    /// Hand this volume back to the phase machine, keeping every row it has.
+    ///
+    /// ⚠️ It only REGISTERS the start; `state::start_pending_phases` runs it once
+    /// the manager is back in the registry.
+    fn restart_the_phases(&mut self, why: &str) {
         log::info!(
-            "'{}' has no completed scan, so '{scan_trigger}' restarts its phases instead of rebuilding it",
+            "'{}' has no completed scan, so {why} restarts its phases instead of rebuilding it",
             self.volume_id
         );
         self.register_a_phased_start(PhasedStart::KeepTheRows);
@@ -204,7 +253,6 @@ impl IndexManager {
         // `resuming`: this is the same session, so there is no gap to admit and a
         // bump here would mark rows stale that nothing happened to.
         self.ensure_branch_watch(false);
-        Ok(())
     }
 
     /// Whether this volume's first index is still the phase machine's to build:

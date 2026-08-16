@@ -26,6 +26,9 @@ them.
   machine having WORK, ❌ not merely walking. ❌ Don't collapse them or classify them by text (both are
   `ScanStartError`). A MANUAL rescan they refuse on a COMPLETED volume is REMEMBERED (`rescan_request`) and fired from
   `cover::release_ground`, claim first.
+- **A machine that stops with a non-empty frontier gets another PASS, ❌ never a rescan** (`completion_retry.rs`, an
+  in-memory 1/5/15-minute per-volume backoff). It goes through `state::resume_the_phases`, ❌ never `force_scan`: on a
+  volume that completed meanwhile that one truncates, fired by a timer. ❌ Never runs against a machine that has work.
 - **`IndexVolumeKind` is a capability model**: branch on the axis, not the variant. `has_event_journal()` gates journal
   replay, ❌ not `last_event_id.is_some()`.
 - **Freshness has ONE total transition table** (`Freshness::on`); no journal ⇒ Stale on launch. `..._on` vs
