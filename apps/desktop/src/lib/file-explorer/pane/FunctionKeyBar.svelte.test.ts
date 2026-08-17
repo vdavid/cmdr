@@ -2,7 +2,7 @@
  * Store-driven F-bar tests: the button `disabled` flags now read the focused
  * pane's `VolumeCapabilities`, not a `volumeId === 'search-results'`
  * string compare. These seed the `explorerState` singleton to a given kind and
- * assert the resulting disablement, pinning the M2 capability wiring at the
+ * assert the resulting disablement, pinning the capability wiring at the
  * component level.
  *
  * `capabilitiesFor` short-circuits on the two virtual ids before any volume-store

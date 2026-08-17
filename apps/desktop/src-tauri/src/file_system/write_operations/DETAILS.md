@@ -462,7 +462,9 @@ are 30 s. What's left underneath is the case with no bound at all, and that's wh
 (`ScanOutcome::Error`) and emits `scan-preview-error` with `timed_out: true` itself, leaving the walk detached behind
 it. It also sets the cancel flag as a courtesy: a walk that is merely slower than we believed reads it and stops working
 for a dialog that has moved on. `claim_outcome` is the one-shot CAS both the watchdog and the worker pass through, so
-exactly one publishes and a late walk can't contradict a timeout the user has already been shown.
+exactly one publishes and a late walk can't contradict a timeout the user has already been shown. ❌ A new terminal path
+in either worker owes that claim: skip it and two publishers race, which is the whole failure this CAS exists to make
+unrepresentable.
 
 **What it reaches.** The pre-confirm dialog renders an honest notice with a retry
 (`src/lib/file-operations/transfer/DETAILS.md` § "When the dialog can't find out"). A CONFIRMED transfer's wait already

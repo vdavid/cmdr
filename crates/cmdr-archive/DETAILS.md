@@ -335,8 +335,11 @@ remote independently.
 
 ## `is_writable()` answers for the VOLUME, not for the zip
 
-`ArchiveVolume` declares `is_writable() == false`, which is what the frontend's write guards ultimately read (it travels
-over IPC on `VolumeInfo.capabilities`). That is NOT a claim that a zip can't be edited: a zip CAN, through the app's
+`ArchiveVolume` declares `is_writable() == false`. ⚠️ That declaration never reaches the frontend: an `ArchiveVolume` is
+registered under `archive_volume_id()` (`archive-{16 hex}`), an id that never appears in the discovered `LocationInfo`
+list, so `enrich_from_volume_registry` never sees it and no `VolumeInfo.capabilities` is published for it. The
+declaration exists for the conformance assertion and for backend-side callers. That is NOT a claim that a zip can't be
+edited: a zip CAN, through the app's
 managed archive-edit flow, which rewrites the whole archive through a staged temp and never mutates through this volume.
 ❌ Never flip the predicate to track editability — the frontend resolves an in-archive pane's write capability from the
 PATH (`pane/volume-capabilities.ts`, `capabilitiesForPane`), precisely because the volume can't answer it.

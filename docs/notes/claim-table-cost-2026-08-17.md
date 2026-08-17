@@ -58,6 +58,14 @@ quote this note as having closed that question.
 
 **Neither figure is a regression risk.** Both are one-time per walk, and both are now flat per root.
 
+**⚠️ Quote the shape, ❌ not the exact ratios.** An independent re-run on the same machine right after a 10-minute check
+suite came in 17–43% slower on the "after" column (2.60 ms and 382 µs at 2,500), and a standalone `rustc -O` replica of
+the old algorithm measured ~1.9× the "before" column, most likely because a bare replica misses the workspace release
+profile's LTO and codegen settings. What reproduces exactly is the **shape**: the old table quadratic (a ~46× per-root
+rise across a 50× width rise), the new one flat at ~1 µs/root free and ~0.2 µs/root contended. So the honest headline is
+**roughly two orders of magnitude, and roughly three for the contended arm**, ❌ never "200×" or "1,651×" as though they
+were stable constants.
+
 ## Re-taking these numbers
 
 ```sh

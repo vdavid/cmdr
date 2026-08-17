@@ -208,8 +208,10 @@ What it counts:
   for free). `AGENTS.md` is in because the root `CLAUDE.md` is a bare `@AGENTS.md` import, so leaving it out would let
   the repo's most-read rule list grow untracked. `.claude/rules/` is deliberately out: those are agent-workflow policy
   rather than code invariants, and `resident-doc-budget` already caps them.
-- **Markers**: every occurrence of the `❌` rune, including inside fenced blocks (a rule quoted in an example is still a
-  rule an agent holds in its head). Counting the marker rather than the prose keeps the check out of parsing English; an
+- **Markers**: every occurrence of the `❌` rune in prose, ❌ **not** inside fenced blocks or inline code spans (use
+  versus mention: a rule is imposed in prose, a marker in backticks is being talked about, and without the strippers a
+  doc explaining this convention would be billed for it). Counting the marker rather than the prose keeps the check out
+  of parsing English; an
   unmarked prohibition is undercounted, which is one more reason to keep marking them. `⚠️` is counted alongside (the
   base rune, so the variation selector doesn't matter) but never gated.
 - **Denominator**: git-tracked source files under the subsystem, by the `fileLengthSourceExtensions` set, counted with

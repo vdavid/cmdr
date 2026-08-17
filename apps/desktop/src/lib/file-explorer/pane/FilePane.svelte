@@ -506,7 +506,7 @@
      * The KIND-structural alt-view selector for the `{#if}` chain below. It picks
      * which non-list view a pane renders purely as a function of `caps.kind` (plus
      * the MTP device-only connection sub-state, which the kind table doesn't carry
-     * — it's a runtime connection state, not a kind). This is NOT a new component
+     * — it's a runtime connection state, not a kind). This is NOT a new component:
      * it's a derived discriminant the existing chain branches on.
      *
      * Only the KIND-driven branches live here. The runtime-state branches

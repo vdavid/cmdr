@@ -634,7 +634,8 @@ Things that will bite whoever builds this, collected in one place.
 - **The tooltip action adopts `contentEl` and adopted elements keep `hidden`.** Bind the inner div, not the wrapper.
 - **Render `row.etaSecondsDisplay`, never `progress.etaSeconds`.** The raw value once showed one operation as "8m 12s"
   in one window and "5m 46s" in the other.
-- **A paused op reports `is_running: true`.** The bar-is-moving truth is the snapshot `status`.
+- **The bar-is-moving truth is the snapshot `status`.** (`OperationStatus.is_running` used to lie here — it was a
+  presence test, true for queued, running, and paused alike. It is gone; the field is now `lifecycle`.)
 - **`emit_error` fires before the record is removed**, so a failure row and a live row can briefly share an id — filter
   the failure out while the record lives, or the keyed `{#each}` throws (F9).
 - **`emit_error` can fire twice per op** (F4) and fires for non-failures (F3).
