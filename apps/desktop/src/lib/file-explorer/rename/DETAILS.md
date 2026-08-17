@@ -15,6 +15,7 @@ Depth and rationale for inline rename. `CLAUDE.md` holds the must-knows.
   `.svelte.ts` for Svelte 5 reactivity.
 - **rename-operations.ts**: pure save-flow logic returning a `RenameResult` discriminated union instead of side effects.
 - **rename-activation.ts**: click-to-rename timer logic (800 ms hold, 10 px threshold, cancel on double-click).
+- **rename-step.ts**: the two pure halves of a chained rename: which keypress chains, and which row it lands on.
 
 ## Three-stage save flow (`rename-operations.ts::executeRenameSave()`)
 
@@ -43,7 +44,8 @@ volume. Renaming isn't possible here." Skipped for MTP volumes (Unix `access()` 
 ## Validation
 
 - **Frontend (instant)** `filename-validation.ts`: disallowed chars (slash, null on macOS), empty/whitespace-only, byte
-  limits (255 name, 1024 path), extension change vs setting.
+  limits (255 name, 1024 path), extension change vs setting. The red border while editing follows the policy: "no" draws
+  it on an extension change, "ask" doesn't (the dialog waits for save), "yes" never validates the extension.
 - **Backend (authoritative)** `validation.rs` + `check_rename_validity` command, accepts an optional `volumeId`: local
   FS (`None` or `"root"`) uses `symlink_metadata` + inode comparison for case-only detection; non-local volumes (MTP)
   use `Volume::get_metadata()` for conflict detection, `is_case_only_rename` always `false` (MTP is case-sensitive).
@@ -78,6 +80,49 @@ on its way out when another takes over, and that blur cancels; reporting the ses
 that has already started. Reading it live would reintroduce exactly that. A one-shot "ignore the next cancel" flag is
 the wrong shape here: `suppressBlurCancel` shows how a one-shot waiting for a blur that never comes eats the user's next
 Escape instead.
+
+## Chaining the rename with the arrow keys
+
+A bare ArrowDown inside the editor saves the name being typed and reopens the editor on the row below; ArrowUp does the
+same upwards. Renaming a run of files becomes one keyboard flow. `rename-step.ts` holds both pure halves,
+`rename-flow.handleRenameStep` performs the step, and `InlineRenameEditor` raises it.
+
+The step, in the order it must happen:
+
+1. **Resolve the neighbour row** (`resolveStepIndex`): `cursorIndex ± 1`, bounded by the listing and by the `..` row,
+   which is nothing to rename. No row there → the key does NOTHING: no commit, no discard, the editor stays open with
+   the edit intact. Running off the end of a directory is the user finding the edge, not a decision about the name
+   they're typing.
+2. **Capture the entry** from the loaded window (`getEntryAt`), or read it with `getFileAt` when it has scrolled out.
+   Capturing BEFORE the save goes out is what makes the hop land where the user was looking: the rename may re-sort the
+   listing and carry the renamed file far away, and the row they meant is the one that sat beside the editor when they
+   pressed the key.
+3. **Fire the save, unawaited**, when the name changed. Chaining stays fast on slow volumes (SMB, MTP), where awaiting
+   each save would stall every step.
+4. **Hop**: move the cursor (`applyNavigation`, which also scrolls the row into view) and activate on the captured
+   entry.
+
+Two orderings inside that are load-bearing, and both fail silently:
+
+- **The save is fired BEFORE the next activation.** `executeFlow` reads the target, the typed name, and the session id
+  synchronously before its first `await`, so firing it first is what tags it with the session that typed it. Activating
+  first would hand the in-flight save the NEW session's id, and every supersession guard above would go blind at once.
+- **The new editor opens on the captured entry**, through `startRenameOnEntry`, not through `startRename`. `startRename`
+  activates on `getEntryUnderCursor()`, which an async IPC read fills from the cursor index: right after the cursor
+  moves it still names the file the chain just left, so activating through it would write the next name onto that file.
+  That is the paste-rename latch (`b0de3824f`) in a new place. Taking the entry directly makes the target path-bound by
+  construction, with no poll to get right.
+
+Nothing rate-limits key repeat: holding the arrow rips through the directory, and session ids are what keep a burst of
+steps from crossing each other's results. The scroll in step 4 matters for more than looks: an editor scrolled out of
+the virtual window unmounts and its blur discards.
+
+Only a bare ArrowUp / ArrowDown chains, matched on the whole combo through the file list's own `nav.up` / `nav.down`
+commands. The caret-to-start/end that a bare arrow used to do inside the input is given up for this; Home and End still
+do it.
+
+A mid-chain rename the backend rejects (a conflict, an unusable name) currently drops the typed name with no toast, and
+the chain keeps going.
 
 ## Ending a rename session
 

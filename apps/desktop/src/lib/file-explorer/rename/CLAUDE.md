@@ -11,7 +11,7 @@ only; selection is preserved and irrelevant.
 - **rename-state.svelte.ts**: reactive state (`.svelte.ts` for Svelte 5 reactivity).
 - **rename-operations.ts**: pure save flow, returns a `RenameResult` discriminated union (`noop` / `error` / `timeout` /
   `extension-ask` / `conflict` / `success`).
-- **rename-activation.ts**: click-to-rename timer.
+- **rename-activation.ts**: click-to-rename timer. **rename-step.ts**: the pure halves of a chained rename.
 
 Full details (the three-stage save flow, permission/validation tiers, post-rename cursor tracking, decisions):
 `DETAILS.md`.
@@ -20,35 +20,35 @@ Full details (the three-stage save flow, permission/validation tiers, post-renam
 
 - **Same-name edit (`trimmedName === originalName`) is a cancel/no-op.** Don't emit a watcher event or refresh the pane;
   it avoids a spurious refresh on whitespace-only edits.
-- **Case-only and known-equivalent extension changes are treated as no change in all extension-policy modes.** Case-only
-  (`.JPG` → `.jpg`) and known-equivalent (`.jpeg` → `.jpg`, `.md` → `.txt`) never show the dialog or a red border. With
-  policy "no" an extension change shows a red border while editing; with "ask" no red border (the dialog waits for
-  save); with "yes" the extension is never validated.
-- **Conflict detection on local FS uses inode comparison, not `exists()`.** On case-insensitive APFS, `readme.txt` →
-  `README.txt` is the same file; `exists()` would false-positive. The backend compares `dev+ino` via
-  `symlink_metadata()`.
-- **`renameFile` and `moveToTrash` can time out on slow mounts; surface the honest "may have succeeded" warning and
-  auto-refresh.** Don't treat a timeout as a hard failure: the rename may have landed on disk.
-- **Thread `volumeId` through `renameFile` / `checkRenameValidity` / `checkRenamePermission`.** Validity (conflict)
-  checks work for all volumes via the Volume trait, but permission checks are skipped for MTP (Unix `access()` doesn't
-  work on MTP virtual paths).
+- **Case-only (`.JPG` → `.jpg`) and known-equivalent (`.jpeg` → `.jpg`, `.md` → `.txt`) extension changes count as no
+  change under every extension policy**: no dialog, no red border. What each policy does with a real one: `DETAILS.md`.
+- **Conflict detection on local FS compares `dev+ino` via `symlink_metadata()`, never `exists()`**: on case-insensitive
+  APFS, `readme.txt` → `README.txt` is the same file, and `exists()` would false-positive.
+- **A `renameFile` / `moveToTrash` timeout on a slow mount is not a failure**: the rename may have landed on disk, so
+  warn honestly ("may have succeeded") and auto-refresh.
+- **Thread `volumeId` through `renameFile` / `checkRenameValidity` / `checkRenamePermission`.** Conflict checks work on
+  every volume via the Volume trait; permission checks are skipped for MTP (Unix `access()` doesn't reach MTP virtual
+  paths).
 - **Async work carries the session id it started with; a superseded session may only toast and refresh.** A save,
   permission check, or editor cancel landing after a newer activation must never cancel, focus, shake, move the cursor,
   or open a dialog. `DETAILS.md` § Rename sessions.
+- **A bare arrow chains the rename to the next row, and both orderings inside that step fail silently.** The save is
+  fired BEFORE the next activation (that's what tags it with the session that typed it), and the new editor opens on the
+  entry captured at keypress time, never on `entryUnderCursor` (which still names the file just left). `DETAILS.md` §
+  Chaining.
 - **Clicking outside the editor SAVES; blur alone discards.** The commit hangs off a document `mousedown` (capture) that
   `InlineRenameEditor` owns, never off blur: blur can't tell a click from the row scrolling out of the virtual window,
-  and committing on a scroll would rename a file the user never decided to rename. Enter saves too; Escape, Tab, drag
-  start, sort/hidden toggle, and any other focus loss discard. Guards (`pendingCommit`, the dialog check, the
-  `suppressBlurCancel` flip) and the invalid-name toast: `DETAILS.md` § Ending a rename session.
+  and committing on a scroll would rename a file nobody chose to. Enter saves too; Escape, Tab, drag start, sort/hidden
+  toggle, and any other focus loss discard. Guards and the invalid-name toast: `DETAILS.md` § Ending a rename session.
 - **Clicks INSIDE the editor must reach the input.** `FilePane.handlePaneClick` and both views' row `mousedown` skip
-  targets under `.rename-input`; without that the pane grabs focus and the rename dies mid-caret-placement, making the
-  field unusable with a mouse. Pinned by E2E in `file-operations.spec.ts`.
-- **Cancel triggers**: the editor losing focus discards for any reason: scrolling the renamed row out of the virtual
-  window UNMOUNTS the input, whose `onblur` cancels (there's no scroll-distance threshold). The editor mounts BY PATH
-  (`shouldMountRenameEditor`), so a watcher diff that shifts OTHER rows makes it follow its file instead of cancelling;
-  only a diff that removes the renamed file itself cancels (`listing-diff-sync`). Watcher events otherwise do NOT cancel
-  (the backend catches issues on save).
+  targets under `.rename-input`; without that the pane grabs focus and the rename dies mid-caret-placement. Pinned by
+  E2E in `file-operations.spec.ts`.
+- **Cancel triggers**: losing focus discards, for any reason: scrolling the renamed row out of the virtual window
+  UNMOUNTS the input, whose `onblur` cancels (no scroll-distance threshold). The editor mounts BY PATH
+  (`shouldMountRenameEditor`), so a watcher diff that shifts OTHER rows makes it follow its file; only a diff removing
+  the renamed file itself cancels (`listing-diff-sync`). Other watcher events do NOT cancel (the backend catches issues
+  on save).
 - **Double-click on the name area must open the file/folder, not activate rename.** The click-to-rename timer cancels on
   a double-click event.
 - **While rename is active, Cmd+C/A/Z/X/V act as text-editing shortcuts, not app commands** (same flag mechanism as
-  dialogs). Other shortcuts (Cmd+O, arrows, etc.) are suppressed.
+  dialogs). Every other app shortcut is suppressed.
