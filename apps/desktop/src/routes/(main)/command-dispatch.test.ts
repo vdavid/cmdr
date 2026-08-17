@@ -26,7 +26,7 @@ vi.mock('$lib/file-explorer/pane/focused-pane-reads', () => ({
 }))
 // `capabilitiesFor` resolves a real volumeId's fsType/category from the store;
 // the virtual ids (`search-results` / `network`) short-circuit before this. An
-// empty store makes `local` fall to the listable default (canPasteInto: true).
+// empty store makes `local` fall to the listable default (canWrite: true).
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
 const addToast = vi.fn()
 vi.mock('$lib/ui/toast', () => ({
@@ -127,7 +127,7 @@ describe('handleCommandExecute — blockedByCapabilities (search-results / netwo
       await handleCommandExecute(id, g.ctx)
 
       expect(ranBy, `${id} must be blocked before the explorer call`).not.toHaveBeenCalled()
-      // The exact L10 string, byte-for-byte (PR3).
+      // The exact string, byte-for-byte.
       expect(addToast, `${id} must surface the toast`).toHaveBeenCalledExactlyOnceWith(
         SEARCH_RESULTS_NOT_A_FOLDER_TOAST,
         { level: 'info' },

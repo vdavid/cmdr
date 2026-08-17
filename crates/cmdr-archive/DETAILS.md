@@ -332,3 +332,12 @@ A REMOTE source copied INTO a zip (an MTP/SMB file dropped onto an archive) now 
 local scratch dir first, then the ordinary local ingest runs against the pulled bytes (source-side pull in
 `apps/desktop/src-tauri/src/file_system/write_operations/archive_edit/DETAILS.md`). The archive itself may be local or
 remote independently.
+
+## `is_writable()` answers for the VOLUME, not for the zip
+
+`ArchiveVolume` declares `is_writable() == false`, which is what the frontend's write guards ultimately read (it travels
+over IPC on `VolumeInfo.capabilities`). That is NOT a claim that a zip can't be edited: a zip CAN, through the app's
+managed archive-edit flow, which rewrites the whole archive through a staged temp and never mutates through this volume.
+❌ Never flip the predicate to track editability — the frontend resolves an in-archive pane's write capability from the
+PATH (`pane/volume-capabilities.ts`, `capabilitiesForPane`), precisely because the volume can't answer it.
+`conformance::assert_writability_matches_the_mutations_offered` pins the declaration against the refusals.

@@ -354,8 +354,7 @@
     })
 
     /**
-     * This pane's volume capabilities, the single A6 source of truth for "what
-     * can a pane on this KIND do". Resolved from `volumeId` AND `currentPath`
+     * This pane's volume capabilities: what this pane is allowed to do. Resolved from `volumeId` AND `currentPath`
      * (kind-from-path): a path inside a supported archive resolves the read-only
      * `archive` kind even though `volumeId` is the writable parent drive; the two
      * virtual ids short-circuit in `volumeKindOf` before the store lookup, and
@@ -366,7 +365,7 @@
     const caps = $derived(capabilitiesForPane(volumeId, currentPath))
 
     // Check if we're viewing the network (special virtual volume). Sourced from
-    // the kind, not a `volumeId === 'network'` string compare (A6).
+    // the kind, not a `volumeId === 'network'` string compare.
     const isNetworkView = $derived(caps.kind === 'network')
 
     /**
@@ -376,13 +375,13 @@
      * `SearchResultsView` which pulls the snapshot from the in-memory store.
      * Most code paths that gate on `isNetworkView` also gate on this; the few
      * exceptions are noted at each call site. Sourced from the kind, not a
-     * `volumeId === 'search-results'` string compare (A6).
+     * `volumeId === 'search-results'` string compare.
      */
     const isSearchResultsView = $derived(caps.kind === 'search-results')
 
     /**
      * The phone-storage caveat for the disk-space readout, only on MTP volumes
-     * (keyed on `caps.kind`, not a volume-id string, per A6). Over USB a phone
+     * (keyed on `caps.kind`, not a volume-id string). Over USB a phone
      * exposes only its shared storage, so the browsable folders add up to far
      * less than the space reported as used; this explains the gap on hover.
      */
@@ -508,12 +507,12 @@
      * which non-list view a pane renders purely as a function of `caps.kind` (plus
      * the MTP device-only connection sub-state, which the kind table doesn't carry
      * — it's a runtime connection state, not a kind). This is NOT a new component
-     * (A8): it's a derived discriminant the existing chain branches on.
+     * it's a derived discriminant the existing chain branches on.
      *
      * Only the KIND-driven branches live here. The runtime-state branches
      * (`unreachable`, SMB reconnecting / gave-up, the inline SMB upgrade login,
      * `loading` / `friendlyError` / `error`) stay per-feature and gate IN FRONT of
-     * this in the chain, with byte-identical precedence to before (L10): a runtime
+     * this in the chain, with byte-identical precedence: a runtime
      * state always wins over the kind view, exactly as the string-compare chain did.
      */
     const paneViewKind = $derived<'network' | 'search-results' | 'mtp-connect' | 'normal'>(
@@ -1043,7 +1042,7 @@
         paneId,
         // The network + search-results skip folds into the kind's `syncsToMcp`
         // capability (false for both), read off the pane's derived `caps` rather
-        // than the two `volumeId ===` deriveds (A6).
+        // than the two `volumeId ===` deriveds.
         getSyncsToMcp: () => caps.syncsToMcp,
         getListingId: () => listingId,
         getTotalCount: () => totalCount,
@@ -1103,7 +1102,7 @@
     const hasParent = $derived(
         computeHasParent({
             // The snapshot no-`..` rule comes from the kind capability, not a
-            // `volumeId === 'search-results'` string compare (A6), read off the
+            // `volumeId === 'search-results'` string compare, read off the
             // pane's derived `caps`.
             hasParentRow: caps.hasParentRow,
             currentPath,

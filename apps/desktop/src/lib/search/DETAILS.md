@@ -126,8 +126,7 @@ pure `resolveSearchTargetVolume` (`search-target-volume.ts`). It feeds three con
 `isNetwork` comes from the typed `volumeKindOf(...) === 'smb'` (`file-explorer/pane/volume-capabilities.ts`), NOT from
 `category === 'network'`. Verified live on 2026-08-04: an SMB share Cmdr couldn't upgrade to a direct connection stays
 an OS mount and the volume list reports it as `attached_volume` with `fsType: 'smbfs'`, so the category test alone told
-a NAS user their boot disk wasn't indexed. `volumeKindOf` is the single frontend classifier (invariant A6) and sees both
-shapes.
+a NAS user their boot disk wasn't indexed. `volumeKindOf` is the single frontend classifier and sees both shapes.
 
 A focused pane whose volume isn't a real filesystem volume in the list (a `search-results://` snapshot) falls back to
 the local root, as does the prop when unset — the same fallback `resolveDefaultScope` makes for the scope.
@@ -565,29 +564,28 @@ is untouched. Snapshot refs therefore persist across pane recreation.
 
 ## Capability flags
 
-The `search-results` row of the per-kind `VolumeCapabilities` table (`lib/file-explorer/pane/volume-capabilities.ts`) is
-`{ canPasteInto: false, canCreateChild: false, canRenameInPlace: false, canBeSource: true, … }`.
-`SearchResultsView.svelte` reads it directly via `capabilitiesForKind('search-results')` (the row context menu's
-`restrict` flag reads `!caps.canRenameInPlace`). Every capability-GUARD consumer reads the table via `capabilitiesFor`
-(the A6 conversion is complete): the F-bar + keyboard dispatch (destination-op guards), clipboard (snapshot-clip
-`pathScheme`, MTP refusal `kind === 'mtp'`), transfer/delete (`!hasBackendListing` source routing + the
-`search-results`-kind-scoped dest block), `pane-commands` (`isSnapshotPane` off `!hasBackendListing`), MCP sync
+The `search-results` row of the per-kind capability defaults (`lib/file-explorer/pane/volume-capabilities.ts`) is
+`{ canWrite: false, canBeSource: true, hasBackendListing: false, … }` — a virtual kind, so it's one of the rows Rust has
+no `Volume` to publish for and the frontend defaults stand. `SearchResultsView.svelte` reads it directly via
+`capabilitiesForKind('search-results')` (the row context menu's `restrict` flag reads `!caps.canWrite`). Every
+capability-GUARD consumer reads the record via `capabilitiesFor`: the F-bar + keyboard dispatch (destination-op guards),
+clipboard (snapshot-clip `kind`, MTP refusal `kind === 'mtp'`), transfer/delete (`!hasBackendListing` source routing +
+the `search-results`-kind-scoped dest block), `pane-commands` (`isSnapshotPane` off `!hasBackendListing`), MCP sync
 (`!syncsToMcp`), and `has-parent` (`hasParentRow`). See `lib/file-explorer/pane/DETAILS.md` § "Volume capabilities" for
 the per-site breakdown. Consumers:
 
 - **F-key bar** (`lib/file-explorer/pane/FunctionKeyBar.svelte` mounted in `routes/(main)/+page.svelte`): derives its
-  `canMkdir` / `canMkfile` (= `caps.canCreateChild`), `canRename` (= `caps.canRenameInPlace`), and `canSourceOps` (=
-  `caps.canBeSource`) off `capabilitiesFor(focusedVolumeId)`. On a `search-results` pane, F2 (Rename), F7 (New folder),
-  and Shift+F4 (New file) render visibly disabled; F5 / F6 / F8 (Copy / Move / Delete) stay enabled because the snapshot
-  row is source-OK.
+  `canMkdir` / `canMkfile` / `canRename` (all = `caps.canWrite`) and `canSourceOps` (= `caps.canBeSource`) off
+  `capabilitiesFor(focusedVolumeId)`. On a `search-results` pane, F2 (Rename), F7 (New folder), and Shift+F4 (New file)
+  render visibly disabled; F5 / F6 / F8 (Copy / Move / Delete) stay enabled because the snapshot row is source-OK.
 - **Right-click context menu**: `showFileContextMenu` IPC takes a `restrictDestinationActions` flag. When `true`, the
   Rust menu builder omits Rename and New folder. Source-side items (Open, Copy, Move, Delete, Show in Finder, Copy
   filename, Copy path) stay. The flag is set when `!canRename && !canMkdir`.
 - **Keyboard shortcut dispatch** (`routes/(main)/command-dispatch.ts::blockedByCapabilities`): catches `⌘V`, `⌘⌥V`,
   `F7`, Shift+F4, `F2` / `file.rename` when the focused pane's capabilities can't satisfy the destination op
-  (`!canPasteInto` / `!canCreateChild` / `!canRenameInPlace`). Surfaces the friendly toast
-  `"Search results aren't a folder. Paste into a real folder instead."` (canonical string
-  `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) — for the `search-results` kind only; a `network` pane keeps its prior silence.
+  (`!canWrite`). Surfaces the friendly toast `"Search results aren't a folder. Paste into a real folder instead."`
+  (canonical string `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) — for the `search-results` kind only; a `network` pane keeps
+  its prior silence.
 
 ### Cross-snapshot purge
 

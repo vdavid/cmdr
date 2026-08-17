@@ -23,7 +23,7 @@ import { ROOT_VOLUME_ID } from '$lib/indexing'
  * couldn't upgrade to a direct connection stays an OS mount under `/Volumes`, and the
  * volume list hands it back as `attached_volume` with `fsType: 'smbfs'`. Voicing that
  * as a local drive tells a NAS user their boot disk isn't indexed. `volumeKindOf` is
- * the single frontend classifier (`file-explorer/pane/CLAUDE.md`, invariant A6) and
+ * the single frontend classifier (`file-explorer/pane/CLAUDE.md`) and
  * covers both shapes.
  */
 function isNetworkVolume(info: VolumeInfo): boolean {

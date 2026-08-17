@@ -14,7 +14,7 @@ re-exports every submodule item, keeping `crate::volumes_linux::X` paths stable.
 - **`fs_type.rs`**: trash support, `VIRTUAL_FS_TYPES`, `get_mount_point`, `get_volume_space` (`statvfs`).
 - **`ids.rs`**: `volume_id_for_mount` and its `/dev/disk/by-uuid` lookup. **`cloud.rs`**: cloud-sync dirs.
 - **`smb.rs`**: CIFS mount-source and GVFS dirname parsing, `get_network_mounts`, plus
-  `enrich_from_volume_registry` (the macOS twin's capability half; keep the two in step, the frontend doesn't branch on
+  `enrich_from_volume_registry` (the macOS twin's capability half; keep them in step, the frontend doesn't branch on
   platform).
 - **`watcher.rs`**: two inotify watchers (see must-knows). Diffs known state, registers/unregisters with
   `VolumeManager`, emits `volume-mounted` / `volume-unmounted` Tauri events.
@@ -49,9 +49,8 @@ Location categories: `Favorite` (user-editable, from the `favorites/` store, exi
 - **GVFS network mounts: `supports_trash: false`, `is_ejectable: true`.** GVFS FUSE mounts don't implement the
   FreeDesktop trash spec (`gio trash` silently fails), so the UI must offer "delete", not "move to trash". Ejectable
   because users expect to disconnect an SMB share.
-- **Removable detection is path-based** (`/run/media/$USER/` or `/media/$USER/` → `is_ejectable`). `get_username()` falls
-  back `$USER` → `$LOGNAME` → empty; empty makes everything non-ejectable, a safe default (wrongly unmountable is worse
-  than wrongly non-ejectable).
+- **Removable detection is path-based** (`/run/media/$USER/` or `/media/$USER/` → `is_ejectable`). `get_username()`
+  falls back `$USER` → `$LOGNAME` → empty; empty makes everything non-ejectable, the safe default.
 - **`is_submount()` filters bind mounts nested under a real mount**, so dev `node_modules` / build-dir bind mounts don't
   clutter the sidebar as separate volumes.
 

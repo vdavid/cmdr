@@ -81,7 +81,7 @@ vi.mock('$lib/file-explorer/pane/focused-pane-reads', () => ({
   getFocusedPanePath: () => m.getPanePath(),
 }))
 
-// Empty store ⇒ `local` falls to the listable default (canPasteInto: true).
+// Empty store ⇒ `local` falls to the listable default (canWrite: true).
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
 
 vi.mock('$lib/ui/toast', () => ({

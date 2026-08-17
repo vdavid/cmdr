@@ -38,10 +38,8 @@ Everything re-exports from `mod.rs` (`LocationInfo` / `LocationCategory`, consts
   `resolve_path_volume_fast`, or they drift.** Gate the disk-image probe to local mounts (it resolves the path, so a
   hung mount stalls it), and don't read read-only as a disk-image proxy: a writable `.dmg` is read-write.
 - **`LocationInfo` enrichment from `VolumeManager` lives only in `enrich_from_volume_registry`** (three callers); new
-  enrichment fields go there once. It fills `capabilities` (the backend's `Volume::capabilities()`) and
-  `smb_connection_state`; a location with no registered volume keeps `capabilities: None` and the frontend falls back to
-  its per-kind defaults. ❌ Never fill `capabilities` from a discovery constructor: discovery knows the mount, the
-  registry knows the backend.
+  enrichment fields go there once. It fills `capabilities` and `smb_connection_state`. ❌ Never fill `capabilities` from
+  a discovery constructor: discovery knows the mount, the registry knows the backend.
 - **`append_mtp_volumes` is duplicated** across `commands/volumes.rs` and `volume_broadcast.rs` (plus Linux twins), so
   set every MTP-derived field (like `usb_speed`) in BOTH or the bootstrap ships volumes missing it.
 - **`get_main_volume` / `get_attached_volumes` / `get_volume_space` wrap their bodies in

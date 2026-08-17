@@ -16,7 +16,7 @@ export interface PaneMcpSyncDeps {
    * kinds — they have other owners (see `skipMcpFileSync` / `syncPaneStateToMcp`).
    * FilePane supplies this from its derived caps, so the gate reads the kind
    * capability, not a `getIsNetworkView() || getIsSearchResultsView()` derivation
-   * off raw `volumeId ===` deriveds (invariant A6).
+   * off raw `volumeId ===` deriveds.
    */
   getSyncsToMcp: () => boolean
   getListingId: () => string

@@ -214,9 +214,9 @@ Three entry paths start a transfer, and they all prepare it through `pane/transf
 `transfer-entry.ts` exposes two pure functions every path calls:
 
 - **`checkTransferDestinationGuard(destVolumeId, volumes)`** — the shared destination guard chain. Order: search-results
-  refusal (not-a-folder toast, gated `!canPasteInto` scoped to the `search-results` kind so the wording stays correct)
-  then read-only alert (off `VolumeInfo.isReadOnly`). Returns `{ ok: true }` or a `{ ok: false, alert | toast }` the
-  caller surfaces through its own dialog/toast plumbing. **The copy is the E2E-asserted contract — don't reword it.** An
+  refusal (not-a-folder toast, gated `!canWrite` scoped to the `search-results` kind so the wording stays correct) then
+  read-only alert (off `VolumeInfo.isReadOnly`). Returns `{ ok: true }` or a `{ ok: false, alert | toast }` the caller
+  surfaces through its own dialog/toast plumbing. **The copy is the E2E-asserted contract — don't reword it.** An
   unknown destination id (no `VolumeInfo`) is allowed through: we can't prove read-only, and blocking on "unknown" would
   break a transfer to a freshly-mounted volume.
 - **`resolveSourceVolumeId(paths, volumes, resolvePathVolume)`** — resolves the REAL source volume for dropped/pasted

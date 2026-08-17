@@ -65,12 +65,12 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // A read-only archive (tar / 7z) is browse + extract only: refuse the write
     // up front rather than letting the user type a name and hit the backend's
     // `ReadOnlyDevice`. Kind-from-path: the pane's `volumeId` is the writable
-    // parent drive, so the PATH decides. A writable zip has the three write flags
-    // on and falls through to the managed archive-edit flow.
+    // parent drive, so the PATH decides. A writable zip has `canWrite` on and
+    // falls through to the managed archive-edit flow.
     // The archive-path branch of `capabilitiesForPane` ignores fsType/category
     // (the boundary segment decides), so passing only the id + path is enough.
     const paneCaps = capabilitiesForPane(volId, access.getPanePath(pane))
-    if (paneCaps.kind === 'archive' && !paneCaps.canCreateChild) {
+    if (paneCaps.kind === 'archive' && !paneCaps.canWrite) {
       return {
         title: tString('fileExplorer.readOnly.archiveTitle'),
         message: tString('fileExplorer.readOnly.archiveMessage'),
@@ -353,7 +353,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // Snapshot source pane: no backend listing exists, so the listing-id-driven
     // builders don't apply — build from the snapshot's selected (or cursor)
     // entries. Routed off the kind's `hasBackendListing` capability, not a
-    // `volumeId === 'search-results'` string compare (A6). Among kinds that reach
+    // `volumeId === 'search-results'` string compare. Among kinds that reach
     // this transfer opener, search-results is the only `!hasBackendListing` one
     // (a network pane can't be a transfer source — `canBeSource: false`).
     if (!capabilitiesFor(access.getPaneVolumeId(pane)).hasBackendListing) {
@@ -572,7 +572,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // file IS real, the confirmation dialog shows the real path, and on success
     // the entry is also removed from every other snapshot that contained it (see
     // `dialog-state::handleTransferComplete`). Routed off `hasBackendListing`,
-    // not a `volumeId === 'search-results'` string compare (A6); search-results
+    // not a `volumeId === 'search-results'` string compare; search-results
     // is the only source-capable `!hasBackendListing` kind to reach here.
     if (!capabilitiesFor(focusedVolId).hasBackendListing) {
       openDeleteFromSearchResults(permanent, autoConfirm, mcpRequestId, initiator)

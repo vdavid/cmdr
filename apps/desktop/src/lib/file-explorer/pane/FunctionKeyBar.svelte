@@ -44,7 +44,7 @@
     /**
      * Capabilities for the focused pane, read straight off the explorer store.
      * The button `disabled` flags branch on the `VolumeCapabilities` record
-     * (invariant A6 — capabilities, not a `volumeId === 'search-results'` string
+     * (capabilities, not a `volumeId === 'search-results'` string
      * compare), the same source the dispatch guard and the context menu read. A
      * `search-results://` snapshot pane has no real folder to create into /
      * rename within, so mkdir / mkfile / rename render visibly disabled; per
@@ -53,20 +53,20 @@
      * stay enabled (`canBeSource: true`).
      *
      * Reading the focused pane's active-tab `volumeId` through the store keeps
-     * this reactive without the old `onFocusedVolumeChange` callback → page
-     * `$state` → prop chain (A9: a store getter inside a `$derived` is reactive;
-     * a plain `explorerRef` method call isn't). Per-pane read only (P1): we touch
-     * the focused pane's manager, never both. `capabilitiesFor` resolves the
-     * `fsType`/`category` from the volume store, so we pass just the volumeId.
+     * this reactive across the component boundary: a store getter inside a
+     * `$derived` is reactive, a plain `explorerRef` method call isn't. Per-pane
+     * read only (P1): we touch the focused pane's manager, never both.
+     * `capabilitiesFor` resolves the `VolumeInfo` from the volume store, so we
+     * pass just the volumeId.
      */
     const caps = $derived(
         capabilitiesFor(
             getActiveTab(explorerState.getTabMgr(explorerState.getFocusedPane())).volumeId,
         ),
     )
-    const canMkdir = $derived(caps.canCreateChild)
-    const canMkfile = $derived(caps.canCreateChild)
-    const canRename = $derived(caps.canRenameInPlace)
+    const canMkdir = $derived(caps.canWrite)
+    const canMkfile = $derived(caps.canWrite)
+    const canRename = $derived(caps.canWrite)
     /** Source-side actions (copy/move/delete). The snapshot pane's rows are real files. */
     const canSourceOps = $derived(caps.canBeSource)
 

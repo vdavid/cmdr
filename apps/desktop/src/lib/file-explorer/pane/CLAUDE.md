@@ -15,10 +15,11 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   startup must call `updateFocusedPane` or Rust's left default misdirects Ask Cmdr and MCP.
 - **Explorer-store fields are module-private with one mutator each** (`cmdr/no-explorer-state-writes`); `cursorIndex`,
   selection, and listing UI state stay LOCAL to `FilePane` (perf P3).
-- **Guard logic branches on `VolumeCapabilities`, ❌ never volume-id strings** (invariant A6). `volume-capabilities.ts`
-  is the single FE source of truth; per-VOLUME runtime flags (`isReadOnly`, …) stay on `VolumeInfo`. `capabilitiesFor` /
-  `volumeKindOf` stay TOTAL (unknown ids fall to `local`); the tint classifier `volumeKindFor` is separate and ❌ never
-  gets that default.
+- **Guard logic branches on `VolumeCapabilities`, ❌ never volume-id strings.** Rust answers what a volume CAN DO
+  (`VolumeInfo.capabilities` → `canWrite` / `canBeSource`); `volume-capabilities.ts` classifies what it IS and defaults
+  where Rust has no volume. ❌ Never source KIND from the backend: an un-upgraded SMB share is served by a local one.
+  `capabilitiesFor` / `volumeKindOf` stay TOTAL (unknown ids fall to `local`); the tint classifier `volumeKindFor` is
+  separate and ❌ never gets that default.
 - **Archive panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone** — a
   pane inside an archive keeps the parent DRIVE's `volumeId`. Zip is WRITABLE, tar/7z READ-ONLY.
 - **The snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false`, AND
@@ -26,20 +27,19 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   sticks on a real path.
 - **BIRTH CONTEXT and an ADOPTED operation are separate slots in separate MODULES.** `adopted-operation.svelte.ts` and
   `archive-password-flow.svelte.ts` get a read-only `hasBirthContext()` and argument-free commands, ❌ never the props,
-  a writer, or a getter. ❌ Never read the progress slot's occupancy off `showTransferProgressDialog`. DETAILS § "Birth
-  context".
+  a writer, or a getter, and ❌ never read the progress slot's occupancy off `showTransferProgressDialog`. DETAILS §
+  "Birth context".
 - **A dialog on screen refuses the commands that START a file operation, ❌ never the ones that STEER a running one.**
-  Cancel, pause, rollback, queue, and answering a clash must keep working with the progress dialog up. Which dialogs
-  block is declared per entry in `$lib/ui/dialog-registry.ts` (a new one won't compile without a verdict); the four
-  refusal layers, and why greying the menu can't be the guard, are DETAILS § "The operation-start gate".
+  Cancel, pause, rollback, queue, and answering a clash keep working with the progress dialog up. Which dialogs block is
+  declared per entry in `$lib/ui/dialog-registry.ts` (a new one won't compile without a verdict); the four refusal
+  layers are DETAILS § "The operation-start gate".
 - **Every dialog renders inside ONE `<svelte:boundary>` in `DialogManager.svelte`**: `show*` flips before the dialog
   renders and suppresses pane keys, so a mid-render throw would wedge the keyboard with a blank screen.
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, A5): mutate the store and let
   it react; ❌ don't scatter `saveAppStatus` / `saveTabsForPaneSide` across nav paths.
 - **Three first-run-layout guardrails, each looking like a tidy-up. ❌ Never "simplify" one away.** `markAlreadyLaidOut`
-  leaves an install that already has pane state untouched (a wrong fire is unrecoverable); `~/Downloads` is probed only
-  after Full Disk Access is confirmed (else a TCC dialog); `loadPersistedState` persists an applied layout itself (the
-  nav-state subscriber never saves its seed). DETAILS § "First-run pane layout".
+  leaves an install that already has pane state untouched; `~/Downloads` is probed only after Full Disk Access is
+  confirmed; `loadPersistedState` persists an applied layout itself. DETAILS § "First-run pane layout".
 - **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }` always
   switches. Resolve bare paths to a `Location` at the edge. Refusal `message` strings are byte-pinned.
 - **`DualPaneExplorer.svelte` and `FilePane.svelte` are `file-length`-flagged**: don't add to them, and ❌ don't carve
@@ -47,5 +47,5 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 
 The file table, the key-dispatch focus guard's dialog exemption, the walk-up fallback's volume re-resolve, `getTabMgr`'s
 live `$state` holder, the select-only cursor jump, the MTP clipboard gate, self-drag identity, the volume tint's
-`hasColorMix` fallback, `ErrorPane`'s ways out, and the A6 residue inventory: `DETAILS.md`. Read it before any
-non-trivial work here: editing, planning, reorganizing, or advising.
+`hasColorMix` fallback, `ErrorPane`'s ways out, and why the remaining volume-id compares are not guards: `DETAILS.md`.
+Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

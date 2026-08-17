@@ -102,7 +102,7 @@ describe('checkTransferDestinationGuard', () => {
   })
 
   it('allows a zip destination (path crosses a zip): it is a writable target now', () => {
-    // A zip is the writable `archive` kind (`canPasteInto: true`), so pasting INTO
+    // A zip is the writable `archive` kind (`canWrite: true`), so pasting INTO
     // it passes the guard; the backend routes the transfer into the archive-edit
     // flow. The dest volumeId is the parent drive, the archive-ness is in the PATH.
     const result = checkTransferDestinationGuard('root', [ROOT], '/Users/me/foo.zip/inner')

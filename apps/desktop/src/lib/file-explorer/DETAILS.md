@@ -200,7 +200,7 @@ Second virtual-volume namespace alongside `network`. `volumeId === 'search-resul
 `VolumeCapabilities`: `FilePane`'s `paneViewKind` derived (`caps.kind === 'search-results'`) picks `SearchResultsView`
 in the `{#if/elseif}` chain, and the "is there a real directory" per-feature gates (git lookups, listing watcher,
 dir-exists poll, MCP file sync) read `!caps.hasBackendListing` — the same gate that skips a `network` pane. See
-`pane/DETAILS.md` § "Volume capabilities" for the per-site breakdown (invariant A6 — capabilities, not a
+`pane/DETAILS.md` § "Volume capabilities" for the per-site breakdown (capabilities, not a
 `volumeId === 'search-results'` string compare).
 
 `SearchResultsView` reads the snapshot from `$lib/search/snapshot-store.svelte` and feeds its entries into `FullList`

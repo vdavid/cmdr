@@ -200,6 +200,24 @@ export type LocationCategory =
 export type SmbConnectionState = 'direct' | 'os_mount' | 'disconnected'
 
 /**
+ * What the registered backend for a volume can do, straight from Rust's
+ * `Volume::capabilities()`. Mirrors the `VolumeCapabilities` type in
+ * `bindings.ts`; the canonical answer for each field lives on the `Volume`
+ * trait, so ❌ never re-derive one of these from an id, an `fsType`, or a
+ * category.
+ *
+ * Absent when no backend is registered for the volume (a favorite, or a volume
+ * discovery found before registration). Consumers fold it over the per-kind
+ * defaults via `pane/volume-capabilities.ts`.
+ */
+export interface VolumeBackendCapabilities {
+  /** Files and folders can be created, renamed, and deleted here. */
+  isWritable: boolean
+  /** Files can be read out of here, so this volume can be the SOURCE of a copy or a move. */
+  canExport: boolean
+}
+
+/**
  * Information about a location (volume, folder, or cloud drive).
  */
 export interface VolumeInfo {
@@ -227,6 +245,8 @@ export interface VolumeInfo {
   smbConnectionState?: SmbConnectionState
   /** Negotiated USB link speed. Only set for MTP/mobile volumes. */
   usbSpeed?: UsbSpeed
+  /** What the registered backend can do. Absent when no backend is registered for this id. */
+  capabilities?: VolumeBackendCapabilities | null
 }
 
 /**

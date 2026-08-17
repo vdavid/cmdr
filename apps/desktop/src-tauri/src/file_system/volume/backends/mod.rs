@@ -47,9 +47,13 @@ mod local_posix_test;
 // against a virtual MTP device), so it carries that gate on top.
 #[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
 mod mtp_archive_test;
-// `mtp_delete_test` pins `Volume::delete`'s non-recursion contract on the one
-// backend that has to implement it rather than inherit it; every test drives a
-// virtual device, so it carries the same gate.
+// `mtp_conformance_test` holds the shared `volume::conformance` assertions this
+// backend runs; `mtp_delete_test` is separate because the non-recursion contract
+// is the one MTP has to implement rather than inherit, with enough
+// backend-specific scaffolding to earn its own file. Both drive a virtual
+// device, so both carry that gate.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
+mod mtp_conformance_test;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
 mod mtp_delete_test;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]

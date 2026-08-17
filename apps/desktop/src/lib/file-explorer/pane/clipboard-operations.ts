@@ -30,15 +30,14 @@ type DialogState = ReturnType<typeof createDialogState>
  * clipboard (virtual paths can't go on the OS clipboard) — the copy/cut/paste
  * refusal that points the user at F5/F6 instead.
  *
- * Reads the kind off the capability table rather than a `startsWith('mtp-')`
- * string compare (invariant A6). The MTP kind is what carries
- * `supportsSystemClipboard: false`; we key on `kind === 'mtp'` rather than the
- * raw flag because `network` and `search-results` ALSO lack a system clipboard,
- * and an MTP-worded toast firing on a (reachable) network paste would be a new,
- * mis-worded toast (PR3). On the live clipboard-time pane id set this is
- * byte-equivalent to the old `volumeId.startsWith('mtp-')` gate — live MTP panes
- * carry `mtp-{…}` ids, which classify to `kind === 'mtp'`; nothing else does
- * (pinned by the equivalence test in `clipboard-operations.test.ts`).
+ * Reads the kind off the capability record rather than a `startsWith('mtp-')`
+ * string compare. ❌ Don't generalize this to a "no system clipboard" capability:
+ * `network` and `search-results` lack one too, and an MTP-worded toast firing on
+ * a reachable network paste would be a new, mis-worded toast. On the live
+ * clipboard-time pane id set this is byte-equivalent to the old
+ * `volumeId.startsWith('mtp-')` gate — live MTP panes carry `mtp-{…}` ids, which
+ * classify to `kind === 'mtp'`; nothing else does (pinned by the equivalence test
+ * in `clipboard-operations.test.ts`).
  */
 function isMtpClipboardRefusal(volumeId: string): boolean {
   return capabilitiesFor(volumeId).kind === 'mtp'
@@ -110,9 +109,9 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
   function getSnapshotClipboardPaths(): { paths: string[]; snapshotId: string } | null {
     const focusedVolId = access.getPaneVolumeId(access.getFocusedPane())
     // The snapshot-clip path applies to the search-results namespace. Read the
-    // pane's path scheme off the capability table rather than a
-    // `volumeId === 'search-results'` string compare (A6).
-    if (capabilitiesFor(focusedVolId).pathScheme !== 'search-results') return null
+    // pane's KIND off the capability record rather than a
+    // `volumeId === 'search-results'` string compare.
+    if (capabilitiesFor(focusedVolId).kind !== 'search-results') return null
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
     // Extract the snapshot id from the URL — pure namespace mechanics, kept as-is.
@@ -243,7 +242,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
 
       // Check MTP before reading clipboard; MTP paste is always rejected,
       // no point reading the system clipboard just to reject it. The capability
-      // decides the refusal, not a `startsWith('mtp-')` string (A6). The
+      // decides the refusal, not a `startsWith('mtp-')` string. The
       // MTP-specific copy ("Use F5…") stays separate from the shared guard
       // because it points the user at the F5/F6 flow MTP paste lacks.
       const focused = access.getFocusedPane()

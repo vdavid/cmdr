@@ -24,27 +24,23 @@ crate.
   via `specta::Type`, so the comment lands in `bindings.ts` too.
 - **`specta` stays pinned to `=2.0.0-rc.24`, identical to the app's.** Two copies in one graph break bindings
   generation.
-- **`Volume::capabilities()` is a PURE FOLD of the trait's own predicates and travels over IPC.** ❌ Never override it,
-  never compute inside it: grow the surface by adding a predicate and folding it. What belongs in the published struct
-  vs. what stays a backend-side predicate: `src/volume/capabilities.rs`.
+- **`Volume::capabilities()` is a PURE FOLD of the trait's predicates, published over IPC.** ❌ Never override it: grow
+  the surface by adding a predicate. What ships vs. what stays a predicate: `src/volume/capabilities.rs`.
 - **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes
   stale after a copy. `DETAILS.md` § "What the app kept".
 - **❌ Never gate BEHAVIOR on `cfg(test)` here; use `any(test, feature = "testing")`.** `cfg(test)` is off in a
   consumer's test build, so the arm flips and production behavior runs inside their suite: compiles clean, surfaces as
   someone else's flake. `DETAILS.md` § "Gotcha: `cfg(test)`-conditioned BEHAVIOR". Turn `testing` on through a
   dev-dependency, never a normal one; that's what keeps it out of shipped builds.
-- **`InMemoryVolume` honors the `Volume` contracts data safety LEANS on**, not just the happy path: `delete` refuses a
-  non-empty directory, `rename` of a directory carries its subtree. ❌ Never relax a contract to make a test green; the
-  double is the oracle. It also LIES on request (`set_stat_failing`, `set_reported_size`, `with_delete_failing`, …), so
-  a defense against a hostile backend is testable rather than assumed. `DETAILS.md` § "The faults `InMemoryVolume` can
-  be told to have".
-- **`volume::conformance` holds the promises a backend can't quietly opt out of**, one assertion each, and EVERY
-  backend's suite calls the ones it can run: `delete` never recurses (one file, or one EMPTY directory — the same-volume
-  move keeps a Skipped child's only copy purely by letting the parent's delete fail); `rename(force = false)` refuses an
-  existing destination, touching neither node; `create_file` refuses rather than truncates; `create_directory_all`
-  reports a pre-existing leaf as `AlreadyExisted`; `is_writable()` and the mutations a backend offers agree, in
-  whichever direction it claims. Each backend earns each one by a DIFFERENT mechanism, which is why
-  it's asserted rather than assumed. `DETAILS.md` § "`InMemoryVolume` honors the contracts".
+- **`InMemoryVolume` honors the `Volume` contracts data safety LEANS on**, not just the happy path. ❌ Never relax one
+  to make a test green; the double is the oracle. It also LIES on request (`set_stat_failing`, `with_delete_failing`,
+  …), so a defense against a hostile backend is testable rather than assumed. `DETAILS.md` § "The faults
+  `InMemoryVolume` can be told to have".
+- **`volume::conformance` holds the promises a backend can't quietly opt out of** (`delete` never recurses,
+  `rename(force = false)` refuses, `create_file` won't truncate, `create_directory_all` reports an existing leaf
+  honestly, `is_writable()` matches the mutations offered), and EVERY backend's suite calls the ones it can run. Each
+  earns each one by a DIFFERENT mechanism, which is why it's asserted rather than assumed. Why each matters:
+  `DETAILS.md` § "`InMemoryVolume` honors the contracts".
 - **❌ Never build a volume ID by hand, or by stripping characters.** `volume::ids` is the one funnel; an ID keys the
   index DB, `lastUsedPaths`, tab state, and routing, so a lossy one hands two disks one identity and sends reads (and
   deletes) to the wrong disk. Add a constructor there.

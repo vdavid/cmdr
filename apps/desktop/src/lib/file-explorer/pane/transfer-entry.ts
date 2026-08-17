@@ -51,14 +51,14 @@ export type TransferGuardResult =
  * matches the original F5/F6 opener:
  *
  * 1. Search-results destination → not a folder, refuse with a toast. Gated on
- *    `!canPasteInto` SCOPED to the `search-results` kind so the wording stays
+ *    `!canWrite` SCOPED to the `search-results` kind so the wording stays
  *    correct (a network destination shares the `false` capability but isn't a
  *    misrendered "not a folder").
  * 2. Read-only destination → refuse with an alert. Read off the destination's
  *    `VolumeInfo.isReadOnly` (a per-volume runtime flag, not a kind capability).
  *
  * A zip destination is NOT refused: it's the writable `archive` kind
- * (`canPasteInto: true`), so it passes step 1 and the transfer routes into the
+ * (`canWrite: true`), so it passes step 1 and the transfer routes into the
  * archive-edit flow (a zip on a read-only VolumeInfo is still caught by step 2).
  *
  * Returns `ok` when none fire. An unknown destination volume id (no `VolumeInfo`)
@@ -76,13 +76,13 @@ export function checkTransferDestinationGuard(
   destPath?: string,
 ): TransferGuardResult {
   const destCaps = capabilitiesForPane(destVolumeId, destPath)
-  if (!destCaps.canPasteInto && destCaps.kind === 'search-results') {
+  if (!destCaps.canWrite && destCaps.kind === 'search-results') {
     return { ok: false, toast: { message: SEARCH_RESULTS_NOT_A_FOLDER_TOAST, level: 'warn' } }
   }
   // A read-only archive (tar / 7z) can't accept a paste/move-in: browse + extract
   // only. Refuse up front rather than routing to the archive-edit flow that the
-  // backend would reject. A writable zip has `canPasteInto: true` and falls through.
-  if (!destCaps.canPasteInto && destCaps.kind === 'archive') {
+  // backend would reject. A writable zip has `canWrite: true` and falls through.
+  if (!destCaps.canWrite && destCaps.kind === 'archive') {
     return {
       ok: false,
       alert: {

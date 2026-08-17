@@ -467,20 +467,20 @@ describe('getSnapshotClipboardPaths', () => {
 })
 
 /**
- * PR3 / A6: the MTP clipboard refusal moved from `volumeId.startsWith('mtp-')`
- * to the capability table's `kind === 'mtp'`. Pin that the converted gate is
- * byte-equivalent to the old string compare across every volumeId a focused
- * pane can hold when a clipboard op fires — so no user-visible toast changes.
+ * The MTP clipboard refusal reads the capability record's `kind === 'mtp'`
+ * rather than a `volumeId.startsWith('mtp-')` string compare. Pin that the two
+ * agree across every volumeId a focused pane can hold when a clipboard op fires,
+ * so no user-visible toast changes.
  *
  * The capability MTP arm (`isMtpVolumeId || category === 'mobile_device'`) is
  * BROADER than `startsWith('mtp-')` (it also catches colon-form ids), but no
  * live clipboard-time pane is colon-form-only: real MTP panes carry
  * `mtp-{location}` / `mtp-{device}:{storage}` ids, both `startsWith('mtp-')`.
  * And `network` / `search-results` (which also lack a system clipboard) must
- * NOT be MTP-refused — `kind === 'mtp'` keeps them out, unlike a raw
- * `!supportsSystemClipboard` read would.
+ * NOT be MTP-refused — `kind === 'mtp'` keeps them out, unlike a generalized
+ * "no system clipboard" capability would.
  */
-describe('MTP clipboard-refusal equivalence (PR3 / A6)', () => {
+describe('MTP clipboard-refusal equivalence', () => {
   // The live set of volumeIds a focused pane can hold when copy/cut/paste fires.
   const liveClipboardPaneIds = [
     'root', // local main volume

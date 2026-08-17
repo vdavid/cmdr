@@ -509,9 +509,9 @@ describe('openTransferDialog', () => {
   })
 
   it('does not show the search-results toast for a network destination (PR3: kind-scoped)', async () => {
-    // A network dest also has `canPasteInto: false`, but the dest-block toast is
+    // A network dest also has `canWrite: false`, but the dest-block toast is
     // scoped to the search-results KIND. Historically a network dest fell through
-    // here silently; converting the gate to `!canPasteInto` must not start
+    // here silently; converting the gate to `!canWrite` must not start
     // toasting it. The transfer then proceeds past the guard as before.
     const access = buildAccess({
       focusedPane: 'left',

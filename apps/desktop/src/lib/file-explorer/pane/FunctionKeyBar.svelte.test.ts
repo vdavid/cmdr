@@ -1,6 +1,6 @@
 /**
  * Store-driven F-bar tests: the button `disabled` flags now read the focused
- * pane's `VolumeCapabilities` (invariant A6), not a `volumeId === 'search-results'`
+ * pane's `VolumeCapabilities`, not a `volumeId === 'search-results'`
  * string compare. These seed the `explorerState` singleton to a given kind and
  * assert the resulting disablement, pinning the M2 capability wiring at the
  * component level.
@@ -46,7 +46,7 @@ describe('FunctionKeyBar capability disablement', () => {
   })
 
   it('a search-results pane disables F2 / F7 (destination ops), keeps F5 / F6 / F8 (source ops)', () => {
-    // caps: canRenameInPlace / canCreateChild false ⇒ F2, F7 disabled;
+    // caps: canWrite false ⇒ F2, F7 disabled;
     // canBeSource true ⇒ F5, F6, F8 enabled (snapshot rows are real files).
     const [f2Rename, f3View, f4Edit, f5Copy, f6Move, f7NewFolder, f8Delete] = mountOn('search-results')
 

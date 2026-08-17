@@ -119,10 +119,10 @@ per family in `command-handlers/DETAILS.md` § "The exempt families". The core s
 ## Capability guard
 
 `blockedByCapabilities` reads `capabilitiesFor(getFocusedPaneVolumeId())`, the same source the F-bar `disabled` flags
-and the context menu read (invariant A6). F-bar buttons and context menus disable visibly at the source; this guard
-catches the shortcut-driven path that bypasses the UI. The toast (`SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) fires only for
-the `search-results` kind: a `network` pane has the same `false` destination caps, but those ops are unreachable through
-its UI and the shortcut path falls through silently to the explorer no-op, so network keeps its prior silence. The
+and the context menu read. F-bar buttons and context menus disable visibly at the source; this guard catches the
+shortcut-driven path that bypasses the UI. The toast (`SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) fires only for the
+`search-results` kind: a `network` pane has the same `false` destination caps, but those ops are unreachable through its
+UI and the shortcut path falls through silently to the explorer no-op, so network keeps its prior silence. The
 capability decides the block; the kind decides the toast.
 
 One exemption: `edit.paste` with a text input focused (`isTextInputFocused`) skips the guard entirely, because that

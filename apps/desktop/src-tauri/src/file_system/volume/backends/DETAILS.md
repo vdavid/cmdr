@@ -427,3 +427,15 @@ would keep feeding paths that no longer name anything.
 `LocalPosixVolume` routes every non-forced rename through the shared atomic-exclusive primitive. This applies equally
 to `/`, attached disks, Dropbox, iCloud, and other local POSIX roots registered with non-root volume IDs. Forced
 renames retain normal POSIX replacement semantics because the caller explicitly authorized replacement.
+
+## Where the shared conformance assertions live
+
+`cmdr_fs::volume::conformance` holds the promises no backend may quietly opt out of, and each backend runs the ones it
+can: `mtp_conformance_test.rs` and `smb_conformance_test.rs` collect them per backend, LocalPosix keeps its in
+`local_posix_test.rs`, and `mtp_delete_test.rs` stays separate because the non-recursion contract is the one MTP has to
+IMPLEMENT rather than inherit (`MtpDeleteScope`), with enough scaffolding to earn its own file.
+
+**Gotcha: a virtual-MTP test must UNREGISTER its device, not just disconnect.** `setup_virtual_mtp_device()` registers a
+device over a fresh `TempDir`; leaving it registered means the next test in the same binary connects to a stale storage
+handle over a directory that's gone, and fails on its first write with a bare `GeneralError` that says nothing about the
+cause. Pair every setup with `unregister_virtual_mtp_device(fixture.location_id)`.

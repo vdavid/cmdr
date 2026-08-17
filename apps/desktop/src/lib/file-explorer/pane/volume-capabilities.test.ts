@@ -1,11 +1,13 @@
 /**
- * Tests for the per-kind volume-capability table + the unified classifier.
+ * Tests for the volume-capability resolution chain.
  *
- * Three concerns:
- *  1. The frozen per-kind table: each kind maps to its exact row + frozenness + purity.
+ * Four concerns:
+ *  1. The frozen per-kind defaults: each kind maps to its exact row + frozenness + purity.
  *  2. `volumeKindOf`: every real/virtual input classifies correctly, including
  *     the favorite edge and the real-but-unclassified default (totality).
- *  3. `capabilitiesFor`: the store-reading convenience, including the
+ *  3. `withBackendCapabilities`: the backend's published answer wins over the
+ *     per-kind default, and an absent one leaves the default standing.
+ *  4. `capabilitiesFor`: the store-reading convenience, including the
  *     store-lookup-miss path (virtual ids + stale ids).
  *
  * The classifier-unify byte-stability (`volumeKindFor` / tint still returns
@@ -30,6 +32,7 @@ import {
   capabilitiesForKind,
   capabilitiesFor,
   capabilitiesForPane,
+  withBackendCapabilities,
   pathInsideArchive,
   archiveNameFromPath,
 } from './volume-capabilities'
@@ -44,80 +47,56 @@ function vol(partial: Partial<VolumeInfo> & { id: string }): VolumeInfo {
   }
 }
 
-describe('capabilitiesForKind — the frozen per-kind table', () => {
+describe('capabilitiesForKind — the frozen per-kind defaults', () => {
   const expected: Record<VolumeKind, VolumeCapabilities> = {
     local: {
       kind: 'local',
       hasBackendListing: true,
-      canPasteInto: true,
-      canCreateChild: true,
-      canRenameInPlace: true,
+      canWrite: true,
       canBeSource: true,
-      supportsSystemClipboard: true,
       hasParentRow: true,
       syncsToMcp: true,
-      pathScheme: 'filesystem',
     },
     smb: {
       kind: 'smb',
       hasBackendListing: true,
-      canPasteInto: true,
-      canCreateChild: true,
-      canRenameInPlace: true,
+      canWrite: true,
       canBeSource: true,
-      supportsSystemClipboard: true,
       hasParentRow: true,
       syncsToMcp: true,
-      pathScheme: 'smb',
     },
     mtp: {
       kind: 'mtp',
       hasBackendListing: true,
-      canPasteInto: true,
-      canCreateChild: true,
-      canRenameInPlace: true,
+      canWrite: true,
       canBeSource: true,
-      supportsSystemClipboard: false,
       hasParentRow: true,
       syncsToMcp: true,
-      pathScheme: 'mtp',
     },
     network: {
       kind: 'network',
       hasBackendListing: false,
-      canPasteInto: false,
-      canCreateChild: false,
-      canRenameInPlace: false,
+      canWrite: false,
       canBeSource: false,
-      supportsSystemClipboard: false,
       hasParentRow: false,
       syncsToMcp: false,
-      pathScheme: 'smb',
     },
     'search-results': {
       kind: 'search-results',
       hasBackendListing: false,
-      canPasteInto: false,
-      canCreateChild: false,
-      canRenameInPlace: false,
+      canWrite: false,
       canBeSource: true,
-      supportsSystemClipboard: false,
       hasParentRow: false,
       syncsToMcp: false,
-      pathScheme: 'search-results',
     },
     archive: {
       kind: 'archive',
       hasBackendListing: true,
-      // Zip is writable: the three write flags are true (managed archive-edit flow).
-      canPasteInto: true,
-      canCreateChild: true,
-      canRenameInPlace: true,
+      // Zip is writable through the managed archive-edit flow.
+      canWrite: true,
       canBeSource: true,
-      supportsSystemClipboard: false,
       hasParentRow: true,
       syncsToMcp: true,
-      pathScheme: 'filesystem',
     },
   }
 
@@ -127,13 +106,12 @@ describe('capabilitiesForKind — the frozen per-kind table', () => {
     })
   }
 
-  it('the search-results row generalizes the original search-results capability seed', () => {
-    // seed: { canPasteInto: false, canMkdir: false, canMkfile: false, canRename: false, isSourceOK: true }
+  it('the snapshot pane can be a SOURCE but never a destination', () => {
+    // Its rows are real files, so copy/move/delete work off them; there's no
+    // folder behind the namespace to write into.
     const caps = capabilitiesForKind('search-results')
-    expect(caps.canPasteInto).toBe(false) // = seed canPasteInto
-    expect(caps.canCreateChild).toBe(false) // folds seed canMkdir + canMkfile
-    expect(caps.canRenameInPlace).toBe(false) // = seed canRename
-    expect(caps.canBeSource).toBe(true) // = seed isSourceOK
+    expect(caps.canWrite).toBe(false)
+    expect(caps.canBeSource).toBe(true)
   })
 
   it('returns a FROZEN reference (no allocation, no mutation)', () => {
@@ -143,7 +121,7 @@ describe('capabilitiesForKind — the frozen per-kind table', () => {
     expect(capabilitiesForKind('local')).toBe(caps)
     expect(() => {
       // Mutating a frozen capability throws in strict mode (vitest runs ESM strict).
-      ;(caps as { canPasteInto: boolean }).canPasteInto = false
+      ;(caps as { canWrite: boolean }).canWrite = false
     }).toThrow()
   })
 
@@ -212,7 +190,7 @@ describe('capabilitiesFor — the store-reading convenience', () => {
     volumes.list = [] // neither virtual id is ever in the store
     expect(capabilitiesFor('network').kind).toBe('network')
     expect(capabilitiesFor('search-results').kind).toBe('search-results')
-    expect(capabilitiesFor('network').canPasteInto).toBe(false)
+    expect(capabilitiesFor('network').canWrite).toBe(false)
   })
 
   it('falls to the local default for a stale/missing real id (store-lookup miss)', () => {
@@ -227,6 +205,61 @@ describe('capabilitiesFor — the store-reading convenience', () => {
     for (const id of ['network', 'search-results', 'root', 'mtp-1:1', 'nope']) {
       expect(capabilitiesFor(id)).toBeDefined()
     }
+  })
+})
+
+describe("withBackendCapabilities — the backend's answer wins over the per-kind default", () => {
+  it('leaves the default standing when the backend published nothing', () => {
+    const row = capabilitiesForKind('local')
+    expect(withBackendCapabilities(row, undefined)).toBe(row)
+    expect(withBackendCapabilities(row, null)).toBe(row)
+  })
+
+  it('returns the SAME frozen row (no allocation) when the two already agree', () => {
+    const row = capabilitiesForKind('local')
+    expect(withBackendCapabilities(row, { isWritable: true, canExport: true })).toBe(row)
+  })
+
+  it("takes the backend's answer when it differs, leaving the structural fields alone", () => {
+    const row = capabilitiesForKind('local')
+    const folded = withBackendCapabilities(row, { isWritable: false, canExport: false })
+    expect(folded.canWrite).toBe(false)
+    expect(folded.canBeSource).toBe(false)
+    // Kind and the per-namespace UI structure are not the backend's to answer.
+    expect(folded.kind).toBe('local')
+    expect(folded.hasBackendListing).toBe(true)
+    expect(folded.hasParentRow).toBe(true)
+    expect(folded.syncsToMcp).toBe(true)
+    expect(Object.isFrozen(folded)).toBe(true)
+  })
+
+  it('reaches capabilitiesFor: a backend that declines writes disables them on the pane', () => {
+    volumes.list = [
+      vol({
+        id: 'weird-vol',
+        fsType: 'apfs',
+        category: 'attached_volume',
+        capabilities: { isWritable: false, canExport: true },
+      }),
+    ]
+    const caps = capabilitiesFor('weird-vol')
+    expect(caps.kind).toBe('local')
+    expect(caps.canWrite).toBe(false)
+    expect(caps.canBeSource).toBe(true)
+  })
+
+  it('❌ never lets the backend change the KIND', () => {
+    // An OS-mounted SMB share is served by a plain local backend until it's
+    // upgraded to smb2. Capability comes from the backend; kind never does.
+    volumes.list = [
+      vol({
+        id: 'volumesnaspi',
+        fsType: 'smbfs',
+        category: 'network',
+        capabilities: { isWritable: true, canExport: true },
+      }),
+    ]
+    expect(capabilitiesFor('volumesnaspi').kind).toBe('smb')
   })
 })
 
@@ -275,13 +308,24 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
     // row (writable) gates the pane, not the drive's row.
     const caps = capabilitiesForPane('root', '/Users/me/foo.zip/inner')
     expect(caps.kind).toBe('archive')
-    expect(caps.canPasteInto).toBe(true)
-    expect(caps.canCreateChild).toBe(true)
-    expect(caps.canRenameInPlace).toBe(true)
+    expect(caps.canWrite).toBe(true)
     expect(caps.canBeSource).toBe(true)
     expect(caps.hasBackendListing).toBe(true)
-    // No system clipboard even when writable: archive-inner paths aren't OS URLs.
-    expect(caps.supportsSystemClipboard).toBe(false)
+  })
+
+  it("❌ never lets the PARENT drive's published capabilities reach an archive pane", () => {
+    // The drive is writable and exports; the pane is inside a tar on it, which is
+    // browse + extract only. Folding the drive's answer in here would hand the
+    // user an enabled F7 inside a read-only archive.
+    volumes.list = [
+      vol({
+        id: 'root',
+        fsType: 'apfs',
+        category: 'main_volume',
+        capabilities: { isWritable: true, canExport: true },
+      }),
+    ]
+    expect(capabilitiesForPane('root', '/Users/me/foo.tar/inner').canWrite).toBe(false)
   })
 
   it('defers to the id-based kind when the path is NOT inside an archive', () => {
@@ -299,10 +343,8 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
     for (const path of ['/x/foo.tar/inner', '/x/foo.tar.gz/d/f.txt', '/x/foo.7z/inner']) {
       const caps = capabilitiesForPane('root', path)
       expect(caps.kind, path).toBe('archive')
-      // Read-only: the three write flags are off...
-      expect(caps.canPasteInto, path).toBe(false)
-      expect(caps.canCreateChild, path).toBe(false)
-      expect(caps.canRenameInPlace, path).toBe(false)
+      // Read-only: no mutation...
+      expect(caps.canWrite, path).toBe(false)
       // ...but copying files OUT still works, and it lists like a folder.
       expect(caps.canBeSource, path).toBe(true)
       expect(caps.hasBackendListing, path).toBe(true)
@@ -313,7 +355,7 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
     volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
     // Leftmost archive component wins: `foo.tar` is the boundary, `bar.zip` is a
     // plain inner entry — so the pane is read-only, not writable.
-    expect(capabilitiesForPane('root', '/x/foo.tar/bar.zip/y').canPasteInto).toBe(false)
+    expect(capabilitiesForPane('root', '/x/foo.tar/bar.zip/y').canWrite).toBe(false)
   })
 })
 

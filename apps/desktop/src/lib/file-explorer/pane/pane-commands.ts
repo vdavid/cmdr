@@ -269,7 +269,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
    * `isSnapshotPane` flags snapshot panes so the dialog renders the banner
    * ("Matching what is shown in the list…"). A snapshot pane is one whose kind
    * has no backend listing (`!caps.hasBackendListing`), read from the capability
-   * table rather than a `volumeId === 'search-results'` string compare (A6).
+   * defaults rather than a `volumeId === 'search-results'` string compare.
    * The network kind is also `!hasBackendListing`, but its pane never opens the
    * Selection dialog (NetworkMountView has no file list), so this stays a
    * snapshot-only flag in practice.

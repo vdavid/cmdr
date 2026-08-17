@@ -193,7 +193,7 @@ leading `0` can't park the cursor on the synthetic `..` row.
 
 **Snapshot pane (`volumeId === 'search-results'`).** Two integration points that MUST stay coupled: `computeHasParent`
 returns `false` (no `..` row, via the `hasParentRow` capability), and opening a real entry from the result rows leaves
-the snapshot volume. `FilePane.handleNavigate` gates the latter on the `isSearchResultsView` capability (A6 — the
+the snapshot volume. `FilePane.handleNavigate` gates the latter on the `isSearchResultsView` capability (the
 `caps.kind === 'search-results'` classifier, never a raw id compare), resolves the entry's `Location`
 (`resolveLocationOrToast`, shared with the other nav edges), and bubbles it via the `onGoToLocation` callback →
 `navigate({ to: { goTo } })`, whose switch arm changes volume (a different volume than `search-results`). An
@@ -202,71 +202,83 @@ the resolve+switch poisons the pane with `volumeId === 'search-results'` + a rea
 location) and `onVolumeChange` (deliberate volume-(re)select) are the two distinct intents — `Location` carries no
 `volumePath`, so the location-only callback is the clean seam.
 
-**Volume capabilities (`volume-capabilities.ts`).** The single FE source of truth for "what can a pane on a given volume
-KIND do" (invariant A6 — guard logic branches on capabilities, never on volume-id strings). A closed `VolumeKind`
-discriminated union (`local` / `smb` / `mtp` / `network` / `search-results`) keys a frozen, by-reference
-`Record<VolumeKind, VolumeCapabilities>` table; each row carries structural capabilities (`hasBackendListing`,
-`canPasteInto`, `canCreateChild`, `canRenameInPlace`, `canBeSource`, `supportsSystemClipboard`, `hasParentRow`,
-`syncsToMcp`, `pathScheme`). It's NOT a `Record<string, boolean>` bag — `kind` is the discriminant.
+**Volume capabilities (`volume-capabilities.ts`).** Guard logic branches on a `VolumeCapabilities` record, ❌ never on a
+volume-id string. The record has two halves, and which half answers is the whole design:
 
-- **Per-KIND vs per-VOLUME.** The table is structural per-kind capability. Per-volume runtime flags (`isReadOnly`,
-  `supportsTrash`, `smbConnectionState`) are NOT in the table — they stay on `VolumeInfo` and layer on top (a specific
-  USB stick is read-only; the `local` KIND is not). That's Q4's resolution: FE table keyed by kind, since `VolumeInfo`
-  carries no capability surface today and the two virtual kinds have no `VolumeInfo` at all.
+- **Rust answers "what can it do."** `Volume::capabilities()` publishes `isWritable` + `canExport` per volume; they ride
+  on `VolumeInfo.capabilities` and land on the record as `canWrite` / `canBeSource` via `withBackendCapabilities`.
+  Canonical: `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model".
+- **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `mtp` /
+  `network` / `search-results` / `archive`), which keys a frozen, by-reference table of per-kind defaults carrying the
+  per-namespace UI structure Rust has nothing to say about (`hasBackendListing`, `hasParentRow`, `syncsToMcp`) plus the
+  fallback write/source answers. It's NOT a `Record<string, boolean>` bag — `kind` is the discriminant.
+
+- **❌ Never source KIND from the backend.** An OS-mounted SMB share that hasn't been upgraded to a direct smb2 session
+  is served by `LocalPosixVolume`, so a backend-published kind would say `local` for a share that's plainly SMB to the
+  user, flipping its tint, its view, and the search-indexing wording. Kind is about the storage; capability is about the
+  backend.
+- **The table is a FALLBACK, not a duplicate.** It stands where Rust has no volume to ask: the two virtual kinds (no
+  `VolumeInfo` at all), `archive` (kind-from-path over the parent drive's volume — and `ArchiveVolume` itself declares
+  `is_writable: false`, because zip editing is the app's managed archive-edit rewrite), a favorite id, and the window
+  before a discovered volume's backend registers. Where the backend HAS answered, its answer wins.
+- **Per-KIND vs per-VOLUME.** The other per-volume runtime flags (`isReadOnly`, `supportsTrash`, `smbConnectionState`)
+  stay on `VolumeInfo` and layer on top. `isReadOnly` is a claim about the MOUNT and `capabilities.isWritable` a claim
+  about the BACKEND, so they're separate on purpose; only the transfer-destination guard reads `isReadOnly` today.
 - **One classifier, not two.** `volumeKindOf` is the SUPERSET of `volume-tint.svelte.ts::volumeKindFor`: it checks the
   two virtual ids first, then DELEGATES to `volumeKindFor` for the real kinds, overriding its `'other'` fall-through
   (favorites + real-but-unclassified) to a `'local'` default so the kind → table lookup is TOTAL (no input can miss the
   table; `capabilitiesFor` never returns `undefined`). The tint classifier keeps its own body and output, so tint stays
   byte-stable — this module never feeds its `'local'` default back into tinting.
-- **`capabilitiesFor(volumeId)`** is the store-reading convenience: callers holding only a `volumeId` (F-bar, dispatch)
-  get the row without replicating the find-in-store dance. The virtual ids short-circuit before the store lookup; a
-  stale/missing real id falls to the `local` default. The pure pair (`volumeKindOf`, `capabilitiesForKind`) stays
-  store-free for the FilePane site (which already holds the `VolumeInfo`) and for tests.
+- **`capabilitiesFor(volumeId)`** is the store-reading entry point: it resolves the `VolumeInfo` once, classifies from
+  it, and folds in whatever the backend published. It returns the frozen row by reference when backend and default
+  already agree (every ordinary volume), so the hot path stays allocation-free.
 - **To add virtual volume #3:** add a `VolumeKind` member, a table row, and a `volumeKindOf` branch — no codebase sweep.
+- **To add a real backend:** override `is_writable` in Rust and there's nothing to do on this side.
 
-Consumers read the table directly: `SearchResultsView.svelte` reads `capabilitiesForKind('search-results')` (it always
-renders a search-results pane), and every capability-GUARD consumer reads the table via `capabilitiesFor`. There's no
-Search-specific capabilities shim — `lib/search/capabilities.ts` keeps only the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` L10
+Consumers read the record directly: `SearchResultsView.svelte` reads `capabilitiesForKind('search-results')` (it always
+renders a search-results pane), and every capability-GUARD consumer reads it via `capabilitiesFor`. There's no
+Search-specific capabilities shim — `lib/search/capabilities.ts` keeps only the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`
 string. The guards:
 
-- **Dispatch** (`command-dispatch.ts::blockedByCapabilities`) + **F-bar** (`FunctionKeyBar.svelte`): the destination-op
-  guards (paste / mkdir / mkfile / rename) off `canPasteInto` / `canCreateChild` / `canRenameInPlace`.
-- **Clipboard** (`clipboard-operations.ts`): the snapshot-clip path gate off `pathScheme === 'search-results'`; the MTP
-  copy/cut/paste refusals (the "Use F5/F6" toasts) off `caps.kind === 'mtp'` via `isMtpClipboardRefusal`. The MTP gate
-  keys on the `kind` discriminant, NOT `!supportsSystemClipboard`, because `network` + `search-results` also lack a
-  system clipboard, and an MTP-worded toast on a reachable network paste would be a new, mis-worded toast (PR3). On the
-  live clipboard-time pane id set this is byte-equivalent to the old `startsWith('mtp-')` gate, pinned by the
-  equivalence test in `clipboard-operations.test.ts`.
+- **Dispatch** (`command-dispatch.ts::blockedByCapabilities`) + **F-bar** (`FunctionKeyBar.svelte`): paste, mkdir,
+  mkfile, and rename all off `!canWrite`. One flag, because it's one question — Rust answers it with one `isWritable`,
+  and splitting it here would be the hand-maintained duplicate all over again.
+- **Clipboard** (`clipboard-operations.ts`): the snapshot-clip path gate off `kind === 'search-results'`; the MTP
+  copy/cut/paste refusals (the "Use F5/F6" toasts) off `caps.kind === 'mtp'` via `isMtpClipboardRefusal`. ❌ Don't
+  generalize that MTP gate into a "no system clipboard" capability: `network` + `search-results` lack one too, and an
+  MTP-worded toast on a reachable network paste would be a new, mis-worded toast. On the live clipboard-time pane id set
+  it's byte-equivalent to the old `startsWith('mtp-')` gate, pinned by the equivalence test in
+  `clipboard-operations.test.ts`.
 - **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`. The
-  destination guards (search-results dest-paste block off `!canPasteInto` scoped to the `search-results` kind so the
-  toast wording stays correct; the `isReadOnly` alert per-`VolumeInfo`, Q4) live in `transfer-entry.ts`'s
+  destination guards (search-results dest-paste block off `!canWrite` scoped to the `search-results` kind so the toast
+  wording stays correct; the `isReadOnly` alert per-`VolumeInfo`) live in `transfer-entry.ts`'s
   `checkTransferDestinationGuard` so F5/F6, drag-and-drop, AND paste run the identical chain — see
   `file-operations/transfer/CLAUDE.md` § "One transfer entry seam". The `search-results://` URL parses stay (namespace
   mechanics).
 - **`pane-commands.ts`**: `isSnapshotPane` (the Selection-dialog banner flag) off `!hasBackendListing`.
 - **MCP sync** (`pane-mcp-sync.svelte.ts`): the network/search skip off `!syncsToMcp`. The deps interface carries a
-  single `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps); the two `getIs*View()` deps retired.
+  single `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps).
 - **`has-parent.ts`**: `computeHasParent` folds ONLY the snapshot rule via `hasParentRow`; the two PATH comparisons
-  (`=== '/'`, `=== root`) stay (L5).
+  (`=== '/'`, `=== root`) stay.
 - **FilePane alt-view chain** (`FilePane.svelte`): the kind-structural view selection resolves through a `paneViewKind`
   derived discriminant (`'network' | 'search-results' | 'mtp-connect' | 'normal'`) off `caps.kind` (+ the MTP
   device-only connection sub-state, which the table doesn't carry — it's a runtime connection state, not a kind). The
   `{#if}` chain branches on `paneViewKind` for the three alt-views (NetworkMountView / SearchResultsView /
   MtpConnectionView) and the SelectionInfo footer (`paneViewKind === 'normal'`). The RUNTIME-state branches
   (`unreachable`, SMB reconnecting / gave-up / needs-auth sign-in, the inline SMB upgrade login, `loading` /
-  `friendlyError` / `error`) stay per-feature and gate IN FRONT of the descriptor, byte-identical precedence (L10). This
-  is a derived discriminant, NOT a new component (A8). The per-feature gates (git lookup, type-to-jump keystroke,
-  dir-exists poll) read `!caps.hasBackendListing` for the "is there a real directory" half; the MTP-path-specific checks
+  `friendlyError` / `error`) stay per-feature and gate IN FRONT of the descriptor, byte-identical precedence. This is a
+  derived discriminant, NOT a new component. The per-feature gates (git lookup, type-to-jump keystroke, dir-exists poll)
+  read `!caps.hasBackendListing` for the "is there a real directory" half; the MTP-path-specific checks
   (`isMtpVolumeId(volumeId)` for git-skip, `isMtpView` for the dir-poll, `isMtpDeviceOnly` for the jump) STAY — MTP has
   a backend listing but git can't run on it, there's no on-disk path to `pathExists`-poll, and the not-yet-connected
-  sub-state isn't a kind capability. `caps` is derived once per pane (`caps = $derived(capabilitiesFor(volumeId))`); the
-  named `isNetworkView` / `isSearchResultsView` deriveds re-source off `caps.kind`.
+  sub-state isn't a kind capability. `caps` is derived once per pane
+  (`caps = $derived(capabilitiesForPane(volumeId, currentPath))`); the named `isNetworkView` / `isSearchResultsView`
+  deriveds re-source off `caps.kind`.
 
-**A6 residue inventory (the sweep is DONE — don't "finish" it).** Every capability GUARD now reads `VolumeCapabilities`;
-the A6 conversion is complete. A grep for `=== 'search-results'` / `=== 'network'` / `startsWith('mtp-')` (and the `!==`
-forms) across `apps/desktop/src/` still returns hits, but each is justified residue, NOT a guard left behind. Before
-converting any of these, understand which category it's in — forcing a mechanics/display/classifier site through the
-capability table is the "differently complicated" failure mode the refactor explicitly avoids:
+**The volume-id string compares that REMAIN are not guards — don't "finish the sweep".** A grep for
+`=== 'search-results'` / `=== 'network'` / `startsWith('mtp-')` (and the `!==` forms) across `apps/desktop/src/` returns
+hits, and every one is a classifier input, a namespace mechanic, or a display choice. Forcing one of those through the
+capability record is the "differently complicated" failure mode to avoid:
 
 - **Classifier internals (the inputs that FEED `volumeKindOf`).** `volume-capabilities.ts` (the two virtual-id checks),
   `volume-tint.svelte.ts::volumeKindFor` (`category === 'network' || fsType === 'smbfs'`), `volume-grouping.ts`
@@ -274,20 +286,18 @@ capability table is the "differently complicated" failure mode the refactor expl
   classifier — converting them would be circular.
 - **Namespace / path mechanics (which string scheme, not what's allowed).** `navigate.ts` (the on-network / on-MTP
   refusal sources + the `smb://` / `search-results://` drop-foreign-listings prefix + `validateMtpNavigation` path
-  parse), `clipboard-operations.ts:76` (`pathScheme !== 'search-results'` — the snapshot-clip path resolver; reads the
-  table but it's a scheme question), `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the
-  network-mirror / copy-path-between-panes identity branches), `rename-flow.svelte.ts:166` (skip the Unix-`access()`
-  permission check on MTP virtual paths — a syscall-support mechanic, not a "may rename" capability).
+  parse), `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the network-mirror /
+  copy-path-between-panes identity branches), `rename-flow.svelte.ts` (skip the Unix-`access()` permission check on MTP
+  virtual paths — a syscall-support mechanic, not a "may rename" capability).
 - **Display / view selection.** `VolumeBreadcrumb.svelte` (the "Network" / "Search results" labels + the
-  network-disabled gate), `FilePane.svelte` (`paneViewKind === 'network' | 'search-results'` in the `{#if}` chain — the
-  kind-driven view choice, sourced off `caps.kind`; the `isNetworkView` / `isSearchResultsView` named deriveds; the MTP
-  device-only sub-state + the `loadDirectory` skip for network/device-only panes), `MtpConnectionView.svelte`
-  (device-only sub-state).
+  network-disabled gate), `FilePane.svelte` (`paneViewKind` in the `{#if}` chain, sourced off `caps.kind`; the
+  `isNetworkView` / `isSearchResultsView` named deriveds; the MTP device-only sub-state + the `loadDirectory` skip for
+  network/device-only panes), `MtpConnectionView.svelte` (device-only sub-state).
 - **Persistence / init mechanics.** `app-status-store.ts` (skip filesystem path-resolution for the virtual `network`
   volume on persist), `initialization.ts` (trust the stored `network` id at startup, no `resolvePathVolume`).
-- **Converted-caps scope (reads the table, kind-scopes a toast).** `command-dispatch.ts:114` +
-  `file-operation-commands.ts:300` (`caps.kind === 'search-results'` decides the toast WORDING after the capability
-  decides the block — the capability / kind split, not a string guard).
+- **Kind-scoped toast wording (reads the record, then picks words).** `command-dispatch.ts` +
+  `file-operation-commands.ts` (`caps.kind === 'search-results'` decides the WORDING after the capability decides the
+  block).
 - **Tests + debug.** `navigate.test.ts` and the other `*.test.*` fixtures, `routes/debug/DebugHistoryPanel.svelte`.
 
 **Command-body factories read through `PaneAccess`.** The MCP/palette command bodies live in factories
@@ -344,14 +354,14 @@ when the held manager mutates in place. Returning a snapshot would silently seve
 
 **`FunctionKeyBar` reads the store, not props.** The F-key bar is mounted in `+page.svelte` (a sibling of
 `DualPaneExplorer`, not a child), yet it derives its capability flags from `explorerState` directly: one
-`caps = $derived(capabilitiesFor(getActiveTab(getTabMgr(getFocusedPane())).volumeId))`, then `canMkdir` / `canMkfile` =
-`caps.canCreateChild`, `canRename` = `caps.canRenameInPlace`, `canSourceOps` = `caps.canBeSource` (invariant A6 —
-capabilities, not a `volumeId === 'search-results'` string compare; `capabilitiesFor` resolves `fsType`/`category` from
-the volume store, so the bar passes only the volumeId). This is the A9 pattern — a store getter inside a `$derived` is
-reactive across the component boundary, so there's no `onFocusedVolumeChange` callback or `+page.svelte` mirror `$state`
-in the chain. Per-pane read only (P1): touch the focused pane's manager, never both. `canSourceOps` is no longer a prop
-(it was a dead-true `+page.svelte={true}` placeholder); a focused `network` pane now disables the source buttons too
-(`canBeSource: false`), which only makes the bar honest — those ops already no-op'd deep down on a network pane.
+`caps = $derived(capabilitiesFor(getActiveTab(getTabMgr(getFocusedPane())).volumeId))`, then `canMkdir` / `canMkfile` /
+`canRename` = `caps.canWrite` and `canSourceOps` = `caps.canBeSource` (capabilities, not a
+`volumeId === 'search-results'` string compare; `capabilitiesFor` resolves the `VolumeInfo` from the volume store, so
+the bar passes only the volumeId). A store getter inside a `$derived` is reactive across the component boundary, so
+there's no `onFocusedVolumeChange` callback or `+page.svelte` mirror `$state` in the chain. Per-pane read only (P1):
+touch the focused pane's manager, never both. `canSourceOps` is no longer a prop (it was a dead-true
+`+page.svelte={true}` placeholder); a focused `network` pane now disables the source buttons too (`canBeSource: false`),
+which only makes the bar honest — those ops already no-op'd deep down on a network pane.
 
 **`FunctionKeyBar` dispatches `file.*` onto the bus.** Each button click calls a single
 `onCommand?: (id: CommandId) => void` prop, wired in `+page.svelte` to `handleCommandExecute`. The button-to-command
@@ -860,13 +870,13 @@ volume ids never enter FE state, history, persistence, or MCP sync. Archive-ness
 routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
 
 - **`pathInsideArchive(path)` + `capabilitiesForPane(volumeId, path)`** (`volume-capabilities.ts`) are the seam. The
-  first is a pure, extension-only check mirroring the backend's `SUPPORTED_ARCHIVE_EXTENSIONS`; the second returns the
-  `archive` capability row when the path is inside an archive, else defers to `capabilitiesFor(volumeId)`. The pane's
-  `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so `hasBackendListing`/`hasParentRow`/`syncsToMcp` and
-  the write flags (`canPasteInto`/`canCreateChild`/`canRenameInPlace`) are all true — `supportsSystemClipboard` stays
-  false (archive-inner paths aren't OS URLs, so ⌘C/⌘V route to F5/F6). Zip is the only supported format and it's
-  mutable; when M7 adds browse-only formats (tar/7z) to `SUPPORTED_ARCHIVE_EXTENSIONS`, `capabilitiesForPane` must split
-  to a read-only archive variant for a non-writable boundary format (its doc comment marks the seam).
+  first is a pure, extension-only check mirroring the backend's `archive_format::format_for_name`; the second returns
+  the `archive` capability row when the path is inside an archive, else defers to `capabilitiesFor(volumeId)`. The
+  pane's `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so `hasBackendListing` / `hasParentRow` /
+  `syncsToMcp` / `canWrite` are all true for a zip; a tar or 7z boundary gets the read-only variant (`canWrite: false`,
+  `canBeSource: true` so extract-out still works). ⌘C/⌘X are refused separately and route to F5/F6, since archive-inner
+  paths aren't OS-resolvable URLs. ❌ The archive branch never folds in the PARENT drive's published capabilities: they
+  answer for the drive, and the pane is inside a file on it.
 - **Why `VolumeInfo.isReadOnly` still matters**: the archive pane's `volumeId` is the parent drive. A writable zip runs
   the real managed archive-edit flow, but a zip that lives on a read-only `VolumeInfo` (a locked disk image) can't be
   rewritten in place — the write guards (`file-operation-commands.ts` `readOnlyRefusal`, `transfer-entry.ts`

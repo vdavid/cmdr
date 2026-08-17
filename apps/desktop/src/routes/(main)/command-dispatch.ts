@@ -49,9 +49,9 @@ function activeTextRegion(): Element | null {
  * action the focused pane's volume capabilities can't satisfy. Reads the focused
  * pane's `VolumeCapabilities` (one source, shared with the F-bar's `disabled`
  * flags and the menu items) instead of a `volumeId === 'search-results'` string
- * compare (invariant A6): paste/pasteAsMove gate on `!canPasteInto`,
- * newFolder/newFile on `!canCreateChild`, rename on `!canRenameInPlace`.
- * Source-side actions (copy/move/delete) stay enabled (`canBeSource: true`).
+ * compare: paste, pasteAsMove, newFolder, newFile, and rename all gate on
+ * `!canWrite`. Source-side actions (copy/move/delete) stay enabled
+ * (`canBeSource: true`).
  *
  * Menu paths are disabled at the source (F-bar, context-menu items), so this
  * guard exists for the shortcut path (⌘V, F7, etc.) that bypasses the UI. The
@@ -82,9 +82,12 @@ function blockedByCapabilities(commandId: CommandId, explorer: ExplorerAPI | und
   if (caps.kind !== 'search-results') return false
 
   const isBlocked =
-    ((commandId === 'edit.paste' || commandId === 'edit.pasteAsMove') && !caps.canPasteInto) ||
-    ((commandId === 'file.newFolder' || commandId === 'file.newFile') && !caps.canCreateChild) ||
-    (commandId === 'file.rename' && !caps.canRenameInPlace)
+    !caps.canWrite &&
+    (commandId === 'edit.paste' ||
+      commandId === 'edit.pasteAsMove' ||
+      commandId === 'file.newFolder' ||
+      commandId === 'file.newFile' ||
+      commandId === 'file.rename')
   if (!isBlocked) return false
 
   addToast(SEARCH_RESULTS_NOT_A_FOLDER_TOAST, { level: 'info' })

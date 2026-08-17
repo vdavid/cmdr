@@ -3,7 +3,7 @@
  *
  * The snapshot rule comes in as the `hasParentRow` capability
  * (`VolumeCapabilities.hasParentRow`, `false` for the search-results kind), NOT
- * a `volumeId === 'search-results'` string compare (invariant A6). A snapshot
+ * a `volumeId === 'search-results'` string compare. A snapshot
  * pane has no `..` row, and the path comparison `currentPath !==
  * effectiveVolumeRoot` can't catch it — a `search-results://sr-N` URL never
  * matches a real volume root, so without `hasParentRow` the comparison returns
@@ -13,7 +13,7 @@
  * `hasParentRow` folds ONLY the snapshot rule; it is NOT a complete has-parent
  * answer. The two PATH comparisons stay here: a `local` pane at `/`, or any pane
  * sitting on its volume root, has no `..` despite `hasParentRow: true`. The real
- * answer is `hasParentRow && currentPath !== '/' && currentPath !== root` (L5).
+ * answer is `hasParentRow && currentPath !== '/' && currentPath !== root`.
  */
 export interface HasParentInput {
   /**

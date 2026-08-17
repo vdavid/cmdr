@@ -84,7 +84,7 @@
     /**
      * Capability flags driving the row context menu. This view always renders a
      * `search-results` pane, so it reads the `search-results` row of the per-kind
-     * table directly (A6 — capabilities, not a `volumeId === 'search-results'`
+     * defaults directly (capabilities, not a `volumeId === 'search-results'`
      * string compare). The pure `capabilitiesForKind` needs no store lookup.
      */
     const caps = capabilitiesForKind('search-results')
@@ -220,7 +220,7 @@
             // instead so it reads `Copy test.md` and the underlying
             // command-dispatch (which uses `entryUnderCursor.name`, also a
             // basename) copies the same string.
-            const restrict = !caps.canRenameInPlace
+            const restrict = !caps.canWrite
             void showFileContextMenu(entry.path, basename(entry.path), entry.isDirectory, [entry.path], restrict)
         }}
     />
