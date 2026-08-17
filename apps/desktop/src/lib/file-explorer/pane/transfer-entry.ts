@@ -55,7 +55,7 @@ export type TransferGuardResult =
  *    correct (a network destination shares the `false` capability but isn't a
  *    misrendered "not a folder").
  * 2. Read-only destination → refuse with an alert. Read off the destination's
- *    `VolumeInfo.isReadOnly` (a per-volume runtime flag, not a kind capability).
+ *    `VolumeInfo.mountIsReadOnly` (a per-volume runtime flag, not a kind capability).
  *
  * A zip destination is NOT refused: it's the writable `archive` kind
  * (`canWrite: true`), so it passes step 1 and the transfer routes into the
@@ -93,7 +93,7 @@ export function checkTransferDestinationGuard(
   }
 
   const destVolume = getDestinationVolumeInfo(destVolumeId, volumes)
-  if (destVolume?.isReadOnly) {
+  if (destVolume?.mountIsReadOnly) {
     return {
       ok: false,
       alert: {

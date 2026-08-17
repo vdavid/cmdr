@@ -650,7 +650,12 @@ pub trait Volume: Send + Sync {
     /// A claim about the BACKEND, not about one path or one mount. A read-only
     /// mount of a writable backend still answers `true`; that mount's own
     /// read-only flag is separate and layers on top (it reaches the frontend as
-    /// `isReadOnly` on the location).
+    /// `mountIsReadOnly` on the location).
+    ///
+    /// The predicate keeps the bare name and the published field spells its
+    /// subject out ([`VolumeCapabilities::backend_can_write`]): inside a
+    /// `Volume` impl the subject can only be the backend, while the published
+    /// struct sits next to the location's mount flag, where it can't.
     ///
     /// Default `false`, matching the `NotSupported` default of every mutation
     /// method above: a backend that implements them opts in, and one that
@@ -677,7 +682,7 @@ pub trait Volume: Send + Sync {
     /// published struct and what stays a backend-side predicate.
     fn capabilities(&self) -> VolumeCapabilities {
         VolumeCapabilities {
-            is_writable: self.is_writable(),
+            backend_can_write: self.is_writable(),
             can_export: self.supports_export(),
         }
     }

@@ -205,8 +205,8 @@ location) and `onVolumeChange` (deliberate volume-(re)select) are the two distin
 **Volume capabilities (`volume-capabilities.ts`).** Guard logic branches on a `VolumeCapabilities` record, ❌ never on a
 volume-id string. The record has two halves, and which half answers is the whole design:
 
-- **Rust answers "what can it do."** `Volume::capabilities()` publishes `isWritable` + `canExport` per volume; they ride
-  on `VolumeInfo.capabilities` and land on the record as `canWrite` / `canBeSource` via `withBackendCapabilities`.
+- **Rust answers "what can it do."** `Volume::capabilities()` publishes `backendCanWrite` + `canExport` per volume; they
+  ride on `VolumeInfo.capabilities` and land on the record as `canWrite` / `canBeSource` via `withBackendCapabilities`.
   Canonical: `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model".
 - **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `mtp` /
   `network` / `search-results` / `archive`), which keys a frozen, by-reference table of per-kind defaults carrying the
@@ -219,11 +219,13 @@ volume-id string. The record has two halves, and which half answers is the whole
   backend.
 - **The table is a FALLBACK, not a duplicate.** It stands where Rust has no volume to ask: the two virtual kinds (no
   `VolumeInfo` at all), `archive` (kind-from-path over the parent drive's volume — and `ArchiveVolume` itself declares
-  `is_writable: false`, because zip editing is the app's managed archive-edit rewrite), a favorite id, and the window
-  before a discovered volume's backend registers. Where the backend HAS answered, its answer wins.
-- **Per-KIND vs per-VOLUME.** The other per-volume runtime flags (`isReadOnly`, `supportsTrash`, `smbConnectionState`)
-  stay on `VolumeInfo` and layer on top. `isReadOnly` is a claim about the MOUNT and `capabilities.isWritable` a claim
-  about the BACKEND, so they're separate on purpose; only the transfer-destination guard reads `isReadOnly` today.
+  `backend_can_write: false`, because zip editing is the app's managed archive-edit rewrite), a favorite id, and the
+  window before a discovered volume's backend registers. Where the backend HAS answered, its answer wins.
+- **Per-KIND vs per-VOLUME.** The other per-volume runtime flags (`mountIsReadOnly`, `supportsTrash`,
+  `smbConnectionState`) stay on `VolumeInfo` and layer on top. `mountIsReadOnly` is a claim about the MOUNT and
+  `capabilities.backendCanWrite` a claim about the BACKEND, so they're separate on purpose; both combinations occur (a
+  writable backend on a read-only mount, a read-only backend on a writable disk), which is why the names say which is
+  which. Only the transfer-destination guard reads `mountIsReadOnly` today.
 - **One classifier, not two.** `volumeKindOf` is the SUPERSET of `volume-tint.svelte.ts::volumeKindFor`: it checks the
   two virtual ids first, then DELEGATES to `volumeKindFor` for the real kinds, overriding its `'other'` fall-through
   (favorites + real-but-unclassified) to a `'local'` default so the kind → table lookup is TOTAL (no input can miss the
@@ -241,8 +243,8 @@ Search-specific capabilities shim — `lib/search/capabilities.ts` keeps only th
 string. The guards:
 
 - **Dispatch** (`command-dispatch.ts::blockedByCapabilities`) + **F-bar** (`FunctionKeyBar.svelte`): paste, mkdir,
-  mkfile, and rename all off `!canWrite`. One flag, because it's one question — Rust answers it with one `isWritable`,
-  and splitting it here would be the hand-maintained duplicate all over again.
+  mkfile, and rename all off `!canWrite`. One flag, because it's one question — Rust answers it with one
+  `backendCanWrite`, and splitting it here would be the hand-maintained duplicate all over again.
 - **Clipboard** (`clipboard-operations.ts`): the snapshot-clip path gate off `kind === 'search-results'`; the MTP
   copy/cut/paste refusals (the "Use F5/F6" toasts) off `caps.kind === 'mtp'` via `isMtpClipboardRefusal`. ❌ Don't
   generalize that MTP gate into a "no system clipboard" capability: `network` + `search-results` lack one too, and an
@@ -251,7 +253,7 @@ string. The guards:
   `clipboard-operations.test.ts`.
 - **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`. The
   destination guards (search-results dest-paste block off `!canWrite` scoped to the `search-results` kind so the toast
-  wording stays correct; the `isReadOnly` alert per-`VolumeInfo`) live in `transfer-entry.ts`'s
+  wording stays correct; the `mountIsReadOnly` alert per-`VolumeInfo`) live in `transfer-entry.ts`'s
   `checkTransferDestinationGuard` so F5/F6, drag-and-drop, AND paste run the identical chain — see
   `file-operations/transfer/CLAUDE.md` § "One transfer entry seam". The `search-results://` URL parses stay (namespace
   mechanics).
@@ -877,11 +879,11 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
   `canBeSource: true` so extract-out still works). ⌘C/⌘X are refused separately and route to F5/F6, since archive-inner
   paths aren't OS-resolvable URLs. ❌ The archive branch never folds in the PARENT drive's published capabilities: they
   answer for the drive, and the pane is inside a file on it.
-- **Why `VolumeInfo.isReadOnly` still matters**: the archive pane's `volumeId` is the parent drive. A writable zip runs
-  the real managed archive-edit flow, but a zip that lives on a read-only `VolumeInfo` (a locked disk image) can't be
-  rewritten in place — the write guards (`file-operation-commands.ts` `readOnlyRefusal`, `transfer-entry.ts`
-  `checkTransferDestinationGuard`) still fall through to the per-volume `isReadOnly` refusal for that case. The backend
-  `ReadOnlyDevice` rejection is the safety net behind them.
+- **Why `VolumeInfo.mountIsReadOnly` still matters**: the archive pane's `volumeId` is the parent drive. A writable zip
+  runs the real managed archive-edit flow, but a zip that lives on a read-only `VolumeInfo` (a locked disk image) can't
+  be rewritten in place — the write guards (`file-operation-commands.ts` `readOnlyRefusal`, `transfer-entry.ts`
+  `checkTransferDestinationGuard`) still fall through to the per-volume `mountIsReadOnly` refusal for that case. The
+  backend `ReadOnlyDevice` rejection is the safety net behind them.
 - **Edits are managed ops, not instant.** A zip mutation is an O(archive) temp+rename rewrite, so mkdir/mkfile/rename
   inside a zip return an OPERATION handle, not a landed path, and copy/move into or out of a zip route through
   `copyBetweenVolumes`/`moveBetweenVolumes` (never the local `moveFiles` fast-path — `transfer-progress-state`'s

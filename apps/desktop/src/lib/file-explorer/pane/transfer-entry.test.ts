@@ -10,7 +10,7 @@ const ROOT: VolumeInfo = {
   path: '/',
   category: 'main_volume',
   isEjectable: false,
-  isReadOnly: false,
+  mountIsReadOnly: false,
 }
 const EXT: VolumeInfo = {
   id: 'ext',
@@ -18,7 +18,7 @@ const EXT: VolumeInfo = {
   path: '/Volumes/Ext',
   category: 'attached_volume',
   isEjectable: true,
-  isReadOnly: false,
+  mountIsReadOnly: false,
 }
 const SD_CARD: VolumeInfo = {
   id: 'mtp-dev:65538',
@@ -26,7 +26,7 @@ const SD_CARD: VolumeInfo = {
   path: 'mtp://dev/65538',
   category: 'mobile_device',
   isEjectable: true,
-  isReadOnly: true,
+  mountIsReadOnly: true,
 }
 
 // Favorites are pseudo-volumes that exist ONLY in the volume picker; the backend
@@ -51,7 +51,7 @@ const SMB_SHARE: VolumeInfo = {
   path: 'smb://server/share',
   category: 'network',
   isEjectable: true,
-  isReadOnly: false,
+  mountIsReadOnly: false,
 }
 
 /**
@@ -114,7 +114,7 @@ describe('checkTransferDestinationGuard', () => {
     // zip can't be rewritten in place, so the device refusal still fires.
     const result = checkTransferDestinationGuard(
       'ro',
-      [{ ...ROOT, id: 'ro', name: 'Locked', isReadOnly: true }],
+      [{ ...ROOT, id: 'ro', name: 'Locked', mountIsReadOnly: true }],
       '/ro/foo.zip/inner',
     )
     expect(result.ok).toBe(false)

@@ -71,7 +71,7 @@ fn get_mounted_volumes_with(mounts: &[MountEntry], volume_id: impl Fn(&str) -> S
             is_ejectable: is_removable,
             fs_type,
             supports_trash,
-            is_read_only: false,
+            mount_is_read_only: false,
             is_disk_image: false,
             smb_connection_state: None,
             usb_speed: None,

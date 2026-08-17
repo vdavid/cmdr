@@ -34,8 +34,8 @@ Everything re-exports from `mod.rs` (`LocationInfo` / `LocationCategory`, consts
   `get_icon_for_path()` returns `None` and `get_cloud_drives()` is empty; both re-emit after the decision.
   `lib/onboarding/CLAUDE.md` § "FDA gate".
 - **Detect SMB with `is_smb_fs_type()`**, never raw `"smbfs"` / `"cifs"` comparisons: one place covers both platforms.
-- **`is_read_only` (`MNT_RDONLY`) and `is_disk_image` (DiskArbitration) are set in BOTH `get_attached_volumes` and
-  `resolve_path_volume_fast`, or they drift.** Gate the disk-image probe to local mounts (it resolves the path, so a
+- **`mount_is_read_only` (`MNT_RDONLY`) and `is_disk_image` (DiskArbitration) are set in BOTH
+  `get_attached_volumes` and `resolve_path_volume_fast`, or they drift.** Gate the disk-image probe to local mounts (it resolves the path, so a
   hung mount stalls it), and don't read read-only as a disk-image proxy: a writable `.dmg` is read-write.
 - **`LocationInfo` enrichment from `VolumeManager` lives only in `enrich_from_volume_registry`** (three callers); new
   enrichment fields go there once. It fills `capabilities` and `smb_connection_state`. ❌ Never fill `capabilities` from

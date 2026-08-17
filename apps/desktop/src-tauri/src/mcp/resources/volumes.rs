@@ -207,7 +207,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                 id: loc.id.clone(),
                 kind,
                 filesystem: loc.fs_type.clone(),
-                read_only: Some(loc.is_read_only),
+                read_only: Some(loc.mount_is_read_only),
                 ejectable: Some(loc.is_ejectable),
                 index_status: Some(index_status_token(&status)),
                 smb_connection_state,

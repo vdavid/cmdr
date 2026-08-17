@@ -81,7 +81,7 @@ function vol(over: Partial<VolumeInfo>): VolumeInfo {
     isEjectable: false,
     fsType: 'apfs',
     supportsTrash: true,
-    isReadOnly: false,
+    mountIsReadOnly: false,
     isDiskImage: false,
     smbConnectionState: null,
     usbSpeed: null,

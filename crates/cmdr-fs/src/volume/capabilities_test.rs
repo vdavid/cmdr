@@ -110,7 +110,7 @@ fn an_undeclared_backend_gets_the_conservative_answer_to_everything() {
     assert_eq!(
         BareVolume.capabilities(),
         VolumeCapabilities {
-            is_writable: false,
+            backend_can_write: false,
             can_export: false,
         }
     );
@@ -121,7 +121,7 @@ fn declaring_a_predicate_moves_the_published_surface() {
     assert_eq!(
         WritableExportingVolume(BareVolume).capabilities(),
         VolumeCapabilities {
-            is_writable: true,
+            backend_can_write: true,
             can_export: true,
         }
     );
@@ -133,7 +133,7 @@ fn the_in_memory_double_publishes_the_read_write_surface_a_test_expects() {
     assert_eq!(
         volume.capabilities(),
         VolumeCapabilities {
-            is_writable: true,
+            backend_can_write: true,
             can_export: true,
         }
     );

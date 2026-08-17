@@ -58,9 +58,9 @@ vi.mock('$lib/search/snapshot-store.svelte', () => ({ resolveSnapshotPaths: reso
 // per-test volumes list.
 vi.mock('./transfer-operations', () => ({
   getCommonParentPath: getCommonParentPathSpy,
-  getDestinationVolumeInfo: (volumeId: string, volumes: { id: string; name: string; isReadOnly?: boolean }[]) => {
+  getDestinationVolumeInfo: (volumeId: string, volumes: { id: string; name: string; mountIsReadOnly?: boolean }[]) => {
     const v = volumes.find((vol) => vol.id === volumeId)
-    return v ? { name: v.name, isReadOnly: v.isReadOnly ?? false } : undefined
+    return v ? { name: v.name, mountIsReadOnly: v.mountIsReadOnly ?? false } : undefined
   },
 }))
 
@@ -106,7 +106,7 @@ interface AccessConfig {
   volumeId?: string
   path?: string
   showHiddenFiles?: boolean
-  volumes?: { id: string; name: string; isReadOnly?: boolean }[]
+  volumes?: { id: string; name: string; mountIsReadOnly?: boolean }[]
 }
 
 function buildAccess(config: AccessConfig = {}): PaneAccess {
@@ -294,7 +294,7 @@ describe('pasteFromClipboard', () => {
   it('refuses pasting into a read-only destination with the shared "Read-only device" alert', async () => {
     const access = buildAccess({
       volumeId: 'ext-ro',
-      volumes: [{ id: 'ext-ro', name: 'Backup', isReadOnly: true }],
+      volumes: [{ id: 'ext-ro', name: 'Backup', mountIsReadOnly: true }],
     })
 
     await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)

@@ -34,9 +34,14 @@
  *
  * The table carries STRUCTURAL, per-kind capability (can this namespace host a
  * backend listing, does it have a `..`, is paste-into meaningful). The other
- * per-VOLUME runtime flags (`isReadOnly`, `supportsTrash`, `smbConnectionState`)
- * stay on `VolumeInfo` and layer ON TOP; `isReadOnly` in particular is a claim
- * about the MOUNT, while `capabilities.isWritable` is a claim about the backend.
+ * per-VOLUME runtime flags (`mountIsReadOnly`, `supportsTrash`,
+ * `smbConnectionState`) stay on `VolumeInfo` and layer ON TOP.
+ *
+ * `mountIsReadOnly` and `capabilities.backendCanWrite` sound like one question
+ * and are two: whether THIS mount takes writes right now (a read-only `.dmg`, a
+ * write-protected stick) versus whether the BACKEND implements mutations at all
+ * (`ArchiveVolume` says no, `LocalPosixVolume` says yes). Both combinations
+ * happen, which is why each name says whose answer it is.
  *
  * ## One classifier, not two
  *
@@ -79,8 +84,9 @@ export type VolumeKind =
  * What a pane on a given volume can do. A real typed interface (NOT a
  * `Record<string, boolean>` bag): the `kind` field is the discriminant.
  *
- * `canWrite` and `canBeSource` come from the BACKEND (Rust's `isWritable` /
- * `canExport`) whenever the pane sits on a registered volume; the per-kind row
+ * `canWrite` and `canBeSource` are the FOLDED answers — the backend's published
+ * `backendCanWrite` / `canExport` laid over the per-kind row whenever the pane
+ * sits on a registered volume; the per-kind row
  * is the default for everything Rust has no volume for. The remaining three are
  * per-namespace UI structure Rust has nothing to say about.
  */
@@ -91,7 +97,7 @@ export interface VolumeCapabilities {
   /**
    * Mutations are allowed here: paste INTO, create a child (F7 / ⇧F4), and
    * rename the cursor row in place (F2). ONE flag because it's one question —
-   * Rust answers it with one `isWritable`, and splitting it on this side would
+   * Rust answers it with one `backendCanWrite`, and splitting it here would
    * be the hand-maintained duplicate all over again.
    */
   canWrite: boolean
@@ -231,8 +237,8 @@ export function withBackendCapabilities(
   published: VolumeBackendCapabilities | null | undefined,
 ): VolumeCapabilities {
   if (!published) return row
-  if (published.isWritable === row.canWrite && published.canExport === row.canBeSource) return row
-  return Object.freeze({ ...row, canWrite: published.isWritable, canBeSource: published.canExport })
+  if (published.backendCanWrite === row.canWrite && published.canExport === row.canBeSource) return row
+  return Object.freeze({ ...row, canWrite: published.backendCanWrite, canBeSource: published.canExport })
 }
 
 /**

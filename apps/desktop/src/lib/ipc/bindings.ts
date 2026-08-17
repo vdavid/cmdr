@@ -6253,10 +6253,16 @@ export type LocationInfo = {
   // Whether this volume supports macOS trash. Derived from `fs_type`.
   supportsTrash: boolean
   /**
-   *  Whether this location is read-only (for example, MTP devices with locked storage,
-   *  or a read-only mounted volume). Powers the 🔒 indicator and the copy/move write guard.
+   *  Whether the MOUNT behind this location refuses writes right now: a read-only `.dmg`, a
+   *  write-protected card, an MTP device reporting locked storage. From `MNT_RDONLY` via
+   *  `read_only_from_statfs` for real mounts. Powers the 🔒 indicator and the copy/move write
+   *  guard.
+   *
+   *  Orthogonal to `capabilities.backend_can_write`, which answers whether the BACKEND serving
+   *  this volume implements mutations at all. Both combinations happen: a writable backend on a
+   *  read-only mount, and a read-only backend (`ArchiveVolume`) on a perfectly writable disk.
    */
-  isReadOnly: boolean
+  mountIsReadOnly: boolean
   /**
    *  Whether this volume is backed by a mounted disk image (a `.dmg`). Disk images are
    *  transient install-style mounts: the UI suppresses indexing (badge + first-connect
@@ -9262,9 +9268,18 @@ export type ViewerWordWrapToggled = null
 /**
  *  What a volume can do, from the frontend's point of view.
  *
- *  A claim about the BACKEND, not about one path or one mount: a read-only
- *  mount of a writable backend still answers `is_writable: true`, and the
- *  per-location `isReadOnly` flag layers on top of this.
+ *  Every field is a claim about the BACKEND, not about one path or one mount: a
+ *  read-only mount of a writable backend still answers
+ *  `backend_can_write: true`. Whether THIS mount happens to be read-only right
+ *  now is a separate fact travelling separately, as `mount_is_read_only` on the
+ *  location.
+ *
+ *  Only `backend_can_write` spells the subject out, because it's the one that
+ *  has near-namesakes to be told apart from: the location's
+ *  `mount_is_read_only` above it, and the frontend's own folded `canWrite`
+ *  below it (`pane/volume-capabilities.ts`, the per-kind default laid under
+ *  this answer). `can_export` has neither, so a qualifier would only add
+ *  length.
  *
  *  Adding a capability means adding a predicate to
  *  [`Volume`](super::Volume) and folding it in
@@ -9272,8 +9287,12 @@ export type ViewerWordWrapToggled = null
  *  answer here.
  */
 export type VolumeCapabilities = {
-  // Files and folders can be created, renamed, and deleted here.
-  isWritable: boolean
+  /**
+   *  Files and folders can be created, renamed, and deleted here, because the
+   *  backend serving this volume implements mutations at all. Says nothing
+   *  about whether the mount underneath currently accepts writes.
+   */
+  backendCanWrite: boolean
   /**
    *  Files can be read out of here, so this volume can be the SOURCE of a copy
    *  or a move.

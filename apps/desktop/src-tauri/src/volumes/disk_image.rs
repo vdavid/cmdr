@@ -8,7 +8,7 @@
 //! The signal is DiskArbitration's `DADeviceModel` description value, which
 //! reports "Disk Image" for any `hdiutil`-attached image regardless of its
 //! filesystem (APFS/HFS) or read-only flag. Read-only is NOT a reliable proxy:
-//! a writable APFS `.dmg` reports `is_read_only == false`.
+//! a writable APFS `.dmg` reports `mount_is_read_only == false`.
 
 /// Does a DiskArbitration `DADeviceModel` value denote a disk image?
 ///

@@ -132,17 +132,17 @@ panes off ejected volumes.
 **Why**: Disk images are transient install-style mounts, so the UI suppresses their index affordances and free-space
 bars (the frontend reads `isDiskImage`). The reliable signal is DiskArbitration: `DADeviceModel == "Disk Image"` for any
 `hdiutil`-attached image (verified on macOS 15.5, 2026-06-27). Read-only is NOT a usable proxy — a writable APFS `.dmg`
-reports `is_read_only == false`, and conversely a locked SD card is read-only but not an image — so the two flags are
+reports `mount_is_read_only == false`, and conversely a locked SD card is read-only but not an image — so the two flags are
 independent. `fs_type`/`f_mntfromname` don't disambiguate either (a `.dmg` can be APFS/HFS and present a normal
 `/dev/diskNsM` source). The DA call is synchronous (no run loop) and cheap next to the per-volume NSURL/icon work, but it
 resolves the volume path, so callers gate it to local (non-SMB) mounts to keep a hung network mount from stalling it.
 Both `get_attached_volumes` (the switcher list) and `resolve_path_volume_fast` (highlight + transfer-source) set the flag
 so they can't drift.
 
-**Decision**: Populate `is_read_only` for attached volumes from the `statfs` `MNT_RDONLY` flag (`read_only_from_statfs`).
+**Decision**: Populate `mount_is_read_only` for attached volumes from the `statfs` `MNT_RDONLY` flag (`read_only_from_statfs`).
 **Why**: It powers the 🔒 indicator and the copy/move write guard for ANY read-only mount (a read-only `.dmg`, a locked
 SD card, an optical disc), not just MTP locked storage. The frontend guard machinery (`file-operation-commands.ts`,
-`transfer-entry.ts`) already keys on `isReadOnly`, so populating the flag activates it with no frontend change; backend
+`transfer-entry.ts`) already keys on `mountIsReadOnly`, so populating the flag activates it with no frontend change; backend
 `validate_destination_writable` (via `libc::access`) is the second line of defense.
 
 **Decision**: A volume ID is derived from the volume's IDENTITY, never from the shape of its mount path, and every ID is

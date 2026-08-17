@@ -74,9 +74,15 @@ pub struct LocationInfo {
     pub fs_type: Option<String>,
     /// Whether this volume supports macOS trash. Derived from `fs_type`.
     pub supports_trash: bool,
-    /// Whether this location is read-only (for example, MTP devices with locked storage,
-    /// or a read-only mounted volume). Powers the 🔒 indicator and the copy/move write guard.
-    pub is_read_only: bool,
+    /// Whether the MOUNT behind this location refuses writes right now: a read-only `.dmg`, a
+    /// write-protected card, an MTP device reporting locked storage. From `MNT_RDONLY` via
+    /// `read_only_from_statfs` for real mounts. Powers the 🔒 indicator and the copy/move write
+    /// guard.
+    ///
+    /// Orthogonal to `capabilities.backend_can_write`, which answers whether the BACKEND serving
+    /// this volume implements mutations at all. Both combinations happen: a writable backend on a
+    /// read-only mount, and a read-only backend (`ArchiveVolume`) on a perfectly writable disk.
+    pub mount_is_read_only: bool,
     /// Whether this volume is backed by a mounted disk image (a `.dmg`). Disk images are
     /// transient install-style mounts: the UI suppresses indexing (badge + first-connect
     /// prompt) and both free-space bars for them. Detected via DiskArbitration; see
@@ -149,7 +155,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             LocationCategory::AttachedVolume
         };
         let icon = get_icon_for_path(&mount_point);
-        let is_read_only = read_only_from_statfs(&mount_point);
+        let mount_is_read_only = read_only_from_statfs(&mount_point);
         // Only attached, non-network volumes can be disk images; the boot volume never is.
         let is_disk_image = matches!(category, LocationCategory::AttachedVolume)
             && !is_smb_fs_type(Some(&fs_type))
@@ -172,7 +178,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             is_ejectable,
             fs_type: Some(fs_type),
             supports_trash,
-            is_read_only,
+            mount_is_read_only,
             is_disk_image,
             smb_connection_state: None,
             usb_speed: None,
@@ -259,7 +265,7 @@ fn get_favorites() -> Vec<LocationInfo> {
                 is_ejectable: false,
                 fs_type,
                 supports_trash,
-                is_read_only: false,
+                mount_is_read_only: false,
                 is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,
@@ -295,7 +301,7 @@ fn get_main_volume() -> Option<LocationInfo> {
             is_ejectable: false,
             fs_type,
             supports_trash,
-            is_read_only: false,
+            mount_is_read_only: false,
             is_disk_image: false,
             smb_connection_state: None,
             usb_speed: None,

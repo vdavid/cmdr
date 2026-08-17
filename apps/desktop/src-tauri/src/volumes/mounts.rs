@@ -185,7 +185,7 @@ fn build_attached_location(
         is_ejectable,
         fs_type: Some(fs_type),
         supports_trash,
-        is_read_only: mount.is_read_only,
+        mount_is_read_only: mount.is_read_only,
         is_disk_image,
         smb_connection_state: None,
         usb_speed: None,
@@ -293,7 +293,7 @@ mod tests {
         let loc = build_attached_location(&m, forbidden_resolver).expect("NFS mount is an attached volume");
         assert_eq!(loc.id, crate::file_system::volume::path_volume_id("/Volumes/export"));
         assert_eq!(loc.name, "export");
-        assert!(loc.is_read_only, "MNT_RDONLY flag propagates from getfsstat");
+        assert!(loc.mount_is_read_only, "MNT_RDONLY flag propagates from getfsstat");
         assert_eq!(loc.fs_type.as_deref(), Some("nfs"));
     }
 

@@ -19,7 +19,7 @@ fn volume(id: &str) -> LocationInfo {
         category: LocationCategory::MainVolume,
         icon: None,
         is_ejectable: false,
-        is_read_only: false,
+        mount_is_read_only: false,
         is_disk_image: false,
         fs_type: None,
         supports_trash: true,

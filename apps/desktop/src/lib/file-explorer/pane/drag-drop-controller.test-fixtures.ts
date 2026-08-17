@@ -37,7 +37,7 @@ export const ROOT_VOLUME: VolumeInfo = {
   name: 'Macintosh HD',
   path: '/',
   volumeType: 'local',
-  isReadOnly: false,
+  mountIsReadOnly: false,
   supportsTrash: true,
 } as unknown as VolumeInfo
 
@@ -46,7 +46,7 @@ export const EXT_VOLUME: VolumeInfo = {
   name: 'Ext',
   path: '/Volumes/Ext',
   volumeType: 'local',
-  isReadOnly: false,
+  mountIsReadOnly: false,
   supportsTrash: true,
 } as unknown as VolumeInfo
 
@@ -58,7 +58,7 @@ export const SD_CARD_VOLUME: VolumeInfo = {
   name: 'Virtual Pixel 9 - SD Card',
   path: 'mtp://dev/65538',
   volumeType: 'mtp',
-  isReadOnly: true,
+  mountIsReadOnly: true,
   supportsTrash: false,
 } as unknown as VolumeInfo
 
@@ -67,7 +67,7 @@ export const MTP_VOLUME: VolumeInfo = {
   name: 'Virtual Pixel 9',
   path: 'mtp://dev/65537',
   volumeType: 'mtp',
-  isReadOnly: false,
+  mountIsReadOnly: false,
   supportsTrash: false,
 } as unknown as VolumeInfo
 
@@ -84,7 +84,7 @@ export const SMB_VOLUME: VolumeInfo = {
   name: 'share on server',
   path: 'smb://server/share',
   category: 'network',
-  isReadOnly: false,
+  mountIsReadOnly: false,
   supportsTrash: false,
 } as unknown as VolumeInfo
 

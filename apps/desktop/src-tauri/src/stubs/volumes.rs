@@ -32,7 +32,7 @@ pub struct VolumeInfo {
     /// Whether this volume supports trash operations.
     pub supports_trash: bool,
     /// Whether this location is read-only.
-    pub is_read_only: bool,
+    pub mount_is_read_only: bool,
     /// Whether this volume is a mounted disk image (`.dmg`). Always `false` on stub platforms;
     /// mirrors the macOS shape so the shared `LocationInfo`/`VolumeInfo` type stays identical.
     pub is_disk_image: bool,
@@ -86,7 +86,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
                 is_ejectable: false,
                 fs_type: None,
                 supports_trash: true,
-                is_read_only: false,
+                mount_is_read_only: false,
                 is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,
@@ -105,7 +105,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         is_ejectable: false,
         fs_type: None,
         supports_trash: true,
-        is_read_only: false,
+        mount_is_read_only: false,
         is_disk_image: false,
         smb_connection_state: None,
         usb_speed: None,
@@ -122,7 +122,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         is_ejectable: false,
         fs_type: None,
         supports_trash: true,
-        is_read_only: false,
+        mount_is_read_only: false,
         is_disk_image: false,
         smb_connection_state: None,
         usb_speed: None,

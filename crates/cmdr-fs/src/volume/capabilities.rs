@@ -16,9 +16,18 @@ use serde::{Deserialize, Serialize};
 
 /// What a volume can do, from the frontend's point of view.
 ///
-/// A claim about the BACKEND, not about one path or one mount: a read-only
-/// mount of a writable backend still answers `is_writable: true`, and the
-/// per-location `isReadOnly` flag layers on top of this.
+/// Every field is a claim about the BACKEND, not about one path or one mount: a
+/// read-only mount of a writable backend still answers
+/// `backend_can_write: true`. Whether THIS mount happens to be read-only right
+/// now is a separate fact travelling separately, as `mount_is_read_only` on the
+/// location.
+///
+/// Only `backend_can_write` spells the subject out, because it's the one that
+/// has near-namesakes to be told apart from: the location's
+/// `mount_is_read_only` above it, and the frontend's own folded `canWrite`
+/// below it (`pane/volume-capabilities.ts`, the per-kind default laid under
+/// this answer). `can_export` has neither, so a qualifier would only add
+/// length.
 ///
 /// Adding a capability means adding a predicate to
 /// [`Volume`](super::Volume) and folding it in
@@ -27,8 +36,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeCapabilities {
-    /// Files and folders can be created, renamed, and deleted here.
-    pub is_writable: bool,
+    /// Files and folders can be created, renamed, and deleted here, because the
+    /// backend serving this volume implements mutations at all. Says nothing
+    /// about whether the mount underneath currently accepts writes.
+    pub backend_can_write: bool,
     /// Files can be read out of here, so this volume can be the SOURCE of a copy
     /// or a move.
     pub can_export: bool,

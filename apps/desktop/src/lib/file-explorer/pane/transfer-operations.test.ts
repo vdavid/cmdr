@@ -25,7 +25,7 @@ describe('getDestinationVolumeInfo', () => {
       path: '/mnt/main',
       category: 'main_volume',
       isEjectable: false,
-      isReadOnly: false,
+      mountIsReadOnly: false,
     },
     {
       id: 'vol-2',
@@ -33,7 +33,7 @@ describe('getDestinationVolumeInfo', () => {
       path: '/mnt/backup',
       category: 'attached_volume',
       isEjectable: true,
-      isReadOnly: true,
+      mountIsReadOnly: true,
     },
     {
       id: 'mtp-device-1:65537',
@@ -41,7 +41,7 @@ describe('getDestinationVolumeInfo', () => {
       path: 'mtp://device-1/65537',
       category: 'mobile_device',
       isEjectable: true,
-      isReadOnly: false,
+      mountIsReadOnly: false,
     },
     {
       id: 'mtp-device-2:65537',
@@ -49,32 +49,32 @@ describe('getDestinationVolumeInfo', () => {
       path: 'mtp://device-2/65537',
       category: 'mobile_device',
       isEjectable: true,
-      isReadOnly: true,
+      mountIsReadOnly: true,
     },
   ]
 
   it('returns info for regular volume', () => {
     expect(getDestinationVolumeInfo('vol-1', volumes)).toEqual({
       name: 'Main Drive',
-      isReadOnly: false,
+      mountIsReadOnly: false,
     })
   })
 
   it('returns info for read-only regular volume', () => {
-    expect(getDestinationVolumeInfo('vol-2', volumes)).toEqual({ name: 'Backup', isReadOnly: true })
+    expect(getDestinationVolumeInfo('vol-2', volumes)).toEqual({ name: 'Backup', mountIsReadOnly: true })
   })
 
   it('returns info for MTP volume', () => {
     expect(getDestinationVolumeInfo('mtp-device-1:65537', volumes)).toEqual({
       name: 'Phone Storage',
-      isReadOnly: false,
+      mountIsReadOnly: false,
     })
   })
 
   it('returns info for read-only MTP volume', () => {
     expect(getDestinationVolumeInfo('mtp-device-2:65537', volumes)).toEqual({
       name: 'Read-only Device',
-      isReadOnly: true,
+      mountIsReadOnly: true,
     })
   })
 

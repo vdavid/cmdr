@@ -217,12 +217,12 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
 
   it('returns the SAME frozen row (no allocation) when the two already agree', () => {
     const row = capabilitiesForKind('local')
-    expect(withBackendCapabilities(row, { isWritable: true, canExport: true })).toBe(row)
+    expect(withBackendCapabilities(row, { backendCanWrite: true, canExport: true })).toBe(row)
   })
 
   it("takes the backend's answer when it differs, leaving the structural fields alone", () => {
     const row = capabilitiesForKind('local')
-    const folded = withBackendCapabilities(row, { isWritable: false, canExport: false })
+    const folded = withBackendCapabilities(row, { backendCanWrite: false, canExport: false })
     expect(folded.canWrite).toBe(false)
     expect(folded.canBeSource).toBe(false)
     // Kind and the per-namespace UI structure are not the backend's to answer.
@@ -239,7 +239,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
         id: 'weird-vol',
         fsType: 'apfs',
         category: 'attached_volume',
-        capabilities: { isWritable: false, canExport: true },
+        capabilities: { backendCanWrite: false, canExport: true },
       }),
     ]
     const caps = capabilitiesFor('weird-vol')
@@ -256,7 +256,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
         id: 'volumesnaspi',
         fsType: 'smbfs',
         category: 'network',
-        capabilities: { isWritable: true, canExport: true },
+        capabilities: { backendCanWrite: true, canExport: true },
       }),
     ]
     expect(capabilitiesFor('volumesnaspi').kind).toBe('smb')
@@ -322,7 +322,7 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
         id: 'root',
         fsType: 'apfs',
         category: 'main_volume',
-        capabilities: { isWritable: true, canExport: true },
+        capabilities: { backendCanWrite: true, canExport: true },
       }),
     ]
     expect(capabilitiesForPane('root', '/Users/me/foo.tar/inner').canWrite).toBe(false)

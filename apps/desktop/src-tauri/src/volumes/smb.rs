@@ -144,7 +144,7 @@ mod enrichment_tests {
             is_ejectable: false,
             fs_type: Some("apfs".to_string()),
             supports_trash: true,
-            is_read_only: false,
+            mount_is_read_only: false,
             is_disk_image: false,
             smb_connection_state: None,
             usb_speed: None,
@@ -166,7 +166,10 @@ mod enrichment_tests {
         enrich_from_volume_registry(&mut locations);
 
         let published = locations[0].capabilities.expect("a registered backend must publish");
-        assert!(published.is_writable, "InMemoryVolume is writable and must say so");
+        assert!(
+            published.backend_can_write,
+            "InMemoryVolume is writable and must say so"
+        );
         assert!(published.can_export, "InMemoryVolume exports and must say so");
 
         get_volume_manager().unregister(id);

@@ -139,7 +139,7 @@ pub(super) fn get_network_mounts() -> Vec<LocationInfo> {
                 is_ejectable: true,
                 fs_type: None,
                 supports_trash: false,
-                is_read_only: false,
+                mount_is_read_only: false,
                 is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,

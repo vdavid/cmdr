@@ -273,10 +273,10 @@ function computeDroppedSplit(
 export function getDestinationVolumeInfo(
   volumeId: string,
   volumes: VolumeInfo[],
-): { name: string; isReadOnly: boolean } | undefined {
+): { name: string; mountIsReadOnly: boolean } | undefined {
   const volume = volumes.find((v) => v.id === volumeId)
   if (volume) {
-    return { name: volume.name, isReadOnly: volume.isReadOnly ?? false }
+    return { name: volume.name, mountIsReadOnly: volume.mountIsReadOnly ?? false }
   }
   return undefined
 }

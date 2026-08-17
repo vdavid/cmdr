@@ -980,7 +980,7 @@ test.describe('MTP read-only enforcement', () => {
     // Wait for the read-only alert dialog to appear.
     await expect.poll(async () => tauriPage.isVisible('[data-dialog-id="alert"]'), { timeout: 5000 }).toBeTruthy()
 
-    // Rename should be blocked with an alert (DualPaneExplorer.startRename checks isReadOnly)
+    // Rename should be blocked with an alert (DualPaneExplorer.startRename checks mountIsReadOnly)
     const hasRenameAlert = await tauriPage.isVisible('[data-dialog-id="alert"]')
     expect(hasRenameAlert).toBe(true)
 

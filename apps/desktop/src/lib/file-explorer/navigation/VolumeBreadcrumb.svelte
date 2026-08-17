@@ -794,7 +794,7 @@
             <img class="icon" src={dirIconFallback} alt="" />
         {/if}
         {currentVolumeName}
-        {#if currentVolume?.isReadOnly}
+        {#if currentVolume?.mountIsReadOnly}
             <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}><Icon name="lock" size={14} aria-hidden="true" /></span>
         {/if}
         <span class="chevron"></span>
@@ -976,7 +976,7 @@
                                 <Icon name="info" size={12} />
                             </span>
                         {/if}
-                        {#if volume.isReadOnly}
+                        {#if volume.mountIsReadOnly}
                             <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}><Icon name="lock" size={14} aria-hidden="true" /></span>
                         {/if}
                         {#if volume.smbConnectionState}

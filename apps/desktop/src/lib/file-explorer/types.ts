@@ -212,7 +212,7 @@ export type SmbConnectionState = 'direct' | 'os_mount' | 'disconnected'
  */
 export interface VolumeBackendCapabilities {
   /** Files and folders can be created, renamed, and deleted here. */
-  isWritable: boolean
+  backendCanWrite: boolean
   /** Files can be read out of here, so this volume can be the SOURCE of a copy or a move. */
   canExport: boolean
 }
@@ -234,7 +234,7 @@ export interface VolumeInfo {
   /** Whether this can be ejected */
   isEjectable: boolean
   /** Whether this volume is read-only (for example, PTP cameras) */
-  isReadOnly?: boolean
+  mountIsReadOnly?: boolean
   /** Whether this volume is a mounted disk image (.dmg): no indexing affordances, no space bars. */
   isDiskImage?: boolean
   /** Filesystem type from statfs (for example, "apfs", "smbfs", "exfat") */

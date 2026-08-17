@@ -77,7 +77,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       }
     }
 
-    if (volumeInfo?.isReadOnly) {
+    if (volumeInfo?.mountIsReadOnly) {
       const messageKey: Record<typeof action, MessageKey> = {
         rename: 'fileExplorer.readOnly.renameMessage',
         mkdir: 'fileExplorer.readOnly.mkdirMessage',

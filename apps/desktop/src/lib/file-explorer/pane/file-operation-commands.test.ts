@@ -163,7 +163,7 @@ function volume(overrides: Partial<VolumeInfo> = {}): VolumeInfo {
   return {
     id: 'root',
     name: 'Macintosh HD',
-    isReadOnly: false,
+    mountIsReadOnly: false,
     supportsTrash: true,
     ...overrides,
   } as unknown as VolumeInfo
@@ -207,7 +207,7 @@ describe('startRename', () => {
   it('refuses on a read-only volume with the exact alert and never starts rename', () => {
     const startRename = vi.fn()
     const paneRef = buildPaneRef({ startRename })
-    const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume({ isReadOnly: true })] })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume({ mountIsReadOnly: true })] })
     const dialogs = buildDialogs()
 
     create(access, dialogs).startRename()
@@ -256,7 +256,7 @@ describe('startRename', () => {
     const paneRef = buildPaneRef({ startRename })
     const access = buildAccess({
       paneRefs: { left: paneRef },
-      volumes: [volume({ isReadOnly: true })],
+      volumes: [volume({ mountIsReadOnly: true })],
       paths: { left: '/left/foo.zip/inner' },
     })
     const dialogs = buildDialogs()
@@ -309,7 +309,7 @@ describe('isRenaming', () => {
 
 describe('openNewFolderDialog', () => {
   it('refuses on a read-only volume with the exact alert', async () => {
-    const access = buildAccess({ volumes: [volume({ isReadOnly: true })] })
+    const access = buildAccess({ volumes: [volume({ mountIsReadOnly: true })] })
     const dialogs = buildDialogs()
 
     await create(access, dialogs).openNewFolderDialog()
@@ -377,7 +377,7 @@ describe('openNewFolderDialog', () => {
 
 describe('openNewFileDialog', () => {
   it('refuses on a read-only volume with the exact alert', async () => {
-    const access = buildAccess({ volumes: [volume({ isReadOnly: true })] })
+    const access = buildAccess({ volumes: [volume({ mountIsReadOnly: true })] })
     const dialogs = buildDialogs()
 
     await create(access, dialogs).openNewFileDialog()
@@ -531,7 +531,7 @@ describe('openTransferDialog', () => {
     const access = buildAccess({
       focusedPane: 'left',
       volumeIds: { left: 'root', right: 'mtp-1' },
-      volumes: [volume({ id: 'mtp-1', name: 'Pixel SD card', isReadOnly: true })],
+      volumes: [volume({ id: 'mtp-1', name: 'Pixel SD card', mountIsReadOnly: true })],
     })
     const dialogs = buildDialogs()
 
@@ -696,7 +696,7 @@ describe('openDeleteDialog', () => {
   it('refuses on a read-only volume with the exact alert', async () => {
     const access = buildAccess({
       paneRefs: { left: buildPaneRef({ listingId: 'lst-1' }) },
-      volumes: [volume({ isReadOnly: true })],
+      volumes: [volume({ mountIsReadOnly: true })],
     })
     const dialogs = buildDialogs()
 

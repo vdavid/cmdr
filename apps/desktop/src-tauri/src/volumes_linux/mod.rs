@@ -67,8 +67,10 @@ pub struct LocationInfo {
     pub is_ejectable: bool,
     pub fs_type: Option<String>,
     pub supports_trash: bool,
-    /// Whether this location is read-only (for example, MTP devices with locked storage).
-    pub is_read_only: bool,
+    /// Whether the MOUNT behind this location refuses writes right now (for example, an MTP
+    /// device reporting locked storage). Orthogonal to `capabilities.backend_can_write`, which
+    /// answers for the BACKEND. Mirrors the macOS field; see `volumes/mod.rs`.
+    pub mount_is_read_only: bool,
     /// Whether this volume is a mounted disk image (`.dmg`). Always `false` on Linux;
     /// mirrors the macOS shape so the shared `LocationInfo`/`VolumeInfo` type stays identical.
     pub is_disk_image: bool,
@@ -192,7 +194,7 @@ fn get_favorites(mounts: &[MountEntry]) -> Vec<LocationInfo> {
                 is_ejectable: false,
                 fs_type,
                 supports_trash,
-                is_read_only: false,
+                mount_is_read_only: false,
                 is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,
@@ -215,7 +217,7 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
         is_ejectable: false,
         fs_type,
         supports_trash,
-        is_read_only: false,
+        mount_is_read_only: false,
         is_disk_image: false,
         smb_connection_state: None,
         usb_speed: None,
@@ -245,7 +247,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         is_ejectable: false,
         fs_type: Some(fs_type),
         supports_trash,
-        is_read_only: false,
+        mount_is_read_only: false,
         is_disk_image: false,
         smb_connection_state: None,
         usb_speed: None,
