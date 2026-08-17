@@ -263,10 +263,11 @@ export type DriveIndexActionFeedback =
  * Pure, so the whole contract is unit-testable: the component runs the answer, it
  * doesn't work one out. Two of these matter more than they look:
  *
- * - **`deferred_until_search_ends`** is a promise, not a refusal. A search walking
- *   the same drive blocks the truncating scan, so the backend remembers the request
- *   and runs it when the walk ends. Silence here is what made "Rescan now" look
- *   like a dead button.
+ * - **Both `deferred_*`** outcomes are promises, not refusals. Something else holds
+ *   the drive (a search walking it, or a full walk already running), so the backend
+ *   remembers the request and runs it when that holder ends. Silence here is what
+ *   made "Rescan now" look like a dead button. They stay apart because the user's
+ *   next question differs: one drive is being searched, the other already indexed.
  * - **`status: 'error'`** reaches the caller as a VALUE. `typedError` rethrows only
  *   real `Error` instances, and a Rust `Err(String)` isn't one, so a `catch` never
  *   sees it and an unhandled branch means a click that says nothing at all.
@@ -290,6 +291,10 @@ export function driveIndexActionFeedback(
             : 'fileExplorer.navigation.driveIndex.deferredRescan',
         level: 'info',
       }
+    // One line for both buttons: the drive is being indexed right now either way,
+    // and what the user asked for is next.
+    case 'deferred_until_scan_ends':
+      return { kind: 'toast', key: 'fileExplorer.navigation.driveIndex.queuedBehindScan', level: 'info' }
     // The master switch went off between the menu opening and the click (or the
     // action came from MCP). Say so rather than leaving a click that quietly did
     // nothing.

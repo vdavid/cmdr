@@ -79,6 +79,10 @@ pub enum StartOutcome {
     /// request and runs it when the walk ends, so this is a "soon", not a "no" —
     /// a host that says nothing here leaves a button that looks broken.
     DeferredUntilSearchEnds,
+    /// The same promise, with the volume held by a full walk of its own instead: a
+    /// scan, or the journal replay a launch does. The index runs the requested walk
+    /// when that one ends, so the person who asked for fresh data gets it.
+    DeferredUntilScanEnds,
     /// The master drive-indexing switch is off, so no volume may index. Nothing
     /// is wrong with this one.
     IndexingDisabled,
@@ -96,7 +100,8 @@ fn started_or_deferred(outcome: crate::indexing::lifecycle::rescan_request::Resc
     use crate::indexing::lifecycle::rescan_request::RescanOutcome;
     match outcome {
         RescanOutcome::Started => StartOutcome::Started,
-        RescanOutcome::Deferred => StartOutcome::DeferredUntilSearchEnds,
+        RescanOutcome::DeferredUntilSearchEnds => StartOutcome::DeferredUntilSearchEnds,
+        RescanOutcome::DeferredUntilScanEnds => StartOutcome::DeferredUntilScanEnds,
     }
 }
 

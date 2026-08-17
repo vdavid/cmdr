@@ -1405,6 +1405,10 @@
   "@fileExplorer.navigation.driveIndex.deferredEnable": {
     "sourceHash": "b27d24c"
   },
+  "fileExplorer.navigation.driveIndex.queuedBehindScan": "A Cmdr épp indexeli ezt: {name}. A kért átvizsgálás elindul, amint ez befejeződik.",
+  "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
+    "sourceHash": "09106ce"
+  },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "A Cmdr most nem tudja indexelni ezt: {name}. Csatlakoztasd újra a meghajtót, és próbáld újra.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"

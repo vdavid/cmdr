@@ -395,12 +395,15 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
   lie; the drive's own choice is untouched and returns with the switch.
 - **What an enable/rescan owes the user is the pure `driveIndexActionFeedback`**, off the TYPED outcome, never message
   text. `VolumeBreadcrumb` runs the answer (toast it, or route a `refusal`), so the whole contract is unit-testable
-  without mounting anything. Its five arms:
+  without mounting anything. Its six arms:
   - `started` → **silent**: the badge going blue is the feedback.
   - `deferred_until_search_ends` → the promise toast (`info`), worded per action (`deferredEnable` /`deferredRescan`). A
     search walking the same drive blocks a truncating scan, so the backend REMEMBERS the request and runs it when the
     walk ends (model: `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two single-flight questions a scan has
     to ask). Silence here is what made "Rescan now" look like a dead button for the minutes a walk can last.
+  - `deferred_until_scan_ends` → the same promise with a full walk of the drive already running, so ONE line
+    (`queuedBehindScan`) serves both buttons: the drive is being indexed either way, and what the user asked for is
+    next. This arm is what "Rescan now" during a scan became — it used to report `started` and do nothing at all.
   - `indexing_disabled` → the settings-oriented toast at `info`, not `error`: transport-neutral, and reachable because
     the master switch can flip between the menu opening and the click, or MCP can call in.
   - `refused` → the typed `SmbIndexGateReason`, which `credentials_needed` routes into the direct-connect/login flow

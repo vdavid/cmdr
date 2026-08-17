@@ -1412,6 +1412,10 @@
   "@fileExplorer.navigation.driveIndex.deferredEnable": {
     "sourceHash": "b27d24c"
   },
+  "fileExplorer.navigation.driveIndex.queuedBehindScan": "O Cmdr está indexando {name} agora. A varredura que você pediu começa assim que isso terminar.",
+  "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
+    "sourceHash": "09106ce"
+  },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "O Cmdr não pode indexar {name} agora. Reconecte o disco e tente novamente.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"

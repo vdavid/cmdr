@@ -122,6 +122,19 @@ Two consequences worth stating, because both are easy to get backwards:
 - **A whole-volume claim outlives the call that takes it.** `start_scan` and `start_volume_scan` return while their
   walks run, so the claim travels into the task that ends the run. Custody and the release sites: `../DETAILS.md`.
 
+## And the one walk a volume is waiting for
+
+The table also carries one bit per volume: whether a manual "Rescan now" was turned away and is waiting for the ground.
+It lives HERE rather than in a set of its own because "may that rescan start" is one question about this table — is
+anything owed, and is the ground free — and two structures answering half each can disagree in the window between them,
+with a truncating scan riding on the answer. `remember_rescan` / `take_rescan` / `forget_rescan` / `a_rescan_can_start`
+are the whole surface; what the request MEANS, who runs it, and when is `../rescan_request.rs` and `../DETAILS.md` §
+"The one walk a volume remembers".
+
+⚠️ A volume's entry therefore outlives its claims: the request is recorded BEFORE its scan tries to start, which is
+routinely a moment when nobody holds anything. ❌ Never prune an entry on `roots.is_empty()` alone — `is_idle()` is the
+test, and `live::tests::a_waiting_request_outlives_an_empty_claim_table` is what catches losing it.
+
 ⚠️ **Two modes deliberately do not express every holder's wish.** A holder wanting "block truncating scans and search
 walks, but not phase walks" has no mode: `Exclusive` would refuse the phase machine's own per-group walks, and
 `Additive` at the volume root conflicts with every subtree claim because an ancestor counts as overlapping. The

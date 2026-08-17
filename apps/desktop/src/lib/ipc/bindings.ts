@@ -4548,6 +4548,12 @@ export type EnableIndexingOutcome =
    */
   | { status: 'deferred_until_search_ends' }
   /**
+   *  The same promise with the drive held by a full walk of its own (a scan, or
+   *  the journal replay a launch does). The queued walk runs when that one ends,
+   *  so the FE says the drive is already being indexed and this one is next.
+   */
+  | { status: 'deferred_until_scan_ends' }
+  /**
    *  The master drive-indexing switch is off, so no drive may index. Transport-
    *  neutral (the master switch outranks every per-transport gate), so the FE
    *  gets ONE shape to recognize whichever drive was asked for.

@@ -25,7 +25,10 @@ export async function indexUncoveredDrive(volumeId: string, driveName: string): 
   const drive = driveName || tString('search.coverage.unnamedDrive')
   try {
     const res = await enableDriveIndex(volumeId)
-    if (res.status === 'ok' && res.data.status === 'started') {
+    // `deferred_until_scan_ends` means a full walk of this drive is already
+    // running, so from the coverage note's point of view the news is the same as
+    // `started`: the drive is being indexed, and searches here get fast.
+    if (res.status === 'ok' && (res.data.status === 'started' || res.data.status === 'deferred_until_scan_ends')) {
       addToast(tString('search.coverage.toast.started', { drive }), { level: 'info' })
     } else if (res.status === 'ok' && res.data.status === 'deferred_until_search_ends') {
       // A search is walking this very drive, so the scan can't truncate under it

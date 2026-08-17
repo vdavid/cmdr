@@ -159,7 +159,7 @@ resume. Three things wire it, and each is one line:
 - **Armed** by `Machine::finish`, only when the machine wasn't CANCELLED. A machine somebody stopped (a teardown, the
   master switch, `report_a_vanished_volume_if_that_is_what_happened`) didn't run out of passes, and retrying a drive
   nothing is indexing any more would wake it every minute until the app quits.
-- **Reset** by the completion sequence and by every teardown path, beside `rescan_request::forget`.
+- **Reset** by the completion sequence and by every teardown path, beside `cover::forget_rescan`.
 - **Nudged** by the volume's own 30 s maintenance tick in `state/startup.rs`, which already carries
   `ClearAbandonedIfDue` for the same reason: a per-volume timer that dies with the writer channel, so ❌ nothing here
   invents a second scheduling concept.
@@ -488,10 +488,10 @@ Without the claim, a coalesced shallow anchor, a journal-gap fallback, or the ma
 `INSERT OR IGNORE`, and everything hanging off them is orphaned.
 
 **One claim answer, two user-visible outcomes**, which is why `Claim::take` reports the conflicting holder's MODE and
-`claim_the_volume` maps it: `Exclusive` ⇒ `AlreadyScanning` (the walk the caller wanted is in flight, and `force_scan`
-reports `Started`), `Additive` ⇒ `GroundBeingWalked` (a walk will let this ground go, so the request is remembered and
-reported as `Deferred`). The mode is the whole vocabulary, and why identity isn't is `cover/DETAILS.md` § "The two modes
-a claim can hold in".
+`claim_the_volume` maps it: `Exclusive` ⇒ `GroundBeingRewritten` (a scan or a journal replay owns the drive), `Additive`
+⇒ `GroundBeingWalked` (a cover walk holds part of it). Both are remembered and both are run by the holder in the way;
+what the mode buys is what the user is TOLD — "Cmdr is indexing this drive" versus "Cmdr is searching it". The mode is
+the whole vocabulary, and why identity isn't is `cover/DETAILS.md` § "The two modes a claim can hold in".
 
 ⚠️ **The claim is NOT scoped to the call that takes it**, and this is the part that bites. `start_scan` returns while
 the walk runs, so the claim travels into the task that ends the run: `ScanCompletion` on the local path, the completion
@@ -521,11 +521,11 @@ A THIRD question is asked above both, in `cover_or_scan`: whether this volume's 
 all (§ "Every other way a full walk starts"), which routes a never-completed volume to the machine rather than to a full
 walk.
 
-**The refusals are TYPED** (`rescan_request::ScanStartError`: `AlreadyScanning`, `GroundBeingWalked`, `Internal`). Their
-wording used to be the only thing separating them, which the project's hard rule forbids classifying on, and which left
-a caller nothing to branch on but prose. Regression anchors:
-`cover::cold_drive_tests::rescans::a_truncating_rescan_refuses_while_a_search_cover_walk_is_live` for the deferred half,
-`::a_rescan_under_a_running_scan_is_the_scan_that_is_already_running` for the idempotent one.
+**The refusals are TYPED** (`rescan_request::ScanStartError`: `AlreadyScanning`, `GroundBeingRewritten`,
+`GroundBeingWalked`, `Internal`). Their wording used to be the only thing separating them, which the project's hard rule
+forbids classifying on, and which left a caller nothing to branch on but prose. Regression anchors:
+`cover::cold_drive_tests::rescans::a_truncating_rescan_refuses_while_a_search_cover_walk_is_live` for the walk half,
+`::a_rescan_asked_for_during_a_scan_runs_when_that_scan_ends` for the scan half.
 
 ### The one walk a volume remembers
 
@@ -539,26 +539,44 @@ states**; ❌ neither supersedes the other, and ❌ don't "fix" the phased route
 An AUTOMATIC trigger needs nothing more than the refusal: a journal gap and a coalesced anchor both recur on their own,
 and nobody is watching a button for them. `manager::perform_registry_rescan` therefore logs and moves on.
 
-A MANUAL one is different. A cover walk holds ground for seconds to minutes, the person who clicked "Rescan now" (or
-"Turn on indexing" on a volume a search built an index for) can't see when it lets go, and telling them to click again
-puts the scheduling on the one participant who can't observe the schedule. So `state::force_scan` — the entry point
-behind both buttons — records a `GroundBeingWalked` refusal in `rescan_request` and answers `RescanOutcome::Deferred`,
-which reaches the frontend as `StartOutcome::DeferredUntilSearchEnds` and becomes a toast that promises the scan.
+A MANUAL one is different. Ground is held for seconds to minutes (a cover walk) or longer (a scan), the person who
+clicked "Rescan now" (or "Turn on indexing" on a volume a search built an index for) can't see when it lets go, and
+telling them to click again puts the scheduling on the one participant who can't observe the schedule. So
+`state::force_scan` — the entry point behind both buttons — records EITHER claim refusal in the claim table and answers
+the matching `RescanOutcome`, which reaches the frontend as `StartOutcome::DeferredUntilSearchEnds` or
+`DeferredUntilScanEnds` and becomes a toast that promises the scan.
 
-- **The walk that blocked it runs it**, from `cover::release_ground`, in an order that is the whole trick: the branch
-  set, then the claim, then the owed scan. Fired before the claim goes, the scan would see this very walk's ground and
-  defer itself again, forever.
+⚠️ **A click during a running scan really does queue a SECOND full walk**, and that is the intent: the run in flight was
+started against a state the user has moved past, and they asked for the drive as it is now. It cost the outcome that
+used to look tidiest — reporting `Started` and doing nothing — which is the one answer a button must never give. The
+bound is that the volume waits for at most one walk, so five impatient clicks are one rebuild
+(`cover::cold_drive_tests::rescans::clicking_rescan_five_times_during_a_scan_queues_one_walk`).
+
+- **The request lives in the claim table** (`cover/live.rs`), one bit beside the holders it waits for, so "may it start"
+  is ONE look: owed, and no ground held. Two structures answering half each can disagree in the window between them, and
+  the answer decides whether a truncating scan spawns.
+- **Whoever was in the way runs it**, through `rescan_request::run_if_owed`. A cover walk fires from
+  `cover::release_ground` in an order that is the whole trick: the branch set, then the claim, then the owed scan —
+  fired before the claim goes, the scan would see this very walk's ground and defer itself again, forever.
+- ⚠️ **The two scans fire it where they stop WRITING, not where they hand the ground back.** A completion task keeps
+  reconciling buffered events and then stamps `scan_completed_at` after its walk thread is joined, so a rescan starting
+  at the release would truncate underneath and take the old scan's completion marker onto its own half-built index — the
+  state that makes the next launch skip the healing rescan. The ground still comes back at the join, because what the
+  handoff writes is arbitrated by the branch set and a search shouldn't wait for it. Anchors:
+  `scan_completion::tests::a_rescan_queued_behind_a_scan_runs_when_the_scan_ends` and
+  `::the_handoff_finishes_before_the_queued_rescan_may_truncate`; the set of holders is pinned by
+  `rescan_request::tests::every_whole_volume_holder_runs_the_rescan_it_owes`.
 - **The request is recorded BEFORE the attempt**, and dropped again by an attempt that got somewhere. Recording it on
-  the way out of a `GroundBeingWalked` refusal reads more naturally and has a hole: the walk can end between the guard
-  answering and the request landing, and its `run_if_owed` would carry nothing out, leaving a promise waiting on a walk
-  that already finished.
-- **❌ Nothing assumes the coast is clear.** The fire re-asks both guards by going through `force_scan`, so a second
-  walk still holding ground re-defers the request behind ITS ending. That's what makes a truncating scan under a live
-  walk unreachable however many walks are in flight
+  the way out of a refusal reads more naturally and has a hole: the holder can end between the guard answering and the
+  request landing, and its `run_if_owed` would carry nothing out, leaving a promise waiting on a walk that already
+  finished.
+- **❌ Nothing assumes the coast is clear.** The fire re-asks every guard by going through `force_scan`, so a holder
+  still on the volume re-defers the request behind ITS ending. That's what makes a truncating scan under a live walk
+  unreachable however many walks are in flight
   (`cover::cold_drive_tests::rescans::a_remembered_rescan_waits_for_the_last_walk_out`).
 - **One request per volume, memory only.** It carries nothing but "this volume wants a full walk", so a second click
-  describes the same work and a set of volume ids is the whole state; quitting drops it. Every teardown path drops it
-  too (`stop_indexing`, `clear_index`, `remove_instance_and_handles`), and the master switch going off drops it at fire
+  describes the same work and one bit per volume is the whole state; quitting drops it. Every teardown path drops it too
+  (`stop_indexing`, `clear_index`, `remove_instance_and_handles`), and the master switch going off drops it at fire
   time, so a stopped drive is owed nothing
   (`cover::cold_drive_tests::rescans::a_drive_that_stopped_indexing_is_owed_no_rescan`).
 

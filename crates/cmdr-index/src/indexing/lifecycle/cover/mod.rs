@@ -703,7 +703,9 @@ mod bootstrap;
 mod live;
 
 pub(crate) use bootstrap::{NoCoverContext, context_for_walk};
-pub(in crate::indexing) use live::{Claim, Mode, ground_being_walked};
+pub(in crate::indexing) use live::{
+    Claim, Mode, a_rescan_can_start, forget_rescan, ground_being_walked, remember_rescan, take_rescan,
+};
 
 #[cfg(test)]
 mod bench;

@@ -1413,6 +1413,10 @@
   "@fileExplorer.navigation.driveIndex.deferredEnable": {
     "sourceHash": "b27d24c"
   },
+  "fileExplorer.navigation.driveIndex.queuedBehindScan": "Cmdr est en train d''indexer {name}. L''analyse demandée démarrera dès que ce sera terminé.",
+  "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
+    "sourceHash": "09106ce"
+  },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr ne peut pas indexer {name} pour le moment. Reconnectez le disque et réessayez.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"

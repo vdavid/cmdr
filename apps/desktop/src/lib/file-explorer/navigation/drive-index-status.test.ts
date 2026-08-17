@@ -212,6 +212,16 @@ describe('driveIndexActionFeedback', () => {
     })
   })
 
+  it('promises the scan when the drive is already being indexed, whichever button was pressed', () => {
+    for (const action of ['rescan', 'enable'] as const) {
+      expect(driveIndexActionFeedback(action, { status: 'ok', data: { status: 'deferred_until_scan_ends' } })).toEqual({
+        kind: 'toast',
+        key: 'fileExplorer.navigation.driveIndex.queuedBehindScan',
+        level: 'info',
+      })
+    }
+  })
+
   it('points at the master switch when it is what refused', () => {
     expect(driveIndexActionFeedback('enable', { status: 'ok', data: { status: 'indexing_disabled' } })).toEqual({
       kind: 'toast',

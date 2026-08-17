@@ -1415,6 +1415,10 @@
   "@fileExplorer.navigation.driveIndex.deferredEnable": {
     "sourceHash": "b27d24c"
   },
+  "fileExplorer.navigation.driveIndex.queuedBehindScan": "Cmdr indexeert {name} op dit moment. De gevraagde scan begint zodra dat klaar is.",
+  "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
+    "sourceHash": "09106ce"
+  },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr kan {name} nu niet indexeren. Verbind de schijf opnieuw en probeer het opnieuw.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"

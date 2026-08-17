@@ -32,7 +32,7 @@ fn a_rescan_refused_under_a_walk_runs_when_the_walk_ends() {
 
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(drive.volume_id),
-        Ok(RescanOutcome::Deferred),
+        Ok(RescanOutcome::DeferredUntilSearchEnds),
         "the rescan can't run under the walk, and says so as a variant rather than a sentence"
     );
     assert_eq!(drive.scans_started(), 0, "so nothing truncates while the walk writes");
@@ -68,7 +68,7 @@ fn a_remembered_rescan_waits_for_the_last_walk_out() {
 
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(drive.volume_id),
-        Ok(RescanOutcome::Deferred),
+        Ok(RescanOutcome::DeferredUntilSearchEnds),
     );
 
     // The first walk ends. Run the fire on this thread rather than through the
@@ -104,7 +104,7 @@ fn a_drive_that_stopped_indexing_is_owed_no_rescan() {
     let walking = Claim::take(drive.volume_id, vec![scope.clone()], Mode::Additive);
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(drive.volume_id),
-        Ok(RescanOutcome::Deferred),
+        Ok(RescanOutcome::DeferredUntilSearchEnds),
     );
 
     drive
@@ -112,7 +112,7 @@ fn a_drive_that_stopped_indexing_is_owed_no_rescan() {
         .disable_volume(drive.volume_id)
         .expect("turn indexing off for the drive");
     assert!(
-        !crate::indexing::lifecycle::rescan_request::take(drive.volume_id),
+        !take_rescan(drive.volume_id),
         "the request went with the index it was made against, so re-enabling the drive later \
          doesn't inherit a scan nobody asked for"
     );
@@ -159,7 +159,7 @@ fn a_truncating_rescan_refuses_while_a_search_cover_walk_is_live() {
 
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(drive.volume_id),
-        Ok(RescanOutcome::Deferred),
+        Ok(RescanOutcome::DeferredUntilSearchEnds),
         "a rescan waits for the walk holding ground on the volume"
     );
     assert_eq!(
@@ -182,16 +182,16 @@ fn a_truncating_rescan_refuses_while_a_search_cover_walk_is_live() {
     );
 }
 
-/// The other half of the same claim, and the one that must NOT be deferred: a
-/// rescan asked for while a full scan owns the volume is the scan the caller
-/// wanted, so it answers `Started` and remembers nothing.
+/// The other half of the same claim: a rescan asked for while a full scan owns
+/// the volume QUEUES behind it, and that scan's ending runs it.
 ///
-/// One claim answers for two holders now, so the two user-visible outcomes hang
-/// on the MODE the refusal reports. Read as `Deferred`, a click during a scan
-/// would promise a second truncating rescan the moment the first finished; read
-/// as `Started`, it stays the idempotent no-op it has always been.
+/// The person clicking "Rescan now" mid-scan wants the drive as it is NOW, and the
+/// scan already running was started against a state they've moved past. Answering
+/// `Started` reported success for work nobody was going to do, which is the one
+/// outcome a button must never produce. So the second walk really does run, and the
+/// user is told it's waiting rather than done.
 #[test]
-fn a_rescan_under_a_running_scan_is_the_scan_that_is_already_running() {
+fn a_rescan_asked_for_during_a_scan_runs_when_that_scan_ends() {
     let drive = ColdDrive::new("cover-rescan-under-scan-test");
     std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
 
@@ -205,20 +205,65 @@ fn a_rescan_under_a_running_scan_is_the_scan_that_is_already_running() {
 
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(drive.volume_id),
-        Ok(RescanOutcome::Started),
-        "a full walk of this volume is in flight, which is what the caller asked for"
+        Ok(RescanOutcome::DeferredUntilScanEnds),
+        "the drive is being rebuilt right now, so the walk the user asked for waits for that one"
     );
     assert_eq!(
         drive.scans_started(),
         0,
         "and nothing started a second one over the top of it"
     );
-    assert!(
-        !crate::indexing::lifecycle::rescan_request::take(drive.volume_id),
-        "nor is anything remembered: a promise here would truncate the drive again on the way out"
+
+    // The scan ends. Fired on this thread rather than through the spawn, so the
+    // assertion is about the decision and not about timing; the release SITES that
+    // reach this in production are covered by
+    // `scan_completion::tests::a_rescan_queued_behind_a_scan_runs_when_its_handoff_is_done`
+    // and `cover::tests::every_whole_volume_holder_runs_the_rescan_it_owes`.
+    drop(scanning);
+    crate::indexing::lifecycle::rescan_request::run_owed_now(drive.volume_id);
+    assert_eq!(
+        drive.scans_started(),
+        1,
+        "and the drive gets the fresh walk that was asked for"
     );
+}
+
+/// Five impatient clicks are one queued rescan, not five.
+///
+/// The request carries nothing but "this volume wants a full walk", so a second
+/// click describes the same work — and a queue would mean a truncating rebuild per
+/// click, each one blanking what the last just wrote, for as long as the user kept
+/// pressing.
+#[test]
+fn clicking_rescan_five_times_during_a_scan_queues_one_walk() {
+    let drive = ColdDrive::new("cover-rescan-clicks-dont-stack-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+
+    drive.cover(&drive.path("scope"));
+    drive.mark_scan_completed();
+
+    let volume_root = drive.tree.path().to_string_lossy().to_string();
+    let scanning = Claim::take(drive.volume_id, vec![volume_root], Mode::Exclusive);
+
+    for _ in 0..5 {
+        assert_eq!(
+            crate::indexing::lifecycle::state::force_scan(drive.volume_id),
+            Ok(RescanOutcome::DeferredUntilScanEnds),
+            "every click gets the same honest answer"
+        );
+    }
 
     drop(scanning);
+    crate::indexing::lifecycle::rescan_request::run_owed_now(drive.volume_id);
+    assert_eq!(drive.scans_started(), 1, "one walk for five clicks");
+
+    // And nothing is left over to fire a sixth time when the next holder leaves.
+    crate::indexing::lifecycle::rescan_request::run_owed_now(drive.volume_id);
+    assert_eq!(
+        drive.scans_started(),
+        1,
+        "the request was spent by the walk that ran it"
+    );
 }
 
 /// The truncate door the "Rescan now" button used to be, and where the two

@@ -436,6 +436,11 @@ impl IndexManager {
             // claim rode into this task because the scan outlives `start_volume_scan`;
             // owned here, it is released on every arm below, on a cancel, and on a
             // panic alike.
+            //
+            // ⚠️ A rescan queued behind this scan runs at the END of this task, not
+            // here: the arms below still write (the completion marker above all), and
+            // a truncating rescan landing between the two would stamp this scan's
+            // marker onto its own half-built index.
             drop(ground);
 
             // Three outcomes, three arms. `Ok` now means the walk FINISHED (a
@@ -599,6 +604,10 @@ impl IndexManager {
                     });
                 }
             }
+
+            // This run is over on every arm, so the share can have the walk somebody
+            // queued behind it. Refuses itself while anything still holds the ground.
+            crate::indexing::lifecycle::rescan_request::run_if_owed(&volume_id);
         });
 
         Ok(())

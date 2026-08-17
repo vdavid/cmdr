@@ -414,6 +414,10 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     // ⚠️ Everything before this point releases it too, by owning it: an early
     // return (a journal gap, an overflow), an abort, or a panic all drop it.
     drop(ground);
+    // A "Rescan now" that landed mid-replay was queued behind it, and this is the
+    // moment it can have the volume: the journal is committed, and from here the
+    // loop writes one event at a time like any live one.
+    crate::indexing::lifecycle::rescan_request::run_if_owed(&volume_id);
 
     log::info!("Replay: switching to live mode");
     // The volume that replays a journal is one that indexes whole, so this loop

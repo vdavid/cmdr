@@ -1019,6 +1019,7 @@ export type MessageKey =
   | 'fileExplorer.navigation.driveIndex.menuIndexingOffNote'
   | 'fileExplorer.navigation.driveIndex.menuRescan'
   | 'fileExplorer.navigation.driveIndex.menuStop'
+  | 'fileExplorer.navigation.driveIndex.queuedBehindScan'
   | 'fileExplorer.navigation.driveIndex.refusedDisconnected'
   | 'fileExplorer.navigation.driveIndex.refusedGeneric'
   | 'fileExplorer.navigation.driveIndex.refusedIndexingOff'

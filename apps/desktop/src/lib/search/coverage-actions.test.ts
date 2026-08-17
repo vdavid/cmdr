@@ -85,6 +85,19 @@ describe('indexUncoveredDrive', () => {
     })
   })
 
+  it('confirms the same when the drive is already being indexed, rather than warning it did not start', async () => {
+    // A full walk of this drive is already running and the request is queued
+    // behind it, so the news from here is the news the note asked for: the drive
+    // is being indexed. Warning would be the opposite of true.
+    enableDriveIndexMock.mockResolvedValue({ status: 'ok', data: { status: 'deferred_until_scan_ends' } })
+    await indexUncoveredDrive('smb-naspi', 'Naspolya')
+
+    expect(toast()).toEqual({
+      message: tString('search.coverage.toast.started', { drive: 'Naspolya' }),
+      level: 'info',
+    })
+  })
+
   it('falls back to a generic drive name when the drive is not in the volume list', async () => {
     enableDriveIndexMock.mockResolvedValue({ status: 'ok', data: { status: 'started' } })
     await indexUncoveredDrive('smb-gone', '')

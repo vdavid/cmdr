@@ -9,8 +9,9 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use super::{INDEX_REGISTRY, IndexInstance, IndexPhase};
+use crate::indexing::lifecycle::cover;
 use crate::indexing::lifecycle::manager::{IndexManager, PhaseResume};
-use crate::indexing::lifecycle::rescan_request::{self, RescanOutcome, ScanStartError};
+use crate::indexing::lifecycle::rescan_request::{RescanOutcome, ScanStartError};
 use crate::indexing::reconcile::verifier;
 
 /// Flip a Running volume's "a full scan is in flight" flag, so a test can pin
@@ -136,16 +137,18 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
 /// Force a fresh full scan for a volume: the manual entry point behind "Rescan
 /// now" and behind an enable that finds a volume still awaiting its first scan.
 ///
-/// This is where a refused request becomes a REMEMBERED one. A cover walk holds
-/// ground for seconds to minutes, and the person who clicked the button can't see
-/// when it lets go, so a `GroundBeingWalked` refusal is recorded
-/// (`rescan_request`) and reported as [`RescanOutcome::Deferred`]; the walk that
-/// blocked it runs it on its way out. ❌ Nothing here decides the coast is clear:
-/// the guard below is asked again at that moment, so a second walk still holding
-/// ground defers it once more instead of truncating under one.
+/// This is where a refused request becomes a REMEMBERED one. Ground on a volume
+/// is held for seconds to minutes, and the person who clicked the button can't see
+/// when it lets go, so a refusal by either kind of holder is recorded in the claim
+/// table and reported as one of the two deferred outcomes; the holder that blocked
+/// it runs it on its way out. ❌ Nothing here decides the coast is clear: the
+/// guards below are asked again at that moment, so a holder still on the volume
+/// defers it once more instead of truncating under one.
 ///
-/// A scan that's ALREADY running answers `Started`, because it is: the caller
-/// wanted a full walk on this volume and one is in flight.
+/// A volume whose FIRST INDEX is still the phase machine's answers `Started` and
+/// remembers nothing: the machine is walking the drive whole, in pieces, which is
+/// the walk the caller asked for, and it composes with everything else on the
+/// drive rather than blocking it. So there is nothing to wait for.
 ///
 /// The other automatic rescan door, `manager::perform_registry_rescan`, remembers
 /// nothing on purpose. Its triggers (a journal gap, a coalesced shallow anchor)
@@ -176,18 +179,22 @@ pub fn force_scan(volume_id: &str) -> Result<RescanOutcome, String> {
     // falsely marking the index complete — so a NAS "Rescan now" indexed zero
     // entries.
     let detached = off_the_registry(volume_id, |mgr| {
-        rescan_request::remember(volume_id);
+        cover::remember_rescan(volume_id);
         match mgr.force_rescan("manual start") {
             Ok(()) | Err(ScanStartError::AlreadyScanning) => {
-                rescan_request::forget(volume_id);
+                cover::forget_rescan(volume_id);
                 Ok(RescanOutcome::Started)
             }
             Err(ScanStartError::GroundBeingWalked) => {
                 log::info!("force_scan: '{volume_id}' is being walked; its scan runs when that walk ends");
-                Ok(RescanOutcome::Deferred)
+                Ok(RescanOutcome::DeferredUntilSearchEnds)
+            }
+            Err(ScanStartError::GroundBeingRewritten) => {
+                log::info!("force_scan: '{volume_id}' is being rebuilt; its scan runs when that run ends");
+                Ok(RescanOutcome::DeferredUntilScanEnds)
             }
             Err(ScanStartError::Internal(diagnostic)) => {
-                rescan_request::forget(volume_id);
+                cover::forget_rescan(volume_id);
                 Err(diagnostic)
             }
         }
@@ -199,7 +206,7 @@ pub fn force_scan(volume_id: &str) -> Result<RescanOutcome, String> {
             // Whatever we just promised, this volume stopped indexing while we
             // were detached; a request left behind would rescan a drive nobody
             // is indexing any more.
-            rescan_request::forget(volume_id);
+            cover::forget_rescan(volume_id);
             result
         }
     }

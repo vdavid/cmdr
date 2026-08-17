@@ -113,9 +113,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `indexing/lifecycle/DETAILS.md` § The two indexing switches): `set_indexing_enabled` moves the gate first, then stops
   every volume or resumes only the drives whose per-drive intent says yes, and `enable_drive_index` refuses once,
   transport-neutrally, with `EnableIndexingOutcome::IndexingDisabled` so the FE has one shape to match. The other
-  non-`Started` arm the FE must answer is `DeferredUntilSearchEnds`: a search is walking the drive, so the index
-  remembers the request and runs it when the walk ends (`indexing/lifecycle/DETAILS.md` § The one walk a volume
-  remembers) — a promise the UI has to voice, since nothing else marks the wait.
+  non-`Started` arms the FE must answer are the two deferrals: something else holds the drive (`DeferredUntilSearchEnds`
+  a search walking it, `DeferredUntilScanEnds` a full walk already running), so the index remembers the request and runs
+  it when that holder ends (`indexing/lifecycle/DETAILS.md` § The one walk a volume remembers) — a promise the UI has to
+  voice, since nothing else marks the wait, and they stay two variants because the user's next question differs.
 - **`media_index/`**: the media-index IPC surface, one module per family — `search.rs` (OCR, tag, semantic,
   find-similar, dedup), `state.rs` (per-volume state + covered-count preview), `reclaim.rs` (preview + prune),
   `file_status.rs` (per-file overlay + per-folder badge), `clip_model.rs` (install state, download, delete),

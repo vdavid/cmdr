@@ -30,6 +30,10 @@ pub enum EnableIndexingOutcome {
     /// says "soon", ❌ never "nothing happened" — this is the variant that stops
     /// "Rescan now" from looking like a dead button.
     DeferredUntilSearchEnds,
+    /// The same promise with the drive held by a full walk of its own (a scan, or
+    /// the journal replay a launch does). The queued walk runs when that one ends,
+    /// so the FE says the drive is already being indexed and this one is next.
+    DeferredUntilScanEnds,
     /// The master drive-indexing switch is off, so no drive may index. Transport-
     /// neutral (the master switch outranks every per-transport gate), so the FE
     /// gets ONE shape to recognize whichever drive was asked for.
@@ -47,6 +51,7 @@ impl From<StartOutcome> for EnableIndexingOutcome {
         match outcome {
             StartOutcome::Started => Self::Started,
             StartOutcome::DeferredUntilSearchEnds => Self::DeferredUntilSearchEnds,
+            StartOutcome::DeferredUntilScanEnds => Self::DeferredUntilScanEnds,
             StartOutcome::IndexingDisabled => Self::IndexingDisabled,
             StartOutcome::Refused(reason) => Self::Refused { reason },
         }

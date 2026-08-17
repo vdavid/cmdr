@@ -338,7 +338,7 @@ fn a_truncating_rescan_of_a_share_refuses_while_a_cover_walk_is_live() {
     let walking = Claim::take(volume_id, vec![share.path("scope")], Mode::Additive);
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(volume_id),
-        Ok(RescanOutcome::Deferred),
+        Ok(RescanOutcome::DeferredUntilSearchEnds),
         "a rescan waits for the walk holding ground on the share, and says so in a variant"
     );
     assert_eq!(

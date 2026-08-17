@@ -25,14 +25,13 @@ impl IndexManager {
     /// counts an ancestor.
     ///
     /// **The two refusals are two different promises**, which is why the claim
-    /// reports a MODE and this maps it:
+    /// reports a MODE and this maps it. Both are remembered and reported as
+    /// deferred, and both are run by the holder in the way on its way out; what
+    /// differs is what the user is told is happening on their drive:
     ///
     /// - an `Exclusive` holder is another whole-volume run (a scan, a journal
-    ///   replay), so the walk the caller asked for is for practical purposes the
-    ///   one in flight, and `force_scan` reports it as `Started`;
-    /// - an `Additive` one is a cover walk holding ground it WILL let go of, so
-    ///   the request is remembered and reported as `Deferred`, and the walk runs it
-    ///   on its way out.
+    ///   replay), so the drive is being rebuilt right now;
+    /// - an `Additive` one is a cover walk, so the drive is being searched.
     ///
     /// ❌ Never by holder identity: the mode is the whole vocabulary
     /// (`cover/live.rs`), and re-entrancy was rejected by name.
@@ -49,8 +48,8 @@ impl IndexManager {
             Some(cover::Mode::Additive) => Err(ScanStartError::GroundBeingWalked),
             // Exclusive, and the unreachable "refused by nobody" — a claim over one
             // root gets it unless somebody holds the volume. Both mean a
-            // whole-volume run owns this drive, which is what the caller wanted.
-            _ => Err(ScanStartError::AlreadyScanning),
+            // whole-volume run owns this drive.
+            _ => Err(ScanStartError::GroundBeingRewritten),
         }
     }
 

@@ -1405,6 +1405,10 @@
   "@fileExplorer.navigation.driveIndex.deferredEnable": {
     "sourceHash": "b27d24c"
   },
+  "fileExplorer.navigation.driveIndex.queuedBehindScan": "Cmdr đang lập chỉ mục {name}. Lượt quét bạn yêu cầu sẽ bắt đầu ngay khi xong.",
+  "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
+    "sourceHash": "09106ce"
+  },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr không thể lập chỉ mục {name} ngay lúc này. Hãy kết nối lại ổ đĩa và thử lại.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"

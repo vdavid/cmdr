@@ -95,7 +95,21 @@ fn scan_failure_is_vanished_volume(err: &ScanError) -> bool {
 
 /// Wait for the scan to finish, then run post-scan reconciliation and switch to
 /// live mode. Spawned by `start_scan`; see [`ScanCompletion`] for the inputs.
+///
+/// Ends by running the rescan somebody queued behind this scan, if there is one.
+/// ⚠️ **Here rather than beside the claim release below**, and the gap is the
+/// point: the ground comes back when the walk THREAD is done, but this task keeps
+/// writing after that — buffered events, then `scan_completed_at`. A truncating
+/// rescan starting in that window would take the old scan's completion marker onto
+/// its own half-built index, the one state that makes a launch skip the heal.
 pub(super) async fn run_scan_completion(params: ScanCompletion) {
+    let volume_id = params.volume_id.clone();
+    finish_the_scan(params).await;
+    super::rescan_request::run_if_owed(&volume_id);
+}
+
+/// Everything the completion task does with the scan's result, join to live loop.
+async fn finish_the_scan(params: ScanCompletion) {
     let ScanCompletion {
         join_handle,
         scan_done,
@@ -121,9 +135,14 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
     scan_done.store(true, Ordering::Relaxed);
     // Reset scanning flag so get_status() reports correctly
     scanning.store(false, Ordering::Relaxed);
-    // And let the volume's ground go, which is what lets a new scan (or a search
-    // walk) start. Released HERE, right after the join: the walk thread is
-    // finished, so nothing is still inserting rows a rescan could truncate under.
+    // And let the volume's ground go, which is what lets a search walk start.
+    // Released HERE, right after the join: the walk thread is finished, so nothing
+    // is reading the disk any more, and a search that waited through the scan gets
+    // its answer without also waiting out the handoff below. What the handoff still
+    // writes is arbitrated by the branch set, exactly as on any live volume.
+    //
+    // ⚠️ The rescan someone may have queued behind this scan does NOT run here; see
+    // `run_scan_completion` for why it waits for the end of the handoff.
     drop(ground);
 
     // Flatten the outer Result (from spawn_blocking) and inner Result (from thread join)
@@ -610,6 +629,54 @@ mod tests {
             let next = cover::Claim::take(volume_id, vec!["/".to_string()], cover::Mode::Exclusive);
             assert_eq!(next.mine(), ["/"], "'{volume_id}' is walkable again");
         }
+    }
+
+    /// A rescan queued behind this scan is RUN by it.
+    ///
+    /// The queue only works if every whole-volume holder carries the request out on
+    /// its way, and this is the local scan's half of that. Miss it and a user who
+    /// pressed "Rescan now" mid-scan is promised a walk that never comes.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_rescan_queued_behind_a_scan_runs_when_the_scan_ends() {
+        let mut fx = Fixture::new("owed-after-scan");
+        let params = fx.completion("owed-after-scan", Ok(summary(42)));
+        cover::remember_rescan("owed-after-scan");
+
+        run_scan_completion(params).await;
+
+        // The volume isn't registered in this fixture, so the scan attempt itself
+        // goes nowhere; what this pins is that the request was carried out of the
+        // task rather than left waiting for a holder that is never coming back.
+        cmdr_fs::testing::wait_until(
+            std::time::Duration::from_secs(10),
+            "the queued rescan to be taken up",
+            || !cover::a_rescan_can_start("owed-after-scan"),
+        );
+    }
+
+    /// And it runs AFTER the handoff, not where the ground goes back.
+    ///
+    /// Fired right after the join, the rescan would truncate while this task is
+    /// still reconciling buffered events and stamping `scan_completed_at` — landing
+    /// this scan's completion marker on the new scan's half-built index, which is
+    /// exactly the state that makes the next launch skip the healing rescan. So the
+    /// whole handoff runs with the request still waiting.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_handoff_finishes_before_the_queued_rescan_may_truncate() {
+        let mut fx = Fixture::new("owed-ordering");
+        let params = fx.completion("owed-ordering", Ok(summary(42)));
+        cover::remember_rescan("owed-ordering");
+
+        finish_the_scan(params).await;
+
+        assert!(
+            fx.completion_marker().await.is_some(),
+            "precondition: the handoff wrote the marker"
+        );
+        assert!(
+            cover::take_rescan("owed-ordering"),
+            "and the request was still waiting while it did, so nothing could truncate under it"
+        );
     }
 
     /// The one that strands an index if it ever goes wrong: a stopped scan holds

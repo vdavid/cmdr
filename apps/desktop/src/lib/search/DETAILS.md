@@ -175,11 +175,14 @@ again" writes it here). The note itself always renders: silencing the offer does
 on `SearchResult.targetVolumeId` — the volume the BACKEND routed to — because a typed scope can point at a drive the
 pane isn't on, and offering to index the wrong one would be worse than saying nothing.
 
-`indexUncoveredDrive` branches on the TYPED `EnableIndexingOutcome`, and one arm is easy to get backwards:
-`deferred_until_search_ends` means a search is walking that very drive, so the scan can't truncate under it yet and the
-backend remembers the request to run when the walk ends (model: `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` §
-The one walk a volume remembers). It's a promise; falling through to the "Cmdr can't index this right now" answer would
-be the opposite of true.
+`indexUncoveredDrive` branches on the TYPED `EnableIndexingOutcome`, and two arms are easy to get backwards. Both are
+promises, and falling through to the "Cmdr can't index this right now" answer would be the opposite of true (model:
+`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The one walk a volume remembers):
+
+- `deferred_until_search_ends` means a search is walking that very drive, so the scan can't truncate under it yet and
+  the backend remembers the request to run when the walk ends.
+- `deferred_until_scan_ends` means a full walk of the drive is already running. From HERE that is the same news as
+  `started` — the drive is being indexed — so it shares that toast rather than carrying copy of its own.
 
 ## The live search (`live-search-source.ts`, `live-ranking.ts`)
 

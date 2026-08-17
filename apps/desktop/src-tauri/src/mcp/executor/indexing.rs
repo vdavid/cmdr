@@ -58,14 +58,20 @@ pub async fn execute_indexing(params: &Value) -> ToolResult {
                         return Err(ToolError::internal(format!("Can't index {volume_id}: {reason}")));
                     }
 
-                    // A search is walking this drive, so the walk we asked for is
+                    // Something else holds the drive, so the walk we asked for is
                     // REMEMBERED rather than running: the index starts it when that
-                    // walk ends. Say so and return, since the freshness this waits
+                    // holder ends. Say so and return, since the freshness this waits
                     // for isn't going to move yet.
                     if matches!(started, EnableIndexingOutcome::DeferredUntilSearchEnds) {
                         return Ok(json!(format!(
                             "OK: {action} indexing for {volume_id} is waiting for the search walking it; \
                              it starts on its own when that walk ends"
+                        )));
+                    }
+                    if matches!(started, EnableIndexingOutcome::DeferredUntilScanEnds) {
+                        return Ok(json!(format!(
+                            "OK: {action} indexing for {volume_id} is queued behind the walk already \
+                             running on it; it starts on its own when that one ends"
                         )));
                     }
 
