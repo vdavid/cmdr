@@ -203,7 +203,7 @@ fn a_walk_that_gets_no_ground_opens_no_session_and_answers_on_the_spot() {
     // `a_walk_leaves_ground_another_walk_is_covering_to_it` uses, and for the same
     // reason: a real first walk over a fixture this small can finish before the
     // second one starts.
-    let held = Claim::take("cover-share-no-ground-test", vec![scope.clone()]);
+    let held = Claim::take("cover-share-no-ground-test", vec![scope.clone()], Mode::Additive);
 
     let (walk, _cancel) = share.walk(&scope);
     assert_eq!(
@@ -335,7 +335,7 @@ fn a_truncating_rescan_of_a_share_refuses_while_a_cover_walk_is_live() {
     let rows = share.child_ids(&share.path("scope"));
     assert_eq!(rows.len(), 1, "precondition: the walk's rows are in");
 
-    let walking = Claim::take(volume_id, vec![share.path("scope")]);
+    let walking = Claim::take(volume_id, vec![share.path("scope")], Mode::Additive);
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(volume_id),
         Ok(RescanOutcome::Deferred),

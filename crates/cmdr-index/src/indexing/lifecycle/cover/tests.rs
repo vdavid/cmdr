@@ -438,7 +438,7 @@ fn a_walk_leaves_ground_another_walk_is_covering_to_it() {
     f.seed_chain(&root.join("shared"));
     f.seed_chain(&root.join("mine"));
 
-    let first = Claim::take(&f.volume_id, vec![f.path("shared")]);
+    let first = Claim::take(&f.volume_id, vec![f.path("shared")], Mode::Additive);
     let second = start(
         f.context(),
         vec![f.path("shared/inner"), f.path("mine")],

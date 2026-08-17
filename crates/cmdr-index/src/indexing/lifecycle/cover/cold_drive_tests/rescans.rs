@@ -27,7 +27,7 @@ fn a_rescan_refused_under_a_walk_runs_when_the_walk_ends() {
 
     // The ground a walk holds for as long as it runs, taken directly so the window
     // is deterministic rather than a race against a walk of two files.
-    let claim = Claim::take(drive.volume_id, vec![scope.clone()]);
+    let claim = Claim::take(drive.volume_id, vec![scope.clone()], Mode::Additive);
     crate::indexing::lifecycle::state::begin_branch_coverage(drive.volume_id, claim.mine());
 
     assert_eq!(
@@ -62,8 +62,8 @@ fn a_remembered_rescan_waits_for_the_last_walk_out() {
     drive.cover(&scope);
     drive.mark_scan_completed();
 
-    let first = Claim::take(drive.volume_id, vec![scope.clone()]);
-    let second = Claim::take(drive.volume_id, vec![drive.path("elsewhere")]);
+    let first = Claim::take(drive.volume_id, vec![scope.clone()], Mode::Additive);
+    let second = Claim::take(drive.volume_id, vec![drive.path("elsewhere")], Mode::Additive);
     crate::indexing::lifecycle::state::begin_branch_coverage(drive.volume_id, first.mine());
 
     assert_eq!(
@@ -101,7 +101,7 @@ fn a_drive_that_stopped_indexing_is_owed_no_rescan() {
     drive.cover(&scope);
     drive.mark_scan_completed();
 
-    let walking = Claim::take(drive.volume_id, vec![scope.clone()]);
+    let walking = Claim::take(drive.volume_id, vec![scope.clone()], Mode::Additive);
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(drive.volume_id),
         Ok(RescanOutcome::Deferred),
@@ -155,7 +155,7 @@ fn a_truncating_rescan_refuses_while_a_search_cover_walk_is_live() {
 
     // The hold a walk keeps for as long as it runs, taken directly so the window
     // is deterministic rather than a race against a walk of two files.
-    let walking = Claim::take(drive.volume_id, vec![scope.clone()]);
+    let walking = Claim::take(drive.volume_id, vec![scope.clone()], Mode::Additive);
 
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(drive.volume_id),
@@ -212,7 +212,7 @@ fn a_rescan_during_the_phased_window_starts_the_machine_under_a_live_walk() {
     let epoch = drive.current_epoch();
 
     // A second walk is live on the volume, holding ground.
-    let walking = Claim::take(drive.volume_id, vec![scope.clone()]);
+    let walking = Claim::take(drive.volume_id, vec![scope.clone()], Mode::Additive);
 
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(drive.volume_id),

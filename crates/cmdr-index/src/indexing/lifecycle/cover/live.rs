@@ -21,19 +21,99 @@
 //! second search live batches for the shared ground, but it needs per-subscriber
 //! filtering and per-subscriber completion (root X is done while the walk moves
 //! on to Y and Z), and there is no second consumer today to shape either against.
+//!
+//! ## What the table is, and why
+//!
+//! Claims are held path-keyed in a `BTreeMap` per volume, so "does anyone hold
+//! ground overlapping this root" is two range questions rather than a scan of
+//! everything held: the ancestor chain is a handful of lookups whatever the table
+//! holds, and the descendants come out of one sorted range that costs what it
+//! yields. ❌ Never a `Vec` scan — a frontier is checked root by root against the
+//! roots already taken, so a linear membership test makes ONE `take` quadratic in
+//! its own width, and a cold-drive search really does arrive with thousands of
+//! roots (`docs/notes/claim-table-cost-2026-08-17.md`).
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Mutex, OnceLock};
 
-use crate::indexing::paths::path_prefix::is_strict_descendant;
+use crate::indexing::paths::path_prefix::{descendant_range_prefix, self_and_ancestors};
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// The frontier roots being walked right now, per volume id. A volume with no
 /// live walk holds no entry.
-static IN_FLIGHT: OnceLock<Mutex<HashMap<String, Vec<String>>>> = OnceLock::new();
+static IN_FLIGHT: OnceLock<Mutex<HashMap<String, VolumeClaims>>> = OnceLock::new();
 
-fn in_flight() -> &'static Mutex<HashMap<String, Vec<String>>> {
+fn in_flight() -> &'static Mutex<HashMap<String, VolumeClaims>> {
     IN_FLIGHT.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// How much of a volume a claim speaks for.
+///
+/// ⚠️ The two modes are the whole arbitration vocabulary, and deliberately so:
+/// ❌ never re-entrancy or holder identity. A refusal says what KIND of holder is
+/// in the way, which is all a caller needs to decide what to tell the user.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Mode {
+    /// The whole volume, whatever ground anyone else names. A truncating scan
+    /// blanks the database and bumps the epoch, so every concurrent walk is
+    /// writing into a table about to disappear — overlapping ground or not.
+    Exclusive,
+    /// Only the ground it names. Two of these compose as long as their frontiers
+    /// stay off each other, which is what lets a search-driven walk run beside
+    /// the phase machine covering the same volume in pieces (Decision 13).
+    Additive,
+}
+
+/// The claims held on one volume, keyed by path.
+#[derive(Default)]
+struct VolumeClaims {
+    /// Every root somebody holds, and how much of the volume that holder speaks
+    /// for. Keys are unique across holders: a root is granted only when nothing
+    /// overlapping it is held, and a path overlaps itself.
+    roots: BTreeMap<String, Mode>,
+    /// How many of `roots` are [`Mode::Exclusive`], so "is this whole volume
+    /// spoken for" is a counter read rather than a scan.
+    exclusive: usize,
+}
+
+impl VolumeClaims {
+    /// Whether any held root would cover `root`'s ground, in either direction.
+    ///
+    /// A requested root overlaps a held one in EITHER direction — a descendant of
+    /// a live root is already being walked, and an ancestor of one would walk
+    /// straight through it. The second case shouldn't arise from a coverage
+    /// answer (a frontier node's ancestors are listed, or they'd be the frontier
+    /// instead), which is exactly why it's handled rather than assumed.
+    fn overlapping(&self, root: &str) -> bool {
+        self_and_ancestors(root).any(|candidate| self.roots.contains_key(candidate)) || self.holds_under(root)
+    }
+
+    /// Whether anything strictly under `root` is held. One sorted range, stopped
+    /// at the first key outside the prefix.
+    fn holds_under(&self, root: &str) -> bool {
+        let prefix = descendant_range_prefix(root);
+        // ⚠️ The root is its OWN range prefix, so without the length test a claim
+        // at the volume root reads as holding ground under itself. Every strict
+        // descendant's key is longer than the path it sits under.
+        let self_len = root.len();
+        self.roots
+            .range(prefix.clone()..)
+            .take_while(|(key, _)| key.starts_with(&prefix))
+            .any(|(key, _)| key.len() > self_len)
+    }
+
+    fn insert(&mut self, root: String, mode: Mode) {
+        if mode == Mode::Exclusive {
+            self.exclusive += 1;
+        }
+        self.roots.insert(root, mode);
+    }
+
+    fn remove(&mut self, root: &str) {
+        if self.roots.remove(root) == Some(Mode::Exclusive) {
+            self.exclusive -= 1;
+        }
+    }
 }
 
 /// One walk's hold on the frontier roots it may cover, released when it ends.
@@ -44,42 +124,45 @@ pub(super) struct Claim {
     volume_id: String,
     /// The roots this walk took.
     mine: Vec<String>,
-    /// The roots it didn't, because another walk on this volume is covering
-    /// them.
+    /// The roots it didn't, because another holder on this volume has them.
     deferred: Vec<String>,
 }
 
 impl Claim {
     /// Split `frontier` into the roots this walk may take and the roots another
-    /// walk already owns.
+    /// holder already owns.
     ///
-    /// A requested root overlaps a claimed one in EITHER direction — a
-    /// descendant of a live root is already being walked, and an ancestor of one
-    /// would walk straight through it. The second case shouldn't arise from a
-    /// coverage answer (a frontier node's ancestors are listed, or they'd be the
-    /// frontier instead), which is exactly why it's handled rather than assumed.
-    /// The same test deduplicates a frontier that overlaps itself.
-    pub(super) fn take(volume_id: &str, frontier: Vec<String>) -> Self {
+    /// The overlap rule is [`VolumeClaims::overlapping`], and it deduplicates a
+    /// frontier that overlaps ITSELF by the same test: each root is checked
+    /// against the ones this call has already taken, so one walk can't
+    /// double-write its own ground either.
+    pub(super) fn take(volume_id: &str, frontier: Vec<String>, mode: Mode) -> Self {
         let mut live = in_flight().lock_ignore_poison();
         let claimed = live.entry(volume_id.to_string()).or_default();
+
+        // ⚠️ Read BEFORE this claim takes anything, so the volume-wide rule is
+        // about OTHER holders. Asked per root instead, an `Exclusive` claim over
+        // several roots would refuse its own second root the moment its first
+        // landed.
+        let volume_is_spoken_for = !claimed.roots.is_empty() && (mode == Mode::Exclusive || claimed.exclusive > 0);
 
         let mut mine = Vec::with_capacity(frontier.len());
         let mut deferred = Vec::new();
         for root in frontier {
-            if claimed.iter().any(|held| overlaps(held, &root)) {
+            if volume_is_spoken_for || claimed.overlapping(&root) {
                 deferred.push(root);
             } else {
-                claimed.push(root.clone());
+                claimed.insert(root.clone(), mode);
                 mine.push(root);
             }
         }
 
-        if claimed.is_empty() {
+        if claimed.roots.is_empty() {
             live.remove(volume_id);
         }
         if !deferred.is_empty() {
             log::debug!(
-                "Cover: leaving {} frontier root(s) on '{volume_id}' to the walk already covering them",
+                "Cover: leaving {} frontier root(s) on '{volume_id}' to the holder already covering them",
                 deferred.len()
             );
         }
@@ -95,7 +178,7 @@ impl Claim {
         &self.mine
     }
 
-    /// The roots it left to another walk.
+    /// The roots it left to another holder.
     pub(super) fn deferred(&self) -> &[String] {
         &self.deferred
     }
@@ -108,8 +191,10 @@ impl Drop for Claim {
         }
         let mut live = in_flight().lock_ignore_poison();
         if let Some(claimed) = live.get_mut(&self.volume_id) {
-            claimed.retain(|held| !self.mine.contains(held));
-            if claimed.is_empty() {
+            for root in &self.mine {
+                claimed.remove(root);
+            }
+            if claimed.roots.is_empty() {
                 live.remove(&self.volume_id);
             }
         }
@@ -130,26 +215,73 @@ pub(in crate::indexing) fn ground_being_walked(volume_id: &str, frontier: &[Stri
     };
     frontier
         .iter()
-        .filter(|root| claimed.iter().any(|held| overlaps(held, root)))
+        .filter(|root| claimed.overlapping(root))
         .cloned()
         .collect()
-}
-
-/// Whether walking one of these two roots would cover any of the other's ground.
-fn overlaps(a: &str, b: &str) -> bool {
-    a == b || is_strict_descendant(a, b) || is_strict_descendant(b, a)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::indexing::paths::path_prefix::is_strict_descendant;
+
+    /// The overlap rule, written as the predicate it is. The table answers it with
+    /// range queries instead, and [`the_range_queries_answer_the_overlap_rule`]
+    /// holds the two to each other.
+    fn overlaps(a: &str, b: &str) -> bool {
+        a == b || is_strict_descendant(a, b) || is_strict_descendant(b, a)
+    }
+
+    /// The refactor's one real risk: the `BTreeMap` range queries are an
+    /// OPTIMIZATION of the overlap predicate, and nothing else makes them agree
+    /// with it. A prefix test that lost its component-awareness would let a walk
+    /// take ground another walk is writing, which is the data-safety bug this
+    /// whole module exists to prevent, and it would do it silently.
+    #[test]
+    fn the_range_queries_answer_the_overlap_rule() {
+        let paths = [
+            "/", "/a", "/a/b", "/a/b/c", "/a/bc", "/a/bc/d", "/ab", "/ab/c", "/b", "/a/b/c/d",
+        ];
+        for held in paths {
+            let mut claims = VolumeClaims::default();
+            claims.insert(held.to_string(), Mode::Additive);
+            for asked in paths {
+                assert_eq!(
+                    claims.overlapping(asked),
+                    overlaps(held, asked),
+                    "holding {held}, asked about {asked}"
+                );
+            }
+        }
+    }
+
+    /// The same agreement with the table holding MANY roots at once, which is the
+    /// shape a real frontier has and the one where a range that stops too early
+    /// (or runs past its prefix) shows up.
+    #[test]
+    fn the_range_queries_agree_with_a_table_full_of_roots() {
+        let held = ["/a/b", "/a/bc", "/ab", "/x/y/z", "/x/y/zz"];
+        let mut claims = VolumeClaims::default();
+        for root in held {
+            claims.insert(root.to_string(), Mode::Additive);
+        }
+        for asked in [
+            "/", "/a", "/a/b", "/a/b/c", "/a/bc", "/a/bcd", "/ab/c", "/x", "/x/y", "/x/y/z/w", "/q",
+        ] {
+            assert_eq!(
+                claims.overlapping(asked),
+                held.iter().any(|h| overlaps(h, asked)),
+                "asked about {asked}"
+            );
+        }
+    }
 
     /// The case Decision 11 creates: a refined query asks for ground the first
     /// query's walk is still covering. The second walk takes none of it, and says
     /// which roots it left behind.
     #[test]
     fn a_root_another_walk_is_covering_is_left_to_it() {
-        let first = Claim::take("overlap-vol", vec!["/a".to_string(), "/b".to_string()]);
+        let first = Claim::take("overlap-vol", vec!["/a".to_string(), "/b".to_string()], Mode::Additive);
         assert_eq!(first.mine(), ["/a", "/b"]);
         assert!(first.deferred().is_empty());
 
@@ -162,6 +294,7 @@ mod tests {
                 "/".to_string(),       // an ancestor of both claimed roots
                 "/bc".to_string(),     // NOT inside `/b`, component-aware
             ],
+            Mode::Additive,
         );
         assert_eq!(second.mine(), ["/c", "/bc"]);
         assert_eq!(second.deferred(), ["/a", "/b/deep", "/"]);
@@ -177,7 +310,7 @@ mod tests {
             "nobody is walking a volume with no walk on it"
         );
 
-        let held = Claim::take("ask-vol", vec!["/a".to_string()]);
+        let held = Claim::take("ask-vol", vec!["/a".to_string()], Mode::Additive);
         assert_eq!(
             ground_being_walked("ask-vol", &["/a/inner".to_string(), "/b".to_string()]),
             ["/a/inner"],
@@ -195,8 +328,8 @@ mod tests {
     /// places.
     #[test]
     fn two_volumes_claim_independently() {
-        let _first = Claim::take("volume-one", vec!["/shared".to_string()]);
-        let second = Claim::take("volume-two", vec!["/shared".to_string()]);
+        let _first = Claim::take("volume-one", vec!["/shared".to_string()], Mode::Additive);
+        let second = Claim::take("volume-two", vec!["/shared".to_string()], Mode::Additive);
 
         assert_eq!(second.mine(), ["/shared"], "a different drive, a different folder");
     }
@@ -205,7 +338,11 @@ mod tests {
     /// walk can't double-write its own ground either.
     #[test]
     fn a_frontier_that_overlaps_itself_is_deduplicated() {
-        let claim = Claim::take("self-overlap-vol", vec!["/a".to_string(), "/a/inner".to_string()]);
+        let claim = Claim::take(
+            "self-overlap-vol",
+            vec!["/a".to_string(), "/a/inner".to_string()],
+            Mode::Additive,
+        );
 
         assert_eq!(claim.mine(), ["/a"]);
         assert_eq!(claim.deferred(), ["/a/inner"]);
@@ -215,9 +352,9 @@ mod tests {
     /// rather than deferring forever.
     #[test]
     fn ground_is_released_when_its_walk_ends() {
-        drop(Claim::take("release-vol", vec!["/a".to_string()]));
+        drop(Claim::take("release-vol", vec!["/a".to_string()], Mode::Additive));
 
-        let next = Claim::take("release-vol", vec!["/a".to_string()]);
+        let next = Claim::take("release-vol", vec!["/a".to_string()], Mode::Additive);
         assert_eq!(next.mine(), ["/a"]);
         drop(next);
 
@@ -231,12 +368,157 @@ mod tests {
     /// were taken in the same order.
     #[test]
     fn releasing_one_walk_leaves_the_others_claims_standing() {
-        let keeper = Claim::take("mixed-vol", vec!["/keep".to_string()]);
-        drop(Claim::take("mixed-vol", vec!["/go".to_string()]));
+        let keeper = Claim::take("mixed-vol", vec!["/keep".to_string()], Mode::Additive);
+        drop(Claim::take("mixed-vol", vec!["/go".to_string()], Mode::Additive));
 
-        let next = Claim::take("mixed-vol", vec!["/keep".to_string(), "/go".to_string()]);
+        let next = Claim::take(
+            "mixed-vol",
+            vec!["/keep".to_string(), "/go".to_string()],
+            Mode::Additive,
+        );
         assert_eq!(next.mine(), ["/go"], "only the released root is free");
         assert_eq!(next.deferred(), ["/keep"]);
         drop(keeper);
+    }
+
+    // ── Modes ────────────────────────────────────────────────────────────
+
+    /// An `Exclusive` holder speaks for the whole volume, so a walk over ground
+    /// nowhere near it still defers. A truncating scan blanks the database, and
+    /// "somewhere else on the same drive" is no protection from that.
+    #[test]
+    fn an_exclusive_holder_refuses_ground_it_does_not_overlap() {
+        let _scan = Claim::take("exclusive-vol", vec!["/scan".to_string()], Mode::Exclusive);
+
+        let walk = Claim::take("exclusive-vol", vec!["/somewhere/else".to_string()], Mode::Additive);
+        assert!(walk.mine().is_empty(), "the whole volume is spoken for");
+        assert_eq!(walk.deferred(), ["/somewhere/else"]);
+    }
+
+    /// And an `Exclusive` claim is refused by ground an `Additive` walk holds,
+    /// however little of the volume that is. This is the truncate-under-a-walk
+    /// door, from the other side.
+    #[test]
+    fn a_walk_anywhere_refuses_an_exclusive_claim() {
+        let _walk = Claim::take("exclusive-refused-vol", vec!["/corner".to_string()], Mode::Additive);
+
+        let scan = Claim::take("exclusive-refused-vol", vec!["/".to_string()], Mode::Exclusive);
+        assert!(scan.mine().is_empty(), "one walk anywhere is enough to refuse it");
+        assert_eq!(scan.deferred(), ["/"]);
+    }
+
+    /// Two `Exclusive` claims exclude each other, even on disjoint ground: each
+    /// one is the whole volume's.
+    #[test]
+    fn two_exclusive_claims_exclude_each_other() {
+        let _first = Claim::take("two-exclusive-vol", vec!["/one".to_string()], Mode::Exclusive);
+
+        let second = Claim::take("two-exclusive-vol", vec!["/two".to_string()], Mode::Exclusive);
+        assert!(second.mine().is_empty());
+        assert_eq!(second.deferred(), ["/two"]);
+    }
+
+    /// Two `Additive` walks on disjoint ground both run. This is the mode pair
+    /// the search walk and the phase machine rely on (Decision 13), and the one
+    /// an `Exclusive`-everywhere design would have broken.
+    #[test]
+    fn two_additive_walks_on_disjoint_ground_both_run() {
+        let _first = Claim::take("additive-vol", vec!["/one".to_string()], Mode::Additive);
+
+        let second = Claim::take("additive-vol", vec!["/two".to_string()], Mode::Additive);
+        assert_eq!(second.mine(), ["/two"], "different ground, both walk");
+        assert!(second.deferred().is_empty());
+    }
+
+    /// An `Exclusive` claim over several roots takes them ALL: the volume-wide
+    /// rule is about other holders, so its own first root can't refuse its
+    /// second.
+    #[test]
+    fn an_exclusive_claim_does_not_refuse_its_own_roots() {
+        let scan = Claim::take(
+            "exclusive-self-vol",
+            vec!["/one".to_string(), "/two".to_string()],
+            Mode::Exclusive,
+        );
+
+        assert_eq!(scan.mine(), ["/one", "/two"]);
+        assert!(scan.deferred().is_empty());
+    }
+
+    /// It still deduplicates ground it named twice, by the same overlap rule
+    /// every other claim uses.
+    #[test]
+    fn an_exclusive_claim_still_deduplicates_its_own_frontier() {
+        let scan = Claim::take(
+            "exclusive-dedup-vol",
+            vec!["/a".to_string(), "/a/inner".to_string()],
+            Mode::Exclusive,
+        );
+
+        assert_eq!(scan.mine(), ["/a"]);
+        assert_eq!(scan.deferred(), ["/a/inner"]);
+    }
+
+    /// The volume opens back up when the exclusive holder leaves, and the counter
+    /// that tracks it comes back down with it. Without that, one finished scan
+    /// would wedge its volume for the rest of the session.
+    #[test]
+    fn a_volume_reopens_when_its_exclusive_holder_leaves() {
+        let scan = Claim::take("exclusive-release-vol", vec!["/".to_string()], Mode::Exclusive);
+        drop(scan);
+
+        let walk = Claim::take("exclusive-release-vol", vec!["/anywhere".to_string()], Mode::Additive);
+        assert_eq!(walk.mine(), ["/anywhere"], "the volume is free again");
+    }
+
+    /// A partial grant survives every mode: the walk takes the roots it can and
+    /// reports the rest, rather than the all-or-nothing answer that would make a
+    /// wide frontier an all-or-nothing bet.
+    #[test]
+    fn a_partial_grant_takes_what_it_can_and_reports_the_rest() {
+        let _held = Claim::take(
+            "partial-vol",
+            vec!["/taken".to_string(), "/also-taken".to_string()],
+            Mode::Additive,
+        );
+
+        let mixed = Claim::take(
+            "partial-vol",
+            vec![
+                "/taken".to_string(),
+                "/free".to_string(),
+                "/also-taken/inner".to_string(),
+                "/free-too".to_string(),
+            ],
+            Mode::Additive,
+        );
+        assert_eq!(mixed.mine(), ["/free", "/free-too"]);
+        assert_eq!(mixed.deferred(), ["/taken", "/also-taken/inner"]);
+    }
+
+    /// A claim at the volume root covers everything under it, which is what lets
+    /// a scan entry ask about the whole volume by naming just the root.
+    #[test]
+    fn a_claim_at_the_volume_root_covers_every_subtree() {
+        let _whole = Claim::take("whole-vol", vec!["/".to_string()], Mode::Additive);
+
+        assert_eq!(
+            ground_being_walked("whole-vol", &["/deep/inside/here".to_string()]),
+            ["/deep/inside/here"],
+            "the root holds every subtree under it"
+        );
+    }
+
+    /// And the reverse: a subtree claim answers a whole-volume question, which is
+    /// how a scan entry probing with the volume root finds a walk anywhere.
+    #[test]
+    fn a_subtree_claim_answers_a_whole_volume_question() {
+        let _subtree = Claim::take("subtree-vol", vec!["/deep/inside".to_string()], Mode::Additive);
+
+        assert_eq!(
+            ground_being_walked("subtree-vol", &["/".to_string()]),
+            ["/"],
+            "asking about the root finds a walk anywhere under it"
+        );
     }
 }

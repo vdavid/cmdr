@@ -21,16 +21,20 @@ same ground. The registry and the phase machine it runs against are `../CLAUDE.m
 - **A missing `entries` row is NOT only a cold-drive case**: a folder created since its parent was listed has no row on
   a drive indexed yesterday either. ❌ Don't gate bootstrap on "never indexed".
 - **A walk CLAIMS its frontier roots, and a later walk over claimed ground doesn't take it** (`live.rs`). Two walks over
-  one directory allocate different ids for the same names, and `INSERT OR IGNORE` against
-  `UNIQUE (parent_id, name_folded)` makes the loser lose its whole subtree. This is a data-safety rule, ❌ not a
-  performance one.
-- **The second search loses nothing durable**: the first walk's rows land in the same index and Decision 12 shows them
-  to the very next query. ❌ Don't reach for a shared-subscriber fan-out — it needs per-subscriber filtering and
-  completion, with no second consumer to shape either against.
-- **A claim that takes NO ground spawns no walk at all** (`CoverWalk::took_no_ground`), so it runs none of the tail
-  above and ❌ never put work a no-ground request still owes into `start` or `walk_frontier`. A walk's tail commits the
-  writer, which parks behind every batch already queued: seconds behind a first index, spent to commit nothing, while
-  the search that asked sat silent. `docs/notes/cover-no-ground-block-2026-08-15.md`.
+  one directory allocate different ids for the same names, and `INSERT OR IGNORE` makes the loser lose its whole
+  subtree. A data-safety rule, ❌ not a performance one. The deferred search loses nothing durable, so ❌ don't reach
+  for a shared-subscriber fan-out.
+- **A claim holds `Additive`** (every cover walk: the ground it names, composes with the phase machine) **or
+  `Exclusive`** (the whole volume, for a holder that blanks the database). ❌ Never solve a third wish with holder
+  identity or re-entrancy.
+- **The claim table is a path-keyed `BTreeMap`, ❌ never a `Vec` scan**: `take` checks each root against the ones it
+  already took, so a linear test is quadratic in the frontier's own width (446.77 ms at 2,503 roots, on the thread the
+  search waits on). Its range queries only approximate the component-aware overlap predicate; ❌ don't delete
+  `the_range_queries_answer_the_overlap_rule`, the one thing holding them together.
+- **A claim that takes NO ground spawns no walk at all** (`CoverWalk::took_no_ground`), so ❌ never put work a no-ground
+  request still owes into `start` or `walk_frontier`. A walk's tail commits the writer, which parks behind every batch
+  already queued: seconds behind a first index, spent to commit nothing, while the search that asked sat silent.
+  `docs/notes/cover-no-ground-block-2026-08-15.md`.
 
 The walk's stages, the claim mechanism, and everything bootstrap has to stand up: `DETAILS.md`. Read it before any
 non-trivial work here: editing, planning, reorganizing, or advising.

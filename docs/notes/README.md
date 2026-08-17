@@ -49,6 +49,11 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   path-keyed `BTreeMap` (87× off registering a 2,500-root frontier, up to 1,231× off a single live event), plus the two
   questions whose cost has to stay bounded by the PATH rather than by the set. Read it before touching
   `watch/branches.rs`: three separate efforts named this as a suspect and none of them measured it.
+- `claim-table-cost-2026-08-17.md` — the same `Vec`-to-`BTreeMap` story one level down, for the claim table that keeps
+  two walks off each other's ground (200× off taking a 2,500-root frontier, 1,651× off re-asking under a live walk).
+  Read it before assuming the claim is too cheap to matter: it was 446.77 ms on the thread a search waits on, an order
+  of magnitude above what the plan that ordered the measurement had guessed. It names ~450 ms of
+  `cover-no-ground-block-2026-08-15.md`'s unattributed 3.0 s and ❌ does not close that question.
 - `churn-against-completion-2026-08-15.md` — whether a drive somebody is writing to can stop its first index from ever
   finishing (no: it takes ~200 new folders a second sustained to cost one session's completion marker, and the next
   launch settles the drive in ~2 s). Read it before treating a slow first index on a busy machine as a regression, or

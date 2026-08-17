@@ -265,7 +265,12 @@ pub(crate) fn start(
     // Taken on the CALLER's thread, so the answer is already true by the time
     // this returns: a caller that starts two walks in a row can't have the second
     // one claim ground the first hasn't reached the registry with yet.
-    let claim = Claim::take(&context.volume_id, frontier);
+    //
+    // `Additive`: a cover walk speaks only for the ground it names, so it composes
+    // with the phase machine covering the same volume in pieces (Decision 13) and
+    // with any other walk that stays off its frontier. ❌ Never `Exclusive` — that
+    // is for a holder that blanks the whole database.
+    let claim = Claim::take(&context.volume_id, frontier, Mode::Additive);
     let deferred = claim.deferred().to_vec();
 
     // Every root belongs to a walk already running, so there is no walk to make.
@@ -698,13 +703,15 @@ mod bootstrap;
 mod live;
 
 pub(crate) use bootstrap::{NoCoverContext, context_for_walk};
-use live::Claim;
 pub(in crate::indexing) use live::ground_being_walked;
+use live::{Claim, Mode};
 
 #[cfg(test)]
 mod bench;
 #[cfg(test)]
 mod cold_drive_tests;
+#[cfg(test)]
+mod live_bench;
 #[cfg(test)]
 mod network_give_up_tests;
 #[cfg(test)]

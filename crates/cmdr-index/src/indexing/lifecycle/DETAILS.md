@@ -495,9 +495,9 @@ racing the machine for every row. ❌ Don't tidy it away as dead: it is a type-l
 property. Anchor: `cover::network_tests::a_rescan_of_a_share_refuses_while_the_phase_machine_still_owes_it_work`, which
 forces the machine onto a share because no public path produces that shape.
 
-A FOURTH question is asked above all three, in `cover_or_scan`: whether this volume's first index is the phase
-machine's at all (§ "Every other way a full walk starts"), which routes a never-completed volume to the machine rather
-than to a full walk.
+A FOURTH question is asked above all three, in `cover_or_scan`: whether this volume's first index is the phase machine's
+at all (§ "Every other way a full walk starts"), which routes a never-completed volume to the machine rather than to a
+full walk.
 
 **Both refusals are TYPED** (`rescan_request::ScanStartError`: `AlreadyScanning`, `GroundBeingWalked`, `Internal`).
 Their wording used to be the only thing separating them, which the project's hard rule forbids classifying on, and which

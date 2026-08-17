@@ -91,6 +91,43 @@ predecessor's ground, from the index rather than from a replay. ❌ Don't replac
 to get live batches for the shared ground; it needs per-subscriber filtering and per-subscriber completion (one root is
 done while the walk moves on to the next), and there is no second consumer today to shape either against.
 
+### The two modes a claim can hold in
+
+`Mode` is the whole arbitration vocabulary, and two values are all of it:
+
+- **`Additive`** — the holder speaks only for the ground it names. Two additive claims compose as long as their
+  frontiers stay off each other. Every walk `cover::start` makes is one.
+- **`Exclusive`** — the holder speaks for the whole volume, whatever ground anyone else names. What a truncating scan
+  needs: it blanks the database and bumps the epoch, so "somewhere else on the same drive" is no protection.
+
+The conflict rule follows from that: an `Exclusive` holder refuses everything on its volume; an `Exclusive` claim is
+refused by any holder at all; `Additive` against `Additive` is decided per root by the overlap rule. **The volume-wide
+half is read BEFORE the claim takes anything**, so a claim naming several roots never conflicts with its own — asked per
+root, an `Exclusive` claim over `/one` and `/two` would refuse `/two` the moment `/one` landed.
+
+⚠️ **Two modes deliberately do not express every holder's wish.** A holder wanting "block truncating scans and search
+walks, but not phase walks" has no mode: `Exclusive` would refuse the phase machine's own per-group walks, and
+`Additive` at the volume root conflicts with every subtree claim because an ancestor counts as overlapping. The
+resolution is that the phase machine takes no volume-wide claim at all and `phases_have_work` stays a separate question
+(`../DETAILS.md` § "The three single-flight questions a scan has to ask"). ❌ Don't solve it with holder identity or
+re-entrancy: that is the broker design, and it was rejected.
+
+### What the claim table is, and the cost that shaped it
+
+Claims are held per volume in a path-keyed `BTreeMap`, so an overlap question is two range queries — the ancestor chain
+(a handful of lookups whatever the table holds) plus one sorted descendant range that costs what it yields. ❌ Never a
+`Vec` scan: `take` checks each root against the roots it has already taken, so a linear membership test makes ONE call
+quadratic in its own width, and a cold-drive search really does arrive with thousands of roots. Measured at 2,503 roots:
+446.77 ms before, 2.23 ms after, on the caller's thread before any directory is listed
+(`docs/notes/claim-table-cost-2026-08-17.md`).
+
+⚠️ **The range queries are an OPTIMIZATION of a predicate, and nothing but a test makes them agree with it.** The
+predicate is `a == b || is_strict_descendant(a, b) || is_strict_descendant(b, a)`; it lives in `live.rs`'s test module
+as the reference implementation, and `the_range_queries_answer_the_overlap_rule` holds the table to it over a grid of
+sibling traps. A prefix test that quietly lost its component-awareness would let a walk take ground another walk is
+writing — the exact data-safety bug this module exists to prevent — and every other test here would still pass. ❌ Don't
+delete that test as redundant.
+
 ### A claim that takes nothing makes no walk
 
 When the claim leaves EVERY requested root to another walk, `cover::start` hands back a `CoverWalk` with no thread
