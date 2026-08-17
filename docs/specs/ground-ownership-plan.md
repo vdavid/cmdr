@@ -202,18 +202,17 @@ M0 is independent. M1 → M2 → M3 → M4 are sequential. M5, M6, M7 are indepe
   reachable today, since a user's "Rescan now" on a replaying boot disk goes `force_scan` → `cover_or_scan` →
   `start_scan` (replay implies a completed scan, so `first_index_is_the_machines` is false). Constraint 5 spotted the
   `cover_context_for` half of the coupling and missed this one. Dropping the read without replacing it would have let a
-  truncate land under a live replay: the `INSERT OR IGNORE` hazard, principle #1.
-  **Resolution: `start_replay` takes an `Exclusive` claim**, dropped in `run_replay_event_loop` beside the
-  `scanning.store(false)` that ends the replay phase. Replay does write the whole volume through the reconciler, so the
-  claim is honest — what it does NOT do is walk, which is why `cover_context_for` still reads `mgr.scanning` exactly as
-  constraint 5 says. ⚠️ Whoever revisits this: ❌ never drop replay's claim where the replay TASK ends. That task goes
-  on to run the live loop for the session.
+  truncate land under a live replay: the `INSERT OR IGNORE` hazard, principle #1. **Resolution: `start_replay` takes an
+  `Exclusive` claim**, dropped in `run_replay_event_loop` beside the `scanning.store(false)` that ends the replay phase.
+  Replay does write the whole volume through the reconciler, so the claim is honest — what it does NOT do is walk, which
+  is why `cover_context_for` still reads `mgr.scanning` exactly as constraint 5 says. ⚠️ Whoever revisits this: ❌ never
+  drop replay's claim where the replay TASK ends. That task goes on to run the live loop for the session.
 - **The claim is owned by the work, not by a slot on the manager.** M2 named the choice as open; this is the answer.
   `ScanCompletion` gets the local scan's, the spawned completion task gets the network one, `ReplayConfig` gets
   replay's, and each drops it where it clears `mgr.scanning`. So `stop_scan` and `shutdown` have nothing to release,
   which is the point: cancelling a walk is a REQUEST, and the thread keeps writing until it notices, so a slot would
-  hand the ground back while rows were still landing. The cost is a divergence from today, and it is deliberate — a
-  scan started immediately after a `stop_scan` is refused until the cancelled walk actually stops. The exposure is a
+  hand the ground back while rows were still landing. The cost is a divergence from today, and it is deliberate — a scan
+  started immediately after a `stop_scan` is refused until the cancelled walk actually stops. The exposure is a
   debug-panel Stop-then-Start pair (`stop_drive_index` is the only door), and it closes a truncate-under-a-live-walk
   window that the flag left open. A hung walk thread now holds its volume, where before a stop-and-rescan could
   (unsafely) get out of it.
@@ -354,8 +353,8 @@ assertions stay valid, since the store stays. Add claim-level tests for the guar
 ### M3 — `mgr.scanning` is renamed to say what it now is
 
 **Intent:** after M2 the flag is a **reporting and buffering signal**, plus ONE remaining guard: `cover_context_for`,
-which is how a replaying or scanning volume refuses a NEW cover walk. This is a rename plus a narrowed doc comment,
-❌ not a split and ❌ not a deletion. ⚠️ A name that says "reporting only" would be a lie; pick one that covers the
+which is how a replaying or scanning volume refuses a NEW cover walk. This is a rename plus a narrowed doc comment, ❌
+not a split and ❌ not a deletion. ⚠️ A name that says "reporting only" would be a lie; pick one that covers the
 `cover_context_for` reader too.
 
 Full reader inventory (seven, and every one stays):
@@ -388,8 +387,8 @@ true.
 (three sites in `lifecycle/state/teardown.rs:40,174,205`, three in `force_scan`). Those relocate; they do not vanish.
 
 - Release marks under the lock; a lock-free peek decides; the waiter is **spawned onto the runtime**. Constraint 3.
-- **Every post-M2 release site needs the runner**, not just the cover walk's. ⚠️ **The three sites are not the ones
-  this plan guessed**: `lifecycle/scan_completion.rs` (the local scan), the spawned completion task in
+- **Every post-M2 release site needs the runner**, not just the cover walk's. ⚠️ **The three sites are not the ones this
+  plan guessed**: `lifecycle/scan_completion.rs` (the local scan), the spawned completion task in
   `lifecycle/network_scan.rs` (the trait scan), and `watch/event_loop/replay.rs` (the replay phase's end). ❌ NOT
   `stop_scan` and ❌ NOT `shutdown` — they release nothing, because the claim belongs to the work. None of the three has
   a `run_if_owed` call today. **Miss one and a rescan deferred behind that holder never fires.** This is the M2→M4 seam;

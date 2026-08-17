@@ -399,8 +399,8 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
   - `started` → **silent**: the badge going blue is the feedback.
   - `deferred_until_search_ends` → the promise toast (`info`), worded per action (`deferredEnable` /`deferredRescan`). A
     search walking the same drive blocks a truncating scan, so the backend REMEMBERS the request and runs it when the
-    walk ends (model: `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two single-flight questions a scan
-    has to ask). Silence here is what made "Rescan now" look like a dead button for the minutes a walk can last.
+    walk ends (model: `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two single-flight questions a scan has
+    to ask). Silence here is what made "Rescan now" look like a dead button for the minutes a walk can last.
   - `indexing_disabled` → the settings-oriented toast at `info`, not `error`: transport-neutral, and reachable because
     the master switch can flip between the menu opening and the click, or MCP can call in.
   - `refused` → the typed `SmbIndexGateReason`, which `credentials_needed` routes into the direct-connect/login flow

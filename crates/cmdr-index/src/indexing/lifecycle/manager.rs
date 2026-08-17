@@ -13,7 +13,6 @@ use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, EventSink, IndexDebugStatusResponse, IndexEvent, IndexStatusResponse, PhaseRecord,
     RescanReason, ScanRunKind, emit_rescan_notification, set_phase_for,
 };
-use crate::indexing::lifecycle::cover;
 use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
 use crate::indexing::lifecycle::rescan_request::ScanStartError;
 use crate::indexing::reconcile::local_reconcile;
@@ -556,46 +555,6 @@ impl IndexManager {
                 self.start_volume_scan(super::network_scan::NetworkScanMode::Auto, scan_trigger)
             }
             RescanScanner::LocalWalker => self.cover_or_scan(scan_trigger),
-        }
-    }
-
-    /// Take this volume's ground for a run that walks it WHOLE, or say what kind
-    /// of holder is in the way.
-    ///
-    /// **The single-flight question both scan entries ask**, and the reason it
-    /// isn't written twice. `Exclusive`, because a full (re)scan blanks the
-    /// database and bumps the epoch: every concurrent writer is writing into a
-    /// table about to disappear, whether or not it named overlapping ground. The
-    /// volume root as the one frontier root claims all of it, since `overlaps`
-    /// counts an ancestor.
-    ///
-    /// **The two refusals are two different promises**, which is why the claim
-    /// reports a MODE and this maps it:
-    ///
-    /// - an `Exclusive` holder is another whole-volume run (a scan, a journal
-    ///   replay), so the walk the caller asked for is for practical purposes the
-    ///   one in flight, and `force_scan` reports it as `Started`;
-    /// - an `Additive` one is a cover walk holding ground it WILL let go of, so
-    ///   the request is remembered and reported as `Deferred`, and the walk runs it
-    ///   on its way out.
-    ///
-    /// ❌ Never by holder identity: the mode is the whole vocabulary
-    /// (`cover/live.rs`), and re-entrancy was rejected by name.
-    ///
-    /// ⚠️ The claim outlives this call. Whoever starts a run keeps it until that
-    /// run ends — see `scan_completion.rs` and the two entries.
-    pub(in crate::indexing::lifecycle) fn claim_the_volume(&self) -> Result<cover::Claim, ScanStartError> {
-        let whole_volume = vec![self.volume_root.to_string_lossy().into_owned()];
-        let claim = cover::Claim::take(&self.volume_id, whole_volume, cover::Mode::Exclusive);
-        if !claim.mine().is_empty() {
-            return Ok(claim);
-        }
-        match claim.refused_by() {
-            Some(cover::Mode::Additive) => Err(ScanStartError::GroundBeingWalked),
-            // Exclusive, and the unreachable "refused by nobody" — a claim over one
-            // root gets it unless somebody holds the volume. Both mean a
-            // whole-volume run owns this drive, which is what the caller wanted.
-            _ => Err(ScanStartError::AlreadyScanning),
         }
     }
 

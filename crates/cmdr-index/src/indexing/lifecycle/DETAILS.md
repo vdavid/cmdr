@@ -479,9 +479,9 @@ trait half has the same doors and the slowest walks:
   for a walk in flight is canonical on the method itself (`manager/phased.rs`), and it is also why the machine holds no
   volume-wide claim and this stays its own question: it deliberately owns nothing between frontier groups, 50–150 times
   a phase. Asked FIRST, so a refusal takes no claim on its way out.
-- **`claim_the_volume()`** — every other holder, in one answer (`manager.rs`). An `Exclusive` claim over the volume
-  root, refused by another whole-volume run (a scan, a journal replay) and by any cover walk holding any ground on the
-  drive. The volume root as the one frontier root claims all of it, since `overlaps` counts an ancestor.
+- **`claim_the_volume()`** — every other holder, in one answer (`manager/start.rs`). An `Exclusive` claim over the
+  volume root, refused by another whole-volume run (a scan, a journal replay) and by any cover walk holding any ground
+  on the drive. The volume root as the one frontier root claims all of it, since `overlaps` counts an ancestor.
 
 Without the claim, a coalesced shallow anchor, a journal-gap fallback, or the manual button sends `TruncateData` +
 `BumpCurrentEpoch` while a walk is still inserting: the walk's rows land in a blanked database, its ids lose to
@@ -490,8 +490,8 @@ Without the claim, a coalesced shallow anchor, a journal-gap fallback, or the ma
 **One claim answer, two user-visible outcomes**, which is why `Claim::take` reports the conflicting holder's MODE and
 `claim_the_volume` maps it: `Exclusive` ⇒ `AlreadyScanning` (the walk the caller wanted is in flight, and `force_scan`
 reports `Started`), `Additive` ⇒ `GroundBeingWalked` (a walk will let this ground go, so the request is remembered and
-reported as `Deferred`). The mode is the whole vocabulary, and why identity isn't is `cover/DETAILS.md` § "The two
-modes a claim can hold in".
+reported as `Deferred`). The mode is the whole vocabulary, and why identity isn't is `cover/DETAILS.md` § "The two modes
+a claim can hold in".
 
 ⚠️ **The claim is NOT scoped to the call that takes it**, and this is the part that bites. `start_scan` returns while
 the walk runs, so the claim travels into the task that ends the run: `ScanCompletion` on the local path, the completion

@@ -36,7 +36,11 @@ post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.
   `MustScanSubDirs` anchors are collected into a `HashSet` (dedup) and handed to the live drain after replay; NO
   subtree-count cap and no full-scan escalation on churn (the live drain dedups, ancestor-collapses, and
   per-subtree-throttles them). Full-scan fallback stays only for a genuine journal purge, >10M replayed events, or a
-  watcher-channel overflow; its cause rides the `oneshot::<RescanReason>`.
+  watcher-channel overflow; its cause rides the `oneshot::<RescanReason>`. ⚠️ It also OWNS the volume's ground for the
+  replay phase (`ReplayConfig::ground`, taken by `start_replay`) and drops it beside the `scanning.store(false)` that
+  ends that phase, rather than where the task ends — this same task runs the live loop afterwards, and ground held that
+  long would refuse every scan and search walk on the boot disk until quit. Why replay claims ground it never walks:
+  `../lifecycle/DETAILS.md` § "The two single-flight questions a scan has to ask".
 - **event_loop/verification.rs** — `run_background_verification` + `verify_affected_dirs` (below).
 - **event_loop/verify_guard.rs** — the two pure cost-bounding decisions for verification (`VerifyVerdict`,
   `HUGE_DIR_CHILDREN`). Structural role below; the cost-bounding RATIONALE is canonical in `../reconcile/DETAILS.md` §

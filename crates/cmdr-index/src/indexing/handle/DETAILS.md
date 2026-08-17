@@ -76,6 +76,12 @@ the layer that must not import lifecycle state. A `Vec<String>` on a type the su
 the same argument M8's two unreadable lists took. What it buys: a caller can tell "nobody has been here" from "somebody
 is here already" and wait rather than answer empty, without a method of its own.
 
+⚠️ **It means another WALK, not "the claim table has an entry".** A full scan holds the volume root without covering any
+particular root of the frontier it was asked about, so `ground_being_walked` filters to `Additive` holders and a running
+scan never appears here. Unfiltered, every frontier root would read as being walked for the whole of a scan, and the
+host's `DeferredUntilSearchEnds` would promise a search a walk that isn't coming (`../lifecycle/cover/DETAILS.md` § "The
+two modes a claim can hold in").
+
 **Six root promises** came with it. `CoverageMap`, `CoverageToken`, and `CoverageDimension` are the read half's;
 `CoverWalk`, `CoveredEntry`, and `CoverOutcome` are the walk's, and each earns its place by being something a host
 genuinely can't do without:
