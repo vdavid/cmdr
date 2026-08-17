@@ -126,3 +126,60 @@ pub(crate) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
 
 // Deriving a volume ID from a mount lives in `ids.rs`, which owns the rule for
 // every mount kind (SMB, other network, local) in one place.
+
+#[cfg(test)]
+mod enrichment_tests {
+    use super::*;
+    use crate::file_system::volume::manager::get_volume_manager;
+    use cmdr_fs::volume::InMemoryVolume;
+    use std::sync::Arc;
+
+    fn location(id: &str) -> LocationInfo {
+        LocationInfo {
+            id: id.to_string(),
+            name: "Test".to_string(),
+            path: "/tmp/enrichment-test".to_string(),
+            category: crate::volumes::LocationCategory::AttachedVolume,
+            icon: None,
+            is_ejectable: false,
+            fs_type: Some("apfs".to_string()),
+            supports_trash: true,
+            is_read_only: false,
+            is_disk_image: false,
+            smb_connection_state: None,
+            usb_speed: None,
+            capabilities: None,
+        }
+    }
+
+    /// The one wiring that makes the whole published capability surface reach the
+    /// user: discovery builds the `LocationInfo`, the registry knows the backend,
+    /// and this is where they meet. Nothing downstream can tell a silently-empty
+    /// `capabilities` from "no backend registered" — the frontend just falls back
+    /// to its per-kind defaults and the volume's real answer never lands.
+    #[test]
+    fn a_registered_backend_publishes_its_capabilities_onto_the_location() {
+        let id = "enrichment-test-registered";
+        get_volume_manager().register(id, Arc::new(InMemoryVolume::new("Test")));
+
+        let mut locations = vec![location(id)];
+        enrich_from_volume_registry(&mut locations);
+
+        let published = locations[0].capabilities.expect("a registered backend must publish");
+        assert!(published.is_writable, "InMemoryVolume is writable and must say so");
+        assert!(published.can_export, "InMemoryVolume exports and must say so");
+
+        get_volume_manager().unregister(id);
+    }
+
+    /// A location with no backend (a favorite, or one discovery found before
+    /// registration) carries `None` rather than a guess, which is what lets the
+    /// frontend fall back to its per-kind defaults.
+    #[test]
+    fn a_location_with_no_registered_backend_stays_unanswered() {
+        let mut locations = vec![location("enrichment-test-unregistered")];
+        enrich_from_volume_registry(&mut locations);
+
+        assert!(locations[0].capabilities.is_none());
+    }
+}
