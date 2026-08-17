@@ -3,8 +3,10 @@
   "subsystems": {
     ".": 10,
     "apps/api-server": 17,
-    "apps/desktop": 267,
+    "apps/desktop": 2,
+    "apps/desktop/src": 246,
     "apps/desktop/src-tauri": 334,
+    "apps/desktop/test": 19,
     "apps/website": 1,
     "crates/cmdr-archive": 4,
     "crates/cmdr-fs": 14,

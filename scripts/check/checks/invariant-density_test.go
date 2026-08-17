@@ -43,31 +43,107 @@ func writeInvariantDensityAllowlist(t *testing.T, dir string, subsystems map[str
 }
 
 // twoSubsystemRepo builds a fixture with a JS package that nests a Rust member:
-// `apps/desktop` (2 rules / 1,000 lines) and `apps/desktop/src-tauri`
+// `apps/viewer` (2 rules / 1,000 lines) and `apps/viewer/src-tauri`
 // (5 rules / 1,000 lines).
 func twoSubsystemRepo(t *testing.T) string {
 	t.Helper()
 	tmp := t.TempDir()
 	writeFixtureFile(t, tmp, "package.json", "{}")
-	writeFixtureFile(t, tmp, "apps/desktop/package.json", "{}")
-	writeFixtureFile(t, tmp, "apps/desktop/src/lib/CLAUDE.md", rules(2, 3))
-	writeFixtureFile(t, tmp, "apps/desktop/src/lib/pane.ts", sourceLines(1000))
-	writeFixtureFile(t, tmp, "apps/desktop/src-tauri/Cargo.toml", "[package]\nname = \"cmdr\"\n")
-	writeFixtureFile(t, tmp, "apps/desktop/src-tauri/src/CLAUDE.md", rules(5, 0))
-	writeFixtureFile(t, tmp, "apps/desktop/src-tauri/src/main.rs", sourceLines(1000))
+	writeFixtureFile(t, tmp, "apps/viewer/package.json", "{}")
+	writeFixtureFile(t, tmp, "apps/viewer/src/lib/CLAUDE.md", rules(2, 3))
+	writeFixtureFile(t, tmp, "apps/viewer/src/lib/pane.ts", sourceLines(1000))
+	writeFixtureFile(t, tmp, "apps/viewer/src-tauri/Cargo.toml", "[package]\nname = \"cmdr\"\n")
+	writeFixtureFile(t, tmp, "apps/viewer/src-tauri/src/CLAUDE.md", rules(5, 0))
+	writeFixtureFile(t, tmp, "apps/viewer/src-tauri/src/main.rs", sourceLines(1000))
 	return tmp
 }
 
-func TestInvariantSubsystemFor_LongestPrefixWins(t *testing.T) {
-	roots := []string{"apps/desktop", "apps/desktop/src-tauri", "crates/cmdr-index"}
+// desktopSplitRepo builds a fixture in the shape the extra sub-roots exist to break
+// apart: one `package.json` covering the Svelte frontend (6 rules / 1,000 lines),
+// the test harness (3 / 800), and the build scripts plus the app-level doc
+// (1 / 200).
+func desktopSplitRepo(t *testing.T) string {
+	t.Helper()
+	tmp := t.TempDir()
+	writeFixtureFile(t, tmp, "package.json", "{}")
+	writeFixtureFile(t, tmp, "apps/desktop/package.json", "{}")
+	writeFixtureFile(t, tmp, "apps/desktop/CLAUDE.md", rules(1, 0))
+	writeFixtureFile(t, tmp, "apps/desktop/scripts/build.ts", sourceLines(200))
+	writeFixtureFile(t, tmp, "apps/desktop/src/lib/CLAUDE.md", rules(6, 0))
+	writeFixtureFile(t, tmp, "apps/desktop/src/lib/pane.ts", sourceLines(1000))
+	writeFixtureFile(t, tmp, "apps/desktop/test/CLAUDE.md", rules(3, 0))
+	writeFixtureFile(t, tmp, "apps/desktop/test/e2e.ts", sourceLines(800))
+	return tmp
+}
+
+func TestInvariantSubsystemRoots_PromotesEveryConfiguredSubRoot(t *testing.T) {
+	roots := invariantSubsystemRoots([]string{"package.json", "apps/desktop/package.json"})
+	have := make(map[string]bool, len(roots))
+	for _, root := range roots {
+		have[root] = true
+	}
+	if !have["apps/desktop"] {
+		t.Errorf("expected the manifest root kept, got %v", roots)
+	}
+	for _, subRoot := range invariantExtraSubsystemRoots {
+		if !have[subRoot] {
+			t.Errorf("expected the configured sub-root %q promoted to a root, got %v", subRoot, roots)
+		}
+	}
+}
+
+func TestInvariantSubsystemFor_SubRootBeatsThePackageAroundIt(t *testing.T) {
+	roots := invariantSubsystemRoots([]string{"apps/desktop/package.json"})
 	cases := map[string]string{
-		"apps/desktop/src/lib/CLAUDE.md":       "apps/desktop",
-		"apps/desktop/src-tauri/src/CLAUDE.md": "apps/desktop/src-tauri",
-		"apps/desktop/src-tauri/Cargo.toml":    "apps/desktop/src-tauri",
-		"crates/cmdr-index/src/lib.rs":         "crates/cmdr-index",
-		"docs/architecture.md":                 ".",
-		"AGENTS.md":                            ".",
-		"apps/desktop-extras/src/CLAUDE.md":    ".", // prefix must stop at a path boundary
+		"apps/desktop/src/lib/pane.ts":  "apps/desktop/src",
+		"apps/desktop/test/CLAUDE.md":   "apps/desktop/test",
+		"apps/desktop/scripts/build.ts": "apps/desktop",
+		"apps/desktop/CLAUDE.md":        "apps/desktop",
+		"apps/desktop/src-extras/x.ts":  "apps/desktop", // prefix must stop at a path boundary
+	}
+	for rel, want := range cases {
+		if got := invariantSubsystemFor(rel, roots); got != want {
+			t.Errorf("invariantSubsystemFor(%q) = %q, want %q", rel, got, want)
+		}
+	}
+}
+
+func TestMeasureInvariantDensity_SplitsFrontendAndTestsFromTheirPackage(t *testing.T) {
+	report, err := measureInvariantDensity(desktopSplitRepo(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRules := map[string]int{"apps/desktop/src": 6, "apps/desktop/test": 3, "apps/desktop": 1}
+	for root, want := range wantRules {
+		if got := report.rulesByRoot[root]; got != want {
+			t.Errorf("%s rules = %d, want %d", root, got, want)
+		}
+	}
+	// The split may not invent or lose anything: the three buckets reconcile to what
+	// the single `apps/desktop` bucket carried before.
+	rules, lines := 0, 0
+	for _, subsystem := range report.subsystems {
+		rules += subsystem.rules
+		lines += subsystem.sourceLines
+	}
+	if rules != report.totalRules || rules != 10 {
+		t.Errorf("bucket rules sum to %d, want 10 and the report total %d", rules, report.totalRules)
+	}
+	if lines != report.totalLines || lines != 2000 {
+		t.Errorf("bucket source lines sum to %d, want 2,000 and the report total %d", lines, report.totalLines)
+	}
+}
+
+func TestInvariantSubsystemFor_LongestPrefixWins(t *testing.T) {
+	roots := []string{"apps/viewer", "apps/viewer/src-tauri", "crates/cmdr-index"}
+	cases := map[string]string{
+		"apps/viewer/src/lib/CLAUDE.md":       "apps/viewer",
+		"apps/viewer/src-tauri/src/CLAUDE.md": "apps/viewer/src-tauri",
+		"apps/viewer/src-tauri/Cargo.toml":    "apps/viewer/src-tauri",
+		"crates/cmdr-index/src/lib.rs":        "crates/cmdr-index",
+		"docs/architecture.md":                ".",
+		"AGENTS.md":                           ".",
+		"apps/viewer-extras/src/CLAUDE.md":    ".", // prefix must stop at a path boundary
 	}
 	for rel, want := range cases {
 		if got := invariantSubsystemFor(rel, roots); got != want {
@@ -90,21 +166,21 @@ func TestMeasureInvariantDensity_AttributesRulesAndLines(t *testing.T) {
 	if report.totalDocs != 2 {
 		t.Errorf("totalDocs = %d, want 2", report.totalDocs)
 	}
-	if got := report.rulesByRoot["apps/desktop"]; got != 2 {
-		t.Errorf("apps/desktop rules = %d, want 2 (src-tauri must not fold into its parent package)", got)
+	if got := report.rulesByRoot["apps/viewer"]; got != 2 {
+		t.Errorf("apps/viewer rules = %d, want 2 (src-tauri must not fold into its parent package)", got)
 	}
-	if got := report.rulesByRoot["apps/desktop/src-tauri"]; got != 5 {
-		t.Errorf("apps/desktop/src-tauri rules = %d, want 5", got)
+	if got := report.rulesByRoot["apps/viewer/src-tauri"]; got != 5 {
+		t.Errorf("apps/viewer/src-tauri rules = %d, want 5", got)
 	}
 	// Worst density first: 5 rules per 1,000 lines beats 2 per 1,000.
-	if len(report.subsystems) != 2 || report.subsystems[0].root != "apps/desktop/src-tauri" {
+	if len(report.subsystems) != 2 || report.subsystems[0].root != "apps/viewer/src-tauri" {
 		t.Fatalf("expected src-tauri ranked first, got %+v", report.subsystems)
 	}
 	if got := report.subsystems[0].rulesPerKiloLine(); got != 5 {
 		t.Errorf("src-tauri density = %v, want 5", got)
 	}
 	if got := report.subsystems[1].rulesPerKiloLine(); got != 2 {
-		t.Errorf("apps/desktop density = %v, want 2", got)
+		t.Errorf("apps/viewer density = %v, want 2", got)
 	}
 }
 
@@ -138,7 +214,7 @@ func TestRunInvariantDensity_RulesWithNoSourceRankFirst(t *testing.T) {
 	writeFixtureFile(t, tmp, "crates/docs-only/Cargo.toml", "[package]\nname = \"docs-only\"\n")
 	writeFixtureFile(t, tmp, "crates/docs-only/CLAUDE.md", rules(3, 0))
 	writeInvariantDensityAllowlist(t, tmp, map[string]int{
-		"apps/desktop": 2, "apps/desktop/src-tauri": 5, "crates/docs-only": 3,
+		"apps/viewer": 2, "apps/viewer/src-tauri": 5, "crates/docs-only": 3,
 	})
 
 	result, err := RunInvariantDensity(&CheckContext{RootDir: tmp})
@@ -154,7 +230,7 @@ func TestRunInvariantDensity_RulesWithNoSourceRankFirst(t *testing.T) {
 
 func TestRunInvariantDensity_GreenAtAllowlist(t *testing.T) {
 	tmp := twoSubsystemRepo(t)
-	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/desktop": 2, "apps/desktop/src-tauri": 5})
+	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/viewer": 2, "apps/viewer/src-tauri": 5})
 
 	result, err := RunInvariantDensity(&CheckContext{RootDir: tmp})
 	if err != nil {
@@ -167,7 +243,7 @@ func TestRunInvariantDensity_GreenAtAllowlist(t *testing.T) {
 		t.Errorf("expected no allowlist rewrite, got: %s", result.Message)
 	}
 	// The gauge itself is the message: worst subsystem, its density, the totals.
-	for _, want := range []string{"7 ❌", "rules/kloc", "apps/desktop/src-tauri        5.00"} {
+	for _, want := range []string{"7 ❌", "rules/kloc", "apps/viewer/src-tauri        5.00"} {
 		if !strings.Contains(result.Message, want) {
 			t.Errorf("expected %q in the gauge, got: %s", want, result.Message)
 		}
@@ -178,7 +254,7 @@ func TestRunInvariantDensity_WarnsOnAnyGrowth(t *testing.T) {
 	tmp := twoSubsystemRepo(t)
 	// One rule more than allowed: no slack buffer, because a rule count only moves
 	// when somebody writes or deletes a rule.
-	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/desktop": 2, "apps/desktop/src-tauri": 4})
+	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/viewer": 2, "apps/viewer/src-tauri": 4})
 
 	result, err := RunInvariantDensity(&CheckContext{RootDir: tmp})
 	if err != nil {
@@ -197,7 +273,7 @@ func TestRunInvariantDensity_WarnsOnAnyGrowth(t *testing.T) {
 
 func TestRunInvariantDensity_WarnsOnUnlistedSubsystem(t *testing.T) {
 	tmp := twoSubsystemRepo(t)
-	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/desktop": 2})
+	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/viewer": 2})
 
 	result, err := RunInvariantDensity(&CheckContext{RootDir: tmp})
 	if err != nil {
@@ -229,7 +305,7 @@ func TestRunInvariantDensity_CautionsNeverWarn(t *testing.T) {
 
 func TestRunInvariantDensity_RatchetsDownLocally(t *testing.T) {
 	tmp := twoSubsystemRepo(t)
-	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/desktop": 2, "apps/desktop/src-tauri": 9})
+	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/viewer": 2, "apps/viewer/src-tauri": 9})
 
 	result, err := RunInvariantDensity(&CheckContext{RootDir: tmp})
 	if err != nil {
@@ -239,7 +315,7 @@ func TestRunInvariantDensity_RatchetsDownLocally(t *testing.T) {
 		t.Fatalf("expected the allowlist ratcheted down, got: %+v", result)
 	}
 	reloaded := loadInvariantDensityAllowlist(tmp)
-	if got := reloaded.Subsystems["apps/desktop/src-tauri"]; got != 5 {
+	if got := reloaded.Subsystems["apps/viewer/src-tauri"]; got != 5 {
 		t.Errorf("expected ratchet 9 → 5, got %d", got)
 	}
 	if reloaded.Comment == "" {
@@ -252,10 +328,10 @@ func TestRunInvariantDensity_RemovesDeadAndEmptyEntriesLocally(t *testing.T) {
 	writeFixtureFile(t, tmp, "crates/cmdr-archive/Cargo.toml", "[package]\nname = \"cmdr-archive\"\n")
 	writeFixtureFile(t, tmp, "crates/cmdr-archive/src/lib.rs", sourceLines(100))
 	writeInvariantDensityAllowlist(t, tmp, map[string]int{
-		"apps/desktop":           2,
-		"apps/desktop/src-tauri": 5,
-		"crates/cmdr-archive":    3, // subsystem exists but carries no rules any more
-		"crates/gone":            4, // subsystem itself is gone
+		"apps/viewer":           2,
+		"apps/viewer/src-tauri": 5,
+		"crates/cmdr-archive":   3, // subsystem exists but carries no rules any more
+		"crates/gone":           4, // subsystem itself is gone
 	})
 
 	result, err := RunInvariantDensity(&CheckContext{RootDir: tmp})
@@ -278,7 +354,7 @@ func TestRunInvariantDensity_RemovesDeadAndEmptyEntriesLocally(t *testing.T) {
 
 func TestRunInvariantDensity_CIReportsStaleWithoutRewriting(t *testing.T) {
 	tmp := twoSubsystemRepo(t)
-	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/desktop": 2, "apps/desktop/src-tauri": 9})
+	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/viewer": 2, "apps/viewer/src-tauri": 9})
 
 	result, err := RunInvariantDensity(&CheckContext{RootDir: tmp, CI: true})
 	if err != nil {
@@ -290,7 +366,7 @@ func TestRunInvariantDensity_CIReportsStaleWithoutRewriting(t *testing.T) {
 	if !strings.Contains(result.Message, "9 → 5") {
 		t.Errorf("expected the ratchet reported in CI, got: %s", result.Message)
 	}
-	if got := loadInvariantDensityAllowlist(tmp).Subsystems["apps/desktop/src-tauri"]; got != 9 {
+	if got := loadInvariantDensityAllowlist(tmp).Subsystems["apps/viewer/src-tauri"]; got != 9 {
 		t.Errorf("expected the allowlist untouched in CI mode, got %d", got)
 	}
 }

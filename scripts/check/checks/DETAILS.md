@@ -224,6 +224,27 @@ longest-prefix keeps a Rust member nested inside a JS package (`apps/desktop/src
 own bucket rather than folding into the package around it. Per-`CLAUDE.md`-directory buckets were the alternative and
 lose on both counts: ~380 rows is not a legible gauge, and every module rename churns the allowlist.
 
+**Decision**: `invariantExtraSubsystemRoots` in `invariant-density.go` promotes a hand-named directory to a subsystem
+root even though it holds no manifest, and longest-prefix then routes files to it exactly as it does a manifest root.
+Two entries today, both under `apps/desktop`: `src` (the Svelte frontend) and `test` (the Vitest, Playwright, and Linux
+Docker harness). **Why**: a build unit is sometimes coarser than the boundary somebody owns. One
+`apps/desktop/package.json` covers the frontend, the test harness, and the app's build scripts, so a single row averaged
+285,000 lines of UI code with 29,000 lines of harness and answered no question about either. Split, each row names a
+tree a reader would name out loud, and the residual `apps/desktop` bucket (scripts, ESLint plugins, packaging, the
+app-level `C+D.md`) stops being "everything not listed above".
+
+The list is a Go constant rather than a section of the allowlist JSON on purpose: that file is a self-rewriting record
+of accepted counts, and bucket geometry is not something a shrink-wrap pass may move. An entry whose directory is gone
+is inert (its bucket stays empty and shrink-wrap drops the allowlist entry on the next local run), so a rename costs a
+stale line, never a wrong number. It stays a two-entry list rather than a general config system; a third entry wants a
+reason as concrete as these two.
+
+Splitting a bucket re-seeds the allowlist by hand, which is the one time adding entries is right. Seed each new bucket
+with the count it carried when the parent's entry was last accurate (`git show <commit>:<doc>` over that subtree), never
+with today's count: the numbers must sum to the parent's old entry, so an outstanding breach stays visible instead of
+being absorbed by the split. The `apps/desktop` split seeded 246 / 19 / 2 against a parent entry of 267, which kept the
+frontend's then-outstanding +4 exactly where it was.
+
 **Decision**: the allowlist records the ABSOLUTE rule count per subsystem; the per-kloc density is reported but not
 gated. **Why**: adding a rule is the regression, adding code isn't. Gating the ratio would warn when a subsystem
 _deletes_ code, and would let a growing subsystem add rules for free.

@@ -52,6 +52,23 @@ var invariantSubsystemManifests = map[string]bool{
 	"package.json": true,
 }
 
+// invariantExtraSubsystemRoots name directories that become subsystem roots without
+// declaring a manifest. The escape hatch exists because a build unit is sometimes
+// coarser than the boundary somebody owns: one `apps/desktop/package.json` covers
+// the Svelte frontend, the test harness, and the app's build scripts, so without a
+// split the frontend's rules and the E2E harness's rules share a row and neither
+// number answers a question anybody has.
+//
+// Keep the list short, and only add a directory a reader would name out loud. It's
+// a Go constant rather than a section of the allowlist JSON on purpose: that file is
+// a self-rewriting record of accepted counts, and bucket geometry is not something a
+// shrink-wrap pass may move. An entry whose directory is gone is inert (its bucket
+// stays empty, and shrink-wrap drops the allowlist entry on the next local run).
+var invariantExtraSubsystemRoots = []string{
+	"apps/desktop/src",
+	"apps/desktop/test",
+}
+
 // invariantRepoRootBucket is the catch-all subsystem: docs and source that sit
 // under no build unit (`docs/`, `scripts/`, `brand/`, the root `AGENTS.md`).
 const invariantRepoRootBucket = "."
@@ -137,9 +154,13 @@ func loadInvariantDensityAllowlist(rootDir string) invariantDensityAllowlist {
 }
 
 // invariantSubsystemRoots collects every directory holding a subsystem manifest,
-// except the repo root itself (which is the catch-all bucket, not a subsystem).
+// except the repo root itself (which is the catch-all bucket, not a subsystem), plus
+// the manifest-less roots named in invariantExtraSubsystemRoots.
 func invariantSubsystemRoots(relPaths []string) []string {
 	seen := make(map[string]bool)
+	for _, root := range invariantExtraSubsystemRoots {
+		seen[root] = true
+	}
 	for _, rel := range relPaths {
 		if !invariantSubsystemManifests[path.Base(rel)] {
 			continue
