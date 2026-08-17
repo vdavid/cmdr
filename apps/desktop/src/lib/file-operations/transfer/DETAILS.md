@@ -643,8 +643,9 @@ back/settled, no conflict prompt up).
 - **Lifecycle status comes from `operations-changed`, not `write-progress`.** The dialog reads `session.status`, which
   the session takes from the manager's thin snapshot. The bar-is-moving truth is that snapshot status (`running` vs
   `paused` vs `queued`), never `write-progress`: a parked op emits no further ticks, so its last one describes a
-  transfer that has stopped. This mirrors the queue window's rule (see `../queue/CLAUDE.md`). The Pause↔Resume label/icon and the
-  "Paused" title both follow it, so the UI flips only once the backend actually parked — never optimistically.
+  transfer that has stopped. This mirrors the queue window's rule (see `../queue/CLAUDE.md`). The Pause↔Resume
+  label/icon and the "Paused" title both follow it, so the UI flips only once the backend actually parked — never
+  optimistically.
 - **Pause/Resume** is `session.togglePause()`, which steers by that same status (no rollback semantics; the op keeps its
   lane slot while paused). The session's `pauseInFlight` guards against a double-click racing the IPC, and because the
   guard lives on the shared session, a queue row watching the same operation sees the press too.
