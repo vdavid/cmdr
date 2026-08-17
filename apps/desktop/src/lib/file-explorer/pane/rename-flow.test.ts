@@ -10,7 +10,16 @@ const {
   pathInsideArchiveSpy,
   addToastSpy,
 } = vi.hoisted(() => ({
-  executeRenameSaveSpy: vi.fn(),
+  executeRenameSaveSpy:
+    vi.fn<
+      (
+        target: { path: string; originalName: string },
+        trimmedName: string,
+        extensionPolicy: string,
+        skipExtensionCheck?: boolean,
+        volumeId?: string,
+      ) => Promise<unknown>
+    >(),
   checkPermissionSpy: vi.fn<() => Promise<string | null>>(),
   getSettingSpy: vi.fn<(id: string) => unknown>(),
   validateFilenameSpy: vi.fn(),
@@ -19,6 +28,7 @@ const {
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
+  getFileAt: vi.fn(),
   getFileRange: vi.fn(),
   refreshListing: vi.fn(),
   getIpcErrorMessage: (e: unknown) => String(e),
@@ -44,38 +54,7 @@ vi.mock('$lib/intl/messages.svelte', () => ({ tString: (k: string) => k }))
 vi.mock('./volume-capabilities', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
 
 import { refreshListing } from '$lib/tauri-commands'
-import { createRenameFlow } from './rename-flow.svelte'
-import { createRenameState } from '../rename/rename-state.svelte'
-
-type Entry = { name: string; path: string; isDirectory: boolean }
-const PASTED: Entry = { name: 'pasted.txt', path: '/dir/pasted.txt', isDirectory: false }
-
-function buildFlow(getEntry: () => Entry | undefined = () => PASTED, showHiddenFiles = true) {
-  const rename = createRenameState()
-  const onRequestFocus = vi.fn()
-  const flow = createRenameFlow({
-    rename,
-    paneId: 'left',
-    getListingId: () => 'lst-1',
-    getTotalCount: () => 0, // 0 → loadSiblingNames returns [] without hitting getFileRange
-    getIncludeHidden: () => false,
-    getCurrentPath: () => '/dir',
-    getShowHiddenFiles: () => showHiddenFiles,
-    getVolumeId: () => 'root',
-    getEntryUnderCursor: () => getEntry() as never,
-    onRequestFocus,
-  })
-  return { rename, flow, onRequestFocus }
-}
-
-/** A promise the test resolves by hand, to hold a save "in flight". */
-function deferred<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>((r) => {
-    resolve = r
-  })
-  return { promise, resolve }
-}
+import { buildFlow, deferred, PASTED, type Entry } from './test-rename-flow'
 
 const ERROR_VALIDATION = { severity: 'error', message: 'Filename can\'t contain "/" or null characters' }
 

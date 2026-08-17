@@ -892,6 +892,11 @@
         getVolumeId: () => volumeId,
         getEntryUnderCursor,
         onRequestFocus: () => onRequestFocus?.(),
+        getCursorIndex: () => cursorIndex,
+        getEffectiveTotalCount: () => effectiveTotalCount,
+        getHasParent: () => hasParent,
+        getEntryAt: (index: number) => activeListRef()?.getEntryAt(index),
+        moveCursorTo,
     })
 
     // Destructure handlers: factory methods don't use `this`, safe to destructure
@@ -901,6 +906,7 @@
         handleRenameSubmit,
         handleRenameCancel,
         handleRenameClickAway,
+        handleRenameStep,
         handleRenameShakeEnd,
         handleExtensionKeepOld,
         handleExtensionUseNew,
@@ -1228,10 +1234,19 @@
         getFullListRef: () => fullListRef,
     })
 
+    /** The list view on screen, for row reads and scrolling. */
+    function activeListRef(): ListViewAPI | undefined {
+        return viewMode === 'brief' ? briefListRef : fullListRef
+    }
+
     /** Gets the file entry under the cursor from the current list view */
     function getEntryUnderCursor(): FileEntry | undefined {
-        const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-        return listRef?.getEntryAt(cursorIndex)
+        return activeListRef()?.getEntryAt(cursorIndex)
+    }
+
+    /** Lands the cursor on a row and scrolls it into view. */
+    function moveCursorTo(index: number): void {
+        cursorNav.applyNavigation(index, activeListRef())
     }
 
     /**
@@ -1735,6 +1750,7 @@
                 onRenameSubmit={handleRenameSubmit}
                 onRenameCancel={handleRenameCancel}
                 onRenameClickAway={handleRenameClickAway}
+                onRenameStep={handleRenameStep}
                 onRenameShakeEnd={handleRenameShakeEnd}
                 onStartRename={startRename}
                 onDragInitiate={clearJumpState}
@@ -1772,6 +1788,7 @@
                 onRenameSubmit={handleRenameSubmit}
                 onRenameCancel={handleRenameCancel}
                 onRenameClickAway={handleRenameClickAway}
+                onRenameStep={handleRenameStep}
                 onRenameShakeEnd={handleRenameShakeEnd}
                 onStartRename={startRename}
                 onSortChange={onSortChange

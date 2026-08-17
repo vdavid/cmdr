@@ -20,6 +20,7 @@ function setup(overrides: Record<string, unknown> = {}) {
     onCancel: vi.fn(),
     onClickAway: vi.fn(),
     onShakeEnd: vi.fn(),
+    onStep: vi.fn(),
   }
   const target = document.createElement('div')
   document.body.appendChild(target)
@@ -163,6 +164,51 @@ describe('InlineRenameEditor keyboard and focus', () => {
     input.dispatchEvent(new FocusEvent('blur'))
 
     expect(onCancel).toHaveBeenCalledWith(4)
+  })
+
+  it('a bare arrow chains the rename to the neighbouring row, naming the session it was opened for', async () => {
+    const { input, onStep } = setup({ sessionId: 7 })
+    await tick()
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }))
+
+    expect(onStep).toHaveBeenNthCalledWith(1, 'down', 7)
+    expect(onStep).toHaveBeenNthCalledWith(2, 'up', 7)
+  })
+
+  it('keeps the chaining arrow to itself, so the pane behind it does not also move the cursor', async () => {
+    const { input, onStep } = setup()
+    await tick()
+    const seenByThePane = vi.fn()
+    document.body.addEventListener('keydown', seenByThePane)
+
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    input.dispatchEvent(event)
+
+    expect(onStep).toHaveBeenCalledTimes(1)
+    expect(seenByThePane).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(true)
+    document.body.removeEventListener('keydown', seenByThePane)
+  })
+
+  it('leaves every other key out of the chain: only bare arrows step', async () => {
+    const { input, onStep } = setup()
+    await tick()
+
+    for (const init of [
+      { key: 'ArrowDown', metaKey: true },
+      { key: 'ArrowUp', altKey: true },
+      { key: 'ArrowDown', shiftKey: true },
+      { key: 'PageDown' },
+      { key: 'PageUp' },
+      { key: 'Home' },
+      { key: 'End' },
+    ]) {
+      input.dispatchEvent(new KeyboardEvent('keydown', { ...init, bubbles: true }))
+    }
+
+    expect(onStep).not.toHaveBeenCalled()
   })
 
   it('takes focus and selects the name without its extension on mount', async () => {

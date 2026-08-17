@@ -1,4 +1,4 @@
-import { getFileRange, refreshListing } from '$lib/tauri-commands'
+import { getFileAt, getFileRange, refreshListing } from '$lib/tauri-commands'
 import { getIpcErrorMessage, isIpcError, moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
 import { validateFilename, getExtension } from '$lib/utils/filename-validation'
 import { cancelClickToRename } from '../rename/rename-activation'
@@ -11,6 +11,7 @@ import { pathInsideArchive } from './volume-capabilities'
 import type { FileEntry } from '../types'
 import type { StartRenameOptions } from './types'
 import type { createRenameState, RenameSessionId } from '../rename/rename-state.svelte'
+import { resolveStepIndex, type RenameStepDirection } from '../rename/rename-step'
 
 export interface RenameFlowDeps {
   rename: ReturnType<typeof createRenameState>
@@ -24,6 +25,15 @@ export interface RenameFlowDeps {
   getVolumeId: () => string
   getEntryUnderCursor: () => FileEntry | undefined
   onRequestFocus: () => void
+  /** Row the cursor is on, for the chained step's neighbour math. */
+  getCursorIndex: () => number
+  /** Cursor-addressable rows, `..` included when there is one. */
+  getEffectiveTotalCount: () => number
+  getHasParent: () => boolean
+  /** A row read straight out of the loaded window; `undefined` when it isn't loaded. */
+  getEntryAt: (index: number) => FileEntry | undefined
+  /** Lands the cursor on a row and scrolls it into view. */
+  moveCursorTo: (index: number) => void
 }
 
 export function createRenameFlow(deps: RenameFlowDeps) {
@@ -140,6 +150,48 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         }
       })
     }
+  }
+
+  /**
+   * Opens the editor on `entry` itself, with no cursor round-trip.
+   *
+   * `startRename` activates on whatever `getEntryUnderCursor()` reports, and
+   * that value is filled by an async read keyed on the cursor index: right
+   * after a chained step moves the cursor it still names the file the chain
+   * just left, so activating through it would write the next name onto that
+   * file. Taking the entry directly makes the target path-bound by
+   * construction.
+   */
+  function startRenameOnEntry(entry: FileEntry): void {
+    clearPendingRenameActivation()
+    // A chained step is a user rename like any other: it keeps the warning.
+    suppressExtensionWarningOnce = false
+    activateRename(entry)
+  }
+
+  /** Reads a row from the backend when it sits outside the loaded window. */
+  async function fetchEntryAt(index: number): Promise<FileEntry | undefined> {
+    const backendIndex = deps.getHasParent() ? index - 1 : index
+    try {
+      return (await getFileAt(deps.getListingId(), backendIndex, deps.getIncludeHidden())) ?? undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  /**
+   * Sends the current edit on its way and reopens the editor on `entry`.
+   *
+   * The save goes FIRST, and unawaited: `executeFlow` reads the target, the
+   * typed name, and the session id synchronously before it awaits anything, so
+   * firing it here is what tags it with the session that typed it. Activating
+   * first would hand the in-flight save the NEW session's id and blind every
+   * supersession guard at once.
+   */
+  function stepTo(index: number, entry: FileEntry): void {
+    if (rename.hasChanged()) void executeFlow(true)
+    deps.moveCursorTo(index)
+    startRenameOnEntry(entry)
   }
 
   async function loadSiblingNames(excludeName: string): Promise<string[]> {
@@ -490,6 +542,46 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       if (pendingCommit) return
       rename.cancel()
       restoreFocus()
+    },
+
+    /**
+     * ArrowDown / ArrowUp inside the editor: send the current name off to be
+     * saved and reopen the editor on the neighbouring row, so a run of files
+     * gets renamed in one keyboard flow.
+     *
+     * The neighbour is captured BEFORE the save goes out, and by path: the
+     * rename may re-sort the listing and carry the renamed file far away, and
+     * the row the user meant is the one that sat beside the editor when they
+     * pressed the key.
+     *
+     * At either end of the listing there's nothing to step to, and the key does
+     * nothing at all: no commit, no discard, the editor stays open with the edit
+     * intact. Nothing rate-limits key repeat; session ids are what keep a burst
+     * of steps from crossing each other's results.
+     */
+    handleRenameStep(direction: RenameStepDirection, sessionId: RenameSessionId) {
+      if (!rename.active || rename.isSuperseded(sessionId)) return
+
+      const index = resolveStepIndex(direction, {
+        cursorIndex: deps.getCursorIndex(),
+        rowCount: deps.getEffectiveTotalCount(),
+        hasParent: deps.getHasParent(),
+      })
+      if (index === undefined) return
+
+      const entry = deps.getEntryAt(index)
+      if (entry) {
+        stepTo(index, entry)
+        return
+      }
+
+      // The neighbour has scrolled out of the loaded window. Fetching it costs a
+      // round trip, in which the user can end the rename or start another one,
+      // so the session has to answer for itself again before the step lands.
+      void fetchEntryAt(index).then((fetched) => {
+        if (!fetched || !rename.active || rename.isSuperseded(sessionId)) return
+        stepTo(index, fetched)
+      })
     },
 
     handleRenameShakeEnd() {

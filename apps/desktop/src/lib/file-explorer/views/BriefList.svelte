@@ -60,6 +60,7 @@
     import { iconCacheCleared } from '$lib/icon-cache'
     import { escapeHtml, tooltip } from '$lib/tooltip/tooltip'
     import type { RenameState, RenameSessionId } from '../rename/rename-state.svelte'
+    import type { RenameStepDirection } from '../rename/rename-step'
     import { formatByteSize } from '$lib/units'
 
     interface Props {
@@ -111,6 +112,8 @@
         onRenameCancel?: (sessionId: RenameSessionId) => void
         /** Called when the user clicks outside the rename editor (which saves) */
         onRenameClickAway?: () => void
+        /** Called on a bare arrow in the editor: chain the rename to the row above or below */
+        onRenameStep?: (direction: RenameStepDirection, sessionId: RenameSessionId) => void
         /** Called when shake animation ends */
         onRenameShakeEnd?: () => void
         /** Called when click-to-rename timer fires (user held click on cursor entry) */
@@ -150,6 +153,7 @@
         onRenameSubmit,
         onRenameCancel,
         onRenameClickAway,
+        onRenameStep,
         onRenameShakeEnd,
         onStartRename,
         onDragInitiate,
@@ -937,6 +941,8 @@
                                         onSubmit={() => onRenameSubmit?.()}
                                         onCancel={(sessionId: RenameSessionId) => onRenameCancel?.(sessionId)}
                                         onClickAway={() => onRenameClickAway?.()}
+                                        onStep={(direction: RenameStepDirection, sessionId: RenameSessionId) =>
+                                            onRenameStep?.(direction, sessionId)}
                                         onShakeEnd={() => onRenameShakeEnd?.()}
                                     />
                                 {:else}

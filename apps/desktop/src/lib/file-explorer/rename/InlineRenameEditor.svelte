@@ -2,6 +2,7 @@
     import { onMount, tick } from 'svelte'
     import { getExtension } from '$lib/utils/filename-validation'
     import type { RenameSessionId } from './rename-state.svelte'
+    import { renameStepDirection, type RenameStepDirection } from './rename-step'
 
     interface Props {
         /** Current filename value (two-way bindable via onInput) */
@@ -28,6 +29,8 @@
         onCancel: (sessionId: RenameSessionId) => void
         /** Called when the user presses the mouse anywhere outside the input */
         onClickAway: () => void
+        /** Called on a bare arrow: chain the rename to the row above or below, for the session that asked */
+        onStep?: (direction: RenameStepDirection, sessionId: RenameSessionId) => void
         /** Called when shake animation ends */
         onShakeEnd: () => void
     }
@@ -45,6 +48,7 @@
         onSubmit,
         onCancel,
         onClickAway,
+        onStep,
         onShakeEnd,
     }: Props = $props()
 
@@ -94,6 +98,16 @@
             e.preventDefault()
             e.stopPropagation()
             onCancel(openedForSession)
+            return
+        }
+        // A bare arrow chains the rename to the next file. It's answered here and
+        // goes no further: the pane behind the editor would otherwise move the
+        // cursor a second time.
+        const stepDirection = renameStepDirection(e)
+        if (stepDirection) {
+            e.preventDefault()
+            e.stopPropagation()
+            onStep?.(stepDirection, openedForSession)
             return
         }
         // Stop propagation of all keys to prevent app shortcuts
