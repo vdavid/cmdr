@@ -141,7 +141,7 @@ describe('InlineRenameEditor keyboard and focus', () => {
     const onCancel = vi.fn()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const props = {
+    const props: ComponentProps<typeof InlineRenameEditor> = {
       value: 'report.md',
       severity: 'ok',
       shaking: false,
@@ -155,7 +155,7 @@ describe('InlineRenameEditor keyboard and focus', () => {
         return liveSession
       },
     }
-    mount(InlineRenameEditor, { target, props: props as ComponentProps<typeof InlineRenameEditor> })
+    mount(InlineRenameEditor, { target, props })
     const input = target.querySelector('.rename-input') as HTMLInputElement
     await tick()
 
