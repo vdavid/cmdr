@@ -6,6 +6,24 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-18 `agent-proposal-spine-plan.md` - Milestone 1 of the agent spec's rewritten §17 build order: give
+      proposals a durable home. `proposals` + `proposal_ops` in `main.db` with a typed lifecycle, per-op statuses and
+      partial apply, per-batch expiry, and drift detection; then move the shipped `propose_rename_plan` off its
+      in-memory 15-minute `RenameProposalStore` onto it, so the one existing proposing feature is the first consumer.
+      The §20.4 fit-check found batch execution already exists (rename, move, and trash all take batches), so the gaps
+      are narrower and different: the engine reports no per-op results to its caller, skipped and failed rows are
+      journaled nowhere, and per-op status isn't one-to-one with rows (cycle groups abort together). Central design
+      call, forced by three review rounds: a creation snapshot can't be captured at the propose boundary, which reads
+      cached pane state and must never stat (a dead NAS would hang the tool), so `creation_snapshot` is nullable and
+      non-NULL means server-captured BY CONSTRUCTION; rename writes NULL. Carries the crash-recovery rule the in-memory
+      store got for free (persisting `accepted` needs an `interrupted` state on open, and ❌ no reconcile from a journal
+      that's empty in exactly that crash), the claim transaction's exact shape (`BEGIN IMMEDIATE` + conditional
+      `UPDATE` + refusal from `rows_affected == 0`), and `ON DELETE SET NULL` so deleting a chat can't erase the
+      decision record. Also surfaces two live data-safety holes in the shipped agent write path, independent of this
+      plan: a crash mid bulk-rename leaves renamed files with no journal rows and no undo, and its rotation temp
+      (`.cmdr-bulk-rename-*`) matches none of the `.cmdr-tmp-*` recovery sweeps, so a stranded file is unfindable.
+      Blocking question for David up front: a durable rename proposal has no re-entry surface, so durability may only
+      pay off for the detector. Deliberately no activity log, no notifications, no second op kind. NOT STARTED.
 - [ ] 2026-08-17 `ground-ownership-plan.md` - Grow `cover::live::Claim` into the single authority for "who may walk this
       ground right now", retiring the parallel mechanisms that answer the same question in their own vocabulary
       (`mgr.scanning`'s arbitration half, `rescan_request::OWED`, the `phases_have_work` guard). Comes from the finding
