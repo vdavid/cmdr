@@ -10,12 +10,18 @@
 //! roots"). It is the same hazard `lifecycle/state.rs` names for two writers on
 //! one database, one level down.
 //!
-//! So a walk CLAIMS its frontier roots, and a later walk over ground someone
-//! already claimed simply doesn't take it. The second search loses nothing
-//! durable: the first walk's rows land in the same index, and Decision 12 makes
-//! them visible to the very next query, which is exactly how Decision 11 already
-//! says a superseded query recovers the ground its predecessor covered — from the
-//! index, never from a replay.
+//! So a holder CLAIMS the ground it is about to write, and a later one over
+//! ground someone already claimed simply doesn't take it. A truncating scan and a
+//! journal replay claim the volume WHOLE (they blank it, or write anywhere on
+//! it); a cover walk claims the frontier roots it names. That one table is the
+//! single-flight answer both scan entries read: a refusal names the KIND of
+//! holder in the way, which is the whole difference between "the walk you asked
+//! for is already running" and "wait for the walk holding this ground".
+//!
+//! A deferred search loses nothing durable: the first walk's rows land in the
+//! same index, and Decision 12 makes them visible to the very next query, which
+//! is exactly how Decision 11 already says a superseded query recovers the ground
+//! its predecessor covered — from the index, never from a replay.
 //!
 //! ❌ Don't reach for a shared-subscriber fan-out instead. It would give the
 //! second search live batches for the shared ground, but it needs per-subscriber
@@ -39,8 +45,8 @@ use std::sync::{Mutex, OnceLock};
 use crate::indexing::paths::path_prefix::{descendant_range_prefix, self_and_ancestors};
 use cmdr_fs::ignore_poison::IgnorePoison;
 
-/// The frontier roots being walked right now, per volume id. A volume with no
-/// live walk holds no entry.
+/// The ground held right now, per volume id. A volume nobody is writing holds no
+/// entry.
 static IN_FLIGHT: OnceLock<Mutex<HashMap<String, VolumeClaims>>> = OnceLock::new();
 
 fn in_flight() -> &'static Mutex<HashMap<String, VolumeClaims>> {
@@ -53,7 +59,7 @@ fn in_flight() -> &'static Mutex<HashMap<String, VolumeClaims>> {
 /// ❌ never re-entrancy or holder identity. A refusal says what KIND of holder is
 /// in the way, which is all a caller needs to decide what to tell the user.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Mode {
+pub(in crate::indexing) enum Mode {
     /// The whole volume, whatever ground anyone else names. A truncating scan
     /// blanks the database and bumps the epoch, so every concurrent walk is
     /// writing into a table about to disappear — overlapping ground or not.
@@ -76,6 +82,19 @@ struct VolumeClaims {
     exclusive: usize,
 }
 
+/// Which holders an overlap question is asked about. Every mode passes unless a
+/// caller narrows it.
+fn any_holder(_: Mode) -> bool {
+    true
+}
+
+/// Only the holders that are WALKING the ground they name. What a caller asking
+/// "is somebody covering this" means, and what an `Exclusive` holder — which
+/// speaks for a whole volume it may not be walking a step of — must not answer.
+fn walking_holder(mode: Mode) -> bool {
+    mode == Mode::Additive
+}
+
 impl VolumeClaims {
     /// Whether any held root would cover `root`'s ground, in either direction.
     ///
@@ -85,12 +104,18 @@ impl VolumeClaims {
     /// answer (a frontier node's ancestors are listed, or they'd be the frontier
     /// instead), which is exactly why it's handled rather than assumed.
     fn overlapping(&self, root: &str) -> bool {
-        self_and_ancestors(root).any(|candidate| self.roots.contains_key(candidate)) || self.holds_under(root)
+        self.overlapping_holder(root, any_holder)
     }
 
-    /// Whether anything strictly under `root` is held. One sorted range, stopped
-    /// at the first key outside the prefix.
-    fn holds_under(&self, root: &str) -> bool {
+    /// The same question asked of some of the holders: whichever `keep` accepts.
+    fn overlapping_holder(&self, root: &str, keep: fn(Mode) -> bool) -> bool {
+        self_and_ancestors(root).any(|candidate| self.roots.get(candidate).is_some_and(|mode| keep(*mode)))
+            || self.holds_under(root, keep)
+    }
+
+    /// Whether anything strictly under `root` is held by a holder `keep` accepts.
+    /// One sorted range, stopped at the first key outside the prefix.
+    fn holds_under(&self, root: &str, keep: fn(Mode) -> bool) -> bool {
         let prefix = descendant_range_prefix(root);
         // ⚠️ The root is its OWN range prefix, so without the length test a claim
         // at the volume root reads as holding ground under itself. Every strict
@@ -99,7 +124,7 @@ impl VolumeClaims {
         self.roots
             .range(prefix.clone()..)
             .take_while(|(key, _)| key.starts_with(&prefix))
-            .any(|(key, _)| key.len() > self_len)
+            .any(|(key, mode)| key.len() > self_len && keep(*mode))
     }
 
     fn insert(&mut self, root: String, mode: Mode) {
@@ -116,16 +141,21 @@ impl VolumeClaims {
     }
 }
 
-/// One walk's hold on the frontier roots it may cover, released when it ends.
+/// One holder's grip on the ground it may write, released when it ends.
 ///
-/// The walk thread owns it for its whole life, so the roots free up on the
-/// completion path, the cancel path, and a panic alike.
-pub(super) struct Claim {
+/// Whoever holds it owns it for the whole of their work, so the roots free up on
+/// the completion path, the cancel path, and a panic alike. A cover walk's lives
+/// on its own thread; a scan's and a replay's travel into the task that ends
+/// them, since both outlive the call that started them.
+pub(in crate::indexing) struct Claim {
     volume_id: String,
-    /// The roots this walk took.
+    /// The roots this holder took.
     mine: Vec<String>,
     /// The roots it didn't, because another holder on this volume has them.
     deferred: Vec<String>,
+    /// What kind of holder was in the way, for a claim that took NOTHING. See
+    /// [`Claim::refused_by`].
+    refused_by: Option<Mode>,
 }
 
 impl Claim {
@@ -136,7 +166,7 @@ impl Claim {
     /// frontier that overlaps ITSELF by the same test: each root is checked
     /// against the ones this call has already taken, so one walk can't
     /// double-write its own ground either.
-    pub(super) fn take(volume_id: &str, frontier: Vec<String>, mode: Mode) -> Self {
+    pub(in crate::indexing) fn take(volume_id: &str, frontier: Vec<String>, mode: Mode) -> Self {
         let mut live = in_flight().lock_ignore_poison();
         let claimed = live.entry(volume_id.to_string()).or_default();
 
@@ -145,6 +175,19 @@ impl Claim {
         // several roots would refuse its own second root the moment its first
         // landed.
         let volume_is_spoken_for = !claimed.roots.is_empty() && (mode == Mode::Exclusive || claimed.exclusive > 0);
+
+        // And WHAT KIND those other holders are, read at the same moment and for
+        // the same reason: a property of the table BEFORE this call, which is what
+        // keeps a claim's own roots out of the answer. An `Exclusive` holder can
+        // only ever be on the volume alone (any holder refuses one, and it refuses
+        // everyone), so this reads a table that is all one kind or the other.
+        let in_the_way = if claimed.exclusive > 0 {
+            Some(Mode::Exclusive)
+        } else if claimed.roots.is_empty() {
+            None
+        } else {
+            Some(Mode::Additive)
+        };
 
         let mut mine = Vec::with_capacity(frontier.len());
         let mut deferred = Vec::new();
@@ -166,21 +209,44 @@ impl Claim {
                 deferred.len()
             );
         }
+        // A claim that took nothing was turned away by whoever was already here:
+        // the FIRST root of a frontier can't be refused by roots this same call
+        // took, since it took none yet. That's what makes this exact rather than
+        // "somebody else is on the volume".
+        let refused_by = (mine.is_empty() && !deferred.is_empty())
+            .then_some(in_the_way)
+            .flatten();
         Self {
             volume_id: volume_id.to_string(),
             mine,
             deferred,
+            refused_by,
         }
     }
 
-    /// The roots this walk is covering.
-    pub(super) fn mine(&self) -> &[String] {
+    /// The roots this holder is covering.
+    pub(in crate::indexing) fn mine(&self) -> &[String] {
         &self.mine
     }
 
     /// The roots it left to another holder.
-    pub(super) fn deferred(&self) -> &[String] {
+    pub(in crate::indexing) fn deferred(&self) -> &[String] {
         &self.deferred
+    }
+
+    /// What kind of holder turned this claim away, when it got NO ground at all.
+    ///
+    /// The whole of what a refused caller is told, and deliberately so: a mode
+    /// says whether the ground is being blanked ([`Mode::Exclusive`]) or walked
+    /// ([`Mode::Additive`]), which is the difference between "the walk you asked
+    /// for is already happening" and "wait for the walk that's holding it". ❌ Not
+    /// WHICH holder — identity is re-entrancy's vocabulary, and this table
+    /// deliberately doesn't speak it.
+    ///
+    /// `None` whenever the claim took something, a partial grant included: ground
+    /// in hand is not a refusal.
+    pub(in crate::indexing) fn refused_by(&self) -> Option<Mode> {
+        self.refused_by
     }
 }
 
@@ -201,13 +267,19 @@ impl Drop for Claim {
     }
 }
 
-/// Which of `frontier`'s roots a walk on this volume is covering RIGHT NOW.
+/// Which of `frontier`'s roots a WALK on this volume is covering RIGHT NOW.
 ///
 /// The same overlap rule [`Claim::take`] would apply, asked without taking
 /// anything — so a caller can find out that the ground it wants is spoken for
 /// before it commits to a walk that would take none of it. ❌ Not a reservation
 /// and not a promise: the answer can go stale the moment it's read, which is why
 /// `Claim::take` stays the authority and reports what it left behind.
+///
+/// ⚠️ Only [`Mode::Additive`] holders answer, and that's what makes the question
+/// honest rather than a proxy for "is anything held". A scan takes the volume
+/// root `Exclusive`ly, so an unfiltered answer would name every root of every
+/// frontier for as long as one runs — telling a search to wait for a walk that
+/// will never cover its ground.
 pub(in crate::indexing) fn ground_being_walked(volume_id: &str, frontier: &[String]) -> Vec<String> {
     let live = in_flight().lock_ignore_poison();
     let Some(claimed) = live.get(volume_id) else {
@@ -215,7 +287,7 @@ pub(in crate::indexing) fn ground_being_walked(volume_id: &str, frontier: &[Stri
     };
     frontier
         .iter()
-        .filter(|root| claimed.overlapping(root))
+        .filter(|root| claimed.overlapping_holder(root, walking_holder))
         .cloned()
         .collect()
 }
@@ -469,6 +541,83 @@ mod tests {
 
         let walk = Claim::take("exclusive-release-vol", vec!["/anywhere".to_string()], Mode::Additive);
         assert_eq!(walk.mine(), ["/anywhere"], "the volume is free again");
+    }
+
+    /// A refused claim says what KIND of holder is in the way, which is the whole
+    /// of what the two scan entries need: an `Exclusive` one is another whole-volume
+    /// run, so the walk the caller asked for is already happening.
+    #[test]
+    fn a_claim_refused_by_a_whole_volume_holder_says_so() {
+        let _scan = Claim::take("refused-by-scan-vol", vec!["/".to_string()], Mode::Exclusive);
+
+        let second = Claim::take("refused-by-scan-vol", vec!["/".to_string()], Mode::Exclusive);
+        assert!(second.mine().is_empty());
+        assert_eq!(second.refused_by(), Some(Mode::Exclusive));
+    }
+
+    /// And an `Additive` one is a walk holding ground it will let go of, which is
+    /// what a caller can wait for rather than being told its scan already ran.
+    #[test]
+    fn a_claim_refused_by_a_walk_says_so() {
+        let _walk = Claim::take("refused-by-walk-vol", vec!["/corner".to_string()], Mode::Additive);
+
+        let scan = Claim::take("refused-by-walk-vol", vec!["/".to_string()], Mode::Exclusive);
+        assert!(scan.mine().is_empty());
+        assert_eq!(scan.refused_by(), Some(Mode::Additive));
+    }
+
+    /// A walk turned away by a whole-volume holder is told the same thing from
+    /// the other side: what's in the way owns the drive, not a patch of it.
+    #[test]
+    fn a_walk_refused_by_a_whole_volume_holder_says_so() {
+        let _scan = Claim::take("refused-rank-vol", vec!["/one".to_string()], Mode::Exclusive);
+
+        let refused = Claim::take("refused-rank-vol", vec!["/two".to_string()], Mode::Additive);
+        assert!(refused.mine().is_empty());
+        assert_eq!(refused.refused_by(), Some(Mode::Exclusive));
+    }
+
+    /// Ground in hand is not a refusal, however much of the frontier was left
+    /// behind. A partial grant's caller walks; it has nobody to wait for.
+    #[test]
+    fn a_claim_that_got_ground_reports_no_refusal() {
+        let _held = Claim::take("refused-partial-vol", vec!["/taken".to_string()], Mode::Additive);
+
+        let mixed = Claim::take(
+            "refused-partial-vol",
+            vec!["/taken".to_string(), "/free".to_string()],
+            Mode::Additive,
+        );
+        assert_eq!(mixed.mine(), ["/free"]);
+        assert_eq!(mixed.refused_by(), None, "it took ground, so nobody refused it");
+    }
+
+    /// A frontier that overlaps only ITSELF was refused by nobody: the volume was
+    /// free, and the second root lost to the first root of this same claim.
+    #[test]
+    fn deferring_to_ones_own_root_is_not_a_refusal() {
+        let claim = Claim::take(
+            "refused-self-vol",
+            vec!["/a".to_string(), "/a/inner".to_string()],
+            Mode::Additive,
+        );
+
+        assert_eq!(claim.deferred(), ["/a/inner"]);
+        assert_eq!(claim.refused_by(), None);
+    }
+
+    /// Asking who is WALKING ground skips a holder that only speaks for the
+    /// volume. A scan holds its root exclusively without covering a step of the
+    /// frontier a search asked about, so naming those roots would send the search
+    /// off to wait for a walk that is never coming.
+    #[test]
+    fn a_whole_volume_holder_is_not_walking_the_ground_it_speaks_for() {
+        let _scan = Claim::take("walked-filter-vol", vec!["/".to_string()], Mode::Exclusive);
+
+        assert!(
+            ground_being_walked("walked-filter-vol", &["/deep/inside".to_string()]).is_empty(),
+            "a scan owns the volume, but it is not the walk covering this ground"
+        );
     }
 
     /// A partial grant survives every mode: the walk takes the roots it can and

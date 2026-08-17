@@ -225,6 +225,15 @@ pub(crate) struct ReplayConfig {
     /// walk starts the volume may be gone, and the lookup would answer with a
     /// token that never fires.
     pub(crate) cancel: CancellationToken,
+    /// The volume's ground, claimed by `start_replay` and OWNED by the loop.
+    ///
+    /// Replay walks nothing, but it writes anywhere on the volume through the
+    /// reconciler, so a truncating rescan under one blanks rows it is still
+    /// inserting. The loop drops this the moment the replay PHASE ends — ❌ never
+    /// where the task does, because the same task runs the live loop afterwards
+    /// and a claim held that long would refuse every scan and search walk on the
+    /// boot disk until quit.
+    pub(in crate::indexing) ground: crate::indexing::lifecycle::cover::Claim,
 }
 
 // ── Shared helpers ───────────────────────────────────────────────────

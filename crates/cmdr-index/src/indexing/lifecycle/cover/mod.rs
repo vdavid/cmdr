@@ -337,8 +337,8 @@ pub(crate) fn start(
 ///    rows the released events land on are the rows the walk wrote.
 /// 2. **Then the claim**, which is what frees the ground for anything else.
 /// 3. **Then the rescan this walk made someone wait for**, which is why the order
-///    matters at all: fired before the claim went, the scan would ask the guard,
-///    see this very walk's ground, and defer itself again.
+///    matters at all: fired before the claim went, the scan's own claim would find
+///    this very walk still holding the ground, and defer itself again.
 ///
 /// ❌ Not folded into `state::finish_branch_coverage` (which several tests and the
 /// shutdown-window path call on their own) and ❌ not hung off `Claim`'s `Drop`:
@@ -703,8 +703,7 @@ mod bootstrap;
 mod live;
 
 pub(crate) use bootstrap::{NoCoverContext, context_for_walk};
-pub(in crate::indexing) use live::ground_being_walked;
-use live::{Claim, Mode};
+pub(in crate::indexing) use live::{Claim, Mode, ground_being_walked};
 
 #[cfg(test)]
 mod bench;

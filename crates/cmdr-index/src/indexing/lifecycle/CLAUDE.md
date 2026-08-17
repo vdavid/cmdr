@@ -22,10 +22,14 @@ them.
   `cover_or_scan`, ❌ never straight to `start_scan`. ⚠️ A COMPLETED volume takes the replay/reconcile arm FIRST, and an
   EMPTY persisted branch set means a legacy interrupted bulk scan ⇒ rebuild. Start the machine via
   `state::start_pending_phases`, OUTSIDE a registry-held window.
-- **Both scan entries ask THREE single-flight questions** (`mgr.scanning`, `phases_have_work` — ❌ not merely walking —
-  and `cover::ground_being_walked`). ❌ Don't collapse them or classify them by text (all are `ScanStartError`). ⚠️ The
-  phase one refuses nothing a trait-scanned kind can reach today; ❌ don't tidy it away. A MANUAL rescan they refuse on
-  a COMPLETED volume is REMEMBERED (`rescan_request`) and fired from `cover::release_ground`, claim first.
+- **Both scan entries ask TWO single-flight questions**: `phases_have_work` (❌ not merely walking; ⚠️ it refuses
+  nothing a trait-scanned kind reaches today and ❌ isn't dead), then `claim_the_volume` — one `Exclusive` claim
+  answering for every other holder, journal replay included (it writes without walking). The refusal MODE picks the
+  outcome: Exclusive ⇒ `AlreadyScanning`, Additive ⇒ `GroundBeingWalked`. A MANUAL `GroundBeingWalked` on a COMPLETED
+  volume is REMEMBERED (`rescan_request`), fired from `cover::release_ground`, claim first.
+- **A whole-volume claim OUTLIVES its call**: it rides into whatever ends the run and drops where that clears
+  `mgr.scanning`. ❌ Never release one early — `stop_scan`/`shutdown` only cancel, and the replay TASK outlives the
+  replay.
 - **A machine that stops with a non-empty frontier gets another PASS, ❌ never a rescan** (`completion_retry.rs`, an
   in-memory 1/5/15-minute per-volume backoff). It goes through `state::resume_the_phases`, ❌ never `force_scan`: on a
   volume that completed meanwhile that one truncates, fired by a timer. ❌ Never runs against a machine that has work.

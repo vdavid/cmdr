@@ -470,22 +470,44 @@ The walk itself, its `Ground` branch, its `CoverOutcome`, and what it costs are 
 the registry side: the doors a scan has to ask before it can truncate under one, the rescan a walk makes someone wait
 for, and the branch set a walk leaves watched.
 
-### The three single-flight questions a scan has to ask
+### The two single-flight questions a scan has to ask
 
-A scan entry refuses for three independent reasons, and each catches a walk the other two can't see. **Both entries ask
-all three** — `start_scan` (`manager/start.rs`) and `start_volume_scan` (`network_scan.rs`), because the trait half has
-the same doors and the slowest walks:
+**Both entries ask both** — `start_scan` (`manager/start.rs`) and `start_volume_scan` (`network_scan.rs`), because the
+trait half has the same doors and the slowest walks:
 
-- **`mgr.scanning`** — the volume's own full scan. Set by `start_scan`, cleared by the completion handler.
 - **`phases_have_work()`** — the first-index machine covering this volume in pieces. Why it asks for WORK rather than
-  for a walk in flight is canonical on the method itself (`manager/phased.rs`).
-- **`cover::ground_being_walked(volume_id, &[volume_root])`** — a search-driven cover walk. It sets no flag at all: it
-  holds a CLAIM (`cover/live.rs`), and `cover_context_for` refuses only NEW walks, so nothing else stops a rescan
-  arriving mid-walk. The volume root as the frontier asks about the whole volume, since `overlaps` counts an ancestor.
+  for a walk in flight is canonical on the method itself (`manager/phased.rs`), and it is also why the machine holds no
+  volume-wide claim and this stays its own question: it deliberately owns nothing between frontier groups, 50–150 times
+  a phase. Asked FIRST, so a refusal takes no claim on its way out.
+- **`claim_the_volume()`** — every other holder, in one answer (`manager.rs`). An `Exclusive` claim over the volume
+  root, refused by another whole-volume run (a scan, a journal replay) and by any cover walk holding any ground on the
+  drive. The volume root as the one frontier root claims all of it, since `overlaps` counts an ancestor.
 
-Without the third, a coalesced shallow anchor, a journal-gap fallback, or the manual button sends `TruncateData` +
-`BumpCurrentEpoch` while the walk is still inserting: the walk's rows land in a blanked database, its ids lose to
+Without the claim, a coalesced shallow anchor, a journal-gap fallback, or the manual button sends `TruncateData` +
+`BumpCurrentEpoch` while a walk is still inserting: the walk's rows land in a blanked database, its ids lose to
 `INSERT OR IGNORE`, and everything hanging off them is orphaned.
+
+**One claim answer, two user-visible outcomes**, which is why `Claim::take` reports the conflicting holder's MODE and
+`claim_the_volume` maps it: `Exclusive` ⇒ `AlreadyScanning` (the walk the caller wanted is in flight, and `force_scan`
+reports `Started`), `Additive` ⇒ `GroundBeingWalked` (a walk will let this ground go, so the request is remembered and
+reported as `Deferred`). The mode is the whole vocabulary, and why identity isn't is `cover/DETAILS.md` § "The two
+modes a claim can hold in".
+
+⚠️ **The claim is NOT scoped to the call that takes it**, and this is the part that bites. `start_scan` returns while
+the walk runs, so the claim travels into the task that ends the run: `ScanCompletion` on the local path, the completion
+task on the network one, and `run_replay_event_loop` for a replay. Each drops it right where it clears `mgr.scanning`.
+Left held, the drive refuses every later rescan AND every search walk for the rest of the session, which no retry gets
+out of. ❌ Don't release one anywhere else: `stop_scan` and `shutdown` cancel the walk and let its own ending free the
+ground, because a cancel is a request and the walk keeps writing until it notices.
+
+⚠️ **Journal replay claims the volume too, and it is the least obvious holder in the system.** It walks nothing, so it
+looks like it holds no ground — but it WRITES anywhere on the volume through the reconciler, allocating ids for names a
+concurrent scan or cover walk would allocate too. That is the same `INSERT OR IGNORE` collision the claim table exists
+to prevent, and a "Rescan now" landing mid-replay would truncate under rows replay is still inserting. So `start_replay`
+takes an `Exclusive` claim beside its `scanning.store(true)`, and `run_replay_event_loop` drops it beside the matching
+`store(false)` — where the REPLAY phase ends, ❌ never where the task does: that same task goes on to run the live loop
+for the rest of the session. `cover_context_for` keeps reading `mgr.scanning` independently, which is what refuses a new
+cover walk during replay; the claim is what refuses a truncating one.
 
 ⚠️ **The phase question refuses nothing that can reach `start_volume_scan` today, and it is still load-bearing.** A
 volume is phase-covered only if `first_index_is_the_machines` says so, and that requires `uses_local_scanner()`, which
@@ -495,14 +517,15 @@ racing the machine for every row. ❌ Don't tidy it away as dead: it is a type-l
 property. Anchor: `cover::network_tests::a_rescan_of_a_share_refuses_while_the_phase_machine_still_owes_it_work`, which
 forces the machine onto a share because no public path produces that shape.
 
-A FOURTH question is asked above all three, in `cover_or_scan`: whether this volume's first index is the phase machine's
-at all (§ "Every other way a full walk starts"), which routes a never-completed volume to the machine rather than to a
-full walk.
+A THIRD question is asked above both, in `cover_or_scan`: whether this volume's first index is the phase machine's at
+all (§ "Every other way a full walk starts"), which routes a never-completed volume to the machine rather than to a full
+walk.
 
 **The refusals are TYPED** (`rescan_request::ScanStartError`: `AlreadyScanning`, `GroundBeingWalked`, `Internal`). Their
 wording used to be the only thing separating them, which the project's hard rule forbids classifying on, and which left
-a caller nothing to branch on but prose. Regression anchor:
-`cover::cold_drive_tests::rescans::a_truncating_rescan_refuses_while_a_search_cover_walk_is_live`.
+a caller nothing to branch on but prose. Regression anchors:
+`cover::cold_drive_tests::rescans::a_truncating_rescan_refuses_while_a_search_cover_walk_is_live` for the deferred half,
+`::a_rescan_under_a_running_scan_is_the_scan_that_is_already_running` for the idempotent one.
 
 ### The one walk a volume remembers
 

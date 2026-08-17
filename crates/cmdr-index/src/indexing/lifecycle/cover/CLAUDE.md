@@ -20,13 +20,17 @@ same ground. The registry and the phase machine it runs against are `../CLAUDE.m
   walk earns it. An ancestor that claimed a listing it never did would mark a whole tree covered off one walked folder.
 - **A missing `entries` row is NOT only a cold-drive case**: a folder created since its parent was listed has no row on
   a drive indexed yesterday either. ❌ Don't gate bootstrap on "never indexed".
-- **A walk CLAIMS its frontier roots, and a later walk over claimed ground doesn't take it** (`live.rs`). Two walks over
-  one directory allocate different ids for the same names, and `INSERT OR IGNORE` makes the loser lose its whole
+- **A holder CLAIMS the ground it writes, and a later one over claimed ground doesn't take it** (`live.rs`). Two writers
+  over one directory allocate different ids for the same names, and `INSERT OR IGNORE` makes the loser lose its whole
   subtree. A data-safety rule, ❌ not a performance one. The deferred search loses nothing durable, so ❌ don't reach
   for a shared-subscriber fan-out.
 - **A claim holds `Additive`** (every cover walk: the ground it names, composes with the phase machine) **or
-  `Exclusive`** (the whole volume, for a holder that blanks the database). ❌ Never solve a third wish with holder
-  identity or re-entrancy.
+  `Exclusive`** (the whole volume: a scan, a journal replay). ❌ Never solve a third wish with holder identity or
+  re-entrancy. A refusal reports the blocking holder's MODE, and that is what both scan entries map to their two
+  outcomes (`../DETAILS.md`).
+- **`ground_being_walked` answers for `Additive` holders ONLY**: a scan owns the volume without covering any root of the
+  frontier it was asked about, so ❌ never let one answer — it would send a search off to wait for a walk that isn't
+  coming.
 - **The claim table is a path-keyed `BTreeMap`, ❌ never a `Vec` scan**: `take` checks each root against the ones it
   already took, so a linear test is quadratic in the frontier's own width (446.77 ms at 2,503 roots, on the thread the
   search waits on). Its range queries only approximate the component-aware overlap predicate; ❌ don't delete

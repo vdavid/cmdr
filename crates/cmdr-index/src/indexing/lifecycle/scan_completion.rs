@@ -16,6 +16,7 @@ use crate::indexing::events::emit_dir_updated;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, EventSink, IndexEvent, RescanReason, emit_rescan_notification, set_phase_for,
 };
+use crate::indexing::lifecycle::cover;
 use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::scanner::{ScanError, ScanSummary};
 use crate::indexing::store::{IndexStore, ScanCalibrationKind};
@@ -40,6 +41,15 @@ pub(super) struct ScanCompletion {
     pub scan_done: Arc<AtomicBool>,
     /// The manager's "a scan is running" flag; reset to false on completion.
     pub scanning: Arc<AtomicBool>,
+    /// The whole-volume claim `start_scan` took, held here for the rest of the
+    /// scan's life and dropped when the walk is provably over.
+    ///
+    /// ⚠️ It travels rather than staying with the manager because the scan
+    /// outlives the call that started it: `start_scan` returns while the walk runs,
+    /// so a claim scoped to that frame would free the ground before the first row
+    /// landed. Owned by this task, the ground frees on the completion path, the
+    /// cancel path, and a panic alike — including the early returns below.
+    pub ground: cover::Claim,
     /// Buffered watcher events; drained into the reconciler, then handed to the
     /// live event loop. Unbounded (Fix 2): the forward task never backpressures.
     pub event_rx: tokio::sync::mpsc::UnboundedReceiver<FsChangeEvent>,
@@ -90,6 +100,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
         join_handle,
         scan_done,
         scanning,
+        ground,
         event_rx,
         watcher_overflow_flag,
         volume_id,
@@ -108,8 +119,12 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 
     // Signal the progress reporter to stop regardless of outcome
     scan_done.store(true, Ordering::Relaxed);
-    // Reset scanning flag so get_status() reports correctly and new scans can start
+    // Reset scanning flag so get_status() reports correctly
     scanning.store(false, Ordering::Relaxed);
+    // And let the volume's ground go, which is what lets a new scan (or a search
+    // walk) start. Released HERE, right after the join: the walk thread is
+    // finished, so nothing is still inserting rows a rescan could truncate under.
+    drop(ground);
 
     // Flatten the outer Result (from spawn_blocking) and inner Result (from thread join)
     let result = match join_result {
@@ -510,6 +525,9 @@ mod tests {
                 join_handle: std::thread::spawn(move || result),
                 scan_done: Arc::new(AtomicBool::new(false)),
                 scanning: Arc::new(AtomicBool::new(true)),
+                // The ground a real scan hands over, taken the way `start_scan`
+                // takes it so the handler releases something real.
+                ground: cover::Claim::take(volume_id, vec!["/".to_string()], cover::Mode::Exclusive),
                 event_rx: self.event_rx.take().expect("one completion per fixture"),
                 watcher_overflow_flag: None,
                 volume_id: volume_id.to_string(),
@@ -562,6 +580,36 @@ mod tests {
             Some(Freshness::Fresh),
             "a clean completion is authoritative"
         );
+    }
+
+    /// The volume's ground comes back when the scan does, on every outcome.
+    ///
+    /// This is the whole reason the claim travels into this task instead of living
+    /// in `start_scan`'s frame: the scan outlives that call, so nothing else CAN
+    /// release it. Left held, the drive would refuse every later rescan and every
+    /// search walk for the rest of the session — the wedged-ground failure, which
+    /// no amount of retrying gets out of.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_volume_ground_comes_back_when_the_scan_ends() {
+        for (volume_id, result) in [
+            ("ground-clean", Ok(summary(42))),
+            ("ground-cancelled", Err(ScanError::Cancelled(summary(7)))),
+            ("ground-failed", Err(ScanError::RootUnlistable)),
+        ] {
+            let mut fx = Fixture::new(volume_id);
+            let params = fx.completion(volume_id, result);
+            assert!(
+                cover::Claim::take(volume_id, vec!["/".to_string()], cover::Mode::Exclusive)
+                    .mine()
+                    .is_empty(),
+                "precondition: the scan holds '{volume_id}' while it runs"
+            );
+
+            run_scan_completion(params).await;
+
+            let next = cover::Claim::take(volume_id, vec!["/".to_string()], cover::Mode::Exclusive);
+            assert_eq!(next.mine(), ["/"], "'{volume_id}' is walkable again");
+        }
     }
 
     /// The one that strands an index if it ever goes wrong: a stopped scan holds

@@ -66,6 +66,33 @@ impl IndexManager {
         // this to false when replay is done (or on fallback to full scan).
         self.scanning.store(true, Ordering::Relaxed);
 
+        // And take the volume's ground for the same stretch. Replay walks nothing,
+        // but it WRITES the whole volume: every journal event goes through the
+        // reconciler, which allocates ids for names a concurrent scan or cover walk
+        // would allocate too, and that is the `INSERT OR IGNORE` collision the claim
+        // table exists to prevent. So it holds the volume `Exclusive`ly, which is
+        // what refuses a "Rescan now" landing mid-replay — a truncate under a replay
+        // that is still inserting.
+        //
+        // ⚠️ It rides INTO the loop below and is dropped where the replay phase
+        // ends, not where this task does: the same task goes on to run the live
+        // loop for the rest of the session, and ground held that long would refuse
+        // every scan and every search walk on the boot disk until quit.
+        let ground = cover::Claim::take(
+            &self.volume_id,
+            vec![self.volume_root.to_string_lossy().into_owned()],
+            cover::Mode::Exclusive,
+        );
+        if ground.mine().is_empty() {
+            // Nothing here can act on it: replay is the launch path and its writes
+            // are already queued. Worth a line, because it means something else
+            // claimed this volume before its own journal replay started.
+            log::warn!(
+                "Replay: '{}' is already spoken for, so replay runs without holding its ground",
+                self.volume_id
+            );
+        }
+
         // Spawn the replay event processing loop
         let writer = self.writer.clone();
         let events = Arc::clone(&self.events);
@@ -109,6 +136,7 @@ impl IndexManager {
                     estimated_total,
                     heal_after_replay,
                     cancel: replay_cancel,
+                    ground,
                 },
                 fallback_tx,
                 watcher_overflow,
@@ -118,6 +146,8 @@ impl IndexManager {
 
             // Live event loop ended (shutdown). Clear scanning as a safety net
             // (normally cleared inside run_replay_event_loop after replay phase).
+            // The ground needs no safety net: the loop owns the claim, so an early
+            // return, an abort, and a panic all release it.
             scanning.store(false, Ordering::Relaxed);
 
             if let Err(e) = result {
@@ -325,33 +355,25 @@ impl IndexManager {
     /// 4. On scan completion: replay buffered events, switch to live mode
     /// 5. Live events processed continuously until shutdown
     pub fn start_scan(&mut self, scan_trigger: &str) -> Result<(), ScanStartError> {
-        if self.scanning.load(Ordering::Relaxed) {
-            return Err(ScanStartError::AlreadyScanning);
-        }
-
-        // The same question asked of the third kind of walk. A volume being covered
-        // in phases is being walked whole, in pieces, and this call would send
+        // The question the claim table can't answer. A volume being covered in
+        // phases is being walked whole, in pieces, and this call would send
         // `TruncateData` + `BumpCurrentEpoch` over the top of it — blanking rows the
         // machine wrote and destroying the sizes the user has been watching appear.
         //
         // ⚠️ "The machine has WORK", ❌ never "a walk is running": the walking flag
         // goes false between frontier roots, and the stitch produces 50–150 of them
-        // per phase, so a gap-timed rescan would slip straight through.
+        // per phase, so a gap-timed rescan would slip straight through. That gap is
+        // exactly why the machine holds no volume-wide claim and this stays its own
+        // question. Asked FIRST, so a refusal here takes no claim on its way out.
         if self.phases_have_work() {
             return Err(ScanStartError::AlreadyScanning);
         }
 
-        // The same single-flight question asked of the OTHER kind of walk. A
-        // search-driven cover walk never sets `scanning` — it holds a claim on the
-        // ground it is covering — so without this a rescan would truncate and bump
-        // the epoch underneath a walk that is still inserting rows, and the walk's
-        // ids would lose to `INSERT OR IGNORE` and orphan whatever hung off them.
-        // The volume root as the frontier asks about the whole volume: `overlaps`
-        // counts an ancestor, so any live claim answers.
-        let whole_volume = vec![self.volume_root.to_string_lossy().to_string()];
-        if !cover::ground_being_walked(&self.volume_id, &whole_volume).is_empty() {
-            return Err(ScanStartError::GroundBeingWalked);
-        }
+        // And the one the claim table DOES answer, for every other holder at once:
+        // another full scan, a journal replay, or a search-driven cover walk. Held
+        // from here until this scan ends, so nothing can start walking the volume
+        // between this line and the truncate below.
+        let ground = self.claim_the_volume()?;
 
         // The completeness gate for reconcile-vs-truncate (see `local_rescan_reconciles`):
         // snapshot whether the prior scan COMPLETED, read BEFORE `DeleteMeta` clears
@@ -596,6 +618,10 @@ impl IndexManager {
 
         // Shared flag: set to true when the scan finishes (or fails/panics), so the
         // progress reporter loop exits. The completion handler below sets it.
+        //
+        // (The claim taken at the top is handed to that same handler a few lines
+        // down. Everything above this point can still fail out with a `?`, and the
+        // ground goes with it.)
         let scan_done = Arc::new(AtomicBool::new(false));
 
         // Spawn the 500 ms progress reporter: it emits `index-scan-progress` events
@@ -632,6 +658,7 @@ impl IndexManager {
                 join_handle,
                 scan_done,
                 scanning,
+                ground,
                 event_rx,
                 watcher_overflow_flag,
                 volume_id,

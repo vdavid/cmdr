@@ -86,6 +86,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         estimated_total,
         heal_after_replay,
         cancel,
+        ground,
     } = config;
 
     log::info!("Replay: started (since_event_id={since_event_id}, estimated_total={estimated_total:?})");
@@ -407,6 +408,12 @@ pub(in crate::indexing) async fn run_replay_event_loop(
 
     // Replay done. Allow verifier to run and report scanning=false to frontend.
     scanning.store(false, Ordering::Relaxed);
+    // And hand the volume's ground back, so a rescan or a search walk can have it.
+    // From here this loop is a LIVE loop: it writes one event at a time against
+    // committed rows, which is what `branches` arbitrates, not the claim table.
+    // ⚠️ Everything before this point releases it too, by owning it: an early
+    // return (a journal gap, an overflow), an abort, or a panic all drop it.
+    drop(ground);
 
     log::info!("Replay: switching to live mode");
     // The volume that replays a journal is one that indexes whole, so this loop

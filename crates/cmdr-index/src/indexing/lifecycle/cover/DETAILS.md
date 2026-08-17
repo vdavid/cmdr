@@ -76,14 +76,16 @@ three levels, each closing a case the one above it can't see.
    `cover::start` claims each root on the caller's thread, skips any that overlaps a live one in either direction
    (component-aware, so `/a/bc` is not inside `/a/b`), and reports the skipped ones as
    `CoverWalk::covered_by_another_walk`. The claim is owned by the walk thread, so the ground frees up on the completion
-   path, the cancel path, and a panic alike. `ground_being_walked` answers the same question without taking anything,
-   which is what `Index::coverage` reports as `CoverageMap::being_walked`: a caller can then tell that a walk would get
-   it nothing BEFORE committing to one, and wait for the walk that holds the ground instead of answering empty.
+   path, the cancel path, and a panic alike. `ground_being_walked` asks the same overlap question of the WALKS only,
+   without taking anything, which is what `Index::coverage` reports as `CoverageMap::being_walked`: a caller can then
+   tell that a walk would get it nothing BEFORE committing to one, and wait for the walk that holds the ground instead
+   of answering empty.
 
-**The claim is also what keeps a rescan off a live walk.** `start_scan` asks `ground_being_walked` over the whole volume
-and refuses while anything answers, because a search walk sets no `scanning` flag and a truncate under one blanks rows
-it is still writing. That rule is canonical in `../DETAILS.md` § "The three single-flight questions a scan has to ask";
-what matters here is that the claim, not a flag, is the thing being read.
+**The claim is also what keeps a rescan off a live walk, and it is the scan entries' own single-flight answer.** Both
+take the volume root `Exclusive`ly (`IndexManager::claim_the_volume`) instead of reading a flag: a search walk sets no
+flag at all, and a truncate under one blanks rows it is still writing. That rule is canonical in `../DETAILS.md` § "The
+two single-flight questions a scan has to ask"; what matters here is that one table answers for every holder, and that a
+whole-volume claim outlives the call that takes it.
 
 The deferred caller loses nothing durable: the other walk's rows land in the same index, and Decision 12 makes them
 visible to the very next query — which is exactly how Decision 11 already says a superseded query recovers its
@@ -98,18 +100,33 @@ done while the walk moves on to the next), and there is no second consumer today
 - **`Additive`** — the holder speaks only for the ground it names. Two additive claims compose as long as their
   frontiers stay off each other. Every walk `cover::start` makes is one.
 - **`Exclusive`** — the holder speaks for the whole volume, whatever ground anyone else names. What a truncating scan
-  needs: it blanks the database and bumps the epoch, so "somewhere else on the same drive" is no protection.
+  needs: it blanks the database and bumps the epoch, so "somewhere else on the same drive" is no protection. Journal
+  replay takes one too, for a subtler reason (`../DETAILS.md`).
 
 The conflict rule follows from that: an `Exclusive` holder refuses everything on its volume; an `Exclusive` claim is
 refused by any holder at all; `Additive` against `Additive` is decided per root by the overlap rule. **The volume-wide
 half is read BEFORE the claim takes anything**, so a claim naming several roots never conflicts with its own — asked per
 root, an `Exclusive` claim over `/one` and `/two` would refuse `/two` the moment `/one` landed.
 
+**A refusal reports the blocking holder's MODE** (`Claim::refused_by`), which is the whole of what a refused caller is
+told. It is read off the table as it stood BEFORE the claim took anything, and reported only when the claim got NO
+ground — the first root of a frontier can't be refused by roots the same call took, since it took none yet, so a
+self-overlapping frontier reads as "refused by nobody" rather than by itself. What the two scan entries do with it is
+`../DETAILS.md` § "The two single-flight questions a scan has to ask".
+
+Two consequences worth stating, because both are easy to get backwards:
+
+- **A holder that speaks for a volume is not WALKING it.** `ground_being_walked` filters to `Additive` holders, so a
+  running scan never answers it (`Index::coverage`'s `being_walked`, and with it
+  `StartOutcome::DeferredUntilSearchEnds`, keeps meaning "another WALK has this ground").
+- **A whole-volume claim outlives the call that takes it.** `start_scan` and `start_volume_scan` return while their
+  walks run, so the claim travels into the task that ends the run. Custody and the release sites: `../DETAILS.md`.
+
 ⚠️ **Two modes deliberately do not express every holder's wish.** A holder wanting "block truncating scans and search
 walks, but not phase walks" has no mode: `Exclusive` would refuse the phase machine's own per-group walks, and
 `Additive` at the volume root conflicts with every subtree claim because an ancestor counts as overlapping. The
 resolution is that the phase machine takes no volume-wide claim at all and `phases_have_work` stays a separate question
-(`../DETAILS.md` § "The three single-flight questions a scan has to ask"). ❌ Don't solve it with holder identity or
+(`../DETAILS.md` § "The two single-flight questions a scan has to ask"). ❌ Don't solve it with holder identity or
 re-entrancy: that is the broker design, and it was rejected.
 
 ### What the claim table is, and the cost that shaped it

@@ -489,6 +489,9 @@ impl Index {
     /// now ([`CoverageMap::being_walked`]), which the database can't know: only
     /// one walk may have a patch of ground, so a caller whose whole frontier is
     /// already somebody's has nothing to walk and everything to gain by waiting.
+    /// A running SCAN is deliberately not that: it holds the volume without
+    /// covering any particular root, and its ground comes back on its own terms
+    /// rather than a walk's (`cover::ground_being_walked`).
     pub fn coverage(
         &self,
         volume_id: &str,

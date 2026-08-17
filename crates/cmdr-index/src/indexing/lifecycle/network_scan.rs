@@ -192,14 +192,10 @@ impl IndexManager {
         use crate::indexing::scanner::{ScanHandle, ScanProgress};
         use std::sync::atomic::AtomicBool;
 
-        if self.scanning.load(Ordering::Relaxed) {
-            return Err(ScanStartError::AlreadyScanning);
-        }
-
-        // And the same question of the third kind of walk, for the same reason
-        // `start_scan` asks it: a volume the machine still owes work to is being
-        // walked whole, in pieces, and this call would rebuild the index from the
-        // share root over the top of one.
+        // The same question of the phase machine, for the same reason `start_scan`
+        // asks it: a volume the machine still owes work to is being walked whole,
+        // in pieces, and this call would rebuild the index from the share root over
+        // the top of one.
         //
         // ⚠️ No `IndexVolumeKind` is both trait-scanned and phase-covered today —
         // `first_index_is_the_machines` requires `uses_local_scanner()` — so this
@@ -210,14 +206,10 @@ impl IndexManager {
             return Err(ScanStartError::AlreadyScanning);
         }
 
-        // And the same question of the other kind of walk, for the same reason as
-        // `start_scan`: a search-driven cover walk sets no flag, it holds a claim,
-        // and a truncate under one blanks rows it is still writing. Over the wire
-        // that walk is the slowest we have, so this window is the widest.
-        let whole_volume = vec![self.volume_root.to_string_lossy().to_string()];
-        if !super::cover::ground_being_walked(&self.volume_id, &whole_volume).is_empty() {
-            return Err(ScanStartError::GroundBeingWalked);
-        }
+        // And the same claim over the whole share, for the same reason: over the
+        // wire the cover walk is the slowest we have, so the window where a
+        // truncate could land under one is the widest here.
+        let ground = self.claim_the_volume()?;
 
         // Resolve the live volume handle by id. Gone ⇒ the share unmounted; bail
         // so the caller resets to gray rather than scanning nothing.
@@ -440,6 +432,11 @@ impl IndexManager {
 
             scan_done.store(true, Ordering::Relaxed);
             scanning.store(false, Ordering::Relaxed);
+            // And the share's ground goes back, now that nothing is walking it. The
+            // claim rode into this task because the scan outlives `start_volume_scan`;
+            // owned here, it is released on every arm below, on a cancel, and on a
+            // panic alike.
+            drop(ground);
 
             // Three outcomes, three arms. `Ok` now means the walk FINISHED (a
             // cancel arrives as `VolumeScanError::Cancelled`, which is

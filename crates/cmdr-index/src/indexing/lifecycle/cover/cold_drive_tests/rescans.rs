@@ -129,12 +129,12 @@ fn a_drive_that_stopped_indexing_is_owed_no_rescan() {
 /// The other direction of the same rule, and the sharper one: a volume a walk is
 /// covering isn't TRUNCATED under it.
 ///
-/// `start_scan`'s single-flight guard reads `mgr.scanning`, which a search-driven
-/// walk never sets — it holds a claim instead. Left there, a rescan through any
-/// door (the manual button, a journal-gap fallback, a coalesced shallow anchor)
-/// sends `TruncateData` + `BumpCurrentEpoch` while the walk is still writing:
-/// the walk's rows land in a database that was blanked underneath them, and
-/// everything it attributed to an id the truncate dropped is orphaned.
+/// `start_scan` takes the whole volume as a claim, and a walk holding any of it
+/// refuses that claim. Without it, a rescan through any door (the manual button, a
+/// journal-gap fallback, a coalesced shallow anchor) sends `TruncateData` +
+/// `BumpCurrentEpoch` while the walk is still writing: the walk's rows land in a
+/// database that was blanked underneath them, and everything it attributed to an
+/// id the truncate dropped is orphaned.
 #[test]
 fn a_truncating_rescan_refuses_while_a_search_cover_walk_is_live() {
     let drive = ColdDrive::new("cover-truncate-guard-test");
@@ -180,6 +180,45 @@ fn a_truncating_rescan_refuses_while_a_search_cover_walk_is_live() {
         Ok(RescanOutcome::Started),
         "and the moment the walk ends the rescan runs"
     );
+}
+
+/// The other half of the same claim, and the one that must NOT be deferred: a
+/// rescan asked for while a full scan owns the volume is the scan the caller
+/// wanted, so it answers `Started` and remembers nothing.
+///
+/// One claim answers for two holders now, so the two user-visible outcomes hang
+/// on the MODE the refusal reports. Read as `Deferred`, a click during a scan
+/// would promise a second truncating rescan the moment the first finished; read
+/// as `Started`, it stays the idempotent no-op it has always been.
+#[test]
+fn a_rescan_under_a_running_scan_is_the_scan_that_is_already_running() {
+    let drive = ColdDrive::new("cover-rescan-under-scan-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+
+    drive.cover(&drive.path("scope"));
+    drive.mark_scan_completed();
+
+    // The ground a full scan holds for as long as it runs: the whole volume,
+    // taken the way `start_scan` takes it.
+    let volume_root = drive.tree.path().to_string_lossy().to_string();
+    let scanning = Claim::take(drive.volume_id, vec![volume_root], Mode::Exclusive);
+
+    assert_eq!(
+        crate::indexing::lifecycle::state::force_scan(drive.volume_id),
+        Ok(RescanOutcome::Started),
+        "a full walk of this volume is in flight, which is what the caller asked for"
+    );
+    assert_eq!(
+        drive.scans_started(),
+        0,
+        "and nothing started a second one over the top of it"
+    );
+    assert!(
+        !crate::indexing::lifecycle::rescan_request::take(drive.volume_id),
+        "nor is anything remembered: a promise here would truncate the drive again on the way out"
+    );
+
+    drop(scanning);
 }
 
 /// The truncate door the "Rescan now" button used to be, and where the two

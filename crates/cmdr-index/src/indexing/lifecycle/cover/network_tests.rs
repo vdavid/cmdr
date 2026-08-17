@@ -319,8 +319,8 @@ fn a_walk_over_ground_an_earlier_walk_touched_keeps_its_rows() {
 }
 
 /// The truncate door on this half of the walk, and the same refusal:
-/// `start_volume_scan`'s single-flight guard reads `mgr.scanning`, which a
-/// search-driven walk never sets — it holds a claim.
+/// `start_volume_scan` takes the whole share as a claim, and a walk holding any of
+/// it refuses that claim.
 ///
 /// A NAS "Rescan now" landing mid-walk would `TruncateData` + `BumpCurrentEpoch`
 /// under a walk that is still writing rows over the wire, which is the slowest

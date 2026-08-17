@@ -2,7 +2,7 @@
 //! remembers.
 //!
 //! A scan start has two doors it can be turned away at, and both are single-flight
-//! questions rather than failures (`../DETAILS.md` § "The three single-flight
+//! questions rather than failures (`../DETAILS.md` § "The two single-flight
 //! questions a scan has to ask"). [`ScanStartError`] is how a caller tells them
 //! apart without reading a sentence: the wording of a diagnostic is for logs, and
 //! classifying control flow by it breaks the moment someone edits it.
@@ -33,8 +33,9 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 /// [`Display`](std::fmt::Display) output.
 #[derive(Debug)]
 pub(crate) enum ScanStartError {
-    /// A full scan is already running on this volume. The walk the caller asked
-    /// for is, for practical purposes, the one already in flight.
+    /// Something already owns this whole volume: a full scan, a journal replay, or
+    /// a first-index machine that still has work. The walk the caller asked for
+    /// is, for practical purposes, the one already in flight.
     AlreadyScanning,
     /// A search-driven cover walk holds ground on this volume. A truncating
     /// rescan under one blanks the rows it is still inserting, so the scan waits
