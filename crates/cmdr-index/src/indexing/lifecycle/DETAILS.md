@@ -499,9 +499,9 @@ A FOURTH question is asked above all three, in `cover_or_scan`: whether this vol
 at all (§ "Every other way a full walk starts"), which routes a never-completed volume to the machine rather than to a
 full walk.
 
-**The refusals are TYPED** (`rescan_request::ScanStartError`: `AlreadyScanning`, `GroundBeingWalked`, `Internal`).
-Their wording used to be the only thing separating them, which the project's hard rule forbids classifying on, and which
-left a caller nothing to branch on but prose. Regression anchor:
+**The refusals are TYPED** (`rescan_request::ScanStartError`: `AlreadyScanning`, `GroundBeingWalked`, `Internal`). Their
+wording used to be the only thing separating them, which the project's hard rule forbids classifying on, and which left
+a caller nothing to branch on but prose. Regression anchor:
 `cover::cold_drive_tests::rescans::a_truncating_rescan_refuses_while_a_search_cover_walk_is_live`.
 
 ### The one walk a volume remembers

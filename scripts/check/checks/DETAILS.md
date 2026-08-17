@@ -211,9 +211,8 @@ What it counts:
 - **Markers**: every occurrence of the `❌` rune in prose, ❌ **not** inside fenced blocks or inline code spans (use
   versus mention: a rule is imposed in prose, a marker in backticks is being talked about, and without the strippers a
   doc explaining this convention would be billed for it). Counting the marker rather than the prose keeps the check out
-  of parsing English; an
-  unmarked prohibition is undercounted, which is one more reason to keep marking them. `⚠️` is counted alongside (the
-  base rune, so the variation selector doesn't matter) but never gated.
+  of parsing English; an unmarked prohibition is undercounted, which is one more reason to keep marking them. `⚠️` is
+  counted alongside (the base rune, so the variation selector doesn't matter) but never gated.
 - **Denominator**: git-tracked source files under the subsystem, by the `fileLengthSourceExtensions` set, counted with
   the same `countLines` `file-length` uses.
 
