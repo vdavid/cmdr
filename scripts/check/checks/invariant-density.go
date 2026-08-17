@@ -3,6 +3,7 @@ package checks
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -67,11 +68,23 @@ type invariantSubsystem struct {
 // rulesPerKiloLine is the comparable number: rules per 1,000 source lines of the
 // code the docs sit beside. A big subsystem is allowed more rules than a small
 // one; carrying three times the rules per line of code is what stands out.
+//
+// Rules with no source under them at all have no denominator, so they report as
+// infinite: that ranks the subsystem first and prints "n/a" instead of a
+// flattering 0.00.
 func (s invariantSubsystem) rulesPerKiloLine() float64 {
 	if s.sourceLines == 0 {
-		return 0
+		return math.Inf(1)
 	}
 	return float64(s.rules) * 1000 / float64(s.sourceLines)
+}
+
+// formatDensity renders a density cell, spelling out the no-denominator case.
+func formatDensity(density float64) string {
+	if math.IsInf(density, 1) {
+		return "n/a"
+	}
+	return fmt.Sprintf("%.2f", density)
 }
 
 // invariantDoc is one agent doc's marker count, for naming the heaviest docs in a
@@ -361,7 +374,7 @@ func formatInvariantGauge(report invariantDensityReport) string {
 	fmt.Fprintf(&sb, row, width, "subsystem", "rules/kloc", "rules", "cautions", "src lines", "docs")
 	for _, subsystem := range report.subsystems {
 		fmt.Fprintf(&sb, row, width, subsystem.root,
-			fmt.Sprintf("%.2f", subsystem.rulesPerKiloLine()),
+			formatDensity(subsystem.rulesPerKiloLine()),
 			formatThousands(subsystem.rules), formatThousands(subsystem.cautions),
 			formatThousands(subsystem.sourceLines), formatThousands(subsystem.docs))
 	}

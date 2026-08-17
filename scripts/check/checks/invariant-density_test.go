@@ -131,6 +131,27 @@ func TestCountInvariantMarkers_IgnoresMentionedMarkers(t *testing.T) {
 	}
 }
 
+func TestRunInvariantDensity_RulesWithNoSourceRankFirst(t *testing.T) {
+	tmp := twoSubsystemRepo(t)
+	// A build unit carrying rules but no source at all: no denominator, so it can't
+	// report a flattering 0.00 and sink to the bottom of the table.
+	writeFixtureFile(t, tmp, "crates/docs-only/Cargo.toml", "[package]\nname = \"docs-only\"\n")
+	writeFixtureFile(t, tmp, "crates/docs-only/CLAUDE.md", rules(3, 0))
+	writeInvariantDensityAllowlist(t, tmp, map[string]int{
+		"apps/desktop": 2, "apps/desktop/src-tauri": 5, "crates/docs-only": 3,
+	})
+
+	result, err := RunInvariantDensity(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := strings.Split(result.Message, "\n")
+	firstRow := rows[2] // headline, header, then the worst subsystem
+	if !strings.Contains(firstRow, "crates/docs-only") || !strings.Contains(firstRow, "n/a") {
+		t.Errorf("expected the no-denominator subsystem ranked first and marked n/a, got: %s", result.Message)
+	}
+}
+
 func TestRunInvariantDensity_GreenAtAllowlist(t *testing.T) {
 	tmp := twoSubsystemRepo(t)
 	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/desktop": 2, "apps/desktop/src-tauri": 5})
