@@ -165,6 +165,13 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     }
   }
 
+  /** Says so when the name a rename landed on hides the file from this listing. */
+  function toastIfHiddenAfterRename(newName: string) {
+    if (newName.startsWith('.') && !deps.getShowHiddenFiles()) {
+      addToast(tString('fileExplorer.rename.hiddenAfterRename'), { level: 'info' })
+    }
+  }
+
   /**
    * Reports a save whose session has since been superseded by a newer one.
    *
@@ -178,10 +185,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   function reportSupersededResult(result: RenameResult) {
     switch (result.type) {
       case 'success':
-        // The rename landed; if the new name hides the file, say so.
-        if (result.newName.startsWith('.') && !deps.getShowHiddenFiles()) {
-          addToast(tString('fileExplorer.rename.hiddenAfterRename'), { level: 'info' })
-        }
+        toastIfHiddenAfterRename(result.newName)
         break
       case 'error':
         addToast(result.message, { level: 'error' })
@@ -244,8 +248,6 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   }
 
   function finalizeRename(newName: string) {
-    const wasHiddenRename = newName.startsWith('.') && !deps.getShowHiddenFiles()
-
     clearPendingRenameActivation()
     rename.cancel()
     extensionDialogState = null
@@ -255,9 +257,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
 
     pendingCursorName = newName
 
-    if (wasHiddenRename) {
-      addToast(tString('fileExplorer.rename.hiddenAfterRename'), { level: 'info' })
-    }
+    toastIfHiddenAfterRename(newName)
   }
 
   async function executeFlow(skipExtensionCheck?: boolean) {
