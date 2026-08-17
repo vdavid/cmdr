@@ -192,9 +192,40 @@ Related, for whoever touches replay next: the fallback signals at `watch/event_l
 
 ## Milestones
 
-M0 is independent. M1 → M2 → M3 → M4 are sequential. M5, M6, M7 are independent of each other.
+M0 is independent. M1 → M2 → M4 are sequential. M5, M6, M7 are independent of each other. **M3 is a rename and turned
+out not to gate M4**, so it is still open with everything else shipped around it.
 
-**M0, M1, and M2 are shipped.** What executing M2 changed about the rest of this plan:
+**M0, M1, M2, and M4 are shipped**, M4 together with product call 4 (a "Rescan now" during a running scan now QUEUES).
+What executing M4 changed about the rest of this plan:
+
+- **The waiter is a bit on the claim table's own per-volume entry**, not a set beside it, because "may that rescan
+  start" is ONE question — is anything owed, and is the ground free — and two structures answering half each can
+  disagree in the window between them, with a truncating scan riding on the answer. So constraint 3's "release marks the
+  waiter under the lock, a lock-free peek decides" became something stronger and simpler: `a_rescan_can_start` asks the
+  table once, and it can only answer yes when the ground is actually free. `run_if_owed` keeps its peek-then-spawn
+  shape, and is now safe to call from anywhere.
+- **A volume's claim-table entry now outlives its claims.** The request is recorded BEFORE the scan attempt, which is
+  routinely a moment when nobody holds anything, so pruning on `roots.is_empty()` drops it. `is_idle()` is the test.
+- **The plan's release-site list was right about WHICH three, and wrong that the fire belongs at the release.** A scan's
+  completion task keeps writing after its walk thread joins — buffered events through the reconciler, then
+  `scan_completed_at` — so a rescan fired where the ground goes back can truncate and then take the old scan's
+  completion marker onto its own half-built index, the state that makes the next launch skip the healing rescan. **The
+  ground comes back when nothing is WALKING; the rescan it owes runs when nothing is WRITING.** For a cover walk and for
+  replay those are the same moment; for both scans they are not. That hazard existed before this milestone (a walk
+  ending inside the post-scan window could already fire one); queueing behind scans is what would have made it routine.
+- **Product call 4 is shipped**, so `force_scan` now answers `DeferredUntilScanEnds` where it used to report `Started`
+  and forget the request. `ScanStartError` gained `GroundBeingRewritten` for the `Exclusive` conflict, leaving
+  `AlreadyScanning` to mean only what `phases_have_work` means. **The silent loss at `state/scan_control.rs:145` is
+  therefore half fixed**: a claim conflict is now kept, and a first-index machine with work still answers `Started` —
+  honestly, since it IS walking the volume whole, in pieces.
+- **Nothing bounds the queue but the one-bit-per-volume shape**, which is enough: five clicks describe the same work.
+- **Invariant density: 383 → 387 for `crates/cmdr-index` (+4 net).** No mechanism was deleted (the `OWED` set MOVED into
+  the claim table), so nothing became obsolete to delete, and the new hazards — the entry that outlives its claims, and
+  the write-window the fire has to clear — needed saying. ⚠️ **So after four of the five milestones the count has still
+  not fallen, and the thesis that this refactor would reduce it is wrong as stated.** What did improve is enforcement:
+  every rule this milestone added names the test that catches it.
+
+What executing M2 changed about the rest of this plan:
 
 - **The plan was WRONG that the entries' `mgr.scanning` read was only about scans.** `start_replay` sets the same flag
   (`manager/start.rs:67`), so that read was ALSO the only thing refusing a truncating rescan during journal replay —
@@ -378,31 +409,33 @@ true.
 
 **Checks:** `pnpm check rust`, plus the SMB lane.
 
-### M4 — The deferred rescan becomes a claim waiter
+### M4 — The deferred rescan becomes a claim waiter ✅ DONE (with product call 4)
 
 **Intent:** absorb the `OWED` set into the claim table. ❌ **Not "delete `rescan_request.rs`"**: the module also owns
-`ScanStartError` (used by `lifecycle/manager.rs:17`, `lifecycle/network_scan.rs:22`, both scan entries) and
-`RescanOutcome` (`indexing/handle/mod.rs:95`), the master-switch check at `:143`, and the teardown tie via `forget`
-(three sites in `lifecycle/state/teardown.rs:40,174,205`, three in `force_scan`). Those relocate; they do not vanish.
+`ScanStartError` and `RescanOutcome`, the master-switch check, and the runner. What moved is the STORAGE — `remember` /
+`take` / `forget` are now `cover::remember_rescan` / `take_rescan` / `forget_rescan` over the claim table, which is what
+the teardown sites and `force_scan` call. The module kept what a request MEANS and what running one does.
 
-- Release marks under the lock; a lock-free peek decides; the waiter is **spawned onto the runtime**. Constraint 3.
-- **Every post-M2 release site needs the runner**, not just the cover walk's. ⚠️ **The three sites are not the ones this
-  plan guessed**: `lifecycle/scan_completion.rs` (the local scan), the spawned completion task in
-  `lifecycle/network_scan.rs` (the trait scan), and `watch/event_loop/replay.rs` (the replay phase's end). ❌ NOT
-  `stop_scan` and ❌ NOT `shutdown` — they release nothing, because the claim belongs to the work. None of the three has
-  a `run_if_owed` call today. **Miss one and a rescan deferred behind that holder never fires.** This is the M2→M4 seam;
-  treat it as the milestone's main risk.
-- **The real silent loss is `lifecycle/state/scan_control.rs:145`**, not `:153`. The `Ok(()) | Err(AlreadyScanning)` arm
-  forgets the request and answers `Started`, throwing a manual rescan away while reporting success. (`:153` returns
-  `Err(diagnostic)` to the caller, so nothing is silent there.) ⚠️ Per M2's resolution this arm's behavior is
-  **preserved**, and constraint 2 keeps `phases_have_work` outside the claim table, so an `AlreadyScanning` originating
-  there is still not fixed by this milestone. Say so rather than implying M4 closes it.
-- `StartOutcome::DeferredUntilSearchEnds` keeps its meaning **because** M2 filters `being_walked` to Additive holders.
+- The waiter is a bit on the claim table's per-volume entry (`cover/live.rs`), and `a_rescan_can_start` answers "owed,
+  and the ground is free" in one look. `run_if_owed` keeps peek-then-spawn: never inline, ❌ never from `Drop`.
+  Constraint 3.
+- **Every post-M2 release site runs the waiter**, not just the cover walk's: `lifecycle/scan_completion.rs` (the local
+  scan), the spawned completion task in `lifecycle/network_scan.rs` (the trait scan), and `watch/event_loop/replay.rs`
+  (the replay phase's end). ❌ NOT `stop_scan` and ❌ NOT `shutdown` — they release nothing, because the claim belongs
+  to the work. Miss one and a rescan deferred behind that holder never fires, which
+  `rescan_request::tests::every_whole_volume_holder_runs_the_rescan_it_owes` now catches in the source.
+- **The two scans fire it at the END of their completion task, not at the release**, because they keep writing after
+  their walk thread joins. See the M4 note above.
+- **The silent loss at `lifecycle/state/scan_control.rs:145` is half fixed.** The claim-conflict half is now kept and
+  deferred (product call 4); the `phases_have_work` half still answers `Started`, which is honest — a first-index
+  machine is walking the volume whole, in pieces — and constraint 2 keeps that question outside the claim table.
+- `StartOutcome::DeferredUntilSearchEnds` keeps its meaning **because** M2 filters `being_walked` to Additive holders,
+  and it gains a sibling, `DeferredUntilScanEnds`, for the holder that isn't walking.
 
-**Tests: TDD.** `rescans.rs:57 a_remembered_rescan_waits_for_the_last_walk_out` is the anchor. ❌ Do **not** add a test
-asserting that a rescan deferred behind a full scan fires on completion: under M2's resolution a scan conflict answers
-`AlreadyScanning` and is not deferred at all. That behavior change is the product call, not this milestone. **Checks:**
-`pnpm check rust`.
+**Tests: TDD**, `rescans.rs::a_remembered_rescan_waits_for_the_last_walk_out` as the anchor, plus
+`::a_rescan_asked_for_during_a_scan_runs_when_that_scan_ends`,
+`::clicking_rescan_five_times_during_a_scan_queues_one_walk`, and the two in `scan_completion::tests` that pin the local
+scan's site and its ordering. **Checks:** `pnpm check`.
 
 ### M5 — Shareable manager custody (independent, spike first)
 
@@ -458,11 +491,12 @@ cancel-to-join bound. **Checks:** `pnpm check --include-slow`.
 2. **M5 custody: spike it?** Wide refactor, and the spike now has to answer what replaces the `ShuttingDown` exclusion.
    Recommendation: **spike it, decide on the numbers.**
 3. **M6: defer indefinitely?** Consistency win, touches the live hot path. Easy to skip.
-4. **Should "Rescan now" during a running scan queue instead of no-op?** Today it is idempotent: it forgets the request
-   and reports `Started` (`lifecycle/state/scan_control.rs:144-147`), so a user clicking it mid-scan gets nothing and is
-   told it worked. Making it queue would mean a **second full truncating rescan** after the first finishes, which is why
-   it was built this way. This plan **preserves today's behavior** and does not decide it. If you want it changed, it is
-   a small follow-up on top of M4, and it needs UI copy that says "queued" rather than "started".
+4. **Should "Rescan now" during a running scan queue instead of no-op?** ✅ **DECIDED: yes, and shipped with M4.** It
+   used to forget the request and report `Started`, so a user clicking mid-scan got nothing and was told it worked. Now
+   an `Exclusive` conflict is remembered like a walk conflict and answers `DeferredUntilScanEnds`, so a **second full
+   rescan really does run** when the first ends — the run in flight was started against a state the user has moved past.
+   One walk per volume however many times they click. The UI says so: the drive badge menu gains
+   `fileExplorer.navigation.driveIndex.queuedBehindScan`, and MCP reports the queue rather than a scan that started.
 
 ## Honest scope note on tests
 
