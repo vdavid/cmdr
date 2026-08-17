@@ -53,7 +53,7 @@ content-read tool.
 write, no silent config mutation, no self-approval. Because no structural check can prove a handler doesn't mutate,
 `Propose` tools are an explicit hand-authored allowlist (`EXPECTED_PROPOSE_TOOL_NAMES` in
 `mcp/tests/tool_registry_tests.rs`) rather than something inferred — adding one is a deliberate act a human signs off,
-having read the handler. It is empty today; that's the correct state until the first proposing feature ships.
+having read the handler. It holds exactly one name today, `propose_rename_plan`.
 
 **Consent is unaffected.** Proposals flow agent → user, never to the provider. `Propose` adds no egress, so the
 provider-egress question and `CONSENT_COPY_VERSION` are unchanged by this tier. Don't re-litigate it: only a change to

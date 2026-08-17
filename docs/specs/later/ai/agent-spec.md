@@ -1,15 +1,95 @@
 # Agent: v1.0 spec (with v1.5+ outlook)
 
-Status: design complete, not yet implemented. 2026-06-04; codebase claims revised 2026-07-08 against the live tree (a
-month of shipping satisfied the execution-queue prerequisite, consolidated the MCP tool registry, shipped archive
-browsing, and landed the `Location` type). The spec went through three fresh-eyes review rounds (including verification
-of its codebase claims against the live tree) before landing.
+Status: **partially implemented**. The reactive half shipped as **Ask Cmdr** (a read-only chat rail); the proactive half
+(summaries, event pipeline, wake loop, proposal store, memory, notifications) is not started. Written 2026-06-04;
+codebase claims reconciled against the live tree 2026-07-08 and again 2026-08-18. Section §0 is the current status map
+and is the first thing to read; the rest of the spec still states the v1.0 target, so where §0 and a later section
+disagree about the tree, §0 wins.
 
 This spec captures a full design session between David and an AI agent. It is written so that a fresh agent (or human)
 can pick it up with no other context. Decisions below are settled unless they appear in §18 (open questions); intentions
 and principles (§2) govern anything this spec doesn't explicitly answer. §19 is the decision log with rationale, kept as
 a second angle on the same material for future planning and implementing agents. Code paths in this spec are relative to
 `apps/desktop/src-tauri/` unless noted.
+
+## 0. Status map (reconciled 2026-08-18)
+
+What the tree holds today, section by section. "Shipped" means in `main` with tests and colocated docs.
+
+**Shipped:**
+
+- **The agent subsystem exists**: `src/agent/` (~15k lines), named after the entity per D44, with `CLAUDE.md` +
+  `DETAILS.md`. Its first user-facing slice is Ask Cmdr, a read-only chat rail. Frontend: `src/lib/ask-cmdr/`.
+- **§4 storage, the durable half**: `main.db` ships with a forward-migration ladder mirroring `operation_log/store/`,
+  WAL pragmas, no custom collation, and FTS5 (no rusqlite feature needed; the bundled SQLite compiles it in). Tables
+  today: `meta`, `conversations`, `messages`, `cost_meter`. `operation-log.db` ships as the peer durable journal, and
+  its `Initiator` enum already carries `Agent` and `AgentEdited` (the spec's "reserved for later" is now built).
+- **§5.1 importance scorer**: shipped as its own neutral subsystem, not under `agent/`
+  (`crates/cmdr-index/src/importance/`, per-volume `importance.db`, explain call, offline reads, an evals corpus, and a
+  scoped incremental rescore at ~100 µs per origin). This supersedes D8's "cached in the drive index"; see §18.15.
+- **§9.2/9.3 context assembly and §9.4 runtime discipline**: `agent/chat/` ships the stable prefix, elide-only
+  compaction, a user-set chat-memory size, single-flight per thread, per-message budgets, cancellation, crash-safe
+  persistence, and a typed `AgentChatEvent` seam.
+- **§9.6 IPC**: `commands/agent/` ships the chat, conversation CRUD + FTS, attachment, consent, and cost families over
+  typed bindings, with streaming on a Tauri `Channel`.
+- **§10.2 provider layer**: `agent/llm/` ships the `AgentLlm` seam (trait, genai impl over `crate::ai::AiBackend`, a
+  deterministic fake, a typed message-part model carrying the opaque provider reasoning blob). D41 is built.
+- **§11.1 consumer gating**: D59 is built. `mcp/tool_registry/` carries both the `Consumer` and `Access` dimensions; the
+  agent's dispatch view is pinned by structural tests to its authored `[agent]` entries, every one `Read` or `Propose`,
+  never `Write`. `Propose` additionally needs a hand-authored name in `EXPECTED_PROPOSE_TOOL_NAMES`.
+- **§11.2, part of the toolset**: five read families (`app_state`, `list_pane_files`, `list_dir`, `important_folders` +
+  `folder_importance`, `list_volumes`) plus shared `operations_list` / `operations_get` and the photo pair
+  (`search_photos`, `image_facts`). One `Propose` tool is authored: `propose_rename_plan`.
+- **§7, the profile only**: `~/.cmdr/CMDR.md` is read into the stable prefix when present (read-only).
+- **§12 consent and cost**: a backend-enforced consent gate (`agent/consent.rs`, `CONSENT_COPY_VERSION`, record in
+  `main.db`'s `meta`, fails closed) plus a per-day, per-thread cost meter with an honest unpriced path.
+- **§12.1 enable flow, the wizard half**: the onboarding wizard ships `StepFda` and `StepAi`.
+- **§16, part of settings**: `askCmdr.interactiveModel` (the interactive slot layered over shared `ai/` provider config,
+  so the bulk slot slots in with no migration) and `askCmdr.chatMemorySize`.
+
+**Not started:**
+
+- **§4.1 index relocation**: the per-volume `index-{volume_id}.db` files still live in the app data dir. Nothing moved
+  to `~/Library/Caches/<bundle id>/`, nothing was renamed to `drive-index-{volume_id}.db`.
+- **§4.2, the rest of the schema**: no `volumes`, `folder_summaries`, `proposals`, `proposal_ops`, `agent_log`,
+  `agent_inbox`, `walk_state`, or `user_action_log` tables, and no retention pruning in `main.db`.
+- **§5.2, §5.3 summarization**: no summarizer, no walk, no preflight, no summary FTS. The agent's knowledge today is the
+  drive index, importance, the operation log, live app state, and image-derived text.
+- **§6 event pipeline**: no coalescer, interest scorer, inbox, deadline scheduling, digest compaction, or restart
+  reconciliation for the agent. §18.14's tap point is still undesigned.
+- **§8 proposals as durable state**: `propose_rename_plan` stages into an in-memory `RenameProposalStore` keyed by
+  opaque id, reviewed in `BulkRenameReviewDialog` and undoable after apply. There is no `proposals` / `proposal_ops`
+  table, no freeze-at-creation snapshot, no drift detection, no expiry, no invalidation, and no `OperationManager` batch
+  apply. §8.5 auto-apply does not exist.
+- **§7, rules and memory**: no `~/.cmdr/rules/*.md` with `applies_to`, no `~/.cmdr/memory/`, no memory writes.
+- **§9.1 job types**: only chat exists. No wake, planner, or summarizer job.
+- **§9.5 notifications**: no `notify_user` tool, no proactivity dial, no per-folder mute or snooze.
+- **§10.4 bulk slot**: only the interactive slot is settable.
+- **§12 activity log**: no `agent_log` table and no activity or read-log surface. Transparency today is the rail's
+  per-tool lines.
+- **§14 prompts as repo assets**: prompts are Rust source, not markdown templates. No `prompt-lint` check.
+- **§15 evals**: seeded only (`agent/tools/propose/name_quality_eval.rs`, plus the importance evals corpus). No
+  synthetic-home fixture generator, no summarizer or planner scoring harness.
+
+**Changed since the spec was written, and the spec text below is stale where it says otherwise:**
+
+- **genai is pinned `=0.6.5`**, not `=0.6.0-beta.19`, and it is no longer a beta. §18.1's supply risk is reduced but not
+  gone (still a solo-maintainer crate carrying the whole provider layer).
+- **The `read_file` tool of §11.3 was not built, and the privacy line moved with it.** The agent has no content-read
+  tool at all: only names, paths, and metadata reach the provider, plus one deliberate exception, the image-derived TEXT
+  of `search_photos` and `image_facts` (OCR snippets and Vision tags, never image bytes), which the consent copy names.
+  §11.3's guardrails describe a tool that does not exist; adding it means revisiting the whole consent story, not
+  implementing a designed feature.
+- **§11.1's "factor a transport-agnostic core first" did not happen and was not needed.** `execute_tool` is still
+  generic over the Tauri `Runtime` and handlers still take `&AppHandle<R>` plus a `serde_json::Value`. The in-process
+  agent consumes that shape directly. The bounded refactor named there is not a prerequisite for anything left.
+- **A `Propose` tool exists.** `agent/DETAILS.md` still says the allowlist "is empty today"; it holds
+  `propose_rename_plan`. Its bounding contract (cap the payload, pin it with a test) is live, not hypothetical.
+- **Evidence grounding is a new invariant the spec never anticipated.** A proposal citing file contents must prove the
+  model actually received them: `propose::evidence::ImageFactsLedger` is scoped per chat thread, and
+  `propose_rename_plan` refuses a plan citing content the ledger has no delivery for. This exists because 12 real files
+  got fabricated names. Any future `Propose` tool inherits the obligation. See
+  `docs/specs/agent-context-harness-plan.md`.
 
 ## 1. What this is
 
@@ -215,10 +295,16 @@ A fast, pure-Rust algorithm assigning each folder an interest weight. Inputs (ha
 - A `.git` root (or similar project marker) raises the subtree: projects are important.
 - Path class priors: Downloads, Desktop, Documents, project roots high; `~/Library`, caches low.
 
-Weights live in the importance subsystem's separate per-volume `importance.db` (a regenerable cache; see
-`docs/specs/later/importance-subsystem-plan.md`, a confirmed refinement of D8) and recompute cheaply when listings
-change. The weight serves three consumers: summary generation gating, event-bundle interest (§6.2), and as an input the
-LLM sees when reasoning about folders.
+**This section shipped**, as its own neutral subsystem rather than agent-owned code:
+`crates/cmdr-index/src/importance/`, with weights in a separate per-volume `importance.db` (a regenerable cache), an
+explain call, offline reads for unmounted volumes, an evals corpus, and a scoped incremental rescore costing O(touched)
+rather than O(dirs). This supersedes D8's "cached in the drive index"; the plan is
+`docs/specs/importance-subsystem-plan.md` and the durable intent lives in the `importance/` and `indexing/` colocated
+docs. The list above stays the requirements source. The weight serves three consumers: summary generation gating,
+event-bundle interest (§6.2), and as an input the LLM sees when reasoning about folders. The agent already reads it
+through the `important_folders` and `folder_importance` tools.
+
+Still open here: signal-weight tuning (§18.3) and the `kMDItemLastUsedDate` sampling cost (§18.4).
 
 Expectation check: David expects a typical user to have only dozens to a few hundred genuinely important folders. The
 design does not depend on that guess being right: the pre-scan counts before anything costs money, and budgets cap the
@@ -401,10 +487,11 @@ and whether it reports a per-op result the `proposal_ops` table can consume. Des
 Because applied proposals execute through the managed pipeline, **the operation log journals every applied proposal
 batch for free** (the operation log hooks that pipeline). A _rejected_ proposal never becomes an operation, so it never
 appears in that journal — the `proposals` / `proposal_ops` tables above hold the "agent-suggested / accepted / rejected"
-pre-operation states and reference `operations.op_id` for the ops that were accepted and executed. When the agent lands,
-its applied ops are tagged `initiator = agent` in the journal (the operation log reserves that value now; v1 ships
-`user` + `ai_client` only). So the journal is the execution record; the proposal tables are the decision record — don't
-smear proposal states into the operations journal.
+pre-operation states and reference `operations.op_id` for the ops that were accepted and executed. Applied ops are
+tagged `initiator = agent` in the journal; that value is **built, not reserved** (`operation_log::types::Initiator`
+ships `User`, `AiClient`, `Agent`, and `AgentEdited`, the last for an agent proposal the user edited before applying).
+So the journal is the execution record; the proposal tables are the decision record — don't smear proposal states into
+the operations journal.
 
 Dropped from the earlier sketch, deliberately: a `priority` column (YAGNI) and any logic on model "authoritativeness"
 (`created_by_model` is kept as provenance only).
@@ -533,19 +620,18 @@ Single-shot prompts are interchangeable across providers; agent loops are not. T
 
 ### 10.2 Architecture
 
-**The provider layer already exists in the codebase.** The tree ships the `genai` crate (pinned `=0.6.0-beta.19` in
-`Cargo.toml`, which is authoritative) wrapped by `src/ai/client.rs`, with `src/ai/CLAUDE.md` and `DETAILS.md`
-documenting the same per-provider quirk rationale this spec describes (Responses-API routing, per-provider temperature
-handling, ~20 providers normalized). Do NOT run an adoption spike and do NOT hand-roll adapters in parallel to it. The
-work is:
+**This section is built.** The tree ships the `genai` crate (pinned `=0.6.5` in `Cargo.toml`, which is authoritative)
+wrapped by `src/ai/client.rs`, with `src/ai/CLAUDE.md` and `DETAILS.md` documenting the same per-provider quirk
+rationale this spec describes (Responses-API routing, per-provider temperature handling, ~20 providers normalized). Over
+it, `src/agent/llm/` ships the `AgentLlm` seam: the trait, its genai-backed impl, a deterministic fake, and a typed
+message-part model whose parts carry the opaque per-message provider-state blob. Provider types never leak past it, and
+the whole runtime and UI test against the fake. See `agent/llm/CLAUDE.md`.
 
-- **A small owned trait** (e.g. `AgentLlm`) as the agent-facing seam over the existing client: messages carrying an
-  opaque per-message provider-state blob, tool declarations, normalized tool calls and stop reasons. Provider types
-  never leak past it.
-- **Extend the existing genai integration to agent-loop requirements** and verify the quirk list against it: multi-call
-  turns, schema strictness per provider, and above all opaque thinking-state round-tripping (§10.1 point 3). Whether
-  genai 0.6.x handles these for multi-step tool loops is the real open question (§18.1); if it falls short, the options
-  are upstream contribution, a local patch, or per-provider adapters behind the trait for the gaps only.
+What that leaves:
+
+- The bulk slot (§10.4) is unbuilt; only the interactive slot resolves a model today.
+- The quirk list of §10.1 is verified for the chat loop's shapes, not for every provider under a long multi-turn planner
+  loop. Re-verify when the planner job arrives, against the model the bulk and interactive slots actually run.
 
 ### 10.3 Support tiers
 
@@ -604,13 +690,16 @@ a new destructive tool can't ship agent-visible by accident. This lands inside t
 no consumer to gate until the adapters exist). The §8.5 autonomy setting does NOT loosen this view — it acts on the
 proposal pipeline's apply step, never on tool exposure.
 
-One open check on that reuse, and the answer is determinable from the code: the consolidated registry core is currently
-**MCP- and Tauri-shaped, not transport-agnostic**. `get_all_tools()` emits a `tools/list` payload with raw JSON
-`input_schema` blobs, `execute_tool()` is generic over the Tauri `Runtime`, and the `executor/` handlers take an
-`&AppHandle<R>` plus a `serde_json::Value` params object. An in-process agent consumer wants typed params and no Tauri
-handle. So extending the registry means first factoring a transport-agnostic core (authored tool + typed params +
-handler) out of the MCP/Tauri wire adapter, then re-expressing the MCP surface as one adapter over that core and the
-in-process agent surface as another. This is a real (bounded) refactor, not a drop-in.
+**This section is built** (D59). `mcp/tool_registry/` carries both dimensions: `consumers` is the exposure axis and
+`access` (`Read` / `Propose` / `Write`) is the stronger guarantee the token gate can't give, since `TokenGate::Open`
+covers destructive-but-prompting ops. `execute_tool` refuses any name outside the caller's consumer view before
+dispatch, and `agent::tools::view` re-checks `tool_access` as a runtime backstop. Structural tests pin the agent view to
+exactly its authored `[agent]` entries and require every one to be `Read` or `Propose`.
+
+The transport-agnostic-core refactor this section once called a prerequisite **did not happen and was not needed**:
+`execute_tool` is still generic over the Tauri `Runtime` and handlers still take `&AppHandle<R>` plus a
+`serde_json::Value`, and the in-process agent consumes that shape directly. Treat the refactor as an optional cleanup,
+never a blocker.
 
 In docs, "the agent" means this feature; external MCP consumers are "AI clients" to avoid term collision.
 
@@ -627,10 +716,24 @@ their stateful consumer.
 
 ### 11.3 `read_file` guardrails
 
-The privacy and injection surface, so: per-call size caps, per-wake read budget, a sensitive-path denylist (`~/.ssh`,
-browser profiles, keychains, and similar), content-to-cloud gated separately from content-to-local-model, and **every
-read logged to the activity log with a reason**. File content enters context as untrusted data, clearly delimited, never
-as instructions; the structural defense remains §8 (content can at worst produce a reviewable proposal).
+**Not built, and the shipped privacy line is narrower than this section assumes.** The agent has no content-read tool:
+only names, paths, and metadata reach the provider, plus one deliberate exception, the image-derived TEXT of
+`search_photos` and `image_facts` (in-image OCR snippets and Vision tags, never image bytes), which the consent copy
+names. That is a structural line, enforced by the registry view, not a runtime guard.
+
+So `read_file` is not a designed feature waiting to be implemented: adding it widens provider egress from metadata to
+file contents, which means re-deciding the consent story and bumping `CONSENT_COPY_VERSION`, not just writing a handler.
+If it is ever built, these are its guardrails: per-call size caps, per-wake read budget, a sensitive-path denylist
+(`~/.ssh`, browser profiles, keychains, and similar), content-to-cloud gated separately from content-to-local-model, and
+**every read logged to the activity log with a reason**. File content enters context as untrusted data, clearly
+delimited, never as instructions; the structural defense remains §8 (content can at worst produce a reviewable
+proposal).
+
+A related invariant the spec never anticipated, now live: **a proposal claiming file contents must prove the model
+received them.** `propose::evidence::ImageFactsLedger` records per-thread deliveries and `propose_rename_plan` refuses a
+plan citing content the ledger has no delivery for. Whatever elides a tool result owes the ledger a revocation, or it
+vouches for content the model never read. Any future `Propose` tool inherits this. Depth:
+`agent/tools/propose/DETAILS.md`.
 
 ## 12. Privacy, consent, and cost
 
@@ -703,34 +806,62 @@ the daily notification cap, wake deadline tiers, the digest token budget, the re
 expiry, read budgets) is exposed in Settings from v1, even if it reads as too much at first. Consolidating dials into
 Settings > Advanced, or dropping some, is a later editing decision, not a v1 gate.
 
-## 17. Build order (v1 milestones, roughly)
+## 17. Build order
 
-1. **Storage**: `main.db` with migrations, retention, volumes table; relocate/rename the per-volume index DBs
-   (`index-{volume_id}.db`) to `~/Library/Caches/<bundle id>/` as `drive-index-{volume_id}.db`, migrating existing
-   installs by moving the files where cheap (a one-time full rescan is the acceptable fallback). Uses the current bundle
-   id; not blocked on the separate directory-rename effort.
-2. **Importance scorer** (+ cache in the drive index) with thorough unit tests.
-3. **Provider layer**: the `AgentLlm` trait over the existing `genai` client; verify and extend the quirk handling
-   (§10.1) against it; gap-filling adapters only where genai falls short; the two model slots. (No adoption spike; see
-   §10.2.)
-4. **Enable flow**: the onboarding AI-step toggle, consent screen, provider/model selection, proactivity dial, and the
-   FDA-gate composition (§12.1). This gates the knowledge layer's TCC-protected reads, so it lands before them.
-5. **Knowledge layer**: summarizer pipeline (hot folders first, preflight, resumable walk), FTS, knowledge tools.
-   Depends on milestone 4 for FDA and consent.
-6. **Event pipeline**: coalescer, inbox, deadlines, digest compaction, restart reconciliation.
-7. **Wake loop** + budgets + single-flight + degraded modes + activity log.
-8. **Proposals**: schema, freeze-at-creation, drift, invalidation; review dialog + apply via the shipped
-   `OperationManager` (a fit-check for batch-of-ops semantics, not a prerequisite effort); notify tool + dial.
-9. **Chat** surface wiring; `~/.cmdr` files; memory writes.
-10. **Evals v0** alongside 5-9, not after.
+Milestones 1-4 and 9 of the original order are done or mostly done (§0). What follows is the remaining order, and it
+deliberately **inverts the original sequence**: the original spent the knowledge layer, event pipeline, and wake loop
+before a single proactive proposal reached a user, which delivers the north-star metric (§15, proposal acceptance rate)
+last. This order buys that number first and lets it decide how much of the expensive machinery is worth building.
+
+The organizing principle: **each milestone must be shippable to beta users on its own.** Ask Cmdr proved that pattern
+works, and the proactive half is exactly the kind of bet that should not be validated by a big-bang release.
+
+1. **The proposal spine, durable.** `proposals` + `proposal_ops` in `main.db`, freeze-at-creation, per-op
+   `(inode, size, mtime)` snapshots, drift detection at apply, per-op statuses and partial apply, expiry, trash-default,
+   batch caps. Apply through the shipped `OperationManager` (§20.3 fit-check). Migrate `propose_rename_plan` off its
+   in-memory `RenameProposalStore` onto this store, so the one shipped proposing feature is the first consumer and the
+   store is exercised by real use rather than tests alone. No new LLM behavior; this is the durable, testable spine
+   every later milestone rides.
+2. **One deterministic detector, end to end.** The narrowest proactive slice that produces a real proposal: a rule over
+   the already-shipped `downloads/` watcher and the importance data (for example, installers already opened). No
+   summaries, no coalescer, no wake loop, no LLM in the detection path. It needs a review surface (generalize the bulk
+   rename review dialog), a notification path, and the proactivity dial with its caps and per-folder mute. Ship it to
+   beta and start measuring acceptance rate.
+
+   This is the decision point. If users accept proposals, the rest of the plan is worth its cost. If they don't, the fix
+   is upstream of the machinery, and milestones 3-6 would have been built on a wrong premise.
+
+3. **Activity log** (`agent_log`) and its surface. Principle 5 is unpaid so far: the rail's per-tool lines are the only
+   transparency, and a proactive agent needs the full decision record before it earns more autonomy. Pull it earlier
+   than the original order for that reason.
+4. **Event pipeline** (§6): the coalescer, interest scoring, `agent_inbox` with deliver-by deadlines, budgeted digest
+   compaction, restart reconciliation. Resolve §18.14 (tap point, and how the `downloads/` watcher relates) first: this
+   milestone is a second interest-oriented stage over the indexer's already-corrected stream, never a parallel FSEvents
+   subscription. The pure `coalesce` and `compact` seams (§6.3) make this the best parallel-agent target in the whole
+   plan.
+5. **Wake loop** (§9.1, §9.2): the wake job type, its context recipe, per-wake budgets, degraded modes. This is where
+   the LLM finally enters the proactive path, and it enters over a proven proposal store, a proven review surface, a
+   real activity log, and a bounded digest.
+6. **Knowledge layer** (§5.2, §5.3): summarizer job, `folder_summaries` + FTS, the resumable importance-gated walk, the
+   preflight with its cost estimate. Last, not first, because it is the only milestone that spends the user's money
+   before delivering anything, and by this point real acceptance data says whether summaries are what the proposals were
+   missing. Scope it against that evidence rather than the spec's original whole-drive ambition.
+7. **Memory and rules** (§7): `~/.cmdr/rules/*.md` with `applies_to`, `~/.cmdr/memory/`, scoped memory writes. The
+   profile half already ships.
+8. **The rest**: the bulk model slot (§10.4), `main.db` retention pruning, the index relocation to `~/Library/Caches/`
+   (§4.1, independent of everything else and safe to slot in whenever), prompts as repo assets plus `prompt-lint` (§14),
+   and the §8.5 auto-apply grant, which should land only after acceptance-rate data justifies it.
+
+**Evals** (§15) run alongside from milestone 1, not after: the fixture generator for synthetic home directories is worth
+pulling forward the way §20.4 argued, and the proposal spine is testable without a model.
 
 ## 18. Open questions and investigations (honest list)
 
-1. Does the already-shipped `genai` integration (`src/ai/client.rs`, pinned `=0.6.0-beta.19`) handle the agent-loop
-   requirements: multi-call turns, per-provider schema strictness, and opaque thinking-state round-tripping in
-   multi-step tool loops? If not: upstream contribution, local patch, or gap-filling adapters behind the `AgentLlm`
-   trait. Related supply risk that deserves its own eyes: the pin is a beta release of a solo-maintainer crate, and the
-   entire provider layer rides on it (breakage or yanked releases are realistic).
+1. **ANSWERED for the chat loop.** genai (now pinned `=0.6.5`, out of beta) handles multi-call turns, per-provider
+   schema strictness, and opaque reasoning-state round-tripping well enough that `agent/llm/` ships over it with no
+   gap-filling adapters. The blob rides in the typed message-part model and is persisted in `messages.content_blocks`, a
+   backend-only column. Two residuals: the loop is verified for chat's shapes, not for a long planner loop (re-verify at
+   §17 milestone 5), and the supply risk stands (a solo-maintainer crate carrying the entire provider layer).
 2. SMB volume-identity canonicalization: same share via `nas.local`, IP, and DNS name must converge on one identity; is
    a server GUID available per protocol? (Believed not hard, but undesigned.)
 3. Importance-scorer signal weights and the exact scoring formula: needs iteration against real home directories.
@@ -757,23 +888,28 @@ Settings > Advanced, or dropping some, is a later editing decision, not a v1 gat
 These came out of a later review pass and are captured as open items, not settled decisions. They may change the shape
 of sections above; treat them as inputs to the next planning round.
 
-15. **Importance scorer as a standalone neutral subsystem — decided and planned.** The scorer (§5.1) is its own
-    subsystem with its own plan (`importance-subsystem-plan.md`), serving multiple consumers: the agent, the media-ML
-    enrichment scheduler (`indexing/media-ml-index-plan.md`), and future ones. §5.1 stays the requirements source;
-    placement under `src/agent/` and D8's "cached in the drive index" are superseded (separate per-volume
-    `importance.db`, storing the raw signal vector alongside the scalar, confirmed).
+15. **SHIPPED.** The scorer (§5.1) is its own neutral subsystem serving the agent, the media-ML enrichment scheduler,
+    and future consumers. §5.1 stays the requirements source; placement under `src/agent/` and D8's "cached in the drive
+    index" are superseded. Plan: `docs/specs/importance-subsystem-plan.md`; code: `crates/cmdr-index/src/importance/`.
 16. **Per-folder "capability enrollment."** A concept for which folders are enrolled in which expensive analyses (e.g.
     deep photo analysis). Suggested vehicle: the agent's settings-suggestions via `notify_user` action buttons, NOT via
     `proposal_ops` (the freeze/drift semantics of §8.2 fit file ops, not settings changes).
 17. **FTS5 over `messages` for searchable chat history**, alongside the summaries FTS index (§4.2).
-18. **A "vertical slice" milestone**: chat plus read-only knowledge tools over the existing drive index, inserted after
-    the provider layer and before summaries, for early user-visible value ahead of the full knowledge layer.
+18. **SHIPPED, and it became the product.** Chat plus read-only knowledge tools over the existing drive index shipped as
+    Ask Cmdr, ahead of summaries. The §17 rewrite generalizes the lesson: every remaining milestone ships on its own.
 19. **Activity log and chat likely share one surface.** The shipped transfer-queue window (the native panel from the
-    execution-queue work) is the precedent for a native-panel surface both could reuse.
+    execution-queue work) is the precedent for a native-panel surface both could reuse. Now a §17 milestone 3 question,
+    since the rail exists and the activity log doesn't.
 20. **D58 flagged for revisit.** "Every agent tunable in Settings from v1" (§16, D58) may be too much: the main UI keeps
     ~3 dials, with the long tail moved to an advanced section.
 
 ## 19. Decision log
+
+Every decision below still stands as intent. Several are now **built** (D1, D3, D4, D22's DB half, D33, D34's chat job,
+D36, D37, D38, D41, D42's pinning, D43's interactive slot, D44, D48's posture, D49, D51's wizard step, D55, D59) and two
+are **superseded**: D8's "cached in the drive index" (§18.15, now a separate `importance.db`) and D26's `read_file`
+assumption (§11.3, no content-read tool exists at all, so the privacy line is narrower than D26 planned for). §0 has the
+full map.
 
 - **D1**: Two DB families: per-volume `drive-index-{volume_id}.db` (cache) + `main.db` (durable catch-all). Rationale:
   Regenerable vs. valuable; separate writers; different backup policies; index is per-volume today.
@@ -899,23 +1035,21 @@ of sections above; treat them as inputs to the next planning round.
 This document fixes behavior, decisions, and intent. It is deliberately not a build plan. Before writing code, a few
 sequencing notes that are easy to lose otherwise:
 
-1. **Run the genai capability check first, before milestone 1.** §18.1 is the one open question that can invalidate
-   design assumptions rather than just fill in a blank: if the shipped genai (`=0.6.0-beta.19`) cannot round-trip opaque
-   thinking-state through multi-step tool loops, the provider-layer effort changes shape. It is about a day of work and
-   it de-risks everything downstream, so do it ahead of the milestone sequence, not at milestone 3.
-2. **Write a per-milestone plan; do not code straight from this spec.** The spec was written to make planning cheap
+1. **Read §0 first.** The rest of the spec states the v1.0 target, not the tree. Where they disagree, §0 wins.
+2. ~~Run the genai capability check first.~~ Done; see §18.1.
+3. **Write a per-milestone plan; do not code straight from this spec.** The spec was written to make planning cheap
    (decisions settled, intent captured), but the planning step still exists: repo context, exact DDL, module layout,
    migration-code shape, and IPC bindings belong in a milestone plan, not here. Coding off the spec forces the
-   implementer to make planning calls mid-flight.
-3. **Fit-check the shipped `OperationManager` before the proposals milestone (8), not a from-scratch queue effort.** The
-   lane-based queue, transfer-queue window, managed instant ops, and the IPC-edge-injected `OperationEventSink` (the
-   headless-callable write path) are all in the tree. What is left is confirming batch-of-ops apply with per-op statuses
-   and per-op result reporting, and filing any gap as a small extension to the manager. Capture the agent's requirements
-   (batch apply, per-op results, cancellation) against its current API rather than a future effort's design.
-4. **Pull the synthetic-home fixture generator earlier than milestone 10.** The importance scorer (milestone 2) needs
-   iteration against realistic directory trees (§18.3); fixtures plus the developer's own home directory as the first
-   corpus give it a real feedback loop from day one, rather than waiting for the eval work that currently sits alongside
-   milestones 5-9.
-5. **Fold durable intent into colocated `CLAUDE.md` files as milestones land.** `docs/specs/` is wiped periodically by
+   implementer to make planning calls mid-flight. This held for every Ask Cmdr milestone and it still holds.
+4. **Fit-check the shipped `OperationManager` before the proposal spine (§17 milestone 1), not a from-scratch queue
+   effort.** The lane-based queue, transfer-queue window, managed instant ops, and the IPC-edge-injected
+   `OperationEventSink` (the headless-callable write path) are all in the tree. What is left is confirming batch-of-ops
+   apply with per-op statuses and per-op result reporting, and filing any gap as a small extension to the manager.
+   Capture the agent's requirements (batch apply, per-op results, cancellation) against its current API.
+5. **Pull the synthetic-home fixture generator forward.** Still true, now for the proposal spine and the detector rather
+   than the importance scorer (which grew its own evals corpus in the end).
+6. **Fold durable intent into colocated `CLAUDE.md` files as milestones land.** `docs/specs/` is wiped periodically by
    design (see the specs README), so the decisions and intent here must migrate into code-adjacent docs as the
    subsystems take shape, or they evaporate with the folder. The §19 decision log is the thing most worth preserving.
+   Ask Cmdr did this well: `agent/`, `agent/llm/`, `agent/store/`, `agent/tools/`, and `agent/chat/` each carry a
+   `CLAUDE.md` + `DETAILS.md` citing the decision numbers they implement. Keep that up.

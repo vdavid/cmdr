@@ -332,7 +332,13 @@ left, so the durable intent survives the wipe.
       separate OS process for a hard "can't starve the UI" guarantee. Not needed now (thread QoS + bounded logging
       closed the levers; the resilience fix stopped the source); captures the seams, the clean per-volume-WAL
       data-safety split, the `ai/process.rs` sidecar prior art, and the effort/tradeoffs, with revisit triggers.
-- [ ] 2026-06-04 `later/ai/agent-spec.md` - Persistent in-app agent proposing file operations.
+- [ ] 2026-06-04 `later/ai/agent-spec.md` - Persistent in-app agent proposing file operations. PARTIALLY SHIPPED; status
+      reconciled against the tree 2026-08-18 in the spec's §0. The reactive half shipped as Ask Cmdr (`src/agent/`:
+      `main.db` store, the `AgentLlm` seam, consumer-gated tools, the chat runtime, consent, cost meter, one `Propose`
+      tool), plus the importance scorer as its own subsystem. The proactive half (durable proposal store, detectors,
+      activity log, event pipeline, wake loop, summaries, memory) is not started. §17 is rewritten around what's left
+      and inverts the original order: prove the proposal loop with a deterministic detector and measure acceptance
+      before spending on the whole-drive summarization pass.
 - [ ] 2026-06-04 `later/data-dir-rename-spec-draft.md` - Rename data directories from bundle-id to plain names.
 - [ ] 2026-06-28 `later/indexing/index-vacuum-reader-pinning.md` - Reclaim residual index-DB freelist that long-lived
       root readers stop the incremental vacuum from returning to the OS (deferred: the big freelist sources are now
