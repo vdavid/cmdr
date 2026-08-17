@@ -240,6 +240,23 @@ auto-added: entries are added deliberately, with David's OK
 ([the same consent contract](../../../.claude/rules/file-length-allowlist.md) the length allowlists carry). A warn names
 the three rule-heaviest docs of the regressed subsystem, so it points somewhere.
 
+**⚠️ Known limitation: the count conflates two different things, so ❌ never read a rise as "this change made the code
+worse".** One rule at a type definition and ten scattered prose warnings a reader must remember both count as `+1` each.
+Two measured cases, both from the effort that introduced this check:
+
+- The operation-lifecycle work replaced `OperationStatus.is_running` (a presence test that read `true` for queued,
+  running, and paused alike, routed around by roughly ten prose warnings) with one typed field plus one guardrail at its
+  definition. The count went **up 2**, while the places a reader must hold the rule went from ten to one, now enforced
+  by the compiler.
+- The indexing-ownership work's first three milestones ran the count **up 11**, because collapsing mechanisms means
+  adding a mechanism first and documenting honestly why it can't be tidied away.
+
+So the number answers "how many prohibitions does this subsystem assert", not "how hard is this subsystem to hold in
+your head". Those diverge exactly when a rule moves from prose into a type, which is the outcome worth wanting. Treat a
+rise as a prompt to look, and ❌ never shave a doc to make it fall. A future refinement worth considering (David's call,
+not shipped): weight a rule by whether the compiler already enforces it, or count rule SITES a reader must visit rather
+than rule instances.
+
 ## Docs reachable
 
 `docs-reachable` (`IsFast`, an **error** not a warn: the doc tree must stay connected) enforces that every `CLAUDE.md`,
