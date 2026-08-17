@@ -156,16 +156,18 @@ func invariantSubsystemFor(rel string, roots []string) string {
 	return best
 }
 
-// countInvariantMarkers returns a doc's ❌ and ⚠️ counts. Every occurrence counts,
-// including inside fenced blocks: a rule quoted in an example is still a rule an
-// agent has to hold in its head.
+// countInvariantMarkers returns a doc's ❌ and ⚠️ counts, ignoring markers inside
+// fenced blocks and inline code spans. That's the use/mention line: a rule is
+// imposed in prose ("❌ Never do X"), while a marker in backticks is being talked
+// ABOUT. Without it, the docs that explain the convention would be charged for
+// explaining it.
 func countInvariantMarkers(absPath string) (rules, cautions int, err error) {
 	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return 0, 0, err
 	}
-	text := string(data)
-	return strings.Count(text, invariantRuleMarker), strings.Count(text, invariantCautionMarker), nil
+	prose := inlineCodeRe.ReplaceAllString(fencedCodeBlockRe.ReplaceAllString(string(data), ""), "")
+	return strings.Count(prose, invariantRuleMarker), strings.Count(prose, invariantCautionMarker), nil
 }
 
 // invariantTally accumulates one measurement, bucketing every file it's handed

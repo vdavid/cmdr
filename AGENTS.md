@@ -77,6 +77,8 @@ Rules for writing them:
   landmines.
 - **Reference a doc by a bare backticked path**, never a link repeating its own target; link only for descriptive text
   or an `#anchor`.
+- **A rule is a cost.** Every `❌` line is an invariant nothing enforces, paid in tokens every session. Prefer making it
+  unrepresentable in a type; `invariant-density` tracks the count per subsystem, and it only goes down.
 - How the doc system works and how to slim it (playbook, principles, why): `docs/doc-system.md`. Read it before any
   sweeping `C+D.md` slimming or restructuring pass.
 

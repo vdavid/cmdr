@@ -195,6 +195,50 @@ local runs drop dead/under-threshold entries and ratchet >10%-slack entries down
 change. Adding or raising an entry needs David's OK (`.claude/rules/file-length-allowlist.md`); the fix for an oversized
 `CLAUDE.md` is to move depth into `DETAILS.md`, not bump the number.
 
+## Invariant density
+
+`invariant-density` (warn-only, `IsFast`, ~140 ms) gauges how many `❌` "never do X" rules each subsystem's agent docs
+carry. A rule in a doc is an invariant with no enforcement, so the count is a bill: read the whole thesis in
+`docs/doc-system.md` § The rule budget. Read the gauge with `pnpm check invariant-density -v` (a passing check's message
+is suppressed in the default quiet mode).
+
+What it counts:
+
+- **Docs**: `CLAUDE.md`, `DETAILS.md`, and `AGENTS.md`, via `findMarkdownDocs` (so gitignored and vendored trees are out
+  for free). `AGENTS.md` is in because the root `CLAUDE.md` is a bare `@AGENTS.md` import, so leaving it out would let
+  the repo's most-read rule list grow untracked. `.claude/rules/` is deliberately out: those are agent-workflow policy
+  rather than code invariants, and `resident-doc-budget` already caps them.
+- **Markers**: every occurrence of the `❌` rune, including inside fenced blocks (a rule quoted in an example is still a
+  rule an agent holds in its head). Counting the marker rather than the prose keeps the check out of parsing English; an
+  unmarked prohibition is undercounted, which is one more reason to keep marking them. `⚠️` is counted alongside (the
+  base rune, so the variation selector doesn't matter) but never gated.
+- **Denominator**: git-tracked source files under the subsystem, by the `fileLengthSourceExtensions` set, counted with
+  the same `countLines` `file-length` uses.
+
+**Decision**: a subsystem is the nearest ancestor directory holding a `Cargo.toml` or a `package.json` (longest prefix
+wins), everything else falling into a repo-root `.` bucket. **Why**: a directory that declares itself a build unit is a
+boundary somebody owns, its name survives refactors inside it, and it comes with a natural denominator. Deriving the
+buckets from the repo's own manifests means a new crate or app teaches the check about itself with no Go edit, and
+longest-prefix keeps a Rust member nested inside a JS package (`apps/desktop/src-tauri` inside `apps/desktop`) as its
+own bucket rather than folding into the package around it. Per-`CLAUDE.md`-directory buckets were the alternative and
+lose on both counts: ~380 rows is not a legible gauge, and every module rename churns the allowlist.
+
+**Decision**: the allowlist records the ABSOLUTE rule count per subsystem; the per-kloc density is reported but not
+gated. **Why**: adding a rule is the regression, adding code isn't. Gating the ratio would warn when a subsystem
+_deletes_ code, and would let a growing subsystem add rules for free.
+
+**Decision**: no slack buffer, unlike the two length allowlists. **Why**: a line or word count drifts on nearly every
+edit, so a buffer keeps the JSON from churning. A rule count only moves when somebody writes or deletes a rule, so
+there's nothing for a buffer to absorb, and a 10% buffer on `crates/cmdr-index` would silently allow 37 new rules. Any
+rise warns; any fall gets ratcheted in, so the improvement lands in the diff.
+
+`invariant-density-allowlist.json` has one `subsystems` section mapping a subsystem root to its accepted `❌` count.
+Shrink-wrap on local runs drops a subsystem that's gone or has reached zero and ratchets every entry down to the current
+count; CI only reports what a local run would change. A subsystem missing from the allowlist warns rather than being
+auto-added: entries are added deliberately, with David's OK
+([the same consent contract](../../../.claude/rules/file-length-allowlist.md) the length allowlists carry). A warn names
+the three rule-heaviest docs of the regressed subsystem, so it points somewhere.
+
 ## Docs reachable
 
 `docs-reachable` (`IsFast`, an **error** not a warn: the doc tree must stay connected) enforces that every `CLAUDE.md`,
@@ -831,6 +875,7 @@ doubles as production code.
   type-drift (no Rust), and no bare-poll (no Playwright helpers).
 - **Scripts / Go**: gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck
 - **Other / Metrics**: file-length (warn-only), CLAUDE.md-reminder (warn-only), claude-md-length (warn-only),
+  invariant-density (warn-only; `❌` rules per subsystem, absolute and per 1,000 source lines, on a strict ratchet),
   resident-doc-budget (warn-only; caps the always-resident root-CLAUDE.md + @-imports + rules bundle), docs-reachable
   (errors when a CLAUDE.md/DETAILS.md/docs file isn't reachable from the root CLAUDE.md), docs-dead-links (errors on a
   doc link, or a bare backtick path naming a doc, whose local target doesn't exist), docs-link-text (errors on a

@@ -71,6 +71,21 @@ checks (they mutate shared allowlists mid-run), and review every diff yourself. 
 - **Never bump an allowlist without David's OK** (`.claude/rules/file-length-allowlist.md`): trim or split instead;
   leaving a warn is safe.
 
+## The rule budget
+
+A `❌` "never do X" line is an invariant with no enforcement. It's paid in tokens by every session that loads the doc,
+it fails open (nothing stops the next agent from ignoring it), and it rots silently when the code moves on. So a rule is
+a cost, and the win is deleting it by making the thing it forbids unrepresentable: a typed enum instead of a stringly
+value, a constructor that can't build the wrong shape, a check that fails the build. Where that's impossible, a rule is
+the honest fallback, which is why the gauge warns rather than fails.
+
+`invariant-density` measures the bill per subsystem, absolute and per 1,000 source lines of the code the docs sit beside
+(the normalization is what makes a small crate comparable to a big one). Read it with `pnpm check invariant-density -v`.
+It's a strict ratchet, so de-tangling work shows up as the number going down, and a subsystem whose density runs several
+times the rest of the repo is telling you where the type system is doing too little. `⚠️` cautions are counted but never
+gated: a gotcha note is often the right answer when the platform is genuinely weird, while a prohibition rarely is. What
+the check counts and how the buckets are derived: `scripts/check/checks/DETAILS.md`.
+
 ## Enforcement (the checks that keep it honest)
 
 Convention rots; checks don't. Each invariant is a check (sources in `scripts/check/checks/`, detail in its
@@ -79,6 +94,8 @@ Convention rots; checks don't. Each invariant is a check (sources in `scripts/ch
 - **`resident-doc-budget`** (warn): caps the always-resident bundle (root `CLAUDE.md` + its `@`-imports +
   `.claude/rules/`); the cap ratchets DOWN only. Guards against silent regrowth of the per-session cost.
 - **`claude-md-length`** (warn): caps each `CLAUDE.md` at 600 words; shrink-wraps its allowlist.
+- **`invariant-density`** (warn): counts the `❌` rules each subsystem's docs carry, absolute and per 1,000 source
+  lines; a strict ratchet, so the number can only go down. See § The rule budget.
 - **`claude-md-details-sibling`** (error): every non-root `CLAUDE.md` has a sibling `DETAILS.md` and links it.
 - **`docs-reachable`** (error): every doc reachable from the root `CLAUDE.md` by link-walking (no orphans).
 - **`docs-dead-links`** (error): no relative link points at a missing file.

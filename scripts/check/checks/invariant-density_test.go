@@ -108,6 +108,29 @@ func TestMeasureInvariantDensity_AttributesRulesAndLines(t *testing.T) {
 	}
 }
 
+func TestCountInvariantMarkers_IgnoresMentionedMarkers(t *testing.T) {
+	tmp := t.TempDir()
+	writeFixtureFile(t, tmp, "CLAUDE.md", strings.Join([]string{
+		"- ❌ Never do the thing.",
+		"The `❌` marker means \"never do X\", and `⚠️` means watch out.",
+		"```md",
+		"- ❌ Never do the example thing.",
+		"```",
+		"- ⚠️ Watch out for real.",
+	}, "\n"))
+
+	ruleCount, cautionCount, err := countInvariantMarkers(filepath.Join(tmp, "CLAUDE.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ruleCount != 1 {
+		t.Errorf("rules = %d, want 1 (only the prose rule counts)", ruleCount)
+	}
+	if cautionCount != 1 {
+		t.Errorf("cautions = %d, want 1 (only the prose caution counts)", cautionCount)
+	}
+}
+
 func TestRunInvariantDensity_GreenAtAllowlist(t *testing.T) {
 	tmp := twoSubsystemRepo(t)
 	writeInvariantDensityAllowlist(t, tmp, map[string]int{"apps/desktop": 2, "apps/desktop/src-tauri": 5})
