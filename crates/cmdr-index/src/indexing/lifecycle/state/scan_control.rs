@@ -25,6 +25,43 @@ pub(crate) fn set_scanning_for_test(volume_id: &str, scanning: bool) {
     }
 }
 
+/// Ask a volume for the rescan its KIND routes to, with the phase machine forced
+/// to owe this volume work, and report what the scan entry decided.
+///
+/// The only way to reach a trait scanner's phase guard: `first_index_is_the_machines`
+/// requires `uses_local_scanner`, so no `IndexVolumeKind` is both trait-scanned and
+/// phase-covered and no public path produces this shape. That is exactly what makes
+/// the coupling latent, and why it is worth pinning.
+///
+/// Takes the manager out the way [`force_scan`] does, minus the restore-side
+/// `start_pending_phases`: what this pins is the refusal, not what a machine would
+/// then go and do with a share.
+#[cfg(test)]
+pub(crate) fn rescan_with_phases_owed_for_test(volume_id: &str) -> Result<(), ScanStartError> {
+    use crate::indexing::lifecycle::manager::PendingPhases;
+    use cmdr_fs::ignore_poison::IgnorePoison;
+
+    let mut held = {
+        let mut reg = INDEX_REGISTRY.lock_ignore_poison();
+        let instance = reg.get_mut(volume_id).expect("a registered volume to rescan");
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+            IndexPhase::Running(mgr) => mgr,
+            other => {
+                instance.phase = other;
+                panic!("'{volume_id}' has no running manager to rescan");
+            }
+        }
+    };
+    held.pending_phases = PendingPhases::Owed;
+    let result = held.force_rescan("phases-owed test");
+    held.pending_phases = PendingPhases::No;
+
+    let mut reg = INDEX_REGISTRY.lock_ignore_poison();
+    let instance = reg.get_mut(volume_id).expect("the volume to still be registered");
+    instance.phase = IndexPhase::Running(held);
+    result
+}
+
 /// Run `f` with the volume's manager held OUT of the registry under a published
 /// `ShuttingDown`, which is exactly what [`force_scan`] and
 /// `perform_registry_rescan` do for the whole of a scan start.

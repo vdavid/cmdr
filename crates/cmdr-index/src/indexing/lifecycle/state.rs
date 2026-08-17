@@ -73,7 +73,7 @@ pub(crate) use reservation::{is_initializing_phase, try_reserve_initializing_pha
 pub(in crate::indexing::lifecycle) use scan_control::resume_the_phases;
 pub use scan_control::{force_scan, stop_scan, trigger_verification};
 #[cfg(test)]
-pub(crate) use scan_control::{set_scanning_for_test, while_shutting_down_for_test};
+pub(crate) use scan_control::{rescan_with_phases_owed_for_test, set_scanning_for_test, while_shutting_down_for_test};
 pub(crate) use startup::record_drive_index_enabled;
 pub use startup::start_indexing;
 pub(in crate::indexing::lifecycle) use startup::{Activation, start_indexing_for, start_pending_phases};

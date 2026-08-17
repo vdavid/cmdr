@@ -18,7 +18,7 @@ use cmdr_fs::volume::InMemoryVolume;
 
 use super::test_support::{SameNameSiblings, Share, Tree, drain};
 use super::*;
-use crate::indexing::lifecycle::rescan_request::RescanOutcome;
+use crate::indexing::lifecycle::rescan_request::{RescanOutcome, ScanStartError};
 
 // ── The scoped walk ──────────────────────────────────────────────────
 
@@ -352,6 +352,34 @@ fn a_truncating_rescan_of_a_share_refuses_while_a_cover_walk_is_live() {
         crate::indexing::lifecycle::state::force_scan(volume_id),
         Ok(RescanOutcome::Started),
         "and once the walk ends the rescan runs"
+    );
+}
+
+/// The THIRD question the local truncate door asks, asked on this half too: a
+/// volume the phase machine still owes work to is being walked whole, in pieces,
+/// and a whole-volume rescan over the top races the machine for every row.
+///
+/// ⚠️ Unreachable through a public path today, and deliberately so: a volume is
+/// phase-covered only if `first_index_is_the_machines` says so, and that requires
+/// `uses_local_scanner()`, which no trait-scanned kind has. The guard is what
+/// keeps that an accident of the kind list rather than something a fifth kind
+/// silently breaks, so the test puts the machine there itself.
+#[test]
+fn a_rescan_of_a_share_refuses_while_the_phase_machine_still_owes_it_work() {
+    let volume_id = "cover-share-phases-guard-test";
+    let share = Share::new(volume_id, |t| vec![t.dir("scope"), t.file("scope/found.txt", 2)]);
+    share.cover(&share.path("scope"));
+    assert_eq!(
+        share.child_ids(&share.path("scope")).len(),
+        1,
+        "precondition: the walk's rows are in"
+    );
+
+    let refused = crate::indexing::lifecycle::state::rescan_with_phases_owed_for_test(volume_id);
+
+    assert!(
+        matches!(refused, Err(ScanStartError::AlreadyScanning)),
+        "a machine with work owns this volume's walk, so the rescan is the one already in flight; got {refused:?}"
     );
 }
 

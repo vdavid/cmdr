@@ -91,7 +91,7 @@ pub(crate) struct IndexManager {
     /// Where this volume sits between "the launch route handed it to the phase
     /// machine" and "the machine is running". See [`phased::PendingPhases`]: every
     /// state but `No` counts as WORK, the window off the registry lock included.
-    pub(super) pending_phases: phased::PendingPhases,
+    pub(super) pending_phases: PendingPhases,
     /// Calibration for the in-flight scan, captured in `start_scan`: the prior
     /// completed scan's totals (read from meta before truncating) plus the
     /// scanned volume's used bytes (fetched once). A plain field is enough —
@@ -371,7 +371,7 @@ impl IndexManager {
             scanning: Arc::new(AtomicBool::new(false)),
             freshness,
             phases: None,
-            pending_phases: phased::PendingPhases::No,
+            pending_phases: PendingPhases::No,
             scan_calibration: None,
         })
     }
@@ -775,7 +775,7 @@ mod launch_route;
 mod phased;
 mod start;
 
-pub(in crate::indexing::lifecycle) use phased::{PhaseResume, PhasedStart};
+pub(in crate::indexing::lifecycle) use phased::{PendingPhases, PhaseResume, PhasedStart};
 
 #[cfg(test)]
 mod tests;

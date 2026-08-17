@@ -196,6 +196,20 @@ impl IndexManager {
             return Err(ScanStartError::AlreadyScanning);
         }
 
+        // And the same question of the third kind of walk, for the same reason
+        // `start_scan` asks it: a volume the machine still owes work to is being
+        // walked whole, in pieces, and this call would rebuild the index from the
+        // share root over the top of one.
+        //
+        // ⚠️ No `IndexVolumeKind` is both trait-scanned and phase-covered today —
+        // `first_index_is_the_machines` requires `uses_local_scanner()` — so this
+        // guard refuses nothing that can currently reach it. It is here so a fifth
+        // kind that was both doesn't silently start a second whole-volume walk,
+        // which is precisely the shape no test would catch by accident.
+        if self.phases_have_work() {
+            return Err(ScanStartError::AlreadyScanning);
+        }
+
         // And the same question of the other kind of walk, for the same reason as
         // `start_scan`: a search-driven cover walk sets no flag, it holds a claim,
         // and a truncate under one blanks rows it is still writing. Over the wire

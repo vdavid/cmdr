@@ -22,10 +22,10 @@ them.
   `cover_or_scan`, ❌ never straight to `start_scan`. ⚠️ A COMPLETED volume takes the replay/reconcile arm FIRST, and an
   EMPTY persisted branch set means a legacy interrupted bulk scan ⇒ rebuild. Start the machine via
   `state::start_pending_phases`, OUTSIDE a registry-held window.
-- **Every scan entry asks TWO single-flight questions** (`mgr.scanning` AND `cover::ground_being_walked`), plus the
-  machine having WORK, ❌ not merely walking. ❌ Don't collapse them or classify them by text (both are
-  `ScanStartError`). A MANUAL rescan they refuse on a COMPLETED volume is REMEMBERED (`rescan_request`) and fired from
-  `cover::release_ground`, claim first.
+- **Both scan entries ask THREE single-flight questions** (`mgr.scanning`, `phases_have_work` — ❌ not merely walking —
+  and `cover::ground_being_walked`). ❌ Don't collapse them or classify them by text (all are `ScanStartError`). ⚠️ The
+  phase one refuses nothing a trait-scanned kind can reach today; ❌ don't tidy it away. A MANUAL rescan they refuse on
+  a COMPLETED volume is REMEMBERED (`rescan_request`) and fired from `cover::release_ground`, claim first.
 - **A machine that stops with a non-empty frontier gets another PASS, ❌ never a rescan** (`completion_retry.rs`, an
   in-memory 1/5/15-minute per-volume backoff). It goes through `state::resume_the_phases`, ❌ never `force_scan`: on a
   volume that completed meanwhile that one truncates, fired by a timer. ❌ Never runs against a machine that has work.

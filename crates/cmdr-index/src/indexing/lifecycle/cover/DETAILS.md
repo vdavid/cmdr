@@ -82,7 +82,7 @@ three levels, each closing a case the one above it can't see.
 
 **The claim is also what keeps a rescan off a live walk.** `start_scan` asks `ground_being_walked` over the whole volume
 and refuses while anything answers, because a search walk sets no `scanning` flag and a truncate under one blanks rows
-it is still writing. That rule is canonical in `../DETAILS.md` § "The two single-flight questions a scan has to ask";
+it is still writing. That rule is canonical in `../DETAILS.md` § "The three single-flight questions a scan has to ask";
 what matters here is that the claim, not a flag, is the thing being read.
 
 The deferred caller loses nothing durable: the other walk's rows land in the same index, and Decision 12 makes them

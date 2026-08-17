@@ -2,7 +2,7 @@
 //! remembers.
 //!
 //! A scan start has two doors it can be turned away at, and both are single-flight
-//! questions rather than failures (`../DETAILS.md` § "The two single-flight
+//! questions rather than failures (`../DETAILS.md` § "The three single-flight
 //! questions a scan has to ask"). [`ScanStartError`] is how a caller tells them
 //! apart without reading a sentence: the wording of a diagnostic is for logs, and
 //! classifying control flow by it breaks the moment someone edits it.

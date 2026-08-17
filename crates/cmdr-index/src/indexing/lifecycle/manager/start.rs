@@ -543,8 +543,15 @@ impl IndexManager {
         // to Fresh. (Root is journaled, so a restart re-seeds Fresh; this keeps
         // the badge honest DURING a scan/rescan.) Fire through the manager's OWN
         // freshness handle (`apply_freshness_event_on`), NOT the volume-id lookup:
-        // `force_scan` (and the journal-gap fallback) call `start_scan` while
-        // holding the registry lock, so a registry re-lock here deadlocks.
+        // the manager already holds the very `Arc` that lookup would fetch, so the
+        // registry round trip buys nothing and puts a global lock on the scan
+        // start's path.
+        //
+        // ❌ Don't "simplify" it back to `apply_freshness_event`. Today's scan-start
+        // callers all reach here with the manager held OUT of the registry
+        // (`off_the_registry`, `perform_registry_rescan`), so a re-lock would not
+        // deadlock right now — but a handle that can't re-enter the registry keeps
+        // that safe by construction rather than by what every caller happens to do.
         super::super::state::apply_freshness_event_on(
             &self.freshness,
             self.events.as_ref(),
