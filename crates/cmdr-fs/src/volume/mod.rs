@@ -644,6 +644,44 @@ pub trait Volume: Send + Sync {
         false
     }
 
+    /// Whether this volume accepts mutations at all: creating files and
+    /// directories, renaming, and deleting.
+    ///
+    /// A claim about the BACKEND, not about one path or one mount. A read-only
+    /// mount of a writable backend still answers `true`; that mount's own
+    /// read-only flag is separate and layers on top (it reaches the frontend as
+    /// `isReadOnly` on the location).
+    ///
+    /// Default `false`, matching the `NotSupported` default of every mutation
+    /// method above: a backend that implements them opts in, and one that
+    /// doesn't can't accidentally advertise writes it will refuse.
+    ///
+    /// **A shared conformance assertion enforces this**, in whichever direction
+    /// the answer claims: every backend's suite runs
+    /// `conformance::assert_writability_matches_the_mutations_offered` (test
+    /// builds only), so an out-of-date `true` fails rather than reaching the UI
+    /// as an enabled button that can't work.
+    fn is_writable(&self) -> bool {
+        false
+    }
+
+    /// This volume's capability surface as DATA, for consumers outside the
+    /// backend (it travels over IPC to the frontend).
+    ///
+    /// ❌ Never override this, and ❌ never compute an answer inside it. It's a
+    /// pure fold of the predicates above, and that's the whole point: a
+    /// capability has one answer, so growing the surface means adding a
+    /// predicate and folding it here. An override would reintroduce exactly the
+    /// second source of truth this retired. See
+    /// `crates/cmdr-fs/src/volume/capabilities.rs` for what belongs in the
+    /// published struct and what stays a backend-side predicate.
+    fn capabilities(&self) -> VolumeCapabilities {
+        VolumeCapabilities {
+            is_writable: self.is_writable(),
+            can_export: self.supports_export(),
+        }
+    }
+
     /// How many streaming copy operations can be driven concurrently on this
     /// volume.
     ///
@@ -1216,6 +1254,7 @@ pub fn root_anchored(root: &Path, path: &Path) -> PathBuf {
 // …) live in `types`; the volume ID funnel (`local_volume_id`, `smb_volume_id`,
 // …) lives in `ids`. Both are re-exported below so callers import
 // `volume::VolumeError`, `volume::smb_volume_id`, etc.
+mod capabilities;
 mod ids;
 mod in_memory;
 pub mod mtp_ids;
@@ -1238,10 +1277,13 @@ pub mod conformance;
 // Everything a backend needs from the application around it, as named seams.
 pub mod host;
 
+pub use capabilities::VolumeCapabilities;
 pub use ids::*;
 pub use in_memory::InMemoryVolume;
 pub use types::*;
 
+#[cfg(test)]
+mod capabilities_test;
 #[cfg(test)]
 mod in_memory_scan_test;
 #[cfg(test)]

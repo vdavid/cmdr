@@ -24,6 +24,9 @@ crate.
   via `specta::Type`, so the comment lands in `bindings.ts` too.
 - **`specta` stays pinned to `=2.0.0-rc.24`, identical to the app's.** Two copies in one graph break bindings
   generation.
+- **`Volume::capabilities()` is a PURE FOLD of the trait's own predicates and travels over IPC.** ❌ Never override it,
+  never compute inside it: grow the surface by adding a predicate and folding it. What belongs in the published struct
+  vs. what stays a backend-side predicate: `src/volume/capabilities.rs`.
 - **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes
   stale after a copy. `DETAILS.md` § "What the app kept".
 - **❌ Never gate BEHAVIOR on `cfg(test)` here; use `any(test, feature = "testing")`.** `cfg(test)` is off in a
@@ -39,7 +42,8 @@ crate.
   backend's suite calls the ones it can run: `delete` never recurses (one file, or one EMPTY directory — the same-volume
   move keeps a Skipped child's only copy purely by letting the parent's delete fail); `rename(force = false)` refuses an
   existing destination, touching neither node; `create_file` refuses rather than truncates; `create_directory_all`
-  reports a pre-existing leaf as `AlreadyExisted`. Each backend earns each one by a DIFFERENT mechanism, which is why
+  reports a pre-existing leaf as `AlreadyExisted`; `is_writable()` and the mutations a backend offers agree, in
+  whichever direction it claims. Each backend earns each one by a DIFFERENT mechanism, which is why
   it's asserted rather than assumed. `DETAILS.md` § "`InMemoryVolume` honors the contracts".
 - **❌ Never build a volume ID by hand, or by stripping characters.** `volume::ids` is the one funnel; an ID keys the
   index DB, `lastUsedPaths`, tab state, and routing, so a lossy one hands two disks one identity and sends reads (and

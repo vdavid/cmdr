@@ -180,9 +180,9 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
         // `volumes/DETAILS.md` § "Hung mounts".
         let snapshot = tokio::task::spawn_blocking(|| {
             let mut locations = crate::volumes::list_locations();
-            // Enrich with VolumeManager-derived SMB connection state so agents can
-            // see whether a share is `direct` (smb2), `os_mount`, or `disconnected`.
-            crate::volumes::enrich_smb_connection_state(&mut locations);
+            // Enrich from the `VolumeManager` so agents see the SMB connection
+            // state (`direct` / `os_mount` / `disconnected`) alongside the rest.
+            crate::volumes::enrich_from_volume_registry(&mut locations);
             locations
         });
         let locations = match tokio::time::timeout(std::time::Duration::from_secs(2), snapshot).await {

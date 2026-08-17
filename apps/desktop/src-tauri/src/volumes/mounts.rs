@@ -189,6 +189,7 @@ fn build_attached_location(
         is_disk_image,
         smb_connection_state: None,
         usb_speed: None,
+        capabilities: None,
     })
 }
 

@@ -72,6 +72,7 @@ fn cloud_volume_info(id: String, name: String, root: &Path) -> LocationInfo {
         is_disk_image: false,
         smb_connection_state: None,
         usb_speed: None,
+        capabilities: None,
     }
 }
 

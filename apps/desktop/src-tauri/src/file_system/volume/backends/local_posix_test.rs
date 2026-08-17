@@ -754,3 +754,13 @@ async fn listing_a_local_directory_reports_progress_while_it_reads() {
         ticks.iter().map(ListingProgress::entries).collect::<Vec<_>>()
     );
 }
+
+/// The shared writability-declaration assertion: `is_writable()` and the
+/// mutations LocalPosix offers say the same thing.
+#[tokio::test]
+async fn is_writable_honors_the_shared_declaration_contract() {
+    let test_dir = TestDir::new("is_writable_declaration_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    cmdr_fs::volume::conformance::assert_writability_matches_the_mutations_offered(&volume, Path::new("scratch")).await;
+}

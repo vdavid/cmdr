@@ -726,6 +726,10 @@ impl Volume for SmbVolume {
         })
     }
 
+    fn is_writable(&self) -> bool {
+        true
+    }
+
     fn supports_export(&self) -> bool {
         true
     }
@@ -923,7 +927,7 @@ impl Volume for SmbVolume {
         // "not an SMB volume" (None) from "SMB volume in trouble"
         // (Some(Disconnected)). The reconnect manager keys off the latter.
         // The internal state machine is binary; the outer `OsMount` variant
-        // is only attached by `enrich_smb_connection_state` for SMB shares
+        // is only attached by `enrich_from_volume_registry` for SMB shares
         // that have an OS mount but no Cmdr smb2 session at all.
         Some(match self.connection_state() {
             ConnectionState::Direct => SmbConnectionState::Direct,

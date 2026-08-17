@@ -121,3 +121,18 @@ async fn smb_integration_create_directory_all_honors_the_shared_honesty_contract
 
     ensure_clean(&smb_vol, &base).await;
 }
+
+/// The shared writability-declaration assertion, against a real SMB server:
+/// `is_writable()` and what the share actually accepts say the same thing.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_is_writable_honors_the_shared_declaration_contract() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+
+    cmdr_fs::volume::conformance::assert_writability_matches_the_mutations_offered(smb_vol.as_ref(), Path::new(&base))
+        .await;
+
+    ensure_clean(&smb_vol, &base).await;
+}

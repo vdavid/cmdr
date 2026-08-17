@@ -6263,6 +6263,16 @@ export type LocationInfo = {
    *  theoretical max MB/s for the volume switcher.
    */
   usbSpeed: UsbSpeed | null
+  /**
+   *  What the backend registered for this volume can do (writable? can it be a
+   *  copy source?), straight from `Volume::capabilities()`, so the frontend
+   *  never re-derives capability from an id, an `fsType`, or a category.
+   *  `None` when no backend is registered for this id (a favorite, or a volume
+   *  discovery found before registration): the frontend falls back to its
+   *  per-kind defaults. Filled by `enrich_from_volume_registry`, never by a
+   *  discovery constructor.
+   */
+  capabilities: VolumeCapabilities | null
 }
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'warning' | 'error'
@@ -9226,6 +9236,28 @@ export type ViewerSessionStatus = {
 export type ViewerWordWrapToggled = null
 
 /**
+ *  What a volume can do, from the frontend's point of view.
+ *
+ *  A claim about the BACKEND, not about one path or one mount: a read-only
+ *  mount of a writable backend still answers `is_writable: true`, and the
+ *  per-location `isReadOnly` flag layers on top of this.
+ *
+ *  Adding a capability means adding a predicate to
+ *  [`Volume`](super::Volume) and folding it in
+ *  [`Volume::capabilities`](super::Volume::capabilities), never computing a new
+ *  answer here.
+ */
+export type VolumeCapabilities = {
+  // Files and folders can be created, renamed, and deleted here.
+  isWritable: boolean
+  /**
+   *  Files can be read out of here, so this volume can be the SOURCE of a copy
+   *  or a move.
+   */
+  canExport: boolean
+}
+
+/**
  *  How a connecting volume's session looks to the frontend, as carried by
  *  `volume-connection-changed`.
  *
@@ -9235,7 +9267,7 @@ export type ViewerWordWrapToggled = null
  *  `From` impl there. `NeedsCredentials` has no counterpart in it: no backend ever
  *  rests in that state, it rides alongside a failed reconnect attempt. The OS-mount
  *  fallback likewise lives only at the outer `SmbConnectionState` layer (driven by
- *  `enrich_smb_connection_state`), never here.
+ *  `enrich_from_volume_registry`), never here.
  */
 export type VolumeConnection =
   // The backend holds a live session; operations take the fast path.

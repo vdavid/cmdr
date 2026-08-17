@@ -682,6 +682,12 @@ impl Volume for InMemoryVolume {
         })
     }
 
+    /// The double is a full read-write filesystem: every mutation the trait
+    /// declares is implemented here, contracts and all.
+    fn is_writable(&self) -> bool {
+        true
+    }
+
     fn supports_export(&self) -> bool {
         true
     }

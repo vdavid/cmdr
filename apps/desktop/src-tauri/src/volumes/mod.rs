@@ -39,7 +39,7 @@ pub(crate) use nsurl::{
     volume_name_from_path,
 };
 pub(crate) use smb::parse_smb_mount_source;
-pub use smb::{SmbMountInfo, enrich_smb_connection_state, get_smb_mount_info};
+pub use smb::{SmbMountInfo, enrich_from_volume_registry, get_smb_mount_info};
 
 /// Category of a location item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -88,6 +88,14 @@ pub struct LocationInfo {
     /// else carries `None`. Frontend maps to a label like "USB 3.2 Gen 1" and a
     /// theoretical max MB/s for the volume switcher.
     pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
+    /// What the backend registered for this volume can do (writable? can it be a
+    /// copy source?), straight from `Volume::capabilities()`, so the frontend
+    /// never re-derives capability from an id, an `fsType`, or a category.
+    /// `None` when no backend is registered for this id (a favorite, or a volume
+    /// discovery found before registration): the frontend falls back to its
+    /// per-kind defaults. Filled by `enrich_from_volume_registry`, never by a
+    /// discovery constructor.
+    pub capabilities: Option<cmdr_fs::volume::VolumeCapabilities>,
 }
 
 /// Lets discovery collapse a doubly-mounted filesystem down to one published
@@ -168,6 +176,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             is_disk_image,
             smb_connection_state: None,
             usb_speed: None,
+            capabilities: None,
         })
     })
 }
@@ -254,6 +263,7 @@ fn get_favorites() -> Vec<LocationInfo> {
                 is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,
+                capabilities: None,
             }
         })
         .collect()
@@ -289,6 +299,7 @@ fn get_main_volume() -> Option<LocationInfo> {
             is_disk_image: false,
             smb_connection_state: None,
             usb_speed: None,
+            capabilities: None,
         })
     })
 }

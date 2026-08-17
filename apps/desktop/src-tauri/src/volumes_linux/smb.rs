@@ -7,6 +7,22 @@
 use super::{LocationCategory, LocationInfo, ids::volume_id_for_mount, linux_mounts};
 use std::path::Path;
 
+/// Enriches discovered locations with what only the registered `Volume` knows.
+///
+/// The twin of macOS `volumes::enrich_from_volume_registry`, and it must stay
+/// one: the frontend doesn't branch on platform, so a capability published on
+/// one and not the other is a pane whose buttons differ by OS. Only the
+/// capability half exists here — Linux has no smb2 session tracking, so
+/// `smb_connection_state` stays `None`.
+pub fn enrich_from_volume_registry(volumes: &mut [LocationInfo]) {
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    for vol in volumes.iter_mut() {
+        if let Some(registered) = manager.get(&vol.id) {
+            vol.capabilities = Some(registered.capabilities());
+        }
+    }
+}
+
 /// Information about an SMB mount extracted from `/proc/mounts`.
 #[derive(Debug, Clone)]
 pub struct SmbMountInfo {
@@ -127,6 +143,7 @@ pub(super) fn get_network_mounts() -> Vec<LocationInfo> {
                 is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,
+                capabilities: None,
             });
         }
     }

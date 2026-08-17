@@ -23,6 +23,7 @@ pub struct PathVolumeResolution {
 pub async fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
     let mut data = volumes_linux::list_mounted_volumes();
     append_mtp_volumes(&mut data).await;
+    volumes_linux::enrich_from_volume_registry(&mut data);
     TimedOut { data, timed_out: false }
 }
 
@@ -102,6 +103,7 @@ async fn resolve_path_to_volume(path: String) -> (Option<VolumeInfo>, bool) {
                 is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,
+                capabilities: None,
             }),
             false,
         );
@@ -160,6 +162,7 @@ async fn append_mtp_volumes(volumes: &mut Vec<VolumeInfo>) {
                 supports_trash: false,
                 smb_connection_state: None,
                 usb_speed: device.device.usb_speed,
+                capabilities: None,
             });
         }
     }

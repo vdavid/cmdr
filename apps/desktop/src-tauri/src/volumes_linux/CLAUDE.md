@@ -13,7 +13,9 @@ re-exports every submodule item, keeping `crate::volumes_linux::X` paths stable.
 - **`mounts.rs`**: `get_mounted_volumes` and the filters for which `/proc/mounts` rows are user-facing.
 - **`fs_type.rs`**: trash support, `VIRTUAL_FS_TYPES`, `get_mount_point`, `get_volume_space` (`statvfs`).
 - **`ids.rs`**: `volume_id_for_mount` and its `/dev/disk/by-uuid` lookup. **`cloud.rs`**: cloud-sync dirs.
-- **`smb.rs`**: CIFS mount-source and GVFS dirname parsing, plus `get_network_mounts`.
+- **`smb.rs`**: CIFS mount-source and GVFS dirname parsing, `get_network_mounts`, plus
+  `enrich_from_volume_registry` (the macOS twin's capability half; keep the two in step, the frontend doesn't branch on
+  platform).
 - **`watcher.rs`**: two inotify watchers (see must-knows). Diffs known state, registers/unregisters with
   `VolumeManager`, emits `volume-mounted` / `volume-unmounted` Tauri events.
 

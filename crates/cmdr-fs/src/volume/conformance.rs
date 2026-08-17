@@ -191,3 +191,43 @@ pub async fn assert_create_directory_all_reports_an_existing_dir_honestly(volume
         dir.display(),
     );
 }
+
+/// [`Volume::is_writable`] answers for the mutations the backend actually
+/// offers, in whichever direction it claims.
+///
+/// `scratch_dir` must NOT exist on `volume`; the assertion creates it (or
+/// watches the create be refused) and cleans up after itself.
+///
+/// **Why this one is worth a shared assertion.** `is_writable` is the only
+/// capability predicate whose answer leaves the backend and reaches the user as
+/// UI state: it decides whether New folder, New file, Rename, and Paste render
+/// enabled. Every other mutation contract here is enforced by what a method
+/// DOES; this one is a declaration, so nothing but a test stops it drifting from
+/// the methods it speaks for. A stale `true` is an enabled button that can't
+/// work; a stale `false` is a working volume the user can't write to.
+pub async fn assert_writability_matches_the_mutations_offered(volume: &dyn Volume, scratch_dir: &Path) {
+    assert!(
+        !volume.exists(scratch_dir).await,
+        "fixture precondition: {} must not exist yet",
+        scratch_dir.display()
+    );
+
+    let outcome = volume.create_directory(scratch_dir).await;
+    if volume.is_writable() {
+        assert!(
+            outcome.is_ok(),
+            "{} answers is_writable() == true, so creating {} must work. Got {outcome:?}",
+            volume.name(),
+            scratch_dir.display(),
+        );
+        // Leave the volume as we found it, so a caller can reuse the fixture.
+        let _ = volume.delete(scratch_dir).await;
+    } else {
+        assert!(
+            matches!(outcome, Err(VolumeError::NotSupported)),
+            "{} answers is_writable() == false, so creating {} must refuse with NotSupported. Got {outcome:?}",
+            volume.name(),
+            scratch_dir.display(),
+        );
+    }
+}

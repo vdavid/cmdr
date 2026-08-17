@@ -36,6 +36,10 @@ through a `Volume`, with **paths relative to the volume root**.
   `list_directory` + `get_metadata` and opts in. Read `DETAILS.md` § "Trait capability model" before overriding one:
   `create_directory_all`, `listing_watch_coverage`, `operations_are_local`, and `create_directory_errors_on_existing_dir`
   each gate behavior that breaks silently on a wrong answer. New backend? § "Building a new volume".
+- **`capabilities()` is a pure fold of those predicates; ❌ never override it.** It publishes `is_writable` +
+  `can_export` to the frontend as DATA, so an override would be the second source of truth it exists to retire. Grow the
+  surface by adding a predicate and folding it in. `is_writable` reaches the user as button state, so a new writable
+  backend owes both the override AND `conformance::assert_writability_matches_the_mutations_offered`.
 - **`lane_key()` is the operation manager's serialization key** (default = the volume root). Override it when several
   `Volume`s share one physical resource.
 - **On macOS, never size disk space from `statvfs` alone** (it ignores purgeable space). Use `get_space_info_for_path`,

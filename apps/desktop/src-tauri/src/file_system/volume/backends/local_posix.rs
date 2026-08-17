@@ -421,6 +421,10 @@ impl Volume for LocalPosixVolume {
         })
     }
 
+    fn is_writable(&self) -> bool {
+        true
+    }
+
     fn supports_export(&self) -> bool {
         true
     }

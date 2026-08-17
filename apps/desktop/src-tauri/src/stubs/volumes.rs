@@ -40,6 +40,14 @@ pub struct VolumeInfo {
     pub smb_connection_state: Option<String>,
     /// Negotiated USB link speed. Always `None` on stub platforms (no MTP).
     pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
+    /// What the backend registered for this volume can do (writable? can it be a
+    /// copy source?), straight from `Volume::capabilities()`, so the frontend
+    /// never re-derives capability from an id, an `fsType`, or a category.
+    /// `None` when no backend is registered for this id (a favorite, or a volume
+    /// discovery found before registration): the frontend falls back to its
+    /// per-kind defaults. Filled by `enrich_from_volume_registry`, never by a
+    /// discovery constructor.
+    pub capabilities: Option<cmdr_fs::volume::VolumeCapabilities>,
 }
 
 /// Information about volume space.
@@ -82,6 +90,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
                 is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,
+                capabilities: None,
             });
         }
     }
@@ -100,6 +109,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         is_disk_image: false,
         smb_connection_state: None,
         usb_speed: None,
+        capabilities: None,
     });
 
     // Add home directory
@@ -116,6 +126,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         is_disk_image: false,
         smb_connection_state: None,
         usb_speed: None,
+        capabilities: None,
     });
 
     locations

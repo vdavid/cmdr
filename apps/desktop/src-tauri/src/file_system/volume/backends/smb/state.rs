@@ -10,7 +10,7 @@ use std::sync::atomic::Ordering;
 /// Stored as `AtomicU8` for lock-free reads from any thread. The internal state
 /// machine is binary (`Direct ⇄ Disconnected`). The "OS mount" fallback the
 /// frontend shows lives at the outer `SmbConnectionState` layer (see
-/// `enrich_smb_connection_state` in `commands/volumes.rs`) and never reaches
+/// `enrich_from_volume_registry` in `commands/volumes.rs`) and never reaches
 /// this atomic on the smb2 hot path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]

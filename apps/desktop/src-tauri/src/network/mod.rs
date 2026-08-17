@@ -186,7 +186,7 @@ pub struct NetworkHostContextAction {
 /// `From` impl there. `NeedsCredentials` has no counterpart in it: no backend ever
 /// rests in that state, it rides alongside a failed reconnect attempt. The OS-mount
 /// fallback likewise lives only at the outer `SmbConnectionState` layer (driven by
-/// `enrich_smb_connection_state`), never here.
+/// `enrich_from_volume_registry`), never here.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum VolumeConnection {

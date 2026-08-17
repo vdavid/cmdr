@@ -469,6 +469,13 @@ impl Volume for MtpVolume {
         })
     }
 
+    /// A connected MTP storage accepts uploads, folder creation, rename, and
+    /// delete. A storage the device reports as read-only is a per-VOLUME fact and
+    /// travels as the location's `isReadOnly`, not as this backend-level claim.
+    fn is_writable(&self) -> bool {
+        true
+    }
+
     fn supports_export(&self) -> bool {
         true
     }

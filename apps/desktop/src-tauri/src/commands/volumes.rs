@@ -26,7 +26,7 @@ const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
 pub async fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
     let mut result = blocking_with_timeout_flag(VOLUME_TIMEOUT, vec![], volumes::list_mounted_volumes).await;
     append_mtp_volumes(&mut result.data).await;
-    volumes::enrich_smb_connection_state(&mut result.data);
+    volumes::enrich_from_volume_registry(&mut result.data);
     result
 }
 
@@ -113,6 +113,7 @@ async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<V
                 is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,
+                capabilities: None,
             }),
             false,
         );
@@ -182,6 +183,7 @@ async fn append_mtp_volumes(volumes: &mut Vec<VolumeInfo>) {
                 supports_trash: false,
                 smb_connection_state: None,
                 usb_speed: device.device.usb_speed,
+                capabilities: None,
             });
         }
     }

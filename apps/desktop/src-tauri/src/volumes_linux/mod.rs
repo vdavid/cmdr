@@ -26,7 +26,7 @@ mod test_support;
 
 pub use fs_type::{get_volume_space, supports_trash_for_fs_type};
 pub use mounts::get_mounted_volumes;
-pub use smb::{SmbMountInfo, get_smb_mount_info};
+pub use smb::{SmbMountInfo, enrich_from_volume_registry, get_smb_mount_info};
 
 pub(crate) use fs_type::get_mount_point;
 pub(crate) use ids::volume_id_for_mount;
@@ -77,6 +77,14 @@ pub struct LocationInfo {
     /// Negotiated USB link speed. Set only for MTP/mobile volumes; everything
     /// else carries `None`. Frontend maps to a label like "USB 3.2 Gen 1".
     pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
+    /// What the backend registered for this volume can do (writable? can it be a
+    /// copy source?), straight from `Volume::capabilities()`, so the frontend
+    /// never re-derives capability from an id, an `fsType`, or a category.
+    /// `None` when no backend is registered for this id (a favorite, or a volume
+    /// discovery found before registration): the frontend falls back to its
+    /// per-kind defaults. Filled by `enrich_from_volume_registry`, never by a
+    /// discovery constructor.
+    pub capabilities: Option<cmdr_fs::volume::VolumeCapabilities>,
 }
 
 /// Lets discovery collapse a filesystem mounted at several paths down to one
@@ -188,6 +196,7 @@ fn get_favorites(mounts: &[MountEntry]) -> Vec<LocationInfo> {
                 is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,
+                capabilities: None,
             }
         })
         .collect()
@@ -210,6 +219,7 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
         is_disk_image: false,
         smb_connection_state: None,
         usb_speed: None,
+        capabilities: None,
     })
 }
 
@@ -239,6 +249,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         is_disk_image: false,
         smb_connection_state: None,
         usb_speed: None,
+        capabilities: None,
     })
 }
 

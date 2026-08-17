@@ -243,9 +243,12 @@ async fn do_emit() {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     append_mtp_volumes(&mut volumes).await;
 
-    // Enrich SMB volumes with connection state from VolumeManager
+    // Copy across what only the registered `Volume` knows: its capability
+    // surface, plus (macOS) its SMB connection state.
     #[cfg(target_os = "macos")]
-    crate::volumes::enrich_smb_connection_state(&mut volumes);
+    crate::volumes::enrich_from_volume_registry(&mut volumes);
+    #[cfg(target_os = "linux")]
+    crate::volumes_linux::enrich_from_volume_registry(&mut volumes);
 
     debug!(
         "Emitting volumes-changed ({} volumes, timed_out={})",
@@ -292,6 +295,7 @@ async fn append_mtp_volumes(volumes: &mut Vec<LocationInfo>) {
                 supports_trash: false,
                 smb_connection_state: None,
                 usb_speed: device.device.usb_speed,
+                capabilities: None,
             });
         }
     }

@@ -788,3 +788,36 @@ async fn create_directory_all_honors_the_shared_honesty_contract() {
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
+
+/// The shared writability-declaration assertion, against the virtual MTP
+/// device: `is_writable()` and what the device actually accepts say the same
+/// thing.
+#[cfg(feature = "virtual-mtp")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn is_writable_honors_the_shared_declaration_contract() {
+    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
+
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let device_id = crate::mtp::list_mtp_devices()
+        .into_iter()
+        .find(|d| d.location_id == fixture.location_id)
+        .map(|d| d.id)
+        .expect("the virtual device must appear in discovery");
+    let info = connection_manager()
+        .connect(&device_id, None)
+        .await
+        .expect("virtual-mtp connect should succeed");
+    let storage_id = info.storages.first().expect("virtual device should have storages").id;
+    let vol = MtpVolume::new(&device_id, storage_id, "Test");
+    vol.list_directory(Path::new("/"), None)
+        .await
+        .expect("priming the root listing");
+
+    cmdr_fs::volume::conformance::assert_writability_matches_the_mutations_offered(&vol, Path::new("/scratch")).await;
+
+    connection_manager()
+        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .await
+        .expect("virtual-mtp disconnect should succeed");
+}

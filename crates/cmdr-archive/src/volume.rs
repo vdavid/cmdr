@@ -449,6 +449,14 @@ impl Volume for ArchiveVolume {
 
     // ---- Read-only: mutations are unsupported until zip mutation lands ------
 
+    /// ❌ Never flip this to track "the user can edit this zip". Writing INTO a
+    /// zip is the app's managed archive-edit flow (rewrite the whole archive
+    /// through a staged temp, then rename), which never mutates through this
+    /// volume; this answers only for the volume, and the volume mutates nothing.
+    fn is_writable(&self) -> bool {
+        false
+    }
+
     // `create_file`, `create_directory`, `delete`, `rename`, and
     // `write_from_stream` inherit the trait's `NotSupported` default. Only
     // `create_directory_all` is overridden: its default would walk `exists()`

@@ -25,6 +25,7 @@ fn volume(id: &str) -> LocationInfo {
         supports_trash: true,
         smb_connection_state: None,
         usb_speed: None,
+        capabilities: None,
     }
 }
 

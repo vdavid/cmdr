@@ -4,21 +4,27 @@
 
 use super::{LocationInfo, SmbConnectionState, is_smb_fs_type};
 
-/// Returns true if the filesystem type is SMB (macOS `smbfs` or Linux `cifs`).
-/// Enriches volume entries with SMB connection state from the `VolumeManager`.
+/// Enriches discovered locations with everything only the registered `Volume`
+/// knows: its capability surface and its SMB connection state.
 ///
-/// For each volume, looks up the registered `Volume` in `VolumeManager` and reads
-/// its `smb_connection_state()` if any. SMB shares without a direct smb2 session
-/// (typical OS-mounted shares before auto-upgrade) are tagged as `OsMount` so
-/// the FE picker can show the yellow indicator.
+/// Discovery builds a `LocationInfo` from the mount (name, path, icon, fs type);
+/// what the BACKEND can do lives on the `Volume` in `VolumeManager`, and this is
+/// where the two meet. For each location it looks up the registered volume by id
+/// and copies `capabilities()` plus `smb_connection_state()` across. A location
+/// with no registered volume (a favorite, or one discovery found before
+/// registration) keeps `capabilities: None`, and the frontend falls back to its
+/// per-kind defaults. SMB shares without a direct smb2 session (typical
+/// OS-mounted shares before auto-upgrade) are tagged `OsMount` so the picker can
+/// show the yellow indicator.
 ///
 /// Used by the `list_volumes` IPC call, the `volumes-changed` push, and the MCP
 /// `cmdr://state` resource — all three need the same enrichment, so it lives in
 /// one place. Add new enrichment fields here, not at each call site.
-pub fn enrich_smb_connection_state(volumes: &mut [LocationInfo]) {
+pub fn enrich_from_volume_registry(volumes: &mut [LocationInfo]) {
     let manager = crate::file_system::volume::manager::get_volume_manager();
     for vol in volumes.iter_mut() {
         if let Some(registered) = manager.get(&vol.id) {
+            vol.capabilities = Some(registered.capabilities());
             vol.smb_connection_state = registered.smb_connection_state();
         }
 

@@ -697,3 +697,13 @@ async fn remote_archive_reports_a_damaged_zip_typed_not_a_panic() {
         "a non-zip remote file lists as a typed error, got {result:?}"
     );
 }
+
+/// The shared writability-declaration assertion, from the read-only side: an
+/// archive volume declares no writes and refuses them.
+#[tokio::test]
+async fn is_writable_honors_the_shared_declaration_contract() {
+    let archive = TestArchive::from_entries(&[deflated("dir/b.txt", "world")]);
+    let volume = archive.volume();
+
+    cmdr_fs::volume::conformance::assert_writability_matches_the_mutations_offered(&volume, Path::new("scratch")).await;
+}
