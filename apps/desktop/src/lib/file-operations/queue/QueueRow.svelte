@@ -45,9 +45,9 @@
      *  so a control is a plain `void op?.thing()`. */
     const op = $derived(session.current)
 
-    /** A paused op stays in the write-op-state map and reports `is_running:true`,
-     *  so the bar-is-moving truth is the SNAPSHOT status, never the progress
-     *  event. Only a `running` op shows the live spinner / animated bar. */
+    /** The bar-is-moving truth is the SNAPSHOT status, never the progress event:
+     *  a parked op emits no further ticks, so its last one describes a transfer
+     *  that has stopped. Only a `running` op shows the live spinner / animated bar. */
     const isRunning = $derived(status === 'running')
     const isPaused = $derived(status === 'paused')
     const isQueued = $derived(status === 'queued')

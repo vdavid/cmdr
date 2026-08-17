@@ -69,7 +69,7 @@ export interface OperationSession extends OperationSessionCommands {
    *  Holds its LAST known row after the operation leaves the snapshot. */
   readonly snapshot: OperationSnapshot | null
   /** The lifecycle status: `queued` / `running` / `paused` / … . The
-   *  bar-is-moving truth, never `is_running`. */
+   *  bar-is-moving truth, and the only one every surface reads. */
   readonly status: OperationSnapshot['status'] | null
   /** The latest `write-progress` tick, or `null` before the first one. */
   readonly progress: WriteProgressEvent | null
@@ -192,9 +192,9 @@ export function createOperationSession(operationId: string, fanout: OperationEve
    *  deciding.
    *
    *  Two signals, because two shapes of operation report differently: the
-   *  lifecycle STATUS carries the pause (never `is_running` — a parked
-   *  operation still answers `true` there), and the backend's own wait
-   *  classification carries the clash. Both are known-facts tests, so a session
+   *  lifecycle STATUS carries the pause, and the backend's own wait
+   *  classification carries the clash (an operation parked on one is still
+   *  `running`). Both are known-facts tests, so a session
    *  that hasn't heard anything yet says "not waiting" and its first frames
    *  render normally rather than blanking a running transfer. */
   function awaitingHuman(): boolean {
@@ -251,9 +251,9 @@ export function createOperationSession(operationId: string, fanout: OperationEve
     }
   }
 
-  // The lifecycle status is what the toggle steers by. ❌ Never `is_running`: a
-  // parked operation stays in the write-op state map and answers `true` there,
-  // so a toggle reading it would try to pause what is already paused.
+  // The toggle steers by the lifecycle status this session already holds. ❌ Never
+  // a round trip: the answer is on screen, and one asked for would arrive
+  // describing a state the user may have changed while it was in flight.
   const commands = createOperationSessionCommands(operationId, () => snapshot?.status === 'paused')
 
   // Claim, flush, and go live are ONE synchronous block. Nothing may `await`

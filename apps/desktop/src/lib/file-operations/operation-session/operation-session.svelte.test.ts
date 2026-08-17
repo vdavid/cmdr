@@ -391,9 +391,9 @@ describe('derived read state', () => {
 describe('commands', () => {
   it('toggles the way the registry snapshot points, not the way the progress event does', async () => {
     const { fanout, session, dispose } = harness()
-    // The trap in one emit pair: a parked operation keeps answering
-    // `is_running: true` and its last tick still says `copying`, while the
-    // snapshot is the only thing that knows it stopped.
+    // The trap in one emit pair: a parked operation's last tick still says
+    // `copying`, and no further tick comes, so the snapshot is the only thing
+    // that knows it stopped.
     fanout._testEmit({ kind: 'progress', event: progress('a', { phase: 'copying' }) })
     fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'paused')] })
 

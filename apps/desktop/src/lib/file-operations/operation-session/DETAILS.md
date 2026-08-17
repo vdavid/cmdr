@@ -216,7 +216,7 @@ Non-redundant on purpose: `progress` is the latest raw tick (phase, counts, `cur
 `filesPerSecond`), `readout` is the same tick's numbers branded through `transferReadout`, and the rest is what the tick
 alone cannot tell you.
 
-- `snapshot` / `status`: the registry row. The lifecycle status is the bar-is-moving truth, never `is_running`.
+- `snapshot` / `status`: the registry row, carrying the backend's `LifecycleStatus`. That is the bar-is-moving truth.
 - `phase`: `null` before the first tick, then `scanning` and the write phases. Views gate on it (a scanning operation
   has written nothing, so Rollback makes no sense for it).
 - `bytesPerSecondDisplay` / `filesPerSecondDisplay` / `etaSecondsDisplay`: the numbers a view is allowed to print. The
@@ -279,10 +279,10 @@ nothing; a refused request lets go, because the operation is still running and t
 Rollback is refused once a cancel is on its way (there is nothing left to put back), but cancel is deliberately NOT
 refused during a rollback: "stop undoing and keep what's left" is a real thing to want, and this is the only way to ask.
 
-**`togglePause` reads the registry snapshot's lifecycle status.** A paused operation stays in the write-op state map and
-answers `is_running: true`, so a toggle keyed on that would try to pause what is already parked. The commands module
-takes the status as a predicate for exactly this reason, and `operation-session-commands.svelte.test.ts` pins it by
-asserting the status query is never made at all.
+**`togglePause` reads the registry snapshot's lifecycle status**, which the session already holds, and the commands
+module takes it as a PREDICATE rather than querying for it. `operation-session-commands.svelte.test.ts` pins that by
+asserting `getOperationStatus` is never called at all: a toggle that asked the backend which way to go would spend a
+round trip on an answer already on screen, and act on a state that may have changed while the answer was in flight.
 
 ### Answering a clash is a delegation
 

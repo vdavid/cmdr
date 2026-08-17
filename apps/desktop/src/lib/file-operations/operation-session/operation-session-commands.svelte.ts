@@ -47,7 +47,7 @@ export interface OperationSessionCommands {
   resume: () => Promise<boolean>
   /** The single Pause/Resume button every surface renders. Which way it goes is
    *  decided from the registry snapshot, never from the caller's idea of the
-   *  state and never from `is_running`. */
+   *  state. */
   togglePause: () => Promise<boolean>
   /** Stop, keeping what has already been written. Goes through the manager, so
    *  an operation still queued behind a busy lane is dropped before it spawns. */
@@ -81,8 +81,9 @@ export interface OperationSessionCommands {
  * would offer a button the first one has already used.
  *
  * @param isPaused reads the operation's lifecycle status out of the registry
- *   snapshot. A paused operation still answers `is_running: true`, so that is
- *   the one thing the toggle may not ask.
+ *   snapshot the session already holds. A PREDICATE rather than a query on
+ *   purpose: ❌ the toggle must not spend a round trip on an answer that is
+ *   already on screen, and would arrive possibly stale.
  */
 export function createOperationSessionCommands(operationId: string, isPaused: () => boolean): OperationSessionCommands {
   let pauseInFlight = $state(false)

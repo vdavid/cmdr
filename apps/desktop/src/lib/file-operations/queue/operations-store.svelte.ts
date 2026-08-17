@@ -27,9 +27,9 @@
  * the younger one takes to converge, and a view that attaches late is the whole
  * point of the session design. ❌ Never put a smoother back in here.
  *
- * IMPORTANT: a paused op still reports `is_running: true` from the backend
- * status query (it stays in the write-operation-state map). The bar-is-moving
- * truth is the SNAPSHOT `status`, never `is_running`. Read `row.status`.
+ * The bar-is-moving truth is the SNAPSHOT `status` (the backend's
+ * `LifecycleStatus`). Read `row.status`, never a progress event: a parked op
+ * emits no further ticks, so the last one describes a transfer that has stopped.
  */
 
 import {

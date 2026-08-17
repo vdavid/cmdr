@@ -28,9 +28,9 @@ export interface ChipOperation {
   /** The same value as a whole number, so the chip's spoken percentage and the
    *  bar's `aria-valuenow` can't round differently. */
   percent: number
-  /** The user paused this one: the bar is frozen, not moving. A paused
-   *  operation still reports `is_running: true` from the backend, so this comes
-   *  from the snapshot status and nowhere else. */
+  /** The user paused this one: the bar is frozen, not moving. Comes from the
+   *  snapshot's `LifecycleStatus` and nowhere else, so the chip and the queue
+   *  row can't disagree about the same operation. */
   paused: boolean
   /** The operation is counting, not yet writing. Its totals are what the scan
    *  is FOR, so both stay 0 and `fraction` cannot move: the chip shows an

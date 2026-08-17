@@ -9,9 +9,10 @@ const { commandMocks } = vi.hoisted(() => ({
     resolveWriteConflict: vi.fn<
       (id: string, conflictId: number, resolution: string, applyToAll: boolean) => Promise<string>
     >(() => Promise.resolve('resolved')),
-    /** The `is_running` trap: a paused operation still reports `true` here, so
-     *  nothing in a session may ask. Mocked so a test can prove it isn't asked. */
-    getOperationStatus: vi.fn(() => Promise.resolve({ isRunning: true })),
+    /** Mocked only so a test can prove the toggle never asks: the session
+     *  already holds the lifecycle status, so a query would be a round trip for
+     *  an answer on screen. */
+    getOperationStatus: vi.fn(() => Promise.resolve({ lifecycle: 'running' })),
   },
 }))
 
@@ -115,10 +116,10 @@ describe('the pause toggle', () => {
     dispose()
   })
 
-  it('never asks the backend whether the operation is running', async () => {
-    // A paused operation stays in the write-op state map and answers
-    // `is_running: true`, so a toggle keyed on it would try to pause an
-    // operation that is already parked. The snapshot status is the only truth.
+  it('never asks the backend which way to toggle', async () => {
+    // The session already holds the lifecycle status. Asking would spend a round
+    // trip on an answer that is on screen, and act on a state the user may have
+    // changed while it was in flight.
     const { commands, dispose } = harness(true)
 
     await commands.togglePause()

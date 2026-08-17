@@ -25,9 +25,9 @@ queue (⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system
 - **Rows cover copy/move/delete/trash AND the instant ops** (`rename` / `create_folder` / `create_file`), which emit no
   `write-progress`, so they're a spinner + label with no bars. Icon and label arms (`operation-icon.ts`) take the
   SNAKE_CASE wire values.
-- **A paused op still reports `is_running: true`** — the bar-is-moving truth is the SNAPSHOT `status`, and the status
-  column names that LIFECYCLE except where the op stopped or reversed with nothing else saying so: a rollback and an
-  unanswered clash (`session.awaitingAnswer`, ❌ never a raw `progress.activity`). DETAILS § "A row parked on a clash".
+- **The bar-is-moving truth is the SNAPSHOT `status`** (the backend's `LifecycleStatus`), and the status column names
+  that LIFECYCLE except where the op stopped or reversed with nothing else saying so: a rollback and an unanswered
+  clash (`session.awaitingAnswer`, ❌ never a raw `progress.activity`). DETAILS § "A row parked on a clash".
 - **A running OR queued row can be `phase: 'scanning'`**: compact `ScanPhaseBody`, ❌ no dual bar (totals are 0), no
   Pause, no Rollback. DETAILS § "A scanning row".
 - **A failed row STAYS until someone dismisses it**: the page hides only `done` / `cancelled` (`isHiddenSettledStatus`,

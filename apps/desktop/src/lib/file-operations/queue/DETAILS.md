@@ -67,11 +67,11 @@ constructions to keep it that way.
 registry moves, so a binding that re-ran per row object would hand the operation a fresh smoother mid-transfer, every
 time some unrelated operation started or finished. `bindOperationSession` derives the id string for exactly that reason.
 
-### Why snapshot status, not `is_running`
+### Why rows read the snapshot status
 
-A paused Running op stays in `WRITE_OPERATION_STATE`, so `get_operation_status().is_running` reports `true` while paused
-("running but not progressing"). The bar-is-moving truth is therefore the snapshot `status`: only `'running'` shows the
-spinner and an animated bar; `'paused'` shows a static bar and the Paused label. Rows never read `is_running`.
+The bar-is-moving truth is the snapshot `status`, the backend's `LifecycleStatus`: only `'running'` shows the spinner
+and an animated bar; `'paused'` shows a static bar and the Paused label. Every surface reads that one enum, so the
+corner chip, the queue row, and the progress dialog cannot disagree about the same operation.
 
 ## Store public API (the progress-dialog reuse contract)
 

@@ -26,8 +26,8 @@ operation is now plus what you can do to it. Views bind and command through it; 
 - **❌ No `$derived` in a session** (it outlives the view that created it). Compose in the getter.
 - **A scanning operation reads as live and counting, never 0%**: totals stay 0, so branch on `phase === 'scanning'`.
 - **No command throws, and each says whether it landed**: `false` or a `null` verdict means nothing was sent, so leave
-  the screen alone. `togglePause` steers by the lifecycle status, ❌ never `is_running` (a parked one still says
-  `true`); cancel goes through the MANAGER, rollback through the write op.
+  the screen alone. `togglePause` steers by the snapshot's `LifecycleStatus` it already holds, never a round trip;
+  cancel goes through the MANAGER, rollback through the write op.
 - **An answer NAMES its clash**: `resolveConflict(conflictId, …)` releases THAT clash only, and so does the
   `conflictResolved` delivery, which is how a clash answered by ANOTHER surface (or by an agent over MCP) stops being
   shown here. ❌ Never clear on "an answer came back", never privilege one surface, never refuse a clash this session
