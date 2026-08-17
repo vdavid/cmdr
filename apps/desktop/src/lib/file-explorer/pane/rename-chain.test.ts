@@ -108,6 +108,33 @@ describe('chaining the rename to the next file with the arrow keys', () => {
     ])
   })
 
+  it('keeps the live session editing while the earlier saves land behind it, in any order', async () => {
+    const inFlight = slowBackend()
+    const listing = chainListing(['a.txt', 'b.txt', 'c.txt'])
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('one.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+    flow.handleRenameInput('two.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+    flow.handleRenameInput('three.txt')
+
+    // Both earlier saves come back while the third name is still being typed,
+    // and the second one beats the first.
+    inFlight[1].resolve({ type: 'success', newName: 'two.txt' })
+    inFlight[0].resolve({ type: 'success', newName: 'one.txt' })
+    await inFlight[1].promise
+    await inFlight[0].promise
+    await Promise.resolve()
+
+    expect(rename.active).toBe(true)
+    expect(rename.target?.originalName).toBe('c.txt')
+    expect(rename.currentName).toBe('three.txt')
+    // Neither may drag the cursor back to the file it renamed.
+    expect(flow.pendingCursorName).toBeNull()
+  })
+
   it('renames the row that was beside the editor, not the file the cursor still reports', () => {
     // `entryUnderCursor` is filled by an async read keyed on the cursor index, so
     // right after a hop it still names the file the chain just left. Activating

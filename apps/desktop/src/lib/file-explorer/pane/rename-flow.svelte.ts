@@ -164,7 +164,8 @@ export function createRenameFlow(deps: RenameFlowDeps) {
    */
   function startRenameOnEntry(entry: FileEntry): void {
     clearPendingRenameActivation()
-    // A chained step is a user rename like any other: it keeps the warning.
+    // The next session validates its extension under the user's own setting;
+    // only an auto-started rename (paste-clipboard-as-file) suppresses that.
     suppressExtensionWarningOnce = false
     activateRename(entry)
   }
@@ -187,6 +188,9 @@ export function createRenameFlow(deps: RenameFlowDeps) {
    * firing it here is what tags it with the session that typed it. Activating
    * first would hand the in-flight save the NEW session's id and blind every
    * supersession guard at once.
+   *
+   * It skips the extension check because a dialog can't stop a chain: it would
+   * ask about a file the user has already moved past.
    */
   function stepTo(index: number, entry: FileEntry): void {
     if (rename.hasChanged()) void executeFlow(true)
