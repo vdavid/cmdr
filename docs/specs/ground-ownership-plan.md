@@ -72,7 +72,7 @@ An implementing agent cannot check off what it changed without this table. It is
 | 4   | Automatic registry rescan    | `manager::perform_registry_rescan`                          | Whole volume                                                                                     | Background       |
 | 5   | Completion-retry resume      | `completion_retry::nudge` → `resume_the_phases`             | Whole volume, phases only                                                                        | Background timer |
 | 6   | Local full scan              | `IndexManager::start_scan` (executor for 3 and 4)           | Whole volume                                                                                     | —                |
-| 7   | Journal replay               | `lifecycle/manager/start.rs:22`                             | Whole volume, **does not walk**                                                                  | Launch           |
+| 7   | Journal replay               | `lifecycle/manager/start.rs:22`                             | Whole volume, **does not walk but WRITES** (holds an `Exclusive` claim as of M2)                 | Launch           |
 | 8   | Network trait scan           | `lifecycle/network_scan.rs:187`                             | Whole volume                                                                                     | User + reconnect |
 | 9   | Live event loop              | `watch/event_loop/live.rs`                                  | Per-event, per-dir                                                                               | Continuous       |
 | 10  | Deep `MustScanSubDirs` drain | `reconcile/reconciler/rescan/`                              | Subtree (anchor)                                                                                 | Background       |
@@ -165,8 +165,13 @@ through the reconciler, and both allocate fresh ids for the same names: the `INS
 module exists to prevent (`lifecycle/cover/live.rs:6-11`).
 
 **Because M2 keeps `mgr.scanning` set by scans and keeps `cover_context_for` reading it (see M2), replay's suppression
-survives untouched. Do not "tidy" `cover_context_for` onto the claim table.** Its `mgr.scanning` read is load-bearing
-for a holder that has no claim to take. Document that at the call site; it is the least obvious thing in this plan.
+of new cover walks survives untouched. Do not "tidy" `cover_context_for` onto the claim table.**
+
+⚠️ **This constraint saw half the coupling, and M2 found the other half.** The SCAN ENTRIES read the same flag, so it
+was also the only thing refusing a truncating rescan during replay — and a user's "Rescan now" on a replaying boot disk
+reaches `start_scan`. Replay therefore DOES take a claim as of M2: it writes the whole volume through the reconciler,
+which is exactly the collision the table exists to prevent. What it doesn't do is WALK, which is why
+`cover_context_for`'s read stays. See the M2 note under § Milestones.
 
 Related, for whoever touches replay next: the fallback signals at `watch/event_loop/replay.rs:159`, `:246`, `:286` fire
 `perform_registry_rescan` while replay's `scanning` is still true.
@@ -190,7 +195,46 @@ Related, for whoever touches replay next: the fallback signals at `watch/event_l
 
 M0 is independent. M1 → M2 → M3 → M4 are sequential. M5, M6, M7 are independent of each other.
 
-**M0 and M1 are shipped.** What executing them changed about the rest of this plan:
+**M0, M1, and M2 are shipped.** What executing M2 changed about the rest of this plan:
+
+- **The plan was WRONG that the entries' `mgr.scanning` read was only about scans.** `start_replay` sets the same flag
+  (`manager/start.rs:67`), so that read was ALSO the only thing refusing a truncating rescan during journal replay —
+  reachable today, since a user's "Rescan now" on a replaying boot disk goes `force_scan` → `cover_or_scan` →
+  `start_scan` (replay implies a completed scan, so `first_index_is_the_machines` is false). Constraint 5 spotted the
+  `cover_context_for` half of the coupling and missed this one. Dropping the read without replacing it would have let a
+  truncate land under a live replay: the `INSERT OR IGNORE` hazard, principle #1.
+  **Resolution: `start_replay` takes an `Exclusive` claim**, dropped in `run_replay_event_loop` beside the
+  `scanning.store(false)` that ends the replay phase. Replay does write the whole volume through the reconciler, so the
+  claim is honest — what it does NOT do is walk, which is why `cover_context_for` still reads `mgr.scanning` exactly as
+  constraint 5 says. ⚠️ Whoever revisits this: ❌ never drop replay's claim where the replay TASK ends. That task goes
+  on to run the live loop for the session.
+- **The claim is owned by the work, not by a slot on the manager.** M2 named the choice as open; this is the answer.
+  `ScanCompletion` gets the local scan's, the spawned completion task gets the network one, `ReplayConfig` gets
+  replay's, and each drops it where it clears `mgr.scanning`. So `stop_scan` and `shutdown` have nothing to release,
+  which is the point: cancelling a walk is a REQUEST, and the thread keeps writing until it notices, so a slot would
+  hand the ground back while rows were still landing. The cost is a divergence from today, and it is deliberate — a
+  scan started immediately after a `stop_scan` is refused until the cancelled walk actually stops. The exposure is a
+  debug-panel Stop-then-Start pair (`stop_drive_index` is the only door), and it closes a truncate-under-a-live-walk
+  window that the flag left open. A hung walk thread now holds its volume, where before a stop-and-rescan could
+  (unsafely) get out of it.
+- **`Claim::take` reports the mode as `refused_by`, read PRE-take.** Precise rather than "somebody else is here": a
+  claim's own roots can never refuse its first root, so a refusal is reported only when the claim got no ground at all.
+  A self-overlapping frontier reads as refused by nobody.
+- **`run_replay_event_loop` was already at clippy's 7-argument ceiling**, so replay's claim rides in `ReplayConfig`
+  rather than as an eighth parameter.
+- **Invariant density went UP again, by 3 net** across the four docs M2 touched (`lifecycle/CLAUDE.md` 18→18,
+  `lifecycle/DETAILS.md` 23→25, `cover/CLAUDE.md` 11→12, `cover/DETAILS.md` 10→10; subsystem 380→383). One rule was
+  deleted as obsolete ("❌ don't collapse the three questions" — they are collapsed) and one as a duplicate, but the
+  claim's non-local lifetime and replay's invisible holding are new hazards that need saying. ⚠️ **So after three of the
+  four milestones the count has not fallen, and M4 alone has to reverse +12.** M4 absorbs `OWED`, which is one
+  mechanism's worth of rules; that is unlikely to be enough. Whoever runs M4 should report the number plainly and, if it
+  is still up, say the thesis was wrong rather than shave docs to make it true.
+- **A gap M2 leaves open, honestly:** nothing tests that replay holds its claim. There is no replay-loop test harness in
+  the repo (`watch/event_loop/tests/` has none), and building one means a real `DriveWatcher` over a temp tree. What IS
+  covered is the mechanism it relies on: an `Exclusive` holder refuses a scan, and a scan's ground comes back on every
+  outcome.
+
+What executing M0 and M1 changed:
 
 - **The performance section understated the claim table by more than an order of magnitude, and M1's numbers are in.**
   It guessed "plausibly tens of milliseconds" for the `Vec` scan on the grounds that these are plain string comparisons.
@@ -252,7 +296,7 @@ stay and grow.
 
 **Docs:** `lifecycle/cover/CLAUDE.md` + `DETAILS.md`. **Checks:** `pnpm check rust`.
 
-### M2 — The scan entries take an Exclusive claim as their guard
+### M2 — The scan entries take an Exclusive claim as their guard ✅ DONE
 
 **Intent:** collapse `mgr.scanning`'s guard reader and `ground_being_walked` into one question. ❌ **This milestone does
 NOT stop scans from setting `mgr.scanning`.**
@@ -289,11 +333,9 @@ See the product calls section.
 Additive holders only. **Filter it to Additive**, so the field keeps meaning what its doc says (another _walk_ has this
 ground) and `StartOutcome::DeferredUntilSearchEnds` does not become a misnomer.
 
-**Open mechanism to name during implementation:** `stop_scan` (`lifecycle/manager.rs:573`) and `shutdown` (`:742`) clear
-`scanning` from the manager and hold no `ScanCompletion`, so they have nowhere to drop the claim from. Either the claim
-gets a shared slot on the manager, or `stop_scan` clears the flag while the claim lives until the completion task drops
-it, which diverges from today's immediately-startable-again behavior. Pick one and write it down; it is part of the cost
-this milestone already flags.
+**Open mechanism, answered:** neither `stop_scan` (`lifecycle/manager.rs`) nor `shutdown` releases anything. The claim
+belongs to the work, so the run's own ending frees the ground, and the two of them only cancel. See the M2 note above
+for why that beats a shared slot on the manager and what it costs.
 
 **The claim's lifetime is the hard part, and it is not RAII-local.** `start_scan` returns while the scan runs, and
 `scanning` is cleared on other threads at `lifecycle/scan_completion.rs:112`, `lifecycle/manager.rs:573` (`stop_scan`),
@@ -311,8 +353,10 @@ assertions stay valid, since the store stays. Add claim-level tests for the guar
 
 ### M3 — `mgr.scanning` is renamed to say what it now is
 
-**Intent:** after M2 the flag is a **reporting and buffering signal**, not a guard. This is a rename plus a narrowed doc
-comment, ❌ not a split and ❌ not a deletion.
+**Intent:** after M2 the flag is a **reporting and buffering signal**, plus ONE remaining guard: `cover_context_for`,
+which is how a replaying or scanning volume refuses a NEW cover walk. This is a rename plus a narrowed doc comment,
+❌ not a split and ❌ not a deletion. ⚠️ A name that says "reporting only" would be a lie; pick one that covers the
+`cover_context_for` reader too.
 
 Full reader inventory (seven, and every one stays):
 
@@ -330,8 +374,9 @@ Full reader inventory (seven, and every one stays):
 
 **Tests:** the transport buffering ordering gets test-first coverage.
 
-**Doc sweep:** `cover/cold_drive_tests/rescans.rs:130-134` and `cover/network_tests.rs:321-323` carry doc comments
-describing the `mgr.scanning` guard. Both go stale at M2; update them here.
+**Doc sweep:** ✅ done in M2 rather than deferred — `cover/cold_drive_tests/rescans.rs` and `cover/network_tests.rs`
+carried doc comments describing the `mgr.scanning` guard, and a doc that stops being true is fixed where it stops being
+true.
 
 **Checks:** `pnpm check rust`, plus the SMB lane.
 
@@ -343,9 +388,12 @@ describing the `mgr.scanning` guard. Both go stale at M2; update them here.
 (three sites in `lifecycle/state/teardown.rs:40,174,205`, three in `force_scan`). Those relocate; they do not vanish.
 
 - Release marks under the lock; a lock-free peek decides; the waiter is **spawned onto the runtime**. Constraint 3.
-- **Every post-M2 release site needs the runner**, not just the cover walk's: after M2 the claim is also released in
-  `lifecycle/scan_completion.rs`, `stop_scan`, and `shutdown`. `scan_completion.rs` has no such call today. **Miss this
-  and a rescan deferred behind a full scan never fires.** This is the M2→M4 seam; treat it as the milestone's main risk.
+- **Every post-M2 release site needs the runner**, not just the cover walk's. ⚠️ **The three sites are not the ones
+  this plan guessed**: `lifecycle/scan_completion.rs` (the local scan), the spawned completion task in
+  `lifecycle/network_scan.rs` (the trait scan), and `watch/event_loop/replay.rs` (the replay phase's end). ❌ NOT
+  `stop_scan` and ❌ NOT `shutdown` — they release nothing, because the claim belongs to the work. None of the three has
+  a `run_if_owed` call today. **Miss one and a rescan deferred behind that holder never fires.** This is the M2→M4 seam;
+  treat it as the milestone's main risk.
 - **The real silent loss is `lifecycle/state/scan_control.rs:145`**, not `:153`. The `Ok(()) | Err(AlreadyScanning)` arm
   forgets the request and answers `Started`, throwing a manual rescan away while reporting success. (`:153` returns
   `Err(diagnostic)` to the caller, so nothing is silent there.) ⚠️ Per M2's resolution this arm's behavior is
