@@ -10,7 +10,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import { pathInsideArchive } from './volume-capabilities'
 import type { FileEntry } from '../types'
 import type { StartRenameOptions } from './types'
-import type { createRenameState } from '../rename/rename-state.svelte'
+import type { createRenameState, RenameSessionId } from '../rename/rename-state.svelte'
 
 export interface RenameFlowDeps {
   rename: ReturnType<typeof createRenameState>
@@ -104,6 +104,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     }
 
     rename.activate(target)
+    const sessionId = rename.sessionId
     // Seed a proposed name (MCP `rename`) instead of the current one, and validate
     // it so a bad proposal shows the red border immediately (siblings load async;
     // they re-validate on the first keystroke). The editor still selects the
@@ -122,6 +123,9 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     renameSiblingNames = []
 
     void loadSiblingNames(entry.name).then((names) => {
+      // A load that finishes after a newer session started would hand that
+      // session the wrong directory to check its name against.
+      if (rename.isSuperseded(sessionId)) return
       renameSiblingNames = names
     })
 
@@ -129,7 +133,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     const currentVolumeId = deps.getVolumeId()
     if (!currentVolumeId.startsWith('mtp-') && !pathInsideArchive(entry.path)) {
       void checkPermission(entry.path).then((errorMsg) => {
-        if (errorMsg && rename.active && rename.target?.path === entry.path) {
+        if (errorMsg && rename.active && !rename.isSuperseded(sessionId)) {
           rename.cancel()
           addToast(errorMsg, { level: 'error' })
           restoreFocus()
@@ -161,7 +165,45 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     }
   }
 
-  function handleRenameResult(result: RenameResult, trimmedName: string) {
+  /**
+   * Reports a save whose session has since been superseded by a newer one.
+   *
+   * Such a save may only SPEAK (a toast, a background refresh); everything it
+   * used to steer now belongs to a different file. Cancelling would close the
+   * editor the user is typing in, shaking would blame the wrong file, moving the
+   * cursor would yank it off the file being edited, and a dialog would ask about
+   * a file the user has already moved past. The forbidden moves aren't guarded
+   * here, they're absent.
+   */
+  function reportSupersededResult(result: RenameResult) {
+    switch (result.type) {
+      case 'success':
+        // The rename landed; if the new name hides the file, say so.
+        if (result.newName.startsWith('.') && !deps.getShowHiddenFiles()) {
+          addToast(tString('fileExplorer.rename.hiddenAfterRename'), { level: 'info' })
+        }
+        break
+      case 'error':
+        addToast(result.message, { level: 'error' })
+        break
+      case 'timeout':
+        addToast(result.message, { level: 'warn', dismissal: 'persistent' })
+        void refreshListing(deps.getListingId())
+        break
+      case 'noop':
+      case 'conflict':
+      case 'extension-ask':
+        // Nothing happened on disk, and neither question can be put to a user who
+        // has moved on: the edit is dropped.
+        break
+    }
+  }
+
+  function handleRenameResult(result: RenameResult, trimmedName: string, sessionId: RenameSessionId) {
+    if (rename.isSuperseded(sessionId)) {
+      reportSupersededResult(result)
+      return
+    }
     switch (result.type) {
       case 'noop':
         rename.cancel()
@@ -222,12 +264,15 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     const target = rename.target
     if (!target) return
 
+    // Captured up front, together with the target: the save answers for the
+    // session that sent it, whatever is on screen when it comes back.
+    const sessionId = rename.sessionId
     const trimmedName = rename.getTrimmedName()
     const extensionPolicy = effectiveExtensionPolicy()
     const currentVolumeId = deps.getVolumeId()
 
     const result = await executeRenameSave(target, trimmedName, extensionPolicy, skipExtensionCheck, currentVolumeId)
-    handleRenameResult(result, trimmedName)
+    handleRenameResult(result, trimmedName, sessionId)
   }
 
   return {
@@ -376,6 +421,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
 
     handleConflictResolve(resolution: RenameConflictResolution) {
       const target = rename.target
+      const sessionId = rename.sessionId
       const trimmedName = conflictDialogState?.trimmedName
       conflictDialogState = null
 
@@ -393,7 +439,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
           void moveToTrash(conflictPath)
             .then(() => performRename(target, trimmedName, true, currentVolumeId))
             .then((result) => {
-              handleRenameResult(result, trimmedName)
+              handleRenameResult(result, trimmedName, sessionId)
             })
             .catch((e: unknown) => {
               if (isIpcError(e) && e.timedOut) {
@@ -405,6 +451,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
               } else {
                 addToast(getIpcErrorMessage(e), { level: 'error' })
               }
+              if (rename.isSuperseded(sessionId)) return
               rename.cancel()
               restoreFocus()
             })
@@ -412,7 +459,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         }
         case 'overwrite-delete':
           void performRename(target, trimmedName, true, currentVolumeId).then((result) => {
-            handleRenameResult(result, trimmedName)
+            handleRenameResult(result, trimmedName, sessionId)
           })
           break
         case 'cancel':
@@ -425,7 +472,15 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       }
     },
 
-    handleRenameCancel() {
+    /**
+     * Escape, Tab, or the editor losing focus: discard.
+     *
+     * `sessionId` is the session the editor was opened for. A superseded editor
+     * blurs as it unmounts, and that blur must not end the session that has
+     * taken its place.
+     */
+    handleRenameCancel(sessionId: RenameSessionId) {
+      if (rename.isSuperseded(sessionId)) return
       if (suppressBlurCancel) {
         suppressBlurCancel = false
         return

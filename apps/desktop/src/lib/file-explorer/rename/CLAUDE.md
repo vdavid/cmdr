@@ -32,6 +32,9 @@ Full details (the three-stage save flow, permission/validation tiers, post-renam
 - **Thread `volumeId` through `renameFile` / `checkRenameValidity` / `checkRenamePermission`.** Validity (conflict)
   checks work for all volumes via the Volume trait, but permission checks are skipped for MTP (Unix `access()` doesn't
   work on MTP virtual paths).
+- **Async work carries the session id it started with; a superseded session may only toast and refresh.** A save,
+  permission check, or editor cancel landing after a newer activation must never cancel, focus, shake, move the cursor,
+  or open a dialog. `DETAILS.md` § Rename sessions.
 - **Clicking outside the editor SAVES; blur alone discards.** The commit hangs off a document `mousedown` (capture) that
   `InlineRenameEditor` owns, never off blur: blur can't tell a click from the row scrolling out of the virtual window,
   and committing on a scroll would rename a file the user never decided to rename. Enter saves too; Escape, Tab, drag

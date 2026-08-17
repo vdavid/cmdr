@@ -1,10 +1,13 @@
 <script lang="ts">
     import { onMount, tick } from 'svelte'
     import { getExtension } from '$lib/utils/filename-validation'
+    import type { RenameSessionId } from './rename-state.svelte'
 
     interface Props {
         /** Current filename value (two-way bindable via onInput) */
         value: string
+        /** The rename session this editor was opened for; handed back with `onCancel` */
+        sessionId: RenameSessionId
         /** Validation severity for border coloring */
         severity: 'ok' | 'error' | 'warning'
         /** Whether the shake animation is active */
@@ -21,8 +24,8 @@
         onInput: (value: string) => void
         /** Called when Enter is pressed */
         onSubmit: () => void
-        /** Called when Escape is pressed or focus leaves */
-        onCancel: () => void
+        /** Called when Escape is pressed or focus leaves, naming the session that asked */
+        onCancel: (sessionId: RenameSessionId) => void
         /** Called when the user presses the mouse anywhere outside the input */
         onClickAway: () => void
         /** Called when shake animation ends */
@@ -31,6 +34,7 @@
 
     const {
         value,
+        sessionId,
         severity,
         shaking,
         ariaLabel,
@@ -45,6 +49,12 @@
     }: Props = $props()
 
     let inputElement: HTMLInputElement | undefined = $state()
+
+    // Read once, on purpose: this editor answers for the session it was OPENED
+    // for. When the next file's editor takes over, this one blurs on its way out
+    // and cancels — naming the session that is live by then would discard the
+    // edit the user has already started there.
+    const openedForSession = sessionId
 
     /** Focuses the input and selects the filename excluding the extension. */
     function focusAndSelect() {
@@ -77,13 +87,13 @@
         if (e.key === 'Escape') {
             e.preventDefault()
             e.stopPropagation()
-            onCancel()
+            onCancel(openedForSession)
             return
         }
         if (e.key === 'Tab') {
             e.preventDefault()
             e.stopPropagation()
-            onCancel()
+            onCancel(openedForSession)
             return
         }
         // Stop propagation of all keys to prevent app shortcuts
@@ -97,7 +107,7 @@
     }
 
     function handleBlur() {
-        onCancel()
+        onCancel(openedForSession)
     }
 
     /**

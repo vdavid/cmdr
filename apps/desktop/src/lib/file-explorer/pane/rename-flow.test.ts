@@ -43,13 +43,14 @@ vi.mock('$lib/ui/toast', () => ({ addToastForPane: addToastSpy, dismissTransient
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: (k: string) => k }))
 vi.mock('./volume-capabilities', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
 
+import { refreshListing } from '$lib/tauri-commands'
 import { createRenameFlow } from './rename-flow.svelte'
 import { createRenameState } from '../rename/rename-state.svelte'
 
 type Entry = { name: string; path: string; isDirectory: boolean }
 const PASTED: Entry = { name: 'pasted.txt', path: '/dir/pasted.txt', isDirectory: false }
 
-function buildFlow(getEntry: () => Entry | undefined = () => PASTED) {
+function buildFlow(getEntry: () => Entry | undefined = () => PASTED, showHiddenFiles = true) {
   const rename = createRenameState()
   const onRequestFocus = vi.fn()
   const flow = createRenameFlow({
@@ -59,7 +60,7 @@ function buildFlow(getEntry: () => Entry | undefined = () => PASTED) {
     getTotalCount: () => 0, // 0 → loadSiblingNames returns [] without hitting getFileRange
     getIncludeHidden: () => false,
     getCurrentPath: () => '/dir',
-    getShowHiddenFiles: () => true,
+    getShowHiddenFiles: () => showHiddenFiles,
     getVolumeId: () => 'root',
     getEntryUnderCursor: () => getEntry() as never,
     onRequestFocus,
@@ -263,7 +264,7 @@ describe('cancel (Escape, Tab, editor unmount)', () => {
 
     flow.startRename()
     flow.handleRenameInput('notes.md')
-    flow.handleRenameCancel()
+    flow.handleRenameCancel(rename.sessionId)
 
     expect(executeRenameSaveSpy).not.toHaveBeenCalled()
     expect(rename.active).toBe(false)
@@ -284,11 +285,11 @@ describe('cancel (Escape, Tab, editor unmount)', () => {
       expect(flow.conflictDialogState).not.toBeNull()
     })
 
-    flow.handleRenameCancel() // the dialog stealing focus blurred the editor
+    flow.handleRenameCancel(rename.sessionId) // the dialog stealing focus blurred the editor
     expect(rename.active).toBe(true)
 
     // One-shot: the next cancel (a real Escape) still ends the session.
-    flow.handleRenameCancel()
+    flow.handleRenameCancel(rename.sessionId)
     expect(rename.active).toBe(false)
   })
 })
@@ -335,7 +336,7 @@ describe('clicking outside the editor commits (Finder-style), never discards sil
     flow.handleRenameClickAway()
 
     // The browser moves focus right after the click; the editor blurs.
-    flow.handleRenameCancel()
+    flow.handleRenameCancel(rename.sessionId)
     expect(rename.active).toBe(true) // the save owns the session now
 
     save.resolve({ type: 'success', newName: 'notes.md' })
@@ -398,7 +399,7 @@ describe('clicking outside the editor commits (Finder-style), never discards sil
       expect(flow.conflictDialogState).not.toBeNull()
     })
 
-    flow.handleRenameCancel()
+    flow.handleRenameCancel(rename.sessionId)
     expect(rename.active).toBe(false)
   })
 
@@ -429,5 +430,107 @@ describe('clicking outside the editor commits (Finder-style), never discards sil
     flow.handleRenameClickAway()
 
     expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('a superseded rename session may speak, never steer', () => {
+  const NEXT: Entry = { name: 'next.txt', path: '/dir/next.txt', isDirectory: false }
+
+  /**
+   * Sends a save on `pasted.txt`, then activates a second session on `next.txt`
+   * while that save is still in flight. The test resolves the save by hand and
+   * asserts on what the late result was allowed to touch.
+   */
+  function supersededSave(showHiddenFiles = true) {
+    let entry: Entry = PASTED
+    const { rename, flow, onRequestFocus } = buildFlow(() => entry, showHiddenFiles)
+    const save = deferred<unknown>()
+    executeRenameSaveSpy.mockReturnValue(save.promise)
+
+    flow.startRename()
+    flow.handleRenameInput('notes.md')
+    flow.handleRenameSubmit()
+    const staleSessionId = rename.sessionId
+
+    entry = NEXT
+    flow.startRename() // the user has moved on; this session owns the editor now
+
+    /** Lets the save's continuation run before we assert on what it did. */
+    const landSave = async (result: unknown) => {
+      save.resolve(result)
+      await save.promise
+      await Promise.resolve()
+    }
+
+    return { rename, flow, onRequestFocus, staleSessionId, landSave }
+  }
+
+  it('a save landing after the user moved on leaves the live session editing', async () => {
+    const { rename, onRequestFocus, landSave } = supersededSave()
+
+    await landSave({ type: 'success', newName: 'notes.md' })
+
+    expect(rename.active).toBe(true)
+    expect(rename.target?.path).toBe(NEXT.path)
+    expect(onRequestFocus).not.toHaveBeenCalled() // focus belongs to the live editor
+  })
+
+  it('a save landing after the user moved on does not drag the cursor back to the file it renamed', async () => {
+    const { flow, landSave } = supersededSave()
+
+    await landSave({ type: 'success', newName: 'notes.md' })
+
+    expect(flow.pendingCursorName).toBeNull()
+  })
+
+  it('a save landing after the user moved on still says the file went hidden', async () => {
+    const { landSave } = supersededSave(false)
+
+    await landSave({ type: 'success', newName: '.notes.md' })
+
+    expect(addToastSpy.mock.calls[0][1]).toContain('hiddenAfterRename')
+  })
+
+  it('a problem reported after the user moved on toasts, but never shakes the file that is now being edited', async () => {
+    const { rename, landSave } = supersededSave()
+
+    await landSave({ type: 'error', message: 'The disk is read-only' })
+
+    expect(addToastSpy).toHaveBeenCalled()
+    expect(rename.shaking).toBe(false)
+    expect(rename.active).toBe(true)
+  })
+
+  it('a timeout reported after the user moved on still warns and refreshes the listing', async () => {
+    const { rename, landSave } = supersededSave()
+
+    await landSave({ type: 'timeout', message: 'This is taking a while' })
+
+    expect(addToastSpy).toHaveBeenCalled()
+    expect(refreshListing).toHaveBeenCalledWith('lst-1')
+    expect(rename.active).toBe(true)
+  })
+
+  it('a conflict reported after the user moved on never opens a dialog about it', async () => {
+    const { rename, flow, landSave } = supersededSave()
+
+    await landSave({ type: 'conflict', validity: { conflict: { name: 'notes.md' } } })
+
+    expect(flow.conflictDialogState).toBeNull()
+    expect(rename.active).toBe(true)
+  })
+
+  it('the blur from the superseded editor unmounting does not end the live session', async () => {
+    const { rename, flow, staleSessionId, landSave } = supersededSave()
+
+    flow.handleRenameCancel(staleSessionId)
+    expect(rename.active).toBe(true)
+    expect(rename.target?.path).toBe(NEXT.path)
+
+    // The live editor's own Escape still ends it.
+    flow.handleRenameCancel(rename.sessionId)
+    expect(rename.active).toBe(false)
+
+    await landSave({ type: 'success', newName: 'notes.md' })
   })
 })

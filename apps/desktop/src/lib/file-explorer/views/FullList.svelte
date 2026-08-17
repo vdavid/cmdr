@@ -59,7 +59,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
-    import type { RenameState } from '../rename/rename-state.svelte'
+    import type { RenameState, RenameSessionId } from '../rename/rename-state.svelte'
     import { formatByteSize } from '$lib/units'
 
     interface Props {
@@ -115,7 +115,7 @@
         /** Called when rename is submitted (Enter) */
         onRenameSubmit?: () => void
         /** Called when rename is cancelled */
-        onRenameCancel?: () => void
+        onRenameCancel?: (sessionId: RenameSessionId) => void
         /** Called when the user clicks outside the rename editor (which saves) */
         onRenameClickAway?: () => void
         /** Called when shake animation ends */
@@ -702,9 +702,10 @@
                                     ariaInvalid={renameState.validation.severity === 'error'}
                                     validationMessage={renameState.validation.message}
                                     focusTrigger={renameState.focusTrigger}
+                                    sessionId={renameState.sessionId}
                                     onInput={(v: string) => onRenameInput?.(v)}
                                     onSubmit={() => onRenameSubmit?.()}
-                                    onCancel={() => onRenameCancel?.()}
+                                    onCancel={(sessionId: RenameSessionId) => onRenameCancel?.(sessionId)}
                                     onClickAway={() => onRenameClickAway?.()}
                                     onShakeEnd={() => onRenameShakeEnd?.()}
                                 />

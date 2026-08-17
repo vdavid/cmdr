@@ -55,6 +55,30 @@ renamed to a dot-prefixed name while hidden files are off, show "Your file disap
 aren't shown." The `moveCursorToNewFolder()` pattern: subscribe to `directory-diff`, wait 50 ms after the event for the
 listing cache to update, query `findFileIndex()`, clean up the listener after a 3 s timeout.
 
+## Rename sessions
+
+One session is one activation of the editor, from the moment it opens until the save it sent comes back.
+`rename-state.svelte.ts` numbers them: `activate()` takes the next `sessionId`, and `isSuperseded(id)` answers whether a
+NEWER activation has happened since. A plain `cancel()` keeps the id, so ending the editing session (Escape, a blur)
+doesn't make the save that's already on its way a stranger to its own result.
+
+Everything that finishes asynchronously carries the id it started with: the save (`executeFlow` captures it beside the
+target), the permission check and sibling-name load (`activateRename`), the conflict dialog's follow-up rename, and the
+editor's own cancel.
+
+**A superseded session may speak, never steer.** `handleRenameResult` routes a late result to `reportSupersededResult`,
+which can only toast and refresh the listing in the background. It cannot cancel (that would close the editor the user
+is typing in), restore focus, shake (that would blame the file now on screen for a problem with a different one), set
+`pendingCursorName` (which makes `listing-diff-sync` jump the cursor to the renamed file and skip index reconciliation
+entirely), or open the conflict / extension dialog (nobody can answer a question about a file they've moved past). Those
+moves aren't guarded inside the superseded branch, they're absent from it.
+
+`InlineRenameEditor` takes its `sessionId` as a prop and reads it ONCE, at mount (`openedForSession`). An editor blurs
+on its way out when another takes over, and that blur cancels; reporting the session live by then would discard an edit
+that has already started. Reading it live would reintroduce exactly that. A one-shot "ignore the next cancel" flag is
+the wrong shape here: `suppressBlurCancel` shows how a one-shot waiting for a blur that never comes eats the user's next
+Escape instead.
+
 ## Ending a rename session
 
 Four ways in, each with a different meaning:

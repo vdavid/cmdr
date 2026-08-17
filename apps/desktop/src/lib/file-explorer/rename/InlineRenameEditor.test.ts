@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { mount, unmount, tick } from 'svelte'
+import { mount, unmount, tick, type ComponentProps } from 'svelte'
 import InlineRenameEditor from './InlineRenameEditor.svelte'
 
 const noop = () => {}
@@ -30,6 +30,7 @@ function setup(overrides: Record<string, unknown> = {}) {
       severity: 'ok',
       shaking: false,
       ariaLabel: 'Rename report.md',
+      sessionId: 1,
       ...handlers,
       ...overrides,
     },
@@ -118,6 +119,50 @@ describe('InlineRenameEditor keyboard and focus', () => {
 
     expect(onCancel).toHaveBeenCalledTimes(1)
     expect(onClickAway).not.toHaveBeenCalled()
+  })
+
+  it('names the rename session it belongs to when it discards', async () => {
+    const { input, onCancel } = setup({ sessionId: 7 })
+    await tick()
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    input.dispatchEvent(new FocusEvent('blur'))
+
+    expect(onCancel).toHaveBeenNthCalledWith(1, 7)
+    expect(onCancel).toHaveBeenNthCalledWith(2, 7)
+  })
+
+  it('names the session it was OPENED for, so its parting blur cannot end a newer one', async () => {
+    // Renaming down a run of files replaces this editor with one on the next
+    // file. The outgoing input blurs as it unmounts; reporting the session that
+    // is live BY THEN would discard the edit the user has already started.
+    // The live-reading getter is what a reactive `sessionId` read would see.
+    let liveSession = 4
+    const onCancel = vi.fn()
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const props = {
+      value: 'report.md',
+      severity: 'ok',
+      shaking: false,
+      ariaLabel: 'Rename report.md',
+      onInput: noop,
+      onSubmit: noop,
+      onCancel,
+      onClickAway: noop,
+      onShakeEnd: noop,
+      get sessionId() {
+        return liveSession
+      },
+    }
+    mount(InlineRenameEditor, { target, props: props as ComponentProps<typeof InlineRenameEditor> })
+    const input = target.querySelector('.rename-input') as HTMLInputElement
+    await tick()
+
+    liveSession = 5
+    input.dispatchEvent(new FocusEvent('blur'))
+
+    expect(onCancel).toHaveBeenCalledWith(4)
   })
 
   it('takes focus and selects the name without its extension on mount', async () => {
