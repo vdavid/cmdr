@@ -36,12 +36,22 @@ fn snapshot(id: &str, status: LifecycleStatus) -> OperationSnapshot {
     }
 }
 
-fn progress(id: &str, bytes_done: u64, bytes_total: u64, files_done: usize, files_total: usize) -> OperationStatus {
+/// The status-cache half of a row. `status` must match the [`snapshot`] it is
+/// paired with: both describe the same operation, and a fixture where they
+/// disagree would assert against a state the backend can't produce.
+fn progress(
+    id: &str,
+    status: LifecycleStatus,
+    bytes_done: u64,
+    bytes_total: u64,
+    files_done: usize,
+    files_total: usize,
+) -> OperationStatus {
     OperationStatus {
         operation_id: id.to_string(),
         operation_type: WriteOperationType::Copy,
         phase: WriteOperationPhase::Copying,
-        is_running: true,
+        lifecycle: Some(status),
         current_file: Some("photo.jpg".to_string()),
         files_done,
         files_total,
@@ -62,7 +72,7 @@ fn running_op_shows_status_progress_speed_and_eta() {
     let mb = 1_024 * 1_024;
     let rows = vec![OperationRow {
         snapshot: snapshot("op-1", LifecycleStatus::Running),
-        progress: Some(progress("op-1", 200 * mb, 1_024 * mb, 3, 10)),
+        progress: Some(progress("op-1", LifecycleStatus::Running, 200 * mb, 1_024 * mb, 3, 10)),
         pending_conflict: None,
     }];
     let yaml = build_operations_yaml(&rows, 14_000);
@@ -84,7 +94,7 @@ fn paused_op_keeps_its_progress_but_reports_paused() {
     let mb = 1_024 * 1_024;
     let rows = vec![OperationRow {
         snapshot: snapshot("op-2", LifecycleStatus::Paused),
-        progress: Some(progress("op-2", 100 * mb, 1_024 * mb, 1, 10)),
+        progress: Some(progress("op-2", LifecycleStatus::Paused, 100 * mb, 1_024 * mb, 1, 10)),
         pending_conflict: None,
     }];
     let yaml = build_operations_yaml(&rows, 12_000);
@@ -117,12 +127,12 @@ fn a_running_paused_queued_mix_renders_every_row() {
     let rows = vec![
         OperationRow {
             snapshot: snapshot("op-run", LifecycleStatus::Running),
-            progress: Some(progress("op-run", 50 * mb, 100 * mb, 2, 4)),
+            progress: Some(progress("op-run", LifecycleStatus::Running, 50 * mb, 100 * mb, 2, 4)),
             pending_conflict: None,
         },
         OperationRow {
             snapshot: snapshot("op-pause", LifecycleStatus::Paused),
-            progress: Some(progress("op-pause", 10 * mb, 100 * mb, 1, 4)),
+            progress: Some(progress("op-pause", LifecycleStatus::Paused, 10 * mb, 100 * mb, 1, 4)),
             pending_conflict: None,
         },
         OperationRow {
@@ -149,7 +159,7 @@ fn an_operation_parked_on_a_clash_says_which_clash_and_how_to_answer_it() {
     let mb = 1_024 * 1_024;
     let rows = vec![OperationRow {
         snapshot: snapshot("op-1", LifecycleStatus::Running),
-        progress: Some(progress("op-1", 50 * mb, 100 * mb, 2, 4)),
+        progress: Some(progress("op-1", LifecycleStatus::Running, 50 * mb, 100 * mb, 2, 4)),
         pending_conflict: Some(clash(3, Some(4_096))),
     }];
     let yaml = build_operations_yaml(&rows, 12_000);
@@ -219,7 +229,7 @@ fn an_operation_that_is_not_asking_anything_carries_no_conflict_block() {
 #[test]
 fn scanning_op_has_no_bogus_numbers() {
     // Totals unknown during scanning: no percent, no ETA, no "0 B / 0 B".
-    let mut scanning = progress("op-scan", 0, 0, 0, 0);
+    let mut scanning = progress("op-scan", LifecycleStatus::Running, 0, 0, 0, 0);
     scanning.phase = WriteOperationPhase::Scanning;
     scanning.current_file = None;
     let rows = vec![OperationRow {

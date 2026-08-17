@@ -470,7 +470,7 @@ async fn pause_is_declined_during_the_scan_wait() {
     );
 
     assert_eq!(
-        manager().status_of(&op_id),
+        manager().lifecycle_status(&op_id),
         Some(LifecycleStatus::Running),
         "the record must stay Running: nothing has parked"
     );
@@ -519,7 +519,7 @@ async fn a_pause_during_a_scan_wait_latches_and_lands_before_the_first_write() {
     // to park, and flipping the record would claim the walk had stopped.
     assert_eq!(pause_operation(&op_id), PauseOutcome::Deferred);
     assert_eq!(
-        manager().status_of(&op_id),
+        manager().lifecycle_status(&op_id),
         Some(LifecycleStatus::Running),
         "a scan-wait can't park, so the refusal is honest"
     );
@@ -533,12 +533,12 @@ async fn a_pause_during_a_scan_wait_latches_and_lands_before_the_first_write() {
     );
 
     wait_until_async(WAIT, "the latched pause to land", || {
-        manager().status_of(&op_id) == Some(LifecycleStatus::Paused)
+        manager().lifecycle_status(&op_id) == Some(LifecycleStatus::Paused)
             || !events.complete.lock().expect("collector mutex").is_empty()
     })
     .await;
     assert_eq!(
-        manager().status_of(&op_id),
+        manager().lifecycle_status(&op_id),
         Some(LifecycleStatus::Paused),
         "the deferred pause must land before the operation writes a byte, \
          not be dropped on the floor by the refusal"
@@ -711,7 +711,7 @@ async fn cancelling_a_queued_operation_frees_the_preview_it_claimed() {
         Box::new(|| Box::pin(async {})),
     );
     assert_eq!(
-        manager().status_of(&queued_id),
+        manager().lifecycle_status(&queued_id),
         Some(LifecycleStatus::Queued),
         "the second op must be waiting on the busy lane"
     );

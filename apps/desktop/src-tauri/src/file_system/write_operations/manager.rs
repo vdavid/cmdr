@@ -1004,9 +1004,16 @@ impl OperationManager {
         self.run_admission_pass();
     }
 
-    /// Test-only: lifecycle status of an op, if present.
-    #[cfg(test)]
-    pub(crate) fn status_of(&self, operation_id: &str) -> Option<LifecycleStatus> {
+    /// The lifecycle status of a LIVE record, or `None` once the op has settled
+    /// and left the registry.
+    ///
+    /// Deliberately records-only, so `None` means one thing: the manager no
+    /// longer tracks this operation. A retained failure is not consulted because
+    /// it can't be reached this way — a failure is retained from the same
+    /// cleanup that unregisters the status-cache row, so the one caller that
+    /// joins by id (`status_cache::get_operation_status`) has already returned
+    /// `None` by then. `snapshot()` is where the two sources are joined.
+    pub(crate) fn lifecycle_status(&self, operation_id: &str) -> Option<LifecycleStatus> {
         self.inner
             .lock_ignore_poison()
             .records

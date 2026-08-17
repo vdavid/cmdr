@@ -18,6 +18,9 @@ pub(super) use super::error_classification::IoResultExt;
 #[cfg(test)]
 pub(crate) use super::event_sinks::CollectorEventSink;
 pub use super::event_sinks::OperationEventSink;
+// The lifecycle vocabulary is the manager's, and `OperationStatus` carries it
+// rather than growing a second answer to the same question.
+use super::manager::LifecycleStatus;
 
 // ============================================================================
 // Operation types
@@ -477,13 +480,28 @@ pub struct DryRunResult {
 // ============================================================================
 
 /// Current status of an operation for query APIs.
+///
+/// Two INDEPENDENT axes, and they must stay that way: [`Self::lifecycle`] is what
+/// the operation is doing (running, parked, waiting for a lane),
+/// [`Self::phase`] is what KIND of work it's doing (counting, copying, rolling
+/// back). A paused operation is mid-`Copying`; a scanning one is `Running`.
+/// ❌ Neither one may be inferred from the other.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct OperationStatus {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
     pub phase: WriteOperationPhase,
-    pub is_running: bool,
+    /// The manager's own lifecycle status, ❌ never re-derived here. `None` once
+    /// the operation has left the registry and only its status-cache row
+    /// survives, which is the window between settling and teardown.
+    ///
+    /// ❌ Never answer a lifecycle question with `WRITE_OPERATION_STATE.contains`
+    /// (or any other presence test): `spawn_managed` inserts the state entry
+    /// before admission and a paused operation keeps it, so presence means
+    /// "exists and hasn't been torn down" and is `true` for queued, running, and
+    /// parked alike.
+    pub lifecycle: Option<LifecycleStatus>,
     /// Filename only.
     pub current_file: Option<String>,
     pub files_done: usize,

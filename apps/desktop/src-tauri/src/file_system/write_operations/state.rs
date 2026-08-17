@@ -447,7 +447,14 @@ impl WriteOperationRegistry {
         Some(Arc::clone(self.entries.read().ok()?.get(operation_id)?))
     }
 
-    /// Whether `operation_id` is still registered, i.e. still running.
+    /// Whether `operation_id` still has a state entry.
+    ///
+    /// ❌ Test-only, and it must stay that way: this is presence in the state
+    /// map, ❌ never "is it running". A paused operation keeps its entry and a
+    /// queued one has none yet, so answering a lifecycle question with this got
+    /// both backwards. `manager().lifecycle_status()` is that answer; the tests
+    /// here use this to pin the difference.
+    #[cfg(test)]
     pub(super) fn contains(&self, operation_id: &str) -> bool {
         self.entries
             .read()

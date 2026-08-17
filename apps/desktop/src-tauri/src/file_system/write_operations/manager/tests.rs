@@ -111,7 +111,7 @@ async fn admits_immediately_when_lanes_free() {
         .await
         .expect("op with a free lane must be admitted immediately")
         .expect("started signal");
-    assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lifecycle_status(&op), Some(LifecycleStatus::Running));
 
     let _ = rel_tx.send(());
 }
@@ -142,7 +142,7 @@ async fn queues_when_a_needed_lane_is_busy() {
     );
 
     assert_eq!(
-        manager().status_of(&op_b),
+        manager().lifecycle_status(&op_b),
         Some(LifecycleStatus::Queued),
         "second same-lane op must queue while the first holds the lane"
     );
@@ -178,7 +178,7 @@ async fn fifo_dequeue_on_settle_serializes_same_lane_ops() {
         fresh_state(),
         gated_deferred(op_b.clone(), b_started_tx, b_rel_rx),
     );
-    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
+    assert_eq!(manager().lifecycle_status(&op_b), Some(LifecycleStatus::Queued));
 
     // Settle A → B is admitted (FIFO dequeue frees the lane + admits next).
     let _ = a_rel_tx.send(());
@@ -186,8 +186,8 @@ async fn fifo_dequeue_on_settle_serializes_same_lane_ops() {
         .await
         .expect("B must be admitted once A settles and frees the lane")
         .expect("B started");
-    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Running));
-    assert_eq!(manager().status_of(&op_a), None, "A is gone after settle");
+    assert_eq!(manager().lifecycle_status(&op_b), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lifecycle_status(&op_a), None, "A is gone after settle");
 
     let _ = b_rel_tx.send(());
 }
@@ -219,8 +219,8 @@ async fn disjoint_lane_ops_both_run_in_parallel() {
     // though neither has been released.
     a_started_rx.await.expect("A started");
     b_started_rx.await.expect("B started");
-    assert_eq!(manager().status_of(&op_a), Some(LifecycleStatus::Running));
-    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lifecycle_status(&op_a), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lifecycle_status(&op_b), Some(LifecycleStatus::Running));
 
     let _ = a_rel_tx.send(());
     let _ = b_rel_tx.send(());
@@ -261,7 +261,7 @@ async fn two_lane_op_waits_until_both_lanes_free_and_does_not_starve() {
         fresh_state(),
         gated_deferred(op_b.clone(), b_started_tx, b_rel_rx),
     );
-    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
+    assert_eq!(manager().lifecycle_status(&op_b), Some(LifecycleStatus::Queued));
 
     // Free only X (settle A). B still can't run, because Y is busy. Waiting for A's
     // settle pass to complete means the pass that could have (wrongly) admitted B
@@ -269,11 +269,11 @@ async fn two_lane_op_waits_until_both_lanes_free_and_does_not_starve() {
     let passes = manager().admission_pass_count();
     let _ = a_rel_tx.send(());
     wait_until_async(WAIT, "A to settle and its admission pass to complete", || {
-        manager().status_of(&op_a).is_none() && manager().admission_pass_count() > passes
+        manager().lifecycle_status(&op_a).is_none() && manager().admission_pass_count() > passes
     })
     .await;
     assert_eq!(
-        manager().status_of(&op_b),
+        manager().lifecycle_status(&op_b),
         Some(LifecycleStatus::Queued),
         "two-lane op must not start while one of its lanes is still busy"
     );
@@ -320,14 +320,18 @@ async fn cancel_queued_op_removes_it_without_spawning() {
         })
     });
     manager().spawn_managed(descriptor(&op_b, vec![&lane]), fresh_state(), b_deferred);
-    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
+    assert_eq!(manager().lifecycle_status(&op_b), Some(LifecycleStatus::Queued));
 
     // Cancel the queued op: removed from the registry, its deferred never runs.
     assert!(
         manager().cancel_if_queued(&op_b),
         "should report it cancelled a queued op"
     );
-    assert_eq!(manager().status_of(&op_b), None, "queued op removed from registry");
+    assert_eq!(
+        manager().lifecycle_status(&op_b),
+        None,
+        "queued op removed from registry"
+    );
 
     // Settle A (frees the lane + runs an admission pass). That pass is exactly
     // where a still-registered B would have been admitted, so once it has
@@ -335,7 +339,7 @@ async fn cancel_queued_op_removes_it_without_spawning() {
     let passes = manager().admission_pass_count();
     let _ = a_rel_tx.send(());
     wait_until_async(WAIT, "A to settle and its admission pass to complete", || {
-        manager().status_of(&op_a).is_none() && manager().admission_pass_count() > passes
+        manager().lifecycle_status(&op_a).is_none() && manager().admission_pass_count() > passes
     })
     .await;
     assert!(
@@ -363,7 +367,7 @@ async fn cancel_if_queued_returns_false_for_running_op() {
         !manager().cancel_if_queued(&op),
         "a Running op must not be cancellable via the queued-cancel fast path"
     );
-    assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lifecycle_status(&op), Some(LifecycleStatus::Running));
 
     let _ = rel_tx.send(());
 }
@@ -393,7 +397,7 @@ async fn panicking_op_releases_its_lane_without_spawning_next() {
     // releases the lane in ONE locked section, so a gone record means the release
     // has landed too: waiting on the record covers both.
     wait_until_async(WAIT, "the panicking op's Drop guard to remove its record", || {
-        manager().status_of(&op_a).is_none()
+        manager().lifecycle_status(&op_a).is_none()
     })
     .await;
     let lane_use = manager().lane_use_snapshot();
@@ -434,7 +438,7 @@ async fn set_paused_flips_running_op_to_paused_and_keeps_its_lane() {
         gated_deferred(op.clone(), started_tx, rel_rx),
     );
     started_rx.await.expect("started");
-    assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lifecycle_status(&op), Some(LifecycleStatus::Running));
     assert_eq!(manager().lane_use_snapshot().get(&lane).copied(), Some(1));
 
     assert_eq!(
@@ -442,7 +446,7 @@ async fn set_paused_flips_running_op_to_paused_and_keeps_its_lane() {
         PauseOutcome::Applied,
         "pausing a Running op flips it"
     );
-    assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Paused));
+    assert_eq!(manager().lifecycle_status(&op), Some(LifecycleStatus::Paused));
     assert_eq!(
         manager().lane_use_snapshot().get(&lane).copied(),
         Some(1),
@@ -456,14 +460,14 @@ async fn set_paused_flips_running_op_to_paused_and_keeps_its_lane() {
         PauseOutcome::AlreadyInState,
         "pausing a Paused op reports its intent as already held"
     );
-    assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Paused));
+    assert_eq!(manager().lifecycle_status(&op), Some(LifecycleStatus::Paused));
 
     assert_eq!(
         manager().set_paused(&op, false),
         PauseOutcome::Applied,
         "resuming a Paused op flips it back"
     );
-    assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lifecycle_status(&op), Some(LifecycleStatus::Running));
     assert_eq!(manager().lane_use_snapshot().get(&lane).copied(), Some(1));
 
     let _ = rel_tx.send(());
@@ -493,7 +497,7 @@ async fn paused_running_op_does_not_admit_a_queued_same_lane_op() {
         fresh_state(),
         gated_deferred(op_b.clone(), b_started_tx, b_rel_rx),
     );
-    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
+    assert_eq!(manager().lifecycle_status(&op_b), Some(LifecycleStatus::Queued));
 
     // Pause A, then run a pass by hand: pause itself admits nobody, so without
     // forcing one nothing would ever exercise the claim. Admission flips a record
@@ -502,7 +506,7 @@ async fn paused_running_op_does_not_admit_a_queued_same_lane_op() {
     assert_eq!(manager().set_paused(&op_a, true), PauseOutcome::Applied);
     manager().force_admission_pass();
     assert_eq!(
-        manager().status_of(&op_b),
+        manager().lifecycle_status(&op_b),
         Some(LifecycleStatus::Queued),
         "a queued same-lane op must not be admitted while the holder is merely paused"
     );
@@ -536,7 +540,7 @@ async fn set_paused_is_noop_for_queued_or_absent_ops() {
         fresh_state(),
         gated_deferred(op_b.clone(), b_started_tx, b_rel_rx),
     );
-    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
+    assert_eq!(manager().lifecycle_status(&op_b), Some(LifecycleStatus::Queued));
 
     assert_eq!(
         manager().set_paused(&op_b, true),
@@ -544,7 +548,7 @@ async fn set_paused_is_noop_for_queued_or_absent_ops() {
         "pausing a Queued op does nothing and remembers nothing"
     );
     assert_eq!(
-        manager().status_of(&op_b),
+        manager().lifecycle_status(&op_b),
         Some(LifecycleStatus::Queued),
         "a Queued op stays Queued (not Paused)"
     );
@@ -618,7 +622,7 @@ async fn single_op_with_free_lanes_behaves_like_immediate_spawn() {
     // After settle the op is gone and its lane is free (both land in the same
     // locked section, so the record going away is the signal for both).
     wait_until_async(WAIT, "the op to settle and leave the registry", || {
-        manager().status_of(&op).is_none()
+        manager().lifecycle_status(&op).is_none()
     })
     .await;
     assert!(!manager().lane_use_snapshot().contains_key(&lane));
@@ -681,7 +685,7 @@ async fn admitted_op_runs_even_if_the_admitting_runtime_is_dropped() {
     )
     .await;
     wait_until_async(WAIT, "the op to settle and be removed", || {
-        manager().status_of(&op).is_none()
+        manager().lifecycle_status(&op).is_none()
     })
     .await;
     assert!(!manager().lane_use_snapshot().contains_key(&lane), "its lane is freed");
@@ -853,7 +857,7 @@ async fn run_instant_does_not_reserve_a_lane() {
         .await
         .expect("a transfer on the same lane must admit despite the instant op")
         .expect("transfer started");
-    assert_eq!(manager().status_of(&xfer), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lifecycle_status(&xfer), Some(LifecycleStatus::Running));
 
     release.notify_one();
     h.await.expect("joins");

@@ -592,7 +592,18 @@ export const commands = {
       operationId: string
       operationType: WriteOperationType
       phase: WriteOperationPhase
-      isRunning: boolean
+      /**
+       *  The manager's own lifecycle status, ❌ never re-derived here. `None` once
+       *  the operation has left the registry and only its status-cache row
+       *  survives, which is the window between settling and teardown.
+       *
+       *  ❌ Never answer a lifecycle question with `WRITE_OPERATION_STATE.contains`
+       *  (or any other presence test): `spawn_managed` inserts the state entry
+       *  before admission and a paused operation keeps it, so presence means
+       *  "exists and hasn't been torn down" and is `true` for queued, running, and
+       *  parked alike.
+       */
+      lifecycle: LifecycleStatus | null
       // Filename only.
       currentFile: string | null
       filesDone: number
@@ -7091,12 +7102,31 @@ export type OperationSnapshot = {
   error: WriteOperationError | null
 }
 
-// Current status of an operation for query APIs.
+/**
+ *  Current status of an operation for query APIs.
+ *
+ *  Two INDEPENDENT axes, and they must stay that way: [`Self::lifecycle`] is what
+ *  the operation is doing (running, parked, waiting for a lane),
+ *  [`Self::phase`] is what KIND of work it's doing (counting, copying, rolling
+ *  back). A paused operation is mid-`Copying`; a scanning one is `Running`.
+ *  ❌ Neither one may be inferred from the other.
+ */
 export type OperationStatus = {
   operationId: string
   operationType: WriteOperationType
   phase: WriteOperationPhase
-  isRunning: boolean
+  /**
+   *  The manager's own lifecycle status, ❌ never re-derived here. `None` once
+   *  the operation has left the registry and only its status-cache row
+   *  survives, which is the window between settling and teardown.
+   *
+   *  ❌ Never answer a lifecycle question with `WRITE_OPERATION_STATE.contains`
+   *  (or any other presence test): `spawn_managed` inserts the state entry
+   *  before admission and a paused operation keeps it, so presence means
+   *  "exists and hasn't been torn down" and is `true` for queued, running, and
+   *  parked alike.
+   */
+  lifecycle: LifecycleStatus | null
   // Filename only.
   currentFile: string | null
   filesDone: number

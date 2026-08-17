@@ -93,7 +93,11 @@ async fn retained_failure_stays_hidden_until_the_record_settles() {
     })
     .await;
 
-    assert_eq!(mgr.status_of(&op), None, "the record itself is still removed on settle");
+    assert_eq!(
+        mgr.lifecycle_status(&op),
+        None,
+        "the record itself is still removed on settle"
+    );
     let retained = rows_for(mgr, &op);
     assert_eq!(retained.len(), 1, "exactly one row per operation id, always");
     assert!(
@@ -268,7 +272,7 @@ async fn a_failed_op_frees_its_lane_and_admits_the_next_exactly_as_before() {
         fresh_state(),
         gated_deferred(op_b.clone(), b_started_tx, b_rel_rx),
     );
-    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
+    assert_eq!(manager().lifecycle_status(&op_b), Some(LifecycleStatus::Queued));
 
     manager().record_failure(&op_a, WriteOperationType::Copy, &io_error("/a"));
     let _ = a_rel_tx.send(());
@@ -277,14 +281,14 @@ async fn a_failed_op_frees_its_lane_and_admits_the_next_exactly_as_before() {
         .await
         .expect("a FAILED op must free its lane and admit the next one, exactly as a clean settle does")
         .expect("B started");
-    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lifecycle_status(&op_b), Some(LifecycleStatus::Running));
     assert_eq!(
         manager().lane_use_snapshot().get(&lane).copied(),
         Some(1),
         "the lane is held by B alone — the failed op's slot was released, not leaked"
     );
     assert_eq!(
-        manager().status_of(&op_a),
+        manager().lifecycle_status(&op_a),
         None,
         "the failed op's RECORD is gone; only the out-of-band failure row remains"
     );
@@ -295,7 +299,7 @@ async fn a_failed_op_frees_its_lane_and_admits_the_next_exactly_as_before() {
 
     let _ = b_rel_tx.send(());
     wait_until_async(WAIT, "B to settle and free the lane", || {
-        manager().status_of(&op_b).is_none()
+        manager().lifecycle_status(&op_b).is_none()
     })
     .await;
     assert!(
@@ -320,7 +324,7 @@ async fn a_successful_operation_settles_clean_and_retains_nothing() {
     let _ = rel_tx.send(());
 
     wait_until_async(WAIT, "the op to settle and leave the registry", || {
-        manager().status_of(&op).is_none()
+        manager().lifecycle_status(&op).is_none()
     })
     .await;
     assert!(

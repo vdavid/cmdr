@@ -215,12 +215,12 @@ impl QueuedOperationFixture {
         }
 
         assert_eq!(
-            manager().status_of(&holder_id),
+            manager().lifecycle_status(&holder_id),
             Some(LifecycleStatus::Running),
             "the holder takes its own fresh lane, so admission runs it immediately"
         );
         assert_eq!(
-            manager().status_of(&queued_id),
+            manager().lifecycle_status(&queued_id),
             Some(LifecycleStatus::Queued),
             "the second operation shares the lane, so it waits"
         );

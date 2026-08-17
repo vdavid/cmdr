@@ -43,6 +43,9 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
   `../../operation_log/DETAILS.md` § Capture.
 - **A confirmed transfer registers BEFORE its preview finishes**, staying `Running` with `phase: 'scanning'` while its
   task awaits the walk. ❌ No new `LifecycleStatus`. DETAILS § "The scan-wait".
+- **`LifecycleStatus` is the ONE lifecycle answer** and `OperationStatus.lifecycle` carries it to the query API. ❌
+  Never re-derive one from `WRITE_OPERATION_STATE.contains`: the entry lands at spawn and survives a pause, so presence
+  is true for queued, running, and parked alike. DETAILS § "Lifecycle status and `operations-changed`".
 - **Every preview runs under a `ScanWatchdog`, and whoever settles it CLAIMS the outcome first**
   (`watchdog.claim_outcome()`): a new terminal path in either worker owes that claim, or a late walk contradicts a
   timeout the user already saw. It bounds the walk by INACTIVITY (60 s counting nothing), not duration, so a silent

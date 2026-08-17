@@ -331,6 +331,12 @@ Independently, the archive-edit tests still give each op its OWN lane (`archive_
 
 A live RECORD only ever holds `Queued` / `Running` / `Paused`: `Done` and `Cancelled` are declared but never assigned, because `on_settled` deletes the record before anything could set them. `Failed` is the one terminal status that reaches a snapshot, and only through the retained-failure list below, never on a record.
 
+**One lifecycle answer, and the query API carries it too.** `OperationStatus` (`get_operation_status`, the progress/detail query) reports the manager's `LifecycleStatus` in its `lifecycle` field, read through `manager().lifecycle_status(id)`. ❌ Never re-derive a lifecycle from `WRITE_OPERATION_STATE.contains` or any other presence test: `spawn_managed` inserts the state entry BEFORE admission and a paused op keeps it, so presence means "exists and hasn't been torn down" and is true for queued, running, and parked alike. A boolean in that spot reported a parked copy as running, which is what the pause/resume toggle steers by. `lifecycle` is `None` only in the window between an op settling and its status-cache row being unregistered. Pinned by `status_cache_tests::a_paused_operation_reports_paused_not_running` and `a_queued_operation_reports_queued`.
+
+`lifecycle_status(id)` reads live RECORDS only, so `None` means one thing: the manager no longer tracks this id. It deliberately does not consult retained failures, which it cannot reach anyway — a failure is retained from the same cleanup that unregisters the status-cache row, so `get_operation_status` has already returned `None` by then. `snapshot()` is the one place the two sources are joined.
+
+⚠️ **Lock order**: `get_operation_status` asks the manager BEFORE taking the status-cache read lock. That is the only place the two locks meet, and the busy-volume recompute already runs cache-lock-then-out, so nesting the manager lock inside the cache lock would close a cycle through data-safety code.
+
 ### Retained failures
 
 **The exception to removal-on-terminal.** Nothing else can hold the failure of an operation that was backgrounded: the record is deleted on settle, and `write-error` only reaches a window that is listening at that moment — and the queue window being closed is the exact scenario this is for. So the manager keeps a bounded list of failures OUT OF BAND — `ManagerInner::failures`, a `VecDeque<OperationSnapshot>` capped at `FAILURE_CAPACITY = 20`, oldest evicted first — and `snapshot()` appends them after the live rows.

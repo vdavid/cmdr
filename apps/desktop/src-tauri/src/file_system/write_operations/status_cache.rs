@@ -19,7 +19,6 @@ use crate::ignore_poison::IgnorePoison;
 use std::collections::{HashMap, HashSet};
 use std::sync::{LazyLock, OnceLock, RwLock};
 
-use super::state::WRITE_OPERATION_STATE;
 use super::types::{OperationStatus, OperationSummary, WriteOperationPhase, WriteOperationType};
 
 #[cfg(test)]
@@ -302,17 +301,20 @@ pub fn list_active_operations() -> Vec<OperationSummary> {
 ///
 /// Returns `None` if the operation is not found (either never existed or already completed).
 pub fn get_operation_status(operation_id: &str) -> Option<OperationStatus> {
+    // Asked BEFORE the cache lock, never inside it: this is the only place the
+    // two locks meet, and taking them in one order here means there is no order
+    // to get wrong. The busy-volume recompute already walks the other way (cache
+    // lock, then out), so nesting would close a cycle through data-safety code.
+    let lifecycle = super::manager::manager().lifecycle_status(operation_id);
+
     let cache = OPERATION_STATUS_CACHE.read().ok()?;
     let status = cache.get(operation_id)?;
-
-    // Check if the operation is still running
-    let is_running = WRITE_OPERATION_STATE.contains(operation_id);
 
     Some(OperationStatus {
         operation_id: operation_id.to_string(),
         operation_type: status.operation_type,
         phase: status.phase,
-        is_running,
+        lifecycle,
         current_file: status.current_file.clone(),
         files_done: status.files_done,
         files_total: status.files_total,
