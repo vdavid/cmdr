@@ -35,6 +35,7 @@ import {
   NEW_FILE_DIALOG,
   TRANSFER_DIALOG,
   CTRL_OR_META,
+  type PageLike,
 } from './helpers.js'
 
 // Recreate lightweight fixtures (text files + dirs, not bulk .dat files)
@@ -158,6 +159,26 @@ test.describe('Move round-trip', () => {
   })
 })
 
+/**
+ * Replaces the rename editor's value the way typing does (the native value
+ * setter plus an `input` event, since Svelte reads `e.target.value`), then waits
+ * for the reactive update to mirror it back.
+ */
+async function setRenameInput(tauriPage: PageLike, value: string): Promise<void> {
+  await tauriPage.evaluate(`(function() {
+            var input = document.querySelector('.rename-input');
+            input.focus();
+            var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+            desc.set.call(input, ${JSON.stringify(value)});
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        })()`)
+  await expect
+    .poll(async () => tauriPage.evaluate<string>(`document.querySelector('.rename-input')?.value ?? ''`), {
+      timeout: 3000,
+    })
+    .toBe(value)
+}
+
 test.describe('Rename round-trip', () => {
   test('renames file-a.txt to renamed-file.txt via F2', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
@@ -262,20 +283,7 @@ test.describe('Rename round-trip', () => {
     await tauriPage.keyboard.press('F2')
     await tauriPage.waitForSelector('.rename-input', 3000)
 
-    await tauriPage.evaluate(`(function() {
-            var input = document.querySelector('.rename-input');
-            input.focus();
-            var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
-            desc.set.call(input, 'clicked-away.txt');
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-        })()`)
-    await expect
-      .poll(
-        async () =>
-          tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'clicked-away.txt'`),
-        { timeout: 3000 },
-      )
-      .toBeTruthy()
+    await setRenameInput(tauriPage, 'clicked-away.txt')
 
     // Press on a different row: the click-away commits, the way Finder does.
     await tauriPage.evaluate(`(function() {
@@ -292,6 +300,44 @@ test.describe('Rename round-trip', () => {
       .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'clicked-away.txt')), { timeout: 5000 })
       .toBeTruthy()
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(false)
+  })
+
+  test('an arrow carries the rename to the next file, even when the first one re-sorts away', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    expect(await moveCursorToFile(tauriPage, 'file-a.txt')).toBe(true)
+    await tauriPage.keyboard.press('F2')
+    await tauriPage.waitForSelector('.rename-input', 3000)
+
+    // `z-…` sorts below `file-b.txt`, so the renamed file leaves the row the
+    // chain is standing on. The hop must still land on the file that WAS next.
+    await setRenameInput(tauriPage, 'z-chained-a.txt')
+    await tauriPage.press('.rename-input', 'ArrowDown')
+
+    // The editor reopened on file-b.txt with its own name in it, ready to type over.
+    await expect
+      .poll(async () => tauriPage.evaluate<string>(`document.querySelector('.rename-input')?.value ?? ''`), {
+        timeout: 3000,
+      })
+      .toBe('file-b.txt')
+
+    await setRenameInput(tauriPage, 'z-chained-b.txt')
+    await tauriPage.press('.rename-input', 'Enter')
+
+    await expect.poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: 5000 }).toBeTruthy()
+
+    // Both names landed on their own file; neither save crossed over.
+    await expect
+      .poll(
+        () =>
+          fs.existsSync(path.join(fixtureRoot, 'left', 'z-chained-a.txt')) &&
+          fs.existsSync(path.join(fixtureRoot, 'left', 'z-chained-b.txt')),
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(false)
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-b.txt'))).toBe(false)
   })
 })
 
