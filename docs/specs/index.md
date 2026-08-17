@@ -6,6 +6,17 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-17 `ground-ownership-plan.md` - Grow `cover::live::Claim` into the single authority for "who may walk this
+      ground right now", retiring the parallel mechanisms that answer the same question in their own vocabulary
+      (`mgr.scanning`'s arbitration half, `rescan_request::OWED`, the `phases_have_work` guard). Comes from the finding
+      that `cmdr-index` is the top bug source (27 of 125 `fix(...)` commits since 2026-06-01, 368 `❌` rules at 4.1 per
+      kloc against 0.9-1.3 elsewhere) and that essentially every one of those fixes is a handoff between two of eleven
+      actors. An earlier `GroundBroker` draft was killed in review: its headline milestone was impossible (a lease can't
+      give the borrow checker permission to take `Box<IndexManager>` off the registry lock), it hung work off `Drop`
+      that `cover/mod.rs:338-342` refuses by name, and its perf case cited a figure `branch-set-cost-2026-08-15.md`
+      refutes. Adds `Mode::{Exclusive, Additive}` (Decision 13 needs it), fixes `live.rs:69`'s in-call O(n²), and closes
+      a latent `start_volume_scan` truncate bug. M5 (shareable manager custody) is the honest version of the dropped
+      claim and unblocks `later/indexing/swap-scan-plan.md`; M7 (preemption) is the product win.
 - [ ] 2026-08-13 `phased-indexing-plan.md` - Replace the first full drive scan with ordered coverage phases: the user's
       own folders (last session's tabs, favorites, standard home dirs, cloud roots), then whatever they open while the
       app runs, then `$HOME`, then the rest of the drive. Every phase is an `Index::cover` walk, so nothing is ever
