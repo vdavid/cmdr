@@ -159,12 +159,12 @@ pub(in crate::indexing) struct Claim {
 }
 
 impl Claim {
-    /// Split `frontier` into the roots this walk may take and the roots another
-    /// holder already owns.
+    /// Split `frontier` into the roots this holder may take and the roots another
+    /// one already owns.
     ///
     /// The overlap rule is [`VolumeClaims::overlapping`], and it deduplicates a
     /// frontier that overlaps ITSELF by the same test: each root is checked
-    /// against the ones this call has already taken, so one walk can't
+    /// against the ones this call has already taken, so one holder can't
     /// double-write its own ground either.
     pub(in crate::indexing) fn take(volume_id: &str, frontier: Vec<String>, mode: Mode) -> Self {
         let mut live = in_flight().lock_ignore_poison();
@@ -213,9 +213,11 @@ impl Claim {
         // the FIRST root of a frontier can't be refused by roots this same call
         // took, since it took none yet. That's what makes this exact rather than
         // "somebody else is on the volume".
-        let refused_by = (mine.is_empty() && !deferred.is_empty())
-            .then_some(in_the_way)
-            .flatten();
+        let refused_by = if mine.is_empty() && !deferred.is_empty() {
+            in_the_way
+        } else {
+            None
+        };
         Self {
             volume_id: volume_id.to_string(),
             mine,

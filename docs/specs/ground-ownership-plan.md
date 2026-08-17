@@ -159,10 +159,9 @@ replay completes". Its **undocumented second effect** is that `cover_context_for
 `None` for replay's whole duration, so `Index::cover` refuses every search walk on the boot disk while replay runs. It
 is cleared at `watch/event_loop/replay.rs:409` plus the safety net at `lifecycle/manager/start.rs:121`.
 
-Replay does not walk (actor 7), so it holds no ground and cannot take a claim honestly. But if M2 moves
-`cover_context_for` off `mgr.scanning` **without replacing this**, a search cover walk runs while replay writes rows
-through the reconciler, and both allocate fresh ids for the same names: the `INSERT OR IGNORE` collision the claim
-module exists to prevent (`lifecycle/cover/live.rs:6-11`).
+Replay does not walk (actor 7). If M2 moves `cover_context_for` off `mgr.scanning` **without replacing this**, a search
+cover walk runs while replay writes rows through the reconciler, and both allocate fresh ids for the same names: the
+`INSERT OR IGNORE` collision the claim module exists to prevent (`lifecycle/cover/live.rs:6-11`).
 
 **Because M2 keeps `mgr.scanning` set by scans and keeps `cover_context_for` reading it (see M2), replay's suppression
 of new cover walks survives untouched. Do not "tidy" `cover_context_for` onto the claim table.**
