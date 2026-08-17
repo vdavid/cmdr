@@ -1,0 +1,13 @@
+{
+  "$comment": "Accepted ❌ rule count per subsystem, seeded from the state at the check's introduction. A strict ratchet: local runs lower an entry to the current count and drop a subsystem that reaches zero, and raising one needs David's OK (.claude/rules/file-length-allowlist.md). The fix for a subsystem over its number is to encode the invariant in a type, not to bump the number.",
+  "subsystems": {
+    ".": 10,
+    "apps/api-server": 17,
+    "apps/desktop": 267,
+    "apps/desktop/src-tauri": 334,
+    "apps/website": 1,
+    "crates/cmdr-archive": 4,
+    "crates/cmdr-fs": 14,
+    "crates/cmdr-index": 372
+  }
+}

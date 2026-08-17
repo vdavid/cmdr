@@ -20,6 +20,9 @@ func TestCountLines(t *testing.T) {
 		{"single line with newline", "hello\n", 1},
 		{"multiple lines", "a\nb\nc", 3},
 		{"multiple lines with trailing newline", "a\nb\nc\n", 3},
+		// A line longer than bufio.Scanner's 64 kB token limit: a generated bundle
+		// or a minified asset must be measured, not silently dropped from the scan.
+		{"line over the scanner token limit", strings.Repeat("x", 200_000) + "\nsecond\n", 2},
 	}
 
 	for _, tt := range tests {

@@ -1161,6 +1161,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunClaudeMdLength,
 	},
 	{
+		ID:          "invariant-density",
+		DisplayName: "❌ rules per subsystem",
+		App:         AppOther,
+		Tech:        "📏 Metrics",
+		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      wholeRepoInputs, // counts markers in every agent doc, lines in every source file
+		Run:         RunInvariantDensity,
+	},
+	{
 		ID:          "docs-reachable",
 		DisplayName: "docs reachable from AGENTS.md",
 		App:         AppOther,

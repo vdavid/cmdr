@@ -1,7 +1,7 @@
 package checks
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -124,13 +124,9 @@ type fileLengthScanResult struct {
 // against a throwaway dir). Each candidate is filtered by extension, line count,
 // and the allowlist; a tracked file that's locally deleted is skipped silently.
 func scanFileLengths(rootDir string, allowlist fileLengthAllowlist) (fileLengthScanResult, error) {
-	relPaths, ok := gitTrackedFiles(rootDir)
-	if !ok {
-		var err error
-		relPaths, err = walkSourceFiles(rootDir)
-		if err != nil {
-			return fileLengthScanResult{}, err
-		}
+	relPaths, err := repoFiles(rootDir)
+	if err != nil {
+		return fileLengthScanResult{}, err
 	}
 
 	var result fileLengthScanResult
@@ -158,6 +154,18 @@ func scanFileLengths(rootDir string, allowlist fileLengthAllowlist) (fileLengthS
 		result.longFiles = append(result.longFiles, longFile{relPath: relPath, lines: lineCount, sizeBytes: info.Size()})
 	}
 	return result, nil
+}
+
+// repoFiles enumerates every first-party file as a repo-relative, forward-slashed
+// path: the git-tracked set when rootDir is a work tree (so gitignored and
+// untracked generated output is excluded for free), else a filesystem walk. Both
+// whole-tree scanners (`file-length`, `invariant-density`) take their file list
+// from here so they agree on what "in the repo" means.
+func repoFiles(rootDir string) ([]string, error) {
+	if relPaths, ok := gitTrackedFiles(rootDir); ok {
+		return relPaths, nil
+	}
+	return walkSourceFiles(rootDir)
 }
 
 // gitTrackedFiles returns every tracked file as a repo-relative, forward-slashed
@@ -290,19 +298,20 @@ func RunFileLength(ctx *CheckContext) (CheckResult, error) {
 	return CheckResult{Code: ResultWarning, Message: msg, MadeChanges: madeChanges, Total: -1, Issues: -1, Changes: -1}, nil
 }
 
+// countLines returns the file's line count, counting a final unterminated line.
+// Counts newline bytes rather than scanning lines, so a file with one very long
+// line (a generated bundle, a minified asset) is measured instead of erroring out
+// and silently dropping out of every scan that calls this.
 func countLines(path string) (int, error) {
-	f, err := os.Open(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return 0, err
 	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	count := 0
-	for scanner.Scan() {
+	count := bytes.Count(data, []byte{'\n'})
+	if len(data) > 0 && data[len(data)-1] != '\n' {
 		count++
 	}
-	return count, scanner.Err()
+	return count, nil
 }
 
 func formatTokenCount(tokens int64) string {
