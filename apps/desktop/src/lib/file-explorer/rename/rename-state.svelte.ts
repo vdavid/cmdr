@@ -2,6 +2,16 @@
 
 import type { ValidationResult, ValidationSeverity } from '$lib/utils/filename-validation'
 
+/**
+ * Identifies one rename session: one activation of the inline editor, from the
+ * moment it opens until the save it sent comes back.
+ *
+ * Everything that finishes asynchronously (the save, the permission check, the
+ * sibling-name load, the editor's own blur) carries the id it started with, so
+ * it can tell whether it is still speaking for the file on screen.
+ */
+export type RenameSessionId = number
+
 export interface RenameTarget {
   /** Full path to the file being renamed */
   path: string
@@ -26,11 +36,16 @@ export interface RenameState {
   shaking: boolean
   /** Incremented to re-focus the input after a dialog closes */
   focusTrigger: number
+  /**
+   * Id of the most recent activation. It outlives `cancel()`: ending an editing
+   * session doesn't supersede it, only a NEW activation does.
+   */
+  sessionId: RenameSessionId
 }
 
 const initialValidation: ValidationResult = { severity: 'ok', message: '' }
 
-function createInitialState(): RenameState {
+function createInitialState(sessionId: RenameSessionId): RenameState {
   return {
     active: false,
     target: null,
@@ -38,11 +53,12 @@ function createInitialState(): RenameState {
     validation: initialValidation,
     shaking: false,
     focusTrigger: 0,
+    sessionId,
   }
 }
 
 export function createRenameState() {
-  let state = $state<RenameState>(createInitialState())
+  let state = $state<RenameState>(createInitialState(0))
 
   return {
     get active() {
@@ -66,16 +82,22 @@ export function createRenameState() {
     get focusTrigger() {
       return state.focusTrigger
     },
+    get sessionId(): RenameSessionId {
+      return state.sessionId
+    },
 
-    /** Activates rename mode for the given target. */
+    /** Whether a newer session has activated since `sessionId` was handed out. */
+    isSuperseded(sessionId: RenameSessionId): boolean {
+      return sessionId !== state.sessionId
+    },
+
+    /** Activates rename mode for the given target, under a fresh session id. */
     activate(target: RenameTarget) {
       state = {
+        ...createInitialState(state.sessionId + 1),
         active: true,
         target,
         currentName: target.originalName,
-        validation: initialValidation,
-        shaking: false,
-        focusTrigger: 0,
       }
     },
 
@@ -101,9 +123,9 @@ export function createRenameState() {
       state.shaking = false
     },
 
-    /** Deactivates rename mode, resetting all state. */
+    /** Deactivates rename mode, resetting all state but the session id. */
     cancel() {
-      state = createInitialState()
+      state = createInitialState(state.sessionId)
     },
 
     /** Returns whether the current name (trimmed) differs from the original. */

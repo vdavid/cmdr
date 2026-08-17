@@ -108,3 +108,45 @@ describe('createRenameState', () => {
     expect(state.getTrimmedName()).toBe('spaced.txt')
   })
 })
+
+describe('session ids', () => {
+  const otherTarget: RenameTarget = {
+    path: '/Users/test/other.txt',
+    originalName: 'other.txt',
+    parentPath: '/Users/test',
+    isDirectory: false,
+  }
+
+  it('hands every activation a fresh id', () => {
+    const state = createRenameState()
+
+    state.activate(sampleTarget)
+    const first = state.sessionId
+    state.activate(otherTarget)
+
+    expect(state.sessionId).not.toBe(first)
+  })
+
+  it('marks the previous session superseded once a new one activates', () => {
+    const state = createRenameState()
+    state.activate(sampleTarget)
+    const first = state.sessionId
+
+    state.activate(otherTarget)
+
+    expect(state.isSuperseded(first)).toBe(true)
+    expect(state.isSuperseded(state.sessionId)).toBe(false)
+  })
+
+  it('keeps the id through a cancel, so a save landing afterwards is still its own', () => {
+    // Escape ends the editing session, but the save it already sent still owns
+    // the file it was bound to: nothing has taken its place.
+    const state = createRenameState()
+    state.activate(sampleTarget)
+    const id = state.sessionId
+
+    state.cancel()
+
+    expect(state.isSuperseded(id)).toBe(false)
+  })
+})
