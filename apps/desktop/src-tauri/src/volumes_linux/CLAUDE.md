@@ -50,7 +50,7 @@ re-exports every submodule item, keeping `crate::volumes_linux::X` paths stable.
 - **`is_submount()` filters bind mounts nested under a real mount**, so dev `node_modules` / build-dir bind mounts don't
   clutter the sidebar as separate volumes.
 - **The volume IPC commands aren't per-platform**: `commands/volumes.rs` serves both through one `platform` alias, and
-  `commands/volumes_linux.rs` is a bare re-export `ipc.rs` registers against. Linux-only behavior goes behind the
-  alias. DETAILS § "One command module".
+  `commands::volumes_linux` is a `pub use` of it, not a module. Linux-only behavior goes behind the alias. DETAILS §
+  "One command module".
 
 Full details (decision rationale): `DETAILS.md`.

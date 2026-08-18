@@ -17,8 +17,13 @@ Decision rationale. `CLAUDE.md` holds the must-knows.
 
 `commands/volumes.rs` serves macOS and Linux alike. The genuine platform difference is this module versus `volumes/`,
 reached through one `#[cfg]`'d `platform` alias, and the only other divergence is `NETWORK_FS_TYPE` (`smbfs` / `cifs`),
-which the synthetic `network` volume reports. `commands/volumes_linux.rs` is a `pub use super::volumes::*;` re-export,
-kept because `ipc.rs` and `ipc_collectors.rs` register the Linux command set under that path.
+which the synthetic `network` volume reports.
+
+`commands::volumes_linux` still resolves, because `ipc.rs` and `ipc_collectors.rs` register the Linux command set under
+that path, but it's a `pub use volumes as volumes_linux;` in `commands/mod.rs` rather than a file. A file existing only
+to be a registration target reads like a Linux implementation and invites someone to put Linux behavior in it; a
+one-line alias sitting next to the `pub mod volumes` it points at can't. It goes away when those registrations move to
+`volumes`.
 
 The pair of hand-maintained command modules this replaced had drifted: Linux resolved a path inside an archive to
 nothing (no `confirm_archive_boundary`, so a pane deep-linked inside a `.zip` couldn't find its volume), and both
