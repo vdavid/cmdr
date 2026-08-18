@@ -41,12 +41,5 @@ pub mod sync_status; // Has both macOS and non-macOS implementations
 mod util;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod volumes;
-/// The Linux name for the very same module: the volume commands are
-/// cross-platform, and `ipc.rs` / `ipc_collectors.rs` register the Linux set
-/// under `commands::volumes_linux`. An alias rather than a file, so there's no
-/// second module for a reader to mistake for a Linux implementation, and nothing
-/// to drift. Retire it when those registrations move to `volumes`.
-#[cfg(target_os = "linux")]
-pub use volumes as volumes_linux;
 pub mod whats_new;
 pub mod window_ordering;
