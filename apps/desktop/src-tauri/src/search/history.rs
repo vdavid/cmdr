@@ -1,6 +1,6 @@
 //! Persistent recent-searches store for the search dialog.
 //!
-//! Adds an entry only when the user clicks "Open in pane" — see the FE
+//! Adds an entry only when the user clicks "Open in pane"; see the FE
 //! `lib/search/CLAUDE.md` for the call-site rule.
 //!
 //! The list machinery (dedupe, cap, the durable file, quarantine) lives in

@@ -53,8 +53,8 @@ pub trait RecentEntry: Clone + Send + Serialize + DeserializeOwned + 'static {
 pub struct RecentsFile<E: RecentEntry> {
     /// The list itself, newest first. Mirrors the file; loaded at startup.
     cached: Mutex<Vec<E>>,
-    /// Serializes the cache to disk flush, so two IPC commands landing together
-    /// can't clobber each other's write.
+    /// Serializes the flush from cache to disk, so two IPC commands landing
+    /// together can't clobber each other's write.
     disk: Mutex<()>,
 }
 
@@ -66,8 +66,8 @@ impl<E: RecentEntry> Default for RecentsFile<E> {
 
 // ---------------------------------------------------------------------------
 // The list itself, driven by an explicit path. Production calls the app-bound
-// facade further down; taking the path as an argument is what lets a test — this
-// module's and a consumer's — run the whole cycle against a tempdir. A `None` path
+// facade further down; taking the path as an argument is what lets a test (this
+// module's, and a consumer's) run the whole cycle against a tempdir. A `None` path
 // means the app data dir didn't resolve: the in-memory list still updates, only
 // the disk write is skipped.
 // ---------------------------------------------------------------------------

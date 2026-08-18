@@ -38,10 +38,10 @@ it doesn't own a cap. That's what keeps a change to one dialog's semantics from 
 
 Two locks, and no code path holds both:
 
-- `cached: Mutex<Vec<E>>` — the list. Every mutation goes through `update`, which takes the guard, applies the change,
+- `cached: Mutex<Vec<E>>`: the list. Every mutation goes through `update`, which takes the guard, applies the change,
   clones an owned snapshot, and drops the guard before anything touches the disk. A caller can't hold it across an `fs`
   call because it never has it.
-- `disk: Mutex<()>` — serializes the read-modify-write cycle, so two IPC commands landing together can't clobber each
+- `disk: Mutex<()>`: serializes the read-modify-write cycle, so two IPC commands landing together can't clobber each
   other's file.
 
 `load_at` is the one place that takes both, and it releases the disk guard before taking the cache one; that's also the
