@@ -70,16 +70,13 @@ three levels, each closing a case the one above it can't see.
    everything a search would have walked, and running beside it isn't merely redundant: both allocate fresh ids for the
    same names, `insert_entries_v2_batch` is `INSERT OR IGNORE`, and the row that loses takes its subtree with it. With
    no index at all, the lock-first reservation inside `start_indexing_for` decides who builds one.
-3. **Claim the frontier roots** (`live/DETAILS.md`, canonical for everything the claim table does). One writer isn't
-   enough on its own, because two walks THROUGH that one writer over the same directories hit the same
-   `INSERT OR IGNORE` collision. Decision 11 makes this routine: a refined query re-asks `coverage` while the first
-   query's walk is still running, and that first walk keeps going. So `cover::start` claims each root on the caller's
-   thread, skips any that overlaps a live one in either direction (component-aware, so `/a/bc` is not inside `/a/b`),
-   and reports the skipped ones as `CoverWalk::covered_by_another_walk`. The claim is owned by the walk thread, so the
-   ground frees up on the completion path, the cancel path, and a panic alike. `ground_being_walked` asks the same
-   overlap question of the WALKS only, without taking anything, which is what `Index::coverage` reports as
-   `CoverageMap::being_walked`: a caller can then tell that a walk would get it nothing BEFORE committing to one, and
-   wait for the walk that holds the ground instead of answering empty.
+3. **Claim the frontier roots.** One writer isn't enough on its own, because two walks THROUGH that one writer over the
+   same directories hit the same `INSERT OR IGNORE` collision. Decision 11 makes this routine: a refined query re-asks
+   `coverage` while the first query's walk is still running, and that first walk keeps going. So `cover::start` claims
+   on the CALLER's thread, before it spawns anything, and reports what it didn't get as
+   `CoverWalk::covered_by_another_walk`; the claim then travels into the walk thread, so the ground frees up on the
+   completion path, the cancel path, and a panic alike. Everything the table itself does — the overlap rule, the modes,
+   the handover, `ground_being_walked` — is `live/DETAILS.md`.
 
 **The claim is also what keeps a rescan off a live walk, and it is the scan entries' own single-flight answer.** Both
 take the volume root `Exclusive`ly (`IndexManager::claim_the_volume`) instead of reading a flag: a search walk sets no

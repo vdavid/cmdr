@@ -195,7 +195,49 @@ Related, for whoever touches replay next: the fallback signals at `watch/event_l
 M0 is independent. M1 → M2 → M4 are sequential. M5, M6, M7 are independent of each other. **M3 is a rename and turned
 out not to gate M4**, so it is still open with everything else shipped around it.
 
-**M0, M1, M2, and M4 are shipped**, M4 together with product call 4 (a "Rescan now" during a running scan now QUEUES).
+**M0, M1, M2, M4, and M7 are shipped**, M4 together with product call 4 (a "Rescan now" during a running scan now
+QUEUES). What executing M7 changed about the rest of this plan:
+
+- **The plan named one mechanism and the milestone needed two.** Atomic handoff plus a yield channel is what lets a
+  SEARCH take ground off a background walk, and it is the whole of what the plan described. It does nothing for the case
+  the product problem is actually about: the phase machine walking a big sibling while the user opens a folder, where
+  nobody takes a claim at all — the machine consults its own visit queue. So `walk_group` also stops the walk it is
+  inside, per batch, when a folder somebody opened is waiting behind it. **Two preemption paths, one for each way a
+  folder can be waiting**, and they meet at the same cancel token.
+- **The join rule turned out not to be the problem the plan feared.** Cancel-to-join measured 89 ms median over
+  2,400-directory roots and 151 ms median (214 ms worst) over 40,000-directory ones
+  (`docs/notes/preemption-2026-08-18.md`): the walker checks its token between directories, so it grows far slower than
+  the ground does. ⚠️ Not measured over SMB, where it is a listing round trip rather than a `readdir`; that is the
+  number to take if preemption ever feels unresponsive on a NAS.
+- **What the plan did not ask for, and should have: preemption has a break-even.** The machine hears where the user is
+  looking on the reporter's 500 ms tick, so stopping a walk only pays when the root it is on takes longer than that tick
+  plus the join. Below that the machine is slightly SLOWER to cover the folder than doing nothing would have been. Worth
+  taking: the loss is bounded by the poll tick and lands only where nobody was waiting long anyway, and the alternative
+  needs a size estimate for ground that is virgin by definition.
+- **The data-safety window the plan flagged is real and sits somewhere else than expected.** It is not the handoff (a
+  root goes from the leaving holder to the waiter under one lock, so nothing can be mid-write between them). It is the
+  STOPPED walk: it keeps writing after it is asked to stop, and its ground changes hands the moment it lets go, while
+  the next holder decides what is virgin ground by reading the database. So a stopped walk now flushes whatever
+  `FlushOnFinish` its caller chose. ⚠️ **No test can make that fail** — the window needs a writer backlog and a unit
+  test's writer keeps up — so it is pinned in the SOURCE by
+  `cover::tests::flushing_a_stopped_walk_cannot_be_tidied_away`, which is M4's guard pattern reused.
+- **`Claim::take` grew a `Holder` rather than a `Mode`.** A walking holder has to carry the token that stops it, and
+  passing the two beside each other would make "a holder nobody can ask to stop" representable. The mode is now derived
+  from the holder, and `Mode` survives only as what a refusal REPORTS.
+- **The claim table got its own `CLAUDE.md` + `DETAILS.md`** (`lifecycle/cover/live/`). `cover/CLAUDE.md` was at the
+  600-word ceiling and this milestone adds must-knows to it; the table is a mechanism every holder on the volume
+  arbitrates through, not a detail of the cover walk, so it was split rather than shaved.
+- **A bug the milestone found next door:** the visit check read only the FRONT of the visit log, and both panes report
+  every tick — so a pane parked on covered ground hid the folder somebody just opened, indefinitely. Both sides now ask
+  whether ANY remembered folder still has its turn coming
+  (`visits::tests::a_folder_behind_one_that_had_its_turn_is_still_waiting`).
+- **Invariant density: 387 → 398 for `crates/cmdr-index` (+11 net).** The cover pair lost 9 (rules MOVED into the new
+  `live/` pair), the `live/` pair holds 18, and `phases/DETAILS.md` gained 2. Roughly seven are genuinely new, and they
+  are the preemption policy: who may be asked, who may never be, what a stopped walk owes. ⚠️ **Five of the five shipped
+  milestones have raised the count**, which is the plain answer to the thesis this plan is named for: adding a mechanism
+  adds rules, and this one added the most product value of the five. Every new rule names the test that catches it where
+  one exists, and says so plainly where none can.
+
 What executing M4 changed about the rest of this plan:
 
 - **The waiter is a bit on the claim table's own per-volume entry**, not a set beside it, because "may that rescan
@@ -463,7 +505,7 @@ else in this plan depends on M5.
 to 8. Its subtree semantics map onto claims directly. **Migrate the ownership half only**; the throttle, settle, churn
 backoff, and hourglass hold are cost policy. A partial M6 is fine.
 
-### M7 — Preemption (the product win; depends on M1 and M2 only)
+### M7 — Preemption (the product win; depends on M1 and M2 only) ✅ DONE
 
 **Intent:** today a folder the user opens can wait tens of seconds behind a large sibling (`~/projects-git` is 1.58M
 entries on David's machine). `phased-indexing-plan.md` § "Interleaving without preemption" rules it out for **two**
@@ -486,8 +528,10 @@ cancel-to-join bound. **Checks:** `pnpm check --include-slow`.
 
 ## Product calls for David
 
-1. **M7 preemption: ship it?** Fixes a real, measured UX wart. Cost: a background first index takes marginally longer,
-   and its progress ordering becomes non-monotonic. Recommendation: **yes, after M0 to M4 are green.**
+1. **M7 preemption: ship it?** ✅ **SHIPPED.** The cost landed as predicted: a background first index pays a stopped
+   walk's cancel-to-join (134 ms median locally) plus a re-walk of the ground the stopped group left, and its progress
+   ordering is now openly non-monotonic — a stopped group asks for another pass, so the frontier can grow back between
+   passes. What the user gets for it is in `docs/notes/preemption-2026-08-18.md`.
 2. **M5 custody: spike it?** Wide refactor, and the spike now has to answer what replaces the `ShuttingDown` exclusion.
    Recommendation: **spike it, decide on the numbers.**
 3. **M6: defer indefinitely?** Consistency win, touches the live hot path. Easy to skip.

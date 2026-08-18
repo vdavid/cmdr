@@ -54,6 +54,9 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   Read it before assuming the claim is too cheap to matter: it was 446.77 ms on the thread a search waits on, an order
   of magnitude above what the plan that ordered the measurement had guessed. It names ~450 ms of
   `cover-no-ground-block-2026-08-15.md`'s unattributed 3.0 s and ❌ does not close that question.
+- `preemption-2026-08-18.md` — what stopping a walk costs (cancel-to-join, the bound the claim table's atomic handoff
+  does NOT fix) and what it buys the folder somebody just opened. Read it before widening `YIELD_WAIT`, before assuming
+  a stopped walk is free, or before taking preemption to a share: the SMB half of the handover is tested but not timed.
 - `churn-against-completion-2026-08-15.md` — whether a drive somebody is writing to can stop its first index from ever
   finishing (no: it takes ~200 new folders a second sustained to cost one session's completion marker, and the next
   launch settles the drive in ~2 s). Read it before treating a slow first index on a busy machine as a regression, or
