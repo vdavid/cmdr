@@ -1119,3 +1119,21 @@ exactly what the copy avoids.
 - `foregroundBusyToast` no longer claims another operation holds the window (`这里已经打开了别的东西`): the blocker can
   be any dialog. "bring this one up" → `再显示这一项`, tying to the row's `显示` (Show) button · high
 - No `sameAsSourceJustification` needed: all eight values differ from English.
+
+### 重命名链的其他文件计数 (`fileExplorer.rename.chainKeptOriginalNameAndOthers`, 2026-08-18)
+
+macOS Finder zh-CN Tier 1 (KEY-based en→zh), Xfce Thunar zh-CN cross-check.
+
+- **"and so did {N} other files" (the counted tail of the growing rename toast)** → `其他 {othersText} 个文件也是如此`
+  · macOS Finder renders this exact `"X" and N other items` construction as `“^1”和其他^0个项目` (`MR101_V2/V3`
+  Receiving, `MR201_V2/V3` Sending, `PE106_V3/V4` Merge), so "other files" → `其他…个文件`; Thunar zh-CN agrees on
+  `其他文件` for "other files". Measure word `个` per the settled `{count} 个文件` pattern, with spaces around the
+  Latin-digit placeholder per style.md · `high`
+- **Why a separate clause instead of macOS's merged `“{name}”和其他 N 个文件都…`** · the merged subject would bind
+  `{reason}` to all N+1 files, but the `@key.description` says the reason describes ONE file only (the earlier ones can
+  have had different reasons). `，…也是如此` keeps the reason scoped to `{name}` while still counting the rest ·
+  `high`
+- **"kept its name" stays `保留了原来的名称`** · verbatim from the sibling `fileExplorer.rename.chainKeptOriginalName`
+  (the two are one toast that grows, so they must read as one sentence family) · `confirmed`
+- Plural: only the `other` branch, per the Chinese CLDR category; the branch reads naturally for `{others}` = 1 as well
+  (`其他 1 个文件也是如此`).

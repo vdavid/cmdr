@@ -805,6 +805,10 @@
   "@fileExplorer.rename.chainKeptOriginalName": {
     "sourceHash": "5b5e6ce"
   },
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. \"{name}\" manteve o nome, assim como {others, plural, one {outro arquivo} many {outros {othersText} arquivos} other {outros {othersText} arquivos}}.",
+  "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
+    "sourceHash": "7b23e8e"
+  },
   "fileExplorer.columns.name": "Nome",
   "@fileExplorer.columns.name": {
     "sourceHash": "dcd1d52"

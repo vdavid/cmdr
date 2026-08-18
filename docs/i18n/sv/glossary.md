@@ -1186,3 +1186,33 @@ Rättar den `tentative`-markerade rollback-posten ovan och löser den inkonsekve
   substantivet `ångring`, som är korrekt men styltigt i ett gränssnitt.
 - Oförändrade för att de redan stämmer: `rollbackConfirm.body`, `rollbackConfirm.keep`,
   `transferProgress.rollbackTooltip` (`Stoppa`-posten ovan gäller fortfarande).
+
+## Kedjade namnbyten: toasten som räknar de övriga (2026-08-18; `fileExplorer.rename.chainKeptOriginalNameAndOthers`)
+
+Samma toast som `fileExplorer.rename.chainKeptOriginalName`, omskriven varje gång ytterligare en fil i pilkedjan
+behåller sitt namn: den namnger den senaste och räknar de tidigare. Systersträngens `”{name}” behåller sitt namn` är
+redan satt, så den här nyckeln får bara ett påhäng, inte en ny formulering.
+
+- **"kept its name" → `behåller sitt namn`** (oförändrat från systersträngen) · Total Commander sv sätter kollokationen i
+  precis den här domänen: `WCMD.LNG.utf8` `1673="&Behåll namnet;Avbryt"` och `1674="&Behåll namnet;Behåll &alla;…"` är
+  knapparna i namnkonflikten. macOS sv har verbet i samma sammanhang ("Om befintliga objekt med samma namn i målmappen
+  ska **behållas** eller skrivas över", `Finder/LocalizableMerged.json`) men ingen färdig mening att kopiera. Presens,
+  inte preteritum: engelskans "kept" ser tillbaka på en åtgärd som just misslyckades, medan svenskan här beskriver
+  tillståndet filen står i. `high`.
+- **"N other files" → `{othersText} andra filer`, singular `en annan fil`** · Nautilus sv översätter
+  `%'d other item selected` / `%'d other items selected` → **"%'d annat objekt markerat"** / **"%'d andra objekt
+  markerade"**, alltså exakt det räknade "other" vi behöver, i filhanterardomänen. Vi byter objekt mot `fil` eftersom
+  nyckeln bara gäller filer; `fil` är utrum, så det blir `en annan fil` / `andra filer`. `high`.
+- **"and so did …" → `, liksom …`** · svenskans täta motsvarighet till engelskans pro-verb: bisatsens verb elideras, så
+  det reflexiva `sitt namn` aldrig behöver böjas om till `sina namn`. Ingen träff i högen (macOS sv använder i stället
+  `och ytterligare ^0.` för "and ^0 more.", `N141.3`), men `liksom` är standardsvenska och håller meningen i ETT stycke,
+  vilket toasten behöver. ❌ Inte `och det gör …`: `och` mellan två korta huvudsatser tar ingen kommatecken enligt
+  style.md, och "behåller sitt namn och det gör tre andra filer" blir oläsbart utan pausen. ❌ Inte
+  `och detsamma gäller …`: korrekt men byråkratiskt, tvärtemot husrösten. `tentative` (sammansatt; låg risk).
+- **Citattecknen är `”…”`** i båda systersträngarna, per style.md; macOS sv skriver sitt eget namn-slot likadant
+  (`N141.2` = `\n\t”^0”`).
+- Inget `sameAsSourceJustification` behövs: värdet skiljer sig från engelskan.
+- ⚠️ Flaggat för en framtida granskare: `{reason}` är text Cmdr inte helt styr över och avslutas utan punkt, så
+  meningen börjar med en inskjuten främmande sats. Det fungerar i svenskan lika bra som i engelskan, men om en `reason`
+  någon gång slutar med `?` eller `!` blir `. ` efter den fel i båda språken; det är då engelskans nyckelform som ska
+  ändras, inte den här översättningen.

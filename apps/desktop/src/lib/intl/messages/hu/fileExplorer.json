@@ -804,6 +804,10 @@
   "@fileExplorer.rename.chainKeptOriginalName": {
     "sourceHash": "5b5e6ce"
   },
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. A(z) „{name}” megtartotta a nevét, és még {others, plural, one {egy másik fájl} other {{othersText} másik fájl}} is.",
+  "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
+    "sourceHash": "7b23e8e"
+  },
   "fileExplorer.columns.name": "Név",
   "@fileExplorer.columns.name": {
     "sourceHash": "dcd1d52"

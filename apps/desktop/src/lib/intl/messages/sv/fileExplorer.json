@@ -805,6 +805,10 @@
   "@fileExplorer.rename.chainKeptOriginalName": {
     "sourceHash": "5b5e6ce"
   },
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. ”{name}” behåller sitt namn, liksom {others, plural, one {en annan fil} other {{othersText} andra filer}}.",
+  "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
+    "sourceHash": "7b23e8e"
+  },
   "fileExplorer.columns.name": "Namn",
   "@fileExplorer.columns.name": {
     "sourceHash": "dcd1d52"

@@ -1067,3 +1067,21 @@ that jargon is exactly what the copy avoids.
   (`queue.row.foreground`) so the instruction names the control the user has to press · high.
 - No `sameAsSourceJustification` needed: every value differs from English (`Rollback` differs from the source's two-word
   `Roll back`).
+
+## Rename chaining: the counted "and so did N others" toast (`fileExplorer.rename.chainKeptOriginalNameAndOthers`, 2026-08-18)
+
+The growing warning toast for an arrow-key rename run: it names the most recent file that kept its name and counts the
+earlier ones. Must read as one voice with its sibling `fileExplorer.rename.chainKeptOriginalName`
+(„{name}“ behält seinen Namen.), same quotes, same verb.
+
+- **"and so did N other files" → `ebenso {othersText} weitere Dateien`** · macOS Finder `de` renders the counted-other
+  tail elliptically (`Alle neueren Objekte wie „^1“ und ^0 weitere werden beibehalten.`, key `PE106_V4`; the `V3`
+  singular is "^0 weiteres"), and uses `ebenso` for "so did/too" ("Geteilte Objekte in diesem Ordner werden ebenso
+  gelöscht.") · high. The gapping construction (`„A“ behält seinen Namen, ebenso 3 weitere Dateien.`) drops the repeated
+  verb, so the singular/plural agreement question never arises, and it stays short — welcome for a toast in the longest
+  of Cmdr's languages.
+- **`weitere`, not macOS's alternative `andere`** ("und ^0 andere Objekte", `MR101_V3`): the sense here is "N additional
+  files did the same", and the catalog already renders every counted trailing tail with `weitere`
+  (`fileOperations.errorDialog.tooLargeAndMore`, `operationLog.dialog.moreItems`) · high.
+- **The `one` branch spells the word out (`eine weitere Datei`), no number** · mirrors the en source's "one other file"
+  and reads better than "1 weitere Datei"; `{othersText}` still carries every count ≥ 2 · high.

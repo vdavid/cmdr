@@ -1190,6 +1190,7 @@ export type MessageKey =
   | 'fileExplorer.readOnly.renameMessage'
   | 'fileExplorer.readOnly.volumeTitle'
   | 'fileExplorer.rename.chainKeptOriginalName'
+  | 'fileExplorer.rename.chainKeptOriginalNameAndOthers'
   | 'fileExplorer.rename.hiddenAfterRename'
   | 'fileExplorer.rename.keptOriginalName'
   | 'fileExplorer.renameConflict.cancel'

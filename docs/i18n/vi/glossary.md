@@ -1198,3 +1198,27 @@ is exactly what the copy avoids.
 - `foregroundBusyToast` no longer claims another operation holds the window ("Ở đây đang mở một thứ khác"): the blocker
   can be any dialog. "bring this one up" → `hiện thao tác này lên`, tying to the row's `Hiện` (Show) button · high
 - No `sameAsSourceJustification` needed: all eight values differ from English.
+
+## Đổi tên liên tiếp: thông báo gộp khi nhiều tệp giữ nguyên tên (2026-08-18; `fileExplorer.rename.chainKeptOriginalNameAndOthers`)
+
+The growing sibling of `fileExplorer.rename.chainKeptOriginalName` (`{reason}. "{name}" vẫn giữ nguyên tên.`). One
+toast, rewritten each time another file in the arrow-key rename run keeps its name, so the two must read as one voice:
+same `vẫn giữ nguyên tên` predicate, same straight ASCII quotes around `{name}` (the sibling already ships them; ❌ don't
+switch this pair to the style guide's curly `“…”` alone — that's a both-keys migration).
+
+- **"and N other files" → `và {othersText} tệp khác`** · macOS Finder Tier 1 has the exact name-plus-count shape:
+  `Đang gửi “^1” và ^0 mục khác.` ("Sending "X" and N other items."), `và ^0 mục khác.`, and
+  `bảo lưu tất cả các mục mới hơn như “^1” và ^0 mục khác`. GNOME Nautilus agrees on the bare numeral + noun + `khác`
+  (`Đã chọn %'d mục khác`), Xfce Thunar on `Các tệp khác`. ⚠️ No `các` before a numeral: the number already carries the
+  count · high
+- **"and so did …" → `… cũng vậy`** (sentence-final pro-predicate) · everyday standard Vietnamese for "likewise", and
+  the only way to keep English's two-clause scoping: `{reason}` describes ONE file, so merging into
+  `"{name}" và N tệp khác vẫn giữ nguyên tên` would silently spread the reason across all of them. `cũng` as "also" is
+  densely attested in the pile (macOS `tài liệu cũng sẽ được mở khóa`, `Chúng cũng sẽ bị xóa`); the `vậy` pro-predicate
+  is not, hence `tentative`. Fully explicit fallback if a native reader finds it thin:
+  `và {othersText} tệp khác cũng giữ nguyên tên` · tentative
+- **Plural: one `other` arm only** (`{others, plural, other {{othersText} tệp khác}}`), per style.md's single-category
+  rule. `{others}` is kept solely to drive the selection; ❌ never add an `=1`/`one` arm reproducing English's split —
+  `tệp` doesn't inflect. The framing words (`và`, `cũng vậy`) sit OUTSIDE the branch so the arm holds exactly what
+  English's arm holds.
+- No `sameAsSourceJustification` needed: the value differs from English.

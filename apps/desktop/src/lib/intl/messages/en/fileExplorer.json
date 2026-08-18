@@ -1177,10 +1177,20 @@
   },
   "fileExplorer.rename.chainKeptOriginalName": "{reason}. \"{name}\" kept its name.",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "description": "Warning toast shown when the user renames a run of files by pressing the up/down arrow inside the inline rename editor, and one of those renames didn''t apply (the typed name was unusable, or the name was already taken). The editor has already moved on to another file, so the toast names the file that kept its original name. {reason} is the reason, a full sentence without a closing period (for example \"Changing the file extension isn''t allowed (was \".txt\")\" or \"\"notes.txt\" already exists in this folder\"). {name} is the filename, shown in quotes.",
+    "description": "Warning toast shown when the user renames a run of files by pressing the up/down arrow inside the inline rename editor, and ONE of those renames didn''t apply (the typed name was unusable, or the name was already taken). The editor has already moved on to another file, so the toast names the file that kept its original name. {reason} is the reason, a full sentence without a closing period (for example \"Changing the file extension isn''t allowed (was \".txt\")\" or \"\"notes.txt\" already exists in this folder\"). {name} is the filename, shown in quotes. As soon as a second file keeps its name, this same toast is rewritten with fileExplorer.rename.chainKeptOriginalNameAndOthers, so the two read as one message that grows.",
     "placeholders": {
       "reason": "why the rename didn''t apply",
       "name": "the name the file still has"
+    }
+  },
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. \"{name}\" kept its name, and so did {others, plural, one {one other file} other {{othersText} other files}}.",
+  "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
+    "description": "Warning toast shown when the user renames a run of files by pressing the up/down arrow inside the inline rename editor, and SEVERAL of those renames didn''t apply. It is the same single toast as fileExplorer.rename.chainKeptOriginalName, rewritten each time another file keeps its name: it names the most recent one and counts the earlier ones, so a long run can''t bury the user in toasts. {reason} is why the most recent rename didn''t apply, a full sentence without a closing period (for example \"Changing the file extension isn''t allowed (was \".txt\")\" or \"\"notes.txt\" already exists in this folder\"); it describes that one file only. {name} is that file''s name, shown in quotes. {othersText} is how many OTHER files kept their names, already formatted for display; it is always 1 or more.",
+    "placeholders": {
+      "reason": "why the most recent rename didn''t apply",
+      "name": "the name the most recent file still has",
+      "othersText": "how many other files kept their names, already formatted for display",
+      "others": "the same number of other files (drives the singular/plural form)"
     }
   },
   "fileExplorer.columns.name": "Name",

@@ -169,6 +169,15 @@ parallel":
 - **`remove` vs `delete` is a systematic trap.** macOS and Microsoft render both with one verb in many languages, so
   Tier-1 evidence actively pushes toward a verb meaning "delete" on a button that doesn't delete. Check this pair
   explicitly per locale instead of following the pile (es `Quitar`, fr `Retirer`, vi `Gỡ` all diverge deliberately).
+- **A counted "…and N other items" tail has first-party evidence in every language: macOS Finder's `MR101_V2/_V3`,
+  `MR201_V2/_V3`, and `PE106_V3/_V4` keys** (`macOS/Finder/LocalizableMerged.json`, English side `en/macOS/`). They ship
+  both the singular and the plural of `“^1” and ^0 other item(s)`, so they show how a language counts the followers AND
+  whether it repeats or elides the verb (`de` elides: "… wie „^1“ und ^0 weitere werden beibehalten."). Grep the English
+  file for `and ^0 other item`, then read the same keys in your locale.
+- **Don't fuse the subjects of a "X did this, and so did N others" string.** The tidier merged form ("X and N other
+  files kept their names") is what the pile attests, so it pulls hard — but when the key also carries a `{reason}`
+  describing only X, merging silently widens that reason to all N+1 files. Keep the tail as its own clause. Hit in
+  `fileExplorer.rename.chainKeptOriginalNameAndOthers` by zh, hu, and nl independently.
 
 ## Orchestration gotchas (for whoever automates this)
 

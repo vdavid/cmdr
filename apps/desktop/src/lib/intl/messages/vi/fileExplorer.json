@@ -804,6 +804,10 @@
   "@fileExplorer.rename.chainKeptOriginalName": {
     "sourceHash": "5b5e6ce"
   },
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. \"{name}\" vẫn giữ nguyên tên, và {others, plural, other {{othersText} tệp khác}} cũng vậy.",
+  "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
+    "sourceHash": "7b23e8e"
+  },
   "fileExplorer.columns.name": "Tên",
   "@fileExplorer.columns.name": {
     "sourceHash": "dcd1d52"

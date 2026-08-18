@@ -1005,3 +1005,29 @@ ganha um status próprio quando para porque há uma pergunta esperando na janela
   próclise antes de infinitivo, Rever, alterar o nome, **você** omitido): zero ocorrências. Marcas brasileiras:
   **arquivos**, **gravou**, a ênclise **Feche-a**.
 - Nenhum `sameAsSourceJustification` necessário: os oito valores diferem do inglês.
+
+### Cadeia de renomeação: o aviso que cresce (`fileExplorer.rename.chainKeptOriginalNameAndOthers`, 2026-08-18)
+
+O mesmo toast de `fileExplorer.rename.chainKeptOriginalName`, reescrito a cada arquivo que mantém o nome: nomeia o mais
+recente e conta os anteriores.
+
+- "kept its name" · **manteve o nome** · valor já publicado no irmão `chainKeptOriginalName`; macOS Finder pt-BR apoia a
+  família `Manter` ("Manter Original", "Manter Ambos") · confirmed. As duas chaves são uma frase só, então o verbo, as
+  aspas retas em volta de `{name}` e o ponto depois de `{reason}` são idênticos nos dois valores.
+- "and ^0 other items" (o sintagma contado) · **outros {N} itens/arquivos**, com **outros** ANTES do numeral · macOS
+  Finder pt-BR, referência cruzada por chave em `LocalizableMerged.json`: `MR201_V3` "Sending “^1” and ^0 other items."
+  → "Enviando “^1” e outros ^0 itens.", `MR101_V3` (Receiving) e `PE106_V4` (Merge) na mesma forma · confirmed. ❌ Não
+  "{N} outros arquivos": o GNOME Nautilus pt-BR usa essa ordem ("%'d outros itens selecionados"), mas o Finder é Tier 1
+  e a frase dele ("nome" + e N outros itens) é a mesma estrutura desta, então a ordem do Finder ganha.
+- "and so did …" (a elipse que retoma o verbo) · **assim como …** · construção padrão do português para retomar o
+  predicado sem repeti-lo; o pile tem um uso da mesma construção no macOS ("O sistema trata os itens com nomes assim
+  como arquivos invisíveis"), mas no sentido comparativo, então a evidência direta é da gramática, não do pile · high.
+  Escolhida em vez de "e … também" (o par "e … também" fica redundante em texto de UI) e de "e o mesmo aconteceu com …"
+  (longo demais para um toast).
+- "one other file" · **outro arquivo**, sem numeral · o inglês escreve "one" por extenso; o pt-BR resolve com o próprio
+  **outro**, seguindo o padrão já publicado de ramos `one` sem número (`one {uma vez}`, `one {arquivo}`) · high.
+- Plural: ramos `one` / `many` / `other` (o `many` do CLDR pt pega números grandes: 1.000.000 seleciona `many`,
+  verificado com `intl-messageformat` em `pt`). Tudo o que concorda com o substantivo contado (**outro** / **outros**,
+  **arquivo** / **arquivos**) fica DENTRO dos ramos; fora do plural sobra só o ponto final.
+- Verificação regional contra a lista de indícios pt-PT do style guide: zero ocorrências. Marca brasileira: **arquivo**.
+- Nenhum `sameAsSourceJustification` necessário: o valor difere do inglês.

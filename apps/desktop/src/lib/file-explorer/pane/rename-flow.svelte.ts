@@ -7,6 +7,7 @@ import { getSetting } from '$lib/settings'
 import type { RenameConflictResolution } from '../rename/rename-operations'
 import { addToastForPane, dismissTransientToastsForPane, type ToastOriginPane } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
+import { formatInteger } from '$lib/intl/number-format'
 import { pathInsideArchive } from './volume-capabilities'
 import type { FileEntry } from '../types'
 import type { StartRenameOptions } from './types'
@@ -234,17 +235,45 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     void executeFlow(true)
   }
 
+  // One toast for every name a chain didn't apply, replaced in place as more
+  // arrive. Reusing the id is what keeps the count honest: the store holds five
+  // toasts and silently DROPS a new one when they're all persistent, so a toast
+  // per kept name would lose everything past the fifth without a trace.
+  const keptNamesToastId = `rename-kept-names-${deps.paneId}`
+  // Names counted by the toast currently on screen: dismissing it is the user
+  // saying they've read it, and the next one starts over.
+  let keptNamesCount = 0
+
   /**
-   * Says which file kept its name when a chained rename didn't apply.
+   * Says which files kept their names when chained renames didn't apply.
    *
    * Persistent on purpose: `handleRenameInput` clears this pane's transient
    * toasts on every keystroke, which is exactly when the user is typing the next
    * name, so a transient one would be gone before it was read.
+   *
+   * The newest file is the one named, with the reason it kept its name; the
+   * others become a count. Holding the arrow through a directory where a dozen
+   * names clash is one message that grows, not a dozen fighting for five slots.
    */
   function toastKeptName(originalName: string, reason: string): void {
-    addToast(tString('fileExplorer.rename.chainKeptOriginalName', { reason, name: originalName }), {
+    keptNamesCount += 1
+    const others = keptNamesCount - 1
+    const content =
+      others === 0
+        ? tString('fileExplorer.rename.chainKeptOriginalName', { reason, name: originalName })
+        : tString('fileExplorer.rename.chainKeptOriginalNameAndOthers', {
+            reason,
+            name: originalName,
+            others,
+            othersText: formatInteger(others),
+          })
+    addToast(content, {
       level: 'warn',
       dismissal: 'persistent',
+      id: keptNamesToastId,
+      onDismiss: () => {
+        keptNamesCount = 0
+      },
     })
   }
 

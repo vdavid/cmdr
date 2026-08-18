@@ -1167,3 +1167,23 @@ jargon is exactly what the copy avoids.
   valor lo explicita: "… y luego muestra esta operación", reutilizando el botón `Mostrar` (`queue.row.foreground`) ·
   high.
 - No hace falta `sameAsSourceJustification`: todos los valores difieren del inglés.
+
+## La cadena de renombrados: el aviso que cuenta los archivos que no cambiaron (`fileExplorer.rename.chainKeptOriginalName*`, 2026-08-18)
+
+- **"kept its name" → `mantuvo su nombre`** · reafirma lo que ya usa el hermano `chainKeptOriginalName`
+  ("{reason}. “{name}” mantuvo su nombre."); macOS `es` usa `conservar` para el sentido de "quedarse con" en diálogos de
+  elección ("Conservar original", "¿Quieres conservarla?"), pero ahí el usuario ELIGE conservar, mientras que aquí el
+  archivo se quedó con su nombre sin que nadie lo decidiera, y `mantuvo` cuenta ese hecho sin sugerir una elección ·
+  high (consistencia con el hermano + matiz de sentido). Los dos son un solo aviso que se reescribe, así que la fórmula
+  tiene que ser idéntica palabra por palabra.
+- **"and so did {n} other files" (un elemento nombrado + el recuento de los demás) → `y otros {n} archivos también`** ·
+  macOS `es` Finder tiene el patrón exacto (nombrar uno entre comillas y contar el resto): PE106_V4 "… como “^1” y otros
+  ^0 ítems", y AirDrop MR201_V3/MR101_V3 "Enviando/Recibiendo “^1” y ^0 ítems más". Nautilus/Thunar `es` confirman "y
+  otros archivos". Se elige `y otros N archivos` sobre el `y N ítems más` de AirDrop porque el inglés dice "other files"
+  y el catálogo ya fija file → `archivo`; el `también` final es lo que carga el "and so did" · high.
+- **Rama singular sin numeral: `y otro archivo también`** · en español `otro` ya dice "uno más", así que meter el
+  numeral ("y 1 otro archivo") sería agramatical. El inglés hace lo mismo (su rama `one` escribe "one other file" y no
+  usa `{othersText}`), así que `{othersText}` solo aparece en `many`/`other` · high.
+- **Comillas: `“…”` (curvas), como el hermano y como macOS `es`** · nunca `«…»` ni comillas rectas, aunque otras claves
+  viejas de `fileExplorer.json` (`renameConflict.description`) todavía usen las rectas · high.
+- No hace falta `sameAsSourceJustification`: el valor difiere del inglés.
