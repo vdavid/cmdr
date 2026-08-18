@@ -19,10 +19,6 @@ re-exports every submodule item, keeping `crate::volumes_linux::X` paths stable.
 - **`watcher.rs`**: two inotify watchers (see must-knows). Diffs known state, registers/unregisters with
   `VolumeManager`, emits `volume-mounted` / `volume-unmounted` Tauri events.
 
-Location categories: `Favorite` (user-editable, from the `favorites/` store, existence-checked), `MainVolume` (root
-`/`), `AttachedVolume` (real filesystems from `/proc/mounts`), `CloudDrive` (`~/Dropbox`, `~/Google Drive`,
-`~/.local/share/Nextcloud`, `~/OneDrive`), `Network` (GVFS SMB shares under `/run/user/<uid>/gvfs/smb-share:*`).
-
 ## Must-knows
 
 - **❌ Never derive a volume ID yourself; call `volume_id_for_mount`.** It's the twin of macOS `volumes::ids` and owns
@@ -53,15 +49,8 @@ Location categories: `Favorite` (user-editable, from the `favorites/` store, exi
   falls back `$USER` → `$LOGNAME` → empty; empty makes everything non-ejectable, the safe default.
 - **`is_submount()` filters bind mounts nested under a real mount**, so dev `node_modules` / build-dir bind mounts don't
   clutter the sidebar as separate volumes.
-- **The volume IPC commands aren't per-platform.** `commands/volumes.rs` serves both, reaching this module through one
-  `platform` alias; `commands/volumes_linux.rs` is a bare re-export that exists only as a registration path for
-  `ipc.rs`. A Linux-only behavior goes behind that alias. The separate command module this replaced had quietly drifted
-  into shipping Linux without the archive-boundary resolve and without the timeouts that keep a hung mount off the IPC
-  thread, which is the failure mode a second copy invites.
-
-## Dependencies
-
-`linux_mounts` (`/proc/mounts` parsing + fstype lookup), `dirs`, `libc` (`statvfs`), `notify` (inotify), and
-`crate::file_system::volume::{manager::get_volume_manager, LocalPosixVolume}`.
+- **The volume IPC commands aren't per-platform**: `commands/volumes.rs` serves both through one `platform` alias, and
+  `commands/volumes_linux.rs` is a bare re-export `ipc.rs` registers against. Linux-only behavior goes behind the
+  alias. DETAILS § "One command module".
 
 Full details (decision rationale): `DETAILS.md`.

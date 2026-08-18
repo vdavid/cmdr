@@ -2,6 +2,30 @@
 
 Decision rationale. `CLAUDE.md` holds the must-knows.
 
+## What each location category covers
+
+`Favorite` (user-editable, from the `favorites/` store, existence-checked), `MainVolume` (root `/`), `AttachedVolume`
+(real filesystems from `/proc/mounts`), `CloudDrive` (`~/Dropbox`, `~/Google Drive`, `~/.local/share/Nextcloud`,
+`~/OneDrive`), `Network` (GVFS SMB shares under `/run/user/<uid>/gvfs/smb-share:*`).
+
+## Dependencies
+
+`linux_mounts` (`/proc/mounts` parsing + fstype lookup), `dirs`, `libc` (`statvfs`), `notify` (inotify), and
+`crate::file_system::volume::{manager::get_volume_manager, LocalPosixVolume}`.
+
+## One command module
+
+`commands/volumes.rs` serves macOS and Linux alike. The genuine platform difference is this module versus `volumes/`,
+reached through one `#[cfg]`'d `platform` alias, and the only other divergence is `NETWORK_FS_TYPE` (`smbfs` / `cifs`),
+which the synthetic `network` volume reports. `commands/volumes_linux.rs` is a `pub use super::volumes::*;` re-export,
+kept because `ipc.rs` and `ipc_collectors.rs` register the Linux command set under that path.
+
+The pair of hand-maintained command modules this replaced had drifted: Linux resolved a path inside an archive to
+nothing (no `confirm_archive_boundary`, so a pane deep-linked inside a `.zip` couldn't find its volume), and both
+`list_volumes` and `get_volume_space` ran their blocking work straight on the async thread with no deadline, so one
+wedged CIFS mount held the IPC handler. macOS had all three guards. Every test in the shared module now runs on both
+platforms, which is what keeps them.
+
 ## Decisions
 
 **Decision**: two separate inotify watchers, one for `/proc/mounts`, one for `/run/user/<uid>/gvfs/`.

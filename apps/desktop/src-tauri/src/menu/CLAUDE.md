@@ -9,8 +9,8 @@ user shortcuts, and enables/disables items by focus context.
   `menu_id_to_command` / `command_id_to_menu_id` maps).
 - `menu_items.rs` / `menu_structure.rs`: piece builders and hierarchical assembly. `menu_handlers.rs`: events and
   live-update helpers. `media_index_items.rs`: the image-search-items decider. `macos.rs` / `linux.rs`: platform menu
-  bars, each assembling shared pieces (`build_sort_submenu`, `build_zoom_submenu`, `build_view_mode_items`) around its
-  own layout. `open_with.rs`: the macOS "Open with" submenu.
+  bars, assembling shared pieces (`build_sort_submenu`, `build_zoom_submenu`, `build_view_mode_items`) around their own
+  layouts. `open_with.rs`: the macOS "Open with" submenu.
 
 ## Must-knows
 
@@ -21,8 +21,7 @@ user shortcuts, and enables/disables items by focus context.
   `MenuState` tracks each item's submenu and index for this, so **adding or moving one item shifts every
   `register_item` index after it**, mangling a different item on the first rebind.
   `register_item_positions_match_submenu_order` fails on a mismatch; keep the position comments truthful too. It parses
-  both platform files as source, which is why the near-identical `register_item` blocks stay in `macos.rs` / `linux.rs`
-  rather than sharing one helper. `DETAILS.md` § Key decisions.
+  both platform files, which is why their near-identical `register_item` blocks stay put (`DETAILS.md`).
 - **CheckMenuItems (view modes, show hidden) must NOT use `"execute-command"`.** They auto-toggle on click, so emitting
   it too would double-toggle; they emit `"settings-changed"` / `"view-mode-changed"` directly. Sort items emit
   `"menu-sort"`; close-tab and "Open with" have their own paths. Why some are still in `menu_id_to_command`:
@@ -52,8 +51,6 @@ user shortcuts, and enables/disables items by focus context.
   `menu_labels_use_the_ellipsis_character`). Per-item verdicts and why: `DETAILS.md`.
 - **macOS SF Symbol map matches by exact title string**, including the `\u{2026}` ellipsis: keep the `MenuItem` title and
   the symbol map byte-identical, or the item silently loses its icon. Menu bar only, never context menus (`DETAILS.md`).
-- **⌘G / ⌘J double-dispatch on macOS**: the combo fires both the native menu and the JS keydown. Safe unsuppressed
-  (both handlers are idempotent), so expect two log lines per press.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
