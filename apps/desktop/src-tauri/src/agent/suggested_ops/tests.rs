@@ -220,12 +220,7 @@ fn build_index(path: &std::path::Path, rows: &[IndexRow]) {
     let mut dir_ids: HashMap<String, i64> = HashMap::new();
     let mut next_id = ROOT_ID + 1;
 
-    fn ensure_dir(
-        conn: &Connection,
-        dir: &str,
-        dir_ids: &mut HashMap<String, i64>,
-        next_id: &mut i64,
-    ) -> i64 {
+    fn ensure_dir(conn: &Connection, dir: &str, dir_ids: &mut HashMap<String, i64>, next_id: &mut i64) -> i64 {
         use cmdr_index::store::{IndexStore, ROOT_ID};
         if dir.is_empty() || dir == "/" {
             return ROOT_ID;

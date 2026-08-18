@@ -58,6 +58,14 @@ what a log line or a refusal message can carry without leaking a path.
 call counter so `tests/scale.rs` can assert the claim path never calls it. Thread-local, not global: the test harness
 runs tests in parallel threads in one process, so a shared counter would read another test's calls.
 
+## Creation is per-group, and that's fine
+
+`create_group` runs its header insert and all of its op inserts in one `BEGIN IMMEDIATE` (immediate rather than
+deferred because it reads `MAX(seq)` and then writes; a deferred upgrade after another connection wrote yields
+`SQLITE_BUSY_SNAPSHOT`, which the busy timeout does not retry). A sweep's groups each get their own transaction, so a
+crash mid-sweep can leave a sweep with some of its groups. That's harmless by design: a group is independently
+reviewable, and a half-written GROUP is what would matter — that one is atomic.
+
 ## Statuses, and who owns each one
 
 `ProposalStatus` (`agent/types.rs`):

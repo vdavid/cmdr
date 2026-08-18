@@ -89,7 +89,11 @@ pub fn create_sweep(conn: &Connection, sweep: &NewSweep, now: i64) -> Result<i64
 /// The op rows go in with `prepare_cached` inside the same transaction, so a 60 000-op group
 /// is one commit and one compiled statement rather than 60 000 of either.
 pub fn create_group(conn: &Connection, set_id: i64, group: &NewGroup, now: i64) -> Result<i64, AgentStoreError> {
-    let tx = conn.unchecked_transaction()?;
+    // IMMEDIATE, not deferred: this reads `MAX(seq)` and then writes. A deferred
+    // transaction that upgrades to a writer after another connection wrote gets
+    // `SQLITE_BUSY_SNAPSHOT`, which the busy timeout does NOT retry — it would surface as a
+    // failed proposal rather than a wait.
+    let tx = Transaction::new_unchecked(conn, TransactionBehavior::Immediate)?;
     let seq: i64 = tx
         .prepare_cached("SELECT COALESCE(MAX(seq) + 1, 0) FROM proposals WHERE set_id = ?1")?
         .query_row(params![set_id], |row| row.get(0))?;
