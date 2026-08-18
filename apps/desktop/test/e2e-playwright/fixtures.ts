@@ -223,4 +223,87 @@ async function reportAndCleanOverlayLeak(
       `(or click each toast's X). See apps/desktop/test/e2e-playwright/CLAUDE.md § "Closing overlays" ` +
       `for the full rule and the dispatch-on-overlay-not-document rationale.`,
   )
+
+  const stuck = await breakTheCascade(tauriPage)
+  if (stuck !== null) leakReports.push(stuck)
+}
+
+/**
+ * Last resort when the Escape auto-clean above did NOT clear the overlay, so the
+ * app is wedged rather than merely untidy.
+ *
+ * Escape only ever closes a dialog the app is willing to close, and a
+ * transfer-progress dialog over a LIVE operation is not: it's the operation's
+ * only UI, so it stays up until the operation ends. That's the shape that turns
+ * one bad test into a dead shard, because the app is shared and the backend
+ * refuses to start the next operation while a transfer dialog is in the way. One
+ * such wedge produced 196 downstream failures and took a CI run from 5.8 to 33.1
+ * minutes, every one of them reporting the same leaked `.modal-overlay` rather
+ * than anything about the test it was attributed to.
+ *
+ * So when Escape has failed, cancel whatever the dialog is waiting on and try
+ * once more. The culprit's own failure is already recorded either way; this only
+ * decides whether the rest of the shard still means anything.
+ *
+ * Returns null once the screen is clear, or a message naming the surviving
+ * overlays when even cancelling could not free the app — the one case where
+ * every later failure on this shard is noise, and the report says so up front.
+ */
+async function breakTheCascade(tauriPage: EvaluatablePage): Promise<string | null> {
+  const stillOpen = async (): Promise<string[]> => {
+    try {
+      return (
+        (await tauriPage.evaluate<string[] | null>(`(function(){
+                return ['.ui-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown']
+                    .filter(function(s){ return document.querySelector(s) !== null; });
+            })()`)) ?? []
+      )
+    } catch {
+      return []
+    }
+  }
+
+  if ((await stillOpen()).length === 0) return null
+
+  try {
+    // Mirrors `operation-queue.spec.ts`'s drain: cancellation is REQUESTED, not
+    // finished, when the call returns, so wait for the lane to empty, and dismiss
+    // retained failures inside the loop (a retained row never clears itself, and
+    // an op can die while the loop is already spinning). Then Escape again: with
+    // nothing left to run, the dialog now accepts it.
+    await tauriPage.evaluate(`(async function(){
+            try { await window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null }); } catch (e) {}
+            try {
+                var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
+                var ids = ops.map(function(o) { return o.operationId; });
+                if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
+            } catch (e) {}
+            for (var i = 0; i < 50; i++) {
+                try { await window.__TAURI_INTERNALS__.invoke('dismiss_all_failed_operations'); } catch (e) {}
+                var remaining = await window.__TAURI_INTERNALS__.invoke('list_operations');
+                if (!remaining || remaining.length === 0) break;
+                await new Promise(function(r) { setTimeout(r, 100); });
+            }
+            for (var round = 0; round < 2; round++) {
+                ['.ui-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown']
+                    .forEach(function(s){
+                        var el = document.querySelector(s);
+                        if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+                    });
+                await new Promise(function(r) { setTimeout(r, 100); });
+            }
+        })()`)
+  } catch {
+    // Fall through to the probe: what's on screen decides the verdict, not
+    // whether the recovery call itself came back cleanly.
+  }
+
+  const survivors = await stillOpen()
+  if (survivors.length === 0) return null
+  return (
+    `The app is WEDGED: ${survivors.join(', ')} survived both the Escape auto-clean and a full ` +
+    `operation cancel, so every later test on this shard will fail on this same overlay and none of ` +
+    `those failures mean anything. Fix THIS test; ignore the cascade below it. ` +
+    `See apps/desktop/test/e2e-playwright/DETAILS.md § "Breaking the cascade".`
+  )
 }

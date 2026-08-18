@@ -550,6 +550,26 @@ leaked, not at the next test's setup.
 
 See § "The fixture-tree leak guard" for the second probe.
 
+### Breaking the cascade
+
+Escape only closes a dialog the app is WILLING to close, so the auto-clean above is not enough on its own. A
+transfer-progress dialog over a live operation is that operation's only UI and stays up until the operation ends, and
+the backend then refuses to start the next one ("Not starting an operation: the transfer-progress dialog is in the
+way"). One test that lost a conflict answer therefore parked its operation for 28 minutes and took the whole shard with
+it: 196 of 197 failures on that run reported the same leaked `.modal-overlay`, 79 of them as a missing
+`transfer-confirmation` dialog, and the suite went from 5.8 to 33.1 minutes (CI run 32090060740).
+
+So when the Escape rounds leave an overlay standing, `breakTheCascade` in `fixtures.ts` cancels every operation the
+dialog could be waiting on (the same drain `operation-queue.spec.ts` documents: cancel, then poll `list_operations`
+empty while dismissing retained failures) and Escapes again. The culprit's own failure is recorded either way; this only
+decides whether the tests after it still mean anything.
+
+If even that fails, the report says the app is WEDGED and that every later failure on the shard is noise. Read that line
+as "stop reading here, fix this test" — a triage instruction, not one more failure among two hundred.
+
+**Recovery is not a licence to leak.** A spec that needs an operation drained still drains it in its own `afterEach`;
+this is the backstop for the case nobody predicted, and every trip through it is still a failed test.
+
 ## The fixture-tree leak guard
 
 `left/` and `right/` are shared by every spec on a shard, and roughly half of them mutate the tree. `recreateFixtures`
