@@ -848,5 +848,13 @@
       "size": "the new zoom percentage as a number, e.g. \"90\" (the % sign follows it in the template)",
       "hint": "a pre-built sentence telling the user how to reset zoom to 100% (already translated separately)"
     }
+  },
+  "commands.suggestedOpsShow.label": "Suggested ops",
+  "@commands.suggestedOpsShow.label": {
+    "description": "Command name that opens the Suggested ops dialog, where the user reviews file operations Ask Cmdr has suggested. Appears in the command palette and the View menu."
+  },
+  "commands.suggestedOpsShow.description": "Review the file operations Ask Cmdr suggested, and decide what runs",
+  "@commands.suggestedOpsShow.description": {
+    "description": "Longer help text for the Suggested ops command, shown as a secondary line in the command palette."
   }
 }

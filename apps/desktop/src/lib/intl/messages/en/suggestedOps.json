@@ -1,0 +1,114 @@
+{
+  "suggestedOps.title": "Suggested ops",
+  "@suggestedOps.title": {
+    "description": "Title of the dialog listing the file operations Ask Cmdr has suggested, and the matching View-menu item."
+  },
+  "suggestedOps.description": "Ask Cmdr suggested these. Nothing runs until you approve it.",
+  "@suggestedOps.description": {
+    "description": "Line under the dialog title. Makes clear that opening the dialog changes nothing by itself."
+  },
+  "suggestedOps.empty": "Nothing is waiting for you right now.",
+  "@suggestedOps.empty": {
+    "description": "Shown in the dialog body when the agent has no pending suggestions."
+  },
+  "suggestedOps.loadFailed": "Cmdr couldn't read the suggestions. Close this and open it again.",
+  "@suggestedOps.loadFailed": {
+    "description": "Shown when reading the suggestion list threw. Distinct from the empty state, which would read as the agent having suggested nothing."
+  },
+  "suggestedOps.agentReason": "Ask Cmdr's reason",
+  "@suggestedOps.agentReason": {
+    "description": "Label above the agent own words for a group. Load-bearing: it marks the text as the agent claim rather than as something Cmdr verified."
+  },
+  "suggestedOps.cmdrFacts": "What Cmdr knows",
+  "@suggestedOps.cmdrFacts": {
+    "description": "Label above the deterministic file facts shown beside the agent reason, so a claim can be checked against something the agent could not invent."
+  },
+  "suggestedOps.fileCount": "{count, plural, one {# file} other {# files}}",
+  "@suggestedOps.fileCount": {
+    "description": "How many files a suggestion group covers."
+  },
+  "suggestedOps.approve": "Approve",
+  "@suggestedOps.approve": {
+    "description": "Button that queues one group operations."
+  },
+  "suggestedOps.reject": "Reject",
+  "@suggestedOps.reject": {
+    "description": "Button that turns one group down."
+  },
+  "suggestedOps.approveCount": "Approve {count, plural, one {# file} other {# files}}",
+  "@suggestedOps.approveCount": {
+    "description": "Approve button when the user turned some rows off, so the count says what would actually run."
+  },
+  "suggestedOps.review": "Review the files",
+  "@suggestedOps.review": {
+    "description": "Button that expands a group to show the files it would touch."
+  },
+  "suggestedOps.collapse": "Hide the files",
+  "@suggestedOps.collapse": {
+    "description": "Button that collapses an expanded group file list."
+  },
+  "suggestedOps.reversibleRestoreMove": "You can undo this",
+  "@suggestedOps.reversibleRestoreMove": {
+    "description": "Marker on a group whose files can be put back where they were (move, trash, rename)."
+  },
+  "suggestedOps.reversibleDeleteWritten": "Undo by deleting what it writes",
+  "@suggestedOps.reversibleDeleteWritten": {
+    "description": "Marker on a group that only adds files (copy, extract, a new archive), so undoing means removing what it created."
+  },
+  "suggestedOps.irreversible": "This can't be undone",
+  "@suggestedOps.irreversible": {
+    "description": "Marker on a permanent delete, or a compress that overwrites an existing archive. Disclosure only: Cmdr never refuses the group over it."
+  },
+  "suggestedOps.folderWillBeCreated": "Cmdr will create this folder",
+  "@suggestedOps.folderWillBeCreated": {
+    "description": "Marker on a group whose target folder does not exist yet."
+  },
+  "suggestedOps.folderWillBeCreatedTooltip": "The target folder is not there yet. Approving creates it, exactly as it would if you started the move yourself.",
+  "@suggestedOps.folderWillBeCreatedTooltip": {
+    "description": "Tooltip explaining the folder-creation marker."
+  },
+  "suggestedOps.destinationUnknown": "Cmdr couldn't check the target folder",
+  "@suggestedOps.destinationUnknown": {
+    "description": "Shown when the destination volume did not answer in time, so whether the folder exists is genuinely unknown rather than assumed."
+  },
+  "suggestedOps.fromPattern": "Matched by a pattern",
+  "@suggestedOps.fromPattern": {
+    "description": "Marker on a group a selector produced, so the user knows the list was matched rather than named one by one."
+  },
+  "suggestedOps.changedUnderReview": "Ask Cmdr changed this suggestion while you were reading it.",
+  "@suggestedOps.changedUnderReview": {
+    "description": "Notice shown when the agent amended the open group. The rows on screen stay put until the user asks for the new version."
+  },
+  "suggestedOps.showNewVersion": "Show the new version",
+  "@suggestedOps.showNewVersion": {
+    "description": "Button that reloads a group the agent changed while the user was reading it."
+  },
+  "suggestedOps.columnFile": "File",
+  "@suggestedOps.columnFile": {
+    "description": "Column heading for the file each proposed operation would touch."
+  },
+  "suggestedOps.columnNewName": "New name",
+  "@suggestedOps.columnNewName": {
+    "description": "Column heading for the name a rename would give the file."
+  },
+  "suggestedOps.columnSize": "Size when suggested",
+  "@suggestedOps.columnSize": {
+    "description": "Column heading for the size Cmdr index held when the suggestion was made. Says when suggested because relaying it as current would be a claim nothing can back."
+  },
+  "suggestedOps.columnChanged": "Last changed",
+  "@suggestedOps.columnChanged": {
+    "description": "Column heading for the modification date Cmdr index held when the suggestion was made."
+  },
+  "suggestedOps.noIndexData": "Not in the index",
+  "@suggestedOps.noIndexData": {
+    "description": "Shown instead of a size or date when Cmdr index held nothing for a file. Never a zero, which would read as an empty file."
+  },
+  "suggestedOps.includeFile": "Include this file",
+  "@suggestedOps.includeFile": {
+    "description": "Accessible label for the per-file checkbox in a suggestion group."
+  },
+  "suggestedOps.loadingFiles": "Loading the files…",
+  "@suggestedOps.loadingFiles": {
+    "description": "Placeholder while a window of the file list is being read."
+  }
+}

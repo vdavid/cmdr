@@ -377,6 +377,17 @@ export type {
   RenameProposalRow,
 } from './ask-cmdr'
 
+// Suggested ops (the review dialog's reads, and the rejection it records)
+export { listSuggestedOps, pageSuggestedOps, rejectSuggestedGroup } from './suggested-ops'
+export type {
+  DestinationState,
+  RejectResultView,
+  SuggestedGroupView,
+  SuggestedOpPage,
+  SuggestedOpView,
+  SuggestedSweepView,
+} from './suggested-ops'
+
 // Crash reporter
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'
 export type { CrashReport } from './crash-reporter'

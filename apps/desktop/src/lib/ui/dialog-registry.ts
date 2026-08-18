@@ -156,6 +156,11 @@ export const SOFT_DIALOG_REGISTRY = [
     description: 'Reviews an Ask Cmdr rename proposal before any files change',
     whileOpen: BLOCKS_OPERATIONS,
   },
+  {
+    id: 'suggested-ops',
+    description: 'Reviews the file operations Ask Cmdr has suggested, one group at a time, before any of them run',
+    whileOpen: BLOCKS_OPERATIONS,
+  },
   { id: 'connect-to-server', description: 'Manual SMB server address entry', whileOpen: BLOCKS_OPERATIONS },
   {
     id: 'viewer-copy-confirm',

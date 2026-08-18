@@ -330,6 +330,15 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     ],
   },
   {
+    dialogId: 'suggested-ops',
+    label: 'Suggested ops',
+    hostWindow: 'main',
+    status: 'not-triggerable',
+    reason:
+      'Half-built: the file list, the per-group disclosure, and Reject work, but Approve waits on the M4a bridge, so a preview would show a dialog nobody can finish a decision in. It gets store-seeded fixtures (an irreversible group, a folder that will be created, a pattern-matched group, and a 60,000-op group) once approving is real.',
+    states: [],
+  },
+  {
     dialogId: 'delete-ai-model',
     label: 'Delete local AI model',
     hostWindow: 'settings',
