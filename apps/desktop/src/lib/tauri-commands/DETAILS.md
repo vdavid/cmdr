@@ -8,8 +8,9 @@ commands, and notable non-obvious placements.
 - **`ipc-types.ts`**: `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()`: shared timeout-aware types.
 - **`index.ts`**: barrel re-export of everything below.
 - **`file-listing.ts`**: virtual-scroll listing API, batch accessors (`getPathsAtIndices`, `getFilesAtIndices`),
-  drag-and-drop, `pathExists`, `createDirectory`, `createFile`, sync status, font metrics, `getBriefColumnTextWidths`
-  (Brief-view column measurement).
+  `getFileBeside` (the row next to a named one, resolved and read under one backend lock), drag-and-drop, `pathExists`,
+  `createDirectory`, `createFile`, sync status, font metrics, `getBriefColumnTextWidths` (Brief-view column
+  measurement).
 - **`file-viewer.ts`**: viewer session only: open, seek, search (with `useRegex` / `caseSensitive` modes), close, word
   wrap menu, encoding pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`),
   `viewerReload`.

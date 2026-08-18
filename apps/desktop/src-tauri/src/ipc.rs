@@ -126,6 +126,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::file_system::refresh_listing,
         crate::commands::file_system::get_file_range,
         crate::commands::file_system::get_file_at,
+        crate::commands::file_system::get_file_beside,
         crate::commands::file_system::get_paths_at_indices,
         crate::commands::file_system::get_files_at_indices,
         crate::commands::file_system::get_total_count,

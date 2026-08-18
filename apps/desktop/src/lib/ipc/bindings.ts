@@ -214,6 +214,137 @@ export const commands = {
       string
     >(__TAURI_INVOKE('get_file_at', { listingId, index, includeHidden })),
   /**
+   *  The entry immediately before or after the one named `name`, in one call.
+   *
+   *  For a caller holding a row it knows rather than an index it trusts: a chained
+   *  rename asks for the row beside the file its editor is open on, because a
+   *  re-sort moves every index it could have kept while the name stays the name.
+   */
+  getFileBeside: (listingId: string, name: string, side: RowBeside, includeHidden: boolean) =>
+    typedError<
+      {
+        // The entry's own file name (the last path component).
+        name: string
+        // The entry's full path, in the namespace its volume reports.
+        path: string
+        // `true` for a directory (and for a symlink the backend resolved to one).
+        isDirectory: boolean
+        // `true` when the entry itself is a symlink.
+        isSymlink: boolean
+        /**
+         *  `true` when this entry is a file whose extension is a supported browsable
+         *  archive (zip today). Computed extension-only at listing time — no per-file
+         *  byte read, which would be a round-trip-per-file on a remote backend. It
+         *  drives the frontend's Enter fork (navigate INTO the archive); the actual
+         *  magic-byte confirmation happens once at navigation time in the routing
+         *  layer. A directory named `foo.zip` is NOT an archive (its `is_directory`
+         *  wins), so this is always `false` for directories.
+         */
+        isArchive: boolean
+        // Logical size in bytes. `None` when the backend didn't stat it.
+        size: number | null
+        // Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
+        physicalSize: number | null
+        /**
+         *  Inode number, when known. Populated by `LocalPosixVolume` from
+         *  `MetadataExt::ino()`; left `None` by MTP, SMB, and InMemory backends
+         *  because their protocols have no inode concept. Consumed by the
+         *  volume-aware delete / copy walkers to dedupe hardlinks the same way
+         *  the local-FS walker does (see `seen_inodes` in
+         *  `write_operations/scan.rs`). Non-local backends never produce
+         *  hardlinks, so `None` is the safe default — the dedup loop just treats
+         *  every entry as a unique inode.
+         */
+        inode: number | null
+        // Last-modified time, Unix seconds.
+        modifiedAt: number | null
+        // Creation time, Unix seconds.
+        createdAt: number | null
+        // When the file was added to its current directory (macOS only)
+        addedAt: number | null
+        // When the file was last opened (macOS only)
+        openedAt: number | null
+        // POSIX mode bits. `0` when the backend has no permission concept.
+        permissions: number
+        // Owning user name, resolved from the uid. Empty when unknown.
+        owner: string
+        // Owning group name, resolved from the gid. Empty when unknown.
+        group: string
+        // The icon key the frontend resolves to a real image. See [`get_icon_id`].
+        iconId: string
+        /**
+         *  Whether extended metadata (addedAt, openedAt) has been loaded
+         *  Always true for legacy list_directory(), false for list_directory_core()
+         */
+        extendedMetadataLoaded: boolean
+        /**
+         *  macOS Finder tags (`com.apple.metadata:_kMDItemUserTags`). Empty in the
+         *  core listing; filled by the deferred, visible-range-first `enrich_tags`
+         *  pass (a `getxattr` per path, too costly to run inline over a 100k-dir).
+         *  Survives unrelated watcher re-stats via carry-forward (see `caching.rs`).
+         */
+        tags: TagRef[]
+        // Recursive size in bytes (from drive index, None if not indexed)
+        recursiveSize: number | null
+        // Recursive physical size on disk in bytes (from drive index, None if not indexed)
+        recursivePhysicalSize: number | null
+        // Recursive file count (from drive index, None if not indexed)
+        recursiveFileCount: number | null
+        // Recursive dir count (from drive index, None if not indexed)
+        recursiveDirCount: number | null
+        /**
+         *  True when the subtree contains symlinks (whose content is omitted from the
+         *  recursive size). Drives the "size omits symlinked content" hint in the UI.
+         *  `None` when the directory isn't indexed yet.
+         */
+        recursiveHasSymlinks: boolean | null
+        /**
+         *  Whether `recursive_size` is an exact total (`true`) or a lower bound
+         *  (`false`). Derived backend-side from the subtree's `min_subtree_epoch`
+         *  (`> 0` ⇒ fully covered ⇒ exact). The frontend never sees raw epochs: it
+         *  renders an exact size when `true`, a `≥` lower bound (or `—` when the
+         *  size is 0) when `false`. `None` when the directory isn't indexed yet. See
+         *  the "Honest sizes" model in `indexing/DETAILS.md`.
+         */
+        recursiveSizeComplete: boolean | null
+        /**
+         *  Whether the (exact) `recursive_size` was computed at an older volume epoch
+         *  than the current one, so it's accurate-but-stale (the subtree hasn't been
+         *  re-listed since a continuity break). Only meaningful when
+         *  `recursive_size_complete` is `true`; drives the muted "stale" treatment.
+         *  `None` when the directory isn't indexed yet.
+         */
+        recursiveSizeStale: boolean | null
+        /**
+         *  When set on a virtual entry, the frontend navigates to this path instead
+         *  of treating the entry as a normal directory listing. Currently set on
+         *  `worktrees/` and `submodules/` entries inside the git portal so they
+         *  open their working dir directly. The field lives on the base
+         *  `FileEntry` schema so every consumer (frontend list views, MCP
+         *  `cmdr://state`, drag-drop, copy preview, Brief/Full renderers) carries
+         *  it for free.
+         */
+        redirectToPath: string | null
+        /**
+         *  Loose Size-column override for virtual git entries: rendered verbatim
+         *  in the Full mode Size column instead of formatted bytes from `size`.
+         *  Examples: `+12 / -3`, `5 files`, `12 items`, `on main`, short SHA.
+         *  `size` keeps the within-category numeric sort key (ahead-count for
+         *  branches, files-changed for commits, item count for category roots).
+         *  Cross-category Size sorting is meaningless and that's an honest
+         *  tradeoff. Each cell is self-explaining via tooltip + aria-label.
+         */
+        displaySize: string | null
+        /**
+         *  Optional rich tooltip string for the Size cell, used when
+         *  `display_size` is set. Example: "12 commits ahead, 3 commits behind
+         *  `origin/main`". Doubles as the aria-label for screen readers.
+         */
+        displaySizeTooltip: string | null
+      } | null,
+      string
+    >(__TAURI_INVOKE('get_file_beside', { listingId, name, side, includeHidden })),
+  /**
    *  Gets full FileEntry objects at specific backend indices from a cached listing.
    *  Callers are responsible for any parent offset adjustment before passing indices.
    */
@@ -7845,6 +7976,9 @@ export type RollbackRefusal =
  *  (rollback); a fresh op sits at `NotRollbackable` until finalize proves otherwise.
  */
 export type RollbackState = 'notRollbackable' | 'rollbackable' | 'rollingBack' | 'rolledBack' | 'partiallyRolledBack'
+
+// Which side of a named row to read: the one before it or the one after it.
+export type RowBeside = 'previous' | 'next'
 
 /**
  *  An item row's role (D-granularity). `RollbackUnit` rows are the reversal

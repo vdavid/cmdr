@@ -89,7 +89,7 @@ idle/backstop timers and the file viewer's window-`Destroyed` net.
 It keys on `last_accessed_ms`, NOT `created_at`. `created_at` is stamped once and never refreshed, so an age-based reaper
 keyed on it would evict a pane open all session. `last_accessed_ms` (an `AtomicU64` of ms-since-a-process-epoch) is
 bumped by every operation that proves the listing still backs a live pane: the read accessors (`get_file_range`,
-`get_total_count`, `get_file_at`, `get_listing_stats`, the index/path/batch lookups), `resort_listing`, and every
+`get_total_count`, `get_file_at`, `get_file_beside`, `get_listing_stats`, the index/path/batch lookups), `resort_listing`, and every
 watcher/notify cache patch (`insert_entry_sorted` / `remove_entry_by_path` / `update_entry_sorted` /
 `update_listing_entries`). `AtomicU64` so read accessors stamp it lock-free under a shared `LISTING_CACHE.read()`. The
 6 h window is deliberately generous: we'd rather never evict a live listing than aggressively reclaim.

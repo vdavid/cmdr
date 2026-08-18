@@ -4,13 +4,13 @@ use crate::file_system::get_files_at_indices as ops_get_files_at_indices;
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 use crate::file_system::{
     BriefColumnWidths, BriefColumnsIpcError, DirectorySortMode, FileEntry, ListingStartResult, ListingStats,
-    ResortResult, SortColumn, SortOrder, StreamingListingStartResult, cancel_listing as ops_cancel_listing,
+    ResortResult, RowBeside, SortColumn, SortOrder, StreamingListingStartResult, cancel_listing as ops_cancel_listing,
     compute_brief_column_text_widths as ops_compute_brief_column_text_widths, find_file_index as ops_find_file_index,
     find_file_indices as ops_find_file_indices,
     fuzzy_find_first_match_in_listing as ops_fuzzy_find_first_match_in_listing, get_file_at as ops_get_file_at,
-    get_file_range as ops_get_file_range, get_listing_stats as ops_get_listing_stats,
-    get_total_count as ops_get_total_count, list_directory_end as ops_list_directory_end,
-    list_directory_start_streaming as ops_list_directory_start_streaming,
+    get_file_beside as ops_get_file_beside, get_file_range as ops_get_file_range,
+    get_listing_stats as ops_get_listing_stats, get_total_count as ops_get_total_count,
+    list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume,
     refresh_listing_index_sizes as ops_refresh_listing_index_sizes, resort_listing as ops_resort_listing,
 };
@@ -361,6 +361,22 @@ pub async fn find_first_fuzzy_match(
 #[specta::specta]
 pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Result<Option<FileEntry>, String> {
     ops_get_file_at(&listing_id, index, include_hidden)
+}
+
+/// The entry immediately before or after the one named `name`, in one call.
+///
+/// For a caller holding a row it knows rather than an index it trusts: a chained
+/// rename asks for the row beside the file its editor is open on, because a
+/// re-sort moves every index it could have kept while the name stays the name.
+#[tauri::command]
+#[specta::specta]
+pub fn get_file_beside(
+    listing_id: String,
+    name: String,
+    side: RowBeside,
+    include_hidden: bool,
+) -> Result<Option<FileEntry>, String> {
+    ops_get_file_beside(&listing_id, &name, side, include_hidden)
 }
 
 /// Gets file paths at specific frontend indices from a cached listing (batch version of path

@@ -21,9 +21,9 @@ pub use fuzzy_jump::fuzzy_find_first_match_in_listing;
 pub(crate) use cmdr_fs::entry as metadata;
 pub use metadata::{ExtendedMetadata, FileEntry};
 pub use operations::{
-    ListingStartResult, ListingStats, ResortResult, find_file_index, find_file_indices, get_file_at, get_file_range,
-    get_listing_stats, get_total_count, list_directory_end, list_directory_start_with_volume,
-    refresh_listing_index_sizes, resort_listing,
+    ListingStartResult, ListingStats, ResortResult, RowBeside, find_file_index, find_file_indices, get_file_at,
+    get_file_beside, get_file_range, get_listing_stats, get_total_count, list_directory_end,
+    list_directory_start_with_volume, refresh_listing_index_sizes, resort_listing,
 };
 pub use reading::{ListingTally, get_single_entry, list_directory_core, list_directory_core_with_tally};
 pub use sorting::{DirectorySortMode, SortColumn, SortOrder};
@@ -58,6 +58,8 @@ mod diff_emitter_test;
 mod hidden_files_test;
 #[cfg(test)]
 mod operations_test;
+#[cfg(test)]
+mod row_beside_test;
 #[cfg(test)]
 mod sorting_test;
 #[cfg(test)]

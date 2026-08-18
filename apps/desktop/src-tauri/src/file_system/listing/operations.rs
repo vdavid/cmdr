@@ -212,6 +212,51 @@ pub fn find_file_index(listing_id: &str, name: &str, include_hidden: bool) -> Re
     Ok(visible_entries(&listing.entries, include_hidden).position(|e| e.name == name))
 }
 
+/// Which side of a named row to read: the one before it or the one after it.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum RowBeside {
+    Previous,
+    Next,
+}
+
+/// The entry sitting immediately before or after the one named `name`, or `None`
+/// when that name isn't in the listing or the row beside it doesn't exist.
+///
+/// Resolving the anchor and reading its neighbour happen in one pass under ONE
+/// read lock, which is the whole point: a caller doing it in two calls
+/// (`find_file_index`, then `get_file_at`) hands back a row that a rename landing
+/// between the two has already moved. Callers ask this instead of an index when
+/// they have a row they know and want the one beside it, because a name survives
+/// a re-sort that any index they hold does not.
+pub fn get_file_beside(
+    listing_id: &str,
+    name: &str,
+    side: RowBeside,
+    include_hidden: bool,
+) -> Result<Option<FileEntry>, String> {
+    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
+
+    let listing = cache
+        .get(listing_id)
+        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    listing.touch();
+
+    let mut entries = visible_entries(&listing.entries, include_hidden);
+    let mut previous: Option<&FileEntry> = None;
+    while let Some(entry) = entries.next() {
+        if entry.name == name {
+            return Ok(match side {
+                RowBeside::Previous => previous.cloned(),
+                RowBeside::Next => entries.next().cloned(),
+            });
+        }
+        previous = Some(entry);
+    }
+    Ok(None)
+}
+
 /// Finds the indices of multiple files by name in a cached listing (batch version of
 /// `find_file_index`).
 ///

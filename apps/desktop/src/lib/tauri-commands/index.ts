@@ -12,6 +12,7 @@ export {
   findFileIndices,
   findFirstFuzzyMatch,
   getFileAt,
+  getFileBeside,
   getPathsAtIndices,
   getFilesAtIndices,
   listDirectoryEnd,
@@ -270,6 +271,9 @@ export type { QuitRequested } from './quit'
 export type { ManualConnectResult } from './networking'
 
 export type { StreamingListingStartResult } from '../file-explorer/types'
+
+/** Which side of a named row `getFileBeside` reads. */
+export type { RowBeside } from '$lib/ipc/bindings'
 
 // Write + scan-preview event payload types now flow from the typed-events
 // bindings via the `write-operations.ts` re-export.

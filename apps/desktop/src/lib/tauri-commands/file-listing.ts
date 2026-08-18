@@ -1,7 +1,7 @@
 // On-demand virtual scrolling API (listing-based), sync status, font metrics
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { commands, events, type Initiator } from '$lib/ipc/bindings'
+import { commands, events, type Initiator, type RowBeside } from '$lib/ipc/bindings'
 import type {
   FileEntry,
   ListingStats,
@@ -196,6 +196,30 @@ export async function findFirstFuzzyMatch(
  */
 export async function getFileAt(listingId: string, index: number, includeHidden: boolean): Promise<FileEntry | null> {
   const res = await commands.getFileAt(listingId, index, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data as FileEntry | null
+}
+
+/**
+ * Gets the entry sitting immediately before or after the one named `name`, or
+ * `null` when that name isn't in the listing or there's no row on that side.
+ *
+ * For a caller that knows a row rather than an index: the backend resolves the
+ * anchor and reads its neighbour under one lock, so a rename landing mid-call
+ * can't move the row out from under a resolved index. A chained rename asks this
+ * for the row beside the file its editor is open on.
+ * @param listingId - The listing ID from listDirectoryStart.
+ * @param name - Name of the row to read from.
+ * @param side - Which side of it to read.
+ * @param includeHidden - Whether hidden files count as rows.
+ */
+export async function getFileBeside(
+  listingId: string,
+  name: string,
+  side: RowBeside,
+  includeHidden: boolean,
+): Promise<FileEntry | null> {
+  const res = await commands.getFileBeside(listingId, name, side, includeHidden)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data as FileEntry | null
 }
