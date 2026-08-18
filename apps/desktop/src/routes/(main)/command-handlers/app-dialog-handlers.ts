@@ -16,6 +16,7 @@ import { openFeedbackDialog } from '$lib/feedback/feedback-flow.svelte'
 import { openAcknowledgements } from '$lib/licensing/acknowledgements-trigger.svelte'
 import { openWhatsNew } from '$lib/whats-new/whats-new-trigger.svelte'
 import { openOperationLog } from '$lib/operation-log/operation-log-trigger.svelte'
+import { openSuggestedOps } from '$lib/suggested-ops/suggested-ops-trigger.svelte'
 import { toggleRail } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import type { CommandHandlerRecord } from './types'
@@ -73,6 +74,10 @@ export const appDialogHandlers = {
 
   'log.operationLog': () => {
     void openOperationLog()
+  },
+
+  'suggestedOps.show': () => {
+    void openSuggestedOps()
   },
 
   'askCmdr.toggle': () => {

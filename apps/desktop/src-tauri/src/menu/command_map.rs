@@ -189,6 +189,10 @@ pub const HELP_WHATS_NEW_ID: &str = "help_whats_new";
 /// Menu item ID for "Operation log" (opens the alpha operation-log dialog, under the View menu).
 pub const OPERATION_LOG_ID: &str = "operation_log";
 
+/// Menu item ID for "Suggested ops" (opens the review dialog for what the agent has
+/// suggested, under the View menu, next to "Operation log").
+pub const SUGGESTED_OPS_ID: &str = "suggested_ops";
+
 /// Menu item ID for "Ask Cmdr" (toggles the alpha chat rail, under the View menu).
 pub const ASK_CMDR_ID: &str = "ask_cmdr";
 
@@ -230,6 +234,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         // item, which is fine (neither carries a default shortcut).
         CHANGELOG_ID => Some(("help.whatsNew", CommandScope::App)),
         OPERATION_LOG_ID => Some(("log.operationLog", CommandScope::App)),
+        SUGGESTED_OPS_ID => Some(("suggestedOps.show", CommandScope::App)),
         ASK_CMDR_ID => Some(("askCmdr.toggle", CommandScope::App)),
         HELP_SEND_ERROR_REPORT_ID => Some(("help.sendErrorReport", CommandScope::App)),
         HELP_SEND_FEEDBACK_ID => Some(("feedback.send", CommandScope::App)),
@@ -335,6 +340,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "queue.show" => Some(QUEUE_SHOW_ID),
         "help.whatsNew" => Some(HELP_WHATS_NEW_ID),
         "log.operationLog" => Some(OPERATION_LOG_ID),
+        "suggestedOps.show" => Some(SUGGESTED_OPS_ID),
         "askCmdr.toggle" => Some(ASK_CMDR_ID),
         "help.sendErrorReport" => Some(HELP_SEND_ERROR_REPORT_ID),
         "feedback.send" => Some(HELP_SEND_FEEDBACK_ID),
@@ -544,6 +550,7 @@ mod tests {
             "queue.show",
             "help.whatsNew",
             "log.operationLog",
+            "suggestedOps.show",
             "help.sendErrorReport",
             "feedback.send",
             "app.checkForUpdates",

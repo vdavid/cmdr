@@ -31,6 +31,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'help.whatsNew',
   'feedback.send',
   'log.operationLog',
+  'suggestedOps.show',
   'askCmdr.toggle',
   'search.open',
   'nav.goToPath',

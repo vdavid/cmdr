@@ -251,6 +251,8 @@ export const menuCommands = [
   'queue.show',
   // View > Operation log (default ⌥⌘L; registered so a custom binding syncs its accelerator)
   'log.operationLog',
+  // View > Suggested ops (no default; registered so a binding the user adds syncs its accelerator)
+  'suggestedOps.show',
   // View > Ask Cmdr (default ⌥⌘A; registered so a custom binding syncs its accelerator)
   'askCmdr.toggle',
   // Edit menu (custom MenuItems; the focus-routed dispatch exception in

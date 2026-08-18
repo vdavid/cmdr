@@ -50,6 +50,9 @@ export const COMMAND_IDS = [
   // Operation log (alpha)
   'log.operationLog',
 
+  // Suggested ops (the agent's proposals, reviewed before anything runs)
+  'suggestedOps.show',
+
   // Ask Cmdr chat rail (alpha)
   'askCmdr.toggle',
 

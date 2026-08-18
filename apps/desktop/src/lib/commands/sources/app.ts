@@ -144,6 +144,17 @@ export const appCommands: CommandSource[] = [
     descriptionKey: 'commands.logOperationLog.description',
   },
   {
+    // No default shortcut. The indicator in the status corner is the everyday way in, and the
+    // suggestions wait indefinitely, so this isn't a key anyone reaches for mid-task; a user
+    // who wants one can bind it.
+    id: 'suggestedOps.show',
+    nameKey: 'commands.suggestedOpsShow.label',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+    descriptionKey: 'commands.suggestedOpsShow.description',
+  },
+  {
     // Default ⌘⌥A ("A for Ask"). Command-then-Option order (⌘⌥), matching what
     // `formatKeyCombo` emits; macOS still renders it ⌥⌘A in the native menu.
     id: 'askCmdr.toggle',

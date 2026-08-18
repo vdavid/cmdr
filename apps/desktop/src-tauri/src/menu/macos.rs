@@ -22,7 +22,7 @@ use super::{
     NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID,
     QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID,
     SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID,
-    SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, ViewMode,
+    SORT_BY_SIZE_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, ViewMode,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -255,6 +255,11 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // Default ⌘⌥L (Cmd+Opt+L). ⌥⌘O — the plan's first choice — is taken by "Show in Finder".
     // The accelerator syncs from the `log.operationLog` registry shortcut; this is the initial label.
     let operation_log_item = MenuItem::with_id(app, OPERATION_LOG_ID, "Operation log", true, Some("Cmd+Alt+L"))?;
+    // No default accelerator: the status-corner indicator is the everyday way in, and a
+    // suggestion waits indefinitely, so this isn't a key anyone reaches for mid-task. A user
+    // who wants one binds it, and the accelerator then syncs from the `suggestedOps.show`
+    // registry shortcut like every other item here.
+    let suggested_ops_item = MenuItem::with_id(app, SUGGESTED_OPS_ID, "Suggested ops", true, None::<&str>)?;
     // Default ⌘⌥A (rendered ⌥⌘A by macOS). The accelerator syncs from the `askCmdr.toggle`
     // registry shortcut; this is the initial label.
     let ask_cmdr_item = MenuItem::with_id(app, ASK_CMDR_ID, "Ask Cmdr", true, Some("Cmd+Alt+A"))?;
@@ -277,6 +282,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &command_palette_item,
             &queue_show_item,
             &operation_log_item,
+            &suggested_ops_item,
             &ask_cmdr_item,
         ],
     )?;
@@ -437,13 +443,15 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 4);
 
     // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), zoom(5), sep(6),
-    // switch(7), swap(8), sep(9), command(10), queue(11), operation_log(12), ask_cmdr(13)
+    // switch(7), swap(8), sep(9), command(10), queue(11), operation_log(12),
+    // suggested_ops(13), ask_cmdr(14)
     register_item(&mut items, SWITCH_PANE_ID, &switch_pane_item, &view_submenu, 7);
     register_item(&mut items, SWAP_PANES_ID, &swap_panes_item, &view_submenu, 8);
     register_item(&mut items, COMMAND_PALETTE_ID, &command_palette_item, &view_submenu, 10);
     register_item(&mut items, QUEUE_SHOW_ID, &queue_show_item, &view_submenu, 11);
     register_item(&mut items, OPERATION_LOG_ID, &operation_log_item, &view_submenu, 12);
-    register_item(&mut items, ASK_CMDR_ID, &ask_cmdr_item, &view_submenu, 13);
+    register_item(&mut items, SUGGESTED_OPS_ID, &suggested_ops_item, &view_submenu, 13);
+    register_item(&mut items, ASK_CMDR_ID, &ask_cmdr_item, &view_submenu, 14);
 
     // Sort by submenu positions: name(0), extension(1), modified(2), size(3), created(4),
     // sep(5), ascending(6), descending(7). Only the four shortcut-bound columns are
