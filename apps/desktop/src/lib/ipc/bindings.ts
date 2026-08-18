@@ -3607,6 +3607,7 @@ export const events = {
   searchIndexReady: makeEvent<SearchIndexReadyEvent>('search-index-ready'),
   searchProgress: makeEvent<SearchProgressEvent>('search-progress'),
   settingsChanged: makeEvent<SettingsChanged>('settings-changed'),
+  suggestionsChanged: makeEvent<SuggestionsChanged>('suggestions-changed'),
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
   viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
@@ -7630,7 +7631,14 @@ export type ProposalStatus =
    *  what ran. Frozen: the user re-approves (minting a new group) or discards.
    */
   | 'interrupted'
-  // Every op reached a terminal outcome.
+  /**
+   *  Execution FINISHED, whichever way it ended: the operation ran to completion, or
+   *  the user cancelled it, or it failed. The distinction this carries is "no longer in
+   *  flight" versus "we lost track of it" (`Interrupted` above), which is why it is written
+   *  when the operation SETTLES rather than only when it succeeds. What happened to
+   *  each source is the per-op statuses' job; a cancelled group keeps `pending` rows
+   *  for the ops nothing ever reached, and that is the honest record.
+   */
   | 'completed'
   // The user said no.
   | 'rejected'
@@ -9143,6 +9151,39 @@ export type SuggestedSweepView = {
   // The agent's words for the sweep as a whole, shown LABELLED as the agent's.
   rationale: string | null
   groups: SuggestedGroupView[]
+}
+
+/**
+ *  Why the pending set changed.
+ *
+ *  The count alone can't tell these apart, and the dialog's recovery differs: an amend under
+ *  an open group needs the non-destructive "this changed" affordance, while an approval of
+ *  that same group means the review is over. Same id, different affordance, so the reason
+ *  travels rather than being inferred from a follow-up status query.
+ */
+export type SuggestionChange =
+  // A sweep landed, so one or more groups are newly pending.
+  | 'proposed'
+  // The agent re-proposed a group that was already pending; its ops may be different.
+  | 'amended'
+  // The user approved a group and its ops went to the queue.
+  | 'approved'
+  // The user rejected a group.
+  | 'rejected'
+
+// The pending suggestion set changed.
+export type SuggestionsChanged = {
+  // How many groups are pending now, so the indicator renders without a follow-up query.
+  pendingGroupCount: number
+  // How many ops those groups hold between them. Free: it is the same `COUNT(*)` shape.
+  pendingOpCount: number
+  /**
+   *  The group this change was about, when it was about one. `None` for a sweep that
+   *  landed several at once. It is what lets an open review tell "the group I am looking at
+   *  moved" from "something else appeared".
+   */
+  groupId: number | null
+  reason: SuggestionChange
 }
 
 // Sync status for a file in a cloud-synced folder (Dropbox, iCloud, etc.).
