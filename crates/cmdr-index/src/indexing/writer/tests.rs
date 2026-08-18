@@ -20,7 +20,7 @@ const WRITER_SETTLES_WITHIN: Duration = Duration::from_secs(1);
 /// `writer.idle_epoch()` BEFORE sending the flush: the epoch only ticks on an empty queue, so an
 /// advance past it means every message sent before the flush is processed AND its hooks have run.
 #[track_caller]
-pub(super) fn wait_for_writer_to_settle(writer: &IndexWriter, before: u64) {
+pub(crate) fn wait_for_writer_to_settle(writer: &IndexWriter, before: u64) {
     wait_until(
         WRITER_SETTLES_WITHIN,
         "the writer to settle: its idle epoch ticks once the end-of-iteration hooks have run",
@@ -800,6 +800,7 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
             Arc::new(AtomicI64::new(2)),
             Arc::new(MutationTracker::new(true)),
             queue_depth_for_loop,
+            Arc::new(AtomicU64::new(0)),
             Arc::new(AtomicU64::new(0)),
             signal_for_loop,
         );

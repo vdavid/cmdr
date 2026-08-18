@@ -42,11 +42,18 @@ use super::deferred_repair::DeferredRepairs;
 ///
 /// Idempotent and order-independent: two callers produce the same rows and a
 /// duplicate call is a cheap no-op after the short-circuit, so it's safe to fire
-/// from every escalation site without coordination. Writer-thread only; don't
-/// add a `WriteMessage::RepairDirStats` until a real off-thread caller exists.
-pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64, repairs: &DeferredRepairs) {
+/// from every escalation site without coordination. That is also what lets
+/// [`super::pending_rollups`] hold a walk back to the writer's caught-up point:
+/// the recompute writes an absolute value, so running it later only ever sees
+/// more of the truth. Writer-thread only; don't add a
+/// `WriteMessage::RepairDirStats` until a real off-thread caller exists.
+///
+/// Returns whether any level was actually rewritten, so a caller that owes the
+/// panes a refresh can stay silent when nothing moved.
+pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64, repairs: &DeferredRepairs) -> bool {
     use crate::indexing::store::ROOT_ID;
 
+    let mut wrote = false;
     let mut current_id = start_id;
     while current_id != 0 {
         // A read that fails tells us nothing, and this walk is the last line of
@@ -60,7 +67,7 @@ pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64
             (Err(e), _) | (_, Err(e)) => {
                 log::debug!(target: "indexing::writer", "repair_dir_stats_upward: read failed for id={current_id}: {e}");
                 repairs.queue(current_id, "repair_dir_stats_upward read");
-                return;
+                return wrote;
             }
         };
 
@@ -73,8 +80,9 @@ pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64
         if let Err(e) = IndexStore::upsert_dir_stats_by_id(conn, std::slice::from_ref(&fresh)) {
             log::debug!(target: "indexing::writer", "repair_dir_stats_upward: upsert failed for id={current_id}: {e}");
             repairs.queue(current_id, "repair_dir_stats_upward upsert");
-            return;
+            return wrote;
         }
+        wrote = true;
 
         if current_id == ROOT_ID {
             break;
@@ -85,10 +93,11 @@ pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64
             Err(e) => {
                 log::debug!(target: "indexing::writer", "repair_dir_stats_upward: parent lookup failed for id={current_id}: {e}");
                 repairs.queue(current_id, "repair_dir_stats_upward parent lookup");
-                return;
+                return wrote;
             }
         }
     }
+    wrote
 }
 
 /// Recompute one directory's `dir_stats` from its committed children: file

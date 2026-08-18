@@ -91,8 +91,9 @@ far more (it serves a warm arena with a 30 s refresh floor).
 ## The caught-up point and the idle epoch
 
 Every `writer_loop` iteration ends with two hooks that run only when `queue_depth == 0`: the pending-size hourglass
-clear (`pending_sizes::get_pending_sizes_for(volume_id).clear()`) and the deferred `dir_stats` repair drain (why that's
-the right moment: § "The dir_stats ledger"). Together they are the writer's caught-up point.
+clear (`pending_sizes::get_pending_sizes_for(volume_id).clear()`) and `settle_the_ledger`, which rolls up the ancestors
+a burst of subtree aggregates left owing and then drains the deferred `dir_stats` repairs (why that's the right moment:
+§ "The dir_stats ledger"). Together they are the writer's caught-up point.
 
 `Flush` replies from INSIDE `process_message`, so `flush_blocking()` and `flush().await` return one hook run too early:
 every prior message is committed, but the hourglass is still up and the repair queue still full. No production caller
@@ -121,6 +122,12 @@ instead of polling for it, so a regression fails on the assertion rather than on
 depth for itself, so a send landing between the two samples can let one run and not the other; a third sample for the
 tick could miss both and hang a waiter forever. Reading the depth once for all three would be tidier but would change
 when the existing hooks run, which this signal deliberately doesn't touch.
+
+⚠️ **A tick therefore does NOT prove `settle_the_ledger` ran** — only that one of the two hooks saw an empty queue. It
+only bites while another thread is still sending, which is why the roll-up tests flush TWICE: the first flush drains the
+burst, the second runs against a quiet channel where both samples agree
+(`aggregation/tests.rs::settle`). A production waiter never needs the distinction, because the next message's iteration
+settles the ledger anyway and `Shutdown` settles it on the way out.
 
 **Not `Notify`, not `watch`.** The writer is a `std::thread` and its tests are sync `#[test]`s, where
 `Notify::notified()` and `watch::changed()` are both async. A `Notify` would also lose the wakeup outright: the settle
@@ -375,19 +382,61 @@ under-count the backfill pass then heals and repairs upward (monotone convergenc
   field would go negative, the walk switches to `repair_dir_stats_upward(current_id)` and logs ONE `warn!`. In the
   `None` branch, a missing row with any negative delta component escalates to repair (a zeroed row would be a fresh
   lie); a pure-positive delta to a missing row still creates it (load-bearing for live-created dirs, epoch 0).
-- **`handle_compute_subtree_aggregates`.** After the scoped recompute writes the subtree's rows, it calls
-  `repair_dir_stats_upward(parent_of_root)` — one level UP, since the root already agrees with its children. This one
-  walk rolls up sizes, counts, `recursive_has_symlinks`, AND `min_subtree_epoch` at once, subsuming the former
+- **`handle_compute_subtree_aggregates`.** After the scoped recompute writes the subtree's rows, it QUEUES
+  `parent_of_root` to `pending_rollups.rs` — one level UP, since the root already agrees with its children. The drain's
+  one walk rolls up sizes, counts, `recursive_has_symlinks`, AND `min_subtree_epoch` at once, subsuming the former
   symlink-only ancestor walk and both deleted off-writer `PropagateDeltaById` compensation blocks (leaving those in
-  place would double-credit every verified new dir). ⚠️ **Known quadratic, unfixed: W frontier roots sharing one parent
-  that holds W children cost `O(W²)` here.** The phase machine creates exactly that whenever a walk of a wide directory
-  is stopped after the directory is listed (a folder somebody opened, a search taking the ground, a quit): every
-  unwalked child becomes a frontier root, every root's walk ends in one of these messages, and each one recomputes the
-  wide parent from all of its children. Measured at 1.2 µs a child a root, so it passes the fixed per-call cost at ~750
-  children and reaches 73 minutes at 60,000. Diagnosis, evidence, and what a fix involves:
-  `docs/notes/wide-dir-scaling-2026-08-18.md`.
+  place would double-credit every verified new dir). See § "The routine roll-up is coalesced per burst" for why it is
+  queued rather than walked in the handler.
 - **`backfill_missing_dir_stats`.** After writing the missing rows, it repairs each "missing root" 's parent upward (a
   missing root = a missing dir whose parent is NOT missing), crediting ancestors a delta never walked through.
+
+### The routine roll-up is coalesced per burst (`pending_rollups.rs`)
+
+`handle_compute_subtree_aggregates` queues its ancestor instead of walking it, and `writer_loop` drains the queue at the
+caught-up point through `settle_the_ledger`.
+
+**Why.** `walk_subtree` sends exactly one `ComputeSubtreeAggregates` per frontier root, and a repair is `O(children)` at
+each level. Stop a walk after a wide directory has been listed and every unwalked child becomes a frontier root of its
+own, so `W` roots each recompute the one `W`-child parent: `O(W²)`. It passed the fixed per-call cost at ~750 children
+and reached 73 minutes at 60,000 (`docs/notes/wide-dir-scaling-2026-08-18.md`). The phase machine reaches that state
+routinely — a folder somebody opened stops the group, and so does a search taking the ground, a quit, a switch toggle,
+or a `completion_retry` pass. Queued, the same burst costs ONE walk: 400 roots under one parent measure 1 roll-up, down
+from 400 (`aggregation/tests.rs::a_burst_of_roots_under_one_parent_costs_a_handful_of_rollups`, which pins the ratio).
+
+**Why it self-limits rather than trading one stall for another.** The drain runs only when the queue is empty, so while
+the writer is inside an `O(W)` roll-up the walker keeps queueing roots, and every one of them joins the NEXT single
+walk. A burst therefore costs about what the work that filled it cost: the roll-up can at worst double a first index,
+never square it, however wide the directory. The empty queue is also what makes each drain see final rows, which is why
+the trigger is the caught-up point rather than a timer or a size cap (that guardrail lives with the code, in
+`pending_rollups.rs`).
+
+**Why deferring is race-free.** Three things, and all three have to hold:
+
+1. **The repair writes an absolute value.** `repair_dir_stats_upward` recomputes each level from its committed children.
+   It never adds a delta, so nothing that lands during the wait can be double-counted, and running it later only ever
+   shows it MORE of the truth. Idempotent and order-independent for the same reason, which is also why the drain can
+   walk its ids in any order and why the exit paths may run it again.
+2. **There is one writer.** Every `dir_stats` and `entries` write for this volume goes through this thread, so nothing
+   can interleave a write between the queue and the drain. A live `UpsertEntryV2` landing mid-burst is applied first and
+   then subsumed by the recompute (`aggregation/tests.rs::a_mutation_inside_the_pending_window_is_counted_once`).
+3. **The stale window is read-only and bounded.** Between queue and drain the ancestors under-report by the subtree just
+   scanned. Reads see a low size for that window and the drain emits a `/` refresh when it moves anything, so the panes
+   correct themselves. ⚠️ One consequence worth knowing: a delete inside the freshly-scanned subtree during that window
+   can drive `propagate_delta_by_id` negative against the not-yet-credited ancestor, which logs the ledger's one drift
+   `warn!` and escalates to the repair the burst already owed. The outcome is correct; the line is a false alarm. It
+   needs a delete inside the window, so it stays rare.
+
+**Durability.** Each roll-up used to commit with its own message; coalesced, a hard crash inside a burst leaves the wide
+parent short with nothing remembering it. Accepted, deliberately: the index is a disposable cache
+(`../CLAUDE.md` § "Rebuild, don't migrate"), the run that crashed did not complete, and the next launch's resumed run
+ends in `BackfillMissingDirStats` + `ComputeAllAggregates`, which recompute every row from `entries`. A CLEAN quit does
+not lose them at all — `Shutdown` and channel-close both run `settle_the_ledger` on the way out
+(`aggregation/tests.rs::a_shutdown_inside_a_burst_still_rolls_the_ancestors_up`).
+
+**Two queues, not one.** The roll-up queue is unbounded and never gives up; `DeferredRepairs` next door is bounded
+drift telemetry that does both. `pending_rollups.rs` carries that boundary as a guardrail. A roll-up that fails on a
+transient DB error hands its id to `DeferredRepairs`, which drains immediately after it in the same hook.
 
 **Deferred repair: a failed DB operation is drift, not a no-op (`deferred_repair.rs`).** Every ancestor walk
 (`propagate_delta_by_id`, `propagate_recursive_has_symlinks`, `propagate_min_subtree_epoch`, `repair_dir_stats_upward`)

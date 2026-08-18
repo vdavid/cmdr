@@ -39,6 +39,7 @@ mod deferred_repair;
 mod delta;
 mod entries;
 mod maintenance;
+mod pending_rollups;
 mod probe_stats;
 mod repair;
 pub(crate) mod wait_probe;
@@ -61,6 +62,7 @@ use entries::{
     handle_truncate_data, handle_upsert_entry_v2,
 };
 use maintenance::{handle_incremental_vacuum, request_wal_checkpoint, run_deferred_wal_checkpoint};
+use pending_rollups::PendingRollups;
 
 // ── Writer generation (for search index staleness detection) ─────────
 
@@ -506,6 +508,13 @@ pub struct IndexWriter {
     /// its own `Arc` clone and always ticks it; only the reader here is test-gated.
     #[cfg_attr(not(test), allow(dead_code, reason = "test-only observable"))]
     idle_epoch: Arc<AtomicU64>,
+    /// How many ancestor roll-up walks the writer has run out of `pending_rollups`.
+    /// One per drained id, so a test that covers `N` frontier roots under one parent
+    /// reads the coalescing straight off it: `N` before the queue existed, a handful
+    /// after. The writer thread holds its own `Arc` clone and always counts; only the
+    /// reader here is test-gated.
+    #[cfg_attr(not(test), allow(dead_code, reason = "test-only observable"))]
+    rollup_walks: Arc<AtomicU64>,
     /// The per-volume fatal-storage-failure signal. The writer thread trips this on
     /// the first fatal DB error (`SQLITE_IOERR` / corruption / full / read-only) and
     /// then exits, rather than logging and retrying forever. Shared with the live
@@ -580,6 +589,8 @@ impl IndexWriter {
         let queue_depth_clone = Arc::clone(&queue_depth);
         let idle_epoch = Arc::new(AtomicU64::new(0));
         let idle_epoch_clone = Arc::clone(&idle_epoch);
+        let rollup_walks = Arc::new(AtomicU64::new(0));
+        let rollup_walks_clone = Arc::clone(&rollup_walks);
         let failure_signal = Arc::new(IndexFailureSignal::new(Arc::clone(&events)));
         let failure_signal_clone = Arc::clone(&failure_signal);
 
@@ -600,6 +611,7 @@ impl IndexWriter {
                         mutation_tracker_clone,
                         queue_depth_clone,
                         idle_epoch_clone,
+                        rollup_walks_clone,
                         failure_signal_clone,
                     )
                 }
@@ -616,6 +628,7 @@ impl IndexWriter {
             mutation_tracker,
             queue_depth,
             idle_epoch,
+            rollup_walks,
             failure_signal,
         })
     }
@@ -712,6 +725,14 @@ impl IndexWriter {
     #[cfg(test)]
     pub(crate) fn idle_epoch(&self) -> u64 {
         self.idle_epoch.load(Ordering::SeqCst)
+    }
+
+    /// How many ancestor roll-up walks the writer has run (see the `rollup_walks`
+    /// field). Against the number of frontier roots covered, this is the coalescing
+    /// factor — the scaling guard in `aggregation/tests.rs` reads exactly that.
+    #[cfg(test)]
+    pub(crate) fn rollup_walks(&self) -> u64 {
+        self.rollup_walks.load(Ordering::SeqCst)
     }
 
     /// Non-blocking send. Unlike `send`, never parks the caller when the channel
@@ -1063,6 +1084,7 @@ fn writer_loop(
     mutation_tracker: Arc<MutationTracker>,
     queue_depth: Arc<AtomicUsize>,
     idle_epoch: Arc<AtomicU64>,
+    rollup_walks: Arc<AtomicU64>,
     failure_signal: Arc<IndexFailureSignal>,
 ) {
     log::debug!("Writer: thread started");
@@ -1084,6 +1106,9 @@ fn writer_loop(
     // Chains a failed `dir_stats` read/write left drifted, drained below once the
     // writer is idle again. See `deferred_repair.rs`.
     let repairs = DeferredRepairs::new();
+    // Ancestors a finished subtree aggregate owes a roll-up, coalesced per burst and
+    // drained at the same caught-up point. See `pending_rollups.rs`.
+    let rollups = PendingRollups::new(rollup_walks);
     // Coalesces mutations that are ALREADY QUEUED into one transaction, so the live
     // path stops paying a COMMIT + WAL frame write per message. See `batch.rs`.
     let mut batch = ImplicitBatch::new();
@@ -1132,6 +1157,7 @@ fn writer_loop(
         // quit's last writes back, then exit.
         let Some(msg) = msg else {
             batch.close(&conn, &mut probe, &failure_signal, &mut deferred_checkpoint);
+            settle_the_ledger(&conn, &rollups, &repairs);
             break;
         };
 
@@ -1169,6 +1195,7 @@ fn writer_loop(
                 &mut heal_latch,
                 &mut deferred_checkpoint,
                 &repairs,
+                &rollups,
                 &failure_signal,
             )
         });
@@ -1187,6 +1214,7 @@ fn writer_loop(
             &mut heal_latch,
             &mut deferred_checkpoint,
             &repairs,
+            &rollups,
             &failure_signal,
         );
         probe.time_in_processing += proc_start.elapsed();
@@ -1198,6 +1226,10 @@ fn writer_loop(
 
         if should_exit {
             // `Shutdown` is a batch barrier, so the last batch already committed above.
+            // Settle before going: a quit landing inside a burst would otherwise leave
+            // the ancestors that burst coalesced permanently short of it. Bounded by
+            // what one burst queued, which is one id for the wide-directory case.
+            settle_the_ledger(&conn, &rollups, &repairs);
             log::debug!("Writer: shutdown after processing {} messages", stats.current.total);
             return;
         }
@@ -1253,18 +1285,19 @@ fn writer_loop(
             }
         }
 
-        // Drain deferred `dir_stats` repairs at the same caught-up point, and for
-        // the same reason: with nothing queued behind us every committed row is
-        // final, so a recompute-from-children sees the whole truth, and whatever
-        // contention failed the original write (a checkpoint, a long reader) has
-        // had its chance to clear. `is_autocommit()` keeps the drain out of an
-        // open `BeginTransaction` batch, where the tree is only half written: a
-        // repair there would roll ancestors up from a partial state and then
-        // dequeue the id, baking that half-state in.
+        // Settle the `dir_stats` ledger at the same caught-up point, and for the same
+        // reason: with nothing queued behind us every committed row is final, so a
+        // recompute-from-children sees the whole truth, and whatever contention
+        // failed an original write (a checkpoint, a long reader) has had its chance
+        // to clear. This is also where a burst of subtree aggregates pays for its
+        // ancestors exactly once, which is what keeps a wide directory linear.
         if queue_depth.load(Ordering::Relaxed) == 0 {
             settled = true;
-            if conn.is_autocommit() && !repairs.is_empty() {
-                repairs.drain(&conn);
+            if settle_the_ledger(&conn, &rollups, &repairs) {
+                // A roll-up moved ancestor sizes no message handler emitted for, so
+                // the panes would otherwise keep showing the pre-burst number until
+                // something else refreshed them.
+                emit_full_refresh(events.as_ref());
             }
         }
 
@@ -1285,6 +1318,39 @@ fn writer_loop(
     );
 }
 
+/// Settle the `dir_stats` ledger: roll up the ancestors this burst of subtree
+/// aggregates left owing, then repair whatever chains a failed propagation queued.
+///
+/// Both want the writer's caught-up point (see `DETAILS.md` § "The caught-up point")
+/// and both are idempotent, so the exit paths call this again on the way out.
+/// `is_autocommit()` keeps them out of an open `BeginTransaction` batch, where the
+/// tree is only half written: rolling ancestors up from a partial state and then
+/// dropping the id would bake that half-state in.
+///
+/// Returns whether any row moved, so a caller can refresh the panes exactly when
+/// there is something to see.
+fn settle_the_ledger(conn: &rusqlite::Connection, rollups: &PendingRollups, repairs: &DeferredRepairs) -> bool {
+    if !conn.is_autocommit() {
+        return false;
+    }
+    let changed = rollups.drain(conn, repairs);
+    if !repairs.is_empty() {
+        repairs.drain(conn);
+    }
+    changed
+}
+
+/// Tell both panes to re-read their sizes, from BETWEEN messages rather than from
+/// inside a handler. The pool is what `process_message` gets for free: on macOS an
+/// `emit` can autorelease ObjC objects on this background thread, and out here
+/// there is no pool to catch them.
+fn emit_full_refresh(events: &dyn EventSink) {
+    #[cfg(target_os = "macos")]
+    objc2::rc::autoreleasepool(|_| emit_dir_updated(events, vec!["/".to_string()]));
+    #[cfg(not(target_os = "macos"))]
+    emit_dir_updated(events, vec!["/".to_string()]);
+}
+
 /// Process a single message. Returns `true` if the thread should exit.
 #[allow(clippy::too_many_arguments, reason = "writer-loop ambient state")]
 fn process_message(
@@ -1301,6 +1367,7 @@ fn process_message(
     heal_latch: &mut bool,
     deferred_checkpoint: &mut bool,
     repairs: &DeferredRepairs,
+    rollups: &PendingRollups,
     signal: &IndexFailureSignal,
 ) -> bool {
     match msg {
@@ -1424,7 +1491,7 @@ fn process_message(
             handle_compute_partial_aggregates(conn, accumulator, events, hot_paths, source, signal);
         }
         WriteMessage::ComputeSubtreeAggregates { root_id } => {
-            handle_compute_subtree_aggregates(conn, root_id, repairs, signal);
+            handle_compute_subtree_aggregates(conn, root_id, rollups, signal);
         }
         WriteMessage::UpdateLastEventId(id) => {
             if let Err(e) = IndexStore::update_meta(conn, "last_event_id", &id.to_string()) {

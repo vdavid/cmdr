@@ -318,6 +318,7 @@ fn run_prefilled_loop(db_path: &Path, messages: Vec<WriteMessage>) -> usize {
             Arc::new(MutationTracker::new(true)),
             queue_depth_for_loop,
             Arc::new(AtomicU64::new(0)),
+            Arc::new(AtomicU64::new(0)),
             Arc::new(IndexFailureSignal::new(crate::NoopEventSink::shared())),
         );
     });
@@ -390,6 +391,7 @@ fn a_flush_reply_means_the_batched_rows_are_already_committed() {
             Arc::new(AtomicI64::new(2)),
             Arc::new(MutationTracker::new(true)),
             queue_depth_for_loop,
+            Arc::new(AtomicU64::new(0)),
             Arc::new(AtomicU64::new(0)),
             Arc::new(IndexFailureSignal::new(crate::NoopEventSink::shared())),
         );

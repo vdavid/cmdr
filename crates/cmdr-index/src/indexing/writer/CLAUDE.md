@@ -5,8 +5,8 @@ Every write to a volume's index DB goes through one dedicated `std::thread`. Thi
 search-generation bump. Other areas point here.
 
 `mod.rs` the `WriteMessage` protocol + `IndexWriter` handle + `writer_loop`; `batch.rs` the implicit transaction;
-`entries.rs`, `delta.rs`, `aggregation.rs`, `repair.rs`, `deferred_repair.rs`, `abandoned_retry.rs`, `maintenance.rs`,
-`probe_stats.rs`, `wait_probe.rs`, one job each.
+`entries.rs`, `delta.rs`, `aggregation.rs`, `repair.rs`, `deferred_repair.rs`, `pending_rollups.rs`,
+`abandoned_retry.rs`, `maintenance.rs`, `probe_stats.rs`, `wait_probe.rs`, one job each.
 
 ## Must-knows (all hold PER volume id)
 
@@ -40,7 +40,10 @@ search-generation bump. Other areas point here.
 - **Live mutations batch, they don't autocommit** (`batch.rs`): queued work coalesces into one `BEGIN IMMEDIATE`, closed
   on an empty queue. Every new `WriteMessage` needs a `BatchRole`; a reply, emit, or pragma must be `Barrier`.
 - **`flush_blocking` ≠ settled**: it replies from inside the handler, before the end-of-iteration hourglass clear and
-  repair drain. Wait on `idle_epoch()`; ❌ never move the reply.
+  `settle_the_ledger`. Wait on `idle_epoch()`; ❌ never move the reply.
+- **The subtree handler QUEUES its ancestor roll-up** (`pending_rollups.rs`), drained at the caught-up point, because
+  repairing per message made a wide directory `O(width²)`. Safe because a repair recomputes from committed children, so
+  it can't double-count and can't be reordered wrong. A quit drains it; a crash mid-burst is a rescan we accept.
 
 Everything above in depth, plus the caught-up point, the heal, test isolation, and maintenance: `DETAILS.md`. Read it
 before any non-trivial work here: editing, planning, reorganizing, or advising.

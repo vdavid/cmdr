@@ -15,6 +15,7 @@ use crate::indexing::store::IndexStore;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 use super::deferred_repair::DeferredRepairs;
+use super::pending_rollups::PendingRollups;
 use super::repair::repair_dir_stats_upward;
 use super::{AccumulatorMaps, AggSource};
 use crate::indexing::events::emit_dir_updated;
@@ -271,7 +272,7 @@ pub(super) fn handle_compute_all_aggregates(
 pub(super) fn handle_compute_subtree_aggregates(
     conn: &rusqlite::Connection,
     root_id: i64,
-    repairs: &DeferredRepairs,
+    rollups: &PendingRollups,
     signal: &IndexFailureSignal,
 ) {
     let t = Instant::now();
@@ -282,19 +283,24 @@ pub(super) fn handle_compute_subtree_aggregates(
                 pluralize(count, "dir"),
                 t.elapsed().as_millis(),
             );
-            // Repair the ancestor chain from the subtree root's PARENT. The scoped
+            // Queue the ancestor chain from the subtree root's PARENT. The scoped
             // recompute above already wrote the subtree root's fresh totals, so
-            // repairing from the root itself would short-circuit immediately (its
+            // rolling up from the root itself would short-circuit immediately (its
             // row already agrees with its children); we must start one level up.
             // One writer-thread walk rolls up sizes, counts, `recursive_has_symlinks`,
             // AND `min_subtree_epoch` coverage at once — subsuming the former
             // symlink-only ancestor walk and both off-writer `PropagateDeltaById` /
-            // `PropagateMinSubtreeEpoch` compensation blocks (deleted). Running here,
-            // in the same message, makes it race-free by construction.
+            // `PropagateMinSubtreeEpoch` compensation blocks (deleted).
+            //
+            // ❗ Queued rather than walked here: `W` frontier roots sharing one
+            // `W`-child parent would otherwise recompute that parent `W` times, which
+            // is what made a wide directory quadratic. `writer_loop` drains the queue
+            // at its caught-up point, where the burst is one walk. See
+            // `pending_rollups.rs` for why deferring stays race-free.
             if let Ok(Some(parent_id)) = IndexStore::get_parent_id(conn, root_id)
                 && parent_id != 0
             {
-                repair_dir_stats_upward(conn, parent_id, repairs);
+                rollups.queue(parent_id);
             }
         }
         Err(e) => {

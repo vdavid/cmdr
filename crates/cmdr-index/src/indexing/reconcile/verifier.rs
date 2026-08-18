@@ -462,10 +462,13 @@ async fn verify_and_correct(
             }
         }
         // No off-writer ancestor compensation: each `scan_subtree` sends
-        // `ComputeSubtreeAggregates`, whose handler repairs the ancestor chain
-        // (sizes, counts, symlinks, AND coverage) on the writer thread. Doing it
-        // there is race-free and can't double-count; a read-then-`PropagateDeltaById`
-        // here would credit the same bytes twice (Leak A).
+        // `ComputeSubtreeAggregates`, whose handler hands the ancestor chain (sizes,
+        // counts, symlinks, AND coverage) to the writer's roll-up queue, drained at
+        // its caught-up point. Doing it on the writer is race-free and can't
+        // double-count; a read-then-`PropagateDeltaById` here would credit the same
+        // bytes twice (Leak A). ⚠️ The flush below does NOT mean the roll-up landed
+        // (`writer/pending_rollups.rs`); the writer emits its own refresh when it
+        // does.
     }
 
     // Flush all corrections

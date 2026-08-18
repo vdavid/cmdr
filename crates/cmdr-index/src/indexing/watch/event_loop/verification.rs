@@ -165,11 +165,13 @@ pub(super) async fn run_background_verification(
         }
 
         // No off-writer ancestor compensation for the new dirs: each `scan_subtree`
-        // above sent `ComputeSubtreeAggregates`, whose handler repairs the ancestor
+        // above sent `ComputeSubtreeAggregates`, whose handler queues the ancestor
         // chain (sizes, counts, symlinks, AND coverage — which this path never
-        // corrected before) on the writer thread, race-free and without the 2×
-        // credit a read-then-`PropagateDeltaById` here caused (Leak A). The
-        // repairs already committed under the `has_changes` flush above.
+        // corrected before) for the writer's roll-up drain, race-free and without
+        // the 2× credit a read-then-`PropagateDeltaById` here caused (Leak A).
+        // ⚠️ The `has_changes` flush above does NOT mean the roll-up landed: it runs
+        // at the writer's caught-up point (`writer/pending_rollups.rs`), which emits
+        // its own refresh for the sizes it moves.
 
         // Final emit for the replay-affected paths whose stats were corrected
         // (stale-row deletions and new-file additions in the affected_paths set).
