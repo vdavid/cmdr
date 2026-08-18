@@ -143,4 +143,14 @@ describe('the directory names a rename validates against', () => {
     expect(siblings.names).toEqual([])
     expect(getFileRange).not.toHaveBeenCalled()
   })
+
+  it('tries again once a listing with nothing to read has rows', async () => {
+    const siblings = createSiblingNames()
+
+    await siblings.ensure({ ...DIR, totalCount: 0 })
+    await siblings.ensure(DIR)
+
+    // Remembering the empty read would leave the hint blind for the whole chain.
+    expect(siblings.names).toEqual(['a.txt', 'b.txt', 'c.txt'])
+  })
 })

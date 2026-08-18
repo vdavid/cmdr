@@ -99,6 +99,10 @@ export function createSiblingNames(): SiblingNames {
       names = []
       landedWhileReading = []
       if (candidate.listingId === '' || candidate.totalCount === 0) {
+        // Nothing to read, and nothing worth remembering: leaving the scope
+        // unset makes the next activation try again, instead of serving an
+        // empty list for the rest of the chain.
+        scope = null
         reading = null
         return Promise.resolve()
       }
