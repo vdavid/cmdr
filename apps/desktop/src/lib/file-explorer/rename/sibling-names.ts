@@ -106,8 +106,11 @@ export function createSiblingNames(): SiblingNames {
         reading = null
         return Promise.resolve()
       }
-      const started = read(candidate, generation).finally(() => {
-        reading = null
+      const startedFor = generation
+      const started = read(candidate, startedFor).finally(() => {
+        // An abandoned read settling later must not report the LIVE one as
+        // finished: that would drop the patches a landing rename owes it.
+        if (startedFor === generation) reading = null
       })
       reading = started
       return started

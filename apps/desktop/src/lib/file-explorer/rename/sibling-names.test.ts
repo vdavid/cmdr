@@ -126,6 +126,24 @@ describe('the directory names a rename validates against', () => {
     expect(siblings.names).toEqual(['x.txt'])
   })
 
+  it('still replays a rename onto the live read when an abandoned one settles first', async () => {
+    const pending: ((names: { name: string }[]) => void)[] = []
+    vi.mocked(getFileRange).mockImplementation(
+      () => new Promise((resolve) => pending.push(resolve as never)) as never,
+    )
+    const siblings = createSiblingNames()
+
+    siblings.ensure(DIR) // the listing the pane is leaving
+    const live = siblings.ensure({ listingId: 'lst-2', includeHidden: false, parentPath: '/other', totalCount: 2 })
+    pending[0]([{ name: 'a.txt' }]) // the abandoned read comes back first
+    await new Promise((settle) => setTimeout(settle, 0))
+    siblings.applyRename('/other', 'x.txt', 'renamed.txt')
+    pending[1]([{ name: 'x.txt' }, { name: 'y.txt' }])
+    await live
+
+    expect(siblings.names).toEqual(['y.txt', 'renamed.txt'])
+  })
+
   it('gives no names when the listing cannot be read, instead of guessing', async () => {
     vi.mocked(getFileRange).mockRejectedValue(new Error('listing gone'))
     const siblings = createSiblingNames()
