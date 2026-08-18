@@ -12,6 +12,7 @@
 //! - [`conversations`]: thread history (read, list, search, rename, archive).
 //! - [`consent`]: the opt-in gate's status/accept/revoke surface.
 //! - [`cost`]: the per-thread footer total and the per-day rollup.
+//! - [`suggested_ops`]: what the Suggested ops dialog reads, and the rejection it records.
 //!
 //! The two connection helpers below are the only shared plumbing: every store-reading
 //! command opens a short-lived connection off the IPC thread through them, so a missing
@@ -23,6 +24,7 @@ mod chat;
 mod consent;
 mod conversations;
 mod cost;
+mod suggested_ops;
 mod views;
 
 // Glob re-exports, so each `#[tauri::command]`'s generated companion items (`__cmd__*`,
@@ -36,6 +38,7 @@ pub use chat::*;
 pub use consent::*;
 pub use conversations::*;
 pub use cost::*;
+pub use suggested_ops::*;
 pub use views::*;
 
 use tauri::{AppHandle, Manager};
@@ -44,6 +47,12 @@ use crate::agent::AgentDb;
 use crate::agent::store;
 
 const LOG_TARGET: &str = "agent::ipc";
+
+/// The `main.db` path, or `None` when the store never opened. Every command here degrades to
+/// an empty answer in that case rather than surfacing a failure the user can't act on.
+fn db_path(app: &AppHandle) -> Option<std::path::PathBuf> {
+    app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf())
+}
 
 fn now_secs() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};

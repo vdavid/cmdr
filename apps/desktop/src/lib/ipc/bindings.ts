@@ -2566,6 +2566,25 @@ export const commands = {
    */
   cancelBulkRenameProposal: (proposalId: string) => __TAURI_INVOKE<void>('cancel_bulk_rename_proposal', { proposalId }),
   /**
+   *  Every sweep with at least one group still waiting on the user, newest first.
+   *
+   *  Counts only: not one op row is read here, because a group of 60 000 is legitimate and a list
+   *  that loaded them to count them would stall the dialog it exists to open.
+   */
+  suggestedOpsList: () => typedError<SuggestedSweepView[], IpcError>(__TAURI_INVOKE('suggested_ops_list')),
+  // One page of a group's ops, in `seq` order.
+  suggestedOpsPage: (groupId: number, offset: number, limit: number) =>
+    typedError<SuggestedOpPage, IpcError>(__TAURI_INVOKE('suggested_ops_page', { groupId, offset, limit })),
+  /**
+   *  The user said no to a group.
+   *
+   *  Conditional on `pending`, like every other transition: a group that already left it keeps
+   *  the answer it has, and the dialog is told which so it can say what happened rather than
+   *  silently doing nothing.
+   */
+  suggestedOpsReject: (groupId: number) =>
+    typedError<RejectResultView, IpcError>(__TAURI_INVOKE('suggested_ops_reject', { groupId })),
+  /**
    *  A settings change may have switched the model for an open thread: record it as a
    *  conversation event once any in-flight turn finishes (the turn keeps its already-resolved
    *  model; the event marks the boundary). Returns the persisted event's display view, or
@@ -3588,7 +3607,6 @@ export const events = {
   searchIndexReady: makeEvent<SearchIndexReadyEvent>('search-index-ready'),
   searchProgress: makeEvent<SearchProgressEvent>('search-progress'),
   settingsChanged: makeEvent<SettingsChanged>('settings-changed'),
-  suggestionsChanged: makeEvent<SuggestionsChanged>('suggestions-changed'),
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
   viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
@@ -4469,6 +4487,21 @@ export type DedupCluster = {
   // The paths in this near-duplicate group (two or more).
   paths: string[]
 }
+
+/**
+ *  Whether approving a group would create its target folder.
+ *
+ *  `Unknown` is a real answer, not a failure: a remote volume that isn't responding leaves the
+ *  row honest instead of guessing, and the user still sees the destination path itself.
+ */
+export type DestinationState =
+  // The verb binds no target (trash, delete), so there is nothing to create.
+  | 'notApplicable'
+  | 'exists'
+  // Approving creates it, exactly as a user-started move into a missing folder would.
+  | 'willBeCreated'
+  // The volume didn't answer in time, or isn't mounted.
+  | 'unknown'
 
 export type DfsCacheEntryDto = {
   path_prefix: string
@@ -7147,6 +7180,25 @@ export type OcrHit = {
 export type OpKind = 'copy' | 'move' | 'delete' | 'trash' | 'rename' | 'createFolder' | 'createFile' | 'archiveEdit'
 
 /**
+ *  Where one op sits, stored in `proposal_ops.status`. Per-op statuses are what make a
+ *  partial apply ("run 11, skip 3") possible.
+ */
+export type OpStatus =
+  // Part of the group's live op set: what a claim binds and an executor will run.
+  | 'pending'
+  /**
+   *  The user deselected it at review, so it's outside the accepted set. Kept as a row
+   *  (never deleted) so the decision record says what was offered, not just what ran.
+   */
+  | 'excluded'
+  // It ran and did what it said.
+  | 'done'
+  // The executor passed over it (a fingerprint mismatch, a conflict resolution).
+  | 'skipped'
+  // It ran and didn't succeed.
+  | 'failed'
+
+/**
  *  `open-file-viewer`: open a viewer window. `path` present → open that file;
  *  absent → open the file under the cursor (MCP `dialog open file-viewer`).
  */
@@ -7562,6 +7614,39 @@ export type PrepareResult = {
 }
 
 /**
+ *  Where a group sits in its lifecycle, stored in `proposals.status`.
+ *
+ *  `Pending` is the only mutable state: the agent may re-propose a pending group, and
+ *  the claim transaction only ever moves a group out of it. Everything else is frozen to
+ *  the agent — including `Interrupted`, which is the user's to re-approve or discard.
+ */
+export type ProposalStatus =
+  // Proposed, waiting for the user. No expiry: it waits as long as it takes.
+  | 'pending'
+  // The user approved it and the claim transaction handed its ops to the queue.
+  | 'approved'
+  /**
+   *  Approved, but the app restarted before execution finished, so nothing here knows
+   *  what ran. Frozen: the user re-approves (minting a new group) or discards.
+   */
+  | 'interrupted'
+  // Every op reached a terminal outcome.
+  | 'completed'
+  // The user said no.
+  | 'rejected'
+
+/**
+ *  What a proposal group asks to do, stored in `proposals.verb`.
+ *
+ *  A group is exactly ONE call to ONE executor, so the verb decides which executor runs it,
+ *  what the group binds besides its ops, whether its ops carry their own destinations, and
+ *  how far an approved group can be taken back. All three ride on `GroupIntent`
+ *  (`agent/store/proposals/`), which pairs the verb with them so a wrong combination can't
+ *  be built.
+ */
+export type ProposalVerb = 'move' | 'copy' | 'trash' | 'delete' | 'rename' | 'compress' | 'extract'
+
+/**
  *  Known cloud/mount provider. The variant identity crosses IPC (serialized
  *  camelCase); the FE maps it to display names, app names, and the
  *  (provider, category) suggestion table. Variant names match the TS `Provider`
@@ -7773,6 +7858,14 @@ export type RegistrationStatus =
    */
   | 'notRegistered'
 
+// What a rejection did, or why it didn't.
+export type RejectResultView =
+  | { kind: 'rejected' }
+  // Somebody already answered this group. The dialog re-reads rather than insisting.
+  | { kind: 'alreadyAnswered'; found: ProposalStatus }
+  // No group with that id, which usually means the list on screen is stale.
+  | { kind: 'unknown' }
+
 /**
  *  One item's evidence: the typed source plus the short quote or note behind it.
  *
@@ -7948,6 +8041,25 @@ export type RestrictedWindowSettings = {
    */
   appearanceFileSizeFormat: string | null
 }
+
+/**
+ *  How far an approved group can be taken back, stored in `proposals.reversible`. A FACT
+ *  the review dialog discloses, never a reason to refuse a group: per the guiding
+ *  principle, an irreversible group is the user's to approve.
+ */
+export type Reversibility =
+  // The operation log's `RestoreMove` puts it back: move, trash, rename.
+  | 'restoreMove'
+  /**
+   *  Undone by deleting what was written: copy, and a compress that created a new
+   *  archive.
+   */
+  | 'deleteWhatWasWritten'
+  /**
+   *  Nothing takes it back: a permanent delete, or a compress that overwrote an
+   *  existing archive (the seed is unconditional and the prior bytes are gone).
+   */
+  | 'irreversible'
 
 /**
  *  Why a rollback request is refused at the operation level (before any item
@@ -8961,37 +9073,76 @@ export type StreamingListingStartResult = {
   status: ListingStatus
 }
 
-/**
- *  Why the pending set changed.
- *
- *  The count alone can't tell these apart, and the dialog's recovery differs: an amend under
- *  an open group needs the non-destructive "this changed" affordance, while an approval of
- *  that same group means the review is over. Same id, different affordance, so the reason
- *  travels rather than being inferred from a follow-up status query.
- */
-export type SuggestionChange =
-  // A sweep landed, so one or more groups are newly pending.
-  | 'proposed'
-  // The agent re-proposed a group that was already pending; its ops may be different.
-  | 'amended'
-  // The user approved a group and its ops went to the queue.
-  | 'approved'
-  // The user rejected a group.
-  | 'rejected'
-
-// The pending suggestion set changed.
-export type SuggestionsChanged = {
-  // How many groups are pending now, so the indicator renders without a follow-up query.
-  pendingGroupCount: number
-  // How many ops those groups hold between them. Free: it is the same `COUNT(*)` shape.
-  pendingOpCount: number
+// One reviewable group: everything the user weighs before approving it.
+export type SuggestedGroupView = {
+  groupId: number
+  sweepId: number
+  verb: ProposalVerb
+  status: ProposalStatus
   /**
-   *  The group this change was about, when it was about one. `None` for a sweep that
-   *  landed several at once. It is what lets an open review tell "the group I am looking at
-   *  moved" from "something else appeared".
+   *  The friendly name the group leads with. Carries the selector's pattern as display text
+   *  when a pattern produced the group.
    */
-  groupId: number | null
-  reason: SuggestionChange
+  displayName: string
+  // The agent's reason. Shown labelled as the agent's words, never as a fact Cmdr checked.
+  rationale: string | null
+  sourceVolumeId: string
+  /**
+   *  The shared destination folder, the rename parent, or the archive path. `None` for trash
+   *  and delete, which bind no target at all.
+   */
+  destination: string | null
+  /**
+   *  How far an approved group could be taken back. A fact to DISCLOSE; per the guiding
+   *  principle it is never a reason to refuse a group.
+   */
+  reversible: Reversibility
+  // Whether that destination is already there, and so whether approving creates it.
+  destinationState: DestinationState
+  // Ops in the live set: what would run.
+  liveOpCount: number
+  // Every op row the group has, including the ones a previous review deselected.
+  totalOpCount: number
+  /**
+   *  True when a pattern produced this group, so the dialog can show the pattern as the
+   *  provenance of a list the user didn't watch being built.
+   */
+  fromSelector: boolean
+}
+
+// One page of a group's ops, plus the counts that place it in the whole.
+export type SuggestedOpPage = {
+  ops: SuggestedOpView[]
+  // Where this page starts, so a late answer can be matched to the window that asked.
+  offset: number
+  // Every op row in the group. The dialog sizes its scrollbar from this, never from `ops`.
+  total: number
+}
+
+// One proposed op, as the review row shows it.
+export type SuggestedOpView = {
+  opId: number
+  sourcePath: string
+  // The name this source becomes. `Some` only under a rename group.
+  newName: string | null
+  status: OpStatus
+  /**
+   *  What the index held for this file when the group was frozen. `None` when the index had
+   *  nothing, which the row says in words: never a zero, which reads as an empty file.
+   */
+  snapshotSize: number | null
+  // Modification time in unix seconds, from the same frozen snapshot.
+  snapshotModified: number | null
+}
+
+// One sweep, with the groups still waiting on the user.
+export type SuggestedSweepView = {
+  sweepId: number
+  // Unix seconds. The dialog renders it with the house date component.
+  createdAt: number
+  // The agent's words for the sweep as a whole, shown LABELLED as the agent's.
+  rationale: string | null
+  groups: SuggestedGroupView[]
 }
 
 // Sync status for a file in a cloud-synced folder (Dropbox, iCloud, etc.).
