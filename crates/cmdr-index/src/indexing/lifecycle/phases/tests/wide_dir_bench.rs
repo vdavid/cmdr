@@ -118,9 +118,16 @@ fn wide_dir_cost() {
 /// rolls the ancestor chain up from the child's parent: the wide directory
 /// itself, recomputed from all `width` of its children, once per root.
 ///
-/// So the SAME ground costs O(width) in one walk and O(width²) in `width` walks.
-/// The ratio column is the finding; ❌ read it rather than the absolute times,
-/// which move with machine load.
+/// The ancestor roll-up is coalesced per burst now, so the piecemeal arm pays a
+/// handful of ancestor walks rather than one per root and the ratio stays flat as
+/// the width grows (`writer/pending_rollups.rs`). The ratio column is the finding;
+/// ❌ read it rather than the absolute times, which move with machine load.
+///
+/// ⚠️ Both arms walk the way the PHASE MACHINE walks — the drain left to the
+/// caller, settled once at the end — and ❌ not with a blocking flush per root.
+/// A flush per root stops the walker and the writer overlapping at all, which is
+/// exactly the state where nothing can coalesce, so measuring that way would
+/// report a quadratic the machine doesn't have.
 ///
 /// ```sh
 /// CMDR_PHASES_TEST_TREE_DIR=/private/tmp CMDR_WIDE_DIR_BENCH_WIDTHS=500,1000,2000,4000 \
@@ -160,7 +167,8 @@ fn cover_the_wide_directory_whole(width: usize) -> Duration {
     let fixture = Tree::new();
     build_wide(&fixture.root().join("big"), width, Shape::Subdirs);
     let started = Instant::now();
-    fixture.cover(&fixture.path("big"));
+    fixture.cover_leaving_the_drain_to_the_caller(&fixture.path("big"));
+    fixture.settle();
     started.elapsed()
 }
 
@@ -177,8 +185,12 @@ fn cover_the_wide_directory_child_by_child(width: usize) -> Duration {
 
     let started = Instant::now();
     for root in &roots {
-        fixture.cover(root);
+        fixture.cover_leaving_the_drain_to_the_caller(root);
     }
+    // The roll-ups the burst queued are part of what covering this ground costs, so
+    // the timed region ends where the writer is genuinely done, ❌ not where the
+    // last walk returned.
+    fixture.settle();
     started.elapsed()
 }
 

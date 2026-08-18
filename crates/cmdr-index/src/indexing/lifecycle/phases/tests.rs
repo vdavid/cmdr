@@ -118,6 +118,34 @@ impl Tree {
         self.writer.flush_blocking().expect("flush the walk");
     }
 
+    /// Walk one frontier root the way the PHASE MACHINE does: the drain left to
+    /// the caller, so consecutive roots overlap the walker with the writer instead
+    /// of standing still on a flush each (`phases/mod.rs`: "the writer drains once
+    /// per phase, not once per root"). ⚠️ Owes [`settle`](Self::settle) before
+    /// anything reads coverage or a size back.
+    fn cover_leaving_the_drain_to_the_caller(&self, root: &str) {
+        let walk = cover::start(
+            self.context().leaving_the_flush_to_the_caller(),
+            vec![root.to_string()],
+            CoverageDimension::Listing,
+            CancellationToken::new(),
+            cover::WalkFor::TheIndex,
+        );
+        while walk.next_batch().is_some() {}
+        walk.finish();
+    }
+
+    /// Block until the writer has committed everything AND run its caught-up
+    /// hooks, which is where a run of walks pays for the ancestor roll-ups it
+    /// queued (`writer/pending_rollups.rs`). Two flushes, for the reason
+    /// `writer/aggregation/tests.rs::settle` gives.
+    fn settle(&self) {
+        self.writer.flush_blocking().expect("flush the walks");
+        let before = self.writer.idle_epoch();
+        self.writer.flush_blocking().expect("flush again, on a quiet channel");
+        crate::indexing::writer::tests::wait_for_writer_to_settle(&self.writer, before);
+    }
+
     fn coverage(&self, scope: &str) -> CoverageMap {
         let conn = IndexStore::open_read_connection(&self.db_path).expect("read connection");
         coverage_for_scope(&conn, scope, scope, CoverageDimension::Listing).expect("coverage")
