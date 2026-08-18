@@ -281,6 +281,23 @@ FSEvents subscription.
 scenario reads `~/Downloads`, which `fda_gate.rs` names as TCC-protected), when consent is absent, and when no API key
 is configured.
 
+**Design decisions already settled**, from a first pass at the pure core (partial work sits on
+`worktree-sugops-m5-core`, uncommitted: a complete `agent/wake/mod.rs`, a deliberate `coalesce` stub, a test harness).
+Inherit these rather than re-deriving them:
+
+- **Three pure stages** (`coalesce` / `interest` / `compact`), each a value in and a value out, no I/O. §6.3 names the
+  seams and this keeps them honest.
+- **Events are this module's own value type**, ❌ not the indexer's. That is what keeps §18.14's tap point genuinely
+  open instead of answering it by accident through a type dependency.
+- **Bundles carry counters, never file names.** Names would grow memory with the event count on the five-million-change
+  path and spend digest budget on detail the agent can pull with a `list_dir` when it actually needs it. This is the
+  difference between a digest that degrades gracefully on the pathological case §6 exists for and one that falls over on
+  it.
+- **Tumbling, epoch-anchored windows**, so a morning burst and an evening burst can never share one deadline.
+- **❌ Unscored must never collapse into zero.** The interest scorer mirrors `WeightLookup`'s three-way answer, so a
+  folder importance hasn't reached yet stays distinguishable from one scored as junk. Collapsing them would make a new
+  project folder look exactly like `node_modules`, and the agent would quietly ignore it.
+
 Depends on M1 and M3.
 
 ### M6: Port the shipped rename feature onto the spine
