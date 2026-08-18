@@ -519,24 +519,16 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
-            // Volumes.
-            cfg(target_os = "macos") {
+            // Volumes. One block for both platforms: `commands::volumes` is the whole
+            // command layer, and the platform difference lives a layer down in
+            // `crate::volumes` vs `crate::volumes_linux`, which it picks by `cfg`.
+            cfg(any(target_os = "macos", target_os = "linux")) {
                 typed: [
                     crate::commands::volumes::list_volumes,
                     crate::commands::volumes::resolve_path_volume,
                     crate::commands::volumes::resolve_location,
                     crate::commands::volumes::get_default_volume_id,
                     crate::commands::volumes::get_volume_space,
-                ]
-                dispatch_only: []
-            }
-            cfg(target_os = "linux") {
-                typed: [
-                    crate::commands::volumes_linux::list_volumes,
-                    crate::commands::volumes_linux::resolve_path_volume,
-                    crate::commands::volumes_linux::resolve_location,
-                    crate::commands::volumes_linux::get_default_volume_id,
-                    crate::commands::volumes_linux::get_volume_space,
                 ]
                 dispatch_only: []
             }
