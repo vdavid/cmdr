@@ -115,6 +115,40 @@ fn media_paths() {
     }
 }
 
+/// A volume label may contain spaces, but prose after the path must survive.
+///
+/// Real incident: `VolumeManager::report_identity_conflict` logs the two roots and then keeps
+/// talking. The label group swallowed every following lowercase word, so 98 uploaded error
+/// reports arrived truncated at the second `/Volumes/<volume>`, losing the volume ID and the
+/// resolution, the two fields triage actually needs.
+#[test]
+fn mount_label_stops_at_lowercase_prose() {
+    let cases = [
+        (
+            "Two different mount roots (/Volumes/naspi and /Volumes/naspi-1) claim volume ID \
+             smb-192-168-1-111-445-naspi; the earlier root stays recorded, so the two share \
+             per-volume state. Expected only for a cloned volume or a doubly-mounted filesystem.",
+            "Two different mount roots (/Volumes/<volume> and /Volumes/<volume>) claim volume ID \
+             smb-192-168-1-111-445-naspi; the earlier root stays recorded, so the two share \
+             per-volume state. Expected only for a cloned volume or a doubly-mounted filesystem.",
+        ),
+        // A single trailing lowercase word was already handled; a run of them was not.
+        (
+            "/Volumes/Untitled is not the volume we wanted here",
+            "/Volumes/<volume> is not the volume we wanted here",
+        ),
+        (
+            "/media/usb0 could not be read because the device went away.",
+            "/media/<volume> could not be read because the device went away.",
+        ),
+        // Multi-word labels still match: the continuation words are capitalized.
+        ("/Volumes/My Backup Drive is full", "/Volumes/<volume> is full"),
+    ];
+    for (input, expected) in cases {
+        assert_eq!(r(input), expected, "input: {input:?}");
+    }
+}
+
 #[test]
 fn smb_uris() {
     let cases = [

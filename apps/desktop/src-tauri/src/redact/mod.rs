@@ -103,6 +103,13 @@ fn redactor_regex() -> &'static Regex {
         // labels like "My Backup Drive"). Stops at whitespace-runs, quotes, brackets,
         // and sentence-ending punctuation that's clearly not path content.
         //
+        // A continued word after a space MUST start `[A-Z0-9]`, in every branch. That is
+        // what separates a multi-word label from the prose after the path: `/Volumes/My
+        // Backup Drive` keeps matching, while `/Volumes/naspi and ...` stops at `naspi`.
+        // ❌ Never drop that character class from a branch. `split_trailing_noise` only
+        // trims ONE trailing lowercase word, so a branch without the anchor swallows a
+        // whole sentence and the redacted line loses everything after the path.
+        //
         // Tail chars: anything that isn't whitespace, quotes, backticks, angle brackets,
         // or the pipe character. Single spaces between tail chunks are allowed.
         //
@@ -119,10 +126,10 @@ fn redactor_regex() -> &'static Regex {
                                   [^/\s"'<>|`]+
                                   (?: / [^/\s"'<>|`]+ (?: \x20 [A-Z0-9][^/\s"'<>|`]* )* )*
             )
-            | (?P<volumes>        / Volumes / [^/\s"'<>|`]+ (?: \x20 [^/\s"'<>|`]+ )*
+            | (?P<volumes>        / Volumes / [^/\s"'<>|`]+ (?: \x20 [A-Z0-9][^/\s"'<>|`]* )*
                                   (?: / [^/\s"'<>|`]+ (?: \x20 [A-Z0-9][^/\s"'<>|`]* )* )*
             )
-            | (?P<media>          / media / [^/\s"'<>|`]+ (?: \x20 [^/\s"'<>|`]+ )*
+            | (?P<media>          / media / [^/\s"'<>|`]+ (?: \x20 [A-Z0-9][^/\s"'<>|`]* )*
                                   (?: / [^/\s"'<>|`]+ (?: \x20 [A-Z0-9][^/\s"'<>|`]* )* )*
             )
             | (?P<smb_uri>        smb:// [^\s"'<>|`]+ )
