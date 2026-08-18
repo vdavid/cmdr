@@ -34,14 +34,20 @@
 //! `DETAILS.md`.
 
 mod coalesce;
+mod compact;
+mod interest;
 
 #[cfg(test)]
 mod tests;
 
 pub use coalesce::coalesce;
+pub use compact::{Digest, DigestLine, Rollup, ScoredBundle, compact};
+pub use interest::{
+    COLD_DELAY, FolderImportance, HOT_DELAY, HOT_THRESHOLD, Interest, WARM_DELAY, WARM_THRESHOLD, interest, wake_delay,
+};
 
 /// What kind of change happened. Intent-bearing kinds (a file appearing, a file being renamed)
-/// mean more to the agent than churn (a file written to again), which is what [`interest`]
+/// mean more to the agent than churn (a file written to again), which is what [`interest()`]
 /// weighs them by.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChangeKind {
