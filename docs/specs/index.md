@@ -6,6 +6,16 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-19 `duplicate-in-place-plan.md` - Copying an item into the folder it already lives in produces
+      `photo (1).jpg` instead of the "Can't copy to the same location" refusal, from
+      [#50](https://github.com/vdavid/cmdr/issues/50) plus a drag-onto-own-folder report. Replaces the up-front
+      `validate_not_same_location` guard, which is an operation-level lexical verdict on a per-item identity question,
+      with a `dev+ino` self-collision check asked per top-level source at the point its destination is final: copy
+      auto-renames, move no-ops, and neither ever raises a conflict prompt. That's a data-safety change as much as a UX
+      one, since every answer the conflict machinery can give for a self-collision is wrong (an `Overwrite` latch sends
+      the original through set-aside-and-delete, replacing its inode for nothing). Also unifies the three ` (N)`
+      numbering implementations, teaches the sequence to continue rather than nest, opens inline rename on a single-item
+      duplicate, and adds a Duplicate command.
 - [ ] 2026-08-18 `agent-suggested-ops-plan.md` - The agent proposes file operations (move, copy, trash, delete, rename,
       compress, extract), the user approves them in GROUPS from a review dialog, and approved groups become ordinary
       queued operations. Ships as one release. **The guiding principle, from David, resolves most design questions
