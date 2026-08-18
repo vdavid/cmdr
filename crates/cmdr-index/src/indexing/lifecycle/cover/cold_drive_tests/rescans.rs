@@ -391,3 +391,35 @@ fn a_storage_failure_during_the_extraction_window_still_fails_the_volume() {
         "and it is not still running over the dead writer"
     );
 }
+
+/// "Turn indexing off for this drive" that lands mid-scan-start stops the drive
+/// AND records the sticky veto, so the next launch doesn't resume what the user
+/// turned off.
+///
+/// ⚠️ The veto rides the claim rather than being written where the request lands:
+/// `set_drive_index_intent` opens its own short-lived write connection, and the
+/// volume's writer thread is still live for the length of the window.
+#[test]
+fn a_disable_during_the_extraction_window_stops_the_drive_and_records_the_veto() {
+    let drive = ColdDrive::new("disable-in-window");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    drive.cover(&drive.path("scope"));
+    drive.mark_scan_completed();
+
+    let mut disable_result = None;
+    crate::indexing::lifecycle::state::while_detached_for_test(drive.volume_id, || {
+        disable_result = Some(crate::indexing::lifecycle::state::disable_drive_index_persist_intent(
+            drive.volume_id,
+        ));
+    });
+
+    assert_eq!(disable_result, Some(Ok(())), "the caller is told the disable worked");
+    assert!(
+        !crate::indexing::lifecycle::state::is_active(drive.volume_id),
+        "and the volume really stopped"
+    );
+    assert!(
+        IndexStore::user_disabled(&drive.db_path()),
+        "and the sticky veto is on the database, so a reconnect doesn't resume it"
+    );
+}

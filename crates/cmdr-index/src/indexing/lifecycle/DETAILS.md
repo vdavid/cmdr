@@ -332,6 +332,12 @@ constructor of the phase, and `off_the_registry` is the only production caller;
 `state::tests::every_manager_extraction_says_what_a_teardown_in_the_window_does` scans the sources to keep both true.
 The three teardown files may extract too, and each is checked for a `claim_the_teardown` call.
 
+⚠️ **The sticky per-drive veto travels ON the claim** (`PersistDisable`), ❌ never written where the request lands.
+`IndexStore::set_drive_index_intent` opens its own short-lived write connection, and the volume's writer thread is live
+for the whole window; carrying the flag means "turn indexing off for this drive" writes its marker after the drain on
+every path, deferred ones included. Anchor:
+`cover::cold_drive_tests::rescans::a_disable_during_the_extraction_window_stops_the_drive_and_records_the_veto`.
+
 **Readers answer off it as what it is: a volume whose scan is starting.**
 
 - `is_active` counts it (nine callers, the drive badge among them; a badge that reads `enabled: false` beside a live

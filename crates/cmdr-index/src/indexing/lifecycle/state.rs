@@ -160,8 +160,10 @@ pub(crate) enum IndexPhase {
 pub(crate) enum TeardownClaim {
     /// The writer reported a fatal storage error: register `Failed` and stop.
     Failed(IndexFailure),
-    /// Stop indexing this volume, keeping its database on disk.
-    Stopped,
+    /// Stop indexing this volume, keeping its database on disk. Carries whether
+    /// the user asked for the sticky "keep this drive off" veto, so the veto is
+    /// written on the far side of the drain like it is on every other path.
+    Stopped(PersistDisable),
     /// Stop indexing it and delete its database.
     Cleared,
 }
@@ -178,10 +180,25 @@ impl TeardownClaim {
     fn reach(self) -> u8 {
         match self {
             TeardownClaim::Failed(_) => 0,
-            TeardownClaim::Stopped => 1,
+            TeardownClaim::Stopped(_) => 1,
             TeardownClaim::Cleared => 2,
         }
     }
+}
+
+/// Whether a stop should record the user's sticky "keep this drive's indexing off"
+/// veto once nothing is writing to its database any more.
+///
+/// ❌ Not a bare `bool` at the call sites it travels through: it rides a
+/// [`TeardownClaim`] across a window where nothing else can tell an eject from a
+/// user turning a drive off, and those two must not leave the same mark.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PersistDisable {
+    /// The user asked for this drive to stay off.
+    Yes,
+    /// A transient teardown (eject, unmount, the master switch, the memory
+    /// watchdog): per-drive intent survives untouched so auto-resume still works.
+    No,
 }
 
 impl IndexPhase {

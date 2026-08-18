@@ -9,7 +9,9 @@ use std::path::{Path, PathBuf};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
-use super::{INDEX_REGISTRY, IndexPhase, TeardownClaim, all_registered_volume_ids, resolved_index_db_path};
+use super::{
+    INDEX_REGISTRY, IndexPhase, PersistDisable, TeardownClaim, all_registered_volume_ids, resolved_index_db_path,
+};
 use crate::indexing::lifecycle::manager::IndexManager;
 use crate::indexing::read::enrichment::uninstall_read_pool;
 use crate::indexing::read::pending_sizes::uninstall_pending_sizes;
@@ -62,7 +64,7 @@ pub(super) fn finish_the_claimed_teardown(
 ) {
     match claim {
         TeardownClaim::Failed(reason) => super::supervisor::finish_failing(events, volume_id, mgr, reason),
-        TeardownClaim::Stopped => finish_stopping(volume_id, mgr),
+        TeardownClaim::Stopped(persist) => finish_stopping(volume_id, mgr, persist),
         TeardownClaim::Cleared => {
             if let Err(e) = finish_clearing(volume_id, mgr) {
                 log::warn!("Drive index clear for '{volume_id}' finished with: {e}");
@@ -76,6 +78,29 @@ pub(super) fn finish_the_claimed_teardown(
 /// Called when the user disables indexing via settings. The index stays on disk
 /// but no scanning or watching runs. Directory sizes revert to `<dir>`.
 pub fn stop_indexing(volume_id: &str) -> Result<(), String> {
+    stop_the_volume(volume_id, PersistDisable::No)
+}
+
+/// What a stop still has to do once it knows what it found.
+enum StopTarget {
+    /// A live manager to drain.
+    Drain(Box<IndexManager>),
+    /// The instance is gone (or never had a writer); nothing to drain.
+    NothingToDrain,
+    /// A scan start has the manager out and took the request; it finishes the job,
+    /// the sticky veto included.
+    Claimed,
+}
+
+/// Stop a volume, optionally recording the user's sticky "keep this drive off"
+/// veto once nothing is writing to its database any more.
+///
+/// ⚠️ **The veto rides the CLAIM on a detached volume**, ❌ never a write from
+/// here. `set_drive_index_intent` opens its own short-lived write connection, and
+/// a live writer thread on the same database is what that contract forbids — so a
+/// stop that lands mid-scan-start hands `persist` to `finish_stopping`, which
+/// writes it on the far side of the drain like every other path does.
+fn stop_the_volume(volume_id: &str, persist: PersistDisable) -> Result<(), String> {
     withdraw_from_the_read_path(volume_id);
 
     // Take the instance out under the lock, publish `ShuttingDown`, then release
@@ -86,7 +111,7 @@ pub fn stop_indexing(volume_id: &str) -> Result<(), String> {
     // via `ReadPool` and never reacquires the registry lock, so dropping the
     // guard while `ShuttingDown` is published is safe: concurrent callers see
     // `ShuttingDown` and proceed.
-    let owned_mgr = {
+    let target = {
         let mut reg = INDEX_REGISTRY.lock_ignore_poison();
         let instance = match reg.get_mut(volume_id) {
             Some(i) => i,
@@ -96,50 +121,75 @@ pub fn stop_indexing(volume_id: &str) -> Result<(), String> {
         // the ONLY correct answer here: bouncing off the transient phase is what
         // made "turn indexing off for this drive" report success and keep indexing
         // for the rest of the session.
-        if instance.phase.claim_the_teardown(TeardownClaim::Stopped) {
+        if instance.phase.claim_the_teardown(TeardownClaim::Stopped(persist)) {
             log::info!("Indexing stop for '{volume_id}' lands as its scan start hands the manager back");
-            return Ok(());
-        }
-        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
-            IndexPhase::Running(mgr) => mgr,
-            IndexPhase::Initializing { .. } => {
-                // An in-flight start observes the removal and shuts its half-built
-                // manager down. Removing the whole instance is correct: it's
-                // disabled now.
-                reg.remove(volume_id);
-                log::info!("Indexing stopped during initialization for '{volume_id}'");
-                return Ok(());
-            }
-            IndexPhase::Failed { .. } => {
-                // Its manager/writer are already torn down (nothing to drain).
-                // Disabling a failed index removes the instance, so the badge goes
-                // gray/disabled instead of staying red. The DB file stays on disk
-                // for a future re-enable (or a Forget to reclaim it).
-                reg.remove(volume_id);
-                log::info!("Indexing disabled for a failed volume '{volume_id}'");
-                return Ok(());
-            }
-            other => {
-                instance.phase = other; // put it back, wasn't running
-                return Ok(());
+            StopTarget::Claimed
+        } else {
+            match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+                IndexPhase::Running(mgr) => StopTarget::Drain(mgr),
+                IndexPhase::Initializing { .. } => {
+                    // An in-flight start observes the removal and shuts its
+                    // half-built manager down. Removing the whole instance is
+                    // correct: it's disabled now.
+                    reg.remove(volume_id);
+                    log::info!("Indexing stopped during initialization for '{volume_id}'");
+                    StopTarget::NothingToDrain
+                }
+                IndexPhase::Failed { .. } => {
+                    // Its manager/writer are already torn down (nothing to drain).
+                    // Disabling a failed index removes the instance, so the badge
+                    // goes gray/disabled instead of staying red. The DB file stays
+                    // on disk for a future re-enable (or a Forget to reclaim it).
+                    reg.remove(volume_id);
+                    log::info!("Indexing disabled for a failed volume '{volume_id}'");
+                    StopTarget::NothingToDrain
+                }
+                other => {
+                    instance.phase = other; // put it back, wasn't running
+                    StopTarget::NothingToDrain
+                }
             }
         }
     };
 
-    finish_stopping(volume_id, owned_mgr);
+    match target {
+        StopTarget::Drain(mgr) => finish_stopping(volume_id, mgr, persist),
+        StopTarget::NothingToDrain => record_the_disable(volume_id, persist),
+        StopTarget::Claimed => {}
+    }
     Ok(())
 }
 
-/// Drain a stopped volume's manager and take its instance out of the registry.
-/// The half of [`stop_indexing`] that runs OFF the lock, shared with the deferred
-/// path so both end the volume in exactly the same place.
-fn finish_stopping(volume_id: &str, mut mgr: Box<IndexManager>) {
+/// Drain a stopped volume's manager, take its instance out of the registry, and
+/// record the veto if the stop was the user asking for one. The half of
+/// [`stop_indexing`] that runs OFF the lock, shared with the deferred path so both
+/// end the volume in exactly the same place.
+fn finish_stopping(volume_id: &str, mut mgr: Box<IndexManager>, persist: PersistDisable) {
     withdraw_from_the_read_path(volume_id);
     // Guard released: run the blocking drain without holding the registry lock.
     mgr.shutdown();
     // Re-lock only to remove the now-disabled instance.
     INDEX_REGISTRY.lock_ignore_poison().remove(volume_id);
     log::info!("Indexing stopped for '{volume_id}' (DB preserved on disk)");
+    record_the_disable(volume_id, persist);
+}
+
+/// Write the sticky veto, if this stop was the user asking for one.
+///
+/// ⚠️ Guarded on the DB existing, so a drive nobody ever indexed isn't given one
+/// just to record that it stays off: absent markers already read as "off" for every
+/// drive but the boot disk. Best-effort (a failure only means a future reconnect
+/// might re-resume; logged).
+fn record_the_disable(volume_id: &str, persist: PersistDisable) {
+    if persist == PersistDisable::No {
+        return;
+    }
+    if let Ok(db_path) = resolved_index_db_path(volume_id)
+        && db_path.exists()
+        && let Err(e) = IndexStore::set_drive_index_intent(&db_path, false)
+    {
+        log::warn!("disable_drive_index_persist_intent('{volume_id}'): recording the disable failed: {e}");
+    }
 }
 
 /// Discard a volume's partial index and reset it to gray / not-indexed
@@ -160,27 +210,16 @@ pub(crate) fn reset_to_not_indexed(volume_id: &str) {
 /// on disk for a fast re-enable), then persist the sticky veto so nothing resumes
 /// what the user turned off.
 ///
-/// This is the ONLY caller that writes the veto — deliberately NOT `stop_indexing`
+/// This is the ONLY door that writes the veto — deliberately NOT `stop_indexing`
 /// itself, which also runs on eject, unmount, an interrupted network scan
 /// (`reset_to_not_indexed`), and the memory watchdog; marking there would suppress
 /// auto-resume after a transient teardown, not a real user disable. The write also
 /// withdraws the enable marker `record_drive_index_enabled` left, so the two halves
-/// of per-drive intent stay one fact. It runs AFTER the drain, so no writer thread
-/// contends, and it's best-effort (a failure only means a future reconnect might
-/// re-resume; logged).
-///
-/// ⚠️ Guarded on the DB existing, so a drive nobody ever indexed isn't given one
-/// just to record that it stays off: absent markers already read as "off" for every
-/// drive but the boot disk.
+/// of per-drive intent stay one fact. It travels as [`PersistDisable::Yes`] so it
+/// lands AFTER the drain on every path, deferred stops included, and no writer
+/// thread contends for the database.
 pub fn disable_drive_index_persist_intent(volume_id: &str) -> Result<(), String> {
-    stop_indexing(volume_id)?;
-    if let Ok(db_path) = resolved_index_db_path(volume_id)
-        && db_path.exists()
-        && let Err(e) = IndexStore::set_drive_index_intent(&db_path, false)
-    {
-        log::warn!("disable_drive_index_persist_intent('{volume_id}'): recording the disable failed: {e}");
-    }
-    Ok(())
+    stop_the_volume(volume_id, PersistDisable::Yes)
 }
 
 /// Remove a volume's instance from the registry and withdraw its read-path
