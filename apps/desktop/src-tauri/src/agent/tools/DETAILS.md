@@ -155,7 +155,8 @@ Every result that carries a LIST is cut to `agent::chat::budget::MAX_TOOL_RESULT
 `mcp::executor::fit_to_result_budget`, and reports `total` / `returned` / `truncated` so the model can say what it saw
 and ask for the rest. It applies to `list_dir` (children, under the caller's own `limit`), `list_pane_files` (entries, on
 top of its 200-row cap), `image_facts` (per-path rows, on top of the 2,000-char per-file text cap),
-`search_photos` (hits), and the `operations_*` pages.
+`search_photos` (hits), the `operations_*` pages, and the suggested-ops reads (group summaries from
+`list_suggestions`, the op page from `get_suggestion_group`).
 
 **Why a size cut on top of the row caps:** a row cap can't bound a payload. `image_facts` at 200 paths × 2,000
 characters is ~100k estimated tokens, and a `list_dir` on a 20k-entry folder had no cap at all. A result that doesn't
@@ -186,8 +187,12 @@ without authoring a tool per variant — with zero `Propose` tools in the regist
 The negative test (`view.rs`) drives the fake `AgentLlm`'s `CallRawTool("delete", …)` and asserts the refusal end to
 end; it was proven red (gate disabled ⇒ "delete" not refused) before green.
 
-The refusal copy says Ask Cmdr can prepare a rename plan for the user to review but can't change anything, approve a
-proposal, or read file contents: the agent can ask, not act. Keep it accurate as the `Propose` tier grows.
+The refusal copy says Ask Cmdr can prepare a rename plan or suggest file operations for the user to review but
+can't change anything, approve a proposal, or read file contents: the agent can ask, not act. Keep it accurate as the `Propose` tier grows.
+
+`dispatch` routes two tools specially rather than through the generic `execute_tool` call: `propose_rename_plan`,
+which needs the evidence scope, and `propose_suggestions`, which needs the conversation id so a sweep records the
+thread it came out of (`suggestions/DETAILS.md` § The conversation link). Both are gated first, like every other call.
 
 `dispatch` also feeds `propose::evidence::ImageFactsLedger` from every non-elided `image_facts` result. That's what makes
 a rename plan's content claim checkable; the guardrail, its refusal shape, and the revocation seam are in
