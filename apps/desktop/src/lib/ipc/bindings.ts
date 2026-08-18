@@ -3849,7 +3849,7 @@ export type AppStatus =
  */
 export type ApprovalResultView =
   // The ops are queued and running. The dialog closes and the queue takes over.
-  | { kind: 'started'; operation_id: string }
+  | { kind: 'started'; operationId: string }
   // The group left `pending` before this arrived: approved, rejected, or gone.
   | { kind: 'alreadyAnswered' }
   // The op set is not what preflight accepted, so nothing ran. The user re-reads it.
@@ -3857,7 +3857,7 @@ export type ApprovalResultView =
   // No group with that id.
   | { kind: 'unknown' }
   // The drive the sources live on isn't mounted any more.
-  | { kind: 'sourceVolumeGone'; volume_id: string }
+  | { kind: 'sourceVolumeGone'; volumeId: string }
   // The group claimed, but the write engine wouldn't start it.
   | { kind: 'couldNotStart'; detail: string }
 

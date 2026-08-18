@@ -538,7 +538,7 @@ mod tests {
 /// differ: "somebody already answered this" closes the group, "the list changed" sends the user
 /// back to re-read it, and a missing drive is neither.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase", tag = "kind")]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "kind")]
 pub enum ApprovalResultView {
     /// The ops are queued and running. The dialog closes and the queue takes over.
     Started { operation_id: String },
