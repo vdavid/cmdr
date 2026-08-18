@@ -177,6 +177,8 @@ pnpm check [flags]
 - **`checks/cache.go`**: Per-worktree cache file load/save (`node_modules/.cache/cmdr-check-cache.json`), atomic write,
   corrupt-tolerant
 - **`checks/inputs.go`**: Shared `Inputs` building blocks (mined from ci.yml filters) + `inputs()` concatenator
+- **`autofix_notice.go`**: Brackets the run with a `git status` snapshot and names, last, every committed file an
+  auto-fixer rewrote (§ "The auto-fix notice")
 - **`colors.go`**: ANSI color constants
 - **`utils.go`**: `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)
 - **`smb_orchestrator.go`**: Runner-level SMB Docker lifecycle: acquires a machine-wide lease (via `smblease`) at init,
@@ -440,6 +442,21 @@ Desktop: Rust / clippy... OK (1.23s) - No warnings
 ```
 
 Status can be: `OK` (green), `warn` (yellow), `SKIPPED` (yellow), `FAILED` (red), `BLOCKED` (yellow).
+
+### The auto-fix notice
+
+The formatters (`oxfmt`, `rustfmt`, prettier, `eslint --fix`) rewrite the tree on a local run and only CHECK under
+`--ci`. So a reformat that lands AFTER the last commit reads green locally and red in CI: the working tree holds the
+fix, the commit doesn't. That reddened CI on 2026-08-18, and the per-check `SuccessWithChanges` line was too easy to
+miss in a fifty-check run.
+
+`runChecks` snapshots `git status --porcelain -z` before the run and again after, and prints the set difference as the
+LAST line of the run, on both the green and the red path: "This run rewrote N committed files … Commit:", each named.
+
+**Decision**: the notice names only files that were clean when the run started. **Why**: mid-edit files are already
+dirty and always will be, so listing every modification would be noise a reader learns to skip. The set difference is
+exactly "an auto-fixer touched something that was committed", which is exactly the state that fails CI. Skipped under
+`--ci`, where nothing auto-fixes, and silent outside a git work tree.
 
 ## Troubleshooting
 

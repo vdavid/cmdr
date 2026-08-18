@@ -10,7 +10,7 @@ ordering. Invoked via `pnpm check` at the repo root. Check authoring: `checks/CL
 - `checks/inputs.go` (shared `Inputs` blocks) and `checks/cargo-workspace.go` (the geometry every Rust check scopes
   from). `smb_orchestrator.go` + `smblease/` run SMB Docker behind a machine-wide lease.
 - `freestyle.go` (remote-VM runs), `graph.go` / `docs_graph_render.go` (the `--graph` / `--docs-graph` renderers),
-  `stats.go` (the two CSV logs).
+  `stats.go` (the two CSV logs), `autofix_notice.go` (names the committed files a run's auto-fixers rewrote).
 
 ## Must-knows
 
@@ -38,6 +38,8 @@ ordering. Invoked via `pnpm check` at the repo root. Check authoring: `checks/CL
   teardown.
 - **cmdr's SMB stack binds host ports 11480+, not smb2's default 10480+**, so both harnesses coexist.
   `checks.ApplySmbPortEnv()` sets this before bring-up; ❌ don't revert to the default range.
+- **An auto-fixer rewriting a COMMITTED file is a green local run and a red CI one** (CI only checks formatting). The
+  run's last line names those files; commit them. `autofix_notice.go`, DETAILS § "The auto-fix notice".
 - **Two CSV logs, never merged**: `~/cmdr-check-log.csv` per check run, `~/cmdr-test-log.csv` per test. A tenth column
   breaks every reader of the first's ~98 000 rows.
 

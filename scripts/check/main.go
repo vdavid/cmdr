@@ -542,6 +542,14 @@ func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, p
 		}
 	}
 
+	// Bracket the run with a `git status` snapshot so the closing notice can name
+	// the files the auto-fixers rewrote that were committed and clean beforehand.
+	// Skipped under `--ci`, where no check fixes anything.
+	var dirtyBefore dirtyFiles
+	if !ctx.CI {
+		dirtyBefore = gitDirtyFiles(ctx.RootDir)
+	}
+
 	startTime := time.Now()
 	runner := NewRunner(ctx, checksToRun, plan.cached, failFast, noLog, quiet)
 	failed, failedChecks := runner.Run()
@@ -560,9 +568,13 @@ func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, p
 			fmt.Printf("%s⏱️  Total runtime: %s%s\n", colorYellow, formatDuration(totalDuration), colorReset)
 			printFailure(failedChecks)
 		}
+		printAutoFixNotice(dirtyBefore, gitDirtyFiles(ctx.RootDir))
 		os.Exit(1)
 	}
 	printSuccess(quiet, runner, totalDuration)
+	// Last line of the run, on purpose: the summary is where a reader stops, and a
+	// rewrite of a committed file is the one thing a green summary hides.
+	printAutoFixNotice(dirtyBefore, gitDirtyFiles(ctx.RootDir))
 }
 
 // printSuccess prints the all-passed summary. In quiet mode the passing checks
