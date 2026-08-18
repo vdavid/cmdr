@@ -341,4 +341,3 @@ fn an_unknown_field_is_refused_rather_than_ignored() {
     .expect_err("unknown field");
     assert_eq!(refusal, PlanRefusal::Malformed);
 }
-

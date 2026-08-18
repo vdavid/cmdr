@@ -232,4 +232,3 @@ fn sweep_count(conn: &Connection) -> i64 {
     conn.query_row("SELECT COUNT(*) FROM proposal_sets", [], |row| row.get(0))
         .expect("count sweeps")
 }
-

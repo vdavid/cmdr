@@ -107,4 +107,3 @@ fn apply(
     let planned = plan_sweep(call, NOW).expect("the call is valid");
     apply_planned_sweep(conn, index, planned, None, NOW)
 }
-
