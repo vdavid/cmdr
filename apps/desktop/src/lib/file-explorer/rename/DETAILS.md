@@ -29,8 +29,8 @@ Depth and rationale for inline rename. `CLAUDE.md` holds the must-knows.
    `{ type: 'error' }`. `hasConflict: true, isCaseOnlyRename: false` → `{ type: 'conflict', validity }`.
    `hasConflict: true, isCaseOnlyRename: true` → proceed (same inode, just case). `hasConflict: false` → proceed.
 3. **Perform rename**: `renameFile(from, to, force)`. Success → `{ type: 'success', newName }`. Timeout →
-   `{ type: 'timeout', message }`; the caller shows a persistent warning toast (the rename may have succeeded) and
-   auto-refreshes the listing.
+   `{ type: 'timeout' }`, wordless: the caller aggregates a run of them into one toast, so the sentence depends on how
+   many are waiting to be reported (see "Saying so, in one toast that grows").
 
 Conflict resolution calls `performRename(target, newName, force: true)` after "Overwrite and trash/delete". The
 `moveToTrash` call in the overwrite-trash path also has timeout detection (persistent toast + refresh).
@@ -150,8 +150,11 @@ Every name a chain keeps goes into a single toast per pane (`toastKeptName`), re
 message in place. It names the newest file with the reason that one didn't apply (`chainKeptOriginalName`), and counts
 the earlier ones (`chainKeptOriginalNameAndOthers`) once there is anything to count. All three ways a chained name gets
 dropped go through it: the keypress-time `severity === 'error'`, the backend's `conflict`, and the backend's `error` (a
-read-only volume, a permission refusal). A `timeout` does NOT: the rename may well have landed, so it keeps its own "may
-have succeeded" wording and refreshes the listing.
+read-only volume, a permission refusal).
+
+A `timeout` gets a SECOND running toast of its own (`toastUnconfirmedRename`, `unconfirmed` / `unconfirmedAndOthers`),
+never a place in the first. The rename may well have landed on disk, and saying the file kept its name would be a lie
+about a volume we simply got no answer from. Same mechanics, separate id, separate count.
 
 Two properties of the toast store force that shape, and both fail silently:
 
@@ -159,7 +162,14 @@ Two properties of the toast store force that shape, and both fail silently:
   which is exactly when the user is typing the next name. A transient toast would be gone before it was read.
 - The stack holds five and silently DROPS a new toast once they're all persistent (`ui/DETAILS.md` § Toast system). One
   toast per kept name therefore loses everything past the fifth with nothing said, which is the failure this feature
-  exists to prevent. One toast can't stack, so it can't be dropped.
+  exists to prevent. Worse, a stack the timeouts had filled would leave the kept-names toast unable to be created at
+  all, on exactly the slow volumes where a chain produces both. Two toasts can't stack, so neither can be dropped.
+
+The unconfirmed toast also owns the refresh, and DEBOUNCES it: `scheduleUnconfirmedRefresh` resets a 1 s timer per
+timeout and refreshes once the volume has gone quiet. A refresh per unanswered rename would be N directory listings
+asked of a volume already too slow to answer a rename, and the one that runs last is also the only one that sees the
+whole chain settled. The listing id is read when the timer fires, not when it's set, so a pane that has moved on
+refreshes what it's actually showing.
 
 The count belongs to the toast on screen, not to the chain: dismissing it is the user saying they've read it, so the
 `onDismiss` callback zeroes the tally and the next kept name starts a fresh message. It deliberately carries ACROSS a

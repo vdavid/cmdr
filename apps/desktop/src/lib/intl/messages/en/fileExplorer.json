@@ -1193,6 +1193,22 @@
       "others": "the same number of other files (drives the singular/plural form)"
     }
   },
+  "fileExplorer.rename.unconfirmed": "Couldn''t confirm the rename of \"{name}\". The volume is slow, so it may have gone through anyway.",
+  "@fileExplorer.rename.unconfirmed": {
+    "description": "Warning toast shown when a rename gets no answer from the volume in time (a slow network share or phone). The rename may well have succeeded on disk, so the message must never say the file kept its name; it says Cmdr couldn''t tell. Cmdr re-reads the folder right after, so the user will see which it was. {name} is the name the file had before the rename, shown in quotes. As soon as a second rename goes unanswered, this same toast is rewritten with fileExplorer.rename.unconfirmedAndOthers, so the two read as one message that grows.",
+    "placeholders": {
+      "name": "the name the file had before the rename"
+    }
+  },
+  "fileExplorer.rename.unconfirmedAndOthers": "Couldn''t confirm the rename of \"{name}\" and {others, plural, one {one other file} other {{othersText} other files}}. The volume is slow, so they may have gone through anyway.",
+  "@fileExplorer.rename.unconfirmedAndOthers": {
+    "description": "Warning toast shown when SEVERAL renames get no answer from the volume in time, which happens when the user renames a run of files by pressing the up/down arrow inside the inline rename editor and each rename is still waiting on a slow network share or phone. It is the same single toast as fileExplorer.rename.unconfirmed, rewritten each time another rename goes unanswered, so a long run can''t bury the user in toasts. The renames may well have succeeded on disk, so the message must never say the files kept their names. {name} is the name the most recent file had before its rename, shown in quotes. {othersText} is how many OTHER renames went unanswered, already formatted for display; it is always 1 or more.",
+    "placeholders": {
+      "name": "the name the most recent file had before its rename",
+      "othersText": "how many other renames went unanswered, already formatted for display",
+      "others": "the same number of other renames (drives the singular/plural form)"
+    }
+  },
   "fileExplorer.columns.name": "Name",
   "@fileExplorer.columns.name": {
     "description": "File-list column header for the file/folder name. Also measured to size the column; keep it short. Used in both the Full and Brief list views.",

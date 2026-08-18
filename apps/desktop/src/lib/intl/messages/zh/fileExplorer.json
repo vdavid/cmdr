@@ -807,6 +807,14 @@
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "sourceHash": "7b23e8e"
   },
+  "fileExplorer.rename.unconfirmed": "Couldn''t confirm the rename of \"{name}\". The volume is slow, so it may have gone through anyway.",
+  "@fileExplorer.rename.unconfirmed": {
+    "sourceHash": "d36ee78"
+  },
+  "fileExplorer.rename.unconfirmedAndOthers": "Couldn''t confirm the rename of \"{name}\" and {others, plural, one {one other file} other {{othersText} other files}}. The volume is slow, so they may have gone through anyway.",
+  "@fileExplorer.rename.unconfirmedAndOthers": {
+    "sourceHash": "125c1b1"
+  },
   "fileExplorer.columns.name": "名称",
   "@fileExplorer.columns.name": {
     "sourceHash": "dcd1d52"

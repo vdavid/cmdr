@@ -480,14 +480,20 @@ describe('a superseded rename session may speak, never steer', () => {
     expect(rename.active).toBe(true)
   })
 
-  it('a timeout reported after the user moved on still warns and refreshes the listing', async () => {
-    const { rename, landSave } = supersededSave()
+  it('a timeout reported after the user moved on still warns, and refreshes once the volume goes quiet', async () => {
+    vi.useFakeTimers()
+    try {
+      const { rename, landSave } = supersededSave()
 
-    await landSave({ type: 'timeout', message: 'This is taking a while' })
+      await landSave({ type: 'timeout' })
 
-    expect(addToastSpy).toHaveBeenCalled()
-    expect(refreshListing).toHaveBeenCalledWith('lst-1')
-    expect(rename.active).toBe(true)
+      expect(addToastSpy).toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(refreshListing).toHaveBeenCalledWith('lst-1')
+      expect(rename.active).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('a conflict reported after the user moved on never opens a dialog about it', async () => {

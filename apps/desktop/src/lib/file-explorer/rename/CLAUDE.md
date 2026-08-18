@@ -8,8 +8,7 @@ context menu, or click-to-rename (800 ms hold on the name). Operates on the curs
 - **InlineRenameEditor.svelte**: the inline input that replaces the name cell.
 - **RenameConflictDialog.svelte** / **ExtensionChangeDialog.svelte**: the two mid-flow confirmation dialogs.
 - **rename-state.svelte.ts**: reactive state (`.svelte.ts` for Svelte 5 reactivity).
-- **rename-operations.ts**: pure save flow, returns a `RenameResult` discriminated union (`noop` / `error` / `timeout` /
-  `extension-ask` / `conflict` / `success`).
+- **rename-operations.ts**: pure save flow, returns the `RenameResult` union.
 - **rename-activation.ts**: click-to-rename timer. **rename-step.ts**: the pure halves of a chained rename.
   **sibling-names.ts**: the directory's names, read once per chain.
 
@@ -24,7 +23,8 @@ Full details (save flow, permission/validation tiers, post-rename cursor trackin
 - **Conflict detection on local FS compares `dev+ino` via `symlink_metadata()`, never `exists()`**: on case-insensitive
   APFS, `readme.txt` → `README.txt` is the same file, and `exists()` would false-positive.
 - **A `renameFile` / `moveToTrash` timeout on a slow mount is not a failure**: the rename may have landed on disk, so
-  warn honestly ("may have succeeded") and auto-refresh.
+  warn honestly ("may have succeeded"), never as a kept name, and refresh. Chained timeouts share ONE toast and ONE
+  debounced refresh.
 - **Thread `volumeId` through `renameFile` / `checkRenameValidity` / `checkRenamePermission`.** Conflict checks work on
   every volume via the Volume trait; permission checks are skipped for MTP (Unix `access()` can't reach MTP paths).
 - **Async work carries the session id it started with; a superseded session may only toast and refresh.** A save,
@@ -34,8 +34,8 @@ Full details (save flow, permission/validation tiers, post-rename cursor trackin
   the next activation (that's what tags it with the session that typed it); the new editor opens on the entry captured
   at keypress time, never on `entryUnderCursor` (still the file just left); a conflict is dropped on the BACKEND's
   answer only, never on the cached sibling names the chain makes stale (the keypress tests `severity === 'error'`, which
-  also honors the "no" extension policy); and kept names go into ONE running toast, since a persistent toast each is
-  silently dropped past the fifth. `DETAILS.md` § Chaining.
+  also honors the "no" extension policy); and kept names go into ONE running toast (unconfirmed ones into another),
+  since a persistent toast each is silently dropped past the fifth. `DETAILS.md` § Chaining.
 - **Clicking outside the editor SAVES; losing focus any other way discards.** The commit hangs off a document
   `mousedown` (capture), never off blur: blur can't tell a click from the row scrolling out of the virtual window, and
   committing on a scroll would rename a file nobody chose. Enter saves too. Guards and the invalid-name toast:
@@ -46,7 +46,5 @@ Full details (save flow, permission/validation tiers, post-rename cursor trackin
 - **The editor mounts BY PATH** (`shouldMountRenameEditor`), so a watcher diff that shifts OTHER rows makes it follow
   its file; only a diff removing the renamed file itself cancels (`listing-diff-sync`). Other watcher events don't (the
   backend catches issues on save).
-- **Double-click on the name opens the file/folder, never renames**: the click-to-rename timer cancels on a
-  double-click.
-- **While rename is active, Cmd+C/A/Z/X/V edit text instead of running app commands** (same flag as dialogs); every
-  other shortcut is suppressed.
+- **Double-click opens, never renames**: the click-to-rename timer cancels on it.
+- **While rename is active, Cmd+C/A/Z/X/V edit text** (same flag as dialogs); every other shortcut is suppressed.

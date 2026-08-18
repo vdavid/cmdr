@@ -1193,6 +1193,8 @@ export type MessageKey =
   | 'fileExplorer.rename.chainKeptOriginalNameAndOthers'
   | 'fileExplorer.rename.hiddenAfterRename'
   | 'fileExplorer.rename.keptOriginalName'
+  | 'fileExplorer.rename.unconfirmed'
+  | 'fileExplorer.rename.unconfirmedAndOthers'
   | 'fileExplorer.renameConflict.cancel'
   | 'fileExplorer.renameConflict.continueRenaming'
   | 'fileExplorer.renameConflict.description'

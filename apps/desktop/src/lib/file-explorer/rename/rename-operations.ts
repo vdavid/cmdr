@@ -28,7 +28,8 @@ import type { ExtensionChangePolicy } from '$lib/settings'
 export type RenameResult =
   | { type: 'noop' }
   | { type: 'error'; message: string }
-  | { type: 'timeout'; message: string }
+  /** The volume never confirmed the rename. It may still have landed on disk. */
+  | { type: 'timeout' }
   | { type: 'extension-ask'; oldExtension: string; newExtension: string }
   | { type: 'conflict'; validity: RenameValidityResult }
   | { type: 'success'; newName: string }
@@ -110,12 +111,9 @@ export async function performRename(
     await renameFile(fromPath, toPath, force, volumeId)
     return { type: 'success', newName }
   } catch (e) {
-    if (isIpcError(e) && e.timedOut) {
-      return {
-        type: 'timeout',
-        message: "Couldn't confirm the rename completed. The volume may be slow — the file may have been renamed.",
-      }
-    }
+    // The caller words this one: it aggregates a run of them into a single
+    // toast, so the sentence depends on how many are waiting to be reported.
+    if (isIpcError(e) && e.timedOut) return { type: 'timeout' }
     return { type: 'error', message: getIpcErrorMessage(e) }
   }
 }

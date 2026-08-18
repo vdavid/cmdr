@@ -277,6 +277,65 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     })
   }
 
+  // One toast for every rename this pane couldn't confirm, on the same terms as
+  // the kept names: one id, replaced in place. Two things force it. A toast each
+  // is dropped past the fifth; and five persistent toasts fill the stack, which
+  // would leave `toastKeptName` unable to say anything at all — on exactly the
+  // slow volumes where both happen at once.
+  const unconfirmedToastId = `rename-unconfirmed-${deps.paneId}`
+  // Renames counted by the toast currently on screen, zeroed when the user
+  // dismisses it, same as the kept names.
+  let unconfirmedCount = 0
+
+  // A volume too slow to answer a rename must not then be asked to list the
+  // directory once per unanswered rename. The refresh waits out a quiet spell
+  // and runs once; landing AFTER the last straggler is also what makes the
+  // listing show the settled truth rather than a half-finished chain.
+  const UNCONFIRMED_REFRESH_QUIET_MS = 1000
+  let unconfirmedRefreshTimer: ReturnType<typeof setTimeout> | null = null
+
+  function scheduleUnconfirmedRefresh(): void {
+    if (unconfirmedRefreshTimer !== null) clearTimeout(unconfirmedRefreshTimer)
+    unconfirmedRefreshTimer = setTimeout(() => {
+      unconfirmedRefreshTimer = null
+      // Read at fire time: the pane may have moved on, and the listing worth
+      // refreshing is the one it is showing now.
+      void refreshListing(deps.getListingId())
+    }, UNCONFIRMED_REFRESH_QUIET_MS)
+  }
+
+  /**
+   * Says which renames the volume never confirmed, and refreshes to find out.
+   *
+   * A timeout is NOT a refusal: the rename may well have landed on disk. So this
+   * never says the file kept its name, and stays a separate message from
+   * `toastKeptName` however tempting the shared shape looks.
+   *
+   * Persistent for the same reason: the next keystroke clears this pane's
+   * transient toasts, and the user is typing the next name right then.
+   */
+  function toastUnconfirmedRename(name: string): void {
+    unconfirmedCount += 1
+    const others = unconfirmedCount - 1
+    const content =
+      others === 0
+        ? tString('fileExplorer.rename.unconfirmed', { name })
+        : tString('fileExplorer.rename.unconfirmedAndOthers', {
+            name,
+            others,
+            othersText: formatInteger(others),
+          })
+    addToast(content, {
+      level: 'warn',
+      dismissal: 'persistent',
+      id: unconfirmedToastId,
+      onDismiss: () => {
+        unconfirmedCount = 0
+      },
+    })
+    scheduleUnconfirmedRefresh()
+  }
+
   /**
    * Settles the current edit and reopens the editor on `entry`.
    *
@@ -333,10 +392,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         toastKeptName(target.originalName, result.message)
         break
       case 'timeout':
-        // Not a refusal: the rename may well have landed, so this one keeps its
-        // own honest wording rather than claiming the file kept its name.
-        addToast(result.message, { level: 'warn', dismissal: 'persistent' })
-        void refreshListing(deps.getListingId())
+        toastUnconfirmedRename(target.originalName)
         break
       case 'conflict':
         // The only authority on a conflict, and the chain must not stop to ask:
@@ -377,8 +433,10 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       case 'timeout':
         rename.cancel()
         restoreFocus()
-        addToast(result.message, { level: 'warn', dismissal: 'persistent' })
-        void refreshListing(deps.getListingId())
+        // The same aggregated toast the chain uses: a chain's last rename ends
+        // here rather than superseded, and its timeout belongs in the running
+        // count with the others.
+        toastUnconfirmedRename(target.originalName)
         break
       case 'extension-ask':
         // The dialog steals focus and blurs the editor; that blur must not cancel.

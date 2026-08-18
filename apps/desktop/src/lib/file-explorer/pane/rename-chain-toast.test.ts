@@ -49,6 +49,7 @@ vi.mock('$lib/settings', () => ({ getSetting: getSettingSpy }))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: tStringSpy }))
 vi.mock('./volume-capabilities', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
 
+import { refreshListing } from '$lib/tauri-commands'
 import { clearAllToasts, dismissToast, getToasts } from '$lib/ui/toast'
 import { buildFlow, chainListing } from './test-rename-flow'
 
@@ -62,6 +63,12 @@ function dismissAsUser(): void {
 /** The params the message about kept names was last built from. */
 function lastKeptNamesParams(): Record<string, unknown> | undefined {
   const calls = tStringSpy.mock.calls.filter(([key]) => key.startsWith('fileExplorer.rename.chainKept'))
+  return calls[calls.length - 1]?.[1]
+}
+
+/** The params the message about unconfirmed renames was last built from. */
+function lastUnconfirmedParams(): Record<string, unknown> | undefined {
+  const calls = tStringSpy.mock.calls.filter(([key]) => key.startsWith('fileExplorer.rename.unconfirmed'))
   return calls[calls.length - 1]?.[1]
 }
 
@@ -184,5 +191,105 @@ describe('a chained save the backend turns down', () => {
     expect(getToasts()).toHaveLength(1)
     expect(getToasts()[0].content).toBe('fileExplorer.rename.chainKeptOriginalNameAndOthers')
     expect(lastKeptNamesParams()).toMatchObject({ name: 'f5.txt' })
+  })
+})
+
+describe('a chained save the volume never answers', () => {
+  /** Names that pass validation, one per step. */
+  function typedNames(count: number): string[] {
+    return Array.from({ length: count }, (_, i) => `renamed-${String(i)}.txt`)
+  }
+
+  /**
+   * Runs the editor down a run of rows against a volume that never confirms.
+   * A typed name starting with `bad-` is unusable, so it's dropped at the
+   * keypress and never reaches the volume.
+   */
+  function chainAgainstASilentVolume(typed: string[]) {
+    validateFilenameSpy.mockImplementation((value: string) =>
+      value.startsWith('bad-') ? { severity: 'error', message: 'unusable' } : { severity: 'ok', message: '' },
+    )
+    executeRenameSaveSpy.mockResolvedValue({ type: 'timeout' })
+    const names = Array.from({ length: typed.length + 3 }, (_, i) => `f${String(i)}.txt`)
+    const listing = chainListing(names)
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    /** Types one name and steps to the next row, the way holding the arrow does. */
+    const step = (name: string) => {
+      flow.handleRenameInput(name)
+      flow.handleRenameStep('down', rename.sessionId)
+    }
+    typed.forEach(step)
+    return { flow, step }
+  }
+
+  it('names the one file whose rename went unanswered, without claiming it kept its name', async () => {
+    chainAgainstASilentVolume(typedNames(1))
+
+    await vi.waitFor(() => {
+      expect(getToasts()).toHaveLength(1)
+    })
+    expect(getToasts()[0].content).toBe('fileExplorer.rename.unconfirmed')
+    expect(lastUnconfirmedParams()).toMatchObject({ name: 'f0.txt' })
+    expect(getToasts()[0]).toMatchObject({ level: 'warn', dismissal: 'persistent', originPane: 'left' })
+  })
+
+  it('holds six unanswered renames in ONE toast, counted, rather than losing the tail', async () => {
+    chainAgainstASilentVolume(typedNames(6))
+
+    await vi.waitFor(() => {
+      expect(lastUnconfirmedParams()).toMatchObject({ others: 5 })
+    })
+    expect(getToasts()).toHaveLength(1)
+    expect(getToasts()[0].content).toBe('fileExplorer.rename.unconfirmedAndOthers')
+    expect(lastUnconfirmedParams()).toMatchObject({ name: 'f5.txt' })
+  })
+
+  it('leaves room for the toast about names the chain dropped', async () => {
+    const { step } = chainAgainstASilentVolume(typedNames(6))
+    await vi.waitFor(() => {
+      expect(lastUnconfirmedParams()).toMatchObject({ others: 5 })
+    })
+
+    // A toast per unanswered rename would have filled all five slots by now,
+    // and this one — the honest report the chain is built around — would be
+    // dropped with nothing said.
+    step('bad-6/name.txt')
+
+    expect(getToasts()).toHaveLength(2)
+    expect(getToasts().map((toast) => toast.content)).toContain('fileExplorer.rename.chainKeptOriginalName')
+    expect(getToasts().map((toast) => toast.content)).toContain('fileExplorer.rename.unconfirmedAndOthers')
+  })
+
+  it('asks the struggling volume for ONE refresh, however many renames went unanswered', async () => {
+    vi.useFakeTimers()
+    try {
+      chainAgainstASilentVolume(typedNames(6))
+
+      await vi.advanceTimersByTimeAsync(5000)
+
+      // Six refreshes at a volume already too slow to answer is the storm this
+      // feature must not cause.
+      expect(refreshListing).toHaveBeenCalledTimes(1)
+      expect(refreshListing).toHaveBeenCalledWith('lst-1')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('refreshes again for a rename that goes unanswered after the burst settled', async () => {
+    vi.useFakeTimers()
+    try {
+      const { step } = chainAgainstASilentVolume(typedNames(2))
+      await vi.advanceTimersByTimeAsync(5000)
+
+      step('renamed-late.txt')
+      await vi.advanceTimersByTimeAsync(5000)
+
+      expect(refreshListing).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
