@@ -618,7 +618,7 @@ Where each non-`Done` outcome comes from — every one a place the engine alread
 - **A bulk-skipped copy source reports `Skipped`.** Those leave `scan_result.files` before `SourceItemTracker` is even built, so nothing downstream would otherwise speak for them.
 - **A cross-FS move's rename-phase skip reports `Skipped`** in phase 4, which is what makes the last-event rule load-bearing rather than decorative.
 
-❌ The engine must never reach into `agent/store/` to record any of this. The injected sink is the seam: a caller that wants per-source statuses wraps the sink it passes in.
+The injected sink is the seam: a caller that wants per-source statuses wraps the sink it passes in, and the engine never names the `agent` module at all. That boundary is held by the `write-ops-isolation` check rather than by a rule here, so it fails a build instead of costing every session a line it might ignore.
 
 ## Archive edits
 

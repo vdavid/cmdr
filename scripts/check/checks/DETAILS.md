@@ -905,6 +905,8 @@ nothing" and passes). Anything narrower than every first-party member carries a 
   scoped to `src/mtp/`, one app-side USB subsystem.
 - **`desktop-rust-sqlite-open-direct`** is `app` only. The page-cache slab is process-wide, so a standalone CLI opening
   the first connection in its own process has nothing to protect.
+- **`desktop-rust-write-ops-agent-isolation`** is `AppTreeOnly`. It fences `file_system/write_operations/`, which only
+  exists in the app tree; no other member has a write engine to keep out of the agent module.
 - **`desktop-pluralize-noun`** is `app` only. `pluralize` is a private module of the app crate, so a tool crate can't
   reach the helper the check directs it to.
 - **`desktop-rust-cfg-gate`** governs every kind, because it pairs each member's OWN manifest with that member's tree
@@ -921,7 +923,7 @@ Checks by app and tech:
   the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
   cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (warn-only; the clone list, on a per-file-pair ratchet),
   log-error-macro, sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
-  shared page cache is always installed before SQLite initializes), error-string-match, lock-poison, test-sleep (flags a
+  shared page cache is always installed before SQLite initializes), error-string-match, write-ops-isolation (the write engine may not name the `agent` module: an approved operation is an ordinary operation, and an engine that can see the agent grows a second execution path; per-source outcomes reach a caller through the injected `OperationEventSink` instead), lock-poison, test-sleep (flags a
   fixed `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a
   genuine sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built
   on `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's

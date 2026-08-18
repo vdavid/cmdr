@@ -173,6 +173,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunDiscardedOutcome,
 	},
 	{
+		ID:                "desktop-rust-write-ops-agent-isolation",
+		Nickname:          "write-ops-isolation",
+		DisplayName:       "write-ops-isolation",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            rustInputs,
+		Run:               RunWriteOpsAgentIsolation,
+	},
+	{
 		ID:                "desktop-rust-error-string-match",
 		Nickname:          "error-string-match",
 		DisplayName:       "error-string-match",

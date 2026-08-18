@@ -57,6 +57,10 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 	},
 	"desktop-rust-ipc-enum-camelcase": {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-jscpd":              {Kinds: []MemberKind{KindApp, KindTool}},
+	"desktop-rust-write-ops-agent-isolation": {
+		AppTreeOnly: true,
+		Why:         "it fences `file_system/write_operations/`, which only exists in the app tree; no other member has a write engine to keep out of the agent module",
+	},
 	"desktop-rust-sqlite-open-direct": {
 		Kinds: []MemberKind{KindApp},
 		Why:   "the page-cache slab is process-wide, so a standalone CLI opening the first connection in its own process has nothing to protect",
