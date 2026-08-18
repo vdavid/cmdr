@@ -939,7 +939,7 @@ async fn volume_delete_journals_per_leaf_under_the_real_volume_id() {
     let op_id = "op-vol-delete";
     let state = state();
     journal::open_volume_op(op_id, OpKind::Delete, Initiator::User, "smb-src", None, 0);
-    super::delete_volume_files_with_progress_inner(
+    super::delete::delete_volume_files_with_progress_inner(
         volume as Arc<dyn Volume>,
         "smb-src",
         &CollectorEventSink::new(),

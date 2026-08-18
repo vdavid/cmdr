@@ -248,7 +248,15 @@ pub async fn delete_files(
     // driver inside `delete_files_start` (a `{ delete }` changeset), so no
     // rejection here. The `.zip` file itself deletes on the normal path.
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    ops_delete_files_start(events, sources, config, volume_id, initiator.unwrap_or(Initiator::User), None).await
+    ops_delete_files_start(
+        events,
+        sources,
+        config,
+        volume_id,
+        initiator.unwrap_or(Initiator::User),
+        None,
+    )
+    .await
 }
 
 /// Moves files to macOS Trash. Same events as `copy_files` but with `operationType: trash`.

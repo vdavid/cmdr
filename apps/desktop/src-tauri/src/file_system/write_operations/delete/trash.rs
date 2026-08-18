@@ -10,8 +10,8 @@ use std::time::Instant;
 
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::types::{
-    OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
-    SourceItemOutcome, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    OperationEventSink, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -584,7 +584,13 @@ mod tests {
         let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
         let missing = PathBuf::from("/nonexistent_trash_test_ccc/gone.txt");
 
-        let result = trash_files_with_progress(&*events, "op-trash-one-missing", &state, &[missing.clone()], None);
+        let result = trash_files_with_progress(
+            &*events,
+            "op-trash-one-missing",
+            &state,
+            std::slice::from_ref(&missing),
+            None,
+        );
         assert!(matches!(result, Err(WriteOperationError::IoError { .. })));
 
         let items = events.source_items_done.lock().unwrap();

@@ -8,8 +8,8 @@
 use std::path::{Path, PathBuf};
 
 use super::{
-    ExpectedSources, LocalContent, RemoteContent, SourceFingerprint, retain_bound_sources,
-    retain_bound_sources_remote, retain_bound_sources_with_sizes,
+    ExpectedSources, LocalContent, RemoteContent, SourceFingerprint, retain_bound_sources, retain_bound_sources_remote,
+    retain_bound_sources_with_sizes,
 };
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::{SourceItemOutcome, WriteOperationType};
@@ -35,13 +35,7 @@ fn expect_current(paths: &[PathBuf]) -> ExpectedSources {
 /// Drives the real local entry point, so every case here exercises what the
 /// starters exercise.
 fn retain(expected: &ExpectedSources, sink: &CollectorEventSink, sources: &[PathBuf]) -> Option<Vec<PathBuf>> {
-    retain_bound_sources(
-        sink,
-        "op",
-        WriteOperationType::Delete,
-        Some(expected),
-        sources.to_vec(),
-    )
+    retain_bound_sources(sink, "op", WriteOperationType::Delete, Some(expected), sources.to_vec())
 }
 
 fn skipped_paths(sink: &CollectorEventSink) -> Vec<String> {
@@ -64,7 +58,7 @@ async fn seed_remote(volume: &dyn Volume, path: &Path, contents: &[u8]) {
 fn an_unchanged_source_survives_and_says_nothing() {
     let dir = TestDir::new("binding_unchanged");
     let file = write_file(&dir, "report.pdf", b"one");
-    let expected = expect_current(&[file.clone()]);
+    let expected = expect_current(std::slice::from_ref(&file));
     let sink = CollectorEventSink::new();
 
     let kept = retain(&expected, &sink, std::slice::from_ref(&file));
@@ -104,7 +98,7 @@ fn an_unbound_operation_keeps_every_source_and_emits_nothing() {
 fn a_source_rewritten_since_review_is_dropped_and_reported() {
     let dir = TestDir::new("binding_rewritten");
     let file = write_file(&dir, "report.pdf", b"one");
-    let expected = expect_current(&[file.clone()]);
+    let expected = expect_current(std::slice::from_ref(&file));
 
     // Same name, same inode, different bytes: exactly the case a name-only check
     // waves through.
@@ -125,7 +119,7 @@ fn a_source_rewritten_since_review_is_dropped_and_reported() {
 fn a_source_replaced_by_a_different_file_of_the_same_size_is_dropped() {
     let dir = TestDir::new("binding_swapped");
     let file = write_file(&dir, "invoice.pdf", b"aaaa");
-    let expected = expect_current(&[file.clone()]);
+    let expected = expect_current(std::slice::from_ref(&file));
 
     // A swap that preserves size, and at mtime granularity could preserve that
     // too. The inode is what still tells them apart.
@@ -143,7 +137,7 @@ fn a_source_replaced_by_a_different_file_of_the_same_size_is_dropped() {
 fn a_source_that_vanished_is_dropped_and_reported_as_removed() {
     let dir = TestDir::new("binding_vanished");
     let file = write_file(&dir, "temp.log", b"one");
-    let expected = expect_current(&[file.clone()]);
+    let expected = expect_current(std::slice::from_ref(&file));
     std::fs::remove_file(&file).expect("remove");
 
     let sink = CollectorEventSink::new();
@@ -163,7 +157,7 @@ fn a_source_that_vanished_is_dropped_and_reported_as_removed() {
 fn an_operation_the_binding_emptied_completes_rather_than_failing() {
     let dir = TestDir::new("binding_emptied");
     let file = write_file(&dir, "report.pdf", b"one");
-    let expected = expect_current(&[file.clone()]);
+    let expected = expect_current(std::slice::from_ref(&file));
     write_file(&dir, "report.pdf", b"changed");
 
     let sink = CollectorEventSink::new();
@@ -186,7 +180,7 @@ fn a_directory_whose_children_changed_is_still_the_same_directory() {
     let target = dir.join("target");
     std::fs::create_dir(&target).expect("create dir");
     std::fs::write(target.join("a.o"), b"one").expect("seed child");
-    let expected = expect_current(&[target.clone()]);
+    let expected = expect_current(std::slice::from_ref(&target));
 
     std::fs::write(target.join("b.o"), b"two").expect("add a child");
     std::fs::remove_file(target.join("a.o")).expect("remove a child");
@@ -206,7 +200,7 @@ fn a_directory_that_became_a_file_is_dropped() {
     let dir = TestDir::new("binding_dir_to_file");
     let target = dir.join("notes");
     std::fs::create_dir(&target).expect("create dir");
-    let expected = expect_current(&[target.clone()]);
+    let expected = expect_current(std::slice::from_ref(&target));
 
     std::fs::remove_dir(&target).expect("remove dir");
     std::fs::write(&target, b"now a file").expect("write a file in its place");
@@ -225,7 +219,7 @@ fn a_source_the_binding_does_not_name_is_dropped_rather_than_waved_through() {
     let dir = TestDir::new("binding_partial");
     let named = write_file(&dir, "named.txt", b"one");
     let unnamed = write_file(&dir, "unnamed.txt", b"two");
-    let expected = expect_current(&[named.clone()]);
+    let expected = expect_current(std::slice::from_ref(&named));
 
     let sink = CollectorEventSink::new();
     let kept = retain(&expected, &sink, &[named.clone(), unnamed.clone()]);

@@ -87,10 +87,10 @@ pub use write_operations::{
 // and destination-path resolution and every archive fork (extract out, copy/move
 // into a zip); the IPC commands and any backend caller both go through them, so
 // there is one routing to keep right. `write_operations/routing.rs`.
+pub use write_operations::{VolumeCopyConfig, VolumeCopyScanResult, scan_for_volume_copy};
 pub(crate) use write_operations::{
     resolve_dest_path, resolve_source_volume, start_volume_compress, start_volume_copy, start_volume_move,
 };
-pub use write_operations::{VolumeCopyConfig, VolumeCopyScanResult, scan_for_volume_copy};
 
 /// Whether to auto-upgrade SMB mounts to direct smb2 connections.
 /// Set from the `network.directSmbConnection` setting at startup.

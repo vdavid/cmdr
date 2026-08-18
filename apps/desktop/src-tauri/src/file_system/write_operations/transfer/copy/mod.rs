@@ -20,9 +20,9 @@ use super::super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };
 use super::super::types::{
-    ConflictResolution, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
-    SourceItemOutcome, WriteSourceItemDoneEvent,
+    ConflictResolution, OperationEventSink, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent,
+    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use super::super::validation::{validate_disk_space, validate_file_sizes_for_filesystem};
 use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};

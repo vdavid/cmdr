@@ -152,9 +152,7 @@ fn fingerprint_row_id(fingerprint: &RenameSourceFingerprint) -> &str {
     }
 }
 
-fn map_bulk_rename_fingerprint(
-    fingerprint: &RenameSourceFingerprint,
-) -> SourceFingerprint {
+fn map_bulk_rename_fingerprint(fingerprint: &RenameSourceFingerprint) -> SourceFingerprint {
     match fingerprint {
         RenameSourceFingerprint::Local {
             device,

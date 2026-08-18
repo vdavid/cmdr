@@ -564,6 +564,57 @@ the opposite of what a scanning-phase test needs to hold, so `set_test_scan_prev
 `playwright-e2e` feature, falling back to `CMDR_E2E_SCAN_PREVIEW_DELAY_MS`) holds every worker at its starting line for
 a set number of milliseconds. Per-test rather than per-process, so one spec's window doesn't slow the whole run.
 
+## Routing a transfer
+
+`routing.rs` answers the two questions every cross-volume transfer asks before it starts, and owns the fork it takes from the answers. It exists because that whole shape used to live inside the three `#[tauri::command]` bodies in `commands/file_system/volume_copy.rs`, which build a `TauriEventSink` at the edge — so it was reachable only from a window, and a backend caller (an approved suggestion group starting an op with its own injected sink) could reach it only by duplicating it.
+
+- **`resolve_source_volume(volume_id, first_path)`** routes an archive-inner batch to its `ArchiveVolume`. One `source_volume_id` per batch means no straddle risk, so the first path decides. The returned `bool` is "inside an archive": a `.zip` FILE is a plain file, copied through its parent volume, so only a genuinely-inner path flips it. A cheap string pre-filter (`archive_boundary_candidate`) keeps a plain path off the parent-aware resolve entirely.
+- **`resolve_dest_path(dest_volume, dest_path)`** expands `~` for LOCAL volumes only (on a share, `~` is an ordinary folder name) and then root-anchors. The transfer dialog's box is volume-relative (`/photos`, with the volume in a dropdown beside it) while a pane sends the absolute path it displays; `root_anchored` is idempotent, so neither caller has to know which it holds. Skipping it is what made a 360 GB move into an SMB subfolder fail instantly (ERR-XCP5Q): `SmbVolume` read `/photos` as a path outside its mount and answered `NotFound`.
+- **`start_volume_copy` / `start_volume_move` / `start_volume_compress`** are the three entry points. Between them they cover the plain cross-volume engine, copy/move INTO a zip (one `{ add }` changeset), move OUT of one (the compound extract-then-delete op), and compress (seed an empty archive, then copy into it). Each takes an injected `Arc<dyn OperationEventSink>`; the IPC commands build the sink and pass it in, nothing more.
+
+**Decision: an extract has no operation type of its own.**
+**Why**: pulling entries out of a `.zip` is a copy whose SOURCE volume happens to be an `ArchiveVolume`, which `resolve_source_volume` arranges. `ArchiveSubkind::Extract` is an operation-log label describing what a copy was for, not a second driver. A `WriteOperationType::Extract` would need its own lane rules, its own conflict handling, and its own progress accounting, all of which already exist and already work.
+
+**Decision: a compress over an existing archive overwrites it, and this module does not refuse.**
+**Why**: the seed is unconditional and the prior bytes aren't retained, which makes it the one transfer here that can't be reversed at all. That is a fact to DISCLOSE before someone commits to it (the review surface's job), never a refusal in the engine: if a person can do it from the dialog, an operation they approved does the same thing. Same rule as § "Binding the sources".
+
+## Binding the sources
+
+`source_binding.rs`. An operation decided against files as they looked at review time can execute much later — an approved op sits queued behind a forty-minute copy on the same lane, and a suggestion waits until somebody clicks Approve. In between, a source can be edited, replaced, or swapped for a different file under the same name.
+
+**`SourceFingerprint` is what lets an operation notice.** `Local { device, inode, content }` uses the identity the kernel maintains; `Remote { normalized_path, content }` stands in for it where no inode exists (SMB, MTP, an archive). Comparison is derived equality against a fresh capture, so a caller never writes the comparison itself.
+
+**Decision: `LocalContent` / `RemoteContent` are `File { size, modified }` or `Directory`, not `Option`s.**
+**Why**: a directory's own size and mtime move with every child write, so binding a proposed `delete ~/projects/cmdr/target/` to yesterday's directory mtime would refuse it after any build — while `(device, inode)` plus "still a directory" is a real identity worth holding it to. Two variants also make the two reasons a field could be empty impossible to confuse: "it's a folder, so there are no bytes" and "the backend didn't report a size" are different facts, and an `Option<u64>` doing both jobs is the same anti-pattern as `PerSource`'s empty `Vec` (§ "Key patterns", the `scan_sources_internal` decision). A directory that became a file mismatches on the variant alone.
+
+**The pre-flight runs INSIDE the operation's own task, not at approval.** `retain_bound_sources` (local, sync), `retain_bound_sources_remote` (Volume-backed, async), and `retain_bound_sources_with_sizes` (trash, whose `item_sizes` is positional against the sources and has to be filtered in lockstep) sit at the top of the four starters' handlers, after admission. The whole point of a fingerprint is to close the window between checking and acting; checking at approval and acting an hour later would reopen it as wide as it goes.
+
+- **Binding is all-or-nothing.** A source the binding doesn't name is dropped, not waved through: a caller that supplies a partial map has a bug, and guessing "probably fine" means acting on a file nobody reviewed. A caller that wants no checking passes no `ExpectedSources` at all rather than an empty one.
+- **An operation the binding empties completes; it does not fail.** Every source already went out as a `Skipped` item, so the caller has its per-source answers, and a failure dialog on top would be the engine editorializing about a decision the person is entitled to make differently.
+- **`journal_snapshot()` lives on the fingerprint** because the journal's mtime column is Unix SECONDS while a local fingerprint holds nanoseconds. Journal the nanoseconds and every undo reports drift and refuses (silently disabling undo); journal nothing and identity rests on size alone, so a same-size replacement gets renamed back in place of the original. A directory answers `(None, None)`: it has no bytes of its own to be held to.
+
+**Nothing in the engine asks who started an operation**, and a test holds it there. `expected_sources` is an `Option` a caller may supply; an unbound operation gets its sources back untouched, which is every user-started copy, move, delete, and trash. `approved_op_parity_tests.rs` pins the consequence: the same transfer run bound and unbound agrees on the destination tree, the completion counters, and every per-source event — a missing destination folder is created either way, an Overwrite overwrites either way, a Skip skips in the same place either way. `only_a_source_that_changed_is_treated_differently` states the one permitted difference positively, so the parity cases can't be read as "the binding does nothing".
+
+## Per-source outcomes
+
+`write-source-item-done` carries a `SourceItemOutcome` (`Done` / `Skipped` / `Failed`) beside `source_removed`.
+
+**Decision: the outcome rides on that event rather than a sibling one.**
+**Why**: "this source is finished with" and "how it ended" are one fact. Split across two events, every consumer wanting a per-source verdict — the queue's gradual deselection, the search-snapshot purge, the suggestion store writing `proposal_ops.status` — would have to join two streams and decide what a missing partner means.
+
+**The LAST event a source gets is the verdict**, and both directions are pinned. A cross-filesystem move speaks twice for one source: `Done` when it finishes staging, then `Done` again when the source-delete phase removes it, or `Skipped` when the rename phase left it standing. Staging succeeding says nothing about where the item ended up, so a consumer recording a per-source status OVERWRITES rather than accumulating. `move_op_tests.rs`'s `a_cross_fs_move_that_{skipped_the_item_ends_on_skipped_not_done, took_the_item_ends_on_done}` pin both directions, so the rule can't degrade into "the second event is always a skip".
+
+⚠️ **`source_removed` is a separate question from the outcome**, and it is the one the search-snapshot purge steers by (`apps/desktop/src/lib/search/snapshot-purge.ts`). A source skipped BECAUSE it vanished under the operation reports `Skipped` AND `source_removed: true`; a source that merely couldn't be stat'd reports `false`, because "we couldn't look" is not evidence a file is gone and a wrong `true` drops a row for a file the user can still open.
+
+Where each non-`Done` outcome comes from — every one a place the engine already knew and used to say nothing:
+
+- **The binding's pre-flight** (§ above) reports `Skipped` per dropped source, for all four verbs.
+- **Trash reports `Failed` per item**, on both failure paths (a source it can't stat, and `trashItemAtURL` refusing). Trash is per-item by nature: one failure leaves the batch running, so the operation's own terminal event says nothing about that item.
+- **A bulk-skipped copy source reports `Skipped`.** Those leave `scan_result.files` before `SourceItemTracker` is even built, so nothing downstream would otherwise speak for them.
+- **A cross-FS move's rename-phase skip reports `Skipped`** in phase 4, which is what makes the last-event rule load-bearing rather than decorative.
+
+❌ The engine must never reach into `agent/store/` to record any of this. The injected sink is the seam: a caller that wants per-source statuses wraps the sink it passes in.
+
 ## Archive edits
 
 Editing a `.zip` (mkdir/mkfile/rename/delete inside, or copy/move INTO one) is an O(archive) temp+rename rewrite that

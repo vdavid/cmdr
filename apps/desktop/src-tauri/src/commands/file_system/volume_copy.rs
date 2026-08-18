@@ -7,8 +7,8 @@
 
 use crate::file_system::{
     OperationEventSink, ScanConflict, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationError,
-    WriteOperationStartResult, resolve_dest_path, resolve_source_volume, scan_for_volume_copy as ops_scan_for_volume_copy,
-    start_volume_compress, start_volume_copy, start_volume_move,
+    WriteOperationStartResult, resolve_dest_path, resolve_source_volume,
+    scan_for_volume_copy as ops_scan_for_volume_copy, start_volume_compress, start_volume_copy, start_volume_move,
 };
 use std::path::PathBuf;
 use std::sync::Arc;

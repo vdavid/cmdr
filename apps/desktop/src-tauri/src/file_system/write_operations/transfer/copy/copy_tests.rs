@@ -411,7 +411,7 @@ fn a_bulk_skipped_source_reports_itself_as_skipped() {
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
     let items = events.source_items_done.lock().unwrap();
-    let verdict = |path: &std::path::Path| {
+    let verdict = |path: &Path| {
         items
             .iter()
             .find(|item| item.source_path == path.display().to_string())
@@ -420,9 +420,7 @@ fn a_bulk_skipped_source_reports_itself_as_skipped() {
     assert_eq!(verdict(&clashing), Some(SourceItemOutcome::Skipped));
     assert_eq!(verdict(&clean), Some(SourceItemOutcome::Done));
     assert!(
-        items
-            .iter()
-            .all(|item| !item.source_removed),
+        items.iter().all(|item| !item.source_removed),
         "a copy leaves every source where it was, skipped or not"
     );
     assert_eq!(fs::read(dst_dir.join("collide.bin")).unwrap(), b"dest", "the skip held");

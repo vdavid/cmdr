@@ -66,8 +66,8 @@ use std::time::Duration;
 use uuid::Uuid;
 
 use crate::file_system::volume::LaneKey;
-use crate::operation_log::types::{Initiator, OpKind};
-use delete::{delete_files_with_progress_inner, delete_volume_files_with_progress_inner};
+use crate::operation_log::types::Initiator;
+use delete::delete_files_with_progress_inner;
 use manager::OperationDescriptor;
 #[cfg(not(test))]
 use state::WriteOperationState;
@@ -126,21 +126,14 @@ pub(crate) use rename::{
     BulkRenameRow, RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
     start_bulk_rename,
 };
-// The source-identity binding: what a caller was promised each top-level source
-// is, and the pre-flight that holds the filesystem to it before an operation
-// touches anything. Reviewed batches (Ask Cmdr's rename plan, an approved
-// suggestion group) build one; a plain user-started op passes none and is
-// unaffected. `source_binding.rs`.
-// Where a transfer's volumes and destination path come from, plus the three
-// routed entry points every cross-volume transfer goes through. Lifted out of the
-// IPC command bodies so a BACKEND caller can start one — an extract is a copy
-// whose source resolves to an `ArchiveVolume`, and it had no other way in.
-// `routing.rs`.
+// The source-identity binding a reviewed batch may supply. `source_binding.rs`.
+// Volume + destination resolution and the three routed cross-volume entry points,
+// reachable by a backend caller and not only the IPC edge. `routing.rs`.
 pub(crate) use routing::{
     resolve_dest_path, resolve_source_volume, start_volume_compress, start_volume_copy, start_volume_move,
 };
 pub(crate) use source_binding::{ExpectedSources, LocalContent, RemoteContent, SourceFingerprint};
-use source_binding::{retain_bound_sources, retain_bound_sources_remote, retain_bound_sources_with_sizes};
+use source_binding::{retain_bound_sources, retain_bound_sources_with_sizes};
 // External busy-volume seam for the drag-out fulfillment service (see
 // `lifecycle/state.rs` § "External busy-volume seam"). `pub(crate)` so only in-crate
 // callers (`native_drag::fulfillment`) reach it. macOS-only: the sole consumer
@@ -153,10 +146,9 @@ pub use types::{
     ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, OperationStatus,
     OperationSummary, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanPreviewStartResult, ScanPreviewTotals, ScanProgressEvent, SortColumn, SortOrder,
-    SourceItemOutcome,
-    WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
-    WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
+    SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent,
+    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
+    WriteOperationType, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 
 // Re-export for tests (these are pub(crate) in validation.rs and state.rs)
@@ -416,7 +408,7 @@ fn local_lanes(volume_ids: &[String]) -> Vec<LaneKey> {
 
 /// Best-effort `source → destination` summary for the queue window: the source
 /// items' display names joined, and the destination's. Cheap; no I/O.
-fn path_summary(sources: &[PathBuf], destination: Option<&std::path::Path>) -> OperationSummaryText {
+pub(super) fn path_summary(sources: &[PathBuf], destination: Option<&std::path::Path>) -> OperationSummaryText {
     fn name(p: &std::path::Path) -> String {
         p.file_name()
             .map(|n| n.to_string_lossy().into_owned())
@@ -444,14 +436,11 @@ fn path_summary(sources: &[PathBuf], destination: Option<&std::path::Path>) -> O
 /// both-local branch of `copy_between_volumes` passes the real
 /// `Volume::lane_key()`s of the two volumes.
 ///
-/// `expected_sources` binds the operation to what its caller was last shown: a
-/// top-level source whose live identity no longer matches is dropped before any
-/// I/O and announced as a `Skipped` source item. Reviewed batches supply one; a
-/// user-started operation passes `None` and behaves exactly as it always has.
-/// `source_binding.rs`.
+/// `expected_sources` is the caller's source binding, or `None` for the ordinary
+/// user-started case. `source_binding.rs`.
 #[allow(
     clippy::too_many_arguments,
-    reason = "the starter threads the lane/volume/initiator context the manager needs alongside the op's own inputs; a bag struct would just move the same fields"
+    reason = "the manager's context alongside the op's own inputs"
 )]
 pub async fn copy_files_start(
     events: Arc<dyn OperationEventSink>,
@@ -513,14 +502,11 @@ pub async fn copy_files_start(
 /// Uses instant rename() for same-filesystem moves.
 /// Uses atomic staging pattern for cross-filesystem moves.
 ///
-/// `expected_sources` binds the operation to what its caller was last shown: a
-/// top-level source whose live identity no longer matches is dropped before any
-/// I/O and announced as a `Skipped` source item. Reviewed batches supply one; a
-/// user-started operation passes `None` and behaves exactly as it always has.
-/// `source_binding.rs`.
+/// `expected_sources` is the caller's source binding, or `None` for the ordinary
+/// user-started case. `source_binding.rs`.
 #[allow(
     clippy::too_many_arguments,
-    reason = "the starter threads the lane/volume/initiator context the manager needs alongside the op's own inputs; a bag struct would just move the same fields"
+    reason = "the manager's context alongside the op's own inputs"
 )]
 pub async fn move_files_start(
     events: Arc<dyn OperationEventSink>,
@@ -582,11 +568,8 @@ pub async fn move_files_start(
 /// Recursively deletes files and directories. When `volume_id` is provided and
 /// is not the default volume, routes through `delete_volume_files_with_progress`
 /// which uses the Volume trait (needed for MTP and other non-local volumes).
-/// `expected_sources` binds the operation to what its caller was last shown: a
-/// top-level source whose live identity no longer matches is dropped before any
-/// I/O and announced as a `Skipped` source item. Reviewed batches supply one; a
-/// user-started operation passes `None` and behaves exactly as it always has.
-/// `source_binding.rs`.
+/// `expected_sources` is the caller's source binding, or `None` for the ordinary
+/// user-started case. `source_binding.rs`.
 pub async fn delete_files_start(
     events: Arc<dyn OperationEventSink>,
     sources: Vec<PathBuf>,
@@ -630,149 +613,19 @@ pub async fn delete_files_start(
     }
 
     if volume_id_str != "root" {
-        // Volume-aware delete (async handler): route through the manager via a
-        // deferred async start. The lane is the volume's own lane (resolved
-        // from its `Volume::lane_key()`); falls back to the volume id if the
-        // volume isn't registered yet (it'll surface the not-found error on
-        // admission). The manager owns lifecycle, cache cleanup, and the busy
-        // registration; this closure owns the op body + terminal emit + settle.
-        let operation_id = Uuid::new_v4().to_string();
-        let state = Arc::new(WriteOperationState::new(Duration::from_millis(
-            config.progress_interval_ms,
-        )));
-
-        let lane = crate::file_system::volume::manager::get_volume_manager()
-            .get(&volume_id_str)
-            .map(|v| v.lane_key())
-            .unwrap_or_else(|| LaneKey::new(volume_id_str.clone()));
-
-        let descriptor = OperationDescriptor {
-            operation_id: operation_id.clone(),
-            operation_type: WriteOperationType::Delete,
-            lanes: vec![lane],
-            volume_ids: vec![volume_id_str.clone()],
-            summary: path_summary(&sources, None),
-            // Deleted is deleted; there's nothing for a rollback to put back.
-            supports_rollback: false,
-            preview_id: config.preview_id.clone(),
-        };
-
-        let events_for_op = Arc::clone(&events);
-        let op_id_outer = operation_id.clone();
-        let state_for_op = Arc::clone(&state);
-        let volume_id_for_op = volume_id_str.clone();
-        let deferred = move || -> Pin<Box<dyn Future<Output = ()> + Send>> {
-            Box::pin(async move {
-                let events = events_for_op;
-                let op_id = op_id_outer;
-                let state = state_for_op;
-                let volume_id_str = volume_id_for_op;
-                let task_guard = manager::ManagedTaskGuard::new(op_id.clone());
-                // Settle guard: fires `write-settled` at end of scope, AFTER the
-                // terminal event and AFTER `on_settled`'s cache cleanup (the
-                // settle guard drops last). Matches the FE ordering contract.
-                let _settled_guard = WriteSettledGuard::new(
-                    Arc::clone(&events),
-                    op_id.clone(),
-                    WriteOperationType::Delete,
-                    Some(volume_id_str.clone()),
-                );
-
-                // Wait out the confirming dialog's scan before journaling or
-                // touching the device; see `start_write_operation`.
-                if scan_bridge::await_claimed_preview(&*events, &op_id, WriteOperationType::Delete, &state)
-                    .await
-                    .stopped()
-                {
-                    task_guard.disarm();
-                    manager::manager().on_settled(&op_id);
-                    return;
-                }
-
-                // Journal the volume delete under its REAL volume id (not the
-                // hardcoded `"root"` the local helpers bake in). The per-leaf rows
-                // are recorded inside `delete_volume_files_with_progress_inner`.
-                journal::open_volume_op(
-                    &op_id,
-                    OpKind::Delete,
-                    initiator,
-                    &volume_id_str,
-                    None,
-                    sources.len() as u64,
-                );
-
-                let execution_status = match crate::file_system::volume::manager::get_volume_manager()
-                    .get(&volume_id_str)
-                {
-                    None => {
-                        events.emit_error(WriteErrorEvent::new(
-                            op_id.clone(),
-                            WriteOperationType::Delete,
-                            WriteOperationError::IoError {
-                                path: volume_id_str.clone(),
-                                message: format!("Volume '{}' not found", volume_id_str),
-                            },
-                        ));
-                        crate::operation_log::types::ExecutionStatus::Failed
-                    }
-                    Some(volume) => {
-                        let bound = retain_bound_sources_remote(
-                            volume.as_ref(),
-                            &*events,
-                            &op_id,
-                            WriteOperationType::Delete,
-                            expected_sources.as_ref(),
-                            sources,
-                        )
-                        .await;
-                        match bound {
-                            // The binding left nothing to delete. Each source went
-                            // out as a `Skipped` item and the complete event with
-                            // it, so the op is over and it didn't fail.
-                            None => crate::operation_log::types::ExecutionStatus::Done,
-                            Some(sources) => {
-                                let result = delete_volume_files_with_progress_inner(
-                                    volume,
-                                    &volume_id_str,
-                                    &*events,
-                                    &op_id,
-                                    &state,
-                                    &sources,
-                                    &config,
-                                )
-                                .await;
-                                match result {
-                                    Ok(()) => crate::operation_log::types::ExecutionStatus::Done,
-                                    Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {
-                                        crate::operation_log::types::ExecutionStatus::Canceled
-                                    }
-                                    Err(e) => {
-                                        events.emit_error(WriteErrorEvent::new(
-                                            op_id.clone(),
-                                            WriteOperationType::Delete,
-                                            e,
-                                        ));
-                                        crate::operation_log::types::ExecutionStatus::Failed
-                                    }
-                                }
-                            }
-                        }
-                    }
-                };
-                journal::finalize_op(&op_id, OpKind::Delete, execution_status);
-
-                task_guard.disarm();
-                manager::manager().on_settled(&op_id);
-            })
-        };
-
-        manager::manager().spawn_managed(descriptor, state, Box::new(deferred));
-
-        Ok(WriteOperationStartResult {
-            operation_id,
-            operation_type: WriteOperationType::Delete,
-        })
-    } else {
+        // Volume-aware delete: its body is async (the `Volume` trait's I/O is), so
+        // it owns its own deferred start rather than riding `start_write_operation`.
+        // `delete/volume_start.rs`.
+        return Ok(delete::start_volume_delete(
+            events,
+            sources,
+            config,
+            volume_id_str,
+            initiator,
+            expected_sources,
+        ));
+    }
+    {
         // Local same-`root` delete: no ejectable volume involved.
         let summary = path_summary(&sources, None);
         start_write_operation(
@@ -808,15 +661,10 @@ pub async fn delete_files_start(
 /// Moves top-level items to the macOS Trash via `NSFileManager.trashItemAtURL`.
 /// Supports cancellation between items and partial failure (some items may fail
 /// while others succeed).
-/// `expected_sources` binds the operation to what its caller was last shown: a
-/// top-level source whose live identity no longer matches is dropped before any
-/// I/O and announced as a `Skipped` source item. Reviewed batches supply one; a
-/// user-started operation passes `None` and behaves exactly as it always has.
-/// `source_binding.rs`.
+/// `expected_sources` is the caller's source binding, or `None` for the ordinary
+/// user-started case. `source_binding.rs`.
 ///
-/// ⚠️ `item_sizes` is positional against the sources the CALLER passed, so the
-/// binding filter runs against the pair and drops the matching size with its
-/// source.
+/// ⚠️ `item_sizes` is positional, so the binding filters both halves together.
 pub async fn trash_files_start(
     events: Arc<dyn OperationEventSink>,
     sources: Vec<PathBuf>,
@@ -853,9 +701,6 @@ pub async fn trash_files_start(
         None,
         sources.len() as u64,
         move |events, op_id, state| {
-            // Trash reports bytes from a caller-supplied list indexed by position,
-            // so the filter has to move both halves together or every size after
-            // the first drop describes the wrong item.
             let Some((sources, item_sizes)) = retain_bound_sources_with_sizes(
                 &*events,
                 &op_id,

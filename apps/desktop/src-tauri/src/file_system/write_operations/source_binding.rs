@@ -314,7 +314,9 @@ pub(crate) async fn retain_bound_sources_remote(
     let Some(expected) = expected else {
         return Some(sources);
     };
-    let kept = expected.kept_positions_remote(volume, events, operation_id, &sources).await;
+    let kept = expected
+        .kept_positions_remote(volume, events, operation_id, &sources)
+        .await;
     finish_or_keep(events, operation_id, operation_type, sources, kept)
 }
 
@@ -334,7 +336,11 @@ pub(crate) fn retain_bound_sources_with_sizes(
         return Some((sources, item_sizes));
     };
     let kept = expected.kept_positions_local(events, operation_id, &sources);
-    let item_sizes = item_sizes.map(|sizes| kept.iter().filter_map(|position| sizes.get(*position).copied()).collect());
+    let item_sizes = item_sizes.map(|sizes| {
+        kept.iter()
+            .filter_map(|position| sizes.get(*position).copied())
+            .collect()
+    });
     let sources = finish_or_keep(events, operation_id, operation_type, sources, kept)?;
     Some((sources, item_sizes))
 }
@@ -350,7 +356,11 @@ fn finish_or_keep(
         announce_empty_batch(events, operation_id, operation_type, sources.len());
         return None;
     }
-    Some(kept.into_iter().filter_map(|position| sources.get(position).cloned()).collect())
+    Some(
+        kept.into_iter()
+            .filter_map(|position| sources.get(position).cloned())
+            .collect(),
+    )
 }
 
 /// Whether a local source is positively absent, as opposed to merely unreadable.

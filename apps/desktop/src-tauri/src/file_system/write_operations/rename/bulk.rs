@@ -20,8 +20,8 @@ use super::super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::super::source_binding::{SourceFingerprint, normalized_path};
 use super::super::state::{WriteOperationState, WriteSettledGuard, is_cancelled, update_operation_status};
 use super::super::types::{
-    WriteCancelledEvent, WriteCompleteEvent, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
-    SourceItemOutcome, WriteSourceItemDoneEvent,
+    SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationStartResult, WriteOperationType,
+    WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::volume::{LaneKey, Volume, rename_local_exclusive};
 use crate::operation_log::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind};
@@ -293,7 +293,9 @@ fn bulk_rename_local(rows: &[BulkRenameRow], intent: &AtomicU8, recorder: &BulkR
     let mut outcomes = vec![BulkRenameOutcome::Skipped; rows.len()];
     let mut active: Vec<bool> = rows
         .iter()
-        .map(|row| SourceFingerprint::capture_local(&row.source).is_some_and(|actual| actual == row.expected_fingerprint))
+        .map(|row| {
+            SourceFingerprint::capture_local(&row.source).is_some_and(|actual| actual == row.expected_fingerprint)
+        })
         .collect();
     settle_local_conflicts(rows, &mut active);
     for (index, row) in rows.iter().enumerate().filter(|(index, _)| active[*index]) {

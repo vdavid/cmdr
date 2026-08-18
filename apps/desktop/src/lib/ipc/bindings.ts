@@ -799,7 +799,10 @@ export const commands = {
   dismissFailedOperation: (operationId: string) => __TAURI_INVOKE<void>('dismiss_failed_operation', { operationId }),
   // Drops every retained failure. Backs the queue window's "Dismiss all".
   dismissAllFailedOperations: () => __TAURI_INVOKE<void>('dismiss_all_failed_operations'),
-  // Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.
+  /**
+   *  Unified copy across volume types (local, MTP, extract out of a `.zip`).
+   *  Same events as `copy_files`.
+   */
   copyBetweenVolumes: (
     sourceVolumeId: string,
     sourcePaths: string[],
@@ -846,9 +849,9 @@ export const commands = {
       }),
     ),
   /**
-   *  Unified move across volume types. Same events as `copy_between_volumes`.
-   *  Handles same-volume (native rename/move), both-local (native move), and cross-volume
-   *  (copy+delete).
+   *  Unified move across volume types. Handles same-volume (native rename/move),
+   *  both-local (native move), cross-volume (copy+delete), and both directions
+   *  across a `.zip` boundary.
    */
   moveBetweenVolumes: (
     sourceVolumeId: string,
@@ -897,10 +900,8 @@ export const commands = {
     ),
   /**
    *  Compresses `source_paths` into a NEW zip at `dest_zip_path` on `dest_volume_id`.
-   *  Reuses the archive-edit machinery: seed a valid empty zip, then copy the sources
-   *  in as one changeset (`compress_start`). Same events as `copy_between_volumes`.
-   *  The destination may be LOCAL or REMOTE (SMB/MTP): `compress_start` seeds a local
-   *  target on the FS and a remote one THROUGH the parent volume.
+   *  Same events as `copy_between_volumes`. The destination may be LOCAL or REMOTE
+   *  (SMB/MTP).
    */
   compressFiles: (
     sourceVolumeId: string,
@@ -8931,6 +8932,11 @@ export type SourceItemInput = {
  *  hundred children still lands as `Done`, because the source as a whole was
  *  carried out. `Skipped` means the operation deliberately left the item alone
  *  and wrote nothing for it; `Failed` means it tried and couldn't.
+ *
+ *  ⚠️ **The LAST event a source gets is its verdict**, because a cross-filesystem
+ *  move speaks twice for one source and staging succeeding says nothing about where
+ *  the item ended up. A consumer recording a per-source status overwrites rather
+ *  than accumulating.
  */
 export type SourceItemOutcome = 'done' | 'skipped' | 'failed'
 
@@ -10104,15 +10110,11 @@ export type WriteSettledEvent = {
  *  rather than one list per operation. An item the operation never reached before a
  *  cancel still emits nothing — nothing was decided about it.
  *
- *  **Outcome rides on this event rather than a sibling one** because "this source
- *  is finished with" and "how it ended" are one fact. Split across two events, a
- *  consumer that wants a per-source verdict — the queue's gradual deselection, the
- *  search-snapshot purge, the suggestion store writing `proposal_ops.status` —
- *  would have to join two streams and decide what a missing partner means.
- *
  *  The frontend uses it for gradual deselection during an operation, and
  *  `source_removed` additionally drives the search-snapshot purge
- *  (`$lib/search/snapshot-purge.ts`).
+ *  (`$lib/search/snapshot-purge.ts`). Why the outcome rides on this event rather
+ *  than a sibling one, and where each non-`Done` verdict comes from: `DETAILS.md`
+ *  § "Per-source outcomes".
  */
 export type WriteSourceItemDoneEvent = {
   operationId: string

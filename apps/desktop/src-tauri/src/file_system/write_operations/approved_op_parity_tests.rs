@@ -62,10 +62,7 @@ fn read_tree(root: &Path) -> Vec<(PathBuf, Vec<u8>)> {
             if path.is_dir() {
                 walk(&path, root, into);
             } else if let Ok(bytes) = std::fs::read(&path) {
-                into.push((
-                    path.strip_prefix(root).expect("under the root").to_path_buf(),
-                    bytes,
-                ));
+                into.push((path.strip_prefix(root).expect("under the root").to_path_buf(), bytes));
             }
         }
     }
@@ -282,7 +279,10 @@ async fn an_approved_move_takes_the_source_exactly_as_a_user_started_one_does() 
     let (by_user, user_source_left) = run(false, "user").await;
     let (approved, approved_source_left) = run(true, "approved").await;
 
-    assert!(!approved_source_left, "an approved move takes the source, like any move");
+    assert!(
+        !approved_source_left,
+        "an approved move takes the source, like any move"
+    );
     assert_eq!(approved_source_left, user_source_left);
     assert_eq!(
         approved.dest_tree,
@@ -335,11 +335,7 @@ async fn only_a_source_that_changed_is_treated_differently() {
     assert_eq!(
         outcome.source_items,
         vec![
-            (
-                PathBuf::from("fresh.pdf"),
-                false,
-                super::types::SourceItemOutcome::Done
-            ),
+            (PathBuf::from("fresh.pdf"), false, super::types::SourceItemOutcome::Done),
             (
                 PathBuf::from("stale.pdf"),
                 false,

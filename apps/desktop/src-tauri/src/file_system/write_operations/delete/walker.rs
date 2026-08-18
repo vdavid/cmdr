@@ -10,8 +10,8 @@ use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::transfer::volume::map_volume_error;
 use super::super::types::{
-    DryRunResult, IoResultExt, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
-    SourceItemOutcome, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    DryRunResult, IoResultExt, OperationEventSink, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
 use crate::file_system::listing::caching::try_get_authoritative_listing;

@@ -296,12 +296,10 @@ pub struct WriteErrorEvent {
 /// carried out. `Skipped` means the operation deliberately left the item alone
 /// and wrote nothing for it; `Failed` means it tried and couldn't.
 ///
-/// ⚠️ **The LAST event a source gets is its verdict.** A cross-filesystem move
-/// speaks twice for one source — `Done` when it finishes staging, then either
-/// `Done` again when the source-delete phase removes it or `Skipped` when the
-/// rename phase left it standing — because staging succeeding says nothing about
-/// where the item ended up. A consumer recording a per-source status overwrites;
-/// it does not accumulate.
+/// ⚠️ **The LAST event a source gets is its verdict**, because a cross-filesystem
+/// move speaks twice for one source and staging succeeding says nothing about where
+/// the item ended up. A consumer recording a per-source status overwrites rather
+/// than accumulating.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SourceItemOutcome {
@@ -316,15 +314,11 @@ pub enum SourceItemOutcome {
 /// rather than one list per operation. An item the operation never reached before a
 /// cancel still emits nothing — nothing was decided about it.
 ///
-/// **Outcome rides on this event rather than a sibling one** because "this source
-/// is finished with" and "how it ended" are one fact. Split across two events, a
-/// consumer that wants a per-source verdict — the queue's gradual deselection, the
-/// search-snapshot purge, the suggestion store writing `proposal_ops.status` —
-/// would have to join two streams and decide what a missing partner means.
-///
 /// The frontend uses it for gradual deselection during an operation, and
 /// `source_removed` additionally drives the search-snapshot purge
-/// (`$lib/search/snapshot-purge.ts`).
+/// (`$lib/search/snapshot-purge.ts`). Why the outcome rides on this event rather
+/// than a sibling one, and where each non-`Done` verdict comes from: `DETAILS.md`
+/// § "Per-source outcomes".
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 #[tauri_specta(event_name = "write-source-item-done")]
