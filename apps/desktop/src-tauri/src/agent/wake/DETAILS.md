@@ -128,14 +128,42 @@ Related: an intra-doc link that was unambiguous when written can become ambiguou
 appears beside the function (`[`interest`]`). That fails only in the whole-crate doc build, never in `cargo test`, so
 run `pnpm check rustdoc` after adding a module whose name matches an existing item.
 
+## The wake job
+
+`run_wake` reuses `run_turn` rather than growing a second turn loop: budget enforcement,
+elision, crash-safe persistence, and cost metering must not differ between the user asking and
+the agent noticing, and two loops guarantee they eventually will. Single-flight and
+cancellation come from the same guards for the same reason.
+
+**The order of the steps is the safety property.** Gates, then the deadline, then the digest
+shaped from the rows WITHOUT draining them, then the thread, and only then the drain. Every
+step that can decline does so before anything is spent, so a budget too small to say anything,
+or a store that will not take a new thread, leaves the backlog exactly as it was. Draining
+first and discovering the problem afterwards would lose signal with nothing to show for it.
+
+An empty digest means the wake stays quiet rather than opening a thread that reports silence.
+
+**A wake opens a real conversation, with `ConversationOrigin::Notification`.** That token has
+been in the schema since v1 with nothing writing it; this is its first writer. Three things
+follow: the sweep links to the thread through the `EvidenceScope` plumbing without new
+machinery, "why did it suggest this?" has an answer the user can read, and cost metering and
+analytics work unchanged because they hang off a conversation.
+
+**The thread is named for the PLACE, never with an authored sentence** (`thread_title`). A
+folder name is data; a backend-written English title would be untranslated copy shipped into
+the database, sitting in a list beside threads the user named themselves.
+
+The sink is a plain `ChatEventSink`, the same unbounded channel the rail uses. Nobody is
+watching a rail during a wake, so the caller supplies one that drives the indicator instead.
+
 ## Not built here, and what M4b needs to know
 
-The wake JOB is not in this module yet. The approved design: reuse `run_turn` rather than fork a second turn loop
-(budget enforcement, elision, crash-safe persistence, and cost metering must not differ between the user asking and
-the agent noticing), create a real conversation with `ConversationOrigin::Notification`, and go through the chat
-runtime existing single-flight guard.
+The TAP ADAPTER is not built: mapping the crate-side per-batch rollup into `EventBundle` and
+calling `admit_if_permitted` is the remaining seam, and it belongs beside the observer
+described above. The indicator wiring is m4b surface.
 
-**A wake creates a conversation, so wake threads will appear in the rail session list.** Ten wakes over a quiet week
-is ten threads the user never started, interleaved with their own. The `origin` column is already `notification` on
-every one, so filtering needs no schema work, but the product call between filtering the default view and a separate
-affordance belongs to the dialog work.
+**A wake creates a conversation, so wake threads appear in the rail session list.** Ten wakes
+over a quiet week is ten threads the user never started, interleaved with their own. The
+`origin` column is already `notification` on every one, so filtering needs no schema work, but
+the product call between filtering the default view and a separate affordance belongs to the
+dialog work.

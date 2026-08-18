@@ -356,6 +356,30 @@ Inherit these rather than re-deriving them:
 
 Depends on M1 and M3.
 
+**Status: the pipeline and the wake job are built; the tap adapter is not.**
+
+Shipped in `agent/wake/` (54 tests): `coalesce` / `merge_bundles` over one `Merger` fold, `interest` + `wake_delay`,
+`compact`, the `Inbox` with deliver-by deadlines and restart reconciliation, `agent_inbox` (migration v6) with its
+persistence edge, the `WakeReadiness` gates, and `run_wake`. Reasoning for every decision: `agent/wake/DETAILS.md`.
+
+**§18.14 is resolved** (see that `DETAILS.md`): a second observer inside `process_live_batch`, placed after
+`detect_renames_by_inode` and the storm coalescing, handing per-batch per-folder ROLLUPS across the existing
+`IndexEvent` seam. The `downloads/` watcher coexists rather than merging, and the agent must never assume it is running.
+
+**What remains:**
+
+- **The tap adapter.** Mapping the crate-side rollup into `EventBundle` and calling `Inbox::admit_if_permitted`. The
+  observer shape follows `ChurnObserver`, which is passed `&mut` so a live batch cannot be processed without one.
+- **The scheduler that calls `run_wake`.** Something owning a timer that fires at `Inbox::next_deadline`, resolving
+  provider, model, and prompt budget the way the command layer does today, and supplying the `ChatEventSink` the
+  indicator reads.
+- **Indicator wiring (M4b surface).** Each `WakeReadiness` gap is a typed state with an action; none of them is silence.
+- **A wake creates a conversation, so wake threads appear in the rail session list.** `origin` is already `notification`
+  on every one, so filtering needs no schema work, but whether the default view filters them or they get their own
+  affordance is a product call.
+- **Two tuning knobs, deliberately guesses** (agent-spec 18.5): the unknown-importance weight (0.35) and the
+  hot/warm/cold tiers (5s / 5min / 1h). Only their ORDER is pinned as a contract.
+
 ### M6: Port the shipped rename feature onto the spine
 
 `propose_rename_plan` becomes one more producer emitting a single-group sweep, dropping its in-memory

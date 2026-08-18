@@ -62,6 +62,21 @@ impl Inbox {
         self.rows.is_empty()
     }
 
+    /// The waiting rows as scored bundles, WITHOUT draining.
+    ///
+    /// A wake shapes its digest from these before it commits to anything, so a budget too
+    /// small to say anything, or a store that will not take a new thread, costs nothing: the
+    /// rows are still waiting afterwards.
+    pub fn scored(&self) -> Vec<ScoredBundle> {
+        self.rows
+            .iter()
+            .map(|row| ScoredBundle {
+                bundle: row.bundle.clone(),
+                interest: row.interest,
+            })
+            .collect()
+    }
+
     /// The rows as they wait, for the persistence edge to write.
     pub fn rows(&self) -> &[InboxRow] {
         &self.rows

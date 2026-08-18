@@ -37,6 +37,7 @@ mod coalesce;
 mod compact;
 mod inbox;
 mod interest;
+mod job;
 mod persist;
 mod readiness;
 
@@ -49,6 +50,7 @@ pub use inbox::{Inbox, InboxRow, ReconcileReport, SETTLE_AFTER_LAUNCH, STALE_AFT
 pub use interest::{
     COLD_DELAY, FolderImportance, HOT_DELAY, HOT_THRESHOLD, Interest, WARM_DELAY, WARM_THRESHOLD, interest, wake_delay,
 };
+pub use job::{WakeOutcome, WakeParams, run_wake, thread_title};
 pub use persist::{clear, load, save_all, save_row};
 pub use readiness::{AgentGates, WakeReadiness, readiness};
 

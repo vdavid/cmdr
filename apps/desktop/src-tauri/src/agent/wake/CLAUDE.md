@@ -11,7 +11,8 @@ budgeted digest. Depth: `DETAILS.md`.
 - `compact.rs`: the digest, fitted to a hard token budget, with whatever missed a line rolled up and counted.
 - `inbox.rs`: what is waiting, when it comes due, and what a restart does to it.
 - `readiness.rs`: whether the agent may watch, and whether it may think.
-- `persist.rs`: the one file here that takes a `Connection`. Everything else is values in, values out.
+- `job.rs`: the wake itself — gates, digest, a thread, and one `run_turn`.
+- `persist.rs`: the one file here that takes a `Connection` for the inbox. Everything else is values in, values out.
 
 ## Must-knows
 
@@ -30,5 +31,7 @@ budgeted digest. Depth: `DETAILS.md`.
 - **The tap is a second observer inside `process_live_batch`, placed AFTER rename detection and storm coalescing**, and
   it hands over per-batch rollups. Never a parallel FSEvents subscription, and never per-file messages across the crate
   boundary. Why, and the `downloads/` watcher question: `DETAILS.md`.
+- **A wake reuses `run_turn` and opens a real thread** with `ConversationOrigin::Notification`, so the sweep it produces
+  points back at reasoning the user can read. Nothing is drained until the turn is certain to run.
 
 The feature end to end: `docs/specs/agent-suggested-ops-plan.md`. The store beneath: `../store/proposals/CLAUDE.md`.

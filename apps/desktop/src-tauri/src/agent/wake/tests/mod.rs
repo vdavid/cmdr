@@ -4,6 +4,7 @@ mod coalesce;
 mod compact;
 mod inbox;
 mod interest;
+mod job;
 mod readiness;
 
 use super::*;
