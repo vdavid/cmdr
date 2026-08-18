@@ -7,7 +7,7 @@
 use tokio::time::Duration;
 
 use crate::commands::util::{IpcError, blocking_result_with_timeout};
-use crate::go_to_path::history::{self, RecentPathEntry};
+use crate::go_to_path::history::{MAX_RECENTS, RECENT_PATHS, RecentPathEntry};
 use crate::go_to_path::{self, GoToPathResolution};
 
 /// 2s matches the read timeout other filesystem-touching commands use.
@@ -25,7 +25,7 @@ pub async fn resolve_go_to_path(input: String, base_dir: String) -> Result<GoToP
 #[tauri::command]
 #[specta::specta]
 pub fn get_recent_paths() -> Vec<RecentPathEntry> {
-    history::list_entries()
+    RECENT_PATHS.entries(None)
 }
 
 /// Adds a recent-path entry. Dedupes by resolved path, moves the match to the
@@ -33,7 +33,7 @@ pub fn get_recent_paths() -> Vec<RecentPathEntry> {
 #[tauri::command]
 #[specta::specta]
 pub fn add_recent_path(app: tauri::AppHandle, entry: RecentPathEntry) -> Result<(), String> {
-    history::add_entry(&app, entry);
+    RECENT_PATHS.add(&app, entry, MAX_RECENTS);
     Ok(())
 }
 
@@ -41,7 +41,7 @@ pub fn add_recent_path(app: tauri::AppHandle, entry: RecentPathEntry) -> Result<
 #[tauri::command]
 #[specta::specta]
 pub fn remove_recent_path(app: tauri::AppHandle, id: String) -> Result<(), String> {
-    history::remove_entry(&app, &id);
+    RECENT_PATHS.remove(&app, &id);
     Ok(())
 }
 
@@ -49,6 +49,6 @@ pub fn remove_recent_path(app: tauri::AppHandle, id: String) -> Result<(), Strin
 #[tauri::command]
 #[specta::specta]
 pub fn clear_recent_paths(app: tauri::AppHandle) -> Result<(), String> {
-    history::clear_entries(&app);
+    RECENT_PATHS.clear(&app);
     Ok(())
 }

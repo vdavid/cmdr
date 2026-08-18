@@ -12,7 +12,7 @@ use genai::chat::ChatOptions;
 use crate::ai::AiTranslateError;
 
 use crate::selection::ai::{self, SelectionTranslateResult, query_builder};
-use crate::selection::history::{self, SelectionHistoryEntry};
+use crate::selection::history::{DEFAULT_MAX_COUNT, RECENT_SELECTIONS, SelectionHistoryEntry};
 
 /// Translates a natural-language selection request into a glob/regex plus optional
 /// size and date filters.
@@ -65,7 +65,7 @@ pub async fn translate_selection_query(
 #[tauri::command]
 #[specta::specta]
 pub fn get_recent_selections(limit: Option<u32>) -> Vec<SelectionHistoryEntry> {
-    history::list_entries(limit.map(|n| n as usize))
+    RECENT_SELECTIONS.entries(limit.map(|n| n as usize))
 }
 
 /// Adds a recent-selection entry. Dedupes against existing entries by canonical
@@ -77,8 +77,8 @@ pub fn add_recent_selection(
     entry: SelectionHistoryEntry,
     max_count: Option<u32>,
 ) -> Result<(), String> {
-    let cap = max_count.map(|n| n as usize).unwrap_or_else(history::default_max_count);
-    history::add_entry(&app, entry, cap);
+    let cap = max_count.map(|n| n as usize).unwrap_or(DEFAULT_MAX_COUNT);
+    RECENT_SELECTIONS.add(&app, entry, cap);
     Ok(())
 }
 
@@ -86,7 +86,7 @@ pub fn add_recent_selection(
 #[tauri::command]
 #[specta::specta]
 pub fn remove_recent_selection(app: tauri::AppHandle, id: String) -> Result<(), String> {
-    history::remove_entry(&app, &id);
+    RECENT_SELECTIONS.remove(&app, &id);
     Ok(())
 }
 
@@ -94,7 +94,7 @@ pub fn remove_recent_selection(app: tauri::AppHandle, id: String) -> Result<(), 
 #[tauri::command]
 #[specta::specta]
 pub fn clear_recent_selections(app: tauri::AppHandle) -> Result<(), String> {
-    history::clear_entries(&app);
+    RECENT_SELECTIONS.clear(&app);
     Ok(())
 }
 
@@ -103,7 +103,7 @@ pub fn clear_recent_selections(app: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub fn apply_recent_selections_max_count(app: tauri::AppHandle, max_count: u32) -> Result<(), String> {
-    history::apply_max_count(&app, max_count as usize);
+    RECENT_SELECTIONS.apply_max_count(&app, max_count as usize);
     Ok(())
 }
 

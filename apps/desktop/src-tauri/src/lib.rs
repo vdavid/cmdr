@@ -140,6 +140,7 @@ mod platform;
 pub mod priority;
 mod quick_look;
 mod quit;
+pub mod recents;
 mod redact;
 #[cfg(target_os = "macos")]
 mod reduce_transparency;
@@ -632,13 +633,13 @@ pub fn run() {
             network::known_shares::load_known_shares(app.handle());
 
             // Load persisted recent search history into the in-memory cache.
-            search::history::load_history(app.handle());
+            search::history::RECENT_SEARCHES.load(app.handle());
 
             // Same for recent selections (Selection dialog history).
-            selection::history::load_history(app.handle());
+            selection::history::RECENT_SELECTIONS.load(app.handle());
 
             // Same for recent paths (Go to path dialog history).
-            go_to_path::history::load_history(app.handle());
+            go_to_path::history::RECENT_PATHS.load(app.handle());
 
             // Load manually-added servers and inject into discovery state
             #[cfg(any(target_os = "macos", target_os = "linux"))]

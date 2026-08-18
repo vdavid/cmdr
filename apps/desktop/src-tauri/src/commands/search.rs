@@ -12,7 +12,7 @@ use crate::ai::AiTranslateError;
 use crate::search::{self, ParsedScope, SearchQuery, SearchResult, VolumeLoad};
 
 use crate::search::ai::{self, query_builder as ai_query_builder};
-use crate::search::history::{self, HistoryEntry};
+use crate::search::history::{DEFAULT_MAX_COUNT, HistoryEntry, RECENT_SEARCHES};
 
 /// The translation DTOs are defined in `search::ai::types` (business logic owns
 /// its own data) and re-exported here so the IPC surface stays at this path.
@@ -293,7 +293,7 @@ pub async fn translate_search_query(
 #[tauri::command]
 #[specta::specta]
 pub fn get_recent_searches(limit: Option<u32>) -> Vec<HistoryEntry> {
-    history::list_entries(limit.map(|n| n as usize))
+    RECENT_SEARCHES.entries(limit.map(|n| n as usize))
 }
 
 /// Adds a recent-search entry. Dedupes against existing entries by canonical key,
@@ -301,8 +301,8 @@ pub fn get_recent_searches(limit: Option<u32>) -> Vec<HistoryEntry> {
 #[tauri::command]
 #[specta::specta]
 pub fn add_recent_search(app: tauri::AppHandle, entry: HistoryEntry, max_count: Option<u32>) -> Result<(), String> {
-    let cap = max_count.map(|n| n as usize).unwrap_or_else(history::default_max_count);
-    history::add_entry(&app, entry, cap);
+    let cap = max_count.map(|n| n as usize).unwrap_or(DEFAULT_MAX_COUNT);
+    RECENT_SEARCHES.add(&app, entry, cap);
     Ok(())
 }
 
@@ -310,7 +310,7 @@ pub fn add_recent_search(app: tauri::AppHandle, entry: HistoryEntry, max_count: 
 #[tauri::command]
 #[specta::specta]
 pub fn remove_recent_search(app: tauri::AppHandle, id: String) -> Result<(), String> {
-    history::remove_entry(&app, &id);
+    RECENT_SEARCHES.remove(&app, &id);
     Ok(())
 }
 
@@ -318,7 +318,7 @@ pub fn remove_recent_search(app: tauri::AppHandle, id: String) -> Result<(), Str
 #[tauri::command]
 #[specta::specta]
 pub fn clear_recent_searches(app: tauri::AppHandle) -> Result<(), String> {
-    history::clear_entries(&app);
+    RECENT_SEARCHES.clear(&app);
     Ok(())
 }
 
@@ -327,7 +327,7 @@ pub fn clear_recent_searches(app: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub fn apply_recent_searches_max_count(app: tauri::AppHandle, max_count: u32) -> Result<(), String> {
-    history::apply_max_count(&app, max_count as usize);
+    RECENT_SEARCHES.apply_max_count(&app, max_count as usize);
     Ok(())
 }
 

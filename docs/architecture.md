@@ -173,6 +173,8 @@ All under `apps/desktop/src-tauri/src/`.
   itself runs in JS
 - `go_to_path/`: "Go to path" backend: pure path resolution + fixed-cap recent-paths store. IPC in
   `commands/go_to_path.rs`
+- `recents/`: The persisted recents list all three of those keep (dedupe, cap, durable JSON file, quarantine). A
+  consumer supplies the entry type and its dedupe key. See `apps/desktop/src-tauri/src/recents/CLAUDE.md`
 - `font_metrics/`: Binary font metrics cache, per-directory width calculation
 - `window_state/`: Main-window size/position persistence across launches (`.window-state.json`). Replaces
   `tauri-plugin-window-state`. Placement only; the frontend owns showing the window

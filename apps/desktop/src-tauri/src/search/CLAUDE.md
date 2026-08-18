@@ -7,7 +7,7 @@ to the volume that owns it; unscoped means the boot volume.
 `execute.rs` routes and runs the index-only search, `execute/live_run.rs` the live one (dialog and MCP) over
 `execute/coverage.rs`'s model; `live.rs` the run registry and `ResultStream` (events and the one-shot fold:
 `live/CLAUDE.md`); `engine.rs` scans the arena (`index.rs`, per volume via `volumes.rs`); `matcher.rs`, `excludes.rs`,
-`ranking.rs` judge and order a row; `types.rs` / `query.rs` the data, `history.rs` recent searches, `ai/` NL translation
+`ranking.rs` judge and order a row; `types.rs` / `query.rs` the data, `history.rs` the recent-searches entry over `crate::recents`, `ai/` NL translation
 (`ai/CLAUDE.md`).
 
 ## Must-knows
@@ -42,7 +42,6 @@ to the volume that owns it; unscoped means the boot volume.
   (16 B for a value needing 8), and ❌ never compare against the sentinel — `.get()` is the only read. `None` is
   MEANINGFUL in both (a NULL `logical_size` is a hardlink-deduped row, not a zero-byte file), so ❌ never collapse it
   into `0`. DETAILS § The arena row.
-- **`history.rs` holds two locks** (cache `Mutex`, then `DISK_LOCK`): ❌ no `fs` call or `.await` under a guard.
 
 Rationale, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

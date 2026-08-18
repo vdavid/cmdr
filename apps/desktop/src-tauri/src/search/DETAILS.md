@@ -516,18 +516,19 @@ ceiling is precisely the guard that can't fire on the path that needs it.
 
 ## History store (`history.rs`)
 
-- **Persistence**: `{app_data_dir}/search-history.json`, schema-versioned via `_schemaVersion` (currently 1). On parse
-  failure or version mismatch, rename to `.broken` and start fresh (corrupt file kept one rotation for debugging). A
-  `_schemaVersion` mismatch quarantines rather than migrating in place — there's only v1, so a migrator would be
-  speculative; when v2 lands, replace the quarantine branch with a `match` on the version.
+The list itself (persistence to `{app_data_dir}/search-history.json`, dedupe, cap, quarantine, locking) is
+`crate::recents`; see `apps/desktop/src-tauri/src/recents/DETAILS.md`. What lives here:
+
+- **`RECENT_SEARCHES`**, the `RecentsFile<HistoryEntry>` static, plus the entry shape and its `RecentEntry` impl.
 - **Canonical dedupe key** (compare-time only, never persisted): `mode | normalized_query | filters | scope |
-  case_sensitive | exclude_system_dirs`. Same key = same search; the most recent copy wins (move-to-top).
-- **Cap**: `search.recentSearches.maxCount` (default 1000). `apply_max_count` trims in-memory on live-apply; `0` clears
-  and short-circuits future adds.
-- **Concurrency**: a `Mutex<HistoryStore>` cache plus a separate `DISK_LOCK` for the read-modify-write. Drop the cache
-  guard before any `fs` call, and never `.await` while holding a guard.
-- **Shared types**: `selection/` re-exports `HistoryMode` / `HistoryFilters` one-way; the entry structs stay separate.
-  If the two mode sets ever fork, copy the types rather than widening the re-export.
+  case_sensitive | exclude_system_dirs`. Same key = same search; the most recent copy wins (move-to-top). Six segments
+  against Selection's four, pinned by `key_carries_scope_and_exclude_system_dirs` in `history.rs`.
+- **Cap**: `search.recentSearches.maxCount` (`DEFAULT_MAX_COUNT` = 1000), resolved per call in `commands/search.rs`.
+  `apply_max_count` trims in-memory on live-apply; `0` clears and short-circuits future adds.
+- **Shared types**: `HistoryMode`, `HistoryFilters`, and the key-building helpers (`normalize_query`,
+  `filters_fingerprint`, `flag`) live here and `selection/` uses them one-way; the entry structs stay separate. Sharing
+  the helpers is what keeps a newly-added filter field from reaching one key and not the other. If the two mode sets ever
+  fork, copy the types rather than widening the re-export.
 
 ## AI backend resolution
 

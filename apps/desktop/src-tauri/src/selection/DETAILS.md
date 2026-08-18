@@ -35,8 +35,9 @@ See `ai/CLAUDE.md` for prompt design, parser tolerances, caveat/kind defaulting,
   The schemas already diverge (`scope` and `exclude_system_dirs` are irrelevant for Selection), and coupling two
   unrelated migrations forever didn't earn its keep. Two files cost nothing at runtime.
 - **Re-export `HistoryMode` and `HistoryFilters` from `search::history`**: the two pure data types are identical in
-  intent across consumers. The `SelectionHistoryEntry` struct stays separate so the on-disk schema doesn't bind
-  Selection to Search's canonical-key shape. If Search's mode set or filter shape ever diverges, the re-export drops out
+  intent across consumers, and Selection builds its key with the same `normalize_query` / `filters_fingerprint` helpers,
+  so a new filter field can't reach one key and not the other. The `SelectionHistoryEntry` struct stays separate so the
+  on-disk schema doesn't bind Selection to Search's canonical-key shape. If Search's mode set or filter shape ever diverges, the re-export drops out
   and the types fork; the wiring is isolated enough that the change is mechanical.
 - **Cloud-only AI**: folder samples weigh 1–3k tokens; the prompt plus completion lives at ~4–5k tokens. Local 4–8K
   context models often can't fit the payload, and quality on small models is unreliable for pattern inference. The

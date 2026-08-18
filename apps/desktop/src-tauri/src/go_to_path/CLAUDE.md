@@ -7,8 +7,8 @@ reasoning plus the recent-paths store; the IPC layer (`commands/go_to_path.rs`) 
 
 - **`mod.rs`**: pure `resolve(input, base_dir) -> GoToPathResolution` (`~` expansion, relative-to-`base_dir` join,
   lexical `.`/`..` normalization, nearest-ancestor walk, dir/file classify) + unit tests
-- **`history.rs`**: recent-paths store (`RecentPathEntry`, `RecentPathsStore`): in-memory `Mutex` + `OnceLock`, atomic
-  temp+rename write, dedupe by resolved path, fixed cap, schema-version quarantine
+- **`history.rs`**: the `RecentPathEntry` shape and `RECENT_PATHS`, a `crate::recents` list keyed on the resolved path
+  with a fixed cap
 
 Decision rationale and v1 limitations: `DETAILS.md`.
 
@@ -27,10 +27,8 @@ Decision rationale and v1 limitations: `DETAILS.md`.
   file-vs-dir classify, so a symlinked dir navigates into the symlink path and the listing follows it (intended).
 - **`resolve_go_to_path` is async + `blocking_with_timeout` (2s)** because `metadata`/`exists` can block on a hung
   NFS/SMB mount (AGENTS.md § Platform constraints).
-- **Recents store keys on the resolved target, not the raw input.** Entry `{ id, timestamp, path }` where `path` is the
-  dir, file path, or nearest ancestor we actually jumped to. Dedupe by resolved-path string with move-to-top. Fixed cap
-  is a const `MAX_RECENTS = 10` (not a setting); the dialog shows up to 10 via digit keys 1-9, 0. File
-  `go-to-path-history.json` in the app data dir; schema-versioned, a parse error or version mismatch quarantines to
-  `.broken` and starts fresh. Populated only by manual dialog jumps (frontend convention, not enforced here).
-- **Lock-poison: keep the `search/history.rs` idiom verbatim** (`.lock().unwrap_or_else(|e| e.into_inner())` and
-  `match … Err(poisoned) => poisoned.into_inner()`). "Simplifying" to `.lock().unwrap()` trips the `lock-poison` check.
+- **Recents keys on the resolved target, not the raw input.** Entry `{ id, timestamp, path }` where `path` is the dir,
+  file path, or nearest ancestor we actually jumped to; the dedupe key IS that string, so a re-jump moves the row to the
+  top. Cap is the const `MAX_RECENTS = 10` (not a setting), passed per call: the dialog shows up to 10 via digit keys
+  1-9, 0. The file, quarantine, and locking are `crate::recents` (`apps/desktop/src-tauri/src/recents/CLAUDE.md`). Populated only by manual
+  dialog jumps (frontend convention, not enforced here).
