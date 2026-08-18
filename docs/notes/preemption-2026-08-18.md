@@ -27,10 +27,10 @@ and 200,000).
 - **Tree**: a `big` folder of N directories with one file each, plus a `zzz-visited` folder that sorts last. Flat on
   purpose, so one frontier root holds all of it. The run builds three trees of that size, so N dominates its wall time.
 - ⚠️ **Past ~12,000 children in one folder, the fixture stops measuring preemption and starts measuring the phase
-  machine's own cost on a huge directory**, which is strongly superlinear: 12,000 runs the whole bench in 8.9 s, 60,000
-  spends over ten minutes in a single fixture's teardown, and 200,000 blows a 600 s patience budget with nobody
-  preempting anything. That is the FLAT shape's cost, ❌ not preemption's, and it deserves its own look. Arm 1 is
-  unaffected (it times one walk, not a machine run); arm 2 below therefore only has the 12,000 row.
+  machine's own cost on a huge directory.** At 12,000 the whole bench runs in 8.9 s. At 60,000 and at 200,000 the
+  machine does not finish covering the tree inside a 600 s budget, with nobody preempting anything — three runs, two of
+  them on an otherwise idle machine. That is the FLAT shape's cost, ❌ not preemption's, and it is written up as an open
+  question below. Arm 1 is unaffected (it times one walk, not a machine run); arm 2 therefore only has the 12,000 row.
 - ⚠️ **Machine load moves the walk numbers a lot, though not the handover.** A first attempt at N = 60,000 ran while
   several agents were hammering the same disk: building one tree took ~35 minutes (17 ms per entry) and the phase
   machine blew the 600 s patience budget covering it, while its cancel-to-join figures came out within 2 ms of the quiet
@@ -111,7 +111,9 @@ exactly that).
 - **It says nothing about the search-side handover's latency.** `Claim::preempt` waits up to `YIELD_WAIT` for a
   background walk to let go; the arms above measure the holder's side of that wait, not a real search's end-to-end time
   to first result.
-- **It leaves a question it stumbled into.** One directory with 60,000 to 200,000 children costs the phase machine
-  orders of magnitude more than 12,000 does, most of it after the walk is over. Nothing here says whether that is the
-  aggregate roll-up, the branch-watch registration, or the writer's own teardown, and a photo dump or a Maildir really
-  does reach those numbers.
+- ⚠️ **It leaves a question it stumbled into, and somebody should take it.** A first index over ONE directory of 60,000
+  children does not finish in 600 s, where 12,000 finishes in about two — measured three times, twice on an idle
+  machine, with no preemption involved. Nothing here says which stage owns it (the walk, the aggregate roll-up, the
+  branch-watch registration, or the writer), only that it is not the walk's cancel path. A photo dump, a Maildir, or a
+  downloads folder really does reach those numbers, so this is a plausible "the first index never finishes" report
+  waiting to happen. Reproduce with `CMDR_PREEMPTION_BENCH_DIRS=60000` against `preemption_bench.rs`.
