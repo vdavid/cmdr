@@ -131,7 +131,7 @@ describe('the directory names a rename validates against', () => {
     vi.mocked(getFileRange).mockImplementation(() => new Promise((resolve) => pending.push(resolve)) as never)
     const siblings = createSiblingNames()
 
-    siblings.ensure(DIR) // the listing the pane is leaving
+    void siblings.ensure(DIR) // the listing the pane is leaving, deliberately left running
     const live = siblings.ensure({ listingId: 'lst-2', includeHidden: false, parentPath: '/other', totalCount: 2 })
     pending[0]([{ name: 'a.txt' }]) // the abandoned read comes back first
     await new Promise((settle) => setTimeout(settle, 0))

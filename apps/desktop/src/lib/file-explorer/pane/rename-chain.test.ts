@@ -300,7 +300,7 @@ describe('chaining the rename to the next file with the arrow keys', () => {
   it('leaves the editor alone when the neighbour cannot be read at all', async () => {
     const listing = chainListing(['a.txt', 'b.txt'])
     listing.unload(2)
-    vi.mocked(getFileAt).mockResolvedValue(null as never)
+    vi.mocked(getFileAt).mockResolvedValue(null)
     const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
 
     flow.startRename()
