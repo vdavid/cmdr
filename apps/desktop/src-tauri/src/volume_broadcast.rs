@@ -9,7 +9,8 @@
 //! succession, or MTP connect immediately after USB hotplug).
 
 use crate::ignore_poison::IgnorePoison;
-use log::{debug, error, warn};
+use crate::volume_listing::{self, ListingOutcome, LocationInfo};
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
@@ -92,19 +93,6 @@ pub fn emit_volumes_changed_now() {
     });
 }
 
-// ============================================================================
-// Platform-specific list_locations() dispatch
-// ============================================================================
-
-#[cfg(target_os = "macos")]
-use crate::volumes::LocationInfo;
-
-#[cfg(target_os = "linux")]
-use crate::volumes_linux::LocationInfo;
-
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-use crate::stubs::volumes::VolumeInfo as LocationInfo;
-
 /// Typed `volumes-changed` Tauri event. The struct name kebab-cases to the wire
 /// event name (`volumes-changed`) via `tauri_specta::Event`. The TS payload type
 /// and a typed `events.volumesChanged.listen(...)` helper are generated into
@@ -152,47 +140,9 @@ pub struct VolumeContextAction {
     pub volume_name: String,
 }
 
-#[cfg(target_os = "macos")]
-fn list_locations() -> Vec<LocationInfo> {
-    crate::volumes::list_locations()
-}
-
-#[cfg(target_os = "linux")]
-fn list_locations() -> Vec<LocationInfo> {
-    crate::volumes_linux::list_locations()
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-fn list_locations() -> Vec<LocationInfo> {
-    crate::stubs::volumes::list_volumes()
-}
-
-// ============================================================================
-// MTP volume category
-// ============================================================================
-
-#[cfg(target_os = "macos")]
-use crate::volumes::LocationCategory;
-
-#[cfg(target_os = "linux")]
-use crate::volumes_linux::LocationCategory;
-
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-use crate::stubs::volumes::LocationCategory;
-
 // ============================================================================
 // Emission
 // ============================================================================
-
-/// How one attempt at listing local volumes ended.
-enum ListingOutcome {
-    /// The listing returned. This becomes the new last-good set.
-    Listed(Vec<LocationInfo>),
-    /// The listing didn't finish inside [`LIST_TIMEOUT`].
-    TimedOut,
-    /// The blocking task panicked, so no list is coming.
-    Panicked,
-}
 
 /// The local volumes to publish for one `outcome`, and whether the result is flagged
 /// incomplete — folding [`LAST_GOOD_LOCAL`] in. Split out of [`do_emit`] so the rule
@@ -223,32 +173,13 @@ async fn do_emit() {
         }
     };
 
-    // Compute local volumes with a timeout (`list_locations` can block on a hung mount,
-    // or wait for a blocking-pool thread another subsystem is hogging).
-    let outcome = match tokio::time::timeout(LIST_TIMEOUT, tokio::task::spawn_blocking(list_locations)).await {
-        Ok(Ok(vols)) => ListingOutcome::Listed(vols),
-        Ok(Err(e)) => {
-            error!("volumes-changed: spawn_blocking panicked: {}", e);
-            ListingOutcome::Panicked
-        }
-        Err(_) => {
-            warn!("volumes-changed: list_locations timed out after {:?}", LIST_TIMEOUT);
-            ListingOutcome::TimedOut
-        }
-    };
+    // Discovery gets a timeout of its own here rather than going through
+    // `volume_listing::list_with_timeout`, because this caller has somewhere to fall
+    // back to: [`LAST_GOOD_LOCAL`] takes the place of the empty list a bare timeout
+    // would publish.
+    let outcome = volume_listing::discover_local(LIST_TIMEOUT).await;
     let (local_volumes, timed_out) = publishable(outcome, &mut LAST_GOOD_LOCAL.lock_ignore_poison());
-
-    // Append MTP volumes
-    let mut volumes = local_volumes;
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
-    append_mtp_volumes(&mut volumes).await;
-
-    // Copy across what only the registered `Volume` knows: its capability
-    // surface, plus (macOS) its SMB connection state.
-    #[cfg(target_os = "macos")]
-    crate::volumes::enrich_from_volume_registry(&mut volumes);
-    #[cfg(target_os = "linux")]
-    crate::volumes_linux::enrich_from_volume_registry(&mut volumes);
+    let volumes = volume_listing::complete(local_volumes).await;
 
     debug!(
         "Emitting volumes-changed ({} volumes, timed_out={})",
@@ -261,43 +192,6 @@ async fn do_emit() {
     };
     if let Err(e) = payload.emit(app) {
         error!("Failed to emit volumes-changed: {}", e);
-    }
-}
-
-/// Appends connected MTP device storages to the volume list.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-async fn append_mtp_volumes(volumes: &mut Vec<LocationInfo>) {
-    let devices = crate::mtp::connection_manager().get_all_connected_devices().await;
-    for device in devices {
-        let multi = device.storages.len() > 1;
-        let device_name = device
-            .device
-            .product
-            .as_deref()
-            .or(device.device.manufacturer.as_deref())
-            .unwrap_or("Mobile device");
-        for storage in &device.storages {
-            let name = if multi {
-                format!("{} - {}", device_name, storage.name)
-            } else {
-                device_name.to_string()
-            };
-            volumes.push(LocationInfo {
-                id: format!("{}:{}", device.device.id, storage.id),
-                name,
-                path: format!("mtp://{}/{}", device.device.id, storage.id),
-                category: LocationCategory::MobileDevice,
-                icon: None,
-                is_ejectable: true,
-                mount_is_read_only: storage.is_read_only,
-                is_disk_image: false,
-                fs_type: Some("mtp".to_string()),
-                supports_trash: false,
-                smb_connection_state: None,
-                usb_speed: device.device.usb_speed,
-                capabilities: None,
-            });
-        }
     }
 }
 

@@ -5,11 +5,7 @@
 //! good set, and only a failure before any successful listing publishes nothing.
 
 use super::{ListingOutcome, LocationInfo, publishable};
-
-#[cfg(target_os = "macos")]
-use crate::volumes::LocationCategory;
-#[cfg(target_os = "linux")]
-use crate::volumes_linux::LocationCategory;
+use crate::volume_listing::LocationCategory;
 
 fn volume(id: &str) -> LocationInfo {
     LocationInfo {
