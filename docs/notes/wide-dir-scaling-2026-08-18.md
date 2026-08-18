@@ -8,8 +8,8 @@ unwalked child becomes a frontier root of its own, each root's walk ends with a 
 handler recomputes the wide parent from all of its children — once per root. At 60,000 children that is ~73 ms of
 database work per root, 60,000 times.
 
-**It is slow, ❌ not wedged.** The reproduction was still making forward progress at 9.7 roots per second when it hit
-the budget, and would have finished in roughly another 68 minutes.
+**It is slow rather than wedged.** The reproduction was still making forward progress at 9.7 roots per second when it
+hit the budget, and would have finished in roughly another 68 minutes.
 
 **A real user reaches it by opening a folder while the drive indexes**, which is the most ordinary thing they do.
 
@@ -17,7 +17,7 @@ the budget, and would have finished in roughly another 68 minutes.
 
 Hardware: David's MacBook (Apple silicon, APFS, macOS 25.5), 2026-08-18, on `worktree-wide-dir-scaling` at `9191903a5` —
 the same commit `preemption-2026-08-18.md` was taken on, so the two are directly comparable. ⚠️ **The machine was not
-idle**: two Cmdr builds sat at ~99% CPU throughout. That inflates the absolute numbers and ❌ can't explain any of the
+idle**: two Cmdr builds sat at ~99% CPU throughout. That inflates the absolute numbers and can't explain any of the
 ratios below, which are taken between arms of the same run.
 
 - `crates/cmdr-index/src/indexing/lifecycle/phases/tests/wide_dir_bench.rs`, `#[ignore]`d, release build.
@@ -45,7 +45,7 @@ question found.
 ## 2. What the open question actually found
 
 Re-running the preemption bench at `CMDR_PREEMPTION_BENCH_DIRS=60000` reproduces the failure exactly (1,332 s, then
-`timed out after 600.0s waiting for the phases to finish`). **It is the SECOND arm that blows the budget, ❌ not the
+`timed out after 600.0s waiting for the phases to finish`). **The arm that blows the budget is the SECOND one, not the
 first**, so `preemption-2026-08-18.md`'s "with no preemption involved" was wrong: `lsof` on the running process showed
 `index-preemption-bench-after.db` as the only index open, and the handover arm's table had already printed.
 
@@ -53,7 +53,7 @@ The arm that stalls is the one where somebody opens a folder. That is the whole 
 12,000-against-60,000 gap into a **cliff rather than a curve**: the machine hears about an open folder on the progress
 reporter's 500 ms tick, so preemption can only land mid-walk once the wide directory takes longer than that to walk. On
 this hardware the walk of 12,000 children is ~180 ms and never gets stopped; 60,000 is ~2.4 s and does. The threshold
-sits somewhere around 12,000–15,000 children, and it is a property of the timing, ❌ not of the width.
+sits somewhere around 12,000–15,000 children, and it is a property of the timing rather than of the width.
 
 **What preemption leaves behind is the actual problem**, and preemption is only one of several ways to arrive at it (§
 5).
@@ -123,7 +123,7 @@ Past ~1,000 children the roll-up costs more than the walk it follows; past a few
 reach that on ordinary machines. **So: yes, a real user can hit this**, and the trigger is opening a folder while their
 drive is being indexed for the first time.
 
-⚠️ **The end-to-end 600 s reproduction is over a synthetic tree, ❌ not the shipping app.** The mechanism is in product
+⚠️ **The end-to-end 600 s reproduction is over a synthetic tree, not the shipping app.** The mechanism is in product
 code and the ablation attributes it, but nobody has driven the real app into it, and the width where preemption starts
 landing mid-walk is hardware-dependent.
 
@@ -152,7 +152,7 @@ queue drained at the same point turns W repairs of one wide parent into one.
 - It has a durability edge. Today each repair commits with its message, so a crash mid-first-index leaves ancestors
   correct as of the last one. Coalesced, a crash inside a burst leaves the wide parent drifted with nothing remembering
   it, so the fix owes an answer there (the completion sequence's `BackfillMissingDirStats` and `PayLedgerIfUnpaid` heal
-  a run that finishes, ❌ not one that dies).
+  a run that finishes, and neither runs for one that dies).
 - ❌ It must not reuse `DeferredRepairs`. That queue is drift telemetry: it warns on its first entry, caps at 1,024 ids,
   and GIVES UP after five attempts. On the routine path those are all wrong — a dropped roll-up is a permanently wrong
   size, and the warning would fire on every first index.
@@ -173,5 +173,5 @@ in place for a directory an order of magnitude wider.
 - **A stop followed immediately by a start covers nothing.** Building the reproduction turned this up: `stop_indexing`
   only CANCELS, and a `start_volume` before the dying walk has released its ground hands the new machine a frontier
   every root of which is still claimed, so it walks nothing, runs out of passes, and finishes with the frontier intact.
-  `completion_retry` re-arms a minute later, so it self-heals, and a real relaunch is a new process. Worth a look, ❌
-  not worth a fix on this evidence.
+  `completion_retry` re-arms a minute later, so it self-heals, and a real relaunch is a new process. Worth a look,
+  though not worth a fix on this evidence.

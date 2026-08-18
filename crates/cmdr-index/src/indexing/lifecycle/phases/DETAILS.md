@@ -69,7 +69,7 @@ queue — ❌ handing one call a whole phase's frontier looks cheaper but leaves
 its children are not, every child is a frontier root of its own, and each one's walk ends with a
 `ComputeSubtreeAggregates` whose handler recomputes that wide parent from ALL of its children — so the same ground costs
 `O(width²)` in pieces where it cost `O(width)` whole (60,000 children: 3.2 s whole, about 73 minutes in pieces). It is a
-known, unfixed cost in the writer's ancestor roll-up, ❌ not something to answer by making the machine stop less:
+known, unfixed cost in the writer's ancestor roll-up, and making the machine stop less is the wrong answer to it:
 `docs/notes/wide-dir-scaling-2026-08-18.md` names the mechanism and what a fix involves.
 
 **The gaps alone are not a fine enough grain**, and that is why `walk_group` also stops the walk it is inside. A

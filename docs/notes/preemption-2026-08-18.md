@@ -29,7 +29,7 @@ and 200,000).
 - ⚠️ **Past ~12,000 children in one folder, the fixture stops measuring preemption and starts measuring what a STOPPED
   walk of a huge directory costs.** At 12,000 the whole bench runs in 8.9 s. At 60,000 and at 200,000 the machine does
   not finish covering the tree inside a 600 s budget. That cost is the writer's ancestor roll-up going quadratic
-  (`wide-dir-scaling-2026-08-18.md`), ❌ not preemption's own, though preemption is what triggers it here. Arm 1 is
+  (`wide-dir-scaling-2026-08-18.md`) rather than preemption's own, though preemption is what triggers it here. Arm 1 is
   unaffected (it times one walk, not a machine run); arm 2 therefore only has the 12,000 row.
 - ⚠️ **Machine load moves the walk numbers a lot, though not the handover.** A first attempt at N = 60,000 ran while
   several agents were hammering the same disk: building one tree took ~35 minutes (17 ms per entry) and the phase
