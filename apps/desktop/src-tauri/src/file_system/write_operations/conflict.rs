@@ -16,6 +16,7 @@ use super::types::{
     ConflictId, ConflictInfo, ConflictResolution, OperationEventSink, WriteConflictEvent, WriteConflictResolvedEvent,
     WriteOperationConfig, WriteOperationError,
 };
+use super::validation::path_exists_or_is_symlink;
 
 // ============================================================================
 // Apply-to-all state (two-bucket latches)
@@ -350,15 +351,99 @@ fn apply_resolution(
 
 /// Builds the `counter`-th candidate name under the shared ` (N)` dedup
 /// convention: `counter == 0` is the bare `stem[.ext]`, `1..` appends ` (N)`
-/// before the extension. This is the ONE place the convention lives —
-/// `find_unique_name` and the clipboard-paste writer both go through it so the
-/// two numbering paths can't drift.
+/// before the extension. This is the ONE place the convention is written:
+/// `find_unique_name`, `next_available_name`, the volume namer
+/// (`transfer/volume/conflict.rs::find_unique_volume_name`), and the
+/// clipboard-paste writer all go through it, so the numbering paths can't drift.
 pub(super) fn numbered_name(stem: &str, ext: Option<&str>, counter: u32) -> String {
     match (ext, counter) {
         (Some(e), 0) => format!("{stem}.{e}"),
         (None, 0) => stem.to_string(),
         (Some(e), n) => format!("{stem} ({n}).{e}"),
         (None, n) => format!("{stem} ({n})"),
+    }
+}
+
+/// Reads a trailing ` (N)` off a file stem so a search *continues* the series
+/// rather than nesting inside it: duplicating `photo (1).jpg` gives
+/// `photo (2).jpg`, never `photo (1) (1).jpg`. Returns the base to number from
+/// and the first counter to try.
+///
+/// Pure, and the only rule for what a sequence IS. Searches reach it through
+/// [`NameCandidates`] rather than calling it directly.
+///
+/// What counts as a sequence is deliberately narrow, because everything else is
+/// somebody's filename:
+/// - The separating space is required, and the digits must be ASCII, so
+///   `Report (final).pdf`, `photo(1).jpg`, and `photo (+1).jpg` are all plain text.
+/// - Zero padding isn't a format to preserve: `photo (007)` continues at `(8)`.
+/// - A number with no `u32` successor (too large to parse, or `u32::MAX`) is
+///   plain text too, which also keeps the returned counter always advanceable.
+pub(super) fn split_sequence(stem: &str) -> (&str, u32) {
+    if let Some(without_close) = stem.strip_suffix(')')
+        && let Some((base, digits)) = without_close.rsplit_once(" (")
+        && !digits.is_empty()
+        && digits.bytes().all(|b| b.is_ascii_digit())
+        && let Ok(current) = digits.parse::<u32>()
+        && let Some(next) = current.checked_add(1)
+    {
+        return (base, next);
+    }
+    (stem, 1)
+}
+
+/// The ` (N)` candidate sequence for a path: where to put the result, the base
+/// to number from (any trailing sequence already split off by
+/// [`split_sequence`]), and the counter to try next.
+///
+/// This is the whole of what the ` (N)` searches share. Each walks the same
+/// candidates and differs only in how it TESTS one: [`find_unique_name`]
+/// reserves with `O_CREAT|O_EXCL` and has to keep advancing when it loses that
+/// race, [`next_available_name`] only probes, and the volume namer
+/// (`transfer/volume/conflict.rs::find_unique_volume_name`) does either
+/// depending on the backend. A search loop can't be shared across that
+/// difference, so this carries the candidates and the searches keep their loops.
+pub(super) struct NameCandidates<'a> {
+    parent: &'a Path,
+    base: String,
+    extension: Option<String>,
+    counter: u32,
+    /// Where `counter` started, so a search that bounds its own effort can count
+    /// ATTEMPTS. A name that already ends in a high ` (N)` starts the sequence
+    /// there, so the counter's absolute value says nothing about effort spent.
+    start: u32,
+}
+
+impl<'a> NameCandidates<'a> {
+    pub(super) fn for_path(path: &'a Path) -> Self {
+        let stem = path
+            .file_stem()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_default();
+        let (base, counter) = split_sequence(&stem);
+        Self {
+            parent: path.parent().unwrap_or(Path::new("")),
+            base: base.to_string(),
+            extension: path.extension().map(|s| s.to_string_lossy().to_string()),
+            counter,
+            start: counter,
+        }
+    }
+
+    /// The candidate to try right now.
+    pub(super) fn current(&self) -> PathBuf {
+        self.parent
+            .join(numbered_name(&self.base, self.extension.as_deref(), self.counter))
+    }
+
+    /// Moves past a candidate the caller found taken.
+    pub(super) fn advance(&mut self) {
+        self.counter = self.counter.saturating_add(1);
+    }
+
+    /// How many candidates this search has already rejected.
+    pub(super) fn attempts(&self) -> u32 {
+        self.counter.saturating_sub(self.start)
     }
 }
 
@@ -381,22 +466,15 @@ pub(super) fn numbered_name(stem: &str, ext: Option<&str>, counter: u32) -> Stri
 /// empty file before the caller writes), the caller's write still succeeds
 /// (creating fresh).
 pub(super) fn find_unique_name(path: &Path) -> PathBuf {
-    let parent = path.parent().unwrap_or(Path::new(""));
-    let stem = path
-        .file_stem()
-        .map(|s| s.to_string_lossy().to_string())
-        .unwrap_or_default();
-    let extension = path.extension().map(|s| s.to_string_lossy().to_string());
+    let mut candidates = NameCandidates::for_path(path);
 
-    let mut counter: u32 = 1;
     loop {
-        let new_name = numbered_name(&stem, extension.as_deref(), counter);
-        let new_path = parent.join(new_name);
+        let new_path = candidates.current();
 
         match fs::OpenOptions::new().write(true).create_new(true).open(&new_path) {
             Ok(_) => return new_path,
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                counter = counter.saturating_add(1);
+                candidates.advance();
             }
             Err(_) => {
                 // Anything else (parent unwritable, ENOSPC, …) leaks back to
@@ -406,6 +484,34 @@ pub(super) fn find_unique_name(path: &Path) -> PathBuf {
                 return new_path;
             }
         }
+    }
+}
+
+/// Picks the next free ` (N)` name **without reserving it** — same convention
+/// and same sequence rule as [`find_unique_name`], but a probe and no create.
+///
+/// For callers that reserve the name themselves in a way an `O_CREAT|O_EXCL`
+/// *file* placeholder would get in the way of: a directory claims its name with
+/// `create_dir`, and a copy that lands through the ordinary non-overwrite write
+/// path would otherwise find `find_unique_name`'s placeholder sitting at the
+/// destination and raise a conflict against it.
+///
+/// Occupancy uses `path_exists_or_is_symlink`, so a dangling symlink counts as
+/// taken; handing that name back would let the caller's write follow the
+/// symlink to wherever it points.
+#[allow(
+    dead_code,
+    reason = "the non-reserving half of the ` (N)` convention, kept beside the reserving half so the two stay one design; the same-folder-duplicate remap is the caller it exists for"
+)]
+pub(super) fn next_available_name(path: &Path) -> PathBuf {
+    let mut candidates = NameCandidates::for_path(path);
+
+    loop {
+        let new_path = candidates.current();
+        if !path_exists_or_is_symlink(&new_path) {
+            return new_path;
+        }
+        candidates.advance();
     }
 }
 
@@ -1214,6 +1320,176 @@ mod find_unique_name_tests {
         fs::write(&target, b"x").unwrap();
         let unique = find_unique_name(&target);
         assert_eq!(unique.file_name().unwrap().to_string_lossy(), "README (1)");
+    }
+
+    #[test]
+    fn continues_a_trailing_sequence_instead_of_nesting() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("photo (1).jpg");
+        fs::write(&target, b"x").unwrap();
+        let unique = find_unique_name(&target);
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "photo (2).jpg");
+    }
+
+    #[test]
+    fn a_sequence_skips_past_every_taken_number() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("photo (1).jpg");
+        fs::write(&target, b"x").unwrap();
+        fs::write(temp.path().join("photo (2).jpg"), b"x").unwrap();
+        fs::write(temp.path().join("photo (3).jpg"), b"x").unwrap();
+        let unique = find_unique_name(&target);
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "photo (4).jpg");
+    }
+
+    #[test]
+    fn a_non_numeric_parenthetical_is_not_a_sequence() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("Report (final).pdf");
+        fs::write(&target, b"x").unwrap();
+        let unique = find_unique_name(&target);
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "Report (final) (1).pdf");
+    }
+
+    #[test]
+    fn a_number_too_big_for_u32_is_literal_text() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("photo (99999999999).jpg");
+        fs::write(&target, b"x").unwrap();
+        let unique = find_unique_name(&target);
+        assert_eq!(
+            unique.file_name().unwrap().to_string_lossy(),
+            "photo (99999999999) (1).jpg"
+        );
+    }
+
+    #[test]
+    fn zero_padding_is_not_preserved() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("photo (007).jpg");
+        fs::write(&target, b"x").unwrap();
+        let unique = find_unique_name(&target);
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "photo (8).jpg");
+    }
+
+    #[test]
+    fn a_zero_sequence_advances_to_one() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("photo (0).jpg");
+        fs::write(&target, b"x").unwrap();
+        let unique = find_unique_name(&target);
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "photo (1).jpg");
+    }
+}
+
+#[cfg(test)]
+mod split_sequence_tests {
+    //! The pure half of the ` (N)` convention: what counts as a trailing
+    //! sequence and what is ordinary text that happens to hold parentheses.
+    use super::*;
+
+    #[test]
+    fn a_bare_stem_starts_at_one() {
+        assert_eq!(split_sequence("photo"), ("photo", 1));
+    }
+
+    #[test]
+    fn a_trailing_number_continues_from_itself() {
+        assert_eq!(split_sequence("photo (4)"), ("photo", 5));
+        assert_eq!(split_sequence("photo (0)"), ("photo", 1));
+        assert_eq!(split_sequence("photo (007)"), ("photo", 8));
+    }
+
+    #[test]
+    fn only_the_last_parenthetical_counts() {
+        assert_eq!(split_sequence("photo (2) (3)"), ("photo (2)", 4));
+        assert_eq!(split_sequence("photo (2) (draft)"), ("photo (2) (draft)", 1));
+    }
+
+    #[test]
+    fn text_in_parentheses_is_not_a_sequence() {
+        assert_eq!(split_sequence("Report (final)"), ("Report (final)", 1));
+        assert_eq!(split_sequence("photo ()"), ("photo ()", 1));
+        assert_eq!(split_sequence("photo (12a)"), ("photo (12a)", 1));
+        // `u32::from_str` accepts a leading `+`; the convention never writes one.
+        assert_eq!(split_sequence("photo (+1)"), ("photo (+1)", 1));
+        // Non-ASCII digits parse in no locale we generate.
+        assert_eq!(split_sequence("photo (١)"), ("photo (١)", 1));
+    }
+
+    #[test]
+    fn the_separating_space_is_required() {
+        assert_eq!(split_sequence("photo(1)"), ("photo(1)", 1));
+        assert_eq!(split_sequence("(1)"), ("(1)", 1));
+    }
+
+    #[test]
+    fn a_number_that_cannot_advance_is_literal_text() {
+        // Doesn't fit `u32` at all.
+        assert_eq!(split_sequence("photo (99999999999)"), ("photo (99999999999)", 1));
+        // Fits, but has no successor, so continuing the sequence is impossible.
+        let at_max = format!("photo ({})", u32::MAX);
+        assert_eq!(split_sequence(&at_max), (at_max.as_str(), 1));
+    }
+}
+
+#[cfg(test)]
+mod next_available_name_tests {
+    //! The non-reserving sibling of `find_unique_name`: same convention, same
+    //! sequence rule, but it only probes and never creates. Callers that reserve
+    //! the name themselves (a directory claiming its own name with `create_dir`)
+    //! need the probe without the placeholder a file reservation leaves behind.
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn picks_the_next_free_name_without_creating_anything() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("notes.txt");
+        fs::write(&target, b"original").unwrap();
+
+        let picked = next_available_name(&target);
+
+        assert_eq!(picked.file_name().unwrap().to_string_lossy(), "notes (1).txt");
+        assert!(!picked.exists(), "the probe must not reserve the name");
+        // Nothing was reserved, so a second call answers the same.
+        assert_eq!(next_available_name(&target), picked);
+    }
+
+    #[test]
+    fn skips_names_already_taken_and_continues_a_sequence() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("photo (1).jpg");
+        fs::write(&target, b"x").unwrap();
+        fs::write(temp.path().join("photo (2).jpg"), b"x").unwrap();
+
+        let picked = next_available_name(&target);
+        assert_eq!(picked.file_name().unwrap().to_string_lossy(), "photo (3).jpg");
+    }
+
+    #[test]
+    fn works_for_a_directory_source() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("docs");
+        fs::create_dir(&target).unwrap();
+
+        let picked = next_available_name(&target);
+        assert_eq!(picked.file_name().unwrap().to_string_lossy(), "docs (1)");
+        assert!(!picked.exists());
+    }
+
+    #[test]
+    fn a_dangling_symlink_counts_as_taken() {
+        // `Path::exists()` follows symlinks and reports `false` for a broken
+        // one; handing that name back would let the caller's write follow the
+        // symlink to wherever it points.
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("notes.txt");
+        fs::write(&target, b"x").unwrap();
+        std::os::unix::fs::symlink(temp.path().join("gone"), temp.path().join("notes (1).txt")).unwrap();
+
+        let picked = next_available_name(&target);
+        assert_eq!(picked.file_name().unwrap().to_string_lossy(), "notes (2).txt");
     }
 }
 

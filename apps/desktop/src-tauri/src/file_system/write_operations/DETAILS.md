@@ -65,7 +65,27 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   mirror both the behavior and the order with `Volume::create_directory_all(dest)`; see `../volume/DETAILS.md`
   § "Recursive destination create".
 - **`conflict.rs::numbered_name(stem, ext, counter)` is the ONE ` (N)` formatter** (`counter 0` = bare, `1..` = ` (N)`).
-  `find_unique_name` and `paste_clipboard.rs` both go through it, so the two numbering paths can't drift.
+  `find_unique_name`, `next_available_name`, `paste_clipboard.rs`, and the volume namer
+  (`transfer/volume/conflict.rs::find_unique_volume_name`) all go through it, so the numbering paths can't drift.
+  `archive_edit/conflicts.rs::find_unique_inner` is deliberately outside this: it numbers slash-joined inner-path
+  strings against an `ArchiveIndex`, and its doc comment says so.
+- **`conflict.rs::split_sequence(stem) -> (base, next_counter)` is the ONE sequence rule.** It reads a trailing ` (N)`
+  off a stem so a search continues the series instead of nesting: duplicating `photo (1).jpg` gives `photo (2).jpg`,
+  never `photo (1) (1).jpg`. What counts as a sequence is narrow on purpose, because everything else is somebody's
+  filename: the separating space is required and the digits must be ASCII (`Report (final).pdf`, `photo(1).jpg`, and
+  `photo (+1).jpg` are plain text); zero padding isn't preserved (`photo (007)` continues at `(8)`); and a number with
+  no `u32` successor is plain text too, which keeps the returned counter always advanceable.
+- **`conflict.rs::NameCandidates` is the whole of what the ` (N)` searches share**: the parent, the base to number from,
+  and the counter to try next, walked with `current()` / `advance()`. Every search walks the same candidates and differs
+  only in how it TESTS one. `find_unique_name` RESERVES its pick with an `O_CREAT|O_EXCL` placeholder and must keep
+  advancing when it loses that race; `next_available_name` only probes (`path_exists_or_is_symlink`, so a dangling
+  symlink counts as taken) and creates nothing; `transfer/volume/conflict.rs::find_unique_volume_name` does one or the
+  other depending on whether the dest volume is local-FS-backed. That difference is exactly why there's no shared search
+  loop to layer them on as "search, then reserve". `attempts()` (not the counter's absolute value) is what a search
+  bounds its own effort by, since a name ending in a high ` (N)` starts the sequence there.
+- **Reach for the non-reserving `next_available_name` when a file placeholder would be in the way**: a directory claims
+  its name with `create_dir` instead, and an ordinary non-overwrite write would otherwise find `find_unique_name`'s own
+  placeholder sitting at the destination and raise a conflict against it.
 - **`create.rs` co-locates the synthetic listing-cache diff** (`should_emit_synthetic_diff` /
   `emit_synthetic_entry_diff`, both `pub(super)`) that lands a brand-new entry in the pane on local-FS-backed volumes.
   `paste_clipboard.rs` reuses both so a pasted file cursor-lands exactly like mkfile.

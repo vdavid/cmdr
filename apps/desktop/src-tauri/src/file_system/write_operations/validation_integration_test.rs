@@ -4,6 +4,7 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
+use super::conflict::find_unique_name;
 use super::*;
 use crate::test_support::TestDir;
 
@@ -28,10 +29,11 @@ fn test_find_unique_name() {
     fs::write(temp_dir.join("file (1).txt"), "").unwrap();
     fs::write(temp_dir.join("file (2).txt"), "").unwrap();
 
-    // Find unique name would return "file (3).txt"
     let path = temp_dir.join("file.txt");
     let unique = find_unique_name(&path);
     assert_eq!(unique.file_name().unwrap().to_str().unwrap(), "file (3).txt");
+    // The name is RESERVED, not merely picked: a 0-byte placeholder sits there.
+    assert!(unique.exists(), "the chosen name must be reserved on disk");
 }
 
 #[test]
@@ -55,36 +57,28 @@ fn test_conflict_rename_generates_unique_names() {
     fs::write(temp_dir.join("file (1).txt"), "first copy").unwrap();
     fs::write(temp_dir.join("file (2).txt"), "second copy").unwrap();
 
-    // Find unique name should return "file (3).txt"
     let path = temp_dir.join("file.txt");
     let unique = find_unique_name(&path);
     assert_eq!(unique.file_name().unwrap().to_str().unwrap(), "file (3).txt");
+
+    // Nothing that was already there is disturbed by picking a name.
+    assert_eq!(fs::read_to_string(temp_dir.join("file.txt")).unwrap(), "original");
+    assert_eq!(fs::read_to_string(temp_dir.join("file (1).txt")).unwrap(), "first copy");
+    assert_eq!(
+        fs::read_to_string(temp_dir.join("file (2).txt")).unwrap(),
+        "second copy"
+    );
 }
 
-// ============================================================================
-// Helper function to find unique name (exposed for testing)
-// ============================================================================
+#[test]
+fn test_find_unique_name_continues_a_trailing_sequence() {
+    let temp_dir = create_temp_dir("unique_name_sequence");
 
-fn find_unique_name(path: &std::path::Path) -> PathBuf {
-    let parent = path.parent().unwrap_or(std::path::Path::new(""));
-    let stem = path
-        .file_stem()
-        .map(|s| s.to_string_lossy().to_string())
-        .unwrap_or_default();
-    let extension = path.extension().map(|s| s.to_string_lossy().to_string());
+    fs::write(temp_dir.join("file (2).txt"), "").unwrap();
 
-    let mut counter = 1;
-    loop {
-        let new_name = match &extension {
-            Some(ext) => format!("{} ({}).{}", stem, counter, ext),
-            None => format!("{} ({})", stem, counter),
-        };
-        let new_path = parent.join(new_name);
-        if !new_path.exists() {
-            return new_path;
-        }
-        counter += 1;
-    }
+    let path = temp_dir.join("file (2).txt");
+    let unique = find_unique_name(&path);
+    assert_eq!(unique.file_name().unwrap().to_str().unwrap(), "file (3).txt");
 }
 
 // ============================================================================

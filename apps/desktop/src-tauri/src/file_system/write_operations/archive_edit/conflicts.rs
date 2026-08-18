@@ -181,6 +181,14 @@ pub(super) fn conditional_overwrites(
 
 /// Finds a unique inner path by appending ` (1)`, ` (2)`, … before the extension,
 /// avoiding both existing archive entries and already-planned paths.
+///
+/// Deliberately its own numbering rather than `conflict::NameCandidates`: that
+/// walks candidates as a `Path` on a filesystem, this works
+/// on a slash-joined inner-path string that has to split its own stem and
+/// extension and check an `ArchiveIndex` plus a planned set. It also doesn't
+/// continue a trailing ` (N)` sequence. Sharing would mean widening the shared
+/// helpers to a string-and-index shape for one caller; if archive numbering ever
+/// needs to match the filesystem's, `split_sequence` is the piece to reach for.
 pub(super) fn find_unique_inner(inner: &str, index: &ArchiveIndex, planned: &HashSet<String>) -> String {
     let (stem, ext) = match inner.rsplit_once('.') {
         // Keep an extension only when there's a stem before the dot (not a dotfile).

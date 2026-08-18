@@ -14,7 +14,7 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
+use super::super::super::conflict::{ApplyToAll, NameCandidates, apply_to_all_effective, apply_to_all_record};
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
     ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent,
@@ -629,26 +629,17 @@ pub(super) async fn finalize_safe_replace(
 /// `local_path()` is `None`) we can't reserve, so we fall back to the
 /// `exists()` probe and re-check existence immediately before returning to keep
 /// the residual window as narrow as the backend allows.
+///
+/// Naming itself is not this function's business: the candidates come from
+/// `conflict::NameCandidates`, the same sequence the local-FS namer walks, so a
+/// volume dest numbers identically and `photo (1).jpg` continues to
+/// `photo (2).jpg` here too. This function owns only the reservation.
 async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> PathBuf {
-    let parent = path.parent().unwrap_or(Path::new(""));
-    let stem = path
-        .file_stem()
-        .map(|s| s.to_string_lossy().to_string())
-        .unwrap_or_default();
-    let extension = path.extension().map(|s| s.to_string_lossy().to_string());
-
     let local_root = dest_volume.local_path();
-    let build_name = |counter: u32| -> PathBuf {
-        let new_name = match &extension {
-            Some(ext) => format!("{} ({}).{}", stem, counter, ext),
-            None => format!("{} ({})", stem, counter),
-        };
-        parent.join(new_name)
-    };
+    let mut candidates = NameCandidates::for_path(path);
 
-    let mut counter: u32 = 1;
     loop {
-        let new_path = build_name(counter);
+        let new_path = candidates.current();
 
         if let Some(root) = &local_root {
             // Local-FS dest: reserve the name with an O_CREAT|O_EXCL placeholder
@@ -661,7 +652,7 @@ async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> 
             {
                 Ok(_) => return new_path,
                 Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                    counter = counter.saturating_add(1);
+                    candidates.advance();
                 }
                 Err(_) => {
                     // Anything else (parent unwritable, ENOSPC, …) leaks back to
@@ -675,13 +666,13 @@ async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> 
             if !dest_volume.exists(&new_path).await {
                 return new_path;
             }
-            counter = counter.saturating_add(1);
+            candidates.advance();
         }
 
-        // Safety limit to prevent infinite loop.
-        if counter > 1000 {
+        // Safety limit to prevent an infinite loop.
+        if candidates.attempts() > 1000 {
             // Extremely unlikely to happen.
-            return build_name(counter);
+            return candidates.current();
         }
     }
 }

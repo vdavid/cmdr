@@ -658,6 +658,44 @@ async fn non_local_dest_does_not_reserve_a_placeholder() {
     );
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn local_fs_rename_continues_a_trailing_sequence() {
+    // The volume namer shares `conflict::{split_sequence, numbered_name}` with
+    // the local-FS namer, so a name that already ends in ` (N)` continues the
+    // series here too instead of nesting into `notes (1) (1).txt`.
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    let temp = tempfile::TempDir::new().unwrap();
+    let target = temp.path().join("notes (1).txt");
+    std::fs::write(&target, b"original").unwrap();
+
+    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
+
+    let unique = find_unique_volume_name(&vol, &target).await;
+    assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (2).txt");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn non_local_dest_continues_a_trailing_sequence_too() {
+    // The `exists()`-probe branch takes the same route through the shared
+    // convention, so MTP / SMB dests number identically to local ones.
+    let dst = Arc::new(InMemoryVolume::new("dst"));
+    dst.create_file(Path::new("/notes (1).txt"), b"old").await.unwrap();
+    let dst_dyn: Arc<dyn Volume> = dst.clone();
+
+    let unique = find_unique_volume_name(&dst_dyn, Path::new("/notes (1).txt")).await;
+    assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (2).txt");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_non_numeric_parenthetical_is_not_a_sequence_on_a_volume() {
+    let dst = Arc::new(InMemoryVolume::new("dst"));
+    dst.create_file(Path::new("/Report (final).pdf"), b"old").await.unwrap();
+    let dst_dyn: Arc<dyn Volume> = dst.clone();
+
+    let unique = find_unique_volume_name(&dst_dyn, Path::new("/Report (final).pdf")).await;
+    assert_eq!(unique.file_name().unwrap().to_string_lossy(), "Report (final) (1).pdf");
+}
+
 // ----- Axis independence -----
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
