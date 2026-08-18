@@ -1073,3 +1073,12 @@ embaralhe os dois sentidos.
 - Verificação regional contra a lista de indícios pt-PT do style guide: zero ocorrências (arquivo, não ficheiro; sem
   `estar a` + infinitivo; sem próclise em infinitivo).
 - Nenhum `sameAsSourceJustification` necessário: os três valores diferem do inglês.
+
+## Operações sugeridas: a janela do que o Ask Cmdr propõe (`suggestedOps.*`, `commands.suggestedOpsShow.*`, 2026-08-19)
+
+- ops (as operações de arquivo propostas pelo agente) → `operações`; título `Operações sugeridas` · segue o termo da
+  casa ("File operations" → "Operações de arquivo") · high
+- approve → `Aprovar` · padrão; a pilha de referência não traz "approve" em pt · tentative
+- reject → `Recusar` · padrão; a pilha só traz `Aceitar` (Nautilus/Dolphin) e nenhum par para "reject" · tentative
+- "This can't be undone" → `Esta ação não pode ser desfeita` · macOS, palavra por palavra · high
+- suggestion → `sugestão` · já no catálogo (`askCmdr`) · high

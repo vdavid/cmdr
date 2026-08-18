@@ -1250,3 +1250,14 @@ ihop.
   `Filnamnet är för långt` är kvar som de är: `får inte` är regeln användaren bröt, `kan inte användas` är
   samlingsfallet där filsystemet inte säger vilken regel det var. `high`.
 - Inget `sameAsSourceJustification` behövs: alla tre värdena skiljer sig från engelskan.
+
+## Föreslagna åtgärder: rutan för det Ask Cmdr föreslår (`suggestedOps.*`, `commands.suggestedOpsShow.*`, 2026-08-19)
+
+- ops (agentens föreslagna filåtgärder) → `åtgärder`; titeln blir `Föreslagna åtgärder` · följer husets
+  "File operations" → `Filåtgärder` · high
+- approve → `Godkänn` · standard; valt framför macOS `Ta emot`, som hör till att ta emot en AirDrop-fil och inte till
+  att låta något köra · high
+- reject → `Avböj` · macOS Finder, paret Ta emot/Avböj i AirDrop-rutan (Tier 1) · high
+- "This can't be undone" → `Det här går inte att ångra` · macOS Finder ("Den här åtgärden går inte att ångra"),
+  förkortat till en etikettrad · high
+- "Ask Cmdr's reason" → `Ask Cmdrs skäl` · genitiv på varumärket, enligt regeln om att märkesnamn får böjas · high

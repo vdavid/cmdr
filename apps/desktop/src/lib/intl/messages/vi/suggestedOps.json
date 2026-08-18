@@ -1,0 +1,118 @@
+{
+  "suggestedOps.title": "Thao tác được đề xuất",
+  "@suggestedOps.title": {
+    "sourceHash": "4f24ca6"
+  },
+  "suggestedOps.description": "Ask Cmdr đã đề xuất những thao tác này. Không có gì chạy cho đến khi bạn phê duyệt.",
+  "@suggestedOps.description": {
+    "sourceHash": "d70e5f0"
+  },
+  "suggestedOps.empty": "Hiện không có gì đang chờ bạn.",
+  "@suggestedOps.empty": {
+    "sourceHash": "b93eccd"
+  },
+  "suggestedOps.loadFailed": "Cmdr không đọc được các đề xuất. Hãy đóng lại và mở lần nữa.",
+  "@suggestedOps.loadFailed": {
+    "sourceHash": "3d3af5a"
+  },
+  "suggestedOps.agentReason": "Lý do của Ask Cmdr",
+  "@suggestedOps.agentReason": {
+    "sourceHash": "0768c36"
+  },
+  "suggestedOps.cmdrFacts": "Những gì Cmdr biết",
+  "@suggestedOps.cmdrFacts": {
+    "sourceHash": "9851c12"
+  },
+  "suggestedOps.fileCount": "{count, plural, other {# tệp}}",
+  "@suggestedOps.fileCount": {
+    "sourceHash": "e60f4a2"
+  },
+  "suggestedOps.approve": "Phê duyệt",
+  "@suggestedOps.approve": {
+    "sourceHash": "6007acb"
+  },
+  "suggestedOps.reject": "Từ chối",
+  "@suggestedOps.reject": {
+    "sourceHash": "ab604a3"
+  },
+  "suggestedOps.approveCount": "Phê duyệt {count, plural, other {# tệp}}",
+  "@suggestedOps.approveCount": {
+    "sourceHash": "649d66f"
+  },
+  "suggestedOps.review": "Xem lại các tệp",
+  "@suggestedOps.review": {
+    "sourceHash": "b8d04b3"
+  },
+  "suggestedOps.collapse": "Ẩn các tệp",
+  "@suggestedOps.collapse": {
+    "sourceHash": "ced24ea"
+  },
+  "suggestedOps.reversibleRestoreMove": "Bạn có thể hoàn tác việc này",
+  "@suggestedOps.reversibleRestoreMove": {
+    "sourceHash": "de7f6ff"
+  },
+  "suggestedOps.reversibleDeleteWritten": "Hoàn tác bằng cách xóa những gì được tạo ra",
+  "@suggestedOps.reversibleDeleteWritten": {
+    "sourceHash": "997843a"
+  },
+  "suggestedOps.irreversible": "Bạn không thể hoàn tác việc này",
+  "@suggestedOps.irreversible": {
+    "sourceHash": "485d5a3"
+  },
+  "suggestedOps.folderWillBeCreated": "Cmdr sẽ tạo thư mục này",
+  "@suggestedOps.folderWillBeCreated": {
+    "sourceHash": "26243e5"
+  },
+  "suggestedOps.folderWillBeCreatedTooltip": "Thư mục đích chưa tồn tại. Khi bạn phê duyệt, Cmdr sẽ tạo nó, giống hệt như khi bạn tự bắt đầu việc di chuyển.",
+  "@suggestedOps.folderWillBeCreatedTooltip": {
+    "sourceHash": "2d28b7c"
+  },
+  "suggestedOps.destinationUnknown": "Cmdr không kiểm tra được thư mục đích",
+  "@suggestedOps.destinationUnknown": {
+    "sourceHash": "e1293c5"
+  },
+  "suggestedOps.fromPattern": "Khớp theo một mẫu",
+  "@suggestedOps.fromPattern": {
+    "sourceHash": "20e88a9"
+  },
+  "suggestedOps.changedUnderReview": "Ask Cmdr đã thay đổi đề xuất này trong lúc bạn đang đọc.",
+  "@suggestedOps.changedUnderReview": {
+    "sourceHash": "fd6b2ac"
+  },
+  "suggestedOps.showNewVersion": "Hiển thị phiên bản mới",
+  "@suggestedOps.showNewVersion": {
+    "sourceHash": "2b92d18"
+  },
+  "suggestedOps.columnFile": "Tệp",
+  "@suggestedOps.columnFile": {
+    "sourceHash": "50009ce"
+  },
+  "suggestedOps.columnNewName": "Tên mới",
+  "@suggestedOps.columnNewName": {
+    "sourceHash": "04eea2a"
+  },
+  "suggestedOps.columnSize": "Kích cỡ khi đề xuất",
+  "@suggestedOps.columnSize": {
+    "sourceHash": "20d36bd"
+  },
+  "suggestedOps.columnChanged": "Sửa đổi lần cuối",
+  "@suggestedOps.columnChanged": {
+    "sourceHash": "d8c5670"
+  },
+  "suggestedOps.noIndexData": "Không có trong chỉ mục",
+  "@suggestedOps.noIndexData": {
+    "sourceHash": "104d8cb"
+  },
+  "suggestedOps.includeFile": "Bao gồm tệp này",
+  "@suggestedOps.includeFile": {
+    "sourceHash": "71075a7"
+  },
+  "suggestedOps.loadingFiles": "Đang tải các tệp…",
+  "@suggestedOps.loadingFiles": {
+    "sourceHash": "83257e6"
+  },
+  "suggestedOps.indicatorTooltip": "Ask Cmdr có đề xuất đang chờ. Nhấp để xem lại.",
+  "@suggestedOps.indicatorTooltip": {
+    "sourceHash": "dc423e6"
+  }
+}

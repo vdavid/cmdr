@@ -1,0 +1,118 @@
+{
+  "suggestedOps.title": "Javasolt műveletek",
+  "@suggestedOps.title": {
+    "sourceHash": "4f24ca6"
+  },
+  "suggestedOps.description": "Ezt az Ask Cmdr javasolta. Semmi nem indul el, amíg jóvá nem hagyod.",
+  "@suggestedOps.description": {
+    "sourceHash": "d70e5f0"
+  },
+  "suggestedOps.empty": "Most nem vár rád semmi.",
+  "@suggestedOps.empty": {
+    "sourceHash": "b93eccd"
+  },
+  "suggestedOps.loadFailed": "A Cmdr nem tudta beolvasni a javaslatokat. Zárd be, és nyisd meg újra.",
+  "@suggestedOps.loadFailed": {
+    "sourceHash": "3d3af5a"
+  },
+  "suggestedOps.agentReason": "Az Ask Cmdr indoka",
+  "@suggestedOps.agentReason": {
+    "sourceHash": "0768c36"
+  },
+  "suggestedOps.cmdrFacts": "Amit a Cmdr tud",
+  "@suggestedOps.cmdrFacts": {
+    "sourceHash": "9851c12"
+  },
+  "suggestedOps.fileCount": "{count, plural, one {# fájl} other {# fájl}}",
+  "@suggestedOps.fileCount": {
+    "sourceHash": "e60f4a2"
+  },
+  "suggestedOps.approve": "Jóváhagyás",
+  "@suggestedOps.approve": {
+    "sourceHash": "6007acb"
+  },
+  "suggestedOps.reject": "Elutasítás",
+  "@suggestedOps.reject": {
+    "sourceHash": "ab604a3"
+  },
+  "suggestedOps.approveCount": "{count, plural, one {# fájl} other {# fájl}} jóváhagyása",
+  "@suggestedOps.approveCount": {
+    "sourceHash": "649d66f"
+  },
+  "suggestedOps.review": "Fájlok áttekintése",
+  "@suggestedOps.review": {
+    "sourceHash": "b8d04b3"
+  },
+  "suggestedOps.collapse": "Fájlok elrejtése",
+  "@suggestedOps.collapse": {
+    "sourceHash": "ced24ea"
+  },
+  "suggestedOps.reversibleRestoreMove": "Ezt vissza tudod vonni",
+  "@suggestedOps.reversibleRestoreMove": {
+    "sourceHash": "de7f6ff"
+  },
+  "suggestedOps.reversibleDeleteWritten": "A létrehozott fájlok törlésével vonható vissza",
+  "@suggestedOps.reversibleDeleteWritten": {
+    "sourceHash": "997843a"
+  },
+  "suggestedOps.irreversible": "Ezt nem lehet visszavonni",
+  "@suggestedOps.irreversible": {
+    "sourceHash": "485d5a3"
+  },
+  "suggestedOps.folderWillBeCreated": "A Cmdr létrehozza ezt a mappát",
+  "@suggestedOps.folderWillBeCreated": {
+    "sourceHash": "26243e5"
+  },
+  "suggestedOps.folderWillBeCreatedTooltip": "A célmappa még nem létezik. Jóváhagyáskor a Cmdr létrehozza, ugyanúgy, mintha te indítanád az áthelyezést.",
+  "@suggestedOps.folderWillBeCreatedTooltip": {
+    "sourceHash": "2d28b7c"
+  },
+  "suggestedOps.destinationUnknown": "A Cmdr nem tudta ellenőrizni a célmappát",
+  "@suggestedOps.destinationUnknown": {
+    "sourceHash": "e1293c5"
+  },
+  "suggestedOps.fromPattern": "Minta alapján találva",
+  "@suggestedOps.fromPattern": {
+    "sourceHash": "20e88a9"
+  },
+  "suggestedOps.changedUnderReview": "Az Ask Cmdr módosította ezt a javaslatot, miközben olvastad.",
+  "@suggestedOps.changedUnderReview": {
+    "sourceHash": "fd6b2ac"
+  },
+  "suggestedOps.showNewVersion": "Új változat megjelenítése",
+  "@suggestedOps.showNewVersion": {
+    "sourceHash": "2b92d18"
+  },
+  "suggestedOps.columnFile": "Fájl",
+  "@suggestedOps.columnFile": {
+    "sourceHash": "50009ce"
+  },
+  "suggestedOps.columnNewName": "Új név",
+  "@suggestedOps.columnNewName": {
+    "sourceHash": "04eea2a"
+  },
+  "suggestedOps.columnSize": "Méret a javaslatkor",
+  "@suggestedOps.columnSize": {
+    "sourceHash": "20d36bd"
+  },
+  "suggestedOps.columnChanged": "Utoljára módosítva",
+  "@suggestedOps.columnChanged": {
+    "sourceHash": "d8c5670"
+  },
+  "suggestedOps.noIndexData": "Nincs az indexben",
+  "@suggestedOps.noIndexData": {
+    "sourceHash": "104d8cb"
+  },
+  "suggestedOps.includeFile": "Fájl bevonása",
+  "@suggestedOps.includeFile": {
+    "sourceHash": "71075a7"
+  },
+  "suggestedOps.loadingFiles": "Fájlok betöltése…",
+  "@suggestedOps.loadingFiles": {
+    "sourceHash": "83257e6"
+  },
+  "suggestedOps.indicatorTooltip": "Az Ask Cmdr javaslatokat tett. Kattints az áttekintésükhöz.",
+  "@suggestedOps.indicatorTooltip": {
+    "sourceHash": "dc423e6"
+  }
+}

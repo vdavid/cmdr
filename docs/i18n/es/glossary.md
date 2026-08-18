@@ -1227,3 +1227,16 @@ nombre.
   `chainKeptOriginalName`: "Ese nombre de archivo no puede usarse. “foo.txt” mantuvo su nombre."
 - Ningún valor lleva apóstrofo, así que no hay nada que doblar para ICU.
 - No hace falta `sameAsSourceJustification`: los tres valores difieren del inglés.
+
+## Operaciones sugeridas: el diálogo de lo que propone Ask Cmdr (`suggestedOps.*`, `commands.suggestedOpsShow.*`, 2026-08-19)
+
+- ops (el conjunto de operaciones de archivo del agente) → `operaciones`; el título queda `Operaciones sugeridas` ·
+  reutiliza el término de la casa ("File operations" → "Operaciones de archivos" en `settings.json`) · high
+- approve → `Aprobar` · MS (familia "aprobación"); elegido sobre el `Aceptar` de macOS porque la variante con recuento
+  ("Aprobar 3 archivos") autoriza una acción en vez de aceptar un objeto · high
+- reject → `Rechazar` · macOS Finder, el par Aceptar/Rechazar del panel de AirDrop (Tier 1) · high
+- "This can't be undone" → `Esto no se puede deshacer` · macOS Finder ("Esta acción no se puede deshacer", alerta de
+  eliminación inmediata), acortado para un marcador de una línea · high
+- "Undo by deleting what it writes" → `Deshacer eliminando lo creado` · compuesto; se evita "lo que crea" porque se lee
+  como el verbo "creer" · tentative
+- suggestion → `sugerencia` · ya en el catálogo (`ui.combobox`, `askCmdr`) · high

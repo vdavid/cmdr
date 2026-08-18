@@ -1165,3 +1165,11 @@ macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "cou
   subject-first order and the `文件名`/`文件夹名` nouns come from the sibling validation strings in this same catalog
   (`文件名不能为空`, `文件名过长（…）`, `文件名中不能包含“/”或空字符`). "That" → the spoken `这个` per style.md. No
   closing `。`: the string is composed into `{reason}。“{name}”保留了原来的名称。` · `high`
+
+## 建议的操作：Ask Cmdr 提议内容的对话框（`suggestedOps.*`、`commands.suggestedOpsShow.*`，2026-08-19）
+
+- ops（代理提议的文件操作）→ `操作`；标题定为 `建议的操作` · 沿用目录中的 "File operations" → `文件操作` · high
+- approve → `批准` · 通用译法；未采用 macOS 的 `接受`（那是 AirDrop 接收文件的用词），此处是授权执行 · high
+- reject → `拒绝` · macOS Finder AirDrop 面板的 接受/拒绝 词对（Tier 1）· high
+- "This can't be undone" → `此操作无法撤销` · macOS Finder 原句（立即删除警告）· high
+- pattern → `模式` · 已在 `queryUi.json` 中 · high

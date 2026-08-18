@@ -695,5 +695,13 @@
   "commands.handler.zoomDecreased": "Zoom minskad till {size} %. {hint}",
   "@commands.handler.zoomDecreased": {
     "sourceHash": "71404cb"
+  },
+  "commands.suggestedOpsShow.label": "Föreslagna åtgärder",
+  "@commands.suggestedOpsShow.label": {
+    "sourceHash": "4f24ca6"
+  },
+  "commands.suggestedOpsShow.description": "Granska filåtgärderna som Ask Cmdr föreslår och bestäm vad som körs",
+  "@commands.suggestedOpsShow.description": {
+    "sourceHash": "cf24a4f"
   }
 }

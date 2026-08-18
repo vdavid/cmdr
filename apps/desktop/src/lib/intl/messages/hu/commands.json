@@ -695,5 +695,13 @@
   "commands.handler.zoomDecreased": "Nagyítás csökkentve {size}%-ra. {hint}",
   "@commands.handler.zoomDecreased": {
     "sourceHash": "71404cb"
+  },
+  "commands.suggestedOpsShow.label": "Javasolt műveletek",
+  "@commands.suggestedOpsShow.label": {
+    "sourceHash": "4f24ca6"
+  },
+  "commands.suggestedOpsShow.description": "Tekintsd át az Ask Cmdr által javasolt fájlműveleteket, és döntsd el, mi fusson",
+  "@commands.suggestedOpsShow.description": {
+    "sourceHash": "cf24a4f"
   }
 }

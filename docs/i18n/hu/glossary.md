@@ -1453,3 +1453,14 @@ JELENTÉSE ellentétes, ezért a nyitó tagmondat szándékosan más.
     60+ találattal igen), az `Ez a mappa neve …` pedig félreolvasható „ennek a mappának a neve” értelemben. A magyar
     határozott névelő amúgy is a beírt névre mutat.
 - Nem kell `sameAsSourceJustification`: mindhárom érték eltér az angoltól.
+
+## Javasolt műveletek: az Ask Cmdr javaslatainak ablaka (`suggestedOps.*`, `commands.suggestedOpsShow.*`, 2026-08-19)
+
+- ops (az ügynök által javasolt fájlműveletek) → `műveletek`; a cím `Javasolt műveletek` · a katalógus
+  `fájlművelet` szóhasználatához igazítva · high
+- approve → `Jóváhagyás` · ms; a macOS `Elfogadás` az AirDrop-elfogadás párja, itt viszont engedélyezésről van szó · high
+- reject → `Elutasítás` · macOS Finder AirDrop-panel (Tier 1) · high
+- "This can't be undone" → `Ezt nem lehet visszavonni` · macOS Finder ("Ezt a műveletet nem vonhatja vissza"),
+  tegező-semleges alakra hozva, mert a Cmdr tegez · high
+- pattern → `minta` · már a katalógusban (`queryUi.json`) · high
+- undo → `visszavonás` · már a katalógusban (`askCmdr.renameUndo`) · high

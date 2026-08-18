@@ -1,0 +1,118 @@
+{
+  "suggestedOps.title": "Föreslagna åtgärder",
+  "@suggestedOps.title": {
+    "sourceHash": "4f24ca6"
+  },
+  "suggestedOps.description": "Ask Cmdr föreslår det här. Inget körs förrän du godkänner det.",
+  "@suggestedOps.description": {
+    "sourceHash": "d70e5f0"
+  },
+  "suggestedOps.empty": "Inget väntar på dig just nu.",
+  "@suggestedOps.empty": {
+    "sourceHash": "b93eccd"
+  },
+  "suggestedOps.loadFailed": "Cmdr kunde inte läsa förslagen. Stäng det här och öppna igen.",
+  "@suggestedOps.loadFailed": {
+    "sourceHash": "3d3af5a"
+  },
+  "suggestedOps.agentReason": "Ask Cmdrs skäl",
+  "@suggestedOps.agentReason": {
+    "sourceHash": "0768c36"
+  },
+  "suggestedOps.cmdrFacts": "Det här vet Cmdr",
+  "@suggestedOps.cmdrFacts": {
+    "sourceHash": "9851c12"
+  },
+  "suggestedOps.fileCount": "{count, plural, one {# fil} other {# filer}}",
+  "@suggestedOps.fileCount": {
+    "sourceHash": "e60f4a2"
+  },
+  "suggestedOps.approve": "Godkänn",
+  "@suggestedOps.approve": {
+    "sourceHash": "6007acb"
+  },
+  "suggestedOps.reject": "Avböj",
+  "@suggestedOps.reject": {
+    "sourceHash": "ab604a3"
+  },
+  "suggestedOps.approveCount": "Godkänn {count, plural, one {# fil} other {# filer}}",
+  "@suggestedOps.approveCount": {
+    "sourceHash": "649d66f"
+  },
+  "suggestedOps.review": "Granska filerna",
+  "@suggestedOps.review": {
+    "sourceHash": "b8d04b3"
+  },
+  "suggestedOps.collapse": "Dölj filerna",
+  "@suggestedOps.collapse": {
+    "sourceHash": "ced24ea"
+  },
+  "suggestedOps.reversibleRestoreMove": "Det här går att ångra",
+  "@suggestedOps.reversibleRestoreMove": {
+    "sourceHash": "de7f6ff"
+  },
+  "suggestedOps.reversibleDeleteWritten": "Ångra genom att radera det som skapas",
+  "@suggestedOps.reversibleDeleteWritten": {
+    "sourceHash": "997843a"
+  },
+  "suggestedOps.irreversible": "Det här går inte att ångra",
+  "@suggestedOps.irreversible": {
+    "sourceHash": "485d5a3"
+  },
+  "suggestedOps.folderWillBeCreated": "Cmdr skapar den här mappen",
+  "@suggestedOps.folderWillBeCreated": {
+    "sourceHash": "26243e5"
+  },
+  "suggestedOps.folderWillBeCreatedTooltip": "Målmappen finns inte än. När du godkänner skapar Cmdr den, precis som om du startade flytten själv.",
+  "@suggestedOps.folderWillBeCreatedTooltip": {
+    "sourceHash": "2d28b7c"
+  },
+  "suggestedOps.destinationUnknown": "Cmdr kunde inte kontrollera målmappen",
+  "@suggestedOps.destinationUnknown": {
+    "sourceHash": "e1293c5"
+  },
+  "suggestedOps.fromPattern": "Hittad med ett mönster",
+  "@suggestedOps.fromPattern": {
+    "sourceHash": "20e88a9"
+  },
+  "suggestedOps.changedUnderReview": "Ask Cmdr ändrade det här förslaget medan du läste det.",
+  "@suggestedOps.changedUnderReview": {
+    "sourceHash": "fd6b2ac"
+  },
+  "suggestedOps.showNewVersion": "Visa den nya versionen",
+  "@suggestedOps.showNewVersion": {
+    "sourceHash": "2b92d18"
+  },
+  "suggestedOps.columnFile": "Fil",
+  "@suggestedOps.columnFile": {
+    "sourceHash": "50009ce"
+  },
+  "suggestedOps.columnNewName": "Nytt namn",
+  "@suggestedOps.columnNewName": {
+    "sourceHash": "04eea2a"
+  },
+  "suggestedOps.columnSize": "Storlek vid förslaget",
+  "@suggestedOps.columnSize": {
+    "sourceHash": "20d36bd"
+  },
+  "suggestedOps.columnChanged": "Senast ändrad",
+  "@suggestedOps.columnChanged": {
+    "sourceHash": "d8c5670"
+  },
+  "suggestedOps.noIndexData": "Inte i indexet",
+  "@suggestedOps.noIndexData": {
+    "sourceHash": "104d8cb"
+  },
+  "suggestedOps.includeFile": "Ta med den här filen",
+  "@suggestedOps.includeFile": {
+    "sourceHash": "71075a7"
+  },
+  "suggestedOps.loadingFiles": "Läser in filerna…",
+  "@suggestedOps.loadingFiles": {
+    "sourceHash": "83257e6"
+  },
+  "suggestedOps.indicatorTooltip": "Ask Cmdr har förslag åt dig. Klicka för att granska dem.",
+  "@suggestedOps.indicatorTooltip": {
+    "sourceHash": "dc423e6"
+  }
+}

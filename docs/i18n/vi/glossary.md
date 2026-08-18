@@ -1253,3 +1253,12 @@ Cặp `unconfirmed*` là anh em của cặp `chainKeptOriginalName*` (cùng dạ
   `Không thể dùng tên tệp đó. "notes.txt" vẫn giữ nguyên tên.`). Cố ý KHÔNG đoán lý do (`không hợp lệ` ám chỉ một quy
   tắc cụ thể), giữ đúng vai trò chuỗi bắt-tất-cả · high
 - Không cần `sameAsSourceJustification`: cả ba giá trị đều khác bản tiếng Anh.
+
+## Thao tác được đề xuất: hộp thoại cho những gì Ask Cmdr đề xuất (`suggestedOps.*`, `commands.suggestedOpsShow.*`, 2026-08-19)
+
+- ops (các thao tác tệp do tác nhân đề xuất) → `thao tác`; tiêu đề là `Thao tác được đề xuất` · theo thuật ngữ sẵn có
+  ("File operations" → "Thao tác tệp") · high
+- approve → `Phê duyệt` · chuẩn; chọn thay cho `Chấp nhận` của macOS, vốn dành cho việc nhận tệp qua AirDrop · high
+- reject → `Từ chối` · macOS Finder, cặp Chấp nhận/Từ chối trong bảng AirDrop (Tier 1) · high
+- "This can't be undone" → `Bạn không thể hoàn tác việc này` · macOS Finder ("Bạn không thể hoàn tác tác vụ này") · high
+- pattern → `mẫu` · đã có trong `queryUi.json` · high

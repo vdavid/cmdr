@@ -1,0 +1,118 @@
+{
+  "suggestedOps.title": "Operações sugeridas",
+  "@suggestedOps.title": {
+    "sourceHash": "4f24ca6"
+  },
+  "suggestedOps.description": "O Ask Cmdr sugeriu isto. Nada é executado até você aprovar.",
+  "@suggestedOps.description": {
+    "sourceHash": "d70e5f0"
+  },
+  "suggestedOps.empty": "Nada esperando por você agora.",
+  "@suggestedOps.empty": {
+    "sourceHash": "b93eccd"
+  },
+  "suggestedOps.loadFailed": "O Cmdr não conseguiu ler as sugestões. Feche isto e abra de novo.",
+  "@suggestedOps.loadFailed": {
+    "sourceHash": "3d3af5a"
+  },
+  "suggestedOps.agentReason": "Motivo do Ask Cmdr",
+  "@suggestedOps.agentReason": {
+    "sourceHash": "0768c36"
+  },
+  "suggestedOps.cmdrFacts": "O que o Cmdr sabe",
+  "@suggestedOps.cmdrFacts": {
+    "sourceHash": "9851c12"
+  },
+  "suggestedOps.fileCount": "{count, plural, one {# arquivo} many {# arquivos} other {# arquivos}}",
+  "@suggestedOps.fileCount": {
+    "sourceHash": "e60f4a2"
+  },
+  "suggestedOps.approve": "Aprovar",
+  "@suggestedOps.approve": {
+    "sourceHash": "6007acb"
+  },
+  "suggestedOps.reject": "Recusar",
+  "@suggestedOps.reject": {
+    "sourceHash": "ab604a3"
+  },
+  "suggestedOps.approveCount": "Aprovar {count, plural, one {# arquivo} many {# arquivos} other {# arquivos}}",
+  "@suggestedOps.approveCount": {
+    "sourceHash": "649d66f"
+  },
+  "suggestedOps.review": "Revisar os arquivos",
+  "@suggestedOps.review": {
+    "sourceHash": "b8d04b3"
+  },
+  "suggestedOps.collapse": "Ocultar os arquivos",
+  "@suggestedOps.collapse": {
+    "sourceHash": "ced24ea"
+  },
+  "suggestedOps.reversibleRestoreMove": "Você pode desfazer isto",
+  "@suggestedOps.reversibleRestoreMove": {
+    "sourceHash": "de7f6ff"
+  },
+  "suggestedOps.reversibleDeleteWritten": "Desfaça apagando o que for criado",
+  "@suggestedOps.reversibleDeleteWritten": {
+    "sourceHash": "997843a"
+  },
+  "suggestedOps.irreversible": "Esta ação não pode ser desfeita",
+  "@suggestedOps.irreversible": {
+    "sourceHash": "485d5a3"
+  },
+  "suggestedOps.folderWillBeCreated": "O Cmdr vai criar esta pasta",
+  "@suggestedOps.folderWillBeCreated": {
+    "sourceHash": "26243e5"
+  },
+  "suggestedOps.folderWillBeCreatedTooltip": "A pasta de destino ainda não existe. Ao aprovar, o Cmdr cria a pasta, do mesmo jeito que se você iniciasse a movimentação.",
+  "@suggestedOps.folderWillBeCreatedTooltip": {
+    "sourceHash": "2d28b7c"
+  },
+  "suggestedOps.destinationUnknown": "O Cmdr não conseguiu verificar a pasta de destino",
+  "@suggestedOps.destinationUnknown": {
+    "sourceHash": "e1293c5"
+  },
+  "suggestedOps.fromPattern": "Encontrado por um padrão",
+  "@suggestedOps.fromPattern": {
+    "sourceHash": "20e88a9"
+  },
+  "suggestedOps.changedUnderReview": "O Ask Cmdr alterou esta sugestão enquanto você lia.",
+  "@suggestedOps.changedUnderReview": {
+    "sourceHash": "fd6b2ac"
+  },
+  "suggestedOps.showNewVersion": "Mostrar a nova versão",
+  "@suggestedOps.showNewVersion": {
+    "sourceHash": "2b92d18"
+  },
+  "suggestedOps.columnFile": "Arquivo",
+  "@suggestedOps.columnFile": {
+    "sourceHash": "50009ce"
+  },
+  "suggestedOps.columnNewName": "Novo nome",
+  "@suggestedOps.columnNewName": {
+    "sourceHash": "04eea2a"
+  },
+  "suggestedOps.columnSize": "Tamanho na sugestão",
+  "@suggestedOps.columnSize": {
+    "sourceHash": "20d36bd"
+  },
+  "suggestedOps.columnChanged": "Última alteração",
+  "@suggestedOps.columnChanged": {
+    "sourceHash": "d8c5670"
+  },
+  "suggestedOps.noIndexData": "Não está no índice",
+  "@suggestedOps.noIndexData": {
+    "sourceHash": "104d8cb"
+  },
+  "suggestedOps.includeFile": "Incluir este arquivo",
+  "@suggestedOps.includeFile": {
+    "sourceHash": "71075a7"
+  },
+  "suggestedOps.loadingFiles": "Carregando os arquivos…",
+  "@suggestedOps.loadingFiles": {
+    "sourceHash": "83257e6"
+  },
+  "suggestedOps.indicatorTooltip": "O Ask Cmdr tem sugestões esperando. Clique para revisar.",
+  "@suggestedOps.indicatorTooltip": {
+    "sourceHash": "dc423e6"
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "suggestedOps.title": "Voorgestelde bewerkingen",
+  "@suggestedOps.title": {
+    "sourceHash": "4f24ca6"
+  },
+  "suggestedOps.description": "Ask Cmdr stelt dit voor. Er gebeurt niets tot je het goedkeurt.",
+  "@suggestedOps.description": {
+    "sourceHash": "d70e5f0"
+  },
+  "suggestedOps.empty": "Er wacht nu niets op je.",
+  "@suggestedOps.empty": {
+    "sourceHash": "b93eccd"
+  },
+  "suggestedOps.loadFailed": "Cmdr kon de suggesties niet lezen. Sluit dit en open het opnieuw.",
+  "@suggestedOps.loadFailed": {
+    "sourceHash": "3d3af5a"
+  },
+  "suggestedOps.agentReason": "Reden van Ask Cmdr",
+  "@suggestedOps.agentReason": {
+    "sourceHash": "0768c36"
+  },
+  "suggestedOps.cmdrFacts": "Wat Cmdr weet",
+  "@suggestedOps.cmdrFacts": {
+    "sourceHash": "9851c12"
+  },
+  "suggestedOps.fileCount": "{count, plural, one {# bestand} other {# bestanden}}",
+  "@suggestedOps.fileCount": {
+    "sourceHash": "e60f4a2"
+  },
+  "suggestedOps.approve": "Goedkeuren",
+  "@suggestedOps.approve": {
+    "sourceHash": "6007acb"
+  },
+  "suggestedOps.reject": "Weigeren",
+  "@suggestedOps.reject": {
+    "sourceHash": "ab604a3"
+  },
+  "suggestedOps.approveCount": "{count, plural, one {# bestand} other {# bestanden}} goedkeuren",
+  "@suggestedOps.approveCount": {
+    "sourceHash": "649d66f"
+  },
+  "suggestedOps.review": "Bestanden beoordelen",
+  "@suggestedOps.review": {
+    "sourceHash": "b8d04b3"
+  },
+  "suggestedOps.collapse": "Bestanden verbergen",
+  "@suggestedOps.collapse": {
+    "sourceHash": "ced24ea"
+  },
+  "suggestedOps.reversibleRestoreMove": "Dit kun je ongedaan maken",
+  "@suggestedOps.reversibleRestoreMove": {
+    "sourceHash": "de7f6ff"
+  },
+  "suggestedOps.reversibleDeleteWritten": "Ongedaan maken door het gemaakte te verwijderen",
+  "@suggestedOps.reversibleDeleteWritten": {
+    "sourceHash": "997843a"
+  },
+  "suggestedOps.irreversible": "Dit kun je niet ongedaan maken",
+  "@suggestedOps.irreversible": {
+    "sourceHash": "485d5a3"
+  },
+  "suggestedOps.folderWillBeCreated": "Cmdr maakt deze map aan",
+  "@suggestedOps.folderWillBeCreated": {
+    "sourceHash": "26243e5"
+  },
+  "suggestedOps.folderWillBeCreatedTooltip": "De doelmap bestaat nog niet. Bij goedkeuring maakt Cmdr hem aan, net zoals wanneer je het verplaatsen zelf start.",
+  "@suggestedOps.folderWillBeCreatedTooltip": {
+    "sourceHash": "2d28b7c"
+  },
+  "suggestedOps.destinationUnknown": "Cmdr kon de doelmap niet controleren",
+  "@suggestedOps.destinationUnknown": {
+    "sourceHash": "e1293c5"
+  },
+  "suggestedOps.fromPattern": "Gevonden met een patroon",
+  "@suggestedOps.fromPattern": {
+    "sourceHash": "20e88a9"
+  },
+  "suggestedOps.changedUnderReview": "Ask Cmdr heeft deze suggestie gewijzigd terwijl je hem las.",
+  "@suggestedOps.changedUnderReview": {
+    "sourceHash": "fd6b2ac"
+  },
+  "suggestedOps.showNewVersion": "Nieuwe versie tonen",
+  "@suggestedOps.showNewVersion": {
+    "sourceHash": "2b92d18"
+  },
+  "suggestedOps.columnFile": "Bestand",
+  "@suggestedOps.columnFile": {
+    "sourceHash": "50009ce"
+  },
+  "suggestedOps.columnNewName": "Nieuwe naam",
+  "@suggestedOps.columnNewName": {
+    "sourceHash": "04eea2a"
+  },
+  "suggestedOps.columnSize": "Grootte bij de suggestie",
+  "@suggestedOps.columnSize": {
+    "sourceHash": "20d36bd"
+  },
+  "suggestedOps.columnChanged": "Laatst gewijzigd",
+  "@suggestedOps.columnChanged": {
+    "sourceHash": "d8c5670"
+  },
+  "suggestedOps.noIndexData": "Niet in de index",
+  "@suggestedOps.noIndexData": {
+    "sourceHash": "104d8cb"
+  },
+  "suggestedOps.includeFile": "Dit bestand meenemen",
+  "@suggestedOps.includeFile": {
+    "sourceHash": "71075a7"
+  },
+  "suggestedOps.loadingFiles": "Bestanden laden…",
+  "@suggestedOps.loadingFiles": {
+    "sourceHash": "83257e6"
+  },
+  "suggestedOps.indicatorTooltip": "Ask Cmdr heeft suggesties voor je. Klik om ze te bekijken.",
+  "@suggestedOps.indicatorTooltip": {
+    "sourceHash": "dc423e6"
+  }
+}

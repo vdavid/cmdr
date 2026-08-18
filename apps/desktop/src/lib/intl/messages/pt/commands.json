@@ -695,5 +695,13 @@
   "commands.handler.zoomDecreased": "Zoom reduzido para {size}%. {hint}",
   "@commands.handler.zoomDecreased": {
     "sourceHash": "71404cb"
+  },
+  "commands.suggestedOpsShow.label": "Operações sugeridas",
+  "@commands.suggestedOpsShow.label": {
+    "sourceHash": "4f24ca6"
+  },
+  "commands.suggestedOpsShow.description": "Revise as operações de arquivo que o Ask Cmdr sugeriu e decida o que é executado",
+  "@commands.suggestedOpsShow.description": {
+    "sourceHash": "cf24a4f"
   }
 }

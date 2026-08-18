@@ -1487,3 +1487,15 @@ bestand zijn naam heeft gehouden: dat is precies wat we niet weten. Daarmee staa
   (ook `NE74`, `RN5`, `RN23`) · high. `Deze` volgt het aanwijzende `That` van het Engels en de zusterregel `nameTooLong`
   (`Deze mapnaam is te lang`); geen punt op het eind, want de zin wordt ook ingevoegd vóór `‘{name}’ behoudt zijn naam.`
 - Geen ICU-apostrof nodig: geen enkele rechte `'` in de drie waarden, en de aanhalingstekens zijn de gekrulde `‘…’`.
+
+## Voorgestelde bewerkingen: het venster met wat Ask Cmdr voorstelt (`suggestedOps.*`, `commands.suggestedOpsShow.*`, 2026-08-19)
+
+- ops (de door de agent voorgestelde bestandsbewerkingen) → `bewerkingen`; titel `Voorgestelde bewerkingen` · sluit aan
+  op "File operations" → "Bestandsbewerkingen" · high
+- approve → `Goedkeuren` · ms/standaard NL; gekozen boven het `Accepteer` van macOS, omdat de telvariant
+  ("3 bestanden goedkeuren") toestemming geeft in plaats van iets aan te nemen · high
+- reject → `Weigeren` · macOS Finder, het paar Accepteer/Weiger in het AirDrop-venster (Tier 1); infinitief, omdat de
+  knoppen hier infinitief zijn · high
+- "This can't be undone" → `Dit kun je niet ongedaan maken` · macOS Finder, woord voor woord (waarschuwing bij direct
+  verwijderen) · high
+- suggestion → `suggestie` · al in de catalogus · high

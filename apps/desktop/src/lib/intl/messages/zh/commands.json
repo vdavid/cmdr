@@ -695,5 +695,13 @@
   "commands.handler.zoomDecreased": "缩放已减小到 {size}%。{hint}",
   "@commands.handler.zoomDecreased": {
     "sourceHash": "71404cb"
+  },
+  "commands.suggestedOpsShow.label": "建议的操作",
+  "@commands.suggestedOpsShow.label": {
+    "sourceHash": "4f24ca6"
+  },
+  "commands.suggestedOpsShow.description": "复查 Ask Cmdr 建议的文件操作，并决定执行哪些",
+  "@commands.suggestedOpsShow.description": {
+    "sourceHash": "cf24a4f"
   }
 }

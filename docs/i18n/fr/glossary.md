@@ -1535,3 +1535,15 @@ doit jamais laisser entendre que le nom est resté inchangé.
 - Guillemets « » à espaces ASCII autour de `{name}`, qui reste dans une position neutre (aucun accord n'en dépend).
   Seule apostrophe des trois valeurs : `d''un`, ASCII et doublée.
 - Aucun `sameAsSourceJustification` nécessaire : les trois valeurs diffèrent de l'anglais.
+
+## Opérations suggérées : la fenêtre de ce que propose Ask Cmdr (2026-08-19, `suggestedOps.*`, `commands.suggestedOpsShow.*`)
+
+- ops (l'ensemble d'opérations proposé par l'agent) → `opérations` ; le titre devient `Opérations suggérées` · terme
+  maison ("File operations" → "Opérations sur les fichiers") · high
+- approve → `Approuver` · MS ; retenu plutôt que le `Accepter` de macOS, car la variante avec décompte
+  ("Approuver 3 fichiers") autorise une action au lieu d'accepter un objet · high
+- reject → `Refuser` · macOS Finder, paire Accepter/Refuser du panneau AirDrop (Tier 1) · high
+- "This can't be undone" → `Cette opération est irréversible` · macOS Finder, mot pour mot (alerte de suppression
+  immédiate) · high
+- "Ask Cmdr's reason" → `Raison donnée par Ask Cmdr` · composé ; `motif` est déjà pris par pattern, d'où `raison` · high
+- "Matched by a pattern" → `Correspond à un motif` · reprend `motif` du glossaire · high

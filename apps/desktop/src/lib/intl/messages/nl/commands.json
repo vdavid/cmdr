@@ -698,5 +698,13 @@
   "commands.handler.zoomDecreased": "Zoom verlaagd naar {size}%. {hint}",
   "@commands.handler.zoomDecreased": {
     "sourceHash": "71404cb"
+  },
+  "commands.suggestedOpsShow.label": "Voorgestelde bewerkingen",
+  "@commands.suggestedOpsShow.label": {
+    "sourceHash": "4f24ca6"
+  },
+  "commands.suggestedOpsShow.description": "Bekijk de bestandsbewerkingen die Ask Cmdr voorstelt en bepaal wat er gebeurt",
+  "@commands.suggestedOpsShow.description": {
+    "sourceHash": "cf24a4f"
   }
 }
