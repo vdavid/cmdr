@@ -139,6 +139,9 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::sync_status::get_sync_status,
         crate::commands::smb_diagnostics::list_smb_volumes,
         crate::commands::smb_diagnostics::get_smb_diagnostics,
+        // `eject_volume` is macOS + Linux only, but the busy set behind it is plain
+        // `crate::file_system`, so this one answers everywhere the invoke handler does.
+        crate::commands::eject::get_busy_volume_ids,
         crate::volume_broadcast::refresh_volumes,
         crate::space_poller::watch_volume_space,
         crate::space_poller::unwatch_volume_space,
@@ -482,7 +485,6 @@ pub(super) fn collect_network_types(types: &mut Types) -> Vec<Function> {
         crate::commands::network::reconnect_smb_volume_with_credentials,
         crate::commands::network::disconnect_smb_volume,
         crate::commands::eject::eject_volume,
-        crate::commands::eject::get_busy_volume_ids,
         crate::commands::network::remove_manual_server,
         crate::commands::network::disconnect_network_host,
         crate::commands::network::ensure_network_discovery_started,
