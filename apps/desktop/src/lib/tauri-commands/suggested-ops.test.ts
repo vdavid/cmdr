@@ -10,11 +10,21 @@ vi.mock('$lib/ipc/bindings', () => ({
     suggestedOpsList: vi.fn(),
     suggestedOpsPage: vi.fn(),
     suggestedOpsReject: vi.fn(),
+    suggestedOpsApprove: vi.fn(),
+  },
+  events: {
+    suggestionsChanged: { listen: vi.fn() },
   },
 }))
 
-import { commands } from '$lib/ipc/bindings'
-import { listSuggestedOps, pageSuggestedOps, rejectSuggestedGroup } from './suggested-ops'
+import { commands, events } from '$lib/ipc/bindings'
+import {
+  approveSuggestedGroup,
+  listSuggestedOps,
+  onSuggestionsChanged,
+  pageSuggestedOps,
+  rejectSuggestedGroup,
+} from './suggested-ops'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -54,6 +64,54 @@ describe('pageSuggestedOps', () => {
     } as never)
 
     await expect(pageSuggestedOps(7, 0, 200)).rejects.toThrow()
+  })
+})
+
+describe('approveSuggestedGroup', () => {
+  it('sends the deselected ids and answers what happened', async () => {
+    vi.mocked(commands.suggestedOpsApprove).mockResolvedValueOnce({
+      status: 'ok',
+      data: { kind: 'started', operationId: 'op-9' },
+    } as never)
+
+    await expect(approveSuggestedGroup(7, [4, 9])).resolves.toEqual({ kind: 'started', operationId: 'op-9' })
+    expect(commands.suggestedOpsApprove).toHaveBeenCalledWith(7, [4, 9])
+  })
+
+  it('passes a refusal through rather than throwing, since each kind means something different', async () => {
+    vi.mocked(commands.suggestedOpsApprove).mockResolvedValueOnce({
+      status: 'ok',
+      data: { kind: 'listChanged' },
+    } as never)
+
+    await expect(approveSuggestedGroup(7, [])).resolves.toEqual({ kind: 'listChanged' })
+  })
+
+  it('throws when the call itself failed', async () => {
+    vi.mocked(commands.suggestedOpsApprove).mockResolvedValueOnce({
+      status: 'error',
+      error: { message: 'no store' },
+    } as never)
+
+    await expect(approveSuggestedGroup(7, [])).rejects.toThrow()
+  })
+})
+
+describe('onSuggestionsChanged', () => {
+  it('hands the listener the payload, not the event envelope', async () => {
+    const seen: unknown[] = []
+    vi.mocked(events.suggestionsChanged.listen).mockImplementation(((cb: (e: unknown) => void) => {
+      cb({
+        event: 'suggestions-changed',
+        id: 1,
+        payload: { pendingGroupCount: 2, pendingOpCount: 8, groupId: null, reason: 'proposed' },
+      })
+      return Promise.resolve(() => undefined)
+    }) as never)
+
+    await onSuggestionsChanged((payload) => seen.push(payload))
+
+    expect(seen).toEqual([{ pendingGroupCount: 2, pendingOpCount: 8, groupId: null, reason: 'proposed' }])
   })
 })
 

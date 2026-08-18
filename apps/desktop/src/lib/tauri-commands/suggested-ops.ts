@@ -6,7 +6,16 @@
  * rather than here.
  */
 
-import { commands, type RejectResultView, type SuggestedOpPage, type SuggestedSweepView } from '$lib/ipc/bindings'
+import type { UnlistenFn } from '@tauri-apps/api/event'
+import {
+  commands,
+  events,
+  type ApprovalResultView,
+  type RejectResultView,
+  type SuggestedOpPage,
+  type SuggestedSweepView,
+  type SuggestionsChanged,
+} from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 /** Every sweep with at least one group still waiting on the user, newest first. Counts only:
@@ -33,8 +42,28 @@ export async function rejectSuggestedGroup(groupId: number): Promise<RejectResul
   return res.data
 }
 
+/** Approve a group: claim it and hand its ops to the queue. Sends the ids the user turned OFF,
+ *  never the ones they kept, so approving a 60,000-op group whole carries an empty list. */
+export async function approveSuggestedGroup(groupId: number, deselectedOpIds: number[]): Promise<ApprovalResultView> {
+  const res = await commands.suggestedOpsApprove(groupId, deselectedOpIds)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** Fires whenever the pending suggestion set changes: a sweep landed, a group was amended, or
+ *  somebody approved or rejected one. Carries the counts an indicator renders from, so nothing
+ *  has to query after being told. */
+export function onSuggestionsChanged(callback: (payload: SuggestionsChanged) => void): Promise<UnlistenFn> {
+  return events.suggestionsChanged.listen((event) => {
+    callback(event.payload)
+  })
+}
+
 export type {
+  ApprovalResultView,
   DestinationState,
+  SuggestionChange,
+  SuggestionsChanged,
   RejectResultView,
   SuggestedGroupView,
   SuggestedOpPage,

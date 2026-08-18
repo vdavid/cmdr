@@ -378,10 +378,19 @@ export type {
 } from './ask-cmdr'
 
 // Suggested ops (the review dialog's reads, and the rejection it records)
-export { listSuggestedOps, pageSuggestedOps, rejectSuggestedGroup } from './suggested-ops'
+export {
+  approveSuggestedGroup,
+  listSuggestedOps,
+  onSuggestionsChanged,
+  pageSuggestedOps,
+  rejectSuggestedGroup,
+} from './suggested-ops'
 export type {
+  ApprovalResultView,
   DestinationState,
   RejectResultView,
+  SuggestionChange,
+  SuggestionsChanged,
   SuggestedGroupView,
   SuggestedOpPage,
   SuggestedOpView,

@@ -16,10 +16,13 @@
  *   somebody is halfway through deciding on is how a wrong row gets approved.
  */
 
+import type { UnlistenFn } from '@tauri-apps/api/event'
 import { SvelteSet } from 'svelte/reactivity'
 import { getAppLogger } from '$lib/logging/logger'
 import {
+  approveSuggestedGroup,
   listSuggestedOps,
+  onSuggestionsChanged,
   pageSuggestedOps,
   rejectSuggestedGroup,
   type SuggestedOpView,
@@ -97,9 +100,14 @@ export function approvableCount(): number {
   return Math.max(0, group.liveOpCount - suggestedOpsState.deselected.size)
 }
 
+/** Live only while the dialog is open: the badge owns the session-long subscription. */
+let unlistenChanges: UnlistenFn | null = null
+
 export function closeSuggestedOps(): void {
   suggestedOpsState.open = false
   collapseGroup()
+  unlistenChanges?.()
+  unlistenChanges = null
 }
 
 /**
@@ -110,7 +118,38 @@ export function closeSuggestedOps(): void {
 export async function openSuggestedOps(): Promise<void> {
   if (suggestedOpsState.open) return
   suggestedOpsState.open = true
+  await subscribeWhileOpen()
   await refreshSuggestions()
+}
+
+/**
+ * Listen for changes while the dialog is up.
+ *
+ * The interesting case is `amended` on the group the user has open. A count comparison alone
+ * would miss an amendment that swapped a path but kept the op count, and `groupId` alone can't
+ * tell an amendment from the user's own approval: both carry the same id, and only one of them
+ * means "the thing you are reading moved".
+ */
+async function subscribeWhileOpen(): Promise<void> {
+  if (unlistenChanges) return
+  try {
+    unlistenChanges = await listenForChanges()
+  } catch (e) {
+    // The dialog opens either way. Losing the subscription costs the live notice, not the
+    // review: every refresh still compares the open group's op count, so a change that alters
+    // it is still announced.
+    log.warn("Couldn't subscribe to suggestion changes: {error}", { error: String(e) })
+  }
+}
+
+function listenForChanges(): Promise<UnlistenFn> {
+  return onSuggestionsChanged((payload) => {
+    if (payload.reason === 'amended' && payload.groupId !== null && payload.groupId === suggestedOpsState.openGroupId) {
+      // The rows on screen stay exactly where they are; the notice offers the reload.
+      suggestedOpsState.changedUnderReview = true
+    }
+    void refreshSuggestions()
+  })
 }
 
 /** Re-read the waiting sweeps. */
@@ -204,6 +243,39 @@ export function toggleOp(opId: number): void {
     suggestedOpsState.deselected.delete(opId)
   } else {
     suggestedOpsState.deselected.add(opId)
+  }
+}
+
+/**
+ * Approve a group: claim it and hand its ops to the queue.
+ *
+ * Sends the ids the user turned OFF, never the ones they kept. On success the dialog gets out
+ * of the way and the queue surface takes over, which is the hand-off the whole feature is
+ * built around: an approved op is an ordinary queued op from here on.
+ *
+ * A refusal is not a failure to hide. Each variant means a different thing to the user, so the
+ * dialog re-reads and lets them see the state that actually exists.
+ */
+export async function approveGroup(groupId: number): Promise<void> {
+  if (suggestedOpsState.busyGroupId !== null) return
+  suggestedOpsState.busyGroupId = groupId
+  try {
+    const result = await approveSuggestedGroup(groupId, [...suggestedOpsState.deselected])
+    if (result.kind === 'started') {
+      if (suggestedOpsState.openGroupId === groupId) collapseGroup()
+      await refreshSuggestions()
+      // Nothing waiting means nothing left to decide, so the dialog closes itself rather than
+      // sitting there empty over the queue that just took over.
+      if (suggestedOpsState.sweeps.length === 0) suggestedOpsState.open = false
+      return
+    }
+    log.info('A suggestion group was not approved: {kind}', { kind: result.kind })
+    if (result.kind === 'listChanged') suggestedOpsState.changedUnderReview = true
+    await refreshSuggestions()
+  } catch (e) {
+    log.warn("Couldn't approve the group: {error}", { error: String(e) })
+  } finally {
+    suggestedOpsState.busyGroupId = null
   }
 }
 

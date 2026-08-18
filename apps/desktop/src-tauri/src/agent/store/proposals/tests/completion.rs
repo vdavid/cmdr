@@ -112,6 +112,7 @@ fn the_pending_count_sees_only_what_the_user_still_has_to_answer() {
     let (groups, ops) = count_pending(&conn, ProposalStatus::Pending).expect("count");
     assert_eq!(
         groups, 1,
+        // allowed-pluralize-noun: "counts" is the verb here, not a plural noun.
         "only the group still waiting: {waiting} counts, {answered} does not"
     );
     assert_eq!(ops, 3, "and only that group's ops");

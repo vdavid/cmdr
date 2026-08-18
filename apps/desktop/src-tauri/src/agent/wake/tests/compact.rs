@@ -123,6 +123,7 @@ fn the_digest_never_exceeds_its_budget() {
         let cost = crate::agent::chat::budget::estimate_tokens_str(&rendered);
         assert!(
             cost <= budget,
+            // allowed-pluralize-noun: a test diagnostic, not user copy; a blown budget is never one token.
             "budget {budget} exceeded: rendered {cost} tokens ({} lines, {} rollups)",
             digest.lines.len(),
             digest.rollups.len()

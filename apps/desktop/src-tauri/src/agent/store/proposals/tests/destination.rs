@@ -36,6 +36,7 @@ fn a_path_inside_an_archive_cannot_be_a_destination() {
     ] {
         assert!(
             WritableDestination::new(at(inside)).is_none(),
+            // allowed-pluralize-noun: "continues" is the verb here, not a plural noun.
             "{inside} continues inside an archive, so no group may write there"
         );
     }

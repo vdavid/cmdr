@@ -7,8 +7,9 @@ per-group approve and reject and per-op deselection. The backend it reads is
 
 ## Module map
 
-- `suggested-ops-trigger.svelte.ts` — the state: the sweep list, the op WINDOW, deselection, and the reject path.
+- `suggested-ops-trigger.svelte.ts` — the dialog's state: the sweep list, the op WINDOW, deselection, approve, reject.
 - `SuggestedOpsDialog.svelte` — the dialog. Reads state, renders disclosure, owns the virtual list.
+- `suggested-ops-badge.svelte.ts` / `SuggestedOpsIndicator.svelte` — the status-corner count and its subscription.
 
 ## Must-knows
 
@@ -27,5 +28,10 @@ per-group approve and reject and per-op deselection. The backend it reads is
   enumerate 60,000 ids to say what Reject already says.
 - **A group that changed under an open review is ANNOUNCED, never swapped.** `changedUnderReview` raises a notice and
   the rows stay put: re-ordering a list somebody is halfway through deciding on is how a wrong row gets approved.
-- **Approve is not wired yet** (`APPROVE_WIRED`), because claiming a group belongs to the M4a bridge. The button is not
-  rendered at all rather than rendered inert: a control that silently does nothing passes review unnoticed.
+- **The badge is its own module, subscribed and never polled.** It's mounted all session while the dialog's state only
+  exists during a review, so folding them would leave the corner reading a store nothing fills until the dialog opens.
+  It seeds once at startup AND listens: suggestions never expire, so one proposed last week is waiting before any event
+  fires. ❌ Don't drop the seed as redundant.
+- **A change notice keys on `reason`, not on the group id alone.** An approval and an amendment carry the same
+  `groupId`; only `amended` means "the thing you're reading moved". Keying on the id alone raises the notice on the
+  user's own approval.

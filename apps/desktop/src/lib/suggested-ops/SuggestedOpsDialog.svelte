@@ -19,6 +19,7 @@
     import { calculateVirtualWindow } from '$lib/file-explorer/views/virtual-scroll'
     import {
         approvableCount,
+        approveGroup,
         closeSuggestedOps,
         collapseGroup,
         ensureOpWindow,
@@ -30,11 +31,6 @@
         suggestedOpsState,
         toggleOp,
     } from './suggested-ops-trigger.svelte'
-
-    // Approving claims the group and hands it to the queue, which is the M4a bridge. Until that
-    // lands the button is not rendered at all: a button that silently does nothing is worse
-    // than one that isn't there yet, and it would pass review unnoticed.
-    const APPROVE_WIRED = false
 
     /** Row height in pixels, fixed so the virtual window stays plain arithmetic. */
     const ROW_HEIGHT = 30
@@ -152,13 +148,15 @@
                                     {tString('suggestedOps.review')}
                                 </Button>
                             {/if}
-                            {#if APPROVE_WIRED}
-                                <Button variant="primary" disabled={suggestedOpsState.busyGroupId !== null}>
-                                    {g.groupId === suggestedOpsState.openGroupId
-                                        ? tString('suggestedOps.approveCount', { count: approvableCount() })
-                                        : tString('suggestedOps.approve')}
-                                </Button>
-                            {/if}
+                            <Button
+                                variant="primary"
+                                disabled={suggestedOpsState.busyGroupId !== null}
+                                onclick={() => void approveGroup(g.groupId)}
+                            >
+                                {g.groupId === suggestedOpsState.openGroupId
+                                    ? tString('suggestedOps.approveCount', { count: approvableCount() })
+                                    : tString('suggestedOps.approve')}
+                            </Button>
                             <Button
                                 variant="secondary"
                                 disabled={suggestedOpsState.busyGroupId !== null}

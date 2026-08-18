@@ -51,17 +51,39 @@ are. The notice offers the reload; the user takes it when ready.
 ❌ Never swap the rows silently. The user is midway through a decision keyed to row positions, and a list that re-orders
 under the cursor is how a row nobody chose gets approved.
 
-**Not yet subscribed.** Nothing emits an event when the pending set changes, so this fires on the refreshes the dialog
-already does rather than the moment the agent amends. The event lands with the M4a bridge (it needs the approve path,
-which is why it belongs there), and both this affordance and the status-corner indicator subscribe to it then.
+**Two signals, and the weaker one is not redundant.** A refresh compares the open group's `liveOpCount` before and
+after; the `suggestions-changed` event carries a typed `reason`. The count comparison misses an amendment that swapped a
+path but kept the op count, so the event is what actually catches an amendment. Both stay.
+
+**Decision: the notice keys on `reason`, never on `groupId` alone.** An amendment and the user's own approval carry the
+SAME group id, and only one of them means "the list under you moved". Keying on the id would raise "Ask Cmdr changed
+this" the instant the user approved something, which presents as a glitch rather than a bug and gets found late. A
+mutation test pins it: drop the `reason` check and the approval case goes red.
+
+## The badge, and why it is a separate module
+
+`suggested-ops-badge.svelte.ts` is mounted for the whole session; the dialog's state only exists while a review is open.
+Folding them would leave the corner reading a store nothing populates until the dialog opens, so the indicator would sit
+at zero forever, which is the failure mode of an indicator that silently never updates.
+
+It does two things that look redundant and are not:
+
+- **Seeds once at startup**, because suggestions never expire. A group proposed last week is waiting before this session
+  emits anything.
+- **Subscribes**, because after that first read only being told moves it. ❌ Never poll.
+
+A count it cannot read is logged and dropped rather than propagated: an approval that already succeeded must not fail
+because a badge could not refresh.
 
 ## What isn't here yet
 
-- **Approve** (`APPROVE_WIRED`): claiming a group and handing it to the queue is the M4a bridge. The button is not
-  rendered rather than rendered inert.
-- **The status-corner indicator**: waiting on the same event, because an indicator that never updates is worse than one
-  that isn't there.
 - **`interrupted` groups**: re-approving one mints a NEW group with a fresh preflight, which is spine machinery rather
-  than dialog work. The dialog lists `pending` only for now.
-- **The dialog-gallery preview**: the row is `not-triggerable` until approving is real, so David reviews the finished
-  surface rather than a partial one.
+  than dialog work, so surfacing them would mean designing the re-approval flow inside a dialog milestone. Deliberate,
+  not missing.
+- **The degraded-state actions**: `WakeReadiness` types consent / Full Disk Access / no-API-key as distinct states, each
+  with its own action (open consent, open the FDA screen, open AI settings). The indicator renders a count today and
+  should render those states with their specific action rather than a generic "unavailable".
+- **The dialog-gallery preview**: the row is `not-triggerable` until fixtures exist for the interesting shapes (an
+  irreversible group, a folder that will be created, a pattern-matched group, a 60,000-op group).
+- **Nine of the ten locales**: English and German ship; the rest wait on David's copy review, since translating copy
+  that is about to be revised is wasted work.
