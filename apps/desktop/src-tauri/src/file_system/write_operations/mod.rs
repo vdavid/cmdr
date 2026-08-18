@@ -40,6 +40,7 @@ mod overwrite;
 mod paste_clipboard;
 mod rename;
 pub(crate) mod rollback;
+mod routing;
 mod scan;
 mod scan_bridge;
 mod scan_cache;
@@ -130,6 +131,14 @@ pub(crate) use rename::{
 // touches anything. Reviewed batches (Ask Cmdr's rename plan, an approved
 // suggestion group) build one; a plain user-started op passes none and is
 // unaffected. `source_binding.rs`.
+// Where a transfer's volumes and destination path come from, plus the three
+// routed entry points every cross-volume transfer goes through. Lifted out of the
+// IPC command bodies so a BACKEND caller can start one — an extract is a copy
+// whose source resolves to an `ArchiveVolume`, and it had no other way in.
+// `routing.rs`.
+pub(crate) use routing::{
+    resolve_dest_path, resolve_source_volume, start_volume_compress, start_volume_copy, start_volume_move,
+};
 pub(crate) use source_binding::{ExpectedSources, LocalContent, RemoteContent, SourceFingerprint};
 use source_binding::{retain_bound_sources, retain_bound_sources_remote, retain_bound_sources_with_sizes};
 // External busy-volume seam for the drag-out fulfillment service (see
@@ -208,25 +217,17 @@ pub(crate) fn test_retain_failure(operation_id: &str, operation_type: WriteOpera
     manager::manager().record_failure(operation_id, operation_type, error);
 }
 
-// Re-export volume copy types and functions
-pub use transfer::volume::move_between_volumes;
-pub use transfer::volume::{copy_between_volumes, scan_for_volume_copy};
+// Re-export volume copy types and functions. `routing.rs` owns which of
+// `copy_between_volumes` / `move_between_volumes` / `route_archive_{copy_into,
+// move_out}` / `compress_start` a given transfer reaches, so those four are
+// reached through `super::` inside this module and are NOT re-exported: one
+// routing, one place to keep it right.
+pub use transfer::volume::scan_for_volume_copy;
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
-// Copy/move INTO a zip: the command layer routes an archive destination here
-// (the whole transfer becomes one `{ add }` changeset) instead of the per-file
-// cross-volume engine.
-pub(crate) use archive_edit::route_archive_copy_into;
-// Compress: create a NEW zip at a target and pack the sources into it (seed a
-// valid empty archive, then reuse the copy-into flow). The `compress_files` IPC
-// command routes here. A LOCAL parent seeds the local FS; a REMOTE parent (SMB/MTP)
-// seeds THROUGH the parent volume so the copy-into's pull sees it. See
-// `archive_edit/compress.rs`.
-pub(crate) use archive_edit::compress_start;
-// Move OUT of a zip: the command layer routes an archive SOURCE here. It runs a
-// compound op — extract via the cross-volume copy engine, then (only on a fully
-// clean extract) a batch `{ delete }` archive rewrite (the move invariant). See
-// `archive_edit/` and DETAILS § "Archive edits".
-pub(crate) use archive_edit::route_archive_move_out;
+// Test-only: the archive-edit and remote-transfer suites drive these drivers
+// directly, under a `CollectorEventSink` and without a routing decision to make.
+#[cfg(test)]
+pub(crate) use archive_edit::{compress_start, route_archive_copy_into, route_archive_move_out};
 // The cross-volume copy body, reused as the extract phase of an out-of-zip MOVE
 // (`route_archive_move_out`). Not spawn-managed itself — it runs inside the
 // move-out op's deferred under the move op's id/state/sink.
@@ -872,6 +873,8 @@ pub async fn trash_files_start(
     .await
 }
 
+#[cfg(test)]
+mod approved_op_parity_tests;
 #[cfg(test)]
 mod journal_capture_tests;
 #[cfg(test)]

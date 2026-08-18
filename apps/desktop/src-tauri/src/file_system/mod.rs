@@ -83,15 +83,14 @@ pub use write_operations::{
     dismiss_all_failed_operations, dismiss_failed_operation, init_operation_event_emitter, list_operations, pause_all,
     pause_operation, resume_all, resume_operation,
 };
-// Re-export volume copy types and functions
-/// Copy/move INTO a zip routing (the command layer routes an archive destination
-/// here). Crate-internal — not part of the public write-ops surface.
-pub(crate) use write_operations::compress_start;
-pub(crate) use write_operations::route_archive_copy_into;
-pub(crate) use write_operations::route_archive_move_out;
-pub use write_operations::{
-    VolumeCopyConfig, VolumeCopyScanResult, copy_between_volumes, move_between_volumes, scan_for_volume_copy,
+// Cross-volume transfers. The three `start_volume_*` entry points own the volume
+// and destination-path resolution and every archive fork (extract out, copy/move
+// into a zip); the IPC commands and any backend caller both go through them, so
+// there is one routing to keep right. `write_operations/routing.rs`.
+pub(crate) use write_operations::{
+    resolve_dest_path, resolve_source_volume, start_volume_compress, start_volume_copy, start_volume_move,
 };
+pub use write_operations::{VolumeCopyConfig, VolumeCopyScanResult, scan_for_volume_copy};
 
 /// Whether to auto-upgrade SMB mounts to direct smb2 connections.
 /// Set from the `network.directSmbConnection` setting at startup.

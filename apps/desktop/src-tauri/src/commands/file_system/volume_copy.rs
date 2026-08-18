@@ -1,75 +1,25 @@
 //! Tauri commands for cross-volume copy/move operations.
+//!
+//! These are pass-throughs: they build the `TauriEventSink` at the edge and hand
+//! the whole routed transfer to `write_operations::routing`, which owns the volume
+//! and destination-path resolution and the archive forks. That split is what lets
+//! a backend caller start the same transfer with its own injected sink.
 
-use crate::file_system::Volume;
 use crate::file_system::{
     OperationEventSink, ScanConflict, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationError,
-    WriteOperationStartResult, compress_start as ops_compress_start, copy_between_volumes as ops_copy_between_volumes,
-    move_between_volumes as ops_move_between_volumes, route_archive_copy_into as ops_route_archive_copy_into,
-    scan_for_volume_copy as ops_scan_for_volume_copy,
+    WriteOperationStartResult, resolve_dest_path, resolve_source_volume, scan_for_volume_copy as ops_scan_for_volume_copy,
+    start_volume_compress, start_volume_copy, start_volume_move,
 };
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::time::Duration;
 
 use crate::commands::util::{Deadline, IpcError, timeout_detached, timeout_detached_within};
-use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
-/// Turns the destination the transfer dialog sent into the path the destination
-/// volume accepts: home shortcut expanded (local only), then anchored at the
-/// volume's root.
-///
-/// The dialog's destination box is VOLUME-RELATIVE (`/photos`) because the
-/// volume is a separate dropdown next to it, while a pane sends the absolute
-/// path it displays. `cmdr_fs::volume::root_anchored` folds both into the
-/// absolute form, and it's idempotent, so neither caller has to know which one
-/// it holds. Skipping it is what made a move into an SMB subfolder fail
-/// instantly (ERR-XCP5Q): `SmbVolume` reads `/photos` as an absolute path
-/// outside its mount and answers `NotFound` rather than guessing.
-///
-/// `~` expands for local volumes only, per the "never tilde-expand MTP/network
-/// paths" rule: on a share, `~` is an ordinary folder name.
-fn resolve_dest_path(dest_volume: &Arc<dyn Volume>, dest_path: String) -> PathBuf {
-    let expanded = if dest_volume.local_path().is_some() {
-        super::expand_tilde(&dest_path)
-    } else {
-        dest_path
-    };
-    cmdr_fs::volume::root_anchored(dest_volume.root(), Path::new(&expanded))
-}
-
-/// Resolves a batch's source volume, routing a source INSIDE an archive to its
-/// `ArchiveVolume` (extract-out is a supported source). One `source_volume_id`
-/// per batch means no straddle risk — every path shares the same archive or none
-/// — so the first path decides. The `bool` is "source is inside an archive": the
-/// `.zip` file itself is a plain file (copied/moved as a file, via its parent
-/// volume), so only a genuinely-inner source flips it true.
-async fn resolve_source(volume_id: &str, first_path: Option<&PathBuf>) -> Option<(Arc<dyn Volume>, bool)> {
-    let manager = get_volume_manager();
-    let Some(path) = first_path else {
-        return manager.get(volume_id).map(|v| (v, false));
-    };
-    // Only a non-empty inner component can be archive-inner; the `.zip` file itself
-    // (empty inner) is a plain file copied via its parent volume. This is a pure
-    // string pre-filter, so a plain local/remote path skips the resolve below.
-    let is_inner_candidate =
-        archive::archive_boundary_candidate(path).is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
-    if !is_inner_candidate {
-        return manager.get(volume_id).map(|v| (v, false));
-    }
-    // Parent-aware resolve (local `std::fs` OR remote via the parent's own I/O):
-    // a confirmed archive routes to the `ArchiveVolume` (extract-out) with
-    // `is_inside = true`; a mislabeled `.zip` degrades to the parent, `false`.
-    let resolved = manager.resolve(volume_id, path).await;
-    let is_inside = resolved.is_archive;
-    resolved
-        .volume
-        .or_else(|| manager.get(volume_id))
-        .map(|v| (v, is_inside))
-}
-
-/// Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.
+/// Unified copy across volume types (local, MTP, extract out of a `.zip`).
+/// Same events as `copy_files`.
 #[tauri::command]
 #[specta::specta]
 pub async fn copy_between_volumes(
@@ -81,62 +31,22 @@ pub async fn copy_between_volumes(
     config: Option<VolumeCopyConfig>,
     initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
-
-    // Route an archive-inner source batch to its ArchiveVolume (extract-out).
-    let (source_volume, _source_is_archive) = resolve_source(&source_volume_id, source_paths.first())
-        .await
-        .ok_or_else(|| WriteOperationError::IoError {
-            path: source_volume_id.clone(),
-            message: format!("Source volume '{}' not found", source_volume_id),
-        })?;
-
-    // Resolve the destination. A `.zip`-crossing dest routes the whole copy to
-    // the managed archive-edit driver (one `{ add }` changeset).
-    let dest_resolved = get_volume_manager()
-        .resolve(&dest_volume_id, Path::new(&dest_path))
-        .await;
-    let dest_volume = dest_resolved.volume.ok_or_else(|| WriteOperationError::IoError {
-        path: dest_volume_id.clone(),
-        message: format!("Destination volume '{}' not found", dest_volume_id),
-    })?;
-    let config = config.unwrap_or_default();
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-
-    if dest_resolved.is_archive {
-        return ops_route_archive_copy_into(
-            events,
-            source_volume,
-            source_paths,
-            PathBuf::from(&dest_path),
-            dest_volume_id,
-            config.conflict_resolution,
-            config.progress_interval_ms,
-            false,
-            config.compression_level,
-            config.preview_id.clone(),
-        )
-        .await;
-    }
-
-    let dest_path = resolve_dest_path(&dest_volume, dest_path);
-    ops_copy_between_volumes(
+    start_volume_copy(
         events,
         source_volume_id,
-        source_volume,
-        source_paths,
+        source_paths.iter().map(PathBuf::from).collect(),
         dest_volume_id,
-        dest_volume,
         dest_path,
-        config,
+        config.unwrap_or_default(),
         initiator.unwrap_or(Initiator::User),
     )
     .await
 }
 
-/// Unified move across volume types. Same events as `copy_between_volumes`.
-/// Handles same-volume (native rename/move), both-local (native move), and cross-volume
-/// (copy+delete).
+/// Unified move across volume types. Handles same-volume (native rename/move),
+/// both-local (native move), cross-volume (copy+delete), and both directions
+/// across a `.zip` boundary.
 #[tauri::command]
 #[specta::specta]
 pub async fn move_between_volumes(
@@ -148,83 +58,22 @@ pub async fn move_between_volumes(
     config: Option<VolumeCopyConfig>,
     initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
-
-    // An archive SOURCE routes to the compound move-out op (extract via the copy
-    // engine, then a batch `{ delete }` archive rewrite once the extract lands).
-    let (source_volume, source_is_archive) = resolve_source(&source_volume_id, source_paths.first())
-        .await
-        .ok_or_else(|| WriteOperationError::IoError {
-            path: source_volume_id.clone(),
-            message: format!("Source volume '{}' not found", source_volume_id),
-        })?;
-
-    let dest_resolved = get_volume_manager()
-        .resolve(&dest_volume_id, Path::new(&dest_path))
-        .await;
-    let dest_volume = dest_resolved.volume.ok_or_else(|| WriteOperationError::IoError {
-        path: dest_volume_id.clone(),
-        message: format!("Destination volume '{}' not found", dest_volume_id),
-    })?;
-    let config = config.unwrap_or_default();
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-
-    // Move OUT of a zip. Takes precedence over the dest-archive branch: a
-    // zip→zip move extracts out first (the dest-archive case degrades to a copy
-    // failure inside the extract, never data loss).
-    if source_is_archive {
-        let dest_path = resolve_dest_path(&dest_volume, dest_path);
-        return crate::file_system::route_archive_move_out(
-            events,
-            source_volume_id,
-            source_volume,
-            source_paths,
-            dest_volume_id,
-            dest_volume,
-            dest_path,
-            config,
-        )
-        .await;
-    }
-
-    // A move INTO a zip routes to the managed edit driver as one `{ add }`
-    // changeset; the local sources are deleted after the commit (move invariant).
-    if dest_resolved.is_archive {
-        return ops_route_archive_copy_into(
-            events,
-            source_volume,
-            source_paths,
-            PathBuf::from(&dest_path),
-            dest_volume_id,
-            config.conflict_resolution,
-            config.progress_interval_ms,
-            true,
-            config.compression_level,
-            config.preview_id.clone(),
-        )
-        .await;
-    }
-
-    let dest_path = resolve_dest_path(&dest_volume, dest_path);
-    ops_move_between_volumes(
+    start_volume_move(
         events,
         source_volume_id,
-        source_volume,
-        source_paths,
+        source_paths.iter().map(PathBuf::from).collect(),
         dest_volume_id,
-        dest_volume,
         dest_path,
-        config,
+        config.unwrap_or_default(),
         initiator.unwrap_or(Initiator::User),
     )
     .await
 }
 
 /// Compresses `source_paths` into a NEW zip at `dest_zip_path` on `dest_volume_id`.
-/// Reuses the archive-edit machinery: seed a valid empty zip, then copy the sources
-/// in as one changeset (`compress_start`). Same events as `copy_between_volumes`.
-/// The destination may be LOCAL or REMOTE (SMB/MTP): `compress_start` seeds a local
-/// target on the FS and a remote one THROUGH the parent volume.
+/// Same events as `copy_between_volumes`. The destination may be LOCAL or REMOTE
+/// (SMB/MTP).
 #[tauri::command]
 #[specta::specta]
 pub async fn compress_files(
@@ -236,42 +85,14 @@ pub async fn compress_files(
     config: Option<VolumeCopyConfig>,
     initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
-
-    // Route an archive-inner source batch to its ArchiveVolume (compress-from-zip).
-    let (source_volume, _source_is_archive) = resolve_source(&source_volume_id, source_paths.first())
-        .await
-        .ok_or_else(|| WriteOperationError::IoError {
-            path: source_volume_id.clone(),
-            message: format!("Source volume '{}' not found", source_volume_id),
-        })?;
-
-    // The new `.zip` doesn't exist yet, so `resolve` returns the PARENT drive volume
-    // (`is_archive = false` for a non-existent path) — the drive the seed is written
-    // to. `compress_start` bypasses the archive-boundary resolve on its own.
-    let dest_volume = get_volume_manager()
-        .resolve(&dest_volume_id, Path::new(&dest_zip_path))
-        .await
-        .volume
-        .ok_or_else(|| WriteOperationError::IoError {
-            path: dest_volume_id.clone(),
-            message: format!("Destination volume '{}' not found", dest_volume_id),
-        })?;
-
-    let config = config.unwrap_or_default();
-    let dest_zip_path = resolve_dest_path(&dest_volume, dest_zip_path);
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-
-    ops_compress_start(
+    start_volume_compress(
         events,
-        source_volume,
-        source_paths,
-        dest_zip_path,
+        source_volume_id,
+        source_paths.iter().map(PathBuf::from).collect(),
         dest_volume_id,
-        config.conflict_resolution,
-        config.progress_interval_ms,
-        config.compression_level,
-        config.preview_id.clone(),
+        dest_zip_path,
+        config.unwrap_or_default(),
         initiator.unwrap_or(Initiator::User),
     )
     .await
@@ -292,7 +113,7 @@ pub async fn scan_volume_for_copy(
 
     // Resolve both so an archive-inner source scans through its ArchiveVolume
     // (sizing an extract-out) and the dest routes consistently with the copy op.
-    let (source_volume, _) = resolve_source(&source_volume_id, source_paths.first())
+    let (source_volume, _) = resolve_source_volume(&source_volume_id, source_paths.first())
         .await
         .ok_or_else(|| IpcError::from_err(format!("Source volume '{}' not found", source_volume_id)))?;
 
@@ -408,7 +229,7 @@ pub(crate) async fn scan_volume_for_conflicts_within(
         let paths: Vec<PathBuf> = src_paths.iter().map(PathBuf::from).collect();
         let first = paths.first().cloned();
         let resolved = timeout_detached_within(&deadline, async move {
-            Ok::<_, String>(resolve_source(&src_volume_id, first.as_ref()).await)
+            Ok::<_, String>(resolve_source_volume(&src_volume_id, first.as_ref()).await)
         })
         .await;
         if let Ok(Some((src_volume, _))) = resolved {
@@ -528,15 +349,12 @@ pub struct SourceItemInput {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        Deadline, SourceItemInput, merge_source_types_from_batch, resolve_dest_path, resolve_source,
-        scan_volume_for_conflicts_within,
-    };
+    use super::{Deadline, SourceItemInput, merge_source_types_from_batch, scan_volume_for_conflicts_within};
     use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
     use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo};
     use crate::test_support::WedgedVolume;
-    use cmdr_fs::volume::{InMemoryVolume, Volume};
-    use std::path::{Path, PathBuf};
+    use cmdr_fs::volume::Volume;
+    use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::Duration;
 
@@ -586,82 +404,6 @@ mod tests {
             "the whole check owes one budget, not one per leg: took {:?}",
             started.elapsed()
         );
-    }
-
-    /// A non-local volume (no `local_path`) rooted where a mounted share is:
-    /// stands in for `SmbVolume` without a network.
-    fn share_at(root: &str) -> Arc<dyn Volume> {
-        Arc::new(InMemoryVolume::new("TestShare").with_root(root))
-    }
-
-    #[test]
-    fn a_remote_destination_is_anchored_at_its_mount_root() {
-        // The dialog's box is volume-relative. Unanchored, `/_todo_pics` reaches
-        // `SmbVolume` as an absolute path outside the mount and comes back
-        // `NotFound` before any I/O, which is what killed a 360 GB move
-        // (ERR-XCP5Q) and reported the DESTINATION as a missing source.
-        let volume = share_at("/Volumes/naspi");
-        assert_eq!(
-            resolve_dest_path(&volume, "/_todo_pics/Fiumei footage".to_string()),
-            Path::new("/Volumes/naspi/_todo_pics/Fiumei footage")
-        );
-    }
-
-    #[test]
-    fn a_remote_destination_already_under_its_root_is_untouched() {
-        let volume = share_at("/Volumes/naspi");
-        assert_eq!(
-            resolve_dest_path(&volume, "/Volumes/naspi/_todo_pics".to_string()),
-            Path::new("/Volumes/naspi/_todo_pics")
-        );
-    }
-
-    #[test]
-    fn a_remote_destination_at_the_share_root_stays_the_root() {
-        // The one shape that worked before anchoring existed; it must keep
-        // working, and must not become `/Volumes/naspi/`.
-        let volume = share_at("/Volumes/naspi");
-        assert_eq!(resolve_dest_path(&volume, "/".to_string()), Path::new("/Volumes/naspi"));
-    }
-
-    #[test]
-    fn a_local_destination_still_expands_the_home_shortcut() {
-        let volume: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new("Root", "/"));
-        let home = std::env::var("HOME").expect("HOME");
-        assert_eq!(
-            resolve_dest_path(&volume, "~/Downloads".to_string()),
-            Path::new(&home).join("Downloads")
-        );
-    }
-
-    #[tokio::test]
-    async fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {
-        use crate::file_system::volume::LocalPosixVolume;
-        use crate::file_system::volume::manager::get_volume_manager;
-        use std::sync::Arc;
-
-        let dir = tempfile::tempdir().expect("tempdir");
-        let zip = dir.path().join("bundle.zip");
-        std::fs::write(&zip, b"PK\x03\x04rest").expect("write zip magic");
-        // The parent drive holds the `.zip`. (nextest isolates the global per test.)
-        get_volume_manager().register(
-            "root",
-            Arc::new(LocalPosixVolume::new("Root", dir.path().to_str().unwrap())),
-        );
-
-        // The `.zip` FILE itself is copied as a plain file: routed to the PARENT
-        // volume, `is_inside = false` (NOT the ArchiveVolume, which would scan its
-        // contents instead of copying the file).
-        let (vol, is_inside) = resolve_source("root", Some(&zip)).await.expect("source volume");
-        assert!(!is_inside, "the .zip file itself is not archive-inner");
-        assert_eq!(vol.name(), "Root", "routed to the parent volume, not the archive");
-
-        // A path INSIDE the archive routes to the ArchiveVolume, is_inside = true.
-        let (inner_vol, inner_is_inside) = resolve_source("root", Some(&zip.join("entry.txt")))
-            .await
-            .expect("inner volume");
-        assert!(inner_is_inside, "an inner path is archive-inner");
-        assert_eq!(inner_vol.root(), zip, "the archive volume's root is the .zip");
     }
 
     fn scan(is_dir: bool, bytes: u64) -> CopyScanResult {
