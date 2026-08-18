@@ -13,12 +13,10 @@ translate-a-locale job globs ~12 predictable files. Key prefix ↔ filename is 1
 window just by getting its own area key; shared strings live in `common.*`, and the moment one site needs different copy
 it gets its own area key (never a positional "window" argument).
 
-The catalog areas are a closed set, enforced by `desktop-message-key-naming`'s `messageKeyKnownAreas`, and they mirror
-the `lib/` feature directories (lowerCamel): `common`, `transfer`, `settings`, `errors`, `fileExplorer`,
-`fileOperations`, `queryUi`, `search`, `viewer`, `onboarding`, `licensing`, `downloads`, `ai`, `goToPath`, `mtp`, `ui`,
-`updates`, `whatsNew`, `commandPalette`, `commands`, `shortcuts`, `crashReporter`, `errorReporter`, `feedback`, `menu`,
-`indexing`, `lowDiskSpace`, `notifications`, `main`. Adding one means adding both the `<area>.json` file and the area to
-that check.
+The catalog areas are a closed set that mirrors the `lib/` feature directories (lowerCamel). The list itself lives in
+ONE place, `messageKeyKnownAreas` in `scripts/check/checks/desktop-message-key-naming.go`, which is also what enforces
+it; read it there rather than trusting a copy. Adding an area means adding both the `<area>.json` file and the entry in
+that check, or every key in the new file fails as malformed.
 
 ## Message value format
 
