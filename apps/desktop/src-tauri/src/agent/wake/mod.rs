@@ -38,6 +38,7 @@ mod compact;
 mod inbox;
 mod interest;
 mod persist;
+mod readiness;
 
 #[cfg(test)]
 mod tests;
@@ -49,6 +50,7 @@ pub use interest::{
     COLD_DELAY, FolderImportance, HOT_DELAY, HOT_THRESHOLD, Interest, WARM_DELAY, WARM_THRESHOLD, interest, wake_delay,
 };
 pub use persist::{clear, load, save_all, save_row};
+pub use readiness::{AgentGates, WakeReadiness, readiness};
 
 /// What kind of change happened. Intent-bearing kinds (a file appearing, a file being renamed)
 /// mean more to the agent than churn (a file written to again), which is what [`interest()`]
