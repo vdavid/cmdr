@@ -155,6 +155,45 @@ mod tests {
     }
 
     #[test]
+    fn a_file_from_the_previous_build_still_loads() {
+        // What the writer emitted before the list moved to `crate::recents`.
+        let legacy = r#"{
+  "_schemaVersion": 1,
+  "entries": [
+    {
+      "id": "abc-123",
+      "timestamp": 1700000000000,
+      "mode": "regex",
+      "query": "^report.*",
+      "filters": {
+        "sizeMin": null,
+        "sizeMax": null,
+        "modifiedAfter": null,
+        "modifiedBefore": null,
+        "isDirectory": true
+      },
+      "caseSensitive": true,
+      "matchCount": 7
+    }
+  ]
+}"#;
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join(SelectionHistoryEntry::FILENAME);
+        std::fs::write(&path, legacy).expect("write");
+
+        let list = RecentsFile::<SelectionHistoryEntry>::new();
+        list.load_at(&path);
+
+        let entries = list.entries(None);
+        assert_eq!(entries.len(), 1, "the legacy file should have loaded, not quarantined");
+        assert_eq!(entries[0].query, "^report.*");
+        assert_eq!(entries[0].match_count, 7);
+        assert!(entries[0].case_sensitive);
+        assert_eq!(entries[0].filters.is_directory, Some(true));
+    }
+
+    #[test]
     fn default_cap_is_a_thousand() {
         assert_eq!(DEFAULT_MAX_COUNT, 1000);
     }

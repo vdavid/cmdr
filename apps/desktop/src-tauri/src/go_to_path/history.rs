@@ -93,6 +93,33 @@ mod tests {
     }
 
     #[test]
+    fn a_file_from_the_previous_build_still_loads() {
+        // What the writer emitted before the list moved to `crate::recents`.
+        let legacy = r#"{
+  "_schemaVersion": 1,
+  "entries": [
+    {
+      "id": "abc-123",
+      "timestamp": 1700000000000,
+      "path": "/Users/test/Documents"
+    }
+  ]
+}"#;
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join(RecentPathEntry::FILENAME);
+        std::fs::write(&path, legacy).expect("write");
+
+        let list = RecentsFile::<RecentPathEntry>::new();
+        list.load_at(&path);
+
+        let entries = list.entries(None);
+        assert_eq!(entries.len(), 1, "the legacy file should have loaded, not quarantined");
+        assert_eq!(entries[0].id, "abc-123");
+        assert_eq!(entries[0].path, "/Users/test/Documents");
+    }
+
+    #[test]
     fn entry_serialization_round_trip() {
         let e = RecentPathEntry {
             id: "abc-123".to_string(),
