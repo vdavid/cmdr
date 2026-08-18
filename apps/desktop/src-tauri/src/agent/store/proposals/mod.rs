@@ -34,8 +34,8 @@ mod write;
 mod tests;
 
 pub use claim::{
-    AcceptanceOutcome, ClaimOutcome, ClaimRefusal, ClaimedGroup, OpBinding, RejectOutcome,
-    claim_group_for_execution, live_binding, record_acceptance, reject_group,
+    AcceptanceOutcome, ClaimOutcome, ClaimRefusal, ClaimedGroup, OpBinding, RejectOutcome, claim_group_for_execution,
+    live_binding, record_acceptance, reject_group,
 };
 pub use read::{GroupSummary, ProposalOp, count_ops, get_group, list_groups, page_ops};
 pub use recovery::recover_interrupted_groups;
@@ -158,11 +158,13 @@ impl GroupIntent {
                     .iter()
                     .map(|op| (op.source_path.as_str(), None, op.snapshot.as_ref())),
             ),
-            GroupIntent::Rename { renames, .. } => Box::new(
-                renames
-                    .iter()
-                    .map(|op| (op.source_path.as_str(), Some(op.new_name.as_str()), op.snapshot.as_ref())),
-            ),
+            GroupIntent::Rename { renames, .. } => Box::new(renames.iter().map(|op| {
+                (
+                    op.source_path.as_str(),
+                    Some(op.new_name.as_str()),
+                    op.snapshot.as_ref(),
+                )
+            })),
         }
     }
 }
@@ -195,6 +197,10 @@ pub struct ProposalGroup {
 }
 
 /// Decode a stored token, or report which column held what.
-pub(super) fn decode_token<T>(column: &'static str, token: String, parse: fn(&str) -> Option<T>) -> Result<T, super::AgentStoreError> {
+pub(super) fn decode_token<T>(
+    column: &'static str,
+    token: String,
+    parse: fn(&str) -> Option<T>,
+) -> Result<T, super::AgentStoreError> {
     parse(&token).ok_or(super::AgentStoreError::Decode { column, value: token })
 }

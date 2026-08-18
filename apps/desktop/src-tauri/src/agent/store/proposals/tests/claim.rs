@@ -82,8 +82,15 @@ fn a_claim_whose_op_values_changed_refuses_as_binding_mismatch() {
     let ClaimOutcome::Refused(ClaimRefusal::BindingMismatch { accepted: was, live }) = outcome else {
         panic!("an amended op set was claimed: {outcome:?}");
     };
-    assert_eq!(was, Some(accepted.clone()), "the refusal carries what preflight accepted");
-    assert_eq!(live.op_count, accepted.op_count, "the COUNT alone would not have caught this");
+    assert_eq!(
+        was,
+        Some(accepted.clone()),
+        "the refusal carries what preflight accepted"
+    );
+    assert_eq!(
+        live.op_count, accepted.op_count,
+        "the COUNT alone would not have caught this"
+    );
     assert_ne!(live.digest, accepted.digest, "the digest is what caught it");
     assert_eq!(
         status_of(&conn, group_id),

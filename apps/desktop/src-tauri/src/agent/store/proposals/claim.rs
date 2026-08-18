@@ -89,9 +89,8 @@ pub fn record_acceptance(
             OpStatus::Pending.as_token(),
             OpStatus::Excluded.as_token()
         ])?;
-    let mut exclude = tx.prepare_cached(
-        "UPDATE proposal_ops SET status = ?3 WHERE group_id = ?1 AND id = ?2 AND status = ?4",
-    )?;
+    let mut exclude =
+        tx.prepare_cached("UPDATE proposal_ops SET status = ?3 WHERE group_id = ?1 AND id = ?2 AND status = ?4")?;
     for op_id in deselected_op_ids {
         exclude.execute(params![
             group_id,
@@ -130,11 +129,7 @@ pub fn record_acceptance(
 /// ❌ The op statuses are deliberately NOT touched here. Leaving the live set alone is what
 /// makes a losing concurrent claim report the honest reason (stale status) instead of a
 /// binding mismatch caused by the winner.
-pub fn claim_group_for_execution(
-    conn: &Connection,
-    group_id: i64,
-    now: i64,
-) -> Result<ClaimOutcome, AgentStoreError> {
+pub fn claim_group_for_execution(conn: &Connection, group_id: i64, now: i64) -> Result<ClaimOutcome, AgentStoreError> {
     let tx = Transaction::new_unchecked(conn, TransactionBehavior::Immediate)?;
 
     let accepted = read_acceptance(&tx, group_id)?;
@@ -249,8 +244,7 @@ fn read_status(conn: &Connection, group_id: i64) -> Result<Option<ProposalStatus
 
 /// The acceptance record preflight stored for this group, if any.
 fn read_acceptance(conn: &Connection, group_id: i64) -> Result<Option<OpBinding>, AgentStoreError> {
-    let mut stmt =
-        conn.prepare_cached("SELECT op_count, op_digest FROM proposal_acceptances WHERE group_id = ?1")?;
+    let mut stmt = conn.prepare_cached("SELECT op_count, op_digest FROM proposal_acceptances WHERE group_id = ?1")?;
     let mut rows = stmt.query(params![group_id])?;
     match rows.next()? {
         Some(row) => Ok(Some(OpBinding {

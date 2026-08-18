@@ -5,19 +5,7 @@
 //! bucket, a bool); no names or paths ever cross.
 
 use super::types::{WriteCompleteEvent, WriteOperationType};
-
-/// Buckets an item count into a coarse, PII-free range string for analytics. A raw count is fine to
-/// ship (it's not PII), but a bucket keeps the dashboard's cardinality low and the signal readable.
-pub(super) fn item_count_bucket(count: usize) -> &'static str {
-    match count {
-        0 => "0",
-        1 => "1",
-        2..=10 => "2-10",
-        11..=100 => "11-100",
-        101..=1000 => "101-1000",
-        _ => "1000+",
-    }
-}
+use crate::analytics::item_count_bucket;
 
 /// Emits the PII-free PostHog event for a completed write operation. Copy/Move → `file_transfer_completed`
 /// (with `op`, an item-count bucket, and a `had_conflicts` bool); Delete/Trash → `delete_used` (with
@@ -51,24 +39,5 @@ pub(super) fn emit_completion_analytics(event: &WriteCompleteEvent) {
         // Explicit no-op arms (not a catch-all `_`) so a future op type can't
         // silently skip analytics without a compile error here.
         WriteOperationType::Rename | WriteOperationType::CreateFolder | WriteOperationType::CreateFile => {}
-    }
-}
-
-#[cfg(test)]
-mod analytics_bucket_tests {
-    use super::*;
-
-    #[test]
-    fn item_count_buckets_map_to_coarse_ranges() {
-        assert_eq!(item_count_bucket(0), "0");
-        assert_eq!(item_count_bucket(1), "1");
-        assert_eq!(item_count_bucket(2), "2-10");
-        assert_eq!(item_count_bucket(10), "2-10");
-        assert_eq!(item_count_bucket(11), "11-100");
-        assert_eq!(item_count_bucket(100), "11-100");
-        assert_eq!(item_count_bucket(101), "101-1000");
-        assert_eq!(item_count_bucket(1000), "101-1000");
-        assert_eq!(item_count_bucket(1001), "1000+");
-        assert_eq!(item_count_bucket(50_000), "1000+");
     }
 }

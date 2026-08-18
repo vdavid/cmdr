@@ -73,6 +73,14 @@ ANDs on conflict, so a day/thread/model that ever took an unpriced contribution 
 honest lower bound ("unknown"), never a silent $0 (spec §2.4). The per-day cross-thread rollup (`cost_summary`) sums with
 `GROUP BY day` and reads `fully_priced` from `MIN(priced)`.
 
+## v4: the proposal spine
+
+`proposal_sets` / `proposals` / `proposal_ops` / `proposal_acceptances`, the durable half of the suggested-ops feature.
+The tables, the lifecycle machine, the claim transaction, and their DDL rationale live with the code:
+`proposals/DETAILS.md`. The one thing worth knowing from up here is that `proposal_sets.conversation_id` breaks this
+DB's usual pattern — nullable and `ON DELETE SET NULL`, where `messages` and `cost_meter` cascade — because a decision
+record has to outlive the chat thread that produced it.
+
 ## No auto-retention in v1
 
 Transcripts are small (spec §3), so there's no pruning yet. When real sizes exist, the operation log's

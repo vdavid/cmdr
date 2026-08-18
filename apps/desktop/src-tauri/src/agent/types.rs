@@ -59,10 +59,11 @@ token_enum! {
 token_enum! {
     /// What a proposal group asks to do, stored in `proposals.verb`.
     ///
-    /// A group is exactly ONE call to ONE executor, so the verb decides which executor runs
-    /// it, what the group binds ([`ProposalVerb::destination_shape`]), whether its ops carry
-    /// their own destinations ([`ProposalVerb::ops_carry_destinations`]), and how far an
-    /// approved group can be taken back ([`ProposalVerb::reversibility`]).
+    /// A group is exactly ONE call to ONE executor, so the verb decides which executor runs it,
+    /// what the group binds besides its ops, whether its ops carry their own destinations, and
+    /// how far an approved group can be taken back. All three ride on `GroupIntent`
+    /// (`agent/store/proposals/`), which pairs the verb with them so a wrong combination can't
+    /// be built.
     pub enum ProposalVerb {
         Move => "move",
         Copy => "copy",

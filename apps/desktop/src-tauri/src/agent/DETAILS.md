@@ -22,8 +22,11 @@ The backend modules:
   and the typed message-part model. This is the seam the whole runtime and UI test against. Depth:
   `llm/DETAILS.md`.
 - `store/`: the `main.db` durable store — a forward-migration ladder (mirroring `operation_log/store/`),
-  FTS5 over message text, and a per-day cost meter. `agent::start(app)` (open the DB, register the `AgentDb` handle)
-  lands here, modeled on `operation_log::start`. Depth: `store/DETAILS.md`.
+  FTS5 over message text, a per-day cost meter, and the durable proposal spine in `store/proposals/`.
+  `agent::start(app)` (open the DB, register the `AgentDb` handle, run the interrupted-proposal sweep once) lands here,
+  modeled on `operation_log::start`. Depth: `store/DETAILS.md`, `store/proposals/DETAILS.md`.
+- `suggested_ops/`: the service over the spine — resolving a selector to a frozen op list against the drive index,
+  wrapping the store's claim, and the acceptance-rate metric. Depth: `suggested_ops/DETAILS.md`.
 - `tools/`: the in-process toolset — the five read families authored as `consumers: [Agent]`
   entries in the consolidated registry (agent-spec D49, extend-don't-fork), their handlers/result shapes that reuse the
   shipped cores (drive index, importance, operation log, volumes, app state), and the gated dispatch that refuses any
@@ -48,6 +51,11 @@ authored `[agent]` entries, every one `Access::Read` or `Access::Propose`, never
 parse step is the runtime choke point (an unrecognized name resolves to `ToolId::Unrecognized`, which is never in the
 agent view, so dispatch refuses it). Revisit the whole consent + gating story before adding the first write or
 content-read tool.
+
+**Where a proposal LIVES.** `RenameProposalStore` is the in-memory, 15-minute-TTL shape the shipped rename feature
+uses. The durable spine every other verb proposes through is `store/proposals/`, whose claim transaction binds an
+approval to a server-owned acceptance record rather than to the client's word. The rename feature folds onto it in a
+later milestone; until then the two coexist, and the durable one is where new work goes.
 
 **What a `Propose` tool may do.** Stage a proposal and open a review surface. That is its entire power: no filesystem
 write, no silent config mutation, no self-approval. Because no structural check can prove a handler doesn't mutate,

@@ -7,9 +7,11 @@ entity, not the surface, so later proactive slices (proposals, notifications) gr
 
 - `llm/`: the `AgentLlm` seam (provider-agnostic trait, genai impl, deterministic fake, typed message-part model). See
   `llm/CLAUDE.md`.
-- `store/`: the `main.db` durable store (migration ladder, conversations, messages, FTS5 search, cost meter).
-  `start(app)` opens the DB + registers `AgentDb`. See `store/CLAUDE.md`.
-- `types.rs`: store-only token enums (`ConversationOrigin`) + `token_enum!` macro.
+- `store/`: the `main.db` durable store (migration ladder, conversations, messages, FTS5 search, cost meter, the
+  proposal spine). `start(app)` opens the DB + registers `AgentDb`. See `store/CLAUDE.md`.
+- `suggested_ops/`: the service over that spine — selector resolution against the drive index, and the acceptance-rate
+  metric. See `suggested_ops/CLAUDE.md`.
+- `types.rs`: store-only token enums (`ConversationOrigin`, the proposal vocabulary) + `token_enum!` macro.
 - `tools/`: the in-process toolset, five read families as `consumers: [Agent]` registry entries, plus gated dispatch
   (the no-write choke point). See `tools/CLAUDE.md`.
 - `chat/`: the chat runtime (`run_turn` + `ChatRuntime`: single-flight, budgets, cancellation, crash-safe persistence,

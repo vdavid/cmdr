@@ -58,10 +58,7 @@ pub fn get_group(conn: &Connection, group_id: i64) -> Result<Option<ProposalGrou
 
 /// Group summaries, newest first, optionally filtered to one status. Counts come from
 /// `COUNT(*)` subqueries, so this stays cheap however large the groups are.
-pub fn list_groups(
-    conn: &Connection,
-    status: Option<ProposalStatus>,
-) -> Result<Vec<GroupSummary>, AgentStoreError> {
+pub fn list_groups(conn: &Connection, status: Option<ProposalStatus>) -> Result<Vec<GroupSummary>, AgentStoreError> {
     let sql = format!(
         "SELECT {GROUP_COLUMNS},
                 (SELECT COUNT(*) FROM proposal_ops o WHERE o.group_id = p.id AND o.status = ?2) AS live_ops,
@@ -90,9 +87,7 @@ pub fn list_groups(
 /// 60 000 must never be loaded to be counted.
 pub fn count_ops(conn: &Connection, group_id: i64, status: Option<OpStatus>) -> Result<u64, AgentStoreError> {
     let count: i64 = conn
-        .prepare_cached(
-            "SELECT COUNT(*) FROM proposal_ops WHERE group_id = ?1 AND (?2 IS NULL OR status = ?2)",
-        )?
+        .prepare_cached("SELECT COUNT(*) FROM proposal_ops WHERE group_id = ?1 AND (?2 IS NULL OR status = ?2)")?
         .query_row(params![group_id, status.map(OpStatus::as_token)], |row| row.get(0))?;
     Ok(count.max(0) as u64)
 }
@@ -102,12 +97,7 @@ pub fn count_ops(conn: &Connection, group_id: i64, status: Option<OpStatus>) -> 
 /// The only op-row-materializing read in the module. Everything that needs a whole group's
 /// worth of ops (the review dialog, the executor) pages through this; ❌ nothing calls it to
 /// count, compare, or claim.
-pub fn page_ops(
-    conn: &Connection,
-    group_id: i64,
-    limit: u32,
-    offset: u32,
-) -> Result<Vec<ProposalOp>, AgentStoreError> {
+pub fn page_ops(conn: &Connection, group_id: i64, limit: u32, offset: u32) -> Result<Vec<ProposalOp>, AgentStoreError> {
     #[cfg(test)]
     tests_support::note_page_ops_call();
 

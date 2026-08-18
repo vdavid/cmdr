@@ -3,7 +3,7 @@
 
 use super::super::*;
 use super::{group_with_ops, migrated_conn, status_of};
-use crate::agent::types::ProposalStatus;
+use crate::agent::types::{ProposalStatus, ProposalVerb};
 use crate::location::Location;
 
 /// A move group over one source, for re-proposing a group into something else.
@@ -32,15 +32,15 @@ fn re_proposing_a_pending_group_replaces_its_ops() {
     let conn = migrated_conn();
     let group_id = group_with_ops(&conn, 5);
 
-    let outcome = repropose_group(&conn, group_id, &amended_group("/Users/someone/Downloads/inv.pdf"), 200)
-        .expect("re-propose");
+    let outcome =
+        repropose_group(&conn, group_id, &amended_group("/Users/someone/Downloads/inv.pdf"), 200).expect("re-propose");
     assert_eq!(outcome, ReproposeOutcome::Reproposed);
 
     let ops = page_ops(&conn, group_id, 100, 0).expect("ops");
     assert_eq!(ops.len(), 1, "the old op rows are gone, not merged with");
     assert_eq!(ops[0].source_path, "/Users/someone/Downloads/inv.pdf");
     let group = get_group(&conn, group_id).expect("read").expect("exists");
-    assert_eq!(group.verb, crate::agent::types::ProposalVerb::Move);
+    assert_eq!(group.verb, ProposalVerb::Move);
     assert_eq!(group.destination.as_deref(), Some("/Users/someone/Documents/Invoices"));
 }
 
@@ -53,8 +53,7 @@ fn re_proposing_tears_up_the_acceptance_record() {
     let group_id = group_with_ops(&conn, 3);
     record_acceptance(&conn, group_id, &[], 200).expect("preflight");
 
-    repropose_group(&conn, group_id, &amended_group("/Users/someone/Downloads/inv.pdf"), 210)
-        .expect("re-propose");
+    repropose_group(&conn, group_id, &amended_group("/Users/someone/Downloads/inv.pdf"), 210).expect("re-propose");
 
     let outcome = claim_group_for_execution(&conn, group_id, 300).expect("claim");
     assert!(
@@ -82,7 +81,11 @@ fn re_proposing_an_approved_group_is_refused() {
             found: ProposalStatus::Approved
         }
     );
-    assert_eq!(count_ops(&conn, group_id, None).expect("count"), 3, "the ops are untouched");
+    assert_eq!(
+        count_ops(&conn, group_id, None).expect("count"),
+        3,
+        "the ops are untouched"
+    );
 }
 
 /// `interrupted` counts as frozen too. It is the state where nothing knows which ops already

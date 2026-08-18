@@ -78,6 +78,22 @@ pub fn start() {
 /// Whether analytics may send right now, per the tri-state consent rule. `None` (no key persisted,
 /// the opted-in default) and `Some(true)` mean granted; only `Some(false)` is an opt-out. Both the
 /// heartbeat loop and (later) `track_event` gate through this one helper.
+/// Buckets an item count into a coarse, PII-free range string for analytics. A raw count is fine to
+/// ship (it's not PII), but a bucket keeps the dashboard's cardinality low and the signal readable.
+///
+/// Shared by every event that reports "how many things", so two dashboards never end up with two
+/// different ideas of what "a lot" is.
+pub fn item_count_bucket(count: usize) -> &'static str {
+    match count {
+        0 => "0",
+        1 => "1",
+        2..=10 => "2-10",
+        11..=100 => "11-100",
+        101..=1000 => "101-1000",
+        _ => "1000+",
+    }
+}
+
 pub fn analytics_consent_granted(analytics_enabled: Option<bool>) -> bool {
     analytics_enabled != Some(false)
 }
@@ -233,5 +249,24 @@ mod tests {
         };
         let value = serde_json::to_value(&payload).expect("serialize");
         assert_eq!(value["buildMode"], json!(null));
+    }
+}
+
+#[cfg(test)]
+mod bucket_tests {
+    use super::item_count_bucket;
+
+    #[test]
+    fn item_count_buckets_map_to_coarse_ranges() {
+        assert_eq!(item_count_bucket(0), "0");
+        assert_eq!(item_count_bucket(1), "1");
+        assert_eq!(item_count_bucket(2), "2-10");
+        assert_eq!(item_count_bucket(10), "2-10");
+        assert_eq!(item_count_bucket(11), "11-100");
+        assert_eq!(item_count_bucket(100), "11-100");
+        assert_eq!(item_count_bucket(101), "101-1000");
+        assert_eq!(item_count_bucket(1000), "101-1000");
+        assert_eq!(item_count_bucket(1001), "1000+");
+        assert_eq!(item_count_bucket(50_000), "1000+");
     }
 }

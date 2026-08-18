@@ -8,6 +8,8 @@
 //! - `llm`: the `AgentLlm` seam — the provider-agnostic trait, its
 //!   genai-backed impl, the deterministic fake, and the typed message-part model.
 //! - `store`: the `main.db` durable store; `start(app)` lands here.
+//! - `suggested_ops`: the service over the proposal spine (selector resolution against the
+//!   drive index, and the acceptance-rate metric).
 //! - `tools`: the in-process read-only toolset (the agent's registry view).
 //! - `chat`: the chat runtime and the pure context-assembly core.
 //!
@@ -18,6 +20,7 @@ pub mod consent;
 pub mod llm;
 pub mod pricing;
 pub mod store;
+pub mod suggested_ops;
 pub mod tools;
 pub mod types;
 
@@ -71,7 +74,15 @@ pub fn start(app: &AppHandle) {
     // connection is only needed to migrate). The runtime opens its own connections from
     // the managed path.
     match store::AgentStore::open(&db_path) {
-        Ok(_store) => {
+        Ok(store) => {
+            // Exactly once per launch, before anything can read a proposal: an `approved`
+            // group found on disk is one the app died mid-execution on, so it becomes
+            // `interrupted` (the user's to re-approve or discard). ❌ This can't live in
+            // `open_write_connection`, which runs on every connection open and would
+            // reclassify a group that is genuinely executing right now.
+            if let Err(e) = store::proposals::recover_interrupted_groups(store.conn()) {
+                log::warn!(target: "agent::store", "interrupted-proposal sweep didn't run: {e}");
+            }
             app.manage(AgentDb {
                 db_path: db_path.clone(),
             });
