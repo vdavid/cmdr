@@ -58,10 +58,10 @@ Two calls, one question:
 - **`cover(volume_id, frontier, dimension, cancel)`** — the walk half: it takes the frontier a coverage answer named and
   fills it in, handing back each batch of entries it finds while it's still running. It landed 2026-08-05 into the slot
   reserved for it, and brought the three types its answer is made of (below). The `cancel` token is a parameter rather
-  than a method on the handle because the handle can't leave the thread reading its batches (§ below).
-  ⚠️ **A walk started here OUTRANKS the background**, and that is the whole difference between this door and the phase
-  machine's: somebody is waiting on it, so a background walk over ground it names is asked to hand that ground over
-  rather than keeping it. It is never asked to yield in turn. The mechanism, and who may be asked, is
+  than a method on the handle because the handle can't leave the thread reading its batches (§ below). ⚠️ **A walk
+  started here OUTRANKS the background**, and that is the whole difference between this door and the phase machine's:
+  somebody is waiting on it, so a background walk over ground it names is asked to hand that ground over rather than
+  keeping it. It is never asked to yield in turn. The mechanism, and who may be asked, is
   `../lifecycle/cover/live/DETAILS.md`.
 
 **Why the covered half is not in the answer.** It's tempting to return "these subtrees are covered, those aren't", and
