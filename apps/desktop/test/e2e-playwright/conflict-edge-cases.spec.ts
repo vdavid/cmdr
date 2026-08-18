@@ -11,6 +11,7 @@ import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
+  clickButtonByText,
   clickEntryInPane,
   dispatchMenuCommand,
   flushFileWatcher,
@@ -121,18 +122,10 @@ test.describe('Cancel and rollback', () => {
         )
         .toBeTruthy()
 
-      // Click Rollback on the progress dialog.
-      const clicked = await tauriPage.evaluate<boolean>(`(function(){
-        var btns = document.querySelectorAll('[data-dialog-id="transfer-progress"] button');
-        for (var i=0; i<btns.length; i++) {
-          if (btns[i].textContent.trim().toLowerCase() === 'rollback') {
-            btns[i].click();
-            return true;
-          }
-        }
-        return false;
-      })()`)
-      expect(clicked).toBe(true)
+      // Click Rollback on the progress dialog. It carries a real disabled window
+      // (`isCancelling || operationSettled || isScanning`), so pressing it needs
+      // the actionability-aware helper, not a raw `.click()` the DOM can swallow.
+      await clickButtonByText(tauriPage, '[data-dialog-id="transfer-progress"] button', 'Rollback')
       // Rollback asks before it deletes anything.
       await confirmRollback(tauriPage)
 

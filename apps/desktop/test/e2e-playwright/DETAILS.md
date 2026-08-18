@@ -476,6 +476,38 @@ has already closed. `search-open-in-pane.spec.ts` § `typeAndRunSearch` carries 
 `default.json` breaks non-feature builds. So `build.rs` generates the capability file when the feature is active and
 removes it when the feature is not active. The file is gitignored.
 
+## Pressing buttons
+
+**The rule**: press a button with `clickButtonByText` (`helpers/overlays-and-dialogs.ts`), or with the conflict-dialog
+wrapper `resolveConflict` (`conflict-helpers.ts`). Never hand-roll `querySelectorAll(...)[i].click()` in an `evaluate`.
+
+**Why a helper rather than a convention**: `element.click()` on a `disabled` button dispatches NOTHING. The DOM drops
+the event and the call returns normally, so the hand-rolled shape — find the button by text, click it, `return true` —
+reports a press that never happened. Every consequence lands somewhere else: the test waits out its next timeout, the
+failure names a dialog that would not close rather than an answer that never arrived, and (because the app is shared)
+the wedged modal takes the rest of the shard with it. See § "Breaking the cascade" for what that costs.
+
+**The window is real, not theoretical.** Dialogs disable their buttons for exactly as long as the previous answer is in
+flight: `isResolvingConflict` in `TransferConflictDialog.svelte`, `isCancelling` / `operationSettled` / `isScanning` /
+`pauseInFlight` in `TransferProgressDialog.svelte`. Any spec that answers one prompt and then the next is inside it. On
+a developer machine the IPC round trip wins that race every time, which is why the shape survived so long; on a loaded
+CI runner it doesn't.
+
+So `clickButtonByText` polls for ACTIONABILITY, not existence, and its failure says which blocker it kept seeing: a
+button that stayed `disabled` and one that never rendered are opposite bugs wanting opposite fixes. Two things are
+deliberately not blockers, because neither swallows a press: `aria-disabled` (our `Button` keeps those clickable so the
+handler can explain the block, `src/lib/ui/Button.svelte`) and being off-screen or `display: none` (a programmatic
+`.click()` still runs the handler).
+
+`helpers/click-button-by-text.test.ts` anchors all of it under happy-dom, which reproduces the disabled-click
+suppression faithfully (probed 2026-08-18). It executes the helper's real `evaluate` payload rather than a TypeScript
+paraphrase, so the thing under test is the string the suite actually ships into the webview.
+
+**`bare-poll` cannot catch this shape**, and that's worth knowing before trusting it as the whole net. It is a
+line-level scan for a discarded `Promise<boolean>` return, and the trap here had its return value captured and asserted
+(`expect(clicked).toBe(true)`) — the lie was inside the predicate, which claimed a press it never made. Same family of
+bug ("a helper reports success it never achieved"), opposite side of the assertion.
+
 ## Closing overlays and toasts
 
 **The rule**: never use `tauriPage.keyboard.press('Escape')` to close a dialog, popover, dropdown, or palette in E2E

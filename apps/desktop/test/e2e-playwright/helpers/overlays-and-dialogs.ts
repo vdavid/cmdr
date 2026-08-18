@@ -3,13 +3,14 @@
  *
  * `dismissOverlay` / `expectAndDismissToast` are the only sanctioned ways to
  * close overlays and toasts (never `keyboard.press('Escape')` — see the suite's
- * CLAUDE.md). `readDialogCounters` / `expectDialogCounters` / `countTree` cover
- * the transfer dialog's scan-tally assertions.
+ * CLAUDE.md). `clickButtonByText` is the only sanctioned way to press a button.
+ * `readDialogCounters` / `expectDialogCounters` / `countTree` cover the transfer
+ * dialog's scan-tally assertions.
  */
 
 import fs from 'fs'
 import { expect } from '@playwright/test'
-import { type PageLike, TRANSFER_DIALOG } from './core.js'
+import { type PageLike, TRANSFER_DIALOG, pollUntil } from './core.js'
 
 /**
  * Overlay selectors that `dismissOverlay` and the global afterEach safety net know
@@ -113,6 +114,92 @@ export async function acceptOnboardingTermsIfPresent(tauriPage: PageLike): Promi
         var box = document.querySelector('[data-dialog-id="onboarding"] .terms-block input[type="checkbox"]');
         if (box && !box.checked) box.click();
     })()`)
+}
+
+// ── Pressing buttons ─────────────────────────────────────────────────────────
+
+/**
+ * What one attempt at {@link clickButtonByText} found. `clicked` is the only
+ * outcome where a handler actually ran.
+ */
+type ButtonPressOutcome = 'clicked' | 'missing' | 'disabled'
+
+/** What each non-`clicked` outcome means, quoted verbatim in the failure. */
+const PRESS_FAILURE_REASON: Record<ButtonPressOutcome, string> = {
+  clicked: 'it was pressed',
+  missing: 'no element under that selector carried that exact trimmed text',
+  disabled:
+    'the button was there but `disabled` the whole time, which usually means an earlier answer was still ' +
+    'in flight and the test is racing the IPC round trip that re-enables it',
+}
+
+/**
+ * Presses the element under `selector` whose trimmed text is exactly
+ * `buttonText`, waiting until it is genuinely ACTIONABLE and failing loudly if
+ * it never gets there.
+ *
+ * This is the sanctioned way for a spec to press a button, because the obvious
+ * hand-rolled version is a trap: `element.click()` on a `disabled` button
+ * dispatches NOTHING. The DOM swallows it and returns normally, so a helper
+ * that clicks and reports success claims a press that never happened; the test
+ * then waits out its next timeout on a state change that can't come, and (with
+ * the app shared across the suite) hands every later test a wedged modal.
+ *
+ * Dialogs disable their buttons for exactly as long as the previous answer is
+ * in flight — `TransferConflictDialog`'s `isResolvingConflict`,
+ * `TransferProgressDialog`'s `isCancelling` / `isScanning` / `pauseInFlight` —
+ * so any spec answering one prompt and then the next lands in that window. It
+ * is invisible on a fast machine (IPC wins the race) and reproducible on a
+ * loaded CI runner, which is the worst shape a test bug can have.
+ *
+ * So the poll is over actionability rather than existence, and the failure
+ * names which blocker it kept seeing: "stayed disabled" and "never rendered"
+ * are opposite bugs and want opposite fixes.
+ *
+ * Two things are deliberately NOT blockers, because neither swallows a press:
+ * `aria-disabled` (our `Button` keeps those clickable precisely so the handler
+ * can explain the block, `src/lib/ui/Button.svelte`), and being off-screen or
+ * `display: none` (a programmatic `.click()` still runs the handler). Only the
+ * native `disabled` attribute makes the DOM drop the event on the floor.
+ */
+export async function clickButtonByText(
+  tauriPage: PageLike,
+  selector: string,
+  buttonText: string,
+  timeout = 5000,
+): Promise<void> {
+  const sel = JSON.stringify(selector)
+  const txt = JSON.stringify(buttonText)
+  // Widened past the initializer so the closure's writes below stay assignable
+  // and the `PRESS_FAILURE_REASON` lookup keeps every branch.
+  let outcome: ButtonPressOutcome = 'missing'
+  const pressed = await pollUntil(
+    tauriPage,
+    async () => {
+      // One round trip per poll tick: find the match, and press it in the same
+      // evaluate if it's actionable. Reporting "actionable" and then pressing
+      // in a second call would reopen the very race this helper closes.
+      outcome = await tauriPage.evaluate<ButtonPressOutcome>(`(function(){
+            var els = document.querySelectorAll(${sel});
+            var blocked = 'missing';
+            for (var i = 0; i < els.length; i++) {
+                if ((els[i].textContent || '').trim() !== ${txt}) continue;
+                if (els[i].disabled) { blocked = 'disabled'; continue; }
+                els[i].click();
+                return 'clicked';
+            }
+            return blocked;
+        })()`)
+      return outcome === 'clicked'
+    },
+    timeout,
+  )
+  if (!pressed) {
+    throw new Error(
+      `clickButtonByText: "${buttonText}" under "${selector}" never became clickable within ` +
+        `${String(timeout)}ms (${PRESS_FAILURE_REASON[outcome]}).`,
+    )
+  }
 }
 
 /**

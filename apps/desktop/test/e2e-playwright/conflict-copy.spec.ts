@@ -39,8 +39,11 @@ import {
   waitForConflictPolicy,
   selectConflictPolicy,
   clickTransferStart,
-  clickConflictButton,
+  readCurrentConflict,
+  resolveConflict,
+  waitForConflict,
   waitForDialogsToClose,
+  waitForNextConflictOrDone,
 } from './conflict-helpers.js'
 
 // The conflict fixtures' own top-level items, WITHOUT the preserved `bulk/` tree
@@ -215,45 +218,30 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     // Wait for progress dialog with inline conflict UI
     await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 3000)
 
-    // Wait for first conflict to appear
-    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 3000)
-    expect(conflictAppeared).toBe(true)
+    // First conflict: answer "Overwrite" (this file only, not "Overwrite all").
+    const firstConflict = await waitForConflict(tauriPage)
+    await resolveConflict(tauriPage, 'Overwrite')
 
-    // Capture the first conflict's filename so we can poll for the next one
-    // (the `.conflict-section` stays mounted between conflicts; only its
-    // `.conflict-filename` content changes).
-    const firstConflictName = await tauriPage.evaluate<string>(
-      `(document.querySelector('.conflict-section .conflict-filename')?.textContent || '').trim()`,
-    )
+    // Layout A puts three conflicting files in the batch and the first answer
+    // covered exactly one, so a second prompt MUST follow. Assert it rather than
+    // skipping the rest of the test when it doesn't: a swallowed answer used to
+    // land here as "no second conflict, carry on", and the operation then parked
+    // forever waiting for an answer nobody would give. The generous budget is for
+    // a loaded runner, and a green run leaves the poll the moment the prompt
+    // re-renders.
+    const secondConflict = await waitForNextConflictOrDone(tauriPage, firstConflict, 10000)
+    expect(
+      secondConflict,
+      'Layout A has 3 conflicting files, so Overwrite must be followed by another prompt',
+    ).not.toBe(null)
 
-    // First conflict: click "Overwrite" (single file, not "Overwrite all").
-    // `.conflict-section` being visible doesn't guarantee Svelte has rendered
-    // the inner buttons yet, so retry via clickConflictButton until the click
-    // actually lands.
-    await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Overwrite')
+    await resolveConflict(tauriPage, 'Skip all')
 
-    // Wait for the next conflict (different filename) or for the conflict UI
-    // to disappear (no more conflicts).
-    const firstNameJson = JSON.stringify(firstConflictName)
-    const nextConflict = await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(
-          `(function(){
-            var el = document.querySelector('.conflict-section .conflict-filename');
-            if (!el) return true;
-            var name = (el.textContent || '').trim();
-            return name !== ${firstNameJson};
-          })()`,
-        ),
-      3000,
-    )
-    // After the wait, `.conflict-section` might still be visible (next conflict)
-    // or gone (no more conflicts). We proceed if there's a new conflict to act on.
-    const stillVisible = await tauriPage.isVisible('.conflict-section')
-    if (nextConflict && stillVisible) {
-      await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Skip all')
-    }
+    // "Skip all" answers every remaining clash, so the operation must leave the
+    // conflict state outright. Assert THAT, before waiting on the modal: this is
+    // the step that fails when an answer never reaches the backend, and it says
+    // so, instead of surfacing 12 s later as a dialog that would not close.
+    await expect.poll(async () => readCurrentConflict(tauriPage), { timeout: 10000 }).toBe(null)
 
     await waitForDialogsToClose(tauriPage)
     // The copy fires a transient selection-split toast. Layout A's selection is
@@ -311,7 +299,7 @@ test.describe('Rename conflict resolution', () => {
     expect(conflictAppeared).toBe(true)
 
     // Click "Rename": keeps both files, incoming gets " (1)" suffix
-    await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Rename')
+    await resolveConflict(tauriPage, 'Rename')
 
     await waitForDialogsToClose(tauriPage)
     // Single cursored file copied (Rename keeps both → counts as one file).
@@ -343,7 +331,7 @@ test.describe('Rename conflict resolution', () => {
     const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 3000)
     expect(conflictAppeared).toBe(true)
 
-    await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Rename all')
+    await resolveConflict(tauriPage, 'Rename all')
 
     await waitForDialogsToClose(tauriPage)
     // Layout A selection: 2 top-level files + 1 folder (docs/).

@@ -10,7 +10,7 @@ import fs from 'fs'
 import path from 'path'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { expect } from './fixtures.js'
-import { pollUntil, TRANSFER_DIALOG } from './helpers.js'
+import { clickButtonByText, pollUntil, TRANSFER_DIALOG } from './helpers.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 import { removeFixtureEntry } from '../e2e-shared/fixtures.js'
 
@@ -358,46 +358,6 @@ export async function waitForDialogsToClose(tauriPage: PageLike, timeout = 12000
 }
 
 /**
- * Clicks a button by its trimmed text within `containerSelector`. Retries until
- * either the click lands or the timeout expires. Guards against Svelte rendering
- * the container without its inner buttons yet; a plain
- * `querySelectorAll(...).click()` would silently no-op on an empty NodeList and
- * the test would then sit waiting for the next UI state that never comes.
- *
- * Used by the conflict flows where the buttons appear inside `.conflict-section`
- * (`.conflict-buttons-row`, `.conflict-cancel`) but may render a frame after
- * their container becomes visible.
- */
-export async function clickConflictButton(
-  tauriPage: PageLike,
-  containerSelector: string,
-  buttonText: string,
-  timeout = 2000,
-): Promise<void> {
-  const sel = JSON.stringify(containerSelector)
-  const txt = JSON.stringify(buttonText)
-  const clicked = await pollUntil(
-    tauriPage,
-    async () =>
-      tauriPage.evaluate<boolean>(`(function(){
-        var btns = document.querySelectorAll(${sel});
-        for (var i = 0; i < btns.length; i++) {
-          if ((btns[i].textContent || '').trim() === ${txt}) {
-            btns[i].click();
-            return true;
-          }
-        }
-        return false;
-      })()`),
-    timeout,
-  )
-  expect(
-    clicked,
-    `clickConflictButton: no "${buttonText}" button under "${containerSelector}" within ${String(timeout)}ms`,
-  ).toBe(true)
-}
-
-/**
  * Answers the question Rollback raises before it deletes anything.
  *
  * Rollback removes every file the operation has written, and a file it
@@ -406,8 +366,8 @@ export async function clickConflictButton(
  * (`src/lib/file-operations/DETAILS.md` § "Rollback asks first"). A spec that
  * clicks Rollback and waits for the dialogs to close hangs without this.
  */
-export async function confirmRollback(tauriPage: PageLike, timeout = 2000): Promise<void> {
-  await clickConflictButton(tauriPage, '[data-dialog-id="rollback-confirmation"] button', 'Roll back', timeout)
+export async function confirmRollback(tauriPage: PageLike, timeout = 5000): Promise<void> {
+  await clickButtonByText(tauriPage, '[data-dialog-id="rollback-confirmation"] button', 'Roll back', timeout)
 }
 
 // ── Matrix helpers (state-machine spec) ──────────────────────────────────────
@@ -544,7 +504,7 @@ export function createOrderedPairFixture(fixtureRoot: string, options: { normalN
  * disambiguates `Skip` from `Skip all` by exact text.
  */
 export async function resolveConflict(tauriPage: PageLike, buttonText: string): Promise<void> {
-  await clickConflictButton(tauriPage, '.conflict-buttons-row button', buttonText)
+  await clickButtonByText(tauriPage, '.conflict-buttons-row button', buttonText)
 }
 
 /**

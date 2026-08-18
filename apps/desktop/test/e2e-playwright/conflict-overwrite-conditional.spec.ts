@@ -29,7 +29,7 @@ import {
 } from './helpers.js'
 import {
   clearFixtureDirs,
-  clickConflictButton,
+  resolveConflict,
   clickTransferStart,
   readFile,
   selectItemsByName,
@@ -186,7 +186,7 @@ test.describe('Conditional conflict policies (per-file dialog buttons)', () => {
     // labelled "Overwrite all older" and sends `applyToAll: true`. After
     // clicking it, the rest of the operation runs without further prompts.
     await expect.poll(async () => tauriPage.isVisible('.conflict-section'), { timeout: 5000 }).toBeTruthy()
-    await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Overwrite all older')
+    await resolveConflict(tauriPage, 'Overwrite all older')
 
     await waitForDialogsToClose(tauriPage)
 

@@ -32,6 +32,7 @@ import {
   mcpAwaitItem,
 } from '../e2e-shared/mcp-client.js'
 import {
+  clickButtonByText,
   ensureAppReady,
   expectAndDismissToast,
   getFixtureRoot,
@@ -191,14 +192,10 @@ test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets dow
       // Wait for the transfer progress dialog. Then immediately click Cancel
       // before the small delete finishes.
       await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 10000)
-      await tauriPage.evaluate(`(function() {
-        var dialog = document.querySelector('[data-dialog-id="transfer-progress"]');
-        if (!dialog) return;
-        var btns = dialog.querySelectorAll('button');
-        for (var i = 0; i < btns.length; i++) {
-          if ((btns[i].textContent || '').trim() === 'Cancel') { btns[i].click(); return; }
-        }
-      })()`)
+      // Cancel is `disabled` while `isCancelling || operationSettled`, and this
+      // test presses it deliberately early, so it has to wait for the button to
+      // be actionable rather than fire a click the DOM would swallow.
+      await clickButtonByText(tauriPage, '[data-dialog-id="transfer-progress"] button', 'Cancel')
 
       // The dialog must stay visible until `write-settled` lands. Settle bound:
       // less than 2 s — anything beyond that is the cancel propagation failing

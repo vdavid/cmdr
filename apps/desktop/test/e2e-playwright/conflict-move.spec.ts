@@ -9,6 +9,7 @@ import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
+  clickButtonByText,
   dispatchMenuCommand,
   ensureAppReady,
   expectAndDismissToast,
@@ -24,7 +25,6 @@ import {
   waitForConflictPolicy,
   selectConflictPolicy,
   clickTransferStart,
-  clickConflictButton,
   confirmRollback,
   waitForDialogsToClose,
 } from './conflict-helpers.js'
@@ -158,9 +158,9 @@ test.describe('Move rollback', () => {
     )
     expect(hasRollback).toBe(true)
 
-    // Click Rollback to cancel the move mid-conflict. Retry on empty NodeList
-    // for the same reason as the hasRollback poll above.
-    await clickConflictButton(tauriPage, '.conflict-cancel button', 'Rollback')
+    // Click Rollback to cancel the move mid-conflict. `clickButtonByText` waits
+    // for the button to be actionable, not merely present.
+    await clickButtonByText(tauriPage, '.conflict-cancel button', 'Rollback')
     // Rollback asks before it deletes anything.
     await confirmRollback(tauriPage)
 
