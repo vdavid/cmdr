@@ -18,7 +18,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `notify_mutation`, so a redundant full re-read after every transfer (the FE's `refreshPanesAfterTransfer`) used to
   wedge slow volumes (MTP 17 s + USB session collision). Logs at debug `target: "refresh_listing"` on short-circuit.
   `write_ops.rs`: create, copy, move, delete, trash, scan preview, conflict resolution, synthetic diff helpers.
-  `volume_copy.rs`: cross-volume copy/move/scan, `SourceItemInput`. `scan_volume_for_conflicts` optionally takes a
+  `volume_copy.rs`: cross-volume copy/move/compress/scan, `SourceItemInput`. The three transfer commands are
+  pass-throughs that build the `TauriEventSink` and hand everything to `write_operations::start_volume_{copy, move,
+  compress}`, which own the volume + destination-path resolution and the archive forks so a backend caller reaches the
+  same routing (`../file_system/write_operations/DETAILS.md` § "Routing a transfer"). `scan_volume_for_conflicts` optionally takes a
   source volume id + source paths and resolves each item's real `is_directory` + size from the source volume via ONE
   batched `scan_for_copy_batch` (O(top-level items), never a subtree walk), overriding the FE's name-only placeholders
   so dir-vs-dir collisions classify as silent merges; back-compatible when omitted. `stat.rs`:

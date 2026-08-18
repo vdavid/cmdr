@@ -11,6 +11,14 @@ is watcher-fresh in `LISTING_CACHE`, and otherwise the walker resolves it. Both 
 `with_scan_meta(current_dir, dirs_done, None)` so the scanning UI shows the dir count and the directory the walker is
 currently in. The per-entry callback is throttled so the FE tally climbs mid-listing on slow MTP roundtrips.
 
+## The volume delete's own lifecycle
+
+`volume_start.rs::start_volume_delete` registers the op with the manager and hands it a deferred async start; `drive_volume_delete` is that start. A local delete rides `start_write_operation`'s generic spawn, but the `Volume` trait's I/O is `async`, so a volume delete owns its own: the settle guard, `await_claimed_preview`, `open_volume_op` under the REAL volume id (never the `"root"` the local helpers bake in), the source binding, the walk, the terminal event, and `on_settled`.
+
+The deferred is a NAMED future taking one moved-in struct, not an inline `async move` block. Inline, it was ~140 lines nested inside a closure inside a starter inside the module facade, and the shape it forms — descriptor literal, three `Arc::clone` rebinds, `ManagedTaskGuard`, settle guard — is the same boilerplate `transfer/volume/move_same.rs` and `transfer/volume/copy.rs` already carry, so a second literal copy of it is duplication a checker can see. Keep it named.
+
+Per-source outcomes reach the sink from here too: the binding's pre-flight (`../source_binding.rs`) announces every source it drops. `../DETAILS.md` § "Per-source outcomes".
+
 ## What each branch does with a missing or wrong fact
 
 Delete is the operation with no rollback, so every branch here has to have an answer for "what if this fact is absent or

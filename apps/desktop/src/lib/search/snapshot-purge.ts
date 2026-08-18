@@ -8,10 +8,15 @@
  *
  * **The input is outcome, not intent.** `write-source-item-done` fires once per
  * top-level source item, as it finishes, carrying whether that path is GONE. So a
- * skipped item emits nothing, an item a cancel never reached emits nothing, and a
+ * skipped item keeps its row, an item a cancel never reached emits nothing, and a
  * cross-FS move's staging pass reports `sourceRemoved: false` until its
  * source-delete phase runs. Reading the operation's `sourcePaths` instead was
  * wrong in exactly those three ways.
+ *
+ * **Steer by `sourceRemoved`, never by the event's `outcome`.** They answer
+ * different questions: a source an operation SKIPPED because it had already
+ * vanished carries `outcome: 'skipped'` and `sourceRemoved: true`, and its row is
+ * as stale as one a delete removed.
  *
  * **It costs one event per top-level item and no state.** Putting the vanished
  * paths on the completion event was the obvious alternative and is not available:

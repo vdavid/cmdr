@@ -597,9 +597,12 @@ A stored snapshot outlives the pane that opened it and the operation that emptie
 or renamed away meanwhile. `snapshot-purge.ts` keeps it honest, subscribed once per window from `(main)/+page.svelte`.
 
 **Its input is the `write-source-item-done` stream, which is outcome and not intent.** A top-level source item emits
-once it is fully processed, carrying `sourceRemoved`; the purge acts on that flag and ignores everything else. So:
+once it is finished with, carrying `sourceRemoved` beside its `outcome`; the purge acts on THAT FLAG and ignores
+everything else, including the outcome. So:
 
-- A **skipped** item emits nothing, and its row stays (the file is still on disk).
+- A **skipped** item keeps its row, because a skip reports `sourceRemoved: false` — the file is still on disk. The one
+  exception proves the flag is the right thing to steer by: an operation that skipped a source BECAUSE it had vanished
+  reports `Skipped` and `sourceRemoved: true`, and that row is as stale as one a delete removed.
 - An item a **cancel** never reached emits nothing, and the ones the operation did get through are still purged. There
   is no "on completion" about it.
 - A **cross-FS move** reports `sourceRemoved: false` from its staging pass and `true` from its source-delete phase, so a

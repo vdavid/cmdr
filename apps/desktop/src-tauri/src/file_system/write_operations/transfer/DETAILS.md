@@ -89,6 +89,21 @@ Two latent overwrite holes closed with it: the macOS non-APFS branch and the Lin
 
 **Background cleanup is best-effort.** `remove_file_in_background` and `remove_dir_all_in_background` run on detached threads (used for temp/backup file cleanup, not for user-visible rollback). If the network mount disconnects or the app exits, partial files or staging directories may remain on disk. These use the `.cmdr-` prefix, so they're recognizable.
 
+## What a transfer says about each top-level source
+
+Both drivers emit `write-source-item-done` per top-level source, carrying an outcome as well as `source_removed`
+(`../DETAILS.md` § "Per-source outcomes"). Three of the four emit points are non-obvious:
+
+- **A copy bulk-skipped by a pre-known conflict** emits `Skipped` from the bulk-skip prelude, before `SourceItemTracker`
+  is built. Those sources are removed from `scan_result.files` up front, so nothing later in the run would ever speak
+  for them and a caller tracking per-source outcomes would wait on a verdict that isn't coming.
+- **A cross-filesystem move emits TWICE for one source**: `Done` with `source_removed: false` when it finishes staging,
+  then either `Done` with `true` from the source-delete phase or `Skipped` when the rename phase left the source
+  standing. Staging succeeding says nothing about where the item ended up, which is why the LAST event is the verdict.
+- **A same-filesystem move's `source_removed` is an `lstat`, not an inference.** A directory MERGE whose children were
+  partly skipped leaves the source directory on disk, so the flag is read rather than derived from the operation type.
+  Pinned by `move_op_tests.rs`'s `a_same_fs_merge_that_skipped_a_child_reports_the_source_still_there`.
+
 ## Durability (flush before reporting complete)
 
 Copy and move don't report `write-complete` until the freshly written destinations are durable on disk — "complete" means "you can eject now," not "buffered in the page cache." Two layers:

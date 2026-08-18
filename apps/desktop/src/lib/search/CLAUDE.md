@@ -25,8 +25,8 @@ writes), `search-run-tracking.ts` (the analytics clock). `search-state.svelte.ts
   (`releaseSearchIndex(handedOffRunId())`) or it dies as the pane appears, silently. Reopening ADOPTS via
   `source.resume`, ❌ never re-runs.
 - **A vanished file leaves every snapshot from ONE place**, `snapshot-purge.ts`, off the `write-source-item-done`
-  stream's `sourceRemoved` flag (outcome, so a skip and a cancel are right for free). ❌ Never purge from a dialog or a
-  pane: they hold intent, and a snapshot outlives both. DETAILS § "Cross-snapshot purge".
+  stream's `sourceRemoved` flag, not its `outcome` (a source skipped BECAUSE it vanished is still gone). ❌ Never purge
+  from a dialog or pane: they hold intent, and a snapshot outlives both. DETAILS § "Cross-snapshot purge".
 - **❌ Never write into a stored snapshot**: `store.set` a copy and bump `mutationTick`, or the `$derived` stays on one
   reference and freezes a handed-off pane.
 - **An EMPTY scope box means the CURRENT FOLDER**, resolved per run in `buildRunQuery()`. ❌ Never write that path into
