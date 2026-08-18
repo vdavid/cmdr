@@ -16,6 +16,8 @@ Depth and rationale for inline rename. `CLAUDE.md` holds the must-knows.
 - **rename-operations.ts**: pure save-flow logic returning a `RenameResult` discriminated union instead of side effects.
 - **rename-activation.ts**: click-to-rename timer logic (800 ms hold, 10 px threshold, cancel on double-click).
 - **rename-step.ts**: the two pure halves of a chained rename: which keypress chains, and which row it lands on.
+- **chain-reports.ts**: the two running toasts a chain speaks through (kept names, unconfirmed renames), each one per
+  pane, plus the debounced refresh the unconfirmed one owns.
 
 ## Three-stage save flow (`rename-operations.ts::executeRenameSave()`)
 
@@ -131,19 +133,28 @@ that keeps a churn storm from re-rendering the visible range more than four time
 cursor already counts in the new listing while `getEntryAt` still serves the old one.
 
 A chain running upward into names that re-sort above it hits that gap on every step, because each of its own renames
-adds a row above the cursor and takes one away below, which shifts the cursor down exactly one row. Read `cursorIndex - 1`
-out of the stale window in that state and the row that comes back is the file the EDITOR IS OPEN ON, whose rename the
-same step has just sent out. The step then reopens the editor on it, and when the diff for that rename arrives it finds
-the editor's own file removed and cancels the session (the `wasRemoved` branch in `listing-diff-sync`): the editor
-vanishes with no toast, no shake, and nothing logged, and the user has to press F2 to start again. Only the upward
-direction and only names sorting above the cursor produce the shift; downward, the add above and the remove above cancel
-out, which is why the same chain looked healthy in the other direction.
+adds a row above the cursor and takes one away below, which shifts the cursor down exactly one row. Read
+`cursorIndex - 1` out of the stale window in that state and the row that comes back is the file the EDITOR IS OPEN ON,
+whose rename the same step has just sent out. The step then reopens the editor on it, and when the diff for that rename
+arrives it finds the editor's own file removed and cancels the session (the `wasRemoved` branch in `listing-diff-sync`):
+the editor vanishes with no toast, no shake, and nothing logged, and the user has to press F2 to start again. Only the
+upward direction and only names sorting above the cursor produce the shift; downward, the add above and the remove above
+cancel out, which is why the same chain looked healthy in the other direction.
 
 So `neighbourFromLoadedWindow` reads a row out of the window only while the window still names the editor's own file at
 the cursor. That equality is the whole test: it's exactly the condition that makes `cursorIndex ± 1` mean anything, it
 costs one comparison on the fast path, and there is no timer or latch in it. When it fails, the step goes to the backend
 listing, which is the space the cursor index counts in. The round trip is what a step in that gap costs, and it's the
 same path a row that has scrolled out of the window has always taken.
+
+That backend read is exact for the gap it exists for, because the cursor was reconciled by the very diff that opened the
+gap. It is NOT exact when the backend listing is ahead of the cursor instead: a rename mutates the listing cache
+synchronously and its `directory-diff` is emitted on a 50 ms coalescing window (`listing/diff_emitter.rs`), so a chain
+stepping faster than that runs with renames applied that the cursor hasn't been reconciled for yet, and `getFileAt` can
+answer a row or two further along than the user meant. Nothing unsafe comes of it (the editor is always activated on the
+entry that was read, and every save stays bound to its own captured target), but the chain can skip a row. Closing that
+too means anchoring the read on the editor's OWN file (`findFileIndex(originalName) ± 1`), which is exact under any
+skew, and still moving the cursor by ±1 in its own space rather than writing a backend index into it.
 
 Only a bare ArrowUp / ArrowDown chains, matched on the whole combo through the file list's own `nav.up` / `nav.down`
 commands. The caret-to-start/end that a bare arrow used to do inside the input is given up for this, and `⌘←` / `⌘→` are
@@ -175,15 +186,15 @@ dialog.
 
 ### Saying so, in one toast that grows
 
-Every name a chain keeps goes into a single toast per pane (`toastKeptName`), reused by id so each new one REPLACES the
-message in place. It names the newest file with the reason that one didn't apply (`chainKeptOriginalName`), and counts
-the earlier ones (`chainKeptOriginalNameAndOthers`) once there is anything to count. All three ways a chained name gets
-dropped go through it: the keypress-time `severity === 'error'`, the backend's `conflict`, and the backend's `error` (a
-read-only volume, a permission refusal).
+Every name a chain keeps goes into a single toast per pane (`chain-reports.ts`, `keptName`), reused by id so each new
+one REPLACES the message in place. It names the newest file with the reason that one didn't apply
+(`chainKeptOriginalName`), and counts the earlier ones (`chainKeptOriginalNameAndOthers`) once there is anything to
+count. All three ways a chained name gets dropped go through it: the keypress-time `severity === 'error'`, the backend's
+`conflict`, and the backend's `error` (a read-only volume, a permission refusal).
 
-A `timeout` gets a SECOND running toast of its own (`toastUnconfirmedRename`, `unconfirmed` / `unconfirmedAndOthers`),
-never a place in the first. The rename may well have landed on disk, and saying the file kept its name would be a lie
-about a volume we simply got no answer from. Same mechanics, separate id, separate count.
+A `timeout` gets a SECOND running toast of its own (`unconfirmed` / `unconfirmedAndOthers`), never a place in the first.
+The rename may well have landed on disk, and saying the file kept its name would be a lie about a volume we simply got
+no answer from. Same mechanics, separate id, separate count.
 
 Two properties of the toast store force that shape, and both fail silently:
 
@@ -207,12 +218,11 @@ chain boundary while the toast is still up, because a name nobody has acknowledg
 resetting the count there would quietly drop what an earlier chain reported. `pane/rename-chain-toast.test.ts` drives
 this against the real store; the rest of the chain tests stub it.
 
-Both toasts DO go when the pane navigates to another directory: `forgetChainReports` drops each one and zeroes its
-tally, called from `loadDirectory` (`pane/listing-loader.ts`) when the path actually changes. A report that outlives its
-directory names a file that isn't on screen any more, and its count starts pooling reasons from directories, and
-volumes, with nothing to do with each other; one has sat through 15 directories and two volumes saying "and 7 other
-files". A re-list of the SAME directory (an SMB reconnect, a retry after an error) keeps them, since the files they name
-are still there.
+Both toasts DO go when the pane navigates to another directory: `forget` drops each one and zeroes its tally, called
+from `loadDirectory` (`pane/listing-loader.ts`) when the path actually changes. A report that outlives its directory
+names a file that isn't on screen any more, and its count starts pooling reasons from directories, and volumes, with
+nothing to do with each other; one has sat through 15 directories and two volumes saying "and 7 other files". A re-list
+of the SAME directory (an SMB reconnect, a retry after an error) keeps them, since the files they name are still there.
 
 ### The directory's names, read once per chain
 

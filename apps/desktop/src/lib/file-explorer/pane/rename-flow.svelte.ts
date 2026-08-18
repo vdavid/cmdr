@@ -5,14 +5,14 @@ import { cancelClickToRename } from '../rename/rename-activation'
 import { executeRenameSave, performRename, checkPermission, type RenameResult } from '../rename/rename-operations'
 import { getSetting } from '$lib/settings'
 import type { RenameConflictResolution } from '../rename/rename-operations'
-import { addToastForPane, dismissToast, dismissTransientToastsForPane, type ToastOriginPane } from '$lib/ui/toast'
+import { addToastForPane, dismissTransientToastsForPane, type ToastOriginPane } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
-import { formatInteger } from '$lib/intl/number-format'
 import { pathInsideArchive } from './volume-capabilities'
 import type { FileEntry } from '../types'
 import type { StartRenameOptions } from './types'
 import type { createRenameState, RenameSessionId, RenameTarget } from '../rename/rename-state.svelte'
 import { resolveStepIndex, type RenameStepDirection } from '../rename/rename-step'
+import { createChainReports } from '../rename/chain-reports'
 import { createSiblingNames, type ListingScope } from '../rename/sibling-names'
 
 export interface RenameFlowDeps {
@@ -62,6 +62,10 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   // pages the listing once rather than 20 times. Hint only: `decideStepFate`
   // never reads it (see `rename/sibling-names.ts`).
   const siblingNames = createSiblingNames()
+
+  // What a chain tells the user about the names it didn't apply and the renames
+  // no volume confirmed: two running toasts, one per pane (`chain-reports.ts`).
+  const chainReports = createChainReports({ paneId: deps.paneId, getListingId: deps.getListingId })
 
   /** The listing the conflict hint is being checked against right now. */
   function currentScope(): ListingScope {
@@ -254,111 +258,10 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     const target = rename.target
     if (!target || !rename.hasChanged()) return
     if (rename.severity === 'error') {
-      toastKeptName(target.originalName, rename.validation.message)
+      chainReports.keptName(target.originalName, rename.validation.message)
       return
     }
     void executeFlow(true)
-  }
-
-  // One toast for every name a chain didn't apply, replaced in place as more
-  // arrive. Reusing the id is what keeps the count honest: the store holds five
-  // toasts and silently DROPS a new one when they're all persistent, so a toast
-  // per kept name would lose everything past the fifth without a trace.
-  const keptNamesToastId = `rename-kept-names-${deps.paneId}`
-  // Names counted by the toast currently on screen: dismissing it is the user
-  // saying they've read it, and the next one starts over.
-  let keptNamesCount = 0
-
-  /**
-   * Says which files kept their names when chained renames didn't apply.
-   *
-   * Persistent on purpose: `handleRenameInput` clears this pane's transient
-   * toasts on every keystroke, which is exactly when the user is typing the next
-   * name, so a transient one would be gone before it was read.
-   *
-   * The newest file is the one named, with the reason it kept its name; the
-   * others become a count. Holding the arrow through a directory where a dozen
-   * names clash is one message that grows, not a dozen fighting for five slots.
-   */
-  function toastKeptName(originalName: string, reason: string): void {
-    keptNamesCount += 1
-    const others = keptNamesCount - 1
-    const content =
-      others === 0
-        ? tString('fileExplorer.rename.chainKeptOriginalName', { reason, name: originalName })
-        : tString('fileExplorer.rename.chainKeptOriginalNameAndOthers', {
-            reason,
-            name: originalName,
-            others,
-            othersText: formatInteger(others),
-          })
-    addToast(content, {
-      level: 'warn',
-      dismissal: 'persistent',
-      id: keptNamesToastId,
-      onDismiss: () => {
-        keptNamesCount = 0
-      },
-    })
-  }
-
-  // One toast for every rename this pane couldn't confirm, on the same terms as
-  // the kept names: one id, replaced in place. Two things force it. A toast each
-  // is dropped past the fifth; and five persistent toasts fill the stack, which
-  // would leave `toastKeptName` unable to say anything at all, on exactly the
-  // slow volumes where both happen at once.
-  const unconfirmedToastId = `rename-unconfirmed-${deps.paneId}`
-  // Renames counted by the toast currently on screen, zeroed when the user
-  // dismisses it, same as the kept names.
-  let unconfirmedCount = 0
-
-  // A volume too slow to answer a rename must not then be asked to list the
-  // directory once per unanswered rename. The refresh waits out a quiet spell
-  // and runs once; landing AFTER the last straggler is also what makes the
-  // listing show the settled truth rather than a half-finished chain.
-  const UNCONFIRMED_REFRESH_QUIET_MS = 1000
-  let unconfirmedRefreshTimer: ReturnType<typeof setTimeout> | null = null
-
-  function scheduleUnconfirmedRefresh(): void {
-    if (unconfirmedRefreshTimer !== null) clearTimeout(unconfirmedRefreshTimer)
-    unconfirmedRefreshTimer = setTimeout(() => {
-      unconfirmedRefreshTimer = null
-      // Read at fire time: the pane may have moved on, and the listing worth
-      // refreshing is the one it is showing now.
-      void refreshListing(deps.getListingId())
-    }, UNCONFIRMED_REFRESH_QUIET_MS)
-  }
-
-  /**
-   * Says which renames the volume never confirmed, and refreshes to find out.
-   *
-   * A timeout is NOT a refusal: the rename may well have landed on disk. So this
-   * never says the file kept its name, and stays a separate message from
-   * `toastKeptName` however tempting the shared shape looks.
-   *
-   * Persistent for the same reason: the next keystroke clears this pane's
-   * transient toasts, and the user is typing the next name right then.
-   */
-  function toastUnconfirmedRename(name: string): void {
-    unconfirmedCount += 1
-    const others = unconfirmedCount - 1
-    const content =
-      others === 0
-        ? tString('fileExplorer.rename.unconfirmed', { name })
-        : tString('fileExplorer.rename.unconfirmedAndOthers', {
-            name,
-            others,
-            othersText: formatInteger(others),
-          })
-    addToast(content, {
-      level: 'warn',
-      dismissal: 'persistent',
-      id: unconfirmedToastId,
-      onDismiss: () => {
-        unconfirmedCount = 0
-      },
-    })
-    scheduleUnconfirmedRefresh()
   }
 
   /**
@@ -414,15 +317,15 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         // be transient, and the next keystroke wipes this pane's transient
         // toasts: a chain over a volume that refuses every rename would report
         // nothing at all.
-        toastKeptName(target.originalName, result.message)
+        chainReports.keptName(target.originalName, result.message)
         break
       case 'timeout':
-        toastUnconfirmedRename(target.originalName)
+        chainReports.unconfirmed(target.originalName)
         break
       case 'conflict':
         // The only authority on a conflict, and the chain must not stop to ask:
         // the name is dropped, and the toast is how the user learns it was.
-        toastKeptName(target.originalName, tString('fileOperations.validation.conflict', { name: trimmedName }))
+        chainReports.keptName(target.originalName, tString('fileOperations.validation.conflict', { name: trimmedName }))
         break
       case 'noop':
       case 'extension-ask':
@@ -461,7 +364,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         // The same aggregated toast the chain uses: a chain's last rename ends
         // here rather than superseded, and its timeout belongs in the running
         // count with the others.
-        toastUnconfirmedRename(target.originalName)
+        chainReports.unconfirmed(target.originalName)
         break
       case 'extension-ask':
         // The dialog steals focus and blurs the editor; that blur must not cancel.
@@ -567,25 +470,9 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       }, RENAME_ACTIVATION_POLL_MS)
     },
 
-    /**
-     * Drops what a chain has been reporting about the listing the pane is
-     * leaving.
-     *
-     * Both running toasts name a file, and count the earlier ones. Carried into
-     * the next directory they go on naming a file that isn't on screen any more,
-     * and the count starts pooling reasons from directories, and volumes, that
-     * have nothing to do with each other. The tally belongs to the toast on
-     * screen, so dropping the toast is what zeroes it, exactly as dismissing it
-     * does.
-     *
-     * A chain BOUNDARY deliberately doesn't do this: a name nobody has
-     * acknowledged is still unacknowledged, and the files are all still there.
-     */
+    /** Drops what a chain reported about the listing the pane is leaving. */
     forgetChainReports(): void {
-      dismissToast(keptNamesToastId)
-      keptNamesCount = 0
-      dismissToast(unconfirmedToastId)
-      unconfirmedCount = 0
+      chainReports.forget()
     },
 
     cancelRename(): void {
