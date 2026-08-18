@@ -45,6 +45,7 @@
 
 use tauri_specta::{Builder, collect_events};
 
+use crate::agent::suggested_ops::SuggestionsChanged;
 use crate::commands::search::SearchIndexReadyEvent;
 use crate::events::index_mapping::{
     AggregationProgressEvent, IndexAggregationCompleteEvent, IndexCoverageBranchEndedEvent,
@@ -63,7 +64,6 @@ use crate::file_system::write_operations::{
     ScanPreviewProgressEvent, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
     WriteConflictResolvedEvent, WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
-use crate::agent::suggested_ops::SuggestionsChanged;
 use crate::file_system::write_operations::{OperationsChanged, VolumesBusyChanged};
 use crate::mtp::{
     MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,

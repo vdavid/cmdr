@@ -62,6 +62,16 @@ impl Inbox {
         self.rows.is_empty()
     }
 
+    /// The rows as they wait, for the persistence edge to write.
+    pub fn rows(&self) -> &[InboxRow] {
+        &self.rows
+    }
+
+    /// Rebuild an inbox from stored rows, which is what a launch does before reconciling.
+    pub fn from_rows(rows: Vec<InboxRow>) -> Self {
+        Inbox { rows }
+    }
+
     /// Take a bundle in, or merge it into the row already waiting for that folder-window.
     ///
     /// A merge can only pull the deadline EARLIER and can only raise the stored interest. That

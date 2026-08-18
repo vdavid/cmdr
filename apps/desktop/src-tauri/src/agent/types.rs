@@ -91,7 +91,7 @@ token_enum! {
         Interrupted => "interrupted",
         /// Execution FINISHED, whichever way it ended: the operation ran to completion, or
         /// the user cancelled it, or it failed. The distinction this carries is "no longer in
-        /// flight" versus "we lost track of it" ([`Interrupted`]), which is why it is written
+        /// flight" versus "we lost track of it" (`Interrupted` above), which is why it is written
         /// when the operation SETTLES rather than only when it succeeds. What happened to
         /// each source is the per-op statuses' job; a cancelled group keeps `pending` rows
         /// for the ops nothing ever reached, and that is the honest record.
