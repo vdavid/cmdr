@@ -185,9 +185,15 @@ the caller and end the timed region at a settle. **Every number below comes from
 after**, so the two tables are directly comparable — and the "before" column is NOT the § 3 table, which was taken with
 the flush per root.
 
-Method: same MacBook, 2026-08-18, on `worktree-rollup-burst` at `f437c2dbc`, release build, tree in `/private/tmp`. ⚠️
-**The machine was not idle again**: another worktree's debug Cmdr build held ~98% of a core throughout and the load
-average sat near nine. Read the ratios and the per-root SHAPE, not the absolute times.
+Method: same MacBook, 2026-08-18, on `worktree-rollup-burst` (`f437c2dbc` for the tables, re-verified on the branch tip
+once the delete guards landed), release build, tree in `/private/tmp`.
+
+⚠️ **The machine was not idle again**, and this bench is sensitive to that in a way worth knowing before anyone reads a
+future run as a regression. A repeat taken at load average ~41 (two Cmdr instances building and running) reported 1.48
+ms and 1.19 ms a root at 12,000 and 20,000 — three times the numbers below — while 30,000 to 60,000 barely moved. Two
+repeats once the load dropped landed at 477/482 µs and 473/469 µs, back on the line. **The small widths are the noisy
+ones**: they finish inside seconds, so one scheduling episode owns a large share of the run. Read the ratios and the
+per-root SHAPE rather than the absolute times, and re-run a surprising small width before believing it.
 
 **Before** (the roll-up inside the handler):
 
