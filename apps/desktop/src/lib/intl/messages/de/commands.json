@@ -697,5 +697,11 @@
     "sourceHash": "71404cb"
   },
   "commands.suggestedOpsShow.label": "Vorgeschlagene Aktionen",
-  "commands.suggestedOpsShow.description": "Sieh dir an, was Ask Cmdr vorgeschlagen hat, und entscheide, was läuft"
+  "@commands.suggestedOpsShow.label": {
+    "sourceHash": "4f24ca6"
+  },
+  "commands.suggestedOpsShow.description": "Sieh dir an, was Ask Cmdr vorgeschlagen hat, und entscheide, was läuft",
+  "@commands.suggestedOpsShow.description": {
+    "sourceHash": "cf24a4f"
+  }
 }
