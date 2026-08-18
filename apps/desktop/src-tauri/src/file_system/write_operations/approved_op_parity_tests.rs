@@ -386,6 +386,21 @@ async fn an_approved_copy_settles_as_an_ordinary_copy() {
 // ============================================================================
 // The volume route, end to end
 // ============================================================================
+//
+// ⚠️ **Two `InMemoryVolume` gaps both surface as the SAME generic message**, which is a nasty
+// thing to debug cold: `IoError { message: "Operation not supported by this volume type" }`,
+// naming the destination path and nothing else. A volume-level transfer test needs BOTH of
+// these or it fails that way with no hint which is missing:
+//
+// - `.with_space_info(total, available)` on the DESTINATION. Without it the pre-flight
+//   free-space check has nothing to ask, and the operation dies before it copies a byte.
+// - `create_directory` for the destination folder. Nothing in the copy path creates one on
+//   this backend, so a dest of `/incoming` fails unless the test seeds it; `/` alone is not
+//   a way around it, because the space check fails first.
+//
+// The failure arrives as a `write-error` through the sink rather than a panic, so a test that
+// only asserts on what landed reports "the file isn't there" and says nothing about why.
+// Assert on `collector.errors` when a transfer test fails for no visible reason.
 
 /// A lane nothing else in the suite shares, so this op is admitted immediately rather than
 /// queueing behind another test's transfer.
