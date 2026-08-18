@@ -1411,13 +1411,13 @@ hogy a fájl megtartotta a nevét: azt mondja, hogy a Cmdr nem tudja. Ez a `chai
 JELENTÉSE ellentétes, ezért a nyitó tagmondat szándékosan más.
 
 - **"Couldn't confirm X" → `Nem sikerült megerősíteni, hogy …`** · a katalógusban EZ a család bevett nyitánya ugyanerre
-  a meg-nem-erősített-művelet helyzetre: `fileExplorer.pane.trashUnconfirmedToast` (`Nem sikerült megerősíteni, hogy a
-  fájl a Kukába került.`) és `fileOperations.mkdir.timeoutMessage` (`Nem sikerült megerősíteni, hogy a mappa
-  létrejött.`) · high.
-  - ❌ NEM tárgyas `Nem sikerült megerősíteni a(z) „X” átnevezését`: a pile-ban a `megerősítés` tárgyas alakja
-    kizárólag a jóváhagyás-értelmet viszi (Double Commander `Felülírások megerősítése`, `megerősítés kérése nélkül`;
-    Nautilus `Jelszó megerősítése`; macOS AppKit `Confirm` = `Megerősítés`), a `hogy`-os mellékmondat viszont
-    egyértelműen az ellenőrzés-értelem.
+  a meg-nem-erősített-művelet helyzetre: `fileExplorer.pane.trashUnconfirmedToast`
+  (`Nem sikerült megerősíteni, hogy a fájl a Kukába került.`) és `fileOperations.mkdir.timeoutMessage`
+  (`Nem sikerült megerősíteni, hogy a mappa létrejött.`) · high.
+  - ❌ NEM tárgyas `Nem sikerült megerősíteni a(z) „X” átnevezését`: a pile-ban a `megerősítés` tárgyas alakja kizárólag
+    a jóváhagyás-értelmet viszi (Double Commander `Felülírások megerősítése`, `megerősítés kérése nélkül`; Nautilus
+    `Jelszó megerősítése`; macOS AppKit `Confirm` = `Megerősítés`), a `hogy`-os mellékmondat viszont egyértelműen az
+    ellenőrzés-értelem.
 - **"the rename of X" → `a(z) „X” átneveződött` (mediopasszív)** · a testvér buborék pontosan ezt az alakot használja a
   meg nem erősített műveletre (`trashUnconfirmedToast`: `a fájl így is áthelyeződhetett`), és az `-ódik/-ődik`
   mediopasszív a pile-ban is a gépi ágens nélküli állítás alakja (Nautilus, Thunar, Dolphin: `törlődnek`, `másolódnak`,
@@ -1445,10 +1445,10 @@ JELENTÉSE ellentétes, ezért a nyitó tagmondat szándékosan más.
   számú állítmányt kap (`átneveződött`, a magyar alapeset számnévi tag után), a második viszont többeset
   (`átneveződhettek`), hogy a lehetőség az EGÉSZ csoportra vonatkozzon, ne csak az utolsó tagra · high.
 - **"That filename can't be used" → `A fájlnév nem használható` / `A mappa neve nem használható`** · a `nem használható`
-  névre alkalmazva macOS Tier 1 (Finder `A(z) „^0” név nem használható.`, `… mert túl hosszú.`, `… mert a rendszer
-  számára van fenntartva.`; AppKit Document `A(z) „%@” név nem használható.`) · high. A főnév a testvérkulcsokéval
-  azonos (`validation.empty`, `.disallowedChars`, `.nameTooLong`: `A fájlnév` / `A mappa neve`). Záró pont nincs: az
-  érték hosszabb mondatba épül be (`{reason}. A(z) „{name}” megtartotta a nevét.`).
+  névre alkalmazva macOS Tier 1 (Finder `A(z) „^0” név nem használható.`, `… mert túl hosszú.`,
+  `… mert a rendszer számára van fenntartva.`; AppKit Document `A(z) „%@” név nem használható.`) · high. A főnév a
+  testvérkulcsokéval azonos (`validation.empty`, `.disallowedChars`, `.nameTooLong`: `A fájlnév` / `A mappa neve`). Záró
+  pont nincs: az érték hosszabb mondatba épül be (`{reason}. A(z) „{name}” megtartotta a nevét.`).
   - Az angol `That` mutató névmása elmarad: a `mappanév` összetétel a pile EGYIK forrásában sem szerepel (a `fájlnév`
     60+ találattal igen), az `Ez a mappa neve …` pedig félreolvasható „ennek a mappának a neve” értelemben. A magyar
     határozott névelő amúgy is a beírt névre mutat.

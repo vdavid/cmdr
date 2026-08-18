@@ -1218,12 +1218,12 @@ nombre.
 - **Las tres ramas cierran en plural (`los cambios sí se hayan aplicado`)** · incluso en la rama `one` hay dos cambios
   de nombre (el nombrado más el otro). Ramas CLDR `one`/`many`/`other`; `{othersText}` solo aparece en `many`/`other`,
   igual que en `chainKeptOriginalNameAndOthers`, porque `otro archivo` ya dice "uno más" · high
-- **"That filename can''t be used" → `Ese nombre de archivo no puede usarse`** (carpeta: `Ese nombre de carpeta no
-  puede usarse`) · macOS `es` Finder tiene el concepto exacto: RN5 "El nombre “^0” no puede usarse porque está reservado
-  para el sistema", NE74 "…no puede usarse porque es demasiado largo", RN23 "…no se puede usar". El demostrativo `Ese`
-  traduce el "That" del inglés (el nombre que acabas de escribir), y por eso no lleva el artículo de los hermanos
-  (`empty`, `disallowedChars`, `nameTooLong` usan "El nombre de la carpeta / del archivo"); el sustantivo
-  carpeta/archivo sí es el mismo · high. Sin punto final, porque se compone dentro de la frase de
+- **"That filename can''t be used" → `Ese nombre de archivo no puede usarse`** (carpeta:
+  `Ese nombre de carpeta no puede usarse`) · macOS `es` Finder tiene el concepto exacto: RN5 "El nombre “^0” no puede
+  usarse porque está reservado para el sistema", NE74 "…no puede usarse porque es demasiado largo", RN23 "…no se puede
+  usar". El demostrativo `Ese` traduce el "That" del inglés (el nombre que acabas de escribir), y por eso no lleva el
+  artículo de los hermanos (`empty`, `disallowedChars`, `nameTooLong` usan "El nombre de la carpeta / del archivo"); el
+  sustantivo carpeta/archivo sí es el mismo · high. Sin punto final, porque se compone dentro de la frase de
   `chainKeptOriginalName`: "Ese nombre de archivo no puede usarse. “foo.txt” mantuvo su nombre."
 - Ningún valor lleva apóstrofo, así que no hay nada que doblar para ICU.
 - No hace falta `sameAsSourceJustification`: los tres valores difieren del inglés.

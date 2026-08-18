@@ -1505,9 +1505,9 @@ doit jamais laisser entendre que le nom est resté inchangé.
   interdictions de style.md (ni `erreur`, ni `échec`, ni `bloqué`).
 - **Nommer le fichier dans la 2e phrase, ne pas pronominaliser.** ❌ Jamais « donc il a peut-être quand même abouti » :
   l'antécédent masculin le plus proche est `le volume`, et le toast dirait alors le contraire de ce qu'il veut dire. Les
-  deux toasts précédents appliquent déjà cette discipline (« donc LE DOSSIER a peut-être quand même été créé »). D'où
-  « donc le fichier a peut-être quand même été renommé » / « donc les fichiers ont peut-être quand même été renommés ».
-  Le verbe `renommer` au participe dit littéralement l'inverse de `a gardé son nom` du frère, ce qui est exactement la
+  deux toasts précédents appliquent déjà cette discipline (« donc LE DOSSIER a peut-être quand même été créé »). D'où «
+  donc le fichier a peut-être quand même été renommé » / « donc les fichiers ont peut-être quand même été renommés ». Le
+  verbe `renommer` au participe dit littéralement l'inverse de `a gardé son nom` du frère, ce qui est exactement la
   distinction à préserver. L'anglais nomme l'ACTION (« the rename may still have gone through »), le `fr` nomme l'OBJET
   (« le fichier … renommé ») : c'est le moule `mkdir` (« the folder may still have been created » → « le dossier a
   peut-être quand même été créé »), et ça évite de répéter `renommage` deux phrases de suite. Ne pas « corriger » vers
@@ -1518,13 +1518,14 @@ doit jamais laisser entendre que le nom est resté inchangé.
   autres fichiers sont un second SUJET (« « X » a gardé son nom, ainsi qu'un autre fichier »), ici ce sont des
   compléments de `le renommage de`, donc la préposition `de` doit se répéter et `ainsi que` alourdirait sans rien
   apporter. Même famille de voix, slot grammatical différent.
-- Le pluriel `les renommages` est porté par la clé entière (toutes les branches comptent au moins deux renommages),
-  et `et` reste DEVANT le `{others, plural, …}`, seul `d''un` / `de {othersText}` entre dans les branches : l'élision de
+- Le pluriel `les renommages` est porté par la clé entière (toutes les branches comptent au moins deux renommages), et
+  `et` reste DEVANT le `{others, plural, …}`, seul `d''un` / `de {othersText}` entre dans les branches : l'élision de
   `d'un` l'impose. Branches CLDR `fr` `one` / `many` / `other`, `many` identique à `other`.
-- **Le doublement de `peut-être` est voulu**, pas une maladresse : `Le volume est peut-être lent, donc le fichier a
-  peut-être quand même été renommé` calque mot pour mot `mkdir.timeoutMessage`. Les deux `peut-être` ne portent pas sur
-  la même chose (l'un sur la lenteur du volume, l'autre sur l'issue du renommage), et c'est justement ce que le toast
-  doit dire : on ne sait ni pourquoi ça traîne, ni si c'est passé.
+- **Le doublement de `peut-être` est voulu**, pas une maladresse :
+  `Le volume est peut-être lent, donc le fichier a peut-être quand même été renommé` calque mot pour mot
+  `mkdir.timeoutMessage`. Les deux `peut-être` ne portent pas sur la même chose (l'un sur la lenteur du volume, l'autre
+  sur l'issue du renommage), et c'est justement ce que le toast doit dire : on ne sait ni pourquoi ça traîne, ni si
+  c'est passé.
 - **"That filename can't be used" → `Le nom du fichier ne peut pas être utilisé`** (et `… du dossier …`) · macOS Finder
   `fr` (« L'extension « ^0 » est réservée au système et ne peut pas être utilisée. ») · high. Le moule
   `Le nom du {fichier,dossier} ne peut pas …` est repris tel quel des trois sœurs `fileOperations.validation.empty` /

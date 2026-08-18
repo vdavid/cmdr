@@ -1472,9 +1472,9 @@ bestand zijn naam heeft gehouden: dat is precies wat we niet weten. Daarmee staa
 - **rename (naamwoord) → `naamwijziging` / `naamwijzigingen`** · de gevestigde rij hierboven (Microsoft
   "naamwijzigingsvoorstellen"); NOOIT `hernoeming` · high. Het meervoud in de `AndOthers`-arm is correct in beide
   takken: daar staan altijd twee of meer naamwijzigingen.
-- **"The volume may be slow" → `Het volume is mogelijk traag`** · macOS Finder `LA20` ("… may run very slowly" → "…
-  zijn erg traag") is Tier 1 voor `slow` → `traag`, en `mkdir.timeoutMessage` zegt deze halve zin al woordelijk zo ·
-  high. Het `mogelijk` draagt de slag om de arm van het Engels: Cmdr weet niet eens zeker dát het volume traag is.
+- **"The volume may be slow" → `Het volume is mogelijk traag`** · macOS Finder `LA20` ("… may run very slowly" → "… zijn
+  erg traag") is Tier 1 voor `slow` → `traag`, en `mkdir.timeoutMessage` zegt deze halve zin al woordelijk zo · high.
+  Het `mogelijk` draagt de slag om de arm van het Engels: Cmdr weet niet eens zeker dát het volume traag is.
 - **"the rename may still have gone through" → `de naam is misschien toch gewijzigd`** · exact de staartvorm van
   `mkdir.timeoutMessage` ("dus de map is misschien toch aangemaakt") · high. De staart herhaalt het werkwoord uit de
   gevestigde `naam wijzigen`, zodat de zin de daad noemt en niet de afloop claimt. Meervoud in de `AndOthers`-arm
@@ -1484,7 +1484,6 @@ bestand zijn naam heeft gehouden: dat is precies wat we niet weten. Daarmee staa
   hebben.
 - **"That filename can''t be used" → `Deze bestandsnaam kan niet worden gebruikt`** (map: `Deze mapnaam …`) · macOS
   Finder `RN31` is de directe Tier 1-treffer: "The name '^0' can't be used." → "De naam '^0' kan niet worden gebruikt."
-  (ook `NE74`, `RN5`, `RN23`) · high. `Deze` volgt het aanwijzende `That` van het Engels en de zusterregel
-  `nameTooLong` (`Deze mapnaam is te lang`); geen punt op het eind, want de zin wordt ook ingevoegd vóór
-  `‘{name}’ behoudt zijn naam.`
+  (ook `NE74`, `RN5`, `RN23`) · high. `Deze` volgt het aanwijzende `That` van het Engels en de zusterregel `nameTooLong`
+  (`Deze mapnaam is te lang`); geen punt op het eind, want de zin wordt ook ingevoegd vóór `‘{name}’ behoudt zijn naam.`
 - Geen ICU-apostrof nodig: geen enkele rechte `'` in de drie waarden, en de aanhalingstekens zijn de gekrulde `‘…’`.

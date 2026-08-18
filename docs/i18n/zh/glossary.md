@@ -1144,23 +1144,22 @@ macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "cou
 - **"Couldn''t confirm the rename of X" → `无法确认“{name}”是否已重命名`** · the locale already has this exact sentence
   shape for the same situation one op over: `fileOperations` renders "Couldn''t confirm the folder was created" as
   `无法确认文件夹是否已创建。这个宗卷可能比较慢，所以文件夹也许已经创建好了。` and the trash one as
-  `无法确认文件是否已移到废纸篓。该宗卷可能较慢…`. Reused verbatim as a pattern so the whole "we timed out, it may
-  still have worked" family reads as one voice, hedge for hedge. `无法…` per style.md (no bare `失败`/`错误`) · `high`
-- **"The volume may be slow" → `这个宗卷可能比较慢`** · settled `宗卷` (mounted-disk sense, style.md) + the spoken `这个`
-  over `此`/`该`. Keeps the sibling folder-creation string's `可能` hedge verbatim: the English hedges here too, because
-  a timeout says nothing about the volume · `high`
+  `无法确认文件是否已移到废纸篓。该宗卷可能较慢…`. Reused verbatim as a pattern so the whole "we timed out, it may still
+  have worked" family reads as one voice, hedge for hedge. `无法…` per style.md (no bare `失败`/`错误`) · `high`
+- **"The volume may be slow" → `这个宗卷可能比较慢`** · settled `宗卷` (mounted-disk sense, style.md) + the spoken
+  `这个` over `此`/`该`. Keeps the sibling folder-creation string's `可能` hedge verbatim: the English hedges here too,
+  because a timeout says nothing about the volume · `high`
 - **"the rename may still have gone through" → `所以名称也许已经改好了`** (plural arm: `所以这些名称也许已经改好了`) ·
-  `也许已经…了` is the sibling's hedge (`也许已经创建好了`), and macOS Finder attests `可能已` for this
-  "we can''t tell, but probably" register (`NE103` `项目可能已过期`, `NE61` `一个或多个项目可能已删除`). This toast must
-  never say the file kept its name: `保留了原来的名称` belongs to the `chainKeptOriginalName*` pair, which means the
-  OPPOSITE (the rename definitely didn''t apply). `名称…改好了` is the deliberate mirror of it · `high`
+  `也许已经…了` is the sibling's hedge (`也许已经创建好了`), and macOS Finder attests `可能已` for this "we can''t tell,
+  but probably" register (`NE103` `项目可能已过期`, `NE61` `一个或多个项目可能已删除`). This toast must never say the
+  file kept its name: `保留了原来的名称` belongs to the `chainKeptOriginalName*` pair, which means the OPPOSITE (the
+  rename definitely didn''t apply). `名称…改好了` is the deliberate mirror of it · `high`
 - **Why `名称也许已经改好了` and not `重命名也许已经完成了`** · `重命名` is a verb in Chinese and reads awkwardly as the
   subject noun; `名称` is the noun this toast family already turns on (`保留了原来的名称`), so the two toasts contrast
   on the same word · `high`
-- **The counted tail reuses `其他 {othersText} 个文件`** · identical to the `chainKeptOriginalNameAndOthers` tail
-  (macOS Finder `“^1”和其他^0个项目`); here it sits inside the subject
-  (`“{name}”和其他 N 个文件是否已重命名`) because the English counts the files, not a second clause · `high`. Plural:
-  `other` branch only, per the Chinese CLDR category.
+- **The counted tail reuses `其他 {othersText} 个文件`** · identical to the `chainKeptOriginalNameAndOthers` tail (macOS
+  Finder `“^1”和其他^0个项目`); here it sits inside the subject (`“{name}”和其他 N 个文件是否已重命名`) because the
+  English counts the files, not a second clause · `high`. Plural: `other` branch only, per the Chinese CLDR category.
 - **"That filename can''t be used" → `这个文件名不能使用`** (folder arm `这个文件夹名不能使用`) · macOS Finder `RN31`
   `不能使用名称“^0”。` and AppKit `The name "%@" can't be used.` → `不能使用名称“%@”。` give the `不能使用` verb; the
   subject-first order and the `文件名`/`文件夹名` nouns come from the sibling validation strings in this same catalog

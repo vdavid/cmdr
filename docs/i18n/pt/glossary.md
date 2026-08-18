@@ -1039,9 +1039,9 @@ manteve o nome; `unconfirmed*` diz que o Cmdr NÃO sabe, e que a renomeação po
 embaralhe os dois sentidos.
 
 - "Couldn''t confirm …" · **Não foi possível confirmar …** · a voz de "couldn''t/failed" já fixada na seção
-  Error-copy-phrasings, e o valor já publicado em `fileExplorer.pane.trashUnconfirmedToast` ("Não foi possível
-  confirmar que o arquivo foi movido para a Lixeira.") · confirmed. As duas chaves de renomeação reusam essa abertura,
-  então os três toasts de "não deu para confirmar" soam iguais.
+  Error-copy-phrasings, e o valor já publicado em `fileExplorer.pane.trashUnconfirmedToast` ("Não foi possível confirmar
+  que o arquivo foi movido para a Lixeira.") · confirmed. As duas chaves de renomeação reusam essa abertura, então os
+  três toasts de "não deu para confirmar" soam iguais.
 - "the rename of X" · **a renomeação de X** · linha `renomeação` do glossário (substantivo de `Renomear`) · high. ❌
   Nunca "a alteração de nome" (forma pt-PT).
 - "The volume may be slow" · **O volume pode estar lento** · o valor já publicado em `trashUnconfirmedToast` é
@@ -1056,13 +1056,14 @@ embaralhe os dois sentidos.
   "still", não "ainda assim".
 - ⚠️ **Não diga "o arquivo pode ter sido renomeado".** O que está sendo renomeado pode ser uma pasta, e o inglês evita
   de propósito nomear file/folder na primeira frase. O sujeito é a renomeação, não o item.
-- **O substantivo é repetido na segunda frase, sem pronome** (`… a renomeação de "{name}". O volume pode estar lento,
-  então a renomeação pode ter sido concluída…`), acompanhando o inglês, que também repete "the rename"/"the renames", e
-  o irmão `trashUnconfirmedToast`, que repete "o arquivo". Um retomador `ela`/`elas` ficaria ambíguo na chave
-  `AndOthers`, onde o núcleo singular convive com "arquivos" no plural. Por isso a `AndOthers` mantém **a renomeação**
-  (singular) na primeira frase e usa **as renomeações** (plural) na segunda, exatamente como o inglês. O sintagma
-  contado copia o ramo do irmão `chainKeptOriginalNameAndOthers`: `one {outro arquivo}` / `many` e `other`
-  {outros {othersText} arquivos}, com **outros** antes do numeral (macOS Finder `MR201_V3`).
+- **O substantivo é repetido na segunda frase, sem pronome**
+  (`… a renomeação de "{name}". O volume pode estar lento, então a renomeação pode ter sido concluída…`), acompanhando o
+  inglês, que também repete "the rename"/"the renames", e o irmão `trashUnconfirmedToast`, que repete "o arquivo". Um
+  retomador `ela`/`elas` ficaria ambíguo na chave `AndOthers`, onde o núcleo singular convive com "arquivos" no plural.
+  Por isso a `AndOthers` mantém **a renomeação** (singular) na primeira frase e usa **as renomeações** (plural) na
+  segunda, exatamente como o inglês. O sintagma contado copia o ramo do irmão `chainKeptOriginalNameAndOthers`:
+  `one {outro arquivo}` / `many` e `other` {outros {othersText} arquivos}, com **outros** antes do numeral (macOS Finder
+  `MR201_V3`).
 - "That filename/folder name can''t be used" · **Esse nome de arquivo / Esse nome de pasta não pode ser usado** · macOS
   Finder pt-BR é a fonte direta e é da própria família de renomear: `RN31` "O nome “^0” não pode ser usado.", `NE74`
   "…porque é muito longo.", `RN5` "…porque foi reservado pelo sistema." · confirmed. O demonstrativo **Esse** traduz o
