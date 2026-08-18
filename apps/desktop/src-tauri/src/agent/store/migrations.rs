@@ -67,6 +67,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "proposal_rename_evidence: why each proposed name is believable",
         up: migrate_v5_rename_evidence,
     },
+    Migration {
+        version: 6,
+        description: "agent_inbox: folder-window bundles waiting with deliver-by deadlines",
+        up: migrate_v6_agent_inbox,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a fresh DB
@@ -354,6 +359,46 @@ fn migrate_v5_rename_evidence(tx: &Transaction<'_>) -> rusqlite::Result<()> {
             coverage_trimmed_before  INTEGER,   -- 0/1
             coverage_trimmed_after   INTEGER    -- 0/1
         );
+        ",
+    )
+}
+
+/// Version 6: `agent_inbox` — the folder-window bundles waiting for a deliver-by deadline
+/// (agent-spec §4.2, §6.2).
+///
+/// Three shapes here are deliberate:
+///
+/// - **`(folder, window_start)` IS the primary key, because it is the merge key.** The
+///   in-memory inbox merges a new bundle into the row already waiting for that folder-window,
+///   so making the same pair the PK means this table cannot hold two rows the inbox would have
+///   merged. The invariant is structural rather than a rule somebody must remember.
+/// - **No `conversation_id` and no foreign key.** The inbox is pre-proposal SIGNAL, not a
+///   decision record: nobody has been asked anything yet. It belongs to no chat thread, and a
+///   sweep that eventually comes out of it gets its own link.
+/// - **Counters are four columns, not a JSON blob**, so `main.db` stays inspectable in any
+///   stock `sqlite3` browser — the same reason every classification column here is a token.
+///
+/// `interest` is a REAL because it is a score rather than a classification. The wake tiers it
+/// feeds are derived, never stored: tier boundaries are still being tuned (spec §18), and a
+/// stored tier would freeze the guess of one run into the DB.
+fn migrate_v6_agent_inbox(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch(
+        "
+        -- The changes in one folder in one window, waiting for a deadline. Rows live only
+        -- until the next wake drains them, and a restart reconciles whatever it finds here.
+        CREATE TABLE agent_inbox (
+            folder        TEXT    NOT NULL,
+            window_start  INTEGER NOT NULL,   -- unix secs, epoch-anchored
+            created       INTEGER NOT NULL,   -- per-kind counters; never file names
+            modified      INTEGER NOT NULL,
+            removed       INTEGER NOT NULL,
+            renamed       INTEGER NOT NULL,
+            last_event_at INTEGER NOT NULL,   -- newest change; the staleness horizon reads this
+            interest      REAL    NOT NULL,   -- strongest claim any contribution made, 0..=1
+            deliver_by    INTEGER NOT NULL,   -- unix secs
+            PRIMARY KEY (folder, window_start)
+        );
+        CREATE INDEX agent_inbox_deliver_by ON agent_inbox (deliver_by);
         ",
     )
 }

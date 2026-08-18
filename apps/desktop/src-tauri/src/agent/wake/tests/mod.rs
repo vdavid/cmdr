@@ -2,6 +2,7 @@
 
 mod coalesce;
 mod compact;
+mod inbox;
 mod interest;
 
 use super::*;

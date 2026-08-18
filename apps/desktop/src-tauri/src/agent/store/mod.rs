@@ -15,6 +15,7 @@
 //! write-connection lifetime.
 
 mod connection;
+mod inbox;
 mod migrations;
 pub mod proposals;
 mod query;
@@ -25,6 +26,7 @@ use rusqlite::{Connection, ErrorCode};
 
 pub use connection::open_read_connection;
 pub(crate) use connection::open_write_connection;
+pub use inbox::{StoredInboxRow, clear_inbox, load_inbox, replace_inbox, upsert_inbox_row};
 pub use migrations::{MIGRATIONS, Migration, run_migrations};
 pub use query::{
     AskCmdrConsent, ConversationCost, ConversationDetail, ConversationEvent, ConversationRow, ConversationSearchHit,
