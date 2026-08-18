@@ -8,6 +8,8 @@
 //! costs ONE roll-up, the answer it lands is the same one the per-message version
 //! landed, and a quit inside a burst still pays what the burst owes.
 
+use cmdr_fs::pluralize::pluralize;
+
 use super::tests::{dir_row, file_row, set_epoch, settle};
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::check_db_consistency;
@@ -73,8 +75,10 @@ fn a_burst_of_roots_under_one_parent_costs_a_handful_of_rollups() {
     let walks = writer.rollup_walks();
     assert!(
         walks <= (WIDTH as u64) / 10,
-        "{WIDTH} roots sharing one parent cost {walks} ancestor roll-ups; the burst must coalesce, \
-         or a wide directory is quadratic again"
+        "{} sharing one parent cost {}; the burst must coalesce, \
+         or a wide directory is quadratic again",
+        pluralize(WIDTH as u64, "frontier root"),
+        pluralize(walks, "ancestor roll-up"),
     );
 
     // And the coalescing changed no answer.

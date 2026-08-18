@@ -110,33 +110,6 @@ impl PendingRollups {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// The whole point of the set: a burst of roots sharing one parent owes ONE
-    /// walk, not one per root.
-    #[test]
-    fn a_burst_sharing_one_parent_queues_one_id() {
-        let rollups = PendingRollups::new(Arc::new(AtomicU64::new(0)));
-        for _ in 0..10_000 {
-            rollups.queue(42);
-        }
-        assert_eq!(rollups.pending.borrow().len(), 1, "one parent, one queued roll-up");
-    }
-
-    /// Distinct parents each keep their own entry: coalescing must never lose a
-    /// chain that nothing else is going to repair.
-    #[test]
-    fn distinct_parents_all_survive() {
-        let rollups = PendingRollups::new(Arc::new(AtomicU64::new(0)));
-        for id in 1..=50 {
-            rollups.queue(id);
-        }
-        assert_eq!(rollups.pending.borrow().len(), 50);
-    }
-}
-
 /// Settle the `dir_stats` ledger: roll up the ancestors a burst of subtree
 /// aggregates left owing, then repair whatever chains a failed propagation queued.
 ///
@@ -172,4 +145,31 @@ pub(super) fn emit_full_refresh(events: &dyn EventSink) {
     objc2::rc::autoreleasepool(|_| emit_dir_updated(events, vec!["/".to_string()]));
     #[cfg(not(target_os = "macos"))]
     emit_dir_updated(events, vec!["/".to_string()]);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The whole point of the set: a burst of roots sharing one parent owes ONE
+    /// walk, not one per root.
+    #[test]
+    fn a_burst_sharing_one_parent_queues_one_id() {
+        let rollups = PendingRollups::new(Arc::new(AtomicU64::new(0)));
+        for _ in 0..10_000 {
+            rollups.queue(42);
+        }
+        assert_eq!(rollups.pending.borrow().len(), 1, "one parent, one queued roll-up");
+    }
+
+    /// Distinct parents each keep their own entry: coalescing must never lose a
+    /// chain that nothing else is going to repair.
+    #[test]
+    fn distinct_parents_all_survive() {
+        let rollups = PendingRollups::new(Arc::new(AtomicU64::new(0)));
+        for id in 1..=50 {
+            rollups.queue(id);
+        }
+        assert_eq!(rollups.pending.borrow().len(), 50);
+    }
 }
