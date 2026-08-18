@@ -8,8 +8,8 @@
 use std::path::{Path, PathBuf};
 
 use super::{
-    ExpectedSources, LocalContent, RemoteContent, SourceFingerprint, retain_bound_sources, retain_bound_sources_remote,
-    retain_bound_sources_with_sizes,
+    ExpectedSources, LocalContent, RemoteContent, SourceFingerprint, normalized_path, retain_bound_sources,
+    retain_bound_sources_on, retain_bound_sources_with_sizes,
 };
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::{SourceItemOutcome, WriteOperationType};
@@ -283,7 +283,7 @@ async fn a_remote_source_rewritten_since_review_is_dropped_and_reported() {
     seed_remote(&volume, &path, b"replaced with something longer").await;
 
     let sink = CollectorEventSink::new();
-    let kept = retain_bound_sources_remote(
+    let kept = retain_bound_sources_on(
         &volume,
         &sink,
         "op",
@@ -314,7 +314,7 @@ async fn an_unchanged_remote_source_survives() {
     )]);
 
     let sink = CollectorEventSink::new();
-    let kept = retain_bound_sources_remote(
+    let kept = retain_bound_sources_on(
         &volume,
         &sink,
         "op",
@@ -342,7 +342,7 @@ async fn a_remote_source_that_vanished_is_reported_as_removed() {
     volume.delete(&path).await.expect("delete remote file");
 
     let sink = CollectorEventSink::new();
-    let kept = retain_bound_sources_remote(
+    let kept = retain_bound_sources_on(
         &volume,
         &sink,
         "op",
@@ -356,11 +356,11 @@ async fn a_remote_source_that_vanished_is_reported_as_removed() {
     assert!(sink.source_items_done.lock_ignore_poison()[0].source_removed);
 }
 
-/// A local fingerprint can never satisfy a remote expectation, or the other way
-/// round: the two describe different kinds of identity, and treating them as
-/// interchangeable is how a path-only match would slip through.
+/// Honouring a `Local` expectation on a volume route is not the same as trusting
+/// it. A path that only exists in the volume’s namespace cannot be stat’d locally,
+/// so the expectation goes unsettled and the source is dropped rather than guessed at.
 #[tokio::test]
-async fn a_remote_source_never_matches_a_local_expectation() {
+async fn a_local_expectation_for_a_path_only_the_volume_has_is_dropped() {
     let volume = InMemoryVolume::new("Share");
     let path = PathBuf::from("/photos/holiday.jpg");
     seed_remote(&volume, &path, b"original").await;
@@ -377,7 +377,7 @@ async fn a_remote_source_never_matches_a_local_expectation() {
     )]);
 
     let sink = CollectorEventSink::new();
-    let kept = retain_bound_sources_remote(
+    let kept = retain_bound_sources_on(
         &volume,
         &sink,
         "op",
@@ -465,4 +465,76 @@ fn a_directory_journals_no_size_and_no_mtime() {
         content: LocalContent::Directory,
     };
     assert_eq!(fingerprint.journal_snapshot(), (None, None));
+}
+
+/// A caller fingerprints once, when the suggestion is made, and cannot know which
+/// route the operation takes weeks later: `copy_between_volumes` hands a both-local
+/// transfer to the local starters and everything else to the Volume engine. So a
+/// `Local` expectation has to be honoured on the volume route too, or a bound
+/// local-to-MTP copy would skip every source it was handed.
+#[tokio::test]
+async fn a_local_expectation_is_honoured_on_a_volume_route() {
+    let dir = TestDir::new("binding_dispatch_local");
+    let file = write_file(&dir, "report.pdf", b"as reviewed");
+    let expected = expect_current(std::slice::from_ref(&file));
+    let volume = InMemoryVolume::new("Share");
+    let sink = CollectorEventSink::new();
+    let kept = retain_bound_sources_on(
+        &volume,
+        &sink,
+        "op",
+        WriteOperationType::Copy,
+        Some(&expected),
+        vec![file.clone()],
+    )
+    .await;
+    assert_eq!(kept, Some(vec![file]), "the local identity still settles it");
+    assert!(sink.source_items_done.lock_ignore_poison().is_empty());
+}
+
+/// The other half of that dispatch: honouring a `Local` expectation on a volume
+/// route must not mean waving it through. A local file that changed is still
+/// dropped, with the volume sitting right there unasked.
+#[tokio::test]
+async fn a_changed_local_source_is_dropped_on_a_volume_route_too() {
+    let dir = TestDir::new("binding_dispatch_changed");
+    let file = write_file(&dir, "report.pdf", b"as reviewed");
+    let expected = expect_current(std::slice::from_ref(&file));
+    write_file(&dir, "report.pdf", b"edited since the approval");
+    let volume = InMemoryVolume::new("Share");
+    let sink = CollectorEventSink::new();
+    let kept = retain_bound_sources_on(
+        &volume,
+        &sink,
+        "op",
+        WriteOperationType::Copy,
+        Some(&expected),
+        vec![file.clone()],
+    )
+    .await;
+    assert!(kept.is_none());
+    assert_eq!(skipped_paths(&sink), vec![file.display().to_string()]);
+}
+
+/// The reverse direction fails closed: a `Remote` identity needs the backend that
+/// owns it, and the local starters have no volume to ask. Guessing would mean
+/// running an operation nobody could verify.
+#[test]
+fn a_remote_expectation_cannot_be_settled_without_a_volume() {
+    let dir = TestDir::new("binding_dispatch_remote_sync");
+    let file = write_file(&dir, "report.pdf", b"as reviewed");
+    let expected = ExpectedSources::new([(
+        file.clone(),
+        SourceFingerprint::Remote {
+            normalized_path: normalized_path(&file),
+            content: RemoteContent::File {
+                size: Some(11),
+                modified: None,
+            },
+        },
+    )]);
+    let sink = CollectorEventSink::new();
+    let kept = retain(&expected, &sink, std::slice::from_ref(&file));
+    assert!(kept.is_none(), "unverifiable is not the same as fine");
+    assert_eq!(skipped_paths(&sink), vec![file.display().to_string()]);
 }

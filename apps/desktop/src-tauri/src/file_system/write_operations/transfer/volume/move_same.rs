@@ -50,6 +50,10 @@ fn note_pending_for_local_volume(volume: &Arc<dyn Volume>, path: &Path) {
 ///
 /// For MTP, this uses MTP MoveObject: a single USB command per file.
 /// Runs as a background task with operation registration, progress events, and cancellation.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "both volumes travel with their ids, and the source binding is a separate input from the config on purpose (a bound op and a user-started one must share one config); a bag struct would shuffle the same fields"
+)]
 pub(super) async fn move_within_same_volume(
     events: Arc<dyn OperationEventSink>,
     volume_id: String,
@@ -58,6 +62,7 @@ pub(super) async fn move_within_same_volume(
     dest_path: PathBuf,
     config: VolumeCopyConfig,
     initiator: crate::operation_log::types::Initiator,
+    expected_sources: Option<crate::file_system::write_operations::source_binding::ExpectedSources>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let operation_id = Uuid::new_v4().to_string();
 
@@ -142,16 +147,37 @@ pub(super) async fn move_within_same_volume(
                 source_paths.len() as u64,
             );
 
-            let result: Result<(), WriteOperationError> = move_within_same_volume_with_progress(
-                Arc::clone(&events),
+            // Hold the operation to what its caller was promised, at the latest
+            // moment there is: an approved operation can sit queued behind a long
+            // transfer, so the check belongs after admission, not at approval.
+            // `../../source_binding.rs`.
+            let bound = crate::file_system::write_operations::source_binding::retain_bound_sources_on(
+                volume.as_ref(),
+                &*events,
                 &op_id,
-                &state,
-                volume,
-                &source_paths,
-                &dest_path,
-                &config,
+                WriteOperationType::Move,
+                expected_sources.as_ref(),
+                source_paths,
             )
             .await;
+
+            // An emptied binding is a finished operation, and takes the Ok arm:
+            // `announce_empty_batch` has already emitted its `write-complete`.
+            let result: Result<(), WriteOperationError> = match bound {
+                None => Ok(()),
+                Some(source_paths) => {
+                    move_within_same_volume_with_progress(
+                        Arc::clone(&events),
+                        &op_id,
+                        &state,
+                        volume,
+                        &source_paths,
+                        &dest_path,
+                        &config,
+                    )
+                    .await
+                }
+            };
 
             journal::finalize_op(
                 &op_id,

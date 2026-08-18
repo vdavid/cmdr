@@ -216,19 +216,41 @@ impl ExpectedSources {
         }
     }
 
-    /// Whether `path`'s live local identity is the one this binding holds.
-    fn matches_local(&self, path: &Path) -> bool {
-        self.by_path
-            .get(path)
-            .is_some_and(|expected| SourceFingerprint::capture_local(path).as_ref() == Some(expected))
+    /// Whether `path` still is what the caller was promised, with only the local
+    /// filesystem available to ask. A `Remote` expectation cannot be settled here
+    /// and fails closed; [`Self::matches_on`] explains why the EXPECTATION picks
+    /// the namespace.
+    fn matches_locally(&self, path: &Path) -> bool {
+        match self.by_path.get(path) {
+            Some(expected @ SourceFingerprint::Local { .. }) => {
+                SourceFingerprint::capture_local(path).as_ref() == Some(expected)
+            }
+            Some(SourceFingerprint::Remote { .. }) | None => false,
+        }
     }
 
-    /// Whether `path`'s live identity on `volume` is the one this binding holds.
-    async fn matches_remote(&self, volume: &dyn Volume, path: &Path) -> bool {
-        let Some(expected) = self.by_path.get(path) else {
-            return false;
-        };
-        SourceFingerprint::capture_remote(volume, path).await.as_ref() == Some(expected)
+    /// Whether `path` still is what the caller was promised, with `volume` also
+    /// available to ask.
+    ///
+    /// **The EXPECTATION picks the namespace, not the call site.** One entry point
+    /// can take two routes: `copy_between_volumes` hands a both-local transfer to
+    /// the local starters and everything else to the Volume engine, and a caller
+    /// that fingerprinted its sources a week ago cannot know which route the
+    /// operation takes when its turn finally comes. Dispatching on what the caller
+    /// actually holds keeps one binding correct on both routes, which leaves the
+    /// capture rule a single sentence: **fingerprint with `capture_local` when the
+    /// source volume has a `local_path()`, and with `capture_remote` when it does
+    /// not.**
+    async fn matches_on(&self, volume: &dyn Volume, path: &Path) -> bool {
+        match self.by_path.get(path) {
+            Some(expected @ SourceFingerprint::Local { .. }) => {
+                SourceFingerprint::capture_local(path).as_ref() == Some(expected)
+            }
+            Some(expected @ SourceFingerprint::Remote { .. }) => {
+                SourceFingerprint::capture_remote(volume, path).await.as_ref() == Some(expected)
+            }
+            None => false,
+        }
     }
 
     /// The positions in `sources` that still hold what the caller was promised, in
@@ -247,7 +269,7 @@ impl ExpectedSources {
     ) -> Vec<usize> {
         let mut kept = Vec::with_capacity(sources.len());
         for (position, source) in sources.iter().enumerate() {
-            if self.matches_local(source) {
+            if self.matches_locally(source) {
                 kept.push(position);
             } else {
                 announce_skip(events, operation_id, source, local_source_is_gone(source));
@@ -256,8 +278,9 @@ impl ExpectedSources {
         kept
     }
 
-    /// The remote counterpart of [`Self::kept_positions_local`].
-    pub(crate) async fn kept_positions_remote(
+    /// The counterpart of [`Self::kept_positions_local`] for a route that has a
+    /// volume to ask as well as the local filesystem.
+    pub(crate) async fn kept_positions_on(
         &self,
         volume: &dyn Volume,
         events: &dyn OperationEventSink,
@@ -266,7 +289,7 @@ impl ExpectedSources {
     ) -> Vec<usize> {
         let mut kept = Vec::with_capacity(sources.len());
         for (position, source) in sources.iter().enumerate() {
-            if self.matches_remote(volume, source).await {
+            if self.matches_on(volume, source).await {
                 kept.push(position);
             } else {
                 // One extra round trip, and only for a source that already
@@ -301,9 +324,12 @@ pub(crate) fn retain_bound_sources(
     finish_or_keep(events, operation_id, operation_type, sources, kept)
 }
 
-/// [`retain_bound_sources`] for a verb whose sources live on a Volume backend
-/// rather than the local filesystem.
-pub(crate) async fn retain_bound_sources_remote(
+/// [`retain_bound_sources`] for a route that runs through a `Volume`.
+///
+/// It still honours a `Local` expectation, because the expectation picks the
+/// namespace ([`ExpectedSources::matches_on`]); the volume is what makes a
+/// `Remote` one answerable.
+pub(crate) async fn retain_bound_sources_on(
     volume: &dyn Volume,
     events: &dyn OperationEventSink,
     operation_id: &str,
@@ -314,9 +340,7 @@ pub(crate) async fn retain_bound_sources_remote(
     let Some(expected) = expected else {
         return Some(sources);
     };
-    let kept = expected
-        .kept_positions_remote(volume, events, operation_id, &sources)
-        .await;
+    let kept = expected.kept_positions_on(volume, events, operation_id, &sources).await;
     finish_or_keep(events, operation_id, operation_type, sources, kept)
 }
 

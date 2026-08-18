@@ -24,6 +24,7 @@ use std::sync::Arc;
 
 use super::archive_edit::{compress_start, route_archive_copy_into};
 use super::event_sinks::OperationEventSink;
+use super::source_binding::ExpectedSources;
 use super::transfer::volume::{copy_between_volumes, move_between_volumes};
 use super::types::{VolumeCopyConfig, WriteOperationError, WriteOperationStartResult};
 use crate::file_system::volume::Volume;
@@ -87,6 +88,22 @@ pub(crate) async fn resolve_source_volume(
         .map(|v| (v, is_inside))
 }
 
+/// Refuses a transfer whose source binding the route it landed on cannot honour.
+///
+/// The archive-changeset routes plan their own work from a `WalkDir` rather than
+/// the per-source engine, so they have nowhere to apply an `ExpectedSources` yet.
+/// Running one unbound is the exact failure a binding exists to prevent, acting
+/// on a file nobody reviewed, and dropping it silently is worse than refusing
+/// because nothing downstream would ever say so. Never run it unbound instead.
+fn route_cannot_hold_a_binding(route: &str) -> WriteOperationError {
+    WriteOperationError::IoError {
+        path: String::new(),
+        message: format!(
+            "This transfer runs as an archive changeset ({route}), which can't yet hold its sources to what was reviewed."
+        ),
+    }
+}
+
 fn source_volume_missing(volume_id: &str) -> WriteOperationError {
     WriteOperationError::IoError {
         path: volume_id.to_string(),
@@ -108,6 +125,10 @@ fn dest_volume_missing(volume_id: &str) -> WriteOperationError {
 /// `.zip` is a copy whose source volume happens to be an `ArchiveVolume`, which
 /// [`resolve_source_volume`] arranges. `ArchiveSubkind::Extract` is an
 /// operation-log label, not a second execution path.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "both volumes travel with their ids, and the source binding is a separate input from the config on purpose (a bound op and a user-started one must share one config); a bag struct would shuffle the same fields"
+)]
 pub(crate) async fn start_volume_copy(
     events: Arc<dyn OperationEventSink>,
     source_volume_id: String,
@@ -116,6 +137,7 @@ pub(crate) async fn start_volume_copy(
     dest_path: String,
     config: VolumeCopyConfig,
     initiator: Initiator,
+    expected_sources: Option<ExpectedSources>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Route an archive-inner source batch to its ArchiveVolume (extract-out).
     let (source_volume, _source_is_archive) = resolve_source_volume(&source_volume_id, source_paths.first())
@@ -132,6 +154,9 @@ pub(crate) async fn start_volume_copy(
         .ok_or_else(|| dest_volume_missing(&dest_volume_id))?;
 
     if dest_resolved.is_archive {
+        if expected_sources.is_some() {
+            return Err(route_cannot_hold_a_binding("copy into a zip"));
+        }
         return route_archive_copy_into(
             events,
             source_volume,
@@ -158,6 +183,7 @@ pub(crate) async fn start_volume_copy(
         dest_path,
         config,
         initiator,
+        expected_sources,
     )
     .await
 }
@@ -165,6 +191,10 @@ pub(crate) async fn start_volume_copy(
 /// Starts a move across volume types. Handles same-volume (native rename/move),
 /// both-local (native move), cross-volume (copy + delete), out of a `.zip` (the
 /// compound move-out op), and into one (an archive changeset).
+#[allow(
+    clippy::too_many_arguments,
+    reason = "both volumes travel with their ids, and the source binding is a separate input from the config on purpose (a bound op and a user-started one must share one config); a bag struct would shuffle the same fields"
+)]
 pub(crate) async fn start_volume_move(
     events: Arc<dyn OperationEventSink>,
     source_volume_id: String,
@@ -173,6 +203,7 @@ pub(crate) async fn start_volume_move(
     dest_path: String,
     config: VolumeCopyConfig,
     initiator: Initiator,
+    expected_sources: Option<ExpectedSources>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // An archive SOURCE routes to the compound move-out op (extract via the copy
     // engine, then a batch `{ delete }` archive rewrite once the extract lands).
@@ -191,6 +222,9 @@ pub(crate) async fn start_volume_move(
     // zip→zip move extracts out first (the dest-archive case degrades to a copy
     // failure inside the extract, never data loss).
     if source_is_archive {
+        if expected_sources.is_some() {
+            return Err(route_cannot_hold_a_binding("move out of a zip"));
+        }
         let dest_path = resolve_dest_path(&dest_volume, dest_path);
         return super::archive_edit::route_archive_move_out(
             events,
@@ -208,6 +242,9 @@ pub(crate) async fn start_volume_move(
     // A move INTO a zip routes to the managed edit driver as one `{ add }`
     // changeset; the local sources are deleted after the commit (move invariant).
     if dest_resolved.is_archive {
+        if expected_sources.is_some() {
+            return Err(route_cannot_hold_a_binding("move into a zip"));
+        }
         return route_archive_copy_into(
             events,
             source_volume,
@@ -234,6 +271,7 @@ pub(crate) async fn start_volume_move(
         dest_path,
         config,
         initiator,
+        expected_sources,
     )
     .await
 }

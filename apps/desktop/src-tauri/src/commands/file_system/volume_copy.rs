@@ -40,6 +40,8 @@ pub async fn copy_between_volumes(
         dest_path,
         config.unwrap_or_default(),
         initiator.unwrap_or(Initiator::User),
+        // No source binding: the user picked these in the pane they are looking at.
+        None,
     )
     .await
 }
@@ -67,6 +69,8 @@ pub async fn move_between_volumes(
         dest_path,
         config.unwrap_or_default(),
         initiator.unwrap_or(Initiator::User),
+        // No source binding: the user picked these in the pane they are looking at.
+        None,
     )
     .await
 }

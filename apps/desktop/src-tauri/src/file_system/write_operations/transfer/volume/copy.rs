@@ -27,6 +27,7 @@ use uuid::Uuid;
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::journal;
 use super::super::super::manager;
+use super::super::super::source_binding::{ExpectedSources, retain_bound_sources_on};
 use super::super::super::state::{
     OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
 };
@@ -126,6 +127,7 @@ pub async fn copy_between_volumes(
     dest_path: PathBuf,
     config: VolumeCopyConfig,
     initiator: crate::operation_log::types::Initiator,
+    expected_sources: Option<ExpectedSources>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Validate that volumes support the required operations
     if !source_volume.supports_export() {
@@ -178,9 +180,7 @@ pub async fn copy_between_volumes(
             vec![source_volume_id, dest_volume_id],
             Some(lanes),
             initiator,
-            // Volume-routed transfers don't carry a source binding yet; the local
-            // starters own it. `../../source_binding.rs`.
-            None,
+            expected_sources,
         )
         .await;
     }
@@ -274,17 +274,39 @@ pub async fn copy_between_volumes(
                 source_paths.len() as u64,
             );
 
-            let result: Result<(), WriteFailure> = copy_volumes_with_progress(
-                Arc::clone(&events),
+            // Hold the operation to what its caller was promised, at the latest
+            // moment there is: an approved operation can sit queued behind a long
+            // transfer, so the check belongs after admission, not at approval.
+            // `../../source_binding.rs`.
+            let bound = retain_bound_sources_on(
+                source_volume.as_ref(),
+                &*events,
                 &op_id,
-                &state,
-                source_volume,
-                &source_paths,
-                dest_volume,
-                &dest_path,
-                &config,
+                WriteOperationType::Copy,
+                expected_sources.as_ref(),
+                source_paths,
             )
             .await;
+
+            // An emptied binding is a finished operation: `announce_empty_batch`
+            // has already emitted its `write-complete`, so it takes the Ok arm and
+            // the journal finalizes Done, exactly as a copy of nothing would.
+            let result: Result<(), WriteFailure> = match bound {
+                None => Ok(()),
+                Some(source_paths) => {
+                    copy_volumes_with_progress(
+                        Arc::clone(&events),
+                        &op_id,
+                        &state,
+                        source_volume,
+                        &source_paths,
+                        dest_volume,
+                        &dest_path,
+                        &config,
+                    )
+                    .await
+                }
+            };
 
             journal::finalize_op(
                 &op_id,

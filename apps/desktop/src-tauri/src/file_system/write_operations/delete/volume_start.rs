@@ -14,7 +14,7 @@ use std::time::Duration;
 use uuid::Uuid;
 
 use super::super::manager::{self, OperationDescriptor};
-use super::super::source_binding::{ExpectedSources, retain_bound_sources_remote};
+use super::super::source_binding::{ExpectedSources, retain_bound_sources_on};
 use super::super::state::{WriteOperationState, WriteSettledGuard};
 use super::super::types::{
     OperationEventSink, WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
@@ -188,7 +188,7 @@ async fn run_volume_delete(
         return ExecutionStatus::Failed;
     };
 
-    let bound = retain_bound_sources_remote(
+    let bound = retain_bound_sources_on(
         volume.as_ref(),
         events,
         op_id,
