@@ -297,6 +297,90 @@ describe('chaining the rename to the next file with the arrow keys', () => {
     expect(savedPairs()).toEqual([['a.txt', 'one.txt']])
   })
 
+  it('leaves the editor alone when the neighbour cannot be read at all', async () => {
+    const listing = chainListing(['a.txt', 'b.txt'])
+    listing.unload(2)
+    vi.mocked(getFileAt).mockResolvedValue(null as never)
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('one.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+
+    await vi.waitFor(() => {
+      expect(getFileAt).toHaveBeenCalled()
+    })
+    // A row we can't read is the same as no row there: nothing is sent, nothing
+    // moves, and the name the user typed is still in the editor.
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(rename.active).toBe(true)
+    expect(rename.currentName).toBe('one.txt')
+    expect(rename.target?.originalName).toBe('a.txt')
+    expect(listing.moves).toEqual([])
+  })
+
+  it('sends what the user typed while the neighbour was being read, not what was there at the keypress', async () => {
+    const listing = chainListing(['a.txt', 'b.txt'])
+    listing.unload(2)
+    const fetched = deferred<unknown>()
+    vi.mocked(getFileAt).mockReturnValue(fetched.promise as never)
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('one.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+    // The read costs a round trip, and the user keeps typing through it.
+    flow.handleRenameInput('one-final.txt')
+    fetched.resolve({ name: 'b.txt', path: '/dir/b.txt', isDirectory: false })
+
+    await vi.waitFor(() => {
+      expect(rename.target?.path).toBe('/dir/b.txt')
+    })
+    expect(savedPairs()).toEqual([['a.txt', 'one-final.txt']])
+  })
+
+  it('drops a step whose neighbour arrives after the user has ended the rename', async () => {
+    const listing = chainListing(['a.txt', 'b.txt'])
+    listing.unload(2)
+    const fetched = deferred<unknown>()
+    vi.mocked(getFileAt).mockReturnValue(fetched.promise as never)
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('one.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+    flow.handleRenameCancel(rename.sessionId) // Escape, while the read is still out
+    fetched.resolve({ name: 'b.txt', path: '/dir/b.txt', isDirectory: false })
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // The user said stop: the step must not reopen the editor on the next file,
+    // nor send the name they walked away from.
+    expect(rename.active).toBe(false)
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(listing.moves).toEqual([])
+  })
+
+  it('a save still in flight when the user ends the chain can never reopen or steer the editor', async () => {
+    const inFlight = slowBackend()
+    const listing = chainListing(['a.txt', 'b.txt', 'c.txt'])
+    const { rename, flow, onRequestFocus } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('one.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+    flow.handleRenameCancel(rename.sessionId) // Escape ends the chain
+    onRequestFocus.mockClear()
+
+    inFlight[0].resolve({ type: 'success', newName: 'one.txt' })
+    await inFlight[0].promise
+    await Promise.resolve()
+
+    expect(rename.active).toBe(false)
+    expect(flow.pendingCursorName).toBeNull()
+    expect(onRequestFocus).not.toHaveBeenCalled()
+  })
+
   it('a step from an editor that has already been replaced is dropped', () => {
     const listing = chainListing(['a.txt', 'b.txt', 'c.txt'])
     const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
