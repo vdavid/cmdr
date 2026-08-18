@@ -32,8 +32,8 @@ per-lane fixed work**, not in the number of tests, so deleting assertions buys c
   the lane's 66 s wall clock to run 1.6% of the suite. (Measured 2026-08-19, M-series laptop, `pnpm exec vitest run`
   reporter totals.)
 - **`rust-tests`**: all 6,166 tests EXECUTE in 23.3 s wall clock; the check's ~54 s is mostly cargo's freshness and link
-  work, which no test change touches. The slowest single test (5.5 s) sets a floor nothing below it can lower.
-  (Measured 2026-08-19, `cargo nextest run --workspace`.)
+  work, which no test change touches. The slowest single test (5.5 s) sets a floor nothing below it can lower. (Measured
+  2026-08-19, `cargo nextest run --workspace`.)
 
 Consequences for anyone tuning a lane:
 
