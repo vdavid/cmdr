@@ -1226,9 +1226,8 @@ fn writer_loop(
 
         if should_exit {
             // `Shutdown` is a batch barrier, so the last batch already committed above.
-            // Settle before going: a quit landing inside a burst would otherwise leave
-            // the ancestors that burst coalesced permanently short of it. Bounded by
-            // what one burst queued, which is one id for the wide-directory case.
+            // Settle before going, or a quit inside a burst leaves the ancestors that
+            // burst coalesced permanently short of it.
             settle_the_ledger(&conn, &rollups, &repairs);
             log::debug!("Writer: shutdown after processing {} messages", stats.current.total);
             return;
@@ -1439,10 +1438,8 @@ fn process_message(
                 mutation_tracker,
                 signal,
             );
-            // The tables are gone; queued ids name rows that no longer exist. Draining
-            // either queue afterwards would write a zeroed `dir_stats` row for a
-            // deleted entry id, and `next_id` resets here, so the next scan would find
-            // that ghost sitting on one of its own directories.
+            // The tables are gone, so both queues name rows that no longer exist. Why a
+            // drain afterwards is worse than a no-op: `pending_rollups.rs`.
             repairs.clear();
             rollups.clear();
         }

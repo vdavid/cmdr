@@ -425,10 +425,10 @@ the trigger is the caught-up point rather than a timer or a size cap (that guard
 3. **A deleted id is skipped, never resurrected.** A queued roll-up can name a directory something removed while it
    waited — a truncating rescan, or a subtree the reconciler reaped. `repair_dir_stats_upward` therefore checks the id
    still exists in `entries` at every level and stops where it doesn't: recomputing a deleted directory from children
-   finds none and would write a ZEROED `dir_stats` row for a dead entry id, and `TruncateData` resets the id counter,
-   so that ghost would land on whatever the next scan puts at the same id. Skipping is also correct on its own terms —
-   a delete already walked its own debit up that chain. `TruncateData` additionally CLEARS the queue outright, beside
-   the `DeferredRepairs` clear that has always been there. Pinned by
+   finds none and would write a ZEROED `dir_stats` row for a dead entry id, and `TruncateData` resets the id counter, so
+   that ghost would land on whatever the next scan puts at the same id. Skipping is also correct on its own terms — a
+   delete already walked its own debit up that chain. `TruncateData` additionally CLEARS the queue outright, beside the
+   `DeferredRepairs` clear that has always been there. Pinned by
    `aggregation/rollup_tests.rs::a_truncate_drops_the_roll_ups_it_made_meaningless` and
    `a_delete_inside_the_pending_window_leaves_no_ghost_row`; both fail with a ghost row without the guard.
 4. **The stale window is read-only and bounded.** Between queue and drain the ancestors under-report by the subtree just

@@ -251,7 +251,10 @@ fn a_delete_inside_the_pending_window_leaves_no_ghost_row() {
             |row| row.get(0),
         )
         .unwrap();
-    assert_eq!(ghosts, 0, "a reaped directory must not come back as a zeroed dir_stats row");
+    assert_eq!(
+        ghosts, 0,
+        "a reaped directory must not come back as a zeroed dir_stats row"
+    );
     let root = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID).unwrap().unwrap();
     assert_eq!(
         (root.recursive_logical_size, root.recursive_file_count),
