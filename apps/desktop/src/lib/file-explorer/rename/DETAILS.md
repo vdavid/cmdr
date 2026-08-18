@@ -149,9 +149,9 @@ dialog.
 Every name a chain keeps goes into a single toast per pane (`toastKeptName`), reused by id so each new one REPLACES the
 message in place. It names the newest file with the reason that one didn't apply (`chainKeptOriginalName`), and counts
 the earlier ones (`chainKeptOriginalNameAndOthers`) once there is anything to count. All three ways a chained name gets
-dropped go through it: the keypress-time `severity === 'error'`, the backend's `conflict`, and the backend's `error`
-(a read-only volume, a permission refusal). A `timeout` does NOT: the rename may well have landed, so it keeps its own
-"may have succeeded" wording and refreshes the listing.
+dropped go through it: the keypress-time `severity === 'error'`, the backend's `conflict`, and the backend's `error` (a
+read-only volume, a permission refusal). A `timeout` does NOT: the rename may well have landed, so it keeps its own "may
+have succeeded" wording and refreshes the listing.
 
 Two properties of the toast store force that shape, and both fail silently:
 
