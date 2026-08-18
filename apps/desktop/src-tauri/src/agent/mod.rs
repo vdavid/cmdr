@@ -23,6 +23,7 @@ pub mod store;
 pub mod suggested_ops;
 pub mod tools;
 pub mod types;
+pub mod wake;
 
 use std::path::{Path, PathBuf};
 

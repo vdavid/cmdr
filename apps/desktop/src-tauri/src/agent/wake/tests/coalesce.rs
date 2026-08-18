@@ -171,8 +171,8 @@ fn a_zero_window_degrades_to_one_second_instead_of_dividing_by_zero() {
 /// million of anything.
 #[test]
 fn five_million_changes_in_one_folder_coalesce_to_one_exact_bundle() {
-    let events: Vec<FolderEvent> = (0..5_000_000)
-        .map(|i| event("/tmp/log", ChangeKind::Modified, 10 + u64::from(i % 60)))
+    let events: Vec<FolderEvent> = (0..5_000_000u64)
+        .map(|i| event("/tmp/log", ChangeKind::Modified, 10 + i % 60))
         .collect();
 
     let bundles = coalesce(&events, Duration::from_secs(300));
