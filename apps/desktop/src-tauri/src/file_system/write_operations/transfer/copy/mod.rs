@@ -290,6 +290,19 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             bulk_skip_bytes,
             pre_skip_top_levels.len()
         );
+        // These sources are gone from the file list before the tracker is even
+        // built, so nothing downstream would ever speak for them. A caller
+        // tracking per-source outcomes has to hear that the user's "Skip all"
+        // covered them, or it waits on a verdict that isn't coming.
+        for source in &pre_skip_top_levels {
+            events.emit_source_item_done(WriteSourceItemDoneEvent {
+                operation_id: operation_id.to_string(),
+                source_path: source.display().to_string(),
+                // A skipped copy wrote nothing and touched no source.
+                source_removed: false,
+                outcome: SourceItemOutcome::Skipped,
+            });
+        }
     }
 
     log::debug!(

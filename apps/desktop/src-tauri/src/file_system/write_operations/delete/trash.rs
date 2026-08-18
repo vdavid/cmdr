@@ -211,11 +211,20 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
         // records for the top-level item, stat'd BEFORE the OS moves it to trash.
         let source_meta = match fs::symlink_metadata(source) {
             Ok(m) => m,
-            Err(_) => {
+            Err(error) => {
                 errors.push(TrashItemError {
                     path: source.clone(),
                     message: format!("'{}' no longer exists", source.display()),
                 });
+                emit_item_failed(
+                    events,
+                    operation_id,
+                    source,
+                    // Only a NotFound proves the item is gone. "We couldn't look"
+                    // (permissions, a dead mount) is not evidence, and this flag
+                    // decides whether every search snapshot drops the row.
+                    error.kind() == std::io::ErrorKind::NotFound,
+                );
                 continue;
             }
         };
@@ -300,6 +309,9 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
                     path: source.clone(),
                     message: e,
                 });
+                // `trashItemAtURL` is atomic per item, so a failure left this one
+                // exactly where it was.
+                emit_item_failed(events, operation_id, source, false);
                 continue;
             }
         }
@@ -395,6 +407,21 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
 // ============================================================================
 // Tests
 // ============================================================================
+
+/// One top-level item this trash could not take.
+///
+/// Trash is per-item: one failure leaves the rest of the batch running, so the
+/// operation's own terminal event says nothing about THIS item. Without a verdict
+/// here, a caller tracking per-source outcomes waits forever for one that never
+/// comes.
+fn emit_item_failed(events: &dyn OperationEventSink, operation_id: &str, source: &Path, source_removed: bool) {
+    events.emit_source_item_done(WriteSourceItemDoneEvent {
+        operation_id: operation_id.to_string(),
+        source_path: source.display().to_string(),
+        source_removed,
+        outcome: SourceItemOutcome::Failed,
+    });
+}
 
 #[cfg(test)]
 mod tests {
@@ -545,6 +572,29 @@ mod tests {
         let errors = events.errors.lock().unwrap();
         assert_eq!(errors.len(), 1);
         assert!(events.complete.lock().unwrap().is_empty());
+    }
+
+    /// One item failing leaves the rest of the batch running, so the operation's
+    /// own terminal event says nothing about that item. Before this, it said
+    /// nothing at all: a caller tracking per-source outcomes waited forever for a
+    /// verdict on a file that was never going to move.
+    #[test]
+    fn a_source_trash_could_not_take_reports_itself_as_failed() {
+        let events = Arc::new(CollectorEventSink::new());
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+        let missing = PathBuf::from("/nonexistent_trash_test_ccc/gone.txt");
+
+        let result = trash_files_with_progress(&*events, "op-trash-one-missing", &state, &[missing.clone()], None);
+        assert!(matches!(result, Err(WriteOperationError::IoError { .. })));
+
+        let items = events.source_items_done.lock().unwrap();
+        assert_eq!(items.len(), 1, "the item that couldn't be taken speaks for itself");
+        assert_eq!(items[0].source_path, missing.display().to_string());
+        assert_eq!(items[0].outcome, SourceItemOutcome::Failed);
+        assert!(
+            items[0].source_removed,
+            "a NotFound source really is gone, so a stale search snapshot may drop it"
+        );
     }
 
     #[test]

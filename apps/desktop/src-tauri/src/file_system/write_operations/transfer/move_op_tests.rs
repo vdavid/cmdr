@@ -791,6 +791,18 @@ fn a_local_move_never_acts_on_a_preview_of_a_different_selection() {
 // is still on disk drops a row for a file the user can still open. Inferring
 // removal from the operation type is exactly what these cases break.
 
+/// The outcomes this run reported for `path`, in emit order. The LAST one is the
+/// operation's verdict on that source (`types::SourceItemOutcome`).
+fn outcomes_for(events: &CollectorEventSink, path: &Path) -> Vec<SourceItemOutcome> {
+    events
+        .source_items_done
+        .lock_ignore_poison()
+        .iter()
+        .filter(|e| e.source_path == path.display().to_string())
+        .map(|e| e.outcome)
+        .collect()
+}
+
 /// The `source_removed` flags this run reported for `path`, in emit order.
 fn removal_flags_for(events: &CollectorEventSink, path: &Path) -> Vec<bool> {
     events
@@ -901,5 +913,62 @@ fn a_cross_fs_move_that_skipped_the_item_never_reports_it_removed() {
     assert!(
         !removal_flags_for(&events, &source).contains(&true),
         "a skipped source must never be reported removed"
+    );
+}
+
+/// A cross-filesystem move stages every source before it renames any of them, so
+/// staging succeeding says nothing about where the item ended up. Before this,
+/// a source the rename phase skipped kept `Done` from staging as its only word,
+/// and a caller recording per-source outcomes wrote down that the move happened.
+#[test]
+fn a_cross_fs_move_that_skipped_the_item_ends_on_skipped_not_done() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    let dst_root = tmp.path().join("dst");
+    fs::create_dir_all(&src_root).unwrap();
+    fs::create_dir_all(&dst_root).unwrap();
+    let source = src_root.join("a.bin");
+    fs::write(&source, b"source").unwrap();
+    fs::write(dst_root.join("a.bin"), b"dest").unwrap();
+
+    let events = run_cross_fs_move(
+        std::slice::from_ref(&source),
+        &dst_root,
+        ConflictResolution::Skip,
+        "cross-fs-skip-outcome",
+    )
+    .expect("the move must succeed");
+
+    assert!(source.exists(), "precondition: Skip keeps the source");
+    assert_eq!(
+        outcomes_for(&events, &source),
+        vec![SourceItemOutcome::Done, SourceItemOutcome::Skipped],
+        "staged, then left standing: the last word is the verdict"
+    );
+}
+
+/// The ordinary cross-filesystem move still ends on `Done`, so the verdict rule
+/// isn't just "the second event is always a skip".
+#[test]
+fn a_cross_fs_move_that_took_the_item_ends_on_done() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    let dst_root = tmp.path().join("dst");
+    fs::create_dir_all(&src_root).unwrap();
+    fs::create_dir_all(&dst_root).unwrap();
+    let source = src_root.join("a.bin");
+    fs::write(&source, b"content").unwrap();
+
+    let events = run_cross_fs_move(
+        std::slice::from_ref(&source),
+        &dst_root,
+        ConflictResolution::Stop,
+        "cross-fs-done-outcome",
+    )
+    .expect("the move must succeed");
+
+    assert_eq!(
+        outcomes_for(&events, &source),
+        vec![SourceItemOutcome::Done, SourceItemOutcome::Done]
     );
 }

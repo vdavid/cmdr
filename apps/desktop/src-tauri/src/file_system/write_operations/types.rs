@@ -295,6 +295,13 @@ pub struct WriteErrorEvent {
 /// hundred children still lands as `Done`, because the source as a whole was
 /// carried out. `Skipped` means the operation deliberately left the item alone
 /// and wrote nothing for it; `Failed` means it tried and couldn't.
+///
+/// ⚠️ **The LAST event a source gets is its verdict.** A cross-filesystem move
+/// speaks twice for one source — `Done` when it finishes staging, then either
+/// `Done` again when the source-delete phase removes it or `Skipped` when the
+/// rename phase left it standing — because staging succeeding says nothing about
+/// where the item ended up. A consumer recording a per-source status overwrites;
+/// it does not accumulate.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SourceItemOutcome {

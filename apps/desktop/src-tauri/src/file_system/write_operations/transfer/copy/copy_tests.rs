@@ -369,3 +369,61 @@ fn local_copy_bench_many_small_files() {
         median as f64 / FILE_COUNT as f64
     );
 }
+
+/// A top-level source the user's "Skip all" covered leaves the file list before
+/// the source-item tracker is even built, so nothing downstream speaks for it.
+/// Before this it emitted nothing at all, and a caller recording a per-source
+/// verdict waited on one that was never coming.
+#[test]
+fn a_bulk_skipped_source_reports_itself_as_skipped() {
+    use crate::file_system::write_operations::types::{ConflictResolution, SourceItemOutcome};
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    let clashing = src_dir.join("collide.bin");
+    let clean = src_dir.join("fine.bin");
+    fs::write(&clashing, b"source").unwrap();
+    fs::write(&clean, b"source").unwrap();
+    // The pre-flight already found this name at the destination, which is what
+    // lets the copy bulk-skip it rather than re-stat every file under it.
+    fs::write(dst_dir.join("collide.bin"), b"dest").unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(0);
+    let config = WriteOperationConfig {
+        conflict_resolution: ConflictResolution::Skip,
+        pre_known_conflicts: vec!["collide.bin".to_string()],
+        ..WriteOperationConfig::default()
+    };
+
+    let result = copy_files_with_progress_inner(
+        &*events,
+        "op-bulk-skip-outcome",
+        &state,
+        &[clashing.clone(), clean.clone()],
+        &dst_dir,
+        &config,
+    );
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let items = events.source_items_done.lock().unwrap();
+    let verdict = |path: &std::path::Path| {
+        items
+            .iter()
+            .find(|item| item.source_path == path.display().to_string())
+            .map(|item| item.outcome)
+    };
+    assert_eq!(verdict(&clashing), Some(SourceItemOutcome::Skipped));
+    assert_eq!(verdict(&clean), Some(SourceItemOutcome::Done));
+    assert!(
+        items
+            .iter()
+            .all(|item| !item.source_removed),
+        "a copy leaves every source where it was, skipped or not"
+    );
+    assert_eq!(fs::read(dst_dir.join("collide.bin")).unwrap(), b"dest", "the skip held");
+}

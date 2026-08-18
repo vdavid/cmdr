@@ -876,8 +876,17 @@ fn delete_sources_after_move(
         }
 
         // A whole top-level source skipped on a file / type-mismatch conflict:
-        // leave the original exactly where it is.
+        // leave the original exactly where it is, and say so. The staging phase
+        // already reported this source as `Done` (it staged fine); this later
+        // event is the operation's real verdict on it, which is why the LAST
+        // event a source gets is the one that counts (`SourceItemOutcome`).
         if skipped_source_paths.contains(source) {
+            events.emit_source_item_done(WriteSourceItemDoneEvent {
+                operation_id: operation_id.to_string(),
+                source_path: source.display().to_string(),
+                source_removed: false,
+                outcome: SourceItemOutcome::Skipped,
+            });
             continue;
         }
 
