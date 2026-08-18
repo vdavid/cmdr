@@ -75,7 +75,15 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, scope: EvidenceScope, call
             crate::agent::tools::propose::rename::dispatch(app, scope, &call.call_id, &call.arguments).await;
         return DispatchOutcome { result, proposal };
     }
-    let result = match execute_tool(app, Consumer::Agent, call.tool.as_wire_name(), &call.arguments).await {
+    // `propose_suggestions` is the one registry tool that needs to know WHICH thread asked:
+    // a sweep records the conversation it came out of, and the registry path (an external
+    // MCP client) has none. Everything else goes through the plain dispatch.
+    let outcome = if call.tool == ToolId::ProposeSuggestions {
+        crate::agent::tools::suggestions::propose_in_thread(app, scope.conversation_id(), &call.arguments).await
+    } else {
+        execute_tool(app, Consumer::Agent, call.tool.as_wire_name(), &call.arguments).await
+    };
+    let result = match outcome {
         Ok(content) => AgentToolResult {
             call_id: call.call_id.clone(),
             content,

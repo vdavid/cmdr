@@ -737,6 +737,9 @@ const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
     "search_photos",
     "image_facts",
     "propose_rename_plan",
+    "list_suggestions",
+    "get_suggestion_group",
+    "propose_suggestions",
 ];
 
 /// Set-equality: the agent view equals exactly its authored `consumers:[agent]` entries. This is
@@ -758,7 +761,7 @@ fn test_agent_tool_view_is_exactly_expected_set() {
 /// A `Propose` tool must also cap its payload the way `image_facts` caps at 200 paths — a proposal
 /// the user can't review is a proposal they can only rubber-stamp. That contract can't be enforced
 /// generically; see `mcp/DETAILS.md` § Consumer and access views.
-const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &["propose_rename_plan"];
+const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &["propose_rename_plan", "propose_suggestions"];
 
 /// The agent can propose; only the user can approve. Structurally: every tool in the agent's view
 /// is `Access::Read` or `Access::Propose`, and NEVER `Access::Write`. This is the guarantee

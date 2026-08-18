@@ -22,6 +22,12 @@ const TOOL_LABEL_KEYS: Record<string, { doing: MessageKey; done: MessageKey }> =
   search_photos: { doing: 'askCmdr.tool.searchPhotos.doing', done: 'askCmdr.tool.searchPhotos.done' },
   image_facts: { doing: 'askCmdr.tool.imageFacts.doing', done: 'askCmdr.tool.imageFacts.done' },
   propose_rename_plan: { doing: 'askCmdr.tool.proposeRenamePlan.doing', done: 'askCmdr.tool.proposeRenamePlan.done' },
+  list_suggestions: { doing: 'askCmdr.tool.listSuggestions.doing', done: 'askCmdr.tool.listSuggestions.done' },
+  get_suggestion_group: {
+    doing: 'askCmdr.tool.getSuggestionGroup.doing',
+    done: 'askCmdr.tool.getSuggestionGroup.done',
+  },
+  propose_suggestions: { doing: 'askCmdr.tool.proposeSuggestions.doing', done: 'askCmdr.tool.proposeSuggestions.done' },
 }
 
 const UNKNOWN_TOOL_KEYS = { doing: 'askCmdr.tool.unknown.doing', done: 'askCmdr.tool.unknown.done' } as const

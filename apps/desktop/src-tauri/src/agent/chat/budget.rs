@@ -81,8 +81,12 @@ const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
 /// What every call pays before the user has said a word: the system prompt plus the tool
 /// declarations. Measured against the shipped assets, and pinned there —
 /// `context/cost_tests.rs` fails if the real prefix drifts away from this figure. The system
-/// prompt is 963 of it, the 11 tool declarations the rest.
-pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 3_476;
+/// prompt is 1,371 of it, the 14 tool declarations the rest.
+///
+/// It grows whenever a tool joins the view, and every call pays it whether or not it uses
+/// that tool: the suggested-ops trio cost about 1,100 tokens of schema between them, which
+/// is roughly four files off a 16,000-token rename batch. Keep a new schema terse.
+pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 4_972;
 
 /// What one `image_facts` row costs at the corpus' average OCR length.
 pub const IMAGE_FACTS_TOKENS_PER_FILE: usize = 269;
@@ -605,10 +609,10 @@ mod tests {
 
     #[test]
     fn a_batch_hint_derives_from_the_budget() {
-        // (budget − 10% headroom − 3,476 of prefix) / 349 per file, while the prompt is what
+        // (budget − 10% headroom − 4,972 of prefix) / 349 per file, while the prompt is what
         // binds.
-        assert_eq!(files_per_batch(16_000), 31);
-        assert_eq!(files_per_batch(32_000), 72);
+        assert_eq!(files_per_batch(16_000), 27);
+        assert_eq!(files_per_batch(32_000), 68);
         // Past roughly 45,000 the reply's own ceiling binds instead, and the hint stops
         // growing with the budget: 6,000 emittable tokens / 59 per row.
         assert_eq!(files_per_batch(60_000), 101);

@@ -32,6 +32,20 @@ pub struct ProposalOp {
     pub snapshot_inode: Option<u64>,
 }
 
+/// One sweep as stored, header only: what a list surface shows above its groups.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProposalSweep {
+    pub id: i64,
+    /// The chat thread this came out of, when it came out of one. NULLed rather than
+    /// cascaded when that thread is deleted, so the decision record outlives it.
+    pub conversation_id: Option<i64>,
+    pub created_at: i64,
+    /// Provenance only: no logic reads it (agent-spec D32).
+    pub created_by_model: Option<String>,
+    /// The agent's words for the sweep as a whole.
+    pub rationale: Option<String>,
+}
+
 /// A group header plus its op count: what a list surface needs, without a single op row.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GroupSummary {
@@ -52,6 +66,28 @@ pub fn get_group(conn: &Connection, group_id: i64) -> Result<Option<ProposalGrou
     let mut rows = stmt.query(params![group_id])?;
     match rows.next()? {
         Some(row) => Ok(Some(map_group_row(row)?)),
+        None => Ok(None),
+    }
+}
+
+/// Read one sweep header. `None` when there's no such sweep.
+///
+/// Read one at a time rather than as a whole-table list: a caller lists GROUPS (filtered,
+/// counted) and then names the handful of sweeps those groups belong to, so nothing ever
+/// scans every sweep a long-lived `main.db` has accumulated.
+pub fn get_sweep(conn: &Connection, set_id: i64) -> Result<Option<ProposalSweep>, AgentStoreError> {
+    let mut stmt = conn.prepare_cached(
+        "SELECT id, conversation_id, created_at, created_by_model, rationale FROM proposal_sets WHERE id = ?1",
+    )?;
+    let mut rows = stmt.query(params![set_id])?;
+    match rows.next()? {
+        Some(row) => Ok(Some(ProposalSweep {
+            id: row.get(0)?,
+            conversation_id: row.get(1)?,
+            created_at: row.get(2)?,
+            created_by_model: row.get(3)?,
+            rationale: row.get(4)?,
+        })),
         None => Ok(None),
     }
 }

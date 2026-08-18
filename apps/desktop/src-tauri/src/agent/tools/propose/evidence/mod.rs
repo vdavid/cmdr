@@ -203,6 +203,18 @@ pub enum EvidenceScope {
     NoThread,
 }
 
+impl EvidenceScope {
+    /// The chat thread this call belongs to, for anything that records WHICH conversation
+    /// asked (a proposal sweep's provenance). Distinct from the ledger's use of the scope,
+    /// which is about what a claim may cite; this is only the thread's id.
+    pub fn conversation_id(self) -> Option<i64> {
+        match self {
+            EvidenceScope::Thread(id) => Some(id),
+            EvidenceScope::NoThread => None,
+        }
+    }
+}
+
 // ── The ledger ────────────────────────────────────────────────────────────────
 
 /// A ledger lookup: one path, in one thread. Two threads asking about the same file are

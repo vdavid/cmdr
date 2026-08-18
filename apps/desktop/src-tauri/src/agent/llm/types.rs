@@ -172,6 +172,14 @@ pub enum ToolId {
     /// Stages a same-folder rename plan for the user to review. It never applies
     /// a rename and has no approval path.
     ProposeRenamePlan,
+    /// The suggested-ops sweeps and groups already waiting on the user, as
+    /// summaries with counts.
+    ListSuggestions,
+    /// One suggestion group's ops, a page at a time.
+    GetSuggestionGroup,
+    /// Stages a sweep of proposed file operations, or amends a pending group of
+    /// one. It changes no file and cannot approve anything.
+    ProposeSuggestions,
     /// A tool name the agent does not recognize (hallucinated, a typo, or a
     /// write/non-view tool). Carries the raw name for the transparent UI and the
     /// typed "tool not available" result; always refused by dispatch.
@@ -182,7 +190,7 @@ impl ToolId {
     /// Every known read-only variant, in wire order. Excludes [`ToolId::Unrecognized`]
     /// by design (it's the refusal case, never a view entry). The 1:1 structural test
     /// asserts these map exactly onto `agent_tool_view()`.
-    pub const KNOWN: [ToolId; 11] = [
+    pub const KNOWN: [ToolId; 14] = [
         ToolId::AppState,
         ToolId::ListDir,
         ToolId::ListPaneFiles,
@@ -194,6 +202,9 @@ impl ToolId {
         ToolId::SearchPhotos,
         ToolId::ImageFacts,
         ToolId::ProposeRenamePlan,
+        ToolId::ListSuggestions,
+        ToolId::GetSuggestionGroup,
+        ToolId::ProposeSuggestions,
     ];
 
     /// The wire name for this tool: the genai `fn_name`, the DB token, and the IPC
@@ -211,6 +222,9 @@ impl ToolId {
             ToolId::SearchPhotos => "search_photos",
             ToolId::ImageFacts => "image_facts",
             ToolId::ProposeRenamePlan => "propose_rename_plan",
+            ToolId::ListSuggestions => "list_suggestions",
+            ToolId::GetSuggestionGroup => "get_suggestion_group",
+            ToolId::ProposeSuggestions => "propose_suggestions",
             ToolId::Unrecognized(name) => name.as_str(),
         }
     }
@@ -232,6 +246,9 @@ impl ToolId {
             "search_photos" => ToolId::SearchPhotos,
             "image_facts" => ToolId::ImageFacts,
             "propose_rename_plan" => ToolId::ProposeRenamePlan,
+            "list_suggestions" => ToolId::ListSuggestions,
+            "get_suggestion_group" => ToolId::GetSuggestionGroup,
+            "propose_suggestions" => ToolId::ProposeSuggestions,
             other => ToolId::Unrecognized(other.to_string()),
         }
     }

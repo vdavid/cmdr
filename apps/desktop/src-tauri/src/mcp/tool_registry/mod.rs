@@ -694,6 +694,30 @@ mcp_tools! {
         access: Access::Read,
         run: app_params crate::agent::tools::read::importance::execute_folder_importance
     },
+    "list_suggestions" => {
+        desc: "List the file operations Ask Cmdr has already proposed, as sweeps and groups with op COUNTS, never the ops themselves. Default status pending: what is still waiting on the user.",
+        schema: crate::agent::tools::suggestions::list_suggestions_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::suggestions::execute_list_suggestions
+    },
+    "get_suggestion_group" => {
+        desc: "Read one proposed group: its verb, target, reversibility, and a page of the files it would act on, with total / returned / truncated so you can page with offset. Its sizes and dates are what the index held when the group was proposed, not what the files are now.",
+        schema: crate::agent::tools::suggestions::get_suggestion_group_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::suggestions::execute_get_suggestion_group
+    },
+    "propose_suggestions" => {
+        desc: "Propose file operations (move, copy, trash, delete, rename, compress, extract) for the user to review, grouped so each group is approved or rejected on its own. It stages a proposal and changes nothing: only the user approves, and no tool can. Name up to 200 paths per group, or describe thousands with a selector, which Cmdr resolves against the drive index once, now. A whole folder is ONE op: give its path. Pass sweepId plus a groupId to replace a pending group you proposed earlier.",
+        schema: crate::agent::tools::suggestions::propose_suggestions_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Propose,
+        run: app_params crate::agent::tools::suggestions::execute_propose_suggestions
+    },
     "list_volumes" => {
         desc: "List every volume Cmdr can see (local disks, SMB shares, MTP devices, and the Network root) with each one's kind, index freshness (fresh / scanning / stale / off), and — for SMB — its connection state (direct / os_mount / disconnected).",
         schema: crate::agent::tools::read::volumes::list_volumes_schema(),

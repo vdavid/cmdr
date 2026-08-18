@@ -5,6 +5,9 @@
 //! and this module is where their handlers, schemas, and typed result shapes live
 //! ([`read`]) and where the runtime reaches them:
 //!
+//! - [`suggestions`]: the suggested-ops surface — two reads over the proposal
+//!   spine plus the one `Propose` tool that stages a sweep or amends a pending
+//!   group.
 //! - [`agent_tool_declarations`]: the `ToolDeclaration`s handed to the provider,
 //!   built from the registry's `agent_tool_view()`.
 //! - [`view::dispatch`] / [`view::refuse_unavailable`]: the gated dispatch — the
@@ -15,6 +18,7 @@
 
 pub mod propose;
 pub mod read;
+pub mod suggestions;
 pub mod view;
 
 use crate::agent::llm::types::{ToolDeclaration, ToolId};

@@ -34,8 +34,8 @@ use rusqlite::Connection;
 
 use super::store::AgentStoreError;
 use super::store::proposals::{
-    ClaimOutcome, GroupIntent, NewGroup, NewOp, NewSweep, OpSnapshot, RejectOutcome, claim_group_for_execution,
-    count_ops, create_group, create_sweep, get_group,
+    ClaimOutcome, GroupIntent, NewGroup, NewOp, NewSweep, OpSnapshot, RejectOutcome, ReproposeOutcome,
+    claim_group_for_execution, count_ops, create_group, create_sweep, get_group, repropose_group,
 };
 
 /// A sweep as created: its id and the ids of the groups inside it, in order.
@@ -59,10 +59,35 @@ pub fn propose(
     let set_id = create_sweep(conn, sweep, now)?;
     let mut group_ids = Vec::with_capacity(groups.len());
     for group in groups {
-        group_ids.push(create_group(conn, set_id, group, now)?);
-        analytics::group_proposed(group.intent.verb(), group.intent.op_count());
+        group_ids.push(add_group(conn, set_id, group, now)?);
     }
     Ok(ProposedSweep { set_id, group_ids })
+}
+
+/// Add one more group to a sweep that already exists, and report it as proposed.
+///
+/// The same act as a group inside [`propose`], for the caller that is extending a sweep it
+/// created earlier rather than opening a new one.
+pub fn add_group(conn: &Connection, set_id: i64, group: &NewGroup, now: i64) -> Result<i64, AgentStoreError> {
+    let group_id = create_group(conn, set_id, group, now)?;
+    analytics::group_proposed(group.intent.verb(), group.intent.op_count());
+    Ok(group_id)
+}
+
+/// Replace a pending group's op list with a new one, on its author's say-so.
+///
+/// ❌ Deliberately emits NO analytics event. A re-propose AMENDS a proposal the user hasn't
+/// answered yet, so counting it as a second proposal would inflate the denominator of the
+/// acceptance rate and make an agent that revises its own suggestions look worse than one
+/// that doesn't. The same reasoning as the plan's re-approval rule: one decision, counted
+/// once.
+pub fn repropose(
+    conn: &Connection,
+    group_id: i64,
+    group: &NewGroup,
+    now: i64,
+) -> Result<ReproposeOutcome, AgentStoreError> {
+    repropose_group(conn, group_id, group, now)
 }
 
 /// Claim a group for execution on the user's say-so, and report an approval.

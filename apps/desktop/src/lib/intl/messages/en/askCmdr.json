@@ -135,6 +135,30 @@
   "@askCmdr.tool.proposeRenamePlan.done": {
     "description": "Past-tense label on the Ask Cmdr chat tool line after it prepared a file rename proposal. The user still reviews and approves rows separately. Pairs with askCmdr.tool.proposeRenamePlan.doing."
   },
+  "askCmdr.tool.listSuggestions.doing": "Checking suggestions",
+  "@askCmdr.tool.listSuggestions.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant looks up the file operations it has already suggested and that are still waiting for the user to approve or reject them. It reads a list, it changes nothing. Pairs with askCmdr.tool.listSuggestions.done."
+  },
+  "askCmdr.tool.listSuggestions.done": "Checked suggestions",
+  "@askCmdr.tool.listSuggestions.done": {
+    "description": "Past-tense label on the same tool line once the assistant finished looking up its waiting suggestions. Pairs with askCmdr.tool.listSuggestions.doing; keep both the same length where the language allows."
+  },
+  "askCmdr.tool.getSuggestionGroup.doing": "Looking at a suggestion",
+  "@askCmdr.tool.getSuggestionGroup.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens ONE of its suggested groups of file operations to see which files it covers. Reading only. Pairs with askCmdr.tool.getSuggestionGroup.done."
+  },
+  "askCmdr.tool.getSuggestionGroup.done": "Looked at a suggestion",
+  "@askCmdr.tool.getSuggestionGroup.done": {
+    "description": "Past-tense label on the same tool line once the assistant finished reading that one suggestion. Pairs with askCmdr.tool.getSuggestionGroup.doing."
+  },
+  "askCmdr.tool.proposeSuggestions.doing": "Preparing suggestions",
+  "@askCmdr.tool.proposeSuggestions.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant prepares file operations (moving, copying, trashing, deleting, renaming, compressing, extracting) for the user to review. Nothing happens to any file: the user decides. Say ''preparing'', never ''doing'' or ''applying''. Pairs with askCmdr.tool.proposeSuggestions.done."
+  },
+  "askCmdr.tool.proposeSuggestions.done": "Prepared suggestions",
+  "@askCmdr.tool.proposeSuggestions.done": {
+    "description": "Past-tense label on the same tool line once the assistant finished preparing its suggested file operations. The user still reviews and approves each group separately, so this must not read as if anything ran. Pairs with askCmdr.tool.proposeSuggestions.doing."
+  },
   "askCmdr.tool.unknown.doing": "Working",
   "@askCmdr.tool.unknown.doing": {
     "description": "Present-tense fallback status for a tool the rail doesn't have a specific label for."

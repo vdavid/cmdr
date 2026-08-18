@@ -37,7 +37,7 @@ pub use claim::{
     AcceptanceOutcome, ClaimOutcome, ClaimRefusal, ClaimedGroup, OpBinding, RejectOutcome, claim_group_for_execution,
     live_binding, record_acceptance, reject_group,
 };
-pub use read::{GroupSummary, ProposalOp, count_ops, get_group, list_groups, page_ops};
+pub use read::{GroupSummary, ProposalOp, ProposalSweep, count_ops, get_group, get_sweep, list_groups, page_ops};
 pub use recovery::recover_interrupted_groups;
 pub use write::{
     NewGroup, NewOp, NewRename, NewSweep, OpSnapshot, ReproposeOutcome, create_group, create_sweep, repropose_group,

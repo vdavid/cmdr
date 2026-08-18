@@ -128,6 +128,30 @@
   "@askCmdr.tool.proposeRenamePlan.done": {
     "sourceHash": "a271302"
   },
+  "askCmdr.tool.listSuggestions.doing": "Verificando as sugestões",
+  "@askCmdr.tool.listSuggestions.doing": {
+    "sourceHash": "8eddcd5"
+  },
+  "askCmdr.tool.listSuggestions.done": "Verificou as sugestões",
+  "@askCmdr.tool.listSuggestions.done": {
+    "sourceHash": "073df6b"
+  },
+  "askCmdr.tool.getSuggestionGroup.doing": "Consultando uma sugestão",
+  "@askCmdr.tool.getSuggestionGroup.doing": {
+    "sourceHash": "791e75c"
+  },
+  "askCmdr.tool.getSuggestionGroup.done": "Consultou uma sugestão",
+  "@askCmdr.tool.getSuggestionGroup.done": {
+    "sourceHash": "2373235"
+  },
+  "askCmdr.tool.proposeSuggestions.doing": "Preparando sugestões",
+  "@askCmdr.tool.proposeSuggestions.doing": {
+    "sourceHash": "aa27c17"
+  },
+  "askCmdr.tool.proposeSuggestions.done": "Preparou sugestões",
+  "@askCmdr.tool.proposeSuggestions.done": {
+    "sourceHash": "42457d2"
+  },
   "askCmdr.tool.unknown.doing": "Trabalhando",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

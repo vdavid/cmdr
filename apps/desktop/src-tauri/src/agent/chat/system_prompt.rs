@@ -6,9 +6,9 @@
 //! assert it contains the read-only self-description and the coverage-honesty rule
 //! are guarding our prompt text, NOT classifying an error or provider state.
 //!
-//! Five labelled sections, in the order the model reads them: identity, what you can
-//! do, coverage, renaming, evidence, style. The labels are there so a rule can be
-//! found and edited without re-reading the whole block.
+//! Labelled sections, in the order the model reads them: identity, what you can do,
+//! coverage, renaming, suggesting operations, evidence, style. The labels are there so a
+//! rule can be found and edited without re-reading the whole block.
 //!
 //! What it must always carry (the tests pin each one):
 //! - the read-only self-description (Ask Cmdr can look and speak, never act or read
@@ -21,6 +21,11 @@
 //!   fabricated names, and "do not guess" alone leaves the next token to chance,
 //! - **the verbatim-quote rule**, so the model knows a paraphrase is refused and that the
 //!   refusal costs the whole plan rather than the one row,
+//! - **the selector, and the last-opened gap it can't close.** A large suggestion is a
+//!   pattern, not a list of names the model would have to hold; and Cmdr has no access
+//!   time, so a model told only "propose the installers you've opened" would state a fact
+//!   it cannot have. The prompt names what it CAN say instead (when the file last changed),
+//!   the same shape as the fallback rule above,
 //! - **how to read an elided result again**, so a set-aside result is a re-fetch rather
 //!   than a gap the model fills in,
 //! - a short style note so replies match the app's friendly, concise voice.
@@ -39,10 +44,11 @@ and the live app state (panes, cursor, selection, volumes).
 
 # What you can do
 
-You can look and speak, and you can prepare a rename plan for the user to review. You never \
+You can look and speak, and you can prepare a rename plan or a set of suggested file operations for the user to \
+review. You never \
 act: you have no tool that changes, moves, deletes, or renames anything, and no tool that reads the contents of a file. \
-Only names, paths, and metadata reach you, never file contents. If the user asks you \
-to change something, explain that only they can approve a prepared rename plan, or point them at the app's own commands.
+Only names, paths, and metadata reach you, never file contents. Everything you prepare waits for the user: they \
+approve it, and nothing you can call does.
 
 Prefer the answer you can give from what you already know. Call a tool when you need \
 data you do not have yet, and keep to what the user asked. When you are done, answer \
@@ -86,6 +92,27 @@ instead: keep that file's existing name, or put its date in front as \"<date> <e
 reply which files you could not see. A name describing contents you were not shown is worse than a plain one.
 
 Submit the final plan with propose_rename_plan; never claim a rename happened before the user reviews it.
+
+# Suggesting operations
+
+You can also propose move, copy, trash, delete, rename, compress, and extract operations with propose_suggestions, \
+for the user to review and decide on. Group them so each group is one verb with one target, since the user answers a \
+group at a time, and say in each group's rationale what it is for: they read it as your words, beside what Cmdr \
+itself knows about the files.
+
+A whole folder is ONE operation. Give the folder's path; never list what is inside it.
+
+To suggest a large set, describe it with a selector rather than naming files one by one. Cmdr resolves the pattern \
+against its index right then and freezes the exact list, so the user reviews every file it matched. A pattern can ask \
+for a folder, a name glob, a size range, and how recently a file changed.
+
+Cmdr keeps no record of when a file was last OPENED, only when it last changed. So never suggest files on the \
+grounds that the user opened, read, or watched them, and never imply you can tell: say the files last changed a \
+while ago, which is what you actually know.
+
+Read your own suggestions back with list_suggestions and get_suggestion_group. When you want to revise a suggestion \
+the user has not answered yet, send its sweepId and groupId to replace it, rather than proposing the same files \
+twice.
 
 # Evidence
 
@@ -275,6 +302,56 @@ mod tests {
         assert!(
             SYSTEM_PROMPT.contains("variation of the same shape"),
             "nor a near-miss of the style that was denied"
+        );
+    }
+
+    /// The 60,000-op case only works if the model reaches for a pattern instead of a list of
+    /// names it would have to hold in its own context, and a whole-folder op only works if it
+    /// knows the folder's path IS the op. Neither is guessable from the schema.
+    #[test]
+    fn prompt_points_at_the_selector_for_a_large_suggestion() {
+        assert!(
+            SYSTEM_PROMPT.contains("describe it with a selector rather than naming files one by one"),
+            "a large suggestion has to go through a pattern"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("A whole folder is ONE operation"),
+            "a folder is one op, not one op per file inside it"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("freezes the exact list"),
+            "the model must know the pattern is resolved once, so it can tell the user what they'll review"
+        );
+    }
+
+    /// The plan's flagship example ("installers you've already opened") asks for something
+    /// Cmdr cannot see: the drive index has modification time and no access time. A prompt
+    /// that left this out would have the model state it anyway, since the phrasing is the
+    /// user's own. So the prohibition comes with the thing it CAN say instead.
+    #[test]
+    fn prompt_refuses_to_claim_a_file_was_opened() {
+        assert!(
+            SYSTEM_PROMPT.contains("keeps no record of when a file was last OPENED"),
+            "the gap has to be stated, or the model fills it"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("say the files last changed a while ago"),
+            "the prompt must name what to say instead, not only what not to"
+        );
+    }
+
+    /// Re-proposing over a pending group is the difference between one suggestion the user
+    /// decides once and two overlapping ones whose losing half fails a fingerprint check
+    /// later with nothing to explain it.
+    #[test]
+    fn prompt_says_to_revise_a_suggestion_rather_than_repeat_it() {
+        assert!(
+            SYSTEM_PROMPT.contains("send its sweepId and groupId to replace it"),
+            "a revision must replace the pending group"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("rather than proposing the same files"),
+            "the reason has to be stated, or the rule reads as optional bookkeeping"
         );
     }
 

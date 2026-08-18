@@ -129,6 +129,30 @@
   "@askCmdr.tool.proposeRenamePlan.done": {
     "sourceHash": "a271302"
   },
+  "askCmdr.tool.listSuggestions.doing": "Controleert suggesties",
+  "@askCmdr.tool.listSuggestions.doing": {
+    "sourceHash": "8eddcd5"
+  },
+  "askCmdr.tool.listSuggestions.done": "Suggesties gecontroleerd",
+  "@askCmdr.tool.listSuggestions.done": {
+    "sourceHash": "073df6b"
+  },
+  "askCmdr.tool.getSuggestionGroup.doing": "Bekijkt een suggestie",
+  "@askCmdr.tool.getSuggestionGroup.doing": {
+    "sourceHash": "791e75c"
+  },
+  "askCmdr.tool.getSuggestionGroup.done": "Een suggestie bekeken",
+  "@askCmdr.tool.getSuggestionGroup.done": {
+    "sourceHash": "2373235"
+  },
+  "askCmdr.tool.proposeSuggestions.doing": "Bereidt suggesties voor",
+  "@askCmdr.tool.proposeSuggestions.doing": {
+    "sourceHash": "aa27c17"
+  },
+  "askCmdr.tool.proposeSuggestions.done": "Suggesties voorbereid",
+  "@askCmdr.tool.proposeSuggestions.done": {
+    "sourceHash": "42457d2"
+  },
   "askCmdr.tool.unknown.doing": "Bezig",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"
