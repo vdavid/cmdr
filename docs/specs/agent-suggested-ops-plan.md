@@ -108,7 +108,12 @@ The agent cannot enumerate 60,000 paths through its context window, so `propose_
 well as an explicit path list. The backend resolves the selector to a concrete op list **at creation time** and freezes
 it (spec §8.2's freeze-at-creation, which exists for exactly this).
 
-- A selector names a root, a glob or extension set, and optional deterministic predicates (age, size, last-opened).
+- A selector names a root, a glob or extension set, and optional deterministic predicates (age, size).
+- ❌ **"Last opened" is NOT expressible and must not be faked.** The drive index carries size, mtime, and inode but no
+  access time, and `importance.db`'s visit counts are per-FOLDER, not per-file. So the flagship phrasing "installers
+  you've already opened" has no data source today. agent-spec §5.1 names `kMDItemLastUsedDate` via Spotlight as the
+  eventual route and §18.4 flags its sampling cost as unresolved. Until that lands, a selector predicate for it would
+  silently match nothing, which is worse than not offering it. Copy must not promise it either.
 - **Resolution happens server-side against the drive index**, never by walking the filesystem in a tool handler (the
   no-live-FS rule in `agent/tools/CLAUDE.md`).
 - The pattern survives as display text on the group ("`~/Downloads/*.dmg` older than 30 days"), and the dialog expands
@@ -195,7 +200,8 @@ decorator** write `proposal_ops.status`. ❌ `write_operations` must never reach
 
 ## Milestones
 
-M1 and M2 are independent and start together. M3 needs M1. M4 needs M1 + M2. M5 needs M1 + M3. M6 needs M1.
+M1 and M2 are independent and start together. M3 needs M1. M4a needs M1 + M2. M4b needs M4a. M5 needs M1 + M3. M6 needs
+M1.
 
 **Serialization note:** every milestone adding an IPC command must register it in the `ipc.rs` manifest before
 `bindings.ts` regenerates. Land binding regeneration one branch at a time.
@@ -233,7 +239,22 @@ pass unchanged.
 Three tools with the access classes above, schemas, registry entries, `ToolId` variants, rail labels, and the one
 `EXPECTED_PROPOSE_TOOL_NAMES` addition. Selector schema included. Depends on M1.
 
-### M4: The Suggested ops dialog and the indicator
+### M4a: The approval bridge
+
+The backend half of approval, split out of M4 so UI work doesn't carry backend plumbing. Depends on M1 + M2.
+
+Claim the group, build the executor call its `GroupIntent` describes, attach an agent-side **sink decorator** that
+consumes M2's per-source outcomes and writes `proposal_ops.status`, and **mark the group `completed` when the operation
+finishes**.
+
+**That last part is load-bearing and M1 flagged it**: `ProposalStatus::Completed` exists and the recovery sweep respects
+it, but nothing writes it yet. Until something does, a group that ran to completion before a quit comes back as
+`interrupted` on the next launch and asks the user to re-approve work that already happened. ❌ Do not ship the bridge
+without it.
+
+The decorator is agent-side by construction; `write_operations` must never reach into `agent/store/`.
+
+### M4b: The Suggested ops dialog and the indicator
 
 A soft dialog per `docs/guides/building-ui.md` and the house primitives, NOT a window (so no capabilities file, no
 `build.rs` playwright capability, no opener). Per-group approve and reject, per-op deselection over a virtualized list,
@@ -247,7 +268,7 @@ The indicator goes in `lib/status-corner/StatusCorner.svelte`, **between the que
 
 Copy is drafted here and reviewed by David at QA.
 
-**Depends on M1 and M2.**
+**Depends on M1 and M4a.**
 
 ### M5: The agentic loop
 
