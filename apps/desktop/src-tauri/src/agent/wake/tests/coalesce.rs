@@ -181,3 +181,97 @@ fn five_million_changes_in_one_folder_coalesce_to_one_exact_bundle() {
     assert_eq!(bundles[0].counters.modified, 5_000_000);
     assert_eq!(bundles[0].counters.total(), 5_000_000);
 }
+
+// ── Merging pre-counted bundles ───────────────────────────────────────────────
+
+/// The tap hands over per-batch, per-folder ROLLUPS rather than one message per file, so the
+/// coalescer has to accept counted input as well as individual events. Both must land on the
+/// same answer, or the pipeline means something different depending on which source fed it.
+#[test]
+fn merging_pre_counted_bundles_matches_coalescing_the_same_events() {
+    let events = [
+        event("/Users/someone/Downloads", ChangeKind::Created, 10),
+        event("/Users/someone/Downloads", ChangeKind::Created, 20),
+        event("/Users/someone/Downloads", ChangeKind::Modified, 70),
+        event("/tmp/log", ChangeKind::Modified, 15),
+    ];
+    // The same changes, pre-counted the way a live batch would hand them over.
+    let per_event: Vec<EventBundle> = events
+        .iter()
+        .map(|e| {
+            let mut counters = ChangeCounters::default();
+            counters.record(e.kind);
+            EventBundle {
+                folder: e.folder.clone(),
+                counters,
+                window_start: e.at,
+                last_event_at: e.at,
+            }
+        })
+        .collect();
+
+    assert_eq!(coalesce(&events, MINUTE), merge_bundles(&per_event, MINUTE));
+}
+
+/// Two rollups for one folder in one window become one bundle: counters summed, and the
+/// deadline anchored to the LATER of the two.
+#[test]
+fn two_rollups_for_one_folder_in_one_window_become_one() {
+    let first = EventBundle {
+        folder: "/Users/someone/Downloads".to_string(),
+        counters: ChangeCounters {
+            created: 3,
+            ..ChangeCounters::default()
+        },
+        window_start: 10,
+        last_event_at: 12,
+    };
+    let second = EventBundle {
+        folder: "/Users/someone/Downloads".to_string(),
+        counters: ChangeCounters {
+            created: 2,
+            modified: 1,
+            ..ChangeCounters::default()
+        },
+        window_start: 40,
+        last_event_at: 44,
+    };
+
+    let merged = merge_bundles(&[first, second], MINUTE);
+
+    assert_eq!(merged.len(), 1, "{merged:?}");
+    assert_eq!(merged[0].counters.created, 5);
+    assert_eq!(merged[0].counters.modified, 1);
+    assert_eq!(merged[0].window_start, 0, "both sit in the epoch-anchored first minute");
+    assert_eq!(merged[0].last_event_at, 44, "the deadline runs from the newest change");
+}
+
+/// A rollup carries no per-event times, so it can only be placed by the window its own start
+/// falls in. Two batches straddling a boundary therefore stay two bundles — the same answer
+/// the per-event path gives, and the reason the tap emits per batch rather than per minute.
+#[test]
+fn rollups_either_side_of_a_boundary_stay_apart() {
+    let before = EventBundle {
+        folder: "/a".to_string(),
+        counters: ChangeCounters {
+            created: 1,
+            ..ChangeCounters::default()
+        },
+        window_start: 59,
+        last_event_at: 59,
+    };
+    let after = EventBundle {
+        folder: "/a".to_string(),
+        counters: ChangeCounters {
+            created: 1,
+            ..ChangeCounters::default()
+        },
+        window_start: 60,
+        last_event_at: 60,
+    };
+
+    let merged = merge_bundles(&[before, after], MINUTE);
+
+    assert_eq!(merged.len(), 2, "{merged:?}");
+    assert_eq!((merged[0].window_start, merged[1].window_start), (0, 60));
+}

@@ -40,7 +40,7 @@ mod interest;
 #[cfg(test)]
 mod tests;
 
-pub use coalesce::coalesce;
+pub use coalesce::{coalesce, merge_bundles};
 pub use compact::{Digest, DigestLine, Rollup, ScoredBundle, compact};
 pub use interest::{
     COLD_DELAY, FolderImportance, HOT_DELAY, HOT_THRESHOLD, Interest, WARM_DELAY, WARM_THRESHOLD, interest, wake_delay,
