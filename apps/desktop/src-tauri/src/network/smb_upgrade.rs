@@ -281,7 +281,13 @@ pub(crate) async fn register_replacing_predecessor(
     new_volume: std::sync::Arc<dyn crate::file_system::volume::Volume>,
 ) {
     let manager = crate::file_system::volume::manager::get_volume_manager();
-    if let Some(prev) = manager.get(volume_id) {
+    // Ask BEFORE retiring anyone. When a second mount root claims this ID (macOS
+    // suffixes the later mount of one share), the registry keeps the incumbent and
+    // only records the new root, so retiring the incumbent here would leave the ID
+    // pointing at a volume whose watcher we just stopped: the share stays listed
+    // and silently stops seeing its own changes.
+    let refused = manager.would_keep_incumbent(volume_id, new_volume.root());
+    if !refused && let Some(prev) = manager.get(volume_id) {
         log::debug!("Replacing existing volume at id={volume_id}; retiring the predecessor (session stays up)");
         let _ = tokio::task::spawn_blocking(move || prev.on_superseded()).await;
     }

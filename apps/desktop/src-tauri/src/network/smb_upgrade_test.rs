@@ -299,6 +299,58 @@ async fn predecessor_is_superseded_not_unmounted() {
     manager.unregister(volume_id);
 }
 
+/// The registry KEEPS the incumbent when a second mount root claims one ID, so
+/// retiring the incumbent first leaves that ID pointing at a volume whose watcher
+/// has been stopped: the share stays registered but stops seeing its own changes.
+///
+/// Real incident: `localhost:11480` mounting twice 7 ms apart produced this on every
+/// cycle, 320 times across a week on one machine.
+#[tokio::test]
+async fn a_registration_the_registry_refuses_leaves_the_incumbent_untouched() {
+    use std::sync::atomic::Ordering;
+
+    let volume_id = "test-register-replacing-predecessor-conflict";
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+
+    // A SECOND live mount of the same filesystem, which macOS suffixes.
+    let (incumbent, incumbent_hooks) = tracking::TrackingVolume::create_at("/Volumes/naspi", None);
+    let (second_mount, second_hooks) = tracking::TrackingVolume::create_at("/Volumes/naspi-1", None);
+
+    manager.register(volume_id, std::sync::Arc::clone(&incumbent));
+
+    register_replacing_predecessor(volume_id, std::sync::Arc::clone(&second_mount)).await;
+
+    assert!(
+        !incumbent_hooks.superseded.load(Ordering::Relaxed),
+        "the incumbent stays the registered volume, so it must NOT be retired: a superseded volume has no watcher"
+    );
+    assert!(
+        !incumbent_hooks.unmounted.load(Ordering::Relaxed),
+        "the incumbent's mount is still there"
+    );
+    assert!(
+        !second_hooks.superseded.load(Ordering::Relaxed) && !second_hooks.unmounted.load(Ordering::Relaxed),
+        "the refused volume gets no lifecycle hook either"
+    );
+
+    let current = manager
+        .get(volume_id)
+        .expect("the incumbent should still be registered");
+    assert!(
+        std::sync::Arc::ptr_eq(&current, &incumbent),
+        "the incumbent stays active; the registry only records the second root"
+    );
+    assert!(
+        manager
+            .known_roots(volume_id)
+            .iter()
+            .any(|r| r.as_path() == Path::new("/Volumes/naspi-1")),
+        "the second mount root is recorded as a fallback"
+    );
+
+    manager.unregister(volume_id);
+}
+
 /// The lifecycle invariant behind the whole swap: an operation that grabbed
 /// an `Arc` to the volume before an upgrade keeps working on it afterwards.
 ///

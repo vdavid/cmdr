@@ -57,11 +57,19 @@ const ROOT_RECORDED_RESOLUTION: &str =
 /// clone it's a second disk. Neither case is silent, and for the clone the two
 /// already share every per-volume store, so which one the ID points at is not
 /// the wound.
+///
+/// **Warn, not error, and deliberately so.** Error level is the auto-report
+/// threshold (`error_reporter/CLAUDE.md`), and the common case here is a share
+/// macOS mounted twice: recoverable, expected (the message says so), and not
+/// user-impacting, which is exactly the rule's definition of a warning. At error
+/// level one machine's remount loop uploaded 98 bundles in a week and drowned the
+/// channel it was supposed to alert. The rarer clone deserves louder, but nothing
+/// here can tell the two apart, so this stays a warning that names both.
 fn report_identity_conflict(id: &str, existing: &Arc<dyn Volume>, incoming: &Arc<dyn Volume>, resolution: &str) {
-    if !is_identity_conflict(existing, incoming) {
+    if !is_identity_conflict(existing.root(), incoming.root()) {
         return;
     }
-    crate::log_error!(
+    log::warn!(
         target: "cmdr_lib::file_system::volume",
         "Two different mount roots ({} and {}) claim volume ID {id}; {resolution}, so the two share per-volume state. Expected only for a cloned volume or a doubly-mounted filesystem.",
         existing.root().display(),
@@ -71,8 +79,8 @@ fn report_identity_conflict(id: &str, existing: &Arc<dyn Volume>, incoming: &Arc
 
 /// Whether re-registering `id` means two DIFFERENT mounts, rather than the same
 /// mount changing backends (which is routine: that's the SMB upgrade).
-fn is_identity_conflict(existing: &Arc<dyn Volume>, incoming: &Arc<dyn Volume>) -> bool {
-    existing.root() != incoming.root()
+fn is_identity_conflict(existing_root: &Path, incoming_root: &Path) -> bool {
+    existing_root != incoming_root
 }
 
 impl VolumeManager {
@@ -98,7 +106,7 @@ impl VolumeManager {
         let mut volumes = self.volumes.write_ignore_poison();
         if let Some(existing) = volumes.get_mut(id) {
             report_identity_conflict(id, &existing.volume, &volume, ROOT_RECORDED_RESOLUTION);
-            if is_identity_conflict(&existing.volume, &volume) {
+            if is_identity_conflict(existing.volume.root(), volume.root()) {
                 existing.record_root(volume.root());
                 return;
             }
@@ -122,6 +130,23 @@ impl VolumeManager {
         self.volumes
             .write_ignore_poison()
             .insert(id.to_string(), Registration::new(volume));
+    }
+
+    /// Whether [`register`] would REFUSE a volume rooted at `root` under `id`,
+    /// keeping the incumbent active and recording `root` as a fallback.
+    ///
+    /// A caller that retires the incumbent before handing over (the SMB upgrade's
+    /// `register_replacing_predecessor`) has to ask FIRST. Retiring stops the
+    /// volume's watcher, and on a refused registration the registry keeps that
+    /// same volume serving: the ID ends up pointing at a live share that no longer
+    /// sees its own changes.
+    ///
+    /// [`register`]: Self::register
+    pub fn would_keep_incumbent(&self, id: &str, root: &Path) -> bool {
+        self.volumes
+            .read_ignore_poison()
+            .get(id)
+            .is_some_and(|entry| is_identity_conflict(entry.volume.root(), root))
     }
 
     /// Registers a volume only if no volume with this ID exists yet.
@@ -413,7 +438,7 @@ mod tests {
         // `SmbVolume` at the same root. Routine, and it must stay quiet.
         let existing: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("OS mount").with_root("/Volumes/naspi"));
         let incoming: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/naspi"));
-        assert!(!is_identity_conflict(&existing, &incoming));
+        assert!(!is_identity_conflict(existing.root(), incoming.root()));
     }
 
     #[test]
@@ -424,7 +449,7 @@ mod tests {
         // be loud rather than silent.
         let existing: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Disk A").with_root("/Volumes/A"));
         let incoming: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Disk B").with_root("/Volumes/B"));
-        assert!(is_identity_conflict(&existing, &incoming));
+        assert!(is_identity_conflict(existing.root(), incoming.root()));
     }
 
     #[test]
