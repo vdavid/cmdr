@@ -397,7 +397,7 @@ fn unique_lane(label: &str) -> String {
 }
 
 async fn seed(volume: &dyn cmdr_fs::volume::Volume, path: &str, bytes: &[u8]) {
-    let path = std::path::Path::new(path);
+    let path = Path::new(path);
     if volume.exists(path).await {
         volume.delete(path).await.expect("clear");
     }
@@ -415,8 +415,19 @@ async fn seed(volume: &dyn cmdr_fs::volume::Volume, path: &str, bytes: &[u8]) {
 async fn a_bound_cross_volume_copy_skips_the_source_that_changed_while_it_waited() {
     use cmdr_fs::volume::{InMemoryVolume, Volume};
 
-    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Share").with_lane_key(unique_lane("src")));
-    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Phone").with_lane_key(unique_lane("dst")));
+    let source: Arc<dyn Volume> = Arc::new(
+        InMemoryVolume::new("Share")
+            .with_lane_key(unique_lane("src"))
+            .with_space_info(1_000_000, 900_000),
+    );
+    let dest: Arc<dyn Volume> = Arc::new(
+        InMemoryVolume::new("Phone")
+            .with_lane_key(unique_lane("dst"))
+            .with_space_info(1_000_000, 900_000),
+    );
+    dest.create_directory(Path::new("/incoming"))
+        .await
+        .expect("seed the destination folder");
     seed(source.as_ref(), "/holiday.jpg", b"as reviewed").await;
     seed(source.as_ref(), "/invoice.pdf", b"as reviewed too").await;
 
@@ -469,12 +480,19 @@ async fn a_bound_cross_volume_copy_skips_the_source_that_changed_while_it_waited
         verdicts.contains(&(stale.display().to_string(), super::types::SourceItemOutcome::Skipped)),
         "the rewritten source must be reported skipped, got {verdicts:?}"
     );
+    let errors: Vec<_> = collector
+        .errors
+        .lock_ignore_poison()
+        .iter()
+        .map(|e| format!("{:?}", e.error))
+        .collect();
     assert!(
-        dest.exists(std::path::Path::new("/incoming/holiday.jpg")).await,
-        "the untouched source still copies: a binding filters, it does not refuse the batch"
+        dest.exists(Path::new("/incoming/holiday.jpg")).await,
+        "the untouched source still copies: a binding filters, it does not refuse the batch. \
+         verdicts={verdicts:?} errors={errors:?}"
     );
     assert!(
-        !dest.exists(std::path::Path::new("/incoming/invoice.pdf")).await,
+        !dest.exists(Path::new("/incoming/invoice.pdf")).await,
         "and the file the user never approved in this state is not written"
     );
 }

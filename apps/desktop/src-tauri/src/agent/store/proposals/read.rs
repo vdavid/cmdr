@@ -128,6 +128,25 @@ pub fn count_ops(conn: &Connection, group_id: i64, status: Option<OpStatus>) -> 
     Ok(count.max(0) as u64)
 }
 
+/// How many groups sit in `status`, and how many live ops they hold between them.
+///
+/// One statement, both `COUNT(*)`: the indicator that consumes this is always mounted, and a
+/// group of 60 000 ops is legitimate, so drawing a badge must never cost a row.
+pub fn count_pending(conn: &Connection, status: ProposalStatus) -> Result<(u64, u64), AgentStoreError> {
+    let (groups, ops): (i64, i64) = conn
+        .prepare_cached(
+            "SELECT COUNT(*),
+                    COALESCE((SELECT COUNT(*) FROM proposal_ops o
+                              JOIN proposals p2 ON p2.id = o.group_id
+                              WHERE p2.status = ?1 AND o.status = ?2), 0)
+             FROM proposals WHERE status = ?1",
+        )?
+        .query_row(params![status.as_token(), OpStatus::Pending.as_token()], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })?;
+    Ok((groups.max(0) as u64, ops.max(0) as u64))
+}
+
 /// One page of a group's ops, ordered by `seq` — the index order, so no sort happens.
 ///
 /// The only op-row-materializing read in the module. Everything that needs a whole group's

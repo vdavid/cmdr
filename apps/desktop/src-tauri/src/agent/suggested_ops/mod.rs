@@ -24,11 +24,13 @@
 
 mod analytics;
 pub mod bridge;
+mod changed;
 pub mod selector;
 
 #[cfg(test)]
 mod tests;
 
+pub use changed::{SuggestionChange, SuggestionsChanged, init_suggestions_event_emitter};
 pub use selector::{DriveIndex, IndexedFile, OpSelector, SelectorIndex, SelectorRefusal};
 
 use rusqlite::Connection;
@@ -60,8 +62,10 @@ pub fn propose(
     let set_id = create_sweep(conn, sweep, now)?;
     let mut group_ids = Vec::with_capacity(groups.len());
     for group in groups {
-        group_ids.push(add_group(conn, set_id, group, now)?);
+        group_ids.push(create_group(conn, set_id, group, now)?);
+        analytics::group_proposed(group.intent.verb(), group.intent.op_count());
     }
+    changed::announce(conn, SuggestionChange::Proposed, None);
     Ok(ProposedSweep { set_id, group_ids })
 }
 
@@ -72,6 +76,7 @@ pub fn propose(
 pub fn add_group(conn: &Connection, set_id: i64, group: &NewGroup, now: i64) -> Result<i64, AgentStoreError> {
     let group_id = create_group(conn, set_id, group, now)?;
     analytics::group_proposed(group.intent.verb(), group.intent.op_count());
+    changed::announce(conn, SuggestionChange::Proposed, Some(group_id));
     Ok(group_id)
 }
 
@@ -88,7 +93,14 @@ pub fn repropose(
     group: &NewGroup,
     now: i64,
 ) -> Result<ReproposeOutcome, AgentStoreError> {
-    repropose_group(conn, group_id, group, now)
+    let outcome = repropose_group(conn, group_id, group, now)?;
+    // No analytics (see above), but the change still has to be ANNOUNCED: an amend under a
+    // group the user has open is exactly what the dialog's "this changed" affordance is for,
+    // and the two questions are different — one counts decisions, the other refreshes a view.
+    if matches!(outcome, ReproposeOutcome::Reproposed) {
+        changed::announce(conn, SuggestionChange::Amended, Some(group_id));
+    }
+    Ok(outcome)
 }
 
 /// Claim a group for execution on the user's say-so, and report an approval.
@@ -100,6 +112,7 @@ pub fn approve(conn: &Connection, group_id: i64, now: i64) -> Result<ClaimOutcom
     let outcome = claim_group_for_execution(conn, group_id, now)?;
     if let ClaimOutcome::Claimed(claimed) = &outcome {
         analytics::group_approved(claimed.group.verb, claimed.binding.op_count);
+        changed::announce(conn, SuggestionChange::Approved, Some(group_id));
     }
     Ok(outcome)
 }
@@ -114,6 +127,7 @@ pub fn reject(conn: &Connection, group_id: i64, now: i64) -> Result<RejectOutcom
     if let (RejectOutcome::Rejected, Some(group)) = (&outcome, before) {
         let op_count = count_ops(conn, group_id, Some(crate::agent::types::OpStatus::Pending))?;
         analytics::group_rejected(group.verb, op_count);
+        changed::announce(conn, SuggestionChange::Rejected, Some(group_id));
     }
     Ok(outcome)
 }

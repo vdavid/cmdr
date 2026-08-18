@@ -63,6 +63,7 @@ use crate::file_system::write_operations::{
     ScanPreviewProgressEvent, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
     WriteConflictResolvedEvent, WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
+use crate::agent::suggested_ops::SuggestionsChanged;
 use crate::file_system::write_operations::{OperationsChanged, VolumesBusyChanged};
 use crate::mtp::{
     MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,
@@ -820,6 +821,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             WriteSettledEvent,
             // Operation manager registry snapshot (write_operations/manager.rs).
             OperationsChanged,
+            SuggestionsChanged,
             // The quit gate holding an exit while operations run (quit/).
             QuitRequested,
             // Listing sink (file_system/listing/streaming.rs `TauriListingEventSink`).
