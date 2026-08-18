@@ -1439,8 +1439,12 @@ fn process_message(
                 mutation_tracker,
                 signal,
             );
-            // The tables are gone; queued ids name rows that no longer exist.
+            // The tables are gone; queued ids name rows that no longer exist. Draining
+            // either queue afterwards would write a zeroed `dir_stats` row for a
+            // deleted entry id, and `next_id` resets here, so the next scan would find
+            // that ghost sitting on one of its own directories.
             repairs.clear();
+            rollups.clear();
         }
         WriteMessage::ComputeAllAggregates { source } => {
             handle_compute_all_aggregates(

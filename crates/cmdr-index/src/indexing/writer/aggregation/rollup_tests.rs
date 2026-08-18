@@ -190,3 +190,75 @@ fn a_shutdown_inside_a_burst_still_rolls_the_ancestors_up() {
     assert_eq!(root.min_subtree_epoch, 1);
     check_db_consistency(&conn);
 }
+
+/// A truncating rescan wipes the rows a queued roll-up names, so the queue has to
+/// go with them — the same reason `TruncateData` clears the deferred repairs.
+///
+/// Without that, the drain recomputes a directory that no longer exists, finds no
+/// children, and writes a zeroed `dir_stats` row for a deleted entry id. The id
+/// counter resets on truncate, so that ghost row then belongs to whatever the next
+/// scan puts at the same id.
+#[test]
+fn a_truncate_drops_the_roll_ups_it_made_meaningless() {
+    let (db_path, _dir) = setup_db();
+    let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).unwrap();
+    wide_parent(&writer, 2, 1000);
+
+    // A root reports, and the truncating rescan lands behind it before the writer
+    // has caught up — so the roll-up for id 10 is still owed when the tables go.
+    writer
+        .send(WriteMessage::ComputeSubtreeAggregates { root_id: 100 })
+        .unwrap();
+    writer.send(WriteMessage::TruncateData).unwrap();
+    settle(&writer);
+
+    let conn = IndexStore::open_read_connection(&db_path).unwrap();
+    let ghosts: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM dir_stats ds LEFT JOIN entries e ON e.id = ds.entry_id WHERE e.id IS NULL",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(ghosts, 0, "a truncate must leave no dir_stats row without an entry");
+
+    writer.shutdown();
+}
+
+/// The same hazard without a truncate: the reconciler reaps a directory while the
+/// roll-up its child's scan queued is still owed. The drain must not resurrect it
+/// as a zeroed row.
+///
+/// A delete already walks its own debit up the chain, so there is nothing left for
+/// the roll-up to do here — skipping it is correct as well as safe.
+#[test]
+fn a_delete_inside_the_pending_window_leaves_no_ghost_row() {
+    let (db_path, _dir) = setup_db();
+    let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).unwrap();
+    wide_parent(&writer, 2, 1000);
+
+    writer
+        .send(WriteMessage::ComputeSubtreeAggregates { root_id: 100 })
+        .unwrap();
+    writer.send(WriteMessage::DeleteSubtreeById(10)).unwrap();
+    settle(&writer);
+
+    let conn = IndexStore::open_read_connection(&db_path).unwrap();
+    let ghosts: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM dir_stats ds LEFT JOIN entries e ON e.id = ds.entry_id WHERE e.id IS NULL",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(ghosts, 0, "a reaped directory must not come back as a zeroed dir_stats row");
+    let root = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID).unwrap().unwrap();
+    assert_eq!(
+        (root.recursive_logical_size, root.recursive_file_count),
+        (0, 0),
+        "and the delete's own debit still reached the root"
+    );
+    check_db_consistency(&conn);
+
+    writer.shutdown();
+}

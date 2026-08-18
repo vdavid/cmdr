@@ -56,6 +56,24 @@ pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64
     let mut wrote = false;
     let mut current_id = start_id;
     while current_id != 0 {
+        // A queued walk can name a directory something DELETED while it waited: a
+        // truncating rescan, or a subtree the reconciler reaped. Recomputing that
+        // from children finds none and writes a ZEROED `dir_stats` row for an entry
+        // that no longer exists — and `TruncateData` resets the id counter, so the
+        // ghost lands on whatever the next scan puts at the same id. Stop instead;
+        // the delete walked its own debit up this chain already, so there is nothing
+        // left here to roll up. A failed read is not "no row" (the ledger's rule), so
+        // it queues and stops like every other read below.
+        match entry_exists(conn, current_id) {
+            Ok(true) => {}
+            Ok(false) => return wrote,
+            Err(e) => {
+                log::debug!(target: "indexing::writer", "repair_dir_stats_upward: existence check failed for id={current_id}: {e}");
+                repairs.queue(current_id, "repair_dir_stats_upward existence");
+                return wrote;
+            }
+        }
+
         // A read that fails tells us nothing, and this walk is the last line of
         // defense against drift: stop and hand the id back to the deferred queue
         // so a later tick tries again, rather than acting on a guess.
@@ -98,6 +116,16 @@ pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64
         }
     }
     wrote
+}
+
+/// Whether `id` still names a row in `entries`. See the delete guard in
+/// [`repair_dir_stats_upward`] for why a repair asks.
+fn entry_exists(conn: &rusqlite::Connection, id: i64) -> Result<bool, IndexStoreError> {
+    use rusqlite::OptionalExtension;
+    Ok(conn
+        .query_row("SELECT 1 FROM entries WHERE id = ?1", rusqlite::params![id], |_| Ok(()))
+        .optional()?
+        .is_some())
 }
 
 /// Recompute one directory's `dir_stats` from its committed children: file

@@ -79,6 +79,13 @@ impl PendingRollups {
         self.pending.borrow_mut().insert(id);
     }
 
+    /// Forget everything queued, because the rows it names are gone. ONLY
+    /// `TruncateData`: an id dropped for any other reason is a permanently wrong
+    /// size.
+    pub(super) fn clear(&self) {
+        self.pending.borrow_mut().clear();
+    }
+
     /// Roll every queued ancestor up, and report whether any row actually moved
     /// (the caller turns that into one refresh for the panes).
     ///

@@ -374,7 +374,9 @@ from every escalation site with no coordination. **Missing-child-row semantics**
 `ComputeAllAggregates`, which computes the child first): a child dir with NO `dir_stats` row contributes 0 to
 sizes/counts (LEFT JOIN + COALESCE 0), absorbs `min_subtree_epoch` to 0, reads false for symlinks — an honest
 under-count the backfill pass then heals and repairs upward (monotone convergence toward truth). A parentless /
-`ROOT_ID`-boundary start no-ops gracefully.
+`ROOT_ID`-boundary start no-ops gracefully. **A start id with no `entries` row no-ops too**, which is what keeps a
+deferred walk from resurrecting a directory something deleted while it waited (§ "The routine roll-up is coalesced per
+burst", point 3).
 
 **The escalation sites** (where repair replaces a drop or a clamp):
 
@@ -411,7 +413,7 @@ never square it, however wide the directory. The empty queue is also what makes 
 the trigger is the caught-up point rather than a timer or a size cap (that guardrail lives with the code, in
 `pending_rollups.rs`).
 
-**Why deferring is race-free.** Three things, and all three have to hold:
+**Why deferring is race-free.** Four things, and all four have to hold:
 
 1. **The repair writes an absolute value.** `repair_dir_stats_upward` recomputes each level from its committed children.
    It never adds a delta, so nothing that lands during the wait can be double-counted, and running it later only ever
@@ -420,7 +422,16 @@ the trigger is the caught-up point rather than a timer or a size cap (that guard
 2. **There is one writer.** Every `dir_stats` and `entries` write for this volume goes through this thread, so nothing
    can interleave a write between the queue and the drain. A live `UpsertEntryV2` landing mid-burst is applied first and
    then subsumed by the recompute (`aggregation/tests.rs::a_mutation_inside_the_pending_window_is_counted_once`).
-3. **The stale window is read-only and bounded.** Between queue and drain the ancestors under-report by the subtree just
+3. **A deleted id is skipped, never resurrected.** A queued roll-up can name a directory something removed while it
+   waited — a truncating rescan, or a subtree the reconciler reaped. `repair_dir_stats_upward` therefore checks the id
+   still exists in `entries` at every level and stops where it doesn't: recomputing a deleted directory from children
+   finds none and would write a ZEROED `dir_stats` row for a dead entry id, and `TruncateData` resets the id counter,
+   so that ghost would land on whatever the next scan puts at the same id. Skipping is also correct on its own terms —
+   a delete already walked its own debit up that chain. `TruncateData` additionally CLEARS the queue outright, beside
+   the `DeferredRepairs` clear that has always been there. Pinned by
+   `aggregation/rollup_tests.rs::a_truncate_drops_the_roll_ups_it_made_meaningless` and
+   `a_delete_inside_the_pending_window_leaves_no_ghost_row`; both fail with a ghost row without the guard.
+4. **The stale window is read-only and bounded.** Between queue and drain the ancestors under-report by the subtree just
    scanned. Reads see a low size for that window and the drain emits a `/` refresh when it moves anything, so the panes
    correct themselves. ⚠️ One consequence worth knowing: a delete inside the freshly-scanned subtree during that window
    can drive `propagate_delta_by_id` negative against the not-yet-credited ancestor, which logs the ledger's one drift
