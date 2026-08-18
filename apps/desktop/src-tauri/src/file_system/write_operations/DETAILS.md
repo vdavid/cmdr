@@ -714,3 +714,31 @@ sibling's pass can only satisfy them early, never fail them.
 handle threaded through its callers needs none of it.
 
 See also: `docs/testing.md` for the project-wide testing playbook.
+
+## Bulk rename's hop log
+
+`BulkRenameRecorder` (`rename/bulk.rs`) journals every filesystem hop the moment it lands, and the rows that never moved
+once the run settles.
+
+**Why per-hop rather than one pass at the end.** Journaling used to run after the whole batch, so a crash or force-quit
+mid-batch left the renames done on disk, `operation_items` empty, `finalize_op` never run, and nothing for undo to
+reverse (`restore_move` needs `ItemOutcome::Done` rows). The operation log's startup reconciliation only covers
+`RollingBack` ops, so a crashed original stays `Running` with zero item rows forever. Recording as it lands is what makes
+a partially-applied batch reversible.
+
+**Why a rotation's temp hop gets its own row.** A cycle rotates through one same-directory temporary, and a case-only
+rename does the same two-hop. Mid-rotation, one file's real name exists only at a `.cmdr-bulk-rename-*` path. Recording
+`source → temp` as its own rollback unit means a crash there leaves the file findable by name and reversible in the
+ordinary reverse-order replay. Consequence to expect: a two-file swap journals three rows, and a case-only rename two.
+An in-process restore records its reversal hops too, so the log stays a faithful list and the reversals cancel out under
+replay.
+
+**The temp is NOT an `in_flight_temps` entry**, tempting as the shape looks. That ledger's next-launch sweep calls
+`remove_file` on what it holds, which is right for the half-written `.cmdr-tmp-*` partials it exists for and destroys
+data here: a rotation temp holds a COMPLETE user file under a private name.
+
+**Skips are log entries, not rollback units.** Non-landing rows are journaled with `ItemOutcome::Skipped` / `Failed` so
+the operation log stops claiming a smaller batch than the one that ran (they were dropped entirely before). They never
+reach undo: `read_rollback_units_page` binds `ItemOutcome::Done`, which is why `restore_move`'s non-`Done` guard is
+defensive rather than reachable. Pinned by
+`a_skipped_row_is_logged_but_never_offered_to_undo_as_a_rollback_unit`.

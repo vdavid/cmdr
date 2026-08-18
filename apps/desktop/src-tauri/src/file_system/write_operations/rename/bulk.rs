@@ -140,15 +140,16 @@ pub(crate) fn start_bulk_rename(
                 rows_for_task.len() as u64,
             );
 
+            let recorder = BulkRenameRecorder::new(operation_id_for_task.clone(), volume_id_for_task.clone());
             let run = if uses_local_paths {
                 let rows = rows_for_task.clone();
                 let intent = Arc::clone(&state_for_task.intent);
-                match tokio::task::spawn_blocking(move || bulk_rename_local(&rows, &intent)).await {
+                match tokio::task::spawn_blocking(move || bulk_rename_local(&rows, &intent, &recorder)).await {
                     Ok(result) => result,
                     Err(join_error) => BulkRenameRun::failed(rows_for_task.len(), join_error.to_string()),
                 }
             } else {
-                bulk_rename_remote(&rows_for_task, &volume_id_for_task, &state_for_task.intent).await
+                bulk_rename_remote(&rows_for_task, &volume_id_for_task, &state_for_task.intent, &recorder).await
             };
 
             if uses_local_paths {
@@ -159,12 +160,6 @@ pub(crate) fn start_bulk_rename(
                 }
             }
 
-            record_bulk_rename_outcomes(
-                &operation_id_for_task,
-                &volume_id_for_task,
-                &rows_for_task,
-                &run.outcomes,
-            );
             emit_bulk_rename_progress(
                 events_for_task.as_ref(),
                 &state_for_task,
@@ -311,7 +306,7 @@ fn build_execution_plan(rows: &[BulkRenameRow], active: &[bool]) -> Vec<RenamePl
 
 /// Local batch engine used on the blocking pool. Acyclic rows move directly in
 /// dependency order. Only cycles and case-only changes use a sibling temporary.
-fn bulk_rename_local(rows: &[BulkRenameRow], intent: &AtomicU8) -> BulkRenameRun {
+fn bulk_rename_local(rows: &[BulkRenameRow], intent: &AtomicU8, recorder: &BulkRenameRecorder) -> BulkRenameRun {
     let mut outcomes = vec![BulkRenameOutcome::Skipped; rows.len()];
     let mut active: Vec<bool> = rows
         .iter()
@@ -321,28 +316,38 @@ fn bulk_rename_local(rows: &[BulkRenameRow], intent: &AtomicU8) -> BulkRenameRun
     for (index, row) in rows.iter().enumerate().filter(|(index, _)| active[*index]) {
         if row.source == row.destination {
             outcomes[index] = BulkRenameOutcome::Done;
+            // A no-op rename still belongs in the log as a `Done` row, the way it did
+            // when journaling was one pass at the end.
+            recorder.record_hop(row, &row.source, &row.destination);
         }
     }
     for step in build_execution_plan(rows, &active) {
         if is_cancelled(intent) {
+            recorder.record_unmoved(rows, &outcomes);
             return BulkRenameRun {
                 outcomes,
                 cancelled: true,
             };
         }
         match step {
-            RenamePlanStep::Direct(index) => rename_local_direct(&rows[index], &mut outcomes[index]),
-            RenamePlanStep::CaseOnly(index) => rename_local_case_only(&rows[index], &mut outcomes[index]),
-            RenamePlanStep::Cycle(indices) => rename_local_cycle(rows, &indices, &mut outcomes),
+            RenamePlanStep::Direct(index) => rename_local_direct(&rows[index], &mut outcomes[index], recorder),
+            RenamePlanStep::CaseOnly(index) => rename_local_case_only(&rows[index], &mut outcomes[index], recorder),
+            RenamePlanStep::Cycle(indices) => rename_local_cycle(rows, &indices, &mut outcomes, recorder),
         }
     }
+    recorder.record_unmoved(rows, &outcomes);
     BulkRenameRun {
         outcomes,
         cancelled: false,
     }
 }
 
-async fn bulk_rename_remote(rows: &[BulkRenameRow], volume_id: &str, intent: &AtomicU8) -> BulkRenameRun {
+async fn bulk_rename_remote(
+    rows: &[BulkRenameRow],
+    volume_id: &str,
+    intent: &AtomicU8,
+    recorder: &BulkRenameRecorder,
+) -> BulkRenameRun {
     let Some(volume) = crate::file_system::volume::manager::get_volume_manager().get(volume_id) else {
         return BulkRenameRun::failed(rows.len(), "volume unavailable".to_string());
     };
@@ -355,10 +360,14 @@ async fn bulk_rename_remote(rows: &[BulkRenameRow], volume_id: &str, intent: &At
     for (index, row) in rows.iter().enumerate().filter(|(index, _)| active[*index]) {
         if row.source == row.destination {
             outcomes[index] = BulkRenameOutcome::Done;
+            // A no-op rename still belongs in the log as a `Done` row, the way it did
+            // when journaling was one pass at the end.
+            recorder.record_hop(row, &row.source, &row.destination);
         }
     }
     for step in build_execution_plan(rows, &active) {
         if is_cancelled(intent) {
+            recorder.record_unmoved(rows, &outcomes);
             return BulkRenameRun {
                 outcomes,
                 cancelled: true,
@@ -366,35 +375,39 @@ async fn bulk_rename_remote(rows: &[BulkRenameRow], volume_id: &str, intent: &At
         }
         match step {
             RenamePlanStep::Direct(index) => {
-                rename_remote_direct(volume.as_ref(), &rows[index], &mut outcomes[index]).await;
+                rename_remote_direct(volume.as_ref(), &rows[index], &mut outcomes[index], recorder).await;
             }
             RenamePlanStep::CaseOnly(index) => {
-                rename_remote_case_only(volume.as_ref(), &rows[index], &mut outcomes[index]).await;
+                rename_remote_case_only(volume.as_ref(), &rows[index], &mut outcomes[index], recorder).await;
             }
             RenamePlanStep::Cycle(indices) => {
-                rename_remote_cycle(volume.as_ref(), rows, &indices, &mut outcomes).await;
+                rename_remote_cycle(volume.as_ref(), rows, &indices, &mut outcomes, recorder).await;
             }
         }
     }
+    recorder.record_unmoved(rows, &outcomes);
     BulkRenameRun {
         outcomes,
         cancelled: false,
     }
 }
 
-fn rename_local_direct(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome) {
+fn rename_local_direct(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome, recorder: &BulkRenameRecorder) {
     if !local_fingerprint(&row.source).is_some_and(|actual| actual == row.expected_fingerprint) {
         return;
     }
     note_rename_write(&row.source, &row.destination);
     *outcome = match rename_local_exclusive(&row.source, &row.destination) {
-        Ok(()) => BulkRenameOutcome::Done,
+        Ok(()) => {
+            recorder.record_hop(row, &row.source, &row.destination);
+            BulkRenameOutcome::Done
+        }
         Err(error) if error.kind() == io::ErrorKind::AlreadyExists => BulkRenameOutcome::Skipped,
         Err(_) => BulkRenameOutcome::Failed,
     };
 }
 
-fn rename_local_case_only(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome) {
+fn rename_local_case_only(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome, recorder: &BulkRenameRecorder) {
     if !local_fingerprint(&row.source).is_some_and(|actual| actual == row.expected_fingerprint) {
         return;
     }
@@ -407,12 +420,18 @@ fn rename_local_case_only(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome) 
         *outcome = BulkRenameOutcome::Failed;
         return;
     }
+    recorder.record_hop(row, &row.source, &temporary);
     note_rename_write(&temporary, &row.destination);
     *outcome = match rename_local_exclusive(&temporary, &row.destination) {
-        Ok(()) => BulkRenameOutcome::Done,
+        Ok(()) => {
+            recorder.record_hop(row, &temporary, &row.destination);
+            BulkRenameOutcome::Done
+        }
         Err(error) => {
             note_rename_write(&temporary, &row.source);
-            let _ = rename_local_exclusive(&temporary, &row.source);
+            if rename_local_exclusive(&temporary, &row.source).is_ok() {
+                recorder.record_hop(row, &temporary, &row.source);
+            }
             if error.kind() == io::ErrorKind::AlreadyExists {
                 BulkRenameOutcome::Skipped
             } else {
@@ -425,7 +444,12 @@ fn rename_local_case_only(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome) 
 /// Rotates a closed dependency component with one temporary. Once staging has
 /// started, the bounded component finishes or rolls back before cancellation is
 /// observed again, so Cmdr never intentionally strands a private temp name.
-fn rename_local_cycle(rows: &[BulkRenameRow], indices: &[usize], outcomes: &mut [BulkRenameOutcome]) {
+fn rename_local_cycle(
+    rows: &[BulkRenameRow],
+    indices: &[usize],
+    outcomes: &mut [BulkRenameOutcome],
+    recorder: &BulkRenameRecorder,
+) {
     if indices.iter().any(|index| {
         !local_fingerprint(&rows[*index].source).is_some_and(|actual| actual == rows[*index].expected_fingerprint)
     }) {
@@ -441,44 +465,67 @@ fn rename_local_cycle(rows: &[BulkRenameRow], indices: &[usize], outcomes: &mut 
         outcomes[first] = BulkRenameOutcome::Failed;
         return;
     }
+    recorder.record_hop(&rows[first], &rows[first].source, &temporary);
 
     let mut moved = Vec::with_capacity(indices.len() - 1);
     for index in indices.iter().skip(1).rev().copied() {
         let row = &rows[index];
         note_rename_write(&row.source, &row.destination);
         if rename_local_exclusive(&row.source, &row.destination).is_err() {
-            restore_local_cycle(rows, first, &temporary, &moved);
+            restore_local_cycle(rows, first, &temporary, &moved, recorder);
             outcomes[index] = BulkRenameOutcome::Failed;
             return;
         }
+        recorder.record_hop(row, &row.source, &row.destination);
         moved.push(index);
     }
     note_rename_write(&temporary, &rows[first].destination);
     if rename_local_exclusive(&temporary, &rows[first].destination).is_err() {
-        restore_local_cycle(rows, first, &temporary, &moved);
+        restore_local_cycle(rows, first, &temporary, &moved, recorder);
         outcomes[first] = BulkRenameOutcome::Failed;
         return;
     }
+    recorder.record_hop(&rows[first], &temporary, &rows[first].destination);
     for index in indices {
         outcomes[*index] = BulkRenameOutcome::Done;
     }
 }
 
-fn restore_local_cycle(rows: &[BulkRenameRow], first: usize, temporary: &Path, moved: &[usize]) {
+/// Puts a half-rotated cycle back. Each reversal is itself a hop the filesystem
+/// really made, so it gets its own row: the log stays a faithful list of what
+/// happened, and a reverse-order replay of source→temp then temp→source is a net
+/// no-op, which is what a restored cycle is.
+fn restore_local_cycle(
+    rows: &[BulkRenameRow],
+    first: usize,
+    temporary: &Path,
+    moved: &[usize],
+    recorder: &BulkRenameRecorder,
+) {
     for index in moved.iter().rev().copied() {
         note_rename_write(&rows[index].destination, &rows[index].source);
-        let _ = rename_local_exclusive(&rows[index].destination, &rows[index].source);
+        if rename_local_exclusive(&rows[index].destination, &rows[index].source).is_ok() {
+            recorder.record_hop(&rows[index], &rows[index].destination, &rows[index].source);
+        }
     }
     note_rename_write(temporary, &rows[first].source);
-    let _ = rename_local_exclusive(temporary, &rows[first].source);
+    if rename_local_exclusive(temporary, &rows[first].source).is_ok() {
+        recorder.record_hop(&rows[first], temporary, &rows[first].source);
+    }
 }
 
-async fn rename_remote_direct(volume: &dyn Volume, row: &BulkRenameRow, outcome: &mut BulkRenameOutcome) {
+async fn rename_remote_direct(
+    volume: &dyn Volume,
+    row: &BulkRenameRow,
+    outcome: &mut BulkRenameOutcome,
+    recorder: &BulkRenameRecorder,
+) {
     if !remote_fingerprint_matches(volume, &row.source, &row.expected_fingerprint).await {
         return;
     }
     note_rename_write(&row.source, &row.destination);
     *outcome = if volume.rename(&row.source, &row.destination, false).await.is_ok() {
+        recorder.record_hop(row, &row.source, &row.destination);
         BulkRenameOutcome::Done
     } else if volume.get_metadata(&row.destination).await.is_ok() {
         BulkRenameOutcome::Skipped
@@ -487,7 +534,12 @@ async fn rename_remote_direct(volume: &dyn Volume, row: &BulkRenameRow, outcome:
     };
 }
 
-async fn rename_remote_case_only(volume: &dyn Volume, row: &BulkRenameRow, outcome: &mut BulkRenameOutcome) {
+async fn rename_remote_case_only(
+    volume: &dyn Volume,
+    row: &BulkRenameRow,
+    outcome: &mut BulkRenameOutcome,
+    recorder: &BulkRenameRecorder,
+) {
     if !remote_fingerprint_matches(volume, &row.source, &row.expected_fingerprint).await {
         return;
     }
@@ -500,13 +552,17 @@ async fn rename_remote_case_only(volume: &dyn Volume, row: &BulkRenameRow, outco
         *outcome = BulkRenameOutcome::Failed;
         return;
     }
+    recorder.record_hop(row, &row.source, &temporary);
     note_rename_write(&temporary, &row.destination);
     if volume.rename(&temporary, &row.destination, false).await.is_ok() {
+        recorder.record_hop(row, &temporary, &row.destination);
         *outcome = BulkRenameOutcome::Done;
     } else {
         note_rename_write(&temporary, &row.source);
         let destination_exists = volume.get_metadata(&row.destination).await.is_ok();
-        let _ = volume.rename(&temporary, &row.source, false).await;
+        if volume.rename(&temporary, &row.source, false).await.is_ok() {
+            recorder.record_hop(row, &temporary, &row.source);
+        }
         *outcome = if destination_exists {
             BulkRenameOutcome::Skipped
         } else {
@@ -520,6 +576,7 @@ async fn rename_remote_cycle(
     rows: &[BulkRenameRow],
     indices: &[usize],
     outcomes: &mut [BulkRenameOutcome],
+    recorder: &BulkRenameRecorder,
 ) {
     for index in indices {
         if !remote_fingerprint_matches(volume, &rows[*index].source, &rows[*index].expected_fingerprint).await {
@@ -536,15 +593,17 @@ async fn rename_remote_cycle(
         outcomes[first] = BulkRenameOutcome::Failed;
         return;
     }
+    recorder.record_hop(&rows[first], &rows[first].source, &temporary);
     let mut moved = Vec::with_capacity(indices.len() - 1);
     for index in indices.iter().skip(1).rev().copied() {
         let row = &rows[index];
         note_rename_write(&row.source, &row.destination);
         if volume.rename(&row.source, &row.destination, false).await.is_err() {
-            restore_remote_cycle(volume, rows, first, &temporary, &moved).await;
+            restore_remote_cycle(volume, rows, first, &temporary, &moved, recorder).await;
             outcomes[index] = BulkRenameOutcome::Failed;
             return;
         }
+        recorder.record_hop(row, &row.source, &row.destination);
         moved.push(index);
     }
     note_rename_write(&temporary, &rows[first].destination);
@@ -553,10 +612,11 @@ async fn rename_remote_cycle(
         .await
         .is_err()
     {
-        restore_remote_cycle(volume, rows, first, &temporary, &moved).await;
+        restore_remote_cycle(volume, rows, first, &temporary, &moved, recorder).await;
         outcomes[first] = BulkRenameOutcome::Failed;
         return;
     }
+    recorder.record_hop(&rows[first], &temporary, &rows[first].destination);
     for index in indices {
         outcomes[*index] = BulkRenameOutcome::Done;
     }
@@ -568,15 +628,22 @@ async fn restore_remote_cycle(
     first: usize,
     temporary: &Path,
     moved: &[usize],
+    recorder: &BulkRenameRecorder,
 ) {
     for index in moved.iter().rev().copied() {
         note_rename_write(&rows[index].destination, &rows[index].source);
-        let _ = volume
+        if volume
             .rename(&rows[index].destination, &rows[index].source, false)
-            .await;
+            .await
+            .is_ok()
+        {
+            recorder.record_hop(&rows[index], &rows[index].destination, &rows[index].source);
+        }
     }
     note_rename_write(temporary, &rows[first].source);
-    let _ = volume.rename(temporary, &rows[first].source, false).await;
+    if volume.rename(temporary, &rows[first].source, false).await.is_ok() {
+        recorder.record_hop(&rows[first], temporary, &rows[first].source);
+    }
 }
 
 fn settle_local_conflicts(rows: &[BulkRenameRow], active: &mut [bool]) {
@@ -771,28 +838,80 @@ fn journal_snapshot(fingerprint: &BulkRenameFingerprint) -> (Option<i64>, Option
     }
 }
 
-fn record_bulk_rename_outcomes(
-    operation_id: &str,
-    volume_id: &str,
-    rows: &[BulkRenameRow],
-    outcomes: &[BulkRenameOutcome],
-) {
-    for (row, outcome) in rows.iter().zip(outcomes.iter().copied()) {
-        if outcome != BulkRenameOutcome::Done {
-            continue;
+/// Journals what the batch actually did to the filesystem, as it happens.
+///
+/// **Every hop journals the moment it lands; rows that never moved journal once the
+/// run settles.** A crash or force-quit mid-batch has to leave rollback units for the
+/// renames that already happened, or the files sit under their new names with an empty
+/// journal and nothing for undo to reverse. A row that never moved carries no such
+/// debt: nothing on disk depends on it, so its `Skipped`/`Failed` row can wait for the
+/// end of the run.
+struct BulkRenameRecorder {
+    operation_id: String,
+    volume_id: String,
+}
+
+impl BulkRenameRecorder {
+    fn new(operation_id: String, volume_id: String) -> Self {
+        Self {
+            operation_id,
+            volume_id,
         }
+    }
+
+    /// One completed filesystem hop, recorded the moment it lands.
+    ///
+    /// A rotation's temp hop is a hop like any other and gets its own row, so a crash
+    /// mid-rotation leaves the file findable by name and reversible in the ordinary
+    /// reverse-order replay. That is why a two-file swap journals three rows.
+    ///
+    /// ❌ Never track a rotation temp in `in_flight_temps` instead. That ledger's
+    /// next-launch sweep DELETES what it holds, which is right for the half-written
+    /// `.cmdr-tmp-*` partials it exists for and catastrophic here: a rotation temp
+    /// holds a COMPLETE user file under a private name, so sweeping it destroys data.
+    fn record_hop(&self, row: &BulkRenameRow, from: &Path, to: &Path) {
         let (size, mtime) = journal_snapshot(&row.expected_fingerprint);
         super::super::journal::record_volume_leaf(
-            operation_id,
+            &self.operation_id,
             EntryType::File,
-            volume_id,
-            &row.source,
-            Some((volume_id, &row.destination)),
+            &self.volume_id,
+            from,
+            Some((&self.volume_id, to)),
             size,
             mtime,
             false,
             ItemOutcome::Done,
         );
+    }
+
+    /// The rows that never moved, recorded once the run has settled. Journaling a skip
+    /// is what keeps the operation log honest about the batch the user approved: before
+    /// this, a skipped row was dropped entirely and the log claimed a smaller batch than
+    /// the one that ran.
+    fn record_unmoved(&self, rows: &[BulkRenameRow], outcomes: &[BulkRenameOutcome]) {
+        for (row, outcome) in rows.iter().zip(outcomes.iter().copied()) {
+            let item_outcome = match outcome {
+                // A row that landed already has its own hop row (or three, for a rotation).
+                BulkRenameOutcome::Done => continue,
+                BulkRenameOutcome::Skipped => ItemOutcome::Skipped,
+                BulkRenameOutcome::Failed => ItemOutcome::Failed,
+            };
+            let (size, mtime) = journal_snapshot(&row.expected_fingerprint);
+            super::super::journal::record_volume_leaf(
+                &self.operation_id,
+                EntryType::File,
+                &self.volume_id,
+                &row.source,
+                // The destination it was MEANT to reach, so the log can say what was
+                // skipped. Undo never reverses a non-`Done` row (`restore_move` refuses
+                // one), so naming a destination here can't move anything.
+                Some((&self.volume_id, &row.destination)),
+                size,
+                mtime,
+                false,
+                item_outcome,
+            );
+        }
     }
 }
 

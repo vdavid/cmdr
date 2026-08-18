@@ -41,10 +41,11 @@ Copy, move, delete, trash, and zip edits as managed background ops: progress, ca
   under-reserves disk.
 - **Every managed mutation journals by `op_id`**, and a VOLUME op passes the REAL volume id, never `"root"`.
   `../../operation_log/DETAILS.md` § Capture.
+- **Bulk rename journals every hop as it lands.** ❌ Never batch to the end; never put a rotation temp in
+  `in_flight_temps`, whose sweep DELETES. DETAILS § "Bulk rename's hop log".
 - **`LifecycleStatus` is the ONE lifecycle answer**, carried to the query API as `OperationStatus.lifecycle`. ❌ Never
-  re-derive one from `WRITE_OPERATION_STATE.contains` (the entry lands at spawn and survives a pause, so presence is
-  true for queued, running, and parked alike), and ❌ no new variant: a confirmed transfer registers BEFORE its preview
-  finishes and waits as `Running` with `phase: 'scanning'`. DETAILS § "Lifecycle status", § "The scan-wait".
+  re-derive one from a presence test like `WRITE_OPERATION_STATE.contains`, and ❌ no new variant. DETAILS §
+  "Lifecycle status", § "The scan-wait".
 - **Every preview runs under a `ScanWatchdog`, and whoever settles it CLAIMS the outcome first**
   (`watchdog.claim_outcome()`), or a late walk contradicts a timeout the user already saw. It bounds the walk by
   INACTIVITY (60 s counting nothing), not duration, so feed the progress callback. DETAILS § "Bounding the scan".
