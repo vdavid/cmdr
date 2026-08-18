@@ -52,9 +52,10 @@ System Settings; the app's UI language is not a licence to overwrite them.
 
 **3. Auto-selection never crosses a script boundary.** `zh-Hant-TW` currently falls back to the `zh` directory, which is
 Simplified. For a Traditional reader that is worse than English, because English is at least a language they chose to
-list. The guard uses `Intl.Locale(tag).maximize()` and compares the likely script of the candidate with that of the
-catalog. _Intent_: a fallback is only a kindness when it lands somewhere the reader can actually read. An explicit pick
-in the picker is the user's business and carries no such guard.
+list. The guard compares the candidate's likely script against the catalog's (see M1 for where that data comes from, a
+decision that follows from where the resolver lives). `docs/i18n/script-decisions.md` records nine languages with a
+script split, so this is not a one-off for Chinese. _Intent_: a fallback is only a kindness when it lands somewhere the
+reader can actually read. An explicit pick in the picker is the user's business and carries no such guard.
 
 **4. Auto-selection draws only from shipped, complete catalogs, and never from the pseudolocale.** `availableLocales()`
 is already the gated set (`desktop-i18n-coverage` guarantees completeness), but it includes `en-XA` in dev builds.
@@ -88,34 +89,56 @@ Sequential unless stated. Each ends green, committed, and documented.
 **Intent**: make `'system'` mean "walk the user's ordered preferences and take the first language we fully ship",
 instead of "take whatever single tag the webview happens to resolve".
 
+**Where the resolver lives — decide this before writing code.** It reads like a detail and isn't.
+
+Three consumers need the answer, and two of them run before the webview exists: the native menu bar (built in `setup`),
+the "Cmdr is already running" alert (fires before any window), and the webview UI. That plus the project's smart-backend
+/ thin-frontend principle points at **Rust owning the resolution**, with the frontend consuming the answer. The cost is
+that the script guard needs CLDR likely-subtags data, which the webview gets free from `Intl.Locale.maximize()` and Rust
+does not.
+
+**Recommendation: resolve in Rust**, and get the likely-script data from a small build-time generator that asks Node's
+`Intl` for it (the same generator M4 extends to carry menu strings). It only has to cover the languages we ship, so the
+generated table is small and needs no hand-maintenance. The alternative — resolve in TS and have Rust ask the frontend —
+means a second resolver in Rust anyway for the pre-webview alert, which is the drift risk this whole decision is trying
+to avoid. `docs/i18n/script-decisions.md` records nine languages with a script split (`zh`, `sr`, `uz`, `kk`, `mn`,
+`az`, `pa`, `bs`, `be`), so the guard is not a one-off for Chinese and a hand-written table would rot.
+
+**No startup gate.** `routes/(main)/show-main-on-mount.ts` documents, at length, a paint gate that was removed because
+it cost a fixed second of startup for no signal. ❌ Don't reintroduce one here: the resolved locale must ride the
+startup IPC the frontend already makes, or be injected into the webview before app code runs. If neither is possible
+without adding a serialized round-trip, measure the cost and say so rather than quietly paying it. The window is created
+`visible: false` and shown by the frontend, so there is no _visual_ flash to fix; the risk is purely latency.
+
 **Changes**
 
-1. `apps/desktop/src-tauri/src/system_strings.rs`: promote `apple_languages()` from private to a shape the frontend can
-   read. Prefer extending the existing `get_localized_system_strings` command's payload over adding a second command, so
-   the frontend keeps one startup round-trip; if that muddies the type, add `get_preferred_languages`. Non-macOS returns
-   an empty list (the resolver then falls back to the webview default, which is right on Linux).
-2. New `apps/desktop/src/lib/intl/detect-locale.ts`: `pickUiLocale(preferences, available)`, pure and testable. Walks
-   each preference in order, trying the full tag then its base subtag, skipping any candidate that fails the script
-   guard, skipping `en-XA`, returning `null` when nothing matches (caller then uses `en`). No `window`, no Tauri, no
-   side effects: this is the piece that has to be right, so it must be trivially testable.
-3. `messages.svelte.ts` / `locale.ts`: `'system'` resolves through `pickUiLocale`. Keep `getLocale()`'s SSR-safety
-   contract (no DOM, never throws) — the preference list arrives asynchronously, so the resolver must degrade to the
-   webview default until it lands, and re-resolve when it does.
-4. `settings-applier.ts`: `applyLanguage('system')` drives the new resolution.
+1. `apps/desktop/src-tauri/src/system_strings.rs` (or a new sibling module, if this outgrows "system strings"): the
+   ordered `apple_languages()` list feeds a `resolve_ui_locale()` that walks each preference in order, trying the full
+   tag then its base subtag, applying the script guard, and returning `None` when nothing matches (caller uses `en`).
+   Non-macOS returns `None`, and the webview default stands, which is the right answer on Linux.
+2. A generator emits the shipped-locale list and their likely scripts into Rust, from the catalog dirs. Wire it into the
+   same regeneration path as `keys.gen.ts`; never hand-edited.
+3. The resolved tag reaches the frontend on the existing startup path, and `'system'` in `settings-applier.ts` uses it.
+   `getLocale()` keeps its SSR-safety contract (no DOM, never throws) and its uncached-by-design behavior.
+4. Exclude `en-XA` explicitly. It's dev-only and never appears in a real preference list, but the exclusion is one line
+   and the failure mode (a tester's app in pseudolocale) is confusing enough to be worth it.
 
-**Tests** (unit, Vitest; `pickUiLocale` is pure logic with sharp edges, so **test-first, real red → green**)
+**Tests** (the walk is pure logic with sharp edges and no current guard, so **test-first, real red → green**; they live
+wherever the resolver lands)
 
-- `[hu-HU, sv-SE]` with `hu` absent → `sv`. This is the case today's code cannot express; write it first and watch it
-  fail.
+- `[hu-HU, sv-SE]` with `hu` absent → `sv`. This is the case today's code structurally cannot express; write it first
+  and watch it fail for the right reason.
 - `[hu-HU]` with `hu` present → `hu`; `[hu]` → `hu`; casing variants (`HU-hu`) normalize.
-- `[fr-CA]` with only `fr` present → `fr` (base fallback within one preference, before advancing).
-- `[zh-Hant-TW]` with only `zh` (Simplified) present → **not** `zh`; falls through to the next preference, then English.
-- `[zh-CN]` with `zh` present → `zh` (same script, so the guard must not over-block).
+- `[fr-CA]` with only `fr` present → `fr` (base fallback within one preference, before advancing to the next).
+- `[zh-Hant-TW]` with only Simplified `zh` present → **not** `zh`; falls through to the next preference, then English.
+- `[zh-CN]` with `zh` present → `zh`, so the guard doesn't over-block the common case.
 - `[en-US, sv-SE]` → English, and the walk stops at `en` rather than reaching Swedish.
-- `[de-DE]` in a dev build where `en-XA` is loaded → `de`, never the pseudolocale.
-- Empty / missing preference list → `null`, caller lands on `en`, no throw.
-- Rust: `apple_languages()` already has `apple_languages_returns_at_least_one_entry`; add one asserting the command
-  surfaces the list in order.
+- `[de-DE]` in a dev build where `en-XA` exists → `de`, never the pseudolocale.
+- Empty / missing preference list → no match, caller lands on `en`, nothing throws.
+- The generated script table covers every shipped locale (a locale added without regenerating must fail, not silently
+  lose its guard).
+- `apple_languages()` already has `apple_languages_returns_at_least_one_entry`; add one asserting order is preserved end
+  to end, since the whole feature rests on the list being ordered.
 
 **Validation task (do this first, it's five minutes)**: `defaults write -g AppleLanguages -array hu-HU en-US`, relaunch
 only Cmdr, observe, then `defaults write -g AppleLanguages -array en-US sv-SE` to restore David's exact prior value
@@ -405,6 +428,9 @@ Everything else shares `locale.ts` / `messages.svelte.ts` and should stay in ord
 
 1. **M4 in or out?** It's the difference between "auto-language, done properly" and "auto-language, with an English menu
    bar". Recommendation: in — it's already a live gap, and it's the one thing that makes the feature honest.
-2. **The one-time bar for existing users (M5.2)**: worth it, or is the onboarding control plus the settings picker
+2. **Resolver in Rust or in TS?** (M1, argued above.) Recommendation: Rust, because two of the three consumers run
+   before the webview exists and the smart-backend principle points the same way. The cost is a generated likely-script
+   table instead of a free `Intl.Locale.maximize()`.
+3. **The one-time bar for existing users (M5.2)**: worth it, or is the onboarding control plus the settings picker
    enough? It only fires for people whose language actually moves because of M1's ordered walk, which may be a very
    small group.
