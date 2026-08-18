@@ -206,6 +206,48 @@ Only `propose_suggestions` joins `EXPECTED_PROPOSE_TOOL_NAMES`.
 narrow: **no per-source skip or fail**. Add an outcome to that event (or a sibling) and have the agent's own **sink
 decorator** write `proposal_ops.status`. ❌ `write_operations` must never reach into `agent/store/`.
 
+## Build status (2026-08-18, end of the first execution day)
+
+**Merged to `main` and verified:** M1 (store), M2 (executors), M3 (tool surface), M4a (approval bridge), M6 (rename
+port), plus a full-tree verification pass. M5 is merged up to and including inbox persistence: `coalesce`, `interest`,
+`compact`, the `Merger` fold, the inbox with its deadlines, and `agent_inbox` (migration v6, the ladder's current head).
+
+**Outstanding, both on unmerged branches:**
+
+- **M4b** (`worktree-sugops-m4b-dialog`): the read commands, the dialog, and the menu wiring are committed and green.
+  Left: the approve button (a `APPROVE_WIRED` constant plus one `onclick`, now that M4a is merged), the status-corner
+  indicator subscribing to `suggestions-changed`, and nine locales. `i18n-coverage` is deliberately red — German is a
+  quality sample and the rest wait for David's copy pass, since translating copy about to be revised is throwaway work.
+- **M5** (`worktree-sugops-m5-core`): the readiness gate (`WakeReadiness`, precedence consent → FDA → key) and the wake
+  job. Design approved in prose; see the decisions recorded in § M5 above.
+
+**Product questions waiting on David**, none blocking:
+
+1. The dialog's English copy, drafted as if it ships.
+2. The operation log now shows skipped renames as their own rows, and a name swap shows three rather than two — real
+   hops that were previously invisible.
+3. **Wake-created threads will appear in the Ask Cmdr session list.** Every wake opens a conversation (with
+   `ConversationOrigin::Notification`), so ten quiet wakes is ten threads the user never started, interleaved with
+   theirs. The `origin` column makes it filterable; the decision is a product one and belongs to whoever owns the rail.
+4. A ratchet pass on the `invariant-density` +12 that M1's merge left un-shrink-wrapped. This effort's own additions net
+   to zero.
+5. `cargo-audit` / `cargo-deny` are red on `h2 0.4.15` (RUSTSEC-2026-0258, low severity, transitive). Pre-existing,
+   Renovate territory, untouched here.
+
+**Environment hazards this effort hit**, worth knowing before the next parallel run:
+
+- **Concurrent agents share one worktree pin and cwd.** `EnterWorktree` from any session moves every session, so an
+  agent's `git commit` can land in a sibling's tree. It happened once (recovered, nothing lost). The working rule that
+  held: agents run NO git, the lead does all of it, and file writes go through `cd /tmp` first so the guard has nothing
+  ambiguous to verify.
+- **A fresh worktree inherits the check runner's fingerprint cache** through the APFS clone of `target/`, so it can
+  report a cached OK for a check that would fail on its contents — and a branch predating a merge runs a stale SCANNER
+  against a new layout. Both produce confident wrong answers. `--fresh` is the escape hatch; details in
+  `scripts/check/checks/DETAILS.md`.
+- **28 worktrees × a full `target/` fills a 926 GB disk.** It happened twice. `cargo clean` on one merged worktree freed
+  58 GB; APFS block sharing means clearing one clone frees nothing while its source stands, so stale trees have to go
+  together.
+
 ## Milestones
 
 M1 and M2 are independent and start together. M3 needs M1. M4a needs M1 + M2. M4b needs M4a. M5 needs M1 + M3. M6 needs
