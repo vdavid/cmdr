@@ -76,7 +76,9 @@ function lastUnconfirmedParams(): Record<string, unknown> | undefined {
 function paneWithRows(rowCount: number) {
   const names = Array.from({ length: rowCount }, (_, i) => `f${String(i)}.txt`)
   const listing = chainListing(names)
-  const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+  // A chain here can be followed by another one, and a rename started outside a
+  // chain opens on the row the cursor has since moved to.
+  const { rename, flow } = buildFlow(listing.entryUnderCursor, true, listing.deps)
 
   /** Opens the editor and steps down `steps` times, dropping a name at each row. */
   function chainThrough(steps: number) {

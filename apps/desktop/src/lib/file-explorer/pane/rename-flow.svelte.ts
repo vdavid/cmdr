@@ -195,7 +195,32 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     activateRename(entry)
   }
 
-  /** Reads a row from the backend when it sits outside the loaded window. */
+  /**
+   * The neighbouring row, when the loaded window is still counting rows the way
+   * the cursor is.
+   *
+   * The pane refetches that window on a throttle, while the cursor is reconciled
+   * against every diff the moment it lands, so for a beat after a diff moves
+   * rows the two disagree about which row is which. An index read out of the
+   * window in that state hands back the row that USED to sit there. Stepping
+   * upward through names that re-sort above the cursor, that row is the file the
+   * editor is open on, whose own rename is already on its way out: reopening the
+   * editor on it means the diff landing that rename finds the editor's own file
+   * removed and closes the editor (`listing-diff-sync`), which ends the chain
+   * with nothing said.
+   *
+   * The window naming the editor's own file at the cursor is what says the two
+   * agree. Anything else, including a row that has scrolled out of the window
+   * entirely, sends the step to the backend listing instead.
+   */
+  function neighbourFromLoadedWindow(index: number): FileEntry | undefined {
+    const targetPath = rename.target?.path
+    if (targetPath === undefined) return undefined
+    if (deps.getEntryAt(deps.getCursorIndex())?.path !== targetPath) return undefined
+    return deps.getEntryAt(index)
+  }
+
+  /** Reads a row from the backend when the loaded window can't answer for it. */
   async function fetchEntryAt(index: number): Promise<FileEntry | undefined> {
     const backendIndex = deps.getHasParent() ? index - 1 : index
     try {
@@ -732,15 +757,17 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       })
       if (index === undefined) return
 
-      const entry = deps.getEntryAt(index)
+      const entry = neighbourFromLoadedWindow(index)
       if (entry) {
         stepTo(index, entry)
         return
       }
 
-      // The neighbour has scrolled out of the loaded window. Fetching it costs a
-      // round trip, in which the user can end the rename or start another one,
-      // so the session has to answer for itself again before the step lands.
+      // The loaded window can't answer for that row: it has scrolled out, or a
+      // diff has moved rows under it. The backend listing is the space the
+      // cursor index counts in, so ask it. That costs a round trip, in which the
+      // user can end the rename or start another one, so the session has to
+      // answer for itself again before the step lands.
       void fetchEntryAt(index).then((fetched) => {
         if (!fetched || !rename.active || rename.isSuperseded(sessionId)) return
         stepTo(index, fetched)

@@ -98,10 +98,10 @@ The step, in the order it must happen:
    which is nothing to rename. No row there → the key does NOTHING: no commit, no discard, the editor stays open with
    the edit intact. Running off the end of a directory is the user finding the edge, not a decision about the name
    they're typing.
-2. **Capture the entry** from the loaded window (`getEntryAt`), or read it with `getFileAt` when it has scrolled out.
-   Capturing BEFORE the save goes out is what makes the hop land where the user was looking: the rename may re-sort the
-   listing and carry the renamed file far away, and the row they meant is the one that sat beside the editor when they
-   pressed the key.
+2. **Capture the entry** from the loaded window (`getEntryAt`), or read it with `getFileAt` when the window can't answer
+   for that row. Capturing BEFORE the save goes out is what makes the hop land where the user was looking: the rename
+   may re-sort the listing and carry the renamed file far away, and the row they meant is the one that sat beside the
+   editor when they pressed the key.
 3. **Decide the edit's fate** (`decideStepFate`), and fire the save unawaited when it's a save. Chaining stays fast on
    slow volumes (SMB, MTP), where awaiting each save would stall every step.
 4. **Hop**: move the cursor (`applyNavigation`, which also scrolls the row into view) and activate on the captured
@@ -121,6 +121,29 @@ Two orderings inside that are load-bearing, and both fail silently:
 Nothing rate-limits key repeat: holding the arrow rips through the directory, and session ids are what keep a burst of
 steps from crossing each other's results. The scroll in step 4 matters for more than looks: an editor scrolled out of
 the virtual window unmounts and its blur discards.
+
+### The window a neighbour is read from has to agree with the cursor
+
+A pane keeps two clocks. `listing-diff-sync` reconciles the cursor index against a `directory-diff` the moment it lands,
+deliberately unthrottled so it's always exact; the loaded window those rows are READ from is refetched on the throttle
+that keeps a churn storm from re-rendering the visible range more than four times a second
+(`INDEX_LISTING_UPDATE_MIN_INTERVAL_MS`). After any diff that MOVES rows, the two disagree for up to that long: the
+cursor already counts in the new listing while `getEntryAt` still serves the old one.
+
+A chain running upward into names that re-sort above it hits that gap on every step, because each of its own renames
+adds a row above the cursor and takes one away below, which shifts the cursor down exactly one row. Read `cursorIndex - 1`
+out of the stale window in that state and the row that comes back is the file the EDITOR IS OPEN ON, whose rename the
+same step has just sent out. The step then reopens the editor on it, and when the diff for that rename arrives it finds
+the editor's own file removed and cancels the session (the `wasRemoved` branch in `listing-diff-sync`): the editor
+vanishes with no toast, no shake, and nothing logged, and the user has to press F2 to start again. Only the upward
+direction and only names sorting above the cursor produce the shift; downward, the add above and the remove above cancel
+out, which is why the same chain looked healthy in the other direction.
+
+So `neighbourFromLoadedWindow` reads a row out of the window only while the window still names the editor's own file at
+the cursor. That equality is the whole test: it's exactly the condition that makes `cursorIndex ± 1` mean anything, it
+costs one comparison on the fast path, and there is no timer or latch in it. When it fails, the step goes to the backend
+listing, which is the space the cursor index counts in. The round trip is what a step in that gap costs, and it's the
+same path a row that has scrolled out of the window has always taken.
 
 Only a bare ArrowUp / ArrowDown chains, matched on the whole combo through the file list's own `nav.up` / `nav.down`
 commands. The caret-to-start/end that a bare arrow used to do inside the input is given up for this; Home and End still

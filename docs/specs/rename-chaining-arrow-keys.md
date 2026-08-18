@@ -111,6 +111,15 @@ directory. Discarding on a stale false positive would silently throw away what t
 that moves rows makes the editor follow its file; `reconcileCursorAndSelection` (`pane/listing-diff-sync.svelte.ts:42`)
 shifts the cursor by add/remove index arithmetic. `pendingCursorName` is the only thing that bypasses that machinery.
 
+**I6 was wrong as stated**, and the shipped feature died on it: a hands-on test found a chain running upward into names
+that re-sort above it losing its editor after three or four rows, silently. `pendingCursorName` is not the only bypass.
+The cursor reconciliation is exact and immediate, but the loaded window the step READS its neighbour out of is refetched
+on a 250 ms throttle, so after a diff that moves rows the two disagree about which row is which for as long as that
+takes. At 120-180 ms per step the chain is always inside that gap, and the row it reads back is the file the editor is
+open on, whose rename the same step just sent: the editor reopens on it, and the diff landing that rename then cancels
+the session for the editor's own file being removed. The fix and the full mechanism are in `rename/DETAILS.md` §
+Chaining, under "The window a neighbour is read from has to agree with the cursor".
+
 ## Two things that bite in practice
 
 **Sibling names reload every step.** `loadSiblingNames` (`rename-flow.svelte.ts:141`) pages the WHOLE listing in

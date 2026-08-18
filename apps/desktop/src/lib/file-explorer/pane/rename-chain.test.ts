@@ -399,6 +399,86 @@ describe('chaining the rename to the next file with the arrow keys', () => {
     expect(listing.moves).toEqual([2])
   })
 
+  /**
+   * A chain running upward into names that sort to the top of the directory.
+   * Every rename it sends adds a row above the cursor and takes one away below
+   * it, so the cursor is reconciled a row down while the loaded window it reads
+   * its neighbours from is still showing the old order.
+   */
+  function upwardChainThatResorts() {
+    const listing = chainListing(['y1.txt', 'y2.txt', 'y3.txt', 'y4.txt', 'y5.txt', 'y6.txt'], 6)
+    vi.mocked(getFileAt).mockImplementation((_id, index) => Promise.resolve(listing.backendRowAt(index) as never))
+    return listing
+  }
+
+  it('opens on the row above the editor, never back on the file whose rename it just sent, when the window is a landed rename behind', async () => {
+    const listing = upwardChainThatResorts()
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename() // the cursor is on y6.txt, the last row
+    flow.handleRenameInput('up-1.txt')
+    flow.handleRenameStep('up', rename.sessionId) // y6.txt sent, the editor is on y5.txt
+
+    // That rename lands, and the name sorts above everything left in the
+    // directory: the cursor moves down a row to stay on y5.txt, while the window
+    // still holds y6.txt at that index.
+    listing.landRenameSortingToTop('y6.txt', 'up-1.txt')
+
+    flow.handleRenameInput('up-2.txt')
+    flow.handleRenameStep('up', rename.sessionId)
+
+    // Reopening on y5.txt here would put the editor on a file whose rename is
+    // already on its way out; the diff that lands it then finds the editor's own
+    // file gone and closes the editor, ending the chain with nothing said.
+    await vi.waitFor(() => {
+      expect(rename.target?.originalName).toBe('y4.txt')
+    })
+    expect(savedPairs()).toEqual([
+      ['y6.txt', 'up-1.txt'],
+      ['y5.txt', 'up-2.txt'],
+    ])
+  })
+
+  it('holds the chain together across a run of renames that all re-sort above it', async () => {
+    const listing = upwardChainThatResorts()
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+    const openedOn: string[] = []
+
+    flow.startRename()
+    for (let step = 1; step <= 4; step++) {
+      const editing = rename.target?.originalName
+      flow.handleRenameInput(`up-${String(step)}.txt`)
+      flow.handleRenameStep('up', rename.sessionId)
+      await vi.waitFor(() => {
+        expect(rename.target?.originalName).not.toBe(editing)
+      })
+      openedOn.push(rename.target?.originalName ?? 'nothing')
+      listing.landRenameSortingToTop(editing ?? '', `up-${String(step)}.txt`)
+    }
+
+    expect(openedOn).toEqual(['y5.txt', 'y4.txt', 'y3.txt', 'y2.txt'])
+    expect(savedPairs()).toEqual([
+      ['y6.txt', 'up-1.txt'],
+      ['y5.txt', 'up-2.txt'],
+      ['y4.txt', 'up-3.txt'],
+      ['y3.txt', 'up-4.txt'],
+    ])
+    expect(rename.active).toBe(true)
+  })
+
+  it('reads the neighbour straight out of the window while the two still agree', () => {
+    const listing = upwardChainThatResorts()
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameStep('up', rename.sessionId)
+
+    // Nothing has moved under the window, so the step costs no round trip: key
+    // repeat has to rip through the directory without one per row.
+    expect(getFileAt).not.toHaveBeenCalled()
+    expect(rename.target?.originalName).toBe('y5.txt')
+  })
+
   it('does nothing when no rename is running', () => {
     const listing = chainListing(['a.txt', 'b.txt'])
     const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
