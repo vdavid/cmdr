@@ -257,6 +257,12 @@
         color: var(--color-text-secondary);
     }
 
+    /* A load that didn't come back is the one notice the user has to act on, so it
+       carries the error color instead of reading like the empty and loading states. */
+    .notice-problem {
+        color: var(--color-error-text);
+    }
+
     .sweep {
         margin-bottom: var(--spacing-lg);
     }
@@ -307,6 +313,13 @@
         background: var(--color-bg-tertiary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-xs);
+    }
+
+    /* "Can't be undone" has to look different from the neutral markers beside it:
+       it's the one that decides whether the user approves the group. */
+    .marker.danger {
+        background: var(--color-error-bg);
+        color: var(--color-error-text);
     }
 
     /* The agent's words are visibly ITS words. The label isn't decoration: an unlabelled
