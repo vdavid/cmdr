@@ -400,6 +400,7 @@ pub fn list() -> Vec<Favorite> {
 /// end). When `name` is `None`, the label defaults to the path's file name.
 pub fn add(path: &str, name: Option<String>) {
     mutate_and_persist(|store| {
+        // allowed-discarded-outcome: nobody consumes the new id; both callers answer with `()`.
         add_to_store(store, path, name);
         true
     });
