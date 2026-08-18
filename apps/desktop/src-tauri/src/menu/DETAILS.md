@@ -305,6 +305,12 @@ focus-gain (see "Per-window menu activation" above).
 **Decision**: Accelerator updates via remove/recreate/reinsert instead of in-place mutation.
 **Why**: Tauri's menu API has no `set_accelerator()` method. The only way to change a displayed accelerator is to destroy the old `MenuItem`, create a new one with the new accelerator string, and reinsert it at the same position in the parent submenu. This is why `MenuState` tracks both the `Submenu` reference and the positional index for every updatable item.
 
+**Decision**: `macos.rs` and `linux.rs` each keep their own `register_item` block, even though roughly 80 lines of it are identical.
+
+**Why**: `register_item_positions_match_submenu_order` is a source-parsing test. It reads `macos.rs` and `linux.rs` with `include_str!`, pairs every `register_item(…, &submenu, N)` call against the literal `Submenu::with_items(…, &[…])` array in the SAME file, and fails when `N` doesn't point at that item. It's the only guard there is: building a real menu needs AppKit on the main thread, so a wrong index is otherwise invisible until a user edits a shortcut and a different item moves. The test explicitly skips any submenu assembled by a helper, because a helper's array isn't in the file being parsed — so lifting the shared registrations into one would hand back the duplication and take the guard with it. A pure `Submenu` factory like `build_sort_submenu` or `build_view_mode_items` is a different case: its items carry no per-platform positions to get wrong, and it's the item CONSTRUCTION that's shared, not the registration.
+
+The wider version of this question (five of the seven menus have identical structure and differ only in labels and accelerators, so a per-platform data table could build them all) is a real option and would collapse both files, but it replaces this test rather than keeping it, and it reshapes a menu bar David reviews by eye. Not something to do as a side effect of a duplication pass.
+
 **Decision**: Omit F-key and Tab/Space accelerators on Linux.
 **Why**: GTK intercepts F2-F8, Tab, and Space at the toolkit level before events reach the webview. Registering them as menu accelerators causes double-handling or silent swallowing. On Linux these keys are dispatched purely through JS keydown handlers, bypassing the native menu system entirely.
 

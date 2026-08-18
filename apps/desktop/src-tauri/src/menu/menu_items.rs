@@ -8,13 +8,14 @@ use std::collections::HashMap;
 
 use tauri::{
     AppHandle, Runtime,
-    menu::{MenuItem, PredefinedMenuItem, Submenu},
+    menu::{CheckMenuItem, MenuItem, PredefinedMenuItem, Submenu},
 };
 
 use super::{
     MenuItemEntry, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID,
-    SORT_BY_SIZE_ID, SORT_DESCENDING_ID, VIEW_ZOOM_75_ID, VIEW_ZOOM_100_ID, VIEW_ZOOM_125_ID, VIEW_ZOOM_150_ID,
-    VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID,
+    SORT_BY_SIZE_ID, SORT_DESCENDING_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID,
+    VIEW_MODE_FULL_RIGHT_ID, VIEW_ZOOM_75_ID, VIEW_ZOOM_100_ID, VIEW_ZOOM_125_ID, VIEW_ZOOM_150_ID, VIEW_ZOOM_IN_ID,
+    VIEW_ZOOM_OUT_ID, ViewMode,
 };
 
 /// Max chars in the `Copy "<filename>"` context menu label before middle-ellipsis kicks in.
@@ -76,6 +77,90 @@ pub(crate) fn brief_view_label() -> &'static str {
 #[cfg(not(target_os = "macos"))]
 pub(crate) fn brief_view_label() -> &'static str {
     "&Brief view"
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn left_pane_label() -> &'static str {
+    "Left pane"
+}
+
+#[cfg(not(target_os = "macos"))]
+pub(crate) fn left_pane_label() -> &'static str {
+    "&Left pane"
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn right_pane_label() -> &'static str {
+    "Right pane"
+}
+
+#[cfg(not(target_os = "macos"))]
+pub(crate) fn right_pane_label() -> &'static str {
+    "&Right pane"
+}
+
+/// The View menu's per-pane view-mode block: four `CheckMenuItem`s and the two
+/// submenus holding them.
+pub(crate) struct ViewModeItems<R: Runtime> {
+    pub full_left: CheckMenuItem<R>,
+    pub brief_left: CheckMenuItem<R>,
+    pub full_right: CheckMenuItem<R>,
+    pub brief_right: CheckMenuItem<R>,
+    pub left_submenu: Submenu<R>,
+    pub right_submenu: Submenu<R>,
+}
+
+/// Builds `View > Left pane > {Full, Brief}` and the same for the right pane
+/// (shared between macOS and Linux).
+///
+/// Both pairs always exist; only the ACTIVE pane's pair carries the accelerator,
+/// so the shortcut hint visually follows focus as the user tabs between panes.
+/// This is the initial build, where left is the active pane and the right pane
+/// defaults to Brief; `menu_handlers::rebuild_view_mode_items` takes over from
+/// there, and it depends on Full sitting at position 0 and Brief at 1 in each
+/// submenu — it removes and reinserts by index, because Tauri has no
+/// `set_accelerator()`.
+pub(crate) fn build_view_mode_items<R: Runtime>(
+    app: &AppHandle<R>,
+    view_mode: ViewMode,
+) -> tauri::Result<ViewModeItems<R>> {
+    let full_left = CheckMenuItem::with_id(
+        app,
+        VIEW_MODE_FULL_LEFT_ID,
+        full_view_label(),
+        true,
+        view_mode == ViewMode::Full,
+        Some("Cmd+1"),
+    )?;
+    let brief_left = CheckMenuItem::with_id(
+        app,
+        VIEW_MODE_BRIEF_LEFT_ID,
+        brief_view_label(),
+        true,
+        view_mode == ViewMode::Brief,
+        Some("Cmd+2"),
+    )?;
+    let full_right = CheckMenuItem::with_id(app, VIEW_MODE_FULL_RIGHT_ID, full_view_label(), true, false, None::<&str>)?;
+    let brief_right = CheckMenuItem::with_id(
+        app,
+        VIEW_MODE_BRIEF_RIGHT_ID,
+        brief_view_label(),
+        true,
+        true,
+        None::<&str>,
+    )?;
+
+    let left_submenu = Submenu::with_items(app, left_pane_label(), true, &[&full_left, &brief_left])?;
+    let right_submenu = Submenu::with_items(app, right_pane_label(), true, &[&full_right, &brief_right])?;
+
+    Ok(ViewModeItems {
+        full_left,
+        brief_left,
+        full_right,
+        brief_right,
+        left_submenu,
+        right_submenu,
+    })
 }
 
 /// Items returned from `build_sort_submenu` so callers can register the sort items

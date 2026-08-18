@@ -9,7 +9,8 @@ user shortcuts, and enables/disables items by focus context.
   `menu_id_to_command` / `command_id_to_menu_id` maps).
 - `menu_items.rs` / `menu_structure.rs`: piece builders and hierarchical assembly. `menu_handlers.rs`: events and
   live-update helpers. `media_index_items.rs`: the image-search-items decider. `macos.rs` / `linux.rs`: platform menu
-  bars. `open_with.rs`: the macOS "Open with" submenu.
+  bars, each assembling shared pieces (`build_sort_submenu`, `build_zoom_submenu`, `build_view_mode_items`) around its
+  own layout. `open_with.rs`: the macOS "Open with" submenu.
 
 ## Must-knows
 
@@ -19,7 +20,9 @@ user shortcuts, and enables/disables items by focus context.
 - **Accelerator changes go remove/recreate/reinsert, not in-place** (Tauri has no `set_accelerator()`).
   `MenuState` tracks each item's submenu and index for this, so **adding or moving one item shifts every
   `register_item` index after it**, mangling a different item on the first rebind.
-  `register_item_positions_match_submenu_order` fails on a mismatch; keep the position comments truthful too.
+  `register_item_positions_match_submenu_order` fails on a mismatch; keep the position comments truthful too. It parses
+  both platform files as source, which is why the near-identical `register_item` blocks stay in `macos.rs` / `linux.rs`
+  rather than sharing one helper. `DETAILS.md` § Key decisions.
 - **CheckMenuItems (view modes, show hidden) must NOT use `"execute-command"`.** They auto-toggle on click, so emitting
   it too would double-toggle; they emit `"settings-changed"` / `"view-mode-changed"` directly. Sort items emit
   `"menu-sort"`; close-tab and "Open with" have their own paths. Why some are still in `menu_id_to_command`:

@@ -9,7 +9,7 @@ use tauri::{
 };
 
 use super::menu_items::{
-    brief_view_label, build_sort_submenu, build_zoom_submenu, copy_path_accelerator, full_view_label, register_item,
+    ViewModeItems, build_sort_submenu, build_view_mode_items, build_zoom_submenu, copy_path_accelerator, register_item,
     show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 use super::{
@@ -22,8 +22,8 @@ use super::{
     NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID,
     QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID,
     SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID,
-    SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
-    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
+    SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
+    ViewMode,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -212,51 +212,15 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // accelerator (⌘1/⌘2 by default), and it "follows" focus on Tab via
     // `rebuild_view_mode_items`. Initial build: left is the default active pane,
     // both modes default to Brief.
-    let view_mode_full_left_item = CheckMenuItem::with_id(
-        app,
-        VIEW_MODE_FULL_LEFT_ID,
-        full_view_label(),
-        true,
-        view_mode == ViewMode::Full,
-        Some("Cmd+1"),
-    )?;
-    let view_mode_brief_left_item = CheckMenuItem::with_id(
-        app,
-        VIEW_MODE_BRIEF_LEFT_ID,
-        brief_view_label(),
-        true,
-        view_mode == ViewMode::Brief,
-        Some("Cmd+2"),
-    )?;
-    let view_mode_full_right_item = CheckMenuItem::with_id(
-        app,
-        VIEW_MODE_FULL_RIGHT_ID,
-        full_view_label(),
-        true,
-        false,
-        None::<&str>,
-    )?;
-    let view_mode_brief_right_item = CheckMenuItem::with_id(
-        app,
-        VIEW_MODE_BRIEF_RIGHT_ID,
-        brief_view_label(),
-        true,
-        true,
-        None::<&str>,
-    )?;
-
-    let view_left_pane_submenu = Submenu::with_items(
-        app,
-        "Left pane",
-        true,
-        &[&view_mode_full_left_item, &view_mode_brief_left_item],
-    )?;
-    let view_right_pane_submenu = Submenu::with_items(
-        app,
-        "Right pane",
-        true,
-        &[&view_mode_full_right_item, &view_mode_brief_right_item],
-    )?;
+    let view_mode_items = build_view_mode_items(app, view_mode)?;
+    let ViewModeItems {
+        full_left: view_mode_full_left_item,
+        brief_left: view_mode_brief_left_item,
+        full_right: view_mode_full_right_item,
+        brief_right: view_mode_brief_right_item,
+        left_submenu: view_left_pane_submenu,
+        right_submenu: view_right_pane_submenu,
+    } = view_mode_items;
 
     let show_hidden_item = CheckMenuItem::with_id(
         app,
