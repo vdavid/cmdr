@@ -92,7 +92,9 @@ impl OperationEventSink for ConflictResponderSink {
     fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
         self.inner.emit_conflict_resolved(e);
     }
-    fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
+    fn emit_source_item_done(&self, e: WriteSourceItemDoneEvent) {
+        self.inner.emit_source_item_done(e);
+    }
     fn emit_scan_progress(&self, _e: ScanProgressEvent) {}
     fn emit_scan_conflict(&self, _c: ConflictInfo) {}
     fn emit_dry_run_complete(&self, _r: DryRunResult) {}

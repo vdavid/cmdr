@@ -499,10 +499,6 @@ pub(super) fn find_unique_name(path: &Path) -> PathBuf {
 /// Occupancy uses `path_exists_or_is_symlink`, so a dangling symlink counts as
 /// taken; handing that name back would let the caller's write follow the
 /// symlink to wherever it points.
-#[allow(
-    dead_code,
-    reason = "the non-reserving half of the ` (N)` convention, kept beside the reserving half so the two stay one design; the same-folder-duplicate remap is the caller it exists for"
-)]
 pub(super) fn next_available_name(path: &Path) -> PathBuf {
     let mut candidates = NameCandidates::for_path(path);
 
@@ -512,6 +508,27 @@ pub(super) fn next_available_name(path: &Path) -> PathBuf {
             return new_path;
         }
         candidates.advance();
+    }
+}
+
+/// Claims the next free ` (N)` name as a DIRECTORY, creating it. The `create_dir`
+/// loop IS the reservation: `mkdir(2)` fails `AlreadyExists` on a taken name, so
+/// advancing on that error is the directory analogue of [`find_unique_name`]'s
+/// `O_CREAT|O_EXCL` file placeholder.
+///
+/// Separate from [`find_unique_name`] because a placeholder FILE is precisely
+/// what a directory destination can't have sitting at its name. The caller
+/// records the returned path so rollback can remove it.
+pub(super) fn create_unique_dir(path: &Path) -> std::io::Result<PathBuf> {
+    let mut candidates = NameCandidates::for_path(path);
+
+    loop {
+        let new_path = candidates.current();
+        match fs::create_dir(&new_path) {
+            Ok(()) => return Ok(new_path),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => candidates.advance(),
+            Err(e) => return Err(e),
+        }
     }
 }
 

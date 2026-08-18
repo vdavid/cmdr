@@ -44,6 +44,8 @@ pub(crate) mod liveness_test_support;
 #[cfg(test)]
 mod move_integration_test;
 #[cfg(test)]
+mod self_collision_tests;
+#[cfg(test)]
 mod transaction_integration_test;
 #[cfg(test)]
 mod type_mismatch_rename_tests;

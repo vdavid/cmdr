@@ -19,7 +19,9 @@ use super::super::types::{
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
-use super::super::validation::{is_same_filesystem, path_exists_or_is_symlink, validate_file_sizes_for_filesystem};
+use super::super::validation::{
+    is_same_file, is_same_filesystem, path_exists_or_is_symlink, validate_file_sizes_for_filesystem,
+};
 use super::copy::copy_single_item;
 
 // ============================================================================
@@ -147,6 +149,39 @@ pub(in crate::file_system::write_operations) fn move_files_with_progress_inner(
         return Ok(());
     }
 
+    // An item asked to move into the folder it already lives in is already
+    // where it was asked to go: nothing to write, and it reports itself done.
+    // Identity is `dev+ino` (`is_same_file`), so a symlinked parent or a
+    // case-differing path counts too. `transfer/DETAILS.md` § "Self-collision".
+    //
+    // Dropped HERE, above the same-FS / cross-FS split, so NEITHER engine can
+    // see one: `move_with_rename` would hand a directory to
+    // `merge_move_directory`, which threads the destination down through
+    // recursion and would self-merge the tree; `move_with_staging` would land
+    // its own staged copy over the original and then delete that original in
+    // Phase 4.
+    let (already_in_place, sources): (Vec<PathBuf>, Vec<PathBuf>) = sources.iter().cloned().partition(|source| {
+        source
+            .file_name()
+            .map(|name| is_same_file(source, &destination.join(name)))
+            .unwrap_or(false)
+    });
+    for source in &already_in_place {
+        log::info!(
+            "move: {} is already in the destination, nothing to do",
+            source.display()
+        );
+        events.emit_source_item_done(WriteSourceItemDoneEvent {
+            operation_id: operation_id.to_string(),
+            source_path: source.display().to_string(),
+            // Nothing moved, so the source is exactly where it always was.
+            source_removed: false,
+            outcome: SourceItemOutcome::Done,
+        });
+    }
+    let already_in_place = already_in_place.len();
+    let sources = &sources[..];
+
     // Check if all sources are on the same filesystem as destination
     let same_fs = sources
         .iter()
@@ -154,13 +189,32 @@ pub(in crate::file_system::write_operations) fn move_files_with_progress_inner(
 
     if same_fs {
         // Use instant rename for each source
-        move_with_rename(events, operation_id, state, sources, destination, config)
+        move_with_rename(
+            events,
+            operation_id,
+            state,
+            sources,
+            destination,
+            config,
+            already_in_place,
+        )
     } else {
         // Use atomic staging pattern for cross-filesystem move
-        move_with_staging(events, operation_id, state, sources, destination, config)
+        move_with_staging(
+            events,
+            operation_id,
+            state,
+            sources,
+            destination,
+            config,
+            already_in_place,
+        )
     }
 }
 
+/// `already_in_place` counts the top-level sources the caller dropped as already
+/// living at the destination. They wrote nothing, but the user asked for them,
+/// so they belong in the completion tally.
 fn move_with_rename(
     events: &dyn OperationEventSink,
     operation_id: &str,
@@ -168,6 +222,7 @@ fn move_with_rename(
     sources: &[PathBuf],
     destination: &Path,
     config: &WriteOperationConfig,
+    already_in_place: usize,
 ) -> Result<(), WriteOperationError> {
     let mut files_done = 0;
     let mut files_skipped = 0usize;
@@ -365,7 +420,7 @@ fn move_with_rename(
     events.emit_complete(WriteCompleteEvent {
         operation_id: operation_id.to_string(),
         operation_type: WriteOperationType::Move,
-        files_processed: files_done,
+        files_processed: files_done + already_in_place,
         files_skipped,
         bytes_processed: 0, // Rename doesn't track bytes
     });
@@ -486,6 +541,7 @@ fn merge_move_directory(
 
 /// Performs cross-filesystem move using atomic staging pattern.
 /// This ensures source files remain intact if the operation fails.
+/// `already_in_place`: see `move_with_rename`.
 fn move_with_staging(
     events: &dyn OperationEventSink,
     operation_id: &str,
@@ -493,6 +549,7 @@ fn move_with_staging(
     sources: &[PathBuf],
     destination: &Path,
     config: &WriteOperationConfig,
+    already_in_place: usize,
 ) -> Result<(), WriteOperationError> {
     // Phase 1: Scan (or reuse cached preview results)
     let scan_result = if let Some(preview_id) = &config.preview_id {
@@ -835,7 +892,7 @@ fn move_with_staging(
     events.emit_complete(WriteCompleteEvent {
         operation_id: operation_id.to_string(),
         operation_type: WriteOperationType::Move,
-        files_processed: files_done,
+        files_processed: files_done + already_in_place,
         files_skipped,
         bytes_processed: bytes_done,
     });

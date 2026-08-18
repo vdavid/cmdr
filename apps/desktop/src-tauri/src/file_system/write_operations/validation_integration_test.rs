@@ -229,36 +229,6 @@ fn test_ensure_destination_dir_surfaces_create_failure() {
 }
 
 #[test]
-fn test_validate_not_same_location_different() {
-    use super::validate_not_same_location;
-
-    let temp_dir = create_temp_dir("validate_same_loc_diff");
-    let src_dir = temp_dir.join("src");
-    let dst_dir = temp_dir.join("dst");
-    fs::create_dir_all(&src_dir).unwrap();
-    fs::create_dir_all(&dst_dir).unwrap();
-
-    let file = src_dir.join("file.txt");
-    fs::write(&file, "content").unwrap();
-
-    let result = validate_not_same_location(&[file], &dst_dir);
-    assert!(result.is_ok());
-}
-
-#[test]
-fn test_validate_not_same_location_same() {
-    use super::validate_not_same_location;
-
-    let temp_dir = create_temp_dir("validate_same_loc_same");
-    let file = temp_dir.join("file.txt");
-    fs::write(&file, "content").unwrap();
-
-    // Copying file to same directory
-    let result = validate_not_same_location(&[file], &temp_dir);
-    assert!(matches!(result, Err(WriteOperationError::SameLocation { .. })));
-}
-
-#[test]
 fn test_validate_destination_not_inside_source_ok() {
     use super::validate_destination_not_inside_source;
 

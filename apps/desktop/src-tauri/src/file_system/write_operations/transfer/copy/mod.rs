@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::super::cancellable::run_cancellable;
-use super::super::conflict::ApplyToAll;
+use super::super::conflict::{ApplyToAll, create_unique_dir, next_available_name};
 use super::super::durability::flush_created_destinations;
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, top_level_source_path};
 use super::super::scan_cache::take_cached_scan_result;
@@ -24,7 +24,7 @@ use super::super::types::{
     WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
     WriteProgressEvent, WriteSourceItemDoneEvent,
 };
-use super::super::validation::{validate_disk_space, validate_file_sizes_for_filesystem};
+use super::super::validation::{is_same_file, validate_disk_space, validate_file_sizes_for_filesystem};
 use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};
 
 mod rollback;
@@ -62,6 +62,11 @@ fn validate_disk_space_cancellable(
 /// `<dest>/name (1)`, every child path `<dest>/name/child` becomes
 /// `<dest>/name (1)/child`. Returns `dest` unchanged when no ancestor is
 /// remapped (the common case, so the map is almost always empty).
+///
+/// A path that IS a key maps to the mapped value itself, which is how a
+/// self-collision on a plain FILE redirects. `to.join("")` would append a
+/// trailing separator and the copy would then fail to finalize against
+/// `photo (1).jpg/`, so the empty suffix is its own arm.
 pub(super) fn apply_dir_remap(dest: &Path, dir_remap: &HashMap<PathBuf, PathBuf>) -> PathBuf {
     if dir_remap.is_empty() {
         return dest.to_path_buf();
@@ -77,7 +82,11 @@ pub(super) fn apply_dir_remap(dest: &Path, dir_remap: &HashMap<PathBuf, PathBuf>
         Some((from, to)) => {
             // `strip_prefix` can't fail here: `starts_with(from)` held above.
             let suffix = dest.strip_prefix(from).unwrap_or(Path::new(""));
-            to.join(suffix)
+            if suffix.as_os_str().is_empty() {
+                to.clone()
+            } else {
+                to.join(suffix)
+            }
         }
         None => dest.to_path_buf(),
     }
@@ -197,6 +206,54 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
     // flush is moot (clonefile/reflink); the end-of-op flush pass skips these.
     let mut already_synced: HashSet<PathBuf> = HashSet::new();
 
+    // A source that already lives at the destination is a request to DUPLICATE
+    // it, not a conflict: redirect its whole subtree to a free ` (N)` name here
+    // and the conflict machinery is never consulted for it. Identity is
+    // `dev+ino` (`is_same_file`), which settles a symlinked parent, a
+    // case-differing path, and NFC/NFD in one comparison.
+    //
+    // Asked per TOP-LEVEL source, once, BEFORE the loop: the loop iterates the
+    // scan's LEAF files, and in a same-folder folder copy every leaf is its own
+    // self-collision, so a per-leaf question would scatter `a (1).txt` through
+    // the original `docs/` instead of producing `docs (1)/`. `dir_remap` carries
+    // the redirect to every per-file destination for free, and the scanned-dirs
+    // pass reads it too, which is what lands an EMPTY folder's duplicate.
+    // `transfer/DETAILS.md` § "Self-collision".
+    let mut duplicated_sources: HashSet<PathBuf> = HashSet::new();
+    for source in sources {
+        let Some(file_name) = source.file_name() else { continue };
+        let original_dest = destination.join(file_name);
+        if !is_same_file(source, &original_dest) {
+            continue;
+        }
+        let unique_dest = if source.is_dir() {
+            // A directory claims its name eagerly, and the `create_dir` loop IS
+            // the reservation. Recorded so rollback owns it.
+            let claimed = create_unique_dir(&original_dest).map_err(|e| WriteOperationError::IoError {
+                path: original_dest.display().to_string(),
+                message: format!("Couldn't create the copy's folder: {e}"),
+            })?;
+            transaction.record_dir(claimed.clone());
+            created_dirs.insert(claimed.clone());
+            claimed
+        } else {
+            // A file needs no reservation: nothing sits at the picked name, and
+            // the non-overwrite landing refuses an occupied destination
+            // (`RENAME_EXCL`), so a racing writer produces a loud failure rather
+            // than a clobber. ❌ Not `find_unique_name`: its 0-byte placeholder
+            // would occupy the destination and raise the very conflict prompt
+            // this rule exists to remove.
+            next_available_name(&original_dest)
+        };
+        log::info!(
+            "copy: {} is already in the destination, duplicating it as {}",
+            source.display(),
+            unique_dest.display()
+        );
+        dir_remap.insert(original_dest, unique_dest);
+        duplicated_sources.insert(source.clone());
+    }
+
     // Emit initial copying phase event (important when reusing cached scan - no scanning events were
     // emitted)
     state.emit_progress_via_sink(
@@ -246,6 +303,14 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             sources
                 .iter()
                 .filter(|p| {
+                    // A duplicate is never bulk-skipped. The pre-flight matches
+                    // by NAME, so a same-folder paste lists every one of its own
+                    // sources as conflicting; skipping them would turn the
+                    // duplicate into a silent no-op. The redirect above already
+                    // moved this source out of its own way.
+                    if duplicated_sources.contains(*p) {
+                        return false;
+                    }
                     let name_matches = p
                         .file_name()
                         .and_then(|n| n.to_str())

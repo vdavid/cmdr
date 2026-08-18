@@ -1,9 +1,8 @@
 //! Validation helpers for write operations.
 //!
-//! Source/destination existence and type checks, same-location and
-//! destination-inside-source guards, writability and disk-space checks,
-//! same-file / same-filesystem inode comparisons, path/name length limits,
-//! and symlink-loop detection.
+//! Source/destination existence and type checks, the destination-inside-source
+//! guard, writability and disk-space checks, same-file / same-filesystem inode
+//! comparisons, path/name length limits, and symlink-loop detection.
 
 use std::collections::HashSet;
 use std::fs;
@@ -53,19 +52,6 @@ pub(crate) fn ensure_destination_dir(destination: &Path) -> Result<(), WriteOper
             message: format!("Couldn't access the destination folder: {e}"),
         }),
     }
-}
-
-pub(crate) fn validate_not_same_location(sources: &[PathBuf], destination: &Path) -> Result<(), WriteOperationError> {
-    for source in sources {
-        if let Some(parent) = source.parent()
-            && parent == destination
-        {
-            return Err(WriteOperationError::SameLocation {
-                path: source.display().to_string(),
-            });
-        }
-    }
-    Ok(())
 }
 
 pub(crate) fn validate_destination_not_inside_source(

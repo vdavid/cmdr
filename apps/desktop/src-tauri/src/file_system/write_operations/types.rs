@@ -573,9 +573,6 @@ pub enum WriteOperationError {
         available: u64,
         volume_name: Option<String>,
     },
-    SameLocation {
-        path: String,
-    },
     /// Would cause infinite recursion.
     DestinationInsideSource {
         source: String,

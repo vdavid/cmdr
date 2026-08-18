@@ -83,8 +83,7 @@ use trash::trash_files_with_progress;
 pub use event_sinks::{OperationEventSink, TauriEventSink};
 #[cfg(not(test))]
 use validation::{
-    ensure_destination_dir, validate_destination_not_inside_source, validate_destination_writable,
-    validate_not_same_location, validate_sources,
+    ensure_destination_dir, validate_destination_not_inside_source, validate_destination_writable, validate_sources,
 };
 
 // Re-export public types
@@ -165,8 +164,7 @@ pub(crate) use state::{CopyTransaction, OperationIntent, WriteOperationState, is
 #[allow(unused_imports, reason = "Re-exports for test modules in file_system")]
 pub(crate) use validation::{
     ensure_destination_dir, is_same_file, is_same_filesystem, validate_destination_not_inside_source,
-    validate_destination_writable, validate_disk_space, validate_not_same_location, validate_path_length,
-    validate_sources,
+    validate_destination_writable, validate_disk_space, validate_path_length, validate_sources,
 };
 // Exposed for cross-module integration tests (for example the SMB
 // concurrent-copy cross-contamination test in
@@ -497,7 +495,6 @@ pub async fn copy_files_start(
             // doesn't exist, so a copy into a brand-new folder just works.
             ensure_destination_dir(&destination)?;
             validate_destination_writable(&destination)?;
-            validate_not_same_location(&sources, &destination)?;
             copy_files_with_progress_inner(&*events, &op_id, &state, &sources, &destination, &config)
         },
     )
@@ -563,7 +560,6 @@ pub async fn move_files_start(
             // doesn't exist, so a move into a brand-new folder just works.
             ensure_destination_dir(&destination)?;
             validate_destination_writable(&destination)?;
-            validate_not_same_location(&sources, &destination)?;
             move_files_with_progress_inner(&*events, &op_id, &state, &sources, &destination, &config)
         },
     )

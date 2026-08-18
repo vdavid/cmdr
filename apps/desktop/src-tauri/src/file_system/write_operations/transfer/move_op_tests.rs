@@ -49,6 +49,7 @@ fn cross_fs_local_move_single_file_reaches_files_done_n() {
         std::slice::from_ref(&src_file),
         &dst_dir,
         &config,
+        0,
     );
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
@@ -108,6 +109,7 @@ fn cross_fs_local_move_emits_flushing_phase_before_complete() {
         std::slice::from_ref(&src_file),
         &dst_dir,
         &config,
+        0,
     );
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
@@ -198,6 +200,7 @@ fn cross_fs_local_move_flushes_final_dests_before_deleting_sources() {
         std::slice::from_ref(&src_file),
         &dst_dir,
         &config,
+        0,
     );
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
@@ -255,6 +258,7 @@ fn cross_fs_move_skip_preserves_source_and_dest() {
         std::slice::from_ref(&src_file),
         &dst_dir,
         &config,
+        0,
     );
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
@@ -316,6 +320,7 @@ fn cross_fs_move_dir_merge_skip_child_preserves_source_child() {
         std::slice::from_ref(&src_dir),
         &dst_root,
         &config,
+        0,
     );
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
@@ -407,7 +412,7 @@ fn run_cross_fs_move(
         conflict_resolution: resolution,
         ..WriteOperationConfig::default()
     };
-    move_with_staging(&*events, op_id, &state, sources, dst_dir, &config)?;
+    move_with_staging(&*events, op_id, &state, sources, dst_dir, &config, 0)?;
     Ok(events)
 }
 
@@ -682,6 +687,7 @@ fn cross_fs_move_preserves_empty_directories() {
         std::slice::from_ref(&source),
         &dst_dir,
         &config,
+        0,
     );
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
@@ -764,6 +770,7 @@ fn a_local_move_never_acts_on_a_preview_of_a_different_selection() {
         std::slice::from_ref(&selected),
         &dst_dir,
         &config,
+        0,
     );
 
     assert!(result.is_ok(), "the move must succeed: {result:?}");
