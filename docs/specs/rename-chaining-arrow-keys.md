@@ -113,12 +113,11 @@ shifts the cursor by add/remove index arithmetic. `pendingCursorName` is the onl
 
 **I6 was wrong as stated**, and the shipped feature died on it: a hands-on test found a chain running upward into names
 that re-sort above it losing its editor after three or four rows, silently. `pendingCursorName` is not the only bypass.
-The cursor reconciliation is exact and immediate, but the loaded window the step READS its neighbour out of is refetched
-on a 250 ms throttle, so after a diff that moves rows the two disagree about which row is which for as long as that
-takes. At 120-180 ms per step the chain is always inside that gap, and the row it reads back is the file the editor is
-open on, whose rename the same step just sent: the editor reopens on it, and the diff landing that rename then cancels
-the session for the editor's own file being removed. The fix and the full mechanism are in `rename/DETAILS.md` §
-Chaining, under "The window a neighbour is read from has to agree with the cursor".
+The deeper mistake is in step 1 of the sequence above: a pane holds three listings that disagree about indices for a
+beat after each of the chain's own renames, so `cursorIndex ± 1` names a different row in each. A step reads the row
+BESIDE the one the editor is drawn on instead, which is the one row all three agree on because the editor mounts by
+path. The full mechanism is in `rename/DETAILS.md` § Chaining, under "The neighbour is read beside the editor's own row,
+never beside an index".
 
 ## Two things that bite in practice
 

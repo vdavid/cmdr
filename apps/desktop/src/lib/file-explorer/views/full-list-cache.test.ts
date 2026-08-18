@@ -280,6 +280,17 @@ describe('getEntryAt', () => {
   })
 })
 
+describe('indexOfEntry', () => {
+  it('reads the window back by path, the way `getEntryAt` reads it by index', async () => {
+    const cache = makeCache()
+    await cache.fetch(0, 10)
+
+    const row = cache.getEntryAt(2)
+    expect(cache.indexOfEntry(row?.path ?? '')).toBe(2)
+    expect(cache.indexOfEntry('/dir/not-loaded.txt')).toBeUndefined()
+  })
+})
+
 describe('syncStaticEntries', () => {
   it('adopts the host pane array as the whole cache', () => {
     props.staticEntries = [entry('hit-1.txt'), entry('hit-2.txt')]

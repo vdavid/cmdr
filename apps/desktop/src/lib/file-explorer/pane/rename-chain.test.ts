@@ -35,7 +35,7 @@ const {
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
-  getFileAt: vi.fn(),
+  getFileBeside: vi.fn(),
   getFileRange: vi.fn(),
   refreshListing: vi.fn(),
   getIpcErrorMessage: (e: unknown) => String(e),
@@ -60,7 +60,7 @@ vi.mock('$lib/ui/toast', () => ({ addToastForPane: vi.fn(), dismissTransientToas
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: tStringSpy }))
 vi.mock('./volume-capabilities', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
 
-import { getFileAt, getFileRange } from '$lib/tauri-commands'
+import { getFileBeside, getFileRange } from '$lib/tauri-commands'
 import { addToastForPane } from '$lib/ui/toast'
 import { buildFlow, chainListing, deferred } from './test-rename-flow'
 
@@ -282,7 +282,7 @@ describe('chaining the rename to the next file with the arrow keys', () => {
   it('reads the neighbour from the backend when it has scrolled out of the loaded window', async () => {
     const listing = chainListing(['a.txt', 'b.txt'])
     listing.unload(2)
-    vi.mocked(getFileAt).mockResolvedValue({ name: 'b.txt', path: '/dir/b.txt', isDirectory: false } as never)
+    vi.mocked(getFileBeside).mockResolvedValue({ name: 'b.txt', path: '/dir/b.txt', isDirectory: false } as never)
     const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
 
     flow.startRename()
@@ -292,15 +292,15 @@ describe('chaining the rename to the next file with the arrow keys', () => {
     await vi.waitFor(() => {
       expect(rename.target?.path).toBe('/dir/b.txt')
     })
-    // Backend indices skip the `..` row.
-    expect(getFileAt).toHaveBeenCalledWith('lst-1', 1, false)
+    // Asked for by the editor's own row, never by an index the backend counts differently.
+    expect(getFileBeside).toHaveBeenCalledWith('lst-1', 'a.txt', 'next', false)
     expect(savedPairs()).toEqual([['a.txt', 'one.txt']])
   })
 
   it('leaves the editor alone when the neighbour cannot be read at all', async () => {
     const listing = chainListing(['a.txt', 'b.txt'])
     listing.unload(2)
-    vi.mocked(getFileAt).mockResolvedValue(null)
+    vi.mocked(getFileBeside).mockResolvedValue(null)
     const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
 
     flow.startRename()
@@ -308,7 +308,7 @@ describe('chaining the rename to the next file with the arrow keys', () => {
     flow.handleRenameStep('down', rename.sessionId)
 
     await vi.waitFor(() => {
-      expect(getFileAt).toHaveBeenCalled()
+      expect(getFileBeside).toHaveBeenCalled()
     })
     // A row we can't read is the same as no row there: nothing is sent, nothing
     // moves, and the name the user typed is still in the editor.
@@ -319,11 +319,33 @@ describe('chaining the rename to the next file with the arrow keys', () => {
     expect(listing.moves).toEqual([])
   })
 
+  it('leaves the editor alone when the file it is open on has gone from the listing', async () => {
+    const listing = chainListing(['a.txt', 'b.txt'])
+    listing.unloadWindow()
+    // Nothing sits beside a row that isn't there any more (an external rename, a
+    // delete). Guessing one is exactly what the anchor exists to avoid, and the
+    // diff carrying that removal closes the editor on its own.
+    vi.mocked(getFileBeside).mockResolvedValue(null)
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('one.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+
+    await vi.waitFor(() => {
+      expect(getFileBeside).toHaveBeenCalledWith('lst-1', 'a.txt', 'next', false)
+    })
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(rename.active).toBe(true)
+    expect(rename.currentName).toBe('one.txt')
+    expect(listing.moves).toEqual([])
+  })
+
   it('sends what the user typed while the neighbour was being read, not what was there at the keypress', async () => {
     const listing = chainListing(['a.txt', 'b.txt'])
     listing.unload(2)
     const fetched = deferred<unknown>()
-    vi.mocked(getFileAt).mockReturnValue(fetched.promise as never)
+    vi.mocked(getFileBeside).mockReturnValue(fetched.promise as never)
     const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
 
     flow.startRename()
@@ -343,7 +365,7 @@ describe('chaining the rename to the next file with the arrow keys', () => {
     const listing = chainListing(['a.txt', 'b.txt'])
     listing.unload(2)
     const fetched = deferred<unknown>()
-    vi.mocked(getFileAt).mockReturnValue(fetched.promise as never)
+    vi.mocked(getFileBeside).mockReturnValue(fetched.promise as never)
     const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
 
     flow.startRename()
@@ -407,11 +429,13 @@ describe('chaining the rename to the next file with the arrow keys', () => {
    */
   function upwardChainThatResorts() {
     const listing = chainListing(['y1.txt', 'y2.txt', 'y3.txt', 'y4.txt', 'y5.txt', 'y6.txt'], 6)
-    vi.mocked(getFileAt).mockImplementation((_id, index) => Promise.resolve(listing.backendRowAt(index) as never))
+    vi.mocked(getFileBeside).mockImplementation((_id, name, side) =>
+      Promise.resolve(listing.backendRowNextTo(name, side) as never),
+    )
     return listing
   }
 
-  it('opens on the row above the editor, never back on the file whose rename it just sent, when the window is a landed rename behind', async () => {
+  it('opens on the row above the editor, never back on the file whose rename it just sent, when the window is a landed rename behind', () => {
     const listing = upwardChainThatResorts()
     const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
 
@@ -430,16 +454,14 @@ describe('chaining the rename to the next file with the arrow keys', () => {
     // Reopening on y5.txt here would put the editor on a file whose rename is
     // already on its way out; the diff that lands it then finds the editor's own
     // file gone and closes the editor, ending the chain with nothing said.
-    await vi.waitFor(() => {
-      expect(rename.target?.originalName).toBe('y4.txt')
-    })
+    expect(rename.target?.originalName).toBe('y4.txt')
     expect(savedPairs()).toEqual([
       ['y6.txt', 'up-1.txt'],
       ['y5.txt', 'up-2.txt'],
     ])
   })
 
-  it('holds the chain together across a run of renames that all re-sort above it', async () => {
+  it('holds the chain together across a run of renames that all re-sort above it, without one round trip', () => {
     const listing = upwardChainThatResorts()
     const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
     const openedOn: string[] = []
@@ -449,9 +471,6 @@ describe('chaining the rename to the next file with the arrow keys', () => {
       const editing = rename.target?.originalName
       flow.handleRenameInput(`up-${String(step)}.txt`)
       flow.handleRenameStep('up', rename.sessionId)
-      await vi.waitFor(() => {
-        expect(rename.target?.originalName).not.toBe(editing)
-      })
       openedOn.push(rename.target?.originalName ?? 'nothing')
       listing.landRenameSortingToTop(editing ?? '', `up-${String(step)}.txt`)
     }
@@ -463,20 +482,89 @@ describe('chaining the rename to the next file with the arrow keys', () => {
       ['y4.txt', 'up-3.txt'],
       ['y3.txt', 'up-4.txt'],
     ])
+    // The window is a rename behind on every step after the first, and still
+    // answers every one of them: holding the arrow through a directory that
+    // re-sorts under it never costs a round trip.
+    expect(getFileBeside).not.toHaveBeenCalled()
     expect(rename.active).toBe(true)
   })
 
-  it('reads the neighbour straight out of the window while the two still agree', () => {
+  it('reads the neighbour straight out of the window the user is looking at', () => {
     const listing = upwardChainThatResorts()
     const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
 
     flow.startRename()
     flow.handleRenameStep('up', rename.sessionId)
 
-    // Nothing has moved under the window, so the step costs no round trip: key
-    // repeat has to rip through the directory without one per row.
-    expect(getFileAt).not.toHaveBeenCalled()
+    // Key repeat has to rip through the directory without a round trip per row.
+    expect(getFileBeside).not.toHaveBeenCalled()
     expect(rename.target?.originalName).toBe('y5.txt')
+  })
+
+  /**
+   * A chain fast enough to outrun both the loaded window and the diffs: every
+   * row it steps to has to be read from the backend, whose listing already has
+   * renames applied that the frontend hasn't been told about yet.
+   */
+  function chainOutrunningTheWindow() {
+    const listing = chainListing(['m1.txt', 'm2.txt', 'm3.txt', 'm4.txt', 'm5.txt', 'm6.txt'])
+    listing.unloadWindow()
+    vi.mocked(getFileBeside).mockImplementation((_id, name, side) =>
+      Promise.resolve(listing.backendRowNextTo(name, side) as never),
+    )
+    return listing
+  }
+
+  it('steps to the very next row while the backend is a rename ahead of the cursor', async () => {
+    const listing = chainOutrunningTheWindow()
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename() // the editor is on m1.txt
+    flow.handleRenameInput('z1.txt') // a name that sorts to the BOTTOM of the directory
+    flow.handleRenameStep('down', rename.sessionId)
+    await vi.waitFor(() => {
+      expect(rename.target?.originalName).toBe('m2.txt')
+    })
+
+    // That rename lands in the backend's listing straight away, and its diff is
+    // still inside the 50 ms coalescing window: the backend has m1.txt out from
+    // the top of the directory while the cursor still counts it in.
+    listing.renameOnBackend('m1.txt', 'z1.txt')
+
+    flow.handleRenameInput('z2.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+
+    // Reading `cursorIndex + 1` out of the backend in that state answers a row
+    // further along, and m3.txt keeps its name with the user none the wiser.
+    await vi.waitFor(() => {
+      expect(rename.target?.originalName).toBe('m3.txt')
+    })
+  })
+
+  it('skips no row across a run of steps the backend never catches up with', async () => {
+    const listing = chainOutrunningTheWindow()
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+    const openedOn: string[] = []
+
+    flow.startRename()
+    for (let step = 1; step <= 4; step++) {
+      const editing = rename.target?.originalName ?? ''
+      flow.handleRenameInput(`z${String(step)}.txt`)
+      flow.handleRenameStep('down', rename.sessionId)
+      await vi.waitFor(() => {
+        expect(rename.target?.originalName).not.toBe(editing)
+      })
+      openedOn.push(rename.target?.originalName ?? 'nothing')
+      listing.renameOnBackend(editing, `z${String(step)}.txt`)
+    }
+
+    expect(openedOn).toEqual(['m2.txt', 'm3.txt', 'm4.txt', 'm5.txt'])
+    expect(savedPairs()).toEqual([
+      ['m1.txt', 'z1.txt'],
+      ['m2.txt', 'z2.txt'],
+      ['m3.txt', 'z3.txt'],
+      ['m4.txt', 'z4.txt'],
+    ])
   })
 
   it('does nothing when no rename is running', () => {

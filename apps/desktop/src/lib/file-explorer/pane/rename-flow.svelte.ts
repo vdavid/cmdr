@@ -1,4 +1,4 @@
-import { getFileAt, refreshListing } from '$lib/tauri-commands'
+import { getFileBeside, refreshListing } from '$lib/tauri-commands'
 import { getIpcErrorMessage, isIpcError, moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
 import { validateFilename, getExtension } from '$lib/utils/filename-validation'
 import { cancelClickToRename } from '../rename/rename-activation'
@@ -34,6 +34,8 @@ export interface RenameFlowDeps {
   getHasParent: () => boolean
   /** A row read straight out of the loaded window; `undefined` when it isn't loaded. */
   getEntryAt: (index: number) => FileEntry | undefined
+  /** The row a path occupies in the loaded window; `undefined` when it isn't loaded. */
+  indexOfEntry: (path: string) => number | undefined
   /** Lands the cursor on a row and scrolls it into view. */
   moveCursorTo: (index: number) => void
 }
@@ -200,35 +202,49 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   }
 
   /**
-   * The neighbouring row, when the loaded window is still counting rows the way
-   * the cursor is.
+   * The row beside the one the editor is drawn on, read out of the loaded window
+   * the user is looking at.
    *
-   * The pane refetches that window on a throttle, while the cursor is reconciled
-   * against every diff the moment it lands, so for a beat after a diff moves
-   * rows the two disagree about which row is which. An index read out of the
-   * window in that state hands back the row that USED to sit there. Stepping
-   * upward through names that re-sort above the cursor, that row is the file the
-   * editor is open on, whose own rename is already on its way out: reopening the
-   * editor on it means the diff landing that rename finds the editor's own file
-   * removed and closes the editor (`listing-diff-sync`), which ends the chain
-   * with nothing said.
+   * ❌ Never `getEntryAt(cursorIndex ± 1)`. A pane holds three listings that
+   * disagree for a beat each time a chain's own rename lands: the backend mutates
+   * its listing the moment a rename does, the cursor is reconciled when the
+   * `directory-diff` for it arrives 50 ms later, and the window those rows are
+   * READ from is refetched on a throttle after that. An index means a different
+   * row in each of them, so a step that carries one across skips a row, or
+   * reopens the editor on the file whose rename it just sent (which the diff for
+   * that rename then closes, ending the chain with nothing said).
    *
-   * The window naming the editor's own file at the cursor is what says the two
-   * agree. Anything else, including a row that has scrolled out of the window
-   * entirely, sends the step to the backend listing instead.
+   * The editor's own file is the one thing all three agree on, because the editor
+   * mounts BY PATH: find the row it's drawn on and the row beside it is the row
+   * beside it, in whichever listing answered. Here that's the window, which is
+   * also literally what's on screen, so the chain lands where the user was
+   * looking. It costs a `findIndex` over the loaded rows and no round trip.
    */
-  function neighbourFromLoadedWindow(index: number): FileEntry | undefined {
+  function neighbourInLoadedWindow(direction: RenameStepDirection): FileEntry | undefined {
     const targetPath = rename.target?.path
     if (targetPath === undefined) return undefined
-    if (deps.getEntryAt(deps.getCursorIndex())?.path !== targetPath) return undefined
-    return deps.getEntryAt(index)
+    const editorRow = deps.indexOfEntry(targetPath)
+    if (editorRow === undefined) return undefined
+    const beside = direction === 'down' ? editorRow + 1 : editorRow - 1
+    // `..` is nothing to rename, and the window would hand it over happily.
+    if (beside < (deps.getHasParent() ? 1 : 0)) return undefined
+    return deps.getEntryAt(beside)
   }
 
-  /** Reads a row from the backend when the loaded window can't answer for it. */
-  async function fetchEntryAt(index: number): Promise<FileEntry | undefined> {
-    const backendIndex = deps.getHasParent() ? index - 1 : index
+  /**
+   * The same question, asked of the backend when the window can't answer for the
+   * row (a chain that has outrun the pane's prefetch).
+   *
+   * Anchored on the editor's own file for the same reason, and in ONE call:
+   * resolving the anchor's index and reading beside it separately lets a rename
+   * land in between and move the row out from under the index.
+   */
+  async function fetchNeighbour(direction: RenameStepDirection): Promise<FileEntry | undefined> {
+    const originalName = rename.target?.originalName
+    if (originalName === undefined) return undefined
     try {
-      return (await getFileAt(deps.getListingId(), backendIndex, deps.getIncludeHidden())) ?? undefined
+      const side = direction === 'down' ? 'next' : 'previous'
+      return (await getFileBeside(deps.getListingId(), originalName, side, deps.getIncludeHidden())) ?? undefined
     } catch {
       return undefined
     }
@@ -645,10 +661,12 @@ export function createRenameFlow(deps: RenameFlowDeps) {
      * saved and reopen the editor on the neighbouring row, so a run of files
      * gets renamed in one keyboard flow.
      *
-     * The neighbour is captured BEFORE the save goes out, and by path: the
-     * rename may re-sort the listing and carry the renamed file far away, and
-     * the row the user meant is the one that sat beside the editor when they
-     * pressed the key.
+     * The neighbour is captured BEFORE the save goes out, and beside the row the
+     * EDITOR is drawn on rather than beside the cursor's index: the rename may
+     * re-sort the listing and carry the renamed file far away, and the row the
+     * user meant is the one that sat beside the editor when they pressed the key.
+     * The cursor still moves by one in its own space, which is the only space it
+     * is ever reconciled in.
      *
      * At either end of the listing there's nothing to step to, and the key does
      * nothing at all: no commit, no discard, the editor stays open with the edit
@@ -665,18 +683,18 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       })
       if (index === undefined) return
 
-      const entry = neighbourFromLoadedWindow(index)
+      const entry = neighbourInLoadedWindow(direction)
       if (entry) {
         stepTo(index, entry)
         return
       }
 
-      // The loaded window can't answer for that row: it has scrolled out, or a
-      // diff has moved rows under it. The backend listing is the space the
-      // cursor index counts in, so ask it. That costs a round trip, in which the
-      // user can end the rename or start another one, so the session has to
-      // answer for itself again before the step lands.
-      void fetchEntryAt(index).then((fetched) => {
+      // The window isn't holding that row (the chain has outrun the pane's
+      // prefetch, or the editor's own row has gone from it). Asking the backend
+      // costs a round trip, in which the user can end the rename or start
+      // another one, so the session has to answer for itself again before the
+      // step lands.
+      void fetchNeighbour(direction).then((fetched) => {
         if (!fetched || !rename.active || rename.isSuperseded(sessionId)) return
         stepTo(index, fetched)
       })

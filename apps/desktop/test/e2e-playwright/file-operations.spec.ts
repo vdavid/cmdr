@@ -359,6 +359,64 @@ test.describe('Rename round-trip', () => {
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-b.txt'))).toBe(false)
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-c.txt'))).toBe(false)
   })
+
+  test('a chain held down through six files skips none of them, with every rename re-sorting away', async ({
+    tauriPage,
+  }) => {
+    const fixtureRoot = getFixtureRoot()
+    const hops = [1, 2, 3, 4, 5, 6]
+
+    // `hop-*.txt` sorts as one run between `file-b.txt` and `report.docx`, and
+    // each name they get sorts past every other row, so every step moves a row
+    // from above the cursor to below it. That shifts the backend's listing under
+    // a chain going the other way, while its `directory-diff` is still inside the
+    // 50 ms coalescing window: the state a step that trusted an index reads a row
+    // or two too far in, leaving files behind with their old names.
+    for (const hop of hops) {
+      fs.writeFileSync(path.join(fixtureRoot, 'left', `hop-${String(hop)}.txt`), `content of hop ${String(hop)}\n`)
+    }
+    await ensureAppReady(tauriPage, { leftPane: hops.map((hop) => `hop-${String(hop)}.txt`) })
+
+    expect(await moveCursorToFile(tauriPage, 'hop-1.txt')).toBe(true)
+    await tauriPage.keyboard.press('F2')
+    await tauriPage.waitForSelector('.rename-input', 3000)
+
+    // Each step waits only for the editor to land on the next file, never for a
+    // rename to come back: the chain runs with the frontend a rename or two
+    // behind the disk, which is the state the row-skip lived in. Reading the name
+    // back also says the editor landed on the row it was supposed to.
+    for (const hop of hops) {
+      await expect
+        .poll(async () => tauriPage.evaluate<string>(`document.querySelector('.rename-input')?.value ?? ''`), {
+          timeout: 3000,
+        })
+        .toBe(`hop-${String(hop)}.txt`)
+      await setRenameInput(tauriPage, `zz-hop-${String(hop)}.txt`)
+      if (hop === hops.length) await tauriPage.press('.rename-input', 'Enter')
+      else await tauriPage.press('.rename-input', 'ArrowDown')
+    }
+
+    await expect.poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: 5000 }).toBeTruthy()
+
+    // On disk, not in the UI: every file got the name typed for IT, and none was
+    // flown past.
+    await expect
+      .poll(
+        () =>
+          fs
+            .readdirSync(path.join(fixtureRoot, 'left'))
+            .filter((name) => name.includes('hop-'))
+            .sort(),
+        { timeout: 5000 },
+      )
+      .toEqual(hops.map((hop) => `zz-hop-${String(hop)}.txt`))
+    for (const hop of hops) {
+      expect(fs.readFileSync(path.join(fixtureRoot, 'left', `zz-hop-${String(hop)}.txt`), 'utf8')).toBe(
+        `content of hop ${String(hop)}\n`,
+      )
+      expect(fs.existsSync(path.join(fixtureRoot, 'left', `hop-${String(hop)}.txt`))).toBe(false)
+    }
+  })
 })
 
 test.describe('MCP rename', () => {

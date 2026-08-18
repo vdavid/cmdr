@@ -23,6 +23,7 @@
         getFolderCoverageBadge,
         createParentEntry,
         getEntryAt as getEntryAtUtil,
+        indexOfEntry as indexOfEntryUtil,
         fetchVisibleRange as fetchVisibleRangeUtil,
         calculateFetchRange,
         isRangeCached,
@@ -301,6 +302,11 @@
             cachedRange,
             parentDirStats ?? undefined,
         )
+    }
+
+    /** The UI index of a loaded row, or `undefined` when it isn't in the window. */
+    export function indexOfEntry(path: string): number | undefined {
+        return indexOfEntryUtil(path, hasParent, cachedEntries, cachedRange)
     }
 
     /** Updates index size fields on cached directory entries AND on the ".." row. */

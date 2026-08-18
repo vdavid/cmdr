@@ -432,6 +432,11 @@
         return cache.getEntryAt(globalIndex)
     }
 
+    /** The UI index of a loaded row, or `undefined` when it isn't in the window. */
+    export function indexOfEntry(path: string): number | undefined {
+        return cache.indexOfEntry(path)
+    }
+
     /** Updates index size fields on cached directory entries AND on the ".." row. */
     export function refreshIndexSizes(): void {
         cache.refreshIndexSizes()

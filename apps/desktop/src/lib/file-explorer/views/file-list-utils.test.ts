@@ -6,6 +6,7 @@ import {
   getSyncIconPath,
   createParentEntry,
   getEntryAt,
+  indexOfEntry,
   calculateFetchRange,
   isRangeCached,
   shouldResetCache,
@@ -171,6 +172,20 @@ describe('getEntryAt', () => {
   it('returns undefined for negative index', () => {
     const entry = getEntryAt(-1, false, '/parent', mockEntries, { start: 0, end: 2 })
     expect(entry).toBeUndefined()
+  })
+
+  it('answers by path what it answers by index, for a window that starts mid-listing', () => {
+    // The inverse pair, for a caller that holds a row rather than an index: an
+    // index means different rows to the window and to the cursor once a diff has
+    // moved rows, and a path means the same row to both.
+    const range = { start: 40, end: 42 }
+    expect(indexOfEntry('/dir/file2.txt', true, mockEntries, range)).toBe(42)
+    expect(getEntryAt(42, true, '/parent', mockEntries, range)?.path).toBe('/dir/file2.txt')
+    expect(indexOfEntry('/dir/file1.txt', false, mockEntries, range)).toBe(40)
+  })
+
+  it('has no index for a path the window is not holding', () => {
+    expect(indexOfEntry('/dir/gone.txt', true, mockEntries, { start: 0, end: 2 })).toBeUndefined()
   })
 
   it('handles cached range that does not start at 0', () => {

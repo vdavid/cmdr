@@ -151,6 +151,8 @@ export interface ListViewAPI {
   scrollToIndex(index: number): void
   refreshIndexSizes(): void
   getEntryAt(globalIndex: number): FileEntry | undefined
+  /** The UI index of a loaded row, or `undefined` when it isn't in the window. */
+  indexOfEntry(path: string): number | undefined
   /** BriefList only */
   handleKeyNavigation?(key: string, event?: KeyboardEvent): { newIndex: number; overflow: boolean } | undefined
   /** BriefList only: refetch per-column text widths after a listing change. */

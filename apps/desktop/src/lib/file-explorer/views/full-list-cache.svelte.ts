@@ -28,6 +28,7 @@ import { noteRenderedFolderSizes } from '$lib/indexing/first-size-timing'
 import {
   createParentEntry,
   getEntryAt as getEntryAtUtil,
+  indexOfEntry as indexOfEntryUtil,
   fetchVisibleRange as fetchVisibleRangeUtil,
   calculateFetchRange,
   isRangeCached,
@@ -80,6 +81,8 @@ export interface FullListCache {
   readonly parentDirStats: DirStats | null
   /** The entry at a UI index, or `undefined` when it isn't in the window. */
   getEntryAt: (globalIndex: number) => FileEntry | undefined
+  /** The UI index of a loaded row, or `undefined` when it isn't in the window. */
+  indexOfEntry: (path: string) => number | undefined
   /** The rows to render for a virtual window, skipping indices not yet fetched. */
   windowRows: (startIndex: number, endIndex: number) => WindowRow[]
   /** Fetches the window's range. `force` skips the "already cached" short-circuit. */
@@ -169,6 +172,8 @@ export function createFullListCache(deps: FullListCacheDeps): FullListCache {
 
     getEntryAt: (globalIndex: number) =>
       getEntryAtUtil(globalIndex, deps.hasParent(), deps.parentPath(), entries, range, parentDirStats ?? undefined),
+
+    indexOfEntry: (path: string) => indexOfEntryUtil(path, deps.hasParent(), entries, range),
 
     windowRows: (startIndex: number, endIndex: number) => {
       const hasParent = deps.hasParent()

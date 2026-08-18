@@ -897,6 +897,7 @@
         getEffectiveTotalCount: () => effectiveTotalCount,
         getHasParent: () => hasParent,
         getEntryAt: (index: number) => activeListRef()?.getEntryAt(index),
+        indexOfEntry: (path: string) => activeListRef()?.indexOfEntry(path),
         moveCursorTo,
     })
 

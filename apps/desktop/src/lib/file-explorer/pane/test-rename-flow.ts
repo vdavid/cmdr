@@ -25,31 +25,62 @@ export function deferred<T>() {
   return { promise, resolve }
 }
 
+/** A file, as a row: the shape both listings and the loaded window hold. */
+function row(name: string): Entry {
+  return { name, path: `/dir/${name}`, isDirectory: false }
+}
+
 /**
  * A listing the chained rename step can walk: row 0 is `..`, the named files
  * follow. It tracks its own cursor, so a test can assert where a chain ended up
  * and that the editor was scrolled along with it.
  *
- * It keeps the pane's two clocks apart. `rows` is the listing itself, which the
- * cursor is reconciled against the moment a diff lands; the loaded window the
- * rows are READ from is a snapshot that only catches up when the pane's
- * throttled refetch runs. `landRenameSortingToTop` moves the first and leaves
- * the second behind, which is the state a chain runs into every time one of its
- * own renames lands.
+ * It keeps the pane's three clocks apart, because a chain runs with all three
+ * showing different things:
+ *
+ * - `backendRows` is the backend's own listing cache, which a rename mutates the
+ *   moment it lands there, ahead of the `directory-diff` it will be announced
+ *   with (`renameOnBackend`).
+ * - `rows` is the frontend listing the cursor is reconciled against, which
+ *   catches up when that diff arrives (`landRenameSortingToTop`).
+ * - `windowRows` is the loaded window the rows are READ from, a snapshot that
+ *   only catches up when the pane's throttled refetch runs (`windowCatchesUp`).
  */
 export function chainListing(names: string[], startIndex = 1) {
-  const rows: Entry[] = [PARENT, ...names.map((name) => ({ name, path: `/dir/${name}`, isDirectory: false }))]
+  const rows: Entry[] = [PARENT, ...names.map(row)]
   let windowRows: Entry[] = [...rows]
+  const backendRows: Entry[] = names.map(row)
   const entryUnderCursorAtStart = rows[startIndex]
   const unloaded = new Set<number>()
   let cursorIndex = startIndex
   const moves: number[] = []
+  /** Puts a renamed row back where its new name sorts, the way the backend does. */
+  function resortOnBackend(name: string, newName: string) {
+    const from = backendRows.findIndex((entry) => entry.name === name)
+    if (from === -1) return
+    backendRows.splice(from, 1)
+    const goesBefore = backendRows.findIndex((entry) => entry.name > newName)
+    backendRows.splice(goesBefore === -1 ? backendRows.length : goesBefore, 0, row(newName))
+  }
   return {
     /** Rows the cursor visited, in order. */
     moves,
     /** Makes a row unreadable from the loaded window, as if it had scrolled out of it. */
     unload(index: number) {
       unloaded.add(index)
+    },
+    /** Makes the whole window unreadable: the chain has outrun the pane's prefetch. */
+    unloadWindow() {
+      for (let index = 0; index <= names.length; index++) unloaded.add(index)
+    },
+    /**
+     * A chained rename lands in the BACKEND's listing, which happens the moment
+     * the rename does. Its `directory-diff` waits out a 50 ms coalescing window,
+     * so a chain stepping faster than that runs with the backend a rename or two
+     * ahead of everything the frontend has been told about.
+     */
+    renameOnBackend(name: string, newName: string) {
+      resortOnBackend(name, newName)
     },
     /**
      * A chained rename lands on a name that sorts to the top of the directory:
@@ -60,10 +91,11 @@ export function chainListing(names: string[], startIndex = 1) {
      * loaded window keeps serving what it fetched before.
      */
     landRenameSortingToTop(name: string, newName: string) {
-      const from = rows.findIndex((row) => row.name === name)
+      resortOnBackend(name, newName)
+      const from = rows.findIndex((entry) => entry.name === name)
       rows.splice(from, 1)
       const addedAt = 1
-      rows.splice(addedAt, 0, { name: newName, path: `/dir/${newName}`, isDirectory: false })
+      rows.splice(addedAt, 0, row(newName))
       if (from <= cursorIndex) cursorIndex -= 1
       if (addedAt <= cursorIndex) cursorIndex += 1
     },
@@ -73,7 +105,13 @@ export function chainListing(names: string[], startIndex = 1) {
     },
     /** What the backend answers for a row. Backend indices skip the `..` row. */
     backendRowAt(backendIndex: number) {
-      return rows[backendIndex + 1] ?? null
+      return backendRows[backendIndex] ?? null
+    },
+    /** What the backend answers for the row beside the one named `name`. */
+    backendRowNextTo(name: string, direction: 'previous' | 'next') {
+      const at = backendRows.findIndex((entry) => entry.name === name)
+      if (at === -1) return null
+      return backendRows[direction === 'next' ? at + 1 : at - 1] ?? null
     },
     /**
      * What `entryUnderCursor` reports: the row the cursor sat on when the pane
@@ -94,6 +132,10 @@ export function chainListing(names: string[], startIndex = 1) {
       getTotalCount: () => names.length,
       getHasParent: () => true,
       getEntryAt: (index: number) => (unloaded.has(index) ? undefined : windowRows[index]),
+      indexOfEntry: (path: string) => {
+        const at = windowRows.findIndex((entry) => entry.path === path)
+        return at === -1 || unloaded.has(at) ? undefined : at
+      },
       moveCursorTo: (index: number) => {
         cursorIndex = index
         moves.push(index)
@@ -110,6 +152,7 @@ const NO_NEIGHBOURS = {
   getTotalCount: () => 0,
   getHasParent: () => false,
   getEntryAt: () => undefined,
+  indexOfEntry: () => undefined,
   moveCursorTo: () => {},
 }
 
@@ -132,6 +175,7 @@ export function buildFlow(
     onRequestFocus,
     ...listingDeps,
     getEntryAt: (index: number) => listingDeps.getEntryAt(index) as never,
+    indexOfEntry: (path: string) => listingDeps.indexOfEntry(path),
   })
   return { rename, flow, onRequestFocus }
 }

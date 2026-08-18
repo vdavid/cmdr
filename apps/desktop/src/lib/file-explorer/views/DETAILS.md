@@ -125,6 +125,12 @@ FilePane (parent)
 **Key**: Data lives in Rust `LISTING_CACHE`. Frontend fetches visible ranges on-demand via
 `getFileRange(listingId, start, count, includeHidden)`.
 
+Both views expose the window two ways, and a caller that outlives a diff wants the second: `getEntryAt(uiIndex)` reads
+by index, `indexOfEntry(path)` reads by path (both delegate to the pair in `file-list-utils.ts`). The window is
+refetched on a throttle while the pane's cursor is reconciled against every diff the moment it lands, so an index can
+mean one row to the cursor and another to the window; a path means the same row to both. The chained rename anchors on
+it (`rename/DETAILS.md` § Chaining).
+
 ### Virtual scrolling
 
 Uses a configurable row height via `getRowHeight()` from `reactive-settings.svelte.ts` (varies by density setting:

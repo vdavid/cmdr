@@ -100,10 +100,10 @@ The step, in the order it must happen:
    which is nothing to rename. No row there → the key does NOTHING: no commit, no discard, the editor stays open with
    the edit intact. Running off the end of a directory is the user finding the edge, not a decision about the name
    they're typing.
-2. **Capture the entry** from the loaded window (`getEntryAt`), or read it with `getFileAt` when the window can't answer
-   for that row. Capturing BEFORE the save goes out is what makes the hop land where the user was looking: the rename
-   may re-sort the listing and carry the renamed file far away, and the row they meant is the one that sat beside the
-   editor when they pressed the key.
+2. **Capture the entry** beside the row the editor is drawn on: from the loaded window, or with `getFileBeside` when the
+   window can't answer for that row. Capturing BEFORE the save goes out is what makes the hop land where the user was
+   looking: the rename may re-sort the listing and carry the renamed file far away, and the row they meant is the one
+   that sat beside the editor when they pressed the key.
 3. **Decide the edit's fate** (`decideStepFate`), and fire the save unawaited when it's a save. Chaining stays fast on
    slow volumes (SMB, MTP), where awaiting each save would stall every step.
 4. **Hop**: move the cursor (`applyNavigation`, which also scrolls the row into view) and activate on the captured
@@ -124,37 +124,49 @@ Nothing rate-limits key repeat: holding the arrow rips through the directory, an
 steps from crossing each other's results. The scroll in step 4 matters for more than looks: an editor scrolled out of
 the virtual window unmounts and its blur discards.
 
-### The window a neighbour is read from has to agree with the cursor
+### The neighbour is read beside the editor's own row, never beside an index
 
-A pane keeps two clocks. `listing-diff-sync` reconciles the cursor index against a `directory-diff` the moment it lands,
-deliberately unthrottled so it's always exact; the loaded window those rows are READ from is refetched on the throttle
-that keeps a churn storm from re-rendering the visible range more than four times a second
-(`INDEX_LISTING_UPDATE_MIN_INTERVAL_MS`). After any diff that MOVES rows, the two disagree for up to that long: the
-cursor already counts in the new listing while `getEntryAt` still serves the old one.
+A pane holds three listings, and a chain runs with all three showing different things:
 
-A chain running upward into names that re-sort above it hits that gap on every step, because each of its own renames
-adds a row above the cursor and takes one away below, which shifts the cursor down exactly one row. Read
-`cursorIndex - 1` out of the stale window in that state and the row that comes back is the file the EDITOR IS OPEN ON,
-whose rename the same step has just sent out. The step then reopens the editor on it, and when the diff for that rename
-arrives it finds the editor's own file removed and cancels the session (the `wasRemoved` branch in `listing-diff-sync`):
-the editor vanishes with no toast, no shake, and nothing logged, and the user has to press F2 to start again. Only the
-upward direction and only names sorting above the cursor produce the shift; downward, the add above and the remove above
-cancel out, which is why the same chain looked healthy in the other direction.
+- The **backend's listing cache**, which a rename mutates the moment it lands there. Its `directory-diff` waits out a 50
+  ms coalescing window (`listing/diff_emitter.rs`), so a chain stepping faster than that runs with renames applied that
+  the frontend hasn't been told about.
+- The **cursor's listing**, reconciled against every diff the moment it lands (`listing-diff-sync`, deliberately
+  unthrottled so it's always exact).
+- The **loaded window**, which is what's on screen, refetched on the throttle that keeps a churn storm from re-rendering
+  the visible range more than four times a second (`INDEX_LISTING_UPDATE_MIN_INTERVAL_MS`).
 
-So `neighbourFromLoadedWindow` reads a row out of the window only while the window still names the editor's own file at
-the cursor. That equality is the whole test: it's exactly the condition that makes `cursorIndex ± 1` mean anything, it
-costs one comparison on the fast path, and there is no timer or latch in it. When it fails, the step goes to the backend
-listing, which is the space the cursor index counts in. The round trip is what a step in that gap costs, and it's the
-same path a row that has scrolled out of the window has always taken.
+An index means a different row in each of them, and a chain re-sorting the directory as it goes is inside that
+disagreement on nearly every step. Carrying `cursorIndex ± 1` across one of those boundaries fails in two ways, both
+silent:
 
-That backend read is exact for the gap it exists for, because the cursor was reconciled by the very diff that opened the
-gap. It is NOT exact when the backend listing is ahead of the cursor instead: a rename mutates the listing cache
-synchronously and its `directory-diff` is emitted on a 50 ms coalescing window (`listing/diff_emitter.rs`), so a chain
-stepping faster than that runs with renames applied that the cursor hasn't been reconciled for yet, and `getFileAt` can
-answer a row or two further along than the user meant. Nothing unsafe comes of it (the editor is always activated on the
-entry that was read, and every save stays bound to its own captured target), but the chain can skip a row. Closing that
-too means anchoring the read on the editor's OWN file (`findFileIndex(originalName) ± 1`), which is exact under any
-skew, and still moving the cursor by ±1 in its own space rather than writing a backend index into it.
+- Read out of the **stale window**, `cursorIndex - 1` in an upward chain whose names re-sort above it hands back the
+  file the EDITOR IS OPEN ON, whose rename that same step has just sent (each rename adds a row above the cursor and
+  takes one away below, shifting the cursor down exactly one row). The step reopens the editor on it, the diff for that
+  rename finds the editor's own file removed, and `listing-diff-sync`'s `wasRemoved` branch closes the editor with no
+  toast, no shake, and nothing logged.
+- Read out of the **backend listing running ahead**, `cursorIndex + 1` answers a row or two further along, so the chain
+  flies past files that keep their names, and can land on one it renamed a step ago.
+
+The editor's own file is the one row all three agree on, because the editor mounts BY PATH. So a step asks for the row
+BESIDE it, never for a row at an index:
+
+- `neighbourInLoadedWindow` finds the editor's row in the window (`indexOfEntry`, the inverse of `getEntryAt`, shared by
+  both list views) and takes the row on the stepping side. The window is what's on screen, so this lands the chain where
+  the user was looking, and it's a `findIndex` over the loaded rows with no round trip — which is what lets key repeat
+  rip through a directory that re-sorts under it.
+- When the window isn't holding that row (a chain that has outrun the pane's prefetch), `getFileBeside` asks the backend
+  the same question, in ONE call. Resolving the anchor (`findFileIndex`) and reading beside it (`getFileAt`) separately
+  would let a rename land between the two calls and move the row out from under the resolved index, which is this same
+  bug in a smaller window.
+
+Neither can hand back a row that isn't genuinely adjacent to the file being stepped away from, so no length or speed of
+chain skips one. When the anchor is nowhere to be found (the editor's file was renamed or deleted under the user), the
+key is a total no-op, the same as at a boundary: nothing sits beside a row that isn't there, guessing one is what the
+anchor exists to avoid, and the diff carrying that removal closes the editor on its own.
+
+The cursor still moves by ±1 in its OWN space, which is the only space anything ever reconciles it in; writing a backend
+index into it would strand it in a listing nothing will ever shift it through again.
 
 Only a bare ArrowUp / ArrowDown chains, matched on the whole combo through the file list's own `nav.up` / `nav.down`
 commands. The caret-to-start/end that a bare arrow used to do inside the input is given up for this, and `⌘←` / `⌘→` are

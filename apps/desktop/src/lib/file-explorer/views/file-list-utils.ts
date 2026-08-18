@@ -169,6 +169,27 @@ export function getEntryAt(
   return undefined
 }
 
+/**
+ * The UI index a path occupies in the loaded window, or `undefined` when the
+ * window isn't holding that row.
+ *
+ * The inverse of `getEntryAt`, and the way to address the window by something
+ * that survives a re-sort. The window is refetched on a throttle while the
+ * cursor is reconciled against every diff the moment it lands, so an index that
+ * means one row to the cursor can mean another to the window; a path means the
+ * same row to both.
+ */
+export function indexOfEntry(
+  path: string,
+  hasParent: boolean,
+  cachedEntries: FileEntry[],
+  cachedRange: { start: number; end: number },
+): number | undefined {
+  const found = cachedEntries.findIndex((entry) => entry.path === path)
+  if (found === -1) return undefined
+  return cachedRange.start + found + (hasParent ? 1 : 0)
+}
+
 /** Parameters for fetchVisibleRange */
 export interface FetchRangeParams {
   listingId: string

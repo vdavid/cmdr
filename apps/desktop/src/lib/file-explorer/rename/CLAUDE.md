@@ -31,9 +31,9 @@ Full details (save flow, validation tiers, cursor tracking, decisions): `DETAILS
   or open a dialog. `DETAILS.md` § Rename sessions.
 - **A bare arrow chains the rename to the next row; five things inside that step fail silently.** The save fires BEFORE
   the next activation (that's what tags it with the session that typed it); the new editor opens on the entry captured
-  at keypress time, never on `entryUnderCursor` (still the file just left); that entry comes from the loaded window only
-  while the window still names the editor's own file at the cursor, else from the backend; a conflict is dropped on the
-  BACKEND's answer only, never on the cached sibling names the chain makes stale (the keypress tests
+  at keypress time, never on `entryUnderCursor` (still the file just left); that entry is the row BESIDE the editor's
+  own, never one at an index (backend, cursor, and window disagree about indices mid-chain); a conflict is dropped on
+  the BACKEND's answer only, never on the cached sibling names the chain makes stale (the keypress tests
   `severity === 'error'`, which also honors the "no" extension policy); and kept names go into ONE running toast,
   unconfirmed ones into another, since a persistent toast each is dropped past the fifth. `DETAILS.md` § Chaining.
 - **Clicking outside the editor SAVES; losing focus any other way discards.** The commit hangs off a document
