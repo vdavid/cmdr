@@ -148,7 +148,12 @@ impl SelectorIndex for DriveIndex {
                     volume_id: volume_id.to_string(),
                     path: selector.root.path.clone(),
                 })?;
-        let mount_root = crate::search::volumes::registry_mount_root(volume_id);
+        // Only a non-root volume needs one: the boot volume's index stores absolute paths
+        // already. Same rule the search module's volume loader follows, and it keeps the
+        // volume-manager lookup off the common path.
+        let mount_root = (volume_id != cmdr_index::ROOT_VOLUME_ID)
+            .then(|| crate::search::volumes::registry_mount_root(volume_id))
+            .flatten();
         let compiled = selector.compile()?;
 
         pool.with_conn(|conn| walk(conn, selector, &compiled, &read_root, mount_root.as_deref()))

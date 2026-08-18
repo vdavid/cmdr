@@ -179,3 +179,167 @@ fn a_selector_without_a_glob_reads_as_its_root() {
     };
     assert_eq!(selector.pattern_text(), "/Users/someone/Downloads/");
 }
+
+// ── The production resolver, against a real index DB ─────────────────────────────
+
+/// One entry in a synthetic index: a file under `dir`, with what the index knows about it.
+struct IndexRow {
+    dir: &'static str,
+    name: &'static str,
+    is_symlink: bool,
+    size: Option<u64>,
+    mtime: Option<u64>,
+}
+
+/// An ordinary indexed file.
+fn row(dir: &'static str, name: &'static str, size: u64, mtime: u64) -> IndexRow {
+    IndexRow {
+        dir,
+        name,
+        is_symlink: false,
+        size: Some(size),
+        mtime: Some(mtime),
+    }
+}
+
+/// A symlink, which resolution must skip.
+fn symlink_row(dir: &'static str, name: &'static str) -> IndexRow {
+    IndexRow {
+        is_symlink: true,
+        ..row(dir, name, 1, 1)
+    }
+}
+
+/// Build a tiny root index at `path`, creating each row's parent chain on the way.
+fn build_index(path: &std::path::Path, rows: &[IndexRow]) {
+    use cmdr_index::store::{IndexStore, ROOT_ID};
+    use std::collections::HashMap;
+
+    let store = IndexStore::open(path).expect("open index");
+    let conn = store.read_conn();
+    let mut dir_ids: HashMap<String, i64> = HashMap::new();
+    let mut next_id = ROOT_ID + 1;
+
+    fn ensure_dir(
+        conn: &Connection,
+        dir: &str,
+        dir_ids: &mut HashMap<String, i64>,
+        next_id: &mut i64,
+    ) -> i64 {
+        use cmdr_index::store::{IndexStore, ROOT_ID};
+        if dir.is_empty() || dir == "/" {
+            return ROOT_ID;
+        }
+        if let Some(&id) = dir_ids.get(dir) {
+            return id;
+        }
+        let parent = std::path::Path::new(dir)
+            .parent()
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let parent_id = ensure_dir(conn, &parent, dir_ids, next_id);
+        let name = std::path::Path::new(dir)
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let id = *next_id;
+        *next_id += 1;
+        IndexStore::insert_entry_v2_with_id(conn, id, parent_id, &name, true, false, None, None, None, None)
+            .expect("insert dir");
+        dir_ids.insert(dir.to_string(), id);
+        id
+    }
+
+    for entry in rows {
+        let parent_id = ensure_dir(conn, entry.dir, &mut dir_ids, &mut next_id);
+        let id = next_id;
+        next_id += 1;
+        IndexStore::insert_entry_v2_with_id(
+            conn,
+            id,
+            parent_id,
+            entry.name,
+            false,
+            entry.is_symlink,
+            entry.size,
+            entry.size,
+            entry.mtime,
+            None,
+        )
+        .expect("insert entry");
+    }
+}
+
+/// The production resolver reads the real drive index: it descends the whole subtree, keeps
+/// only what the predicates accept, carries each hit's size and date, and stops at the root
+/// the selector named.
+#[test]
+fn the_drive_index_resolves_a_selector_over_a_real_index() {
+    let _pool_guard = cmdr_index::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp dir");
+    let index_path = dir.path().join("index-root.db");
+    build_index(
+        &index_path,
+        &[
+            // Two matches, one of them a directory level down: a selector covers the subtree.
+            row("/Users/someone/Downloads", "one.dmg", 5_000, 1_000),
+            row("/Users/someone/Downloads/older", "two.dmg", 9_000, 500),
+            // Wrong extension, too new, a symlink, and outside the root: none may match.
+            row("/Users/someone/Downloads", "notes.txt", 12, 900),
+            row("/Users/someone/Downloads", "fresh.dmg", 7_000, 9_999),
+            symlink_row("/Users/someone/Downloads", "link.dmg"),
+            row("/Users/someone/Documents", "elsewhere.dmg", 4_000, 100),
+        ],
+    );
+    cmdr_index::test_install_root_read_pool(index_path).expect("install the read pool");
+
+    let resolved = DriveIndex.resolve(&OpSelector {
+        root: Location {
+            volume_id: cmdr_index::ROOT_VOLUME_ID.to_string(),
+            path: "/Users/someone/Downloads".to_string(),
+        },
+        name_glob: Some("*.dmg".to_string()),
+        min_size: None,
+        max_size: None,
+        modified_before: Some(5_000),
+        modified_after: None,
+    });
+    cmdr_index::test_uninstall_root_read_pool();
+
+    let found = resolved.expect("the root is indexed");
+    assert_eq!(
+        found.iter().map(|f| f.path.as_str()).collect::<Vec<_>>(),
+        [
+            "/Users/someone/Downloads/older/two.dmg",
+            "/Users/someone/Downloads/one.dmg"
+        ],
+        "the subtree is covered, and nothing outside the root, too new, misnamed, or symlinked is"
+    );
+    assert_eq!(found[1].size, Some(5_000), "the index's own facts ride along");
+    assert_eq!(found[1].modified_at, Some(1_000));
+}
+
+/// A root the index has never heard of refuses with `RootNotFound`, which is a different
+/// answer from "nothing in there matched" and reaches the user as one.
+#[test]
+fn a_root_the_index_doesnt_hold_refuses_rather_than_matching_nothing() {
+    let _pool_guard = cmdr_index::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp dir");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[row("/Users/someone/Downloads", "one.dmg", 1, 1)]);
+    cmdr_index::test_install_root_read_pool(index_path).expect("install the read pool");
+
+    let resolved = DriveIndex.resolve(&OpSelector {
+        root: Location {
+            volume_id: cmdr_index::ROOT_VOLUME_ID.to_string(),
+            path: "/Users/someone/Downloadz".to_string(),
+        },
+        ..downloads_dmgs()
+    });
+    cmdr_index::test_uninstall_root_read_pool();
+
+    assert!(
+        matches!(resolved, Err(SelectorRefusal::RootNotFound { .. })),
+        "{resolved:?}"
+    );
+}
