@@ -127,7 +127,7 @@ func scanForErrorStringMatch(rootDir, srcDir string) ([]errorStringMatchSite, []
 		// Skip dedicated test files. In-file `#[cfg(test)] mod tests {}` blocks are
 		// still scanned: test assertions like `err.message.contains("...")` are
 		// exactly the kind of stringly-typed check we want to flag.
-		if isRustTestFile(d.Name()) {
+		if isRustTestFile(path) {
 			return nil
 		}
 		scanned++
@@ -199,8 +199,15 @@ func hasAllowErrorStringMatchComment(line string) bool {
 	return strings.Contains(line, AllowErrorStringMatchComment)
 }
 
-// isRustTestFile recognizes the conventional Rust test-file names.
-func isRustTestFile(name string) bool {
+// isRustTestFile recognizes the conventional Rust test-file layouts, by PATH rather than by
+// base name: a module that outgrows one file becomes a `tests/` directory (as
+// `agent/store/proposals/tests/` and `agent/tools/propose/rename/tests/` are), and every file
+// in one is as much a dedicated test file as the `tests.rs` it was split out of.
+func isRustTestFile(path string) bool {
+	if filepath.Base(filepath.Dir(path)) == "tests" {
+		return true
+	}
+	name := filepath.Base(path)
 	if name == "tests.rs" {
 		return true
 	}

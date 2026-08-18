@@ -135,6 +135,14 @@ fn _x() { let _ = stderr.contains("x"); }
 		"tests.rs": `
 fn _x() { let _ = msg.to_string().contains("x"); }
 `,
+		// A module whose tests outgrew one file: every file in a `tests/` directory is as
+		// dedicated a test file as the `tests.rs` it was split out of.
+		"agent/tests/store.rs": `
+fn _x() { let _ = msg.to_string().contains("x"); }
+`,
+		"agent/tests/mod.rs": `
+fn _x() { let _ = stderr.contains("x"); }
+`,
 	})
 	if err != nil {
 		t.Fatalf("expected success on test files, got: %v", err)
