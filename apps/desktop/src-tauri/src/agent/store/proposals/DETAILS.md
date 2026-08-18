@@ -41,9 +41,8 @@ concurrency story: the winner's change alters the live op set, so a concurrent l
 refuses with a MISMATCH instead of the honest stale status. Per-op execution statuses are the executor's to write (M2).
 
 **Why comparing the ops against themselves wouldn't work.** Once the agent can re-propose a pending group, "do the ops
-match the ops?" is a tautology. The shipped rename proposal store solved the same problem the same way: `AcceptedPreflight`
-is a separate record held apart from the rows it describes (`agent/tools/propose/rename/store.rs`), and its `Mutex` only
-made the comparison atomic. Here the separate record is a table and the atomicity comes from the transaction.
+match the ops?" is a tautology. The record held APART from the rows it describes is the whole mechanism; the transaction
+is only what makes reading it and comparing the live set atomic.
 
 ### The binding digest
 
@@ -104,6 +103,16 @@ run leaves no `approved` rows.
   `../../suggested_ops/DETAILS.md`.
 - Every classification column is a TEXT token, so `main.db` stays `sqlite3`-inspectable and nothing branches on a
   message string.
+
+## What a producer may add beside the ops
+
+A verb whose review needs more than a path and a destination keeps it in its OWN table, keyed by op id and cascading with
+it, rather than widening `proposal_ops`. Rename does exactly that: `proposal_rename_evidence` (migration v5) holds why
+each proposed name is believable, and only `agent/tools/propose/rename/` writes or reads it. The spine stays
+verb-agnostic, so adding a verb never means adding a column every other verb leaves NULL.
+
+The catch a producer owns: `create_group` is its own transaction, so a sidecar row can only be written afterwards. State
+what a group missing its sidecar means, and fail closed — rename refuses to load such a group at all.
 
 ## What lives a layer up
 

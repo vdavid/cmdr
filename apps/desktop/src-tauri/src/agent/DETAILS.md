@@ -37,8 +37,8 @@ The backend modules:
 
 ## The agent can propose; only the user can approve
 
-`RenameProposalStore` is managed with the agent runtime. It holds short-lived immutable rename proposals by opaque id;
-the tool can stage one, but no agent path can approve or apply it.
+A staged rename proposal is one group on the durable proposal spine, addressed by opaque id; the tool can stage one, but
+no agent path can approve or apply it.
 
 **The invariant.** The agent can propose. Only the user can approve. Approval originates in the frontend as a user
 action. There is no tool, and never will be a tool, that approves a proposal. Without that, `Propose` is `Write` with
@@ -52,10 +52,10 @@ parse step is the runtime choke point (an unrecognized name resolves to `ToolId:
 agent view, so dispatch refuses it). Revisit the whole consent + gating story before adding the first write or
 content-read tool.
 
-**Where a proposal LIVES.** `RenameProposalStore` is the in-memory, 15-minute-TTL shape the shipped rename feature
-uses. The durable spine every other verb proposes through is `store/proposals/`, whose claim transaction binds an
-approval to a server-owned acceptance record rather than to the client's word. The rename feature folds onto it in a
-later milestone; until then the two coexist, and the durable one is where new work goes.
+**Where a proposal LIVES.** `store/proposals/`, the durable spine in `main.db`, for every verb including rename. Its
+claim transaction binds an approval to a server-owned acceptance record rather than to the client's word. Proposals have
+no expiry; the one thing deliberately held in memory instead is a rename's ACCEPTED preflight, so a restart forces a
+fresh one (`tools/propose/rename/DETAILS.md`).
 
 **What a `Propose` tool may do.** Stage a proposal and open a review surface. That is its entire power: no filesystem
 write, no silent config mutation, no self-approval. Because no structural check can prove a handler doesn't mutate,

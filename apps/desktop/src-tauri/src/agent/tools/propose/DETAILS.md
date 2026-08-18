@@ -120,11 +120,55 @@ LOOK like one.
 The frontend classifies a coverage figure as thin or solid for display (`lib/ask-cmdr/rename-evidence-coverage.ts`); the
 backend supplies only the honest counts.
 
-## The proposal store
+## Where a staged proposal lives
 
-The store is feature-local because its opaque ids and immutable rows are the authority boundary for review and apply commands. Entries expire in memory and are deliberately not persisted in chat history. A successful preflight records both the exact allowed row-id set and server-only source fingerprints; Apply atomically consumes that pair, so a dialog cannot replay an already-started plan or substitute a different subset.
+One group on the durable proposal spine, in `main.db`. **The spine's mechanism — the three levels, `GroupIntent`, the
+claim transaction, the acceptance record, the statuses — is documented once, in `agent/store/proposals/DETAILS.md`.**
+Only what is rename-specific lives here.
 
-Proposal validation reads the `PaneStateStore` cache and index registration only. It does not call live filesystem APIs: a dead mount must not hang an agent turn, and symlinks remain links rather than targets.
+Rename is the spine's documented exception: `GroupIntent::Rename` binds one shared PARENT and each op carries the name
+its source becomes, because `start_bulk_rename` refuses a row whose source and destination parents differ. So the plan
+boundary refuses a plan spanning two folders, and rows take the group's single `source_volume_id` rather than each
+carrying their own claim about which volume they're on.
+
+The opaque ids the frontend holds are the group id and the op ids, as strings. Nothing above the store parses them: an
+id that isn't ours is simply unknown, and `load` answers `None` for it exactly as it does for a group that already left
+`pending`. Every later step (preflight, apply) resolves paths and names from the stored rows by id, so a client-supplied
+value is never trusted, and the source fingerprints never leave the process.
+
+### Evidence rides a sidecar table, and a group without it is unreviewable
+
+`proposal_rename_evidence` (migration v5) holds one row per rename op: the `EvidenceSource` token, the model's `detail`,
+and the eight columns of an accepted `imageText` match's coverage. It is a sidecar rather than columns on `proposal_ops`
+because evidence is a rename-producer concern and the spine stays verb-agnostic; the coverage is columns rather than a
+JSON blob because `EvidenceCoverage` is deliberately Serialize-only (a plan may never send one) and a column list makes
+adding a field a compile error rather than a silently-dropped value.
+
+**Decision: staging is two commits, and a load with missing evidence refuses the whole proposal.** The spine owns group
+creation, so evidence can only be written once its ops have ids. A crash in between leaves rename ops with nothing
+saying where their names came from — and a review row whose evidence is missing is exactly the thing this module exists
+to prevent, so `load` answers `None` rather than showing a name with invented backing.
+
+### The accepted preflight is deliberately NOT durable
+
+A successful preflight records two things, and only one of them survives a restart:
+
+- **The values, in `main.db`**: the spine's server-owned acceptance record, whose digest covers every live op's id,
+  source path, and destination NAME. This is what makes an edited name refuse at claim time.
+- **The row ids and fingerprints, in memory** (`AcceptedRenamePreflights`): the exact subset the user allowed, and the
+  server-only `RenameSourceFingerprint` per row that apply rechecks the source against before renaming it.
+
+The proposal has no expiry, so a user can answer it two weeks later. An APPROVAL can't work that way: a fingerprint
+describes a file as it was at review time, and an app that died mid-review knows nothing about the disk it came back to.
+Dropping the fingerprints on restart means apply falls back to a fresh authoritative preflight, which is the honest
+answer. A refusal is not a failure here.
+
+Closing a review REJECTS its group rather than deleting it, so what the user was asked and what they answered stay in
+the decision record. Proposing, approving, and rejecting all go through `agent/suggested_ops/`, which is where the
+acceptance-rate metric is reported from.
+
+Proposal validation reads the `PaneStateStore` cache and index registration only. It does not call live filesystem APIs:
+a dead mount must not hang an agent turn, and symlinks remain links rather than targets.
 
 Preflight owns row warnings as well as blockers. It compares the final filename extension case-insensitively and marks
 extension additions, removals, and changes without blocking them. A renamed dotfile still has no extension; a trailing

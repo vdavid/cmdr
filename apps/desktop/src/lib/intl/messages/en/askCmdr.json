@@ -631,7 +631,7 @@
   },
   "askCmdr.renameReview.expired": "This review expired. Ask Cmdr to prepare it again.",
   "@askCmdr.renameReview.expired": {
-    "description": "Message when the short-lived server-side rename proposal has expired.",
+    "description": "Message when the server-side rename proposal is no longer reviewable, because it was already applied, turned down, or replaced.",
     "screenshot": "bulk-rename-review-expired.png"
   },
   "askCmdr.renameReview.status": "{allowed, plural, one {# rename allowed} other {# renames allowed}}; {blocked, plural, one {# blocked} other {# blocked}}",

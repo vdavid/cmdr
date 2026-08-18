@@ -169,8 +169,8 @@ Opening the rail grows the MAIN window by the rail's width instead of squeezing 
 `BulkRenameReviewDialog` owns the user's allow/deny decisions. Its Apply action sends only the staged proposal id and
 the currently allowed row ids to `apply_bulk_rename`; it cannot supply a path, destination name, fingerprint, or
 approval from the model. The backend requires that exact subset to have passed the latest preflight, rechecks it if the
-client is stale, consumes the proposal once, then returns a queued operation id. The dialog closes only after that
-operation has started.
+client is stale, claims the proposal in one conditional transaction (so it can't be started twice), then returns a
+queued operation id. The dialog closes only after that operation has started.
 
 Backend preflight verifies every source still exists and blocks any missing source, including one removed after the
 dialog opened. The dialog deselects that row and shows a red, accessible warning; a matching watcher event rechecks it

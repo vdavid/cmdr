@@ -11,7 +11,8 @@ spine. Depth (DDL rationale, the FTS design, the search-JOIN gotcha, no-retentio
 - `query.rs` — conversations, messages, the FTS5 search + its input sanitizer, the cost meter. `AgentStore` (in
   `mod.rs`) owns the schema lifecycle; `agent::start` opens the DB and registers `AgentDb` in state.
 - `proposals/` — the sweep / group / op spine and the claim transaction, its own C+D pair:
-  `proposals/CLAUDE.md`.
+  `proposals/CLAUDE.md`. A producer's own per-op sidecar table lives with that producer (`proposal_rename_evidence` is
+  `agent/tools/propose/rename/`'s), never as columns on the shared `proposal_ops`.
 
 ## Must-knows
 

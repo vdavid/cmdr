@@ -308,8 +308,8 @@ state is unambiguous:
 
 ### Model-change events
 
-`ProposalReady` is a display-only stream event. The runtime emits it only after the proposal dispatcher staged
-immutable rows in `RenameProposalStore`; chat history persists the concise tool result, not proposal authority.
+`ProposalReady` is a display-only stream event. The runtime emits it only after the proposal dispatcher staged the rows
+in `main.db`; chat history persists the concise tool result, not proposal authority.
 
 A settings change can switch a thread's effective model mid-conversation; the thread logs
 it honestly as a UI-facing event row (`store::ConversationEvent::ModelChanged`) so the
