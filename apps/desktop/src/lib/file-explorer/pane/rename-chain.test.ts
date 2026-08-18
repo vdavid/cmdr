@@ -60,7 +60,7 @@ vi.mock('$lib/ui/toast', () => ({ addToastForPane: vi.fn(), dismissTransientToas
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: tStringSpy }))
 vi.mock('./volume-capabilities', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
 
-import { getFileAt } from '$lib/tauri-commands'
+import { getFileAt, getFileRange } from '$lib/tauri-commands'
 import { addToastForPane } from '$lib/ui/toast'
 import { buildFlow, chainListing, deferred } from './test-rename-flow'
 
@@ -86,7 +86,21 @@ beforeEach(() => {
   validateFilenameSpy.mockReturnValue({ severity: 'ok', message: '' })
   getSettingSpy.mockImplementation((id) => (id === 'fileOperations.allowFileExtensionChanges' ? 'ask' : undefined))
   executeRenameSaveSpy.mockResolvedValue({ type: 'success', newName: 'renamed.txt' })
+  vi.mocked(getFileRange).mockResolvedValue([] as never)
 })
+
+/** Answers a sibling-name read with the listing's own rows. */
+function pageableListing(names: string[]) {
+  vi.mocked(getFileRange).mockImplementation((_id, start, count) =>
+    Promise.resolve(names.slice(start, start + count).map((name) => ({ name })) as never),
+  )
+}
+
+/** The directory names the last validation graded a typed name against. */
+function lastValidatedAgainst(): string[] {
+  const calls = validateFilenameSpy.mock.calls
+  return calls[calls.length - 1][3] as string[]
+}
 
 describe('chaining the rename to the next file with the arrow keys', () => {
   /** Makes every save hang, so a whole chain can be in flight at once. */
@@ -402,7 +416,7 @@ describe('what becomes of the name in the editor when the arrow moves on', () =>
     ])
   })
 
-  it('sends the name anyway when only the sibling-name snapshot calls it taken', () => {
+  it('sends the name anyway when only the sibling-name list calls it taken', () => {
     // That snapshot is read when the session opens, and the chain's own renames
     // rewrite the directory under it, so mid-chain it is stale by construction.
     // Dropping the edit on it would throw away a name that is perfectly free.
@@ -415,5 +429,63 @@ describe('what becomes of the name in the editor when the arrow moves on', () =>
     flow.handleRenameStep('down', rename.sessionId)
 
     expect(savedPairs()).toEqual([['a.txt', 'b.txt']])
+  })
+})
+
+describe('the directory names the red border checks a typed name against', () => {
+  it('reads the directory once for a whole chain, however many rows it crosses', async () => {
+    const names = ['a.txt', 'b.txt', 'c.txt', 'd.txt']
+    pageableListing(names)
+    const listing = chainListing(names)
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameStep('down', rename.sessionId)
+    flow.handleRenameStep('down', rename.sessionId)
+    flow.handleRenameStep('down', rename.sessionId)
+
+    await vi.waitFor(() => {
+      expect(getFileRange).toHaveBeenCalled()
+    })
+    // Paging the whole listing per activation is what makes chaining crawl on a
+    // big directory, and it learns the same thing every time.
+    expect(getFileRange).toHaveBeenCalledTimes(1)
+  })
+
+  it('reads the directory again for a rename started outside a chain', async () => {
+    const names = ['a.txt', 'b.txt']
+    pageableListing(names)
+    const listing = chainListing(names)
+    const { flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    await vi.waitFor(() => {
+      expect(getFileRange).toHaveBeenCalledTimes(1)
+    })
+    flow.cancelRename()
+    flow.startRename()
+
+    await vi.waitFor(() => {
+      expect(getFileRange).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  it("follows the chain's own renames, so a name it freed stops looking taken", async () => {
+    const names = ['a.txt', 'b.txt', 'c.txt']
+    pageableListing(names)
+    executeRenameSaveSpy.mockResolvedValue({ type: 'success', newName: 'z.txt' })
+    const listing = chainListing(names)
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('z.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+
+    // Typing is what re-reads the list, so the assertion types again each poll
+    // until the save has landed and patched it.
+    await vi.waitFor(() => {
+      flow.handleRenameInput('a.txt')
+      expect(lastValidatedAgainst()).toEqual(['b.txt', 'c.txt', 'z.txt'])
+    })
   })
 })

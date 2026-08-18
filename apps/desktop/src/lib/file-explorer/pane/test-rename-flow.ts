@@ -51,6 +51,8 @@ export function chainListing(names: string[], startIndex = 1) {
     deps: {
       getCursorIndex: () => cursorIndex,
       getEffectiveTotalCount: () => rows.length,
+      // Backend counts skip the `..` row, so this is what a sibling-name read pages.
+      getTotalCount: () => names.length,
       getHasParent: () => true,
       getEntryAt: (index: number) => (unloaded.has(index) ? undefined : rows[index]),
       moveCursorTo: (index: number) => {
@@ -65,6 +67,7 @@ export function chainListing(names: string[], startIndex = 1) {
 const NO_NEIGHBOURS = {
   getCursorIndex: () => 0,
   getEffectiveTotalCount: () => 0,
+  getTotalCount: () => 0,
   getHasParent: () => false,
   getEntryAt: () => undefined,
   moveCursorTo: () => {},

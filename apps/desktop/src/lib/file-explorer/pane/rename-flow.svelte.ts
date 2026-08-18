@@ -1,4 +1,4 @@
-import { getFileAt, getFileRange, refreshListing } from '$lib/tauri-commands'
+import { getFileAt, refreshListing } from '$lib/tauri-commands'
 import { getIpcErrorMessage, isIpcError, moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
 import { validateFilename, getExtension } from '$lib/utils/filename-validation'
 import { cancelClickToRename } from '../rename/rename-activation'
@@ -12,6 +12,7 @@ import type { FileEntry } from '../types'
 import type { StartRenameOptions } from './types'
 import type { createRenameState, RenameSessionId, RenameTarget } from '../rename/rename-state.svelte'
 import { resolveStepIndex, type RenameStepDirection } from '../rename/rename-step'
+import { createSiblingNames, type ListingScope } from '../rename/sibling-names'
 
 export interface RenameFlowDeps {
   rename: ReturnType<typeof createRenameState>
@@ -55,8 +56,33 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   // Post-rename: name to select after file watcher refresh
   let pendingCursorName = $state<string | null>(null)
 
-  // Sibling names cache for rename conflict detection (loaded once when rename starts)
-  let renameSiblingNames: string[] = []
+  // The directory's own names, for the editor's conflict hint. Read once per
+  // chain and patched as the chain's renames land, so hopping across 20 rows
+  // pages the listing once rather than 20 times. Hint only: `decideStepFate`
+  // never reads it (see `rename/sibling-names.ts`).
+  const siblingNames = createSiblingNames()
+
+  /** The listing the conflict hint is being checked against right now. */
+  function currentScope(): ListingScope {
+    return {
+      listingId: deps.getListingId(),
+      includeHidden: deps.getIncludeHidden(),
+      parentPath: deps.getCurrentPath(),
+      totalCount: deps.getTotalCount(),
+    }
+  }
+
+  /**
+   * Ends the chain the editor has been running: the next rename reads the
+   * directory for itself.
+   *
+   * A chain is one run of the editor across rows. It opens with an activation
+   * that no arrow asked for (F2, the menu, a click) and lasts until the editor
+   * closes or another such activation replaces it.
+   */
+  function endChain() {
+    siblingNames.clear()
+  }
 
   // When true, suppress the blur-cancel (a dialog is about to open)
   let suppressBlurCancel = false
@@ -116,28 +142,26 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     rename.activate(target)
     const sessionId = rename.sessionId
     // Seed a proposed name (MCP `rename`) instead of the current one, and validate
-    // it so a bad proposal shows the red border immediately (siblings load async;
-    // they re-validate on the first keystroke). The editor still selects the
-    // name-minus-extension on mount, so the user can accept it with one keypress.
+    // it so a bad proposal shows the red border immediately (the directory's names
+    // may still be loading; they re-validate on the first keystroke). The editor
+    // still selects the name-minus-extension on mount, so the user can accept it
+    // with one keypress.
     if (initialName !== undefined) {
       rename.setCurrentName(initialName)
       const result = validateFilename(
         initialName,
         entry.name,
         deps.getCurrentPath(),
-        renameSiblingNames,
+        siblingNames.names,
         effectiveExtensionPolicy(),
       )
       rename.setValidation(result)
     }
-    renameSiblingNames = []
 
-    void loadSiblingNames(entry.name).then((names) => {
-      // A load that finishes after a newer session started would hand that
-      // session the wrong directory to check its name against.
-      if (rename.isSuperseded(sessionId)) return
-      renameSiblingNames = names
-    })
+    // Scoped to the listing rather than to the session, so a read that lands
+    // after the chain has hopped on still answers for the right directory, and
+    // a chained activation reuses what the chain already read.
+    void siblingNames.ensure(currentScope())
 
     // Skip the permission check for MTP AND archive-inner paths (see startRename below).
     const currentVolumeId = deps.getVolumeId()
@@ -242,29 +266,6 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     startRenameOnEntry(entry)
   }
 
-  async function loadSiblingNames(excludeName: string): Promise<string[]> {
-    const listingId = deps.getListingId()
-    const totalCount = deps.getTotalCount()
-    const includeHidden = deps.getIncludeHidden()
-    if (!listingId || totalCount === 0) return []
-    try {
-      const batchSize = 500
-      const names: string[] = []
-      for (let start = 0; start < totalCount; start += batchSize) {
-        const count = Math.min(batchSize, totalCount - start)
-        const entries = await getFileRange(listingId, start, count, includeHidden)
-        for (const entry of entries) {
-          if (entry.name !== excludeName) {
-            names.push(entry.name)
-          }
-        }
-      }
-      return names
-    } catch {
-      return []
-    }
-  }
-
   /** Says so when the name a rename landed on hides the file from this listing. */
   function toastIfHiddenAfterRename(newName: string) {
     if (newName.startsWith('.') && !deps.getShowHiddenFiles()) {
@@ -289,6 +290,9 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   function reportSupersededResult(result: RenameResult, target: RenameTarget, trimmedName: string) {
     switch (result.type) {
       case 'success':
+        // The chain's own doing: the directory the hint checks against just
+        // changed, and nothing else will tell it.
+        siblingNames.applyRename(target.parentPath, target.originalName, result.newName)
         toastIfHiddenAfterRename(result.newName)
         break
       case 'error':
@@ -362,6 +366,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
 
   function finalizeRename(newName: string) {
     clearPendingRenameActivation()
+    endChain()
     rename.cancel()
     extensionDialogState = null
     conflictDialogState = null
@@ -403,8 +408,10 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     },
 
     startRename(options?: StartRenameOptions): void {
-      // A fresh startRename supersedes any pending auto-activation poll.
+      // A fresh startRename supersedes any pending auto-activation poll, and
+      // opens a new chain: this is the activation no arrow asked for.
       clearPendingRenameActivation()
+      endChain()
 
       // Scoped to this rename session; reset when it ends (finalize/cancel).
       suppressExtensionWarningOnce = options?.suppressExtensionWarning ?? false
@@ -444,8 +451,8 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     cancelRename(): void {
       clearPendingRenameActivation()
       cancelClickToRename()
+      endChain()
       rename.cancel()
-      renameSiblingNames = []
       extensionDialogState = null
       conflictDialogState = null
       suppressExtensionWarningOnce = false
@@ -460,7 +467,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         value,
         rename.target?.originalName ?? '',
         deps.getCurrentPath(),
-        renameSiblingNames,
+        siblingNames.names,
         extensionPolicy,
       )
       rename.setValidation(result)
@@ -601,6 +608,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       // A click-away already sent the save; the blur it caused arrives right after
       // and must not cancel the session the save still owns.
       if (pendingCommit) return
+      endChain()
       rename.cancel()
       restoreFocus()
     },
