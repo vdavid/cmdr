@@ -187,6 +187,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `volumes/`: macOS location/volume discovery + `NSWorkspace` mount/unmount watcher. Distinct from
   `file_system/volume/`. `get_favorites()` reads the `favorites/` store
 - `volumes_linux/`: Linux equivalent: location discovery + mount/unmount via `/proc/mounts` and GVFS
+- `volume_listing.rs`: the one volume-list pipeline. Aliases whichever discovery module the platform has, bounds it with
+  a timeout, appends the MTP storages, and enriches from the registry; `commands/volumes.rs` and `volume_broadcast.rs`
+  both publish what it returns. See `apps/desktop/src-tauri/src/volumes/CLAUDE.md`
 - `space_poller.rs`: Live disk-space polling (per-volume-type intervals) plus the low-disk-space hysteresis warning
 - `fda_gate.rs`: Full Disk Access startup gate: blocks TCC reads + `NSWorkspace` icon calls until FDA is decided. See
   the `tauri-apis` rule in `.claude/rules/`

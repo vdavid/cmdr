@@ -111,7 +111,7 @@ pub struct VolumeSpaceInfo {
     pub available_bytes: u64,
 }
 
-// Legacy compat alias
+/// The volume-shaped name for the same struct; see the macOS twin in `volumes/mod.rs`.
 pub use LocationInfo as VolumeInfo;
 
 /// Default volume ID for the root filesystem.
@@ -166,11 +166,6 @@ pub fn list_locations() -> Vec<LocationInfo> {
     }
 
     locations
-}
-
-/// Legacy compatibility wrapper.
-pub fn list_mounted_volumes() -> Vec<LocationInfo> {
-    list_locations()
 }
 
 /// Get the user's favorites from the editable store (`favorites.json`).

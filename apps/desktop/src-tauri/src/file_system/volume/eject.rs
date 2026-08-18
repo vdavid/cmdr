@@ -330,7 +330,7 @@ async fn resolve_is_ejectable(mount_path: &str) -> bool {
     {
         let path = mount_path.to_string();
         tokio::task::spawn_blocking(move || {
-            crate::volumes_linux::list_mounted_volumes()
+            crate::volumes_linux::list_locations()
                 .into_iter()
                 .find(|v| v.path == path)
                 .map(|v| v.is_ejectable)

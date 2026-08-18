@@ -53,6 +53,11 @@ Location categories: `Favorite` (user-editable, from the `favorites/` store, exi
   falls back `$USER` → `$LOGNAME` → empty; empty makes everything non-ejectable, the safe default.
 - **`is_submount()` filters bind mounts nested under a real mount**, so dev `node_modules` / build-dir bind mounts don't
   clutter the sidebar as separate volumes.
+- **The volume IPC commands aren't per-platform.** `commands/volumes.rs` serves both, reaching this module through one
+  `platform` alias; `commands/volumes_linux.rs` is a bare re-export that exists only as a registration path for
+  `ipc.rs`. A Linux-only behavior goes behind that alias. The separate command module this replaced had quietly drifted
+  into shipping Linux without the archive-boundary resolve and without the timeouts that keep a hung mount off the IPC
+  thread, which is the failure mode a second copy invites.
 
 ## Dependencies
 

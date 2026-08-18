@@ -39,7 +39,7 @@ pub mod settings;
 pub mod smb_diagnostics;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 mod util;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod volumes;
 #[cfg(target_os = "linux")]
 pub mod volumes_linux;

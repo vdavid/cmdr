@@ -310,13 +310,10 @@ fn get_main_volume() -> Option<LocationInfo> {
     })
 }
 
-// Legacy compatibility - maintain VolumeInfo type for backwards compatibility
+/// The volume-shaped name for the same struct: discovery calls every entry a
+/// location, and everything downstream of it calls the ones backed by a mount a
+/// volume.
 pub use LocationInfo as VolumeInfo;
-
-/// Legacy function - now calls list_locations
-pub fn list_mounted_volumes() -> Vec<LocationInfo> {
-    list_locations()
-}
 
 #[cfg(test)]
 mod tests {

@@ -91,8 +91,9 @@ flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
    beside it.
 3. **Off-main + timeout-guarded callers.** `init_volume_manager` registers root synchronously (cheap, `/` never hangs)
    and spawns attached/cloud discovery on the `volume-init` helper thread, then re-emits `volumes-changed`. Every caller
-   of `list_locations` is wrapped in a ~2s `spawn_blocking` timeout (`volume_broadcast::do_emit`, the MCP
-   `snapshot_volumes`, the `list_volumes` IPC via `blocking_with_timeout_flag`), so the remaining unguarded blocking
+   of `list_locations` is wrapped in a ~2s `spawn_blocking` timeout: `volume_listing::discover_local` is the only door
+   for the `volumes-changed` push and the `list_volumes` IPC, and it has no unbounded path; the MCP
+   `snapshot_volumes` guards its own. So the remaining unguarded blocking
    paths inside `list_locations` — `get_favorites` and `get_cloud_drives`, which still `statfs`/icon per item and would
    hang on a favorite or cloud folder that lives on a wedged mount — degrade to a bounded 2s partial result instead of an
    infinite stall. `get_main_volume` no longer enumerates: it builds root directly from `/`.

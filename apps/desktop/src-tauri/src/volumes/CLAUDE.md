@@ -37,11 +37,13 @@ Everything re-exports from `mod.rs` (`LocationInfo` / `LocationCategory`, consts
 - **`mount_is_read_only` (`MNT_RDONLY`) and `is_disk_image` (DiskArbitration) are set in BOTH
   `get_attached_volumes` and `resolve_path_volume_fast`, or they drift.** Gate the disk-image probe to local mounts (it resolves the path, so a
   hung mount stalls it), and don't read read-only as a disk-image proxy: a writable `.dmg` is read-write.
-- **`LocationInfo` enrichment from `VolumeManager` lives only in `enrich_from_volume_registry`** (three callers); new
-  enrichment fields go there once. It fills `capabilities` and `smb_connection_state`. ❌ Never fill `capabilities` from
-  a discovery constructor: discovery knows the mount, the registry knows the backend.
-- **`append_mtp_volumes` is duplicated** across `commands/volumes.rs` and `volume_broadcast.rs` (plus Linux twins), so
-  set every MTP-derived field (like `usb_speed`) in BOTH or the bootstrap ships volumes missing it.
+- **`LocationInfo` enrichment from `VolumeManager` lives only in `enrich_from_volume_registry`**; new enrichment fields
+  go there once. It fills `capabilities` and `smb_connection_state`. ❌ Never fill `capabilities` from a discovery
+  constructor: discovery knows the mount, the registry knows the backend.
+- **Assemble a published volume list through `volume_listing::complete`, never by hand**: it appends the MTP storages
+  and then enriches, and that order is why it exists (MTP devices are registered volumes, so enriching first ships them
+  with no capabilities). It's also the only copy of `append_mtp_volumes`, so a new MTP-derived field lands everywhere at
+  once.
 - **`get_main_volume` / `get_attached_volumes` / `get_volume_space` wrap their bodies in
   `objc2::rc::autoreleasepool`** (they run in `spawn_blocking`, so the per-call objc objects would leak), and
   `start_volume_watcher`'s observer block runs on the main thread: keep it cheap, no blocking I/O.

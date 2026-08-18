@@ -96,6 +96,20 @@ pub(crate) async fn complete(local: Vec<LocationInfo>) -> Vec<LocationInfo> {
     volumes
 }
 
+/// Discovers and completes in one call: what a caller with nowhere to fall back
+/// to wants. Returns the list and whether discovery came up short, which the
+/// frontend voices as "some volumes may be missing" next to a retry.
+///
+/// A panic reports the same way a timeout does. Both mean the local half is
+/// absent and re-running is the only move the user has.
+pub(crate) async fn list_with_timeout(timeout: Duration) -> (Vec<LocationInfo>, bool) {
+    let (local, timed_out) = match discover_local(timeout).await {
+        ListingOutcome::Listed(volumes) => (volumes, false),
+        ListingOutcome::TimedOut | ListingOutcome::Panicked => (Vec::new(), true),
+    };
+    (complete(local).await, timed_out)
+}
+
 // ============================================================================
 // MTP
 // ============================================================================
@@ -140,4 +154,35 @@ async fn append_mtp_volumes(volumes: &mut Vec<LocationInfo>) {
             });
         }
     }
+}
+
+/// Finds the MTP volume matching an `mtp://device_id/storage_id/...` path, so
+/// path resolution can answer for a device without enumerating local mounts.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) async fn mtp_volume_for_path(path: &str) -> Option<LocationInfo> {
+    let rest = path.strip_prefix("mtp://")?;
+    let mut parts = rest.splitn(3, '/');
+    let device_id = parts.next()?;
+    let storage_id_str = parts.next()?;
+    // Parsed, not used: a non-numeric storage segment isn't an MTP path at all,
+    // and matching the prefix below would otherwise accept it.
+    let _storage_id: u32 = storage_id_str.parse().ok()?;
+
+    let mut volumes = Vec::new();
+    append_mtp_volumes(&mut volumes).await;
+    let prefix = format!("mtp://{}/{}", device_id, storage_id_str);
+    volumes.into_iter().find(|v| v.path == prefix)
+}
+
+/// Queries live MTP space from an `mtp://{device_id}/{storage_id}/...` path.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) async fn mtp_space_for_path(path: &str) -> Option<(u64, u64)> {
+    let rest = path.strip_prefix("mtp://")?;
+    let mut parts = rest.splitn(3, '/');
+    let device_id = parts.next()?;
+    let storage_id: u32 = parts.next()?.parse().ok()?;
+
+    crate::mtp::connection_manager()
+        .get_live_storage_space(device_id, storage_id)
+        .await
 }
