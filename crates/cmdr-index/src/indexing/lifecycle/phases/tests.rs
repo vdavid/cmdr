@@ -205,6 +205,9 @@ mod home_bench;
 /// `#[ignore]`d.
 mod churn_bench;
 
+/// How a first index scales with ONE directory's width. `#[ignore]`d.
+mod wide_dir_bench;
+
 // ── A drive the machine covers, end to end ───────────────────────────
 
 /// A local drive with no index, driven through the PUBLIC handle so the whole
