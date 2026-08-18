@@ -23,7 +23,7 @@ fn create_test_dir(name: &str) -> TestDir {
 }
 
 fn local_row(row_id: &str, source: PathBuf, destination: PathBuf) -> BulkRenameRow {
-    let expected_fingerprint = local_fingerprint(&source).expect("fingerprint fixture source");
+    let expected_fingerprint = SourceFingerprint::capture_local(&source).expect("fingerprint fixture source");
     BulkRenameRow {
         row_id: row_id.to_string(),
         source,
@@ -52,79 +52,15 @@ fn planning_row(source: &str, destination: &str) -> BulkRenameRow {
         row_id: source.to_string(),
         source: PathBuf::from(source),
         destination: PathBuf::from(destination),
-        expected_fingerprint: BulkRenameFingerprint::Local {
+        expected_fingerprint: SourceFingerprint::Local {
             device: 0,
             inode: 0,
-            size: 0,
-            modified_nanos: None,
+            content: super::super::super::source_binding::LocalContent::File {
+                size: 0,
+                modified_nanos: None,
+            },
         },
     }
-}
-
-fn remote_fingerprint(size: Option<u64>, modified: Option<i64>) -> BulkRenameFingerprint {
-    BulkRenameFingerprint::Remote {
-        normalized_path: "/share/receipt.pdf".to_string(),
-        size,
-        modified,
-    }
-}
-
-/// The journal's mtime column is Unix SECONDS (`journal::mtime_secs`), and undo
-/// compares it against `FileEntry::modified_at`, also Unix seconds. A local
-/// fingerprint holds NANOseconds, so recording it raw would make every undo
-/// report drift and refuse — silently disabling undo.
-#[test]
-fn journal_snapshot_converts_local_nanoseconds_into_the_journals_unix_seconds() {
-    let fingerprint = BulkRenameFingerprint::Local {
-        device: 7,
-        inode: 42,
-        size: 4096,
-        modified_nanos: Some(1_700_000_000_987_654_321),
-    };
-
-    // Truncated, not rounded: `Duration::as_secs` on the read side floors too, so
-    // the two readings of one file agree exactly.
-    assert_eq!(journal_snapshot(&fingerprint), (Some(4096), Some(1_700_000_000)));
-}
-
-/// The unit-agreement test: one real file, read through both sides of the
-/// contract. This is what a wrong conversion breaks, and asserting `is_some()`
-/// alone would not catch it.
-#[test]
-fn journal_snapshot_mtime_equals_the_live_reading_undo_rechecks_it_against() {
-    let tmp = create_test_dir("snapshot_unit");
-    let source = tmp.join("receipt.pdf");
-    fs::write(&source, "reviewed").expect("write fixture");
-    let fingerprint = local_fingerprint(&source).expect("fingerprint fixture source");
-
-    let (size, mtime) = journal_snapshot(&fingerprint);
-    let live = crate::file_system::listing::get_single_entry(&source).expect("read the live entry");
-
-    assert_eq!(mtime, live.modified_at.map(|secs| secs as i64));
-    assert_eq!(size, live.size.map(|size| size as i64));
-    assert!(mtime.is_some(), "a local file must journal a verifiable mtime");
-    let _ = fs::remove_dir_all(&tmp);
-}
-
-/// A remote fingerprint already holds `FileEntry::modified_at`, so it needs no
-/// conversion — and must not get one.
-#[test]
-fn journal_snapshot_passes_a_remote_seconds_reading_through_unchanged() {
-    assert_eq!(
-        journal_snapshot(&remote_fingerprint(Some(1_024), Some(1_700_000_000))),
-        (Some(1_024), Some(1_700_000_000))
-    );
-}
-
-/// A backend that reports no mtime (MTP, some SMB servers) journals none, so the
-/// recheck falls back to size alone rather than inventing a value that would
-/// read as a match.
-#[test]
-fn journal_snapshot_records_no_mtime_when_the_backend_reports_none() {
-    assert_eq!(
-        journal_snapshot(&remote_fingerprint(Some(1_024), None)),
-        (Some(1_024), None)
-    );
 }
 
 /// An applied rename must journal the mtime undo verifies on. Recording `None`

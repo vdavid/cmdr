@@ -11,7 +11,7 @@ use std::time::Instant;
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::types::{
     OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
-    WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    SourceItemOutcome, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -290,9 +290,9 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
                     operation_id: operation_id.to_string(),
                     source_path: source.display().to_string(),
                     // `trashItemAtURL` moved the whole tree, so the original path
-                    // is gone. This arm is the Ok branch; a failure pushes to
-                    // `errors` instead and emits nothing.
+                    // is gone.
                     source_removed: true,
+                    outcome: SourceItemOutcome::Done,
                 });
             }
             Err(e) => {

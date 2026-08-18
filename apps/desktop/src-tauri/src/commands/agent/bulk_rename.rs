@@ -14,6 +14,7 @@ use crate::agent::tools::propose::rename::{
     BulkRenamePreflight, BulkRenamePreflightStatus, RenameProposalStore, RenameSourceFingerprint,
 };
 use crate::commands::util::IpcError;
+use crate::file_system::write_operations::{LocalContent, RemoteContent, SourceFingerprint};
 
 const BULK_RENAME_PREFLIGHT_TIMEOUT: Duration = Duration::from_secs(5);
 const BULK_RENAME_APPLY_TIMEOUT: Duration = Duration::from_secs(5);
@@ -153,7 +154,7 @@ fn fingerprint_row_id(fingerprint: &RenameSourceFingerprint) -> &str {
 
 fn map_bulk_rename_fingerprint(
     fingerprint: &RenameSourceFingerprint,
-) -> crate::file_system::write_operations::BulkRenameFingerprint {
+) -> SourceFingerprint {
     match fingerprint {
         RenameSourceFingerprint::Local {
             device,
@@ -161,21 +162,27 @@ fn map_bulk_rename_fingerprint(
             size,
             modified_nanos,
             ..
-        } => crate::file_system::write_operations::BulkRenameFingerprint::Local {
+        } => SourceFingerprint::Local {
             device: *device,
             inode: *inode,
-            size: *size,
-            modified_nanos: *modified_nanos,
+            // The rename review only ever accepts files, so a directory that
+            // turned up under a reviewed name mismatches on the variant alone.
+            content: LocalContent::File {
+                size: *size,
+                modified_nanos: *modified_nanos,
+            },
         },
         RenameSourceFingerprint::Remote {
             normalized_path,
             size,
             modified,
             ..
-        } => crate::file_system::write_operations::BulkRenameFingerprint::Remote {
+        } => SourceFingerprint::Remote {
             normalized_path: normalized_path.clone(),
-            size: *size,
-            modified: *modified,
+            content: RemoteContent::File {
+                size: *size,
+                modified: *modified,
+            },
         },
     }
 }
@@ -195,7 +202,6 @@ mod tests {
     use super::*;
     use crate::agent::tools::propose::evidence::{EvidenceSource, RenameEvidence};
     use crate::agent::tools::propose::rename::RenameProposalRow;
-    use crate::file_system::write_operations::BulkRenameFingerprint;
     use crate::operation_log::types::Initiator;
 
     fn row_from(source: EvidenceSource) -> RenameProposalRow {
@@ -255,11 +261,13 @@ mod tests {
         assert_eq!(fingerprint_row_id(&fingerprint), "row");
         assert_eq!(
             map_bulk_rename_fingerprint(&fingerprint),
-            BulkRenameFingerprint::Local {
+            SourceFingerprint::Local {
                 device: 17,
                 inode: 4_242,
-                size: 9_001,
-                modified_nanos: Some(1_780_000_000_000_000_000),
+                content: LocalContent::File {
+                    size: 9_001,
+                    modified_nanos: Some(1_780_000_000_000_000_000),
+                },
             }
         );
     }
@@ -278,10 +286,12 @@ mod tests {
         assert_eq!(fingerprint_row_id(&fingerprint), "row");
         assert_eq!(
             map_bulk_rename_fingerprint(&fingerprint),
-            BulkRenameFingerprint::Remote {
+            SourceFingerprint::Remote {
                 normalized_path: "/photos/one.png".into(),
-                size: Some(2_048),
-                modified: Some(1_780_000_000),
+                content: RemoteContent::File {
+                    size: Some(2_048),
+                    modified: Some(1_780_000_000),
+                },
             }
         );
     }
@@ -298,11 +308,13 @@ mod tests {
                 size: 3,
                 modified_nanos: None,
             }),
-            BulkRenameFingerprint::Local {
+            SourceFingerprint::Local {
                 device: 1,
                 inode: 2,
-                size: 3,
-                modified_nanos: None,
+                content: LocalContent::File {
+                    size: 3,
+                    modified_nanos: None,
+                },
             }
         );
         assert_eq!(
@@ -312,10 +324,12 @@ mod tests {
                 size: None,
                 modified: None,
             }),
-            BulkRenameFingerprint::Remote {
+            SourceFingerprint::Remote {
                 normalized_path: "/x/a.png".into(),
-                size: None,
-                modified: None,
+                content: RemoteContent::File {
+                    size: None,
+                    modified: None,
+                },
             }
         );
     }

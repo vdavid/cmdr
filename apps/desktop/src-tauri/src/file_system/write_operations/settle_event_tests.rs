@@ -218,6 +218,7 @@ async fn injected_sink_receives_complete_and_settled_for_local_copy() {
         vec![],
         None,
         crate::operation_log::types::Initiator::User,
+        None,
     )
     .await
     .expect("copy_files_start should return Ok");

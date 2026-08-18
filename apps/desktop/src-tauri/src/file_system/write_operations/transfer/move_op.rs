@@ -16,7 +16,8 @@ use super::super::state::{
 };
 use super::super::types::{
     IoResultExt, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    SourceItemOutcome, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    WriteSourceItemDoneEvent,
 };
 use super::super::validation::{is_same_filesystem, path_exists_or_is_symlink, validate_file_sizes_for_filesystem};
 use super::copy::copy_single_item;
@@ -309,6 +310,7 @@ fn move_with_rename(
                 // standing. One `lstat` per top-level item is cheap next to the
                 // move itself, and it's the only honest answer.
                 source_removed: !path_exists_or_is_symlink(source),
+                outcome: SourceItemOutcome::Done,
             });
         }
         Ok(())
@@ -640,6 +642,7 @@ fn move_with_staging(
                     // the rename phase can mean it stays for good. Phase 4 emits
                     // again with `source_removed: true` for the ones it deletes.
                     source_removed: false,
+                    outcome: SourceItemOutcome::Done,
                 });
             }
         }
@@ -897,8 +900,9 @@ fn delete_sources_after_move(
                 operation_id: operation_id.to_string(),
                 source_path: source.display().to_string(),
                 // Phase 4 only reaches here for a source it just removed; a
-                // skipped one is filtered out above.
+                // skipped one is reported above.
                 source_removed: true,
+                outcome: SourceItemOutcome::Done,
             });
         }
     }

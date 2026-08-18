@@ -46,6 +46,7 @@ mod scan_cache;
 mod scan_preview;
 mod scan_watchdog;
 mod scratch_dir;
+mod source_binding;
 mod state;
 mod status_cache;
 mod transfer;
@@ -121,9 +122,16 @@ pub(crate) use create::{create_directory_managed, create_file_managed};
 #[cfg(target_os = "macos")]
 pub(crate) use paste_clipboard::write_payload_to_dir;
 pub(crate) use rename::{
-    BulkRenameFingerprint, BulkRenameRow, RenameValidityResult, check_rename_permission_sync,
-    check_rename_validity_impl, rename_managed, start_bulk_rename,
+    BulkRenameRow, RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
+    start_bulk_rename,
 };
+// The source-identity binding: what a caller was promised each top-level source
+// is, and the pre-flight that holds the filesystem to it before an operation
+// touches anything. Reviewed batches (Ask Cmdr's rename plan, an approved
+// suggestion group) build one; a plain user-started op passes none and is
+// unaffected. `source_binding.rs`.
+pub(crate) use source_binding::{ExpectedSources, LocalContent, RemoteContent, SourceFingerprint};
+use source_binding::{retain_bound_sources, retain_bound_sources_remote, retain_bound_sources_with_sizes};
 // External busy-volume seam for the drag-out fulfillment service (see
 // `lifecycle/state.rs` § "External busy-volume seam"). `pub(crate)` so only in-crate
 // callers (`native_drag::fulfillment`) reach it. macOS-only: the sole consumer
@@ -136,6 +144,7 @@ pub use types::{
     ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, OperationStatus,
     OperationSummary, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanPreviewStartResult, ScanPreviewTotals, ScanProgressEvent, SortColumn, SortOrder,
+    SourceItemOutcome,
     WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
     WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
@@ -433,6 +442,16 @@ fn path_summary(sources: &[PathBuf], destination: Option<&std::path::Path>) -> O
 /// derive them from `volume_ids` (the plain local-copy command path); the
 /// both-local branch of `copy_between_volumes` passes the real
 /// `Volume::lane_key()`s of the two volumes.
+///
+/// `expected_sources` binds the operation to what its caller was last shown: a
+/// top-level source whose live identity no longer matches is dropped before any
+/// I/O and announced as a `Skipped` source item. Reviewed batches supply one; a
+/// user-started operation passes `None` and behaves exactly as it always has.
+/// `source_binding.rs`.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the starter threads the lane/volume/initiator context the manager needs alongside the op's own inputs; a bag struct would just move the same fields"
+)]
 pub async fn copy_files_start(
     events: Arc<dyn OperationEventSink>,
     sources: Vec<PathBuf>,
@@ -441,6 +460,7 @@ pub async fn copy_files_start(
     volume_ids: Vec<String>,
     lanes: Option<Vec<LaneKey>>,
     initiator: Initiator,
+    expected_sources: Option<ExpectedSources>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!(
         "copy_files_start: sources={:?}, destination={:?}, dry_run={}",
@@ -462,6 +482,15 @@ pub async fn copy_files_start(
         config.preview_id.clone(),
         sources.len() as u64,
         move |events, op_id, state| {
+            let Some(sources) = retain_bound_sources(
+                &*events,
+                &op_id,
+                WriteOperationType::Copy,
+                expected_sources.as_ref(),
+                sources,
+            ) else {
+                return Ok(());
+            };
             validate_sources(&sources)?;
             // Guard against copying a folder into itself BEFORE creating anything:
             // the dest may not exist yet, and the guard resolves it via its nearest
@@ -482,6 +511,16 @@ pub async fn copy_files_start(
 ///
 /// Uses instant rename() for same-filesystem moves.
 /// Uses atomic staging pattern for cross-filesystem moves.
+///
+/// `expected_sources` binds the operation to what its caller was last shown: a
+/// top-level source whose live identity no longer matches is dropped before any
+/// I/O and announced as a `Skipped` source item. Reviewed batches supply one; a
+/// user-started operation passes `None` and behaves exactly as it always has.
+/// `source_binding.rs`.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the starter threads the lane/volume/initiator context the manager needs alongside the op's own inputs; a bag struct would just move the same fields"
+)]
 pub async fn move_files_start(
     events: Arc<dyn OperationEventSink>,
     sources: Vec<PathBuf>,
@@ -490,6 +529,7 @@ pub async fn move_files_start(
     volume_ids: Vec<String>,
     lanes: Option<Vec<LaneKey>>,
     initiator: Initiator,
+    expected_sources: Option<ExpectedSources>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!(
         "move_files_start: sources={:?}, destination={:?}, dry_run={}",
@@ -511,6 +551,15 @@ pub async fn move_files_start(
         config.preview_id.clone(),
         sources.len() as u64,
         move |events, op_id, state| {
+            let Some(sources) = retain_bound_sources(
+                &*events,
+                &op_id,
+                WriteOperationType::Move,
+                expected_sources.as_ref(),
+                sources,
+            ) else {
+                return Ok(());
+            };
             validate_sources(&sources)?;
             // Guard against moving a folder into itself BEFORE creating anything:
             // the dest may not exist yet, and the guard resolves it via its nearest
@@ -532,12 +581,18 @@ pub async fn move_files_start(
 /// Recursively deletes files and directories. When `volume_id` is provided and
 /// is not the default volume, routes through `delete_volume_files_with_progress`
 /// which uses the Volume trait (needed for MTP and other non-local volumes).
+/// `expected_sources` binds the operation to what its caller was last shown: a
+/// top-level source whose live identity no longer matches is dropped before any
+/// I/O and announced as a `Skipped` source item. Reviewed batches supply one; a
+/// user-started operation passes `None` and behaves exactly as it always has.
+/// `source_binding.rs`.
 pub async fn delete_files_start(
     events: Arc<dyn OperationEventSink>,
     sources: Vec<PathBuf>,
     config: WriteOperationConfig,
     volume_id: Option<String>,
     initiator: Initiator,
+    expected_sources: Option<ExpectedSources>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
@@ -660,24 +715,45 @@ pub async fn delete_files_start(
                         crate::operation_log::types::ExecutionStatus::Failed
                     }
                     Some(volume) => {
-                        let result = delete_volume_files_with_progress_inner(
-                            volume,
-                            &volume_id_str,
+                        let bound = retain_bound_sources_remote(
+                            volume.as_ref(),
                             &*events,
                             &op_id,
-                            &state,
-                            &sources,
-                            &config,
+                            WriteOperationType::Delete,
+                            expected_sources.as_ref(),
+                            sources,
                         )
                         .await;
-                        match result {
-                            Ok(()) => crate::operation_log::types::ExecutionStatus::Done,
-                            Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {
-                                crate::operation_log::types::ExecutionStatus::Canceled
-                            }
-                            Err(e) => {
-                                events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Delete, e));
-                                crate::operation_log::types::ExecutionStatus::Failed
+                        match bound {
+                            // The binding left nothing to delete. Each source went
+                            // out as a `Skipped` item and the complete event with
+                            // it, so the op is over and it didn't fail.
+                            None => crate::operation_log::types::ExecutionStatus::Done,
+                            Some(sources) => {
+                                let result = delete_volume_files_with_progress_inner(
+                                    volume,
+                                    &volume_id_str,
+                                    &*events,
+                                    &op_id,
+                                    &state,
+                                    &sources,
+                                    &config,
+                                )
+                                .await;
+                                match result {
+                                    Ok(()) => crate::operation_log::types::ExecutionStatus::Done,
+                                    Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {
+                                        crate::operation_log::types::ExecutionStatus::Canceled
+                                    }
+                                    Err(e) => {
+                                        events.emit_error(WriteErrorEvent::new(
+                                            op_id.clone(),
+                                            WriteOperationType::Delete,
+                                            e,
+                                        ));
+                                        crate::operation_log::types::ExecutionStatus::Failed
+                                    }
+                                }
                             }
                         }
                     }
@@ -709,6 +785,15 @@ pub async fn delete_files_start(
             config.preview_id.clone(),
             sources.len() as u64,
             move |events, op_id, state| {
+                let Some(sources) = retain_bound_sources(
+                    &*events,
+                    &op_id,
+                    WriteOperationType::Delete,
+                    expected_sources.as_ref(),
+                    sources,
+                ) else {
+                    return Ok(());
+                };
                 validate_sources(&sources)?;
                 delete_files_with_progress_inner(&*events, &op_id, &state, &sources, &config)
             },
@@ -722,12 +807,22 @@ pub async fn delete_files_start(
 /// Moves top-level items to the macOS Trash via `NSFileManager.trashItemAtURL`.
 /// Supports cancellation between items and partial failure (some items may fail
 /// while others succeed).
+/// `expected_sources` binds the operation to what its caller was last shown: a
+/// top-level source whose live identity no longer matches is dropped before any
+/// I/O and announced as a `Skipped` source item. Reviewed batches supply one; a
+/// user-started operation passes `None` and behaves exactly as it always has.
+/// `source_binding.rs`.
+///
+/// ⚠️ `item_sizes` is positional against the sources the CALLER passed, so the
+/// binding filter runs against the pair and drops the matching size with its
+/// source.
 pub async fn trash_files_start(
     events: Arc<dyn OperationEventSink>,
     sources: Vec<PathBuf>,
     item_sizes: Option<Vec<u64>>,
     config: WriteOperationConfig,
     initiator: Initiator,
+    expected_sources: Option<ExpectedSources>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!("trash_files_start: sources={:?}", sources);
 
@@ -757,6 +852,19 @@ pub async fn trash_files_start(
         None,
         sources.len() as u64,
         move |events, op_id, state| {
+            // Trash reports bytes from a caller-supplied list indexed by position,
+            // so the filter has to move both halves together or every size after
+            // the first drop describes the wrong item.
+            let Some((sources, item_sizes)) = retain_bound_sources_with_sizes(
+                &*events,
+                &op_id,
+                WriteOperationType::Trash,
+                expected_sources.as_ref(),
+                sources,
+                item_sizes,
+            ) else {
+                return Ok(());
+            };
             validate_sources(&sources)?;
             trash_files_with_progress(&*events, &op_id, &state, &sources, item_sizes.as_deref())
         },

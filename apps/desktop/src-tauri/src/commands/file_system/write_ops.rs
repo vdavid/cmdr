@@ -183,6 +183,8 @@ pub async fn copy_files(
         vec![],
         None,
         initiator.unwrap_or(Initiator::User),
+        // No source binding: the user picked these in the pane they are looking at.
+        None,
     )
     .await
 }
@@ -217,6 +219,8 @@ pub async fn move_files(
         vec![],
         None,
         initiator.unwrap_or(Initiator::User),
+        // No source binding: the user picked these in the pane they are looking at.
+        None,
     )
     .await
 }
@@ -244,7 +248,7 @@ pub async fn delete_files(
     // driver inside `delete_files_start` (a `{ delete }` changeset), so no
     // rejection here. The `.zip` file itself deletes on the normal path.
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    ops_delete_files_start(events, sources, config, volume_id, initiator.unwrap_or(Initiator::User)).await
+    ops_delete_files_start(events, sources, config, volume_id, initiator.unwrap_or(Initiator::User), None).await
 }
 
 /// Moves files to macOS Trash. Same events as `copy_files` but with `operationType: trash`.
@@ -270,6 +274,8 @@ pub async fn trash_files(
         item_sizes,
         config,
         initiator.unwrap_or(Initiator::User),
+        // No source binding: the user picked these in the pane they are looking at.
+        None,
     )
     .await
 }

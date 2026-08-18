@@ -53,7 +53,12 @@ function seedSnapshot(): void {
 
 /** What a source item's completion looks like on the wire. */
 function done(sourcePath: string, sourceRemoved: boolean): WriteSourceItemDoneEvent {
-  return { operationId: 'op-1', sourcePath, sourceRemoved }
+  return { operationId: 'op-1', sourcePath, sourceRemoved, outcome: 'done' }
+}
+
+/** A source the operation deliberately left alone, but which is gone anyway. */
+function skipped(sourcePath: string, sourceRemoved: boolean): WriteSourceItemDoneEvent {
+  return { operationId: 'op-1', sourcePath, sourceRemoved, outcome: 'skipped' }
 }
 
 const remainingPaths = () => getSnapshot('sr-1')?.entries.map((e) => e.path)
@@ -84,8 +89,19 @@ describe('an operation that stopped early', () => {
 
 describe('an item the operation skipped', () => {
   it('keeps its row: the file is still on disk', () => {
-    // A move resolved `b.jpg`'s conflict with Skip, so only `a.jpg` emits.
+    // A move resolved `b.jpg`'s conflict with Skip, so `b.jpg` reports Skipped
+    // and its file never moved.
     emit(done(A, true))
+    emit(skipped(B, false))
+
+    expect(remainingPaths()).toEqual([B])
+  })
+
+  it('drops its row anyway when the skip was BECAUSE the file vanished', () => {
+    // `sourceRemoved`, not `outcome`, is what says a path answers to nothing:
+    // an approved operation skips a source it can no longer find, and that row
+    // is as stale as one a delete removed.
+    emit(skipped(A, true))
 
     expect(remainingPaths()).toEqual([B])
   })

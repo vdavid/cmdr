@@ -289,10 +289,31 @@ pub struct WriteErrorEvent {
     pub error: WriteOperationError,
 }
 
-/// Emitted when a top-level source item has been processed IN FULL, and only then:
-/// a skipped item, or one the operation never reached before a cancel, emits
-/// nothing. So this is the per-path OUTCOME stream, not a restatement of intent,
-/// and it costs one event per top-level item rather than one list per operation.
+/// How one top-level source item ENDED.
+///
+/// `Done` is not "every byte moved": a directory merge that skipped three of a
+/// hundred children still lands as `Done`, because the source as a whole was
+/// carried out. `Skipped` means the operation deliberately left the item alone
+/// and wrote nothing for it; `Failed` means it tried and couldn't.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceItemOutcome {
+    Done,
+    Skipped,
+    Failed,
+}
+
+/// Emitted when a top-level source item is FINISHED WITH, whichever way it ended:
+/// carried out, deliberately skipped, or failed. So this is the per-path OUTCOME
+/// stream, not a restatement of intent, and it costs one event per top-level item
+/// rather than one list per operation. An item the operation never reached before a
+/// cancel still emits nothing — nothing was decided about it.
+///
+/// **Outcome rides on this event rather than a sibling one** because "this source
+/// is finished with" and "how it ended" are one fact. Split across two events, a
+/// consumer that wants a per-source verdict — the queue's gradual deselection, the
+/// search-snapshot purge, the suggestion store writing `proposal_ops.status` —
+/// would have to join two streams and decide what a missing partner means.
 ///
 /// The frontend uses it for gradual deselection during an operation, and
 /// `source_removed` additionally drives the search-snapshot purge
@@ -309,8 +330,12 @@ pub struct WriteSourceItemDoneEvent {
     /// item finishes STAGING (the source is still there, and a Skip in the
     /// rename phase may mean it stays) and again when the source-delete phase
     /// removes it. Anything that acts on a vanished file must read this flag,
-    /// not infer removal from the operation type.
+    /// not infer removal from the operation type. ⚠️ Nor is it implied by
+    /// `outcome`: a source skipped because it vanished under us reports
+    /// `Skipped` AND `source_removed: true`.
     pub source_removed: bool,
+    /// How the item ended. See [`SourceItemOutcome`].
+    pub outcome: SourceItemOutcome,
 }
 
 /// Cancelled event payload.

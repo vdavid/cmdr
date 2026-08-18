@@ -17,31 +17,14 @@ use uuid::Uuid;
 
 use super::super::event_sinks::OperationEventSink;
 use super::super::manager::{self, OperationDescriptor, OperationSummaryText};
+use super::super::source_binding::{SourceFingerprint, normalized_path};
 use super::super::state::{WriteOperationState, WriteSettledGuard, is_cancelled, update_operation_status};
 use super::super::types::{
     WriteCancelledEvent, WriteCompleteEvent, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
-    WriteSourceItemDoneEvent,
+    SourceItemOutcome, WriteSourceItemDoneEvent,
 };
 use crate::file_system::volume::{LaneKey, Volume, rename_local_exclusive};
 use crate::operation_log::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind};
-
-/// Server-owned source identity captured by the rename-review preflight. The
-/// frontend never creates this data; the Ask Cmdr command maps its accepted
-/// preflight directly into this write-engine input.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum BulkRenameFingerprint {
-    Local {
-        device: u64,
-        inode: u64,
-        size: u64,
-        modified_nanos: Option<u128>,
-    },
-    Remote {
-        normalized_path: String,
-        size: Option<u64>,
-        modified: Option<i64>,
-    },
-}
 
 /// One immutable row that the user allowed and preflight accepted.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -49,7 +32,7 @@ pub(crate) struct BulkRenameRow {
     pub row_id: String,
     pub source: PathBuf,
     pub destination: PathBuf,
-    pub expected_fingerprint: BulkRenameFingerprint,
+    pub expected_fingerprint: SourceFingerprint,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -310,7 +293,7 @@ fn bulk_rename_local(rows: &[BulkRenameRow], intent: &AtomicU8, recorder: &BulkR
     let mut outcomes = vec![BulkRenameOutcome::Skipped; rows.len()];
     let mut active: Vec<bool> = rows
         .iter()
-        .map(|row| local_fingerprint(&row.source).is_some_and(|actual| actual == row.expected_fingerprint))
+        .map(|row| SourceFingerprint::capture_local(&row.source).is_some_and(|actual| actual == row.expected_fingerprint))
         .collect();
     settle_local_conflicts(rows, &mut active);
     for (index, row) in rows.iter().enumerate().filter(|(index, _)| active[*index]) {
@@ -393,7 +376,7 @@ async fn bulk_rename_remote(
 }
 
 fn rename_local_direct(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome, recorder: &BulkRenameRecorder) {
-    if !local_fingerprint(&row.source).is_some_and(|actual| actual == row.expected_fingerprint) {
+    if !SourceFingerprint::capture_local(&row.source).is_some_and(|actual| actual == row.expected_fingerprint) {
         return;
     }
     note_rename_write(&row.source, &row.destination);
@@ -408,7 +391,7 @@ fn rename_local_direct(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome, rec
 }
 
 fn rename_local_case_only(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome, recorder: &BulkRenameRecorder) {
-    if !local_fingerprint(&row.source).is_some_and(|actual| actual == row.expected_fingerprint) {
+    if !SourceFingerprint::capture_local(&row.source).is_some_and(|actual| actual == row.expected_fingerprint) {
         return;
     }
     let Some(temporary) = unique_temporary_path(&row.source, &row.row_id) else {
@@ -451,7 +434,8 @@ fn rename_local_cycle(
     recorder: &BulkRenameRecorder,
 ) {
     if indices.iter().any(|index| {
-        !local_fingerprint(&rows[*index].source).is_some_and(|actual| actual == rows[*index].expected_fingerprint)
+        !SourceFingerprint::capture_local(&rows[*index].source)
+            .is_some_and(|actual| actual == rows[*index].expected_fingerprint)
     }) {
         return;
     }
@@ -702,10 +686,6 @@ async fn settle_remote_conflicts(rows: &[BulkRenameRow], active: &mut [bool], vo
     }
 }
 
-fn normalized_path(path: &Path) -> String {
-    cmdr_index::store::normalize_for_comparison(&path.to_string_lossy())
-}
-
 fn unique_temporary_path(source: &Path, row_id: &str) -> Option<PathBuf> {
     let parent = source.parent()?;
     for _ in 0..16 {
@@ -733,40 +713,6 @@ fn note_rename_write(from: &Path, to: &Path) {
     crate::downloads::note_pending_write_for_cmdr(to);
 }
 
-fn local_fingerprint(path: &Path) -> Option<BulkRenameFingerprint> {
-    let metadata = std::fs::symlink_metadata(path).ok()?;
-    if metadata.file_type().is_dir() {
-        return None;
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        Some(BulkRenameFingerprint::Local {
-            device: metadata.dev(),
-            inode: metadata.ino(),
-            size: metadata.len(),
-            modified_nanos: metadata
-                .modified()
-                .ok()
-                .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
-                .map(|time| time.as_nanos()),
-        })
-    }
-    #[cfg(not(unix))]
-    {
-        Some(BulkRenameFingerprint::Local {
-            device: 0,
-            inode: 0,
-            size: metadata.len(),
-            modified_nanos: metadata
-                .modified()
-                .ok()
-                .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
-                .map(|time| time.as_nanos()),
-        })
-    }
-}
-
 #[cfg(unix)]
 fn same_local_file(left: &std::fs::Metadata, right: &std::fs::Metadata) -> bool {
     use std::os::unix::fs::MetadataExt;
@@ -778,64 +724,11 @@ fn same_local_file(_left: &std::fs::Metadata, _right: &std::fs::Metadata) -> boo
     false
 }
 
-async fn remote_fingerprint_matches(volume: &dyn Volume, path: &Path, expected: &BulkRenameFingerprint) -> bool {
-    let BulkRenameFingerprint::Remote {
-        normalized_path,
-        size,
-        modified,
-    } = expected
-    else {
-        return false;
-    };
-    if normalized_path != &cmdr_index::store::normalize_for_comparison(&path.to_string_lossy()) {
-        return false;
-    }
-    let Ok(metadata) = volume.get_metadata(path).await else {
-        return false;
-    };
-    !metadata.is_directory && metadata.size == *size && metadata.modified_at.map(|value| value as i64) == *modified
-}
-
-/// Nanoseconds in one second — the divisor that brings a local fingerprint into
-/// the journal's unit.
-const NANOS_PER_SECOND: u128 = 1_000_000_000;
-
-/// The `(size, mtime)` identity snapshot the journal records for one applied
-/// rename, in the journal's units: bytes, and Unix **seconds** for mtime.
-///
-/// **The unit is the whole risk here.** Undo rechecks these two numbers against
-/// the live entry (`operation_log::rollback::verify_snapshot` vs
-/// `FileEntry::modified_at`), and every backend reports `modified_at` in whole
-/// Unix seconds — the local reader via `Duration::as_secs`, SMB pinned by
-/// `smb_integration_modified_at_is_unix_seconds`. Journal nanoseconds and every
-/// undo reports drift and refuses, which silently disables undo; journal nothing
-/// (as this did before) and identity rests on size alone, so a same-size
-/// replacement file gets renamed back in place of the original.
-///
-/// A rename never touches the file's mtime (POSIX `rename` changes the parent
-/// directory's, not the inode's; SMB's `FILE_RENAME_INFORMATION` likewise), so
-/// the pre-rename fingerprint stays the destination's true identity.
-///
-/// `None` for mtime when the backend reported none (MTP, some SMB servers): the
-/// recheck then falls back to size alone rather than inventing a value that
-/// would read as a match.
-fn journal_snapshot(fingerprint: &BulkRenameFingerprint) -> (Option<i64>, Option<i64>) {
-    match fingerprint {
-        BulkRenameFingerprint::Local {
-            size, modified_nanos, ..
-        } => (
-            Some(*size as i64),
-            // Floor-divide, matching the truncation `Duration::as_secs` applies on
-            // the read side, so both readings of one file land on the same second.
-            // `try_from` rather than `as`: a saturating or wrapping cast would
-            // journal a timestamp that isn't the file's, and undo would then refuse
-            // forever. An unrepresentable value (past year 292,277,026,596) degrades
-            // to the size-only check instead of panicking.
-            modified_nanos.and_then(|nanos| i64::try_from(nanos / NANOS_PER_SECOND).ok()),
-        ),
-        // A remote fingerprint already holds `FileEntry::modified_at`, in seconds.
-        BulkRenameFingerprint::Remote { size, modified, .. } => (size.map(|size| size as i64), *modified),
-    }
+/// Whether the row's source on `volume` is still the file the preflight recorded.
+/// The recorded normalized path is part of the fingerprint, so a row pointing at a
+/// different path than the one it was accepted for can never match.
+async fn remote_fingerprint_matches(volume: &dyn Volume, path: &Path, expected: &SourceFingerprint) -> bool {
+    SourceFingerprint::capture_remote(volume, path).await.as_ref() == Some(expected)
 }
 
 /// Journals what the batch actually did to the filesystem, as it happens.
@@ -870,7 +763,7 @@ impl BulkRenameRecorder {
     /// `.cmdr-tmp-*` partials it exists for and catastrophic here: a rotation temp
     /// holds a COMPLETE user file under a private name, so sweeping it destroys data.
     fn record_hop(&self, row: &BulkRenameRow, from: &Path, to: &Path) {
-        let (size, mtime) = journal_snapshot(&row.expected_fingerprint);
+        let (size, mtime) = row.expected_fingerprint.journal_snapshot();
         super::super::journal::record_volume_leaf(
             &self.operation_id,
             EntryType::File,
@@ -896,7 +789,7 @@ impl BulkRenameRecorder {
                 BulkRenameOutcome::Skipped => ItemOutcome::Skipped,
                 BulkRenameOutcome::Failed => ItemOutcome::Failed,
             };
-            let (size, mtime) = journal_snapshot(&row.expected_fingerprint);
+            let (size, mtime) = row.expected_fingerprint.journal_snapshot();
             super::super::journal::record_volume_leaf(
                 &self.operation_id,
                 EntryType::File,
@@ -964,6 +857,7 @@ fn emit_bulk_rename_progress(
                 // `Done` means the row landed at its new name, so nothing answers
                 // to the old path any more.
                 source_removed: true,
+                outcome: SourceItemOutcome::Done,
             });
         }
     }

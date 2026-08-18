@@ -27,7 +27,7 @@ use crate::operation_log::types::{Initiator, OpKind};
 
 mod bulk;
 
-pub(crate) use bulk::{BulkRenameFingerprint, BulkRenameRow, start_bulk_rename};
+pub(crate) use bulk::{BulkRenameRow, start_bulk_rename};
 
 /// Result of a rename validity check.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]

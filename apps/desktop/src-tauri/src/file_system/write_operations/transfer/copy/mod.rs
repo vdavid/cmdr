@@ -22,7 +22,7 @@ use super::super::state::{
 use super::super::types::{
     ConflictResolution, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
-    WriteSourceItemDoneEvent,
+    SourceItemOutcome, WriteSourceItemDoneEvent,
 };
 use super::super::validation::{validate_disk_space, validate_file_sizes_for_filesystem};
 use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};
@@ -377,6 +377,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                     source_path: source_path.display().to_string(),
                     // A copy leaves its source exactly where it was.
                     source_removed: false,
+                    outcome: SourceItemOutcome::Done,
                 });
             }
 

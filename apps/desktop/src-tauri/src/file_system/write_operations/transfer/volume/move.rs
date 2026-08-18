@@ -123,6 +123,9 @@ pub async fn move_between_volumes(
             vec![source_volume_id, dest_volume_id],
             Some(lanes),
             initiator,
+            // Volume-routed transfers don't carry a source binding yet; the local
+            // starters own it. `../../source_binding.rs`.
+            None,
         )
         .await;
     }

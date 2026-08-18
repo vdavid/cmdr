@@ -11,7 +11,8 @@ use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::transfer::volume::map_volume_error;
 use super::super::types::{
     DryRunResult, IoResultExt, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    SourceItemOutcome, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    WriteSourceItemDoneEvent,
 };
 use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::file_system::volume::{Volume, VolumeError};
@@ -179,6 +180,7 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
                 // Every file under this top-level item is unlinked. Delete has no
                 // Skip, so there is no way for it to still be there.
                 source_removed: true,
+                outcome: SourceItemOutcome::Done,
             });
         }
 
