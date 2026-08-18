@@ -23,9 +23,11 @@ use serde::Serialize;
 use tauri::AppHandle;
 
 use super::{now_secs, with_read_connection};
+use crate::agent::store::proposals::{AcceptanceOutcome, ClaimRefusal};
 use crate::agent::store::proposals::{
     GroupSummary, ProposalOp, ProposalSweep, count_ops, get_sweep, list_groups, page_ops,
 };
+use crate::agent::suggested_ops::bridge::{ApprovalOutcome, ApprovalRefusal};
 use crate::agent::types::{OpStatus, ProposalStatus, ProposalVerb, Reversibility};
 use crate::commands::util::IpcError;
 
@@ -324,6 +326,54 @@ mod tests {
     use super::*;
     use crate::agent::store::proposals::ProposalGroup;
 
+    /// Every refusal sends the user somewhere different, so the mapping is the thing worth
+    /// pinning: "somebody already answered" closes the group, "the list changed" sends them back
+    /// to re-read it, and an unmounted drive is neither. Collapsing any two would make the
+    /// dialog say the wrong thing in one of the cases.
+    #[test]
+    fn each_refusal_keeps_the_recovery_it_implies() {
+        assert_eq!(
+            refusal_view(ApprovalRefusal::NotAccepted(AcceptanceOutcome::NotPending {
+                found: ProposalStatus::Approved
+            })),
+            ApprovalResultView::AlreadyAnswered
+        );
+        assert_eq!(
+            refusal_view(ApprovalRefusal::Claim(ClaimRefusal::StaleStatus {
+                found: ProposalStatus::Rejected
+            })),
+            ApprovalResultView::AlreadyAnswered
+        );
+        assert_eq!(
+            refusal_view(ApprovalRefusal::Claim(ClaimRefusal::BindingMismatch {
+                accepted: None,
+                live: crate::agent::store::proposals::OpBinding {
+                    op_count: 3,
+                    digest: "abc".into()
+                }
+            })),
+            ApprovalResultView::ListChanged,
+            "a changed op set is re-readable, never an already-answered group"
+        );
+        assert_eq!(
+            refusal_view(ApprovalRefusal::NotAccepted(AcceptanceOutcome::Unknown)),
+            ApprovalResultView::Unknown
+        );
+        assert_eq!(
+            refusal_view(ApprovalRefusal::Claim(ClaimRefusal::Unknown)),
+            ApprovalResultView::Unknown
+        );
+        assert_eq!(
+            refusal_view(ApprovalRefusal::SourceVolumeGone {
+                volume_id: "smb-nas".into()
+            }),
+            ApprovalResultView::SourceVolumeGone {
+                volume_id: "smb-nas".into()
+            },
+            "the drive is named, because that is what the user has to reconnect"
+        );
+    }
+
     fn group(id: i64, set_id: i64, verb: ProposalVerb) -> GroupSummary {
         GroupSummary {
             group: ProposalGroup {
@@ -479,5 +529,115 @@ mod tests {
         assert_eq!(sweeps[0].sweep_id, 42);
         assert_eq!(sweeps[0].groups.len(), 1);
         assert_eq!(sweeps[0].rationale, None);
+    }
+}
+
+/// What approving a group did, in the terms the dialog acts on.
+///
+/// Every refusal is a typed variant rather than a sentence, because the recoveries genuinely
+/// differ: "somebody already answered this" closes the group, "the list changed" sends the user
+/// back to re-read it, and a missing drive is neither.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase", tag = "kind")]
+pub enum ApprovalResultView {
+    /// The ops are queued and running. The dialog closes and the queue takes over.
+    Started { operation_id: String },
+    /// The group left `pending` before this arrived: approved, rejected, or gone.
+    AlreadyAnswered,
+    /// The op set is not what preflight accepted, so nothing ran. The user re-reads it.
+    ListChanged,
+    /// No group with that id.
+    Unknown,
+    /// The drive the sources live on isn't mounted any more.
+    SourceVolumeGone { volume_id: String },
+    /// The group claimed, but the write engine wouldn't start it.
+    CouldNotStart { detail: String },
+}
+
+/// Approve a group: claim it and hand its ops to the queue.
+///
+/// The client sends the ids it turned OFF, never the ones it kept, so a 60,000-op group
+/// approved whole carries an empty list.
+///
+/// **On its own thread with its own runtime.** `approve_and_execute` holds a `Connection`
+/// across awaits, which a Tauri command's future can't (it must be `Send`). The result comes
+/// back over a oneshot, so the command still answers the caller directly rather than making the
+/// dialog wait on an event.
+#[tauri::command]
+#[specta::specta]
+pub async fn suggested_ops_approve(
+    app: AppHandle,
+    group_id: i64,
+    deselected_op_ids: Vec<i64>,
+) -> Result<ApprovalResultView, IpcError> {
+    let db_path = super::db_path(&app).ok_or_else(|| IpcError::from_err("Cmdr's suggestion store isn't open."))?;
+    let now = now_secs();
+    let (send, receive) = tokio::sync::oneshot::channel();
+
+    std::thread::spawn(move || {
+        let runtime = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
+            Ok(runtime) => runtime,
+            Err(e) => {
+                let _ = send.send(Err(format!("{e}")));
+                return;
+            }
+        };
+        let outcome = runtime.block_on(async move {
+            let conn = crate::agent::store::open_write_connection(&db_path).map_err(|e| e.to_string())?;
+            // A second connection, MOVED into the sink decorator: the operation outlives this
+            // call by minutes, so its writer can't borrow the one above.
+            let reporting = crate::agent::store::open_write_connection(&db_path).map_err(|e| e.to_string())?;
+            let sink = std::sync::Arc::new(crate::file_system::write_operations::TauriEventSink::new(app));
+            crate::agent::suggested_ops::bridge::approve_and_execute(
+                &conn,
+                reporting,
+                sink,
+                group_id,
+                &deselected_op_ids,
+                now,
+            )
+            .await
+            .map_err(|e| e.to_string())
+        });
+        let _ = send.send(outcome);
+    });
+
+    let outcome = receive
+        .await
+        .map_err(|_| IpcError::from_err("Approving didn't finish. Open the review again."))?
+        .map_err(IpcError::from_err)?;
+    Ok(to_approval_view(outcome))
+}
+
+/// Map the bridge's outcome onto what the dialog acts on. Pure, so the mapping is pinned by
+/// tests rather than read out of the command.
+fn to_approval_view(outcome: ApprovalOutcome) -> ApprovalResultView {
+    match outcome {
+        ApprovalOutcome::Started(group) => ApprovalResultView::Started {
+            operation_id: group.operation.operation_id,
+        },
+        ApprovalOutcome::Refused(refusal) => refusal_view(refusal),
+    }
+}
+
+/// Collapsing two refusals that want different recoveries would make the dialog say the wrong
+/// thing in one of the two cases, which is why the bridge types them apart.
+fn refusal_view(refusal: ApprovalRefusal) -> ApprovalResultView {
+    match refusal {
+        ApprovalRefusal::NotAccepted(AcceptanceOutcome::Unknown) | ApprovalRefusal::Claim(ClaimRefusal::Unknown) => {
+            ApprovalResultView::Unknown
+        }
+        ApprovalRefusal::NotAccepted(_) | ApprovalRefusal::Claim(ClaimRefusal::StaleStatus { .. }) => {
+            ApprovalResultView::AlreadyAnswered
+        }
+        ApprovalRefusal::Claim(ClaimRefusal::BindingMismatch { .. }) => ApprovalResultView::ListChanged,
+        ApprovalRefusal::SourceVolumeGone { volume_id } => ApprovalResultView::SourceVolumeGone { volume_id },
+        ApprovalRefusal::EngineRefused { detail } => ApprovalResultView::CouldNotStart { detail },
+        ApprovalRefusal::Engine(error) => ApprovalResultView::CouldNotStart {
+            detail: format!("{error:?}"),
+        },
+        ApprovalRefusal::TargetMissing { verb } => ApprovalResultView::CouldNotStart {
+            detail: format!("the stored group has no target for {}", verb.as_token()),
+        },
     }
 }

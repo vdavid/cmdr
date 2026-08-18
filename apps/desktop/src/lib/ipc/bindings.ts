@@ -2585,6 +2585,19 @@ export const commands = {
   suggestedOpsReject: (groupId: number) =>
     typedError<RejectResultView, IpcError>(__TAURI_INVOKE('suggested_ops_reject', { groupId })),
   /**
+   *  Approve a group: claim it and hand its ops to the queue.
+   *
+   *  The client sends the ids it turned OFF, never the ones it kept, so a 60,000-op group
+   *  approved whole carries an empty list.
+   *
+   *  **On its own thread with its own runtime.** `approve_and_execute` holds a `Connection`
+   *  across awaits, which a Tauri command's future can't (it must be `Send`). The result comes
+   *  back over a oneshot, so the command still answers the caller directly rather than making the
+   *  dialog wait on an event.
+   */
+  suggestedOpsApprove: (groupId: number, deselectedOpIds: number[]) =>
+    typedError<ApprovalResultView, IpcError>(__TAURI_INVOKE('suggested_ops_approve', { groupId, deselectedOpIds })),
+  /**
    *  A settings change may have switched the model for an open thread: record it as a
    *  conversation event once any in-flight turn finishes (the turn keeps its already-resolved
    *  model; the event marks the boundary). Returns the persisted event's display view, or
@@ -3826,6 +3839,27 @@ export type AppStatus =
   | { type: 'commercial'; licenseType: LicenseType; organizationName: string | null; expiresAt: string | null }
   // Expired commercial license - reverted to personal.
   | { type: 'expired'; organizationName: string | null; expiredAt: string; showModal: boolean }
+
+/**
+ *  What approving a group did, in the terms the dialog acts on.
+ *
+ *  Every refusal is a typed variant rather than a sentence, because the recoveries genuinely
+ *  differ: "somebody already answered this" closes the group, "the list changed" sends the user
+ *  back to re-read it, and a missing drive is neither.
+ */
+export type ApprovalResultView =
+  // The ops are queued and running. The dialog closes and the queue takes over.
+  | { kind: 'started'; operation_id: string }
+  // The group left `pending` before this arrived: approved, rejected, or gone.
+  | { kind: 'alreadyAnswered' }
+  // The op set is not what preflight accepted, so nothing ran. The user re-reads it.
+  | { kind: 'listChanged' }
+  // No group with that id.
+  | { kind: 'unknown' }
+  // The drive the sources live on isn't mounted any more.
+  | { kind: 'sourceVolumeGone'; volume_id: string }
+  // The group claimed, but the write engine wouldn't start it.
+  | { kind: 'couldNotStart'; detail: string }
 
 /**
  *  The `archive_edit` subkind, supplied by the capturing driver (compress vs
