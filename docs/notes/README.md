@@ -57,6 +57,11 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 - `preemption-2026-08-18.md` — what stopping a walk costs (cancel-to-join, the bound the claim table's atomic handoff
   does NOT fix) and what it buys the folder somebody just opened. Read it before widening `YIELD_WAIT`, before assuming
   a stopped walk is free, or before taking preemption to a share: the SMB half of the handover is tested but not timed.
+- `wide-dir-scaling-2026-08-18.md` — why a first index over one directory of 60,000 children takes over an hour once
+  something stops the walk, where covering it uninterrupted takes 3.2 s. It names the stage (the writer's ancestor
+  roll-up, `O(width²)` when every child of a wide parent is its own frontier root), proves it three ways including an
+  ablation, and sets out what a fix costs. **Keep it until the fix lands**: it is the only place the quadratic and its
+  break-even (~750 children) are written down, and it corrects two claims in `preemption-2026-08-18.md`.
 - `churn-against-completion-2026-08-15.md` — whether a drive somebody is writing to can stop its first index from ever
   finishing (no: it takes ~200 new folders a second sustained to cost one session's completion marker, and the next
   launch settles the drive in ~2 s). Read it before treating a slow first index on a busy machine as a regression, or

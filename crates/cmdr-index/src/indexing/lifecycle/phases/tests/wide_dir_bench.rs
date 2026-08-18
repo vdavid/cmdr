@@ -1,26 +1,21 @@
 //! What ONE very wide directory costs the first index.
 //!
-//! `#[ignore]`d: it builds a synthetic tree per width and drives the REAL machine
-//! over it, which takes minutes and prints numbers rather than asserting.
+//! `#[ignore]`d: both arms build a synthetic tree per width and print numbers
+//! rather than asserting.
 //!
 //! The question is the scaling SHAPE. A photo dump, a Maildir, or a downloads
 //! folder really does hold tens of thousands of children in one directory, so a
-//! first index that grows faster than the width is a "Cmdr never finishes" report
-//! waiting to happen. Each row separates the three things a run spends time on:
+//! first index that grows faster than the width is a "Cmdr never finishes"
+//! report waiting to happen. Two arms, because the answer differs:
 //!
-//! - **build**: making the tree, which is the fixture's cost and ❌ not the
-//!   product's.
-//! - **machine**: `start_volume` to the machine reporting no work, which IS the
-//!   product's.
-//! - **tail**: how much of the machine's time came AFTER the walk stopped
-//!   counting entries, which is what separates "the walk is slow" from "something
-//!   after the walk is slow".
-//!
-//! ```sh
-//! CMDR_PHASES_TEST_TREE_DIR=/private/tmp CMDR_WIDE_DIR_BENCH_WIDTHS=12000,20000,30000 \
-//!   cargo test -p cmdr-index --release --lib -- --ignored --nocapture --exact \
-//!   indexing::lifecycle::phases::tests::wide_dir_bench::wide_dir_cost
-//! ```
+//! - [`wide_dir_cost`] drives the REAL machine over the directory, uninterrupted.
+//!   It splits the run into **build** (the fixture's cost, ❌ not the product's),
+//!   **machine** (`start_volume` to no work left, which IS the product's),
+//!   **walk** (up to the last moment the entry counter moved), and **tail**
+//!   (everything after that) — so "the walk is slow" and "everything after the
+//!   walk is slow" stop looking alike.
+//! - [`wide_dir_rollup_cost`] covers the same ground with the directory already
+//!   listed, which is what a stopped walk leaves. That is where the cost is.
 //!
 //! Results and the call they back: `docs/notes/wide-dir-scaling-2026-08-18.md`.
 
@@ -112,115 +107,79 @@ fn wide_dir_cost() {
     }
 }
 
-/// What it costs to RESUME a first index that stopped part way through the wide
-/// directory.
+/// What it costs to cover a wide directory's children ONE FRONTIER ROOT AT A
+/// TIME, against covering the same ground in one walk.
 ///
-/// This is the shape the uninterrupted run above never reaches, and the one a
-/// real user gets for free: quit mid-index, open a folder while the machine is
-/// walking (preemption stops the group on purpose), or let a search take the
-/// ground. The wide directory itself is listed, its children are not, so the
-/// frontier stops being one root and becomes one root PER unwalked child — all of
-/// them sharing a parent that has `width` children.
+/// That is not an exotic state: the moment anything stops the walk of a wide
+/// directory after it has been listed — a quit, a search taking the ground, or
+/// the machine stopping the group for a folder somebody opened — its frontier
+/// stops being one root and becomes one root per unwalked child. Every one of
+/// those roots ends its walk with a `ComputeSubtreeAggregates`, whose handler
+/// rolls the ancestor chain up from the child's parent: the wide directory
+/// itself, recomputed from all `width` of its children, once per root.
+///
+/// So the SAME ground costs O(width) in one walk and O(width²) in `width` walks.
+/// The ratio column is the finding; ❌ read it rather than the absolute times,
+/// which move with machine load.
 ///
 /// ```sh
-/// CMDR_PHASES_TEST_TREE_DIR=/private/tmp CMDR_WIDE_DIR_BENCH_WIDTHS=4000,8000,16000 \
+/// CMDR_PHASES_TEST_TREE_DIR=/private/tmp CMDR_WIDE_DIR_BENCH_WIDTHS=500,1000,2000,4000 \
 ///   cargo test -p cmdr-index --release --lib -- --ignored --nocapture --exact \
-///   indexing::lifecycle::phases::tests::wide_dir_bench::wide_dir_resume_cost
+///   indexing::lifecycle::phases::tests::wide_dir_bench::wide_dir_rollup_cost
 /// ```
 #[test]
 #[ignore = "benchmark over a synthetic tree; run manually with --nocapture"]
-fn wide_dir_resume_cost() {
+fn wide_dir_rollup_cost() {
     let mut out = std::io::stderr();
-    let shape = Shape::from_env();
     let _ = writeln!(
         &mut out,
-        "\n── resuming a first index stopped inside one directory of N {} ──\n\
-         {:>8}  {:>10}  {:>10}  {:>10}  {:>9}",
-        shape.label(),
-        "width",
-        "frontier",
-        "resume",
-        "entries",
-        "finished"
+        "\n── covering a wide directory whole, against one child at a time ──\n\
+         {:>8}  {:>12}  {:>14}  {:>10}  {:>12}",
+        "width", "one walk", "per child", "ratio", "per root"
     );
     for width in widths() {
-        let run = one_resume(width, shape);
+        let whole = cover_the_wide_directory_whole(width);
+        let piecemeal = cover_the_wide_directory_child_by_child(width);
         let _ = writeln!(
             &mut out,
-            "{width:>8}  {:>10}  {:>10}  {:>10}  {:>9}",
-            run.frontier,
-            format!("{:.1?}", run.resumed),
-            run.entries,
-            run.finished,
+            "{width:>8}  {:>12}  {:>14}  {:>10}  {:>12}",
+            format!("{whole:.1?}"),
+            format!("{piecemeal:.1?}"),
+            format!(
+                "{:.0}x",
+                piecemeal.as_secs_f64() / whole.as_secs_f64().max(f64::MIN_POSITIVE)
+            ),
+            format!("{:.2?}", piecemeal / width.max(1) as u32),
         );
     }
 }
 
-/// One width's interrupted run and what resuming it cost.
-struct Resume {
-    /// How many frontier roots the interruption left. One is the healthy answer;
-    /// anything near `width` is the shape this bench exists to catch.
-    frontier: usize,
-    /// The relaunch, from `start_volume` to "no work left" or the patience budget.
-    resumed: Duration,
-    entries: u64,
-    /// Whether it actually got there, rather than running out of patience.
-    finished: bool,
+/// The uninterrupted shape: the wide directory is one frontier root, so one walk
+/// covers it and one ancestor roll-up follows.
+fn cover_the_wide_directory_whole(width: usize) -> Duration {
+    let fixture = Tree::new();
+    build_wide(&fixture.root().join("big"), width, Shape::Subdirs);
+    let started = Instant::now();
+    fixture.cover(&fixture.path("big"));
+    started.elapsed()
 }
 
-fn one_resume(width: usize, shape: Shape) -> Resume {
-    let drive = Drive::assembled(
-        "wide-dir-resume-bench",
-        |root| build_wide(&root.join("big"), width, shape),
-        |_, _| {},
-        &[],
-        true,
-        std::sync::Arc::new(crate::indexing::events::RecordingSink::new()) as std::sync::Arc<dyn EventSink>,
-        std::sync::Arc::new(crate::indexing::events::RecordingSink::new()),
-        crate::indexing::host::policy::FakeHostPolicy::shared(),
-    );
-
-    // Stop the machine once it is well inside the wide directory but nowhere near
-    // done, which is where a quit or a preemption lands.
-    drive.start();
-    let stop_after = (width / 5).max(1) as u64;
-    let deadline = Instant::now() + patience();
-    while Instant::now() < deadline {
-        match drive.index.status(drive.volume_id) {
-            Ok(status) if status.entries_scanned >= stop_after || !status.scanning => break,
-            Ok(_) => {}
-            Err(_) => break,
-        }
-        std::thread::sleep(Duration::from_millis(5));
-    }
-    drive.stop();
-    let frontier = frontier_size(&drive);
+/// The interrupted shape: the wide directory is already listed, so every one of
+/// its children is a frontier root of its own.
+fn cover_the_wide_directory_child_by_child(width: usize) -> Duration {
+    let fixture = Tree::new();
+    build_wide(&fixture.root().join("big"), width, Shape::Subdirs);
+    // Exactly what a stopped walk leaves: the wide directory listed, every child
+    // of it a row nothing has walked.
+    stitch::down_to(&fixture.space, &fixture.writer, Path::new(&fixture.path("big")));
+    let roots = fixture.frontier(&fixture.path("big"));
+    assert_eq!(roots.len(), width, "the stitch leaves every child on the frontier");
 
     let started = Instant::now();
-    drive.start();
-    let (finished, _) = wait_out(&drive, started, width);
-    Resume {
-        frontier,
-        resumed: started.elapsed(),
-        entries: drive.entry_count(),
-        finished,
+    for root in &roots {
+        fixture.cover(root);
     }
-}
-
-/// How many frontier roots the volume root still names, read straight off the
-/// database so it can be asked with the volume stopped.
-fn frontier_size(drive: &Drive) -> usize {
-    let Ok(conn) = IndexStore::open_read_connection(&drive.db_path()) else {
-        return 0;
-    };
-    let root = drive.path("");
-    let space = IndexPathSpace::mount_rooted(root.clone());
-    let Some(index_path) = space.index_relative(&root) else {
-        return 0;
-    };
-    coverage_for_scope(&conn, &index_path, &root, CoverageDimension::Listing)
-        .map(|map| map.frontier.len())
-        .unwrap_or(0)
+    started.elapsed()
 }
 
 /// One width's run, split into the parts that tell different stories.
@@ -306,6 +265,9 @@ fn wait_out(drive: &Drive, started: Instant, width: usize) -> (bool, Instant) {
             );
             next_report = Instant::now() + Duration::from_secs(10);
         }
+        // allowed-test-sleep: the poll interval of a bench that has to outlive
+        // `wait_until`'s panic-on-timeout — the whole question is what a run that
+        // blows a budget does next, and it traces where it got while it waits.
         std::thread::sleep(Duration::from_millis(50));
     }
     (false, last_moved)

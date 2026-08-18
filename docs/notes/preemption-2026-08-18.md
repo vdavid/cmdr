@@ -26,11 +26,11 @@ and 200,000).
 - **Hardware**: David's MacBook (Apple silicon, APFS, macOS 25.5), 2026-08-18, on `worktree-preemption`.
 - **Tree**: a `big` folder of N directories with one file each, plus a `zzz-visited` folder that sorts last. Flat on
   purpose, so one frontier root holds all of it. The run builds three trees of that size, so N dominates its wall time.
-- ⚠️ **Past ~12,000 children in one folder, the fixture stops measuring preemption and starts measuring the phase
-  machine's own cost on a huge directory.** At 12,000 the whole bench runs in 8.9 s. At 60,000 and at 200,000 the
-  machine does not finish covering the tree inside a 600 s budget, with nobody preempting anything — three runs, two of
-  them on an otherwise idle machine. That is the FLAT shape's cost, ❌ not preemption's, and it is written up as an open
-  question below. Arm 1 is unaffected (it times one walk, not a machine run); arm 2 therefore only has the 12,000 row.
+- ⚠️ **Past ~12,000 children in one folder, the fixture stops measuring preemption and starts measuring what a STOPPED
+  walk of a huge directory costs.** At 12,000 the whole bench runs in 8.9 s. At 60,000 and at 200,000 the machine does
+  not finish covering the tree inside a 600 s budget. That cost is the writer's ancestor roll-up going quadratic
+  (`wide-dir-scaling-2026-08-18.md`), ❌ not preemption's own, though preemption is what triggers it here. Arm 1 is
+  unaffected (it times one walk, not a machine run); arm 2 therefore only has the 12,000 row.
 - ⚠️ **Machine load moves the walk numbers a lot, though not the handover.** A first attempt at N = 60,000 ran while
   several agents were hammering the same disk: building one tree took ~35 minutes (17 ms per entry) and the phase
   machine blew the 600 s patience budget covering it, while its cancel-to-join figures came out within 2 ms of the quiet
@@ -111,9 +111,11 @@ exactly that).
 - **It says nothing about the search-side handover's latency.** `Claim::preempt` waits up to `YIELD_WAIT` for a
   background walk to let go; the arms above measure the holder's side of that wait, not a real search's end-to-end time
   to first result.
-- ⚠️ **It leaves a question it stumbled into, and somebody should take it.** A first index over ONE directory of 60,000
-  children does not finish in 600 s, where 12,000 finishes in about two — measured three times, twice on an idle
-  machine, with no preemption involved. Nothing here says which stage owns it (the walk, the aggregate roll-up, the
-  branch-watch registration, or the writer), only that it is not the walk's cancel path. A photo dump, a Maildir, or a
-  downloads folder really does reach those numbers, so this is a plausible "the first index never finishes" report
-  waiting to happen. Reproduce with `CMDR_PREEMPTION_BENCH_DIRS=60000` against `preemption_bench.rs`.
+- ✅ **The question it stumbled into is answered: `wide-dir-scaling-2026-08-18.md`.** The stall is the writer's ancestor
+  roll-up, and it is quadratic in the directory's width. Two corrections to what is written above: the arm that blows
+  the budget is the one where somebody OPENS a folder, so "with no preemption involved" was wrong, and the run is slow
+  rather than wedged (9.7 frontier roots a second, about 68 minutes from finishing). Covering 60,000 children
+  uninterrupted takes 3.2 s; it is what a STOPPED walk leaves — every unwalked child its own frontier root, each one
+  rolling the 60,000-child parent up again — that costs `O(width²)`. That also explains the shape of the gap in the
+  warning above: it is a cliff, not a curve, and the cliff is where the walk finally lasts longer than the 500 ms visit
+  poll.

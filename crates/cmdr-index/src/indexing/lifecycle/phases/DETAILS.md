@@ -65,6 +65,13 @@ One `cover()` call per GROUP of frontier roots, joined before the next starts. M
 real walking against a whole-volume walk's 38.1 s), and the gaps between calls are where the machine consults its visit
 queue — ❌ handing one call a whole phase's frontier looks cheaper but leaves it no check points at all.
 
+⚠️ **A stopped walk of a very WIDE directory is expensive, and the cost is not here.** Once the directory is listed and
+its children are not, every child is a frontier root of its own, and each one's walk ends with a
+`ComputeSubtreeAggregates` whose handler recomputes that wide parent from ALL of its children — so the same ground costs
+`O(width²)` in pieces where it cost `O(width)` whole (60,000 children: 3.2 s whole, about 73 minutes in pieces). It is a
+known, unfixed cost in the writer's ancestor roll-up, ❌ not something to answer by making the machine stop less:
+`docs/notes/wide-dir-scaling-2026-08-18.md` names the mechanism and what a fix involves.
+
 **The gaps alone are not a fine enough grain**, and that is why `walk_group` also stops the walk it is inside. A
 frontier root can be 1.58M entries (`~/projects-git` on David's machine, 97% of it under a single child) and no stitch
 depth splits it (`docs/notes/phased-vs-bulk-index-2026-08-14.md` § depth 1 against depth 2), so a folder somebody opens

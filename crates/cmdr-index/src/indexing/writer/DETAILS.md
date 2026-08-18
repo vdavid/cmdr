@@ -379,7 +379,13 @@ under-count the backfill pass then heals and repairs upward (monotone convergenc
   `repair_dir_stats_upward(parent_of_root)` — one level UP, since the root already agrees with its children. This one
   walk rolls up sizes, counts, `recursive_has_symlinks`, AND `min_subtree_epoch` at once, subsuming the former
   symlink-only ancestor walk and both deleted off-writer `PropagateDeltaById` compensation blocks (leaving those in
-  place would double-credit every verified new dir).
+  place would double-credit every verified new dir). ⚠️ **Known quadratic, unfixed: W frontier roots sharing one parent
+  that holds W children cost `O(W²)` here.** The phase machine creates exactly that whenever a walk of a wide directory
+  is stopped after the directory is listed (a folder somebody opened, a search taking the ground, a quit): every
+  unwalked child becomes a frontier root, every root's walk ends in one of these messages, and each one recomputes the
+  wide parent from all of its children. Measured at 1.2 µs a child a root, so it passes the fixed per-call cost at ~750
+  children and reaches 73 minutes at 60,000. Diagnosis, evidence, and what a fix involves:
+  `docs/notes/wide-dir-scaling-2026-08-18.md`.
 - **`backfill_missing_dir_stats`.** After writing the missing rows, it repairs each "missing root" 's parent upward (a
   missing root = a missing dir whose parent is NOT missing), crediting ancestors a delta never walked through.
 
