@@ -7,7 +7,7 @@ use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 use super::phases;
-use super::state::{INDEX_REGISTRY, IndexPhase, start_pending_phases};
+use super::state::{self, Handover};
 use crate::indexing::IndexPathSpace;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, EventSink, IndexDebugStatusResponse, IndexEvent, IndexStatusResponse, PhaseRecord,
@@ -248,71 +248,35 @@ fn should_replay_journal(
 /// now fired through the manager's own `Arc`). Mirrors `state::force_scan`'s
 /// extract-drop-run-reinsert flow.
 pub(in crate::indexing) async fn perform_registry_rescan(volume_id: &str, trigger: &str) {
-    let mut mgr = {
-        let mut reg = match INDEX_REGISTRY.lock() {
-            Ok(g) => g,
-            Err(e) => {
-                log::warn!("Failed to lock registry for a scanner rescan: {e}");
-                return;
+    let handover = state::off_the_registry(
+        volume_id,
+        |mgr| {
+            // Stop the current watcher + live loop (the fresh scan starts its own)
+            // while still under the lock — these are non-blocking.
+            if let Some(ref mut watcher) = mgr.drive_watcher {
+                watcher.stop();
             }
-        };
-        let Some(instance) = reg.get_mut(volume_id) else {
-            return;
-        };
-        // `mgr` is the `IndexManager` taken out of `Running`.
-        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
-            IndexPhase::Running(mut mgr) => {
-                // Stop the current watcher + live loop (the fresh scan starts its
-                // own) while still under the lock — these are non-blocking.
-                if let Some(ref mut watcher) = mgr.drive_watcher {
-                    watcher.stop();
-                }
-                mgr.drive_watcher = None;
-                mgr.branch_watched = false;
-                {
-                    let mut task_guard = mgr.live_event_task.lock_ignore_poison();
-                    if let Some(task) = task_guard.take() {
-                        task.abort();
-                    }
-                }
-                mgr
+            mgr.drive_watcher = None;
+            mgr.branch_watched = false;
+            let mut task_guard = mgr.live_event_task.lock_ignore_poison();
+            if let Some(task) = task_guard.take() {
+                task.abort();
             }
-            other => {
-                instance.phase = other;
-                return;
+        },
+        |mgr| {
+            // Off the lock: run the blocking-prelude scan start. The same door
+            // "Rescan now" goes through, so a volume the machine is still building
+            // has its phases restarted rather than its half-built index truncated.
+            if let Err(ref e) = mgr.cover_or_scan(trigger) {
+                log::warn!("Scanner rescan for '{volume_id}' failed to start: {e}");
             }
-        }
-    };
-
-    // Guard released: run the blocking-prelude scan start off the lock. The same
-    // door "Rescan now" goes through, so a volume the machine is still building
-    // has its phases restarted rather than its half-built index truncated.
-    if let Err(ref e) = mgr.cover_or_scan(trigger) {
-        log::warn!("Scanner rescan for '{volume_id}' failed to start: {e}");
-    }
-
-    // Re-lock to restore the manager as `Running`. If the volume was torn down
-    // while we were detached, shut the orphaned manager down instead of
-    // resurrecting a removed volume.
-    let mut reg = match INDEX_REGISTRY.lock() {
-        Ok(g) => g,
-        Err(e) => {
-            log::warn!("Failed to re-lock registry after a scanner rescan: {e}");
-            mgr.shutdown();
-            return;
-        }
-    };
-    match reg.get_mut(volume_id) {
-        Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
-            instance.phase = IndexPhase::Running(mgr);
-            drop(reg);
-            // On the far side of the restore, for the reason that function names.
-            start_pending_phases(volume_id);
-        }
-        _ => {
-            drop(reg);
-            log::info!("scanner rescan: '{volume_id}' was torn down during scan start; shutting down the manager");
-            mgr.shutdown();
+        },
+    );
+    match handover {
+        Err(e) => log::debug!("Scanner rescan for '{volume_id}' found nothing running: {e}"),
+        Ok(Handover::Restored(())) => {}
+        Ok(Handover::TornDownWhileAway(())) => {
+            log::info!("scanner rescan: '{volume_id}' was torn down during scan start; the teardown ran instead");
         }
     }
 }
@@ -330,7 +294,7 @@ impl IndexManager {
         db_path: PathBuf,
         kind: IndexVolumeKind,
         inodes_trustworthy: bool,
-        signals: super::state::VolumeSignals,
+        signals: state::VolumeSignals,
     ) -> Result<Self, String> {
         let store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open index store: {e}"))?;
 
@@ -340,7 +304,7 @@ impl IndexManager {
         // SMB/MTP writer must not invalidate the root search index it doesn't
         // feed, or every NAS/phone change-notify event would thrash a full root
         // search reload. See `writer::WRITER_GENERATION` and `indexing/DETAILS.md`.
-        let super::state::VolumeSignals {
+        let state::VolumeSignals {
             freshness,
             events,
             cancel: volume_cancel,

@@ -23,7 +23,8 @@ concurrently without corrupting each other. Every invariant below holds independ
   - `teardown.rs` — `stop_indexing`, `clear_index`, `clear_every_index`, `reset_to_not_indexed`,
     `disable_drive_index_persist_intent`, `remove_instance_and_handles`, and `stop_all_indexing`, all sharing the
     withdraw-then-publish-`ShuttingDown`-then-drop-the-guard-then-drain ordering.
-  - `scan_control.rs` — `force_scan`, `stop_scan`, `trigger_verification`.
+  - `scan_control.rs` — `force_scan`, `stop_scan`, `trigger_verification`, plus `off_the_registry` and the
+    `DetachedManager` guard behind it: the ONE place a live volume's manager comes out for blocking work.
   - `queries.rs` — the read-only surface: `is_active`, `is_failed`, `index_failure`, `awaits_its_first_scan`,
     `ready_volumes_with_kind`, `all_registered_volume_ids`, `volume_kind`, `registered_mtp_volume_ids_for_device`.
   - `freshness_bridge.rs` — the registry ↔ `freshness.rs` wiring (`apply_freshness_event` vs `..._on`, which is LOCK
@@ -137,9 +138,9 @@ reach started fresh ones. The machine starts a watcher too, but only from a walk
 takes stock, completes, and spends the rest of the session with nothing watching ground it serves as covered.
 
 ⚠️ **The machine is started from OUTSIDE the registry-held window**, by `state::start_pending_phases`, at all three
-sites. Both rescan doors hold the manager out under a transient `ShuttingDown` for the whole scan-start prelude, and
-`cover_context_for` hands a context out only from a `Running` manager — start the machine in there and every one of its
-first walks reports "did not run". At launch the ordering has a second reason (`state/startup.rs`).
+sites. Both rescan doors hold the manager out under a transient `IndexPhase::Detached` for the whole scan-start prelude,
+and `cover_context_for` hands a context out only from a `Running` manager — start the machine in there and every one of
+its first walks reports "did not run". At launch the ordering has a second reason (`state/startup.rs`).
 
 ⚠️ **And the standing-up itself runs off the lock too**, in two short `with_running_manager` windows with
 `PhaseStart::run` between them. The start reads scan calibration off SQLite, asks the host for its open listings, and
@@ -214,10 +215,10 @@ per volume id, keyed independently so two volumes can't corrupt each other: sing
 reservation, drop-guard-before-drain, reads-via-`ReadPool`-never-under-the-lifecycle-lock.
 
 **Disabled is the absence of a key.** There is no `IndexPhase::Disabled`. An `IndexInstance` only ever exists in
-`Initializing` / `Running` / `ShuttingDown` / `Failed`; a stopped or never-started volume has no entry. `get_status`/
-`is_active` treat an absent key as disabled, and `stop_indexing`/`clear_index` `remove()` the instance after the drain.
-This is why IPC `get_index_status` for a stopped volume returns the same "not initialized" response a never-started one
-does.
+`Initializing` / `Running` / `Detached` / `ShuttingDown` / `Failed`; a stopped or never-started volume has no entry.
+`get_status`/ `is_active` treat an absent key as disabled, and `stop_indexing`/`clear_index` `remove()` the instance
+after the drain. This is why IPC `get_index_status` for a stopped volume returns the same "not initialized" response a
+never-started one does.
 
 **Why one bundled instance** (vs. parallel `HashMap`s or a `DashMap`): keeping `{phase, kind, signals}` in one struct
 keyed by volume id means a volume's phase and the handles its manager fires through are taken and dropped together. One
@@ -294,11 +295,63 @@ captured up front cancels correctly in that case.
 ## The `IndexPhase` machine (and where the pipeline-phase EVENT lives)
 
 `IndexPhase` (state.rs) is the LIFECYCLE state: `Initializing { store }` → `Running` → `ShuttingDown` (transient) →
-absent, plus the terminal `Failed { reason, db_path }`. This is distinct from the pipeline-phase (`ActivityPhase`:
+absent, plus the terminal `Failed { reason, db_path }` and the transient `Detached { writer, teardown }` a scan start
+publishes (§ "The detached window"). This is distinct from the pipeline-phase (`ActivityPhase`:
 Replaying/Scanning/Aggregating/Reconciling/Live/Idle) that drives the FE step checklist — that lives in
 `../events/CLAUDE.md` as the `index-phase-changed` event. Fire every pipeline-phase transition through
 `events::set_phase_for(app, volume_id, phase, trigger)` (it does the global debug ring AND the per-volume emit in one
 call so they can't drift); the lifecycle-phase transitions here are the `IndexPhase` swaps under the registry lock.
+
+## The detached window (`IndexPhase::Detached`)
+
+The millisecond a scan start holds a live volume's manager out of the registry, so its blocking prelude
+(`block_in_place(flush_blocking)`, a space-info query) runs off the lock. Measured: **7–57 µs** for a refused start,
+**2.76–2.95 ms** for one that starts on a small temp drive, and a real boot-disk start is ~9 ms typical with a ~30 ms
+tail (`volume_used_bytes` on `/` is ~6.5 ms median, 26 ms max) — before a truncating arm, whose `flush_blocking` queues
+behind `TruncateData` and has NO upper bound (2,613 ms measured on a real root index). Evidence and method:
+`docs/notes/manager-custody-spike-2026-08-18.md`.
+
+**Why its own phase, ❌ not `ShuttingDown`.** One transient state served both, and every reader that met it answered as
+though the volume had gone away. Benign for most, a bug for three: `stop_indexing`, `clear_index`, and `fail_index` each
+had an arm that put a non-`Running` phase back and returned SUCCESS, so a teardown landing in the window was reported as
+done and then lost. The `fail_index` case is the data-safety one — the failure signal is one-shot, so a swallowed trip
+left the volume restored as `Running` over a DEAD writer, badge normal, dropping every write for the rest of the
+session, with nothing to retry.
+
+**A teardown CLAIMS it rather than bouncing off it.** `IndexPhase::claim_the_teardown(TeardownClaim)` records the
+request on the phase and reports that it took it; the caller returns success, truthfully. Whoever hands the manager back
+(`hand_the_manager_back`) reads the claim, publishes the real `ShuttingDown`, and runs the same `finish_stopping` /
+`finish_clearing` / `finish_failing` the direct path runs — so a claimed teardown and an immediate one cannot end the
+volume in different places. Two claims in one window resolve by `TeardownClaim::reach` (`Cleared` > `Stopped` >
+`Failed`): the user's intent outranks a storage failure, and clearing IS stopping plus the database. This is what makes
+`Handover::TornDownWhileAway` a state production can actually reach.
+
+**Nothing can leave the window open.** `DetachedManager` publishes the phase on the way in and resolves it on the way
+out, `Drop` included, so a `?` or a panic in the work restores the volume instead of stranding it. It is the only
+constructor of the phase, and `off_the_registry` is the only production caller;
+`state::tests::every_manager_extraction_says_what_a_teardown_in_the_window_does` scans the sources to keep both true.
+The three teardown files may extract too, and each is checked for a `claim_the_teardown` call.
+
+**Readers answer off it as what it is: a volume whose scan is starting.**
+
+- `is_active` counts it (nine callers, the drive badge among them; a badge that reads `enabled: false` beside a live
+  freshness color is a shape its own doc comment rules out).
+- `get_status` / `get_debug_status` report `initialized: true, scanning: true` with no numbers, so the hourglass stops
+  blanking at the moment a rescan begins. ❌ Nothing here may read a database: the registry lock is held.
+- `get_writer_and_scanning_for` hands out the writer with `scanning: true`, so an SMB or MTP change is BUFFERED for
+  post-scan replay instead of dropped. ⚠️ The `true` is deliberate, ❌ not the manager's real flag: that flag flips
+  partway through `start_scan`, so a live apply in the gap would write rows the `TruncateData` below it blanks, or land
+  after it with ids the walk is about to allocate.
+- `cover_context_for` still answers `None` — a scan is starting, which is one of the three cases it already refuses. The
+  claim table refuses the walk one line later anyway (`claim_the_volume` takes the volume `Exclusive`ly before every
+  blocking call in `start_scan`), so the phase check is belt over braces.
+- `stop_scan` and `trigger_verification` still refuse / no-op, which stays correct for a volume whose scan is starting.
+
+**The honest end state, recorded and not taken.** The window exists only because `start_scan`'s prelude blocks under
+`&mut self`. `volume_used_bytes` is a pure input that could be fetched before extraction, and the `DeleteMeta` /
+`BumpCurrentEpoch` / `TruncateData` / stamp / flush sequence needs a `writer` clone and a read connection, both cheap to
+hold outside the manager. A prelude that blocks on neither needs no window at all. Larger than this design; see the
+spike note's § 6.
 
 ## Capability axes (`IndexVolumeKind`)
 
@@ -339,8 +392,8 @@ the published `ShuttingDown` phase (reported as not-initialized). After the drai
 instance. Don't fold the drain back under a single held guard.
 
 **Drop the registry guard before the blocking scan-start, too.** `force_scan(vid)` and the journal-gap fallback task
-take the `Running` manager OUT of the registry under the lock (swapping in a transient `ShuttingDown`), RELEASE the
-guard, run `mgr.force_rescan(...)` / `mgr.start_scan(...)`, then re-lock only to restore the manager as `Running`.
+take the `Running` manager OUT of the registry under the lock (swapping in a transient `IndexPhase::Detached`), RELEASE
+the guard, run `mgr.force_rescan(...)` / `mgr.start_scan(...)`, then re-lock only to restore the manager as `Running`.
 `start_scan`'s prelude does blocking I/O (`block_in_place(flush_blocking())` plus a `get_space_info_for_path` query) AND
 fires the scan-start freshness transition. Held under the global registry lock, that prelude froze every concurrent
 registry user, and the freshness firing re-locked the registry → an outright self-deadlock that froze the whole UI on
@@ -449,8 +502,9 @@ DISTINCT from "absent = disabled" so the badge is honest, yet its writer/watcher
 Initializing→Running window is never missed). On the trip it runs `fail_index`: uninstall + invalidate the read-path
 handles, take the manager OUT of the registry under the lock (publishing a transient `ShuttingDown`), DROP the lock,
 `mgr.shutdown()`, re-lock and install `IndexPhase::Failed`, then fire `set_phase_for(Failed)` +
-`apply_freshness_event( StorageFailed)`. Same drop-the-guard-before-the-drain discipline as `stop_indexing`. A no-op if
-the volume isn't `Running`.
+`apply_freshness_event( StorageFailed)`. Same drop-the-guard-before-the-drain discipline as `stop_indexing`. A volume
+that is `Detached` gets the trip CLAIMED instead (§ "The detached window") — that arm is the data-safety one, since the
+signal is one-shot. A no-op for any other phase.
 
 **Recovery is rebuild-from-scratch** (the index is a disposable cache). A `Failed` volume can't resume in place — its
 manager/writer are gone and the instance still holds the key, so a plain `start_indexing` would no-op. The
@@ -596,11 +650,11 @@ canonical in `../watch/DETAILS.md` § "Watching what a search walked"; what belo
   the outcome: a cancelled walk still marked every directory it read, so that ground needs watching exactly as much.
 - **The release is independent of the registry phase**, and the asymmetry with `begin` is deliberate. A walk can only
   START on a `Running` volume (`cover_context_for` hands out a context for no other phase), but it ENDS minutes later,
-  possibly inside the `ShuttingDown` window `force_scan` / `perform_registry_rescan` publish for the whole of a scan
-  start. So finish reaches the set through `branches::live_for` and only ASKS the manager (when there is one) what to
-  leave behind; routing the release itself through `with_running_manager` left the branch at `walks > 0` for the rest of
-  the session — its events buffered and never promoted, `may_walk` false for that ground, and never absorbed. Anchor:
-  `cover::cold_drive_tests::branches::a_walk_that_finishes_while_the_manager_is_shutting_down_still_releases_its_branch`.
+  possibly inside the `Detached` window `force_scan` / `perform_registry_rescan` publish for the whole of a scan start.
+  So finish reaches the set through `branches::live_for` and only ASKS the manager (when there is one) what to leave
+  behind; routing the release itself through `with_running_manager` left the branch at `walks > 0` for the rest of the
+  session — its events buffered and never promoted, `may_walk` false for that ground, and never absorbed. Anchor:
+  `cover::cold_drive_tests::branches::a_walk_that_finishes_while_the_manager_is_detached_still_releases_its_branch`.
 - **`ensure_branch_watch` starts the watcher** for a volume that has none — the `WriterOnly` shape, the only one with
   coverage and no watcher. A scanned volume declines it (`branch_watched` says which of the two is up), and `start_scan`
   retires the branch set outright, so a volume is branch-watched or whole-watched and never both.

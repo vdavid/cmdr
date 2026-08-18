@@ -105,7 +105,10 @@ The read-only index queries the IPC commands call (status + dir-stats), distinct
 mutate registry state.
 
 - `get_status(vid)` / `get_debug_status(vid)` — read a volume's phase (plus the `Initializing` temp store) under the
-  registry lock.
+  registry lock. A volume in the transient `IndexPhase::Detached` reports `initialized: true, scanning: true` with no
+  numbers, ❌ not the disabled shape: the phase means a scan is being started, and answering disabled blanked the
+  hourglass at the exact moment a rescan began. ⚠️ Nothing in either arm may read a database — the registry lock is
+  held. Why the phase exists: `../lifecycle/DETAILS.md` § "The detached window".
 - `get_volume_index_status(path)` / `get_volume_index_status_by_id(volume_id)` — build the per-drive badge shape
   (`VolumeIndexStatus { volume_id, enabled, freshness, scan_completed_at, scan_duration_ms, coalesced_signals_since_sweep, next_sweep_due_at }`).
   The path form resolves the volume from a listing path (the always-visible active-drive badge); the id form is keyed by

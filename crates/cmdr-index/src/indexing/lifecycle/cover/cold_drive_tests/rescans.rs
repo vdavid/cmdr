@@ -319,3 +319,75 @@ fn a_rescan_during_the_phased_window_starts_the_machine_under_a_live_walk() {
 
     drop(walking);
 }
+
+// ── A teardown that lands while the manager is detached ──────────────
+
+/// Turning indexing off for a drive really turns it off, even when the request
+/// lands while a scan start holds the manager out of the registry.
+#[test]
+fn a_stop_during_the_extraction_window_really_stops() {
+    let drive = ColdDrive::new("stop-in-window");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    drive.cover(&drive.path("scope"));
+    drive.mark_scan_completed();
+
+    let mut stop_result = None;
+    crate::indexing::lifecycle::state::while_detached_for_test(drive.volume_id, || {
+        stop_result = Some(crate::indexing::lifecycle::state::stop_indexing(drive.volume_id));
+    });
+
+    assert_eq!(stop_result, Some(Ok(())), "the caller is told the stop worked");
+    assert!(
+        !crate::indexing::lifecycle::state::is_active(drive.volume_id),
+        "and the volume really stopped"
+    );
+}
+
+/// Clearing a drive's index really clears it, even when the request lands while a
+/// scan start holds the manager out of the registry.
+#[test]
+fn a_clear_during_the_extraction_window_really_clears() {
+    let drive = ColdDrive::new("clear-in-window");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    drive.cover(&drive.path("scope"));
+    drive.mark_scan_completed();
+
+    let mut clear_result = None;
+    crate::indexing::lifecycle::state::while_detached_for_test(drive.volume_id, || {
+        clear_result = Some(crate::indexing::lifecycle::state::clear_index(drive.volume_id));
+    });
+
+    assert_eq!(clear_result, Some(Ok(())), "the caller is told the clear worked");
+    assert!(!drive.db_path().exists(), "and the database really went away");
+}
+
+/// ⚠️ **The data-safety one.** A fatal storage error that trips while a scan start
+/// holds the manager out of the registry still fails the volume.
+///
+/// The failure signal is one-shot, so nothing retries: a trip the registry
+/// swallowed left the volume restored as `Running` over a dead writer, its badge
+/// showing a normal index, dropping every write for the rest of the session.
+#[test]
+fn a_storage_failure_during_the_extraction_window_still_fails_the_volume() {
+    let drive = ColdDrive::new("fail-in-window");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    drive.cover(&drive.path("scope"));
+    drive.mark_scan_completed();
+
+    let reason = crate::indexing::store::IndexFailure {
+        code: rusqlite::ffi::SQLITE_IOERR,
+        extended_code: 0,
+    };
+    crate::indexing::lifecycle::state::while_detached_for_test(drive.volume_id, || {
+        crate::indexing::lifecycle::state::fail_index_for_test(drive.events.as_ref(), drive.volume_id, reason);
+    });
+
+    assert!(
+        crate::indexing::lifecycle::state::is_failed(drive.volume_id),
+        "the volume reached Failed, so the badge is honest and nothing goes on writing to a dead index"
+    );
+    assert!(
+        !crate::indexing::lifecycle::state::is_active(drive.volume_id),
+        "and it is not still running over the dead writer"
+    );
+}

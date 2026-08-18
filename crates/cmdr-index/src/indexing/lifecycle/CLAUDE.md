@@ -38,6 +38,8 @@ path); `manager.rs` the coordinator (`launch_route.rs` the launch table); `cover
 - **Freshness has ONE total transition table** (`Freshness::on`); no journal ⇒ Stale on launch. `..._on` vs
   `apply_freshness_event` is LOCK DISCIPLINE, not style.
 - **A fatal storage error STOPS + FAILS the index, ❌ never retries**; recovery is a rebuild.
+- **A scan start detaches the manager (`Detached`), ❌ never `ShuttingDown`**; a teardown meeting it CLAIMS it, ❌ never
+  bounces — bouncing swallowed `stop`/`clear`/`fail` whole. ONE door: `state::off_the_registry`.
 - **TWO switches, master wins, both gating BACKGROUND work only.** `indexing.enabled` hard-gates
   `Activation::IndexTheVolume`; master-off goes through `stop_indexing`, which ❌ must never write per-drive intent. ⚠️
   A search walk is carved out of both AND `user_disabled`; ❌ don't "fix" that into a refusal.

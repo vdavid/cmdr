@@ -11,8 +11,10 @@ the same exclusion and pays a lock for it, on paths the subsystem's whole lock d
 retires **none** of the three stranding bugs the plan credits it with: it relocates two into manager-mutex poisoning and
 is irrelevant to the third.
 
-**Ship a smaller replacement instead** (§ "What to do instead"). The dance's real defects are worth fixing, they are
-about 150 lines of work, and none of them needs shareable custody.
+**Ship a smaller replacement instead** (§ "What to do instead"). ✅ **Shipped.** All four items of § 6 landed; § 4's bug
+4 is fixed, and the three stranding hazards are closed. The record below stands as the analysis that got there, and the
+code is `IndexPhase::Detached` plus `DetachedManager` (`lifecycle/DETAILS.md` § "The detached window"). The dance's real
+defects are worth fixing, they are about 150 lines of work, and none of them needs shareable custody.
 
 The blast radius is genuinely small, so blast radius is not the reason to say no. The reason is that the primitive being
 proposed is the wrong shape for what the window does.
@@ -60,10 +62,10 @@ Collateral, and wrong:
 - **`get_status` / `get_debug_status`** (`read/queries.rs`): `disabled_status_response()`, so `initialized: false` and
   `scanning: false`. The hourglass blanks at the moment a rescan starts.
 
-A bug:
+A bug (✅ fixed):
 
 - **`stop_indexing` / `clear_index`** (`state/teardown.rs`) and **`fail_index`** (`state/supervisor.rs`): `Ok(())`,
-  having done nothing. Proved in § 4.
+  having done nothing. Proved in § 4. Each now CLAIMS the window instead, and the claim runs on hand-back.
 
 Two entries carry the argument.
 
@@ -167,6 +169,10 @@ nothing today.
 
 ## 4. Does it retire the three stranding bugs? No. And there is a fourth
 
+✅ **All four are fixed**, by the § 6 route rather than by shareable custody. Bugs 1 and 2 by `DetachedManager`'s `Drop`
+plus `IgnorePoison` on every registry lock in the window; bug 3 by a `Drop` guard around `PhaseStart::run`; bug 4 by the
+claimable `IndexPhase::Detached`.
+
 **1. The registry lock poisons after extraction** (`scan_control.rs:287`): the early return drops `mgr` and the phase
 stays `ShuttingDown` forever.
 
@@ -218,10 +224,13 @@ Consequences, in order of how much they matter:
   honors it; this session keeps indexing and writing.
 - **"Clear this drive's index" swallowed.** Logs "already shutting down" and returns `Ok(())`.
 
-Two red tests, run against `93cc47a05` in release. Both fail. They use the existing `while_shutting_down_for_test`
-helper, which publishes exactly the window `force_scan` and `perform_registry_rescan` publish, so the reproduction needs
-no new machinery. Paste them into `cover/cold_drive_tests/rescans.rs` as the red step of whichever milestone picks this
-up:
+Two red tests, run against `93cc47a05` in release. Both failed; both now pass, and they live in
+`cover/cold_drive_tests/rescans.rs` alongside a third for the `fail_index` case
+(`a_storage_failure_during_the_extraction_window_still_fails_the_volume`). ⚠️ The helper is now
+`while_detached_for_test`, since the window it publishes is `Detached` rather than `ShuttingDown`. They use the existing
+`while_shutting_down_for_test` helper, which publishes exactly the window `force_scan` and `perform_registry_rescan`
+publish, so the reproduction needs no new machinery. Paste them into `cover/cold_drive_tests/rescans.rs` as the red step
+of whichever milestone picks this up:
 
 ```rust
 #[test]
@@ -260,11 +269,11 @@ fn a_clear_during_the_extraction_window_really_clears() {
 }
 ```
 
-A corollary: **`Detached::TornDownWhileAway` is unreachable in production.** It fires only when the instance is gone or
-is no longer `ShuttingDown` on the re-lock, and no teardown path produces either from an extracted `Running` volume; all
-of them bail. The ceremony that makes `off_the_registry` complicated is wired to a state nothing can reach, while the
-case it was written for is swallowed instead. The plan already has the right shape here. It needs connecting, not
-replacing.
+A corollary (✅ fixed; the outcome enum is now `Handover`): **`Handover::TornDownWhileAway` was unreachable in
+production.** It fires only when the instance is gone or is no longer `ShuttingDown` on the re-lock, and no teardown
+path produces either from an extracted `Running` volume; all of them bail. The ceremony that makes `off_the_registry`
+complicated is wired to a state nothing can reach, while the case it was written for is swallowed instead. The plan
+already has the right shape here. It needs connecting, not replacing.
 
 ## 5. What it does for `swap-scan-plan.md`
 
@@ -289,6 +298,13 @@ window a teardown request it records rather than drops. Whoever picks up swap-sc
 correct § 2.3 step 5's prose about what the exclusion guarantees.
 
 ## 6. What to do instead
+
+✅ **Done**, all four, in the order below. What shipped differs from item 3 in one place, deliberately: rather than
+hoisting a handle bundle onto `IndexInstance` as an `Option` (a second source of truth, and `None` for `Initializing`
+anyway), the transient phase CARRIES the writer, so "a live writer exists" and "handles are available" are one fact the
+type holds. `cover_context_for` keeps answering `None` in the window, and `get_writer_and_scanning_for` answers
+`scanning: true` rather than the manager's real flag — see `lifecycle/DETAILS.md` § "The detached window" for why the
+truthful flag would be a NEW hazard (a live apply between `TruncateData` and the walk's first ids).
 
 Everything M5 was reaching for, minus the lock. Roughly 150 lines plus tests, one milestone.
 

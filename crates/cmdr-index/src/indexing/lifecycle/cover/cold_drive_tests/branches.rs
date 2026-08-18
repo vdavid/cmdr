@@ -89,12 +89,12 @@ async fn a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_doe
 /// A walk registers its ground when it starts and releases it when it ends, and
 /// the release can't depend on what the registry is doing minutes later.
 ///
-/// `force_scan` and `perform_registry_rescan` publish `ShuttingDown` for the whole
-/// of a scan start, so a walk ending inside that window used to leave its branch
+/// `force_scan` and `perform_registry_rescan` detach the manager for the whole of
+/// a scan start, so a walk ending inside that window used to leave its branch
 /// at `walks > 0` forever: `may_walk` false for that ground permanently, every
 /// event for it buffered and never promoted, and the branch never absorbed.
 #[test]
-fn a_walk_that_finishes_while_the_manager_is_shutting_down_still_releases_its_branch() {
+fn a_walk_that_finishes_while_the_manager_is_detached_still_releases_its_branch() {
     use crate::indexing::watch::branches::{self, WatchScope};
     use crate::indexing::watch::watcher::{FsChangeEvent, FsEventFlags};
 
@@ -128,7 +128,7 @@ fn a_walk_that_finishes_while_the_manager_is_shutting_down_still_releases_its_br
     };
     let _ = WatchScope::Branches(Arc::clone(&watch)).admit(held);
 
-    crate::indexing::lifecycle::state::while_shutting_down_for_test(drive.volume_id, || {
+    crate::indexing::lifecycle::state::while_detached_for_test(drive.volume_id, || {
         crate::indexing::lifecycle::state::finish_branch_coverage(drive.volume_id, &branch);
     });
 

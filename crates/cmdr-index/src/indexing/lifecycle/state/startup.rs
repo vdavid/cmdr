@@ -378,6 +378,31 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
 /// and spawns two threads, and the first thing the driver does is come back
 /// through this very lock. Under the guard that first walk would wait on us.
 pub(in crate::indexing::lifecycle) fn start_pending_phases(volume_id: &str) {
+    /// Clears `PendingPhases::BeingStarted` if [`PhaseStart::run`] panics off the
+    /// lock. Without it the flag sticks, `phases_have_work()` stays true forever,
+    /// and every scan entry on the volume answers `AlreadyScanning` for the rest of
+    /// the session — a stranded volume with nothing left to strand it.
+    ///
+    /// Disarmed on the normal path, so it only ever fires on an unwind: a stop and
+    /// a fresh start can both land in the window, and a `BeingStarted` we find
+    /// afterwards may belong to the NEW manager rather than to us.
+    struct BeingStartedGuard<'a> {
+        volume_id: &'a str,
+        armed: bool,
+    }
+    impl Drop for BeingStartedGuard<'_> {
+        fn drop(&mut self) {
+            if !self.armed {
+                return;
+            }
+            log::warn!(
+                "start_pending_phases: '{}' unwound while standing its machine up; giving the start up",
+                self.volume_id
+            );
+            with_running_manager(self.volume_id, |mgr| mgr.abandon_the_phase_start());
+        }
+    }
+
     let mut start = None;
     with_running_manager(volume_id, |mgr| start = mgr.take_the_phase_start());
     let Some(start) = start else {
@@ -385,10 +410,12 @@ pub(in crate::indexing::lifecycle) fn start_pending_phases(volume_id: &str) {
     };
 
     // Guard released: stand the machine up off the lock.
+    let mut guard = BeingStartedGuard { volume_id, armed: true };
     let mut started = Some(start.run());
     with_running_manager(volume_id, |mgr| {
         started = mgr.hold_the_started_phases(started.take().expect("a machine to hand over"));
     });
+    guard.armed = false;
 
     // Still here means the volume was torn down (or restarted) while its machine
     // was being stood up, so nothing holds it any more. Its token is a child of

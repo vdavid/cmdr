@@ -304,6 +304,20 @@ impl IndexManager {
         })
     }
 
+    /// Give up a phase start that never got stood up, so the volume stops
+    /// reporting work nothing will ever do.
+    ///
+    /// `No` rather than back to `Owed`, and that is the point: `Owed` still reads
+    /// as WORK, so every scan entry on this volume would answer `AlreadyScanning`
+    /// for the rest of the session — the exact stranding this closes. From `No` the
+    /// retry ladder can register a fresh start (`cover_again`), which is the
+    /// recovery that actually covers the drive.
+    pub(in crate::indexing::lifecycle) fn abandon_the_phase_start(&mut self) {
+        if self.pending_phases == PendingPhases::BeingStarted {
+            self.pending_phases = PendingPhases::No;
+        }
+    }
+
     /// Take the machine [`PhaseStart::run`] built, and stop reporting the start as
     /// pending.
     ///

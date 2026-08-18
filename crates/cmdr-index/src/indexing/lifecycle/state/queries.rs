@@ -146,14 +146,20 @@ pub(crate) fn is_watching_for_test(volume_id: &str) -> bool {
     }
 }
 
-/// Check whether a volume's index is active (initializing or running).
+/// Check whether a volume's index is active (initializing, running, or momentarily
+/// detached for a scan start).
+///
+/// ⚠️ `Detached` counts, and it has to: nine callers ask this, including the drive
+/// badge, and a volume that reads inactive for the length of a rescan renders
+/// `enabled: false` next to a live freshness color — a shape the badge's own doc
+/// comment says can't occur.
 pub fn is_active(volume_id: &str) -> bool {
     INDEX_REGISTRY
         .lock()
         .map(|reg| {
             matches!(
                 reg.get(volume_id).map(|i| &i.phase),
-                Some(IndexPhase::Initializing { .. } | IndexPhase::Running(_))
+                Some(IndexPhase::Initializing { .. } | IndexPhase::Running(_) | IndexPhase::Detached { .. })
             )
         })
         .unwrap_or(false)

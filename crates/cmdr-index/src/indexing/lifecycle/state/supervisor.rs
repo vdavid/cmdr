@@ -7,12 +7,12 @@
 
 use std::sync::Arc;
 
-use super::{INDEX_REGISTRY, IndexPhase, apply_freshness_event};
+use cmdr_fs::ignore_poison::IgnorePoison;
+
+use super::{INDEX_REGISTRY, IndexPhase, TeardownClaim, apply_freshness_event};
 use crate::indexing::lifecycle::failure::IndexFailureSignal;
 use crate::indexing::lifecycle::freshness::FreshnessEvent;
-use crate::indexing::read::enrichment::uninstall_read_pool;
-use crate::indexing::read::pending_sizes::uninstall_pending_sizes;
-use crate::indexing::reconcile::verifier;
+use crate::indexing::lifecycle::manager::IndexManager;
 use crate::indexing::store::IndexFailure;
 
 /// Spawn the per-volume failure supervisor: a task that awaits the writer's
@@ -51,39 +51,41 @@ pub(crate) fn spawn_failure_supervisor(
 /// re-lock to install `Failed`. Holding the registry lock across `shutdown()` would
 /// freeze every concurrent registry reader (the documented UI-freeze gotcha).
 ///
-/// A no-op if the volume isn't `Running` (a concurrent `stop_indexing` /
-/// `clear_index` already removed or replaced it): the trip just meant "stop", and
-/// stopping already happened.
+/// Three answers, by what the registry says:
+///
+/// - `Running`: fail it here.
+/// - [`Detached`](IndexPhase::Detached), so a scan start has the manager out:
+///   CLAIM the volume, and `finish_failing` runs as the manager comes back.
+/// - anything else (a concurrent `stop_indexing` / `clear_index` already removed
+///   or replaced it): a no-op. The trip just meant "stop", and stopping already
+///   happened.
 fn fail_index(events: &dyn crate::EventSink, volume_id: &str, reason: IndexFailure) {
-    verifier::invalidate();
-
     // Withdraw + invalidate the read-path handles BEFORE the phase flips to
     // `Failed`. A `Failed` instance stays registered so the badge can be honest,
     // but its DB is dead, so reads must skip: withdrawing the handles here is what
     // makes them skip, and it's why a `Failed` phase needs no read-path special
     // case anywhere.
-    if let Some(pool) = uninstall_read_pool(volume_id) {
-        pool.invalidate();
-    }
-    uninstall_pending_sizes(volume_id);
-    // The branch set goes with the instance that watched it. A cleared index
-    // deletes the database, so the persisted copy goes too; a stopped one keeps
-    // it, and the next start reads it back.
-    crate::indexing::watch::branches::forget(volume_id);
+    super::teardown::withdraw_from_the_read_path(volume_id);
 
     // Take the manager out under the lock (transient `ShuttingDown`), so the
     // blocking `shutdown()` drain runs WITHOUT holding the registry lock.
     let owned_mgr = {
-        let mut reg = match INDEX_REGISTRY.lock() {
-            Ok(g) => g,
-            Err(e) => {
-                log::warn!("fail_index('{volume_id}'): registry lock poisoned: {e}");
-                return;
-            }
-        };
+        let mut reg = INDEX_REGISTRY.lock_ignore_poison();
         let Some(instance) = reg.get_mut(volume_id) else {
             return;
         };
+        // ⚠️ **The data-safety case.** A scan start has the manager out right now,
+        // and the failure signal is ONE-SHOT: bouncing off the transient phase left
+        // the volume restored as `Running` over a dead writer, badge normal, every
+        // write dropped for the rest of the session, with nothing to retry. So the
+        // trip is RECORDED and the `Failed` transition runs as the manager comes
+        // back.
+        if instance.phase.claim_the_teardown(TeardownClaim::Failed(reason)) {
+            log::warn!(
+                "fail_index('{volume_id}'): a fatal storage error landed during a scan start; failing the volume as its manager comes back"
+            );
+            return;
+        }
         match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
             IndexPhase::Running(mgr) => mgr,
             other => {
@@ -96,10 +98,32 @@ fn fail_index(events: &dyn crate::EventSink, volume_id: &str, reason: IndexFailu
         }
     };
 
+    finish_failing(events, volume_id, owned_mgr, reason);
+}
+
+/// The `Failed` transition the supervisor runs, driven directly so a test can
+/// place it in a chosen window rather than racing a real writer death.
+#[cfg(test)]
+pub(crate) fn fail_index_for_test(events: &dyn crate::EventSink, volume_id: &str, reason: IndexFailure) {
+    fail_index(events, volume_id, reason);
+}
+
+/// Drain a failed volume's manager and register it as `Failed`. The half of
+/// `fail_index` that runs OFF the lock, shared with the deferred path so a trip
+/// that landed mid-scan-start ends the volume in exactly the same place as one
+/// that didn't.
+pub(super) fn finish_failing(
+    events: &dyn crate::EventSink,
+    volume_id: &str,
+    mgr: Box<IndexManager>,
+    reason: IndexFailure,
+) {
+    super::teardown::withdraw_from_the_read_path(volume_id);
+
     // Guard released: blocking drain. The writer thread already exited on the trip,
     // so `writer.shutdown()`'s join returns fast; this mainly stops the watcher and
     // drains the live event loop's final batch.
-    let mut mgr = owned_mgr;
+    let mut mgr = mgr;
     let db_path = mgr.db_path().to_path_buf();
     mgr.shutdown();
 
@@ -107,13 +131,7 @@ fn fail_index(events: &dyn crate::EventSink, volume_id: &str, reason: IndexFailu
     // `ShuttingDown` marker we published (a concurrent stop/clear may have removed
     // it while we drained; respect that).
     {
-        let mut reg = match INDEX_REGISTRY.lock() {
-            Ok(g) => g,
-            Err(e) => {
-                log::warn!("fail_index('{volume_id}'): registry lock poisoned on re-lock: {e}");
-                return;
-            }
-        };
+        let mut reg = INDEX_REGISTRY.lock_ignore_poison();
         match reg.get_mut(volume_id) {
             Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
                 instance.phase = IndexPhase::Failed { reason, db_path };

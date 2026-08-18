@@ -17,7 +17,8 @@ volume arbitrates through. The registry and phase machine are `../CLAUDE.md`.
   decide what is virgin. **`CoverOutcome::abandoned_ground` is independent of every other field**: ❌ any caller
   reporting completeness must consult it.
 - **A walk RELEASES its branch whatever the registry phase** (`finish_branch_coverage` reaches the set directly), ❌
-  never behind `with_running_manager` — a walk ending in a `ShuttingDown` window would hold that ground forever.
+  never behind `with_running_manager` — a walk ending in a `Detached`/`ShuttingDown` window would hold that ground
+  forever.
 - **Bootstrap creates the rows a walk needs to START, each at `listed_epoch = 0`; ❌ nothing here claims coverage** —
   the walk earns it, and an ancestor claiming a listing it never did would mark a whole tree covered off one walked
   folder.

@@ -70,17 +70,19 @@ pub use queries::{is_active, is_failed};
 #[cfg(any(test, feature = "testing"))]
 pub use reservation::reserve_initializing_index_for_test;
 pub(crate) use reservation::{is_initializing_phase, try_reserve_initializing_phase};
-pub(in crate::indexing::lifecycle) use scan_control::resume_the_phases;
+pub(in crate::indexing::lifecycle) use scan_control::{Handover, off_the_registry, resume_the_phases};
 pub use scan_control::{force_scan, stop_scan, trigger_verification};
 #[cfg(test)]
-pub(crate) use scan_control::{rescan_with_phases_owed_for_test, set_scanning_for_test, while_shutting_down_for_test};
+pub(crate) use scan_control::{rescan_with_phases_owed_for_test, set_scanning_for_test, while_detached_for_test};
 pub(crate) use startup::record_drive_index_enabled;
 pub use startup::start_indexing;
-pub(in crate::indexing::lifecycle) use startup::{Activation, start_indexing_for, start_pending_phases};
+pub(in crate::indexing::lifecycle) use startup::{Activation, start_indexing_for};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use startup::{
     start_indexing_for_local_external_inner, start_indexing_for_mtp_inner, start_indexing_for_smb_inner,
 };
+#[cfg(test)]
+pub(crate) use supervisor::fail_index_for_test;
 pub(crate) use supervisor::spawn_failure_supervisor;
 pub(crate) use teardown::reset_to_not_indexed;
 pub(crate) use teardown::stop_all_indexing;
@@ -103,6 +105,31 @@ pub(crate) enum IndexPhase {
     Initializing { store: IndexStore },
     /// Fully operational: scanning, watching, enrichment, IPC all work.
     Running(Box<IndexManager>),
+    /// The manager is momentarily OUT of the registry while a scan start runs its
+    /// blocking prelude against it off the lock (`state::off_the_registry`). The
+    /// volume is still fully alive: its writer thread, watcher, and read handles
+    /// are all up, and the manager comes back within milliseconds.
+    ///
+    /// ⚠️ **Distinct from [`ShuttingDown`](IndexPhase::ShuttingDown), and that is
+    /// the whole point.** One transient state served both, so a teardown landing
+    /// in this window read it as "somebody is already tearing this volume down",
+    /// reported success, and did nothing — including `fail_index`, which left a
+    /// volume running over a dead writer for the rest of the session. A teardown
+    /// that meets this phase CLAIMS it instead (`teardown`), and whoever hands the
+    /// manager back carries the request out.
+    ///
+    /// Readers answer off it as what it is — a volume whose scan is starting — so
+    /// nothing has to pretend the volume went away for the length of a rescan.
+    Detached {
+        /// This volume's writer, cloned off the manager as it left. Fixed for the
+        /// manager's whole life (nothing ever reassigns `IndexManager::writer`),
+        /// so this copy cannot drift from the one the manager holds. It's what
+        /// lets an SMB or MTP change land in the buffer instead of the floor while
+        /// the manager is away.
+        writer: crate::indexing::writer::IndexWriter,
+        /// What a teardown asked for while the manager was out, if anything.
+        teardown: Option<TeardownClaim>,
+    },
     /// Shutdown in progress (transitional, cleanup running). The instance is
     /// removed from the registry once the drain completes.
     ShuttingDown,
@@ -120,6 +147,60 @@ pub(crate) enum IndexPhase {
     /// deletes the DB, then a fresh `start_indexing` scans. See `fail_index` and
     /// DETAILS § "The Failed state".
     Failed { reason: IndexFailure, db_path: PathBuf },
+}
+
+/// What a teardown asked for while a volume's manager was detached, for whoever
+/// hands the manager back to carry out.
+///
+/// Recording the request is what makes it survive the window. ❌ Never a bare
+/// bool: the three teardowns end the volume in three different places (removed,
+/// removed with its database gone, registered as `Failed`), and a caller that
+/// only knew "somebody asked" would have to guess which.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TeardownClaim {
+    /// The writer reported a fatal storage error: register `Failed` and stop.
+    Failed(IndexFailure),
+    /// Stop indexing this volume, keeping its database on disk.
+    Stopped,
+    /// Stop indexing it and delete its database.
+    Cleared,
+}
+
+impl TeardownClaim {
+    /// How much of the volume this claim takes away, so two teardowns landing in
+    /// one window resolve to the one that does more rather than to whichever
+    /// arrived last.
+    ///
+    /// A user asking to stop or clear outranks a storage failure: they asked for
+    /// the drive to go quiet, and a red "indexing stopped" badge on a drive
+    /// somebody just turned off is a worse answer than a gray one. Clearing
+    /// outranks stopping because it IS stopping, plus the database.
+    fn reach(self) -> u8 {
+        match self {
+            TeardownClaim::Failed(_) => 0,
+            TeardownClaim::Stopped => 1,
+            TeardownClaim::Cleared => 2,
+        }
+    }
+}
+
+impl IndexPhase {
+    /// Ask a phase to CARRY a teardown request instead of bouncing it, reporting
+    /// whether it took it.
+    ///
+    /// Only [`Detached`](IndexPhase::Detached) can: it's the one phase whose
+    /// manager is coming back, so it's the one phase with somebody to hand the
+    /// request to. Every other phase answers `false` and the caller acts on it
+    /// directly, exactly as it always did.
+    pub(super) fn claim_the_teardown(&mut self, claim: TeardownClaim) -> bool {
+        let IndexPhase::Detached { teardown, .. } = self else {
+            return false;
+        };
+        if teardown.is_none_or(|held| held.reach() < claim.reach()) {
+            *teardown = Some(claim);
+        }
+        true
+    }
 }
 
 /// The three handles a volume's registry instance and its `IndexManager` both
@@ -230,10 +311,20 @@ pub(crate) fn resolved_index_db_path(volume_id: &str) -> Result<PathBuf, String>
 ///
 /// `None` while the volume is `Initializing` (its scan owns the writer) or
 /// absent.
+///
+/// A [`Detached`](IndexPhase::Detached) volume answers with its writer and
+/// `scanning: true`, so the change is BUFFERED. Both halves matter: the phase
+/// exists because a scan is being started, so `true` is the honest answer, and
+/// buffering is what stops the change going on the floor the way it did when this
+/// window read as no index at all. ❌ Don't "improve" it to the manager's real
+/// `scanning` flag — that flag flips true partway through `start_scan`, so a live
+/// apply in the gap would insert rows the `TruncateData` a few lines later blanks,
+/// or worse, rows that land after it with ids the walk is about to allocate.
 pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(crate::indexing::writer::IndexWriter, bool)> {
     let reg = INDEX_REGISTRY.lock().ok()?;
     match reg.get(volume_id).map(|i| &i.phase) {
         Some(IndexPhase::Running(mgr)) => Some((mgr.writer.clone(), mgr.scanning.load(Ordering::Relaxed))),
+        Some(IndexPhase::Detached { writer, .. }) => Some((writer.clone(), true)),
         _ => None,
     }
 }
@@ -253,6 +344,13 @@ pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(crate::ind
 ///   names (`INSERT OR IGNORE` drops one and orphans its subtree);
 /// - the volume has no index at all, which is the cold-bootstrap case
 ///   (`cover/bootstrap.rs` builds one).
+///
+/// A [`Detached`](IndexPhase::Detached) volume is the second case seen a
+/// millisecond earlier — a scan is being started on it — so it answers `None`
+/// too. The claim table would refuse the walk one line later anyway
+/// (`IndexManager::claim_the_volume` takes the volume `Exclusive`ly before every
+/// blocking call in `start_scan`), so this is belt over braces rather than the
+/// protection itself.
 pub(crate) fn cover_context_for(volume_id: &str) -> Option<crate::indexing::lifecycle::cover::CoverContext> {
     let reg = INDEX_REGISTRY.lock().ok()?;
     match reg.get(volume_id).map(|i| &i.phase) {

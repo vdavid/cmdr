@@ -613,7 +613,7 @@ impl IndexManager {
         // (`off_the_registry`, `perform_registry_rescan`), so a re-lock would not
         // deadlock right now — but a handle that can't re-enter the registry keeps
         // that safe by construction rather than by what every caller happens to do.
-        super::super::state::apply_freshness_event_on(
+        state::apply_freshness_event_on(
             &self.freshness,
             self.events.as_ref(),
             &self.volume_id,
