@@ -86,7 +86,7 @@ An implementing agent cannot check off what it changed without this table. It is
 | `mgr.scanning: Arc<AtomicBool>`            | `lifecycle/manager.rs:78`                                           | **Keeps being SET by scans.** Loses only its two guard readers. Narrowed and renamed |
 | `rescan_request::OWED`                     | `lifecycle/rescan_request.rs:81`                                    | Absorbed as a per-volume waiter. The module's error/outcome vocabulary relocates     |
 | `mgr.pending_phases` + `working`/`walking` | `lifecycle/manager/phased.rs:35`, `lifecycle/phases/mod.rs:172,181` | **Unchanged.** `phases_have_work` stays a separate question                          |
-| `INDEX_REGISTRY` + `IndexPhase`            | `lifecycle/state.rs:196`                                            | Keeps custody. Its `ShuttingDown` exclusion is M5's problem, not this plan's         |
+| `INDEX_REGISTRY` + `IndexPhase`            | `lifecycle/state.rs:196`                                            | Keeps custody, and keeps its `ShuttingDown` exclusion: M5 spiked it and dropped it   |
 | `watch::branches::WATCHES`                 | `watch/branches.rs:81`                                              | **Stays.** Already correct and measured                                              |
 | Reconciler rescan scheduler                | `reconcile/reconciler/rescan/mod.rs:46-56`                          | Optional, M6                                                                         |
 | `verifier::VERIFIER_STATE`                 | `reconcile/verifier.rs:29`                                          | Out of scope, already RAII                                                           |
@@ -101,7 +101,7 @@ An implementing agent cannot check off what it changed without this table. It is
 - **❌ `BranchWatch`.** The one mechanism already in the right shape, and the only one with a `Buffered` outcome. The
   live event loop cannot block, be refused, or queue.
 - **❌ `listed_epoch` and the `EXCLUSION_POLICY_KEY` stamp.** The durable half of arbitration.
-- **❌ Manager custody.** See M5.
+- **❌ Manager custody.** See M5, which spiked it and dropped it.
 
 ## The constraints
 
@@ -196,7 +196,8 @@ M0 is independent. M1 → M2 → M4 are sequential. M5, M6, M7 are independent o
 out not to gate M4**, so it is still open with everything else shipped around it.
 
 **M0, M1, M2, M4, and M7 are shipped**, M4 together with product call 4 (a "Rescan now" during a running scan now
-QUEUES). What executing M7 changed about the rest of this plan:
+QUEUES). **M5 was spiked and dropped**, so M3 and M6 are all that remain open. What executing M7 changed about the rest
+of this plan:
 
 - **The plan named one mechanism and the milestone needed two.** Atomic handoff plus a yield channel is what lets a
   SEARCH take ground off a background walk, and it is the whole of what the plan described. It does nothing for the case
@@ -479,25 +480,46 @@ the teardown sites and `force_scan` call. The module kept what a request MEANS a
 `::clicking_rescan_five_times_during_a_scan_queues_one_walk`, and the two in `scan_completion::tests` that pin the local
 scan's site and its ordering. **Checks:** `pnpm check`.
 
-### M5 — Shareable manager custody (independent, spike first)
+### M5 — Shareable manager custody ❌ DROPPED (spiked 2026-08-18)
 
-**Intent:** the honest version of the claim the broker draft got wrong. `Running(Box<IndexManager>)` plus a lock-held
-`with_running_manager` forces `mem::replace` to get an owned `&mut`.
+**Verdict: don't do it.** Evidence, numbers, and the replacement milestone:
+`docs/notes/manager-custody-spike-2026-08-18.md`. Dropped on its merits, like M3 and M6; nothing else in this plan
+depended on it.
 
-**⚠️ It is not pure ergonomics, and the spike must scope this.** `lifecycle/state/scan_control.rs:219-222` says:
-"Holding the manager out is also the mutual exclusion a caller asking 'does this volume already have a machine?' depends
-on: `start_pending_phases` finds nothing to start while we are away." `swap-scan-plan.md` item 5 states it more strongly
-still. `Arc<Mutex<IndexManager>>` **removes that exclusion and forces a replacement.** So M5 does not simply "unblock"
-swap-scan; it invalidates swap-scan's stated exclusion design.
+Why, in one paragraph each:
 
-Upside remains real: it retires three stranding hazards (poisoned lock after extraction, panic in `work(&mut mgr)` with
-no `Drop` guard, `PendingPhases::BeingStarted` stuck if `PhaseStart::run` panics off the lock).
+- **The exclusion cannot be given up, so there is nothing to replace.** `work(&mut IndexManager)` needs the manager's
+  `MutexGuard` for its whole body, and that body is the blocking scan-start prelude. `Arc<Mutex<IndexManager>>` keeps
+  the same exclusion and pays a lock for it, converting a window where NO lock is held into one where a lock every
+  reader of that volume must take is held across blocking I/O — measured at 3 to 10 ms typical on the boot disk, seconds
+  on the truncating arm, unbounded on a wedged mount. That is the hazard `lifecycle/DETAILS.md` § "Lock discipline"
+  records two QA incidents for, and `cover_context_for` (50 to 150 calls per phase) plus `get_writer_and_scanning_for`
+  (per SMB change) would both move onto it.
+- **The two exclusions the plan cited are already redundant.** `start_pending_phases` is single-flighted by
+  `PendingPhases`' compare-and-set, not by extraction; `cover_context_for` is covered by the `Exclusive` claim
+  `start_scan` takes at `manager/start.rs:415`, before any blocking work, as of M2. Both comments predate the mechanisms
+  that now carry them.
+- **It retires none of the three stranding hazards.** It relocates the poison and panic strands into manager-mutex
+  poisoning (a larger surface than the microsecond registry holds it replaces) and is irrelevant to stuck
+  `BeingStarted`, which lives entirely inside `start_pending_phases`.
+- **Blast radius was never the problem.** 23 `IndexPhase::Running` sites, eight files, one crate; `with_running_manager`
+  is private with five callers. Mostly mechanical. The lock semantics are the reason to say no.
 
-**Spike scope:** blast radius across `with_running_manager` callers, lock contention versus extraction, **and what
-replaces the `ShuttingDown` exclusion.** If the numbers or the exclusion answer come back bad, stop and report. Nothing
-else in this plan depends on M5.
+**What the spike found that IS worth doing** (a fourth stranding hazard the plan didn't list, with two red tests in the
+note): **a teardown landing in the extraction window is silently swallowed.** `stop_indexing`, `clear_index`, and
+`fail_index` all take a put-it-back-and-return-Ok arm when they meet the transient `ShuttingDown`, so the request is
+lost and `off_the_registry` restores the volume to `Running`. The `fail_index` case is a principle #1 exposure: a fatal
+storage error that trips in the window never reaches `Failed`, and the volume runs on over a dead writer for the rest of
+the session. `Detached::TornDownWhileAway` is unreachable in production for the same reason.
 
-**Checks:** `pnpm check rust`, then `pnpm check --include-slow`.
+The note § 6 sketches the replacement, roughly 150 lines plus tests: an RAII restore guard at the four extraction sites,
+a transient phase a teardown can claim (which finally connects `TornDownWhileAway`), hoisting the volume's stable
+handles onto `IndexInstance` the way `VolumeSignals` already is, and a `Drop` guard for `BeingStarted`. **Not scheduled
+here** — it is a lifecycle-correctness milestone, not a ground-ownership one.
+
+**Correction to § "Sequencing against other plans":** M5 does NOT invalidate `swap-scan-plan.md`'s exclusion design.
+Under `Arc<Mutex<_>>` a concurrent teardown would block rather than lose the race, so the exclusion survives with
+different vocabulary. What swap-scan really inherits from today's shape is the swallowed teardown above.
 
 ### M6 — The reconciler's rescan scheduler (optional)
 
@@ -532,8 +554,11 @@ cancel-to-join bound. **Checks:** `pnpm check --include-slow`.
    walk's cancel-to-join (134 ms median locally) plus a re-walk of the ground the stopped group left, and its progress
    ordering is now openly non-monotonic — a stopped group asks for another pass, so the frontier can grow back between
    passes. What the user gets for it is in `docs/notes/preemption-2026-08-18.md`.
-2. **M5 custody: spike it?** Wide refactor, and the spike now has to answer what replaces the `ShuttingDown` exclusion.
-   Recommendation: **spike it, decide on the numbers.**
+2. **M5 custody: spike it?** ✅ **SPIKED 2026-08-18, and DROPPED.** `Arc<Mutex<IndexManager>>` keeps the exclusion and
+   pays a lock for it across the blocking scan-start prelude, and retires none of the three stranding hazards it was
+   credited with. The spike did turn up a fourth one worth fixing on its own (a teardown in the extraction window is
+   silently swallowed, `fail_index` included), and sketched the ~150-line milestone that fixes all four without touching
+   custody. Full reasoning and numbers: `docs/notes/manager-custody-spike-2026-08-18.md`.
 3. **M6: defer indefinitely?** Consistency win, touches the live hot path. Easy to skip.
 4. **Should "Rescan now" during a running scan queue instead of no-op?** ✅ **DECIDED: yes, and shipped with M4.** It
    used to forget the request and report `Started`, so a user clicking mid-scan got nothing and was told it worked. Now
@@ -573,13 +598,16 @@ reasons, but the stated reason is not true. Unrelated to this plan; fix it in pa
 
 ## Sequencing against other plans
 
-`swap-scan-plan.md` (`docs/specs/later/indexing/swap-scan-plan.md`) is NOT STARTED. M0 and M2 help it. **M5 does not
-simply unblock it; M5 invalidates its stated exclusion design and forces a replacement.** Whoever picks up swap-scan
-should read M5's spike result first.
+`swap-scan-plan.md` (`docs/specs/later/indexing/swap-scan-plan.md`) is NOT STARTED. M0 and M2 help it. **M5 is dropped
+and does NOT invalidate its exclusion design** (the spike corrected that claim). What swap-scan does inherit from
+today's extract-reinsert shape is a teardown landing in the window being silently swallowed, which its § 2.3 step 5
+prose doesn't anticipate. Whoever picks up swap-scan should read `docs/notes/manager-custody-spike-2026-08-18.md` § 5
+first.
 
 Independent, no interaction: `sealed-subtrees-plan.md`, `media-ml-index-plan.md`, `index-vacuum-reader-pinning.md`,
 `drive-index-overall-eta.md`, `resource-use-plan.md`, `scoped-incremental-walk.md`, `importance-subsystem-plan.md`.
-`later/indexing/out-of-process-indexing.md` gets easier if M5 lands.
+`later/indexing/out-of-process-indexing.md` would have got easier if M5 landed; it didn't, so that plan keeps the
+extract-reinsert shape to reckon with.
 
 ## Definition of done
 
@@ -587,5 +615,5 @@ Independent, no interaction: `sealed-subtrees-plan.md`, `media-ml-index-plan.md`
   per touched doc; `pnpm check invariant-density -v` prints the gauge (a passing check is suppressed in quiet mode).
 - `CLAUDE.md` files stay in the 300 to 400 word band; depth to the sibling `DETAILS.md`. One that will not compress
   under 600 words means the module wants splitting: say so rather than bumping an allowlist.
-- Benchmarks for M1, M2, and M7 in `docs/notes/` with method and date.
+- Benchmarks for M1, M2, and M7 in `docs/notes/` with method and date, plus M5's spike result.
 - Conventional commits leading with impact. No `Co-Authored-By`. No push.

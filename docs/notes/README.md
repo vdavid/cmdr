@@ -104,6 +104,13 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **A decision record for something we evaluated and rejected**, kept so nobody re-proposes it from the same premises:
 
+- `manager-custody-spike-2026-08-18.md` — why `IndexPhase::Running` stays a `Box<IndexManager>` and the
+  extract-work-reinsert dance stays: `Arc<Mutex<IndexManager>>` can't give the exclusion up (the closure needs the guard
+  for its whole body), so it keeps the same exclusion and pays a lock for it across the blocking scan-start prelude,
+  measured at 3-10 ms typical and unbounded on a wedged mount. It also retires none of the three stranding hazards it
+  was credited with. Read it before proposing shareable manager custody again, and read § 4 regardless: it carries two
+  red tests proving a **fourth** hazard nobody had listed, that a teardown landing in the extraction window
+  (`stop_indexing`, `clear_index`, and `fail_index` alike) reports success and does nothing.
 - `size-only-subtrees-rejected-2026-08-06.md` — why storing folder totals instead of per-file rows under `CACHEDIR.TAG`
   subtrees was dropped (the CPU case is ~1%, measured in release), the cross-directory hardlink finding any revival has
   to solve first, and the search-arena and APFS-clone leads that came out of it.
