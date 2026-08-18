@@ -16,9 +16,10 @@ above them that a row can't hold. Depth: `DETAILS.md`.
   which, so the job is to lay everything out for the user to decide. ❌ Never add an agent-specific safety behaviour to
   the execution path (no auto-skip on collision, no refusing an overwrite, no refusing an irreversible group): once the
   user approves, it is exactly as if they started the action. Put the effort into disclosure instead.
-- **A selector resolves ONCE, at creation, against the drive INDEX.** ❌ Never at approval, and never by walking the
-  filesystem (a walk blocks on a dead mount and reads ground the user never consented to index). Freezing is what makes
-  "what the user saw is what runs" true; a test pins that the resolver is asked exactly once.
+- **A selector resolves ONCE, at creation, against the drive INDEX.** Never at approval, and that half needs no rule:
+  `tests.rs::a_selector_freezes_at_creation_and_is_never_resolved_again` counts the resolver's calls and fails at two.
+  Freezing is what makes "what the user saw is what runs" true. ❌ Never resolve by walking the filesystem, though:
+  nothing catches that one, and a walk blocks on a dead mount and reads ground the user never consented to index.
 - **The matcher is `search::matcher::CompiledQuery`.** ❌ Never re-derive glob translation or case folding here: that
   fork is how a selector and the search box would disagree about the same `*.dmg`.
 - **A refusal is not an empty list.** `SelectorRefusal::NotIndexed` says "I can't see that drive", which is a different

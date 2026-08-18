@@ -15,9 +15,11 @@ one executor call, an **op** (`proposal_ops`) is one path that may be a whole di
 
 - **The claim is the one place a bug applies ops to real files twice.** One `BEGIN IMMEDIATE`: read the stored
   acceptance, compare the live op set as a hash plus count, conditional `UPDATE ... WHERE status = 'pending'`, refuse on
-  a mismatch **or** on `rows_affected == 0` as two distinct typed variants (the recovery differs). ❌ Don't reorder it
-  and ❌ don't touch op statuses in it: leaving the live set alone is what makes a losing concurrent claim report stale
-  status instead of a mismatch the winner caused.
+  a mismatch **or** on `rows_affected == 0` as two distinct typed variants (the recovery differs). ❌ Don't reorder it.
+  It also leaves op statuses alone, which is what makes a losing concurrent claim report stale status instead of a
+  mismatch the winner caused. That one needs no rule, because a test holds it:
+  `tests/claim.rs::two_concurrent_claims_leave_exactly_one_winner_and_a_typed_refusal` goes red if the claim starts
+  writing them.
 - **The acceptance record is SERVER-OWNED.** The client presents a group id and DESELECTED op ids, never values.
   Comparing `proposal_ops` against itself is a tautology once the agent can amend a pending group, so the record held
   apart from the rows is the whole mechanism.

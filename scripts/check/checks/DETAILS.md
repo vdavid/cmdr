@@ -923,16 +923,19 @@ Checks by app and tech:
   the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
   cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (warn-only; the clone list, on a per-file-pair ratchet),
   log-error-macro, sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
-  shared page cache is always installed before SQLite initializes), error-string-match, write-ops-isolation (the write engine may not name the `agent` module: an approved operation is an ordinary operation, and an engine that can see the agent grows a second execution path; per-source outcomes reach a caller through the injected `OperationEventSink` instead), lock-poison, test-sleep (flags a
-  fixed `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a
-  genuine sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built
-  on `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's
-  live fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load
-  bearing opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
-  `CachedScanResult` / `SourceHint` / `VolumePreflight` in test code, so a fixture can only be one of the shapes a named
-  constructor actually builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder —
-  the shapes are already clean, and the point is that the next test author can't undo that by copy-pasting an old
-  literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
+  shared page cache is always installed before SQLite initializes), error-string-match, write-ops-isolation (the write
+  engine may not name the `agent` module: an approved operation is an ordinary operation, and an engine that can see the
+  agent grows a second execution path; per-source outcomes reach a caller through the injected `OperationEventSink`
+  instead), lock-poison, test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in test code, where a
+  condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
+  `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on `std::env::temp_dir()`, where every
+  process on the machine shares the path and two suite runs delete each other's live fixtures; the sanctioned fixture is
+  `crate::test_support::TestDir`, and a site where the temp root is load bearing opts out with
+  `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of `CachedScanResult` /
+  `SourceHint` / `VolumePreflight` in test code, so a fixture can only be one of the shapes a named constructor actually
+  builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder — the shapes are already
+  clean, and the point is that the next test author can't undo that by copy-pasting an old literal),
+  derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
   `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information", it's a claim about
   the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in production
   `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the branch that
