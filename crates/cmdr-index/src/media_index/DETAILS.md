@@ -432,8 +432,7 @@ every module, so each command keeps its `commands::media_index::<name>` path in 
 through the same path.
 
 Every command is `async` + `spawn_blocking` (a sync `#[tauri::command]` would block the IPC thread), offline-capable,
-and registered in BOTH `ipc.rs` and `ipc_collectors.rs` — regen the typed bindings with `pnpm bindings:regen` after any
-command change.
+and registered in the `ipc.rs` manifest — regen the typed bindings with `pnpm bindings:regen` after any command change.
 
 - **`media_index_search_ocr(volume_id, query, limit?)`** — the IPC door onto `MediaIndex::search_ocr` (plan Decision 8):
   it resolves the app data dir, opens `MediaIndex` for the volume, and searches. `limit` defaults to 200, clamped

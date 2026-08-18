@@ -42,7 +42,7 @@ This file owns the leaves: `coverage/`, `gate.rs` (toggle / scope / threshold / 
   via `gate::should_stop` (watchdog OR toggle OFF); ❌ don't narrow it to `is_cancelled`.
 - **CLIP is a SEPARATE vector space from the Vision feature print**; ❌ never cosine-compare the two.
 - **Every pass emits `media-enrich-progress`** over the ENRICHABLE subset (❌ never `images.len()`) and
-  `media-enrich-terminal` on EVERY exit path. New commands register in BOTH `ipc.rs` and `ipc_collectors.rs`, events in
+  `media-enrich-terminal` on EVERY exit path. New commands register in the `ipc.rs` manifest, events in
   `collect_events!`.
 
 Port rationale, the GC safety argument, the scope model, the coverage caches, settings, events, and the frontend map:

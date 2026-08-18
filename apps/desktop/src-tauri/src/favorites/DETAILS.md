@@ -104,7 +104,7 @@ there's no `list_favorites` command.
 - `rename_favorite(id: String, name: String) -> Result<(), IpcError>`
 - `reorder_favorites(ordered_ids: Vec<String>) -> Result<(), IpcError>`
 
-Registered in both `ipc.rs` (runtime `generate_handler`) and `ipc_collectors.rs` (specta types).
+Registered in the `ipc.rs` manifest, which feeds both runtime dispatch and the specta types.
 
 ## FDA-pending skip (macOS)
 

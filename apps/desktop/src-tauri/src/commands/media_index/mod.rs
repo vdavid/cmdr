@@ -56,8 +56,8 @@ mod search;
 mod state;
 mod thumbnail;
 
-// Glob re-exports so every command keeps its `commands::media_index::<name>` path in
-// `ipc.rs` / `ipc_collectors.rs`. They're globs on purpose: `#[tauri::command]` also
+// Glob re-exports so every command keeps its `commands::media_index::<name>` path in the
+// `ipc.rs` manifest. They're globs on purpose: `#[tauri::command]` also
 // generates two hidden macros per function (`__cmd__*`, `__tauri_command_name_*`) that
 // `generate_handler!` resolves through the SAME path, so naming the items one by one
 // would mean listing those macros too.

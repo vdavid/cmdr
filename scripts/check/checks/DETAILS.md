@@ -686,11 +686,11 @@ things hold that together:
   `CargoSelectionArgs(members, "macos")` + `SharedTargetFeatureArgs()`, and fails on a re-introduced `cd src-tauri`.
   macOS is the right target to compare against because the committed `bindings.ts` is the macOS surface (that's the
   check's `NotInCI` reason).
-- The regen only survives the shared feature set because the exported surface no longer moves with it:
-  `ipc_collectors.rs::collect_virtual_mtp_types` holds the three virtual-MTP commands back while the crate compiles its
-  own tests, which is where `ipc::tests::export_bindings_test` writes the file. Without that, regenerating with the
-  feature would commit three commands a real build doesn't answer. Pinned by
-  `ipc_collectors::tests::the_exported_surface_leaves_out_the_test_only_virtual_mtp_commands`.
+- The regen only survives the shared feature set because the exported surface no longer moves with it: the manifest's
+  `typed unless cfg(test)` group in `ipc.rs` holds the three virtual-MTP commands back while the crate compiles its own
+  tests, which is where `ipc::tests::export_bindings_test` writes the file. Without that, regenerating with the feature
+  would commit three commands a real build doesn't answer. Pinned by
+  `ipc::tests::the_exported_surface_leaves_out_the_test_only_virtual_mtp_commands`.
 
 Net effect on the two lanes, same sequence measured before and after: `bindings-fresh` on a marker miss went 28.8 s →
 2.3 s, and the `rust-tests` run right after it went 70 s → 27.7 s.

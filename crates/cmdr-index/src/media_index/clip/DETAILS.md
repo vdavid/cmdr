@@ -122,9 +122,9 @@ tested; the FFI compile/load around them isn't (needs Core ML + the real model).
 
 ## The query path
 
-`media_index_search_semantic(volume_id, query, limit)` (IPC, registered in both `ipc.rs` + `ipc_collectors.rs`) runs OFF
-the IPC thread (`spawn_blocking`): tokenize + warm-text-tower encode (`clip::encode_text_query`, which hops to the CLIP
-worker) → `MediaIndex::search_semantic(query_vec, limit)` brute-force top-k over a SECOND resident CLIP cache
+`media_index_search_semantic(volume_id, query, limit)` (IPC, registered in the `ipc.rs` manifest) runs OFF the IPC
+thread (`spawn_blocking`): tokenize + warm-text-tower encode (`clip::encode_text_query`, which hops to the CLIP worker)
+→ `MediaIndex::search_semantic(query_vec, limit)` brute-force top-k over a SECOND resident CLIP cache
 (`vector::cache::get_or_load_clip`, keyed `(db_path, EmbeddingTable::Clip)`, invalidated per completed pass, dropped by
 the memory watchdog with the feature-print cache). The read API takes the already-encoded query VECTOR, so it's a pure
 vector query testable with deterministic vectors; the command owns the encode. `[]` (never an error) when indexing is

@@ -285,7 +285,7 @@ func HostCargoSelectionArgs(rootDir string) ([]string, error) {
 // `virtual-mtp` is the set because `desktop-rust-tests` genuinely needs it (~29
 // MTP tests only COMPILE under it) and nothing else needs it absent: it's
 // test-only, never enters a production build, and no longer changes the exported
-// IPC surface (`ipc_collectors.rs` keeps its commands out of the bindings).
+// IPC surface (the `ipc.rs` manifest keeps its commands out of the bindings).
 // It MUST stay package-qualified: a bare `--features virtual-mtp` changes meaning
 // once more than one package is selected.
 func SharedTargetFeatureArgs() []string {

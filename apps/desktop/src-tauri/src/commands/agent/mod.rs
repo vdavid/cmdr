@@ -26,8 +26,8 @@ mod cost;
 mod views;
 
 // Glob re-exports, so each `#[tauri::command]`'s generated companion items (`__cmd__*`,
-// `__tauri_command_name_*`, `__specta__fn__*`) come along: `ipc.rs` and
-// `ipc_collectors.rs` register every command by its `crate::commands::agent::<name>` path,
+// `__tauri_command_name_*`, `__specta__fn__*`) come along: the `ipc.rs` manifest registers
+// every command by its `crate::commands::agent::<name>` path,
 // and a named re-export would leave those hidden items behind. Same pattern as
 // `commands/file_system/mod.rs`.
 pub use attachments::*;

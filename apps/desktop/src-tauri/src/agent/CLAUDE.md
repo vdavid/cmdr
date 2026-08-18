@@ -34,7 +34,7 @@ entity, not the surface, so later proactive slices (proposals, notifications) gr
   tool dispatch; `agent::start` registers `ChatRuntime`. `../commands/agent/` is the thin frontend surface
   (send/cancel, conversation CRUD + FTS, attachment resolvers, consent + cost commands; full list in DETAILS.md).
   `ask_cmdr_send_message` streams over a Tauri `Channel` on a worker thread (`run_turn` holds a non-`Send` connection
-  across awaits). Register a new command in BOTH `ipc.rs` and `ipc_collectors.rs`. Frontend:
+  across awaits). Register a new command in the `ipc.rs` manifest. Frontend:
   `apps/desktop/src/lib/ask-cmdr/CLAUDE.md`.
 - **The interactive slot layers a dedicated model over shared `ai/` config.** `resolve_agent_llm` reads
   `askCmdr.interactiveModel` fresh and passes it to `ai::manager::resolve_backend_with_model`: provider on/off, keys,

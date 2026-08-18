@@ -73,7 +73,6 @@ pub use cmdr_fs::ignore_poison::IgnorePoison;
 pub use cmdr_fs::{ignore_poison, pluralize, process_memory, sqlite_util, thread_qos};
 
 mod ipc;
-mod ipc_collectors;
 
 mod logging;
 

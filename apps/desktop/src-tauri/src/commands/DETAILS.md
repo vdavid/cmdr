@@ -164,7 +164,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 wire DTOs they share: `views.rs` (the stream event enum, the specta display projections, and the pure mappings),
 `chat.rs` (send + cancel), `attachments.rs`, `bulk_rename.rs`, `conversations.rs`, `consent.rs`, `cost.rs`. `mod.rs`
 glob-re-exports each submodule, which is load-bearing: `#[tauri::command]` generates companion items next to the
-function, and `ipc.rs` / `ipc_collectors.rs` register by the `crate::commands::agent::<name>` path, so a NAMED re-export
+function, and the `ipc.rs` manifest registers by the `crate::commands::agent::<name>` path, so a NAMED re-export
 would leave those hidden items behind and fail to compile. `mod.rs` also owns the two shared `main.db` connection
 helpers.
 

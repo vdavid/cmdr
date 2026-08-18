@@ -197,9 +197,10 @@ problem to the helper instead of solving it. Just rename the locals at the call 
 2. Any new DTO crossing the IPC boundary needs `#[derive(specta::Type)]`. Drop `Deserialize` if the type is
    serialize-only (a return value, not a parameter), and never add `#[serde(skip_serializing_if = ...)]`. See § Type
    shape constraints below.
-3. Add the path to `ipc.rs::builder()` (the `tauri::generate_handler![]` block, runtime dispatch) AND the matching
-   `collect_*_types()` helper (the `specta::function::collect_functions![]` block, type info for `bindings.ts`).
-   Platform-gated commands go in the cfg-matched `collect_*_types()` per platform.
+3. Add the path once, at the end of the `typed:` list of its `#[cfg]` group in `ipc.rs::ipc_command_manifest!`. A
+   platform-gated command goes in the group whose `cfg(...)` matches it. A command specta can't describe (generic over
+   `R: Runtime`, streaming over a `Channel<T>`, or carrying a `serde_json::Value`) goes in the group's `dispatch_only:`
+   list instead, with a comment saying which, and stays on raw invoke on the frontend.
 4. `pnpm bindings:regen`. Commit `bindings.ts` alongside the Rust change.
 5. Use it on the FE: `import { commands } from '$lib/ipc/bindings'; await commands.doThing(volumeId, force)`. If it
    returns `Result`, unwrap via `throwIpcError`.
@@ -293,20 +294,24 @@ input.
 
 The Rust side splits into:
 
-- `ipc.rs::builder()`: single source of truth for the Tauri-Specta `Builder<Wry>`. Contains:
-  - The full `tauri::generate_handler![…]` for runtime dispatch (supports `#[cfg(...)]` per-line).
-  - One `collect_*_types(types: &mut Types) -> Vec<Function>` per platform group (specta types collection).
-  - A combined function that walks all the per-platform collectors.
+- `ipc.rs::ipc_command_manifest!`: every command the app exposes, written once, grouped by the `#[cfg]` predicate that
+  decides whether the group compiles. Two consumer macros read it: `build_invoke_handler!` expands it into the
+  `tauri::generate_handler![…]` runtime dispatch table (one `#[cfg]` per entry), `define_type_collectors!` expands it
+  into `collect_all_types`, one `collect_functions![…]` block per group in manifest order.
+- `ipc.rs::builder()`: single source of truth for the Tauri-Specta `Builder<Wry>`. Hands both expansions to
+  `tauri_specta::internal::command`, then registers the typed events with `collect_events![…]`.
 - `lib.rs::run()` calls `ipc::builder()`, passes `.invoke_handler(builder.invoke_handler())` to
   `tauri::Builder::default()`. The runtime never writes `bindings.ts` itself; regeneration is explicit, via
   `pnpm bindings:regen` (which runs the `#[ignore]`'d `ipc::tests::export_bindings_test` and then `oxfmt`). The runtime
   must never auto-rewrite the file: doing so skips both the AUTO-GENERATED header and the oxfmt postprocess, silently
   overwriting the committed formatted file with raw specta output every launch.
 
-Why two parallel command lists? `specta::function::collect_functions![]` doesn't accept `#[cfg(...)]` inline attributes
-(it only takes path expressions). The `tauri::generate_handler![]` macro does. So we use `generate_handler![]` for
-runtime dispatch (handles platform gating cleanly) and `collect_functions![]` for type collection (split by platform
-into separate fns). They're kept in sync by convention.
+Why a manifest macro instead of two lists? The two macros can't take the same input: `collect_functions![]` takes bare
+paths and rejects inline `#[cfg(...)]`, while `generate_handler![]` takes a `#[cfg(...)]` per entry but hands back an
+opaque invoke handler. Both need the same commands, so the manifest holds the list and each consumer shapes it. A
+command that reaches one reaches the other, which is what keeps `bindings.ts` from advertising a command the invoke
+handler doesn't answer (it drifted that way once, for `get_busy_volume_ids`, while the lists were kept in sync by
+convention).
 
 ## IPC contract testing
 

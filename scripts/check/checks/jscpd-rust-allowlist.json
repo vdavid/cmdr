@@ -26,7 +26,6 @@
     "apps/desktop/src-tauri/src/file_viewer/byte_seek.rs ↔ apps/desktop/src-tauri/src/file_viewer/line_index.rs": 22,
     "apps/desktop/src-tauri/src/file_viewer/line_index.rs": 19,
     "apps/desktop/src-tauri/src/icons/per_path.rs ↔ crates/cmdr-fs/src/icons/packages.rs": 48,
-    "apps/desktop/src-tauri/src/ipc.rs ↔ apps/desktop/src-tauri/src/ipc_collectors.rs": 239,
     "apps/desktop/src-tauri/src/logging/dispatch.rs": 18,
     "apps/desktop/src-tauri/src/menu/linux.rs ↔ apps/desktop/src-tauri/src/menu/macos.rs": 118,
     "apps/desktop/src-tauri/src/mtp/connection/directory_ops.rs": 27,

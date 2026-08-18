@@ -37,7 +37,7 @@ module owns only the persistent history store and the AI translation pipeline. I
 - `crate::recents`: the persisted-list machinery behind `RECENT_SELECTIONS`.
 - `crate::ai::manager` + `crate::ai::client`: backend resolution and chat completion (mirrors `commands::search`).
 
-The six IPC commands are registered in `crate::ipc::builder` and `crate::ipc_collectors::collect_cross_platform_types`;
+The six IPC commands are registered in the `crate::ipc` manifest's cross-platform group;
 typed wrappers in `apps/desktop/src/lib/tauri-commands/selection.ts`. Dialog frontend in
 `apps/desktop/src/lib/selection-dialog/`.
 

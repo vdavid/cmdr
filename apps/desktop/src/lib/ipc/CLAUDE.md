@@ -14,8 +14,8 @@ The Rust side lives in `apps/desktop/src-tauri/src/ipc.rs`.
   Regen explicitly with `cd apps/desktop && pnpm bindings:regen`; review and commit the diff alongside the Rust change.
 - **A test-only cargo feature must not move the exported surface.** The regen runs under the shared cargo feature set
   (`cmdr/virtual-mtp`) so it reuses the other lanes' `target/` artifacts, so a command that appears only under such a
-  feature has to be held back from its specta collector in test builds, the way
-  `ipc_collectors.rs::collect_virtual_mtp_types` does. E2E reaches those commands by raw `__TAURI_INTERNALS__.invoke`.
+  feature has to be held back from its specta collector in test builds, the way the `ipc.rs` manifest's
+  `typed unless cfg(test)` group does. E2E reaches those commands by raw `__TAURI_INTERNALS__.invoke`.
   `scripts/check/checks/DETAILS.md` § "One feature set across the cargo lanes".
 - **Never call `commands.*` / `events.*` raw in components.** Wrap each in `$lib/tauri-commands/` (an `on<Event>(cb)`
   for events). Enforced by `cmdr/no-raw-tauri-invoke`.
