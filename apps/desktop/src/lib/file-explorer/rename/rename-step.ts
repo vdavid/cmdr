@@ -44,7 +44,10 @@ export function resolveStepIndex(direction: RenameStepDirection, bounds: RenameS
  * only a bare arrow chains: `⌘↓` (open), `⌥↑` (go to first), and `⇧↓` (extend
  * the selection) keep their meanings, and Page Up/Down, Home, and End never
  * chain at all. The caret-to-start/end that a bare arrow used to do inside the
- * input is given up for this; Home and End still do it.
+ * input is given up for this, and `⌘←` / `⌘→` are what still do it: Home and End
+ * reach the input un-prevented, and this webview moves the caret nowhere for
+ * them, in any text field in the app (verified on macOS 26.5.2 / WKWebView, real
+ * OS key events, 2026-08-18).
  */
 export function renameStepDirection(event: KeyboardEvent): RenameStepDirection | undefined {
   if (eventMatchesCommand(event, 'nav.down')) return 'down'

@@ -134,7 +134,10 @@ chain failures, or aggregate them into one end-of-chain summary. Copy is user-fa
 
 ## UX details
 
-- Up/Down currently move the caret to the start/end of the input. That's given up; Home/End still do it.
+- Up/Down currently move the caret to the start/end of the input. That's given up; `⌘←` / `⌘→` are what still do it.
+  Home and End were assumed to, and don't: they reach the input un-prevented and the webview moves the caret nowhere for
+  them, in every text field in the app (verified on macOS 26.5.2 / WKWebView, real OS key events for `key code 115` /
+  `119`, 2026-08-18).
 - The new editor focuses and selects name-minus-extension on mount, same as any rename. Chaining therefore lets the user
   type a fresh name immediately.
 - The editor must stay visible: `applyNavigation` scrolls the neighbour into view, which matters because an editor

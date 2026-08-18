@@ -146,8 +146,10 @@ listing, which is the space the cursor index counts in. The round trip is what a
 same path a row that has scrolled out of the window has always taken.
 
 Only a bare ArrowUp / ArrowDown chains, matched on the whole combo through the file list's own `nav.up` / `nav.down`
-commands. The caret-to-start/end that a bare arrow used to do inside the input is given up for this; Home and End still
-do it.
+commands. The caret-to-start/end that a bare arrow used to do inside the input is given up for this, and `⌘←` / `⌘→` are
+what still do it. Home and End are not: they reach the input un-prevented and the webview moves the caret nowhere for
+them, in the rename input and in every other text field in the app alike (verified on macOS 26.5.2 / WKWebView, real OS
+key events for `key code 115` / `119`, 2026-08-18).
 
 ### What becomes of the edit being stepped away from
 
