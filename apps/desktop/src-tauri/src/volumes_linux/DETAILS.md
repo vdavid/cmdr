@@ -25,11 +25,17 @@ to be a registration target reads like a Linux implementation and invites someon
 one-line alias sitting next to the `pub mod volumes` it points at can't. It goes away when those registrations move to
 `volumes`.
 
-The pair of hand-maintained command modules this replaced had drifted: Linux resolved a path inside an archive to
-nothing (no `confirm_archive_boundary`, so a pane deep-linked inside a `.zip` couldn't find its volume), and both
-`list_volumes` and `get_volume_space` ran their blocking work straight on the async thread with no deadline, so one
-wedged CIFS mount held the IPC handler. macOS had all three guards. Every test in the shared module now runs on both
-platforms, which is what keeps them.
+The pair of hand-maintained command modules this replaced had drifted: both `list_volumes` and `get_volume_space` ran
+their blocking work straight on the async thread with no deadline here, so one wedged CIFS mount or a stuck
+`gvfsd-fuse` held the IPC handler for as long as the kernel did. macOS had wrapped both in `blocking_with_timeout_flag`
+for months. Every test in the shared module now runs on both platforms, which is what keeps them in step.
+
+The shared `confirm_archive_boundary` call in `resolve_path_to_volume` is NOT one of those fixes, despite looking like
+one. macOS needs it because `statfs` fails outright on `…/bundle.zip/docs/readme.txt`; `get_mount_point` here is a
+longest-prefix match over `/proc/mounts` that never fails, so Linux already resolved such a path to the containing
+drive (verified by running the macOS test against the pre-merge Linux module in the Docker lane, where it passed).
+It's shared so the contract is explicit: a stat-based fast path added here later would otherwise silently start
+answering `None` for archive-inner paths.
 
 ## Decisions
 

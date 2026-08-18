@@ -4,8 +4,11 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 
 ## File inventory
 
-- **`mod.rs`**: re-exports. `mtp` / `network` gated behind `#[cfg(any(target_os = "macos", target_os = "linux"))]`;
-  `volumes` behind `#[cfg(target_os = "macos")]`; `volumes_linux` behind `#[cfg(target_os = "linux")]`.
+- **`mod.rs`**: re-exports. `mtp` / `network` / `volumes` gated behind
+  `#[cfg(any(target_os = "macos", target_os = "linux"))]`. There's no `volumes_linux` module: the volume commands are
+  cross-platform, and `commands::volumes_linux` is a `#[cfg(target_os = "linux")] pub use volumes as volumes_linux;`
+  kept only until `ipc.rs` stops registering the Linux set under that path. See
+  `../volumes_linux/DETAILS.md` § "One command module".
 - **`util.rs`**: `TimedOut<T>`, `IpcError`, `blocking_with_timeout`, `blocking_with_timeout_flag`,
   `blocking_result_with_timeout`.
 - **`file_system/`**: directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, tests.

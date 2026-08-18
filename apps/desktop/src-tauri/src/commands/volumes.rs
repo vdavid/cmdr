@@ -148,6 +148,13 @@ async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<V
     // drive id, never a per-archive id), so read the `.zip`'s real location, not the
     // inner path (which isn't a real FS path). The boundary check runs inside the
     // timeout-wrapped closure so its stat can't block IPC on a hung mount.
+    //
+    // Only macOS strictly needs the check: its `resolve_path_volume_fast` goes through
+    // `statfs`, which fails on the inner path and would answer `None`. Linux's is a
+    // longest-prefix match over `/proc/mounts` that never fails, so it lands on the same
+    // drive either way. Shared regardless, so the contract is stated rather than
+    // inherited from one resolver's failure mode — a stat-based fast path on Linux would
+    // otherwise start returning `None` here with nothing to catch it.
     let result = blocking_with_timeout_flag(fs_timeout, None, move || {
         let fs_path = match crate::file_system::volume::backends::archive::confirm_archive_boundary(
             std::path::Path::new(&path),
@@ -204,11 +211,10 @@ mod tests {
     #[tokio::test]
     async fn resolve_location_inside_an_archive_returns_the_parent_drive() {
         // A path INSIDE a `.zip` resolves to the parent drive (display semantics),
-        // not `None` — so restoring a pane deep-linked inside an archive works. The
-        // inner path isn't a real FS path, so this only works by resolving the
-        // `.zip`'s real location. Ran on macOS only while the Linux command was a
-        // separate copy that skipped the boundary check, which is how that platform
-        // shipped without it.
+        // not `None` — so restoring a pane deep-linked inside an archive works. On
+        // macOS this only works by resolving the `.zip`'s real location first; Linux
+        // reaches the same answer through its prefix-matched mount table. The test
+        // runs on both so neither platform can lose the behavior on its own.
         let dir = tempfile::tempdir().expect("create temp dir");
         let zip = dir.path().join("bundle.zip");
         std::fs::write(&zip, b"PK\x03\x04rest").expect("write zip magic");

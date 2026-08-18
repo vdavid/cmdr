@@ -391,6 +391,24 @@ There are two start paths. **Startup** (`start_mcp_server` → `start_mcp_server
 
 The live-control commands (`set_mcp_enabled`, `set_mcp_port`, no restart needed) return a typed `McpServerOutcome` (`Running { port }` / `Stopped` / `PortInUse { requested }`) so the frontend branches on `kind`, never a message string; the wire shape is pinned by `mcp_server_outcome_json_shape`. The frontend shows "(ephemeral)" when the setting was 0, "(port N was in use)" when a *startup* probe landed off the pinned port, and on `PortInUse` keeps the server on its current port while offering the suggested free port (`findAvailablePort`). If the server crashes mid-serve, `MCP_ACTUAL_PORT` resets to 0 but the on-disk file may linger; external readers retry on `ECONNREFUSED`. Check logs for "MCP server crashed" errors.
 
+### `cmdr://state` lists no real volumes on Linux
+
+**Known gap, unfixed.** `resources/volumes.rs::snapshot_volumes` enumerates every discovered location under
+`#[cfg(target_os = "macos")]`: `volumes::list_locations()` plus `enrich_from_volume_registry`, inside a 2 s
+`spawn_blocking` guard, then the synthetic `Network` root. Linux falls into the `#[cfg(not(target_os = "macos"))]`
+branch, which pushes ONE hardcoded `root` entry and nothing else. MTP storages are appended for both.
+
+So an agent reading `cmdr://state` on Linux sees `root` and any connected phone, and no external drives, CIFS or GVFS
+shares, or cloud drives — and no `Network` root, so it can't tell that browsing shares is even possible. Nothing
+reports the gap; the section is present and plausible, just short.
+
+Fixing it means a Linux branch calling `volume_listing::discover_local` + `volume_listing::complete` (the same pipeline
+the IPC command and the `volumes-changed` push use) and its own summary mapping: Linux `LocationInfo` carries
+`smb_connection_state: Option<String>` rather than the macOS `SmbConnectionState` enum, and `is_smb_fs_type` lives in
+the macOS-only `volumes/fs_type.rs`, so the `VolumeKind::Smb` classification needs a home both platforms can reach
+before this can just be shared. Roughly 40 lines plus that move. Found during the volume-command dedupe; deliberately
+left out of that branch because it's an agent-facing behavior change, not duplication.
+
 ### Live MCP control only works from the settings window
 
 `McpServerSection.svelte` subscribes to `developer.mcpEnabled` and `developer.mcpPort` changes and calls the Tauri commands directly. The main window's `settings-applier.ts` intentionally does NOT handle these settings to avoid double-firing (both windows receive setting change events). This means if an MCP tool changes `developer.mcpEnabled` via the settings bridge while the settings window is closed, the setting is saved but the server state doesn't change until the next app restart. This is acceptable, since an MCP tool toggling its own server is circular.
