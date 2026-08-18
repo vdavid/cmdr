@@ -11,8 +11,8 @@
 //! Four concerns, one per file:
 //! - [`plan`]: the tool boundary — schema, dispatch, and everything a plan must survive
 //!   before a single row is staged (scope, validation, the evidence check).
-//! - [`store`]: what a staged proposal IS and how long it lives — the rows, the display
-//!   snapshot, the accepted-preflight handoff, and the TTL'd store.
+//! - [`store`]: what a staged proposal IS and where it lives — one durable group on the
+//!   proposal spine, its display snapshot, and the process-local accepted preflight.
 //! - [`preflight`](mod@preflight): user-action-time revalidation of the subset the user allows, and the
 //!   fingerprints apply later checks the sources against.
 //! - [`revise`]: the user's own name for one row, replacing the model's without re-running the
@@ -33,8 +33,8 @@ pub use preflight::{
 };
 pub use revise::revise_row;
 pub use store::{
-    AcceptedPreflight, RenameProposal, RenameProposalRow, RenameProposalRowSnapshot, RenameProposalSnapshot,
-    RenameProposalStore, RenameSourceFingerprint,
+    AcceptedPreflight, AcceptedRenamePreflights, RenameProposal, RenameProposalRow, RenameProposalRowSnapshot,
+    RenameProposalSnapshot, RenameSourceFingerprint, group_ops, load, numeric_id,
 };
 
 #[cfg(test)]

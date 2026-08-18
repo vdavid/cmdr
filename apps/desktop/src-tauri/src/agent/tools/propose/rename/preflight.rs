@@ -1,10 +1,15 @@
 //! Review-time revalidation of the subset the user currently allows.
 //!
 //! The caller sends opaque row ids only; paths and destination names stay in the proposal
-//! store. Nothing is mutated here: each allowed row is re-checked against the live source
-//! (locally by `symlink_metadata`, remotely through the volume backend), duplicate
-//! destinations and closed rename cycles are marked, and fingerprints are recorded only
-//! when every allowed row is safe to apply.
+//! store. Each allowed row is re-checked against the live source (locally by
+//! `symlink_metadata`, remotely through the volume backend), duplicate destinations and
+//! closed rename cycles are marked, and an acceptance is recorded only when every allowed row
+//! is safe to apply.
+//!
+//! A Ready preflight is what records the user's answer: the ops the review left out become
+//! `excluded` rows and the spine writes a server-owned acceptance record over what's left.
+//! The fingerprints that pair with it stay in this process ([`AcceptedRenamePreflights`]), so
+//! a restart forces a fresh preflight rather than reviving an approval given before it.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -13,8 +18,10 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::store::{
-    AcceptedPreflight, RenameProposal, RenameProposalRow, RenameProposalStore, RenameSourceFingerprint,
+    AcceptedPreflight, AcceptedRenamePreflights, RenameProposal, RenameProposalRow, RenameSourceFingerprint,
 };
+use crate::agent::AgentDb;
+use crate::agent::store::proposals::AcceptanceOutcome;
 
 /// A row's user-action-time validation result. It deliberately contains no
 /// path or destination authority: the frontend retains only opaque row ids.
@@ -77,10 +84,15 @@ pub async fn preflight<R: Runtime>(
     proposal_id: String,
     allowed_row_ids: Vec<String>,
 ) -> BulkRenamePreflight {
-    let Some(store) = app.try_state::<RenameProposalStore>() else {
+    let (Some(db), Some(accepted_preflights)) =
+        (app.try_state::<AgentDb>(), app.try_state::<AcceptedRenamePreflights>())
+    else {
         return expired_preflight();
     };
-    let Some(proposal) = store.get(&proposal_id) else {
+    let Ok(conn) = db.open_write_connection() else {
+        return expired_preflight();
+    };
+    let Ok(Some(proposal)) = super::store::load(&conn, &proposal_id) else {
         return expired_preflight();
     };
     let outcome = if proposal
@@ -98,21 +110,56 @@ pub async fn preflight<R: Runtime>(
     } else {
         preflight_remote(&proposal, &allowed_row_ids).await
     };
-    if outcome.status == BulkRenamePreflightStatus::Ready
-        && !store.record_accepted_preflight(
-            &proposal_id,
-            AcceptedPreflight {
-                // The names as they stood for THIS check, so a later edit can't ride this
-                // acceptance past the duplicate, cycle, and case-only checks above.
-                allowed_destination_names: proposal.destination_names_for(&allowed_row_ids),
-                allowed_row_ids,
-                fingerprints: outcome.fingerprints,
-            },
-        )
-    {
-        return expired_preflight();
+    if outcome.status != BulkRenamePreflightStatus::Ready {
+        return outcome.response;
     }
+    match record_user_acceptance(&conn, &proposal, &allowed_row_ids) {
+        Ok(true) => {}
+        Ok(false) | Err(_) => return expired_preflight(),
+    }
+    accepted_preflights.record(
+        &proposal_id,
+        AcceptedPreflight {
+            allowed_row_ids,
+            fingerprints: outcome.fingerprints,
+        },
+    );
     outcome.response
+}
+
+/// Record what the user allowed, as the spine's server-owned acceptance record: every op the
+/// review left out becomes `excluded`, and the digest over what's left is what the claim
+/// transaction binds against at apply time.
+///
+/// The client presented ids, never values — so the digest (each live op's id, source path, and
+/// destination NAME) is the half of the binding that says which names were checked. A revise
+/// changes it, and the claim then refuses rather than applying a name preflight never saw.
+fn record_user_acceptance(
+    conn: &rusqlite::Connection,
+    proposal: &RenameProposal,
+    allowed_row_ids: &[String],
+) -> Result<bool, crate::agent::store::AgentStoreError> {
+    let Some(group_id) = super::store::numeric_id(&proposal.proposal_id) else {
+        return Ok(false);
+    };
+    let deselected: Vec<i64> = proposal
+        .rows
+        .iter()
+        .filter(|row| !allowed_row_ids.contains(&row.row_id))
+        .filter_map(|row| super::store::numeric_id(&row.row_id))
+        .collect();
+    Ok(matches!(
+        crate::agent::store::proposals::record_acceptance(conn, group_id, &deselected, now_secs())?,
+        AcceptanceOutcome::Accepted { .. }
+    ))
+}
+
+fn now_secs() -> i64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
 }
 
 pub(super) struct PreflightOutcome {

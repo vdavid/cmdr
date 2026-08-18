@@ -86,6 +86,33 @@ impl EvidenceSource {
     pub fn claims_image_content(self) -> bool {
         matches!(self, EvidenceSource::ImageText | EvidenceSource::ImageTags)
     }
+
+    /// The token this source is stored as in `main.db`. Same spelling as the wire form, so the
+    /// file stays `sqlite3`-inspectable and one name means one thing everywhere.
+    pub fn as_token(self) -> &'static str {
+        match self {
+            EvidenceSource::ImageText => "imageText",
+            EvidenceSource::ImageTags => "imageTags",
+            EvidenceSource::Filename => "filename",
+            EvidenceSource::Metadata => "metadata",
+            EvidenceSource::UserInstruction => "userInstruction",
+            EvidenceSource::UserEdited => "userEdited",
+        }
+    }
+
+    /// Read a stored token back. `None` for anything this build doesn't know.
+    pub fn from_token(token: &str) -> Option<Self> {
+        [
+            EvidenceSource::ImageText,
+            EvidenceSource::ImageTags,
+            EvidenceSource::Filename,
+            EvidenceSource::Metadata,
+            EvidenceSource::UserInstruction,
+            EvidenceSource::UserEdited,
+        ]
+        .into_iter()
+        .find(|source| source.as_token() == token)
+    }
 }
 
 impl RenameEvidence {

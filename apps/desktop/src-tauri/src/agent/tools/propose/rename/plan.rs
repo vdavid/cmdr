@@ -12,17 +12,17 @@ use std::path::Path;
 use serde::Deserialize;
 use serde_json::Value;
 use tauri::{AppHandle, Manager, Runtime};
-use uuid::Uuid;
 
 use super::preflight::volume_uses_local_paths;
-use super::store::{RenameProposal, RenameProposalRow, RenameProposalSnapshot, RenameProposalStore};
+use super::store::{RenameDraft, RenameDraftRow, RenameProposalSnapshot};
+use crate::agent::AgentDb;
 use crate::agent::llm::types::AgentToolResult;
 use crate::agent::tools::propose::evidence::{EvidenceRejection, EvidenceScope, ImageFactsLedger};
 use crate::file_system::validation::validate_filename;
 use crate::mcp::pane_state::{PaneFileEntry, PaneState, PaneStateStore};
 use crate::mcp::{ToolError, ToolResult};
 
-const MAX_RENAMES: usize = 200;
+pub(super) const MAX_RENAMES: usize = 200;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -106,18 +106,16 @@ pub async fn dispatch<R: Runtime>(
     call_id: &str,
     params: &Value,
 ) -> RenameDispatchOutcome {
-    match build_proposal(app, scope, params) {
-        Ok(proposal) => {
-            let snapshot = app.state::<RenameProposalStore>().stage(proposal);
-            RenameDispatchOutcome {
-                result: AgentToolResult {
-                    call_id: call_id.to_string(),
-                    content: serde_json::json!({ "readyForReview": true, "count": snapshot.rows.len() }),
-                    elided: false,
-                },
-                proposal: Some(snapshot),
-            }
-        }
+    let outcome = build_draft(app, scope, params).and_then(|draft| stage_draft(app, scope, &draft));
+    match outcome {
+        Ok(snapshot) => RenameDispatchOutcome {
+            result: AgentToolResult {
+                call_id: call_id.to_string(),
+                content: serde_json::json!({ "readyForReview": true, "count": snapshot.rows.len() }),
+                elided: false,
+            },
+            proposal: Some(snapshot),
+        },
         Err(refusal) => RenameDispatchOutcome {
             result: AgentToolResult {
                 call_id: call_id.to_string(),
@@ -127,6 +125,39 @@ pub async fn dispatch<R: Runtime>(
             proposal: None,
         },
     }
+}
+
+/// Write the plan into `main.db` as one group in a sweep of its own, and answer the snapshot
+/// the review dialog opens on.
+///
+/// The proposal outlives the turn that made it and has no expiry, so the store — not this
+/// process — is what the review, the preflight, and the apply all read from afterwards.
+fn stage_draft<R: Runtime>(
+    app: &AppHandle<R>,
+    scope: EvidenceScope,
+    draft: &RenameDraft,
+) -> Result<RenameProposalSnapshot, ProposalRefusal> {
+    let unavailable = || ToolError::internal("The proposal store isn't available, so nothing was staged.");
+    let db = app.try_state::<AgentDb>().ok_or_else(unavailable)?;
+    let conn = db.open_write_connection().map_err(|e| {
+        log::warn!(target: "agent::propose", "staging a rename proposal couldn't open main.db: {e}");
+        unavailable()
+    })?;
+    super::store::stage(&conn, scope.conversation_id(), draft, now_secs())
+        .map_err(|e| {
+            log::warn!(target: "agent::propose", "staging a rename proposal didn't land: {e}");
+            unavailable()
+        })?
+        .ok_or_else(unavailable)
+        .map_err(ProposalRefusal::from)
+}
+
+fn now_secs() -> i64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
 }
 
 pub async fn execute_propose_rename_plan<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
@@ -164,11 +195,11 @@ fn invalid_params(message: impl Into<String>) -> ProposalRefusal {
     ProposalRefusal::Problem(ToolError::invalid_params(message))
 }
 
-fn build_proposal<R: Runtime>(
+fn build_draft<R: Runtime>(
     app: &AppHandle<R>,
     evidence_scope: EvidenceScope,
     params: &Value,
-) -> Result<RenameProposal, ProposalRefusal> {
+) -> Result<RenameDraft, ProposalRefusal> {
     let input: RenamePlanInput = serde_json::from_value(params.clone()).map_err(|_| {
         ToolError::invalid_params(
             "Provide a rename plan with sourcePath, volumeId, destinationName, and evidence for every row.",
@@ -196,6 +227,7 @@ fn build_proposal<R: Runtime>(
     let ledger = registered.as_deref().unwrap_or(&no_facts);
     let mut source_paths = HashSet::new();
     let mut destination_names = HashSet::new();
+    let mut parent: Option<String> = None;
     let mut rows = Vec::with_capacity(input.renames.len());
     for rename in input.renames {
         if rename.volume_id != volume_id {
@@ -223,10 +255,18 @@ fn build_proposal<R: Runtime>(
         {
             return Err(invalid_params("Rename plans can't include files inside an archive."));
         }
-        rows.push(RenameProposalRow {
-            row_id: Uuid::new_v4().to_string(),
+        // One group is one `start_bulk_rename` call, and that executor refuses a row whose
+        // source and destination parents differ — so the group binds ONE parent folder, and a
+        // plan that spans folders is refused here rather than half-applied later.
+        let row_parent = Path::new(&rename.source_path)
+            .parent()
+            .map(|parent| parent.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        if *parent.get_or_insert(row_parent.clone()) != row_parent {
+            return Err(invalid_params("Every rename must stay in one folder."));
+        }
+        rows.push(RenameDraftRow {
             source_path: rename.source_path,
-            volume_id: volume_id.clone(),
             destination_name: rename.destination_name,
             evidence: rename.evidence,
             coverage: None,
@@ -235,8 +275,9 @@ fn build_proposal<R: Runtime>(
     // One unbacked claim refuses the WHOLE plan: staging the rest would show the user a
     // partial plan they'd read as complete, and the model needs to resend it anyway.
     check_row_evidence(ledger, evidence_scope, &mut rows).map_err(ProposalRefusal::Evidence)?;
-    Ok(RenameProposal {
-        proposal_id: Uuid::new_v4().to_string(),
+    Ok(RenameDraft {
+        volume_id,
+        parent: parent.unwrap_or_default(),
         rows,
     })
 }
@@ -250,7 +291,7 @@ fn build_proposal<R: Runtime>(
 pub(super) fn check_row_evidence(
     ledger: &ImageFactsLedger,
     scope: EvidenceScope,
-    rows: &mut [RenameProposalRow],
+    rows: &mut [RenameDraftRow],
 ) -> Result<(), Vec<EvidenceRejection>> {
     let mut rejections = Vec::new();
     for row in rows.iter_mut() {

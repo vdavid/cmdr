@@ -2558,8 +2558,11 @@ export const commands = {
       __TAURI_INVOKE('revise_bulk_rename_row', { proposalId, rowId, destinationName }),
     ),
   /**
-   *  Discards a staged proposal after the user closes its review. There is no
-   *  agent-controlled approval route: only this user action consumes the plan.
+   *  Records the user's "no" after they close a review. There is no agent-controlled approval
+   *  route: only a user action decides a proposal, and closing the dialog is one.
+   *
+   *  The group is REJECTED rather than deleted, so what the user was asked and what they answered
+   *  stays in the decision record.
    */
   cancelBulkRenameProposal: (proposalId: string) => __TAURI_INVOKE<void>('cancel_bulk_rename_proposal', { proposalId }),
   /**

@@ -1,5 +1,5 @@
 //! Rename-proposal tests: the plan boundary (scope, validation, the evidence guardrail),
-//! the store's staging lifetime, and the preflight engine's blocks and warnings.
+//! what staging into `main.db` makes true, and the preflight engine's blocks and warnings.
 
 use super::plan::{
     ProposalRefusal, RenameInput, check_row_evidence, missing_local_child, refusal_content, scoped_files,
@@ -9,14 +9,18 @@ use super::preflight::{
     allowed_rows, initial_rows, mark_cycle_warnings, mark_duplicate_destinations, preflight_local, rename_warnings,
 };
 use super::revise::revise_staged_row;
+use super::store::{RenameDraft, RenameDraftRow};
 use super::{
-    AcceptedPreflight, BulkRenameBlockReason, BulkRenamePreflightStatus, BulkRenameWarning, RenameProposal,
-    RenameProposalRow, RenameProposalStore,
+    AcceptedPreflight, AcceptedRenamePreflights, BulkRenameBlockReason, BulkRenamePreflightStatus, BulkRenameWarning,
+    RenameProposal, RenameProposalRow,
 };
+use crate::agent::store::proposals::{ClaimOutcome, ClaimRefusal, claim_group_for_execution, record_acceptance};
+use crate::agent::store::{MIGRATIONS, run_migrations};
 use crate::agent::tools::propose::evidence::{
     EvidenceProblem, EvidenceScope, EvidenceSource, ImageFactsLedger, RenameEvidence,
 };
 use crate::mcp::pane_state::{PaneFileEntry, PaneState};
+use rusqlite::Connection;
 
 /// The chat thread these tests deliver into and propose from.
 const THREAD: EvidenceScope = EvidenceScope::Thread(11);
@@ -155,19 +159,140 @@ fn destination_names_reject_paths_and_dot_entries() {
     }
     assert!(validate_destination_name("2026-07-20 - Receipt.png").is_ok());
 }
-#[test]
-fn store_returns_an_immutable_snapshot_and_consumes_once() {
-    let store = RenameProposalStore::default();
-    let proposal = RenameProposal {
-        proposal_id: "proposal".into(),
-        rows: vec![proposal_row("row", "/x/a.png", "b.png")],
+// ── Where a staged proposal lives ─────────────────────────────────────────────
+
+/// A migrated in-memory `main.db`.
+fn migrated_conn() -> Connection {
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
+    conn.execute_batch("PRAGMA foreign_keys = ON;").expect("pragma");
+    run_migrations(&conn, MIGRATIONS).expect("migrate");
+    conn
+}
+
+/// Stage `rows` as one group and read the proposal back, the way every later step does.
+fn staged(conn: &Connection, rows: Vec<RenameDraftRow>) -> RenameProposal {
+    let draft = RenameDraft {
+        volume_id: "root".into(),
+        parent: "/shots".into(),
+        rows,
     };
-    let snapshot = store.stage(proposal);
+    // No conversation id: `proposal_sets.conversation_id` is a real foreign key, and these
+    // fixtures are about the proposal, not the thread it came out of.
+    super::store::stage(conn, None, &draft, 100)
+        .expect("stage")
+        .expect("a group was created");
+    let proposal_id = last_group_id(conn).to_string();
+    super::store::load(conn, &proposal_id)
+        .expect("load")
+        .expect("the staged proposal is reviewable")
+}
+
+fn last_group_id(conn: &Connection) -> i64 {
+    conn.query_row("SELECT MAX(id) FROM proposals", [], |row| row.get(0))
+        .expect("a staged group")
+}
+
+#[test]
+fn a_staged_proposal_reads_back_the_same_every_time() {
+    let conn = migrated_conn();
+    let proposal = staged(
+        &conn,
+        vec![draft_row(
+            "/shots/a.png",
+            "b.png",
+            EvidenceSource::Filename,
+            "the old name",
+        )],
+    );
+
+    let snapshot = proposal.snapshot();
     assert_eq!(snapshot.rows[0].source_name, "a.png");
-    assert!(store.get("proposal").is_some());
-    assert!(store.get("proposal").is_some());
-    assert!(store.consume("proposal").is_some());
-    assert!(store.get("proposal").is_none());
+    assert_eq!(snapshot.rows[0].destination_name, "b.png");
+    assert!(
+        super::store::load(&conn, &proposal.proposal_id)
+            .expect("load")
+            .is_some()
+    );
+    assert!(
+        super::store::load(&conn, &proposal.proposal_id)
+            .expect("load")
+            .is_some(),
+        "reading a review never consumes it"
+    );
+}
+
+/// The reason the proposal moved into `main.db` at all: it has no expiry, so it is still
+/// there for the user to answer after a quit. What the agent proposed and what the user was
+/// asked outlives the process that asked it.
+#[test]
+fn a_staged_proposal_survives_a_store_reopen() {
+    let dir = crate::test_support::TestDir::new("rename-proposal-reopen");
+    let db_path = dir.join("main.db");
+    let proposal_id = {
+        let conn = crate::agent::store::open_write_connection(&db_path).expect("open");
+        let proposal = staged(
+            &conn,
+            vec![draft_row(
+                "/shots/one.png",
+                "Invoice 4021.png",
+                EvidenceSource::Metadata,
+                "Taken 2026-07-20",
+            )],
+        );
+        proposal.proposal_id
+    };
+
+    let conn = crate::agent::store::open_write_connection(&db_path).expect("reopen");
+    let reopened = super::store::load(&conn, &proposal_id)
+        .expect("load")
+        .expect("the proposal is still there");
+    assert_eq!(reopened.rows.len(), 1);
+    assert_eq!(reopened.rows[0].destination_name, "Invoice 4021.png");
+    assert_eq!(
+        reopened.rows[0].evidence.source,
+        EvidenceSource::Metadata,
+        "and it still says where its name came from"
+    );
+}
+
+/// The other half of no-expiry, and the one that matters for data safety: an APPROVAL does
+/// not survive. The fingerprints an acceptance pairs with describe files as they were before
+/// the app died, so a restart has to force a fresh preflight rather than resurrect it.
+#[test]
+fn an_accepted_preflight_does_not_survive_a_store_reopen() {
+    let dir = crate::test_support::TestDir::new("rename-acceptance-reopen");
+    let db_path = dir.join("main.db");
+    let accepted = AcceptedRenamePreflights::default();
+    let (proposal_id, allowed) = {
+        let conn = crate::agent::store::open_write_connection(&db_path).expect("open");
+        let proposal = staged(
+            &conn,
+            vec![draft_row("/shots/a.png", "b.png", EvidenceSource::Filename, "old name")],
+        );
+        let allowed: Vec<String> = proposal.rows.iter().map(|row| row.row_id.clone()).collect();
+        record_acceptance(&conn, last_group_id(&conn), &[], 200).expect("preflight");
+        accepted.record(
+            &proposal.proposal_id,
+            AcceptedPreflight {
+                allowed_row_ids: allowed.clone(),
+                fingerprints: vec![],
+            },
+        );
+        (proposal.proposal_id, allowed)
+    };
+
+    // What a restart leaves behind: the durable half only.
+    let restarted = AcceptedRenamePreflights::default();
+    let conn = crate::agent::store::open_write_connection(&db_path).expect("reopen");
+    assert!(
+        super::store::load(&conn, &proposal_id).expect("load").is_some(),
+        "the proposal itself is still reviewable"
+    );
+    assert!(
+        restarted.matching(&proposal_id, &allowed).is_none(),
+        "but nothing may apply it without preflighting it again"
+    );
+    assert!(restarted.take_matching(&proposal_id, &allowed).is_none());
 }
 
 #[test]
@@ -290,22 +415,19 @@ fn one_unbacked_content_claim_rejects_that_row_and_refuses_the_whole_plan() {
         ] }),
     );
     let mut rows = vec![
-        evidence_row(
-            "backed",
+        draft_row(
             "/shots/one.png",
             "Invoice 4021.png",
             EvidenceSource::ImageText,
             "Invoice 4021",
         ),
-        evidence_row(
-            "fabricated",
+        draft_row(
             "/shots/two.png",
             "hello-world-output.png",
             EvidenceSource::ImageText,
             "hello world output",
         ),
-        evidence_row(
-            "dated",
+        draft_row(
             "/shots/three.png",
             "2026-07-20.png",
             EvidenceSource::Metadata,
@@ -336,17 +458,17 @@ fn one_unbacked_content_claim_rejects_that_row_and_refuses_the_whole_plan() {
 /// each name is based on rather than only old-name → new-name.
 #[test]
 fn the_review_snapshot_carries_each_rows_evidence() {
-    let store = RenameProposalStore::default();
-    let snapshot = store.stage(RenameProposal {
-        proposal_id: "proposal".into(),
-        rows: vec![evidence_row(
-            "row",
+    let conn = migrated_conn();
+    let snapshot = staged(
+        &conn,
+        vec![draft_row(
             "/shots/one.png",
             "Invoice 4021.png",
             EvidenceSource::ImageText,
             "Invoice 4021",
         )],
-    });
+    )
+    .snapshot();
 
     assert_eq!(snapshot.rows[0].evidence.source, EvidenceSource::ImageText);
     assert_eq!(snapshot.rows[0].evidence.detail, "Invoice 4021");
@@ -371,15 +493,13 @@ fn the_review_snapshot_carries_the_matchs_coverage_and_the_previewable_path() {
         ] }),
     );
     let mut rows = vec![
-        evidence_row(
-            "quoted",
+        draft_row(
             "/shots/one.png",
             "Klarna payment.png",
             EvidenceSource::ImageText,
             "payment confirmation",
         ),
-        evidence_row(
-            "dated",
+        draft_row(
             "/shots/two.png",
             "2026-07-20.png",
             EvidenceSource::Metadata,
@@ -388,11 +508,8 @@ fn the_review_snapshot_carries_the_matchs_coverage_and_the_previewable_path() {
     ];
 
     check_row_evidence(&ledger, THREAD, &mut rows).expect("both rows check out");
-    let store = RenameProposalStore::default();
-    let snapshot = store.stage(RenameProposal {
-        proposal_id: "proposal".into(),
-        rows,
-    });
+    let conn = migrated_conn();
+    let snapshot = staged(&conn, rows).snapshot();
 
     let wire = serde_json::to_value(&snapshot).expect("serializes");
     let quoted = &wire["rows"][0];
@@ -424,61 +541,58 @@ fn a_rename_row_without_evidence_does_not_parse() {
     assert!(serde_json::from_value::<RenameInput>(with).is_ok());
 }
 
-fn evidence_row(
-    row_id: &str,
-    source_path: &str,
-    destination_name: &str,
-    source: EvidenceSource,
-    detail: &str,
-) -> RenameProposalRow {
-    RenameProposalRow {
+/// One row of a plan on its way in: no id yet, because the store hands those out.
+fn draft_row(source_path: &str, destination_name: &str, source: EvidenceSource, detail: &str) -> RenameDraftRow {
+    RenameDraftRow {
+        source_path: source_path.into(),
+        destination_name: destination_name.into(),
         evidence: RenameEvidence {
             source,
             detail: detail.into(),
         },
-        ..proposal_row(row_id, source_path, destination_name)
+        coverage: None,
     }
 }
 
 #[test]
 fn accepted_preflight_requires_the_exact_allowed_subset() {
-    let store = RenameProposalStore::default();
-    store.stage(RenameProposal {
-        proposal_id: "proposal".into(),
-        rows: vec![proposal_row("row", "/x/a.png", "b.png")],
-    });
-    assert!(store.record_accepted_preflight(
-        "proposal",
+    let accepted = AcceptedRenamePreflights::default();
+    accepted.record(
+        "7",
         AcceptedPreflight {
             allowed_row_ids: vec!["row".into()],
-            allowed_destination_names: vec!["b.png".into()],
             fingerprints: vec![],
         },
-    ));
-    assert!(store.accepted_preflight("proposal", &["row".into()]).is_some());
-    assert!(store.accepted_preflight("proposal", &["other".into()]).is_none());
+    );
+
+    assert!(accepted.matching("7", &["row".into()]).is_some());
+    assert!(
+        accepted.matching("7", &["other".into()]).is_none(),
+        "an acceptance describes the rows it checked and no others"
+    );
+    assert!(accepted.matching("8", &["row".into()]).is_none());
 }
 
 // ── Revising one row's name, as the user typed it ─────────────────────────────
 
-/// Stages one row and records the accepted preflight a Ready review would have left behind.
-fn staged_with_accepted_preflight(rows: Vec<RenameProposalRow>) -> RenameProposalStore {
-    let store = RenameProposalStore::default();
-    let allowed_row_ids: Vec<String> = rows.iter().map(|row| row.row_id.clone()).collect();
-    let allowed_destination_names: Vec<String> = rows.iter().map(|row| row.destination_name.clone()).collect();
-    store.stage(RenameProposal {
-        proposal_id: "proposal".into(),
-        rows,
-    });
-    assert!(store.record_accepted_preflight(
-        "proposal",
+/// Stages `rows` and records both halves of the acceptance a Ready review leaves behind: the
+/// spine's own record of the values, and this process's row ids plus fingerprints.
+fn staged_with_accepted_preflight(
+    conn: &Connection,
+    accepted: &AcceptedRenamePreflights,
+    rows: Vec<RenameDraftRow>,
+) -> RenameProposal {
+    let proposal = staged(conn, rows);
+    let allowed_row_ids: Vec<String> = proposal.rows.iter().map(|row| row.row_id.clone()).collect();
+    record_acceptance(conn, last_group_id(conn), &[], 200).expect("preflight");
+    accepted.record(
+        &proposal.proposal_id,
         AcceptedPreflight {
             allowed_row_ids,
-            allowed_destination_names,
             fingerprints: vec![],
         },
-    ));
-    store
+    );
+    proposal
 }
 
 /// The user's name is the first destination name that crosses IPC, so the server validates it
@@ -486,21 +600,34 @@ fn staged_with_accepted_preflight(rows: Vec<RenameProposalRow>) -> RenameProposa
 /// it from this stored row, never from the client.
 #[test]
 fn revising_a_row_validates_the_name_on_the_server() {
-    let store = staged_with_accepted_preflight(vec![proposal_row("row", "/x/a.png", "b.png")]);
+    let conn = migrated_conn();
+    let accepted = AcceptedRenamePreflights::default();
+    let proposal = staged_with_accepted_preflight(
+        &conn,
+        &accepted,
+        vec![draft_row(
+            "/shots/a.png",
+            "b.png",
+            EvidenceSource::Filename,
+            "the old name",
+        )],
+    );
+    let id = proposal.proposal_id.as_str();
+    let row_id = proposal.rows[0].row_id.as_str();
 
     for name in ["", "   ", ".", "..", "folder/name.png", "folder\\name.png"] {
         assert!(
-            revise_staged_row(&store, "proposal", "row", name).is_err(),
+            revise_staged_row(&conn, &accepted, id, row_id, name).is_err(),
             "{name:?} must be refused"
         );
     }
-    assert!(revise_staged_row(&store, "proposal", "unknown-row", "fine.png").is_err());
-    assert!(revise_staged_row(&store, "other-proposal", "row", "fine.png").is_err());
+    assert!(revise_staged_row(&conn, &accepted, id, "unknown-row", "fine.png").is_err());
+    assert!(revise_staged_row(&conn, &accepted, "9999", row_id, "fine.png").is_err());
 
-    let revised = revise_staged_row(&store, "proposal", "row", "Receipt 2026-07-20.png").expect("a valid filename");
+    let revised = revise_staged_row(&conn, &accepted, id, row_id, "Receipt 2026-07-20.png").expect("a valid filename");
     assert_eq!(revised.destination_name, "Receipt 2026-07-20.png");
     assert_eq!(
-        store.get("proposal").expect("still staged").rows[0].destination_name,
+        super::store::load(&conn, id).expect("load").expect("still staged").rows[0].destination_name,
         "Receipt 2026-07-20.png",
         "the stored row is what apply reads, so the edit has to land there"
     );
@@ -512,48 +639,98 @@ fn revising_a_row_validates_the_name_on_the_server() {
 /// those checks ever saw. Any revise clears the acceptance (invariant 10).
 #[test]
 fn revising_a_row_clears_the_accepted_preflight() {
-    let store = staged_with_accepted_preflight(vec![proposal_row("row", "/x/a.png", "b.png")]);
+    let conn = migrated_conn();
+    let accepted = AcceptedRenamePreflights::default();
+    let proposal = staged_with_accepted_preflight(
+        &conn,
+        &accepted,
+        vec![draft_row(
+            "/shots/a.png",
+            "b.png",
+            EvidenceSource::Filename,
+            "the old name",
+        )],
+    );
+    let allowed: Vec<String> = proposal.rows.iter().map(|row| row.row_id.clone()).collect();
     assert!(
-        store.accepted_preflight("proposal", &["row".into()]).is_some(),
+        accepted.matching(&proposal.proposal_id, &allowed).is_some(),
         "the review starts from a Ready preflight"
     );
 
-    revise_staged_row(&store, "proposal", "row", "typed-by-hand.png").expect("a valid filename");
+    revise_staged_row(
+        &conn,
+        &accepted,
+        &proposal.proposal_id,
+        &proposal.rows[0].row_id,
+        "typed-by-hand.png",
+    )
+    .expect("a valid filename");
 
     assert!(
-        store.accepted_preflight("proposal", &["row".into()]).is_none(),
+        accepted.matching(&proposal.proposal_id, &allowed).is_none(),
         "an edited name must be preflighted again before it can reach the filesystem"
     );
     assert!(
-        store.take_accepted_preflight("proposal", &["row".into()]).is_none(),
+        accepted.take_matching(&proposal.proposal_id, &allowed).is_none(),
         "and apply must not be able to consume the stale acceptance either"
     );
 }
 
-/// Belt and braces for the same failure: the acceptance records the names it checked, so a
-/// lookup whose names have moved on refuses even if some future path forgets to clear it.
+/// Belt and braces for the same failure, and the half the client can't reach: the spine's
+/// acceptance record binds the VALUES the ops carried, so a revised name makes the claim
+/// refuse with a binding mismatch even if some future path forgets to drop the fingerprints.
 /// Apply then falls back to a fresh authoritative preflight instead of trusting the old one.
 #[test]
-fn an_accepted_preflight_is_bound_to_the_names_it_checked() {
-    let store = RenameProposalStore::default();
-    store.stage(RenameProposal {
-        proposal_id: "proposal".into(),
-        rows: vec![proposal_row("row", "/x/a.png", "b.png")],
-    });
-    assert!(store.record_accepted_preflight(
-        "proposal",
-        AcceptedPreflight {
-            allowed_row_ids: vec!["row".into()],
-            allowed_destination_names: vec!["a-different-name.png".into()],
-            fingerprints: vec![],
-        },
-    ));
+fn a_revised_name_makes_the_claim_refuse() {
+    let conn = migrated_conn();
+    let accepted = AcceptedRenamePreflights::default();
+    staged_with_accepted_preflight(
+        &conn,
+        &accepted,
+        vec![draft_row(
+            "/shots/a.png",
+            "b.png",
+            EvidenceSource::Filename,
+            "the old name",
+        )],
+    );
+    assert!(
+        matches!(
+            claim_group_for_execution(&conn, last_group_id(&conn), 300).expect("claim"),
+            ClaimOutcome::Claimed(_)
+        ),
+        "the counterfactual: the plan the user preflighted claims cleanly"
+    );
+
+    // Same plan, same acceptance, one name typed over.
+    let conn = migrated_conn();
+    let accepted = AcceptedRenamePreflights::default();
+    let proposal = staged_with_accepted_preflight(
+        &conn,
+        &accepted,
+        vec![draft_row(
+            "/shots/a.png",
+            "b.png",
+            EvidenceSource::Filename,
+            "the old name",
+        )],
+    );
+    revise_staged_row(
+        &conn,
+        &accepted,
+        &proposal.proposal_id,
+        &proposal.rows[0].row_id,
+        "typed-by-hand.png",
+    )
+    .expect("a valid filename");
 
     assert!(
-        store.accepted_preflight("proposal", &["row".into()]).is_none(),
-        "row ids alone don't say which names were checked"
+        matches!(
+            claim_group_for_execution(&conn, last_group_id(&conn), 300).expect("claim"),
+            ClaimOutcome::Refused(ClaimRefusal::BindingMismatch { .. })
+        ),
+        "a name preflight never checked can't ride an older approval onto the filesystem"
     );
-    assert!(store.take_accepted_preflight("proposal", &["row".into()]).is_none());
 }
 
 /// Invariant 10: a user-edited name needs no evidence, never claims any, and never inherits
@@ -569,8 +746,7 @@ fn a_revised_row_reports_user_edited_and_keeps_no_evidence() {
             { "path": "/shots/one.png", "state": "indexed", "text": "Klarna payment confirmation 1,299 SEK" }
         ] }),
     );
-    let mut rows = vec![evidence_row(
-        "row",
+    let mut rows = vec![draft_row(
         "/shots/one.png",
         "Klarna invoice.png",
         EvidenceSource::ImageText,
@@ -581,9 +757,18 @@ fn a_revised_row_reports_user_edited_and_keeps_no_evidence() {
         rows[0].coverage.is_some(),
         "the model's row carries its match's coverage"
     );
-    let store = staged_with_accepted_preflight(rows);
+    let conn = migrated_conn();
+    let accepted = AcceptedRenamePreflights::default();
+    let proposal = staged_with_accepted_preflight(&conn, &accepted, rows);
 
-    let revised = revise_staged_row(&store, "proposal", "row", "Klarna payment 2026-07-20.png").expect("valid");
+    let revised = revise_staged_row(
+        &conn,
+        &accepted,
+        &proposal.proposal_id,
+        &proposal.rows[0].row_id,
+        "Klarna payment 2026-07-20.png",
+    )
+    .expect("valid");
 
     assert_eq!(revised.evidence.source, EvidenceSource::UserEdited);
     assert_eq!(revised.evidence.detail, "", "a typed name quotes nothing");
@@ -611,15 +796,13 @@ fn revising_a_row_does_not_re_run_the_whole_plan_evidence_rule() {
         ] }),
     );
     let mut rows = vec![
-        evidence_row(
-            "quoted",
+        draft_row(
             "/shots/one.png",
             "Invoice 4021.png",
             EvidenceSource::ImageText,
             "Invoice 4021 total",
         ),
-        evidence_row(
-            "neighbour",
+        draft_row(
             "/shots/two.png",
             "Order summary.png",
             EvidenceSource::ImageText,
@@ -627,7 +810,9 @@ fn revising_a_row_does_not_re_run_the_whole_plan_evidence_rule() {
         ),
     ];
     check_row_evidence(&ledger, THREAD, &mut rows).expect("both quotes check out");
-    let store = staged_with_accepted_preflight(rows.clone());
+    let conn = migrated_conn();
+    let accepted = AcceptedRenamePreflights::default();
+    let proposal = staged_with_accepted_preflight(&conn, &accepted, rows.clone());
 
     // The prompt dropped that result after the fact, so the ledger no longer vouches for
     // either row: a re-staged plan would now be refused in full.
@@ -638,9 +823,18 @@ fn revising_a_row_does_not_re_run_the_whole_plan_evidence_rule() {
         "the counterfactual: the whole-plan rule would refuse this plan now"
     );
 
-    revise_staged_row(&store, "proposal", "quoted", "Invoice 4021 (Klarna).png").expect("the edit still lands");
+    revise_staged_row(
+        &conn,
+        &accepted,
+        &proposal.proposal_id,
+        &proposal.rows[0].row_id,
+        "Invoice 4021 (Klarna).png",
+    )
+    .expect("the edit still lands");
 
-    let stored = store.get("proposal").expect("the review survives");
+    let stored = super::store::load(&conn, &proposal.proposal_id)
+        .expect("load")
+        .expect("the review survives");
     assert_eq!(stored.rows[0].destination_name, "Invoice 4021 (Klarna).png");
     assert_eq!(
         stored.rows[1].evidence.source,
@@ -655,8 +849,7 @@ fn revising_a_row_does_not_re_run_the_whole_plan_evidence_rule() {
 /// send it: a plan that did would put "You typed this name" beside a name it invented itself.
 #[test]
 fn a_plan_cannot_claim_the_user_typed_a_name() {
-    let mut rows = vec![evidence_row(
-        "row",
+    let mut rows = vec![draft_row(
         "/shots/one.png",
         "hand-typed.png",
         EvidenceSource::UserEdited,

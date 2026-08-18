@@ -1,4 +1,4 @@
-//! What a staged rename proposal is, and how long it lives.
+//! Where a staged rename proposal LIVES: one group on the proposal spine, in `main.db`.
 //!
 //! A proposal is server-owned data: the tool boundary stages it, the review surface sees only a
 //! display snapshot, and the frontend hands back opaque ROW IDS plus (on a revise) one name it
@@ -7,21 +7,66 @@
 //! so a client-supplied value is never trusted. The snapshot's own path is display data — the
 //! review dialog previews the file the user is being asked to rename.
 //!
-//! The rows are immutable to the AGENT: [`RenameProposalStore::revise_row`] is the one mutation,
-//! it belongs to the user, and it invalidates the accepted preflight so the new name can't reach
-//! the filesystem unchecked (see [`super::revise`]).
+//! Rename is the spine's documented exception ([`GroupIntent::Rename`]): its ops carry their own
+//! destinations and the group binds the shared PARENT, because `start_bulk_rename` refuses a row
+//! whose source and destination parents differ.
+//!
+//! Two halves, and each is durable in a different way ON PURPOSE:
+//!
+//! - **The proposal is durable.** It has no expiry; a suggestion waits until the user acts on it,
+//!   and it survives a restart because the spine holds it.
+//! - **The accepted preflight is NOT** ([`AcceptedRenamePreflights`], process-local). It carries
+//!   the source fingerprints apply rechecks, and those describe files as they were minutes ago.
+//!   A restart must force a fresh preflight rather than resurrect an approval given before the
+//!   app died.
+//!
+//! The rows are immutable to the AGENT: [`revise_row`] is the one mutation, it belongs to the
+//! user, and it invalidates the accepted preflight so the new name can't reach the filesystem
+//! unchecked (see [`super::revise`]).
 
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
 
+use rusqlite::{Connection, Transaction, TransactionBehavior, params};
 use serde::Serialize;
 
-use crate::agent::tools::propose::evidence::{EvidenceCoverage, RenameEvidence};
+use crate::agent::store::AgentStoreError;
+use crate::agent::store::proposals::{GroupIntent, NewGroup, NewRename, NewSweep, ProposalOp, get_group, page_ops};
+use crate::agent::tools::propose::evidence::{EvidenceCoverage, EvidenceSource, RenameEvidence};
+use crate::agent::types::ProposalStatus;
 use crate::ignore_poison::IgnorePoison;
 
-const PROPOSAL_TTL: Duration = Duration::from_secs(15 * 60);
+/// The most rows one plan can stage, from the tool boundary's own cap. Paging a rename group
+/// would buy nothing: the review dialog shows every row at once.
+const MAX_RENAME_ROWS: u32 = super::plan::MAX_RENAMES as u32;
+
+// ── What the tool boundary hands over, before the store gives its rows ids ────
+
+/// A validated rename plan on its way into the store. It has no ids yet: the spine assigns
+/// them, which is what makes them opaque to everything above.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenameDraft {
+    /// The one volume every source lives on.
+    pub volume_id: String,
+    /// The one folder every source lives in. A rename group binds a shared parent because
+    /// `start_bulk_rename` refuses a row that would change it.
+    pub parent: String,
+    pub rows: Vec<RenameDraftRow>,
+}
+
+/// One row of a plan the store hasn't taken yet.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenameDraftRow {
+    pub source_path: String,
+    pub destination_name: String,
+    pub evidence: RenameEvidence,
+    /// Filled in by the evidence check AFTER it accepted the row, so it describes a delivery
+    /// the ledger recorded; `None` for every source that makes no content claim.
+    pub coverage: Option<EvidenceCoverage>,
+}
+
+// ── What a staged proposal is, once loaded back ───────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenameProposal {
@@ -37,8 +82,7 @@ pub struct RenameProposalRow {
     pub destination_name: String,
     pub evidence: RenameEvidence,
     /// How much of the delivered text this row's quote covers, for an accepted `imageText`
-    /// claim. Filled in by the evidence check AFTER it accepted the row, so it describes a
-    /// delivery the ledger recorded; `None` for every other source.
+    /// claim; `None` for every other source.
     pub coverage: Option<EvidenceCoverage>,
 }
 
@@ -78,17 +122,6 @@ impl RenameProposal {
             rows: self.rows.iter().map(RenameProposalRow::snapshot).collect(),
         }
     }
-
-    /// The destination names of the given rows, in the order they were allowed. An unknown id
-    /// contributes nothing, so a subset that names a row this proposal doesn't have can never
-    /// produce a name list that matches a recorded one.
-    pub(super) fn destination_names_for(&self, row_ids: &[String]) -> Vec<String> {
-        row_ids
-            .iter()
-            .filter_map(|row_id| self.rows.iter().find(|row| row.row_id == *row_id))
-            .map(|row| row.destination_name.clone())
-            .collect()
-    }
 }
 
 impl RenameProposalRow {
@@ -109,22 +142,13 @@ impl RenameProposalRow {
     }
 }
 
-struct StoredProposal {
-    proposal: RenameProposal,
-    expires_at: Instant,
-    accepted_preflight: Option<AcceptedPreflight>,
-}
+// ── The accepted preflight, held for this process only ────────────────────────
 
-/// The exact user-approved subset that passed the latest preflight. The apply
-/// command consumes this later; the frontend never receives fingerprints.
+/// The exact user-approved subset that passed the latest preflight, and the server-only
+/// source fingerprints apply rechecks each source against.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AcceptedPreflight {
     pub allowed_row_ids: Vec<String>,
-    /// The destination names those rows carried when preflight cleared them, in the same
-    /// order. Row ids alone don't say WHICH names were checked, and duplicate-destination,
-    /// cycle, and case-only detection all live in preflight: binding the names is what stops
-    /// an edited name from riding an older acceptance onto the filesystem (invariant 10).
-    pub allowed_destination_names: Vec<String>,
     pub fingerprints: Vec<RenameSourceFingerprint>,
 }
 
@@ -145,128 +169,340 @@ pub enum RenameSourceFingerprint {
     },
 }
 
+/// Every group whose latest preflight came back Ready, keyed by proposal id.
+///
+/// **In memory on purpose, where the proposal itself is durable.** A fingerprint describes a
+/// file as it was at review time, and an approval given before the app died says nothing about
+/// the disk the app came back to. So a restart drops these and apply falls back to a fresh
+/// authoritative preflight, rather than resurrecting an acceptance.
+///
+/// This holds one half of the binding (the exact allowed row ids). The other half — the VALUES
+/// those rows carried — is the spine's own server-owned acceptance record, whose digest covers
+/// each live op's id, source path, and destination name. A revised name changes that digest, so
+/// the claim refuses and the approval can't ride onto a name preflight never checked.
 #[derive(Default)]
-pub struct RenameProposalStore {
-    proposals: Mutex<HashMap<String, StoredProposal>>,
+pub struct AcceptedRenamePreflights {
+    entries: Mutex<HashMap<String, AcceptedPreflight>>,
 }
 
-impl RenameProposalStore {
-    pub fn stage(&self, proposal: RenameProposal) -> RenameProposalSnapshot {
-        let snapshot = proposal.snapshot();
-        let mut proposals = self.proposals.lock_ignore_poison();
-        proposals.retain(|_, stored| stored.expires_at > Instant::now());
-        proposals.insert(
-            proposal.proposal_id.clone(),
-            StoredProposal {
-                proposal,
-                expires_at: Instant::now() + PROPOSAL_TTL,
-                accepted_preflight: None,
-            },
-        );
-        snapshot
+impl AcceptedRenamePreflights {
+    pub fn record(&self, proposal_id: &str, accepted: AcceptedPreflight) {
+        self.entries
+            .lock_ignore_poison()
+            .insert(proposal_id.to_string(), accepted);
     }
 
-    /// Gets an immutable proposal for repeated review-time checks. Expired
-    /// records are removed and indistinguishable from a missing id to callers.
-    pub fn get(&self, proposal_id: &str) -> Option<RenameProposal> {
-        let mut proposals = self.proposals.lock_ignore_poison();
-        let is_live = proposals
+    /// The acceptance for exactly this subset, or `None` — including when the subset differs,
+    /// because an acceptance describes the rows it checked and no others.
+    pub fn matching(&self, proposal_id: &str, allowed_row_ids: &[String]) -> Option<AcceptedPreflight> {
+        let entries = self.entries.lock_ignore_poison();
+        entries
             .get(proposal_id)
-            .is_some_and(|stored| stored.expires_at > Instant::now());
-        if !is_live {
-            proposals.remove(proposal_id);
-            return None;
-        }
-        proposals.get(proposal_id).map(|stored| stored.proposal.clone())
+            .filter(|accepted| accepted.allowed_row_ids == allowed_row_ids)
+            .cloned()
     }
 
-    /// Discards a proposal after an explicit user cancellation or terminal apply.
-    pub fn consume(&self, proposal_id: &str) -> Option<RenameProposal> {
-        let stored = self.proposals.lock_ignore_poison().remove(proposal_id)?;
-        (stored.expires_at > Instant::now()).then_some(stored.proposal)
-    }
-
-    /// Replaces one staged row's destination name with the one the user typed, and drops
-    /// everything that described the model's name for it: the evidence becomes the
-    /// `UserEdited` marker and the coverage goes (invariant 10).
-    ///
-    /// The name arrives already validated — the caller ([`super::revise`]) is the boundary
-    /// that checks it, exactly as the tool boundary checks the model's.
-    pub fn revise_row(
-        &self,
-        proposal_id: &str,
-        row_id: &str,
-        destination_name: &str,
-    ) -> Option<RenameProposalRowSnapshot> {
-        let mut proposals = self.proposals.lock_ignore_poison();
-        let stored = proposals.get_mut(proposal_id)?;
-        if stored.expires_at <= Instant::now() {
-            proposals.remove(proposal_id);
-            return None;
-        }
-        let row = stored.proposal.rows.iter_mut().find(|row| row.row_id == row_id)?;
-        row.destination_name = destination_name.to_string();
-        row.evidence = RenameEvidence::user_edited();
-        row.coverage = None;
-        let snapshot = row.snapshot();
-        // Apply skips its own re-check when the allowed row ids match the acceptance, so a name
-        // that changed since that check has to force a fresh preflight.
-        stored.accepted_preflight = None;
-        Some(snapshot)
-    }
-
-    pub fn record_accepted_preflight(&self, proposal_id: &str, accepted: AcceptedPreflight) -> bool {
-        let mut proposals = self.proposals.lock_ignore_poison();
-        let Some(stored) = proposals.get_mut(proposal_id) else {
-            return false;
-        };
-        if stored.expires_at <= Instant::now() {
-            proposals.remove(proposal_id);
-            return false;
-        }
-        stored.accepted_preflight = Some(accepted);
-        true
-    }
-
-    pub fn accepted_preflight(&self, proposal_id: &str, allowed_row_ids: &[String]) -> Option<AcceptedPreflight> {
-        let proposal = self.get(proposal_id)?;
-        let proposals = self.proposals.lock_ignore_poison();
-        let stored = proposals.get(&proposal.proposal_id)?;
-        let accepted = stored.accepted_preflight.clone()?;
-        accepted_matches(&accepted, &stored.proposal, allowed_row_ids).then_some(accepted)
-    }
-
-    /// Atomically consumes the exact user-approved subset after a successful
-    /// preflight. Once apply begins, the proposal cannot be replayed or altered.
-    pub fn take_accepted_preflight(
-        &self,
-        proposal_id: &str,
-        allowed_row_ids: &[String],
-    ) -> Option<(RenameProposal, AcceptedPreflight)> {
-        let mut proposals = self.proposals.lock_ignore_poison();
-        let stored = proposals.get(proposal_id)?;
-        if stored.expires_at <= Instant::now() {
-            proposals.remove(proposal_id);
-            return None;
-        }
-        if stored
-            .accepted_preflight
-            .as_ref()
-            .is_none_or(|accepted| !accepted_matches(accepted, &stored.proposal, allowed_row_ids))
+    /// Consume the acceptance for exactly this subset. Apply takes it, so a dialog can't
+    /// replay an already-started plan.
+    pub fn take_matching(&self, proposal_id: &str, allowed_row_ids: &[String]) -> Option<AcceptedPreflight> {
+        let mut entries = self.entries.lock_ignore_poison();
+        if entries
+            .get(proposal_id)
+            .is_none_or(|accepted| accepted.allowed_row_ids != allowed_row_ids)
         {
             return None;
         }
-        let stored = proposals.remove(proposal_id)?;
-        Some((stored.proposal, stored.accepted_preflight?))
+        entries.remove(proposal_id)
+    }
+
+    /// Drop this group's acceptance: a revise did, or the review is over.
+    pub fn forget(&self, proposal_id: &str) {
+        self.entries.lock_ignore_poison().remove(proposal_id);
     }
 }
 
-/// Whether an acceptance still describes what the caller is asking to apply: the same rows AND
-/// the same names. Row ids alone can't say that — a revised row keeps its id — and every
-/// name-level check (duplicate destinations, cycles, case-only edges, target-exists) happened
-/// during the preflight that recorded this. So a mismatch means "check it again", never
-/// "apply it anyway".
-fn accepted_matches(accepted: &AcceptedPreflight, proposal: &RenameProposal, allowed_row_ids: &[String]) -> bool {
-    accepted.allowed_row_ids == allowed_row_ids
-        && accepted.allowed_destination_names == proposal.destination_names_for(allowed_row_ids)
+// ── Staging, loading, revising ────────────────────────────────────────────────
+
+/// Stage a plan as one group in a sweep of its own, and answer the review snapshot.
+///
+/// Two commits, not one: the spine owns group creation, so the evidence rows can only be
+/// written once their ops have ids. A crash in between leaves rename ops with no evidence, and
+/// [`load`] refuses such a group outright — a name whose backing is missing must never be shown
+/// with invented backing.
+pub fn stage(
+    conn: &Connection,
+    conversation_id: Option<i64>,
+    draft: &RenameDraft,
+    now: i64,
+) -> Result<Option<RenameProposalSnapshot>, AgentStoreError> {
+    let sweep = NewSweep {
+        conversation_id,
+        created_by_model: None,
+        rationale: None,
+    };
+    let group = NewGroup {
+        intent: GroupIntent::Rename {
+            parent: draft.parent.clone(),
+            renames: draft
+                .rows
+                .iter()
+                .map(|row| NewRename {
+                    source_path: row.source_path.clone(),
+                    new_name: row.destination_name.clone(),
+                    snapshot: None,
+                })
+                .collect(),
+        },
+        source_volume_id: draft.volume_id.clone(),
+        display_name: display_name(&draft.parent, draft.rows.len()),
+        rationale: None,
+        selector: None,
+    };
+    let proposed = crate::agent::suggested_ops::propose(conn, &sweep, std::slice::from_ref(&group), now)?;
+    let Some(group_id) = proposed.group_ids.first().copied() else {
+        return Ok(None);
+    };
+
+    let ops = page_ops(conn, group_id, MAX_RENAME_ROWS, 0)?;
+    let tx = Transaction::new_unchecked(conn, TransactionBehavior::Immediate)?;
+    {
+        let mut stmt = tx.prepare_cached(
+            "INSERT INTO proposal_rename_evidence (
+                op_id, source, detail,
+                coverage_match_offset, coverage_matched_chars, coverage_delivered_chars,
+                coverage_context_before, coverage_matched_text, coverage_context_after,
+                coverage_trimmed_before, coverage_trimmed_after
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+        )?;
+        // The ops come back in `seq` order, which is the order they were inserted in, so a
+        // row's evidence is the evidence of the draft row at the same index.
+        for (op, row) in ops.iter().zip(&draft.rows) {
+            let c = row.coverage.as_ref();
+            stmt.execute(params![
+                op.id,
+                row.evidence.source.as_token(),
+                row.evidence.detail,
+                c.map(|c| c.match_offset as i64),
+                c.map(|c| c.matched_chars as i64),
+                c.map(|c| c.delivered_chars as i64),
+                c.map(|c| c.context_before.as_str()),
+                c.map(|c| c.matched_text.as_str()),
+                c.map(|c| c.context_after.as_str()),
+                c.map(|c| c.trimmed_before),
+                c.map(|c| c.trimmed_after),
+            ])?;
+        }
+    }
+    tx.commit()?;
+
+    Ok(load(conn, &group_id.to_string())?.map(|proposal| proposal.snapshot()))
+}
+
+/// Read back a staged proposal, or `None` when there is nothing to review.
+///
+/// `None` covers every way a review can be over: an unknown or non-numeric id, a group that
+/// left `pending` (approved, rejected, or interrupted), and a group whose rows lost their
+/// evidence. Callers report all of them as an expired review, because that is what they are —
+/// there is nothing here the user can still decide.
+pub fn load(conn: &Connection, proposal_id: &str) -> Result<Option<RenameProposal>, AgentStoreError> {
+    let Some(group_id) = numeric_id(proposal_id) else {
+        return Ok(None);
+    };
+    let Some(group) = get_group(conn, group_id)? else {
+        return Ok(None);
+    };
+    // Only a pending group is still the user's to answer. An approved one is in flight, and
+    // re-reading it as a live review is how a plan would be applied twice.
+    if group.status != ProposalStatus::Pending {
+        return Ok(None);
+    }
+    let ops = page_ops(conn, group_id, MAX_RENAME_ROWS, 0)?;
+    let mut evidence = read_evidence(conn, group_id)?;
+    let mut rows = Vec::with_capacity(ops.len());
+    for op in ops {
+        // Fails closed: no evidence row means nothing can say where this name came from, so
+        // the whole proposal is unreviewable rather than partly believable.
+        let Some((row_evidence, coverage)) = evidence.remove(&op.id) else {
+            return Ok(None);
+        };
+        rows.push(RenameProposalRow {
+            row_id: op.id.to_string(),
+            source_path: op.source_path,
+            volume_id: group.source_volume_id.clone(),
+            destination_name: op.destination.unwrap_or_default(),
+            evidence: row_evidence,
+            coverage,
+        });
+    }
+    Ok(Some(RenameProposal {
+        proposal_id: group_id.to_string(),
+        rows,
+    }))
+}
+
+/// Replace one staged row's destination name with the one the user typed, and drop everything
+/// that described the model's name for it: the evidence becomes the `UserEdited` marker and
+/// the coverage goes (invariant 10).
+///
+/// The name arrives already validated — the caller ([`super::revise`]) is the boundary that
+/// checks it, exactly as the tool boundary checks the model's. Only a row of a PENDING group
+/// moves: an approved group is the user's answer, already given.
+pub fn revise_row(
+    conn: &Connection,
+    proposal_id: &str,
+    row_id: &str,
+    destination_name: &str,
+) -> Result<Option<RenameProposalRowSnapshot>, AgentStoreError> {
+    let (Some(group_id), Some(op_id)) = (numeric_id(proposal_id), numeric_id(row_id)) else {
+        return Ok(None);
+    };
+    let tx = Transaction::new_unchecked(conn, TransactionBehavior::Immediate)?;
+    let status: Option<String> = tx
+        .prepare_cached("SELECT status FROM proposals WHERE id = ?1")?
+        .query_row(params![group_id], |row| row.get(0))
+        .ok();
+    if status.as_deref() != Some(ProposalStatus::Pending.as_token()) {
+        return Ok(None);
+    }
+    let updated = tx
+        .prepare_cached("UPDATE proposal_ops SET destination = ?3 WHERE id = ?1 AND group_id = ?2")?
+        .execute(params![op_id, group_id, destination_name])?;
+    if updated == 0 {
+        return Ok(None);
+    }
+    tx.prepare_cached(
+        "UPDATE proposal_rename_evidence SET
+            source = ?2, detail = '',
+            coverage_match_offset = NULL, coverage_matched_chars = NULL, coverage_delivered_chars = NULL,
+            coverage_context_before = NULL, coverage_matched_text = NULL, coverage_context_after = NULL,
+            coverage_trimmed_before = NULL, coverage_trimmed_after = NULL
+         WHERE op_id = ?1",
+    )?
+    .execute(params![op_id, EvidenceSource::UserEdited.as_token()])?;
+    tx.commit()?;
+
+    Ok(load(conn, proposal_id)?
+        .and_then(|proposal| proposal.rows.into_iter().find(|row| row.row_id == row_id))
+        .map(|row| row.snapshot()))
+}
+
+/// The stored id behind an opaque id the frontend handed back — a group id for a proposal, an
+/// op id for a row. A non-numeric one is simply unknown: ids are ours, so anything else was
+/// never issued here.
+pub fn numeric_id(id: &str) -> Option<i64> {
+    id.parse::<i64>().ok()
+}
+
+/// Every op's evidence in this group, by op id.
+fn read_evidence(
+    conn: &Connection,
+    group_id: i64,
+) -> Result<HashMap<i64, (RenameEvidence, Option<EvidenceCoverage>)>, AgentStoreError> {
+    let mut stmt = conn.prepare_cached(
+        "SELECT e.op_id, e.source, e.detail,
+                e.coverage_match_offset, e.coverage_matched_chars, e.coverage_delivered_chars,
+                e.coverage_context_before, e.coverage_matched_text, e.coverage_context_after,
+                e.coverage_trimmed_before, e.coverage_trimmed_after
+         FROM proposal_rename_evidence e
+         JOIN proposal_ops o ON o.id = e.op_id
+         WHERE o.group_id = ?1",
+    )?;
+    let mut rows = stmt.query(params![group_id])?;
+    let mut out = HashMap::new();
+    while let Some(row) = rows.next()? {
+        let op_id: i64 = row.get(0)?;
+        let token: String = row.get(1)?;
+        let source = EvidenceSource::from_token(&token).ok_or(AgentStoreError::Decode {
+            column: "proposal_rename_evidence.source",
+            value: token,
+        })?;
+        let evidence = RenameEvidence {
+            source,
+            detail: row.get(2)?,
+        };
+        // All or nothing: a coverage is written as one set of columns, and a partial one would
+        // describe a match nobody measured.
+        let coverage = match (
+            row.get::<_, Option<i64>>(3)?,
+            row.get::<_, Option<i64>>(4)?,
+            row.get::<_, Option<i64>>(5)?,
+            row.get::<_, Option<String>>(6)?,
+            row.get::<_, Option<String>>(7)?,
+            row.get::<_, Option<String>>(8)?,
+            row.get::<_, Option<bool>>(9)?,
+            row.get::<_, Option<bool>>(10)?,
+        ) {
+            (
+                Some(match_offset),
+                Some(matched_chars),
+                Some(delivered_chars),
+                Some(context_before),
+                Some(matched_text),
+                Some(context_after),
+                Some(trimmed_before),
+                Some(trimmed_after),
+            ) => Some(EvidenceCoverage {
+                match_offset: match_offset.max(0) as usize,
+                matched_chars: matched_chars.max(0) as usize,
+                delivered_chars: delivered_chars.max(0) as usize,
+                context_before,
+                matched_text,
+                context_after,
+                trimmed_before,
+                trimmed_after,
+            }),
+            _ => None,
+        };
+        out.insert(op_id, (evidence, coverage));
+    }
+    Ok(out)
+}
+
+/// The friendly name a group leads with in a review list. English display text stored with the
+/// group, as the spine takes it; the rename dialog renders its own localized copy.
+fn display_name(parent: &str, count: usize) -> String {
+    let folder = Path::new(parent)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or(parent);
+    let files = if count == 1 {
+        "one file".to_string()
+    } else {
+        format!("{} files", spelled_count(count))
+    };
+    format!("Rename {files} in {folder}")
+}
+
+/// A count the way the style guide writes one: spelled out through nine, thousands separators
+/// above.
+fn spelled_count(count: usize) -> String {
+    match count {
+        1 => "one".into(),
+        2 => "two".into(),
+        3 => "three".into(),
+        4 => "four".into(),
+        5 => "five".into(),
+        6 => "six".into(),
+        7 => "seven".into(),
+        8 => "eight".into(),
+        9 => "nine".into(),
+        _ => {
+            let digits = count.to_string();
+            let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+            for (index, digit) in digits.chars().enumerate() {
+                if index > 0 && (digits.len() - index).is_multiple_of(3) {
+                    out.push(',');
+                }
+                out.push(digit);
+            }
+            out
+        }
+    }
+}
+
+/// The ops of a group, for callers that need the whole live set (apply, and preflight's
+/// deselection arithmetic). Rename groups are capped at [`MAX_RENAME_ROWS`], so this is a
+/// bounded read.
+pub fn group_ops(conn: &Connection, group_id: i64) -> Result<Vec<ProposalOp>, AgentStoreError> {
+    page_ops(conn, group_id, MAX_RENAME_ROWS, 0)
 }

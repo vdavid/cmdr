@@ -1,7 +1,7 @@
 //! Review and apply a server-owned rename proposal.
 //!
 //! Paths and destination names never cross this IPC boundary: the frontend submits only
-//! opaque row ids, and this layer looks the real work up in `RenameProposalStore`.
+//! opaque row ids, and this layer looks the real work up in the proposal spine.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -10,8 +10,10 @@ use std::time::Duration;
 
 use tauri::{AppHandle, Manager};
 
+use crate::agent::AgentDb;
+use crate::agent::store::proposals::ClaimOutcome;
 use crate::agent::tools::propose::rename::{
-    BulkRenamePreflight, BulkRenamePreflightStatus, RenameProposalStore, RenameSourceFingerprint,
+    AcceptedRenamePreflights, BulkRenamePreflight, BulkRenamePreflightStatus, RenameSourceFingerprint,
 };
 use crate::commands::util::IpcError;
 use crate::file_system::write_operations::{LocalContent, RemoteContent, SourceFingerprint};
@@ -45,16 +47,16 @@ pub async fn apply_bulk_rename(
     proposal_id: String,
     allowed_row_ids: Vec<String>,
 ) -> Result<crate::file_system::write_operations::WriteOperationStartResult, IpcError> {
-    let Some(store) = app.try_state::<RenameProposalStore>() else {
-        return Err(IpcError::from_err(
-            "This rename review has expired. Ask Cmdr to prepare it again.",
-        ));
+    let (Some(db), Some(accepted_preflights)) =
+        (app.try_state::<AgentDb>(), app.try_state::<AcceptedRenamePreflights>())
+    else {
+        return Err(review_is_over());
     };
 
     // The normal dialog path always arrives with this exact preflight. A stale
     // client retries the bounded authoritative preflight instead of trusting old
     // rows or accepting a different subset.
-    if store.accepted_preflight(&proposal_id, &allowed_row_ids).is_none() {
+    if accepted_preflights.matching(&proposal_id, &allowed_row_ids).is_none() {
         let preflight = tokio::time::timeout(
             BULK_RENAME_APPLY_TIMEOUT,
             crate::agent::tools::propose::rename::preflight(&app, proposal_id.clone(), allowed_row_ids.clone()),
@@ -62,21 +64,23 @@ pub async fn apply_bulk_rename(
         .await
         .map_err(|_| IpcError::timeout())?;
         if preflight.status != BulkRenamePreflightStatus::Ready {
-            return Err(IpcError::from_err("Review the rename plan again before applying it."));
+            return Err(review_again());
         }
     }
 
-    let Some((proposal, accepted)) = store.take_accepted_preflight(&proposal_id, &allowed_row_ids) else {
-        return Err(IpcError::from_err(
-            "This rename review has expired. Ask Cmdr to prepare it again.",
-        ));
+    let Some(accepted) = accepted_preflights.take_matching(&proposal_id, &allowed_row_ids) else {
+        return Err(review_is_over());
+    };
+    let conn = db.open_write_connection().map_err(|_| review_is_over())?;
+    let Some(proposal) = crate::agent::tools::propose::rename::load(&conn, &proposal_id)
+        .ok()
+        .flatten()
+    else {
+        return Err(review_is_over());
     };
     let Some(volume_id) = proposal.rows.first().map(|row| row.volume_id.clone()) else {
         return Err(IpcError::from_err("This rename plan has no rows to apply."));
     };
-    if proposal.rows.iter().any(|row| row.volume_id != volume_id) {
-        return Err(IpcError::from_err("A rename plan must stay on one volume."));
-    }
 
     let fingerprints: HashMap<_, _> = accepted
         .fingerprints
@@ -87,10 +91,10 @@ pub async fn apply_bulk_rename(
     let mut applied_rows = Vec::with_capacity(allowed_row_ids.len());
     for row_id in &allowed_row_ids {
         let Some(proposal_row) = proposal.rows.iter().find(|row| &row.row_id == row_id) else {
-            return Err(IpcError::from_err("Review the rename plan again before applying it."));
+            return Err(review_again());
         };
         let Some(fingerprint) = fingerprints.get(row_id) else {
-            return Err(IpcError::from_err("Review the rename plan again before applying it."));
+            return Err(review_again());
         };
         applied_rows.push(proposal_row);
         rows.push(crate::file_system::write_operations::BulkRenameRow {
@@ -104,6 +108,16 @@ pub async fn apply_bulk_rename(
         });
     }
 
+    // The claim is what makes this plan un-replayable: one conditional transaction moves the
+    // group out of `pending`, and it refuses when the op set no longer matches what preflight
+    // accepted (a revised name) or when somebody already answered. Last, so a refusal leaves
+    // the group reviewable rather than approved-but-unstarted.
+    let claimed = crate::agent::suggested_ops::approve(&conn, group_id_of(&proposal_id)?, now_secs())
+        .map_err(|_| review_is_over())?;
+    if !matches!(claimed, ClaimOutcome::Claimed(_)) {
+        return Err(review_again());
+    }
+
     let initiator = bulk_rename_initiator(&applied_rows);
     crate::file_system::write_operations::start_bulk_rename(
         Arc::new(crate::file_system::write_operations::TauriEventSink::new(app)),
@@ -114,20 +128,46 @@ pub async fn apply_bulk_rename(
     .map_err(IpcError::from_err)
 }
 
+fn group_id_of(proposal_id: &str) -> Result<i64, IpcError> {
+    crate::agent::tools::propose::rename::numeric_id(proposal_id).ok_or_else(review_is_over)
+}
+
+fn review_is_over() -> IpcError {
+    IpcError::from_err("This rename review has expired. Ask Cmdr to prepare it again.")
+}
+
+fn review_again() -> IpcError {
+    IpcError::from_err("Review the rename plan again before applying it.")
+}
+
+fn now_secs() -> i64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
 /// Replaces one row's proposed name with the one the user typed in the review, and answers the
 /// row as the dialog should now show it. The name is validated server-side; the row keeps no
 /// evidence afterwards, and the edit invalidates the accepted preflight, so the new name is
 /// rechecked before it can reach the filesystem.
 #[tauri::command]
 #[specta::specta]
-pub fn revise_bulk_rename_row(
+pub async fn revise_bulk_rename_row(
     app: AppHandle,
     proposal_id: String,
     row_id: String,
     destination_name: String,
 ) -> Result<crate::agent::tools::propose::rename::RenameProposalRowSnapshot, IpcError> {
-    crate::agent::tools::propose::rename::revise_row(&app, &proposal_id, &row_id, &destination_name)
-        .map_err(|error| IpcError::from_err(error.message))
+    // Off the IPC thread: the edit lands in `main.db`, and a command that opens a database
+    // must not block the handler.
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::agent::tools::propose::rename::revise_row(&app, &proposal_id, &row_id, &destination_name)
+            .map_err(|error| IpcError::from_err(error.message))
+    })
+    .await
+    .map_err(IpcError::from_err)?
 }
 
 /// Who the operation log credits for a batch. The agent proposed it, but a row the user
@@ -185,14 +225,33 @@ fn map_bulk_rename_fingerprint(fingerprint: &RenameSourceFingerprint) -> SourceF
     }
 }
 
-/// Discards a staged proposal after the user closes its review. There is no
-/// agent-controlled approval route: only this user action consumes the plan.
+/// Records the user's "no" after they close a review. There is no agent-controlled approval
+/// route: only a user action decides a proposal, and closing the dialog is one.
+///
+/// The group is REJECTED rather than deleted, so what the user was asked and what they answered
+/// stays in the decision record.
 #[tauri::command]
 #[specta::specta]
-pub fn cancel_bulk_rename_proposal(app: AppHandle, proposal_id: String) {
-    if let Some(store) = app.try_state::<RenameProposalStore>() {
-        store.consume(&proposal_id);
+pub async fn cancel_bulk_rename_proposal(app: AppHandle, proposal_id: String) {
+    if let Some(accepted) = app.try_state::<AcceptedRenamePreflights>() {
+        accepted.forget(&proposal_id);
     }
+    let (Some(db_path), Some(group_id)) = (
+        app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf()),
+        crate::agent::tools::propose::rename::numeric_id(&proposal_id),
+    ) else {
+        return;
+    };
+    // Off the IPC thread, like every other command that opens `main.db`.
+    let _ = tauri::async_runtime::spawn_blocking(move || {
+        let Ok(conn) = crate::agent::store::open_write_connection(&db_path) else {
+            return;
+        };
+        if let Err(e) = crate::agent::suggested_ops::reject(&conn, group_id, now_secs()) {
+            log::warn!(target: "agent::propose", "closing a rename review didn't record the rejection: {e}");
+        }
+    })
+    .await;
 }
 
 #[cfg(test)]

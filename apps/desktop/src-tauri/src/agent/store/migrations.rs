@@ -62,6 +62,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "the proposal spine: proposal_sets, proposals, proposal_ops, proposal_acceptances",
         up: migrate_v4_proposal_spine,
     },
+    Migration {
+        version: 5,
+        description: "proposal_rename_evidence: why each proposed name is believable",
+        up: migrate_v5_rename_evidence,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a fresh DB
@@ -310,6 +315,44 @@ fn migrate_v4_proposal_spine(tx: &Transaction<'_>) -> rusqlite::Result<()> {
             op_count   INTEGER NOT NULL,                -- how many ops were accepted
             op_digest  TEXT    NOT NULL,                -- hash of the values those ops carried
             created_at INTEGER NOT NULL
+        );
+        ",
+    )
+}
+
+/// Version 5: what each proposed rename NAME is based on, one row per rename op.
+///
+/// A sidecar rather than columns on `proposal_ops`, because evidence is a rename-producer
+/// concern and the spine stays verb-agnostic: only `agent/tools/propose/rename/` writes or
+/// reads this table. It cascades with its op, so a re-proposed or deleted group takes its
+/// evidence with it.
+///
+/// The coverage of an accepted `imageText` match is stored as its own columns rather than a
+/// JSON blob, for two reasons: `EvidenceCoverage` is deliberately Serialize-only (a plan may
+/// never send one), and a column list makes adding a field a compile error here rather than a
+/// silently-dropped value at read time.
+fn migrate_v5_rename_evidence(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch(
+        "
+        -- Why one proposed name is believable. Written with the group at staging time and
+        -- rewritten by a revise; a rename op with no row here can never be reviewed (the
+        -- loader refuses the whole proposal rather than showing a name with invented
+        -- backing).
+        CREATE TABLE proposal_rename_evidence (
+            op_id  INTEGER PRIMARY KEY REFERENCES proposal_ops(id) ON DELETE CASCADE,
+            source TEXT NOT NULL,      -- EvidenceSource token
+            detail TEXT NOT NULL,      -- model-authored quote or note, bounded at the tool boundary
+
+            -- How thin the match behind the name is, for an accepted `imageText` claim only.
+            -- All NULL together for every other source.
+            coverage_match_offset    INTEGER,
+            coverage_matched_chars   INTEGER,
+            coverage_delivered_chars INTEGER,
+            coverage_context_before  TEXT,
+            coverage_matched_text    TEXT,
+            coverage_context_after   TEXT,
+            coverage_trimmed_before  INTEGER,   -- 0/1
+            coverage_trimmed_after   INTEGER    -- 0/1
         );
         ",
     )

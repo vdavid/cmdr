@@ -14,12 +14,16 @@
 //!   client-supplied name; it resolves this stored row by opaque row id.
 //! - **Replace the evidence, not keep it.** The model's quote described the model's name.
 //! - **Invalidate the accepted preflight**, so duplicate-destination, cycle, and case-only
-//!   detection see the new name before anything reaches the filesystem (invariant 10).
+//!   detection see the new name before anything reaches the filesystem (invariant 10). Twice
+//!   over: the edited name changes the spine's binding digest, so the claim refuses, AND the
+//!   fingerprints held for that acceptance are dropped here.
 
+use rusqlite::Connection;
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::plan::validate_destination_name;
-use super::store::{RenameProposalRowSnapshot, RenameProposalStore};
+use super::store::{AcceptedRenamePreflights, RenameProposalRowSnapshot};
+use crate::agent::AgentDb;
 use crate::mcp::ToolError;
 
 /// Replace one row's destination name with the user's own, answering the row as the review
@@ -30,22 +34,38 @@ pub fn revise_row<R: Runtime>(
     row_id: &str,
     destination_name: &str,
 ) -> Result<RenameProposalRowSnapshot, ToolError> {
-    let store = app
-        .try_state::<RenameProposalStore>()
-        .ok_or_else(|| ToolError::internal("This rename review has expired. Ask Cmdr to prepare it again."))?;
-    revise_staged_row(&store, proposal_id, row_id, destination_name)
+    let (Some(db), Some(accepted)) = (app.try_state::<AgentDb>(), app.try_state::<AcceptedRenamePreflights>()) else {
+        return Err(review_is_over());
+    };
+    let conn = db.open_write_connection().map_err(|e| {
+        log::warn!(target: "agent::propose", "revising a proposed name couldn't open main.db: {e}");
+        review_is_over()
+    })?;
+    revise_staged_row(&conn, &accepted, proposal_id, row_id, destination_name)
 }
 
-/// The operation itself, over the store alone: validate, then replace. Pure of Tauri so the
+/// The operation itself, over a connection alone: validate, then replace. Pure of Tauri so the
 /// guardrails around it are testable without an app.
 pub(super) fn revise_staged_row(
-    store: &RenameProposalStore,
+    conn: &Connection,
+    accepted: &AcceptedRenamePreflights,
     proposal_id: &str,
     row_id: &str,
     destination_name: &str,
 ) -> Result<RenameProposalRowSnapshot, ToolError> {
     validate_destination_name(destination_name)?;
-    store
-        .revise_row(proposal_id, row_id, destination_name)
-        .ok_or_else(|| ToolError::invalid_params("This rename review has expired. Ask Cmdr to prepare it again."))
+    let revised = super::store::revise_row(conn, proposal_id, row_id, destination_name)
+        .map_err(|e| {
+            log::warn!(target: "agent::propose", "revising a proposed name didn't land: {e}");
+            review_is_over()
+        })?
+        .ok_or_else(review_is_over)?;
+    // The second guard, and the one that doesn't depend on the spine noticing: the fingerprints
+    // this group's acceptance paired with describe a plan whose names have moved on.
+    accepted.forget(proposal_id);
+    Ok(revised)
+}
+
+fn review_is_over() -> ToolError {
+    ToolError::invalid_params("This rename review has expired. Ask Cmdr to prepare it again.")
 }
