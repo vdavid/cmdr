@@ -63,3 +63,28 @@ launch rather than after.
 An approval is only reported when a claim actually went through — a refused claim is not an approval. A rejection reads
 the group's verb and live op count BEFORE the transition, because that's the group the user was looking at when they
 said no.
+
+## The approval bridge
+
+`bridge/` is the whole hand-off from an approved group to a running operation: preflight records what the user accepted, the claim transaction binds against it, the live ops become an ordinary executor call, and the injected sink goes in wrapped so each source reports its outcome back.
+
+**Every cross-volume verb goes through the ROUTED entry points** (`start_volume_{copy, move, compress}`), the same ones the transfer commands use, so an approved transfer resolves its volumes and anchors its destination exactly as a clicked one does. Extract needs no arm of its own: its sources resolve to an `ArchiveVolume` inside that routing, which is why extract has no operation type.
+
+**Decision: two connections, and the second is MOVED into the decorator.**
+**Why**: the operation outlives the call that started it by minutes or hours, so its writer cannot borrow anything the caller owns. One connection for the operation lifetime rather than one per event, because a group may carry 60 000 sources and a connection per source would dominate the run.
+
+**Decision: `completed` is written on SETTLE, not on `write-complete`.**
+**Why**: settle fires exactly once per operation after full teardown, on every ending — success, cancel, failure, panic — and the question `ProposalStatus::Completed` answers is "is this group still in flight?". Marking only on success leaves a cancelled group `approved`, and the next launch recovery sweep calls it `interrupted`: a claim that the app died, about an operation the user deliberately stopped. The per-op statuses carry what actually happened; a cancelled group keeps `pending` rows for the ops nothing reached.
+
+**Decision: rename has no route yet, and says so as a typed refusal.**
+**Why**: `start_bulk_rename` takes rows carrying a server-owned `SourceFingerprint` per source, and a frozen `OpSnapshot` cannot produce one (see below). `ApprovalRefusal::NoRouteYet` keeps the dispatch total rather than leaving a silent fallthrough; rename gets its route when the shipped rename feature moves onto the spine (plan M6).
+
+### The source binding is not wired yet, and the reason is precision
+
+M2 gave every executor an optional `ExpectedSources`, so an operation approved a week ago can notice that a source changed since. The bridge passes none, because `OpSnapshot` cannot build a `SourceFingerprint`:
+
+- `OpSnapshot` carries `{ size, mtime (seconds), inode }`; `SourceFingerprint::Local` needs `{ device, inode, size, modified_nanos }`.
+- The missing `device` could be taken from the source volume root, with an assumption about firmlinks and nested mounts.
+- **The precision gap cannot be papered over.** `capture_local` reads real nanosecond mtime, so a snapshot holding whole seconds turns into a `modified_nanos` with a zero sub-second part and mismatches nearly every real file. A naive conversion would make a bound group skip everything and complete having done nothing, which is worse than running unbound.
+
+Closing it needs either a device-less, second-precision fingerprint variant (compared by flooring the live nanos) or a snapshot that carries device and nanoseconds. Both are cross-milestone decisions; until one lands, an approved group runs unbound and this is the place that says so.

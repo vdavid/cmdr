@@ -26,6 +26,7 @@
 //! rationale): `DETAILS.md`.
 
 mod claim;
+mod complete;
 mod read;
 mod recovery;
 mod write;
@@ -37,6 +38,7 @@ pub use claim::{
     AcceptanceOutcome, ClaimOutcome, ClaimRefusal, ClaimedGroup, OpBinding, RejectOutcome, claim_group_for_execution,
     live_binding, record_acceptance, reject_group,
 };
+pub use complete::{CompleteOutcome, mark_group_completed, record_op_outcome};
 pub use read::{GroupSummary, ProposalOp, ProposalSweep, count_ops, get_group, get_sweep, list_groups, page_ops};
 pub use recovery::recover_interrupted_groups;
 pub use write::{
@@ -45,6 +47,42 @@ pub use write::{
 
 use crate::agent::types::{ProposalStatus, ProposalVerb, Reversibility};
 use crate::location::Location;
+
+/// A place a group may write into: a [`Location`] proven not to be inside an archive.
+///
+/// Copy or move INTO a zip, and move OUT of one, plan their work from their own `WalkDir`
+/// rather than the per-source engine, so there is nowhere to apply a source binding. The
+/// write engine refuses a bound transfer that lands on one of those routes, which is the
+/// right backstop and the wrong layer on its own: a user-started copy-into-zip works while
+/// an approved one refuses, and it refuses AFTER the user approved, which is exactly the
+/// agent-specific execution behaviour the guiding principle forbids.
+///
+/// So the constraint lives at the PROPOSAL boundary instead, where a refusal costs the agent
+/// a retry and costs the user nothing. A group with such a destination cannot be built, the
+/// same way a trash group carrying a destination cannot.
+///
+/// Extract is unaffected: its SOURCES are archive-inner, its destination an ordinary folder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WritableDestination(Location);
+
+impl WritableDestination {
+    /// The destination, or `None` when it is inside an archive.
+    ///
+    /// Extension-only, no I/O: `archive_boundary_candidate` splits on the first path
+    /// component carrying an archive extension, and a non-empty remainder means the path
+    /// continues INSIDE it. An empty remainder is the archive file itself, which is a
+    /// perfectly good compress target and an ordinary file to copy.
+    pub fn new(location: Location) -> Option<Self> {
+        let inside_archive = cmdr_archive::boundary::archive_boundary_candidate(std::path::Path::new(&location.path))
+            .is_some_and(|(_archive, inner)| !inner.as_os_str().is_empty());
+        (!inside_archive).then_some(Self(location))
+    }
+
+    /// The location it wraps.
+    pub fn location(&self) -> &Location {
+        &self.0
+    }
+}
 
 /// What a group asks for: the verb, the target that verb's executor binds, and the ops in
 /// the shape that verb takes.
@@ -57,14 +95,23 @@ use crate::location::Location;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GroupIntent {
     /// Move every source into one shared destination directory.
-    Move { destination: Location, sources: Vec<NewOp> },
+    Move {
+        destination: WritableDestination,
+        sources: Vec<NewOp>,
+    },
     /// Copy every source into one shared destination directory.
-    Copy { destination: Location, sources: Vec<NewOp> },
+    Copy {
+        destination: WritableDestination,
+        sources: Vec<NewOp>,
+    },
     /// Extract archive-inner sources into one shared destination directory.
-    Extract { destination: Location, sources: Vec<NewOp> },
+    Extract {
+        destination: WritableDestination,
+        sources: Vec<NewOp>,
+    },
     /// Compress every source into one target archive.
     Compress {
-        archive: Location,
+        archive: WritableDestination,
         sources: Vec<NewOp>,
         /// Whether that archive already exists. It decides reversibility: creating one is
         /// undone by deleting it, overwriting one is not undoable at all (the seed is
@@ -123,9 +170,13 @@ impl GroupIntent {
             GroupIntent::Move { destination, .. }
             | GroupIntent::Copy { destination, .. }
             | GroupIntent::Extract { destination, .. } => {
+                let destination = destination.location();
                 (Some(destination.path.as_str()), Some(destination.volume_id.as_str()))
             }
-            GroupIntent::Compress { archive, .. } => (Some(archive.path.as_str()), Some(archive.volume_id.as_str())),
+            GroupIntent::Compress { archive, .. } => {
+                let archive = archive.location();
+                (Some(archive.path.as_str()), Some(archive.volume_id.as_str()))
+            }
             GroupIntent::Rename { parent, .. } => (Some(parent.as_str()), None),
             GroupIntent::Trash { .. } | GroupIntent::Delete { .. } => (None, None),
         }

@@ -119,3 +119,23 @@ what a group missing its sidecar means, and fail closed — rename refuses to lo
 Selector resolution, the analytics events, and the propose/approve/reject service are `agent/suggested_ops/`. This
 module keeps `rusqlite` as its only real dependency, so nothing about the drive index or PostHog can reach into the
 persistence layer.
+
+## What execution writes back
+
+`complete.rs`. Two writes, both conditional, both shaped so a late or duplicate call cannot undo a decision.
+
+**`record_op_outcome` overwrites, deliberately.** A cross-filesystem move speaks twice for one source: `Done` when staging finishes, then `Done` again once the source-delete phase removes it, or `Skipped` when the rename phase left it standing. Staging succeeding says nothing about where the item ended up, so the LAST word is the verdict. It refuses only one row: an `excluded` op was never in the accepted set, so nothing that ran can be about it, and a stray path match must not overwrite the record of what was offered.
+
+**`mark_group_completed` is conditional on `approved`**, the same shape as the claim and the rejection. A group the recovery sweep already froze must not be resurrected by a late settle from the operation that died with the last launch.
+
+**Decision: `Completed` means execution FINISHED, not that every op succeeded.**
+**Why**: it is written when the operation settles, whatever the outcome, because the distinction the status carries is "no longer in flight" versus "we lost track of it". A cancelled group keeps `pending` rows for the ops nothing ever reached, and those rows are the honest record. The alternative — marking only on success — leaves a cancelled group `approved`, so the next launch calls it `interrupted` and asks the user to re-approve an operation they deliberately stopped. Pinned by `tests/completion.rs`.
+
+## A destination inside an archive is unrepresentable
+
+`WritableDestination` wraps the `Location` that `Move`, `Copy`, `Extract`, and `Compress` bind, and refuses one whose path continues inside an archive. Extension-only, no I/O, splitting exactly where `write_operations::routing` splits — the check and the routing must agree, or the executor fence fires on a group this layer allowed.
+
+**Decision: the constraint is here, not only in the executor.**
+**Why**: copy or move INTO a zip, and move OUT of one, plan from their own `WalkDir` rather than the per-source engine, so a source binding has nowhere to be applied. The write engine refuses a bound transfer that lands there, which is the right backstop and the wrong layer on its own: it fires AFTER the user approved, so a user-started copy-into-zip would work while an approved one refused — the agent-specific execution behaviour the guiding principle forbids. At the proposal boundary a refusal costs the agent a retry and the user nothing. Keep the executor fence; this is what makes it never fire.
+
+The compress TARGET is an archive and stays legal: only a non-empty inner remainder is refused. Extract is unaffected, its sources being the archive-inner half.

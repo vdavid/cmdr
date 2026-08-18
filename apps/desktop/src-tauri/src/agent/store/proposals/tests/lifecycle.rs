@@ -10,10 +10,11 @@ use crate::location::Location;
 fn amended_group(source: &str) -> NewGroup {
     NewGroup {
         intent: GroupIntent::Move {
-            destination: Location {
+            destination: WritableDestination::new(Location {
                 volume_id: "root".to_string(),
                 path: "/Users/someone/Documents/Invoices".to_string(),
-            },
+            })
+            .expect("an ordinary folder is a writable destination"),
             sources: vec![NewOp {
                 source_path: source.to_string(),
                 snapshot: None,

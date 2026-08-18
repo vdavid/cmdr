@@ -2,11 +2,14 @@
 //!
 //! - `schema.rs`: the two FK actions, asserted in raw SQL because the FK action IS the thing
 //!   under test.
+//! - `completion.rs`: what execution writes back, and why a completed group outlives a sweep.
 //! - `claim.rs`: the claim transaction — the one place a bug applies ops to real files twice.
 //! - `lifecycle.rs`: re-propose's pending-only guard and the `interrupted` recovery sweep.
 //! - `scale.rs`: a 60 000-op group, which is a legitimate group.
 
 mod claim;
+mod completion;
+mod destination;
 mod lifecycle;
 mod scale;
 mod schema;

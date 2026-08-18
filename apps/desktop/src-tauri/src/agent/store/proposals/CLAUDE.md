@@ -9,6 +9,7 @@ one executor call, an **op** (`proposal_ops`) is one path that may be a whole di
 - `write.rs` — `create_sweep` / `create_group` (creation is where a proposal FREEZES) and `repropose_group`.
 - `read.rs` — group headers, `COUNT(*)` counts, and the one paged op reader.
 - `claim.rs` — preflight, the claim transaction, rejection, and the streaming binding.
+- `complete.rs` — what execution writes back: per-op outcomes, and the group's own end.
 - `recovery.rs` — the `interrupted` startup sweep.
 
 ## Must-knows
@@ -35,6 +36,14 @@ one executor call, an **op** (`proposal_ops`) is one path that may be a whole di
 - **`GroupIntent` makes the wrong shapes unrepresentable.** Each variant carries the target its executor binds AND its
   op shape, so a trash group with a destination, or a move group whose ops carry their own, can't be built. Reversibility
   falls out of the same enum. Add a verb by adding a variant, never by adding a check.
+- **A group that finished is marked `completed`, on SETTLE and whatever the operation did.** Settle fires once per
+  operation on every ending, including a cancel, and the question this status answers is "still in flight, or not?"
+  Marking only on success leaves a cancelled group `approved`, and the next launch calls it `interrupted` — a claim
+  that the app died, about an operation the user stopped on purpose. The per-op statuses carry what actually
+  happened.
+- **`WritableDestination` is why a group can't be built to write inside an archive.** Those routes plan from their
+  own `WalkDir`, so a source binding has nowhere to go, and the engine's refusal would fire AFTER the user approved.
+  The constraint belongs here, where a refusal costs the agent a retry and the user nothing.
 - **A deselected op keeps its ROW** (`OpStatus::Excluded`). The decision record says what was offered, not only what ran.
 
 Service layer above this (selectors, analytics): `../../suggested_ops/CLAUDE.md`.

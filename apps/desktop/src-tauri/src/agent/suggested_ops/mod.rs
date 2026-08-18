@@ -23,6 +23,7 @@
 //! Depth: `DETAILS.md`.
 
 mod analytics;
+pub mod bridge;
 pub mod selector;
 
 #[cfg(test)]

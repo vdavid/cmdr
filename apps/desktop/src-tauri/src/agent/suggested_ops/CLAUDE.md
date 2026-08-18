@@ -7,6 +7,8 @@ above them that a row can't hold. Depth: `DETAILS.md`.
 ## Module map
 
 - `mod.rs` — `propose` / `approve` / `reject` (thin over the store, plus the metric) and `resolve_selector_ops`.
+- `bridge/` — approval to running operation: the claim, the executor call, and the sink decorator that writes
+  outcomes back. `bridge/mod.rs` and `bridge/decorator.rs`.
 - `selector.rs` — `OpSelector`, the `SelectorIndex` seam, and `DriveIndex`, the drive-index resolver.
 - `analytics.rs` — the three PostHog events.
 
@@ -26,6 +28,13 @@ above them that a row can't hold. Depth: `DETAILS.md`.
   answer from "nothing matched". Branch on the variant, as `error-string-match` already requires.
 - **Analytics carry a verb and a bucketed count, never a path**, a file name, a rationale, or a selector pattern. All of
   those are the user's own data, and `main.db` is a map of their life that stays local.
+- **The bridge builds an ORDINARY executor call**, through the same routed entry points a click uses, with the default
+  config — which is where the rule above stops being a slogan. The bookkeeping it adds never reaches the filesystem.
+- **Reporting flows engine → store, never the reverse.** The decorator wraps the injected sink and writes
+  `proposal_ops.status` from the per-source outcomes; `write_operations` names nothing in `agent::`, and
+  `write-ops-isolation` fails the build if it ever does.
+- **Rename has no route yet** (`ApprovalRefusal::NoRouteYet`): its executor needs a server-owned fingerprint per
+  row, which a frozen snapshot can't supply. It gets one when the shipped rename feature moves onto the spine (M6).
 - **Symlinks are skipped during resolution.** The index doesn't follow them, so their size and date describe the LINK,
   and a proposal built on those would show facts about something other than the file the user is deciding on.
 
