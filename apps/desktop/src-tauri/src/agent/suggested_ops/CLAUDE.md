@@ -11,6 +11,7 @@ above them that a row can't hold. Depth: `DETAILS.md`.
   outcomes back. `bridge/mod.rs` and `bridge/decorator.rs`.
 - `selector.rs` — `OpSelector`, the `SelectorIndex` seam, and `DriveIndex`, the drive-index resolver.
 - `analytics.rs` — the three PostHog events.
+- `changed.rs` — `suggestions-changed`, the one signal that the pending set moved.
 
 ## Must-knows
 
@@ -33,10 +34,12 @@ above them that a row can't hold. Depth: `DETAILS.md`.
 - **Reporting flows engine → store, never the reverse.** The decorator wraps the injected sink and writes
   `proposal_ops.status` from the per-source outcomes; `write_operations` names nothing in `agent::`, and
   `write-ops-isolation` fails the build if it ever does.
-- **The execution binding is a LIVE stat at preflight; the stored creation snapshot answers a different question.**
-  The snapshot says "changed since the agent looked" (a stale belief, second precision, for the review); the binding
-  says "changed since I showed it to you" (a race, needing nanoseconds), and converting one into the other would
-  mismatch nearly every file. Fingerprints stay in memory, so a restart forces a fresh preflight.
+- **The execution binding is a LIVE stat at preflight**; the stored creation snapshot answers a different question.
+  The snapshot says "changed since the agent looked" (stale belief, seconds, for the review); the binding says "changed
+  since I showed it to you" (a race, needing nanoseconds). Fingerprints stay in memory, so a restart re-preflights.
+- **Every path that moves the pending set announces it** (`changed.rs`), so surfaces subscribe rather than poll. An
+  amend emits no ANALYTICS (one decision, counted once) but still announces: counting decisions and refreshing a view
+  are different questions.
 - **Symlinks are skipped during resolution.** The index doesn't follow them, so their size and date describe the LINK,
   and a proposal built on those would show facts about something other than the file the user is deciding on.
 

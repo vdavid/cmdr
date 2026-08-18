@@ -82,11 +82,19 @@ pub fn add_group(conn: &Connection, set_id: i64, group: &NewGroup, now: i64) -> 
 
 /// Replace a pending group's op list with a new one, on its author's say-so.
 ///
-/// ❌ Deliberately emits NO analytics event. A re-propose AMENDS a proposal the user hasn't
-/// answered yet, so counting it as a second proposal would inflate the denominator of the
-/// acceptance rate and make an agent that revises its own suggestions look worse than one
-/// that doesn't. The same reasoning as the plan's re-approval rule: one decision, counted
-/// once.
+/// ❌ Deliberately emits NO analytics event, and just as deliberately DOES announce. The two
+/// go together, and reading only the first half is how the announcement gets missed.
+///
+/// **No analytics**: a re-propose AMENDS a proposal the user hasn't answered yet, so counting
+/// it as a second proposal would inflate the denominator of the acceptance rate and make an
+/// agent that revises its own suggestions look worse than one that doesn't — punishing
+/// exactly the behaviour we want. Same reasoning as the plan's re-approval rule: one
+/// decision, counted once.
+///
+/// **Announce anyway**: counting decisions and refreshing a view are different questions. An
+/// amend under a group the user has open is precisely what the dialog's "this changed"
+/// affordance exists for, and a view that missed it would show stale rows for a group the
+/// agent has already revised.
 pub fn repropose(
     conn: &Connection,
     group_id: i64,
@@ -94,9 +102,8 @@ pub fn repropose(
     now: i64,
 ) -> Result<ReproposeOutcome, AgentStoreError> {
     let outcome = repropose_group(conn, group_id, group, now)?;
-    // No analytics (see above), but the change still has to be ANNOUNCED: an amend under a
-    // group the user has open is exactly what the dialog's "this changed" affordance is for,
-    // and the two questions are different — one counts decisions, the other refreshes a view.
+    // Announce but don't count: see the asymmetry above. Only a re-propose that actually
+    // landed changed anything to announce.
     if matches!(outcome, ReproposeOutcome::Reproposed) {
         changed::announce(conn, SuggestionChange::Amended, Some(group_id));
     }

@@ -99,3 +99,34 @@ fn an_excluded_op_is_never_overwritten_by_an_outcome() {
     let after = page_ops(&conn, group_id, 10, 0).expect("ops");
     assert_eq!(after[0].status, OpStatus::Excluded);
 }
+
+/// The indicator is always mounted, so the count it renders has to be cheap and it has to be
+/// right: only PENDING groups, and only their live ops. A group the user already answered
+/// must not keep a badge on screen.
+#[test]
+fn the_pending_count_sees_only_what_the_user_still_has_to_answer() {
+    let conn = migrated_conn();
+    let waiting = group_with_ops(&conn, 3);
+    let answered = approved_group(&conn, 5);
+
+    let (groups, ops) = count_pending(&conn, ProposalStatus::Pending).expect("count");
+    assert_eq!(
+        groups, 1,
+        "only the group still waiting: {waiting} counts, {answered} does not"
+    );
+    assert_eq!(ops, 3, "and only that group's ops");
+}
+
+/// A deselected op stays as a row so the decision record says what was OFFERED, but it is not
+/// something the user still has to answer, so it must not inflate the badge.
+#[test]
+fn a_deselected_op_does_not_count_toward_the_badge() {
+    let conn = migrated_conn();
+    let group_id = group_with_ops(&conn, 3);
+    let first = page_ops(&conn, group_id, 10, 0).expect("ops")[0].id;
+    record_acceptance(&conn, group_id, &[first], 200).expect("preflight");
+
+    let (groups, ops) = count_pending(&conn, ProposalStatus::Pending).expect("count");
+    assert_eq!(groups, 1);
+    assert_eq!(ops, 2, "the excluded op keeps its row but leaves the live set");
+}

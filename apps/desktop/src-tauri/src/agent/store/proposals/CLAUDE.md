@@ -36,14 +36,12 @@ one executor call, an **op** (`proposal_ops`) is one path that may be a whole di
 - **`GroupIntent` makes the wrong shapes unrepresentable.** Each variant carries the target its executor binds AND its
   op shape, so a trash group with a destination, or a move group whose ops carry their own, can't be built. Reversibility
   falls out of the same enum. Add a verb by adding a variant, never by adding a check.
-- **A group that finished is marked `completed`, on SETTLE and whatever the operation did.** Settle fires once per
-  operation on every ending, including a cancel, and the question this status answers is "still in flight, or not?"
-  Marking only on success leaves a cancelled group `approved`, and the next launch calls it `interrupted` — a claim
-  that the app died, about an operation the user stopped on purpose. The per-op statuses carry what actually
-  happened.
-- **`WritableDestination` is why a group can't be built to write inside an archive.** Those routes plan from their
-  own `WalkDir`, so a source binding has nowhere to go, and the engine's refusal would fire AFTER the user approved.
-  The constraint belongs here, where a refusal costs the agent a retry and the user nothing.
+- **`completed` is written on SETTLE, whatever the operation did**, because the question it answers is "still in
+  flight, or not?" Marking only on success leaves a cancelled group `approved`, so the next launch calls it
+  `interrupted` — a claim the app died, about an operation the user stopped. Per-op statuses carry the rest.
+- **`WritableDestination` stops a group being built to write inside an archive.** Those routes plan from their own
+  `WalkDir`, so a binding has nowhere to go, and the engine's refusal would fire AFTER the user approved. Refusing here
+  costs the agent a retry and the user nothing.
 - **A deselected op keeps its ROW** (`OpStatus::Excluded`). The decision record says what was offered, not only what ran.
 
 Service layer above this (selectors, analytics): `../../suggested_ops/CLAUDE.md`.

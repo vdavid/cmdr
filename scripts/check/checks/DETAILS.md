@@ -89,6 +89,24 @@ CheckDefinition{
   set (including from the globals); it's the only way to make a set too narrow, so read `../DETAILS.md` § "Exclusions"
   before adding one, and give it a test.
 
+### ⚠️ A fresh worktree inherits the cache, so a green check can be a stale answer
+
+The fingerprint cache lives under `target/`, and `new-worktree.sh` APFS-clones `target/` from an existing worktree. So a
+brand-new worktree starts with somebody else's cache entries, and a check whose inputs happen to match one reports a
+cached OK **without ever running against the files actually in that tree**.
+
+That is fine while the clone source and the new branch agree, and misleading the moment they don't — which is exactly
+the parallel-agent case every worktree here is. Two shapes it takes, both observed:
+
+- **A stale PASS**: the tree contains a violation, the inherited entry says the check passed, and nothing runs. It stays
+  green until an unrelated edit invalidates the fingerprint, then fails "suddenly" on code that was never touched.
+- **A stale SCANNER**: the branch predates a merge that fixed a predicate, so the check runs the OLD scanner against the
+  NEW layout and fails on a file that is fine on `main`. Rebasing is the fix, not an opt-out comment.
+
+**`pnpm check <name> --fresh` is the escape hatch**: it bypasses the fingerprint, runs everything selected, and then
+refreshes the cache. Reach for it before trusting a green check in a young worktree, and before concluding that `main`
+is broken — verify against the main clone first, where the answer is not clone-shaped.
+
 ## Adding a new check
 
 1. Create `{app}-{name}.go` with a `func RunSomething(ctx *CheckContext) (CheckResult, error)`. Use `website-build.go`
