@@ -1187,3 +1187,43 @@ jargon is exactly what the copy avoids.
 - **Comillas: `“…”` (curvas), como el hermano y como macOS `es`** · nunca `«…»` ni comillas rectas, aunque otras claves
   viejas de `fileExplorer.json` (`renameConflict.description`) todavía usen las rectas · high.
 - No hace falta `sameAsSourceJustification`: el valor difiere del inglés.
+
+## El renombrado sin confirmar y el nombre que el sistema rechaza (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`, 2026-08-18)
+
+Pareja hermana de `chainKeptOriginalName*`, con el sentido contrario: allí el archivo se quedó con su nombre, seguro;
+aquí no se sabe, y puede que sí se haya renombrado. Estas dos claves nunca deben insinuar que el archivo conservó su
+nombre.
+
+- **"the rename" (el sustantivo) → `el cambio de nombre`** · macOS `es` Finder RN1/RN2 ("Rehacer/Deshacer cambio de
+  nombre") y AppKit SavePanel ("Name Change" → "Cambio de nombre"). Se elige el sustantivo de Apple en vez de inventar
+  "el renombrado", y además da un sujeto masculino singular conocido para la segunda frase, así que el participio no
+  depende del género de lo que haya detrás de `{name}` (archivo o carpeta) · high
+- **"Couldn''t confirm …" → `No se pudo confirmar …`** · reafirma el patrón que el catálogo ya usa para este mismo caso
+  de "no hubo respuesta a tiempo": `fileOperations.mkdir.timeoutMessage` ("No se pudo confirmar que la carpeta se
+  creara…") y `fileExplorer.pane.trashUnconfirmedToast`. confirm → confirmar (macOS AppKit Common, "Confirm" →
+  "Confirmar") · high
+- **"The volume may be slow" → `El volumen puede ir lento`** · copia literal de `mkdir.timeoutMessage`, que traduce esa
+  misma frase inglesa; `trashUnconfirmedToast` usa la variante "Puede que el volumen vaya lento". La locución del
+  catálogo para un volumen que tarda es `ir lento` · high
+- **"the rename may still have gone through" → `es posible que el cambio sí se haya aplicado`** · el `sí` enfático es el
+  recurso con el que los hermanos cargan el "still" del inglés ("es posible que la carpeta sí se haya creado", "quizá el
+  archivo sí se haya movido"). `aplicarse` para un cambio que surte efecto: macOS `es` ("Estos ajustes se aplicarán…") ·
+  high. El inglés vuelve a nombrar el sujeto ("the rename"), igual que el hermano `mkdir` repite "the folder", así que
+  el español también lo nombra, pero con el anafórico corto `el cambio`: repetir las cuatro palabras "el cambio de
+  nombre" en un aviso tan breve pesa demasiado. El sujeto es el cambio, no el archivo, así que no hay género que
+  adivinar detrás de `{name}`
+- **Coordinación negativa: `ni el de`** · "the rename of X and N other files" bajo una negación pide `ni` en español:
+  "No se pudo confirmar el cambio de nombre de “{name}” ni el de otros 3 archivos". El `el de` elide "el cambio de
+  nombre" y deja claro que lo no confirmado también es el cambio de nombre de los otros · high
+- **Las tres ramas cierran en plural (`los cambios sí se hayan aplicado`)** · incluso en la rama `one` hay dos cambios
+  de nombre (el nombrado más el otro). Ramas CLDR `one`/`many`/`other`; `{othersText}` solo aparece en `many`/`other`,
+  igual que en `chainKeptOriginalNameAndOthers`, porque `otro archivo` ya dice "uno más" · high
+- **"That filename can''t be used" → `Ese nombre de archivo no puede usarse`** (carpeta: `Ese nombre de carpeta no
+  puede usarse`) · macOS `es` Finder tiene el concepto exacto: RN5 "El nombre “^0” no puede usarse porque está reservado
+  para el sistema", NE74 "…no puede usarse porque es demasiado largo", RN23 "…no se puede usar". El demostrativo `Ese`
+  traduce el "That" del inglés (el nombre que acabas de escribir), y por eso no lleva el artículo de los hermanos
+  (`empty`, `disallowedChars`, `nameTooLong` usan "El nombre de la carpeta / del archivo"); el sustantivo
+  carpeta/archivo sí es el mismo · high. Sin punto final, porque se compone dentro de la frase de
+  `chainKeptOriginalName`: "Ese nombre de archivo no puede usarse. “foo.txt” mantuvo su nombre."
+- Ningún valor lleva apóstrofo, así que no hay nada que doblar para ICU.
+- No hace falta `sameAsSourceJustification`: los tres valores difieren del inglés.

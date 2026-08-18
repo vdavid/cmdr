@@ -1489,3 +1489,48 @@ Le toast grandissant qui compte les renommages non appliqués. Il prolonge la ph
 - `{reason}` arrive sans point final et hors du contrôle de Cmdr : il reste en tête de phrase, suivi du point, comme
   dans le frère. `{name}` reste entre guillemets « » avec espaces ASCII, dans une position neutre (aucun accord ne
   dépend de lui).
+
+## Renommage non confirmé : le volume ne répond pas (2026-08-18, `fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
+
+Paire sœur du couple `chainKeptOriginalName*` juste au-dessus, mais de SENS OPPOSÉ : là où `chainKept*` affirme que le
+fichier a gardé son nom, `unconfirmed*` dit qu'on n'en sait rien et que le renommage est peut-être passé. La valeur ne
+doit jamais laisser entendre que le nom est resté inchangé.
+
+- **"Couldn't confirm the rename of X" → `Impossible de confirmer le renommage de « X »`** · le catalogue tient déjà
+  deux toasts du même moule pour la même situation (volume qui ne répond pas à temps) :
+  `fileOperations.mkdir.timeoutMessage` (« Impossible de confirmer la création du dossier. Le volume est peut-être lent,
+  donc le dossier a peut-être quand même été créé. ») et `fileExplorer.pane.trashUnconfirmedToast`. Même moule, même
+  ordre, même « quand même » pour le `anyway` anglais · high. `Impossible de …` est aussi la forme macOS `fr` pour un
+  `Couldn't` (« Impossible de créer le dossier. », « Impossible de copier « ^0 » … ») et ne tombe sous aucune des
+  interdictions de style.md (ni `erreur`, ni `échec`, ni `bloqué`).
+- **Nommer le fichier dans la 2e phrase, ne pas pronominaliser.** ❌ Jamais « donc il a peut-être quand même abouti » :
+  l'antécédent masculin le plus proche est `le volume`, et le toast dirait alors le contraire de ce qu'il veut dire. Les
+  deux toasts précédents appliquent déjà cette discipline (« donc LE DOSSIER a peut-être quand même été créé »). D'où
+  « donc le fichier a peut-être quand même été renommé » / « donc les fichiers ont peut-être quand même été renommés ».
+  Le verbe `renommer` au participe dit littéralement l'inverse de `a gardé son nom` du frère, ce qui est exactement la
+  distinction à préserver. L'anglais nomme l'ACTION (« the rename may still have gone through »), le `fr` nomme l'OBJET
+  (« le fichier … renommé ») : c'est le moule `mkdir` (« the folder may still have been created » → « le dossier a
+  peut-être quand même été créé »), et ça évite de répéter `renommage` deux phrases de suite. Ne pas « corriger » vers
+  `donc le renommage a peut-être quand même abouti`.
+- **"the rename of X and N other files" → `les renommages de « X » et de {n} autres fichiers`** · macOS Finder Tier 1
+  pour ce moule exact, nom verbal + complément partagé (`LocalizableMerged.json` : « Envoi de « ^1 » et de ^0 autres
+  éléments. ») · high. Noter la divergence VOULUE avec le `ainsi que` de `chainKeptOriginalNameAndOthers` : là-bas les
+  autres fichiers sont un second SUJET (« « X » a gardé son nom, ainsi qu'un autre fichier »), ici ce sont des
+  compléments de `le renommage de`, donc la préposition `de` doit se répéter et `ainsi que` alourdirait sans rien
+  apporter. Même famille de voix, slot grammatical différent.
+- Le pluriel `les renommages` est porté par la clé entière (toutes les branches comptent au moins deux renommages),
+  et `et` reste DEVANT le `{others, plural, …}`, seul `d''un` / `de {othersText}` entre dans les branches : l'élision de
+  `d'un` l'impose. Branches CLDR `fr` `one` / `many` / `other`, `many` identique à `other`.
+- **Le doublement de `peut-être` est voulu**, pas une maladresse : `Le volume est peut-être lent, donc le fichier a
+  peut-être quand même été renommé` calque mot pour mot `mkdir.timeoutMessage`. Les deux `peut-être` ne portent pas sur
+  la même chose (l'un sur la lenteur du volume, l'autre sur l'issue du renommage), et c'est justement ce que le toast
+  doit dire : on ne sait ni pourquoi ça traîne, ni si c'est passé.
+- **"That filename can't be used" → `Le nom du fichier ne peut pas être utilisé`** (et `… du dossier …`) · macOS Finder
+  `fr` (« L'extension « ^0 » est réservée au système et ne peut pas être utilisée. ») · high. Le moule
+  `Le nom du {fichier,dossier} ne peut pas …` est repris tel quel des trois sœurs `fileOperations.validation.empty` /
+  `.disallowedChars` / `.nameTooLong`, plutôt que le démonstratif `Ce nom de fichier …` qui casserait la colonne. Sans
+  point final : la valeur s'insère aussi dans `{reason}` de `chainKeptOriginalName`, ce qui donne « Le nom du fichier ne
+  peut pas être utilisé. « rapport final.pdf » a gardé son nom. »
+- Guillemets « » à espaces ASCII autour de `{name}`, qui reste dans une position neutre (aucun accord n'en dépend).
+  Seule apostrophe des trois valeurs : `d''un`, ASCII et doublée.
+- Aucun `sameAsSourceJustification` nécessaire : les trois valeurs diffèrent de l'anglais.

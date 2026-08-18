@@ -809,13 +809,13 @@
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "sourceHash": "7b23e8e"
   },
-  "fileExplorer.rename.unconfirmed": "Couldn''t confirm the rename of \"{name}\". The volume is slow, so it may have gone through anyway.",
+  "fileExplorer.rename.unconfirmed": "Det gick inte att bekräfta namnbytet av ”{name}”. Volymen kan vara långsam, så filen kan ändå ha bytt namn.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "d36ee78"
+    "sourceHash": "d43e419"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Couldn''t confirm the rename of \"{name}\" and {others, plural, one {one other file} other {{othersText} other files}}. The volume is slow, so they may have gone through anyway.",
+  "fileExplorer.rename.unconfirmedAndOthers": "Det gick inte att bekräfta namnbytena av ”{name}” och {others, plural, one {en annan fil} other {{othersText} andra filer}}. Volymen kan vara långsam, så filerna kan ändå ha bytt namn.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "125c1b1"
+    "sourceHash": "1258eb3"
   },
   "fileExplorer.columns.name": "Namn",
   "@fileExplorer.columns.name": {

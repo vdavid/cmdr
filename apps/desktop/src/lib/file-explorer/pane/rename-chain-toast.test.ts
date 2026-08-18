@@ -253,7 +253,7 @@ describe('a chained save the volume never answers', () => {
     })
 
     // A toast per unanswered rename would have filled all five slots by now,
-    // and this one — the honest report the chain is built around — would be
+    // and this one, the honest report the chain is built around, would be
     // dropped with nothing said.
     step('bad-6/name.txt')
 

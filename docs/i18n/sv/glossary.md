@@ -1216,3 +1216,37 @@ redan satt, så den här nyckeln får bara ett påhäng, inte en ny formulering.
   börjar med en inskjuten främmande sats. Det fungerar i svenskan lika bra som i engelskan, men om en `reason` någon
   gång slutar med `?` eller `!` blir `. ` efter den fel i båda språken; det är då engelskans nyckelform som ska ändras,
   inte den här översättningen.
+
+## Obekräftade namnbyten och det oanvändbara namnet (2026-08-18; `fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
+
+Systerparet till `chainKeptOriginalName*`, men med motsatt innebörd: där säger vi att filen definitivt behåller sitt
+namn, här säger vi att vi inte vet, och att namnbytet mycket väl kan ha gått igenom. Formuleringarna får aldrig glida
+ihop.
+
+- **"Couldn't confirm the rename of X" → `Det gick inte att bekräfta namnbytet av ”X”`** · katalogens egna
+  systersträngar sätter mallen för hela den här familjen: `fileOperations.mkdir.timeoutMessage` ("Det gick inte att
+  bekräfta att mappen skapades. Volymen kan vara långsam, så mappen kan ändå ha skapats.") och
+  `fileExplorer.pane.trashUnconfirmedToast`. macOS `sv` bekräftar `bekräfta` för `confirm` och `Det gick inte att …`
+  som huvudmall för en åtgärd som inte gick vägen ("Det gick inte att byta namn på bilden ”%1$@” till ”%2$@”.",
+  `Finder`/`AppKit`). Substantivet `namnbyte` styr `av`, inte `på`: Thunar/Dolphin `sv` skriver "Namnbyte av flera
+  objekt", "namnbyte av en fil", "namnbyte av flera filer". `high`.
+- **Flera på en gång → `namnbytena av ”X” och …`** (bestämd plural) · engelskan behåller singular "the rename of X and
+  N other files" fastän det handlar om flera; svenskan blir tydligare i plural, och `en annan fil`-grenen ger ändå två
+  namnbyten. Räkneleden `en annan fil` / `{othersText} andra filer` är oförändrad från `chainKeptOriginalNameAndOthers`
+  (Nautilus `sv`, "%'d annat objekt markerat" / "%'d andra objekt markerade"). `high`.
+- **"it may have gone through anyway" → `så filen kan ändå ha bytt namn`** (plural: `så filerna kan ändå ha bytt
+  namn`) · exakt formen `mkdir.timeoutMessage` redan använder: subjekt + `kan ändå ha` + supinum av själva åtgärden.
+  ❌ Inte `så det kan ändå ha gått igenom`: `gå igenom` i betydelsen "lyckas" finns inte belagd i högen, och de enda
+  träffarna är den andra betydelsen ("Går igenom alla visningslägen", Nautilus `sv`) — sense-fällan i
+  `docs/i18n/reference-pile/how-to-mine.md`. ❌ Inte `så det kan ändå ha lyckats`: `lyckas`/`misslyckas` finns inte
+  någonstans i sv-katalogen, husrösten undviker medvetet den statusetiketten. `high`.
+- **"The volume may be slow" → `Volymen kan vara långsam`** · ordagrant syskonsträngarnas hedge
+  (`mkdir.timeoutMessage`, `trashUnconfirmedToast`), som engelskan i den här nyckeln numera också använder. Vi vet inte
+  att volymen är långsam, vi gissar, och `kan vara` bär gissningen. `volym` är den satta termen (style.md). `high`.
+- **"That folder/filename can't be used" → `Det här mappnamnet/filnamnet kan inte användas`** · macOS `sv` har frasen
+  ordagrant i vår domän: "Namnet ”^0” kan inte användas.", "Namnet ”^0” kan inte användas eftersom det är för långt."
+  (`Finder`). Behåller engelskans deixis (`Det här …`), eftersom nyckeln också skjuts in i en längre mening om filen
+  som behåller sitt namn. Ingen avslutande punkt, per nyckelns kontrakt. Syskonens `Mappnamn får inte …` / `Filnamnet
+  är för långt` är kvar som de är: `får inte` är regeln användaren bröt, `kan inte användas` är samlingsfallet där
+  filsystemet inte säger vilken regel det var. `high`.
+- Inget `sameAsSourceJustification` behövs: alla tre värdena skiljer sig från engelskan.

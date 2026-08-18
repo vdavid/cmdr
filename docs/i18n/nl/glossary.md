@@ -1453,3 +1453,38 @@ waarde moet dezelfde stem, dezelfde aanhalingstekens en hetzelfde werkwoord houd
   woordelijke "one" krijgt hier ook een uitgeschreven telwoord.
 - Geen ICU-apostrof nodig: de waarde bevat geen enkele rechte `'`, en de aanhalingstekens zijn de gekrulde `‘…’` van de
   locale-brede afspraak.
+
+## De onbevestigde naamwijziging en de onbruikbare naam (`fileExplorer.rename.unconfirmed`/`unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`, 2026-08-18)
+
+Een traag volume (netwerkshare, telefoon) antwoordt niet op tijd op een naamwijziging. De toast mag NOOIT zeggen dat het
+bestand zijn naam heeft gehouden: dat is precies wat we niet weten. Daarmee staat dit paar tegenover
+`chainKeptOriginalName*`, dat wél zeker weet dat de naam onveranderd is.
+
+- **Waarden:
+  `We konden de naamwijziging van ‘{name}’ niet bevestigen. Het volume is mogelijk traag, dus de naam is misschien toch gewijzigd.`
+  en
+  `We konden de naamwijzigingen van ‘{name}’ en {others, plural, one {één ander bestand} other {{othersText} andere bestanden}} niet bevestigen. Het volume is mogelijk traag, dus de namen zijn misschien toch gewijzigd.`**
+- **"Couldn''t confirm …" → `We konden … niet bevestigen`** · de catalogus heeft dit patroon al twee keer voor precies
+  dezelfde time-outsituatie (`fileOperations.mkdir.timeoutMessage` "We konden niet bevestigen dat de map is aangemaakt",
+  `fileExplorer.pane.trashUnconfirmedToast`), en `bevestigen` is Microsoft Tier 2 voor `confirm` (`DUTCH.tbx`, nl
+  `bevestigen`) plus macOS AppKit (`Bevestig`) · high. Het Engels heeft hier een naamwoordelijk object ("the rename of
+  X") in plaats van een `dat`-zin, dus het object staat vooraan en het werkwoord achteraan.
+- **rename (naamwoord) → `naamwijziging` / `naamwijzigingen`** · de gevestigde rij hierboven (Microsoft
+  "naamwijzigingsvoorstellen"); NOOIT `hernoeming` · high. Het meervoud in de `AndOthers`-arm is correct in beide
+  takken: daar staan altijd twee of meer naamwijzigingen.
+- **"The volume may be slow" → `Het volume is mogelijk traag`** · macOS Finder `LA20` ("… may run very slowly" → "…
+  zijn erg traag") is Tier 1 voor `slow` → `traag`, en `mkdir.timeoutMessage` zegt deze halve zin al woordelijk zo ·
+  high. Het `mogelijk` draagt de slag om de arm van het Engels: Cmdr weet niet eens zeker dát het volume traag is.
+- **"the rename may still have gone through" → `de naam is misschien toch gewijzigd`** · exact de staartvorm van
+  `mkdir.timeoutMessage` ("dus de map is misschien toch aangemaakt") · high. De staart herhaalt het werkwoord uit de
+  gevestigde `naam wijzigen`, zodat de zin de daad noemt en niet de afloop claimt. Meervoud in de `AndOthers`-arm
+  (`de namen zijn`), want daar gaat het altijd om meer dan één bestand.
+- **`{othersText} andere bestanden` / `één ander bestand`** · woordelijk overgenomen van
+  `chainKeptOriginalNameAndOthers` hierboven (Apple Tier 1 telformule); de twee ketentoasts moeten dezelfde telstaart
+  hebben.
+- **"That filename can''t be used" → `Deze bestandsnaam kan niet worden gebruikt`** (map: `Deze mapnaam …`) · macOS
+  Finder `RN31` is de directe Tier 1-treffer: "The name '^0' can't be used." → "De naam '^0' kan niet worden gebruikt."
+  (ook `NE74`, `RN5`, `RN23`) · high. `Deze` volgt het aanwijzende `That` van het Engels en de zusterregel
+  `nameTooLong` (`Deze mapnaam is te lang`); geen punt op het eind, want de zin wordt ook ingevoegd vóór
+  `‘{name}’ behoudt zijn naam.`
+- Geen ICU-apostrof nodig: geen enkele rechte `'` in de drie waarden, en de aanhalingstekens zijn de gekrulde `‘…’`.

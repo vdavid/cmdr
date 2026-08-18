@@ -708,7 +708,7 @@
   "@fileOperations.validation.conflict": {
     "sourceHash": "ba13237"
   },
-  "fileOperations.validation.nameNotUsable": "{kind, select, folder {That folder name can''t be used} other {That filename can''t be used}}",
+  "fileOperations.validation.nameNotUsable": "{kind, select, folder {Không thể dùng tên thư mục đó} other {Không thể dùng tên tệp đó}}",
   "@fileOperations.validation.nameNotUsable": {
     "sourceHash": "8482a7b"
   },

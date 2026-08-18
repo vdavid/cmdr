@@ -1222,3 +1222,34 @@ don't switch this pair to the style guide's curly `“…”` alone — that's a
   `tệp` doesn't inflect. The framing words (`và`, `cũng vậy`) sit OUTSIDE the branch so the arm holds exactly what
   English's arm holds.
 - No `sameAsSourceJustification` needed: the value differs from English.
+
+## Đổi tên không xác nhận được + tên không dùng được (2026-08-18; `fileExplorer.rename.unconfirmed`/`.unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
+
+Cặp `unconfirmed*` là anh em của cặp `chainKeptOriginalName*` (cùng dạng thông báo nhỏ), nhưng NGHĨA khác hẳn:
+`chainKept*` khẳng định tệp vẫn giữ nguyên tên, còn `unconfirmed*` nói rằng Cmdr chưa biết, và việc đổi tên vẫn có thể
+đã xảy ra. ❌ Đừng bao giờ dùng `vẫn giữ nguyên tên` trong cặp này.
+
+- **"Couldn't confirm …" (thao tác hết thời gian chờ, có thể đã thành công) → `Chưa xác nhận được …`** · chính catalog
+  vi đã dùng đúng khung này cho hai chuỗi song song: `fileOperations.mkdir.timeoutMessage`
+  (`Chưa xác nhận được thư mục đã được tạo. Ổ đĩa có thể chậm, nên thư mục vẫn có thể đã được tạo.`) và
+  `fileExplorer.pane.trashUnconfirmedToast`. `Chưa … được` (chưa làm được, còn để ngỏ) hợp hơn `Không thể` cho tình
+  huống "chưa biết", và tránh hẳn `lỗi`/`thất bại` theo giọng lỗi trong style.md · high (nhất quán catalog)
+- **"the rename of X" (danh từ hóa) → `việc đổi tên "{name}"`** · `việc` + động từ là cách danh từ hóa chuẩn; GNOME
+  Nautilus dùng `đổi tên "%s"` với tên trong ngoặc kép. Dạng này quan trọng vì nó nở ra được:
+  `việc đổi tên "{name}" và {othersText} tệp khác` · high
+- **"The volume may be slow" → `Ổ đĩa có thể chậm`** · giống hệt vế giữa của `mkdir.timeoutMessage`; `ổ đĩa` là từ đã
+  chốt cho drive/volume, và `có thể chậm` giữ đúng giọng dè dặt (app không biết chắc) · high
+- **"the rename may still have gone through" → `việc đổi tên vẫn có thể đã hoàn tất`** · `vẫn có thể đã` là đúng cấu
+  trúc `mkdir.timeoutMessage` dùng (`thư mục vẫn có thể đã được tạo`), và `hoàn tất` là từ hoàn thành catalog đã dùng
+  nhiều (`hoàn tất thao tác`, `trước khi hoàn tất`). Bản tiếng Anh lặp lại "the rename" ở vế sau, bản vi lặp lại
+  `việc đổi tên` y hệt · high
+- **"the renames" (số nhiều, bản nhiều tệp) → `các lần đổi tên`** · `lần` là lượng từ cho một lượt thao tác, đúng kiểu
+  `lần truyền` (transfer) đã chốt trước đó. ❌ Không viết `các việc đổi tên`: `việc` không đếm được kiểu đó · high
+- **"and N other files" → `và {othersText} tệp khác`; một nhánh `other` duy nhất** · dùng lại nguyên cách của
+  `chainKeptOriginalNameAndOthers` (xem mục 2026-08-18 ở trên), kể cả ngoặc kép ASCII thẳng quanh `{name}` · high
+- **"That filename can't be used" → `Không thể dùng tên tệp đó`; nhánh folder → `Không thể dùng tên thư mục đó`** ·
+  `không thể` là từ đã chốt cho can't/couldn't, và GNOME Nautilus có đúng cấu trúc `không thể dùng X`. Câu trọn vẹn,
+  KHÔNG có dấu chấm cuối (nó được ghép vào câu dài hơn của `chainKeptOriginalName`:
+  `Không thể dùng tên tệp đó. "notes.txt" vẫn giữ nguyên tên.`). Cố ý KHÔNG đoán lý do (`không hợp lệ` ám chỉ một quy
+  tắc cụ thể), giữ đúng vai trò chuỗi bắt-tất-cả · high
+- Không cần `sameAsSourceJustification`: cả ba giá trị đều khác bản tiếng Anh.

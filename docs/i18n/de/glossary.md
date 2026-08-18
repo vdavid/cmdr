@@ -1085,3 +1085,36 @@ seinen Namen.), same quotes, same verb.
   (`fileOperations.errorDialog.tooLargeAndMore`, `operationLog.dialog.moreItems`) · high.
 - **The `one` branch spells the word out (`eine weitere Datei`), no number** · mirrors the en source's "one other file"
   and reads better than "1 weitere Datei"; `{othersText}` still carries every count ≥ 2 · high.
+
+## Unconfirmed rename + the catch-all name rejection (`fileExplorer.rename.unconfirmed`/`.unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`, 2026-08-18)
+
+The `unconfirmed*` pair is the sibling of the `chainKept*` pair above and shares its toast shape, but carries the
+opposite meaning: `chainKept*` says the file definitely kept its name, `unconfirmed*` says Cmdr couldn't tell and the
+rename may well have gone through. The German must never let the two blur.
+
+- **"Couldn't confirm the rename of X" → `Es ließ sich nicht bestätigen, dass „X“ umbenannt wurde`** · the catalog
+  already settles this exact frame twice for the same situation: `fileExplorer.pane.trashUnconfirmedToast` ("Es ließ
+  sich nicht bestätigen, dass die Datei in den Papierkorb bewegt wurde.") and `fileOperations.mkdir.timeoutMessage`
+  ("Die Erstellung des Ordners ließ sich nicht bestätigen.") · high. The `dass`-clause is preferred over the noun frame
+  (`Die Umbenennung von „X“ …`) because it keeps `{name}` nominative, dodging the case trap the style guide flags: the
+  noun frame needs `von` + dative, which then forces `einer weiteren Datei` / `{othersText} weiteren Dateien` in the
+  plural branches and diverges from the `chainKept*` pair's nominative wording.
+- **The plural branches reuse `chainKeptOriginalNameAndOthers` verbatim** (`eine weitere Datei` /
+  `{othersText} weitere Dateien`), so the two toast pairs read as one voice · high.
+- **"so the rename may still have gone through" → `die Umbenennung hat also womöglich trotzdem geklappt`** (counted
+  variant: `die Umbenennungen haben also …`) · `womöglich trotzdem` is the catalog's settled hedge for exactly this
+  timeout case (`mkdir.timeoutMessage`: "der Ordner wurde also womöglich trotzdem erstellt"), and `klappen` is in-voice
+  for a Cmdr outcome (`fileOperations.archivePassword.retryTitle` "Das hat nicht geklappt",
+  `onboarding.stepBeta.signup.failure`) · high. Name the subject (`die Umbenennung`) the way the en source and
+  `mkdir.timeoutMessage` both do; a bare `sie`-pronoun would point at `Dateien` and read as the files (not the renames)
+  having worked out. `Umbenennung`/`Umbenennungen` as a noun is attested in the pile (Thunar, Double Commander: "mit der
+  Umbenennung der restlichen Dateien fortfahren", "die bisher durchgeführten Umbenennungen rückgängig machen").
+- **"The volume may be slow" → `Das Volume ist vielleicht langsam`** · verbatim from the two sibling timeout toasts
+  (`fileExplorer.pane.trashUnconfirmedToast`, `fileOperations.mkdir.timeoutMessage`), so all three hedge alike · high.
+  `volume → Volume` is settled in `style.md`.
+- **"That filename can't be used" → `Dieser Dateiname kann nicht verwendet werden`** (folder: `Dieser Ordnername …`) ·
+  macOS Finder `de` is decisive for this exact catch-all: "Der Name „^0“ kann nicht verwendet werden.", plus the
+  reason-carrying variants "… da er vom System reserviert ist." / "… da er zu lang ist." · high. `Dieser` (not `Der`)
+  mirrors the source's deictic "That"; the passive matches the English's own passive and the sibling validation keys'
+  register (`Der Dateiname darf nicht leer sein`, `… ist zu lang`). No closing period: the value is composed into
+  `fileExplorer.rename.keptOriginalName` / `.chainKeptOriginalName`, which supply it.

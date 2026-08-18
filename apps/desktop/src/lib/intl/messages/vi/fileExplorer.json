@@ -808,13 +808,13 @@
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "sourceHash": "7b23e8e"
   },
-  "fileExplorer.rename.unconfirmed": "Couldn''t confirm the rename of \"{name}\". The volume is slow, so it may have gone through anyway.",
+  "fileExplorer.rename.unconfirmed": "Chưa xác nhận được việc đổi tên \"{name}\". Ổ đĩa có thể chậm, nên việc đổi tên vẫn có thể đã hoàn tất.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "d36ee78"
+    "sourceHash": "d43e419"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Couldn''t confirm the rename of \"{name}\" and {others, plural, one {one other file} other {{othersText} other files}}. The volume is slow, so they may have gone through anyway.",
+  "fileExplorer.rename.unconfirmedAndOthers": "Chưa xác nhận được việc đổi tên \"{name}\" và {others, plural, other {{othersText} tệp khác}}. Ổ đĩa có thể chậm, nên các lần đổi tên vẫn có thể đã hoàn tất.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "125c1b1"
+    "sourceHash": "1258eb3"
   },
   "fileExplorer.columns.name": "Tên",
   "@fileExplorer.columns.name": {

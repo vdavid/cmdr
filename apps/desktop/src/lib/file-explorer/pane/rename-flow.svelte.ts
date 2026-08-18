@@ -280,7 +280,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   // One toast for every rename this pane couldn't confirm, on the same terms as
   // the kept names: one id, replaced in place. Two things force it. A toast each
   // is dropped past the fifth; and five persistent toasts fill the stack, which
-  // would leave `toastKeptName` unable to say anything at all — on exactly the
+  // would leave `toastKeptName` unable to say anything at all, on exactly the
   // slow volumes where both happen at once.
   const unconfirmedToastId = `rename-unconfirmed-${deps.paneId}`
   // Renames counted by the toast currently on screen, zeroed when the user

@@ -1031,3 +1031,44 @@ recente e conta os anteriores.
   **arquivo** / **arquivos**) fica DENTRO dos ramos; fora do plural sobra só o ponto final.
 - Verificação regional contra a lista de indícios pt-PT do style guide: zero ocorrências. Marca brasileira: **arquivo**.
 - Nenhum `sameAsSourceJustification` necessário: o valor difere do inglês.
+
+### Renomeação sem confirmação e nome recusado (`fileExplorer.rename.unconfirmed*` + `fileOperations.validation.nameNotUsable`, 2026-08-18)
+
+O par irmão de `chainKeptOriginalName*`: mesma forma de toast, situação oposta. `chainKept*` afirma que o arquivo
+manteve o nome; `unconfirmed*` diz que o Cmdr NÃO sabe, e que a renomeação pode muito bem ter acontecido. Nunca
+embaralhe os dois sentidos.
+
+- "Couldn''t confirm …" · **Não foi possível confirmar …** · a voz de "couldn''t/failed" já fixada na seção
+  Error-copy-phrasings, e o valor já publicado em `fileExplorer.pane.trashUnconfirmedToast` ("Não foi possível
+  confirmar que o arquivo foi movido para a Lixeira.") · confirmed. As duas chaves de renomeação reusam essa abertura,
+  então os três toasts de "não deu para confirmar" soam iguais.
+- "the rename of X" · **a renomeação de X** · linha `renomeação` do glossário (substantivo de `Renomear`) · high. ❌
+  Nunca "a alteração de nome" (forma pt-PT).
+- "The volume may be slow" · **O volume pode estar lento** · o valor já publicado em `trashUnconfirmedToast` é
+  literalmente essa oração; **volume** = volume no macOS Finder pt-BR (`LocalizableMerged.json`: "O volume de destino
+  está bloqueado.", "O volume tem um formato incorreto…"), **lento** é o adjetivo padrão do pile (MS terminology
+  "conexão mais lenta"; GNOME "A busca pode ser lenta…") · confirmed. O inglês hesita ("may be"), então o português
+  também: nunca afirme "O volume está lento".
+- "the rename may still have gone through" · **a renomeação pode ter sido concluída mesmo assim** (plural **as
+  renomeações podem ter sido concluídas mesmo assim**) · o padrão "pode ter sido {particípio} mesmo assim" já publicado
+  em `trashUnconfirmedToast` ("o arquivo pode ter sido movido mesmo assim", de um "may still have been moved" idêntico);
+  **Concluída** é o termo do Finder para completado · confirmed. **mesmo assim** é a tradução estabelecida desse
+  "still", não "ainda assim".
+- ⚠️ **Não diga "o arquivo pode ter sido renomeado".** O que está sendo renomeado pode ser uma pasta, e o inglês evita
+  de propósito nomear file/folder na primeira frase. O sujeito é a renomeação, não o item.
+- **O substantivo é repetido na segunda frase, sem pronome** (`… a renomeação de "{name}". O volume pode estar lento,
+  então a renomeação pode ter sido concluída…`), acompanhando o inglês, que também repete "the rename"/"the renames", e
+  o irmão `trashUnconfirmedToast`, que repete "o arquivo". Um retomador `ela`/`elas` ficaria ambíguo na chave
+  `AndOthers`, onde o núcleo singular convive com "arquivos" no plural. Por isso a `AndOthers` mantém **a renomeação**
+  (singular) na primeira frase e usa **as renomeações** (plural) na segunda, exatamente como o inglês. O sintagma
+  contado copia o ramo do irmão `chainKeptOriginalNameAndOthers`: `one {outro arquivo}` / `many` e `other`
+  {outros {othersText} arquivos}, com **outros** antes do numeral (macOS Finder `MR201_V3`).
+- "That filename/folder name can''t be used" · **Esse nome de arquivo / Esse nome de pasta não pode ser usado** · macOS
+  Finder pt-BR é a fonte direta e é da própria família de renomear: `RN31` "O nome “^0” não pode ser usado.", `NE74`
+  "…porque é muito longo.", `RN5` "…porque foi reservado pelo sistema." · confirmed. O demonstrativo **Esse** traduz o
+  "That" do inglês (aponta para o nome que a pessoa acabou de digitar), e os substantivos **arquivo**/**pasta** seguem
+  os irmãos `validation.empty` / `.disallowedChars` / `.nameTooLong`. Sem ponto final: o valor também entra composto em
+  `{reason}` de `chainKeptOriginalName*` ("Esse nome de arquivo não pode ser usado. "notas.txt" manteve o nome.").
+- Verificação regional contra a lista de indícios pt-PT do style guide: zero ocorrências (arquivo, não ficheiro; sem
+  `estar a` + infinitivo; sem próclise em infinitivo).
+- Nenhum `sameAsSourceJustification` necessário: os três valores diferem do inglês.

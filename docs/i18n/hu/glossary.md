@@ -1403,3 +1403,53 @@ A soron belüli átnevezőben a fel/le nyíllal végigfutó átnevezésekből t�
   `settings.mediaIndex.reclaim.line` mintája; az `other` ág a `{othersText}` formázott értéket használja. A főnév
   MINDKÉT ágban egyes számú (`másik fájl`, soha `másik fájlok`) a szám utáni nem-többesítés szabálya szerint · high.
 - Nem kell `sameAsSourceJustification`: az érték eltér az angoltól.
+
+### A meg nem erősített átnevezés buboréka és a fel nem használható név (`fileExplorer.rename.unconfirmed`/`unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`, 2026-08-18)
+
+Lassú köteten (hálózati megosztás, telefon) az átnevezésre nem érkezik visszajelzés időben. A buborék NEM állíthatja,
+hogy a fájl megtartotta a nevét: azt mondja, hogy a Cmdr nem tudja. Ez a `chainKeptOriginalName*` pár testvére, de a
+JELENTÉSE ellentétes, ezért a nyitó tagmondat szándékosan más.
+
+- **"Couldn't confirm X" → `Nem sikerült megerősíteni, hogy …`** · a katalógusban EZ a család bevett nyitánya ugyanerre
+  a meg-nem-erősített-művelet helyzetre: `fileExplorer.pane.trashUnconfirmedToast` (`Nem sikerült megerősíteni, hogy a
+  fájl a Kukába került.`) és `fileOperations.mkdir.timeoutMessage` (`Nem sikerült megerősíteni, hogy a mappa
+  létrejött.`) · high.
+  - ❌ NEM tárgyas `Nem sikerült megerősíteni a(z) „X” átnevezését`: a pile-ban a `megerősítés` tárgyas alakja
+    kizárólag a jóváhagyás-értelmet viszi (Double Commander `Felülírások megerősítése`, `megerősítés kérése nélkül`;
+    Nautilus `Jelszó megerősítése`; macOS AppKit `Confirm` = `Megerősítés`), a `hogy`-os mellékmondat viszont
+    egyértelműen az ellenőrzés-értelem.
+- **"the rename of X" → `a(z) „X” átneveződött` (mediopasszív)** · a testvér buborék pontosan ezt az alakot használja a
+  meg nem erősített műveletre (`trashUnconfirmedToast`: `a fájl így is áthelyeződhetett`), és az `-ódik/-ődik`
+  mediopasszív a pile-ban is a gépi ágens nélküli állítás alakja (Nautilus, Thunar, Dolphin: `törlődnek`, `másolódnak`,
+  `mentődnek`) · high a szerkezetre, `tentative` a szótőre: konkrétan `átneveződ*` alak sem a pile-ban, sem a
+  katalógusban nincs.
+  - ❌ NEM `átnevezték` (a katalógus 3. sz. többes határozatlan alakja, pl. `errors.write.sourceNotFound.suggestion`):
+    az KÜLSŐ ágenst jelöl (valaki a Cmdren kívül nevezte át), itt viszont maga a Cmdr nevezett át.
+- **"The volume may be slow" → `Lehet, hogy a kötet lassú`** · szó szerint a két testvér buborék második mondata
+  (`trashUnconfirmedToast`, `mkdir.timeoutMessage`); `kötet` a szótár szava (macOS Tier 1), a `lassú` melléknévre
+  Nautilus (`A keresés lassú lehet, …`) és Double Commander (`(lassú)`, `(lassabb)`) a fedezet · high.
+- **"the rename may still have gone through" → `így az átnevezés attól még sikerülhetett`** (többesben
+  `az átnevezések attól még sikerülhettek`) · az `attól még` + `-hat/-het` potenciális alak szó szerint a
+  `mkdir.timeoutMessage` mintája (`így a mappa attól még létrejöhetett`) · high a szerkezetre, `tentative` a
+  `sikerülhetett` alakra: a `sikerül` ige a pile-ban 88-szor, a katalógusban 100-szor szerepel, de szinte kizárólag a
+  tagadó `nem sikerült` fordulatban, erre az állító potenciális alakra nincs korpuszfedezet.
+  - **Az alanyt KI KELL mondani** (`az átnevezés`), pro-drop itt hibás: a második mondat élén `a kötet` az utolsó
+    alanyeset, így a `így attól még átneveződhetett` egy pillanatra „a kötet neveződhetett át” olvasatot ad. A két
+    testvér pontosan ezért ismétli meg a maga alanyát (`a mappa`, `a fájl`).
+  - Az alany `az átnevezés`, nem `a fájl`: az `unconfirmed` kulcs alatt MAPPA is állhat, tehát a testvérek főneve itt
+    hamis állítás lenne. Az angol is ezt a főnevet nevezi meg ("the rename(s)").
+  - ❌ NEM `megtörténhetett`: a pile-ban a `történt` szinte kizárólag a `Hiba történt …` fordulatban él (lásd a fenti
+    `chainKeptOriginalNameAndOthers` blokkot), a buborék hangja pedig kerüli a hiba-regisztert.
+- **Az `AndOthers` számnév-ágai szó szerint a `chainKeptOriginalNameAndOthers`-éi** (`egy másik fájl` /
+  `{othersText} másik fájl`), hogy a két buborékpár egy hangon szóljon. Az összetett alany után az első tagmondat egyes
+  számú állítmányt kap (`átneveződött`, a magyar alapeset számnévi tag után), a második viszont többeset
+  (`átneveződhettek`), hogy a lehetőség az EGÉSZ csoportra vonatkozzon, ne csak az utolsó tagra · high.
+- **"That filename can't be used" → `A fájlnév nem használható` / `A mappa neve nem használható`** · a `nem használható`
+  névre alkalmazva macOS Tier 1 (Finder `A(z) „^0” név nem használható.`, `… mert túl hosszú.`, `… mert a rendszer
+  számára van fenntartva.`; AppKit Document `A(z) „%@” név nem használható.`) · high. A főnév a testvérkulcsokéval
+  azonos (`validation.empty`, `.disallowedChars`, `.nameTooLong`: `A fájlnév` / `A mappa neve`). Záró pont nincs: az
+  érték hosszabb mondatba épül be (`{reason}. A(z) „{name}” megtartotta a nevét.`).
+  - Az angol `That` mutató névmása elmarad: a `mappanév` összetétel a pile EGYIK forrásában sem szerepel (a `fájlnév`
+    60+ találattal igen), az `Ez a mappa neve …` pedig félreolvasható „ennek a mappának a neve” értelemben. A magyar
+    határozott névelő amúgy is a beírt névre mutat.
+- Nem kell `sameAsSourceJustification`: mindhárom érték eltér az angoltól.
