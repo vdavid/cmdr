@@ -22,7 +22,8 @@ use platform::{DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, VolumeSpaceInfo}
 const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// The `fs_type` the synthetic `network` volume reports: whatever the OS calls an
-/// SMB mount, so `is_smb_fs_type` recognizes it on both platforms.
+/// SMB mount, so a consumer classifying by fs type sees a share and not an unknown
+/// filesystem.
 #[cfg(target_os = "macos")]
 const NETWORK_FS_TYPE: &str = "smbfs";
 #[cfg(target_os = "linux")]
