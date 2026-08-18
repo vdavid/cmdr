@@ -21,6 +21,33 @@ layer catches different bugs:
 Default to the lowest layer that can express the property you want to check. E2E is the most expensive lane; don't push
 work into it that a unit test would cover.
 
+## What a test actually costs
+
+Read this before proposing to delete tests to make a lane faster. In both unit lanes the cost sits in **per-file and
+per-lane fixed work**, not in the number of tests, so deleting assertions buys close to nothing.
+
+- **`svelte-tests`**: one test FILE costs about as much as **91 test bodies**. Of a full run's worker CPU, 11% is test
+  bodies (103.9 s) and 89% is per-file fixed work: module import 603.8 s, environment 167.1 s, transform 57.9 s, setup
+  files 20.7 s, over 826 files and 9,209 tests. A slice of 97 one-and-two-test files measured the same shape: 9.3 s of
+  the lane's 66 s wall clock to run 1.6% of the suite. (Measured 2026-08-19, M-series laptop, `pnpm exec vitest run`
+  reporter totals.)
+- **`rust-tests`**: all 6,166 tests EXECUTE in 23.3 s wall clock; the check's ~54 s is mostly cargo's freshness and link
+  work, which no test change touches. The slowest single test (5.5 s) sets a floor nothing below it can lower.
+  (Measured 2026-08-19, `cargo nextest run --workspace`.)
+
+Consequences for anyone tuning a lane:
+
+- **Deleting N average tests saves ~N × 11 ms of CPU** in `svelte-tests` and ~N × 4 ms in `rust-tests`, divided again by
+  the lane's parallelism. A hundred of them is under a second of wall clock. "Replace 100 cheap tests with 1" is not a
+  speed lever here.
+- **The levers that do move a lane** are: fewer test FILES (frontend), and the handful of tests that wait on real time.
+  Rank the latter with `~/cmdr-test-log.csv`; a test that appears there on nearly every run is consistently slow, one
+  that appears a few times only goes slow under load.
+- **A slow test that waits out a production constant is not waste.** `busy_db_is_retried_not_deleted` (5.5 s) waits out
+  SQLite's real 5 s `busy_timeout` and `a_slow_first_attempt_spends_the_retry_budget` (2.1 s) waits out the real
+  `CONNECT_RETRY_BUDGET`; the duration IS the assertion. Only a sleep the TEST invented (a fake slow closure) is fair
+  game, and then keep a loud margin over the timeout it has to outlast.
+
 ## Decision table: what tool for what test
 
 - **Pure function with edge cases**: `proptest` (Rust unit). State a property, fuzz inputs.
