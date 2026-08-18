@@ -29,16 +29,20 @@ use std::io::Write;
 use std::sync::atomic::AtomicBool;
 use std::time::{Duration, Instant};
 
+use cmdr_fs::pluralize::pluralize;
+
 use super::*;
 use crate::indexing::events::{EventSink, IndexEvent};
 
 /// How many directories the big sibling holds. Big enough that walking it takes
 /// seconds — which is the wart being measured — and small enough to build.
 ///
-/// ⚠️ The run builds THREE trees this size and building dominates it: 60,000
-/// directories took about 35 minutes each on APFS under load, and the machine
-/// then needed longer than the 600 s patience below to cover one. Raise it for a
-/// headline number, and budget hours rather than minutes.
+/// ⚠️ Raising it stops measuring preemption. The run builds THREE trees this
+/// size, and a single folder of 60,000 children costs the phase machine more
+/// than the 600 s patience below with nobody preempting anything (measured
+/// three times, `docs/notes/preemption-2026-08-18.md`). A bigger headline number
+/// wants a NESTED tree first, so a big root is big without being one enormous
+/// directory.
 fn dir_budget() -> usize {
     std::env::var("CMDR_PREEMPTION_BENCH_DIRS")
         .ok()
@@ -67,7 +71,9 @@ fn preemption_cost() {
     let handovers = how_long_a_walk_takes_to_hand_its_ground_over(dirs);
     let _ = writeln!(
         &mut out,
-        "\n── handing ground over ({dirs} dirs, {HANDOVER_ROUNDS} rounds) ──"
+        "\n── handing ground over ({}, {}) ──",
+        pluralize(dirs as u64, "dir"),
+        pluralize(HANDOVER_ROUNDS as u64, "round")
     );
     for (round, took) in handovers.iter().enumerate() {
         let _ = writeln!(&mut out, "  round {}: {took:.2?}", round + 1);
@@ -83,7 +89,11 @@ fn preemption_cost() {
 
     let before = how_long_the_big_sibling_takes(dirs);
     let after = how_long_a_folder_somebody_opens_waits(dirs);
-    let _ = writeln!(&mut out, "\n── time to index a folder somebody opened ({dirs} dirs) ──");
+    let _ = writeln!(
+        &mut out,
+        "\n── time to index a folder somebody opened ({}) ──",
+        pluralize(dirs as u64, "dir")
+    );
     let _ = writeln!(&mut out, "  the big sibling's own walk: {:.2?}", before.sibling);
     let _ = writeln!(&mut out, "  the opened folder's own walk: {:.2?}", before.visited);
     let _ = writeln!(
