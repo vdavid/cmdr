@@ -56,7 +56,7 @@ describe('clickButtonByText', () => {
     // The shape that wedged CI: a dialog disables its buttons for the whole IPC
     // round trip of the previous answer, and the spec presses inside that window.
     // Pre-fix the helper pressed once, saw `click()` return, and reported success
-    // while `presses` stayed empty — so the answer never reached the backend and
+    // while `presses` stayed empty, so the answer never reached the backend and
     // the operation parked until teardown.
     const button = addButton('Overwrite', { disabled: true })
     setTimeout(() => {

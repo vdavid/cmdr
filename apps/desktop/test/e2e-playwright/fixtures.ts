@@ -246,7 +246,7 @@ async function reportAndCleanOverlayLeak(
  * decides whether the rest of the shard still means anything.
  *
  * Returns null once the screen is clear, or a message naming the surviving
- * overlays when even cancelling could not free the app — the one case where
+ * overlays when even cancelling could not free the app: the one case where
  * every later failure on this shard is noise, and the report says so up front.
  */
 async function breakTheCascade(tauriPage: EvaluatablePage): Promise<string | null> {

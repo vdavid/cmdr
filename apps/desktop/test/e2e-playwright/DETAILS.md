@@ -482,7 +482,7 @@ removes it when the feature is not active. The file is gitignored.
 wrapper `resolveConflict` (`conflict-helpers.ts`). Never hand-roll `querySelectorAll(...)[i].click()` in an `evaluate`.
 
 **Why a helper rather than a convention**: `element.click()` on a `disabled` button dispatches NOTHING. The DOM drops
-the event and the call returns normally, so the hand-rolled shape — find the button by text, click it, `return true` —
+the event and the call returns normally, so the hand-rolled shape (find the button by text, click it, `return true`)
 reports a press that never happened. Every consequence lands somewhere else: the test waits out its next timeout, the
 failure names a dialog that would not close rather than an answer that never arrived, and (because the app is shared)
 the wedged modal takes the rest of the shard with it. See § "Breaking the cascade" for what that costs.
@@ -505,7 +505,7 @@ paraphrase, so the thing under test is the string the suite actually ships into 
 
 **`bare-poll` cannot catch this shape**, and that's worth knowing before trusting it as the whole net. It is a
 line-level scan for a discarded `Promise<boolean>` return, and the trap here had its return value captured and asserted
-(`expect(clicked).toBe(true)`) — the lie was inside the predicate, which claimed a press it never made. Same family of
+(`expect(clicked).toBe(true)`): the lie was inside the predicate, which claimed a press it never made. Same family of
 bug ("a helper reports success it never achieved"), opposite side of the assertion.
 
 ## Closing overlays and toasts
@@ -597,7 +597,7 @@ empty while dismissing retained failures) and Escapes again. The culprit's own f
 decides whether the tests after it still mean anything.
 
 If even that fails, the report says the app is WEDGED and that every later failure on the shard is noise. Read that line
-as "stop reading here, fix this test" — a triage instruction, not one more failure among two hundred.
+as "stop reading here, fix this test": a triage instruction, not one more failure among two hundred.
 
 **Recovery is not a licence to leak.** A spec that needs an operation drained still drains it in its own `afterEach`;
 this is the backstop for the case nobody predicted, and every trip through it is still a failed test.

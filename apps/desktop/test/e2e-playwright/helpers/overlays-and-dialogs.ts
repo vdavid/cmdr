@@ -146,8 +146,8 @@ const PRESS_FAILURE_REASON: Record<ButtonPressOutcome, string> = {
  * the app shared across the suite) hands every later test a wedged modal.
  *
  * Dialogs disable their buttons for exactly as long as the previous answer is
- * in flight — `TransferConflictDialog`'s `isResolvingConflict`,
- * `TransferProgressDialog`'s `isCancelling` / `isScanning` / `pauseInFlight` —
+ * in flight (`TransferConflictDialog`'s `isResolvingConflict`,
+ * `TransferProgressDialog`'s `isCancelling` / `isScanning` / `pauseInFlight`),
  * so any spec answering one prompt and then the next lands in that window. It
  * is invisible on a fast machine (IPC wins the race) and reproducible on a
  * loaded CI runner, which is the worst shape a test bug can have.
@@ -170,8 +170,8 @@ export async function clickButtonByText(
 ): Promise<void> {
   const sel = JSON.stringify(selector)
   const txt = JSON.stringify(buttonText)
-  // Widened past the initializer so the closure's writes below stay assignable
-  // and the `PRESS_FAILURE_REASON` lookup keeps every branch.
+  // Annotated (not inferred) so the poll callback's writes stay assignable and
+  // the `PRESS_FAILURE_REASON` lookup below keeps every branch.
   let outcome: ButtonPressOutcome = 'missing'
   const pressed = await pollUntil(
     tauriPage,
