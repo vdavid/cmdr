@@ -5,7 +5,7 @@ import { cancelClickToRename } from '../rename/rename-activation'
 import { executeRenameSave, performRename, checkPermission, type RenameResult } from '../rename/rename-operations'
 import { getSetting } from '$lib/settings'
 import type { RenameConflictResolution } from '../rename/rename-operations'
-import { addToastForPane, dismissTransientToastsForPane, type ToastOriginPane } from '$lib/ui/toast'
+import { addToastForPane, dismissToast, dismissTransientToastsForPane, type ToastOriginPane } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
 import { pathInsideArchive } from './volume-capabilities'
@@ -565,6 +565,27 @@ export function createRenameFlow(deps: RenameFlowDeps) {
           clearPendingRenameActivation()
         }
       }, RENAME_ACTIVATION_POLL_MS)
+    },
+
+    /**
+     * Drops what a chain has been reporting about the listing the pane is
+     * leaving.
+     *
+     * Both running toasts name a file, and count the earlier ones. Carried into
+     * the next directory they go on naming a file that isn't on screen any more,
+     * and the count starts pooling reasons from directories, and volumes, that
+     * have nothing to do with each other. The tally belongs to the toast on
+     * screen, so dropping the toast is what zeroes it, exactly as dismissing it
+     * does.
+     *
+     * A chain BOUNDARY deliberately doesn't do this: a name nobody has
+     * acknowledged is still unacknowledged, and the files are all still there.
+     */
+    forgetChainReports(): void {
+      dismissToast(keptNamesToastId)
+      keptNamesCount = 0
+      dismissToast(unconfirmedToastId)
+      unconfirmedCount = 0
     },
 
     cancelRename(): void {

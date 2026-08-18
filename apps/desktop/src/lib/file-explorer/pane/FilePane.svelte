@@ -311,6 +311,7 @@
         },
         selection,
         renameCancel: () => { rename.cancel(); },
+        renameForgetChainReports: () => { renameFlow.forgetChainReports(); },
         jumpClear: () => { jump.clear(); },
         syncMcp: () => {
             debouncedSyncMcp.call()

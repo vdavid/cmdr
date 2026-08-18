@@ -151,6 +151,27 @@ describe('telling the user which names a chain did not apply', () => {
     expect(getToasts()).toHaveLength(1)
     expect(getToasts()[0].content).toBe('fileExplorer.rename.chainKeptOriginalName')
   })
+
+  it('goes with the directory it was reporting on, rather than naming files the user has left behind', () => {
+    const { flow, chainThrough } = paneWithRows(8)
+    chainThrough(3)
+
+    flow.forgetChainReports()
+
+    expect(getToasts()).toHaveLength(0)
+  })
+
+  it('counts from zero again in the next directory', () => {
+    const { flow, chainThrough } = paneWithRows(8)
+    chainThrough(3)
+    flow.forgetChainReports()
+
+    chainThrough(1)
+
+    // "and 3 other files" would be counting files in a directory this toast is
+    // no longer about.
+    expect(getToasts()[0].content).toBe('fileExplorer.rename.chainKeptOriginalName')
+  })
 })
 
 describe('a chained save the backend turns down', () => {
@@ -293,5 +314,22 @@ describe('a chained save the volume never answers', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('goes with the directory it was reporting on, and counts from zero in the next one', async () => {
+    const { flow, step } = chainAgainstASilentVolume(typedNames(3))
+    await vi.waitFor(() => {
+      expect(lastUnconfirmedParams()).toMatchObject({ others: 2 })
+    })
+
+    flow.forgetChainReports()
+    expect(getToasts()).toHaveLength(0)
+
+    step('renamed-elsewhere.txt')
+
+    await vi.waitFor(() => {
+      expect(getToasts()).toHaveLength(1)
+    })
+    expect(getToasts()[0].content).toBe('fileExplorer.rename.unconfirmed')
   })
 })

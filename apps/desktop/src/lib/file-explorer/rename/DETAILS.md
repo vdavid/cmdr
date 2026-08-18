@@ -207,6 +207,13 @@ chain boundary while the toast is still up, because a name nobody has acknowledg
 resetting the count there would quietly drop what an earlier chain reported. `pane/rename-chain-toast.test.ts` drives
 this against the real store; the rest of the chain tests stub it.
 
+Both toasts DO go when the pane navigates to another directory: `forgetChainReports` drops each one and zeroes its
+tally, called from `loadDirectory` (`pane/listing-loader.ts`) when the path actually changes. A report that outlives its
+directory names a file that isn't on screen any more, and its count starts pooling reasons from directories, and
+volumes, with nothing to do with each other; one has sat through 15 directories and two volumes saying "and 7 other
+files". A re-list of the SAME directory (an SMB reconnect, a retry after an error) keeps them, since the files they name
+are still there.
+
 ### The directory's names, read once per chain
 
 `sibling-names.ts` holds the names the editor's red border checks a typed name against. Reading them means paging the

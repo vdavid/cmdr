@@ -144,6 +144,7 @@ function makeHarness(over: Partial<PaneState> = {}) {
     onMtpFatalError: vi.fn(),
     onCancelLoading: vi.fn(),
     renameCancel: vi.fn(),
+    renameForgetChainReports: vi.fn(),
     jumpClear: vi.fn(),
     syncMcp: vi.fn(),
     fetchEntryUnderCursor: vi.fn(),
@@ -231,6 +232,7 @@ function makeHarness(over: Partial<PaneState> = {}) {
       setSelectedIndices: spies.setSelectedIndices,
     },
     renameCancel: spies.renameCancel,
+    renameForgetChainReports: spies.renameForgetChainReports,
     jumpClear: spies.jumpClear,
     syncMcp: spies.syncMcp,
     fetchEntryUnderCursor: spies.fetchEntryUnderCursor,
@@ -672,6 +674,28 @@ describe('createListingLoader — swap state + cleanup', () => {
     await Promise.resolve()
     expect(state.totalCount).toBe(6)
     expect(spies.onPathChange).not.toHaveBeenCalledWith('/a')
+  })
+
+  it('leaves a chain’s running reports behind with the directory they name', async () => {
+    const { loader, spies } = makeHarness()
+    await loader.loadDirectory('/a')
+    spies.renameForgetChainReports.mockClear()
+
+    await loader.loadDirectory('/b')
+
+    expect(spies.renameForgetChainReports).toHaveBeenCalled()
+  })
+
+  it('keeps them through a re-list of the same directory', async () => {
+    const { loader, spies } = makeHarness()
+    await loader.loadDirectory('/a')
+    spies.renameForgetChainReports.mockClear()
+
+    // An SMB reconnect, a retry after an error: the files the reports name are
+    // still the ones on screen.
+    await loader.loadDirectory('/a')
+
+    expect(spies.renameForgetChainReports).not.toHaveBeenCalled()
   })
 
   it('cleanup cancels the active listing and unlistens', async () => {

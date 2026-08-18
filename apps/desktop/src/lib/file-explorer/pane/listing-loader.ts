@@ -117,6 +117,8 @@ export interface ListingLoaderDeps {
     setSelectedIndices: (indices: number[]) => void
   }
   renameCancel: () => void
+  /** Drops what a chain reported about the listing being left. */
+  renameForgetChainReports: () => void
   jumpClear: () => void
   syncMcp: () => void
   fetchEntryUnderCursor: () => void
@@ -263,6 +265,12 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     // transfer, downloads, indexing) and the other pane's toasts survive, so a
     // background navigation (e.g. an SMB reconnect retry) can't wipe them.
     dismissTransientToastsForPane(deps.paneId)
+    // A chain's running reports name files in the listing being left, so they go
+    // with it: carried along they'd name a file that isn't on screen any more,
+    // and pool reasons from directories, and volumes, with nothing to do with
+    // each other. A re-list of the SAME directory (an SMB reconnect, a retry
+    // after an error) keeps them, since the files they name are still here.
+    if (path !== loadedPath) deps.renameForgetChainReports()
     // Directory change invalidates in-flight type-to-jump buffer (per plan § 6).
     deps.jumpClear()
 
