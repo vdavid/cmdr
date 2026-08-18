@@ -26,5 +26,6 @@
   "suggestedOps.columnChanged": "Zuletzt geändert",
   "suggestedOps.noIndexData": "Nicht im Index",
   "suggestedOps.includeFile": "Diese Datei einbeziehen",
-  "suggestedOps.loadingFiles": "Dateien werden geladen …"
+  "suggestedOps.loadingFiles": "Dateien werden geladen …",
+  "suggestedOps.indicatorTooltip": "Ask Cmdr hat Vorschläge für dich. Zum Ansehen klicken."
 }

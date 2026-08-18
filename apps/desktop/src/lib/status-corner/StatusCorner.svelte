@@ -6,8 +6,15 @@
     //
     // The hourglass is the trailing, always-last member (it's the oldest and the
     // most ambient); anything passed as `children` renders to its left.
+    //
+    // The suggestions indicator is a NAMED member rather than a `children` one,
+    // because David placed it between the queue chip and the hourglass and
+    // `children` renders left of both. Members stay ordered here, in the corner
+    // that owns placement, so the hourglass-stays-last rule is visible in one
+    // file rather than spread across the callers.
     import type { Snippet } from 'svelte'
     import IndexingStatusIndicator from '$lib/indexing/IndexingStatusIndicator.svelte'
+    import SuggestedOpsIndicator from '$lib/suggested-ops/SuggestedOpsIndicator.svelte'
     import OperationChip from './OperationChip.svelte'
 
     interface Props {
@@ -21,6 +28,7 @@
 <div class="status-corner">
     {@render children?.()}
     <OperationChip />
+    <SuggestedOpsIndicator />
     <IndexingStatusIndicator />
 </div>
 

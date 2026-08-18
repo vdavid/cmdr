@@ -2701,6 +2701,7 @@ export type MessageKey =
   | 'suggestedOps.folderWillBeCreatedTooltip'
   | 'suggestedOps.fromPattern'
   | 'suggestedOps.includeFile'
+  | 'suggestedOps.indicatorTooltip'
   | 'suggestedOps.irreversible'
   | 'suggestedOps.loadFailed'
   | 'suggestedOps.loadingFiles'

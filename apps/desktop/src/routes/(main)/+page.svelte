@@ -22,6 +22,7 @@
     import { operationLogState } from '$lib/operation-log/operation-log-trigger.svelte'
     import SuggestedOpsDialog from '$lib/suggested-ops/SuggestedOpsDialog.svelte'
     import { suggestedOpsState } from '$lib/suggested-ops/suggested-ops-trigger.svelte'
+    import { startSuggestedOpsBadge, stopSuggestedOpsBadge } from '$lib/suggested-ops/suggested-ops-badge.svelte'
     import AskCmdrRail from '$lib/ask-cmdr/AskCmdrRail.svelte'
     import BulkRenameReviewDialog from '$lib/ask-cmdr/BulkRenameReviewDialog.svelte'
     import { askCmdrState } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
@@ -316,6 +317,11 @@
         // has focus. Chrome only; every real refusal is elsewhere.
         stopMenuOperationGate = startMenuOperationGate()
 
+        // Seed and subscribe the suggestions badge. The seed is not redundant with the
+        // subscription: suggestions never expire, so a group proposed in an earlier session
+        // is already waiting before anything emits.
+        void startSuggestedOpsBadge()
+
         // Load license status from cache (fast, no network)
         try {
             const licenseStatus = await loadLicenseStatus()
@@ -470,6 +476,7 @@
 
     onDestroy(() => {
         destroyShortcutDispatch()
+        stopSuggestedOpsBadge()
         destroyIndexState()
         destroyMediaEnrichState()
         stopOperationFailureWatch()

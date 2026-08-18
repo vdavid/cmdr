@@ -110,5 +110,9 @@
   "suggestedOps.loadingFiles": "Loading the files…",
   "@suggestedOps.loadingFiles": {
     "description": "Placeholder while a window of the file list is being read."
+  },
+  "suggestedOps.indicatorTooltip": "Ask Cmdr has suggestions waiting. Click to review them.",
+  "@suggestedOps.indicatorTooltip": {
+    "description": "Tooltip and accessible name for the status-corner indicator that opens the Suggested ops dialog. The number itself is in the badge beside it, so the sentence doesn't repeat it."
   }
 }
