@@ -27,6 +27,13 @@ func runLockPoisonOn(t *testing.T, files map[string]string) (CheckResult, error)
 			t.Fatalf("write: %v", err)
 		}
 	}
+	return runLockPoisonIn(t, root)
+}
+
+// runLockPoisonIn runs the check against an already-populated fixture repo, for
+// the tests that need to seed an allowlist alongside the sources.
+func runLockPoisonIn(t *testing.T, root string) (CheckResult, error) {
+	t.Helper()
 	return RunLockPoison(&CheckContext{RootDir: root})
 }
 
@@ -373,5 +380,472 @@ fn t() {
 	}
 	if res.Code != ResultSuccess {
 		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
+
+// --- The swallow lane: a lock result discarded without recording intent ---
+
+// seedLockPoisonAllowlist writes the swallow-lane allowlist into a fixture repo,
+// so a test can exercise the suppress / ratchet / shrink-wrap behavior.
+func seedLockPoisonAllowlist(t *testing.T, root string, files map[string]int) {
+	t.Helper()
+	list := lockPoisonAllowlist{Files: files}
+	path := filepath.Join(root, "scripts", "check", "checks", "lock-poison-allowlist.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := writeJSONAllowlist(path, list); err != nil {
+		t.Fatalf("seed allowlist: %v", err)
+	}
+}
+
+func TestLockPoison_WarnsOnIfLetOkSwallow(t *testing.T) {
+	// The real bug: `if let Ok(guard) = cache().lock()` skips the block on
+	// poison, and the caller sees an empty recents list with no clue why.
+	res, err := runLockPoisonOn(t, map[string]string{
+		"recents.rs": `
+fn entries() -> Vec<Entry> {
+    let mut out = Vec::new();
+    if let Ok(guard) = cache().lock() {
+        out.extend(guard.iter().cloned());
+    }
+    out
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning, got %v: %s", res.Code, res.Message)
+	}
+	if !strings.Contains(res.Message, "recents.rs:4") {
+		t.Errorf("expected the swallowing `if let Ok` at recents.rs:4, got: %s", res.Message)
+	}
+}
+
+func TestLockPoison_WarnsOnMatchErrEarlyReturn(t *testing.T) {
+	// The real bug: on poison the watcher thread returns and never watches
+	// again for the rest of the session.
+	res, err := runLockPoisonOn(t, map[string]string{
+		"watcher.rs": `
+fn check_for_mount_changes() {
+    let mut known_guard = match known.lock() {
+        Ok(g) => g,
+        Err(_) => return,
+    };
+    known_guard.clear();
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning, got %v: %s", res.Code, res.Message)
+	}
+	if !strings.Contains(res.Message, "watcher.rs:3") {
+		t.Errorf("expected the swallowing `match` at watcher.rs:3, got: %s", res.Message)
+	}
+}
+
+func TestLockPoison_FindsErrArmWellBelowTheMatch(t *testing.T) {
+	// The Err arm can sit many lines under the `match`, so the classifier reads
+	// the whole match block rather than peeking at the next line or two.
+	res, err := runLockPoisonOn(t, map[string]string{
+		"deep.rs": `
+fn drain() {
+    let guard = match STATE.lock() {
+        Ok(g) => {
+            trace!("took the state lock");
+            g
+        }
+        Err(_) => {
+            warn!("state lock poisoned");
+            return;
+        }
+    };
+    guard.drain();
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning, got %v: %s", res.Code, res.Message)
+	}
+	if !strings.Contains(res.Message, "deep.rs:3") {
+		t.Errorf("expected the swallowing `match` at deep.rs:3, got: %s", res.Message)
+	}
+}
+
+func TestLockPoison_WarnsOnLetElseSwallow(t *testing.T) {
+	res, err := runLockPoisonOn(t, map[string]string{
+		"registry.rs": `
+fn clear_all() {
+    let Ok(mut reg) = INDEX_REGISTRY.lock() else {
+        return;
+    };
+    reg.clear();
+}
+
+fn peek() -> bool {
+    let Ok(reg) = INDEX_REGISTRY.lock() else { return false };
+    reg.is_empty()
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning, got %v: %s", res.Code, res.Message)
+	}
+	for _, want := range []string{"registry.rs:3", "registry.rs:10"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("expected the swallowing let-else at %s, got: %s", want, res.Message)
+		}
+	}
+}
+
+func TestLockPoison_WarnsOnLockOk(t *testing.T) {
+	res, err := runLockPoisonOn(t, map[string]string{
+		"cache.rs": `
+fn lookup(key: &str) -> Option<String> {
+    let cache = share_cache().lock().ok()?;
+    cache.get(key).cloned()
+}
+
+fn handle() -> Option<Handle> {
+    MCP_HANDLE.lock().ok().and_then(|mut guard| guard.take())
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning, got %v: %s", res.Code, res.Message)
+	}
+	for _, want := range []string{"cache.rs:3", "cache.rs:8"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("expected the swallowing `.ok()` at %s, got: %s", want, res.Message)
+		}
+	}
+}
+
+func TestLockPoison_AcceptsRecoveringAndPropagatingHandlers(t *testing.T) {
+	res, err := runLockPoisonOn(t, map[string]string{
+		"handled.rs": `
+fn recovered() {
+    let mut guard = match STATE.lock() {
+        Ok(g) => g,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    guard.clear();
+}
+
+fn propagated() -> Result<(), IndexError> {
+    let Ok(reg) = INDEX_REGISTRY.lock() else {
+        return Err(IndexError::RegistryUnavailable);
+    };
+    reg.flush()
+}
+
+fn aborted() {
+    let guard = match MACHINE.lock() {
+        Ok(g) => g,
+        Err(_) => panic!("state machine poisoned: torn invariant"),
+    };
+    guard.step();
+}
+
+fn wildcard_recovers() {
+    let mut guard = match STATE.lock() {
+        Ok(g) => g,
+        _ => STATE.lock_ignore_poison(),
+    };
+    guard.clear();
+}
+
+fn else_branch_recovers(state: &State) {
+    if let Ok(mut g) = state.entries.lock() {
+        g.clear();
+    } else {
+        state.entries.lock_ignore_poison().clear();
+    }
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected success on handlers that record intent, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
+
+func TestLockPoison_WarnsOnElseBranchThatSubstitutesEmptyData(t *testing.T) {
+	// An `else` arm is not intent on its own: handing back an empty Vec is the
+	// silently-emptied-list bug with extra steps.
+	res, err := runLockPoisonOn(t, map[string]string{
+		"status.rs": `
+fn removed_ids() -> Vec<String> {
+    if let Ok(mut cache) = STATUS_CACHE.write() {
+        cache.drain().collect()
+    } else {
+        Vec::new()
+    }
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning, got %v: %s", res.Code, res.Message)
+	}
+	if !strings.Contains(res.Message, "status.rs:3") {
+		t.Errorf("expected the empty-substituting else at status.rs:3, got: %s", res.Message)
+	}
+}
+
+func TestLockPoison_SwallowLaneIgnoresTokioAndTryLock(t *testing.T) {
+	res, err := runLockPoisonOn(t, map[string]string{
+		"async.rs": `
+async fn run(state: &State) {
+    let guard = state.async_mutex.lock().await;
+    if let Ok(g) = state.entries.try_lock() {
+        drop(g);
+    }
+    let mut buf = [0u8; 8];
+    if let Ok(n) = reader.read(&mut buf) {
+        drop(n);
+    }
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected success for tokio/try_lock/io shapes, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
+
+func TestLockPoison_SwallowLaneHonorsOptOut(t *testing.T) {
+	res, err := runLockPoisonOn(t, map[string]string{
+		"opt.rs": `
+fn f(state: &State) {
+    // allowed-lock-poison: best-effort breadcrumb, losing one is fine
+    if let Ok(mut g) = state.entries.lock() {
+        g.push(1);
+    }
+    if let Ok(mut g) = state.other.lock() { // allowed-lock-poison: same
+        g.push(1);
+    }
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected success with opt-out comments, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
+
+func TestLockPoison_SwallowLaneSkipsTestMods(t *testing.T) {
+	res, err := runLockPoisonOn(t, map[string]string{
+		"thing.rs": `
+pub fn thing() {}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn t() {
+        if let Ok(g) = STATE.lock() {
+            assert!(g.is_empty());
+        }
+    }
+}
+`,
+		"other_test.rs": `
+fn helper() {
+    let Ok(g) = STATE.lock() else { return };
+    drop(g);
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected success for swallows in test code, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
+
+func TestLockPoison_AllowlistSuppressesKnownSwallows(t *testing.T) {
+	root := t.TempDir()
+	seedAppFixtureWorkspace(t, root)
+	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	body := `
+fn a(state: &State) {
+    if let Ok(mut g) = state.entries.lock() {
+        g.push(1);
+    }
+    if let Ok(mut g) = state.other.lock() {
+        g.push(2);
+    }
+}
+`
+	if err := os.WriteFile(filepath.Join(srcDir, "known.rs"), []byte(body), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	seedLockPoisonAllowlist(t, root, map[string]int{"apps/desktop/src-tauri/src/known.rs": 2})
+
+	res, err := runLockPoisonIn(t, root)
+	if err != nil {
+		t.Fatalf("expected success for allowlisted swallows, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
+
+func TestLockPoison_AllowlistRatchetsDownAndWarnsOnGrowth(t *testing.T) {
+	root := t.TempDir()
+	seedAppFixtureWorkspace(t, root)
+	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	shrunk := `
+fn a(state: &State) {
+    if let Ok(mut g) = state.entries.lock() {
+        g.push(1);
+    }
+}
+`
+	if err := os.WriteFile(filepath.Join(srcDir, "shrunk.rs"), []byte(shrunk), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	grown := `
+fn b(state: &State) {
+    if let Ok(mut g) = state.entries.lock() {
+        g.push(1);
+    }
+    if let Ok(mut g) = state.other.lock() {
+        g.push(2);
+    }
+}
+`
+	if err := os.WriteFile(filepath.Join(srcDir, "grown.rs"), []byte(grown), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	seedLockPoisonAllowlist(t, root, map[string]int{
+		"apps/desktop/src-tauri/src/shrunk.rs": 3,
+		"apps/desktop/src-tauri/src/grown.rs":  1,
+		"apps/desktop/src-tauri/src/gone.rs":   4,
+	})
+
+	res, err := runLockPoisonIn(t, root)
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning for the grown file, got %v: %s", res.Code, res.Message)
+	}
+	if !strings.Contains(res.Message, "grown.rs:6") {
+		t.Errorf("expected the site over budget at grown.rs:6, got: %s", res.Message)
+	}
+	list := loadLockPoisonAllowlist(root)
+	if got := list.Files["apps/desktop/src-tauri/src/shrunk.rs"]; got != 1 {
+		t.Errorf("expected shrunk.rs ratcheted 3 → 1, got %d", got)
+	}
+	if _, ok := list.Files["apps/desktop/src-tauri/src/gone.rs"]; ok {
+		t.Error("expected the entry for the deleted file to be dropped")
+	}
+	if got := list.Files["apps/desktop/src-tauri/src/grown.rs"]; got != 1 {
+		t.Errorf("expected grown.rs to keep its contract at 1, got %d", got)
+	}
+}
+
+func TestLockPoison_HardViolationsStillFailAndNameTheSwallowsToo(t *testing.T) {
+	_, err := runLockPoisonOn(t, map[string]string{
+		"mixed.rs": `
+fn f(state: &State) {
+    let g = state.entries.lock().unwrap();
+    if let Ok(mut o) = state.other.lock() {
+        o.push(1);
+    }
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected the bare unwrap to fail the check")
+	}
+	if !strings.Contains(err.Error(), "mixed.rs:3") {
+		t.Errorf("expected the bare unwrap at mixed.rs:3, got: %s", err.Error())
+	}
+	if !strings.Contains(err.Error(), "mixed.rs:4") {
+		t.Errorf("expected the swallow at mixed.rs:4 to be reported alongside, got: %s", err.Error())
+	}
+}
+
+func TestLockPoison_ReadsPastCommentsAroundTheErrArm(t *testing.T) {
+	// A comment between the arms must not hide the `Err` arm, and prose in it
+	// must not read as recorded intent. Both would silently un-flag a site.
+	res, err := runLockPoisonOn(t, map[string]string{
+		"state.rs": `
+fn enrich(&self, event: &mut Progress) {
+    let stats = match self.estimator.lock() {
+        Ok(mut est) => est.update(EtaSample {
+            now,
+            phase: event.phase,
+        }),
+        // Poisoned mutex (another thread panicked). We could panic! here, but
+        // progress events are advisory.
+        Err(_) => return,
+    };
+    event.eta_seconds = stats.eta_seconds;
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning, got %v: %s", res.Code, res.Message)
+	}
+	if !strings.Contains(res.Message, "state.rs:3") {
+		t.Errorf("expected the swallowing `match` at state.rs:3, got: %s", res.Message)
+	}
+}
+
+func TestLockPoison_BracesInStringsAndCommentsDoNotDerailTheParser(t *testing.T) {
+	res, err := runLockPoisonOn(t, map[string]string{
+		"fmt.rs": `
+fn describe(state: &State) -> String {
+    if let Ok(g) = state.entries.lock() {
+        // A stray { in a comment, and a lifetime like &'a str.
+        return format!("{ {}", g.len());
+    }
+    String::new()
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning, got %v: %s", res.Code, res.Message)
+	}
+	if !strings.Contains(res.Message, "fmt.rs:3") {
+		t.Errorf("expected the swallowing `if let Ok` at fmt.rs:3, got: %s", res.Message)
 	}
 }
