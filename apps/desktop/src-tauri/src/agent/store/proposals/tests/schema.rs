@@ -1,16 +1,6 @@
-//! Proposal-spine tests.
+//! The FK actions of the spine, asserted in raw SQL.
 
-use rusqlite::Connection;
-
-use crate::agent::store::{MIGRATIONS, run_migrations};
-
-/// A migrated in-memory `main.db`.
-fn migrated_conn() -> Connection {
-    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
-    conn.execute_batch("PRAGMA foreign_keys = ON;").expect("pragma");
-    run_migrations(&conn, MIGRATIONS).expect("migrate");
-    conn
-}
+use super::migrated_conn;
 
 /// Deleting a conversation NULLs its sweep's link and deletes NOTHING: the decision
 /// record outlives the chat that produced it. Asserted in raw SQL, because the FK action

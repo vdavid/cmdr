@@ -55,3 +55,76 @@ token_enum! {
         Notification => "notification",
     }
 }
+
+token_enum! {
+    /// What a proposal group asks to do, stored in `proposals.verb`.
+    ///
+    /// A group is exactly ONE call to ONE executor, so the verb decides which executor runs
+    /// it, what the group binds ([`ProposalVerb::destination_shape`]), whether its ops carry
+    /// their own destinations ([`ProposalVerb::ops_carry_destinations`]), and how far an
+    /// approved group can be taken back ([`ProposalVerb::reversibility`]).
+    pub enum ProposalVerb {
+        Move => "move",
+        Copy => "copy",
+        Trash => "trash",
+        Delete => "delete",
+        Rename => "rename",
+        Compress => "compress",
+        Extract => "extract",
+    }
+}
+
+token_enum! {
+    /// Where a group sits in its lifecycle, stored in `proposals.status`.
+    ///
+    /// `Pending` is the only mutable state: the agent may re-propose a pending group, and
+    /// the claim transaction only ever moves a group out of it. Everything else is frozen to
+    /// the agent — including `Interrupted`, which is the user's to re-approve or discard.
+    pub enum ProposalStatus {
+        /// Proposed, waiting for the user. No expiry: it waits as long as it takes.
+        Pending => "pending",
+        /// The user approved it and the claim transaction handed its ops to the queue.
+        Approved => "approved",
+        /// Approved, but the app restarted before execution finished, so nothing here knows
+        /// what ran. Frozen: the user re-approves (minting a new group) or discards.
+        Interrupted => "interrupted",
+        /// Every op reached a terminal outcome.
+        Completed => "completed",
+        /// The user said no.
+        Rejected => "rejected",
+    }
+}
+
+token_enum! {
+    /// Where one op sits, stored in `proposal_ops.status`. Per-op statuses are what make a
+    /// partial apply ("run 11, skip 3") possible.
+    pub enum OpStatus {
+        /// Part of the group's live op set: what a claim binds and an executor will run.
+        Pending => "pending",
+        /// The user deselected it at review, so it's outside the accepted set. Kept as a row
+        /// (never deleted) so the decision record says what was offered, not just what ran.
+        Excluded => "excluded",
+        /// It ran and did what it said.
+        Done => "done",
+        /// The executor passed over it (a fingerprint mismatch, a conflict resolution).
+        Skipped => "skipped",
+        /// It ran and didn't succeed.
+        Failed => "failed",
+    }
+}
+
+token_enum! {
+    /// How far an approved group can be taken back, stored in `proposals.reversible`. A FACT
+    /// the review dialog discloses, never a reason to refuse a group: per the guiding
+    /// principle, an irreversible group is the user's to approve.
+    pub enum Reversibility {
+        /// The operation log's `RestoreMove` puts it back: move, trash, rename.
+        RestoreMove => "restore_move",
+        /// Undone by deleting what was written: copy, and a compress that created a new
+        /// archive.
+        DeleteWhatWasWritten => "delete_what_was_written",
+        /// Nothing takes it back: a permanent delete, or a compress that overwrote an
+        /// existing archive (the seed is unconditional and the prior bytes are gone).
+        Irreversible => "irreversible",
+    }
+}
