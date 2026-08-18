@@ -1175,6 +1175,14 @@
       "reason": "the validation message explaining what is wrong with the typed name"
     }
   },
+  "fileExplorer.rename.chainKeptOriginalName": "{reason}. \"{name}\" kept its name.",
+  "@fileExplorer.rename.chainKeptOriginalName": {
+    "description": "Warning toast shown when the user renames a run of files by pressing the up/down arrow inside the inline rename editor, and one of those renames didn''t apply (the typed name was unusable, or the name was already taken). The editor has already moved on to another file, so the toast names the file that kept its original name. {reason} is the reason, a full sentence without a closing period (for example \"Changing the file extension isn''t allowed (was \".txt\")\" or \"\"notes.txt\" already exists in this folder\"). {name} is the filename, shown in quotes.",
+    "placeholders": {
+      "reason": "why the rename didn''t apply",
+      "name": "the name the file still has"
+    }
+  },
   "fileExplorer.columns.name": "Name",
   "@fileExplorer.columns.name": {
     "description": "File-list column header for the file/folder name. Also measured to size the column; keep it short. Used in both the Full and Brief list views.",

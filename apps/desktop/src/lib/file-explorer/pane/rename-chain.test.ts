@@ -9,23 +9,30 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { executeRenameSaveSpy, checkPermissionSpy, getSettingSpy, validateFilenameSpy, pathInsideArchiveSpy } =
-  vi.hoisted(() => ({
-    executeRenameSaveSpy:
-      vi.fn<
-        (
-          target: { path: string; originalName: string },
-          trimmedName: string,
-          extensionPolicy: string,
-          skipExtensionCheck?: boolean,
-          volumeId?: string,
-        ) => Promise<unknown>
-      >(),
-    checkPermissionSpy: vi.fn<() => Promise<string | null>>(),
-    getSettingSpy: vi.fn<(id: string) => unknown>(),
-    validateFilenameSpy: vi.fn(),
-    pathInsideArchiveSpy: vi.fn<() => boolean>(),
-  }))
+const {
+  executeRenameSaveSpy,
+  checkPermissionSpy,
+  getSettingSpy,
+  validateFilenameSpy,
+  pathInsideArchiveSpy,
+  tStringSpy,
+} = vi.hoisted(() => ({
+  executeRenameSaveSpy:
+    vi.fn<
+      (
+        target: { path: string; originalName: string },
+        trimmedName: string,
+        extensionPolicy: string,
+        skipExtensionCheck?: boolean,
+        volumeId?: string,
+      ) => Promise<unknown>
+    >(),
+  checkPermissionSpy: vi.fn<() => Promise<string | null>>(),
+  getSettingSpy: vi.fn<(id: string) => unknown>(),
+  validateFilenameSpy: vi.fn(),
+  pathInsideArchiveSpy: vi.fn<() => boolean>(),
+  tStringSpy: vi.fn((key: string, _params?: Record<string, string>) => key),
+}))
 
 vi.mock('$lib/tauri-commands', () => ({
   getFileAt: vi.fn(),
@@ -35,12 +42,12 @@ vi.mock('$lib/tauri-commands', () => ({
   isIpcError: () => false,
   moveToTrash: vi.fn(),
 }))
-vi.mock('$lib/utils/filename-validation', () => ({
+// Only `validateFilename` is stubbed; the extension-policy tests below hand the
+// spy the real implementation back, because what they're checking IS how the
+// real validator grades an extension change under each policy.
+vi.mock('$lib/utils/filename-validation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/utils/filename-validation')>()),
   validateFilename: validateFilenameSpy,
-  getExtension: (name: string) => {
-    const i = name.lastIndexOf('.')
-    return i > 0 ? name.slice(i) : ''
-  },
 }))
 vi.mock('../rename/rename-activation', () => ({ cancelClickToRename: vi.fn() }))
 vi.mock('../rename/rename-operations', () => ({
@@ -50,15 +57,26 @@ vi.mock('../rename/rename-operations', () => ({
 }))
 vi.mock('$lib/settings', () => ({ getSetting: getSettingSpy }))
 vi.mock('$lib/ui/toast', () => ({ addToastForPane: vi.fn(), dismissTransientToastsForPane: vi.fn() }))
-vi.mock('$lib/intl/messages.svelte', () => ({ tString: (k: string) => k }))
+vi.mock('$lib/intl/messages.svelte', () => ({ tString: tStringSpy }))
 vi.mock('./volume-capabilities', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
 
 import { getFileAt } from '$lib/tauri-commands'
+import { addToastForPane } from '$lib/ui/toast'
 import { buildFlow, chainListing, deferred } from './test-rename-flow'
+
+/** The real validator, for the tests that are about how it grades a name. */
+const { validateFilename: gradeName } = await vi.importActual<typeof import('$lib/utils/filename-validation')>(
+  '$lib/utils/filename-validation',
+)
 
 /** `[file being renamed, name it is being given]` for every save the flow sent. */
 function savedPairs(): [string, string][] {
   return executeRenameSaveSpy.mock.calls.map(([target, trimmedName]) => [target.originalName, trimmedName])
+}
+
+/** The message keys and params every toast the flow raised was built from. */
+function toastedKeys() {
+  return tStringSpy.mock.calls
 }
 
 beforeEach(() => {
@@ -291,5 +309,111 @@ describe('chaining the rename to the next file with the arrow keys', () => {
 
     expect(rename.active).toBe(false)
     expect(listing.moves).toEqual([])
+  })
+})
+
+describe('what becomes of the name in the editor when the arrow moves on', () => {
+  /** The options the flow attached to the toast it raised. */
+  function lastToastOptions() {
+    const calls = vi.mocked(addToastForPane).mock.calls
+    return calls[calls.length - 1][2]
+  }
+
+  it('drops a name it already knows is unusable, names the file that kept its own, and still hops', () => {
+    validateFilenameSpy.mockReturnValue({ severity: 'error', message: 'unusable' })
+    const listing = chainListing(['a.txt', 'b.txt'])
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('a/b.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    // The user keeps moving; only the edit is dropped.
+    expect(rename.active).toBe(true)
+    expect(rename.target?.originalName).toBe('b.txt')
+    expect(listing.moves).toEqual([2])
+    expect(toastedKeys()).toContainEqual([
+      'fileExplorer.rename.chainKeptOriginalName',
+      { reason: 'unusable', name: 'a.txt' },
+    ])
+    // The next keystroke dismisses this pane's transient toasts, which is exactly
+    // when the user is typing the next name.
+    expect(lastToastOptions()).toMatchObject({ level: 'warn', dismissal: 'persistent' })
+  })
+
+  it('drops a name the backend finds taken, with a toast and never a dialog', async () => {
+    executeRenameSaveSpy.mockResolvedValue({
+      type: 'conflict',
+      validity: { valid: true, hasConflict: true, isCaseOnlyRename: false },
+    })
+    const listing = chainListing(['a.txt', 'b.txt'])
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('taken.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+
+    await vi.waitFor(() => {
+      expect(toastedKeys()).toContainEqual([
+        'fileExplorer.rename.chainKeptOriginalName',
+        { reason: 'fileOperations.validation.conflict', name: 'a.txt' },
+      ])
+    })
+    // The chain must not stop to ask about a file the user has moved past.
+    expect(flow.conflictDialogState).toBeNull()
+    expect(flow.extensionDialogState).toBeNull()
+    expect(rename.active).toBe(true)
+    expect(rename.target?.originalName).toBe('b.txt')
+    // The toast says which name was taken, not only which file kept its own.
+    expect(toastedKeys()).toContainEqual(['fileOperations.validation.conflict', { name: 'taken.txt' }])
+    expect(lastToastOptions()).toMatchObject({ level: 'warn', dismissal: 'persistent' })
+  })
+
+  it('commits an extension change with no dialog while the policy asks', () => {
+    validateFilenameSpy.mockImplementation(gradeName)
+    const listing = chainListing(['a.txt', 'b.txt'])
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('a.png')
+    flow.handleRenameStep('down', rename.sessionId)
+
+    expect(savedPairs()).toEqual([['a.txt', 'a.png']])
+    expect(executeRenameSaveSpy.mock.calls[0][3]).toBe(true) // the dialog is skipped
+    expect(flow.extensionDialogState).toBeNull()
+  })
+
+  it('drops an extension change while the policy forbids one: skipping the dialog is not overriding the setting', () => {
+    getSettingSpy.mockImplementation((id) => (id === 'fileOperations.allowFileExtensionChanges' ? 'no' : undefined))
+    validateFilenameSpy.mockImplementation(gradeName)
+    const listing = chainListing(['a.txt', 'b.txt'])
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('a.png')
+    flow.handleRenameStep('down', rename.sessionId)
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(rename.target?.originalName).toBe('b.txt')
+    expect(toastedKeys()).toContainEqual([
+      'fileExplorer.rename.chainKeptOriginalName',
+      { reason: 'fileOperations.validation.extensionChangeBlocked', name: 'a.txt' },
+    ])
+  })
+
+  it('sends the name anyway when only the sibling-name snapshot calls it taken', () => {
+    // That snapshot is read when the session opens, and the chain's own renames
+    // rewrite the directory under it, so mid-chain it is stale by construction.
+    // Dropping the edit on it would throw away a name that is perfectly free.
+    validateFilenameSpy.mockReturnValue({ severity: 'warning', message: 'looks taken' })
+    const listing = chainListing(['a.txt', 'b.txt'])
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('b.txt')
+    flow.handleRenameStep('down', rename.sessionId)
+
+    expect(savedPairs()).toEqual([['a.txt', 'b.txt']])
   })
 })

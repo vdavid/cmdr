@@ -799,6 +799,10 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
+  "fileExplorer.rename.chainKeptOriginalName": "{reason}。“{name}”保留了原来的名称。",
+  "@fileExplorer.rename.chainKeptOriginalName": {
+    "sourceHash": "5b5e6ce"
+  },
   "fileExplorer.columns.name": "名称",
   "@fileExplorer.columns.name": {
     "sourceHash": "dcd1d52"

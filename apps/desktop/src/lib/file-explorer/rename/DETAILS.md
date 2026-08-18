@@ -83,8 +83,8 @@ Escape instead.
 
 ## Chaining the rename with the arrow keys
 
-A bare ArrowDown inside the editor saves the name being typed and reopens the editor on the row below; ArrowUp does the
-same upwards. Renaming a run of files becomes one keyboard flow. `rename-step.ts` holds both pure halves,
+A bare ArrowDown inside the editor settles the name being typed (usually by saving it, see below) and reopens the editor
+on the row below; ArrowUp does the same upwards. Renaming a run of files becomes one keyboard flow. `rename-step.ts` holds both pure halves,
 `rename-flow.handleRenameStep` performs the step, and `InlineRenameEditor` raises it.
 
 The step, in the order it must happen:
@@ -97,8 +97,8 @@ The step, in the order it must happen:
    Capturing BEFORE the save goes out is what makes the hop land where the user was looking: the rename may re-sort the
    listing and carry the renamed file far away, and the row they meant is the one that sat beside the editor when they
    pressed the key.
-3. **Fire the save, unawaited**, when the name changed. Chaining stays fast on slow volumes (SMB, MTP), where awaiting
-   each save would stall every step.
+3. **Decide the edit's fate** (`decideStepFate`), and fire the save unawaited when it's a save. Chaining stays fast on
+   slow volumes (SMB, MTP), where awaiting each save would stall every step.
 4. **Hop**: move the cursor (`applyNavigation`, which also scrolls the row into view) and activate on the captured
    entry.
 
@@ -121,8 +121,31 @@ Only a bare ArrowUp / ArrowDown chains, matched on the whole combo through the f
 commands. The caret-to-start/end that a bare arrow used to do inside the input is given up for this; Home and End still
 do it.
 
-A mid-chain rename the backend rejects (a conflict, an unusable name) currently drops the typed name with no toast, and
-the chain keeps going.
+### What becomes of the edit being stepped away from
+
+Whatever the answer, the hop happens: the user is moving, and only the name they typed is at stake. Nothing actively
+discards either, because the activation that follows resets the editor; an edit that isn't sent is simply gone.
+
+- **Unchanged name**: nothing at all. No save, no toast.
+- **`rename.severity === 'error'`**: dropped without a round trip, with a `chainKeptOriginalName` toast naming the file
+  that kept its own name. This is also where the extension-change policy is honored. A chain has to pass
+  `skipExtensionCheck`, since a dialog would ask about a file the user has moved past; under policy "no" the changed
+  extension is already a validation ERROR, so it lands here and never reaches the backend. Skipping the dialog therefore
+  never becomes overriding the setting, and no second policy read is needed to get that. Under "ask" it grades as fine
+  and commits, with the operation log as the way back from a fumbled extension.
+- **Anything else**: `executeFlow(skipExtensionCheck: true)`, unawaited.
+
+**A conflict is decided by the BACKEND, never at keypress time.** The frontend's conflict signal is a
+`severity: 'warning'` computed against `renameSiblingNames`, snapshotted when the session opened, and a chain rewrites
+the directory as it runs: mid-chain that snapshot is stale by construction. Dropping the edit on it would silently throw
+away a name that is perfectly free. So the keypress checks only `severity === 'error'`, the edit reaches
+`checkRenameValidity`, and the authoritative `{ type: 'conflict' }` is handled in `reportSupersededResult` (a chained
+save is always superseded by the time it returns): dropped with the same `chainKeptOriginalName` toast, never a dialog.
+
+Both toasts are `dismissal: 'persistent'`. `handleRenameInput` clears the pane's transient toasts on every keystroke,
+which is exactly when the user is typing the next name, so a transient one would be gone before it was read. The toast
+stack holds five and silently drops new ones once they're all persistent (`ui/DETAILS.md` § Toast system), so a chain
+with more than five failures still loses the tail; aggregating them into one running summary is the fix.
 
 ## Ending a rename session
 

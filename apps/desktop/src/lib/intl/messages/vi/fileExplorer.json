@@ -800,6 +800,10 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
+  "fileExplorer.rename.chainKeptOriginalName": "{reason}. \"{name}\" vẫn giữ nguyên tên.",
+  "@fileExplorer.rename.chainKeptOriginalName": {
+    "sourceHash": "5b5e6ce"
+  },
   "fileExplorer.columns.name": "Tên",
   "@fileExplorer.columns.name": {
     "sourceHash": "dcd1d52"

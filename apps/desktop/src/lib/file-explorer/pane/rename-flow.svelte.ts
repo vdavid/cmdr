@@ -10,7 +10,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import { pathInsideArchive } from './volume-capabilities'
 import type { FileEntry } from '../types'
 import type { StartRenameOptions } from './types'
-import type { createRenameState, RenameSessionId } from '../rename/rename-state.svelte'
+import type { createRenameState, RenameSessionId, RenameTarget } from '../rename/rename-state.svelte'
 import { resolveStepIndex, type RenameStepDirection } from '../rename/rename-step'
 
 export interface RenameFlowDeps {
@@ -181,7 +181,51 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   }
 
   /**
-   * Sends the current edit on its way and reopens the editor on `entry`.
+   * Decides what becomes of the edit the user is stepping away from.
+   *
+   * A name the frontend already grades as unusable is dropped here instead of
+   * sent, so a chain doesn't spend a round trip to be told what it knew. That
+   * covers the extension-change policy on its own: under "no" a changed
+   * extension IS a validation error, so skipping the dialog (which a chain must)
+   * never turns into overriding the setting. Under "ask" it grades as fine and
+   * commits, and the operation log is the way back from a fumbled extension.
+   *
+   * A CONFLICT is deliberately not decided here. The frontend's conflict signal
+   * is only a warning, computed against the sibling names read when the session
+   * opened, and a chain rewrites the directory as it runs: mid-chain that
+   * snapshot is stale by construction, and dropping the edit on it would throw
+   * away a name that is perfectly free. The backend has the authoritative
+   * answer, and `reportSupersededResult` acts on that one.
+   *
+   * Nothing has to actively discard: the activation that follows resets the
+   * editor, so an edit that isn't sent is simply gone.
+   */
+  function decideStepFate(): void {
+    const target = rename.target
+    if (!target || !rename.hasChanged()) return
+    if (rename.severity === 'error') {
+      toastKeptName(target.originalName, rename.validation.message)
+      return
+    }
+    void executeFlow(true)
+  }
+
+  /**
+   * Says which file kept its name when a chained rename didn't apply.
+   *
+   * Persistent on purpose: `handleRenameInput` clears this pane's transient
+   * toasts on every keystroke, which is exactly when the user is typing the next
+   * name, so a transient one would be gone before it was read.
+   */
+  function toastKeptName(originalName: string, reason: string): void {
+    addToast(tString('fileExplorer.rename.chainKeptOriginalName', { reason, name: originalName }), {
+      level: 'warn',
+      dismissal: 'persistent',
+    })
+  }
+
+  /**
+   * Settles the current edit and reopens the editor on `entry`.
    *
    * The save goes FIRST, and unawaited: `executeFlow` reads the target, the
    * typed name, and the session id synchronously before it awaits anything, so
@@ -193,7 +237,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
    * ask about a file the user has already moved past.
    */
   function stepTo(index: number, entry: FileEntry): void {
-    if (rename.hasChanged()) void executeFlow(true)
+    decideStepFate()
     deps.moveCursorTo(index)
     startRenameOnEntry(entry)
   }
@@ -237,8 +281,12 @@ export function createRenameFlow(deps: RenameFlowDeps) {
    * cursor would yank it off the file being edited, and a dialog would ask about
    * a file the user has already moved past. The forbidden moves aren't guarded
    * here, they're absent.
+   *
+   * `target` and `trimmedName` are the ones the save was sent with, so the toast
+   * can name the file that kept its name rather than whichever one the editor
+   * has since landed on.
    */
-  function reportSupersededResult(result: RenameResult) {
+  function reportSupersededResult(result: RenameResult, target: RenameTarget, trimmedName: string) {
     switch (result.type) {
       case 'success':
         toastIfHiddenAfterRename(result.newName)
@@ -250,18 +298,27 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         addToast(result.message, { level: 'warn', dismissal: 'persistent' })
         void refreshListing(deps.getListingId())
         break
-      case 'noop':
       case 'conflict':
+        // The only authority on a conflict, and the chain must not stop to ask:
+        // the name is dropped, and the toast is how the user learns it was.
+        toastKeptName(target.originalName, tString('fileOperations.validation.conflict', { name: trimmedName }))
+        break
+      case 'noop':
       case 'extension-ask':
-        // Nothing happened on disk, and neither question can be put to a user who
-        // has moved on: the edit is dropped.
+        // Nothing happened on disk, and the extension question can't be put to a
+        // user who has moved on: the edit is dropped.
         break
     }
   }
 
-  function handleRenameResult(result: RenameResult, trimmedName: string, sessionId: RenameSessionId) {
+  function handleRenameResult(
+    result: RenameResult,
+    target: RenameTarget,
+    trimmedName: string,
+    sessionId: RenameSessionId,
+  ) {
     if (rename.isSuperseded(sessionId)) {
-      reportSupersededResult(result)
+      reportSupersededResult(result, target, trimmedName)
       return
     }
     switch (result.type) {
@@ -328,7 +385,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     const currentVolumeId = deps.getVolumeId()
 
     const result = await executeRenameSave(target, trimmedName, extensionPolicy, skipExtensionCheck, currentVolumeId)
-    handleRenameResult(result, trimmedName, sessionId)
+    handleRenameResult(result, target, trimmedName, sessionId)
   }
 
   return {
@@ -495,7 +552,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
           void moveToTrash(conflictPath)
             .then(() => performRename(target, trimmedName, true, currentVolumeId))
             .then((result) => {
-              handleRenameResult(result, trimmedName, sessionId)
+              handleRenameResult(result, target, trimmedName, sessionId)
             })
             .catch((e: unknown) => {
               if (isIpcError(e) && e.timedOut) {
@@ -515,7 +572,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         }
         case 'overwrite-delete':
           void performRename(target, trimmedName, true, currentVolumeId).then((result) => {
-            handleRenameResult(result, trimmedName, sessionId)
+            handleRenameResult(result, target, trimmedName, sessionId)
           })
           break
         case 'cancel':
