@@ -187,12 +187,12 @@ through a real regression. Delete the local helper and point those tests at the 
 ### M2. Self-collision in the local engine
 
 **One commit**: add the identity check and its two outcomes, and in the same change delete `validate_not_same_location`,
-its call sites (`write_operations/mod.rs:474`, `:523`), and the now-unreachable `WriteOperationError::SameLocation`
-variant (`types.rs:550`). See "This is a data-safety change" above for why these can't be separate commits.
+its call sites (`write_operations/mod.rs:500`, `:566`), and the now-unreachable `WriteOperationError::SameLocation`
+variant (`types.rs:576`). See "This is a data-safety change" above for why these can't be separate commits.
 
 This one milestone covers the whole local story, including everything the frontend sends: the frontend always dispatches
-copy through `copyBetweenVolumes`, and `transfer/volume/copy.rs:140-173` delegates a both-local copy straight to
-`copy_files_start` (`move.rs:118` likewise). Paste, F5, drag, and MCP all land here. MCP is not a bypass: its copy/move
+copy through `copyBetweenVolumes`, and `transfer/volume/copy.rs:142-175` delegates a both-local copy straight to
+`copy_files_start` (`move.rs:121` likewise). Paste, F5, drag, and MCP all land here. MCP is not a bypass: its copy/move
 executors drive the same frontend dialog and the same Tauri commands a person does.
 
 **Ask it per top-level source, once, before the copy loop — never per file.** The copy loop iterates the scan's *leaf*
@@ -237,10 +237,10 @@ same rule (its top level is itself, and `starts_with` matches a path against its
   before the loop and `scanned_dirs.rs:50` already applies the remap. Pin it with a test; this is invisible today because
   the up-front guard rejects it first.
 
-- **Move must skip before it recurses.** `dest_path` is computed at `move_op.rs:189` and the dir/dir merge branch is at
-  `:216`. `merge_move_directory` (`:393-483`) threads `dest_dir` down through recursion, so a self-collision would
+- **Move must skip before it recurses.** `dest_path` is computed at `move_op.rs:190` and the dir/dir merge branch is at
+  `:217`. `merge_move_directory` (`:393-483`) threads `dest_dir` down through recursion, so a self-collision would
   self-merge: every leaf either renames to itself (a POSIX no-op) or gets shuffled aside to `name (1)`, depending on
-  policy. No data loss, but nonsense. Drop a self-colliding top-level source right after `:189`, before `:216` is
+  policy. No data loss, but nonsense. Drop a self-colliding top-level source right after `:190`, before `:217` is
   reached.
 
 `resolve_conflict` itself stays about the user's conflict policy and learns nothing about duplication.
@@ -280,7 +280,7 @@ showing identical size and mtime on both sides. This milestone replaces that pro
 
 Add the identity check at the top of `resolve_volume_conflict` (`transfer/volume/conflict.rs:50`), before the dir/dir
 merge short-circuit at `:103`. **No `dir_remap` equivalent is needed here**: the volume engine threads `dest_path` down
-through `merge_level` (`volume/merge.rs:363`, with `child_dest = dest_path.join(&entry.name)` at `:443`; note it's
+through `merge_level` (`volume/merge.rs:363`, with `child_dest = dest_path.join(&entry.name)` at `:444`; note it's
 `merge_level` that recurses, not its caller `copy_directory_streaming:305`), so a top-level rename propagates through the
 subtree on its own. That asymmetry with the local path is worth a line in the docs.
 
@@ -307,12 +307,12 @@ bulk-skips all of them and **the duplicate silently does nothing**.
 
 This affects **F5/F6 and drag and drop**, both of which go through `TransferDialog`
 (`drag-drop-controller.svelte.ts:186`, `:213`). Paste is genuinely unaffected: `pasteFromClipboard`
-(`clipboard-operations.ts:288`) calls `dialogs.startTransferProgress(...)` directly and never runs this precheck.
+(`clipboard-operations.ts:236`) calls `dialogs.startTransferProgress(...)` directly and never runs this precheck.
 
 **Where to fix it.** The per-backend `scan_for_conflicts` implementations (`local_posix.rs:714`, `smb/scan.rs:445`,
 `mtp/scan.rs:208`) can't answer this: they receive `SourceItemInfo`, which carries a *name* and no source path
 (`cmdr-fs/src/volume/types.rs:303`). Rather than widen that DTO across three backends and their test doubles, filter one
-level up in `scan_volume_for_conflicts_within` (`commands/file_system/volume_copy.rs:361`), which already receives
+level up in `scan_volume_for_conflicts_within` (`commands/file_system/volume_copy.rs:186`), which already receives
 `source_paths: Option<Vec<String>>`: drop any returned `ScanConflict` whose `dest_path` is the same file as one of the
 sources. One place, one definition of self-collision, no trait churn.
 
