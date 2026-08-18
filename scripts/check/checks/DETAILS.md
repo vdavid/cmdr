@@ -287,14 +287,14 @@ two files say the same thing, at which lines.
 **Decision**: the clone list is the product, the percentage is a footnote. **Why**: nobody refactors a percentage. A
 lane that keeps only the aggregate can't name a target, which is what a duplication check is for.
 
-**Decision**: two checks, not one with two lanes. **Why**: they carry different `Inputs` (a TypeScript edit shouldn't
+**Decision**: two checks, each owning one lane. **Why**: they carry different `Inputs` (a TypeScript edit shouldn't
 invalidate the Rust lane's cache), different `Tech` (the runner groups its output by it), different sensitivity floors,
 and separate CI steps, so one lane's warn doesn't hide the other's. They share every line of logic through `jscpd.go`;
 each `{app}-{name}.go` file is a `jscpdLane` value plus a one-line entry point.
 
 **Decision**: in the default local lane, not `--fast` and not CI-only. **Why**: a copy-paste is cheapest to undo at the
-milestone where somebody wrote it; the same warn three weeks later in CI is archaeology. The cost is ~11 s (Rust) and
-~5 s (frontend), both cheap enough for a per-milestone run and too slow for the pre-commit lane.
+milestone where somebody wrote it; the same warn three weeks later in CI is archaeology. The cost is ~11 s (Rust) and ~5
+s (frontend), both cheap enough for a per-milestone run and too slow for the pre-commit lane.
 
 ### Thresholds
 
@@ -312,11 +312,12 @@ Both floors are measured, not guessed; re-measure before moving one.
 ### Svelte is covered; there's just no `svelte` row
 
 jscpd tokenizes a `.svelte` file into three sub-formats: `typescript` for the script block, `css` for the style block,
-and `markup` for the template. So Svelte clones are reported under those names and the statistics carry no `svelte`
-row — which reads exactly like "Svelte didn't parse". ❌ Don't drop `svelte` from the lane's `--format` list on that
-evidence: dropping it makes jscpd skip every `.svelte` file outright, which is the real blind spot. (Verified on jscpd
-4.2.3, 2026-08-18: `getFormatByFile('a.svelte')` returns `svelte`, and 16 of the frontend lane's 22 pairs are `.svelte`
-files.)
+and `markup` for the template. So Svelte clones are reported under those names and the statistics carry no `svelte` row
+— which reads exactly like "Svelte didn't parse", and makes dropping `svelte` from the lane's `--format` list look like
+a cleanup. Dropping it is what would create the blind spot: jscpd then skips every `.svelte` file outright. The
+guardrail against that sits on the `formats` field in `desktop-svelte-jscpd.go`, where the edit would happen. (Verified
+on jscpd 4.2.3, 2026-08-18: `getFormatByFile('a.svelte')` returns `svelte`, and 16 of the frontend lane's 22 pairs are
+`.svelte` files.)
 
 The frontend lane scans `apps/desktop/src` only. `apps/website`, `apps/api-server`, and `apps/analytics-dashboard` are a
 deliberate blind spot: 436,000 lines against roughly 12,000 each, so three more lanes would buy coverage of 3% of the
@@ -328,15 +329,15 @@ frontend line count. Revisit when one of them grows.
 `"path/a.rs ↔ path/b.rs"` (sorted, so report order can't mint a second entry; a single path for a clone with both ends
 in one file) to the duplicated line count that pair may carry.
 
-**Decision**: the key is the file pair, ❌ not the clone. **Why**: a churning allowlist is worse than no allowlist. A
-`file:line` key moves the moment anything above the clone changes, and a content hash of the fragment changes the moment
-somebody renames a variable in both copies — both would rewrite the JSON on edits that changed no duplication at all. A
-pair of paths only moves when a file is renamed or deleted. What a pair key gives up is "the clone moved to a different
-part of the same two files", which was never a regression.
+**Decision**: the key is the file pair, never an individual clone. **Why**: a churning allowlist is worse than no
+allowlist. A `file:line` key moves the moment anything above the clone changes, and a content hash of the fragment
+changes the moment somebody renames a variable in both copies — both would rewrite the JSON on edits that changed no
+duplication at all. A pair of paths only moves when a file is renamed or deleted. What a pair key gives up is "the clone
+moved to a different part of the same two files", which was never a regression.
 
-**Decision**: the value is duplicated lines, ❌ not a clone count. **Why**: one number then catches both regressions.
-A new duplicated block between the same two files raises it, and an existing block growing raises it too — a clone count
-would miss the second entirely.
+**Decision**: the value is duplicated lines rather than a clone count. **Why**: one number then catches both
+regressions. A new duplicated block between the same two files raises it, and an existing block growing raises it too —
+a clone count would miss the second entirely.
 
 **Decision**: no slack buffer, unlike the two length allowlists. **Why**: a line or word count drifts on nearly every
 edit, so those need one. A duplicated-line count only moves when duplication is added or removed, so there's nothing for
@@ -353,8 +354,8 @@ doubles as the complete inventory: every duplicated file pair in the repo is a l
   and lines of that pair's widest clone. Visible under `pnpm check -v`. This is the standing map of where duplication
   lives.
 - **Warn**: only the delta — every pair over its number, with EVERY clone behind it as `file:line ↔ file:line` — then
-  the one-line headline. ❌ The standing inventory is deliberately absent here: burying three new lines under ten
-  standing ones is how a check teaches people to skip it.
+  the one-line headline. The standing inventory is deliberately absent here: burying three new lines under ten standing
+  ones is how a check teaches people to skip it.
 
 `jscpdSpan` orders the two ends of a location because jscpd reports a few intra-file clones backwards (`start` 105,
 `end` 51, with the byte positions agreeing), which printed verbatim reads like the tool is broken.
@@ -918,18 +919,18 @@ Checks by app and tech:
 - **Desktop / Rust**: rustfmt, clippy, rustdoc (`cargo doc --all-features --document-private-items` over every
   first-party member, with every doc lint in `rustdocDeniedLints` denied and any leftover warning failing the check too;
   the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
-  cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (warn-only; the clone list, on a per-file-pair ratchet), log-error-macro, sqlite-open-direct (every SQLite
-  connection opens through `crate::sqlite_util`, so the process-wide shared page cache is always installed before SQLite
-  initializes), error-string-match, lock-poison, test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in
-  test code, where a condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
-  `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on `std::env::temp_dir()`, where every
-  process on the machine shares the path and two suite runs delete each other's live fixtures; the sanctioned fixture is
-  `crate::test_support::TestDir`, and a site where the temp root is load bearing opts out with
-  `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of `CachedScanResult` /
-  `SourceHint` / `VolumePreflight` in test code, so a fixture can only be one of the shapes a named constructor actually
-  builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder — the shapes are already
-  clean, and the point is that the next test author can't undo that by copy-pasting an old literal),
-  derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
+  cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (warn-only; the clone list, on a per-file-pair ratchet),
+  log-error-macro, sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
+  shared page cache is always installed before SQLite initializes), error-string-match, lock-poison, test-sleep (flags a
+  fixed `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a
+  genuine sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built
+  on `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's
+  live fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load
+  bearing opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
+  `CachedScanResult` / `SourceHint` / `VolumePreflight` in test code, so a fixture can only be one of the shapes a named
+  constructor actually builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder —
+  the shapes are already clean, and the point is that the next test author can't undo that by copy-pasting an old
+  literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
   `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information", it's a claim about
   the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in production
   `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the branch that
@@ -963,23 +964,22 @@ doubles as production code.
   stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
   (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), dialog-gallery-coverage (every
   `SOFT_DIALOG_REGISTRY` id has a row in the Debug > Soft dialogs gallery, and every row names a registered id),
-  btn-restyle, bare-poll, svelte-check, import-cycles, jscpd (warn-only; the frontend clone list, TypeScript and Svelte),
-  message-keys-fresh (regenerate-and-diff `keys.gen.ts` from the
-  message catalogs), message-key-naming (the `area.feature.leaf` shape + known-area first segment), message-keys-unused
-  (catalog keys never referenced in `src/`; error-level, with a closed dynamic-prefix allowlist for runtime-built keys),
-  message-screenshots-fresh (warn-only; drift between the committed i18n capture report and the catalogs'
-  `@key.screenshot` couplings; runs the coupler's `--check`, reads no PNGs), i18n-stale (warn-only; a non-`en`
-  translation whose `@key.sourceHash` no longer matches the English value), i18n-parity (ERROR; each locale key's
-  `{placeholder}`+`<tag>` set, or raw `{token}` set for `errors.*`, must equal English's, since a mismatch crashes at
-  runtime), i18n-icu (ERROR; every non-`errors.*` locale message must compile via `intl-messageformat`),
-  i18n-tag-param-collision (ERROR; a message naming a `<tag>` and a `{param}` alike renders the param as a stringified
-  handler, because `Trans` lets the tag win the merged lookup), i18n-trans-snippets (ERROR; a message `<tag>` with no
-  matching `snippets={{ … }}` key at the call site renders as nothing, so its inner text silently vanishes; catches a
-  rename finished on only one side), i18n-plural (ERROR; each plural covers its locale's required CLDR categories, gated
-  on the English source's plural shape), i18n-coverage (ERROR; keys missing from a locale, or byte-identical to English
-  without a `@key.sameAsSourceJustification`, either of which ships a half-translated locale), i18n-dont-translate
-  (warn-only; a curated brand/system token English carries but the locale dropped), knip, type-drift, tests,
-  e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
+  btn-restyle, bare-poll, svelte-check, import-cycles, jscpd (warn-only; the frontend clone list, TypeScript and
+  Svelte), message-keys-fresh (regenerate-and-diff `keys.gen.ts` from the message catalogs), message-key-naming (the
+  `area.feature.leaf` shape + known-area first segment), message-keys-unused (catalog keys never referenced in `src/`;
+  error-level, with a closed dynamic-prefix allowlist for runtime-built keys), message-screenshots-fresh (warn-only;
+  drift between the committed i18n capture report and the catalogs' `@key.screenshot` couplings; runs the coupler's
+  `--check`, reads no PNGs), i18n-stale (warn-only; a non-`en` translation whose `@key.sourceHash` no longer matches the
+  English value), i18n-parity (ERROR; each locale key's `{placeholder}`+`<tag>` set, or raw `{token}` set for
+  `errors.*`, must equal English's, since a mismatch crashes at runtime), i18n-icu (ERROR; every non-`errors.*` locale
+  message must compile via `intl-messageformat`), i18n-tag-param-collision (ERROR; a message naming a `<tag>` and a
+  `{param}` alike renders the param as a stringified handler, because `Trans` lets the tag win the merged lookup),
+  i18n-trans-snippets (ERROR; a message `<tag>` with no matching `snippets={{ … }}` key at the call site renders as
+  nothing, so its inner text silently vanishes; catches a rename finished on only one side), i18n-plural (ERROR; each
+  plural covers its locale's required CLDR categories, gated on the English source's plural shape), i18n-coverage
+  (ERROR; keys missing from a locale, or byte-identical to English without a `@key.sameAsSourceJustification`, either of
+  which ships a half-translated locale), i18n-dont-translate (warn-only; a curated brand/system token English carries
+  but the locale dropped), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
   `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input
