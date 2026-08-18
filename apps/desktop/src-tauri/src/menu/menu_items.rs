@@ -140,7 +140,14 @@ pub(crate) fn build_view_mode_items<R: Runtime>(
         view_mode == ViewMode::Brief,
         Some("Cmd+2"),
     )?;
-    let full_right = CheckMenuItem::with_id(app, VIEW_MODE_FULL_RIGHT_ID, full_view_label(), true, false, None::<&str>)?;
+    let full_right = CheckMenuItem::with_id(
+        app,
+        VIEW_MODE_FULL_RIGHT_ID,
+        full_view_label(),
+        true,
+        false,
+        None::<&str>,
+    )?;
     let brief_right = CheckMenuItem::with_id(
         app,
         VIEW_MODE_BRIEF_RIGHT_ID,
