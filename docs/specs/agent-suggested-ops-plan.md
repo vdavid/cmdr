@@ -101,6 +101,14 @@ Consequences:
   the edge. The resolution work an extract needs (`resolve_source`, the parent-aware resolve routing an archive-inner
   batch to its `ArchiveVolume`, and `resolve_dest_path`, tilde expansion plus root-anchoring) is private to that command
   module and has to be lifted. That is real M2 work.
+- ❌ **A group's destination must never be inside an archive.** Copy or move INTO a zip, and move OUT of one, plan from
+  their own `WalkDir` rather than the per-source engine, so there is nowhere to apply a source binding. M2 makes those
+  routes REFUSE a binding rather than run unbound, which is the right backstop but the wrong layer on its own: a
+  user-started copy-into-zip works while an approved one refuses, and it refuses AFTER the user approved — the exact
+  agent-specific execution behaviour the guiding principle forbids. So the constraint belongs at the PROPOSAL boundary:
+  `GroupIntent` must not be constructible with an archive-inner destination, the way it already forecloses a trash group
+  with a destination. Keep the executor fence as the backstop; make the proposal layer mean it never fires. (Extract is
+  unaffected: it has an archive SOURCE and a normal destination, and runs through the bound `copy_between_volumes`.)
 
 ### Selectors: how the agent proposes 60,000 ops
 
