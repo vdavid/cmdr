@@ -13,6 +13,7 @@
  * - evaluate() takes a string expression, not a function
  */
 
+import { expect } from '@playwright/test'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 /** Union type for tauriPage. Works in both Tauri and browser mode. */
@@ -445,6 +446,27 @@ export function sleep(ms: number): Promise<void> {
     process.stdout.write(`[sleep] +${String(ms)}ms @ ${frame}\n`)
   }
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/** The name currently in the inline rename editor, or `''` when it isn't open. */
+export async function renameEditorValue(tauriPage: PageLike): Promise<string> {
+  return tauriPage.evaluate<string>(`document.querySelector('.rename-input')?.value ?? ''`)
+}
+
+/**
+ * Replaces the rename editor's value the way typing does (the native value
+ * setter plus an `input` event, since Svelte reads `e.target.value`), then waits
+ * for the reactive update to mirror it back.
+ */
+export async function setRenameInput(tauriPage: PageLike, value: string): Promise<void> {
+  await tauriPage.evaluate(`(function() {
+            var input = document.querySelector('.rename-input');
+            input.focus();
+            var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+            desc.set.call(input, ${JSON.stringify(value)});
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        })()`)
+  await expect.poll(async () => renameEditorValue(tauriPage), { timeout: 3000 }).toBe(value)
 }
 
 /**
