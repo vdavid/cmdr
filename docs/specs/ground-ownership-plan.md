@@ -231,12 +231,12 @@ QUEUES). What executing M7 changed about the rest of this plan:
   every tick — so a pane parked on covered ground hid the folder somebody just opened, indefinitely. Both sides now ask
   whether ANY remembered folder still has its turn coming
   (`visits::tests::a_folder_behind_one_that_had_its_turn_is_still_waiting`).
-- **Invariant density: 387 → 398 for `crates/cmdr-index` (+11 net).** The cover pair lost 9 (rules MOVED into the new
-  `live/` pair), the `live/` pair holds 18, and `phases/DETAILS.md` gained 2. Roughly seven are genuinely new, and they
-  are the preemption policy: who may be asked, who may never be, what a stopped walk owes. ⚠️ **Five of the five shipped
-  milestones have raised the count**, which is the plain answer to the thesis this plan is named for: adding a mechanism
-  adds rules, and this one added the most product value of the five. Every new rule names the test that catches it where
-  one exists, and says so plainly where none can.
+- **Invariant density: 387 → 401 for `crates/cmdr-index` (+14 net).** The cover pair lost 9 as rules MOVED into the new
+  `live/` pair, which holds 18; `phases/CLAUDE.md` gained 3 and its `DETAILS.md` 2. So about ten are genuinely new, and
+  they are the preemption policy: who may be asked, who may never be, what a stopped walk owes, and which end of the
+  visit log both sides read. ⚠️ **Five of the five shipped milestones have raised the count**, which is the plain answer
+  to the thesis this plan is named for: adding a mechanism adds rules, and this one added the most product value of the
+  five. Every new rule names the test that catches it where one exists, and says so plainly where none can.
 
 What executing M4 changed about the rest of this plan:
 
