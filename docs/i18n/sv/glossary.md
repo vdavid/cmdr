@@ -1253,8 +1253,8 @@ ihop.
 
 ## Föreslagna åtgärder: rutan för det Ask Cmdr föreslår (`suggestedOps.*`, `commands.suggestedOpsShow.*`, 2026-08-19)
 
-- ops (agentens föreslagna filåtgärder) → `åtgärder`; titeln blir `Föreslagna åtgärder` · följer husets
-  "File operations" → `Filåtgärder` · high
+- ops (agentens föreslagna filåtgärder) → `åtgärder`; titeln blir `Föreslagna åtgärder` · följer husets "File
+  operations" → `Filåtgärder` · high
 - approve → `Godkänn` · standard; valt framför macOS `Ta emot`, som hör till att ta emot en AirDrop-fil och inte till
   att låta något köra · high
 - reject → `Avböj` · macOS Finder, paret Ta emot/Avböj i AirDrop-rutan (Tier 1) · high

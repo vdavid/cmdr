@@ -1456,9 +1456,10 @@ JELENTÉSE ellentétes, ezért a nyitó tagmondat szándékosan más.
 
 ## Javasolt műveletek: az Ask Cmdr javaslatainak ablaka (`suggestedOps.*`, `commands.suggestedOpsShow.*`, 2026-08-19)
 
-- ops (az ügynök által javasolt fájlműveletek) → `műveletek`; a cím `Javasolt műveletek` · a katalógus
-  `fájlművelet` szóhasználatához igazítva · high
-- approve → `Jóváhagyás` · ms; a macOS `Elfogadás` az AirDrop-elfogadás párja, itt viszont engedélyezésről van szó · high
+- ops (az ügynök által javasolt fájlműveletek) → `műveletek`; a cím `Javasolt műveletek` · a katalógus `fájlművelet`
+  szóhasználatához igazítva · high
+- approve → `Jóváhagyás` · ms; a macOS `Elfogadás` az AirDrop-elfogadás párja, itt viszont engedélyezésről van szó ·
+  high
 - reject → `Elutasítás` · macOS Finder AirDrop-panel (Tier 1) · high
 - "This can't be undone" → `Ezt nem lehet visszavonni` · macOS Finder ("Ezt a műveletet nem vonhatja vissza"),
   tegező-semleges alakra hozva, mert a Cmdr tegez · high

@@ -1540,8 +1540,8 @@ doit jamais laisser entendre que le nom est resté inchangé.
 
 - ops (l'ensemble d'opérations proposé par l'agent) → `opérations` ; le titre devient `Opérations suggérées` · terme
   maison ("File operations" → "Opérations sur les fichiers") · high
-- approve → `Approuver` · MS ; retenu plutôt que le `Accepter` de macOS, car la variante avec décompte
-  ("Approuver 3 fichiers") autorise une action au lieu d'accepter un objet · high
+- approve → `Approuver` · MS ; retenu plutôt que le `Accepter` de macOS, car la variante avec décompte ("Approuver 3
+  fichiers") autorise une action au lieu d'accepter un objet · high
 - reject → `Refuser` · macOS Finder, paire Accepter/Refuser du panneau AirDrop (Tier 1) · high
 - "This can't be undone" → `Cette opération est irréversible` · macOS Finder, mot pour mot (alerte de suppression
   immédiate) · high

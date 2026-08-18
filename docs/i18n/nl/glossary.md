@@ -1492,8 +1492,8 @@ bestand zijn naam heeft gehouden: dat is precies wat we niet weten. Daarmee staa
 
 - ops (de door de agent voorgestelde bestandsbewerkingen) → `bewerkingen`; titel `Voorgestelde bewerkingen` · sluit aan
   op "File operations" → "Bestandsbewerkingen" · high
-- approve → `Goedkeuren` · ms/standaard NL; gekozen boven het `Accepteer` van macOS, omdat de telvariant
-  ("3 bestanden goedkeuren") toestemming geeft in plaats van iets aan te nemen · high
+- approve → `Goedkeuren` · ms/standaard NL; gekozen boven het `Accepteer` van macOS, omdat de telvariant ("3 bestanden
+  goedkeuren") toestemming geeft in plaats van iets aan te nemen · high
 - reject → `Weigeren` · macOS Finder, het paar Accepteer/Weiger in het AirDrop-venster (Tier 1); infinitief, omdat de
   knoppen hier infinitief zijn · high
 - "This can't be undone" → `Dit kun je niet ongedaan maken` · macOS Finder, woord voor woord (waarschuwing bij direct
