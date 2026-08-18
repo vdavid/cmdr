@@ -33,5 +33,5 @@ mod tests;
 
 pub use group::{execute_get_suggestion_group, get_suggestion_group_schema};
 pub use list::{execute_list_suggestions, list_suggestions_schema};
-pub use propose::{execute_propose_suggestions, propose_suggestions_schema};
 pub(crate) use propose::propose_in_thread;
+pub use propose::{execute_propose_suggestions, propose_suggestions_schema};

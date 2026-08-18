@@ -320,7 +320,9 @@ fn group_problem_content(problem: &GroupProblem) -> (&'static str, String) {
         ),
         GroupProblem::TooManyPaths { sent } => (
             "tooManyPaths",
-            format!("{sent} paths is past the {MAX_PATHS} one group may name. Describe them with a selector instead: Cmdr resolves it here and the user still reviews every file it matched."),
+            format!(
+                "{sent} paths is past the {MAX_PATHS} one group may name. Describe them with a selector instead: Cmdr resolves it here and the user still reviews every file it matched."
+            ),
         ),
         GroupProblem::RelativePath { path } => (
             "relativePath",
@@ -344,12 +346,14 @@ fn apply_refusal_content(refusal: &ApplyRefusal) -> Value {
             None,
             format!("There's no sweep {sweep_id}. Call list_suggestions to see what's waiting."),
         ),
-        ApplyRefusal::UnknownGroup { group, group_id } => refusal_content(
-            "unknownGroup",
-            Some(*group),
-            format!("There's no group {group_id}."),
-        ),
-        ApplyRefusal::GroupNotPending { group, group_id, status } => refusal_content(
+        ApplyRefusal::UnknownGroup { group, group_id } => {
+            refusal_content("unknownGroup", Some(*group), format!("There's no group {group_id}."))
+        }
+        ApplyRefusal::GroupNotPending {
+            group,
+            group_id,
+            status,
+        } => refusal_content(
             "groupNotPending",
             Some(*group),
             format!(
@@ -563,12 +567,7 @@ fn new_group(intent: GroupIntent, naming: ExplicitNaming, rationale: Option<Stri
 /// Write one group: a fresh one, or a replacement for a pending one. A group that left
 /// `pending` between the check and this write keeps the answer the user gave it, and the
 /// report says so.
-fn write_group(
-    conn: &Connection,
-    sweep_id: i64,
-    entry: ResolvedGroup,
-    now: i64,
-) -> Result<GroupReport, ApplyRefusal> {
+fn write_group(conn: &Connection, sweep_id: i64, entry: ResolvedGroup, now: i64) -> Result<GroupReport, ApplyRefusal> {
     let verb = entry.group.intent.verb();
     let op_count = entry.group.intent.op_count();
     let display_name = entry.group.display_name.clone();

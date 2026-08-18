@@ -200,10 +200,17 @@ pub(super) enum PlanRefusal {
     /// The JSON didn't parse into the tool's shape at all.
     Malformed,
     NoGroups,
-    TooManyGroups { sent: usize },
+    TooManyGroups {
+        sent: usize,
+    },
     /// A `groupId` with no `sweepId`: an amendment has to say which sweep it amends.
-    GroupIdWithoutSweep { group: usize },
-    Group { group: usize, problem: GroupProblem },
+    GroupIdWithoutSweep {
+        group: usize,
+    },
+    Group {
+        group: usize,
+        problem: GroupProblem,
+    },
 }
 
 /// What one group got wrong.
@@ -219,17 +226,29 @@ pub(super) enum GroupProblem {
     SelectorCantRename,
     /// A field the verb's executor doesn't bind (a destination on a trash group, a parent
     /// on a move).
-    UnboundField { field: &'static str },
+    UnboundField {
+        field: &'static str,
+    },
     /// A field the verb's executor requires.
-    MissingField { field: &'static str },
+    MissingField {
+        field: &'static str,
+    },
     /// `sourceVolumeId` / `displayName` sent alongside a selector, which supplies both.
-    SelectorSuppliesField { field: &'static str },
+    SelectorSuppliesField {
+        field: &'static str,
+    },
     EmptySources,
-    TooManyPaths { sent: usize },
+    TooManyPaths {
+        sent: usize,
+    },
     /// A path that is neither absolute nor a `scheme://` virtual path.
-    RelativePath { path: String },
+    RelativePath {
+        path: String,
+    },
     /// A rename destination that is a path rather than a bare name.
-    NotABareName { name: String },
+    NotABareName {
+        name: String,
+    },
     /// A size or age window nothing can satisfy.
     ImpossibleWindow,
 }
@@ -264,14 +283,10 @@ pub(super) fn plan_sweep(params: &serde_json::Value, now: i64) -> Result<Planned
 
 fn plan_group(group: GroupInput, now: i64) -> Result<PlannedGroup, GroupProblem> {
     let is_rename = group.verb == ProposalVerb::Rename;
-    let sources_given = [
-        group.paths.is_some(),
-        group.renames.is_some(),
-        group.selector.is_some(),
-    ]
-    .into_iter()
-    .filter(|given| *given)
-    .count();
+    let sources_given = [group.paths.is_some(), group.renames.is_some(), group.selector.is_some()]
+        .into_iter()
+        .filter(|given| *given)
+        .count();
     match sources_given {
         0 => return Err(GroupProblem::NoSources),
         1 => {}
@@ -492,5 +507,6 @@ fn plan_selector(input: SelectorInput, now: i64) -> Result<OpSelector, GroupProb
 /// The unix second `days` whole days before `now`, floored at the epoch so an absurd day
 /// count can't wrap into the future.
 fn days_ago(now: i64, days: u32) -> i64 {
-    now.saturating_sub(i64::from(days).saturating_mul(SECONDS_PER_DAY)).max(0)
+    now.saturating_sub(i64::from(days).saturating_mul(SECONDS_PER_DAY))
+        .max(0)
 }

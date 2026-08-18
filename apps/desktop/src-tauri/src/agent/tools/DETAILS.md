@@ -1,6 +1,6 @@
 # Agent tools — details
 
-The toolset the Ask Cmdr chat agent dispatches in-process: read tools today, plus the `Propose` tier it may grow into.
+The toolset the Ask Cmdr chat agent dispatches in-process: the read families, and the `Propose` tier over them.
 Must-knows: `CLAUDE.md`.
 
 ## The two-view registry model
@@ -65,6 +65,11 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   honesty (it reuses `photos.rs`'s helpers), and a typed per-path `indexed` / `notIndexed` so a not-yet-enriched file
   is never read as an empty one. Privacy: this is the widest derived-content egress the agent has (full recognized
   text, not a snippet) — same consent gate, same copy.
+
+- **`list_suggestions` / `get_suggestion_group` / `propose_suggestions`** (`suggestions/`) — the suggested-ops surface
+  over the proposal spine: what the agent has already put in front of the user (summaries and counts, never op rows),
+  one group's ops paged, and the one tool that stages a sweep or amends a pending group. Access classes, the
+  resolve-check-write order, the selector schema, and the last-opened gap: `suggestions/DETAILS.md`.
 
 ## One tool, both questions (`list_dir`)
 

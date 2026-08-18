@@ -47,7 +47,7 @@ const PLAN_ROW_PER_FILE: usize = PLAN_ROW_TOKENS_PER_FILE;
 const LISTING_PER_FILE: usize = LISTING_TOKENS_PER_FILE;
 
 /// The whole 100-file rename turn, prefix included.
-const HUNDRED_FILE_TURN: usize = 39_922;
+const HUNDRED_FILE_TURN: usize = 41_554;
 
 const SHOTS_DIR: &str = "/Users/me/Downloads/shots";
 

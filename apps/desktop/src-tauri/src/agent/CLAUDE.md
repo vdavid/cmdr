@@ -12,8 +12,8 @@ entity, not the surface, so later proactive slices (proposals, notifications) gr
 - `suggested_ops/`: the service over that spine — selector resolution against the drive index, and the acceptance-rate
   metric. See `suggested_ops/CLAUDE.md`.
 - `types.rs`: store-only token enums (`ConversationOrigin`, the proposal vocabulary) + `token_enum!` macro.
-- `tools/`: the in-process toolset, five read families as `consumers: [Agent]` registry entries, plus gated dispatch
-  (the no-write choke point). See `tools/CLAUDE.md`.
+- `tools/`: the in-process toolset — reads, the rename proposal, the suggested-ops trio — plus gated dispatch (the
+  no-write choke point). See `tools/CLAUDE.md`.
 - `chat/`: the chat runtime (`run_turn` + `ChatRuntime`: single-flight, budgets, cancellation, crash-safe persistence,
   the `AgentChatEvent` seam) + pure context assembly. See `chat/CLAUDE.md`.
 - `consent.rs`: the consent gate (`CONSENT_COPY_VERSION` + `has_current_consent`, fails closed).

@@ -199,7 +199,7 @@ same shape as the interactive model override.
 
 ### A local window too small to use
 
-`prompt_budget_for_local_context(4096)` was 2,457 tokens against 3,476 of fixed overhead: the shipped default could not
+`prompt_budget_for_local_context(4096)` was 2,457 tokens against 4,972 of fixed overhead: the shipped default could not
 complete one turn. So `MIN_LOCAL_CONTEXT_TOKENS = 16_384` is the floor, `ai.localContextSize` offers nothing smaller,
 and a stored 2,048 / 4,096 / 8,192 no longer validates (it resolves to the 16,384 default on load, migrating an early
 tester instead of leaving them broken).
@@ -230,13 +230,13 @@ all. A persist problem is logged and dropped — a gauge is worth no turn.
 `files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits, as the **smaller of two
 limits**:
 
-- what the PROMPT holds: `(budget − 10% headroom − 3,476 of prefix) / 349 per file`. The headroom exists because the
+- what the PROMPT holds: `(budget − 10% headroom − 4,972 of prefix) / 349 per file`. The headroom exists because the
   measured 100-file turn came in ~4% above what the per-file costs account for (the paths the calls name, the envelope,
   the user's sentence, JSON scaffolding).
 - what one REPLY can emit: `AGENT_MAX_OUTPUT_TOKENS` (12,000), less a half-slot reasoning reserve, divided by the plan
   row's 59 tokens, so **101**.
 
-31 files at 16,000, 72 at 32,000, then **101 from roughly 45,000 upward** — including at 200,000, because past that
+27 files at 16,000, 68 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
 crossover the reply's ceiling binds and a bigger window buys no bigger batch.
 
 **Both limits are load-bearing.** The number is advertised to the model as "propose this many files" and the model
@@ -256,16 +256,18 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and the plan's "measured ground truth" section together.
 
-- **Fixed overhead: 3,476 tokens** on every single call — 963 for `SYSTEM_PROMPT` and 2,513 for the 11 tool
+- **Fixed overhead: 4,972 tokens** on every single call — 1,371 for `SYSTEM_PROMPT` and 3,601 for the 14 tool
   declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch fit and a
-  12-file one did not.
+  12-file one did not. **It grows with the tool view**: the suggested-ops trio added ~1,100 tokens of schema, which every
+  call pays whether or not it suggests anything, and which costs a 16k budget about four files of rename batch. A new
+  tool's schema is prefix, so keep its descriptions terse and say the rest once, in the registry line or the prompt.
 - **Per file: 269 for an `image_facts` row** (at 900 chars of OCR, the corpus average, against the 2,000-char cap — a
   text-dense corpus costs up to ~2.2× more), **59 for a plan row**, **21 for a pane-listing entry**. The facts dominate
   by more than 3×, so a window has to be sized for them, not for the plan.
-- **A 100-file content-based rename: 39,922 tokens** for the whole turn. The parts above account for over 90% of it; the
+- **A 100-file content-based rename: 41,554 tokens** for the whole turn. The parts above account for over 90% of it; the
   rest is the paths the calls name, the envelope, the user's sentence, and JSON scaffolding. The facts arrive over
   several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn.
-- So **60k does 100 files, 16k does roughly 30** (`files_per_batch` says 101 and 31). A model's window must exceed the
+- So **60k does 100 files, 16k does roughly 27** (`files_per_batch` says 101 and 27). A model's window must exceed the
   whole turn, not one page of it: every page of facts is evidence the plan cites, so none of it may elide.
 
 ## The runtime (`runtime/`)
