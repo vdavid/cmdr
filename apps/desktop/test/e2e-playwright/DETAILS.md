@@ -270,6 +270,10 @@ Only the layout facts that none of those carry live here:
   into `helpers/` directly.
 - **`global-setup.ts` creates or refreshes the ~170 MB fixture tree**, and `global-teardown.ts` removes it only when
   globalSetup created it. Per-instance roots and the hardlink strategy live in `../e2e-shared/DETAILS.md`.
+- **A spec needing a row the shared tree doesn't have writes the file itself**, before `ensureAppReady(…, {leftPane})`
+  so the readiness poll waits for the pane to list it. Reshaping `left/` for one spec's sake would push the change
+  through the ~40 specs that read it; the leak guard's restore removes anything not in the manifest, so the extra row
+  cleans itself up. `file-operations.spec.ts`'s three-file chained rename is the worked example.
 - **`viewer-tail.spec.ts` carries `test.describe.configure({ timeout: 30000 })`** to absorb the FSEvents debounce plus
   the backend coalescer, because it drives the real pipeline with `fs.appendFile`.
 - **`viewer-wordwrap-persistence.spec.ts` polls the instance's `settings.json`** (so it needs `CMDR_DATA_DIR`) instead
