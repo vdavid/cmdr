@@ -273,7 +273,10 @@ fn plan_refusal_content(refusal: &PlanRefusal) -> Value {
         PlanRefusal::TooManyGroups { sent } => refusal_content(
             "tooManyGroups",
             None,
-            format!("{sent} groups is more than one sitting's worth of review. Send at most {MAX_GROUPS}, and follow up with the rest."),
+            format!(
+                "{} is more than one sitting's worth of review. Send at most {MAX_GROUPS}, and follow up with the rest.",
+                crate::pluralize::pluralize(*sent as u64, "group")
+            ),
         ),
         PlanRefusal::GroupIdWithoutSweep { group } => refusal_content(
             "groupIdWithoutSweep",
@@ -321,7 +324,8 @@ fn group_problem_content(problem: &GroupProblem) -> (&'static str, String) {
         GroupProblem::TooManyPaths { sent } => (
             "tooManyPaths",
             format!(
-                "{sent} paths is past the {MAX_PATHS} one group may name. Describe them with a selector instead: Cmdr resolves it here and the user still reviews every file it matched."
+                "{} is past the {MAX_PATHS} one group may name. Describe them with a selector instead: Cmdr resolves it here and the user still reviews every file it matched.",
+                crate::pluralize::pluralize(*sent as u64, "path")
             ),
         ),
         GroupProblem::RelativePath { path } => (
