@@ -148,6 +148,43 @@ fn an_accepted_preflight_does_not_survive_a_store_reopen() {
     assert!(restarted.take_matching(&proposal_id, &allowed).is_none());
 }
 
+/// Staging is two commits (the spine owns group creation, so evidence can only be written once
+/// its ops have ids), which leaves one crash window: a group whose rows have no evidence. A row
+/// like that is the thing this module exists to prevent, a name on screen with nothing saying
+/// where it came from, so the WHOLE proposal is unreviewable rather than the one row.
+#[test]
+fn a_proposal_whose_rows_lost_their_evidence_is_refused_whole() {
+    let conn = migrated_conn();
+    let proposal = staged(
+        &conn,
+        vec![
+            draft_row("/shots/one.png", "a.png", EvidenceSource::Filename, "the old name"),
+            draft_row("/shots/two.png", "b.png", EvidenceSource::Filename, "the old name"),
+        ],
+    );
+    let orphaned: i64 = proposal
+        .rows
+        .get(1)
+        .expect("two rows")
+        .row_id
+        .parse()
+        .expect("op ids are numeric");
+
+    // What a crash between the two commits leaves behind, on one row of two.
+    conn.execute(
+        &format!("DELETE FROM proposal_rename_evidence WHERE op_id = {orphaned}"),
+        (),
+    )
+    .expect("orphan one row");
+
+    assert!(
+        super::super::store::load(&conn, &proposal.proposal_id)
+            .expect("load")
+            .is_none(),
+        "one row with no backing makes the whole review unavailable, never a partial plan"
+    );
+}
+
 /// Evidence rides the snapshot into the review dialog, so the reviewer can see what each name
 /// is based on rather than only old-name → new-name.
 #[test]

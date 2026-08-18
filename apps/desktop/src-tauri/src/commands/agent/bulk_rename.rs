@@ -78,9 +78,12 @@ pub async fn apply_bulk_rename(
     else {
         return Err(review_is_over());
     };
-    let Some(volume_id) = proposal.rows.first().map(|row| row.volume_id.clone()) else {
+    if proposal.rows.is_empty() {
         return Err(IpcError::from_err("This rename plan has no rows to apply."));
-    };
+    }
+    // One volume for the whole plan, straight off the group. There is nothing to cross-check:
+    // a rename group binds one source volume and its rows can't carry a different answer.
+    let volume_id = proposal.volume_id.clone();
 
     let fingerprints: HashMap<_, _> = accepted
         .fingerprints
@@ -265,7 +268,6 @@ mod tests {
         RenameProposalRow {
             row_id: "row".into(),
             source_path: "/shots/one.png".into(),
-            volume_id: "root".into(),
             destination_name: "renamed.png".into(),
             evidence: RenameEvidence {
                 source,

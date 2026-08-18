@@ -128,8 +128,10 @@ Only what is rename-specific lives here.
 
 Rename is the spine's documented exception: `GroupIntent::Rename` binds one shared PARENT and each op carries the name
 its source becomes, because `start_bulk_rename` refuses a row whose source and destination parents differ. So the plan
-boundary refuses a plan spanning two folders, and rows take the group's single `source_volume_id` rather than each
-carrying their own claim about which volume they're on.
+boundary refuses a plan spanning two folders, and the VOLUME is a field of `RenameProposal`, not of
+`RenameProposalRow`. A row cannot state which volume it is on, so "do these rows agree about their volume?" is a
+question apply can no longer ask, let alone answer wrong; the row snapshot's `volumeId` is filled from the proposal on
+its way to the dialog.
 
 The opaque ids the frontend holds are the group id and the op ids, as strings. Nothing above the store parses them: an
 id that isn't ours is simply unknown, and `load` answers `None` for it exactly as it does for a group that already left

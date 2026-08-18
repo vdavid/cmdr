@@ -95,11 +95,7 @@ pub async fn preflight<R: Runtime>(
     let Ok(Some(proposal)) = super::store::load(&conn, &proposal_id) else {
         return expired_preflight();
     };
-    let outcome = if proposal
-        .rows
-        .first()
-        .is_some_and(|row| volume_uses_local_paths(&row.volume_id))
-    {
+    let outcome = if volume_uses_local_paths(&proposal.volume_id) {
         let blocking_proposal = proposal.clone();
         let blocking_allowed_row_ids = allowed_row_ids.clone();
         match tokio::task::spawn_blocking(move || preflight_local(&blocking_proposal, &blocking_allowed_row_ids)).await
@@ -223,10 +219,7 @@ async fn preflight_remote(proposal: &RenameProposal, allowed_row_ids: &[String])
     mark_duplicate_destinations(&allowed, &mut rows);
     let allowed_sources: HashSet<&str> = allowed.iter().map(|row| row.source_path.as_str()).collect();
     let mut fingerprints = Vec::new();
-    let Some(volume_id) = proposal.rows.first().map(|row| row.volume_id.as_str()) else {
-        return finish_preflight(rows, fingerprints);
-    };
-    let Some(volume) = crate::file_system::volume::manager::get_volume_manager().get(volume_id) else {
+    let Some(volume) = crate::file_system::volume::manager::get_volume_manager().get(&proposal.volume_id) else {
         for status in rows.values_mut() {
             if status.status == BulkRenameRowStatus::Ready {
                 block(status, BulkRenameBlockReason::VolumeUnavailable);

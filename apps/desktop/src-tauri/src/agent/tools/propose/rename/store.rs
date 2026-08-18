@@ -71,6 +71,10 @@ pub struct RenameDraftRow {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenameProposal {
     pub proposal_id: String,
+    /// The one volume every row lives on. A GROUP field, never a per-row one: a rename group
+    /// binds one source volume, so "do all these rows agree about their volume?" is a question
+    /// that can't be asked here, let alone answered wrong.
+    pub volume_id: String,
     pub rows: Vec<RenameProposalRow>,
 }
 
@@ -78,7 +82,6 @@ pub struct RenameProposal {
 pub struct RenameProposalRow {
     pub row_id: String,
     pub source_path: String,
-    pub volume_id: String,
     pub destination_name: String,
     pub evidence: RenameEvidence,
     /// How much of the delivered text this row's quote covers, for an accepted `imageText`
@@ -119,13 +122,15 @@ impl RenameProposal {
     pub fn snapshot(&self) -> RenameProposalSnapshot {
         RenameProposalSnapshot {
             proposal_id: self.proposal_id.clone(),
-            rows: self.rows.iter().map(RenameProposalRow::snapshot).collect(),
+            rows: self.rows.iter().map(|row| row.snapshot(&self.volume_id)).collect(),
         }
     }
 }
 
 impl RenameProposalRow {
-    pub fn snapshot(&self) -> RenameProposalRowSnapshot {
+    /// The row as the dialog shows it. It takes the volume from its PROPOSAL, the only place a
+    /// rename's volume exists.
+    pub fn snapshot(&self, volume_id: &str) -> RenameProposalRowSnapshot {
         RenameProposalRowSnapshot {
             row_id: self.row_id.clone(),
             source_name: Path::new(&self.source_path)
@@ -135,7 +140,7 @@ impl RenameProposalRow {
                 .to_string(),
             destination_name: self.destination_name.clone(),
             source_path: self.source_path.clone(),
-            volume_id: self.volume_id.clone(),
+            volume_id: volume_id.to_string(),
             evidence: self.evidence.clone(),
             coverage: self.coverage.clone(),
         }
@@ -328,7 +333,6 @@ pub fn load(conn: &Connection, proposal_id: &str) -> Result<Option<RenameProposa
         rows.push(RenameProposalRow {
             row_id: op.id.to_string(),
             source_path: op.source_path,
-            volume_id: group.source_volume_id.clone(),
             destination_name: op.destination.unwrap_or_default(),
             evidence: row_evidence,
             coverage,
@@ -336,6 +340,7 @@ pub fn load(conn: &Connection, proposal_id: &str) -> Result<Option<RenameProposa
     }
     Ok(Some(RenameProposal {
         proposal_id: group_id.to_string(),
+        volume_id: group.source_volume_id,
         rows,
     }))
 }
@@ -381,9 +386,13 @@ pub fn revise_row(
     .execute(params![op_id, EvidenceSource::UserEdited.as_token()])?;
     tx.commit()?;
 
-    Ok(load(conn, proposal_id)?
-        .and_then(|proposal| proposal.rows.into_iter().find(|row| row.row_id == row_id))
-        .map(|row| row.snapshot()))
+    Ok(load(conn, proposal_id)?.and_then(|proposal| {
+        proposal
+            .rows
+            .iter()
+            .find(|row| row.row_id == row_id)
+            .map(|row| row.snapshot(&proposal.volume_id))
+    }))
 }
 
 /// The stored id behind an opaque id the frontend handed back — a group id for a proposal, an

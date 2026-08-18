@@ -13,6 +13,7 @@ use crate::agent::tools::propose::evidence::{EvidenceSource, RenameEvidence};
 fn cycle_warnings_mark_only_closed_dependency_components() {
     let proposal = RenameProposal {
         proposal_id: "proposal".into(),
+        volume_id: "root".into(),
         rows: vec![
             proposal_row("chain-a", "/x/a", "b"),
             proposal_row("chain-b", "/x/b", "free"),
@@ -39,7 +40,6 @@ fn proposal_row(row_id: &str, source_path: &str, destination_name: &str) -> Rena
     RenameProposalRow {
         row_id: row_id.into(),
         source_path: source_path.into(),
-        volume_id: "root".into(),
         destination_name: destination_name.into(),
         evidence: RenameEvidence {
             source: EvidenceSource::Filename,
@@ -85,6 +85,7 @@ fn local_preflight_blocks_a_source_that_no_longer_exists() {
     let missing = temp.path().join("missing.png");
     let proposal = RenameProposal {
         proposal_id: "proposal".into(),
+        volume_id: "root".into(),
         rows: vec![proposal_row(
             "row",
             missing.to_str().expect("UTF-8 temp path"),
@@ -109,6 +110,7 @@ fn duplicate_final_targets_block_every_row_in_the_group() {
     let mut statuses = initial_rows(
         &RenameProposal {
             proposal_id: "proposal".into(),
+            volume_id: "root".into(),
             rows: vec![first.clone(), second.clone()],
         },
         &["first".into(), "second".into()],
