@@ -437,7 +437,6 @@ pub fn stop_scan(volume_id: &str) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::{Path, PathBuf};
 
     /// Every place that takes a volume's manager out of the registry says what a
     /// teardown landing in that window should do about it.
@@ -456,28 +455,7 @@ mod tests {
     /// sites are few and deliberate, so pin the set and what each one promises.
     #[test]
     fn every_manager_extraction_says_what_a_teardown_in_the_window_does() {
-        fn collect(dir: &Path, prefix: &str, out: &mut Vec<(String, PathBuf)>) {
-            for entry in std::fs::read_dir(dir).expect("an indexing dir") {
-                let path = entry.expect("dir entry").path();
-                let name = path.file_name().expect("file name").to_string_lossy().to_string();
-                let rel = if prefix.is_empty() {
-                    name.clone()
-                } else {
-                    format!("{prefix}/{name}")
-                };
-                if path.is_dir() {
-                    if name != "tests" {
-                        collect(&path, &rel, out);
-                    }
-                } else if path.extension().is_some_and(|e| e == "rs") && !name.ends_with("tests.rs") {
-                    out.push((rel, path));
-                }
-            }
-        }
-
-        let indexing = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing");
-        let mut sources: Vec<(String, PathBuf)> = Vec::new();
-        collect(&indexing, "", &mut sources);
+        let sources = crate::indexing::source_guard::indexing_sources();
 
         // Assembled rather than written out, so a marker can't match its own mention.
         let takes_the_manager_out = concat!("mem::replace(&mut ", "instance.phase,");

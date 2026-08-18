@@ -42,6 +42,10 @@ pub(crate) mod writer;
 #[doc(hidden)]
 pub mod testing;
 
+/// The shared source walk behind the guards that enumerate call sites (see the module doc for
+/// when one of those is the right answer and when it isn't).
+#[cfg(test)]
+pub(crate) mod source_guard;
 /// The allocation-counting harness behind the memory-shape guards. `cfg(test)` because it
 /// installs a `#[global_allocator]`, which is per binary.
 #[cfg(test)]

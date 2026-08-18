@@ -154,30 +154,7 @@ mod tests {
     /// keeps, and the user's "Rescan now" simply never happens.
     #[test]
     fn every_whole_volume_holder_runs_the_rescan_it_owes() {
-        /// Collect every non-test `.rs` file under `dir`, recursively, named
-        /// relative to the `indexing` root.
-        fn collect(dir: &std::path::Path, prefix: &str, out: &mut Vec<(String, std::path::PathBuf)>) {
-            for entry in std::fs::read_dir(dir).expect("an indexing dir") {
-                let path = entry.expect("dir entry").path();
-                let name = path.file_name().expect("file name").to_string_lossy().to_string();
-                let rel = if prefix.is_empty() {
-                    name.clone()
-                } else {
-                    format!("{prefix}/{name}")
-                };
-                if path.is_dir() {
-                    if name != "tests" {
-                        collect(&path, &rel, out);
-                    }
-                } else if path.extension().is_some_and(|e| e == "rs") && !name.ends_with("tests.rs") {
-                    out.push((rel, path));
-                }
-            }
-        }
-
-        let indexing = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing");
-        let mut sources: Vec<(String, std::path::PathBuf)> = Vec::new();
-        collect(&indexing, "", &mut sources);
+        let sources = crate::indexing::source_guard::indexing_sources();
 
         // The spelling all three whole-volume holders share: the claim rides into
         // the task that ends the run and is handed back by name there. Assembled
