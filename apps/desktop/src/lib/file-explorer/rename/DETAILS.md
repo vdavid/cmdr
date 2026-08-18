@@ -167,7 +167,8 @@ Two properties of the toast store force that shape, and both fail silently:
 - The stack holds five and silently DROPS a new toast once they're all persistent (`ui/DETAILS.md` § Toast system). One
   toast per kept name therefore loses everything past the fifth with nothing said, which is the failure this feature
   exists to prevent. Worse, a stack the timeouts had filled would leave the kept-names toast unable to be created at
-  all, on exactly the slow volumes where a chain produces both. Two toasts can't stack, so neither can be dropped.
+  all, on exactly the slow volumes where a chain produces both. Two toasts can't stack, so no length of chain can drop
+  either one.
 
 The unconfirmed toast also owns the refresh, and DEBOUNCES it: `scheduleUnconfirmedRefresh` resets a 1 s timer per
 timeout and refreshes once the volume has gone quiet. A refresh per unanswered rename would be N directory listings
