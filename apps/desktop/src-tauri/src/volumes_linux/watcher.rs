@@ -9,6 +9,7 @@
 //! Tauri events. Also registers/unregisters volumes with the global `VolumeManager`.
 
 use crate::file_system::linux_mounts;
+use crate::ignore_poison::IgnorePoison;
 use crate::volume_broadcast::{VolumeMounted, VolumeUnmounted};
 use log::{debug, error, info, warn};
 use notify::{Event, EventKind, RecommendedWatcher, Watcher};
@@ -43,10 +44,10 @@ pub fn start_volume_watcher(app: &AppHandle) {
 
     let initial = get_real_mounts();
     let known = KNOWN_MOUNTS.get_or_init(|| Mutex::new(HashMap::new()));
-    if let Ok(mut guard) = known.lock() {
-        *guard = initial;
-        debug!("Initial Linux mounts: {} entries", guard.len());
-    }
+    let mut guard = known.lock_ignore_poison();
+    *guard = initial;
+    debug!("Initial Linux mounts: {} entries", guard.len());
+    drop(guard);
 
     info!("Starting Linux volume watcher on /proc/mounts");
 
@@ -65,9 +66,7 @@ pub fn start_volume_watcher(app: &AppHandle) {
             }
 
             let storage = WATCHER.get_or_init(|| Mutex::new(None));
-            if let Ok(mut guard) = storage.lock() {
-                *guard = Some(watcher);
-            }
+            *storage.lock_ignore_poison() = Some(watcher);
 
             info!("Linux volume watcher started successfully");
         }
@@ -98,10 +97,7 @@ fn check_for_mount_changes() {
         None => return,
     };
 
-    let mut known_guard = match known.lock() {
-        Ok(g) => g,
-        Err(_) => return,
-    };
+    let mut known_guard = known.lock_ignore_poison();
 
     let mut changed = false;
 
@@ -183,10 +179,8 @@ fn start_gvfs_watcher() {
     // Snapshot current GVFS SMB mounts
     let initial = get_current_gvfs_smb_paths(&gvfs_dir);
     let known = KNOWN_GVFS_MOUNTS.get_or_init(|| Mutex::new(HashSet::new()));
-    if let Ok(mut guard) = known.lock() {
-        debug!("Initial GVFS SMB mounts: {} entries", initial.len());
-        *guard = initial;
-    }
+    debug!("Initial GVFS SMB mounts: {} entries", initial.len());
+    *known.lock_ignore_poison() = initial;
 
     let gvfs_dir_owned = gvfs_dir.clone();
     let watcher_result = notify::recommended_watcher(move |result: Result<Event, notify::Error>| match result {
@@ -202,9 +196,7 @@ fn start_gvfs_watcher() {
             }
 
             let storage = GVFS_WATCHER.get_or_init(|| Mutex::new(None));
-            if let Ok(mut guard) = storage.lock() {
-                *guard = Some(watcher);
-            }
+            *storage.lock_ignore_poison() = Some(watcher);
 
             info!("GVFS watcher started on {}", gvfs_dir);
         }
@@ -233,10 +225,7 @@ fn check_for_gvfs_changes(gvfs_dir: &str) {
         None => return,
     };
 
-    let mut known_guard = match known.lock() {
-        Ok(g) => g,
-        Err(_) => return,
-    };
+    let mut known_guard = known.lock_ignore_poison();
 
     let mut changed = false;
 
