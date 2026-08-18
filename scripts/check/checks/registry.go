@@ -113,12 +113,12 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "jscpd",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
-		// Copy-paste detection is a periodic sweep, not a per-milestone gate: it's the
-		// worst cost-per-catch in the suite by a wide margin (24 days of local runs,
-		// 837 of them, 20 122 CPU-seconds, one real finding). CI keeps running it on
-		// every push, so nothing stops being enforced; it just stops taxing the local
-		// loop. Name it (`pnpm check jscpd-rust`) to run it here.
-		CIOnly:            true,
+		// In the default local lane, not `--fast`: a copy-paste is cheapest to undo
+		// at the milestone where somebody wrote it, and the same warn three weeks
+		// later in CI is archaeology. It earns the ~10 s because it now reports the
+		// clones it finds and only warns on what's new (`jscpd.go`); the version
+		// that kept the aggregate percentage and threw the clone list away caught
+		// one thing in 837 local runs, which is what got it demoted to CI-only.
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		Inputs:            rustInputs,
@@ -742,6 +742,17 @@ var AllChecks = []CheckDefinition{
 		IsFast:      true,
 		Inputs:      svelteInputs,
 		Run:         RunKnip,
+	},
+	{
+		ID:          "desktop-svelte-jscpd",
+		CpuWeight:   2,
+		Nickname:    "jscpd-frontend",
+		DisplayName: "jscpd",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		DependsOn:   nil,
+		Inputs:      svelteInputs,
+		Run:         RunJscpdFrontend,
 	},
 	{
 		ID:          "desktop-svelte-type-drift",

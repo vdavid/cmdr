@@ -1,0 +1,27 @@
+{
+  "$comment": "Accepted duplicated lines per file pair. Never hand-edited: `pnpm check jscpd-frontend` shrink-wraps it. Raising an entry needs David's OK (`.claude/rules/file-length-allowlist.md`).",
+  "pairs": {
+    "apps/desktop/src/lib/downloads/GlobalShortcutRow.svelte ↔ apps/desktop/src/lib/settings/sections/KeyboardShortcutsSection.svelte": 37,
+    "apps/desktop/src/lib/error-reporter/AutoSendToastContent.svelte ↔ apps/desktop/src/lib/error-reporter/ErrorReportToastContent.svelte": 20,
+    "apps/desktop/src/lib/file-explorer/drag/drag-image-renderer.ts": 14,
+    "apps/desktop/src/lib/file-operations/delete/DeleteDialog.svelte ↔ apps/desktop/src/lib/file-operations/transfer/ScanPhaseBody.svelte": 23,
+    "apps/desktop/src/lib/file-operations/mkdir/NewFolderDialog.svelte ↔ apps/desktop/src/lib/file-operations/mkfile/NewFileDialog.svelte": 74,
+    "apps/desktop/src/lib/file-operations/mkdir/new-folder-operations.ts ↔ apps/desktop/src/lib/file-operations/mkfile/new-file-operations.ts": 19,
+    "apps/desktop/src/lib/mtp/mtp-store.svelte.ts": 14,
+    "apps/desktop/src/lib/onboarding/StepBeta.svelte ↔ apps/desktop/src/lib/onboarding/StepOptional.svelte": 32,
+    "apps/desktop/src/lib/onboarding/StepBeta.svelte ↔ apps/desktop/src/lib/settings/sections/UpdatesSection.svelte": 51,
+    "apps/desktop/src/lib/query-ui/filter-chips/filter-popover-helpers.ts": 8,
+    "apps/desktop/src/lib/search/ImageSearchResults.svelte": 22,
+    "apps/desktop/src/lib/settings/components/SettingCheckbox.svelte ↔ apps/desktop/src/lib/settings/components/SettingSwitch.svelte": 20,
+    "apps/desktop/src/lib/settings/sections/GitSection.svelte ↔ apps/desktop/src/lib/settings/sections/SearchSection.svelte": 18,
+    "apps/desktop/src/lib/status-corner/OperationFailedToastContent.svelte ↔ apps/desktop/src/lib/status-corner/OperationFailuresToastContent.svelte": 31,
+    "apps/desktop/src/routes/debug/DebugErrorPreviewPanel.svelte": 40,
+    "apps/desktop/src/routes/debug/DebugHistoryPanel.svelte": 14,
+    "apps/desktop/src/routes/dev/components/+page.svelte ↔ apps/desktop/src/routes/dev/graphics/+page.svelte": 63,
+    "apps/desktop/src/routes/dev/components/sections/FilterPopoverSection.svelte ↔ apps/desktop/src/routes/dev/components/sections/PopoverSection.svelte": 16,
+    "apps/desktop/src/routes/dev/components/sections/MenuSection.svelte ↔ apps/desktop/src/routes/dev/components/sections/PopoverSection.svelte": 14,
+    "apps/desktop/src/routes/dev/components/sections/SizeBadges.svelte ↔ apps/desktop/src/routes/dev/components/sections/StatusBadgeSection.svelte": 23,
+    "apps/desktop/src/routes/dev/graphics/sections/IconsSection.svelte ↔ apps/desktop/src/routes/dev/graphics/sections/StatusBadgesSection.svelte": 24,
+    "apps/desktop/src/routes/viewer/viewer-copy.svelte.ts": 11
+  }
+}

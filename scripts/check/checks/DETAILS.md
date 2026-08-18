@@ -17,7 +17,7 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
 - **An allowlist is a sibling JSON named `<check>-allowlist.json`**, and it's NEVER hand-edited: the owning check
   shrink-wraps it on local runs, so you run the check and commit its rewrite (`.claude/rules/file-length-allowlist.md`).
   The shared staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist
-  shrink-wrap". Seven exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the two
+  shrink-wrap". Nine exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the two
   with no § of their own (both are exempt-with-reason lists whose checks FAIL on a dead or redundant entry rather than
   auto-removing it).
 - **Not every file here is a registry check.** `e2e-durations.go` is embedded in the two E2E checks (§ "E2E test
@@ -278,6 +278,87 @@ rise as a prompt to look, and ❌ never shave a doc to make it fall. A future re
 not shipped): weight a rule by whether the compiler already enforces it, or count rule SITES a reader must visit rather
 than rule instances.
 
+## Copy-paste detection (jscpd)
+
+Two warn-only lanes over one shared core (`jscpd.go`): `jscpd-rust` (`desktop-rust-jscpd.go`) and `jscpd-frontend`
+(`desktop-svelte-jscpd.go`). Both shell out to the pinned jscpd CLI, read its JSON report, and report the CLONES: which
+two files say the same thing, at which lines.
+
+**Decision**: the clone list is the product, the percentage is a footnote. **Why**: nobody refactors a percentage. A
+lane that keeps only the aggregate can't name a target, which is what a duplication check is for.
+
+**Decision**: two checks, not one with two lanes. **Why**: they carry different `Inputs` (a TypeScript edit shouldn't
+invalidate the Rust lane's cache), different `Tech` (the runner groups its output by it), different sensitivity floors,
+and separate CI steps, so one lane's warn doesn't hide the other's. They share every line of logic through `jscpd.go`;
+each `{app}-{name}.go` file is a `jscpdLane` value plus a one-line entry point.
+
+**Decision**: in the default local lane, not `--fast` and not CI-only. **Why**: a copy-paste is cheapest to undo at the
+milestone where somebody wrote it; the same warn three weeks later in CI is archaeology. The cost is ~11 s (Rust) and
+~5 s (frontend), both cheap enough for a per-milestone run and too slow for the pre-commit lane.
+
+### Thresholds
+
+Both floors are measured, not guessed; re-measure before moving one.
+
+- **Rust, `--min-tokens 100`** (~25 lines): 91 clones in 53 file pairs. 75 gives 200 clones, 50 gives 555, and the extra
+  ones are mostly short match arms and builder chains that read as idiom rather than copy-paste.
+- **Frontend, `--min-tokens 75`**: 28 clones in 22 file pairs, median 20 lines, and every pair names two things that
+  plainly do the same job (`NewFolderDialog` ↔ `NewFileDialog`, `SettingCheckbox` ↔ `SettingSwitch`). 50 gives 101
+  clones with a 14-line median, over half of them short CSS blocks that read as house style.
+- Both lanes exclude test code, which is intentionally repetitive. Rust also excludes `tests/` module directories, where
+  most of this repo's unit tests live; the frontend excludes `*.test.ts`, `*.test-*.ts`, `test-*.ts`, `__mocks__/`, and
+  `__fixtures__/`. `dialog-gallery/fixtures/` stays in — that gallery ships.
+
+### Svelte is covered; there's just no `svelte` row
+
+jscpd tokenizes a `.svelte` file into three sub-formats: `typescript` for the script block, `css` for the style block,
+and `markup` for the template. So Svelte clones are reported under those names and the statistics carry no `svelte`
+row — which reads exactly like "Svelte didn't parse". ❌ Don't drop `svelte` from the lane's `--format` list on that
+evidence: dropping it makes jscpd skip every `.svelte` file outright, which is the real blind spot. (Verified on jscpd
+4.2.3, 2026-08-18: `getFormatByFile('a.svelte')` returns `svelte`, and 16 of the frontend lane's 22 pairs are `.svelte`
+files.)
+
+The frontend lane scans `apps/desktop/src` only. `apps/website`, `apps/api-server`, and `apps/analytics-dashboard` are a
+deliberate blind spot: 436,000 lines against roughly 12,000 each, so three more lanes would buy coverage of 3% of the
+frontend line count. Revisit when one of them grows.
+
+### The allowlist keys on a file PAIR, valued in duplicated LINES
+
+`jscpd-rust-allowlist.json` and `jscpd-frontend-allowlist.json` each hold one `pairs` section mapping
+`"path/a.rs ↔ path/b.rs"` (sorted, so report order can't mint a second entry; a single path for a clone with both ends
+in one file) to the duplicated line count that pair may carry.
+
+**Decision**: the key is the file pair, ❌ not the clone. **Why**: a churning allowlist is worse than no allowlist. A
+`file:line` key moves the moment anything above the clone changes, and a content hash of the fragment changes the moment
+somebody renames a variable in both copies — both would rewrite the JSON on edits that changed no duplication at all. A
+pair of paths only moves when a file is renamed or deleted. What a pair key gives up is "the clone moved to a different
+part of the same two files", which was never a regression.
+
+**Decision**: the value is duplicated lines, ❌ not a clone count. **Why**: one number then catches both regressions.
+A new duplicated block between the same two files raises it, and an existing block growing raises it too — a clone count
+would miss the second entirely.
+
+**Decision**: no slack buffer, unlike the two length allowlists. **Why**: a line or word count drifts on nearly every
+edit, so those need one. A duplicated-line count only moves when duplication is added or removed, so there's nothing for
+a buffer to absorb, and a buffer would let a clone grow for free.
+
+Shrink-wrap on local runs drops a pair with no duplication left and ratchets every entry down to what's actually there;
+CI only reports what a local run would change. A pair missing from the allowlist warns rather than being auto-added,
+under the same consent contract as the length allowlists (`.claude/rules/file-length-allowlist.md`). The allowlist also
+doubles as the complete inventory: every duplicated file pair in the repo is a line in it.
+
+### What each verdict prints
+
+- **Pass**: the headline (clones, duplicated lines, percentage, file pairs) plus the ten worst pairs, each with the file
+  and lines of that pair's widest clone. Visible under `pnpm check -v`. This is the standing map of where duplication
+  lives.
+- **Warn**: only the delta — every pair over its number, with EVERY clone behind it as `file:line ↔ file:line` — then
+  the one-line headline. ❌ The standing inventory is deliberately absent here: burying three new lines under ten
+  standing ones is how a check teaches people to skip it.
+
+`jscpdSpan` orders the two ends of a location because jscpd reports a few intra-file clones backwards (`start` 105,
+`end` 51, with the byte positions agreeing), which printed verbatim reads like the tool is broken.
+
 ## Docs reachable
 
 `docs-reachable` (`IsFast`, an **error** not a warn: the doc tree must stay connected) enforces that every `CLAUDE.md`,
@@ -456,7 +537,8 @@ Policy by staleness class:
   allowlisted E2E test now under 1.5 s): reported for an agent to judge — the reason may say "tested elsewhere", and the
   margin band stays silently allowlisted to avoid removal/re-add churn.
 - **Numeric slack** (file-length, the website bundle-size baseline): auto-ratcheted; the entries carry no reason text,
-  so the rewrite loses nothing.
+  so the rewrite loses nothing. `invariant-density` and the two jscpd lanes ratchet the same way but carry no buffer —
+  their numbers only move when somebody writes a rule or duplicates a block, so there's no drift to absorb.
 - **Orphaned opt-out comments** (`allowed-bare-poll` / `allowed-lock-poison` / `allowed-error-string-match` /
   `allowed-dropping-timeout` / `allowed-btn-restyle` / `allowed-rustup-add`): the scanners track which directives
   excused a violation and fail on the unused rest. Prose that merely mentions a directive (a comment line not starting
@@ -836,7 +918,7 @@ Checks by app and tech:
 - **Desktop / Rust**: rustfmt, clippy, rustdoc (`cargo doc --all-features --document-private-items` over every
   first-party member, with every doc lint in `rustdocDeniedLints` denied and any leftover warning failing the check too;
   the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
-  cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (CI-only), log-error-macro, sqlite-open-direct (every SQLite
+  cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (warn-only; the clone list, on a per-file-pair ratchet), log-error-macro, sqlite-open-direct (every SQLite
   connection opens through `crate::sqlite_util`, so the process-wide shared page cache is always installed before SQLite
   initializes), error-string-match, lock-poison, test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in
   test code, where a condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
@@ -881,7 +963,8 @@ doubles as production code.
   stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
   (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), dialog-gallery-coverage (every
   `SOFT_DIALOG_REGISTRY` id has a row in the Debug > Soft dialogs gallery, and every row names a registered id),
-  btn-restyle, bare-poll, svelte-check, import-cycles, message-keys-fresh (regenerate-and-diff `keys.gen.ts` from the
+  btn-restyle, bare-poll, svelte-check, import-cycles, jscpd (warn-only; the frontend clone list, TypeScript and Svelte),
+  message-keys-fresh (regenerate-and-diff `keys.gen.ts` from the
   message catalogs), message-key-naming (the `area.feature.leaf` shape + known-area first segment), message-keys-unused
   (catalog keys never referenced in `src/`; error-level, with a closed dynamic-prefix allowlist for runtime-built keys),
   message-screenshots-fresh (warn-only; drift between the committed i18n capture report and the catalogs'
