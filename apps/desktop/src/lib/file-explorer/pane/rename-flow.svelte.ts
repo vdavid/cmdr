@@ -216,10 +216,10 @@ export function createRenameFlow(deps: RenameFlowDeps) {
    * commits, and the operation log is the way back from a fumbled extension.
    *
    * A CONFLICT is deliberately not decided here. The frontend's conflict signal
-   * is only a warning, computed against the sibling names read when the session
-   * opened, and a chain rewrites the directory as it runs: mid-chain that
-   * snapshot is stale by construction, and dropping the edit on it would throw
-   * away a name that is perfectly free. The backend has the authoritative
+   * is only a warning, computed against the directory names the chain read when
+   * it started, and a chain rewrites the directory as it runs: those names can
+   * call a name taken that is perfectly free, and dropping the edit on that
+   * would throw away what the user typed. The backend has the authoritative
    * answer, and `reportSupersededResult` acts on that one.
    *
    * Nothing has to actively discard: the activation that follows resets the
@@ -448,7 +448,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       const initialName = options?.initialName
 
       // Activate ONLY on the intended entry. The permission check (skipped for MTP
-      // and archive-inner paths) and sibling-name load live in `activateRename`.
+      // and archive-inner paths) and the directory-name read live in `activateRename`.
       // `expectedName` (auto-started rename) guards against latching a DIFFERENT
       // file when the cursor move beats the new file's synthetic diff — a
       // data-safety hazard, since the next keystroke would rename that other file.

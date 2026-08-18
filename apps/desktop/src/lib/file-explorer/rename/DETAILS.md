@@ -65,8 +65,9 @@ NEWER activation has happened since. A plain `cancel()` keeps the id, so ending 
 doesn't make the save that's already on its way a stranger to its own result.
 
 Everything that finishes asynchronously carries the id it started with: the save (`executeFlow` captures it beside the
-target), the permission check and sibling-name load (`activateRename`), the conflict dialog's follow-up rename, and the
-editor's own cancel.
+target), the permission check (`activateRename`), the conflict dialog's follow-up rename, and the editor's own cancel.
+The directory-name read is the one exception, and deliberately so: it answers to the LISTING it was read from, which is
+stronger (see "The directory's names, read once per chain" below).
 
 **A superseded session may speak, never steer.** `handleRenameResult` routes a late result to `reportSupersededResult`,
 which can only toast and refresh the listing in the background. It cannot cancel (that would close the editor the user
@@ -136,11 +137,12 @@ discards either, because the activation that follows resets the editor; an edit 
 - **Anything else**: `executeFlow(skipExtensionCheck: true)`, unawaited.
 
 **A conflict is decided by the BACKEND, never at keypress time.** The frontend's conflict signal is a
-`severity: 'warning'` computed against `renameSiblingNames`, snapshotted when the session opened, and a chain rewrites
-the directory as it runs: mid-chain that snapshot is stale by construction. Dropping the edit on it would silently throw
-away a name that is perfectly free. So the keypress checks only `severity === 'error'`, the edit reaches
-`checkRenameValidity`, and the authoritative `{ type: 'conflict' }` is handled in `reportSupersededResult` (a chained
-save is always superseded by the time it returns): dropped with the same `chainKeptOriginalName` toast, never a dialog.
+`severity: 'warning'` computed against the directory names the chain read when it started (`sibling-names.ts`), and a
+chain rewrites the directory as it runs. Those names can call a name taken that is perfectly free, and dropping the edit
+on that would silently throw away what the user typed. So the keypress checks only `severity === 'error'`, the edit
+reaches `checkRenameValidity`, and the authoritative `{ type: 'conflict' }` is handled in `reportSupersededResult` (a
+chained save is always superseded by the time it returns): dropped with the same `chainKeptOriginalName` toast, never a
+dialog.
 
 ### Saying so, in one toast that grows
 
