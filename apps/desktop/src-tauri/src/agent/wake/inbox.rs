@@ -10,7 +10,7 @@
 
 use std::time::Duration;
 
-use super::{EventBundle, FolderImportance, Interest, ScoredBundle, interest, wake_delay};
+use super::{EventBundle, FolderImportance, Interest, ScoredBundle, WakeReadiness, interest, wake_delay};
 
 /// How long after launch the inbox holds back rows that came due while the app was closed.
 ///
@@ -105,6 +105,25 @@ impl Inbox {
                 });
             }
         }
+    }
+
+    /// Admit a bundle only if the gates permit STORING it, and report whether it landed.
+    ///
+    /// The gate lives here rather than at each call site so that "no consent, no rows" is one
+    /// decision instead of a rule every producer has to remember. A caller that wants the
+    /// unconditional behaviour still has [`admit`](Self::admit); the tap uses this one.
+    pub fn admit_if_permitted(
+        &mut self,
+        readiness: WakeReadiness,
+        bundle: EventBundle,
+        importance: FolderImportance,
+        now: u64,
+    ) -> bool {
+        if !readiness.admits_to_inbox() {
+            return false;
+        }
+        self.admit(bundle, importance, now);
+        true
     }
 
     /// The soonest deadline waiting, if anything is.

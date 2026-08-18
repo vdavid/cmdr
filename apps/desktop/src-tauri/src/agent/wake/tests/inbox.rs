@@ -172,3 +172,37 @@ fn reconciling_an_empty_inbox_reports_nothing() {
     assert_eq!(report.deferred, 0);
     assert!(!inbox.due_at(10_000 + SETTLE_AFTER_LAUNCH.as_secs()));
 }
+
+/// The gate at the storing end: an unconsented agent keeps no record of what the user has
+/// been doing with their files, because nobody has agreed to that.
+#[test]
+fn an_unconsented_agent_stores_nothing() {
+    let mut inbox = Inbox::default();
+
+    let admitted = inbox.admit_if_permitted(
+        WakeReadiness::NeedsConsent,
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        1_000,
+    );
+
+    assert!(!admitted);
+    assert_eq!(inbox.len(), 0, "no row, not even a deferred one");
+}
+
+/// A missing key is a different kind of gap: the user opted in, so signal accumulates and
+/// waits for them to close it.
+#[test]
+fn a_missing_key_still_lets_signal_accumulate() {
+    let mut inbox = Inbox::default();
+
+    let admitted = inbox.admit_if_permitted(
+        WakeReadiness::NeedsApiKey,
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        1_000,
+    );
+
+    assert!(admitted);
+    assert_eq!(inbox.len(), 1);
+}
