@@ -270,9 +270,15 @@ the agent's reason beside Cmdr's own deterministic facts, the irreversible marke
 marker, and the "this changed" affordance. Approving closes the dialog and hands off to the queue.
 
 The indicator goes in `lib/status-corner/StatusCorner.svelte`, **between the queue indicator and the hourglass**
-(`status-corner/CLAUDE.md`: the corner owns placement, the hourglass stays last). Menu item wiring is bidirectional in
-`menu/command_map.rs` plus `menu_structure.rs`, plus a label AND description in the command registry, which
-`command-registry.parity.test.ts` enforces. Ten locales.
+(`status-corner/CLAUDE.md`: the corner owns placement, the hourglass stays last); `children` renders left of both
+neighbours, so the indicator needs a real member slot rather than the default children position.
+
+**Adding the menu command touches SIX places, not the three an earlier draft of this plan claimed** — and
+`commands/CLAUDE.md` warns the omission fails silently: `command-ids.ts`, `commands/sources/*.ts`, the handler in
+`routes/(main)/command-handlers/`, `messages/en/commands.json` (a label AND a description, then ten locales, which
+`command-registry.parity.test.ts` enforces), `menuCommands` in `shortcuts-store.ts`, and the menu bar itself. ❌ The
+menu bar is `menu/macos.rs` AND `menu/linux.rs` (`MenuItem::with_id` + `register_item`) plus `command_map.rs`'s two
+directions — NOT `menu_structure.rs`, which delegates the bar to the two platform builders and owns only context menus.
 
 Copy is drafted here and reviewed by David at QA.
 
