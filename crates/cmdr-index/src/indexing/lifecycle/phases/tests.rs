@@ -137,13 +137,9 @@ impl Tree {
 
     /// Block until the writer has committed everything AND run its caught-up
     /// hooks, which is where a run of walks pays for the ancestor roll-ups it
-    /// queued (`writer/pending_rollups.rs`). Two flushes, for the reason
-    /// `writer/aggregation/tests.rs::settle` gives.
+    /// queued (`writer/pending_rollups.rs`).
     fn settle(&self) {
-        self.writer.flush_blocking().expect("flush the walks");
-        let before = self.writer.idle_epoch();
-        self.writer.flush_blocking().expect("flush again, on a quiet channel");
-        crate::indexing::writer::tests::wait_for_writer_to_settle(&self.writer, before);
+        crate::indexing::writer::tests::settle_the_writer(&self.writer);
     }
 
     fn coverage(&self, scope: &str) -> CoverageMap {

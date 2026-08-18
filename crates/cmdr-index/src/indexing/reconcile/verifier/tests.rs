@@ -8,6 +8,7 @@ use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::check_db_consistency;
 use crate::indexing::writer::AggSource;
 use crate::indexing::writer::IndexWriter;
+use crate::indexing::writer::tests::settle_the_writer;
 use std::fs;
 use std::sync::Arc;
 
@@ -300,7 +301,12 @@ fn verify_new_dir_credits_ancestors_exactly_once() {
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     let _paths = rt.block_on(verify_root(fs_root.path(), &writer));
-    writer.flush_blocking().unwrap();
+    // ⚠️ `settle_the_writer`, ❌ never the flush alone: the verifier's subtree
+    // aggregate QUEUES this dir's ancestors and the writer rolls them up at its
+    // caught-up point, one hook run after the flush replies
+    // (`writer/pending_rollups.rs`). A flush-only read sees `new_dir`'s row
+    // present but its 6 bytes not yet credited upward.
+    settle_the_writer(&writer);
 
     let conn = IndexStore::open_write_connection(&db_path).unwrap();
     let parent = IndexStore::get_dir_stats_by_id(&conn, parent_id).unwrap().unwrap();

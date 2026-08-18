@@ -125,9 +125,19 @@ when the existing hooks run, which this signal deliberately doesn't touch.
 
 ⚠️ **A tick therefore does NOT prove `settle_the_ledger` ran** — only that one of the two hooks saw an empty queue. It
 only bites while another thread is still sending, which is why the roll-up tests flush TWICE: the first flush drains the
-burst, the second runs against a quiet channel where both samples agree (`aggregation/tests.rs::settle`). A production
-waiter never needs the distinction, because the next message's iteration settles the ledger anyway and `Shutdown`
-settles it on the way out.
+burst, the second runs against a quiet channel where both samples agree. `tests::settle_the_writer` is that protocol,
+and is what every test reading a `dir_stats` row back must use. A production waiter never needs the distinction,
+because the next message's iteration settles the ledger anyway and `Shutdown` settles it on the way out.
+
+⚠️ **A flush-only `dir_stats` read is a Linux-only flake, so a local `pnpm check rust-tests` will not find it.** The
+gap between the flush reply and the ledger hook is about a millisecond; measured in the `rust-tests-linux` container,
+`reconcile/verifier/tests.rs::verify_new_dir_credits_ancestors_exactly_once` read the stale ancestor in 8 of 20 runs
+run ALONE, while the same binary on macOS read the settled one 40 times out of 40. Two more twists that make it hard
+to chase: a full-package parallel run passed 3/3 with the same bug (the test thread gets descheduled after the flush,
+which hands the writer its hook), and the stale read is often TORN rather than absent, so it surfaces at
+`check_db_consistency`'s recompute oracle (a credited parent under an uncredited grandparent) as readily as at the
+test's own assertion. ❌ Don't read the under-credit as a lost roll-up: the queue is unbounded and the drain is
+idempotent, so the row converges on its own with nothing further sent (measured: 1.3-1.7 ms).
 
 **Not `Notify`, not `watch`.** The writer is a `std::thread` and its tests are sync `#[test]`s, where
 `Notify::notified()` and `watch::changed()` are both async. A `Notify` would also lose the wakeup outright: the settle

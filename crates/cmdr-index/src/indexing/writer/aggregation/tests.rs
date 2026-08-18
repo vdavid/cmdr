@@ -3,7 +3,7 @@
 use super::*;
 use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, LEDGER_HEAL_KEY, ROOT_ID};
 use crate::indexing::stress_test_helpers::check_db_consistency;
-use crate::indexing::writer::tests::{setup_db, wait_for_writer_to_settle};
+use crate::indexing::writer::tests::{settle_the_writer, setup_db};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
 /// Read the ledger-heal marker directly off a fresh connection.
@@ -12,22 +12,6 @@ fn heal_key_present(db_path: &std::path::Path) -> bool {
     IndexStore::get_meta(&conn, LEDGER_HEAL_KEY)
         .expect("read heal key")
         .is_some()
-}
-
-/// Wait until the writer has committed everything AND run the ledger hook that
-/// rolls queued ancestors up.
-///
-/// TWO flushes on purpose. The hook samples `queue_depth` for itself, and the
-/// hourglass hook one line above samples it separately, so a send landing between
-/// the two ticks the idle epoch with the ledger hook skipped (`DETAILS.md`
-/// § "The caught-up point" calls that out). The first flush drains whatever the
-/// test was sending; the second runs against a quiet channel, where both samples
-/// see the same empty queue.
-pub(super) fn settle(writer: &IndexWriter) {
-    writer.flush_blocking().unwrap();
-    let before = writer.idle_epoch();
-    writer.flush_blocking().unwrap();
-    wait_for_writer_to_settle(writer, before);
 }
 
 // ── Subtree-aggregate ancestor repair (Leak A) ───────────────────
@@ -136,7 +120,7 @@ fn subtree_aggregate_grows_ancestors_and_restores_coverage() {
     writer
         .send(WriteMessage::ComputeSubtreeAggregates { root_id: 20 })
         .unwrap();
-    settle(&writer);
+    settle_the_writer(&writer);
 
     let conn = IndexStore::open_write_connection(&db_path).unwrap();
     let a = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
@@ -208,7 +192,7 @@ fn subtree_aggregate_shrinks_ancestors() {
     writer
         .send(WriteMessage::ComputeSubtreeAggregates { root_id: 20 })
         .unwrap();
-    settle(&writer);
+    settle_the_writer(&writer);
 
     let conn = IndexStore::open_write_connection(&db_path).unwrap();
     let a = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
@@ -710,7 +694,7 @@ fn reconcile_finish_interleaved_with_subtree_scan_stays_exact() {
     writer
         .send(WriteMessage::ComputeSubtreeAggregates { root_id: 20 })
         .unwrap();
-    settle(&writer);
+    settle_the_writer(&writer);
 
     let conn = IndexStore::open_read_connection(&db_path).unwrap();
     let a = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();

@@ -10,10 +10,10 @@
 
 use cmdr_fs::pluralize::pluralize;
 
-use super::tests::{dir_row, file_row, set_epoch, settle};
+use super::tests::{dir_row, file_row, set_epoch};
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::check_db_consistency;
-use crate::indexing::writer::tests::setup_db;
+use crate::indexing::writer::tests::{settle_the_writer, setup_db};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
 /// One parent holding `width` child dirs, each with one file of `size` bytes.
@@ -70,7 +70,7 @@ fn a_burst_of_roots_under_one_parent_costs_a_handful_of_rollups() {
             })
             .unwrap();
     }
-    settle(&writer);
+    settle_the_writer(&writer);
 
     let walks = writer.rollup_walks();
     assert!(
@@ -139,7 +139,7 @@ fn a_mutation_inside_the_pending_window_is_counted_once() {
             })
             .unwrap();
     }
-    settle(&writer);
+    settle_the_writer(&writer);
 
     let conn = IndexStore::open_read_connection(&db_path).unwrap();
     let big = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
@@ -210,7 +210,7 @@ fn a_truncate_drops_the_roll_ups_it_made_meaningless() {
         .send(WriteMessage::ComputeSubtreeAggregates { root_id: 100 })
         .unwrap();
     writer.send(WriteMessage::TruncateData).unwrap();
-    settle(&writer);
+    settle_the_writer(&writer);
 
     let conn = IndexStore::open_read_connection(&db_path).unwrap();
     let ghosts: i64 = conn
@@ -241,7 +241,7 @@ fn a_delete_inside_the_pending_window_leaves_no_ghost_row() {
         .send(WriteMessage::ComputeSubtreeAggregates { root_id: 100 })
         .unwrap();
     writer.send(WriteMessage::DeleteSubtreeById(10)).unwrap();
-    settle(&writer);
+    settle_the_writer(&writer);
 
     let conn = IndexStore::open_read_connection(&db_path).unwrap();
     let ghosts: i64 = conn

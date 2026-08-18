@@ -244,6 +244,34 @@ asserts on the mechanism: 400 frontier roots under one parent cost **1** ancesto
 (`writer/aggregation/tests.rs::a_burst_of_roots_under_one_parent_costs_a_handful_of_rollups`, which fails at 400 if
 anyone puts the inline repair back).
 
+### The one thing it cost, and how to spot the next one
+
+Deferring the roll-up moved WHEN an ancestor is credited: from inside the `ComputeSubtreeAggregates` handler to the
+writer's caught-up point, one hook run after `flush_blocking` replies. Any test that read a `dir_stats` row back on the
+heels of a flush therefore reads a not-yet-credited ancestor. The roll-up work fixed the tests it knew about, in
+`writer/aggregation/`; it missed
+`indexing::reconcile::verifier::tests::verify_new_dir_credits_ancestors_exactly_once`, two subsystems away, which is
+the only test outside the writer that reads an ANCESTOR's totals back after a subtree scan.
+
+Why nothing caught it (verified on the `rust-tests-linux` container and macOS, 2026-08-18):
+
+- **macOS never loses the race.** 40 runs of the failing test on the Mac, 40 passes. The same binary in the Linux
+  container failed 8 of 20. So `pnpm check rust-tests` and CI's native Linux `desktop-rust-tests` lane both read green
+  while the bug was live; the Docker lane is where it surfaces, and it is `IsSlow`, so it runs on the
+  `--include-slow` cadence rather than every wrap.
+- **Load HIDES it, it doesn't cause it.** A full-package parallel `cargo nextest run -p cmdr-index` passed 3/3 with the
+  bug in place: the test thread gets descheduled after the flush, which is exactly the pause the writer needs. Run
+  alone on a quiet machine, it fails. That inverts the usual reading of a re-run-alone classifier, which calls "fails
+  alone" real and "fails only under load" contention.
+- **The symptom is an UNDER-credit under a test named for double-crediting**, and it is often TORN rather than absent
+  (a credited parent under an uncredited grandparent), so it surfaces at `check_db_consistency`'s recompute oracle as
+  readily as at the test's own assertion. Two different panic sites, one cause.
+
+❌ Don't read an under-credit here as a lost roll-up. Measured: with nothing further sent to the writer, the stale row
+converged in 1.3-1.7 ms. The queue is unbounded, the drain is idempotent, and `Shutdown` and channel-close both settle
+on the way out, so the ledger is eventually consistent by design. The fix is `writer::tests::settle_the_writer` at the
+read site, never a change to the writer.
+
 ## What this note does NOT settle
 
 - **Nothing was measured over SMB or MTP.** A trait-scanned volume walks the same phase machine and sends the same

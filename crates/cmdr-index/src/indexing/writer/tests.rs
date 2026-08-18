@@ -28,6 +28,29 @@ pub(crate) fn wait_for_writer_to_settle(writer: &IndexWriter, before: u64) {
     );
 }
 
+/// Block until the writer has committed everything AND run its end-of-iteration hooks, which is
+/// where a burst of subtree aggregates pays for the ancestor roll-ups it queued
+/// (`writer/pending_rollups.rs`).
+///
+/// ⚠️ **A test that reads a `dir_stats` row back needs this, ❌ never `flush_blocking` alone.** The
+/// flush replies from inside `process_message`, before the hooks at the end of that same loop
+/// iteration, so a read on its heels can see an ancestor the ledger has not credited yet. The
+/// window is a millisecond wide and a Mac essentially never loses the race, so a flush-only test
+/// reads as permanently green locally and fails ~40% of the time in the Linux container.
+///
+/// TWO flushes on purpose. The ledger hook samples `queue_depth` for itself, and the hourglass
+/// hook one line above samples it separately, so a send landing between the two ticks the idle
+/// epoch with the ledger hook skipped (`writer/DETAILS.md` § "The caught-up point" calls that
+/// out). The first flush drains whatever the test was sending; the second runs against a quiet
+/// channel, where both samples see the same empty queue.
+#[track_caller]
+pub(crate) fn settle_the_writer(writer: &IndexWriter) {
+    writer.flush_blocking().expect("flush what the test sent");
+    let before = writer.idle_epoch();
+    writer.flush_blocking().expect("flush again, on a quiet channel");
+    wait_for_writer_to_settle(writer, before);
+}
+
 // ── Search-generation gating (D7: search is single-volume / root-only) ──
 
 /// A search-feeding (root) writer's mutation bumps BOTH its per-writer
