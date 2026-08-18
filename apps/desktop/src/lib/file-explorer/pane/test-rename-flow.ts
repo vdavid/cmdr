@@ -63,10 +63,11 @@ export function chainListing(names: string[], startIndex = 1) {
   }
 }
 
-/** A pane with nothing to step to, for the tests that never chain. */
+/** A pane with nothing to step to and nothing to read, for the tests that never chain. */
 const NO_NEIGHBOURS = {
   getCursorIndex: () => 0,
   getEffectiveTotalCount: () => 0,
+  // 0 rows → the sibling-name read answers [] without an IPC call.
   getTotalCount: () => 0,
   getHasParent: () => false,
   getEntryAt: () => undefined,
@@ -84,7 +85,6 @@ export function buildFlow(
     rename,
     paneId: 'left',
     getListingId: () => 'lst-1',
-    getTotalCount: () => 0, // 0 → loadSiblingNames returns [] without hitting getFileRange
     getIncludeHidden: () => false,
     getCurrentPath: () => '/dir',
     getShowHiddenFiles: () => showHiddenFiles,
