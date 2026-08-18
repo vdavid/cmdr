@@ -45,6 +45,8 @@ use std::time::Instant;
 
 use cmdr_fs::pluralize::pluralize;
 
+use crate::indexing::events::{EventSink, emit_dir_updated};
+
 use super::deferred_repair::DeferredRepairs;
 use super::repair::repair_dir_stats_upward;
 
@@ -133,4 +135,41 @@ mod tests {
         }
         assert_eq!(rollups.pending.borrow().len(), 50);
     }
+}
+
+/// Settle the `dir_stats` ledger: roll up the ancestors a burst of subtree
+/// aggregates left owing, then repair whatever chains a failed propagation queued.
+///
+/// Both want the writer's caught-up point (`DETAILS.md` § "The caught-up point")
+/// and both are idempotent, so the exit paths call this again on the way out.
+/// `is_autocommit()` keeps them out of an open `BeginTransaction` batch, where the
+/// tree is only half written: rolling ancestors up from a partial state and then
+/// dropping the id would bake that half-state in.
+///
+/// Returns whether any row moved, so a caller can refresh the panes exactly when
+/// there is something to see.
+pub(super) fn settle_the_ledger(
+    conn: &rusqlite::Connection,
+    rollups: &PendingRollups,
+    repairs: &DeferredRepairs,
+) -> bool {
+    if !conn.is_autocommit() {
+        return false;
+    }
+    let changed = rollups.drain(conn, repairs);
+    if !repairs.is_empty() {
+        repairs.drain(conn);
+    }
+    changed
+}
+
+/// Tell both panes to re-read their sizes, from BETWEEN messages rather than from
+/// inside a handler. The pool is what `process_message` gets for free: on macOS an
+/// `emit` can autorelease ObjC objects on this background thread, and out here
+/// there is no pool to catch them.
+pub(super) fn emit_full_refresh(events: &dyn EventSink) {
+    #[cfg(target_os = "macos")]
+    objc2::rc::autoreleasepool(|_| emit_dir_updated(events, vec!["/".to_string()]));
+    #[cfg(not(target_os = "macos"))]
+    emit_dir_updated(events, vec!["/".to_string()]);
 }

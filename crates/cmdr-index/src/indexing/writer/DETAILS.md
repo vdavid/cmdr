@@ -125,9 +125,9 @@ when the existing hooks run, which this signal deliberately doesn't touch.
 
 ⚠️ **A tick therefore does NOT prove `settle_the_ledger` ran** — only that one of the two hooks saw an empty queue. It
 only bites while another thread is still sending, which is why the roll-up tests flush TWICE: the first flush drains the
-burst, the second runs against a quiet channel where both samples agree
-(`aggregation/tests.rs::settle`). A production waiter never needs the distinction, because the next message's iteration
-settles the ledger anyway and `Shutdown` settles it on the way out.
+burst, the second runs against a quiet channel where both samples agree (`aggregation/tests.rs::settle`). A production
+waiter never needs the distinction, because the next message's iteration settles the ledger anyway and `Shutdown`
+settles it on the way out.
 
 **Not `Notify`, not `watch`.** The writer is a `std::thread` and its tests are sync `#[test]`s, where
 `Notify::notified()` and `watch::changed()` are both async. A `Notify` would also lose the wakeup outright: the settle
@@ -428,15 +428,15 @@ the trigger is the caught-up point rather than a timer or a size cap (that guard
    needs a delete inside the window, so it stays rare.
 
 **Durability.** Each roll-up used to commit with its own message; coalesced, a hard crash inside a burst leaves the wide
-parent short with nothing remembering it. Accepted, deliberately: the index is a disposable cache
-(`../CLAUDE.md` § "Rebuild, don't migrate"), the run that crashed did not complete, and the next launch's resumed run
-ends in `BackfillMissingDirStats` + `ComputeAllAggregates`, which recompute every row from `entries`. A CLEAN quit does
-not lose them at all — `Shutdown` and channel-close both run `settle_the_ledger` on the way out
+parent short with nothing remembering it. Accepted, deliberately: the index is a disposable cache (`../CLAUDE.md` §
+"Rebuild, don't migrate"), the run that crashed did not complete, and the next launch's resumed run ends in
+`BackfillMissingDirStats` + `ComputeAllAggregates`, which recompute every row from `entries`. A CLEAN quit does not lose
+them at all — `Shutdown` and channel-close both run `settle_the_ledger` on the way out
 (`aggregation/tests.rs::a_shutdown_inside_a_burst_still_rolls_the_ancestors_up`).
 
-**Two queues, not one.** The roll-up queue is unbounded and never gives up; `DeferredRepairs` next door is bounded
-drift telemetry that does both. `pending_rollups.rs` carries that boundary as a guardrail. A roll-up that fails on a
-transient DB error hands its id to `DeferredRepairs`, which drains immediately after it in the same hook.
+**Two queues, not one.** The roll-up queue is unbounded and never gives up; `DeferredRepairs` next door is bounded drift
+telemetry that does both. `pending_rollups.rs` carries that boundary as a guardrail. A roll-up that fails on a transient
+DB error hands its id to `DeferredRepairs`, which drains immediately after it in the same hook.
 
 **Deferred repair: a failed DB operation is drift, not a no-op (`deferred_repair.rs`).** Every ancestor walk
 (`propagate_delta_by_id`, `propagate_recursive_has_symlinks`, `propagate_min_subtree_epoch`, `repair_dir_stats_upward`)

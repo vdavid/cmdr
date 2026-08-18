@@ -358,4 +358,6 @@ fn build_progress_callback<'a>(events: &'a dyn EventSink, volume_id: &'a str) ->
 #[cfg(test)]
 mod partial_tests;
 #[cfg(test)]
+mod rollup_tests;
+#[cfg(test)]
 mod tests;

@@ -1,7 +1,8 @@
-# The 60,000-child stall: it is the ancestor roll-up, and it is quadratic
+# The 60,000-child stall: it was the ancestor roll-up, and it was quadratic
 
 `preemption-2026-08-18.md` stumbled into a first index that did not finish in 600 s over one directory of 60,000
-children, where 12,000 finished in about two, and left the question open. This note answers it.
+children, where 12,000 finished in about two, and left the question open. This note answers it, and § 7 carries the fix
+that shipped for it and the curve it replaced the quadratic with.
 
 **The finding.** Covering a wide directory is fine. Covering it AFTER something stopped the walk is `O(width²)`: each
 unwalked child becomes a frontier root of its own, each root's walk ends with a `ComputeSubtreeAggregates`, and that
@@ -12,6 +13,11 @@ database work per root, 60,000 times.
 hit the budget, and would have finished in roughly another 68 minutes.
 
 **A real user reaches it by opening a folder while the drive indexes**, which is the most ordinary thing they do.
+
+**✅ Fixed.** The writer coalesces the roll-up per burst instead of per subtree, which takes the piecemeal cost from
+`O(width²)` to linear: 60,000 children now settle in 29.3 s where the same bench measured a curve heading for 73
+minutes. § 7 has both curves. §§ 1–6 are the diagnosis as it stood, kept because the mechanism and the ~750-child
+break-even are what make the fix's shape make sense.
 
 ## Method
 
@@ -127,11 +133,11 @@ drive is being indexed for the first time.
 code and the ablation attributes it, but nobody has driven the real app into it, and the width where preemption starts
 landing mid-walk is hardware-dependent.
 
-## 6. What a fix involves
+## 6. What the fix had to answer
 
 **The target**: roll the ancestor up once per BURST of subtree aggregates, rather than once per subtree. The residual
 per-root cost with the roll-up removed is ~0.6 ms and flat, so 60,000 roots would settle in well under a minute instead
-of 73.
+of 73. (Measured after: ~490 µs and flat, 29.3 s at 60,000. § 7.)
 
 **❌ There is no cheaper incremental version of the current call.** Sizes and counts could ride `propagate_delta_by_id`
 at `O(depth)`, but `recursive_has_symlinks` and `min_subtree_epoch` are recomputed from a directory's children in every
@@ -143,7 +149,7 @@ caught-up point — `queue_depth == 0` and `conn.is_autocommit()` — for exactl
 queued behind us every committed row is final, so a recompute-from-children sees the whole truth"). A routine roll-up
 queue drained at the same point turns W repairs of one wide parent into one.
 
-**What makes it more than a patch**, and why this note stops here rather than shipping it:
+**What made it more than a patch**, and what the shipped version answers (§ 7):
 
 - It moves a documented invariant. The ancestor repair is race-free today because it runs inside the same message;
   deferring it to the caught-up point means the wide parent's row is stale in between, and `flush_blocking` replies
@@ -163,6 +169,74 @@ distinct parent once would cut the roll-ups 16x with no semantic change at all. 
 was, because a group can now be stopped mid-flight for a folder somebody opened, so a long call no longer costs
 responsiveness. Together they would take 73 minutes to tens of seconds at 60,000 children — while leaving the quadratic
 in place for a directory an order of magnitude wider.
+
+## 7. What shipped, and the curve it bought
+
+**The change**: `handle_compute_subtree_aggregates` queues the ancestor instead of walking it, and `writer_loop` drains
+the queue at its caught-up point, where a whole burst is one walk. Mechanism, the race argument, and the durability
+answer live with the code (`crates/cmdr-index/src/indexing/writer/DETAILS.md` § "The routine roll-up is coalesced per
+burst"); this section is the measurement.
+
+**The bench had to be corrected first.** `wide_dir_rollup_cost` drove each frontier root through a `cover` that blocks
+on a flush before returning. The phase machine does the opposite ("the writer drains once per phase, not once per
+root"), and the difference decides the answer: a flush per root stops the walker and the writer overlapping at all, so
+nothing can ever coalesce and the arm reports a quadratic the machine does not have. Both arms now leave the drain to
+the caller and end the timed region at a settle. **Every number below comes from that corrected bench, before and
+after**, so the two tables are directly comparable — and the "before" column is NOT the § 3 table, which was taken with
+the flush per root.
+
+Method: same MacBook, 2026-08-18, on `worktree-rollup-burst` at `f437c2dbc`, release build, tree in `/private/tmp`. ⚠️
+**The machine was not idle again**: another worktree's debug Cmdr build held ~98% of a core throughout and the load
+average sat near nine. Read the ratios and the per-root SHAPE, not the absolute times.
+
+**Before** (the roll-up inside the handler):
+
+| width  | one walk | per child | ratio | per root |
+| ------ | -------- | --------- | ----- | -------- |
+| 500    | 19.7 ms  | 655.8 ms  | 33x   | 1.31 ms  |
+| 1,000  | 32.5 ms  | 1.8 s     | 56x   | 1.82 ms  |
+| 2,000  | 61.9 ms  | 5.7 s     | 92x   | 2.86 ms  |
+| 4,000  | 120.8 ms | 21.2 s    | 175x  | 5.30 ms  |
+| 8,000  | 230.8 ms | 84.1 s    | 364x  | 10.51 ms |
+| 12,000 | 368.2 ms | 194.0 s   | 527x  | 16.16 ms |
+
+**After** (coalesced per burst):
+
+| width  | one walk | per child | ratio | per root |
+| ------ | -------- | --------- | ----- | -------- |
+| 500    | 17.0 ms  | 250.2 ms  | 15x   | 500.3 µs |
+| 1,000  | 31.9 ms  | 492.2 ms  | 15x   | 492.2 µs |
+| 2,000  | 65.3 ms  | 961.4 ms  | 15x   | 480.7 µs |
+| 4,000  | 110.5 ms | 2.0 s     | 18x   | 505.4 µs |
+| 12,000 | 359.9 ms | 6.2 s     | 17x   | 518.2 µs |
+| 20,000 | 667.2 ms | 9.6 s     | 14x   | 479.9 µs |
+| 30,000 | 1.1 s    | 14.7 s    | 14x   | 491.6 µs |
+| 40,000 | 1.7 s    | 19.5 s    | 12x   | 488.0 µs |
+| 60,000 | 3.0 s    | 29.3 s    | 10x   | 488.2 µs |
+
+**The per-root column is the finding. It grows 12× across the "before" widths and does not move at all across the
+"after" ones** — 480 to 518 µs from 500 children to 60,000, which is the § 6 prediction (the residual cost with the
+roll-up ablated away) landing on the nose. The ratio against covering the same ground whole now FALLS as the directory
+gets wider, where it used to climb without limit.
+
+**Above 12,000 the "before" column is extrapolated, not measured.** The 12,000 arm alone took 194 s and 60,000 would
+have taken about 73 minutes. The § 3 fit, `per root ≈ 0.9 ms + 1.2 µs × width`, predicts 10.5 ms at 8,000 and 15.3 ms at
+12,000 against 10.51 ms and 16.16 ms measured, so it holds: 500 s at 20,000, 1,110 s at 30,000, 1,960 s at 40,000, and
+4,380 s at 60,000. **Against 29.3 s measured, that is a 150× improvement at 60,000, and the multiple keeps growing with
+the width because the shape changed rather than the constant.**
+
+**End to end, the original reproduction.** `preemption_bench::preemption_cost` at `CMDR_PREEMPTION_BENCH_DIRS=60000` is
+the run § 2 caught stalling: it took 1,332 s and its second arm gave up with
+`timed out after 600.0s waiting for the phases to finish`. The same run now finishes in **74.2 s** with no arm timing
+out, and the arm that stalled — the folder somebody opened while the big sibling walks — reports **891.7 ms** from
+opened to covered, against the 2.38 s it would wait without preemption. Handing ground over stayed where
+`preemption-2026-08-18.md` measured it (median 133 ms, worst 141 ms over five rounds). So the wide directory no longer
+costs the phase machine anything a user would notice, and preemption's own numbers are unchanged by the fix.
+
+**The coalescing factor, counted rather than timed.** The writer counts the roll-up walks it runs, so the scaling guard
+asserts on the mechanism: 400 frontier roots under one parent cost **1** ancestor roll-up, against exactly 400 before
+(`writer/aggregation/tests.rs::a_burst_of_roots_under_one_parent_costs_a_handful_of_rollups`, which fails at 400 if
+anyone puts the inline repair back).
 
 ## What this note does NOT settle
 

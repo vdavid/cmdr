@@ -62,7 +62,7 @@ use entries::{
     handle_truncate_data, handle_upsert_entry_v2,
 };
 use maintenance::{handle_incremental_vacuum, request_wal_checkpoint, run_deferred_wal_checkpoint};
-use pending_rollups::PendingRollups;
+use pending_rollups::{PendingRollups, emit_full_refresh, settle_the_ledger};
 
 // ── Writer generation (for search index staleness detection) ─────────
 
@@ -1316,39 +1316,6 @@ fn writer_loop(
         "Writer: channel closed, thread exiting after processing {} messages",
         stats.current.total,
     );
-}
-
-/// Settle the `dir_stats` ledger: roll up the ancestors this burst of subtree
-/// aggregates left owing, then repair whatever chains a failed propagation queued.
-///
-/// Both want the writer's caught-up point (see `DETAILS.md` § "The caught-up point")
-/// and both are idempotent, so the exit paths call this again on the way out.
-/// `is_autocommit()` keeps them out of an open `BeginTransaction` batch, where the
-/// tree is only half written: rolling ancestors up from a partial state and then
-/// dropping the id would bake that half-state in.
-///
-/// Returns whether any row moved, so a caller can refresh the panes exactly when
-/// there is something to see.
-fn settle_the_ledger(conn: &rusqlite::Connection, rollups: &PendingRollups, repairs: &DeferredRepairs) -> bool {
-    if !conn.is_autocommit() {
-        return false;
-    }
-    let changed = rollups.drain(conn, repairs);
-    if !repairs.is_empty() {
-        repairs.drain(conn);
-    }
-    changed
-}
-
-/// Tell both panes to re-read their sizes, from BETWEEN messages rather than from
-/// inside a handler. The pool is what `process_message` gets for free: on macOS an
-/// `emit` can autorelease ObjC objects on this background thread, and out here
-/// there is no pool to catch them.
-fn emit_full_refresh(events: &dyn EventSink) {
-    #[cfg(target_os = "macos")]
-    objc2::rc::autoreleasepool(|_| emit_dir_updated(events, vec!["/".to_string()]));
-    #[cfg(not(target_os = "macos"))]
-    emit_dir_updated(events, vec!["/".to_string()]);
 }
 
 /// Process a single message. Returns `true` if the thread should exit.

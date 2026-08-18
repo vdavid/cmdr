@@ -65,12 +65,15 @@ One `cover()` call per GROUP of frontier roots, joined before the next starts. M
 real walking against a whole-volume walk's 38.1 s), and the gaps between calls are where the machine consults its visit
 queue — ❌ handing one call a whole phase's frontier looks cheaper but leaves it no check points at all.
 
-⚠️ **A stopped walk of a very WIDE directory is expensive, and the cost is not here.** Once the directory is listed and
-its children are not, every child is a frontier root of its own, and each one's walk ends with a
-`ComputeSubtreeAggregates` whose handler recomputes that wide parent from ALL of its children — so the same ground costs
-`O(width²)` in pieces where it cost `O(width)` whole (60,000 children: 3.2 s whole, about 73 minutes in pieces). It is a
-known, unfixed cost in the writer's ancestor roll-up, and making the machine stop less is the wrong answer to it:
-`docs/notes/wide-dir-scaling-2026-08-18.md` names the mechanism and what a fix involves.
+⚠️ **A stopped walk of a very WIDE directory costs more than a whole one, and the cost is not here.** Once the directory
+is listed and its children are not, every child is a frontier root of its own, and each one's walk ends with a
+`ComputeSubtreeAggregates`. That used to recompute the wide parent from ALL of its children once per root, so the same
+ground cost `O(width²)` in pieces where it cost `O(width)` whole — about 73 minutes at 60,000 children against 3.2 s.
+The writer now coalesces those roll-ups per burst (`../../writer/DETAILS.md` § "The routine roll-up is coalesced per
+burst"), which makes the piecemeal cost linear: ~490 µs a root at every width from 500 to 60,000, so 60,000 children
+settle in 29 s. What remains is a ~10-17× multiple over walking the same ground whole, flat in the width, and making the
+machine stop less is still the wrong answer to it. `docs/notes/wide-dir-scaling-2026-08-18.md` holds the diagnosis and
+both curves.
 
 **The gaps alone are not a fine enough grain**, and that is why `walk_group` also stops the walk it is inside. A
 frontier root can be 1.58M entries (`~/projects-git` on David's machine, 97% of it under a single child) and no stitch
