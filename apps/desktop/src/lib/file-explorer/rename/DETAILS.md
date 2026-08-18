@@ -148,7 +148,10 @@ dialog.
 
 Every name a chain keeps goes into a single toast per pane (`toastKeptName`), reused by id so each new one REPLACES the
 message in place. It names the newest file with the reason that one didn't apply (`chainKeptOriginalName`), and counts
-the earlier ones (`chainKeptOriginalNameAndOthers`) once there is anything to count.
+the earlier ones (`chainKeptOriginalNameAndOthers`) once there is anything to count. All three ways a chained name gets
+dropped go through it: the keypress-time `severity === 'error'`, the backend's `conflict`, and the backend's `error`
+(a read-only volume, a permission refusal). A `timeout` does NOT: the rename may well have landed, so it keeps its own
+"may have succeeded" wording and refreshes the listing.
 
 Two properties of the toast store force that shape, and both fail silently:
 
@@ -167,9 +170,8 @@ this against the real store; the rest of the chain tests stub it.
 ### The directory's names, read once per chain
 
 `sibling-names.ts` holds the names the editor's red border checks a typed name against. Reading them means paging the
-whole listing (500 rows per IPC round trip), and it used to happen on EVERY activation: chaining 20 rows of a 100k-file
-directory meant 4,000 round trips to learn the same thing 20 times, which is what would make a chain crawl on SMB or
-MTP.
+whole listing (500 rows per IPC round trip), so doing it per activation is what would make a chain crawl on SMB or MTP:
+20 rows of a 100k-file directory would cost 4,000 round trips to learn the same thing 20 times.
 
 - **Lifetime: one chain.** A chain opens with an activation no arrow asked for (F2, the menu, a click, an MCP or
   auto-rename) and lasts until the editor closes or another such activation replaces it. `startRename`,

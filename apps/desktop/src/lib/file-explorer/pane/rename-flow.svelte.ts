@@ -325,9 +325,16 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         toastIfHiddenAfterRename(result.newName)
         break
       case 'error':
-        addToast(result.message, { level: 'error' })
+        // The file definitely kept its name, so it belongs in the same running
+        // toast as every other name the chain dropped. A plain toast here would
+        // be transient, and the next keystroke wipes this pane's transient
+        // toasts: a chain over a volume that refuses every rename would report
+        // nothing at all.
+        toastKeptName(target.originalName, result.message)
         break
       case 'timeout':
+        // Not a refusal: the rename may well have landed, so this one keeps its
+        // own honest wording rather than claiming the file kept its name.
         addToast(result.message, { level: 'warn', dismissal: 'persistent' })
         void refreshListing(deps.getListingId())
         break

@@ -143,3 +143,46 @@ describe('telling the user which names a chain did not apply', () => {
     expect(getToasts()[0].content).toBe('fileExplorer.rename.chainKeptOriginalName')
   })
 })
+
+describe('a chained save the backend turns down', () => {
+  /** Runs the editor down a run of rows typing names the backend refuses. */
+  function chainAgainstARefusingBackend(steps: number) {
+    validateFilenameSpy.mockReturnValue({ severity: 'ok', message: '' })
+    executeRenameSaveSpy.mockResolvedValue({ type: 'error', message: "You don't have permission to rename this file" })
+    const names = Array.from({ length: steps + 2 }, (_, i) => `f${String(i)}.txt`)
+    const listing = chainListing(names)
+    const { rename, flow } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    for (let step = 0; step < steps; step++) {
+      flow.handleRenameInput(`renamed-${String(step)}.txt`)
+      flow.handleRenameStep('down', rename.sessionId)
+    }
+    return { flow }
+  }
+
+  it('survives the typing that follows it, which clears this pane’s transient toasts', async () => {
+    const { flow } = chainAgainstARefusingBackend(1)
+
+    await vi.waitFor(() => {
+      expect(getToasts()).toHaveLength(1)
+    })
+    // The user is typing the next name the instant the refusal lands, and that
+    // keystroke wipes this pane's transient toasts.
+    flow.handleRenameInput('the-next-name.txt')
+
+    expect(getToasts()).toHaveLength(1)
+  })
+
+  it('holds six refusals in ONE toast, counted, rather than losing the tail', async () => {
+    chainAgainstARefusingBackend(6)
+
+    await vi.waitFor(() => {
+      expect(lastKeptNamesParams()).toMatchObject({ others: 5 })
+    })
+    // Six separate toasts would fill the five-slot stack and drop the last one.
+    expect(getToasts()).toHaveLength(1)
+    expect(getToasts()[0].content).toBe('fileExplorer.rename.chainKeptOriginalNameAndOthers')
+    expect(lastKeptNamesParams()).toMatchObject({ name: 'f5.txt' })
+  })
+})

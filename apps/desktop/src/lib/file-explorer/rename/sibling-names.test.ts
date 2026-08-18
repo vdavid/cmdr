@@ -128,9 +128,7 @@ describe('the directory names a rename validates against', () => {
 
   it('still replays a rename onto the live read when an abandoned one settles first', async () => {
     const pending: ((names: { name: string }[]) => void)[] = []
-    vi.mocked(getFileRange).mockImplementation(
-      () => new Promise((resolve) => pending.push(resolve as never)) as never,
-    )
+    vi.mocked(getFileRange).mockImplementation(() => new Promise((resolve) => pending.push(resolve)) as never)
     const siblings = createSiblingNames()
 
     siblings.ensure(DIR) // the listing the pane is leaving
