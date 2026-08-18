@@ -1469,9 +1469,8 @@ l'opération a écrit, il ne REND rien. `restaurer` promettait donc l'inverse de
 
 ## Renommage en chaîne : « et N autres » se rend par `ainsi que …` (2026-08-18, `fileExplorer.rename.chainKeptOriginalNameAndOthers`)
 
-Le toast grandissant qui compte les renommages non appliqués. Il prolonge la phrase du frère
-`chainKeptOriginalName` (« {reason}. « {name} » a gardé son nom. »), donc même voix, mêmes guillemets, même
-« a gardé son nom ».
+Le toast grandissant qui compte les renommages non appliqués. Il prolonge la phrase du frère `chainKeptOriginalName` («
+{reason}. « {name} » a gardé son nom. »), donc même voix, mêmes guillemets, même « a gardé son nom ».
 
 - **"and so did N other files" → `ainsi que {n} autres fichiers`** · macOS Finder Tier 1 pour la forme « X et N autres
   éléments » (`LocalizableMerged.json` : « Envoi de « ^1 » et de ^0 autres éléments. », « … en gardant les éléments les
@@ -1483,9 +1482,10 @@ Le toast grandissant qui compte les renommages non appliqués. Il prolonge la ph
   `ainsi qu''un autre fichier`, les autres `ainsi que {othersText} autres fichiers`. Même discipline que la règle
   style.md § Plurals sur les clauses qui doivent s'accorder ; le contrôle de parité ne compare que l'ENSEMBLE des
   placeholders, donc c'est sans risque.
-- Branches CLDR `fr` : `one` / `many` / `other`, `many` identique à `other` (les entiers simples ne sélectionnent
-  jamais `many`, mais le contrôle de parité veut la branche).
-- Valeur : `{reason}. « {name} » a gardé son nom, {others, plural, one {ainsi qu''un autre fichier} many {ainsi que {othersText} autres fichiers} other {ainsi que {othersText} autres fichiers}}.`
+- Branches CLDR `fr` : `one` / `many` / `other`, `many` identique à `other` (les entiers simples ne sélectionnent jamais
+  `many`, mais le contrôle de parité veut la branche).
+- Valeur :
+  `{reason}. « {name} » a gardé son nom, {others, plural, one {ainsi qu''un autre fichier} many {ainsi que {othersText} autres fichiers} other {ainsi que {othersText} autres fichiers}}.`
 - `{reason}` arrive sans point final et hors du contrôle de Cmdr : il reste en tête de phrase, suivi du point, comme
   dans le frère. `{name}` reste entre guillemets « » avec espaces ASCII, dans une position neutre (aucun accord ne
   dépend de lui).

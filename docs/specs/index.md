@@ -260,12 +260,14 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       already on a 20 s cap, not 8 s). All three Rust lanes plus both Playwright lanes now report retry-passes as warns,
       and `rust-integration-tests` gets the contention re-run too. Remaining, needing David's OK: a per-test duration
       budget for the Rust suites, mirroring the 2 s one E2E already enforces (only 16 of ~4,900 tests exceed it today).
-- [ ] 2026-07-28 `rename-chaining-arrow-keys.md` - ArrowDown/ArrowUp in the inline rename editor commits the current
-      edit and instantly starts renaming the file below/above, so renaming a run of files is one keyboard flow. Fire and
-      forget (fast on SMB/MTP), neighbour captured by path BEFORE the rename re-sorts the listing, unusable names and
-      conflicts discarded, extension changes committed without a dialog. Carries the data-safety invariants (session
-      ids, superseded-session effects, `pendingCursorName` suppression) that keep a save in flight for file N from
-      corrupting the editor already on N+1. SPECCED, not started.
+- [x] 2026-07-28 `rename-chaining-arrow-keys.md` - SHIPPED (the toast wording awaits David's copy review).
+      ArrowDown/ArrowUp in the inline rename editor commits the current edit and instantly starts renaming the file
+      below/above, so renaming a run of files is one keyboard flow. Fire and forget (fast on SMB/MTP), neighbour
+      captured by path BEFORE the rename re-sorts the listing, unusable names and conflicts discarded, extension changes
+      committed without a dialog. Carries the data-safety invariants (session ids, superseded-session effects,
+      `pendingCursorName` suppression) that keep a save in flight for file N from corrupting the editor already on N+1.
+      The durable intent lives in `apps/desktop/src/lib/file-explorer/rename/CLAUDE.md` and its `DETAILS.md` §§ Rename
+      sessions and Chaining.
 - [x] 2026-07-25 `index-crate-extraction-plan.md` - SHIPPED, and wiped. Extracted `indexing/` + `media_index/` +
       `importance/` (93k lines, 28% of `src-tauri/src`) into a Tauri-free `cmdr-index` crate over a `cmdr-fs`
       foundation, with a designed public API: an owned `Index` handle, five named host seams, typed errors, no

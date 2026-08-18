@@ -11,15 +11,21 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { executeRenameSaveSpy, checkPermissionSpy, getSettingSpy, validateFilenameSpy, pathInsideArchiveSpy, tStringSpy } =
-  vi.hoisted(() => ({
-    executeRenameSaveSpy: vi.fn(),
-    checkPermissionSpy: vi.fn<() => Promise<string | null>>(),
-    getSettingSpy: vi.fn<(id: string) => unknown>(),
-    validateFilenameSpy: vi.fn(),
-    pathInsideArchiveSpy: vi.fn<() => boolean>(),
-    tStringSpy: vi.fn((key: string, _params?: Record<string, unknown>) => key),
-  }))
+const {
+  executeRenameSaveSpy,
+  checkPermissionSpy,
+  getSettingSpy,
+  validateFilenameSpy,
+  pathInsideArchiveSpy,
+  tStringSpy,
+} = vi.hoisted(() => ({
+  executeRenameSaveSpy: vi.fn(),
+  checkPermissionSpy: vi.fn<() => Promise<string | null>>(),
+  getSettingSpy: vi.fn<(id: string) => unknown>(),
+  validateFilenameSpy: vi.fn(),
+  pathInsideArchiveSpy: vi.fn<() => boolean>(),
+  tStringSpy: vi.fn((key: string, _params?: Record<string, unknown>) => key),
+}))
 
 vi.mock('$lib/tauri-commands', () => ({
   getFileAt: vi.fn(),

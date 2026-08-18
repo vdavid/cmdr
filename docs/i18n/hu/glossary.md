@@ -1380,26 +1380,26 @@ egy sor azért állt meg, mert a főablakban kérdés vár a felhasználóra.
 
 ### Az átnevezés-láncban nevüket megtartó fájlok számláló buboréka (`fileExplorer.rename.chainKeptOriginalNameAndOthers`, 2026-08-18)
 
-A soron belüli átnevezőben a fel/le nyíllal végigfutó átnevezésekből több is elmaradt. Ugyanaz az EGY buborék,
-mint a `chainKeptOriginalName`, csak újraírva: megnevezi a legutóbbi fájlt, a korábbiakat pedig megszámolja.
+A soron belüli átnevezőben a fel/le nyíllal végigfutó átnevezésekből több is elmaradt. Ugyanaz az EGY buborék, mint a
+`chainKeptOriginalName`, csak újraírva: megnevezi a legutóbbi fájlt, a korábbiakat pedig megszámolja.
 
-- **A testvérkulcs első tagmondata szó szerint marad**: `A(z) „{name}” megtartotta a nevét`. A buborék a helyén
-  íródik újra a felhasználó szeme előtt, ezért csak a farka nőhet, ahogy az angolban is. Az idézőjel `„…”`
-  (style.md), a `megtartotta a nevét` a testvérkulcs igéje.
-- **"and so did {N} other files" → `és még {othersText} másik fájl is.`** · a `„^1” és ^0 másik elem` alak macOS
-  Tier 1 (Finder AirDrop: `„^1” és ^0 másik elem fogadása.` / `… küldése.`, valamint az egyesítés-párbeszéd
+- **A testvérkulcs első tagmondata szó szerint marad**: `A(z) „{name}” megtartotta a nevét`. A buborék a helyén íródik
+  újra a felhasználó szeme előtt, ezért csak a farka nőhet, ahogy az angolban is. Az idézőjel `„…”` (style.md), a
+  `megtartotta a nevét` a testvérkulcs igéje.
+- **"and so did {N} other files" → `és még {othersText} másik fájl is.`** · a `„^1” és ^0 másik elem` alak macOS Tier 1
+  (Finder AirDrop: `„^1” és ^0 másik elem fogadása.` / `… küldése.`, valamint az egyesítés-párbeszéd
   `a(z) „^1” és ^0 további elem`), tehát az `és {szám} másik {főnév}` szerkezet és a szám utáni EGYES SZÁMÚ főnév is
   attesztált · high. A záró `is` (az azonos állítmány elhagyása, magyar gapping: „Péter megtartotta a nevét, és Anna
   is.”) pont az angol "and so did" megfelelője, ezért nem kell megismételni az igét · a NYELVTANRA high, a FORMÁRA
-  tentative: a pile rövid címkékből és hibaüzenetekből áll, egyetlen ` is.`-re végződő mondat sincs benne, tehát erre
-  a záró alakra nincs korpuszfedezet.
-  - ❌ NEM összevont alany (`A(z) „{name}” és még {N} másik fájl megtartotta a nevét.`): rövidebb ugyan, de az en
-    `@key` kiköti, hogy a `{reason}` CSAK a megnevezett fájlra vonatkozik, az egy alannyá olvasztás pedig az egész
-    csoportra vinné át az indoklást.
+  tentative: a pile rövid címkékből és hibaüzenetekből áll, egyetlen ` is.`-re végződő mondat sincs benne, tehát erre a
+  záró alakra nincs korpuszfedezet.
+  - ❌ NEM összevont alany (`A(z) „{name}” és még {N} másik fájl megtartotta a nevét.`): rövidebb ugyan, de az en `@key`
+    kiköti, hogy a `{reason}` CSAK a megnevezett fájlra vonatkozik, az egy alannyá olvasztás pedig az egész csoportra
+    vinné át az indoklást.
   - ❌ NEM `és ugyanez történt még {N} másik fájllal`: nyelvtanilag rendben van, de a pile-ban a `történt` szinte
     kizárólag a `Hiba történt …` / `… hiba történt` fordulatban él (macOS AppKit 8 találatból 6, Nautilus, Thunar,
     Double Commander), és a buborék hangja szándékosan kerüli a hiba-regisztert (style.md § Voice and tone).
-- **Az `one` ág kiírja a számnevet: `egy másik fájl`**, ahogy az angol is ("one other file") és a `settings.mediaIndex.reclaim.line`
-  mintája; az `other` ág a `{othersText}` formázott értéket használja. A főnév MINDKÉT ágban egyes számú
-  (`másik fájl`, soha `másik fájlok`) a szám utáni nem-többesítés szabálya szerint · high.
+- **Az `one` ág kiírja a számnevet: `egy másik fájl`**, ahogy az angol is ("one other file") és a
+  `settings.mediaIndex.reclaim.line` mintája; az `other` ág a `{othersText}` formázott értéket használja. A főnév
+  MINDKÉT ágban egyes számú (`másik fájl`, soha `másik fájlok`) a szám utáni nem-többesítés szabálya szerint · high.
 - Nem kell `sameAsSourceJustification`: az érték eltér az angoltól.

@@ -76,6 +76,9 @@ suite:
   hidden-files toggle.
 - `entries-snapshot.ts`: the Selection dialog's entry list and the operation's selected-names snapshot.
 - `network-host-state.svelte.ts`: the open Network host and its queued auto-mount share.
+- `rename-flow.svelte.ts`: the whole inline-rename flow (activation, save, the dialogs, the arrow-key chain). It lives
+  here because it hangs off the pane, but everything it does is documented next to the rest of rename in
+  `../rename/DETAILS.md`, whose `CLAUDE.md` you won't get autoloaded while editing this directory.
 
 **Where a factory is CREATED matters when it owns `$effect`s.** Svelte runs effects in creation order, so a factory
 whose effects interact with the component's own (`selection-info-feed`, which feeds the MCP push and the menu-context

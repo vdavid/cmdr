@@ -1436,16 +1436,16 @@ Eén toast die wordt herschreven zodra een tweede bestand zijn naam houdt: hij n
 eerdere. De broer-en-zus-sleutel `chainKeptOriginalName` (`{reason}. ‘{name}’ behoudt zijn naam.`) is het anker; deze
 waarde moet dezelfde stem, dezelfde aanhalingstekens en hetzelfde werkwoord houden.
 
-- **Waarde: `{reason}. ‘{name}’ behoudt zijn naam, net als {others, plural, one {één ander bestand} other {{othersText} andere bestanden}}.`**
-- **"kept its name" → `behoudt zijn naam`** (tegenwoordige tijd) · overgenomen van de broer-en-zus-sleutel, en `behouden`
-  is macOS Tier 1 voor `keep` (Finder `Behoud origineel`, `Behoud gedeeltelijke kopie`, AppKit `Keep` → `Behoud`) · high.
-  `zijn` hoort bij het onzijdige `bestand`.
+- **Waarde:
+  `{reason}. ‘{name}’ behoudt zijn naam, net als {others, plural, one {één ander bestand} other {{othersText} andere bestanden}}.`**
+- **"kept its name" → `behoudt zijn naam`** (tegenwoordige tijd) · overgenomen van de broer-en-zus-sleutel, en
+  `behouden` is macOS Tier 1 voor `keep` (Finder `Behoud origineel`, `Behoud gedeeltelijke kopie`, AppKit `Keep` →
+  `Behoud`) · high. `zijn` hoort bij het onzijdige `bestand`.
 - **"and so did N other files" → `net als {othersText} andere bestanden`** · macOS Finder telt na-komende onderdelen
-  precies zo: `MR101_V3` / `MR201_V3` / `PE106_V4` renderen "‘^1’ and ^0 other items" als
-  `'^1' en ^0 andere onderdelen` (Tier 1 voor `N andere <meervoud>`; de sleutelfamilie staat beschreven in
-  `docs/i18n/translation-learnings.md` § Reference-pile notes). `net als` draagt het werkwoordsecho van "and so did" dat
-  een kaal `en … ook` mist; het staat als vergelijkend voegwoord in Nautilus nl ("net als deze") · high op de
-  telformule, tentative op `net als`.
+  precies zo: `MR101_V3` / `MR201_V3` / `PE106_V4` renderen "‘^1’ and ^0 other items" als `'^1' en ^0 andere onderdelen`
+  (Tier 1 voor `N andere <meervoud>`; de sleutelfamilie staat beschreven in `docs/i18n/translation-learnings.md` §
+  Reference-pile notes). `net als` draagt het werkwoordsecho van "and so did" dat een kaal `en … ook` mist; het staat
+  als vergelijkend voegwoord in Nautilus nl ("net als deze") · high op de telformule, tentative op `net als`.
 - **Enkelvoud → `één ander bestand`**, zonder `-e` · Apple schrijft `'^1' en ^0 ander onderdeel` (`MR101_V2`,
   `MR201_V2`): geen buigings-`e` bij een onzijdig zelfstandig naamwoord met onbepaald lidwoord. Het afwijkende
   `^0 andere onderdeel` in `PE106_V3` is een slip in Apple's eigen catalogus, niet de regel · high. De accenten op `één`

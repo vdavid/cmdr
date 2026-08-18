@@ -14,7 +14,8 @@ All under `apps/desktop/src/lib/`.
   `explorer-state.svelte.ts` module store
 - `file-explorer/views/`: Virtual-scrolling file lists (Brief + Full modes), 100k+ files
 - `file-explorer/drag/`: Native drag-and-drop (drag-out, drop-in, pane-to-pane, macOS image swizzle)
-- `file-explorer/rename/`: Inline rename with validation, conflict resolution, extension change
+- `file-explorer/rename/`: Inline rename with validation, conflict resolution, extension change, and arrow-key chaining
+  across a run of files
 - `file-explorer/selection/`: Space/Shift/Cmd selection, range operations
 - `file-explorer/navigation/`: Back/forward history, breadcrumb, path utilities
 - `file-explorer/network/`: Network browser UI (SMB share browsing, login form)

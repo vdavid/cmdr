@@ -1193,8 +1193,8 @@ Samma toast som `fileExplorer.rename.chainKeptOriginalName`, omskriven varje gå
 behåller sitt namn: den namnger den senaste och räknar de tidigare. Systersträngens `”{name}” behåller sitt namn` är
 redan satt, så den här nyckeln får bara ett påhäng, inte en ny formulering.
 
-- **"kept its name" → `behåller sitt namn`** (oförändrat från systersträngen) · Total Commander sv sätter kollokationen i
-  precis den här domänen: `WCMD.LNG.utf8` `1673="&Behåll namnet;Avbryt"` och `1674="&Behåll namnet;Behåll &alla;…"` är
+- **"kept its name" → `behåller sitt namn`** (oförändrat från systersträngen) · Total Commander sv sätter kollokationen
+  i precis den här domänen: `WCMD.LNG.utf8` `1673="&Behåll namnet;Avbryt"` och `1674="&Behåll namnet;Behåll &alla;…"` är
   knapparna i namnkonflikten. macOS sv har verbet i samma sammanhang ("Om befintliga objekt med samma namn i målmappen
   ska **behållas** eller skrivas över", `Finder/LocalizableMerged.json`) men ingen färdig mening att kopiera. Presens,
   inte preteritum: engelskans "kept" ser tillbaka på en åtgärd som just misslyckades, medan svenskan här beskriver
@@ -1212,7 +1212,7 @@ redan satt, så den här nyckeln får bara ett påhäng, inte en ny formulering.
 - **Citattecknen är `”…”`** i båda systersträngarna, per style.md; macOS sv skriver sitt eget namn-slot likadant
   (`N141.2` = `\n\t”^0”`).
 - Inget `sameAsSourceJustification` behövs: värdet skiljer sig från engelskan.
-- ⚠️ Flaggat för en framtida granskare: `{reason}` är text Cmdr inte helt styr över och avslutas utan punkt, så
-  meningen börjar med en inskjuten främmande sats. Det fungerar i svenskan lika bra som i engelskan, men om en `reason`
-  någon gång slutar med `?` eller `!` blir `. ` efter den fel i båda språken; det är då engelskans nyckelform som ska
-  ändras, inte den här översättningen.
+- ⚠️ Flaggat för en framtida granskare: `{reason}` är text Cmdr inte helt styr över och avslutas utan punkt, så meningen
+  börjar med en inskjuten främmande sats. Det fungerar i svenskan lika bra som i engelskan, men om en `reason` någon
+  gång slutar med `?` eller `!` blir `. ` efter den fel i båda språken; det är då engelskans nyckelform som ska ändras,
+  inte den här översättningen.

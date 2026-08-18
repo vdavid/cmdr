@@ -1,6 +1,11 @@
 # Chained rename with ArrowUp / ArrowDown
 
-**Status**: specced, not started. **Owner**: David. **Date**: 2026-07-28.
+**Status**: shipped, all four milestones. The toast wording awaits David's copy review. **Owner**: David. **Date**:
+2026-07-28.
+
+What shipped lives in `apps/desktop/src/lib/file-explorer/rename/CLAUDE.md` and its `DETAILS.md` §§ "Rename sessions"
+and "Chaining the rename with the arrow keys"; this file is the plan it was built from and can be wiped with the rest of
+the folder.
 
 While the inline rename editor is open, ArrowDown commits the current edit and immediately starts renaming the file
 below; ArrowUp does the same upwards. Renaming a run of files becomes one keyboard flow instead of F2, Enter, Down, F2.

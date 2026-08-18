@@ -84,8 +84,8 @@ Escape instead.
 ## Chaining the rename with the arrow keys
 
 A bare ArrowDown inside the editor settles the name being typed (usually by saving it, see below) and reopens the editor
-on the row below; ArrowUp does the same upwards. Renaming a run of files becomes one keyboard flow. `rename-step.ts` holds both pure halves,
-`rename-flow.handleRenameStep` performs the step, and `InlineRenameEditor` raises it.
+on the row below; ArrowUp does the same upwards. Renaming a run of files becomes one keyboard flow. `rename-step.ts`
+holds both pure halves, `rename-flow.handleRenameStep` performs the step, and `InlineRenameEditor` raises it.
 
 The step, in the order it must happen:
 
@@ -142,10 +142,50 @@ away a name that is perfectly free. So the keypress checks only `severity === 'e
 `checkRenameValidity`, and the authoritative `{ type: 'conflict' }` is handled in `reportSupersededResult` (a chained
 save is always superseded by the time it returns): dropped with the same `chainKeptOriginalName` toast, never a dialog.
 
-Both toasts are `dismissal: 'persistent'`. `handleRenameInput` clears the pane's transient toasts on every keystroke,
-which is exactly when the user is typing the next name, so a transient one would be gone before it was read. The toast
-stack holds five and silently drops new ones once they're all persistent (`ui/DETAILS.md` § Toast system), so a chain
-with more than five failures still loses the tail; aggregating them into one running summary is the fix.
+### Saying so, in one toast that grows
+
+Every name a chain keeps goes into a single toast per pane (`toastKeptName`), reused by id so each new one REPLACES the
+message in place. It names the newest file with the reason that one didn't apply (`chainKeptOriginalName`), and counts
+the earlier ones (`chainKeptOriginalNameAndOthers`) once there is anything to count.
+
+Two properties of the toast store force that shape, and both fail silently:
+
+- It is `dismissal: 'persistent'`, because `handleRenameInput` clears the pane's transient toasts on every keystroke,
+  which is exactly when the user is typing the next name. A transient toast would be gone before it was read.
+- The stack holds five and silently DROPS a new toast once they're all persistent (`ui/DETAILS.md` § Toast system). One
+  toast per kept name therefore loses everything past the fifth with nothing said, which is the failure this feature
+  exists to prevent. One toast can't stack, so it can't be dropped.
+
+The count belongs to the toast on screen, not to the chain: dismissing it is the user saying they've read it, so the
+`onDismiss` callback zeroes the tally and the next kept name starts a fresh message. It deliberately carries ACROSS a
+chain boundary while the toast is still up, because a name nobody has acknowledged is still unacknowledged, and
+resetting the count there would quietly drop what an earlier chain reported. `pane/rename-chain-toast.test.ts` drives
+this against the real store; the rest of the chain tests stub it.
+
+### The directory's names, read once per chain
+
+`sibling-names.ts` holds the names the editor's red border checks a typed name against. Reading them means paging the
+whole listing (500 rows per IPC round trip), and it used to happen on EVERY activation: chaining 20 rows of a 100k-file
+directory meant 4,000 round trips to learn the same thing 20 times, which is what would make a chain crawl on SMB or
+MTP.
+
+- **Lifetime: one chain.** A chain opens with an activation no arrow asked for (F2, the menu, a click, an MCP or
+  auto-rename) and lasts until the editor closes or another such activation replaces it. `startRename`,
+  `handleRenameCancel`, `cancelRename`, and `finalizeRename` all end it; a chained activation (`startRenameOnEntry`)
+  reuses what the chain already read.
+- **Scoped to the LISTING, not to a session**: `listingId` + `includeHidden` + `parentPath`. Navigating, changing
+  directory, or switching a tab mints a new listing id, so names can't leak across directories. It also replaces the
+  session-id guard the old per-activation load needed: a read that lands after the chain has hopped on still answers for
+  the directory it was read from.
+- **The chain's own renames patch it**: a `success` result drops the old name and adds the new one, keyed on the
+  `parentPath` the save was sent with, so a late save from a directory the pane has left can't patch the one it's in
+  now. Renames that land while the read is still paging are replayed onto it, since the backend snapshot predates them.
+- **External changes are NOT tracked.** A watcher diff could patch it too, but invalidating on one would defeat the
+  cache entirely (the chain's own renames generate diffs constantly), and the payoff is small: the list feeds a hint on
+  a short-lived chain, and the backend has the authoritative answer at save time.
+- **It feeds the hint, never a decision.** `decideStepFate` reads `severity === 'error'` and nothing derived from these
+  names, because mid-chain the list can call a name taken that is perfectly free. The full argument is in "What becomes
+  of the edit being stepped away from" above.
 
 ## Ending a rename session
 

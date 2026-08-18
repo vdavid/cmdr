@@ -1203,8 +1203,8 @@ is exactly what the copy avoids.
 
 The growing sibling of `fileExplorer.rename.chainKeptOriginalName` (`{reason}. "{name}" vẫn giữ nguyên tên.`). One
 toast, rewritten each time another file in the arrow-key rename run keeps its name, so the two must read as one voice:
-same `vẫn giữ nguyên tên` predicate, same straight ASCII quotes around `{name}` (the sibling already ships them; ❌ don't
-switch this pair to the style guide's curly `“…”` alone — that's a both-keys migration).
+same `vẫn giữ nguyên tên` predicate, same straight ASCII quotes around `{name}` (the sibling already ships them; ❌
+don't switch this pair to the style guide's curly `“…”` alone — that's a both-keys migration).
 
 - **"and N other files" → `và {othersText} tệp khác`** · macOS Finder Tier 1 has the exact name-plus-count shape:
   `Đang gửi “^1” và ^0 mục khác.` ("Sending "X" and N other items."), `và ^0 mục khác.`, and

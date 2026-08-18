@@ -1170,12 +1170,12 @@ jargon is exactly what the copy avoids.
 
 ## La cadena de renombrados: el aviso que cuenta los archivos que no cambiaron (`fileExplorer.rename.chainKeptOriginalName*`, 2026-08-18)
 
-- **"kept its name" → `mantuvo su nombre`** · reafirma lo que ya usa el hermano `chainKeptOriginalName`
-  ("{reason}. “{name}” mantuvo su nombre."); macOS `es` usa `conservar` para el sentido de "quedarse con" en diálogos de
-  elección ("Conservar original", "¿Quieres conservarla?"), pero ahí el usuario ELIGE conservar, mientras que aquí el
-  archivo se quedó con su nombre sin que nadie lo decidiera, y `mantuvo` cuenta ese hecho sin sugerir una elección ·
-  high (consistencia con el hermano + matiz de sentido). Los dos son un solo aviso que se reescribe, así que la fórmula
-  tiene que ser idéntica palabra por palabra.
+- **"kept its name" → `mantuvo su nombre`** · reafirma lo que ya usa el hermano `chainKeptOriginalName` ("{reason}.
+  “{name}” mantuvo su nombre."); macOS `es` usa `conservar` para el sentido de "quedarse con" en diálogos de elección
+  ("Conservar original", "¿Quieres conservarla?"), pero ahí el usuario ELIGE conservar, mientras que aquí el archivo se
+  quedó con su nombre sin que nadie lo decidiera, y `mantuvo` cuenta ese hecho sin sugerir una elección · high
+  (consistencia con el hermano + matiz de sentido). Los dos son un solo aviso que se reescribe, así que la fórmula tiene
+  que ser idéntica palabra por palabra.
 - **"and so did {n} other files" (un elemento nombrado + el recuento de los demás) → `y otros {n} archivos también`** ·
   macOS `es` Finder tiene el patrón exacto (nombrar uno entre comillas y contar el resto): PE106_V4 "… como “^1” y otros
   ^0 ítems", y AirDrop MR201_V3/MR101_V3 "Enviando/Recibiendo “^1” y ^0 ítems más". Nautilus/Thunar `es` confirman "y
