@@ -99,8 +99,10 @@ run leaves no `approved` rows.
 - **The creation snapshot (`snapshot_size` / `snapshot_mtime` / `snapshot_inode`) is nullable.** A selector fills it
   from the index row; an explicit path list from the agent has nothing behind it to fill it with. M2's per-source
   fingerprint check reads it where it exists.
-- **`selector` holds the selector's JSON**, for display and provenance. ❌ It is never re-run; see
-  `../../suggested_ops/DETAILS.md`.
+- **`selector` holds the selector's JSON**, for display and provenance. It is never re-run, and that half needs no
+  rule: `../../suggested_ops/tests.rs::a_selector_freezes_at_creation_and_is_never_resolved_again` counts the
+  resolver's calls across propose → preflight → approve and fails at two. Why freezing is what makes "what the user
+  saw is what runs" true: `../../suggested_ops/DETAILS.md`.
 - Every classification column is a TEXT token, so `main.db` stays `sqlite3`-inspectable and nothing branches on a
   message string.
 
