@@ -348,7 +348,7 @@ the index alone and says nothing about reporting; `execute/live_run.rs` is the r
 Steps 1–3 are one repeatable unit (`groundwork`), because nothing has been emitted by the end of them. That is what
 lets a run which would answer with NOTHING AT ALL wait instead: no rows and no count from the index, and every frontier
 root already claimed by a walk in flight (`another_walk_owns_the_whole_answer`). Only one walk may have a patch of
-ground (`cover/live.rs`), so such a run has nothing to show and nothing it may walk; it used to finish on the spot
+ground (`cover/live/mod.rs`), so such a run has nothing to show and nothing it may walk; it used to finish on the spot
 reading as "no files found", under a note promising the files would turn up in a moment. It now waits for that walk
 (`wait_for_the_other_walk`: the COVERAGE question only, 200 ms apart — reloading the arena per poll would rebuild a
 multi-second snapshot for nothing), then redoes the groundwork once and answers from what the walk wrote. That redo
@@ -418,7 +418,7 @@ walk it isn't allowed to stop, and the arena mark has to keep pace with rows it'
 covered comes back to the next query from the index, not from a replay buffer.
 
 Ground a live walk already holds is reported as `still_covering` rather than walked twice (one walk per patch of
-ground, `lifecycle/cover/live.rs`); those rows reach the same index, so it means "these arrive a bit later" — for a run
+ground, `lifecycle/cover/live/mod.rs`); those rows reach the same index, so it means "these arrive a bit later" — for a run
 that has other ground to show. A run whose WHOLE scope is somebody else's waits for it instead of saying that (step 1
 above): with nothing to show and nothing to walk, "a bit later" would have meant "not in this run".
 

@@ -59,14 +59,35 @@ launch and the first phase, and while drive indexing is off. ⚠️ The second h
 other direction: a directory the reconcile cost budget SKIPPED carries the same `listed_epoch == 0` and no cause, and on
 a completed volume the verifier is the only thing that heals it.
 
-## Interleaving without preemption
+## Why a visited root doesn't wait for a big sibling
 
 One `cover()` call per GROUP of frontier roots, joined before the next starts. Measured, the join costs nothing (41 s of
-real walking against a whole-volume walk's 38.1 s), and the gaps between calls are what give the queue its check points
-— ❌ handing one call a whole phase's frontier looks cheaper but the cancel check inside `cover` is not a point the
-machine can consult a queue at. Preemption is out of scope: a root the user opens waits for the running walk, which on a
-big folder is tens of seconds, and no stitch depth fixes that (`docs/notes/phased-vs-bulk-index-2026-08-14.md` § depth 1
-against depth 2).
+real walking against a whole-volume walk's 38.1 s), and the gaps between calls are where the machine consults its visit
+queue — ❌ handing one call a whole phase's frontier looks cheaper but leaves it no check points at all.
+
+**The gaps alone are not a fine enough grain**, and that is why `walk_group` also stops the walk it is inside. A
+frontier root can be 1.58M entries (`~/projects-git` on David's machine, 97% of it under a single child) and no stitch
+depth splits it (`docs/notes/phased-vs-bulk-index-2026-08-14.md` § depth 1 against depth 2), so a folder somebody opens
+behind one waits out the whole thing: "what you open gets indexed next" meant "in tens of seconds". So the batch drain
+asks, per batch, whether a folder somebody opened is waiting behind this walk, and stops the walk if one is. What that
+buys and what stopping costs: `docs/notes/preemption-2026-08-18.md`.
+
+Three rules hold it together, each of which fails silently:
+
+- **The stop is a PEEK at the visit log, ❌ never a take.** The interlude can't run until the walk it interrupts has
+  ended, so deciding to stop and deciding what to run next are two moments; taking at the first would drop the visit on
+  the floor in between.
+- **Both sides ask the same question**, "does any remembered folder still have its turn coming". ⚠️ Asked of the FRONT
+  folder alone it breaks on the ordinary two-pane case: both panes report every tick, so a pane parked on covered ground
+  sits in front of the folder somebody just opened, and the machine would stop for a visit `take_a_visit` then declines
+  — over and over. Guarded by `visits::tests::a_folder_behind_one_that_had_its_turn_is_still_waiting`.
+- **A stopped group asks for another PASS.** It didn't run out of ground, it left some on purpose, so reading it as
+  "covered nothing" would end the phase and hand the volume to the retry ladder every time somebody browsed. It also ❌
+  doesn't feed `grouping.note`: a group looks cheap because it was cut short, and the sizing rule would answer by
+  handing the next call MORE roots.
+
+The walk's own half of the handover — what a stopped walk owes before its ground changes hands — is
+`../cover/live/DETAILS.md` § "Asking a walk for its ground".
 
 **How big a group is, is measured rather than predicted** (`grouping.rs`). A frontier root is virgin ground by
 definition, so nothing in the index says how much is under it: the only honest estimate is what the last group cost per

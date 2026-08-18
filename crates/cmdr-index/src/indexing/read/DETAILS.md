@@ -204,12 +204,13 @@ over the same subtree, so a caller runs its own query over the scope unfiltered 
 That's the whole reason there's no deduplication anywhere in the search path.
 
 One field of the answer is not a read of the database at all: `being_walked` names the frontier roots a walk is covering
-RIGHT NOW, and `Index::coverage` fills it from the in-flight claims (`../lifecycle/cover/live.rs::ground_being_walked`)
-after the query returns — this module stays a pure read, and the layering that keeps `read/` from importing lifecycle
-state holds. It's a reading, not a reservation: it can go stale immediately, and `Claim::take` stays the authority on
-what a walk actually got. What it's for: only one walk may have a patch of ground, so a caller that would otherwise
-commit to a walk taking NOTHING can tell the difference between "nobody has been here" and "somebody is here already",
-and wait rather than answer empty (`search/DETAILS.md` § The shape).
+RIGHT NOW, and `Index::coverage` fills it from the in-flight claims
+(`../lifecycle/cover/live/mod.rs::ground_being_walked`) after the query returns — this module stays a pure read, and the
+layering that keeps `read/` from importing lifecycle state holds. It's a reading, not a reservation: it can go stale
+immediately, and `Claim::take` stays the authority on what a walk actually got. What it's for: only one walk may have a
+patch of ground, so a caller that would otherwise commit to a walk taking NOTHING can tell the difference between
+"nobody has been here" and "somebody is here already", and wait rather than answer empty (`search/DETAILS.md` § The
+shape).
 
 Read `docs/specs/unindexed-search-plan.md` § "The core mechanism" for the product intent this serves. The WALK half —
 what actually fills a frontier in, and why it may never delete — is `../lifecycle/cover/DETAILS.md`.

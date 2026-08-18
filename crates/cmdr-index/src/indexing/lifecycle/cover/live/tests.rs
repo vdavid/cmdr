@@ -24,7 +24,7 @@ fn the_range_queries_answer_the_overlap_rule() {
     ];
     for held in paths {
         let mut claims = VolumeClaims::default();
-        claims.insert(held.to_string(), Mode::Additive);
+        claims.insert(held.to_string(), Holder::a_background_walk());
         for asked in paths {
             assert_eq!(
                 claims.overlapping(asked),
@@ -43,7 +43,7 @@ fn the_range_queries_agree_with_a_table_full_of_roots() {
     let held = ["/a/b", "/a/bc", "/ab", "/x/y/z", "/x/y/zz"];
     let mut claims = VolumeClaims::default();
     for root in held {
-        claims.insert(root.to_string(), Mode::Additive);
+        claims.insert(root.to_string(), Holder::a_background_walk());
     }
     for asked in [
         "/", "/a", "/a/b", "/a/b/c", "/a/bc", "/a/bcd", "/ab/c", "/x", "/x/y", "/x/y/z/w", "/q",
@@ -61,7 +61,11 @@ fn the_range_queries_agree_with_a_table_full_of_roots() {
 /// which roots it left behind.
 #[test]
 fn a_root_another_walk_is_covering_is_left_to_it() {
-    let first = Claim::take("overlap-vol", vec!["/a".to_string(), "/b".to_string()], Mode::Additive);
+    let first = Claim::take(
+        "overlap-vol",
+        vec!["/a".to_string(), "/b".to_string()],
+        Holder::a_background_walk(),
+    );
     assert_eq!(first.mine(), ["/a", "/b"]);
     assert!(first.deferred().is_empty());
 
@@ -74,7 +78,7 @@ fn a_root_another_walk_is_covering_is_left_to_it() {
             "/".to_string(),       // an ancestor of both claimed roots
             "/bc".to_string(),     // NOT inside `/b`, component-aware
         ],
-        Mode::Additive,
+        Holder::a_background_walk(),
     );
     assert_eq!(second.mine(), ["/c", "/bc"]);
     assert_eq!(second.deferred(), ["/a", "/b/deep", "/"]);
@@ -90,7 +94,7 @@ fn ground_a_walk_holds_can_be_asked_about_without_taking_it() {
         "nobody is walking a volume with no walk on it"
     );
 
-    let held = Claim::take("ask-vol", vec!["/a".to_string()], Mode::Additive);
+    let held = Claim::take("ask-vol", vec!["/a".to_string()], Holder::a_background_walk());
     assert_eq!(
         ground_being_walked("ask-vol", &["/a/inner".to_string(), "/b".to_string()]),
         ["/a/inner"],
@@ -108,8 +112,8 @@ fn ground_a_walk_holds_can_be_asked_about_without_taking_it() {
 /// places.
 #[test]
 fn two_volumes_claim_independently() {
-    let _first = Claim::take("volume-one", vec!["/shared".to_string()], Mode::Additive);
-    let second = Claim::take("volume-two", vec!["/shared".to_string()], Mode::Additive);
+    let _first = Claim::take("volume-one", vec!["/shared".to_string()], Holder::a_background_walk());
+    let second = Claim::take("volume-two", vec!["/shared".to_string()], Holder::a_background_walk());
 
     assert_eq!(second.mine(), ["/shared"], "a different drive, a different folder");
 }
@@ -121,7 +125,7 @@ fn a_frontier_that_overlaps_itself_is_deduplicated() {
     let claim = Claim::take(
         "self-overlap-vol",
         vec!["/a".to_string(), "/a/inner".to_string()],
-        Mode::Additive,
+        Holder::a_background_walk(),
     );
 
     assert_eq!(claim.mine(), ["/a"]);
@@ -132,9 +136,13 @@ fn a_frontier_that_overlaps_itself_is_deduplicated() {
 /// rather than deferring forever.
 #[test]
 fn ground_is_released_when_its_walk_ends() {
-    drop(Claim::take("release-vol", vec!["/a".to_string()], Mode::Additive));
+    drop(Claim::take(
+        "release-vol",
+        vec!["/a".to_string()],
+        Holder::a_background_walk(),
+    ));
 
-    let next = Claim::take("release-vol", vec!["/a".to_string()], Mode::Additive);
+    let next = Claim::take("release-vol", vec!["/a".to_string()], Holder::a_background_walk());
     assert_eq!(next.mine(), ["/a"]);
     drop(next);
 
@@ -148,13 +156,17 @@ fn ground_is_released_when_its_walk_ends() {
 /// were taken in the same order.
 #[test]
 fn releasing_one_walk_leaves_the_others_claims_standing() {
-    let keeper = Claim::take("mixed-vol", vec!["/keep".to_string()], Mode::Additive);
-    drop(Claim::take("mixed-vol", vec!["/go".to_string()], Mode::Additive));
+    let keeper = Claim::take("mixed-vol", vec!["/keep".to_string()], Holder::a_background_walk());
+    drop(Claim::take(
+        "mixed-vol",
+        vec!["/go".to_string()],
+        Holder::a_background_walk(),
+    ));
 
     let next = Claim::take(
         "mixed-vol",
         vec!["/keep".to_string(), "/go".to_string()],
-        Mode::Additive,
+        Holder::a_background_walk(),
     );
     assert_eq!(next.mine(), ["/go"], "only the released root is free");
     assert_eq!(next.deferred(), ["/keep"]);
@@ -168,9 +180,13 @@ fn releasing_one_walk_leaves_the_others_claims_standing() {
 /// "somewhere else on the same drive" is no protection from that.
 #[test]
 fn an_exclusive_holder_refuses_ground_it_does_not_overlap() {
-    let _scan = Claim::take("exclusive-vol", vec!["/scan".to_string()], Mode::Exclusive);
+    let _scan = Claim::take("exclusive-vol", vec!["/scan".to_string()], Holder::Rewriting);
 
-    let walk = Claim::take("exclusive-vol", vec!["/somewhere/else".to_string()], Mode::Additive);
+    let walk = Claim::take(
+        "exclusive-vol",
+        vec!["/somewhere/else".to_string()],
+        Holder::a_background_walk(),
+    );
     assert!(walk.mine().is_empty(), "the whole volume is spoken for");
     assert_eq!(walk.deferred(), ["/somewhere/else"]);
 }
@@ -180,9 +196,13 @@ fn an_exclusive_holder_refuses_ground_it_does_not_overlap() {
 /// door, from the other side.
 #[test]
 fn a_walk_anywhere_refuses_an_exclusive_claim() {
-    let _walk = Claim::take("exclusive-refused-vol", vec!["/corner".to_string()], Mode::Additive);
+    let _walk = Claim::take(
+        "exclusive-refused-vol",
+        vec!["/corner".to_string()],
+        Holder::a_background_walk(),
+    );
 
-    let scan = Claim::take("exclusive-refused-vol", vec!["/".to_string()], Mode::Exclusive);
+    let scan = Claim::take("exclusive-refused-vol", vec!["/".to_string()], Holder::Rewriting);
     assert!(scan.mine().is_empty(), "one walk anywhere is enough to refuse it");
     assert_eq!(scan.deferred(), ["/"]);
 }
@@ -191,9 +211,9 @@ fn a_walk_anywhere_refuses_an_exclusive_claim() {
 /// one is the whole volume's.
 #[test]
 fn two_exclusive_claims_exclude_each_other() {
-    let _first = Claim::take("two-exclusive-vol", vec!["/one".to_string()], Mode::Exclusive);
+    let _first = Claim::take("two-exclusive-vol", vec!["/one".to_string()], Holder::Rewriting);
 
-    let second = Claim::take("two-exclusive-vol", vec!["/two".to_string()], Mode::Exclusive);
+    let second = Claim::take("two-exclusive-vol", vec!["/two".to_string()], Holder::Rewriting);
     assert!(second.mine().is_empty());
     assert_eq!(second.deferred(), ["/two"]);
 }
@@ -203,9 +223,9 @@ fn two_exclusive_claims_exclude_each_other() {
 /// an `Exclusive`-everywhere design would have broken.
 #[test]
 fn two_additive_walks_on_disjoint_ground_both_run() {
-    let _first = Claim::take("additive-vol", vec!["/one".to_string()], Mode::Additive);
+    let _first = Claim::take("additive-vol", vec!["/one".to_string()], Holder::a_background_walk());
 
-    let second = Claim::take("additive-vol", vec!["/two".to_string()], Mode::Additive);
+    let second = Claim::take("additive-vol", vec!["/two".to_string()], Holder::a_background_walk());
     assert_eq!(second.mine(), ["/two"], "different ground, both walk");
     assert!(second.deferred().is_empty());
 }
@@ -218,7 +238,7 @@ fn an_exclusive_claim_does_not_refuse_its_own_roots() {
     let scan = Claim::take(
         "exclusive-self-vol",
         vec!["/one".to_string(), "/two".to_string()],
-        Mode::Exclusive,
+        Holder::Rewriting,
     );
 
     assert_eq!(scan.mine(), ["/one", "/two"]);
@@ -232,7 +252,7 @@ fn an_exclusive_claim_still_deduplicates_its_own_frontier() {
     let scan = Claim::take(
         "exclusive-dedup-vol",
         vec!["/a".to_string(), "/a/inner".to_string()],
-        Mode::Exclusive,
+        Holder::Rewriting,
     );
 
     assert_eq!(scan.mine(), ["/a"]);
@@ -244,10 +264,14 @@ fn an_exclusive_claim_still_deduplicates_its_own_frontier() {
 /// would wedge its volume for the rest of the session.
 #[test]
 fn a_volume_reopens_when_its_exclusive_holder_leaves() {
-    let scan = Claim::take("exclusive-release-vol", vec!["/".to_string()], Mode::Exclusive);
+    let scan = Claim::take("exclusive-release-vol", vec!["/".to_string()], Holder::Rewriting);
     drop(scan);
 
-    let walk = Claim::take("exclusive-release-vol", vec!["/anywhere".to_string()], Mode::Additive);
+    let walk = Claim::take(
+        "exclusive-release-vol",
+        vec!["/anywhere".to_string()],
+        Holder::a_background_walk(),
+    );
     assert_eq!(walk.mine(), ["/anywhere"], "the volume is free again");
 }
 
@@ -256,9 +280,9 @@ fn a_volume_reopens_when_its_exclusive_holder_leaves() {
 /// run, so the walk the caller asked for is already happening.
 #[test]
 fn a_claim_refused_by_a_whole_volume_holder_says_so() {
-    let _scan = Claim::take("refused-by-scan-vol", vec!["/".to_string()], Mode::Exclusive);
+    let _scan = Claim::take("refused-by-scan-vol", vec!["/".to_string()], Holder::Rewriting);
 
-    let second = Claim::take("refused-by-scan-vol", vec!["/".to_string()], Mode::Exclusive);
+    let second = Claim::take("refused-by-scan-vol", vec!["/".to_string()], Holder::Rewriting);
     assert!(second.mine().is_empty());
     assert_eq!(second.refused_by(), Some(Mode::Exclusive));
 }
@@ -267,9 +291,13 @@ fn a_claim_refused_by_a_whole_volume_holder_says_so() {
 /// what a caller can wait for rather than being told its scan already ran.
 #[test]
 fn a_claim_refused_by_a_walk_says_so() {
-    let _walk = Claim::take("refused-by-walk-vol", vec!["/corner".to_string()], Mode::Additive);
+    let _walk = Claim::take(
+        "refused-by-walk-vol",
+        vec!["/corner".to_string()],
+        Holder::a_background_walk(),
+    );
 
-    let scan = Claim::take("refused-by-walk-vol", vec!["/".to_string()], Mode::Exclusive);
+    let scan = Claim::take("refused-by-walk-vol", vec!["/".to_string()], Holder::Rewriting);
     assert!(scan.mine().is_empty());
     assert_eq!(scan.refused_by(), Some(Mode::Additive));
 }
@@ -278,9 +306,13 @@ fn a_claim_refused_by_a_walk_says_so() {
 /// the other side: what's in the way owns the drive, not a patch of it.
 #[test]
 fn a_walk_refused_by_a_whole_volume_holder_says_so() {
-    let _scan = Claim::take("refused-rank-vol", vec!["/one".to_string()], Mode::Exclusive);
+    let _scan = Claim::take("refused-rank-vol", vec!["/one".to_string()], Holder::Rewriting);
 
-    let refused = Claim::take("refused-rank-vol", vec!["/two".to_string()], Mode::Additive);
+    let refused = Claim::take(
+        "refused-rank-vol",
+        vec!["/two".to_string()],
+        Holder::a_background_walk(),
+    );
     assert!(refused.mine().is_empty());
     assert_eq!(refused.refused_by(), Some(Mode::Exclusive));
 }
@@ -289,12 +321,16 @@ fn a_walk_refused_by_a_whole_volume_holder_says_so() {
 /// behind. A partial grant's caller walks; it has nobody to wait for.
 #[test]
 fn a_claim_that_got_ground_reports_no_refusal() {
-    let _held = Claim::take("refused-partial-vol", vec!["/taken".to_string()], Mode::Additive);
+    let _held = Claim::take(
+        "refused-partial-vol",
+        vec!["/taken".to_string()],
+        Holder::a_background_walk(),
+    );
 
     let mixed = Claim::take(
         "refused-partial-vol",
         vec!["/taken".to_string(), "/free".to_string()],
-        Mode::Additive,
+        Holder::a_background_walk(),
     );
     assert_eq!(mixed.mine(), ["/free"]);
     assert_eq!(mixed.refused_by(), None, "it took ground, so nobody refused it");
@@ -307,7 +343,7 @@ fn deferring_to_ones_own_root_is_not_a_refusal() {
     let claim = Claim::take(
         "refused-self-vol",
         vec!["/a".to_string(), "/a/inner".to_string()],
-        Mode::Additive,
+        Holder::a_background_walk(),
     );
 
     assert_eq!(claim.deferred(), ["/a/inner"]);
@@ -320,7 +356,7 @@ fn deferring_to_ones_own_root_is_not_a_refusal() {
 /// off to wait for a walk that is never coming.
 #[test]
 fn a_whole_volume_holder_is_not_walking_the_ground_it_speaks_for() {
-    let _scan = Claim::take("walked-filter-vol", vec!["/".to_string()], Mode::Exclusive);
+    let _scan = Claim::take("walked-filter-vol", vec!["/".to_string()], Holder::Rewriting);
 
     assert!(
         ground_being_walked("walked-filter-vol", &["/deep/inside".to_string()]).is_empty(),
@@ -336,7 +372,7 @@ fn a_partial_grant_takes_what_it_can_and_reports_the_rest() {
     let _held = Claim::take(
         "partial-vol",
         vec!["/taken".to_string(), "/also-taken".to_string()],
-        Mode::Additive,
+        Holder::a_background_walk(),
     );
 
     let mixed = Claim::take(
@@ -347,7 +383,7 @@ fn a_partial_grant_takes_what_it_can_and_reports_the_rest() {
             "/also-taken/inner".to_string(),
             "/free-too".to_string(),
         ],
-        Mode::Additive,
+        Holder::a_background_walk(),
     );
     assert_eq!(mixed.mine(), ["/free", "/free-too"]);
     assert_eq!(mixed.deferred(), ["/taken", "/also-taken/inner"]);
@@ -357,7 +393,7 @@ fn a_partial_grant_takes_what_it_can_and_reports_the_rest() {
 /// a scan entry ask about the whole volume by naming just the root.
 #[test]
 fn a_claim_at_the_volume_root_covers_every_subtree() {
-    let _whole = Claim::take("whole-vol", vec!["/".to_string()], Mode::Additive);
+    let _whole = Claim::take("whole-vol", vec!["/".to_string()], Holder::a_background_walk());
 
     assert_eq!(
         ground_being_walked("whole-vol", &["/deep/inside/here".to_string()]),
@@ -370,7 +406,11 @@ fn a_claim_at_the_volume_root_covers_every_subtree() {
 /// how a scan entry probing with the volume root finds a walk anywhere.
 #[test]
 fn a_subtree_claim_answers_a_whole_volume_question() {
-    let _subtree = Claim::take("subtree-vol", vec!["/deep/inside".to_string()], Mode::Additive);
+    let _subtree = Claim::take(
+        "subtree-vol",
+        vec!["/deep/inside".to_string()],
+        Holder::a_background_walk(),
+    );
 
     assert_eq!(
         ground_being_walked("subtree-vol", &["/".to_string()]),
@@ -418,7 +458,11 @@ fn a_waiting_rescan_can_start_only_when_the_ground_is_free() {
         "a volume nobody asked about is waiting for nothing"
     );
 
-    let walking = Claim::take("owed-ready-vol", vec!["/scope".to_string()], Mode::Additive);
+    let walking = Claim::take(
+        "owed-ready-vol",
+        vec!["/scope".to_string()],
+        Holder::a_background_walk(),
+    );
     remember_rescan("owed-ready-vol");
     assert!(
         !a_rescan_can_start("owed-ready-vol"),
@@ -445,5 +489,203 @@ fn a_waiting_request_outlives_an_empty_claim_table() {
     assert!(
         !in_flight().lock_ignore_poison().contains_key("owed-empty-vol"),
         "and the entry goes with it, rather than growing a map forever"
+    );
+}
+
+// ── Asking for ground somebody else has ──────────────────────────────
+
+/// How long a test that expects the ask to fail gives it. Long enough that a
+/// loaded machine doesn't flake, short enough that a stuck test is a fast one.
+const A_SHORT_WAIT: Duration = Duration::from_millis(50);
+
+/// A walk somebody is waiting on, with a token nothing else holds.
+fn a_walk_someone_waits_on() -> Holder {
+    Holder::Walking {
+        yield_to: CancellationToken::new(),
+        for_whom: WalkFor::TheUser,
+    }
+}
+
+/// The yield channel itself: a refusal that only NAMED the holder left the
+/// person waiting on a walk they couldn't reach, so the claim carries the token
+/// that stops it and asking for the ground pulls it.
+#[test]
+fn a_background_walk_holding_ground_somebody_wants_is_asked_to_stop() {
+    let stop = CancellationToken::new();
+    let _background = Claim::take(
+        "asked-vol",
+        vec!["/a".to_string()],
+        Holder::Walking {
+            yield_to: stop.clone(),
+            for_whom: WalkFor::TheIndex,
+        },
+    );
+    assert!(!stop.is_cancelled(), "nobody has asked it for anything yet");
+
+    let waiting = Claim::preempt(
+        "asked-vol",
+        vec!["/a".to_string()],
+        a_walk_someone_waits_on(),
+        A_SHORT_WAIT,
+    );
+
+    assert!(stop.is_cancelled(), "the walk holding the ground was asked to stop");
+    assert!(
+        waiting.mine().is_empty(),
+        "and the ground stays its own until it actually lets go"
+    );
+    assert_eq!(waiting.deferred(), ["/a"]);
+    assert_eq!(waiting.refused_by(), Some(Mode::Additive));
+}
+
+/// The handoff, and the reason it lives in the release's own critical section: a
+/// third claim arriving the instant the holder let go must find the ground
+/// already in the waiter's name. Released and re-taken instead, the walk that
+/// asked for the ground would cover nothing and report success — which is
+/// exactly why preemption was ruled out before.
+#[test]
+fn ground_a_yielding_walk_lets_go_of_is_already_the_waiters() {
+    let stop = CancellationToken::new();
+    let background = Claim::take(
+        "handover-vol",
+        vec!["/a".to_string()],
+        Holder::Walking {
+            yield_to: stop.clone(),
+            for_whom: WalkFor::TheIndex,
+        },
+    );
+
+    let waiter = std::thread::spawn(|| {
+        Claim::preempt(
+            "handover-vol",
+            vec!["/a".to_string()],
+            a_walk_someone_waits_on(),
+            Duration::from_secs(10),
+        )
+    });
+    // The ask reaching the holder is also how we know the waiter is registered.
+    cmdr_fs::testing::wait_until(Duration::from_secs(5), "the holder is asked to yield", || {
+        stop.is_cancelled()
+    });
+
+    drop(background);
+
+    let racer = Claim::take("handover-vol", vec!["/a".to_string()], Holder::a_background_walk());
+    assert!(
+        racer.mine().is_empty(),
+        "the ground never passed through nobody's hands, so a racing claim finds it taken"
+    );
+    assert_eq!(
+        waiter.join().expect("the waiting claim").mine(),
+        ["/a"],
+        "and the walk that asked for it got it"
+    );
+}
+
+/// Two walks somebody is waiting on leave each other alone. Asking would make
+/// them take turns stopping each other, and neither would ever cover its ground.
+#[test]
+fn a_walk_somebody_is_waiting_on_is_never_asked_to_yield() {
+    let stop = CancellationToken::new();
+    let _first = Claim::take(
+        "no-ping-pong-vol",
+        vec!["/a".to_string()],
+        Holder::Walking {
+            yield_to: stop.clone(),
+            for_whom: WalkFor::TheUser,
+        },
+    );
+
+    let second = Claim::preempt(
+        "no-ping-pong-vol",
+        vec!["/a".to_string()],
+        a_walk_someone_waits_on(),
+        A_SHORT_WAIT,
+    );
+
+    assert!(
+        !stop.is_cancelled(),
+        "a walk with somebody waiting on it outranks nothing"
+    );
+    assert_eq!(second.deferred(), ["/a"]);
+}
+
+/// A truncating scan is never asked, and nobody waits for one either: half a
+/// rewrite is not a thing to hand over, and a scan runs for minutes.
+#[test]
+fn a_rewriting_holder_is_neither_asked_nor_waited_for() {
+    let _scan = Claim::take("no-ask-scan-vol", vec!["/".to_string()], Holder::Rewriting);
+
+    let started = Instant::now();
+    let waiting = Claim::preempt(
+        "no-ask-scan-vol",
+        vec!["/somewhere".to_string()],
+        a_walk_someone_waits_on(),
+        Duration::from_secs(30),
+    );
+
+    assert_eq!(waiting.refused_by(), Some(Mode::Exclusive));
+    assert!(
+        started.elapsed() < Duration::from_secs(5),
+        "it answered rather than sitting out a scan that will never hand anything over"
+    );
+}
+
+/// Ground nobody holds is this claim's immediately, and the roots it does have to
+/// ask for are still reported separately: partial grant survives the ask exactly
+/// as it survives a plain take.
+#[test]
+fn asking_for_ground_keeps_the_partial_grant() {
+    let _background = Claim::take(
+        "ask-partial-vol",
+        vec!["/held".to_string()],
+        Holder::a_background_walk(),
+    );
+
+    let waiting = Claim::preempt(
+        "ask-partial-vol",
+        vec!["/free".to_string(), "/held".to_string(), "/free-too".to_string()],
+        a_walk_someone_waits_on(),
+        A_SHORT_WAIT,
+    );
+
+    assert_eq!(waiting.mine(), ["/free", "/free-too"]);
+    assert_eq!(waiting.deferred(), ["/held"]);
+    assert_eq!(waiting.refused_by(), None, "it took ground, so nobody refused it");
+}
+
+/// And a frontier that overlaps ITSELF is settled before anyone is asked for
+/// anything: no holder can hand over ground this same walk is about to cover.
+#[test]
+fn asking_for_a_self_overlapping_frontier_deduplicates_it_first() {
+    let waiting = Claim::preempt(
+        "ask-self-overlap-vol",
+        vec!["/a".to_string(), "/a/inner".to_string()],
+        a_walk_someone_waits_on(),
+        A_SHORT_WAIT,
+    );
+
+    assert_eq!(waiting.mine(), ["/a"]);
+    assert_eq!(waiting.deferred(), ["/a/inner"]);
+    assert_eq!(waiting.refused_by(), None);
+}
+
+/// The waiter is not a holder: a claim that asked and got nothing leaves the
+/// volume's entry exactly as it found it, rather than pinning a map row for the
+/// life of the process.
+#[test]
+fn a_waiter_that_got_nothing_leaves_no_trace() {
+    let background = Claim::take("ask-trace-vol", vec!["/a".to_string()], Holder::a_background_walk());
+    drop(Claim::preempt(
+        "ask-trace-vol",
+        vec!["/a".to_string()],
+        a_walk_someone_waits_on(),
+        A_SHORT_WAIT,
+    ));
+    drop(background);
+
+    assert!(
+        !in_flight().lock_ignore_poison().contains_key("ask-trace-vol"),
+        "nothing is held, nobody is owed a rescan, and nobody is part way through a handover"
     );
 }

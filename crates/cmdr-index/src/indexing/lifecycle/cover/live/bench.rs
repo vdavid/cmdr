@@ -24,7 +24,7 @@
 use std::io::Write;
 use std::time::{Duration, Instant};
 
-use super::live::{Claim, Mode};
+use super::{Claim, Holder};
 
 /// Frontier widths to measure at. The real number that prompted this was 2,503
 /// roots on one cold-drive search; the rest bracket it so the growth curve is
@@ -72,7 +72,7 @@ fn free_frontier_cost(width: usize) -> (Duration, Duration) {
     let paths = frontier(width);
 
     let start = Instant::now();
-    let claim = Claim::take(&volume_id, paths, Mode::Additive);
+    let claim = Claim::take(&volume_id, paths, Holder::a_background_walk());
     let take = start.elapsed();
     assert_eq!(claim.mine().len(), width, "a free volume grants the whole frontier");
 
@@ -88,11 +88,11 @@ fn free_frontier_cost(width: usize) -> (Duration, Duration) {
 fn contended_cost(width: usize) -> Duration {
     let volume_id = format!("claim-bench-contended-{width}");
     let paths = frontier(width);
-    let held = Claim::take(&volume_id, paths.clone(), Mode::Additive);
+    let held = Claim::take(&volume_id, paths.clone(), Holder::a_background_walk());
     assert_eq!(held.mine().len(), width, "the first walk takes it all");
 
     let start = Instant::now();
-    let second = Claim::take(&volume_id, paths, Mode::Additive);
+    let second = Claim::take(&volume_id, paths, Holder::a_background_walk());
     let take = start.elapsed();
 
     assert!(second.mine().is_empty(), "and the second takes none of it");

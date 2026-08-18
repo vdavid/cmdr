@@ -143,6 +143,7 @@ fn a_walk_emits_what_it_writes() {
         frontier,
         CoverageDimension::Listing,
         CancellationToken::new(),
+        WalkFor::TheIndex,
     );
     let (entries, outcome) = drain(walk);
     f.writer.flush_blocking().expect("flush");
@@ -192,6 +193,7 @@ fn dropping_the_consumer_leaves_the_walk_running() {
         vec![f.path("wide")],
         CoverageDimension::Listing,
         CancellationToken::new(),
+        WalkFor::TheIndex,
     );
     // Never read a batch; `finish` drops the channel and waits it out.
     let outcome = walk.finish();
@@ -241,6 +243,7 @@ fn a_non_virgin_frontier_node_is_repaired_without_losing_rows() {
         vec![f.path("F/G")],
         CoverageDimension::Listing,
         CancellationToken::new(),
+        WalkFor::TheIndex,
     );
     drain(g_walk);
     f.writer.flush_blocking().expect("flush");
@@ -254,6 +257,7 @@ fn a_non_virgin_frontier_node_is_repaired_without_losing_rows() {
         vec![f.path("F")],
         CoverageDimension::Listing,
         CancellationToken::new(),
+        WalkFor::TheIndex,
     );
     let (_, outcome) = drain(walk);
     f.writer.flush_blocking().expect("flush");
@@ -294,6 +298,7 @@ fn a_frontier_path_with_no_row_is_materialized_and_walked() {
         vec![f.path("fresh/deeper")],
         CoverageDimension::Listing,
         CancellationToken::new(),
+        WalkFor::TheIndex,
     );
     let (entries, outcome) = drain(walk);
     f.writer.flush_blocking().expect("flush");
@@ -329,6 +334,7 @@ fn a_materialized_ancestor_claims_no_listing() {
         vec![f.path("fresh/deeper")],
         CoverageDimension::Listing,
         CancellationToken::new(),
+        WalkFor::TheIndex,
     );
     drain(walk);
     f.writer.flush_blocking().expect("flush");
@@ -369,6 +375,7 @@ fn a_chain_running_through_a_file_row_is_declined() {
         vec![f.path("mixed/inner")],
         CoverageDimension::Listing,
         CancellationToken::new(),
+        WalkFor::TheIndex,
     );
     let (entries, outcome) = drain(walk);
 
@@ -438,12 +445,13 @@ fn a_walk_leaves_ground_another_walk_is_covering_to_it() {
     f.seed_chain(&root.join("shared"));
     f.seed_chain(&root.join("mine"));
 
-    let first = Claim::take(&f.volume_id, vec![f.path("shared")], Mode::Additive);
+    let first = Claim::take(&f.volume_id, vec![f.path("shared")], Holder::a_background_walk());
     let second = start(
         f.context(),
         vec![f.path("shared/inner"), f.path("mine")],
         CoverageDimension::Listing,
         CancellationToken::new(),
+        WalkFor::TheIndex,
     );
 
     assert_eq!(
@@ -477,6 +485,7 @@ fn a_finished_walk_releases_the_ground_it_held() {
         vec![f.path("once")],
         CoverageDimension::Listing,
         CancellationToken::new(),
+        WalkFor::TheIndex,
     );
     assert!(walk.covered_by_another_walk().is_empty(), "nobody else holds it");
     drain(walk);
@@ -486,6 +495,7 @@ fn a_finished_walk_releases_the_ground_it_held() {
         vec![f.path("once")],
         CoverageDimension::Listing,
         CancellationToken::new(),
+        WalkFor::TheIndex,
     );
     assert!(
         again.covered_by_another_walk().is_empty(),
@@ -519,6 +529,7 @@ fn a_walk_cancelled_partway_reports_the_ground_it_covered() {
         vec![f.path("one"), f.path("two")],
         CoverageDimension::Listing,
         cancel.clone(),
+        WalkFor::TheIndex,
     );
     // The first root's batch is in hand, so its walk is over; stop before the second.
     let first = walk.next_batch().expect("the first root's entries");
@@ -540,6 +551,105 @@ fn a_walk_cancelled_partway_reports_the_ground_it_covered() {
     assert!(
         f.listed_epoch(&f.path("one")) > 0,
         "the coverage the walk earned is durable"
+    );
+}
+
+/// Preemption over the local walker, end to end: a walk somebody is waiting on
+/// asks a background walk for ground it is mid-way through, and gets it.
+///
+/// The share half of the same handover is
+/// `network_tests::a_walk_somebody_waits_on_takes_ground_off_a_background_walk`;
+/// this is the half where `Ground::Local` does the reading, and where the stop
+/// travels the yield channel rather than a token the test holds.
+///
+/// It also reads the walk's rows back WITHOUT flushing, which is what a stopped
+/// walk owes: see `flushing_a_stopped_walk_cannot_be_tidied_away` for why that
+/// assertion can't fail here on its own.
+#[test]
+fn a_background_walk_hands_its_ground_to_the_walk_somebody_is_waiting_on() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    // Wide enough that the walk is still reading when it is asked to stop, so
+    // "it handed the ground over" and "it had already finished" are different
+    // outcomes.
+    for index in 0..2_000 {
+        std::fs::create_dir_all(root.join("big").join(format!("sub-{index:04}"))).expect("dirs");
+    }
+    f.seed_chain(&root.join("big"));
+
+    let walk = start(
+        // The phase machine's shape: it runs many walks in a row, so it owes the
+        // drain itself. That is exactly the case the cancel arm exists for.
+        f.context().leaving_the_flush_to_the_caller(),
+        vec![f.path("big")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+        WalkFor::TheIndex,
+    );
+    // One batch in hand means the walk is writing, so what follows is about a
+    // walk with rows in flight rather than one that never started.
+    walk.next_batch()
+        .expect("the walk delivers before anyone asks for its ground");
+    let drainer = std::thread::spawn(move || drain(walk));
+
+    // The real door, so the stop travels the yield channel the way a preemption
+    // does — and `preempt` returns exactly when the ground changes hands.
+    let taken = Claim::preempt(
+        &f.volume_id,
+        vec![f.path("big")],
+        Holder::Walking {
+            yield_to: CancellationToken::new(),
+            for_whom: WalkFor::TheUser,
+        },
+        std::time::Duration::from_secs(30),
+    );
+    assert_eq!(taken.mine(), [f.path("big")], "precondition: the ground changed hands");
+
+    // ❌ No flush here, deliberately: the walk owed it to itself on the way out,
+    // and this is the moment the next holder would start deciding what is virgin
+    // ground.
+    assert!(
+        !f.child_ids(&f.path("big")).is_empty(),
+        "the rows a stopped walk wrote are committed by the time its ground changes hands"
+    );
+    let (_, outcome) = drainer.join().expect("the stopped walk");
+    assert!(outcome.cancelled, "and it stopped because it was asked to");
+}
+
+/// A walk that was STOPPED commits what it wrote before it lets go, whatever its
+/// caller promised about the drain.
+///
+/// Ground changes hands the instant a stopped walk releases it, and the holder
+/// that takes it decides what is virgin ground by reading the DATABASE. Rows
+/// still in the writer's queue read as directories nobody has written, so the
+/// next holder allocates fresh ids for names this walk already named: the
+/// `INSERT OR IGNORE` collision the claim table exists to prevent (`live.rs`),
+/// and a lost subtree with it.
+///
+/// Checked in the SOURCE because no test can make it fail. The window is real
+/// only behind a writer backlog — a first index, an SMB share — and a unit test's
+/// writer keeps up, so a behavioural version passes with the flush removed
+/// (measured 2,000 dirs, a 20,000-message backlog, and a read taken the instant
+/// the ground moved; all green either way). ⚠️ So the arm has no test that fails
+/// when it goes, and this is what stands in for one.
+#[test]
+fn flushing_a_stopped_walk_cannot_be_tidied_away() {
+    let source = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing/lifecycle/cover/mod.rs"),
+    )
+    .expect("the cover driver's source");
+    let Some(flush) = source
+        .split("let owed =")
+        .nth(1)
+        .and_then(|rest| rest.split(';').next())
+    else {
+        panic!("`walk_frontier` no longer decides a flush with `let owed = …;`, so this guard can't read it");
+    };
+
+    assert!(
+        flush.contains("cancel.is_cancelled()"),
+        "a stopped walk must flush before it releases its ground, and this condition no longer asks whether it \
+         was stopped:\n{flush}"
     );
 }
 
@@ -579,6 +689,7 @@ fn a_walk_cancelled_up_front_covers_nothing_and_admits_it() {
         vec![f.path("untouched")],
         CoverageDimension::Listing,
         cancel,
+        WalkFor::TheIndex,
     );
     let (entries, outcome) = drain(walk);
     f.writer.flush_blocking().expect("flush");

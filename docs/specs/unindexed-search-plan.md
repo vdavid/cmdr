@@ -450,9 +450,9 @@ this search, so it shows what Cmdr had found by then."
   kind-derived `ExclusionScope`; the walk pins the device its root sits on and cuts where another filesystem is mounted
   (one `symlink_metadata` per discovered directory, 2–3 µs and 3–6% of wall clock, measured); Decision 13's carve-out
   landed as one condition in `start_indexing_for`, with the four docs corrected; and one walk per patch of ground
-  (`cover/live.rs`) closes the collision one writer per DB doesn't. Either cut writes NO ROW, because an unlisted row
-  would sit in the frontier forever. File Provider domains stay in scope, pinned by a test that claims every directory
-  is a domain root and asserts the walk descends anyway.
+  (`cover/live/mod.rs`) closes the collision one writer per DB doesn't. Either cut writes NO ROW, because an unlisted
+  row would sit in the frontier forever. File Provider domains stay in scope, pinned by a test that claims every
+  directory is a domain root and asserts the walk descends anyway.
 
 - **M3d**: the scoped walk on every volume kind. `network_scanner/cover_scan.rs::cover_volume_subtree` is a scoped BFS
   over the `Volume` trait — one frontier node resolved to its own entry id, the same round-trip disciplines and

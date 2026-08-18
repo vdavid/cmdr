@@ -1,6 +1,6 @@
 # What the claim table cost, and what it costs now
 
-The claim table (`crates/cmdr-index/src/indexing/lifecycle/cover/live.rs`) is how two walks over one volume stay off
+The claim table (`crates/cmdr-index/src/indexing/lifecycle/cover/live/mod.rs`) is how two walks over one volume stay off
 each other's ground: a walk takes its frontier roots, and a later walk over ground somebody already holds doesn't take
 it. It is a data-safety mechanism, not a performance one, but it sits on the CALLER's thread at the top of
 `cover::start`, before any disk is read, so whatever it costs is latency a search pays before it can see a result.

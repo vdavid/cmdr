@@ -491,7 +491,7 @@ Without the claim, a coalesced shallow anchor, a journal-gap fallback, or the ma
 `claim_the_volume` maps it: `Exclusive` ⇒ `GroundBeingRewritten` (a scan or a journal replay owns the drive), `Additive`
 ⇒ `GroundBeingWalked` (a cover walk holds part of it). Both are remembered and both are run by the holder in the way;
 what the mode buys is what the user is TOLD — "Cmdr is indexing this drive" versus "Cmdr is searching it". The mode is
-the whole vocabulary, and why identity isn't is `cover/DETAILS.md` § "The two modes a claim can hold in".
+the whole vocabulary, and why identity isn't is `cover/live/DETAILS.md` § "The two modes a claim can hold in".
 
 ⚠️ **The claim is NOT scoped to the call that takes it**, and this is the part that bites. `start_scan` returns while
 the walk runs, so the claim travels into the task that ends the run: `ScanCompletion` on the local path, the completion
@@ -552,9 +552,9 @@ used to look tidiest — reporting `Started` and doing nothing — which is the 
 bound is that the volume waits for at most one walk, so five impatient clicks are one rebuild
 (`cover::cold_drive_tests::rescans::clicking_rescan_five_times_during_a_scan_queues_one_walk`).
 
-- **The request lives in the claim table** (`cover/live.rs`), one bit beside the holders it waits for, so "may it start"
-  is ONE look: owed, and no ground held. Two structures answering half each can disagree in the window between them, and
-  the answer decides whether a truncating scan spawns.
+- **The request lives in the claim table** (`cover/live/mod.rs`), one bit beside the holders it waits for, so "may it
+  start" is ONE look: owed, and no ground held. Two structures answering half each can disagree in the window between
+  them, and the answer decides whether a truncating scan spawns.
 - **Whoever was in the way runs it**, through `rescan_request::run_if_owed`. A cover walk fires from
   `cover::release_ground` in an order that is the whole trick: the branch set, then the claim, then the owed scan —
   fired before the claim goes, the scan would see this very walk's ground and defer itself again, forever.

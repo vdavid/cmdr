@@ -339,6 +339,20 @@ fn home_dir() -> Option<PathBuf> {
     dirs::home_dir()
 }
 
+/// How one group of frontier roots ended.
+///
+/// The two are independent: a group can cover a dozen roots and still be stopped
+/// on the thirteenth, and a group can be stopped having covered nothing. The pass
+/// loop needs both, because a machine that STOPPED has ground left on purpose and
+/// a machine that covered nothing has run out of it.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct GroupOutcome {
+    /// Whether the walk finished any frontier root.
+    covered: bool,
+    /// Whether the machine stopped it to cover somewhere the user opened.
+    preempted: bool,
+}
+
 /// The driver, which owns its thread for the whole run.
 struct Machine {
     started_at: Instant,
@@ -468,20 +482,20 @@ impl Machine {
         });
     }
 
-    /// Walk the frontier in groups, consulting the visit queue between them.
-    /// Reports whether anything was covered.
+    /// Walk the frontier in groups, consulting the visit queue between them and
+    /// stopping a group that is standing between the user and the folder they just
+    /// opened. Reports whether the phase should get another pass.
     ///
     /// How big a group is comes from what the last one cost (`grouping.rs`): big
     /// roots keep it at one, and the tiny ones an interrupted run leaves behind let
-    /// it grow, so the per-call cost stops being the whole cost. The visit check
-    /// sits between GROUPS, which is what the sizing rule keeps short.
+    /// it grow, so the per-call cost stops being the whole cost.
     fn walk_all(&self, roots: &[String], phase: &Phase, queue: &mut PhaseQueue) -> bool {
-        let mut covered = false;
+        let mut another_pass = false;
         let mut grouping = Grouping::new();
         let mut rest = roots;
-        while !rest.is_empty() {
+        loop {
             if !self.may_run() {
-                return covered;
+                return another_pass;
             }
             // A root the user just opened outranks home and the whole volume, and
             // never the priority roots — those are already the best answer to the
@@ -490,13 +504,30 @@ impl Machine {
             if phase.kind > CoveragePhase::VisitedRoot && self.take_a_visit(queue) {
                 self.announce_the_phase(phase);
             }
+            // ⚠️ Asked AFTER the visit check, ❌ never before it: the group a walk
+            // was stopped for is routinely the last one, and testing emptiness
+            // first would end the phase without ever running the folder the
+            // machine stopped for.
+            if rest.is_empty() {
+                return another_pass;
+            }
             let (group, remaining) = rest.split_at(grouping.roots().min(rest.len()));
             rest = remaining;
             let started = Instant::now();
-            covered |= self.walk_group(group);
-            grouping.note(group.len(), started.elapsed());
+            let outcome = self.walk_group(group, phase, queue);
+            // A pass the machine stopped ON PURPOSE didn't run out of ground: the
+            // roots it left are still frontier, and the next pass asks for them
+            // again. Reading it as "covered nothing" would end the phase and leave
+            // the volume to the retry ladder every time somebody browsed.
+            another_pass |= outcome.covered || outcome.preempted;
+            // ❌ Don't size the next group off one somebody cut short. It looks
+            // cheap because it was stopped, and the sizing rule would answer by
+            // handing the next call MORE roots — the opposite of what a machine
+            // being interrupted wants.
+            if !outcome.preempted {
+                grouping.note(group.len(), started.elapsed());
+            }
         }
-        covered
     }
 
     /// Run one root the user opened while we were walking, as its own small phase.
@@ -506,39 +537,49 @@ impl Machine {
     /// ❌ It doesn't check the visit queue itself: a nested check would let a
     /// browsing user push the phase that is actually running arbitrarily far down,
     /// and one root per boundary is already faster than anyone can browse.
+    /// ⚠️ Folders that have already had their turn are skipped rather than ending
+    /// the check, so this asks the same question `a_visit_is_waiting_behind_this_walk`
+    /// does. Both panes report every tick, so one parked on covered ground sits in
+    /// front of the folder somebody just opened — and stopping a walk for a visit
+    /// this then declined would stop the next walk too.
     fn take_a_visit(&self, queue: &mut PhaseQueue) -> bool {
-        let Some(visited) = self.visits.take() else {
-            return false;
-        };
-        if queue.already_done(&visited) {
-            return false;
+        while let Some(visited) = self.visits.take() {
+            if queue.already_done(&visited) {
+                continue;
+            }
+            let phase = Phase {
+                kind: CoveragePhase::VisitedRoot,
+                path: visited,
+            };
+            log::debug!(
+                "Phases: taking {} next, the user is looking at it",
+                phase.path.display()
+            );
+            self.run_phase(&phase, queue);
+            queue.mark_done(&phase.path);
+            return true;
         }
-        let phase = Phase {
-            kind: CoveragePhase::VisitedRoot,
-            path: visited,
-        };
-        log::debug!(
-            "Phases: taking {} next, the user is looking at it",
-            phase.path.display()
-        );
-        self.run_phase(&phase, queue);
-        queue.mark_done(&phase.path);
-        true
+        false
     }
 
-    /// Cover a group of frontier roots in one walk, and say whether it covered
-    /// anything.
+    /// Cover a group of frontier roots in one walk, and say how it ended.
     ///
     /// The group is one claim, one branch bracket, one walk thread, and one
     /// backend session; inside it the walk takes the roots one at a time. Ground
     /// another walk on this volume already holds (a live search) is left to it:
     /// its rows land in the same index, and the next pass asks again.
-    fn walk_group(&self, roots: &[String]) -> bool {
+    ///
+    /// ⚠️ It also STOPS the walk when the folder somebody just opened is waiting
+    /// behind it. A frontier root can be 1.58M entries and no stitch depth splits
+    /// it (`../DETAILS.md` § "Why a visited root doesn't wait for a big sibling"),
+    /// so the gap between groups is not a fine enough grain: without this, "what
+    /// you open gets indexed next" means "in forty seconds".
+    fn walk_group(&self, roots: &[String], phase: &Phase, queue: &PhaseQueue) -> GroupOutcome {
         let context = match cover::context_for_walk(&self.volume_id) {
             Ok(context) => context.leaving_the_flush_to_the_caller(),
             Err(e) => {
                 log::info!("Phases: can't walk '{}' right now: {e}", self.volume_id);
-                return false;
+                return GroupOutcome::default();
             }
         };
         self.walking.store(true, Ordering::Relaxed);
@@ -551,16 +592,40 @@ impl Machine {
             volume_id: self.volume_id.clone(),
             roots: roots.to_vec(),
         });
+        // This walk's own stop signal, under the machine's: stopping it hands its
+        // ground on without ending the run.
+        let walk_cancel = self.cancel.child_token();
         let walk = cover::start(
             context,
             roots.to_vec(),
             CoverageDimension::Listing,
-            self.cancel.child_token(),
+            walk_cancel.clone(),
+            // Background coverage: it leaves ground a search holds to the search,
+            // and hands its own over when one asks.
+            cover::WalkFor::TheIndex,
         );
         // Draining the batches is what keeps the live entry counter honest: the
         // walk's own heartbeat counts directories, and a phased run has no total to
-        // measure itself against, so the counter IS the progress.
-        while let Some(batch) = walk.next_batch() {
+        // measure itself against, so the counter IS the progress. It is also the
+        // one place inside a walk the machine gets a say, which is why the visit
+        // check lives here rather than only between groups.
+        // ⚠️ The check comes BEFORE the blocking receive, ❌ not after it: the
+        // folder somebody opened routinely lands while the walk is spinning up,
+        // and asking only once a batch has arrived would hold the machine on a
+        // root it has already decided to leave.
+        let mut preempted = false;
+        loop {
+            if !preempted && self.a_visit_is_waiting_behind_this_walk(phase, queue) {
+                log::debug!(
+                    "Phases: stopping the walk of {} to cover what the user just opened",
+                    roots.first().map(String::as_str).unwrap_or("-")
+                );
+                walk_cancel.cancel();
+                preempted = true;
+            }
+            let Some(batch) = walk.next_batch() else {
+                break;
+            };
             self.count(&batch);
         }
         let outcome = walk.finish();
@@ -577,7 +642,22 @@ impl Machine {
         // group can hold one root a live search is already walking and a dozen
         // nobody is, and reading the whole group as uncovered would end the phase's
         // pass with ground still on the frontier.
-        outcome.roots_covered > 0
+        GroupOutcome {
+            covered: outcome.roots_covered > 0,
+            preempted,
+        }
+    }
+
+    /// Whether stopping the walk in flight would let the machine cover a folder
+    /// somebody has open.
+    ///
+    /// A PEEK, ❌ never a take: the interlude can't run until the walk it would
+    /// interrupt has ended, so deciding to stop and deciding what to run next are
+    /// two moments, and taking here would drop the visit on the floor in between.
+    /// A root that has already had its turn buys nothing, which is what keeps a
+    /// pane sitting on one folder from stopping every walk of the run.
+    fn a_visit_is_waiting_behind_this_walk(&self, phase: &Phase, queue: &PhaseQueue) -> bool {
+        phase.kind > CoveragePhase::VisitedRoot && self.visits.any_waiting(|path| queue.already_done(path))
     }
 
     /// Record what is under the walker, for the status a mid-run reload reads.

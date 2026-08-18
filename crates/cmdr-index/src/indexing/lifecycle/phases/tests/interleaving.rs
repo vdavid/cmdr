@@ -185,6 +185,7 @@ fn the_progress_pump_outlives_the_walks_it_reports_on() {
         true,
         std::sync::Arc::clone(&watcher) as std::sync::Arc<dyn crate::indexing::events::EventSink>,
         recorder,
+        crate::indexing::host::policy::FakeHostPolicy::shared(),
     );
 
     drive.start();
@@ -238,6 +239,7 @@ fn a_window_joining_mid_run_reads_the_running_phase_off_the_status() {
         true,
         std::sync::Arc::clone(&asker) as std::sync::Arc<dyn crate::indexing::events::EventSink>,
         recorder,
+        crate::indexing::host::policy::FakeHostPolicy::shared(),
     );
 
     drive.start();
@@ -395,5 +397,140 @@ impl crate::indexing::events::EventSink for PauseBetweenWalks {
             }
             _ => {}
         }
+    }
+}
+
+/// How many directories the big sibling holds. Enough that the walker is still
+/// inside it several batches after it starts, so "the machine stopped it" and
+/// "the machine finished it" are different observable outcomes.
+const A_BIG_SIBLING: usize = 2_000;
+
+/// How long the sink holds the machine still so the reporter's `open_listings`
+/// poll lands before the walk starts. Two of its 500 ms ticks fit.
+const UNTIL_THE_POLL_LANDS: std::time::Duration = std::time::Duration::from_millis(1_200);
+
+/// The headline of this milestone: a folder somebody opens while a big sibling is
+/// being walked doesn't wait for that sibling to finish.
+///
+/// The gap BETWEEN groups was never fine enough grain — `~/projects-git` is 1.58M
+/// entries on a real machine and 97% of it is a single child, so no stitch depth
+/// splits it and "whatever you open gets indexed next" meant "in forty seconds"
+/// (`docs/specs/phased-indexing-plan.md` § "Interleaving without preemption").
+/// So the walk itself is stopped, the folder is covered, and the sibling's
+/// leftovers come back as frontier — which is what the last assertion is: ground
+/// under the big sibling being walked AFTER the folder somebody opened.
+#[test]
+fn a_folder_the_user_opens_stops_the_walk_of_a_big_sibling() {
+    let recorder = std::sync::Arc::new(crate::indexing::events::RecordingSink::new());
+    let host = crate::indexing::host::policy::FakeHostPolicy::shared();
+    let opener = std::sync::Arc::new(OpensAFolderMidWalk::new(
+        "phased-preemption",
+        std::sync::Arc::clone(&recorder),
+        std::sync::Arc::clone(&host),
+        "zzz-visited",
+    ));
+    let drive = Drive::assembled(
+        "phased-preemption",
+        |root| {
+            for index in 0..A_BIG_SIBLING {
+                std::fs::create_dir_all(root.join(format!("big-a/sub-{index:04}"))).expect("dirs");
+            }
+            std::fs::create_dir_all(root.join("big-b/inner")).expect("dirs");
+            std::fs::create_dir_all(root.join("zzz-visited/inner")).expect("dirs");
+        },
+        |_, _| {},
+        &[],
+        true,
+        std::sync::Arc::clone(&opener) as std::sync::Arc<dyn crate::indexing::events::EventSink>,
+        recorder,
+        host,
+    );
+
+    drive.start();
+    drive.wait_for_the_machine();
+
+    let branches = drive.walked_branches();
+    let big = drive.path("big-a");
+    let visited = drive.path("zzz-visited");
+    assert!(
+        branches.first().is_some_and(|roots| roots.contains(&big)),
+        "precondition: the machine started on the big sibling ({branches:?})"
+    );
+    let covered_the_folder = branches
+        .iter()
+        .position(|roots| roots.iter().any(|root| root.starts_with(&visited)))
+        .expect("the folder somebody opened was covered");
+    let back_inside_the_sibling = branches
+        .iter()
+        .skip(covered_the_folder + 1)
+        .position(|roots| roots.iter().any(|root| root.starts_with(&big)));
+
+    assert!(
+        back_inside_the_sibling.is_some(),
+        "the big sibling ran to the end before the folder somebody opened got a walk, \
+         so nothing was preempted: {branches:?}"
+    );
+    assert!(
+        drive.frontier(&drive.path("")).is_empty(),
+        "and the walk that was stopped resumed: the drive still ends covered"
+    );
+}
+
+/// Opens a folder from inside the first walk's announcement, and holds the
+/// machine still long enough for the reporter's poll to hear about it.
+///
+/// The announcement goes out on the machine's own thread just BEFORE the walk
+/// starts, so what this arranges is the case the interlude between groups can't
+/// take: the folder arrives once the walk is already reading.
+struct OpensAFolderMidWalk {
+    volume_id: &'static str,
+    recorder: std::sync::Arc<crate::indexing::events::RecordingSink>,
+    host: std::sync::Arc<crate::indexing::host::policy::FakeHostPolicy>,
+    folder: &'static str,
+    opened: std::sync::atomic::AtomicBool,
+}
+
+impl OpensAFolderMidWalk {
+    fn new(
+        volume_id: &'static str,
+        recorder: std::sync::Arc<crate::indexing::events::RecordingSink>,
+        host: std::sync::Arc<crate::indexing::host::policy::FakeHostPolicy>,
+        folder: &'static str,
+    ) -> Self {
+        Self {
+            volume_id,
+            recorder,
+            host,
+            folder,
+            opened: std::sync::atomic::AtomicBool::new(false),
+        }
+    }
+}
+
+impl crate::indexing::events::EventSink for OpensAFolderMidWalk {
+    fn emit(&self, event: crate::indexing::events::IndexEvent) {
+        let starting = match &event {
+            crate::indexing::events::IndexEvent::CoverageBranchStarted { volume_id, roots }
+                if volume_id == self.volume_id =>
+            {
+                roots.first().cloned()
+            }
+            _ => None,
+        };
+        self.recorder.emit(event);
+        let Some(first_root) = starting else { return };
+        if self.opened.swap(true, Ordering::Relaxed) {
+            return;
+        }
+        let opened = Path::new(&first_root)
+            .parent()
+            .expect("the frontier root sits under the tree")
+            .join(self.folder);
+        self.host.note_open_listing(self.volume_id, opened);
+        // allowed-test-sleep: the machine hears where the user is looking on the
+        // reporter's own 500 ms tick and ❌ nothing faster (`visits.rs`), so the
+        // only way to arrange "the folder arrives while the walk is reading" is to
+        // let that tick happen. Nothing observable fires when a poll lands.
+        std::thread::sleep(UNTIL_THE_POLL_LANDS);
     }
 }

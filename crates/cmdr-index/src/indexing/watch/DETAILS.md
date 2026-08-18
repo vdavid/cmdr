@@ -69,7 +69,7 @@ is kept as current as an indexed drive's rows, so nothing has to be re-walked an
 2. a walk covering it ⇒ **buffer**, released when that walk ends;
 3. no branch at all ⇒ **discard** on a branch-watched volume, **process** on a whole-watched one.
 
-**Why buffering, on every volume.** Letting a live loop write into a branch a walk is covering is `cover/live.rs`'s
+**Why buffering, on every volume.** Letting a live loop write into a branch a walk is covering is `cover/live/mod.rs`'s
 two-walks collision one level down: the parallel walker allocates fresh ids, `insert_entries_v2_batch` is
 `INSERT OR IGNORE`, and whichever row loses takes its subtree with it. Discarding instead drifts the branch's aggregates
 with nothing to signal it. So the events wait — the per-branch shape of the scan-completion handshake, which buffers a

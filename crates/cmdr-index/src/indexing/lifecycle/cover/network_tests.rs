@@ -203,7 +203,11 @@ fn a_walk_that_gets_no_ground_opens_no_session_and_answers_on_the_spot() {
     // `a_walk_leaves_ground_another_walk_is_covering_to_it` uses, and for the same
     // reason: a real first walk over a fixture this small can finish before the
     // second one starts.
-    let held = Claim::take("cover-share-no-ground-test", vec![scope.clone()], Mode::Additive);
+    let held = Claim::take(
+        "cover-share-no-ground-test",
+        vec![scope.clone()],
+        Holder::a_background_walk(),
+    );
 
     let (walk, _cancel) = share.walk(&scope);
     assert_eq!(
@@ -335,7 +339,7 @@ fn a_truncating_rescan_of_a_share_refuses_while_a_cover_walk_is_live() {
     let rows = share.child_ids(&share.path("scope"));
     assert_eq!(rows.len(), 1, "precondition: the walk's rows are in");
 
-    let walking = Claim::take(volume_id, vec![share.path("scope")], Mode::Additive);
+    let walking = Claim::take(volume_id, vec![share.path("scope")], Holder::a_background_walk());
     assert_eq!(
         crate::indexing::lifecycle::state::force_scan(volume_id),
         Ok(RescanOutcome::DeferredUntilSearchEnds),
@@ -670,4 +674,83 @@ fn a_walk_over_a_phone_covers_the_folder_it_was_pointed_at() {
 
     let _ = index.forget_volume(volume_id);
     drop(serialized);
+}
+
+/// The yield channel, end to end over a real walk: a walk somebody is waiting on
+/// takes ground a BACKGROUND walk is mid-way through, instead of deferring behind
+/// it.
+///
+/// The share is the right half to pin it on: it is the slowest ground we have, so
+/// it is where "wait for the walk that has this" costs the most, and the
+/// instrumented backend can hold a walk at a KNOWN listing rather than racing it.
+///
+/// What it proves in one run: the claim carries a handle that stops ONE walk, the
+/// walk commits what it wrote before letting go, and the ground arrives in the
+/// waiting walk's hands rather than back in the pool.
+#[test]
+fn a_walk_somebody_waits_on_takes_ground_off_a_background_walk() {
+    let volume_id = "cover-share-preempt-test";
+    let (share, backend) = Share::instrumented(
+        volume_id,
+        |t| {
+            vec![
+                t.dir("scope"),
+                t.dir("scope/a"),
+                t.file("scope/a/one.txt", 1),
+                t.dir("scope/b"),
+                t.file("scope/b/two.txt", 2),
+            ]
+        },
+        Some("scope/b"),
+    );
+    let scope = share.path("scope");
+    // What the person is waiting for sits INSIDE the ground the background walk
+    // took, which is the shape the product problem has: the machine is covering a
+    // big folder and somebody opens something under it.
+    let wanted = share.path("scope/a");
+
+    // A background walk, holding `scope` and parked inside it.
+    let context = context_for_walk(volume_id).expect("the share is walkable");
+    let background = start(
+        context,
+        vec![scope.clone()],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+        WalkFor::TheIndex,
+    );
+    let background = std::thread::spawn(move || drain(background));
+    backend.wait_for_the_gate();
+    assert_eq!(
+        ground_being_walked(volume_id, std::slice::from_ref(&scope)),
+        std::slice::from_ref(&scope),
+        "precondition: the background walk holds this ground and is reading it"
+    );
+
+    // Let the parked listing go once the ask has landed, which is the one moment
+    // a test can line itself up against: after that, the handover is a single
+    // critical section with nothing observable inside it.
+    let unblock = Arc::clone(&backend);
+    let released = std::thread::spawn(move || {
+        cmdr_fs::testing::wait_until(
+            std::time::Duration::from_secs(5),
+            "somebody to ask for the ground",
+            || somebody_is_asking_for_ground(volume_id),
+        );
+        unblock.release_the_gate();
+    });
+
+    let (waiting, _cancel) = share.walk(&wanted);
+
+    assert!(
+        waiting.covered_by_another_walk().is_empty(),
+        "the walk somebody is waiting on got the ground, rather than being told to wait for it"
+    );
+    let (_, outcome) = drain(waiting);
+    assert!(outcome.roots_covered > 0, "and it covered it");
+    released.join().expect("the gate releaser");
+    let (_, background) = background.join().expect("the background walk");
+    assert!(
+        background.cancelled,
+        "the background walk was asked to stop, and stopped"
+    );
 }

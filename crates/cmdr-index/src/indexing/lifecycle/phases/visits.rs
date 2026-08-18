@@ -10,7 +10,7 @@
 //! listings, and for every refresh: too loose a signal to reorder a drive walk by.
 
 use std::collections::VecDeque;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
@@ -54,6 +54,18 @@ impl VisitLog {
     pub(crate) fn take(&self) -> Option<PathBuf> {
         self.seen.lock_ignore_poison().pop_front()
     }
+
+    /// Whether any remembered folder still has its turn coming, left where it is.
+    ///
+    /// What a walk in flight asks to find out whether stopping would buy the user
+    /// anything: the machine can't run the interlude until the walk it is in has
+    /// ended, so the decision to stop and the decision to take are two separate
+    /// moments. ⚠️ Every remembered folder, ❌ never only the front one: both
+    /// panes report every tick, so a pane parked on a folder that has already had
+    /// its turn sits in front of the folder somebody just opened.
+    pub(crate) fn any_waiting(&self, already_done: impl Fn(&Path) -> bool) -> bool {
+        self.seen.lock_ignore_poison().iter().any(|path| !already_done(path))
+    }
 }
 
 #[cfg(test)]
@@ -79,6 +91,22 @@ mod tests {
         assert_eq!(log.take(), Some(PathBuf::from("/a")));
         assert_eq!(log.take(), Some(PathBuf::from("/b")));
         assert_eq!(log.take(), None, "and a pane on another drive was never ours");
+    }
+
+    /// Two panes report every tick, so a pane parked on a folder that has already
+    /// had its turn sits in front of the one somebody just opened. Asked of the
+    /// front folder alone, the machine would never stop a walk for the second pane.
+    #[test]
+    fn a_folder_behind_one_that_had_its_turn_is_still_waiting() {
+        let log = VisitLog::new();
+        log.note(&[listing("root", "/opened")], "root");
+        log.note(&[listing("root", "/parked")], "root");
+
+        assert!(
+            log.any_waiting(|path| path == Path::new("/parked")),
+            "the folder behind the parked pane hasn't had its turn"
+        );
+        assert!(!log.any_waiting(|_| true), "and once both have, nobody is waiting");
     }
 
     /// A pane left open for an hour can't grow the set: the log is where the user

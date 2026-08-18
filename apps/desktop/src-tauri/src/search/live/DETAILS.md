@@ -35,7 +35,7 @@ sentence to tell "slow" from "stuck", so a phase that's inferred rather than kno
   against (`../DETAILS.md` § Decision 12). Announced first by every run, which is also why it's the fallback everywhere
   else.
 - **`WaitingForAnotherWalk`** — coverage IS resolved, and the answer was that a walk in flight already holds this run's
-  ground. One walk per patch of ground (`lifecycle/cover/live.rs`), so the run can only wait for that walk and read what
+  ground. One walk per patch of ground (`lifecycle/cover/live/mod.rs`), so the run can only wait for that walk and read what
   it wrote. Two places reach it, and they're the same situation seen from either side of `Index::cover`:
   `wait_for_the_other_walk` (the run has nothing to show, so it waits rather than answering empty) and
   `walk_phase(attempted_roots)` when a walk came back holding NO roots (the run had index rows to show, so it goes on,

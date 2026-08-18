@@ -109,6 +109,7 @@ fn a_retry_that_lands_mid_run_never_starts_a_second_machine() {
         true,
         Arc::clone(&asker) as Arc<dyn EventSink>,
         recorder,
+        crate::indexing::host::policy::FakeHostPolicy::shared(),
     );
 
     drive.start();
@@ -148,6 +149,7 @@ fn churning_drive(volume_id: &'static str) -> (Drive, Arc<CreatesAFolderAfterEve
         true,
         Arc::clone(&churn) as Arc<dyn EventSink>,
         recorder,
+        crate::indexing::host::policy::FakeHostPolicy::shared(),
     );
     churn.write_into(drive.tree.path());
     (drive, churn)

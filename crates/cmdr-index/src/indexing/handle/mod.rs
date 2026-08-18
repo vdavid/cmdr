@@ -528,6 +528,11 @@ impl Index {
     /// cancelled still leaves every directory it read covered, and the next walk
     /// over the same scope has that much less to do.
     ///
+    /// Somebody is waiting on every walk that comes through here, so it outranks
+    /// the background: a phase machine covering the same ground is asked to hand
+    /// it over, and hands over what it has written rather than what it has read.
+    /// A walk that came through here is never asked to yield in turn.
+    ///
     /// Cancel it through the `cancel` token you pass in, from wherever you like:
     /// the walk handle itself can't leave the thread that reads its batches, and
     /// the thing that decides a walk should stop (a closing dialog, a quitting
@@ -562,7 +567,13 @@ impl Index {
             // because the scan already covers what it would have walked.
             other => IndexError::Internal(Diagnostic(format!("can't walk '{volume_id}': {other}"))),
         })?;
-        Ok(cover::start(context, frontier, dimension, cancel))
+        Ok(cover::start(
+            context,
+            frontier,
+            dimension,
+            cancel,
+            cover::WalkFor::TheUser,
+        ))
     }
 
     /// The user is looking at this directory; check that the index still matches

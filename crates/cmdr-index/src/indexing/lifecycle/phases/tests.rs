@@ -111,6 +111,7 @@ impl Tree {
             vec![root.to_string()],
             CoverageDimension::Listing,
             CancellationToken::new(),
+            cover::WalkFor::TheIndex,
         );
         while walk.next_batch().is_some() {}
         walk.finish();
@@ -193,6 +194,10 @@ mod menu_actions;
 /// ground in one go. `#[ignore]`d.
 mod resume_bench;
 
+/// What stopping a walk costs, and what it buys the folder somebody opened.
+/// `#[ignore]`d.
+mod preemption_bench;
+
 /// What covering a REAL home folder costs. `#[ignore]`d.
 mod home_bench;
 
@@ -239,7 +244,17 @@ impl Drive {
     ) -> Self {
         let recorder = std::sync::Arc::new(crate::indexing::events::RecordingSink::new());
         let sink = std::sync::Arc::clone(&recorder) as std::sync::Arc<dyn crate::indexing::events::EventSink>;
-        Self::assembled(volume_id, build, host_says, priority, indexing_enabled, sink, recorder)
+        let host = crate::indexing::host::policy::FakeHostPolicy::shared();
+        Self::assembled(
+            volume_id,
+            build,
+            host_says,
+            priority,
+            indexing_enabled,
+            sink,
+            recorder,
+            host,
+        )
     }
 
     /// The whole fixture, with the sink the volume reports THROUGH given apart
@@ -257,6 +272,7 @@ impl Drive {
         indexing_enabled: bool,
         sink: std::sync::Arc<dyn crate::indexing::events::EventSink>,
         events: std::sync::Arc<crate::indexing::events::RecordingSink>,
+        host: std::sync::Arc<crate::indexing::host::policy::FakeHostPolicy>,
     ) -> Self {
         let serialized = crate::indexing::handle::test_lock();
         let data = tempfile::tempdir().expect("index data dir");
@@ -275,7 +291,6 @@ impl Drive {
                     .with_local_fs_access(),
             ),
         );
-        let host = crate::indexing::host::policy::FakeHostPolicy::shared();
         for root in priority {
             host.note_priority_root(volume_id, tree.path().join(root));
         }
@@ -331,6 +346,24 @@ impl Drive {
                     if volume_id == self.volume_id =>
                 {
                     Some(phase)
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// The frontier roots each walk took, in the order the walks started. The
+    /// SEQUENCE is what an ordering test reads: which ground the machine was on
+    /// when, and whether it came back to any of it.
+    fn walked_branches(&self) -> Vec<Vec<String>> {
+        self.events
+            .events()
+            .into_iter()
+            .filter_map(|event| match event {
+                crate::indexing::events::IndexEvent::CoverageBranchStarted { volume_id, roots }
+                    if volume_id == self.volume_id =>
+                {
+                    Some(roots)
                 }
                 _ => None,
             })

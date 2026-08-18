@@ -245,32 +245,65 @@ impl CoverContext {
     }
 }
 
+/// How long a walk somebody is waiting on gives a background walk to hand its
+/// ground over before taking what it can and reporting the rest.
+///
+/// A bound rather than a promise: the walker checks the token between
+/// directories, so the wait is one directory's read plus the parallel walker's
+/// own drain. Measured locally, that is 89 ms median over 2,400-directory roots
+/// and 151 ms median (214 ms worst) over 40,000-directory ones
+/// (`docs/notes/preemption-2026-08-18.md`). This budget is 3.5× the worst of
+/// those, which leaves room for a share's listing round trip, and it is short
+/// enough that a walk which never stops costs a search a fraction of a second
+/// rather than the tens of seconds it used to wait for a whole frontier root.
+const YIELD_WAIT: std::time::Duration = std::time::Duration::from_millis(750);
+
 /// Start walking `frontier` on the volume `context` describes.
 ///
 /// The paths are the ones a [`coverage`](crate::Index::coverage) answer named,
 /// each taken whole: nothing under a frontier node is covered, so there is no
 /// pruning to do inside one. Ground another walk on this volume is already
 /// covering is left to it and reported as
-/// [`covered_by_another_walk`](CoverWalk::covered_by_another_walk).
+/// [`covered_by_another_walk`](CoverWalk::covered_by_another_walk) — unless
+/// `for_whom` says somebody is waiting on this walk, in which case the background
+/// walk holding that ground is asked to hand it over.
 pub(crate) fn start(
     context: CoverContext,
     frontier: Vec<String>,
     dimension: CoverageDimension,
     cancel: CancellationToken,
+    for_whom: WalkFor,
 ) -> CoverWalk {
     // Deliberately an irrefutable `let`: a second dimension has to become a
     // compile error here, not a silently-ignored parameter.
     let CoverageDimension::Listing = dimension;
 
+    // ⚠️ A CHILD of whatever the caller passed, always. Stopping one walk so its
+    // ground can change hands must not stop the volume, and a caller that handed
+    // its own token straight in would have every yield cancel everything else
+    // hanging off it. The caller's token still stops this walk, because that is
+    // what a parent does.
+    let walk_cancel = cancel.child_token();
+    let holder = Holder::Walking {
+        yield_to: walk_cancel.clone(),
+        for_whom,
+    };
+
     // Taken on the CALLER's thread, so the answer is already true by the time
     // this returns: a caller that starts two walks in a row can't have the second
     // one claim ground the first hasn't reached the registry with yet.
     //
-    // `Additive`: a cover walk speaks only for the ground it names, so it composes
-    // with the phase machine covering the same volume in pieces (Decision 13) and
-    // with any other walk that stays off its frontier. ❌ Never `Exclusive` — that
+    // A cover walk speaks only for the ground it names, so it composes with the
+    // phase machine covering the same volume in pieces (Decision 13) and with any
+    // other walk that stays off its frontier. ❌ Never `Holder::Rewriting` — that
     // is for a holder that blanks the whole database.
-    let claim = Claim::take(&context.volume_id, frontier, Mode::Additive);
+    let claim = match for_whom {
+        // ❌ Never the waiting form for background work: a machine that queued
+        // behind user walks would stop converging the moment somebody kept
+        // searching (constraint 4).
+        WalkFor::TheIndex => Claim::take(&context.volume_id, frontier, holder),
+        WalkFor::TheUser => Claim::preempt(&context.volume_id, frontier, holder, YIELD_WAIT),
+    };
     let deferred = claim.deferred().to_vec();
 
     // Every root belongs to a walk already running, so there is no walk to make.
@@ -297,7 +330,6 @@ pub(crate) fn start(
     super::state::begin_branch_coverage(&context.volume_id, claim.mine());
 
     let (sender, batches) = sync_channel(BATCH_QUEUE_DEPTH);
-    let walk_cancel = cancel;
     // ONE pulse for the whole frontier, not one per root: a consumer watching a
     // walk of eight roots wants a count that keeps climbing, not one that restarts.
     let heartbeat = WalkHeartbeat::new();
@@ -394,13 +426,23 @@ fn walk_frontier(
     // thing the walk does, so nothing waits on the queue that didn't have to.
     //
     // A caller running many walks in a row takes that drain over (a flush per walk
-    // stops the walker and the writer overlapping at all) — except when this walk's
-    // ground BUFFERED live events while it ran. Those are released the moment the
-    // branch is finished, a few lines below, and the loop that replays them
-    // resolves paths through a read connection: against rows still sitting in the
-    // writer's batch, every one of them would look like a change under a missing
-    // parent.
+    // stops the walker and the writer overlapping at all) — except in two cases.
+    //
+    // One: this walk's ground BUFFERED live events while it ran. Those are
+    // released the moment the branch is finished, a few lines below, and the loop
+    // that replays them resolves paths through a read connection: against rows
+    // still sitting in the writer's batch, every one of them would look like a
+    // change under a missing parent.
+    //
+    // Two: ⚠️ this walk was STOPPED, so its ground can change hands the moment it
+    // lets go — and a preemption is exactly that, immediately. The next holder
+    // decides what is virgin ground by reading the DATABASE, so rows still in the
+    // queue read as directories nobody has written, and it would allocate fresh
+    // ids for names this walk already named: the `INSERT OR IGNORE` collision the
+    // claim table exists to prevent. The ground comes back when nothing is
+    // WALKING it; it changes hands when nothing is WRITING it.
     let owed = context.flush == FlushOnFinish::BeforeReporting
+        || cancel.is_cancelled()
         || super::state::branch_coverage_buffered_events(&context.volume_id, frontier);
     if owed && let Err(e) = context.writer.flush_blocking() {
         log::warn!("Cover: the walk's last rows may not have landed: {e}");
@@ -703,16 +745,19 @@ mod bootstrap;
 mod live;
 
 pub(crate) use bootstrap::{NoCoverContext, context_for_walk};
+/// Wider than the rest of the table's vocabulary because it is a parameter of
+/// [`start`], which the handle calls.
+pub(crate) use live::WalkFor;
+#[cfg(test)]
+pub(in crate::indexing) use live::somebody_is_asking_for_ground;
 pub(in crate::indexing) use live::{
-    Claim, Mode, a_rescan_can_start, forget_rescan, ground_being_walked, remember_rescan, take_rescan,
+    Claim, Holder, Mode, a_rescan_can_start, forget_rescan, ground_being_walked, remember_rescan, take_rescan,
 };
 
 #[cfg(test)]
 mod bench;
 #[cfg(test)]
 mod cold_drive_tests;
-#[cfg(test)]
-mod live_bench;
 #[cfg(test)]
 mod network_give_up_tests;
 #[cfg(test)]

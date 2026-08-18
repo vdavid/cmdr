@@ -455,7 +455,7 @@ A prefill also clears `lastRunQuery`, because it REPLACES the session: it drops 
 field names the query those results came from. ❌ Don't restore it. The dialog's reopen-with-results path is a second
 producer of `runOnMount` and arms it from exactly that field, in `onMount` — after the prefill's own run has already
 fired and cleared the flag. That ran the same query twice a millisecond apart; the second run found its ground claimed
-by the first one's walk (`cover/live.rs`), walked nothing, and is the one the dialog renders, so
+by the first one's walk (`cover/live/mod.rs`), walked nothing, and is the one the dialog renders, so
 `open_search_dialog autoRun: true` on unindexed ground showed an empty dialog. Clearing the field also makes
 `autoRun: false` mean what it says, instead of the reopen path running the prefill anyway.
 

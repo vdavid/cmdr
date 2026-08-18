@@ -70,16 +70,16 @@ three levels, each closing a case the one above it can't see.
    everything a search would have walked, and running beside it isn't merely redundant: both allocate fresh ids for the
    same names, `insert_entries_v2_batch` is `INSERT OR IGNORE`, and the row that loses takes its subtree with it. With
    no index at all, the lock-first reservation inside `start_indexing_for` decides who builds one.
-3. **Claim the frontier roots** (`live.rs`). One writer isn't enough on its own, because two walks THROUGH that one
-   writer over the same directories hit the same `INSERT OR IGNORE` collision. Decision 11 makes this routine: a refined
-   query re-asks `coverage` while the first query's walk is still running, and that first walk keeps going. So
-   `cover::start` claims each root on the caller's thread, skips any that overlaps a live one in either direction
-   (component-aware, so `/a/bc` is not inside `/a/b`), and reports the skipped ones as
-   `CoverWalk::covered_by_another_walk`. The claim is owned by the walk thread, so the ground frees up on the completion
-   path, the cancel path, and a panic alike. `ground_being_walked` asks the same overlap question of the WALKS only,
-   without taking anything, which is what `Index::coverage` reports as `CoverageMap::being_walked`: a caller can then
-   tell that a walk would get it nothing BEFORE committing to one, and wait for the walk that holds the ground instead
-   of answering empty.
+3. **Claim the frontier roots** (`live/DETAILS.md`, canonical for everything the claim table does). One writer isn't
+   enough on its own, because two walks THROUGH that one writer over the same directories hit the same
+   `INSERT OR IGNORE` collision. Decision 11 makes this routine: a refined query re-asks `coverage` while the first
+   query's walk is still running, and that first walk keeps going. So `cover::start` claims each root on the caller's
+   thread, skips any that overlaps a live one in either direction (component-aware, so `/a/bc` is not inside `/a/b`),
+   and reports the skipped ones as `CoverWalk::covered_by_another_walk`. The claim is owned by the walk thread, so the
+   ground frees up on the completion path, the cancel path, and a panic alike. `ground_being_walked` asks the same
+   overlap question of the WALKS only, without taking anything, which is what `Index::coverage` reports as
+   `CoverageMap::being_walked`: a caller can then tell that a walk would get it nothing BEFORE committing to one, and
+   wait for the walk that holds the ground instead of answering empty.
 
 **The claim is also what keeps a rescan off a live walk, and it is the scan entries' own single-flight answer.** Both
 take the volume root `Exclusive`ly (`IndexManager::claim_the_volume`) instead of reading a flag: a search walk sets no
@@ -92,71 +92,6 @@ visible to the very next query — which is exactly how Decision 11 already says
 predecessor's ground, from the index rather than from a replay. ❌ Don't replace this with a shared-subscriber fan-out
 to get live batches for the shared ground; it needs per-subscriber filtering and per-subscriber completion (one root is
 done while the walk moves on to the next), and there is no second consumer today to shape either against.
-
-### The two modes a claim can hold in
-
-`Mode` is the whole arbitration vocabulary, and two values are all of it:
-
-- **`Additive`** — the holder speaks only for the ground it names. Two additive claims compose as long as their
-  frontiers stay off each other. Every walk `cover::start` makes is one.
-- **`Exclusive`** — the holder speaks for the whole volume, whatever ground anyone else names. What a truncating scan
-  needs: it blanks the database and bumps the epoch, so "somewhere else on the same drive" is no protection. Journal
-  replay takes one too, for a subtler reason (`../DETAILS.md`).
-
-The conflict rule follows from that: an `Exclusive` holder refuses everything on its volume; an `Exclusive` claim is
-refused by any holder at all; `Additive` against `Additive` is decided per root by the overlap rule. **The volume-wide
-half is read BEFORE the claim takes anything**, so a claim naming several roots never conflicts with its own — asked per
-root, an `Exclusive` claim over `/one` and `/two` would refuse `/two` the moment `/one` landed.
-
-**A refusal reports the blocking holder's MODE** (`Claim::refused_by`), which is the whole of what a refused caller is
-told. It is read off the table as it stood BEFORE the claim took anything, and reported only when the claim got NO
-ground — the first root of a frontier can't be refused by roots the same call took, since it took none yet, so a
-self-overlapping frontier reads as "refused by nobody" rather than by itself. What the two scan entries do with it is
-`../DETAILS.md` § "The two single-flight questions a scan has to ask".
-
-Two consequences worth stating, because both are easy to get backwards:
-
-- **A holder that speaks for a volume is not WALKING it.** `ground_being_walked` filters to `Additive` holders, so a
-  running scan never answers it (`Index::coverage`'s `being_walked`, and with it
-  `StartOutcome::DeferredUntilSearchEnds`, keeps meaning "another WALK has this ground").
-- **A whole-volume claim outlives the call that takes it.** `start_scan` and `start_volume_scan` return while their
-  walks run, so the claim travels into the task that ends the run. Custody and the release sites: `../DETAILS.md`.
-
-## And the one walk a volume is waiting for
-
-The table also carries one bit per volume: whether a manual "Rescan now" was turned away and is waiting for the ground.
-It lives HERE rather than in a set of its own because "may that rescan start" is one question about this table — is
-anything owed, and is the ground free — and two structures answering half each can disagree in the window between them,
-with a truncating scan riding on the answer. `remember_rescan` / `take_rescan` / `forget_rescan` / `a_rescan_can_start`
-are the whole surface; what the request MEANS, who runs it, and when is `../rescan_request.rs` and `../DETAILS.md` §
-"The one walk a volume remembers".
-
-⚠️ A volume's entry therefore outlives its claims: the request is recorded BEFORE its scan tries to start, which is
-routinely a moment when nobody holds anything. ❌ Never prune an entry on `roots.is_empty()` alone — `is_idle()` is the
-test, and `live::tests::a_waiting_request_outlives_an_empty_claim_table` is what catches losing it.
-
-⚠️ **Two modes deliberately do not express every holder's wish.** A holder wanting "block truncating scans and search
-walks, but not phase walks" has no mode: `Exclusive` would refuse the phase machine's own per-group walks, and
-`Additive` at the volume root conflicts with every subtree claim because an ancestor counts as overlapping. The
-resolution is that the phase machine takes no volume-wide claim at all and `phases_have_work` stays a separate question
-(`../DETAILS.md` § "The two single-flight questions a scan has to ask"). ❌ Don't solve it with holder identity or
-re-entrancy: that is the broker design, and it was rejected.
-
-### What the claim table is, and the cost that shaped it
-
-Claims are held per volume in a path-keyed `BTreeMap`, so an overlap question is two range queries — the ancestor chain
-(a handful of lookups whatever the table holds) plus one sorted descendant range that costs what it yields. ❌ Never a
-`Vec` scan: `take` checks each root against the roots it has already taken, so a linear membership test makes ONE call
-quadratic in its own width, and a cold-drive search really does arrive with thousands of roots. Measured at 2,503 roots:
-446.77 ms before, 2.23 ms after, on the caller's thread before any directory is listed
-(`docs/notes/claim-table-cost-2026-08-17.md`).
-
-⚠️ **The range queries are an OPTIMIZATION of a predicate, and nothing but a test makes them agree with it.** The
-predicate is `a == b || is_strict_descendant(a, b) || is_strict_descendant(b, a)`; it lives in `live.rs`'s test module
-as the reference implementation, and `the_range_queries_answer_the_overlap_rule` holds the table to it over a grid of
-sibling traps. A prefix test that quietly lost its component-awareness would let a walk take ground another walk is
-writing — the exact data-safety bug this module exists to prevent — and every other test here would still pass. ❌ Don't
-delete that test as redundant.
 
 ### A claim that takes nothing makes no walk
 

@@ -8,7 +8,7 @@ takes; `visits.rs` where the user is looking; `completion.rs` the two stamps. Th
 
 ## Must-knows
 
-Each of these fails SILENTLY when ignored; `DETAILS.md` has the incident behind every one.
+Each of these fails SILENTLY when ignored.
 
 - **The stitch is what makes phases compose; ❌ never skip it** (the next phase re-walks everything, each root taking
   the SERIAL repair). It marks ONE directory at a time, files included, flushes between the upserts and the mark, stamps
@@ -25,6 +25,9 @@ Each of these fails SILENTLY when ignored; `DETAILS.md` has the incident behind 
   the verifier's.** ❌ Never `mgr.scanning`: `cover_context_for` returns `None` under it, so our own walks fail.
 - **One `cover()` per GROUP of frontier roots, joined**, sized from what the last group cost (`grouping.rs`), draining
   per phase and taking stock per DRAIN, ❌ never per root, ❌ never a whole frontier in one call, ❌ never a fixed size.
+  ⚠️ **A group is also STOPPED for a folder somebody opened**: the gaps are too coarse when a root is 1.58M entries. A
+  PEEK over EVERY remembered folder, ❌ never a take, ❌ never just the front. It earns another PASS and ❌ never sizes
+  the next group.
 - **The phase is a typed `CoveragePhase` on ONE event AND on the status response** (transition-only leaves a reloaded
   window blank). ❌ Never off the branch events, ❌ never derived host-side, ❌ not one-shot: an interlude makes the
   outer phase re-announce, via the coverage event alone.
@@ -38,5 +41,6 @@ Each of these fails SILENTLY when ignored; `DETAILS.md` has the incident behind 
 - **A rescan before full coverage RESTARTS the phases**, ❌ never truncates, ❌ never errors; the deferred-rescan
   mechanism answers for COMPLETED volumes only.
 
-Depth on every bullet, the escape hatch, and the measurements behind the flush batching and the `~/Library` decision:
-`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Depth on every bullet (with the incident behind each), the escape hatch, and the measurements behind the flush batching
+and the `~/Library` decision: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing,
+or advising.

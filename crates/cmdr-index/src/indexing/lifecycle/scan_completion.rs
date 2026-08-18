@@ -546,7 +546,7 @@ mod tests {
                 scanning: Arc::new(AtomicBool::new(true)),
                 // The ground a real scan hands over, taken the way `start_scan`
                 // takes it so the handler releases something real.
-                ground: cover::Claim::take(volume_id, vec!["/".to_string()], cover::Mode::Exclusive),
+                ground: cover::Claim::take(volume_id, vec!["/".to_string()], cover::Holder::Rewriting),
                 event_rx: self.event_rx.take().expect("one completion per fixture"),
                 watcher_overflow_flag: None,
                 volume_id: volume_id.to_string(),
@@ -618,7 +618,7 @@ mod tests {
             let mut fx = Fixture::new(volume_id);
             let params = fx.completion(volume_id, result);
             assert!(
-                cover::Claim::take(volume_id, vec!["/".to_string()], cover::Mode::Exclusive)
+                cover::Claim::take(volume_id, vec!["/".to_string()], cover::Holder::Rewriting)
                     .mine()
                     .is_empty(),
                 "precondition: the scan holds '{volume_id}' while it runs"
@@ -626,7 +626,7 @@ mod tests {
 
             run_scan_completion(params).await;
 
-            let next = cover::Claim::take(volume_id, vec!["/".to_string()], cover::Mode::Exclusive);
+            let next = cover::Claim::take(volume_id, vec!["/".to_string()], cover::Holder::Rewriting);
             assert_eq!(next.mine(), ["/"], "'{volume_id}' is walkable again");
         }
     }

@@ -654,6 +654,7 @@ fn a_listing_of_ground_a_walk_is_covering_writes_nothing() {
         vec![fs_root.path().join("claimed").to_string_lossy().into_owned()],
         crate::indexing::read::coverage::CoverageDimension::Listing,
         CancellationToken::new(),
+        crate::indexing::lifecycle::cover::WalkFor::TheIndex,
     );
 
     let rt = tokio::runtime::Runtime::new().unwrap();

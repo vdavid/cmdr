@@ -40,7 +40,7 @@ impl IndexManager {
     /// run ends — see `scan_completion.rs` and the two entries.
     pub(in crate::indexing::lifecycle) fn claim_the_volume(&self) -> Result<cover::Claim, ScanStartError> {
         let whole_volume = vec![self.volume_root.to_string_lossy().into_owned()];
-        let claim = cover::Claim::take(&self.volume_id, whole_volume, cover::Mode::Exclusive);
+        let claim = cover::Claim::take(&self.volume_id, whole_volume, cover::Holder::Rewriting);
         if !claim.mine().is_empty() {
             return Ok(claim);
         }
@@ -120,7 +120,7 @@ impl IndexManager {
         let ground = cover::Claim::take(
             &self.volume_id,
             vec![self.volume_root.to_string_lossy().into_owned()],
-            cover::Mode::Exclusive,
+            cover::Holder::Rewriting,
         );
         if ground.mine().is_empty() {
             // Nothing here can act on it: replay is the launch path and its writes
