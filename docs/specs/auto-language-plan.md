@@ -248,6 +248,23 @@ tests green, so that a later icon regression can't be blamed on the translation.
    Menu labels are exactly the strings the macOS Finder reference is authoritative for, so this should be a
    high-confidence pass.
 
+**The checks that break the moment `menu.*` keys exist** (found while planning; budget for them, they're not
+incidental):
+
+- **`message-keys-unused`** scans the frontend for literal `t('…')` / `getMessage('…')` usage. Keys consumed only from
+  Rust look like orphans. Its own doc says the `unusedKeyDynamicPrefixes` allowlist is closed and ❌ must not be widened
+  to silence an orphan — and it's right, because these aren't orphans, they're used from a language the scanner doesn't
+  read. **Teach the scanner to also scan Rust for `menu_t("…")` literals.** Allowlisting `menu.` would blind us to a
+  genuinely dead menu key forever.
+- **`message-screenshots-fresh`** and the `@key.screenshot` coupling harness drive the webview surface by surface.
+  Native menu strings never render in the webview, so they can't be coupled. They need a documented exemption in the
+  coupling pipeline, not a fake screenshot.
+- **`message-key-naming`**: confirm the `menu.*` shape satisfies it before writing 200 keys under it.
+- **Bundle weight**: the frontend loads `messages/*/*.json` wholesale, so menu strings it never uses would ride along in
+  the JS bundle (~60 KB across ten locales). Accept that for now: one catalog and one set of checks is worth more than
+  the bytes. Splitting `menu.json` out and excluding it from the glob is the fallback, and it walks straight into the
+  gotcha `intl/CLAUDE.md` already documents about the `screenshots/` sibling, so only do it with a real reason.
+
 **Tests**
 
 - Rust unit, **test-first** for the re-key refactor (it's a behavior-preserving change to code with no current guard,
