@@ -151,6 +151,20 @@ describe('accessibility', () => {
   })
 })
 
+/**
+ * Both labels, or neither works.
+ *
+ * The disclosure is a JUXTAPOSITION: the agent's claim on one side, facts Cmdr holds by itself
+ * on the other, so the user can check one against the other. Drop either label and it inverts.
+ * Without "Ask Cmdr's reason", a rationale reads as something Cmdr verified. Without "What Cmdr
+ * knows", a column of sizes and dates reads as MORE of the agent's claims rather than as the
+ * independent check on them, which is worse than showing no facts at all: it lends the agent
+ * Cmdr's credibility.
+ *
+ * Both were nearly lost once already. "What Cmdr knows" was written into the message catalog
+ * and never rendered; only `message-keys-unused` noticed, because the dialog looked complete
+ * without it.
+ */
 describe('disclosure', () => {
   it("labels the agent's words as the agent's, never as something Cmdr checked", () => {
     const host = mountDialog()
