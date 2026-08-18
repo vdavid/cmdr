@@ -300,6 +300,12 @@ fn group_problem_content(problem: &GroupProblem) -> (&'static str, String) {
             "ambiguousSources",
             "Give exactly one of paths, renames, or a selector, so it's clear what the user is reviewing.".into(),
         ),
+        GroupProblem::DestinationInsideArchive => (
+            "destinationInsideArchive",
+            "A group can't write into a zip. Pick a folder outside the archive, or propose a compress with the \
+             archive itself as the target."
+                .into(),
+        ),
         GroupProblem::RenamesVerbMismatch => (
             "renamesVerbMismatch",
             "renames belongs to the rename verb and to no other, and a rename group needs them.".into(),

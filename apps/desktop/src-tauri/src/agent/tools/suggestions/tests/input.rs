@@ -341,3 +341,49 @@ fn an_unknown_field_is_refused_rather_than_ignored() {
     .expect_err("unknown field");
     assert_eq!(refusal, PlanRefusal::Malformed);
 }
+
+/// A group whose destination continues inside a zip is refused HERE, at the proposal
+/// boundary, where the model can just try again. Left to the executor it would refuse after
+/// the user had already approved — a user-started copy-into-zip working while an approved one
+/// does not, which is the agent-specific execution behaviour the guiding principle forbids.
+#[test]
+fn a_group_cannot_be_proposed_to_write_inside_an_archive() {
+    for verb in ["move", "copy", "extract", "compress"] {
+        let refusal = plan_sweep(
+            &json!({ "groups": [{
+                "verb": verb,
+                "sourceVolumeId": "root",
+                "displayName": "x",
+                "paths": ["/a"],
+                "destination": { "volumeId": "root", "path": "/Users/someone/Desktop/backup.zip/inside" },
+            }] }),
+            NOW,
+        )
+        .expect_err("a destination inside an archive is not proposable");
+        assert_eq!(
+            refusal,
+            PlanRefusal::Group {
+                group: 0,
+                problem: GroupProblem::DestinationInsideArchive
+            },
+            "{verb} must be refused at the boundary"
+        );
+    }
+}
+
+/// The compress TARGET is an archive, and that is the point of compress. Only a path
+/// continuing inside one is refused, or the verb would be unusable.
+#[test]
+fn compressing_into_a_new_archive_is_still_proposable() {
+    plan_sweep(
+        &json!({ "groups": [{
+            "verb": "compress",
+            "sourceVolumeId": "root",
+            "displayName": "x",
+            "paths": ["/a"],
+            "destination": { "volumeId": "root", "path": "/Users/someone/Desktop/backup.zip" },
+        }] }),
+        NOW,
+    )
+    .expect("an archive being created is a legal target");
+}

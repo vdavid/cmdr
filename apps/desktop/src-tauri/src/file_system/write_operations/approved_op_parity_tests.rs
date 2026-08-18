@@ -382,3 +382,99 @@ async fn an_approved_copy_settles_as_an_ordinary_copy() {
     let settled = collector.settled.lock_ignore_poison();
     assert_eq!(settled[0].operation_type, WriteOperationType::Copy);
 }
+
+// ============================================================================
+// The volume route, end to end
+// ============================================================================
+
+/// A lane nothing else in the suite shares, so this op is admitted immediately rather than
+/// queueing behind another test's transfer.
+fn unique_lane(label: &str) -> String {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static N: AtomicU64 = AtomicU64::new(0);
+    let n = N.fetch_add(1, Ordering::Relaxed);
+    format!("bound-{label}-{n}-{:?}", std::thread::current().id())
+}
+
+async fn seed(volume: &dyn cmdr_fs::volume::Volume, path: &str, bytes: &[u8]) {
+    let path = std::path::Path::new(path);
+    if volume.exists(path).await {
+        volume.delete(path).await.expect("clear");
+    }
+    volume.create_file(path, bytes).await.expect("seed");
+}
+
+/// The whole chain, on the route an approved SMB or MTP group actually takes: a binding
+/// captured at review time, a source rewritten while the operation waited, and the engine
+/// noticing at admission rather than at approval.
+///
+/// Until this existed, "does the deferred actually call the pre-flight?" rested on the
+/// compiler and a grep. The unit tests prove the binding refuses a changed file; only this
+/// proves `copy_between_volumes` asks it before it writes.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_bound_cross_volume_copy_skips_the_source_that_changed_while_it_waited() {
+    use cmdr_fs::volume::{InMemoryVolume, Volume};
+
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Share").with_lane_key(unique_lane("src")));
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Phone").with_lane_key(unique_lane("dst")));
+    seed(source.as_ref(), "/holiday.jpg", b"as reviewed").await;
+    seed(source.as_ref(), "/invoice.pdf", b"as reviewed too").await;
+
+    // What preflight saw, captured live through the volume that owns these paths.
+    let reviewed = PathBuf::from("/holiday.jpg");
+    let stale = PathBuf::from("/invoice.pdf");
+    let mut entries = Vec::new();
+    for path in [&reviewed, &stale] {
+        entries.push((
+            path.clone(),
+            SourceFingerprint::capture_remote(source.as_ref(), path)
+                .await
+                .expect("capture"),
+        ));
+    }
+    let expected = ExpectedSources::new(entries);
+
+    // Somebody rewrites one of them while the operation sits in the queue.
+    seed(source.as_ref(), "/invoice.pdf", b"edited while it waited for its lane").await;
+
+    let collector = Arc::new(CollectorEventSink::new());
+    let events: Arc<dyn OperationEventSink> = collector.clone();
+    super::transfer::volume::copy_between_volumes(
+        events,
+        "share".to_string(),
+        Arc::clone(&source),
+        vec![reviewed.clone(), stale.clone()],
+        "phone".to_string(),
+        Arc::clone(&dest),
+        PathBuf::from("/incoming"),
+        super::types::VolumeCopyConfig::default(),
+        Initiator::Agent,
+        Some(expected),
+    )
+    .await
+    .expect("the copy starts");
+
+    crate::test_support::wait_until_async(Duration::from_secs(10), "the bound copy to settle", || {
+        !collector.settled.lock_ignore_poison().is_empty()
+    })
+    .await;
+
+    let verdicts: Vec<_> = collector
+        .source_items_done
+        .lock_ignore_poison()
+        .iter()
+        .map(|item| (item.source_path.clone(), item.outcome))
+        .collect();
+    assert!(
+        verdicts.contains(&(stale.display().to_string(), super::types::SourceItemOutcome::Skipped)),
+        "the rewritten source must be reported skipped, got {verdicts:?}"
+    );
+    assert!(
+        dest.exists(std::path::Path::new("/incoming/holiday.jpg")).await,
+        "the untouched source still copies: a binding filters, it does not refuse the batch"
+    );
+    assert!(
+        !dest.exists(std::path::Path::new("/incoming/invoice.pdf")).await,
+        "and the file the user never approved in this state is not written"
+    );
+}

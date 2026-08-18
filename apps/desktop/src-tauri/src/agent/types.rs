@@ -89,7 +89,12 @@ token_enum! {
         /// Approved, but the app restarted before execution finished, so nothing here knows
         /// what ran. Frozen: the user re-approves (minting a new group) or discards.
         Interrupted => "interrupted",
-        /// Every op reached a terminal outcome.
+        /// Execution FINISHED, whichever way it ended: the operation ran to completion, or
+        /// the user cancelled it, or it failed. The distinction this carries is "no longer in
+        /// flight" versus "we lost track of it" ([`Interrupted`]), which is why it is written
+        /// when the operation SETTLES rather than only when it succeeds. What happened to
+        /// each source is the per-op statuses' job; a cancelled group keeps `pending` rows
+        /// for the ops nothing ever reached, and that is the honest record.
         Completed => "completed",
         /// The user said no.
         Rejected => "rejected",

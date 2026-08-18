@@ -202,3 +202,79 @@ fn a_group_the_decorator_settled_survives_the_next_launch_sweep() {
     crate::agent::store::proposals::recover_interrupted_groups(&conn).expect("sweep");
     assert_eq!(group_status(&conn, group_id), ProposalStatus::Completed);
 }
+
+/// The binding is a LIVE capture, and this is the difference that makes: it holds the file as
+/// it was while the user was deciding, at nanosecond precision, so a rewrite in the window
+/// between the review and the operation getting its lane is caught. The stored creation
+/// snapshot could not do this — whole seconds, and no device.
+#[tokio::test]
+async fn the_binding_holds_what_preflight_saw_not_what_the_agent_saw() {
+    let dir = TestDir::new("bridge_live_binding");
+    let reviewed = dir.join("reviewed.dmg");
+    std::fs::write(&reviewed, b"as reviewed").expect("seed");
+
+    let volume = crate::file_system::volume::LocalPosixVolume::new("Root", "/");
+    let sources = vec![reviewed.clone()];
+    let expected = super::capture_expected_sources(&volume, &sources).await;
+
+    // Somebody rewrites it between the review and the operation getting its turn.
+    std::fs::write(&reviewed, b"edited while it waited in the queue").expect("rewrite");
+
+    let sink = CollectorEventSink::new();
+    let kept = crate::file_system::write_operations::retain_bound_sources(
+        &sink,
+        "op-1",
+        WriteOperationType::Trash,
+        Some(&expected),
+        sources,
+    );
+
+    assert!(kept.is_none(), "the file the user approved is not the file on disk now");
+}
+
+/// The other half: an untouched source survives, so the binding is not simply refusing
+/// everything.
+#[tokio::test]
+async fn an_untouched_source_survives_its_own_binding() {
+    let dir = TestDir::new("bridge_live_binding_ok");
+    let reviewed = dir.join("reviewed.dmg");
+    std::fs::write(&reviewed, b"as reviewed").expect("seed");
+
+    let volume = crate::file_system::volume::LocalPosixVolume::new("Root", "/");
+    let sources = vec![reviewed.clone()];
+    let expected = super::capture_expected_sources(&volume, &sources).await;
+
+    let sink = CollectorEventSink::new();
+    let kept = crate::file_system::write_operations::retain_bound_sources(
+        &sink,
+        "op-1",
+        WriteOperationType::Trash,
+        Some(&expected),
+        sources.clone(),
+    );
+
+    assert_eq!(kept, Some(sources));
+}
+
+/// A source that vanished between the proposal and the review gets no fingerprint, and the
+/// binding drops what it cannot name. Skipping it is the honest answer, and it is the same
+/// answer every other unverifiable source gets.
+#[tokio::test]
+async fn a_source_that_vanished_before_preflight_is_left_out_of_the_binding() {
+    let dir = TestDir::new("bridge_live_binding_gone");
+    let gone = dir.join("gone.dmg");
+
+    let volume = crate::file_system::volume::LocalPosixVolume::new("Root", "/");
+    let expected = super::capture_expected_sources(&volume, std::slice::from_ref(&gone)).await;
+
+    let sink = CollectorEventSink::new();
+    let kept = crate::file_system::write_operations::retain_bound_sources(
+        &sink,
+        "op-1",
+        WriteOperationType::Trash,
+        Some(&expected),
+        vec![gone],
+    );
+
+    assert!(kept.is_none());
+}

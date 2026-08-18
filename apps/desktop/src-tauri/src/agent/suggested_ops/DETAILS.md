@@ -76,15 +76,16 @@ said no.
 **Decision: `completed` is written on SETTLE, not on `write-complete`.**
 **Why**: settle fires exactly once per operation after full teardown, on every ending — success, cancel, failure, panic — and the question `ProposalStatus::Completed` answers is "is this group still in flight?". Marking only on success leaves a cancelled group `approved`, and the next launch recovery sweep calls it `interrupted`: a claim that the app died, about an operation the user deliberately stopped. The per-op statuses carry what actually happened; a cancelled group keeps `pending` rows for the ops nothing reached.
 
-**Decision: rename has no route yet, and says so as a typed refusal.**
-**Why**: `start_bulk_rename` takes rows carrying a server-owned `SourceFingerprint` per source, and a frozen `OpSnapshot` cannot produce one (see below). `ApprovalRefusal::NoRouteYet` keeps the dispatch total rather than leaving a silent fallthrough; rename gets its route when the shipped rename feature moves onto the spine (plan M6).
+**Decision: the execution binding is a LIVE capture at preflight, never the stored snapshot.**
+**Why**: the two answer different questions, and only one of them is about a race.
 
-### The source binding is not wired yet, and the reason is precision
+- The **creation snapshot** on `proposal_ops` came from the drive index when the agent proposed the group. It answers "has this changed since the agent looked at it?" — a stale BELIEF, surfaced in the review so the user can re-judge. Second precision is plenty: it is noticing a file that moved on days ago, and it is nullable because the index does not always hold all three fields.
+- The **preflight fingerprint** answers "has this changed since I showed it to you?" That is a RACE. The window is the review plus however long the operation then waits for its lane, which with `LANE_BUDGET = 1` can be well past an hour, and catching it needs the full nanosecond mtime a live `stat` gives.
 
-M2 gave every executor an optional `ExpectedSources`, so an operation approved a week ago can notice that a source changed since. The bridge passes none, because `OpSnapshot` cannot build a `SourceFingerprint`:
+Converting the first into the second cannot work: whole seconds turn into a `modified_nanos` with a zero sub-second part, so it would mismatch nearly every real file and a bound group would skip everything. `capture_expected_sources` stats live instead, picking the namespace by `local_path()` exactly as the binding documents, and the fingerprints never reach the database — a restart must force a fresh preflight rather than resurrect one. This is the same rule, for the same reason, that `agent/tools/propose/rename/` already keeps its `AcceptedRenamePreflights` in memory.
 
-- `OpSnapshot` carries `{ size, mtime (seconds), inode }`; `SourceFingerprint::Local` needs `{ device, inode, size, modified_nanos }`.
-- The missing `device` could be taken from the source volume root, with an assumption about firmlinks and nested mounts.
-- **The precision gap cannot be papered over.** `capture_local` reads real nanosecond mtime, so a snapshot holding whole seconds turns into a `modified_nanos` with a zero sub-second part and mismatches nearly every real file. A naive conversion would make a bound group skip everything and complete having done nothing, which is worse than running unbound.
+A source that cannot be read at preflight simply gets no entry, and the binding drops what it does not name, so it is skipped and reported rather than acted on.
 
-Closing it needs either a device-less, second-precision fingerprint variant (compared by flooring the live nanos) or a snapshot that carries device and nanoseconds. Both are cross-milestone decisions; until one lands, an approved group runs unbound and this is the place that says so.
+**Rename routes like every other verb.** Its executor is the one that takes per-row destinations and a fingerprint per row, and the live capture supplies exactly that: `rename_rows` rejoins the group's shared parent with each op's stored NAME (the executor refuses a row whose parents differ) and reads the fingerprint out of the binding rather than stat-ing the same files twice.
+
+**Compress is the one verb that runs unbound.** It routes to the archive-changeset driver, which plans from its own walk and has nowhere to apply a per-source binding. The exposure is small and one-directional: compress READS its sources into a new archive rather than moving or deleting them, so a source that changed in the window is copied in its newer form rather than lost.

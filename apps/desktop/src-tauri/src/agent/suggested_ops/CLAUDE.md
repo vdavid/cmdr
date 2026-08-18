@@ -33,8 +33,10 @@ above them that a row can't hold. Depth: `DETAILS.md`.
 - **Reporting flows engine → store, never the reverse.** The decorator wraps the injected sink and writes
   `proposal_ops.status` from the per-source outcomes; `write_operations` names nothing in `agent::`, and
   `write-ops-isolation` fails the build if it ever does.
-- **Rename has no route yet** (`ApprovalRefusal::NoRouteYet`): its executor needs a server-owned fingerprint per
-  row, which a frozen snapshot can't supply. It gets one when the shipped rename feature moves onto the spine (M6).
+- **The execution binding is a LIVE stat at preflight; the stored creation snapshot answers a different question.**
+  The snapshot says "changed since the agent looked" (a stale belief, second precision, for the review); the binding
+  says "changed since I showed it to you" (a race, needing nanoseconds), and converting one into the other would
+  mismatch nearly every file. Fingerprints stay in memory, so a restart forces a fresh preflight.
 - **Symlinks are skipped during resolution.** The index doesn't follow them, so their size and date describe the LINK,
   and a proposal built on those would show facts about something other than the file the user is deciding on.
 

@@ -13,7 +13,7 @@
 
 use serde::Deserialize;
 
-use crate::agent::store::proposals::{GroupIntent, NewOp, NewRename};
+use crate::agent::store::proposals::{GroupIntent, NewOp, NewRename, WritableDestination};
 use crate::agent::suggested_ops::OpSelector;
 use crate::agent::tools::read::expand_tilde;
 use crate::agent::types::ProposalVerb;
@@ -143,16 +143,16 @@ pub(super) struct ExplicitNaming {
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum SourceShape {
     Move {
-        destination: Location,
+        destination: WritableDestination,
     },
     Copy {
-        destination: Location,
+        destination: WritableDestination,
     },
     Extract {
-        destination: Location,
+        destination: WritableDestination,
     },
     Compress {
-        archive: Location,
+        archive: WritableDestination,
         overwrites_existing: bool,
     },
     Trash,
@@ -224,6 +224,12 @@ pub(super) enum GroupProblem {
     RenamesVerbMismatch,
     /// A selector under `rename`.
     SelectorCantRename,
+    /// A destination that continues inside an archive. Copy or move INTO a zip, and move
+    /// OUT of one, plan from their own walk rather than the per-source engine, so a group
+    /// written there could not be held to the sources the user reviewed. Refused HERE, where
+    /// it costs the model a retry, rather than at execution where it would refuse after the
+    /// user had already approved.
+    DestinationInsideArchive,
     /// A field the verb's executor doesn't bind (a destination on a trash group, a parent
     /// on a move).
     UnboundField {
@@ -367,6 +373,11 @@ fn explicit_naming(
     })
 }
 
+/// A destination a group may be built with, or the refusal that says why not.
+fn writable(location: Location) -> Result<WritableDestination, GroupProblem> {
+    WritableDestination::new(location).ok_or(GroupProblem::DestinationInsideArchive)
+}
+
 /// Pair a verb with the target its executor binds: the plan's verb table, as code.
 fn plan_shape(
     verb: ProposalVerb,
@@ -380,7 +391,7 @@ fn plan_shape(
                     field: "overwritesExisting",
                 });
             }
-            let destination = expanded_location(required(destination, "destination")?);
+            let destination = writable(expanded_location(required(destination, "destination")?))?;
             Ok(match verb {
                 ProposalVerb::Move => SourceShape::Move { destination },
                 ProposalVerb::Copy => SourceShape::Copy { destination },
@@ -388,7 +399,9 @@ fn plan_shape(
             })
         }
         ProposalVerb::Compress => Ok(SourceShape::Compress {
-            archive: expanded_location(required(destination, "destination")?),
+            // The archive being created IS the target and is perfectly legal; only a path
+            // continuing inside one is refused.
+            archive: writable(expanded_location(required(destination, "destination")?))?,
             overwrites_existing: overwrites_existing.unwrap_or(false),
         }),
         ProposalVerb::Trash | ProposalVerb::Delete => {

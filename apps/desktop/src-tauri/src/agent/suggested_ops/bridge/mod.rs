@@ -31,12 +31,14 @@ use decorator::ProposalReportingSink;
 
 use super::super::store::AgentStoreError;
 use super::super::store::proposals::{
-    AcceptanceOutcome, ClaimOutcome, ClaimRefusal, ProposalGroup, ProposalOp, page_ops, record_acceptance,
+    AcceptanceOutcome, ClaimOutcome, ClaimRefusal, ProposalGroup, ProposalOp, get_group, page_ops, record_acceptance,
 };
 use super::super::types::{OpStatus, ProposalVerb};
+use crate::file_system::volume::Volume;
 use crate::file_system::write_operations::{
-    OperationEventSink, VolumeCopyConfig, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
-    delete_files_start, start_volume_compress, start_volume_copy, start_volume_move, trash_files_start,
+    BulkRenameRow, ExpectedSources, OperationEventSink, SourceFingerprint, VolumeCopyConfig, WriteOperationConfig,
+    WriteOperationError, WriteOperationStartResult, delete_files_start, resolve_source_volume, start_bulk_rename,
+    start_volume_compress, start_volume_copy, start_volume_move, trash_files_start,
 };
 use crate::operation_log::types::Initiator;
 
@@ -54,11 +56,11 @@ pub enum ApprovalRefusal {
     NotAccepted(AcceptanceOutcome),
     /// The claim transaction refused. Its two variants mean different recoveries.
     Claim(ClaimRefusal),
-    /// The verb has no executor route on this spine yet. Rename is the one: its executor
-    /// takes rows carrying a server-owned fingerprint per source, which the spine cannot
-    /// build from a frozen snapshot. It gets its route when the shipped rename feature moves
-    /// onto the spine (plan M6).
-    NoRouteYet { verb: ProposalVerb },
+    /// The volume the group's sources live on is no longer registered: a drive ejected or a
+    /// share went away between the proposal and the review. Nothing was claimed.
+    SourceVolumeGone { volume_id: String },
+    /// The write engine refused to start the operation.
+    EngineRefused { detail: String },
     /// The stored row lacks the target its verb binds. Unreachable through `GroupIntent`,
     /// which pairs each verb with its target at construction; reported rather than panicked
     /// because the row is read back from SQLite, where a hand-edit could produce it.
@@ -107,6 +109,21 @@ pub async fn approve_and_execute(
         other => return Ok(ApprovalOutcome::Refused(ApprovalRefusal::NotAccepted(other))),
     }
 
+    // Read the accepted set and fingerprint it BEFORE the claim, so the binding describes the
+    // files as they were while the user was deciding. The claim that follows is the last gate
+    // before the engine.
+    let ops = live_ops(conn, group_id)?;
+    let op_ids: HashMap<PathBuf, i64> = ops.iter().map(|op| (PathBuf::from(&op.source_path), op.id)).collect();
+    let sources: Vec<PathBuf> = ops.iter().map(|op| PathBuf::from(&op.source_path)).collect();
+
+    let volume_id = source_volume_of(conn, group_id)?;
+    let Some((source_volume, _)) = resolve_source_volume(&volume_id, sources.first()).await else {
+        return Ok(ApprovalOutcome::Refused(ApprovalRefusal::SourceVolumeGone {
+            volume_id,
+        }));
+    };
+    let expected = capture_expected_sources(source_volume.as_ref(), &sources).await;
+
     // Through the service layer, so the approval metric is reported in the one place that
     // owns it rather than a second time here.
     let group = match super::approve(conn, group_id, now)? {
@@ -114,17 +131,21 @@ pub async fn approve_and_execute(
         ClaimOutcome::Refused(refusal) => return Ok(ApprovalOutcome::Refused(ApprovalRefusal::Claim(refusal))),
     };
 
-    let live = live_ops(conn, group_id)?;
-    let op_ids: HashMap<PathBuf, i64> = live.iter().map(|op| (PathBuf::from(&op.source_path), op.id)).collect();
-    let sources: Vec<PathBuf> = live.into_iter().map(|op| PathBuf::from(op.source_path)).collect();
-
     let sink: Arc<dyn OperationEventSink> =
         Arc::new(ProposalReportingSink::new(events, group_id, op_ids, reporting_conn));
 
-    match start_for(&group, sources, sink).await {
+    match start_for(&group, sources, &ops, expected, sink).await {
         Ok(operation) => Ok(ApprovalOutcome::Started(ApprovedGroup { group_id, operation })),
         Err(refusal) => Ok(ApprovalOutcome::Refused(refusal)),
     }
+}
+
+/// The volume every source in the group lives on. A sweep may span volumes; a group may not,
+/// which is what lets one capture rule cover the whole batch.
+fn source_volume_of(conn: &Connection, group_id: i64) -> Result<String, AgentStoreError> {
+    Ok(get_group(conn, group_id)?
+        .map(|group| group.source_volume_id)
+        .unwrap_or_default())
 }
 
 /// Every op in the group live set, paged.
@@ -152,9 +173,10 @@ fn live_ops(conn: &Connection, group_id: i64) -> Result<Vec<ProposalOp>, AgentSt
 async fn start_for(
     group: &ProposalGroup,
     sources: Vec<PathBuf>,
+    ops: &[ProposalOp],
+    expected: ExpectedSources,
     events: Arc<dyn OperationEventSink>,
 ) -> Result<WriteOperationStartResult, ApprovalRefusal> {
-    let source_paths: Vec<String> = sources.iter().map(|p| p.to_string_lossy().into_owned()).collect();
     match group.verb {
         ProposalVerb::Move => {
             let (path, volume) = target_of(group)?;
@@ -166,7 +188,7 @@ async fn start_for(
                 path,
                 VolumeCopyConfig::default(),
                 Initiator::Agent,
-                None,
+                Some(expected),
             )
             .await
             .map_err(ApprovalRefusal::Engine)
@@ -181,7 +203,7 @@ async fn start_for(
                 path,
                 VolumeCopyConfig::default(),
                 Initiator::Agent,
-                None,
+                Some(expected),
             )
             .await
             .map_err(ApprovalRefusal::Engine)
@@ -206,7 +228,7 @@ async fn start_for(
             None,
             WriteOperationConfig::default(),
             Initiator::Agent,
-            None,
+            Some(expected),
         )
         .await
         .map_err(ApprovalRefusal::Engine),
@@ -216,15 +238,94 @@ async fn start_for(
             WriteOperationConfig::default(),
             Some(group.source_volume_id.clone()),
             Initiator::Agent,
-            None,
+            Some(expected),
         )
         .await
         .map_err(ApprovalRefusal::Engine),
+        // Rename is the one verb whose executor takes per-row destinations and a fingerprint
+        // per row, which is exactly what the live preflight capture produces. The group binds
+        // the shared PARENT, and each op carries the NAME it becomes.
         ProposalVerb::Rename => {
-            let _ = source_paths;
-            Err(ApprovalRefusal::NoRouteYet { verb: group.verb })
+            let (parent, _) = target_of(group)?;
+            let rows = rename_rows(&parent, ops, &expected)?;
+            start_bulk_rename(events, group.source_volume_id.clone(), rows, Initiator::Agent)
+                .map_err(|detail| ApprovalRefusal::EngineRefused { detail })
         }
     }
+}
+
+/// The rows `start_bulk_rename` takes, built from the group's ops and the live preflight.
+///
+/// The stored `destination` is a NAME, not a path, because the executor refuses a row whose
+/// source and destination parents differ — so the group binds the shared parent and this
+/// rejoins the two. A row whose source went unfingerprinted at preflight is dropped, which is
+/// the same answer the binding gives every other verb: an unreadable source is not the source
+/// anybody reviewed.
+fn rename_rows(
+    parent: &str,
+    ops: &[ProposalOp],
+    expected: &ExpectedSources,
+) -> Result<Vec<BulkRenameRow>, ApprovalRefusal> {
+    let mut rows = Vec::with_capacity(ops.len());
+    for op in ops {
+        let Some(new_name) = op.destination.as_deref() else {
+            return Err(ApprovalRefusal::TargetMissing {
+                verb: ProposalVerb::Rename,
+            });
+        };
+        let source = PathBuf::from(&op.source_path);
+        let Some(fingerprint) = expected.fingerprint_of(&source) else {
+            continue;
+        };
+        rows.push(BulkRenameRow {
+            row_id: op.id.to_string(),
+            source,
+            destination: PathBuf::from(parent).join(new_name),
+            expected_fingerprint: fingerprint.clone(),
+        });
+    }
+    Ok(rows)
+}
+
+/// Stat every source as it is RIGHT NOW, and bind the operation to what it finds.
+///
+/// **This is a live capture, not the stored snapshot, and the two answer different
+/// questions.** The creation snapshot on `proposal_ops` came from the drive index when the
+/// agent proposed the group: second-precision, often absent, and its job is the review-time
+/// question "has this changed since the agent looked at it?" — a stale BELIEF the dialog
+/// surfaces so the user can re-judge. An execution binding answers the other question, "has
+/// this changed since I showed it to you?", which is a RACE: the window is the review plus
+/// however long the operation then waits for its lane, and catching it needs the full
+/// nanosecond precision a live stat gives.
+///
+/// So this stats now, the way the rename preflight does, and the fingerprints never reach the
+/// database. A restart must force a fresh preflight rather than resurrect one, because a
+/// fingerprint describes a file as it was at review time and nothing else.
+///
+/// A source that can't be read gets no entry, and the binding drops what it doesn't name, so
+/// a source that vanished between the proposal and the review is skipped and reported rather
+/// than acted on.
+async fn capture_expected_sources(volume: &dyn Volume, sources: &[PathBuf]) -> ExpectedSources {
+    // The rule the binding itself documents: a local-FS volume answers with the identity the
+    // kernel maintains, anything else answers through its own backend.
+    let local = volume.local_path().is_some();
+    let mut entries = Vec::with_capacity(sources.len());
+    for source in sources {
+        let captured = if local {
+            SourceFingerprint::capture_local(source)
+        } else {
+            SourceFingerprint::capture_remote(volume, source).await
+        };
+        match captured {
+            Some(fingerprint) => entries.push((source.clone(), fingerprint)),
+            None => log::info!(
+                target: "agent::suggested_ops",
+                "{} couldn't be read at preflight, so the operation won't touch it",
+                source.display()
+            ),
+        }
+    }
+    ExpectedSources::new(entries)
 }
 
 /// The target a destination-binding verb stored, as the routed entry points take it.

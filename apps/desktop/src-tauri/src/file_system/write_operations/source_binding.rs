@@ -202,18 +202,19 @@ pub(crate) struct ExpectedSources {
 }
 
 impl ExpectedSources {
-    // The pre-flight this feeds is wired into all four starters; what production
-    // still lacks is the caller that BUILDS a binding, which is the suggestion
-    // approval path (plan M4). `expect` rather than `allow` so this marker has to
-    // be deleted the moment that caller lands.
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "built by the suggestion-approval path, which lands in M4")
-    )]
     pub(crate) fn new(entries: impl IntoIterator<Item = (PathBuf, SourceFingerprint)>) -> Self {
         Self {
             by_path: entries.into_iter().collect(),
         }
+    }
+
+    /// The fingerprint this binding holds for `path`, if any.
+    ///
+    /// For the one executor whose rows carry a fingerprint each (`start_bulk_rename`): it
+    /// takes the identity per row rather than a set to filter against, so it reads what the
+    /// preflight captured instead of stat-ing the same files a second time.
+    pub(crate) fn fingerprint_of(&self, path: &Path) -> Option<&SourceFingerprint> {
+        self.by_path.get(path)
     }
 
     /// Whether `path` still is what the caller was promised, with only the local

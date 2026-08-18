@@ -132,8 +132,15 @@ pub(crate) use rename::{
 pub(crate) use routing::{
     resolve_dest_path, resolve_source_volume, start_volume_compress, start_volume_copy, start_volume_move,
 };
+#[cfg(not(test))]
+use source_binding::retain_bound_sources;
+use source_binding::retain_bound_sources_with_sizes;
 pub(crate) use source_binding::{ExpectedSources, LocalContent, RemoteContent, SourceFingerprint};
-use source_binding::{retain_bound_sources, retain_bound_sources_with_sizes};
+// Test-only reach for the suggestion bridge's suite, which checks that a binding captured at
+// preflight refuses a source rewritten afterwards. Production callers get the pre-flight
+// through the starters, never directly.
+#[cfg(test)]
+pub(crate) use source_binding::retain_bound_sources;
 // External busy-volume seam for the drag-out fulfillment service (see
 // `lifecycle/state.rs` § "External busy-volume seam"). `pub(crate)` so only in-crate
 // callers (`native_drag::fulfillment`) reach it. macOS-only: the sole consumer
