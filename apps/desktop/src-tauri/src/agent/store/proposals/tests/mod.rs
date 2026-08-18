@@ -41,7 +41,10 @@ pub(super) fn group_with_ops(conn: &Connection, count: usize) -> i64 {
         &NewGroup {
             intent: GroupIntent::Trash { sources },
             source_volume_id: "root".to_string(),
-            display_name: format!("{count} installers you've already opened"),
+            display_name: format!(
+                "{} you've already opened",
+                crate::pluralize::pluralize(count as u64, "installer")
+            ),
             rationale: Some("They're all months old and you opened every one.".to_string()),
             selector: None,
         },

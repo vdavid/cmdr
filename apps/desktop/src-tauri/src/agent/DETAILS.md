@@ -55,7 +55,7 @@ content-read tool.
 **Where a proposal LIVES.** `store/proposals/`, the durable spine in `main.db`, for every verb including rename. Its
 claim transaction binds an approval to a server-owned acceptance record rather than to the client's word. Proposals have
 no expiry; the one thing deliberately held in memory instead is a rename's ACCEPTED preflight, so a restart forces a
-fresh one (`tools/propose/rename/DETAILS.md`).
+fresh one (`tools/propose/DETAILS.md`).
 
 **What a `Propose` tool may do.** Stage a proposal and open a review surface. That is its entire power: no filesystem
 write, no silent config mutation, no self-approval. Because no structural check can prove a handler doesn't mutate,
