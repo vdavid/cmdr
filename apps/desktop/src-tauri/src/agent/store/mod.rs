@@ -16,6 +16,7 @@
 
 mod connection;
 mod migrations;
+pub mod proposals;
 mod query;
 
 use std::path::{Path, PathBuf};

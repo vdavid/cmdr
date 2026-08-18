@@ -57,6 +57,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "conversations.last_prompt_tokens/last_prompt_budget for the context gauge",
         up: migrate_v3_context_usage,
     },
+    Migration {
+        version: 4,
+        description: "the proposal spine: proposal_sets, proposals, proposal_ops, proposal_acceptances",
+        up: migrate_v4_proposal_spine,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a fresh DB
@@ -223,5 +228,89 @@ fn migrate_v3_context_usage(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     tx.execute_batch(
         "ALTER TABLE conversations ADD COLUMN last_prompt_tokens INTEGER;
          ALTER TABLE conversations ADD COLUMN last_prompt_budget INTEGER;",
+    )
+}
+
+/// Version 4: the proposal spine — sweeps (`proposal_sets`), reviewable groups
+/// (`proposals`), their ops (`proposal_ops`), and the server-owned acceptance record
+/// (`proposal_acceptances`) the claim transaction binds against.
+///
+/// Two shapes here differ from the tables around them, both on purpose:
+///
+/// - **`proposal_sets.conversation_id` is nullable and `ON DELETE SET NULL`**, where every
+///   other conversation-linked table cascades. A sweep is a DECISION record: what the user
+///   was asked and what they answered outlives the chat thread that produced it (and a
+///   sweep from a background wake has no thread at all). Cascading would delete the
+///   evidence of an approval alongside a tidied-up transcript.
+/// - **No expiry column.** A suggestion waits until the user acts on it; a two-week-old
+///   proposal is still the user's to decide.
+///
+/// Every classification column is a TEXT token (`super::proposals::ProposalVerb`,
+/// `ProposalStatus`, `OpStatus`, `Reversibility`), so the file stays `sqlite3`-inspectable
+/// and nothing branches on a message string. Column rationale: `proposals/DETAILS.md`.
+fn migrate_v4_proposal_spine(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch(
+        "
+        -- One agent wake's output: display and provenance only. The reviewable unit is a
+        -- group, one level down.
+        CREATE TABLE proposal_sets (
+            id               INTEGER PRIMARY KEY,
+            conversation_id  INTEGER REFERENCES conversations(id) ON DELETE SET NULL,
+            created_at       INTEGER NOT NULL,          -- unix secs
+            created_by_model TEXT,                      -- provenance only; no logic reads it
+            rationale        TEXT                       -- the agent's words for the sweep
+        );
+        CREATE INDEX proposal_sets_created ON proposal_sets (created_at DESC, id DESC);
+
+        -- A group: the reviewable, approvable, executable unit, and exactly one call to one
+        -- executor. `source_volume_id` lives here rather than on the sweep because a sweep
+        -- may span volumes and a group may not.
+        CREATE TABLE proposals (
+            id                    INTEGER PRIMARY KEY,
+            set_id                INTEGER NOT NULL REFERENCES proposal_sets(id) ON DELETE CASCADE,
+            seq                   INTEGER NOT NULL,     -- ordinal within the sweep
+            verb                  TEXT    NOT NULL,     -- ProposalVerb token
+            status                TEXT    NOT NULL,     -- ProposalStatus token
+            source_volume_id      TEXT    NOT NULL,
+            destination           TEXT,                 -- shared dest dir / rename parent / archive path
+            destination_volume_id TEXT,                 -- where `destination` lives; NULL when it has none
+            reversible            TEXT    NOT NULL,     -- Reversibility token; disclosed, never a blocker
+            display_name          TEXT    NOT NULL,     -- friendly name, may carry the selector's pattern
+            rationale             TEXT,                 -- the agent's words, labelled as such in review
+            selector              TEXT,                 -- JSON of the selector this group froze, if any
+            created_at            INTEGER NOT NULL,
+            decided_at            INTEGER               -- when it left `pending`
+        );
+        CREATE UNIQUE INDEX proposals_set_seq ON proposals (set_id, seq);
+        CREATE INDEX proposals_status ON proposals (status, created_at DESC, id DESC);
+
+        -- One op: one path, which may be a file or a whole directory. Paged and counted by
+        -- (group_id, seq); a group of 60 000 is legitimate, so nothing loads these to count
+        -- them. `destination` is per-op for rename and NULL for every other verb, which
+        -- binds a shared one on the group.
+        CREATE TABLE proposal_ops (
+            id             INTEGER PRIMARY KEY,
+            group_id       INTEGER NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
+            seq            INTEGER NOT NULL,
+            source_path    TEXT    NOT NULL,
+            destination    TEXT,                        -- rename only: the new name
+            status         TEXT    NOT NULL,            -- OpStatus token; per-op partial apply
+            snapshot_size  INTEGER,                     -- creation snapshot, nullable: drift detection
+            snapshot_mtime INTEGER,
+            snapshot_inode INTEGER,
+            created_at     INTEGER NOT NULL
+        );
+        CREATE UNIQUE INDEX proposal_ops_group_seq ON proposal_ops (group_id, seq);
+
+        -- What preflight accepted, owned by the server. The client presents a group id and
+        -- deselected op ids, NEVER values, so this record is the only thing the claim
+        -- transaction trusts about what the user saw.
+        CREATE TABLE proposal_acceptances (
+            group_id   INTEGER PRIMARY KEY REFERENCES proposals(id) ON DELETE CASCADE,
+            op_count   INTEGER NOT NULL,                -- how many ops were accepted
+            op_digest  TEXT    NOT NULL,                -- hash of the values those ops carried
+            created_at INTEGER NOT NULL
+        );
+        ",
     )
 }
