@@ -37,21 +37,28 @@ var lockBareUnwrapPattern = regexp.MustCompile(`\b(lock|read|write)\(\)\.unwrap\
 // own message checked by FindAllStringSubmatch.
 var lockExpectPattern = regexp.MustCompile(`\b(lock|read|write)\(\)\.expect\(\s*"((?:[^"\\]|\\.)*)"`)
 
-// The three result-discarding binding shapes, all sharing the same verb rules as
-// the patterns above (empty parens, no `try_` prefix, no `.await`):
+// The swallow lane's patterns. lockAcquirePattern finds the acquisitions
+// themselves, under the same verb rules as the two above (empty parens, so
+// `read(&mut buf)` is out; a leading `.`, so `try_lock()` is out). The two
+// prefix patterns then say which construct is consuming the `Result`: they're
+// anchored at the end of the text BEFORE an acquisition, and `[^;{}]*$` keeps
+// them inside the same statement.
 //
-//   - lockLetOkPattern covers `if let Ok(g) = m.lock()`, the `&& let Ok(…)` link
-//     of a let-chain, and `let Ok(g) = m.lock() else`. Which one it is depends on
-//     the token that follows, so the pattern deliberately stops at the `()`.
-//   - lockMatchPattern covers `match m.lock() {`, including the `let x = match …`
-//     form. It swallows the opening brace so the block finder can start on it.
-//   - lockOkPattern covers `.lock().ok()`, where the poison becomes a `None` the
-//     next combinator drops.
+// lockOrDefaultPattern catches the combinator family that turns a failure into a
+// value out of thin air: `unwrap_or`, `unwrap_or_default`, `unwrap_or_else`,
+// `map_or`, `map_or_else`.
 var (
-	lockLetOkPattern = regexp.MustCompile(`\blet\s+Ok\s*\([^()]*\)\s*=\s*[^;{}]*?\b(?:lock|read|write)\(\)`)
-	lockMatchPattern = regexp.MustCompile(`\bmatch\s+[^;{}]*?\b(?:lock|read|write)\(\)\s*\{`)
-	lockOkPattern    = regexp.MustCompile(`\.(?:lock|read|write)\(\)\.ok\(\)`)
+	lockAcquirePattern   = regexp.MustCompile(`\.(?:lock|read|write)\(\)`)
+	lockLetOkPrefix      = regexp.MustCompile(`\blet\s+Ok\s*\([^()]*\)\s*=\s*[^;{}]*$`)
+	lockMatchPrefix      = regexp.MustCompile(`\bmatch\s+[^;{}]*$`)
+	lockOrDefaultPattern = regexp.MustCompile(`\.(?:unwrap_or|map_or)`)
 )
+
+// lockChainLookahead bounds how many lines a combinator chain may wrap across
+// before the parser gives up on it. Nothing in the tree comes close; the cap is
+// there so a file with unbalanced brackets can't turn one site into a whole-file
+// scan.
+const lockChainLookahead = 12
 
 // lockIntentMarkers are the fingerprints of the three outcomes the lock-poison
 // policy sanctions when an acquisition fails (see the module doc of
@@ -80,10 +87,11 @@ type lockPoisonSite struct {
 type lockSwallowShape string
 
 const (
-	swallowIfLet   lockSwallowShape = "if let Ok"
-	swallowLetElse lockSwallowShape = "let-else"
-	swallowMatch   lockSwallowShape = "match"
-	swallowOk      lockSwallowShape = ".ok()"
+	swallowIfLet     lockSwallowShape = "if let Ok"
+	swallowLetElse   lockSwallowShape = "let-else"
+	swallowMatch     lockSwallowShape = "match"
+	swallowOk        lockSwallowShape = ".ok()"
+	swallowOrDefault lockSwallowShape = "unwrap_or"
 )
 
 type lockSwallowSite struct {
@@ -499,64 +507,146 @@ func hasAllowLockPoisonComment(line string) bool {
 	return strings.Contains(line, AllowLockPoisonComment)
 }
 
-// classifyLockSwallows returns the result-discarding acquisitions on lines[idx].
-// The `relPath` of each site is left to the caller. A binding or match whose
-// failure handler records intent is not a site, and neither is one whose shape
-// the parser couldn't resolve — an unreadable site is left alone rather than
-// guessed at.
+// classifyLockSwallows returns the result-discarding acquisitions on lines[idx],
+// one site per acquisition. The `relPath` of each site is left to the caller.
+//
+// An acquisition whose failure handler records intent is not a site, and neither
+// is one whose shape the parser couldn't resolve — an unreadable site is left
+// alone rather than guessed at.
 func classifyLockSwallows(lines []string, idx int) []lockSwallowSite {
-	line := lines[idx]
-	text := strings.TrimSpace(line)
+	line := blankLineComment(lines[idx])
+	text := strings.TrimSpace(lines[idx])
 	var out []lockSwallowSite
 
-	for _, m := range lockLetOkPattern.FindAllStringIndex(line, -1) {
-		shape, handler, hasHandler := lockBindingHandler(lines, idx, m[1])
-		if hasHandler && handlerRecordsIntent(handler) {
-			continue
-		}
-		out = append(out, lockSwallowSite{line: idx + 1, shape: shape, text: text})
-	}
-
-	if m := lockMatchPattern.FindStringIndex(line); m != nil {
-		// m[1] is just past the `{`; back up onto it so the block finder opens
-		// on the match body rather than hunting for the next brace.
-		if body, _, _, ok := findBraceBlock(lines, idx, m[1]-1); ok {
-			if arm, found := lockMatchErrArm(body); found && !handlerRecordsIntent(arm) {
-				out = append(out, lockSwallowSite{line: idx + 1, shape: swallowMatch, text: text})
-			}
+	for _, m := range lockAcquirePattern.FindAllStringIndex(line, -1) {
+		if shape, discards := classifyLockAcquisition(lines, line, idx, m[0], m[1]); discards {
+			out = append(out, lockSwallowSite{line: idx + 1, shape: shape, text: text})
 		}
 	}
-
-	for range lockOkPattern.FindAllStringIndex(line, -1) {
-		out = append(out, lockSwallowSite{line: idx + 1, shape: swallowOk, text: text})
-	}
-
 	return out
 }
 
-// lockBindingHandler resolves what happens when a `let Ok(…) = <lock>()` binding
-// fails. col is the offset just past the acquisition. It returns the shape, the
-// handler body, and whether a handler exists at all — a plain `if let Ok(…)`
-// with no `else` has none, which is the whole point of this lane.
-func lockBindingHandler(lines []string, idx, col int) (lockSwallowShape, string, bool) {
+// classifyLockAcquisition decides what one `.lock()` / `.read()` / `.write()`
+// does with a failure. What precedes the call says which construct is consuming
+// the `Result` (`let Ok(…) = …`, `match …`, or a plain combinator chain), and
+// each construct's own handler decides whether the failure is recorded or
+// dropped.
+func classifyLockAcquisition(lines []string, line string, idx, start, end int) (lockSwallowShape, bool) {
+	before := line[:start]
+	switch {
+	case consumesDirectly(lockLetOkPrefix, before):
+		return lockBindingDiscards(lines, idx, end)
+	case consumesDirectly(lockMatchPrefix, before):
+		return lockMatchDiscards(lines, idx, end)
+	default:
+		return lockChainDiscards(lines, idx, end)
+	}
+}
+
+// consumesDirectly reports whether the construct the prefix pattern found is the
+// one consuming this acquisition's `Result`. It has to sit at the same bracket
+// depth: in `match watched.and_then(|w| w.lock().ok())` the `match` reads what
+// the closure returned, so the closure's own chain is what discards the failure.
+func consumesDirectly(pattern *regexp.Regexp, before string) bool {
+	loc := pattern.FindStringIndex(before)
+	if loc == nil {
+		return false
+	}
+	depth := 0
+	for _, c := range before[loc[0]:] {
+		switch c {
+		case '(', '[':
+			depth++
+		case ')', ']':
+			depth--
+		}
+	}
+	return depth == 0
+}
+
+// lockBindingDiscards resolves what happens when a `let Ok(…) = <lock>()`
+// binding fails. col is the offset just past the acquisition.
+func lockBindingDiscards(lines []string, idx, col int) (lockSwallowShape, bool) {
 	next, nextIdx, nextCol := nextMeaningful(lines, idx, col)
 	if startsWithWord(next, "else") {
 		body, _, _, ok := findBraceBlock(lines, nextIdx, nextCol)
-		return swallowLetElse, body, ok
+		return swallowLetElse, !ok || !handlerRecordsIntent(body)
 	}
 
 	// A plain `if let` (or the `&& let` link of a let-chain): the only handler
 	// it can have is an `else` after the block it guards.
 	_, endIdx, endCol, ok := findBraceBlock(lines, idx, col)
 	if !ok {
-		return swallowIfLet, "", false
+		return swallowIfLet, true
 	}
 	after, afterIdx, afterCol := nextMeaningful(lines, endIdx, endCol)
 	if !startsWithWord(after, "else") {
-		return swallowIfLet, "", false
+		return swallowIfLet, true
 	}
 	body, _, _, ok := findBraceBlock(lines, afterIdx, afterCol)
-	return swallowIfLet, body, ok
+	return swallowIfLet, !ok || !handlerRecordsIntent(body)
+}
+
+// lockMatchDiscards reads the `match` block the acquisition feeds and judges its
+// `Err` arm. An unparsable block or a missing `Err` arm stays quiet.
+func lockMatchDiscards(lines []string, idx, col int) (lockSwallowShape, bool) {
+	body, _, _, ok := findBraceBlock(lines, idx, col)
+	if !ok {
+		return swallowMatch, false
+	}
+	arm, found := lockMatchErrArm(body)
+	return swallowMatch, found && !handlerRecordsIntent(arm)
+}
+
+// lockChainDiscards judges the combinator chain hanging off the acquisition. The
+// chain is read to the end of its statement, so one that wraps across lines
+// (`.lock()` … `.map(…)` … `.unwrap_or_default()`) is still seen whole.
+func lockChainDiscards(lines []string, idx, col int) (lockSwallowShape, bool) {
+	chain := lockChainAfter(lines, idx, col)
+	if strings.Contains(chain, "into_inner") {
+		return "", false
+	}
+	if strings.Contains(chain, ".ok()") {
+		return swallowOk, true
+	}
+	if lockOrDefaultPattern.MatchString(chain) {
+		return swallowOrDefault, true
+	}
+	return "", false
+}
+
+// lockChainAfter returns the text from an acquisition to the end of its
+// statement: the next `;` at bracket depth zero, the close of the expression it
+// sits inside, or the lookahead limit, whichever comes first.
+func lockChainAfter(lines []string, idx, col int) string {
+	var sb strings.Builder
+	depth := 0
+	for i := idx; i < len(lines) && i < idx+lockChainLookahead; i++ {
+		line := blankLineComment(lines[i])
+		start := 0
+		if i == idx {
+			start = col
+		}
+		for j := start; j < len(line); j++ {
+			switch line[j] {
+			case '(', '[', '{':
+				depth++
+			case ')', ']', '}':
+				depth--
+			case ';':
+				if depth == 0 {
+					return sb.String()
+				}
+			}
+			if depth < 0 {
+				// The enclosing call or block closed: the chain ended with it.
+				return sb.String()
+			}
+			sb.WriteByte(line[j])
+		}
+		sb.WriteByte('\n')
+	}
+	return sb.String()
 }
 
 // startsWithWord reports whether s opens with the given keyword as a whole word,

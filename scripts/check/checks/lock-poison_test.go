@@ -849,3 +849,127 @@ fn describe(state: &State) -> String {
 		t.Errorf("expected the swallowing `if let Ok` at fmt.rs:3, got: %s", res.Message)
 	}
 }
+
+func TestLockPoison_WarnsOnUnwrapOrFamily(t *testing.T) {
+	// The chain is read to the end of its statement, so the wrapped shape that
+	// hands the user an empty list is seen as clearly as the one-liner.
+	res, err := runLockPoisonOn(t, map[string]string{
+		"shares.rs": `
+pub fn get_all_known_shares() -> Vec<KnownNetworkShare> {
+    known_shares_mutex()
+        .lock()
+        .map(|cache| cache.known_network_shares.clone())
+        .unwrap_or_default()
+}
+
+pub fn volume_count(&self) -> usize {
+    self.volumes.read().map(|v| v.len()).unwrap_or(0)
+}
+
+pub fn is_empty(&self) -> bool {
+    self.volumes.read().map_or(true, |v| v.is_empty())
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning, got %v: %s", res.Code, res.Message)
+	}
+	for _, want := range []string{"shares.rs:4", "shares.rs:10", "shares.rs:14"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("expected the default-substituting chain at %s, got: %s", want, res.Message)
+		}
+	}
+}
+
+func TestLockPoison_AcceptsUnwrapOrElseIntoInner(t *testing.T) {
+	// The house recovery idiom, and what `lock_ignore_poison()` itself is.
+	res, err := runLockPoisonOn(t, map[string]string{
+		"store.rs": `
+fn set(data: ClipboardData) {
+    *DATA_STORE.lock().unwrap_or_else(|e| e.into_inner()) = data;
+}
+
+fn get() -> ClipboardData {
+    DATA_STORE.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected success for the recovery idiom, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
+
+func TestLockPoison_CountsOneSitePerAcquisition(t *testing.T) {
+	// A let-chain acquires twice on one line, and both halves get skipped on
+	// poison, so both are sites.
+	res, err := runLockPoisonOn(t, map[string]string{
+		"chain.rs": `
+fn both(state: &State) {
+    if let Ok(a) = state.left.lock() && let Ok(b) = state.right.lock() {
+        drop((a, b));
+    }
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if !strings.Contains(res.Message, "chain.rs: 2 sites") {
+		t.Errorf("expected both acquisitions on the line to count, got: %s", res.Message)
+	}
+}
+
+func TestLockPoison_LeavesPropagatingAndProbingChainsAlone(t *testing.T) {
+	res, err := runLockPoisonOn(t, map[string]string{
+		"quiet.rs": `
+fn propagates(state: &State) -> Result<usize, PoisonError> {
+    let g = state.entries.lock()?;
+    Ok(g.len())
+}
+
+fn probes(state: &State) -> bool {
+    state.entries.lock().is_ok()
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected success for a propagating or probing chain, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
+
+func TestLockPoison_SeesAnAcquisitionInsideAClosureArgument(t *testing.T) {
+	// The `match` reads what the closure returned, so it's the closure's `.ok()`
+	// that drops the poison. Reading the `match` arms instead let this one — a
+	// poll loop that stops polling for the rest of the session — go unreported.
+	res, err := runLockPoisonOn(t, map[string]string{
+		"poller.rs": `
+async fn poll_loop() {
+    loop {
+        let unique: HashMap<String, String> = match WATCHED.get().and_then(|w| w.lock().ok()) {
+            Some(map) => map.clone(),
+            None => continue,
+        };
+        drop(unique);
+    }
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected a warning, not a hard failure, got: %v", err)
+	}
+	if res.Code != ResultWarning {
+		t.Fatalf("expected ResultWarning, got %v: %s", res.Code, res.Message)
+	}
+	if !strings.Contains(res.Message, "poller.rs:4") {
+		t.Errorf("expected the closure's `.ok()` at poller.rs:4, got: %s", res.Message)
+	}
+}
