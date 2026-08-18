@@ -50,6 +50,10 @@ volume. Renaming isn't possible here." Skipped for MTP volumes (Unix `access()` 
   FS (`None` or `"root"`) uses `symlink_metadata` + inode comparison for case-only detection; non-local volumes (MTP)
   use `Volume::get_metadata()` for conflict detection, `is_case_only_rename` always `false` (MTP is case-sensitive).
 
+The backend answers with a word-free `ValidationError` kind, and `validityMessage` renders it from the SAME
+`fileOperations.validation.*` keys the live validation uses. So a name the backend turns down reads exactly the way the
+red border already read, and the sentence the chain builds around it ("… kept its name") can't end up half-translated.
+
 ## Post-rename cursor tracking
 
 File watcher emits `directory-diff` → `findFileIndex(listingId, newName)` → frontend index → `setCursorIndex()`. If

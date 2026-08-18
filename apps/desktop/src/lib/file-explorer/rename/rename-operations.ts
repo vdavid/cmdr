@@ -5,6 +5,7 @@
  */
 
 import { extensionsDifferMeaningfully, getExtension } from '$lib/utils/filename-validation'
+import { tString } from '$lib/intl/messages.svelte'
 
 export interface ConflictFileInfo {
   name: string
@@ -33,6 +34,37 @@ export type RenameResult =
   | { type: 'extension-ask'; oldExtension: string; newExtension: string }
   | { type: 'conflict'; validity: RenameValidityResult }
   | { type: 'success'; newName: string }
+
+/**
+ * Words for the backend's typed verdict on a name it won't take.
+ *
+ * The same catalog messages the editor's live validation uses, so a name the
+ * backend turns down reads the way the red border already read. The backend
+ * names the offending character; the message doesn't, because it lists the
+ * whole forbidden set instead, which is what the user needs in order to fix it.
+ */
+function validityMessage(error: RenameValidityResult['error'], isDirectory: boolean): string {
+  const kind = isDirectory ? 'folder' : 'file'
+  switch (error?.kind) {
+    case 'empty':
+      return tString('fileOperations.validation.empty', { kind })
+    case 'disallowedCharacter':
+      return tString('fileOperations.validation.disallowedChars', { kind })
+    case 'nameTooLong':
+      return tString('fileOperations.validation.nameTooLong', {
+        kind,
+        byteCount: String(error.bytes),
+        maxBytes: String(error.max),
+      })
+    case 'pathTooLong':
+      return tString('fileOperations.validation.pathTooLong', {
+        byteCount: String(error.bytes),
+        maxBytes: String(error.max),
+      })
+    default:
+      return tString('fileOperations.validation.nameNotUsable', { kind })
+  }
+}
 
 /**
  * Runs the full rename save flow.
@@ -73,16 +105,7 @@ export async function executeRenameSave(
   }
 
   if (!validity.valid) {
-    const errMsg = validity.error
-      ? validity.error.kind === 'empty'
-        ? 'Filename cannot be empty'
-        : validity.error.kind === 'disallowedCharacter'
-          ? `Filename contains a disallowed character: "${validity.error.character}"`
-          : validity.error.kind === 'nameTooLong'
-            ? `Filename is too long (${String(validity.error.bytes)} bytes, max ${String(validity.error.max)})`
-            : `Path is too long (${String(validity.error.bytes)} bytes, max ${String(validity.error.max)})`
-      : 'Invalid filename'
-    return { type: 'error', message: errMsg }
+    return { type: 'error', message: validityMessage(validity.error, target.isDirectory) }
   }
 
   // Conflict detected (and not a case-only rename of the same file)

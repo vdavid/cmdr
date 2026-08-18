@@ -1233,6 +1233,13 @@
     }
   },
 
+  "fileOperations.validation.nameNotUsable": "{kind, select, folder {That folder name can''t be used} other {That filename can''t be used}}",
+  "@fileOperations.validation.nameNotUsable": {
+    "description": "Message shown when the file system turns a name down while saving a rename, without saying which rule it broke. It''s the catch-all behind the specific messages (empty, disallowed character, too long), so keep it short and general rather than guessing at a reason. It also appears inside a longer sentence about a file that kept its name, so write it as a complete sentence with NO closing period. Write each branch as a complete, natural sentence for a file versus a folder.",
+    "placeholders": {
+      "kind": "what is being named: \"folder\" for a folder, anything else for a file"
+    }
+  },
   "fileOperations.validation.pathEmpty": "Path can''t be empty",
   "@fileOperations.validation.pathEmpty": {
     "description": "Inline validation message for a directory-path field (e.g. the transfer destination or go-to-path), shown when the path is blank or only whitespace. \"Path\" means a full file-system path."

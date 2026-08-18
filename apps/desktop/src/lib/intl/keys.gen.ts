@@ -1430,6 +1430,7 @@ export type MessageKey =
   | 'fileOperations.validation.disallowedChars'
   | 'fileOperations.validation.empty'
   | 'fileOperations.validation.extensionChangeBlocked'
+  | 'fileOperations.validation.nameNotUsable'
   | 'fileOperations.validation.nameTooLong'
   | 'fileOperations.validation.pathEmpty'
   | 'fileOperations.validation.pathNotAbsolute'
