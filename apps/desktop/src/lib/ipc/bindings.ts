@@ -3008,14 +3008,15 @@ export const commands = {
   scanMtpForCopy: (deviceId: string, storageId: number, path: string) =>
     typedError<MtpScanResult, MtpConnectionError>(__TAURI_INVOKE('scan_mtp_for_copy', { deviceId, storageId, path })),
   /**
-   *  Lists all mounted volumes, including connected MTP devices.
-   *  Enriches SMB volumes with their connection state from the VolumeManager.
+   *  Lists all mounted volumes, including connected MTP devices, each enriched
+   *  with what its registered backend can do.
    */
   listVolumes: () => __TAURI_INVOKE<TimedOut<LocationInfo[]>>('list_volumes'),
   /**
    *  Resolves a path to its containing volume without enumerating all volumes.
-   *  Uses `statfs()` for filesystem paths (<1ms for local disks), protocol
-   *  dispatch for MTP/SMB paths. Returns `timed_out: true` if the filesystem
+   *  Reads the mount table for filesystem paths (`statfs` on macOS,
+   *  `/proc/self/mountinfo` on Linux; <1ms for local disks) and dispatches on
+   *  protocol for MTP/SMB paths. Returns `timed_out: true` if the filesystem
    *  didn't respond within 2s.
    */
   resolvePathVolume: (path: string) => __TAURI_INVOKE<PathVolumeResolution>('resolve_path_volume', { path }),
@@ -3033,7 +3034,8 @@ export const commands = {
   /**
    *  Gets space information for a volume at the given path.
    *  Returns total and available bytes for the volume.
-   *  For MTP paths (`mtp://`), fetches from the MTP connection manager instead of macOS NSURL.
+   *  For MTP paths (`mtp://`), fetches from the MTP connection manager instead of
+   *  asking the filesystem.
    */
   getVolumeSpace: (path: string) => __TAURI_INVOKE<TimedOut<VolumeSpaceInfo | null>>('get_volume_space', { path }),
   // Gets all currently discovered network hosts.

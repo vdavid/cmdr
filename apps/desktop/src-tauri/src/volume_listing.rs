@@ -62,7 +62,7 @@ pub(crate) async fn discover_local(timeout: Duration) -> ListingOutcome {
     match tokio::time::timeout(timeout, tokio::task::spawn_blocking(list_locations)).await {
         Ok(Ok(volumes)) => ListingOutcome::Listed(volumes),
         Ok(Err(e)) => {
-            log::error!("volume listing: spawn_blocking panicked: {}", e);
+            crate::log_error!("volume listing: spawn_blocking panicked: {}", e);
             ListingOutcome::Panicked
         }
         Err(_) => {
