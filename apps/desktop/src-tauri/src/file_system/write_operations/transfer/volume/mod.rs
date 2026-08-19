@@ -21,6 +21,7 @@ mod merge;
 /// facade names it: the move entry points are re-exported below.
 mod r#move;
 mod move_same;
+mod naming;
 mod preflight;
 mod rename_merge;
 mod sequential_extract;

@@ -67,7 +67,7 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   § "Recursive destination create".
 - **`unique_name.rs::numbered_name(stem, ext, counter)` is the ONE ` (N)` formatter** (`counter 0` = bare, `1..` = ` (N)`).
   `find_unique_name`, `next_available_name`, `paste_clipboard.rs`, and the volume namer
-  (`transfer/volume/conflict.rs::find_unique_volume_name`) all go through it, so the numbering paths can't drift.
+  (`transfer/volume/naming.rs::find_unique_volume_name`) all go through it, so the numbering paths can't drift.
   `archive_edit/conflicts.rs::find_unique_inner` is deliberately outside this: it numbers slash-joined inner-path
   strings against an `ArchiveIndex`, and its doc comment says so.
 - **`unique_name.rs::split_sequence(stem) -> (base, next_counter)` is the ONE sequence rule.** It reads a trailing ` (N)`
@@ -79,12 +79,12 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
 - **`unique_name.rs::NameCandidates` is the whole of what the ` (N)` searches share**: the parent, the base to number from,
   and the counter to try next, walked with `current()` / `advance()`. Built per item KIND, and the kind is not cosmetic:
   `for_file` keeps the extension at the end (`photo.jpg` → `photo (1).jpg`), while `for_directory` numbers the whole name,
-  because a directory has none (`my.dir` → `my.dir (1)`, ❌ never `my (1).dir`; likewise `backup.2024` and `v1.2.3`).
+  because a directory has none (`my.dir` → `my.dir (1)` rather than `my (1).dir`; likewise `backup.2024` and `v1.2.3`).
   `create_unique_dir` and the volume namer's `is_directory` branch pick the second, everything else the first.
   Every search walks the same candidates and differs only in how it TESTS one. `find_unique_name` RESERVES its pick with
   an `O_CREAT|O_EXCL` placeholder and must keep advancing when it loses that race; `next_available_name` only probes
   (`path_exists_or_is_symlink`, so a dangling symlink counts as taken) and creates nothing;
-  `transfer/volume/conflict.rs::find_unique_volume_name` reserves only when the destination volume is local-FS-backed
+  `transfer/volume/naming.rs::find_unique_volume_name` reserves only when the destination volume is local-FS-backed
   AND the item is a FILE (`local_path().filter(|_| !is_directory)`), and probes otherwise — a directory takes the probe
   on every backend, for a reason `transfer/volume/DETAILS.md` states as load-bearing (a placeholder FILE where the copy
   is about to create a directory makes the merge walker merge into it, and leaves rollback nothing to remove).

@@ -9,7 +9,7 @@
 //! can't answer on its own — a name one operation has picked but not yet
 //! written — is what [`ClaimedNames`] remembers.
 //!
-//! The volume namer (`transfer/volume/conflict.rs::find_unique_volume_name`)
+//! The volume namer (`transfer/volume/naming.rs::find_unique_volume_name`)
 //! and the clipboard-paste writer (`paste_clipboard.rs`) walk these same
 //! candidates, so the numbering can't drift between backends.
 
@@ -55,7 +55,7 @@ impl ClaimedNames {
 /// convention: `counter == 0` is the bare `stem[.ext]`, `1..` appends ` (N)`
 /// before the extension. This is the ONE place the convention is written:
 /// `find_unique_name`, `next_available_name`, the volume namer
-/// (`transfer/volume/conflict.rs::find_unique_volume_name`), and the
+/// (`transfer/volume/naming.rs::find_unique_volume_name`), and the
 /// clipboard-paste writer all go through it, so the numbering paths can't drift.
 pub(super) fn numbered_name(stem: &str, ext: Option<&str>, counter: u32) -> String {
     match (ext, counter) {
@@ -103,7 +103,7 @@ pub(super) fn split_sequence(stem: &str) -> (&str, u32) {
 /// candidates and differs only in how it TESTS one: [`find_unique_name`]
 /// reserves with `O_CREAT|O_EXCL` and has to keep advancing when it loses that
 /// race, [`next_available_name`] only probes, and the volume namer
-/// (`transfer/volume/conflict.rs::find_unique_volume_name`) does either
+/// (`transfer/volume/naming.rs::find_unique_volume_name`) does either
 /// depending on the backend. A search loop can't be shared across that
 /// difference, so this carries the candidates and the searches keep their loops.
 pub(super) struct NameCandidates<'a> {
@@ -127,8 +127,9 @@ impl<'a> NameCandidates<'a> {
     }
 
     /// Candidates for a DIRECTORY, which has no extension: everything after a
-    /// dot is part of its name, so the number goes at the END. `my.dir` →
-    /// `my.dir (1)`, ❌ never `my (1).dir`; `backup.2024` and `v1.2.3` likewise.
+    /// dot is part of its name, so the number goes at the END. `my.dir` becomes
+    /// `my.dir (1)` rather than `my (1).dir`, and `backup.2024` and `v1.2.3`
+    /// likewise.
     pub(super) fn for_directory(path: &'a Path) -> Self {
         let name = path.file_name().map(|s| s.to_string_lossy().to_string());
         Self::from_parts(path, name.unwrap_or_default(), None)

@@ -58,10 +58,11 @@ pub(super) struct DestNameIndex {
 ///
 /// `pub(super)` because the volume conflict resolver asks it about the final
 /// component of two paths, to tell a duplicate from a clash
-/// (`volume/conflict.rs::is_the_same_volume_path`). ❌ It is never asked about a
-/// whole path: this rule speaks for names inside ONE listing, and no listing
-/// says whether two differently-cased parent directories are one directory.
-/// One folding rule for the whole transfer layer, one question it answers.
+/// (`volume/conflict.rs::is_the_same_volume_path`, which owns the rule about
+/// what may and may not be folded). This answers for names inside ONE listing,
+/// and no listing says whether two differently-cased parent directories are one
+/// directory. One folding rule for the whole transfer layer, one question it
+/// answers.
 pub(super) fn fold(name: &str) -> String {
     if name.is_ascii() {
         return name.to_ascii_lowercase();

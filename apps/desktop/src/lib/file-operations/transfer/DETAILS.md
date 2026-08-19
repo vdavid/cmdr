@@ -249,6 +249,14 @@ still works. A PARTIAL set dispatches normally and the backend drops the ones al
 lexical because the frontend holds paths and nothing else; the backend settles identity properly
 (`src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in place)").
 
+What the pre-confirm conflict check owes that backend is the SOURCE side of the question:
+`transfer-conflict-check.svelte.ts` forwards `sourceVolumeId` and `sourcePaths` to `scanVolumeForConflicts`, and only
+with those can the command drop the collisions that name a source itself. Without them the check matches by name alone,
+every source of a same-folder copy comes back as its own clash, and the dialog grows a conflict count, the
+overwrite/skip/rename radios, and a bulk-skip list naming the files the user asked to duplicate.
+`transfer-conflict-check.svelte.test.ts` pins it with a mock that behaves like that backend rather than answering a
+canned list.
+
 #### Only paste and F5 end a duplicate in the rename editor
 
 A transfer that duplicates ONE item in the folder it already lived in can end by opening the inline rename editor on the
