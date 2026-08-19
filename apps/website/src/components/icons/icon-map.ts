@@ -21,7 +21,6 @@ import Folder from '~icons/lucide/folder'
 import GitBranch from '~icons/lucide/git-branch'
 import History from '~icons/lucide/history'
 import Keyboard from '~icons/lucide/keyboard'
-import Languages from '~icons/lucide/languages'
 import ListChecks from '~icons/lucide/list-checks'
 import MessageCircleQuestionMark from '~icons/lucide/message-circle-question-mark'
 import MessagesSquare from '~icons/lucide/messages-square'
@@ -55,7 +54,6 @@ export const ICONS = {
   'git-branch': GitBranch,
   history: History,
   keyboard: Keyboard,
-  languages: Languages,
   'list-checks': ListChecks,
   'message-circle-question-mark': MessageCircleQuestionMark,
   'messages-square': MessagesSquare,
