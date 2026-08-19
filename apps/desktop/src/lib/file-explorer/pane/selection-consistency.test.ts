@@ -16,6 +16,8 @@ import { findFileIndex } from '$lib/tauri-commands'
 // ============================================================================
 
 let mockEntry: unknown = null
+/** The pane's live `directory-diff` handler, captured when it subscribes on mount. */
+let emitDirectoryDiff: ((payload: unknown) => void) | null = null
 
 vi.mock('$lib/tauri-commands', () => ({
   listDirectoryStart: vi.fn().mockResolvedValue({ listingId: 'mock-listing', status: { status: 'ready' } }),
@@ -94,7 +96,10 @@ vi.mock('$lib/tauri-commands', () => ({
   onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
   onVolumeSpaceChanged: vi.fn().mockResolvedValue(() => {}),
   onWriteSourceItemDone: vi.fn().mockResolvedValue(() => {}),
-  onDirectoryDiff: vi.fn().mockResolvedValue(() => {}),
+  onDirectoryDiff: vi.fn((handler: (payload: unknown) => void) => {
+    emitDirectoryDiff = handler
+    return Promise.resolve(() => {})
+  }),
   onDirectoryDeleted: vi.fn().mockResolvedValue(() => {}),
   onMtpExclusiveAccessError: vi.fn().mockResolvedValue(() => {}),
   onMtpPermissionError: vi.fn().mockResolvedValue(() => {}),
@@ -573,5 +578,76 @@ describe('Selection state consistency', () => {
     expect(() => {
       handleKeyUp(shiftUpEvent)
     }).not.toThrow()
+  })
+  it('a row that moves to a new sorted position takes the cursor and the selection with it', async () => {
+    // The reported bug: a date-sorted pane while a big folder is being deleted. The
+    // folder bumps its own mtime, jumps to the top, and a cursor that stayed on the
+    // old index would sit on a neighbour, reading as if the wrong folder were going.
+    const component = mount(FilePane, {
+      target: getTarget(),
+      props: {
+        initialPath: '/',
+        volumeId: 'root',
+        volumePath: '/',
+        isFocused: true,
+        showHiddenFiles: true,
+        viewMode: 'brief',
+      },
+    })
+
+    await waitForUpdates(100)
+
+    type Api = {
+      adoptListing: (s: {
+        currentPath: string
+        listingId: string
+        totalCount: number
+        cursorIndex: number
+        selectedIndices: number[]
+        lastSequence: number
+      }) => void
+      getSelectedIndices: () => number[]
+      getCursorIndex: () => number
+    }
+    const c = component as unknown as Api
+
+    c.adoptListing({
+      currentPath: '/',
+      listingId: 'mock-listing',
+      totalCount: 10,
+      cursorIndex: 3,
+      selectedIndices: [3],
+      lastSequence: 0,
+    })
+    await waitForUpdates(50)
+    expect(c.getCursorIndex()).toBe(3)
+
+    expect(emitDirectoryDiff).not.toBeNull()
+    emitDirectoryDiff?.({
+      listingId: 'mock-listing',
+      sequence: 1,
+      changes: [
+        {
+          type: 'move',
+          entry: {
+            name: 'big-folder',
+            path: '/big-folder',
+            isDirectory: true,
+            isSymlink: false,
+            permissions: 0o755,
+            owner: 'user',
+            group: 'staff',
+            iconId: 'dir',
+            extendedMetadataLoaded: true,
+          },
+          index: 0,
+          previousIndex: 3,
+        },
+      ],
+    })
+    await waitForUpdates(100)
+
+    expect(c.getCursorIndex()).toBe(0)
+    expect(c.getSelectedIndices()).toEqual([0])
   })
 })
