@@ -172,6 +172,8 @@ cache that the same record points already write, and the `manager()` operation-m
 The `WriterJournal` also **batches** rows (a per-op buffer flushed at `RECORD_BATCH` or finalize, so a huge op coalesces
 into batched writer transactions) and **auto-assigns `seq`** in recording order, so record points never track it.
 
+### Why a reader waits for `write-settled`
+
 **A reader can only trust an op's rows once `write-settled` has fired**, and that is a consequence of the batching
 above, not a nicety. An op smaller than `RECORD_BATCH` (512 rows) has its whole tail sitting in the in-memory buffer
 until `finalize` flushes it, and every write path emits its terminal event (`write-complete` / `write-cancelled` /

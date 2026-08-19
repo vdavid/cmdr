@@ -219,7 +219,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
     // the original `docs/` instead of producing `docs (1)/`. `dir_remap` carries
     // the redirect to every per-file destination for free, and the scanned-dirs
     // pass reads it too, which is what lands an EMPTY folder's duplicate.
-    // `transfer/DETAILS.md` § "Self-collision".
+    // `transfer/DETAILS.md` § "Self-collision (duplicating in place)".
     let mut duplicated_sources: HashSet<PathBuf> = HashSet::new();
     for source in sources {
         let Some(file_name) = source.file_name() else { continue };

@@ -152,7 +152,7 @@ pub(in crate::file_system::write_operations) fn move_files_with_progress_inner(
     // An item asked to move into the folder it already lives in is already
     // where it was asked to go: nothing to write, and it reports itself done.
     // Identity is `dev+ino` (`is_same_file`), so a symlinked parent or a
-    // case-differing path counts too. `transfer/DETAILS.md` § "Self-collision".
+    // case-differing path counts too. `transfer/DETAILS.md` § "Self-collision (duplicating in place)".
     //
     // Dropped HERE, above the same-FS / cross-FS split, so NEITHER engine can
     // see one: `move_with_rename` would hand a directory to

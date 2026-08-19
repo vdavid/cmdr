@@ -19,7 +19,7 @@ map: `DETAILS.md` § Files.
 - **A source that would land on ITSELF is a duplicate, ❌ never a conflict**: settled by `dev+ino` per TOP-LEVEL
   source before either engine's loop (copy seeds `dir_remap` with a free ` (N)` name, move drops the item), because
   every answer the conflict machinery can give destroys the original or refuses the user. `DETAILS.md` §
-  "Self-collision".
+  "Self-collision (duplicating in place)".
 - **Cross-volume copy parks and yields between chunks** (`CheckpointStream`): park in place, ❌ no release/reopen. TWO
   opt-ins, ❌ don't merge them: SOURCE read-yield (MTP + SMB) is unbounded, DESTINATION write-yield (SMB only) is capped.
 - **Every phase announces itself to `transfer_probe.rs`, on ALL THREE streaming paths** (both copy drivers and the

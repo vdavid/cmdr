@@ -753,7 +753,7 @@ pub(crate) async fn copy_volumes_with_progress(
     // as conflicting, and under `Skip` this prelude would drop them all and the
     // duplicate would silently do nothing. `resolve_volume_conflict` redirects
     // these to a free ` (N)` name instead of ever asking. Local twin:
-    // `../copy/mod.rs`. `DETAILS.md` § "Self-collision".
+    // `../copy/mod.rs`. `DETAILS.md` § "Self-collision (duplicating in place)".
     pre_skip_paths.retain(|source| {
         source
             .file_name()

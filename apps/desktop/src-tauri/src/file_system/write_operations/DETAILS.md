@@ -80,13 +80,17 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   and the counter to try next, walked with `current()` / `advance()`. Built per item KIND, and the kind is not cosmetic:
   `for_file` keeps the extension at the end (`photo.jpg` → `photo (1).jpg`), while `for_directory` numbers the whole name,
   because a directory has none (`my.dir` → `my.dir (1)`, ❌ never `my (1).dir`; likewise `backup.2024` and `v1.2.3`).
-  `create_unique_dir` and the volume namer's `is_directory` branch pick the second, everything else the first. Every search walks the same candidates and differs
-  only in how it TESTS one. `find_unique_name` RESERVES its pick with an `O_CREAT|O_EXCL` placeholder and must keep
-  advancing when it loses that race; `next_available_name` only probes (`path_exists_or_is_symlink`, so a dangling
-  symlink counts as taken) and creates nothing; `transfer/volume/conflict.rs::find_unique_volume_name` does one or the
-  other depending on whether the dest volume is local-FS-backed. That difference is exactly why there's no shared search
-  loop to layer them on as "search, then reserve". `attempts()` (not the counter's absolute value) is what a search
-  bounds its own effort by, since a name ending in a high ` (N)` starts the sequence there.
+  `create_unique_dir` and the volume namer's `is_directory` branch pick the second, everything else the first.
+  Every search walks the same candidates and differs only in how it TESTS one. `find_unique_name` RESERVES its pick with
+  an `O_CREAT|O_EXCL` placeholder and must keep advancing when it loses that race; `next_available_name` only probes
+  (`path_exists_or_is_symlink`, so a dangling symlink counts as taken) and creates nothing;
+  `transfer/volume/conflict.rs::find_unique_volume_name` reserves only when the destination volume is local-FS-backed
+  AND the item is a FILE (`local_path().filter(|_| !is_directory)`), and probes otherwise — a directory takes the probe
+  on every backend, for a reason `transfer/volume/DETAILS.md` states as load-bearing (a placeholder FILE where the copy
+  is about to create a directory makes the merge walker merge into it, and leaves rollback nothing to remove).
+  That difference is exactly why there's no shared search loop to layer them on as "search, then reserve". `attempts()`
+  (not the counter's absolute value) is what a search bounds its own effort by, since a name ending in a high ` (N)`
+  starts the sequence there.
 - **Reach for the non-reserving `next_available_name` when a file placeholder would be in the way**: a directory claims
   its name with `create_dir` instead, and an ordinary non-overwrite write would otherwise find `find_unique_name`'s own
   placeholder sitting at the destination and raise a conflict against it.
