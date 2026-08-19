@@ -25,10 +25,10 @@ use super::menu_items::{
     truncate_for_menu_label,
 };
 #[cfg(target_os = "macos")]
-use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, QUICK_LOOK_ID};
+use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, HELP_MENU_ID, QUICK_LOOK_ID};
 use super::{
-    COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
-    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID, FILE_MOVE_ID,
+    COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EDIT_MENU_ID, EJECT_VOLUME_ID,
+    FAVORITE_REMOVE_ID, FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID, FILE_MOVE_ID,
     FILE_NEW_FOLDER_ID, FILE_VIEW_ID, ImageIndexMenuState, MenuItems, NETWORK_HOST_DISCONNECT_ID,
     NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID,
     TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
@@ -396,8 +396,12 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
     // macOS routes to the focused text field (the search box) through the responder
     // chain. All four are needed: without Cut/Paste, ⌘X/⌘V are dead in the viewer's
     // search input (the viewer menu is the active app menu while a viewer is focused).
-    let edit_menu = Submenu::with_items(
+    // Carries the same ID as the main bar's Edit menu: `cleanup_macos_menus` runs against whichever
+    // bar is installed, and AppKit injects its Writing Tools / AutoFill / Dictation items into this
+    // one too. Only one of the two bars is ever installed at a time, so the shared ID never collides.
+    let edit_menu = Submenu::with_id_and_items(
         app,
+        EDIT_MENU_ID,
         "Edit",
         true,
         &[
@@ -432,7 +436,9 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
         menu.append(&window_menu)?;
 
         // --- Help menu ---
-        let help_menu = Submenu::with_items(app, "Help", true, &[])?;
+        // Empty, but it still needs the ID: `cleanup_macos_menus` hands it to
+        // `NSApplication.setHelpMenu:` so the viewer bar gets the search field too.
+        let help_menu = Submenu::with_id_and_items(app, HELP_MENU_ID, "Help", true, &[])?;
         menu.append(&help_menu)?;
     }
 

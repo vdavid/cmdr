@@ -8,6 +8,33 @@
 
 use super::CommandScope;
 
+/// IDs for the menus themselves, as opposed to the items inside them. Submenus fire no events, so
+/// these exist purely so the macOS post-construction passes (`cleanup_macos_menus`,
+/// `set_macos_menu_icons`) can find a menu without knowing what it's called: AppKit indexes menus by
+/// title, and a title is user-facing text that translation moves. Both menu bars that macOS installs
+/// (the main one in `macos.rs`, the viewer's in `menu_structure.rs`) use the same IDs, since only one
+/// of them is ever the app menu bar at a time. Only the two that a cross-platform builder assigns
+/// are unconditional; the rest are macOS-only, because nothing on Linux looks a menu up.
+#[cfg(target_os = "macos")]
+pub const APP_MENU_ID: &str = "menu_app";
+#[cfg(target_os = "macos")]
+pub const FILE_MENU_ID: &str = "menu_file";
+pub const EDIT_MENU_ID: &str = "menu_edit";
+#[cfg(target_os = "macos")]
+pub const SELECT_MENU_ID: &str = "menu_select";
+#[cfg(target_os = "macos")]
+pub const VIEW_MENU_ID: &str = "menu_view";
+/// The "Sort by" submenu nested under View, built by `build_sort_submenu` for both platforms.
+pub const SORT_BY_MENU_ID: &str = "menu_sort_by";
+#[cfg(target_os = "macos")]
+pub const GO_MENU_ID: &str = "menu_go";
+#[cfg(target_os = "macos")]
+pub const TAB_MENU_ID: &str = "menu_tab";
+#[cfg(target_os = "macos")]
+pub const WINDOW_MENU_ID: &str = "menu_window";
+#[cfg(target_os = "macos")]
+pub const HELP_MENU_ID: &str = "menu_help";
+
 /// Menu item IDs for file actions.
 pub const SHOW_HIDDEN_FILES_ID: &str = "show_hidden_files";
 /// View mode CheckMenuItems, one pair per pane, nested under per-pane submenus

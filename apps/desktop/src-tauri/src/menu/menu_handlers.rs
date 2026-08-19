@@ -30,14 +30,14 @@ use super::{
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
 ///
-/// macOS AppKit automatically injects "Writing Tools", "AutoFill", "Start Dictation...",
-/// and "Emoji & Symbols" into any menu named "Edit". It also only shows the Help menu
-/// search field when a menu is registered via `NSApplication.setHelpMenu:`. Both of these
-/// happen at the AppKit level regardless of how the menu is constructed, so we fix them
-/// post-construction via native API calls.
+/// macOS AppKit automatically injects Writing Tools, AutoFill, Start Dictation, and Emoji & Symbols
+/// into any menu it takes for an Edit menu. It also only shows the Help menu search field when a
+/// menu is registered via `NSApplication.setHelpMenu:`. Both of these happen at the AppKit level
+/// regardless of how the menu is constructed, so we fix them post-construction via native API
+/// calls. Acts on whichever menu bar is installed (`app.menu()`), finding both menus by ID.
 #[cfg(target_os = "macos")]
-pub fn cleanup_macos_menus() {
-    super::macos::cleanup_macos_menus();
+pub fn cleanup_macos_menus<R: Runtime>(app: &AppHandle<R>) {
+    super::macos_appkit::cleanup_macos_menus(app);
 }
 
 /// Runs [`cleanup_macos_menus`] on the main thread, for callers running on a Tauri command thread.
@@ -49,7 +49,8 @@ pub fn cleanup_macos_menus() {
 /// items in place, never a broken state.
 #[cfg(target_os = "macos")]
 pub fn cleanup_macos_menus_from_command<R: Runtime>(app: &AppHandle<R>) {
-    if let Err(e) = app.run_on_main_thread(cleanup_macos_menus) {
+    let handle = app.clone();
+    if let Err(e) = app.run_on_main_thread(move || cleanup_macos_menus(&handle)) {
         log::warn!(target: "menu", "Failed to dispatch macOS menu cleanup to the main thread: {e}");
     }
 }
@@ -58,10 +59,23 @@ pub fn cleanup_macos_menus_from_command<R: Runtime>(app: &AppHandle<R>) {
 ///
 /// Tauri's menu API doesn't support SF Symbols, so we walk the NSMenu hierarchy after
 /// construction and call `NSImage(systemSymbolName:accessibilityDescription:)` + `setImage:`
-/// on each item, matching by title within each known submenu.
+/// on each item. Which item gets which symbol is keyed by menu item ID; the ID is resolved to the
+/// item's current title only to find it on the AppKit side, which knows no other index.
 #[cfg(target_os = "macos")]
-pub fn set_macos_menu_icons() {
-    super::macos::set_macos_menu_icons();
+pub fn set_macos_menu_icons<R: Runtime>(app: &AppHandle<R>) {
+    super::macos_appkit::set_macos_menu_icons(app);
+}
+
+/// Runs [`set_macos_menu_icons`] on the main thread, for callers running on a Tauri command thread.
+///
+/// Same fire-and-forget contract as [`cleanup_macos_menus_from_command`]: a failed hop costs icons,
+/// never correctness.
+#[cfg(target_os = "macos")]
+pub fn set_macos_menu_icons_from_command<R: Runtime>(app: &AppHandle<R>) {
+    let handle = app.clone();
+    if let Err(e) = app.run_on_main_thread(move || set_macos_menu_icons(&handle)) {
+        log::warn!(target: "menu", "Failed to dispatch macOS menu icons to the main thread: {e}");
+    }
 }
 
 /// Convert frontend shortcut format (⌘2) to Tauri accelerator format (Cmd+2).

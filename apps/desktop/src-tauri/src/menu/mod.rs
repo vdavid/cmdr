@@ -16,6 +16,8 @@
 //!   `frontend_shortcut_to_accelerator`, and the macOS post-construction helpers
 //!   (`cleanup_macos_menus`, `set_macos_menu_icons`).
 //! - `macos.rs` / `linux.rs`: platform-specific menu bar shape.
+//! - `macos_appkit.rs`: the objc2 passes that fix the built menu bar up (`cleanup_macos_menus`,
+//!   `set_macos_menu_icons`), plus the `MENU_BAR_ICONS` table.
 //! - `open_with.rs` (macOS): "Open with" submenu builder.
 
 mod command_map;
@@ -23,6 +25,8 @@ mod command_map;
 mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
+#[cfg(target_os = "macos")]
+mod macos_appkit;
 mod media_index_items;
 mod menu_handlers;
 mod menu_items;
@@ -48,7 +52,9 @@ use tauri::{
 pub use command_map::*;
 pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};
 #[cfg(target_os = "macos")]
-pub use menu_handlers::{cleanup_macos_menus, cleanup_macos_menus_from_command, set_macos_menu_icons};
+pub use menu_handlers::{
+    cleanup_macos_menus, cleanup_macos_menus_from_command, set_macos_menu_icons, set_macos_menu_icons_from_command,
+};
 pub use menu_handlers::{
     frontend_shortcut_to_accelerator, handle_menu_event, rebuild_view_mode_items, sync_view_mode_check_states,
     update_menu_item_accelerator,

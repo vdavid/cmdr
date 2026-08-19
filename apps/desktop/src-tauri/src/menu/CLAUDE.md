@@ -10,7 +10,8 @@ user shortcuts, and enables/disables items by focus context.
 - `menu_items.rs` / `menu_structure.rs`: piece builders and hierarchical assembly. `menu_handlers.rs`: events and
   live-update helpers. `media_index_items.rs`: the image-search-items decider. `macos.rs` / `linux.rs`: platform menu
   bars, assembling shared pieces (`build_sort_submenu`, `build_zoom_submenu`, `build_view_mode_items`) around their own
-  layouts. `open_with.rs`: the macOS "Open with" submenu.
+  layouts. `macos_appkit.rs`: the objc2 passes that fix the bar up afterwards. `open_with.rs`: the macOS "Open with"
+  submenu.
 
 ## Must-knows
 
@@ -49,8 +50,8 @@ user shortcuts, and enables/disables items by focus context.
 - **Trailing `…` means the dialog can change WHAT the command acts on** (`Copy…` takes a destination), not merely
   whether it runs (`Delete` confirms). Same label in menu bar and context menu; always U+2026, never `...` (enforced by
   `menu_labels_use_the_ellipsis_character`). Per-item verdicts and why: `DETAILS.md`.
-- **macOS SF Symbol map matches by exact title string**, including the `\u{2026}` ellipsis: keep the `MenuItem` title and
-  the symbol map byte-identical, or the item silently loses its icon. Menu bar only, never context menus (`DETAILS.md`).
+- **Menus and items are keyed by ID, never title** (titles get translated): `macos_appkit.rs` resolves IDs to live
+  titles only at the AppKit boundary; SF Symbols sit in `MENU_BAR_ICONS`.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

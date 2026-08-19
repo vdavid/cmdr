@@ -756,11 +756,11 @@ pub fn run() {
 
             // Remove macOS system-injected Edit menu items and register Help menu for search
             #[cfg(target_os = "macos")]
-            menu::cleanup_macos_menus();
+            menu::cleanup_macos_menus(app.handle());
 
             // Set SF Symbol icons on menu items (macOS only)
             #[cfg(target_os = "macos")]
-            menu::set_macos_menu_icons();
+            menu::set_macos_menu_icons(app.handle());
 
             // Subscribe to NSWorkspace launch/terminate notifications so the "Open with"
             // candidate cache invalidates when the user installs or removes apps.

@@ -1,8 +1,9 @@
+//! The macOS menu bar's shape.
+//!
+//! Building only. The two passes that reach into AppKit afterwards live in `macos_appkit.rs`.
+
 use std::collections::HashMap;
 
-use objc2::MainThreadMarker;
-use objc2_app_kit::{NSApplication, NSImage, NSMenuItem as NSMenuItemAppKit};
-use objc2_foundation::NSString;
 use tauri::{
     AppHandle, Runtime,
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
@@ -13,15 +14,17 @@ use super::menu_items::{
     register_sort_items, show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 use super::{
-    ABOUT_ID, ACKNOWLEDGEMENTS_ID, ASK_CMDR_ID, CHANGELOG_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID,
-    COMMAND_PALETTE_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID,
-    EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
-    FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_DUPLICATE_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID,
-    GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_HOME_ID, GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID,
-    HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID,
-    NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID,
-    QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID,
-    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, ViewMode,
+    ABOUT_ID, ACKNOWLEDGEMENTS_ID, APP_MENU_ID, ASK_CMDR_ID, CHANGELOG_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID,
+    CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID,
+    EDIT_CUT_ID, EDIT_ID, EDIT_MENU_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID,
+    FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_DUPLICATE_ID, FILE_MENU_ID, FILE_MOVE_ID,
+    FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_HOME_ID, GO_LATEST_DOWNLOAD_ID,
+    GO_MENU_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_MENU_ID, HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID,
+    HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID,
+    OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID,
+    SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SELECT_MENU_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID,
+    SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SUGGESTED_OPS_ID,
+    SWAP_PANES_ID, SWITCH_PANE_ID, TAB_MENU_ID, VIEW_MENU_ID, ViewMode, WINDOW_MENU_ID,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -61,8 +64,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let open_onboarding_item = MenuItem::with_id(app, OPEN_ONBOARDING_ID, "Onboarding\u{2026}", true, None::<&str>)?;
     let settings_item = MenuItem::with_id(app, SETTINGS_ID, "Settings\u{2026}", true, Some("Cmd+,"))?;
 
-    let app_menu = Submenu::with_items(
+    let app_menu = Submenu::with_id_and_items(
         app,
+        APP_MENU_ID,
         "cmdr",
         true,
         &[
@@ -121,8 +125,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // handler ate the keydown before AppKit's menu dispatcher saw it.
     let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, Some("Shift+Space"))?;
 
-    let file_menu = Submenu::with_items(
+    let file_menu = Submenu::with_id_and_items(
         app,
+        FILE_MENU_ID,
         "File",
         true,
         &[
@@ -160,8 +165,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy filename", true, None::<&str>)?;
     let search_files_item = MenuItem::with_id(app, SEARCH_FILES_ID, "Search files\u{2026}", true, Some("Cmd+F"))?;
 
-    let edit_menu = Submenu::with_items(
+    let edit_menu = Submenu::with_id_and_items(
         app,
+        EDIT_MENU_ID,
         "Edit",
         true,
         &[
@@ -192,8 +198,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let select_files_item = MenuItem::with_id(app, SELECT_FILES_ID, "Select files\u{2026}", true, None::<&str>)?;
     let deselect_files_item = MenuItem::with_id(app, DESELECT_FILES_ID, "Deselect files\u{2026}", true, None::<&str>)?;
 
-    let select_menu = Submenu::with_items(
+    let select_menu = Submenu::with_id_and_items(
         app,
+        SELECT_MENU_ID,
         "Select",
         true,
         &[
@@ -265,8 +272,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // registry shortcut; this is the initial label.
     let ask_cmdr_item = MenuItem::with_id(app, ASK_CMDR_ID, "Ask Cmdr", true, Some("Cmd+Alt+A"))?;
 
-    let view_submenu = Submenu::with_items(
+    let view_submenu = Submenu::with_id_and_items(
         app,
+        VIEW_MENU_ID,
         "View",
         true,
         &[
@@ -304,8 +312,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // accelerator-sync pass picks up whatever the user later binds in Settings > Keyboard shortcuts.
     let favorites_add_item = MenuItem::with_id(app, FAVORITES_ADD_ID, "Add to favorites", true, None::<&str>)?;
 
-    let go_menu = Submenu::with_items(
+    let go_menu = Submenu::with_id_and_items(
         app,
+        GO_MENU_ID,
         "Go",
         true,
         &[
@@ -340,8 +349,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let pin_tab_item = MenuItem::with_id(app, PIN_TAB_MENU_ID, "Pin tab", true, None::<&str>)?;
     let close_other_tabs_item = MenuItem::with_id(app, CLOSE_OTHER_TABS_ID, "Close other tabs", true, None::<&str>)?;
 
-    let tab_menu = Submenu::with_items(
+    let tab_menu = Submenu::with_id_and_items(
         app,
+        TAB_MENU_ID,
         "Tab",
         true,
         &[
@@ -359,8 +369,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     menu.append(&tab_menu)?;
 
     // --- Window menu ---
-    let window_menu = Submenu::with_items(
+    let window_menu = Submenu::with_id_and_items(
         app,
+        WINDOW_MENU_ID,
         "Window",
         true,
         &[
@@ -383,8 +394,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         true,
         None::<&str>,
     )?;
-    let help_menu = Submenu::with_items(
+    let help_menu = Submenu::with_id_and_items(
         app,
+        HELP_MENU_ID,
         "Help",
         true,
         &[
@@ -511,236 +523,4 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         items,
         sort_submenu,
     })
-}
-
-pub(crate) fn cleanup_macos_menus() {
-    // This runs during Tauri's setup() which is inside tao's `did_finish_launching`
-    // This is an `extern "C"` callback that aborts on panic. NSMenu operations can raise ObjC
-    // exceptions (which are foreign exceptions that `catch_unwind` can't catch), so we
-    // use `objc2::exception::catch` to absorb them gracefully.
-    let result = objc2::exception::catch(cleanup_macos_menus_inner);
-    if let Err(e) = result {
-        log::warn!("Failed to clean up macOS menus: {e:?}");
-    }
-}
-
-fn cleanup_macos_menus_inner() {
-    let mtm = MainThreadMarker::new().expect("cleanup_macos_menus_inner must be called from the main thread");
-    let app = NSApplication::sharedApplication(mtm);
-    let Some(main_menu) = app.mainMenu() else {
-        return;
-    };
-
-    // Titles of system-injected items we want to remove from the Edit menu.
-    let unwanted_titles: &[&str] = &[
-        "Writing Tools",
-        "AutoFill",
-        "Start Dictation\u{2026}", // macOS uses Unicode ellipsis (U+2026)
-        "Start Dictation...",
-        "Emoji & Symbols",
-    ];
-
-    // Walk top-level menus looking for "Edit" and "Help"
-    let count = main_menu.numberOfItems();
-    for i in 0..count {
-        let Some(top_item) = main_menu.itemAtIndex(i) else {
-            continue;
-        };
-        let Some(submenu) = top_item.submenu() else {
-            continue;
-        };
-        let title = submenu.title().to_string();
-
-        if title == "Edit" {
-            // Remove system-injected items by walking backwards. We use a manual index
-            // instead of a range because each removal shifts indices; the loop must
-            // re-check against the live count after every removal.
-            let mut j = submenu.numberOfItems() - 1;
-            while j >= 0 {
-                if let Some(item) = submenu.itemAtIndex(j) {
-                    let item_title = item.title().to_string();
-                    if unwanted_titles.contains(&item_title.as_str()) {
-                        submenu.removeItemAtIndex(j);
-                        // Also remove a preceding separator if present
-                        if j > 0
-                            && let Some(prev) = submenu.itemAtIndex(j - 1)
-                            && prev.isSeparatorItem()
-                        {
-                            submenu.removeItemAtIndex(j - 1);
-                            j -= 1; // account for the extra removal
-                        }
-                    }
-                }
-                j -= 1;
-            }
-
-            // Clean up any trailing separator left at the bottom
-            let final_count = submenu.numberOfItems();
-            if final_count > 0
-                && let Some(last) = submenu.itemAtIndex(final_count - 1)
-                && last.isSeparatorItem()
-            {
-                submenu.removeItemAtIndex(final_count - 1);
-            }
-        } else if title == "Help" {
-            // Register as the app's Help menu so macOS adds the search field
-            app.setHelpMenu(Some(&submenu));
-        }
-    }
-}
-
-pub(crate) fn set_macos_menu_icons() {
-    let result = objc2::exception::catch(set_macos_menu_icons_inner);
-    if let Err(e) = result {
-        log::warn!("Failed to set macOS menu icons: {e:?}");
-    }
-}
-
-fn set_macos_menu_icons_inner() {
-    let mtm = MainThreadMarker::new().expect("set_macos_menu_icons_inner must be called from the main thread");
-    let app = NSApplication::sharedApplication(mtm);
-    let Some(main_menu) = app.mainMenu() else {
-        return;
-    };
-
-    let count = main_menu.numberOfItems();
-    for i in 0..count {
-        let Some(top_item) = main_menu.itemAtIndex(i) else {
-            continue;
-        };
-        let Some(submenu) = top_item.submenu() else {
-            continue;
-        };
-        let title = submenu.title().to_string();
-
-        let mappings: &[(&str, &str)] = match title.as_str() {
-            "cmdr" => &[
-                ("Enter license key\u{2026}", "key"),
-                ("See license details", "key"),
-                ("Check for updates\u{2026}", "arrow.down.circle"),
-                ("Changelog", "list.bullet.rectangle"),
-                ("Onboarding\u{2026}", "sparkles"),
-                ("Settings\u{2026}", "gearshape"),
-            ],
-            "File" => &[
-                ("Open", "arrow.up.forward"),
-                ("View", "document"),
-                ("Edit in editor", "pencil"),
-                ("Copy\u{2026}", "document.on.document"),
-                ("Move\u{2026}", "folder"),
-                ("Duplicate", "plus.square.on.square"),
-                ("Compress\u{2026}", "archivebox"),
-                ("New folder\u{2026}", "folder.badge.plus"),
-                ("Delete", "trash"),
-                ("Delete permanently", "trash.slash"),
-                ("Rename", "character.cursor.ibeam"),
-                ("Show in Finder", "arrow.forward.circle"),
-                ("Get info", "info.circle"),
-                ("Quick look", "eye"),
-            ],
-            "Edit" => &[
-                ("Cut", "scissors"),
-                ("Copy", "document.on.document"),
-                ("Paste", "clipboard"),
-                ("Move here", "document.on.clipboard"),
-                ("Copy path", "link"),
-                ("Copy filename", "textformat"),
-                ("Search files\u{2026}", "magnifyingglass"),
-            ],
-            "Select" => &[
-                ("Select all", "checkmark.circle"),
-                ("Deselect all", "circle"),
-                ("Select files\u{2026}", "plus.circle"),
-                ("Deselect files\u{2026}", "minus.circle"),
-            ],
-            "View" => {
-                // Also apply icons to the "Sort by" submenu items
-                apply_sf_symbols_to_nested_submenu(
-                    &submenu,
-                    "Sort by",
-                    &[
-                        ("Name", "textformat.alt"),
-                        ("Extension", "character.textbox"),
-                        ("Date modified", "clock"),
-                        ("Size", "ruler"),
-                        ("Date created", "calendar"),
-                        ("Ascending", "chevron.up"),
-                        ("Descending", "chevron.down"),
-                    ],
-                );
-
-                &[
-                    ("Switch pane", "rectangle.2.swap"),
-                    ("Swap panes", "arrow.left.arrow.right"),
-                    ("Command palette\u{2026}", "command"),
-                ]
-            }
-            "Go" => &[
-                ("Back", "chevron.left"),
-                ("Forward", "chevron.right"),
-                ("Parent folder", "arrow.up"),
-                ("Home", "house"),
-                ("Go to path\u{2026}", "arrow.right.to.line"),
-                ("Go to latest download", "arrow.down.circle"),
-            ],
-            "Tab" => &[
-                ("New tab", "plus"),
-                ("Close tab", "xmark"),
-                ("Next tab", "arrow.right"),
-                ("Previous tab", "arrow.left"),
-                ("Pin tab", "pin"),
-                ("Close other tabs", "xmark.circle"),
-            ],
-            "Help" => &[
-                ("What's new", "sparkles"),
-                ("Send error report\u{2026}", "exclamationmark.bubble"),
-            ],
-            _ => continue,
-        };
-
-        apply_sf_symbols_to_submenu(&submenu, mappings);
-    }
-}
-
-fn apply_sf_symbols_to_submenu(submenu: &objc2_app_kit::NSMenu, mappings: &[(&str, &str)]) {
-    let item_count = submenu.numberOfItems();
-    for j in 0..item_count {
-        let Some(item) = submenu.itemAtIndex(j) else {
-            continue;
-        };
-        if item.isSeparatorItem() {
-            continue;
-        }
-        let item_title = item.title().to_string();
-        for &(title, symbol_name) in mappings {
-            if item_title == title {
-                set_sf_symbol(&item, symbol_name);
-                break;
-            }
-        }
-    }
-}
-
-fn apply_sf_symbols_to_nested_submenu(parent: &objc2_app_kit::NSMenu, submenu_title: &str, mappings: &[(&str, &str)]) {
-    let count = parent.numberOfItems();
-    for i in 0..count {
-        let Some(item) = parent.itemAtIndex(i) else {
-            continue;
-        };
-        if let Some(child_menu) = item.submenu()
-            && child_menu.title().to_string() == submenu_title
-        {
-            apply_sf_symbols_to_submenu(&child_menu, mappings);
-            return;
-        }
-    }
-}
-
-fn set_sf_symbol(item: &NSMenuItemAppKit, symbol_name: &str) {
-    let name = NSString::from_str(symbol_name);
-    if let Some(image) = NSImage::imageWithSystemSymbolName_accessibilityDescription(&name, None) {
-        item.setImage(Some(&image));
-    } else {
-        log::warn!("SF Symbol not found: {symbol_name}");
-    }
 }

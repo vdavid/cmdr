@@ -27,9 +27,10 @@ window focus context.
   `sync_view_mode_check_states`, `update_menu_item_accelerator`, `frontend_shortcut_to_accelerator`,
   and the macOS post-construction wrappers `cleanup_macos_menus` / `set_macos_menu_icons` (the
   actual objc2 FFI lives in `macos.rs`).
-- `macos.rs`: `build_menu_macos` (full macOS menu bar), `cleanup_macos_menus` (removes
-  system-injected Edit items, registers Help menu), `set_macos_menu_icons` (SF Symbol icons via
-  objc2 FFI), and their helpers.
+- `macos.rs`: `build_menu_macos`, the full macOS menu bar. Building only.
+- `macos_appkit.rs`: the two passes that reach past Tauri into AppKit once the bar is built:
+  `cleanup_macos_menus` (removes system-injected Edit items, registers the Help menu) and
+  `set_macos_menu_icons` (SF Symbol icons via objc2 FFI) with its `MENU_BAR_ICONS` table.
 - `open_with.rs` (macOS): `build_open_with_submenu` for the file context menu's "Open with"
   submenu. Returns the submenu plus a `bundle_id → app_path` map that callers stash in
   `MenuState.context.open_with_apps` so `on_menu_event` can resolve dynamic `open-with:<bundle-id>`
@@ -140,7 +141,8 @@ Because the position is a bare magic number, inserting or removing one item sile
 `register_item` index after it, and the damage only shows up the first time a user rebinds that
 shortcut: a DIFFERENT item gets removed and reinserted. `register_item_positions_match_submenu_order`
 in `menu_items.rs` guards it by reading `macos.rs` / `linux.rs` with `include_str!` and checking each
-registered index against the item's real slot in that submenu's `Submenu::with_items` array. Source
+registered index against the item's real slot in that submenu's `Submenu::with_items` /
+`Submenu::with_id_and_items` array. Source
 parsing is the only option available: building a real menu needs AppKit on the main thread. Submenus
 assembled by a helper (`build_zoom_submenu`, `build_sort_submenu`) have no literal array in those
 files, so their registrations are skipped. That is why the Sort by registrations live in
@@ -206,22 +208,65 @@ the focus listener. The ordering is race-free: a viewer's `onMount` only runs af
 loads, always after the main window's instant blur, so `"viewer"` wins; and macOS fires `resignKey`
 before `becomeKey`, so the gaining window's handler runs last on a window-to-window switch too.
 
+### Finding a menu from AppKit
+
+Both macOS post-construction passes have the same problem: they work on `NSMenu` objects, and AppKit
+indexes menus and items by title and nothing else. Tauri IDs don't reach that layer (muda sets no
+`identifier` and no `tag` on the `NSMenuItem` it creates), and a title is user-facing text that
+translation moves.
+
+**Decision**: keep the ID as the key everywhere we own, and resolve it to a title at the last
+moment. Each pass takes the `AppHandle`, reads `app.menu()` (whichever menu bar is installed right
+now), finds the menu or item by ID there, and asks that object what title it currently carries. The
+title then locates the `NSMenu` / `NSMenuItem`. The string being matched comes from the same object
+AppKit drew, so a translated label matches itself.
+
+**Why**: keying off English titles is a hard-rule violation (never classify by string-matching) and
+breaks the moment a title is translated, silently in both cases: icons vanish, and AppKit's injected
+Edit items come back.
+
+This is why every menu-bar submenu is built with `Submenu::with_id_and_items` and an ID from
+`command_map.rs`. Two IDs are shared with the viewer menu bar (`menu_structure.rs`): `EDIT_MENU_ID`
+and `HELP_MENU_ID`, because `cleanup_macos_menus` runs against whichever bar is installed. Only one
+bar is ever installed at a time, so the shared IDs never collide. `menu_items.rs` owns
+`SORT_BY_MENU_ID` (its `build_sort_submenu` serves both platforms).
+
 ### macOS cleanup (objc2)
 
-`cleanup_macos_menus()` runs post-construction via objc2 FFI:
-1. Removes system-injected Edit items (Writing Tools, AutoFill, Dictation, Emoji & Symbols)
-2. Registers the Help menu via `NSApplication.setHelpMenu:` so macOS adds the search field
+`cleanup_macos_menus(app)` runs post-construction via objc2 FFI:
+1. Hands the Help menu (found by `HELP_MENU_ID`) to `NSApplication.setHelpMenu:` so macOS adds the
+   search field. Tauri's `Submenu::set_as_help_menu_for_nsapp` resolves the live `NSMenu` itself, so
+   this half needs no title at all.
+2. Finds the Edit menu by `EDIT_MENU_ID` and removes the items AppKit injects into it (Writing
+   Tools, AutoFill, Dictation, Emoji & Symbols), plus the separators they leave behind.
+
+The injected items in step 2 carry none of our IDs (AppKit adds them after we build the menu), so
+they're matched on `NSMenuItem.identifier` — AppKit's own API identity, listed in
+`APPKIT_INJECTED_EDIT_ITEM_IDS`. Their TITLES would be the obvious key and are the wrong one: macOS
+localizes them to the system language, so an English title match strips nothing on a Swedish Mac and
+every injected item survives. Two of the four identifiers are private (`_NS…`), which is the price.
+
+Measured on macOS 26.5.2 (2026-08-19), reading every Edit item at startup: our own items carry
+AppKit's default identifier, the action selector name (`fireMenuItemAction:` for muda items, `undo:`
+/ `redo:` for the predefined pair), so nothing of ours collides. macOS injects duplicates (two "Start
+Dictation…", three "Emoji & Symbols"), which is why the removal loop takes every match rather than
+the first.
 
 Uses `objc2::exception::catch` because NSMenu operations can raise ObjC exceptions inside Tauri's
 `did_finish_launching` callback, which aborts on panic.
 
 ### SF Symbol icons (macOS only)
 
-`set_macos_menu_icons()` runs post-construction via objc2 FFI, walking
-`NSApplication.mainMenu()` and calling `NSImage(systemSymbolName:)` + `setImage:` on each
-`NSMenuItem` matched by title. This produces true template images that auto-tint on
-selection highlighting. Also handles nested submenus (Sort by) via
-`apply_sf_symbols_to_nested_submenu`.
+`set_macos_menu_icons(app)` runs post-construction via objc2 FFI, walking the `MENU_BAR_ICONS` table
+in `macos.rs` and calling `NSImage(systemSymbolName:)` + `setImage:` on each `NSMenuItem`. This
+produces true template images that auto-tint on selection highlighting.
+
+The table is `(menu ID, [(menu item ID, SF Symbol name)], nested)`, resolved to titles as described
+above. `nested` recurses one level for View > Sort by; the recursion is uniform, so a second nesting
+level would need no new code. Anything that fails to resolve logs a warning naming the ID and the
+symbol, because the failure is otherwise invisible: the menu builds fine, just without an icon.
+`menu_icon_ids_are_built_by_the_menu_bar` (in `macos.rs`) is the compile-time-ish guard, parsing
+`macos.rs` and `menu_items.rs` for the IDs the menu bar actually constructs.
 
 Context menus don't get SF Symbols for our own items because Tauri doesn't expose the raw `NSMenu`
 pointer for context menus, and rasterized SF Symbol bitmaps via `IconMenuItem` look poor (no

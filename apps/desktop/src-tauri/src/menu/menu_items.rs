@@ -12,10 +12,10 @@ use tauri::{
 };
 
 use super::{
-    MenuItemEntry, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID,
-    SORT_BY_SIZE_ID, SORT_DESCENDING_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID,
-    VIEW_MODE_FULL_RIGHT_ID, VIEW_ZOOM_75_ID, VIEW_ZOOM_100_ID, VIEW_ZOOM_125_ID, VIEW_ZOOM_150_ID, VIEW_ZOOM_IN_ID,
-    VIEW_ZOOM_OUT_ID, ViewMode,
+    MenuItemEntry, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MENU_ID, SORT_BY_MODIFIED_ID,
+    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
+    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEW_ZOOM_75_ID, VIEW_ZOOM_100_ID, VIEW_ZOOM_125_ID,
+    VIEW_ZOOM_150_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID, ViewMode,
 };
 
 /// Max chars in the `Copy "<filename>"` context menu label before middle-ellipsis kicks in.
@@ -200,8 +200,9 @@ pub(crate) fn build_sort_submenu<R: Runtime>(
     let sort_asc = MenuItem::with_id(app, SORT_ASCENDING_ID, "Ascending", true, None::<&str>)?;
     let sort_desc = MenuItem::with_id(app, SORT_DESCENDING_ID, "Descending", true, None::<&str>)?;
 
-    let submenu = Submenu::with_items(
+    let submenu = Submenu::with_id_and_items(
         app,
+        SORT_BY_MENU_ID,
         label,
         true,
         &[
@@ -430,9 +431,8 @@ mod tests {
     }
 
     /// Menu labels end with the U+2026 ellipsis character, never three periods.
-    /// Two reasons: macOS kerns `...` visibly worse next to system items, and
-    /// `set_macos_menu_icons` matches SF Symbols by exact title string, so a `...`
-    /// title silently loses its icon (six of them once did).
+    /// macOS kerns `...` visibly worse next to system items, and the SF Symbol pass finds an
+    /// `NSMenuItem` by its title, so a stray `...` costs the item its icon.
     #[test]
     fn menu_labels_use_the_ellipsis_character() {
         const SOURCES: [(&str, &str); 4] = [
@@ -441,15 +441,9 @@ mod tests {
             ("menu_structure.rs", include_str!("menu_structure.rs")),
             ("open_with.rs", include_str!("open_with.rs")),
         ];
-        // AppKit injects these titles with literal periods; `cleanup_macos_menus`
-        // matches them byte-for-byte to strip them, so they must stay as macOS ships them.
-        const SYSTEM_INJECTED: [&str; 1] = ["\"Start Dictation...\""];
 
         for (name, source) in SOURCES {
             for (line_number, line) in source.lines().enumerate() {
-                if SYSTEM_INJECTED.iter().any(|title| line.contains(title)) {
-                    continue;
-                }
                 assert!(
                     !line.contains("...\""),
                     "{name}:{} ends a menu label with `...`; use `\\u{{2026}}`: {}",
@@ -507,6 +501,8 @@ mod tests {
     }
 
     /// Maps each `let <name> = Submenu::with_items(…, &[…])` to its ordered item expressions.
+    /// `Submenu::with_id_and_items` counts the same: the ID goes before the label, and neither
+    /// shifts the item array this reads.
     fn parse_submenu_layouts(source: &str) -> HashMap<String, Vec<String>> {
         let mut layouts = HashMap::new();
         let mut lines = source.lines();
@@ -514,7 +510,10 @@ mod tests {
             let Some(rest) = line.trim().strip_prefix("let ") else {
                 continue;
             };
-            let Some((submenu_name, _)) = rest.split_once(" = Submenu::with_items(") else {
+            let Some((submenu_name, _)) = rest
+                .split_once(" = Submenu::with_items(")
+                .or_else(|| rest.split_once(" = Submenu::with_id_and_items("))
+            else {
                 continue;
             };
             // Walk to the item array, giving up if this call doesn't spell one out.

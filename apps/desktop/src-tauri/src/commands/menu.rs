@@ -501,9 +501,7 @@ fn swap_to_main_menu<R: Runtime>(app: &AppHandle<R>) {
     // macOS re-injects Edit items on every `set_menu`, and SF Symbol icons don't survive the swap,
     // so re-run both on the main thread (mirrors the startup ordering in `lib.rs`).
     crate::menu::cleanup_macos_menus_from_command(app);
-    if let Err(e) = app.run_on_main_thread(crate::menu::set_macos_menu_icons) {
-        log::warn!(target: "menu", "Failed to re-apply macOS menu icons after swap: {e}");
-    }
+    crate::menu::set_macos_menu_icons_from_command(app);
 }
 
 /// Swaps the app-level menu bar to the shared viewer menu, if a different menu is installed.
