@@ -8,9 +8,10 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
 - ❌ No `eprintln!` / `println!` / `dbg!`: they bypass the fern logger (no level filter, file output, or error-report
   capture), and clippy denies them. Use `log::{debug,info,warn,error}!` with a scoped `target:`. See
   `src/logging/CLAUDE.md`.
-- ❌ No bare `.lock()` / `.read()` / `.write().unwrap()` on a std `Mutex` / `RwLock`: a poisoned lock aborts the app.
-  Use `*_ignore_poison()` (recover) or `.expect("…poison…<why aborting is correct>")` (abort). Enforced by
-  `lock-poison`; helpers live in `crate::ignore_poison`.
+- ❌ A failed std `Mutex` / `RwLock` acquisition has three answers: `*_ignore_poison()` (recover),
+  `.expect("…poison…<why>")` (abort), or an `Err` upward. A bare `.unwrap()` aborts the app; dropping it silently
+  (`if let Ok(g) = …`, `.ok()`) leaves a watcher dead or a list empty. Enforced by `lock-poison`; policy in
+  `crate::ignore_poison`.
 - ❌ No bare `.unwrap()` in production: it's a silent panic. Handle the error (`?` / `ok_or` / `match`), or
   `.expect("<concrete why it can't fail>")` for a true invariant. Enforced by `clippy::unwrap_used`; `#[test]` fns are
   exempt, test *helper* fns outside one aren't.

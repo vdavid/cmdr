@@ -28,17 +28,31 @@
 //!
 //! ## The rule (enforced by the `lock-poison` checker)
 //!
-//! 1. **Default to recover** for value-store locks: `lock_ignore_poison()` /
+//! A failed acquisition has exactly three sanctioned outcomes. Anything else
+//! substitutes a default value out of thin air, which is worse than both.
+//!
+//! 1. **Recover**, the default for value-store locks: `lock_ignore_poison()` /
 //!    `read_ignore_poison()` / `write_ignore_poison()`. This is the overwhelmingly
 //!    common case.
-//! 2. **Abort only when the lock guards a real cross-field invariant**, and say so:
+//! 2. **Abort**, only when the lock guards a real cross-field invariant, and say so:
 //!    `.lock().expect("<lock name> poisoned: <the invariant that makes recovery
 //!    unsafe>")`. The message MUST contain "poison" so the deliberate choice is
 //!    visible and machine-checkable.
-//! 3. **Bare `.lock().unwrap()` / `.read().unwrap()` / `.write().unwrap()` on a
-//!    std lock is banned** in non-test Rust code anywhere in the workspace — it records no intent, so a
-//!    reader can't tell a considered abort from a thoughtless one. The `lock-poison`
-//!    check (`scripts/check/checks/`) fails on it; pick form 1 or 2.
+//! 3. **Propagate**, handing the caller an `Err` to decide on.
+//!
+//! Two things are banned in non-test Rust code anywhere in the workspace, and the
+//! `lock-poison` check (`scripts/check/checks/`) catches both:
+//!
+//! - **A bare `.lock().unwrap()` / `.read().unwrap()` / `.write().unwrap()`**
+//!   records no intent, so a reader can't tell a considered abort from a
+//!   thoughtless one. Error-level; pick form 1, 2, or 3.
+//! - **Silently discarding the failure** — `if let Ok(g) = m.lock()` with no
+//!   `else`, a `match` arm that returns on `Err(_)`, `let Ok(g) = m.lock() else
+//!   { return }`, `.lock().ok()`, `.lock().map(…).unwrap_or_default()`. These READ
+//!   as handled while doing something worse than panicking: the block is skipped
+//!   with no log line and no recovery, so a watcher stops watching or a list
+//!   reaches the user empty while the data behind it is intact. Warn-only against a
+//!   per-file ratchet, since the tree still carries a pile of them.
 //!
 //! The checker enforces *form* (a deliberate choice was recorded), not *choice*
 //! (that the right form was picked for the data) — the latter is the author's

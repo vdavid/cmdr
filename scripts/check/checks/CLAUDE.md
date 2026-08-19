@@ -9,8 +9,9 @@ Each check is one Go file here, registered in `registry.go`'s `AllChecks`. Runne
 - One `{app}-{name}.go` per check. `test-log.go` and the parsers beside it hold the per-test record vocabulary;
   `e2e-build.go` produces the Playwright lane's binary.
 - Warn-only scanners with JSON allowlists: `file-length.go`, `claude-md-length.go`, `invariant-density.go`,
-  `e2e-durations.go`, `website-bundle-size.go`, and the two copy-paste lanes over shared `jscpd.go`. Error-level
-  doc-graph checks: `docs-reachable.go` (+ `docs_graph.go`), `docs-dead-links.go`, `docs-link-text.go`.
+  `e2e-durations.go`, `website-bundle-size.go`, `lock-poison.go`'s second lane, and the two copy-paste lanes over shared
+  `jscpd.go`. Error-level doc-graph checks: `docs-reachable.go` (+ `docs_graph.go`), `docs-dead-links.go`,
+  `docs-link-text.go`.
 
 ## Must-knows
 

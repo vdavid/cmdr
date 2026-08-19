@@ -17,7 +17,7 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
 - **An allowlist is a sibling JSON named `<check>-allowlist.json`**, and it's NEVER hand-edited: the owning check
   shrink-wraps it on local runs, so you run the check and commit its rewrite (`.claude/rules/file-length-allowlist.md`).
   The shared staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist
-  shrink-wrap". Nine exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the two
+  shrink-wrap". Ten exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the two
   with no § of their own (both are exempt-with-reason lists whose checks FAIL on a dead or redundant entry rather than
   auto-removing it).
 - **Not every file here is a registry check.** `e2e-durations.go` is embedded in the two E2E checks (§ "E2E test
@@ -944,16 +944,17 @@ Checks by app and tech:
   shared page cache is always installed before SQLite initializes), error-string-match, write-ops-isolation (the write
   engine may not name the `agent` module: an approved operation is an ordinary operation, and an engine that can see the
   agent grows a second execution path; per-source outcomes reach a caller through the injected `OperationEventSink`
-  instead), lock-poison, test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in test code, where a
-  condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
-  `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on `std::env::temp_dir()`, where every
-  process on the machine shares the path and two suite runs delete each other's live fixtures; the sanctioned fixture is
-  `crate::test_support::TestDir`, and a site where the temp root is load bearing opts out with
-  `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of `CachedScanResult` /
-  `SourceHint` / `VolumePreflight` in test code, so a fixture can only be one of the shapes a named constructor actually
-  builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder — the shapes are already
-  clean, and the point is that the next test author can't undo that by copy-pasting an old literal),
-  derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
+  instead), lock-poison (two lanes: an error-level one for an acquisition that records no poison-handling choice, and a
+  warn-only one for a failure that's silently discarded, on a per-file ratchet), test-sleep (flags a fixed
+  `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a genuine
+  sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on
+  `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's live
+  fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing
+  opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
+  `CachedScanResult` / `SourceHint` / `VolumePreflight` in test code, so a fixture can only be one of the shapes a named
+  constructor actually builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder —
+  the shapes are already clean, and the point is that the next test author can't undo that by copy-pasting an old
+  literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
   `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information", it's a claim about
   the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in production
   `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the branch that
@@ -1150,14 +1151,48 @@ background thread panicked while holding it), and records no intent — a reader
 thoughtless one. The policy (recover-by-default for value stores via `lock_ignore_poison()`; abort only for
 invariant-guarding locks, marked by an `.expect("… poison …")` whose message names poison) lives in the module doc of
 `crates/cmdr-fs/src/ignore_poison.rs`. The check is a fast-lane Go scanner (every Rust source root, modeled on
-`error-string-match`) that flags bare unwraps and non-poison `.expect(…)`. Its matcher requires empty parens (`.lock()`
-/ `.read()` / `.write()` with nothing between) immediately followed by `.unwrap()` / `.expect(`, so
-`io::Read::read(&mut buf).unwrap()`, `io::Write::write(buf).unwrap()`, and tokio's `mutex.lock().await` all pass
-through; `try_lock` / `try_read` / `try_write` are out of scope by name. Opt out with `// allowed-lock-poison: <reason>`
-on the line above or as a trailing comment. Unlike `error-string-match`, it skips in-file `#[cfg(test)]` mods (tracked
-by brace depth): a poisoned lock in a test means the test already panicked, so aborting there is harmless. Whole test
-files are skipped via `isRustTestPath` (shared with `test-sleep`), so a `tests.rs` split into themed modules under a
-`tests/` directory keeps passing.
+`error-string-match`) running TWO lanes over one scan: an error-level intent lane, and a warn-only swallow lane (§ "The
+lock-poison swallow lane" below). The intent lane flags bare unwraps and non-poison `.expect(…)`. Its matcher requires
+empty parens (`.lock()` / `.read()` / `.write()` with nothing between) immediately followed by `.unwrap()` / `.expect(`,
+so `io::Read::read(&mut buf).unwrap()`, `io::Write::write(buf).unwrap()`, and tokio's `mutex.lock().await` all pass
+through; `try_lock` / `try_read` / `try_write` are out of scope by name. Opt out of EITHER lane with
+`// allowed-lock-poison: <reason>` on the line above or as a trailing comment. Unlike `error-string-match`, it skips
+in-file `#[cfg(test)]` mods (tracked by brace depth): a poisoned lock in a test means the test already panicked, so
+aborting there is harmless. Whole test files are skipped via `isRustTestPath` (shared with `test-sleep`), so a
+`tests.rs` split into themed modules under a `tests/` directory keeps passing.
+
+### The lock-poison swallow lane
+
+**Decision**: a second, warn-only lane in the same check for an acquisition whose failure is silently DISCARDED, on a
+per-file ratchet in `lock-poison-allowlist.json`. **Why**: two bugs shipped from this shape, and neither was visible to
+the intent lane — `if let Ok(guard) = cache().lock()` emptied three recents lists, and
+`match known.lock() { Err(_) => return }` killed the Linux volume watcher for a whole session. Both READ as handled
+while doing something worse than the panic the intent lane bans: no log line, no recovery, and a facility that stays
+dead. A third (the MTP device watcher) and 48 more sites came out of the first run.
+
+The lane classifies each acquisition by what CONSUMES its `Result`, so the four shapes fall out of one rule rather than
+four matchers:
+
+- A `let Ok(…) = <lock>()` binding: an `if let` with no `else`, or a let-else / `else` branch that records nothing.
+- A `match <lock>() { … }` whose `Err` arm (or the wildcard standing in for it) returns, breaks, or yields a default.
+- A combinator chain ending in `.ok()` or the `unwrap_or` / `map_or` family.
+
+A handler is accepted when it does one of the three things the policy sanctions: recover (`into_inner` /
+`*_ignore_poison`), abort loudly (`panic!` / `expect`), or hand the failure to the caller (an `Err(…)`). Anything else
+substitutes a default value out of thin air, which IS the bug class.
+
+Parsing notes, all of them load-bearing: the consuming construct must sit at the same bracket depth as the acquisition
+(in `match watched.and_then(|w| w.lock().ok())` the `match` reads what the closure returned, so the closure's `.ok()` is
+what discards); comments are BLANKED rather than removed, so a brace in prose can't unbalance the depth count and a
+`panic!` in prose can't read as intent, while byte offsets stay comparable across the scanners; a chain is read to the
+end of its statement, so a `.map(…).unwrap_or_default()` wrapped over three lines is still seen whole; and a shape the
+parser can't resolve is left alone rather than guessed at.
+
+**Decision**: the allowlist keys on the FILE, valued in its site count. **Why**: same reasoning as the jscpd lanes — a
+`file:line` key moves the moment anything above the site changes, while a count only moves when somebody writes or
+removes a swallow. No slack buffer, for the same reason. Shrink-wrap ratchets an entry down to the current count and
+drops a file that reaches zero, so the number only goes down; raising one needs David's OK
+(`.claude/rules/file-length-allowlist.md`).
 
 **Decision**: `mtp-dropping-timeout` check to keep wall-clock timeouts and task aborts away from mtp-rs calls. **Why**:
 A PTP transaction is command → data → response over one bulk pipe, so dropping its future mid-data-phase leaves the
