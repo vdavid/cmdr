@@ -57,6 +57,13 @@ decision that follows from where the resolver lives). `docs/i18n/script-decision
 script split, so this is not a one-off for Chinese. _Intent_: a fallback is only a kindness when it lands somewhere the
 reader can actually read. An explicit pick in the picker is the user's business and carries no such guard.
 
+**3b. Regional variants DO fall back, deliberately.** The script guard is about legibility, not about dialect, so
+`pt-PT` lands on the Brazilian `pt` catalog and `en-GB` lands on US `en` ("Trash", `-ize`). That's the documented roster
+decision (`docs/i18n/language-selection-decisions.md` lists `pt-PT` and `en-GB` as wave-2 variants), and reading a
+sibling dialect is a small friction next to reading a language you don't speak. _Intent_: don't confuse "wrong dialect"
+with "unreadable" — the first is a papercut a fast-follow locale fixes, the second is a wall. Say this out loud in the
+docs so nobody later "fixes" it by blocking regional fallback.
+
 **4. Auto-selection draws only from shipped, complete catalogs, and never from the pseudolocale.** `availableLocales()`
 is already the gated set (`desktop-i18n-coverage` guarantees completeness), but it includes `en-XA` in dev builds.
 _Intent_: "we auto-enabled a language" is a promise that the app is fully in that language. One English string in a
@@ -132,6 +139,8 @@ wherever the resolver lands)
 - `[fr-CA]` with only `fr` present → `fr` (base fallback within one preference, before advancing to the next).
 - `[zh-Hant-TW]` with only Simplified `zh` present → **not** `zh`; falls through to the next preference, then English.
 - `[zh-CN]` with `zh` present → `zh`, so the guard doesn't over-block the common case.
+- `[pt-PT]` → `pt` and `[en-GB]` → `en`: regional fallback is allowed, so the guard must not block a same-script
+  dialect. This is the mirror of the `zh-Hant` case and pins decision 3b against a later over-correction.
 - `[en-US, sv-SE]` → English, and the walk stops at `en` rather than reaching Swedish.
 - `[de-DE]` in a dev build where `en-XA` exists → `de`, never the pseudolocale.
 - Empty / missing preference list → no match, caller lands on `en`, nothing throws.
