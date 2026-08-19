@@ -305,6 +305,12 @@ Security via parity: agents can only do what users can do. Giving agents `fs.rea
 
 **Why.** Coverage: the `select` tool already selects by names, index range, or all, and `ai_search` already runs a natural-language query — together they cover what the Selection dialog does programmatically, so a dialog-opener adds little. The Selection dialog IS registered now (`selection-add` / `selection-remove`), so `dialog close` reaches it and an opener would ack on `SoftDialogAppeared` the same way `open_search_dialog` does; what's left to build is an FE prefill listener plus the tool/handler/tests. Add it when an agent actually needs to hand a human a pre-filled selection to review, not for symmetry.
 
+### No `duplicate` tool
+
+**Decision.** The Duplicate command (⌘D, the context menu, the File menu) gets no MCP tool of its own.
+
+**Why.** Coverage again: `copy` into the folder the items already live in IS a duplicate, and an agent gets there by pointing the other pane at that folder, which it can already do with `nav_to_path`. A dedicated tool would add a second name for one operation and a second path into the same engine, for no capability the surface lacks. The human command exists because a person shouldn't have to arrange two panes to duplicate a file; an agent has no such trouble.
+
 ### Why no file-content read tool (`read_file`)
 
 **Decision.** This surface deliberately exposes NO tool or resource that returns file *contents*, even though "understand this folder" tempts one. Listings, sizes, tags, and importance scores are fair game (the user can see them in the UI); reading a file's bytes is not.

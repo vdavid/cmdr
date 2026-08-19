@@ -175,6 +175,14 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   Skip, a conditional policy that declines to overwrite, or an unrepresentable entry) increments the plan's
   `skipped_count`, which gates the move-source deletion and surfaces as `files_skipped` on the terminal event. Pinned by
   the `interactive_*` tests.
+- **Duplicating INSIDE a zip is deliberately out of scope.** The rule that turns a same-folder copy into a duplicate
+  (`../transfer/DETAILS.md` § "Self-collision (duplicating in place)") governs the two transfer engines; this is a third,
+  independent pipeline with its own conflict layer and no same-location guard to remove, so a source pasted into its own
+  folder inside a zip behaves tolerably by accident: `Rename` numbers it, `Stop` asks a question about a file that is
+  its own clash. Making that question go away here is its own effort. Related: `conflicts.rs::find_unique_inner` is a
+  THIRD ` (N)` numbering implementation, kept separate on purpose (it numbers slash-joined inner-path strings against an
+  `ArchiveIndex` plus a planned set, and doesn't continue a trailing sequence); its own doc comment says what to reach
+  for if archive numbering ever has to match the filesystem's.
 - **Mutation-test coverage (`cargo mutants` on `archive_edit/`).** Every conflict-resolution and routing/data-path
   mutant is killed (Rename numbering incl. dotfiles, OverwriteSmaller/Older strict `<` incl. the equal-size/mtime
   boundary, move-source deletion gating, per-source move-out convergence (deep-skip count, durable-prefix delete), dir-merge mkdir guard, settle payloads). The only

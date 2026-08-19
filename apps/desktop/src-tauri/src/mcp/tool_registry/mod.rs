@@ -291,7 +291,7 @@ mcp_tools! {
 
     // ── File operations ─────────────────────────────────────────────────────
     "copy" => {
-        desc: "Copy the selection (else the cursor item) to the other pane. Without autoConfirm, opens the confirm dialog. With autoConfirm, starts at once and returns the operationId (await operation_complete, or steer with queue). onConflict resolves file clashes.",
+        desc: "Copy the selection (else the cursor item) into the folder the other pane shows; already there duplicates each as name (1). Without autoConfirm, opens the confirm dialog. With autoConfirm, starts and returns the operationId. onConflict resolves clashes.",
         schema: schemas::copy_schema(),
         gate: TokenGate::IfAutoConfirm,
         consumers: &[Consumer::AiClient],

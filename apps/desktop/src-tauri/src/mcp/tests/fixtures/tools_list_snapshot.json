@@ -188,7 +188,7 @@
       "name": "select"
     },
     {
-      "description": "Copy the selection (else the cursor item) to the other pane. Without autoConfirm, opens the confirm dialog. With autoConfirm, starts at once and returns the operationId (await operation_complete, or steer with queue). onConflict resolves file clashes.",
+      "description": "Copy the selection (else the cursor item) into the folder the other pane shows; already there duplicates each as name (1). Without autoConfirm, opens the confirm dialog. With autoConfirm, starts and returns the operationId. onConflict resolves clashes.",
       "inputSchema": {
         "properties": {
           "autoConfirm": {

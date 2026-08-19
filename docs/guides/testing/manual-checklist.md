@@ -21,12 +21,15 @@ Use this checklist before each release to verify features that cannot be automat
 - [ ] "Copy path" copies full path to clipboard
 - [ ] "Get info" opens system Info panel
 - [ ] "Quick Look" previews file (space bar alternative)
+- [ ] "Duplicate" is in the context menu and in the File menu, and both make a `name (1)` copy beside the item
 
 ### Drag-and-drop (Tauri plugin, cannot be automated)
 
 - [ ] Drag file to Finder copies/moves it
 - [ ] Drag file to other apps (like Mail) attaches it
 - [ ] Drag icon shows file preview
+- [ ] Dragging items onto their own pane does nothing (a sloppy drag can't reorder or copy anything)
+- [ ] Holding ⌥ while dropping items on their own pane duplicates them as `name (1)`
 
 ### File watcher (requires real file system events)
 
