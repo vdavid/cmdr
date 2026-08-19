@@ -266,7 +266,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **gix-zlib** 0.1.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **glob** 0.3.3, MIT OR Apache-2.0, <https://github.com/rust-lang/glob>
 - **global-hotkey** 0.8.0, Apache-2.0 OR MIT, <https://github.com/tauri-apps/global-hotkey>
-- **h2** 0.4.15, MIT, <https://github.com/hyperium/h2>
+- **h2** 0.4.16, MIT, <https://github.com/hyperium/h2>
 - **half** 2.7.1, MIT OR Apache-2.0, <https://github.com/VoidStarKat/half-rs>
 - **hash32** 0.3.1, MIT OR Apache-2.0, <https://github.com/japaric/hash32>
 - **hashbrown** 0.12.3, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
@@ -6674,7 +6674,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: h2 0.4.15
+Covers: h2 0.4.16
 
 Text from: `LICENSE`
 
