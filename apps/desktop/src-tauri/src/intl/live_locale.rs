@@ -8,7 +8,7 @@
 //!
 //! macOS posts locale changes in bursts (System Settings writes language,
 //! region, and calendar as separate preferences), and most of those bursts don't
-//! move either answer. So [`LocaleWatcher`] sits between the notification and
+//! move either answer. So `LocaleWatcher` sits between the notification and
 //! the app: it collapses a burst into one re-read and stays silent unless the
 //! answer actually changed. Both halves matter downstream, where an
 //! announcement re-renders every open `t()` in every window.

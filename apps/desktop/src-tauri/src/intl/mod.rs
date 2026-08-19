@@ -6,7 +6,7 @@
 //! on purpose.
 //!
 //! The language half is this file: macOS hands us an ORDERED list of languages
-//! the user reads ([`crate::system_strings::apple_languages`]), and given the
+//! the user reads (`system_strings::apple_languages`), and given the
 //! catalogs we actually ship, one of them is the answer. The region half is
 //! `format_locale.rs`, which composes the tag the webview can't work out for
 //! itself. [`get_os_locales`] hands both over at once.
