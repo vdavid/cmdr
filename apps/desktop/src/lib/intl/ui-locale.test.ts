@@ -11,14 +11,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const getUiLocale = vi.fn<() => Promise<string | null>>()
 
+/** The handler `watchSystemUiLocale` registered, so a test can post an event. */
+let onEvent: ((payload: { locale: string }) => void) | undefined
+const unlisten = vi.fn()
+
 vi.mock('$lib/tauri-commands', () => ({
   getUiLocale: () => getUiLocale(),
+  onUiLocaleChanged: (handler: (payload: { locale: string }) => void) => {
+    onEvent = handler
+    return Promise.resolve(unlisten)
+  },
 }))
 
-import { loadSystemUiLocale, pickUiLocale, _setSystemUiLocaleForTests } from './ui-locale'
+import { loadSystemUiLocale, pickUiLocale, watchSystemUiLocale, _setSystemUiLocaleForTests } from './ui-locale'
 
 beforeEach(() => {
   getUiLocale.mockReset()
+  onEvent = undefined
+  unlisten.mockClear()
   _setSystemUiLocaleForTests(null)
 })
 
@@ -60,5 +70,30 @@ describe('loadSystemUiLocale', () => {
     // `undefined`. Both mean the same thing to `setLocale()`.
     getUiLocale.mockResolvedValue(undefined as unknown as null)
     await expect(loadSystemUiLocale()).resolves.toBeNull()
+  })
+})
+
+describe('watchSystemUiLocale', () => {
+  it('adopts a moved OS answer, so `system` re-resolves without a restart', async () => {
+    _setSystemUiLocaleForTests('sv')
+    const onMoved = vi.fn()
+    await watchSystemUiLocale(onMoved)
+
+    onEvent?.({ locale: 'hu' })
+
+    expect(pickUiLocale('system')).toBe('hu')
+    expect(onMoved).toHaveBeenCalledWith('hu')
+  })
+
+  it('stays silent on an answer the app already has', async () => {
+    // Every call re-renders every open `t()` in the window, so a stray or
+    // replayed event must cost nothing.
+    _setSystemUiLocaleForTests('sv')
+    const onMoved = vi.fn()
+    await watchSystemUiLocale(onMoved)
+
+    onEvent?.({ locale: 'sv' })
+
+    expect(onMoved).not.toHaveBeenCalled()
   })
 })

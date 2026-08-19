@@ -3633,6 +3633,7 @@ export const events = {
   suggestionsChanged: makeEvent<SuggestionsChanged>('suggestions-changed'),
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
+  uiLocaleChanged: makeEvent<UiLocaleChanged>('ui-locale-changed'),
   viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
   viewerWordWrapToggled: makeEvent<ViewerWordWrapToggled>('viewer-word-wrap-toggled'),
   volumeConnectionChanged: makeEvent<VolumeConnectionChanged>('volume-connection-changed'),
@@ -9486,6 +9487,17 @@ export type TypeToJumpInfo = {
    *  `cursor_index` + `files`.
    */
   lastMatchedName?: string | null
+}
+
+/**
+ *  `ui-locale-changed`: the user changed their macOS language preferences while
+ *  the app was running, and the catalog we resolve to actually moved. `locale`
+ *  is the fresh answer (`hu`, `en`), the same value `get_ui_locale` would return
+ *  now. Only emitted when the answer differs from the one the app is running on,
+ *  so a listener can act on every one it receives (`intl/live_locale.rs`).
+ */
+export type UiLocaleChanged = {
+  locale: string
 }
 
 /**

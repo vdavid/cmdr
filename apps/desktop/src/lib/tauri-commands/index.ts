@@ -431,6 +431,7 @@ export {
   onAccentColorChanged,
   onReduceTransparencyChanged,
   onSystemTextSizeChanged,
+  onUiLocaleChanged,
 } from './appearance'
 
 // Native-menu events

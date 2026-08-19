@@ -11,6 +11,7 @@ import {
   type LocalizedSystemStrings,
   type ReduceTransparencyChanged,
   type SystemTextSizeChanged,
+  type UiLocaleChanged,
 } from '$lib/ipc/bindings'
 
 /** Reads the current OS accent color as `#rrggbb`. */
@@ -58,6 +59,19 @@ export function onAccentColorChanged(handler: (payload: AccentColorChanged) => v
  */
 export function onSystemTextSizeChanged(handler: (payload: SystemTextSizeChanged) => void): Promise<UnlistenFn> {
   return events.systemTextSizeChanged.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Subscribes to a live OS language change: the user reordered their macOS
+ * language preferences and the catalog we resolve to actually moved. The
+ * payload's `locale` is the fresh answer, the same value `getUiLocale()` would
+ * return now. Backend-deduplicated, so every event carries a real change
+ * (`src-tauri/src/intl/live_locale.rs`).
+ */
+export function onUiLocaleChanged(handler: (payload: UiLocaleChanged) => void): Promise<UnlistenFn> {
+  return events.uiLocaleChanged.listen((event) => {
     handler(event.payload)
   })
 }

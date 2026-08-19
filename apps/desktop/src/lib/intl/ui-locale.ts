@@ -15,13 +15,16 @@
  *
  * Every window resolves for itself: each is its own webview with its own i18n
  * runtime instance, so the main window's answer doesn't reach the Settings or
- * Queue window.
+ * Queue window. That includes following a LIVE change: `'system'` means the
+ * language the user reads now, not the one they read at launch, so every window
+ * also subscribes through {@link watchSystemUiLocale}.
  */
 
 // Aliased: `getUiLocale` is also the sync reader in `locale.ts` (the language
 // the app currently speaks). This one is the IPC round-trip that asks the OS.
-import { getUiLocale as fetchOsUiLocale } from '$lib/tauri-commands'
+import { getUiLocale as fetchOsUiLocale, onUiLocaleChanged } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import type { UnlistenFn } from '@tauri-apps/api/event'
 
 const log = getAppLogger('ui-locale')
 
@@ -72,6 +75,31 @@ export function loadSystemUiLocale(): Promise<string | null> {
  */
 export function pickUiLocale(setting: string): string | null {
   return setting === 'system' ? systemUiLocale : setting
+}
+
+/**
+ * Follows a live OS language change for this window: keeps the cached OS answer
+ * current and calls `onMoved` when it actually moved.
+ *
+ * The caller's job is to re-apply the language setting, which is what turns a
+ * new OS answer into a re-render. Under an explicit `appearance.language` that
+ * re-apply is a no-op for the copy, and it's still the right call: the rune bump
+ * re-renders the formatters against whatever the OS now formats in.
+ *
+ * ❌ Don't call `onMoved` on an event that doesn't move the answer. The backend
+ * already drops those, and this second guard is what keeps a stray or replayed
+ * event from re-rendering every open `t()` in the window for nothing.
+ *
+ * @param onMoved run once per real change, with the fresh OS answer
+ * @returns an unlisten for the subscription
+ */
+export function watchSystemUiLocale(onMoved: (locale: string) => void): Promise<UnlistenFn> {
+  return onUiLocaleChanged(({ locale }) => {
+    if (locale === systemUiLocale) return
+    log.info('The OS UI language moved to {locale}', { locale })
+    systemUiLocale = locale
+    onMoved(locale)
+  })
 }
 
 /** Test seam: pin (or clear, with `null`) the OS answer without an IPC call. */

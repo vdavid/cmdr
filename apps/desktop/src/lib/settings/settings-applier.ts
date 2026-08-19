@@ -39,7 +39,7 @@ import {
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { tString, setLocale } from '$lib/intl/messages.svelte'
-import { loadSystemUiLocale, pickUiLocale } from '$lib/intl/ui-locale'
+import { loadSystemUiLocale, pickUiLocale, watchSystemUiLocale } from '$lib/intl/ui-locale'
 import { pushConfigToBackend } from './ai-config'
 import { noteModelSettingChanged } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
@@ -49,6 +49,7 @@ const log = getAppLogger('settings-applier')
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
+let unlistenOsLocale: (() => void) | undefined
 
 /**
  * Last observed value of `advanced.maxLogStorageMb`. Used to detect `0 ↔ non-zero`
@@ -338,6 +339,18 @@ export async function initSettingsApplier(): Promise<void> {
 
     // Subscribe to future changes
     unsubscribe = onSettingChange(handleSettingChange)
+
+    // Follow the OS language while we run: `'system'` means the language the
+    // user reads NOW, so re-applying the setting against the fresh OS answer
+    // re-localizes the window in place. Not awaited: nothing downstream waits
+    // on the subscription, and a language change is minutes away, not
+    // milliseconds.
+    void watchSystemUiLocale(() => {
+      applyLanguage(getSetting('appearance.language'))
+    }).then((unlisten) => {
+      unlistenOsLocale = unlisten
+    })
+
     initialized = true
 
     log.debug('Settings applier initialized successfully')
@@ -353,6 +366,10 @@ export function cleanupSettingsApplier(): void {
   if (unsubscribe) {
     unsubscribe()
     unsubscribe = undefined
+  }
+  if (unlistenOsLocale) {
+    unlistenOsLocale()
+    unlistenOsLocale = undefined
   }
   initialized = false
   log.debug('Settings applier cleaned up')

@@ -96,7 +96,7 @@ use crate::quit::QuitRequested;
 use crate::restricted_paths::RestrictedPathsChangedPayload;
 use crate::system_events::{
     AccentColorChanged, DragImageSize, DragModifiers, ReduceTransparencyChanged, SessionCompleteEvent,
-    SessionStartedEvent, SystemTextSizeChanged,
+    SessionStartedEvent, SystemTextSizeChanged, UiLocaleChanged,
 };
 
 /// Public greeting used by the example webview surface; kept here as the
@@ -924,6 +924,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             AccentColorChanged,
             ReduceTransparencyChanged,
             SystemTextSizeChanged,
+            UiLocaleChanged,
             SettingsChanged,
             ViewModeChanged,           // emit_to("main")
             MenuSort,                  // emit_to("main")

@@ -202,6 +202,14 @@ rather than stack: ❌ no serialized round-trip, and no paint gate — `routes/(
 removed the last one). Secondary windows use `initWindowLanguageSync()` from `$lib/settings/window-settings`, which
 applies the persisted value synchronously and re-applies when the OS answer lands, so nothing gates a first paint.
 
+**`'system'` means the language the user reads NOW, not the one they read at launch.** Rust observes the macOS language
+preferences and pushes `ui-locale-changed` when the resolved catalog moves (`src-tauri/src/intl/DETAILS.md` has the
+observer, the burst collapsing, and why Linux gets nothing). Every window subscribes through `watchSystemUiLocale()`,
+which adopts the fresh answer and re-applies `appearance.language`, so the `setLocale()` rune bump re-renders the window
+in place. It drops an event whose locale matches the answer it already has, a second guard behind the backend's, because
+a needless bump re-runs every open `t()` for nothing. Under an EXPLICIT language the re-apply still happens and is still
+right: the copy doesn't move, and the bump is what re-renders the formatters against the OS's new locale.
+
 `null` from `pickUiLocale` means "no override": the webview default stands. That's the answer before the fetch settles,
 on any platform with no preference list (Linux), and when the read fails, so a broken read degrades to a reasonable
 language rather than a broken app.

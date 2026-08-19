@@ -1,7 +1,7 @@
 //! Cross-platform appearance/system event payloads.
 //!
 //! These events are emitted from platform-gated modules (`accent_color.rs` /
-//! `accent_color_linux.rs`, macOS-only `text_size.rs`), but `collect_events!`
+//! `accent_color_linux.rs`, macOS-only `text_size.rs` and `intl/live_locale.rs`), but `collect_events!`
 //! in `ipc.rs` can't `#[cfg]`-gate inline, so their typed payload structs live
 //! here in an always-compiled module. The emit sites just build and `.emit()`
 //! them. Same pattern the MTP and network modules use (structs in an
@@ -34,6 +34,17 @@ pub struct ReduceTransparencyChanged {
 #[serde(rename_all = "camelCase")]
 pub struct SystemTextSizeChanged {
     pub multiplier: f32,
+}
+
+/// `ui-locale-changed`: the user changed their macOS language preferences while
+/// the app was running, and the catalog we resolve to actually moved. `locale`
+/// is the fresh answer (`hu`, `en`), the same value `get_ui_locale` would return
+/// now. Only emitted when the answer differs from the one the app is running on,
+/// so a listener can act on every one it receives (`intl/live_locale.rs`).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct UiLocaleChanged {
+    pub locale: String,
 }
 
 /// `drag-image-size`: the OS drag image's pixel dimensions, read on drag enter

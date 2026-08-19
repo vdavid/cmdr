@@ -6,6 +6,8 @@ Resolves the UI language from the user's ORDERED macOS language preferences agai
 
 - `mod.rs`: `resolve_ui_locale(preferences, shipped)` (the walk + the script guard) and the `get_ui_locale` IPC command
   the frontend reads at startup.
+- `live_locale.rs`: `observe_ui_locale_changes`, which follows the OS language while the app runs and emits
+  `ui-locale-changed`. macOS only.
 - `shipped_locales.gen.rs`: the catalog table with its CLDR script facts. Generated, never hand-edited.
 
 ## Must-knows
@@ -23,9 +25,17 @@ Resolves the UI language from the user's ORDERED macOS language preferences agai
   next to it: `docs/i18n/script-decisions.md` lists nine languages with a script split, so it would rot.
 - **The `en-XA` pseudolocale is excluded by the GENERATOR, not filtered here.** Auto-selection draws only from the
   table, so leaving it out is what makes it unreachable. Keep it that way rather than adding a runtime check.
+- **`'system'` means the language the user reads NOW, not at launch.** Two macOS notifications feed one
+  `LocaleWatcher`, which collapses a burst into ONE re-read and emits `ui-locale-changed` only when the resolved catalog
+  moved (an unchanged answer would re-render every open `t()` in every window for nothing; the unit tests pin both).
+  The emit site is also the seam for anything else that must be rebuilt in the new language (the native menu bar).
+  Linux has no equivalent signal and the no-op says so.
+- **`defaults write -g AppleLanguages` posts NO notification**, so it can't test the observer on its own: write the
+  preference, then post `AppleLanguagePreferencesChangedNotification` on the distributed centre the way System Settings
+  does. Measurement and the recipe: `DETAILS.md`.
 - **`get_ui_locale` returns `None` off macOS**, meaning "no OS answer, the webview default stands" — the right behavior
   on Linux. On macOS it always answers, falling back to `en`, because that IS the answer when the user reads no
   language we ship.
 
-The walk, the script data, the specificity rule, and the frontend contract: `DETAILS.md`. The frontend half:
+The walk, the script data, the specificity rule, the live-change path, and the frontend contract: `DETAILS.md`. The frontend half:
 `apps/desktop/src/lib/intl/`.

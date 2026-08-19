@@ -96,6 +96,50 @@ The `en-XA` pseudolocale (accented, inflated English for overflow testing) is dr
 filtered in Rust. Auto-selection draws only from the table, so its absence is what makes it unreachable, and there's no
 runtime check that a later refactor could quietly remove.
 
+## Following a live language change
+
+`'system'` tracks the CURRENT system language. macOS nudges people to restart their apps after a language change; doing
+the right thing without asking is better, and it costs one observer.
+
+`live_locale.rs` registers two notification observers from the Tauri `setup` hook, both feeding one `LocaleWatcher`:
+
+- `AppleLanguagePreferencesChangedNotification` on `NSDistributedNotificationCenter`. **This is the one that carries a
+  language change.** Undocumented, on the same terms as the accessibility notification `text_size.rs` watches; if Apple
+  stops posting it the language still resolves correctly at the next launch. The System Settings pane that owns the
+  setting posts it (`/System/Library/ExtensionKit/Extensions/Localization.appex` carries the literal name, next to its
+  `AppleDate…` / `AppleNumber…` / `AppleTime…` siblings; verified on macOS 26.5.2, `strings`, 2026-08-19).
+- `NSCurrentLocaleDidChangeNotification` on the default `NSNotificationCenter`. The documented signal, kept as the
+  fallback if the undocumented one ever goes away. It tracks `AppleLocale` (the REGION and format settings), not
+  `AppleLanguages`: with `AppleLanguages` flipped to `[de-DE, en-US]`, `Locale.current` stayed `en_US@rg=sezzzz`
+  (verified on macOS 26.5.2, Swift observer on both centres, 2026-08-19). So on today's macOS it fires for a region
+  change and not for a language one.
+
+**Gotcha: `defaults write -g AppleLanguages` posts NOTHING.** The value changes and a re-read sees it immediately, but
+no notification reaches either centre (same measurement as above), so `defaults write` alone can't test this path. To
+exercise it, write the preference and then post the distributed notification the way System Settings does:
+`DistributedNotificationCenter.default().postNotificationName(...)` from a throwaway Swift script.
+
+A region-only change re-reads and then emits nothing, because the UI language didn't move. Formatters therefore don't
+re-key until the next launch on a pure region change; that's a known gap, not an oversight.
+
+Overlap between the two costs nothing, because the watcher applies two filters in order:
+
+1. **Collapse the burst.** One System Settings change posts several notifications (language, region, and calendar are
+   separate preferences), and both centres may carry the same one. The first notification arms a settle timer
+   (`SETTLE_WINDOW`, 300 ms); the rest ride on it, because the timer re-reads live state when it fires. So a burst
+   costs one `apple_languages()` read, not one per notification.
+2. **Compare the answer.** The fresh resolution is checked against the one the app is running on (seeded at
+   registration, then updated per announcement), and a match emits nothing. Most locale notifications don't move the UI
+   language at all.
+
+What survives both filters is a `UiLocaleChanged` event carrying the fresh tag. The emit site is the ONE place that
+knows the answer moved, which makes it the seam for anything else that has to be rebuilt in the new language: the
+native menu bar hooks in beside the emit once its labels are localized.
+
+Linux gets a no-op. The desktop language lives in the session's environment (`LANG` / `LC_MESSAGES`), fixed for the
+life of the process, and no portal or D-Bus name broadcasts a change; a user who changes their language gets it at
+their next login, which is also when Cmdr restarts.
+
 ## The frontend contract
 
 `get_ui_locale` is the only way out of this module. It returns `Option<String>`:
@@ -105,8 +149,13 @@ runtime check that a later refactor could quietly remove.
 - **anything else**: `None`, meaning "no OS preference list here". The frontend reads that as "no override" and lets the
   webview default stand, which is the right behavior on Linux.
 
+`ui-locale-changed` is the same answer, pushed. `watchSystemUiLocale` (`src/lib/intl/ui-locale.ts`) adopts it into the
+cached OS answer and re-applies `appearance.language`, which re-renders the window through the message runtime's version
+rune. It drops an event whose locale matches the cached answer, a second guard behind the backend's, because a needless
+bump re-renders every open `t()` in the window.
+
 The frontend half (`src/lib/intl/ui-locale.ts`) fetches this once per window and resolves the `'system'` setting through
 it. Startup pays no serialized round-trip: the main window fires the fetch before awaiting the settings store, so the
 two overlap. The backend side of the call measures ~65 µs (debug build, 1,000 iterations, dominated by the
-`NSUserDefaults` read), so there's nothing to cache here; keeping it uncached is also what will let a live OS
-language change be re-read later.
+`NSUserDefaults` read), so there's nothing to cache here; keeping it uncached is also what lets the live
+observer re-read it.

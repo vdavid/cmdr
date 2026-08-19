@@ -21,6 +21,10 @@ mod shipped_locales;
 
 use shipped_locales::SHIPPED_LOCALES;
 
+mod live_locale;
+
+pub use live_locale::observe_ui_locale_changes;
+
 /// One catalog we ship, plus the script facts the resolver's guard needs.
 ///
 /// The scripts come from CLDR's likely-subtags data, which Rust has no runtime
@@ -56,13 +60,23 @@ pub(crate) struct ShippedLocale {
 pub fn get_ui_locale() -> Option<String> {
     #[cfg(target_os = "macos")]
     {
-        let preferences = crate::system_strings::apple_languages();
-        Some(resolve_ui_locale(&preferences, SHIPPED_LOCALES).unwrap_or_else(|| "en".to_string()))
+        Some(resolved_ui_locale())
     }
     #[cfg(not(target_os = "macos"))]
     {
         None
     }
+}
+
+/// The macOS answer to "which catalog should the app open", read fresh from the
+/// OS preference list every time.
+///
+/// Uncached on purpose: the read is a `NSUserDefaults` lookup (~65 µs), and
+/// caching it is what would make a live language change invisible.
+#[cfg(target_os = "macos")]
+pub(crate) fn resolved_ui_locale() -> String {
+    let preferences = crate::system_strings::apple_languages();
+    resolve_ui_locale(&preferences, SHIPPED_LOCALES).unwrap_or_else(|| "en".to_string())
 }
 
 /// The locale the UI should use, or `None` to stay on English.

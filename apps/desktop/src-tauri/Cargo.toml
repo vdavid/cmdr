@@ -238,6 +238,8 @@ objc2 = { version = "0.6", features = ["std", "exception"] }
 objc2-foundation = { version = "0.3", features = [
     "NSURL", "NSString", "NSDictionary", "NSDate", "NSArray", "NSValue", "NSError",
     "NSData", "NSFileManager", "NSNotification", "NSBundle", "NSDistributedNotificationCenter", "NSUserDefaults",
+    # `NSCurrentLocaleDidChangeNotification`, half of the live-language-change signal (`intl/live_locale.rs`).
+    "NSLocale",
     "NSOperation", "NSProcessInfo",
 ] }
 objc2-app-kit = { version = "0.3", features = [

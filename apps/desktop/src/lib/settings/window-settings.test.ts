@@ -115,13 +115,18 @@ describe('initWindowSettings', () => {
 describe('initWindowLanguageSync', () => {
   /** The change listener the sync registers, so a test can fire it. */
   let changeListener: ((id: string, value: string) => void) | undefined
+  /** The OS-language-moved callback the sync registers, so a test can fire it. */
+  let osLocaleMoved: (() => void) | undefined
   let language = 'system'
   const unsubscribe = vi.fn()
+  const unlistenOsLocale = vi.fn()
   const setLocale = vi.fn()
 
   beforeEach(() => {
     vi.resetModules()
     changeListener = undefined
+    osLocaleMoved = undefined
+    unlistenOsLocale.mockClear()
     language = 'system'
     unsubscribe.mockClear()
     setLocale.mockClear()
@@ -151,6 +156,10 @@ describe('initWindowLanguageSync', () => {
     vi.doMock('$lib/intl/ui-locale', () => ({
       loadSystemUiLocale: () => Promise.resolve(systemLocale),
       pickUiLocale: (setting: string) => (setting === 'system' ? systemLocale : setting),
+      watchSystemUiLocale: (onMoved: () => void) => {
+        osLocaleMoved = onMoved
+        return Promise.resolve(unlistenOsLocale)
+      },
     }))
     return import('./window-settings')
   }
@@ -180,8 +189,27 @@ describe('initWindowLanguageSync', () => {
     expect(setLocale).toHaveBeenCalledWith('de')
   })
 
-  it('hands back the listener unsubscribe, so a closing window stops following', async () => {
+  it('follows the OS language moving underneath the window', async () => {
+    // `'system'` means the language the user reads NOW: a switch in System
+    // Settings has to re-localize this window without a restart.
+    const { initWindowLanguageSync } = await loadWith('de')
+    initWindowLanguageSync()
+    await vi.waitFor(() => {
+      expect(osLocaleMoved).toBeDefined()
+    })
+    setLocale.mockClear()
+    osLocaleMoved?.()
+    expect(setLocale).toHaveBeenCalledWith('de')
+  })
+
+  it('stops following both sources when the window closes', async () => {
     const { initWindowLanguageSync } = await loadWith(null)
-    expect(initWindowLanguageSync()).toBe(unsubscribe)
+    const stop = initWindowLanguageSync()
+    await vi.waitFor(() => {
+      expect(osLocaleMoved).toBeDefined()
+    })
+    stop()
+    expect(unsubscribe).toHaveBeenCalled()
+    expect(unlistenOsLocale).toHaveBeenCalled()
   })
 })

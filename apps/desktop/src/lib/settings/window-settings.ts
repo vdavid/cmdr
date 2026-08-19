@@ -16,7 +16,8 @@
  */
 
 import { setLocale } from '$lib/intl/messages.svelte'
-import { loadSystemUiLocale, pickUiLocale } from '$lib/intl/ui-locale'
+import { loadSystemUiLocale, pickUiLocale, watchSystemUiLocale } from '$lib/intl/ui-locale'
+import type { UnlistenFn } from '@tauri-apps/api/event'
 import { initReactiveSettings } from './reactive-settings.svelte'
 import { getSetting, onSpecificSettingChange } from './settings-store'
 
@@ -87,7 +88,12 @@ export async function initWindowSettings(pathname?: string): Promise<void> {
  * would gate the window's paint on a round-trip for a case (`'system'`) where
  * the webview default is already a close guess.
  *
- * @returns an unsubscribe for the change listener
+ * Then it follows two sources of change for the rest of the window's life: the
+ * user's own pick in the settings picker, and the OS's language preferences
+ * moving underneath us (`'system'` tracks the CURRENT system language, so a
+ * switch in System Settings re-localizes the window without a restart).
+ *
+ * @returns a teardown that stops following both
  */
 export function initWindowLanguageSync(): () => void {
   const apply = (value: string): void => {
@@ -97,7 +103,26 @@ export function initWindowLanguageSync(): () => void {
   void loadSystemUiLocale().then(() => {
     apply(getSetting('appearance.language'))
   })
-  return onSpecificSettingChange('appearance.language', (_id, value) => {
+
+  // The subscription lands a tick later than the teardown could be called (a
+  // window closing mid-startup), so a teardown that ran first unlistens on
+  // arrival rather than leaving a listener behind.
+  let unlistenOsLocale: UnlistenFn | undefined
+  let stopped = false
+  void watchSystemUiLocale(() => {
+    apply(getSetting('appearance.language'))
+  }).then((unlisten) => {
+    if (stopped) unlisten()
+    else unlistenOsLocale = unlisten
+  })
+
+  const unsubscribeSetting = onSpecificSettingChange('appearance.language', (_id, value) => {
     apply(value)
   })
+
+  return () => {
+    stopped = true
+    unlistenOsLocale?.()
+    unsubscribeSetting()
+  }
 }
