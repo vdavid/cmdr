@@ -209,6 +209,50 @@ new names.
 
 ---
 
+### M2b: Follow the user's region, not just their language
+
+**Intent**: finish what M2 started. M2 stopped the UI language from overwriting formatting; this makes formatting
+actually match the OS, which today it does not.
+
+**The measured problem** (found during M2, recorded in `apps/desktop/src/lib/intl/DETAILS.md` with its evidence anchor):
+WebKit does not hand the whole OS locale answer to the webview. On a Mac set to US English with a Swedish region
+(`AppleLocale = en_US@rg=sezzzz`), Finder writes `2026-08-19` and `1 234 567,89` while our webview writes `08/19/2026`
+and `1,234,567.89`. The `-u-rg-` extension is dropped, and passing it explicitly is not a workaround:
+`en-US-u-rg-sezzzz` resolves straight back to `en-US`. A real region subtag DOES work, and `en-SE` reproduces
+Foundation's output exactly.
+
+So the fix is to stop asking the webview and compose the tag ourselves, on the same seam M1 already built for the
+language. Elegance is the argument: one more small Rust-side answer, delivered the same way, rather than a special case
+somewhere in the formatting layer.
+
+**Changes**
+
+1. Rust: read the current region (`Locale.current.region`, which honors the `rg=` override) and compose the format
+   locale as `<language>-<REGION>`. Expose it through the same path `get_ui_locale` uses.
+2. `getFormatLocale()` prefers the composed tag and falls back to the webview default when there isn't one. Everything
+   downstream (`number-format.ts`, `format-utils.ts`, the first-day-of-week resolver) already reads that one function,
+   so no call site changes.
+3. The composed tag follows the OS, ❌ never the `appearance.language` setting — that's design decision 2 and M2b must
+   not quietly undo it. A Hungarian UI on a US-English/Swedish-region Mac still formats `en-SE`.
+4. The live-change path from M3 already re-emits on `NSCurrentLocaleDidChangeNotification`, which is exactly the
+   notification that tracks `AppleLocale`. That's the right signal for a region change, so wire the region answer into
+   the emit M3 built rather than adding a second observer.
+
+**Tests**
+
+- The case that motivated it: language `en`, region override `SE` → format locale `en-SE`, and a formatted date and
+  grouped number match Foundation's output rather than US conventions.
+- No region override (`AppleLocale = en_US`) → `en-US`, i.e. **nothing changes for the common case**.
+  `en-us-parity.test.ts` must stay green untouched; if it moves, the composition is wrong.
+- An unresolvable or missing region → fall back to the webview default rather than composing a malformed tag.
+- An explicit UI language does not change the format locale (decision 2 held).
+
+**Docs**: update the `DETAILS.md` finding from "here's why this user still sees US formats" to the current behavior plus
+the reason the composition exists. Keep the evidence anchor and the ❌ note about Cmdr's own date column not being able
+to answer this (`appearance.dateTimeFormat: 'iso'` hides it).
+
+---
+
 ### M3: Follow a live OS language change
 
 **Intent**: `'system'` should mean _currently_ system, not "system as of app launch". macOS nudges users to restart apps
@@ -470,6 +514,8 @@ All four questions the plan opened with are answered; nothing here is pending.
 3. **No one-time notice for already-onboarded users.** Silent is fine. M5 keeps only the onboarding control; the
    persistent-toast half is cut. (Keep the toast idea out of the code entirely — don't build it "just in case".)
 4. **The M1 validation may flip the global `AppleLanguages` to Hungarian**, then restore `[en-US, sv-SE]`.
+5. **M2b is IN** (added 2026-08-19, after M2's investigation measured the problem): compose the format locale from the
+   OS region so a region override actually reaches the formatters. David's call: "it sounds like the elegant solution".
 
 **Execution constraint**: work SEQUENTIALLY, no parallel subagents. There's a harness bug where the current working
 directory bleeds across agents in parallel sessions, which in a worktree means an agent can write to the wrong checkout.
