@@ -173,7 +173,12 @@ jobs:
     name: SMB soak (30 min)
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
-    timeout-minutes: 50
+    # The soak itself is a fixed 30 minutes, and everything before it (mise,
+    # a cold Cargo build, the Tauri Linux packages, the Docker SMB containers)
+    # took ~20 on the 2026-08-19 run, which hit the old 50-minute ceiling with
+    # the soak still running and reported the job as cancelled. Sized so the
+    # setup can grow without the deadline eating the signal we asked for.
+    timeout-minutes: 80
 
     steps:
       - name: Checkout code
