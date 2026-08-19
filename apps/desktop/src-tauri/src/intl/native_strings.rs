@@ -106,8 +106,8 @@ pub fn active_locale() -> String {
 /// mid-translation), and to the key itself when nothing has it. Never panics:
 /// a native menu is built on the main thread inside AppKit callbacks that abort
 /// the process on a panic, so a typo must cost a visibly wrong label, not a
-/// crash. `menu_t_literals_exist_in_the_english_catalog` is what catches the typo
-/// at test time instead.
+/// crash. `every_menu_key_literal_exists_in_the_english_catalog` catches the typo at
+/// test time instead.
 pub fn menu_t(key: &str) -> String {
     let active = active_locale();
     lookup(&active, key)
@@ -124,11 +124,20 @@ pub fn menu_t(key: &str) -> String {
 /// doesn't contain is silently ignored, which is the right behavior for a
 /// translation that legitimately drops one.
 pub fn menu_t_with(key: &str, args: &[(&str, &str)]) -> String {
-    let mut value = menu_t(key);
+    expand_tokens(&menu_t(key), args)
+}
+
+/// `value` with each `{token}` span replaced by its argument.
+///
+/// Split out from [`menu_t_with`] so the substitution rules can be tested
+/// without touching the process-wide active locale, which every other test in
+/// this module would then be racing against.
+fn expand_tokens(value: &str, args: &[(&str, &str)]) -> String {
+    let mut expanded = value.to_string();
     for (token, replacement) in args {
-        value = value.replace(&format!("{{{token}}}"), replacement);
+        expanded = expanded.replace(&format!("{{{token}}}"), replacement);
     }
-    value
+    expanded
 }
 
 /// The value for `key` in `locale`'s table, or `None`.
@@ -224,7 +233,7 @@ mod tests {
         // The menu is built inside AppKit callbacks that abort on panic, so the
         // failure mode for a typo has to be a wrong label, never a crash. The key
         // goes through a binding on purpose: written inline it would be a literal
-        // for `menu_t_literals_exist_in_the_english_catalog` to find and reject.
+        // for `every_menu_key_literal_exists_in_the_english_catalog` to reject.
         let unknown = "menu.nope.notAThing";
         assert_eq!(menu_t(unknown), unknown);
     }
@@ -253,8 +262,13 @@ mod tests {
     /// by restoring `'system'`, so nothing after it sees a pinned language.
     #[test]
     fn the_preference_decides_the_catalog_and_says_when_it_moved() {
+        // Start from a known state: earlier tests in this process may have
+        // resolved the locale already.
+        set_language_preference(Some("en".to_string()));
+        assert_eq!(active_locale(), "en");
+
         // A pinned language the app ships.
-        assert!(set_language_preference(Some("hu".to_string())));
+        assert!(set_language_preference(Some("hu".to_string())), "en → hu is a move");
         assert_eq!(active_locale(), "hu");
         // Setting the same thing again is not a move, so nothing rebuilds.
         assert!(!set_language_preference(Some("hu".to_string())));
@@ -279,38 +293,51 @@ mod tests {
 
     #[test]
     fn tokens_are_replaced_literally_with_no_icu_in_sight() {
+        let named = lookup(BASE_LOCALE, "menu.context.copyNamed").expect("the key ships");
+        assert_eq!(expand_tokens(named, &[("name", "holiday.jpg")]), "Copy \"holiday.jpg\"");
+
+        // An uncontrolled value goes in verbatim: no escaping, no formatting, and
+        // nothing that looks like a token in the VALUE gets a second pass.
+        let eject = lookup(BASE_LOCALE, "menu.volume.eject").expect("the key ships");
         assert_eq!(
-            menu_t_with("menu.context.copyNamed", &[("name", "holiday.jpg")]),
-            "Copy \"holiday.jpg\""
-        );
-        // An uncontrolled value goes in verbatim: no escaping, no formatting.
-        assert_eq!(
-            menu_t_with("menu.volume.eject", &[("name", "Backup {Drive}")]),
+            expand_tokens(eject, &[("name", "Backup {Drive}")]),
             "Eject (Backup {Drive})"
         );
     }
 
     #[test]
     fn a_token_the_translation_dropped_costs_nothing() {
-        assert_eq!(menu_t_with("menu.bar.file", &[("name", "x")]), "File");
+        // A translation that legitimately drops a token still renders; it just
+        // renders without the value.
+        assert_eq!(expand_tokens("File", &[("name", "x")]), "File");
     }
 
-    /// Every key literal handed to `menu_t` or `menu_t_with` anywhere in the
-    /// crate names a key the English catalog has.
+    /// Every `"menu.…"` literal anywhere in the crate names a key the English
+    /// catalog has.
     ///
     /// `menu_t` deliberately never panics, so a typo would otherwise ship as a
     /// menu item labelled `menu.file.opne` and nothing would notice. Source
     /// parsing is the only guard available: building a real menu needs AppKit on
-    /// the main thread. Keys built at runtime are skipped (only a literal first
-    /// argument is readable from here).
+    /// the main thread.
+    ///
+    /// It scans for the literal rather than for `menu_t` CALL SITES on purpose:
+    /// several keys are held in tables and passed as a variable (the tag colors
+    /// in `menu_structure.rs`, the image-search items in `media_index_items.rs`,
+    /// the pin/unpin pair), and those are exactly the ones a call-site parser
+    /// would miss.
     #[test]
-    fn menu_t_literals_exist_in_the_english_catalog() {
+    fn every_menu_key_literal_exists_in_the_english_catalog() {
         let source_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
         let mut checked = 0usize;
         let mut missing: Vec<String> = Vec::new();
 
         for (path, source) in rust_sources(&source_root) {
-            for key in menu_t_keys(&source) {
+            // The generated table IS the catalog, and this file's own doc
+            // comments talk about keys that deliberately don't exist.
+            if path.ends_with("native_strings.gen.rs") || path.ends_with("native_strings.rs") {
+                continue;
+            }
+            for key in menu_key_literals(&source) {
                 checked += 1;
                 if lookup(BASE_LOCALE, &key).is_none() {
                     missing.push(format!("{}: {key}", path.display()));
@@ -320,11 +347,11 @@ mod tests {
 
         assert!(
             checked > 100,
-            "only {checked} `menu_t` call sites parsed; the parser is broken, not the source"
+            "only {checked} menu-key literals parsed; the parser is broken, not the source"
         );
         assert!(
             missing.is_empty(),
-            "these `menu_t` keys are absent from `messages/en/`:\n  {}",
+            "these menu keys are absent from `messages/en/`:\n  {}",
             missing.join("\n  ")
         );
     }
@@ -351,19 +378,20 @@ mod tests {
         sources
     }
 
-    /// The key literals passed to `menu_t` / `menu_t_with` in one source file.
-    /// Only a literal first argument is read; a key held in a variable can't be
-    /// checked from here and is covered by the table it's built from instead.
-    fn menu_t_keys(source: &str) -> Vec<String> {
+    /// Every `"menu.…"` string literal in one source file.
+    ///
+    /// A literal starts at `"menu.` and runs to the next `"`. Prose in a doc
+    /// comment can't match, because a key mentioned there is written in
+    /// backticks rather than quotes.
+    fn menu_key_literals(source: &str) -> Vec<String> {
+        const OPEN: &str = "\"menu.";
         let mut keys = Vec::new();
-        for call in ["menu_t(\"", "menu_t_with(\""] {
-            let mut rest = source;
-            while let Some(at) = rest.find(call) {
-                let after = &rest[at + call.len()..];
-                let Some(end) = after.find('"') else { break };
-                keys.push(after[..end].to_string());
-                rest = &after[end..];
-            }
+        let mut rest = source;
+        while let Some(at) = rest.find(OPEN) {
+            let after = &rest[at + 1..]; // past the opening quote
+            let Some(end) = after.find('"') else { break };
+            keys.push(after[..end].to_string());
+            rest = &after[end..];
         }
         keys
     }

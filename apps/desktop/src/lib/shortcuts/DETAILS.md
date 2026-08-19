@@ -418,6 +418,11 @@ side, `MenuState.items` is a `HashMap<String, MenuItemEntry>` that tracks regula
 `update_menu_item_accelerator()` handles the remove/recreate/reinsert cycle. View mode CheckMenuItems still use the
 separate `update_view_mode_accelerator()` path to preserve checked state.
 
+A menu-bar REBUILD (the UI language changed) throws every menu item away, so the customized accelerators are back at
+their registry defaults on brand-new objects. `resyncMenuAccelerators()` pushes them all again, driven by the
+`menu-bar-rebuilt` event in `DualPaneExplorer.svelte`. Only the CUSTOMIZED ones need re-pushing: the fresh items already
+carry the defaults.
+
 The list can't silently drift from the Rust side anymore: the `menuCommands ↔ command_id_to_menu_id` set-equality test
 in `commands/rust-command-id-drift.test.ts` parses `menu/mod.rs` and fails when a menu item is missing from
 `menuCommands` (stale accelerator after rebinding) or excused without a documented reason. Five reverse-map items are
