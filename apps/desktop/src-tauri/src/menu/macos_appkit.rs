@@ -4,10 +4,11 @@
 //! menu; `set_macos_menu_icons` puts SF Symbols on the items worth spotting at a glance. Neither is
 //! expressible through Tauri's menu API, and both have to re-run after every `app.set_menu()`.
 //!
-//! Both work on `NSMenu` objects, which AppKit indexes by title and nothing else, while a title is
-//! user-facing text that translation moves. So everything here is keyed by menu ID and resolved to a
-//! title at the last moment, through the live Tauri menu. See `DETAILS.md` § "Finding a menu from
-//! AppKit".
+//! Both work on `NSMenu` objects, and AppKit offers no way to find one by a Tauri menu ID. So
+//! everything OURS is keyed by ID and resolved to a title only at that boundary, through the live
+//! Tauri menu, which keeps the match working once the labels are translated. The items AppKit itself
+//! injects are the exception, and they're keyed on `NSMenuItem.identifier`. See `DETAILS.md` §
+//! "Finding a menu from AppKit".
 
 use std::panic::AssertUnwindSafe;
 
@@ -289,9 +290,9 @@ fn set_macos_menu_icons_inner<R: Runtime>(app: &AppHandle<R>) {
 
 /// Puts one menu's SF Symbols on its `NSMenu`, then recurses into whatever nests below it.
 ///
-/// AppKit indexes menus and items by title and nothing else, so this resolves each ID to the title
-/// the Tauri item currently carries and matches on that. The title comes from the same object
-/// AppKit drew, which is what keeps this working once the labels are translated.
+/// AppKit can't be asked for a Tauri ID, so this resolves each ID to the title the Tauri item
+/// currently carries and matches on that. The title comes from the same object AppKit drew, which is
+/// what keeps this working once the labels are translated.
 fn apply_icon_group<R: Runtime>(ns_parent: &NSMenu, tauri_menu: &Submenu<R>, group: &MenuIcons) {
     let menu_id = group.menu_id;
     let Some(ns_menu) = tauri_menu

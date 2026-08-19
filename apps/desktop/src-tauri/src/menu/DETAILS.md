@@ -313,8 +313,8 @@ The **Go** submenu holds, in order: `Back` (⌘[), `Forward` (⌘]), separator, 
 `nav.goToPath` and `GO_LATEST_DOWNLOAD_ID` (`"go_latest_download"`) → `downloads.goToLatest`, both `FileScoped` so they
 grey out in the viewer/settings windows. `Go to path…` carries the macOS ellipsis (it opens the Go-to-path dialog);
 `Go to latest download` has none (direct action). On macOS the SF Symbols are `arrow.right.to.line` (Go to path…) and
-`arrow.down.circle` (Go to latest download); the symbol map matches by exact title string, so the `\u{2026}` ellipsis
-must stay byte-identical between the `MenuItem` title and the map. On Linux the mnemonics are `Go &to path…` and
+`arrow.down.circle` (Go to latest download), keyed by item ID in `MENU_BAR_ICONS`. On Linux the mnemonics are
+`Go &to path…` and
 `Go to &latest download` (B/F/P are claimed by Back/Forward/Parent).
 
 **Double-dispatch (⌘G / ⌘J).** A key combo matching a menu accelerator fires BOTH the native menu (`execute-command`)
