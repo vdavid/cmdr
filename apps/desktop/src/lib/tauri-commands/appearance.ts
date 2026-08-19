@@ -34,6 +34,15 @@ export function getLocalizedSystemStrings(): Promise<LocalizedSystemStrings> {
 }
 
 /**
+ * Reads the UI language the OS preference list points at: the first catalog we
+ * ship that the user can read. `null` off macOS, where there's no preference
+ * list and the webview's own default stands.
+ */
+export function getUiLocale(): Promise<string | null> {
+  return commands.getUiLocale()
+}
+
+/**
  * Subscribes to OS accent-color (or light/dark appearance) changes. The
  * payload's `hex` is the new accent color as `#rrggbb`.
  */

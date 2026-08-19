@@ -39,11 +39,10 @@ vi.mock('@tauri-apps/api/window', () => ({
   getCurrentWindow: () => ({ setFocus: vi.fn(), close: vi.fn() }),
 }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn(() => Promise.resolve(() => {})) }))
-vi.mock('$lib/settings', () => ({
-  getSetting: () => 'system',
-  onSpecificSettingChange: () => () => {},
+vi.mock('$lib/settings/window-settings', () => ({
+  initWindowSettings: vi.fn(() => Promise.resolve()),
+  initWindowLanguageSync: vi.fn(() => () => {}),
 }))
-vi.mock('$lib/settings/window-settings', () => ({ initWindowSettings: vi.fn(() => Promise.resolve()) }))
 vi.mock('$lib/accent-color', () => ({
   initAccentColor: vi.fn(() => Promise.resolve()),
   cleanupAccentColor: vi.fn(),

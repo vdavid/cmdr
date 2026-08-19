@@ -5,9 +5,8 @@
     import { onMcpSettingsClose, activateWindowMenu, isE2eMode } from '$lib/tauri-commands'
     import SettingsSidebar from '$lib/settings/components/SettingsSidebar.svelte'
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
-    import { forceSave as forceSettingsSave, getSetting, onSpecificSettingChange } from '$lib/settings'
-    import { initWindowSettings } from '$lib/settings/window-settings'
-    import { setLocale } from '$lib/intl/messages.svelte'
+    import { forceSave as forceSettingsSave } from '$lib/settings'
+    import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
@@ -62,22 +61,6 @@
     let unlistenWindowFocus: UnlistenFn | undefined
     let unlistenRectTracking: (() => void) | undefined
     let unsubscribeLanguage: (() => void) | undefined
-
-    /**
-     * Keeps THIS window's UI language in sync. The settings window is its own
-     * webview with its own i18n runtime instance, so the main window's applier
-     * doesn't reach it: apply the persisted language at open, and re-apply on any
-     * `appearance.language` change (including the user's own pick in this window,
-     * which round-trips through the store), so the picker re-localizes the whole
-     * settings UI live. `'system'` maps to the OS locale (`setLocale(null)`).
-     */
-    function initLanguageSync(): void {
-        const applyLanguage = (value: string) => { setLocale(value === 'system' ? null : value); }
-        applyLanguage(getSetting('appearance.language'))
-        unsubscribeLanguage = onSpecificSettingChange('appearance.language', (_id, value) => {
-            applyLanguage(value)
-        })
-    }
 
     function safeParseSectionParam(raw: string): string[] | null {
         try {
@@ -313,7 +296,7 @@
             await installE2eFlushHook()
 
             // Apply + live-sync the UI language for this window (own i18n runtime).
-            initLanguageSync()
+            unsubscribeLanguage = initWindowLanguageSync()
 
             // Read system accent color from macOS and listen for changes
             await initAccentColor()

@@ -39,6 +39,7 @@ import {
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { tString, setLocale } from '$lib/intl/messages.svelte'
+import { loadSystemUiLocale, pickUiLocale } from '$lib/intl/ui-locale'
 import { pushConfigToBackend } from './ai-config'
 import { noteModelSettingChanged } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
@@ -88,15 +89,15 @@ function applyDensity(density: UiDensity): void {
 }
 
 /**
- * Applies the chosen UI language by driving the i18n locale-switch seam. The
- * `'system'` sentinel maps to `null` (follow the OS locale); any other value is
- * a BCP-47 tag. `setLocale()` writes the single locale source AND bumps the
- * message rune, so every open `t()`/`<Trans>` re-renders and the number/date
- * formatters (which read the same source) reformat: fully live, no restart.
- * Locale is frontend-only, so there's no Tauri command to push.
+ * Applies the chosen UI language by driving the i18n locale-switch seam.
+ * `pickUiLocale` resolves the `'system'` sentinel against the OS preference
+ * list; any other value is a BCP-47 tag. `setLocale()` writes the single locale
+ * source AND bumps the message rune, so every open `t()`/`<Trans>` re-renders
+ * and the number/date formatters (which read the same source) reformat: fully
+ * live, no restart. Locale is frontend-only, so there's no Tauri command to push.
  */
 function applyLanguage(value: string): void {
-  setLocale(value === 'system' ? null : value)
+  setLocale(pickUiLocale(value))
   log.debug('Applied language: {value}', { value })
 }
 
@@ -318,8 +319,15 @@ export async function initSettingsApplier(): Promise<void> {
   log.debug('Initializing settings applier')
 
   try {
+    // Ask the OS which language to speak BEFORE awaiting the settings store, so
+    // the two IPC round-trips overlap instead of stacking. Startup pays the
+    // slower of the two, not their sum: ❌ no serialized round-trip and no paint
+    // gate (see `routes/(main)/show-main-on-mount.ts` for why we don't gate).
+    const systemUiLocale = loadSystemUiLocale()
+
     // Ensure settings store is initialized
     await initializeSettings()
+    await systemUiLocale
 
     // Seed the last-observed log-storage cap so the first change event can distinguish
     // `0 ↔ non-zero` transitions from routine cap changes.

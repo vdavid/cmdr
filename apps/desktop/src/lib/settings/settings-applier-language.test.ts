@@ -5,10 +5,11 @@
  *
  * We mock the i18n runtime (to observe `setLocale`) and the settings store (to
  * drive a controllable change pipeline + a controllable startup value), so the
- * test isolates the applier's mapping: `'system'` → `setLocale(null)` (follow
- * the OS), a real tag → `setLocale(tag)`.
+ * test isolates the applier's mapping: `'system'` → the locale Rust resolved
+ * from the OS preference list, a real tag → `setLocale(tag)`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { _setSystemUiLocaleForTests } from '$lib/intl/ui-locale'
 
 const setLocale = vi.fn()
 
@@ -68,6 +69,7 @@ beforeEach(() => {
   setLocale.mockClear()
   changeListener = undefined
   startupLanguage = 'system'
+  _setSystemUiLocaleForTests(null)
 })
 
 afterEach(() => {
@@ -81,7 +83,18 @@ describe('settings-applier: appearance.language', () => {
     expect(setLocale).toHaveBeenCalledWith('en-XA')
   })
 
-  it('applies System default at startup as a null override (follow the OS)', async () => {
+  it('applies the OS-resolved locale at startup for System default', async () => {
+    // The point of the whole feature: `'system'` means the first language we
+    // ship out of the user's ORDERED preference list, which only Rust can see.
+    startupLanguage = 'system'
+    _setSystemUiLocaleForTests('sv')
+    await initSettingsApplier()
+    expect(setLocale).toHaveBeenCalledWith('sv')
+  })
+
+  it('applies System default as a null override when the OS has no answer', async () => {
+    // Off macOS, or when the read failed: the webview default is the honest
+    // fallback, and the catalog resolver walks it down to `en`.
     startupLanguage = 'system'
     await initSettingsApplier()
     expect(setLocale).toHaveBeenCalledWith(null)
@@ -96,11 +109,12 @@ describe('settings-applier: appearance.language', () => {
     expect(setLocale).toHaveBeenCalledWith('en-XA')
   })
 
-  it('live-applies a switch back to System default as a null override', async () => {
+  it('live-applies a switch back to System default as the OS-resolved locale', async () => {
+    _setSystemUiLocaleForTests('hu')
     await initSettingsApplier()
     setLocale.mockClear()
     changeListener?.('appearance.language', 'system')
     expect(setLocale).toHaveBeenCalledTimes(1)
-    expect(setLocale).toHaveBeenCalledWith(null)
+    expect(setLocale).toHaveBeenCalledWith('hu')
   })
 })

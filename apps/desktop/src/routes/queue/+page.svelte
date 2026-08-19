@@ -3,9 +3,7 @@
     import { SvelteSet } from 'svelte/reactivity'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-    import { getSetting, onSpecificSettingChange } from '$lib/settings'
-    import { initWindowSettings } from '$lib/settings/window-settings'
-    import { setLocale } from '$lib/intl/messages.svelte'
+    import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
@@ -126,22 +124,6 @@
         }
     }
 
-    /**
-     * Keeps THIS window's UI language in sync. The queue window is its own webview
-     * with its own i18n runtime, so the main window's applier doesn't reach it:
-     * apply the persisted language at open and on any change. `'system'` maps to
-     * the OS locale (`setLocale(null)`). Mirrors the Settings window.
-     */
-    function initLanguageSync(): void {
-        const applyLanguage = (value: string) => {
-            setLocale(value === 'system' ? null : value)
-        }
-        applyLanguage(getSetting('appearance.language'))
-        unsubscribeLanguage = onSpecificSettingChange('appearance.language', (_id, value) => {
-            applyLanguage(value)
-        })
-    }
-
     function handleKeydown(event: KeyboardEvent): void {
         if (event.key === 'Escape') {
             event.preventDefault()
@@ -167,7 +149,7 @@
             // events, mirroring the viewer, and non-throwing so a perm failure can't
             // leave the body unrendered.
             await initWindowSettings()
-            initLanguageSync()
+            unsubscribeLanguage = initWindowLanguageSync()
             await initAccentColor()
             await initReduceTransparency()
             await initTextSize()

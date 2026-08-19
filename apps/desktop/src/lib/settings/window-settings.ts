@@ -15,7 +15,10 @@
  * Coverage guard: `routes/reactive-settings-coverage.test.ts`.
  */
 
+import { setLocale } from '$lib/intl/messages.svelte'
+import { loadSystemUiLocale, pickUiLocale } from '$lib/intl/ui-locale'
 import { initReactiveSettings } from './reactive-settings.svelte'
+import { getSetting, onSpecificSettingChange } from './settings-store'
 
 /**
  * How a window reaches the settings store.
@@ -66,4 +69,35 @@ export function windowSettingsAccess(pathname: string): WindowSettingsAccess {
 export async function initWindowSettings(pathname?: string): Promise<void> {
   const route = pathname ?? (typeof window === 'undefined' ? '/' : window.location.pathname)
   await initReactiveSettings({ restrictedWindow: windowSettingsAccess(route) === 'restricted' })
+}
+
+/**
+ * Keeps a SECONDARY window's UI language in sync with `appearance.language`.
+ *
+ * Each window is its own webview with its own i18n runtime instance, so the
+ * main window's settings applier doesn't reach the Settings or Queue window:
+ * they apply the language themselves, and re-apply on every change (including
+ * the user's own pick in the Settings picker, which round-trips through the
+ * store) so the whole window re-localizes live.
+ *
+ * Applies twice on purpose. The persisted value is available synchronously, so
+ * an explicit language is right from the first paint; the `'system'` answer
+ * comes from Rust over IPC, so it lands a tick later and the second apply is
+ * what picks it up. ❌ Don't await the OS answer before the first apply: that
+ * would gate the window's paint on a round-trip for a case (`'system'`) where
+ * the webview default is already a close guess.
+ *
+ * @returns an unsubscribe for the change listener
+ */
+export function initWindowLanguageSync(): () => void {
+  const apply = (value: string): void => {
+    setLocale(pickUiLocale(value))
+  }
+  apply(getSetting('appearance.language'))
+  void loadSystemUiLocale().then(() => {
+    apply(getSetting('appearance.language'))
+  })
+  return onSpecificSettingChange('appearance.language', (_id, value) => {
+    apply(value)
+  })
 }

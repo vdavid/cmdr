@@ -427,6 +427,7 @@ export {
   getShouldReduceTransparency,
   getSystemTextSizeMultiplier,
   getLocalizedSystemStrings,
+  getUiLocale,
   onAccentColorChanged,
   onReduceTransparencyChanged,
   onSystemTextSizeChanged,
