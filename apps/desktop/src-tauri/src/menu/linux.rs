@@ -48,10 +48,28 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     // --- File menu ---
     let mut file = Mnemonics::new();
     let open_item = MenuItem::with_id(app, OPEN_ID, file.assign(&menu_t("menu.file.open")), true, None::<&str>)?;
-    let file_view_item = MenuItem::with_id(app, FILE_VIEW_ID, file.assign(&menu_t("menu.file.view")), true, None::<&str>)?;
+    let file_view_item = MenuItem::with_id(
+        app,
+        FILE_VIEW_ID,
+        file.assign(&menu_t("menu.file.view")),
+        true,
+        None::<&str>,
+    )?;
     let edit_item = MenuItem::with_id(app, EDIT_ID, file.assign(&menu_t("menu.file.edit")), true, None::<&str>)?;
-    let file_copy_item = MenuItem::with_id(app, FILE_COPY_ID, file.assign(&menu_t("menu.file.copy")), true, None::<&str>)?;
-    let file_move_item = MenuItem::with_id(app, FILE_MOVE_ID, file.assign(&menu_t("menu.file.move")), true, None::<&str>)?;
+    let file_copy_item = MenuItem::with_id(
+        app,
+        FILE_COPY_ID,
+        file.assign(&menu_t("menu.file.copy")),
+        true,
+        None::<&str>,
+    )?;
+    let file_move_item = MenuItem::with_id(
+        app,
+        FILE_MOVE_ID,
+        file.assign(&menu_t("menu.file.move")),
+        true,
+        None::<&str>,
+    )?;
     let file_duplicate_item = MenuItem::with_id(
         app,
         FILE_DUPLICATE_ID,
@@ -73,7 +91,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         None::<&str>,
     )?;
-    let file_delete_item = MenuItem::with_id(app, FILE_DELETE_ID, file.assign(&menu_t("menu.file.delete")), true, None::<&str>)?;
+    let file_delete_item = MenuItem::with_id(
+        app,
+        FILE_DELETE_ID,
+        file.assign(&menu_t("menu.file.delete")),
+        true,
+        None::<&str>,
+    )?;
     let file_delete_permanently_item = MenuItem::with_id(
         app,
         FILE_DELETE_PERMANENTLY_ID,
@@ -81,7 +105,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         None::<&str>,
     )?;
-    let rename_item = MenuItem::with_id(app, RENAME_ID, file.assign(&menu_t("menu.file.rename")), true, None::<&str>)?;
+    let rename_item = MenuItem::with_id(
+        app,
+        RENAME_ID,
+        file.assign(&menu_t("menu.file.rename")),
+        true,
+        None::<&str>,
+    )?;
     let show_in_fm_item = MenuItem::with_id(
         app,
         SHOW_IN_FINDER_ID,
@@ -89,7 +119,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         Some(show_in_file_manager_accelerator()),
     )?;
-    let get_info_item = MenuItem::with_id(app, GET_INFO_ID, file.assign(&menu_t("menu.file.getInfo")), true, Some("Cmd+I"))?;
+    let get_info_item = MenuItem::with_id(
+        app,
+        GET_INFO_ID,
+        file.assign(&menu_t("menu.file.getInfo")),
+        true,
+        Some("Cmd+I"),
+    )?;
     let quick_look_item = MenuItem::with_id(
         app,
         QUICK_LOOK_ID,
@@ -126,9 +162,27 @@ pub(crate) fn build_menu_linux<R: Runtime>(
 
     // --- Edit menu ---
     let mut edit = Mnemonics::new();
-    let edit_cut_item = MenuItem::with_id(app, EDIT_CUT_ID, edit.assign(&menu_t("menu.edit.cut")), true, Some("Ctrl+X"))?;
-    let edit_copy_item = MenuItem::with_id(app, EDIT_COPY_ID, edit.assign(&menu_t("menu.edit.copy")), true, Some("Ctrl+C"))?;
-    let edit_paste_item = MenuItem::with_id(app, EDIT_PASTE_ID, edit.assign(&menu_t("menu.edit.paste")), true, Some("Ctrl+V"))?;
+    let edit_cut_item = MenuItem::with_id(
+        app,
+        EDIT_CUT_ID,
+        edit.assign(&menu_t("menu.edit.cut")),
+        true,
+        Some("Ctrl+X"),
+    )?;
+    let edit_copy_item = MenuItem::with_id(
+        app,
+        EDIT_COPY_ID,
+        edit.assign(&menu_t("menu.edit.copy")),
+        true,
+        Some("Ctrl+C"),
+    )?;
+    let edit_paste_item = MenuItem::with_id(
+        app,
+        EDIT_PASTE_ID,
+        edit.assign(&menu_t("menu.edit.paste")),
+        true,
+        Some("Ctrl+V"),
+    )?;
     let edit_paste_move_item = MenuItem::with_id(
         app,
         EDIT_PASTE_MOVE_ID,
@@ -157,7 +211,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         Some("Cmd+F"),
     )?;
-    let settings_item = MenuItem::with_id(app, SETTINGS_ID, edit.assign(&menu_t("menu.app.settings")), true, Some("Cmd+,"))?;
+    let settings_item = MenuItem::with_id(
+        app,
+        SETTINGS_ID,
+        edit.assign(&menu_t("menu.app.settings")),
+        true,
+        Some("Cmd+,"),
+    )?;
     // Only one of these takes input, so only one gets the ellipsis: entering a key
     // asks for the key, seeing the details just shows them.
     let license_label = if has_existing_license {
@@ -165,7 +225,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     } else {
         menu_t("menu.app.licenseEnter")
     };
-    let license_item = MenuItem::with_id(app, ENTER_LICENSE_KEY_ID, edit.assign(&license_label), true, None::<&str>)?;
+    let license_item = MenuItem::with_id(
+        app,
+        ENTER_LICENSE_KEY_ID,
+        edit.assign(&license_label),
+        true,
+        None::<&str>,
+    )?;
     let check_for_updates_item = MenuItem::with_id(
         app,
         CHECK_FOR_UPDATES_ID,
@@ -174,7 +240,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         None::<&str>,
     )?;
     // Opens the "What's new" popup showing the latest releases (same command as Help > What's new).
-    let changelog_item = MenuItem::with_id(app, CHANGELOG_ID, edit.assign(&menu_t("menu.app.changelog")), true, None::<&str>)?;
+    let changelog_item = MenuItem::with_id(
+        app,
+        CHANGELOG_ID,
+        edit.assign(&menu_t("menu.app.changelog")),
+        true,
+        None::<&str>,
+    )?;
 
     let edit_menu = Submenu::with_items(
         app,
@@ -204,7 +276,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     // commands. The two `…` dialog openers carry no accelerator: the keystroke binding
     // (bare `+` / `-`) lives in FilePane's keydown handler.
     let mut select = Mnemonics::new();
-    let select_all_item = MenuItem::with_id(app, SELECT_ALL_ID, select.assign(&menu_t("menu.select.all")), true, Some("Cmd+A"))?;
+    let select_all_item = MenuItem::with_id(
+        app,
+        SELECT_ALL_ID,
+        select.assign(&menu_t("menu.select.all")),
+        true,
+        Some("Cmd+A"),
+    )?;
     let deselect_all_item = MenuItem::with_id(
         app,
         DESELECT_ALL_ID,
@@ -378,7 +456,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     // --- Go menu ---
     let mut go = Mnemonics::new();
     let go_back_item = MenuItem::with_id(app, GO_BACK_ID, go.assign(&menu_t("menu.go.back")), true, Some("Cmd+["))?;
-    let go_forward_item = MenuItem::with_id(app, GO_FORWARD_ID, go.assign(&menu_t("menu.go.forward")), true, Some("Cmd+]"))?;
+    let go_forward_item = MenuItem::with_id(
+        app,
+        GO_FORWARD_ID,
+        go.assign(&menu_t("menu.go.forward")),
+        true,
+        Some("Cmd+]"),
+    )?;
     let go_parent_item = MenuItem::with_id(
         app,
         GO_PARENT_ID,
@@ -386,8 +470,20 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         Some("Cmd+Up"),
     )?;
-    let go_home_item = MenuItem::with_id(app, GO_HOME_ID, go.assign(&menu_t("menu.go.home")), true, Some("Shift+Cmd+H"))?;
-    let go_to_path_item = MenuItem::with_id(app, GO_TO_PATH_ID, go.assign(&menu_t("menu.go.goToPath")), true, Some("Cmd+G"))?;
+    let go_home_item = MenuItem::with_id(
+        app,
+        GO_HOME_ID,
+        go.assign(&menu_t("menu.go.home")),
+        true,
+        Some("Shift+Cmd+H"),
+    )?;
+    let go_to_path_item = MenuItem::with_id(
+        app,
+        GO_TO_PATH_ID,
+        go.assign(&menu_t("menu.go.goToPath")),
+        true,
+        Some("Cmd+G"),
+    )?;
     let go_latest_download_item = MenuItem::with_id(
         app,
         GO_LATEST_DOWNLOAD_ID,
@@ -426,8 +522,20 @@ pub(crate) fn build_menu_linux<R: Runtime>(
 
     // --- Tab menu ---
     let mut tab = Mnemonics::new();
-    let new_tab_item = MenuItem::with_id(app, NEW_TAB_ID, tab.assign(&menu_t("menu.tab.newTab")), true, Some("Cmd+T"))?;
-    let close_tab_item = MenuItem::with_id(app, CLOSE_TAB_ID, tab.assign(&menu_t("menu.tab.closeTab")), true, Some("Cmd+W"))?;
+    let new_tab_item = MenuItem::with_id(
+        app,
+        NEW_TAB_ID,
+        tab.assign(&menu_t("menu.tab.newTab")),
+        true,
+        Some("Cmd+T"),
+    )?;
+    let close_tab_item = MenuItem::with_id(
+        app,
+        CLOSE_TAB_ID,
+        tab.assign(&menu_t("menu.tab.closeTab")),
+        true,
+        Some("Cmd+W"),
+    )?;
     // Disabled initially; frontend enables it after the first close.
     let reopen_closed_tab_item = MenuItem::with_id(
         app,
@@ -436,7 +544,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         false,
         Some("Cmd+Shift+T"),
     )?;
-    let next_tab_item = MenuItem::with_id(app, NEXT_TAB_ID, tab.assign(&menu_t("menu.tab.nextTab")), true, Some("Ctrl+Tab"))?;
+    let next_tab_item = MenuItem::with_id(
+        app,
+        NEXT_TAB_ID,
+        tab.assign(&menu_t("menu.tab.nextTab")),
+        true,
+        Some("Ctrl+Tab"),
+    )?;
     let prev_tab_item = MenuItem::with_id(
         app,
         PREV_TAB_ID,
@@ -444,7 +558,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         Some("Ctrl+Shift+Tab"),
     )?;
-    let pin_tab_item = MenuItem::with_id(app, PIN_TAB_MENU_ID, tab.assign(&menu_t("menu.tab.pinTab")), true, None::<&str>)?;
+    let pin_tab_item = MenuItem::with_id(
+        app,
+        PIN_TAB_MENU_ID,
+        tab.assign(&menu_t("menu.tab.pinTab")),
+        true,
+        None::<&str>,
+    )?;
     let close_other_tabs_item = MenuItem::with_id(
         app,
         CLOSE_OTHER_TABS_ID,
@@ -473,7 +593,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
 
     // --- Help menu ---
     let mut help = Mnemonics::new();
-    let about_item = MenuItem::with_id(app, ABOUT_ID, help.assign(&menu_t("menu.app.about")), true, None::<&str>)?;
+    let about_item = MenuItem::with_id(
+        app,
+        ABOUT_ID,
+        help.assign(&menu_t("menu.app.about")),
+        true,
+        None::<&str>,
+    )?;
     // Linux has no app menu, so the third-party credits sit under Help next to About.
     let acknowledgements_item = MenuItem::with_id(
         app,

@@ -70,7 +70,13 @@ pub fn build_open_with_submenu<R: Runtime>(
         submenu.append(&PredefinedMenuItem::separator(app)?)?;
     }
 
-    let other_item = MenuItem::with_id(app, OPEN_WITH_OTHER_ID, menu_t("menu.context.openWithOther"), true, None::<&str>)?;
+    let other_item = MenuItem::with_id(
+        app,
+        OPEN_WITH_OTHER_ID,
+        menu_t("menu.context.openWithOther"),
+        true,
+        None::<&str>,
+    )?;
     submenu.append(&other_item)?;
 
     Ok((submenu, bundle_to_path))

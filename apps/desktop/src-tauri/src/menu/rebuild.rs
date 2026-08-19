@@ -93,7 +93,11 @@ pub fn rebuild_menu_bar<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
 /// bar. Both post-construction passes run afterwards, exactly as the focus-swap
 /// path does (`menu/DETAILS.md` § Per-window menu activation).
 #[cfg(target_os = "macos")]
-fn install<R: Runtime>(app: &AppHandle<R>, menu_state: &MenuState<R>, main_menu: tauri::menu::Menu<R>) -> tauri::Result<()> {
+fn install<R: Runtime>(
+    app: &AppHandle<R>,
+    menu_state: &MenuState<R>,
+    main_menu: tauri::menu::Menu<R>,
+) -> tauri::Result<()> {
     use super::ActiveMenuKind;
 
     let viewer_menu_items = super::build_viewer_menu(app)?;

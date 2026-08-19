@@ -743,6 +743,9 @@ pub fn run() {
             // the OS's answer) has to be known first. `settings.json` is already
             // on hand; the frontend re-pushes the same value when it loads, and
             // `set_ui_language` rebuilds the bar if the two ever disagree.
+            // The `bool` means "rebuild the menu bar", and there is no menu bar yet: it's built a few
+            // statements down, already in the right language.
+            // allowed-discarded-outcome: nothing to rebuild before the first build
             intl::set_language_preference(saved_settings.appearance_language.clone());
 
             // Build and set the application menu with persisted showHiddenFiles

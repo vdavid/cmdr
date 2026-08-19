@@ -409,7 +409,13 @@ pub(crate) fn build_zoom_submenu<R: Runtime>(
         true,
         None::<&str>,
     )?;
-    let zoom_in = MenuItem::with_id(app, VIEW_ZOOM_IN_ID, mnemonics.assign(&menu_t("menu.zoom.in")), true, accel_in)?;
+    let zoom_in = MenuItem::with_id(
+        app,
+        VIEW_ZOOM_IN_ID,
+        mnemonics.assign(&menu_t("menu.zoom.in")),
+        true,
+        accel_in,
+    )?;
     let zoom_out = MenuItem::with_id(
         app,
         VIEW_ZOOM_OUT_ID,

@@ -31,9 +31,9 @@ mod media_index_items;
 mod menu_handlers;
 mod menu_items;
 mod menu_structure;
-mod rebuild;
 #[cfg(target_os = "macos")]
 pub mod open_with;
+mod rebuild;
 #[cfg(target_os = "macos")]
 mod tag_icons;
 
@@ -52,8 +52,6 @@ use tauri::{
 // `command_map`; the glob keeps every existing `crate::menu::…` / `super::…` import path valid.
 pub use command_map::*;
 pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};
-pub use menu_items::pin_tab_label;
-pub use rebuild::rebuild_menu_bar;
 #[cfg(target_os = "macos")]
 pub use menu_handlers::{
     cleanup_macos_menus, cleanup_macos_menus_from_command, set_macos_menu_icons, set_macos_menu_icons_from_command,
@@ -62,10 +60,12 @@ pub use menu_handlers::{
     frontend_shortcut_to_accelerator, handle_menu_event, rebuild_view_mode_items, sync_view_mode_check_states,
     update_menu_item_accelerator,
 };
+pub use menu_items::pin_tab_label;
 pub use menu_structure::{
     FileContextInfo, build_breadcrumb_context_menu, build_context_menu, build_menu, build_network_host_context_menu,
     build_parent_row_context_menu, build_tab_context_menu, build_viewer_menu, build_volume_row_context_menu,
 };
+pub use rebuild::rebuild_menu_bar;
 
 /// `settings-changed`: a CheckMenuItem toggle (currently only "Show hidden
 /// files") flipped a setting from the native menu. The menu click is the

@@ -26,8 +26,8 @@ use super::{
     HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
     OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID,
     REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SELECT_MENU_ID, SETTINGS_ID,
-    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, TAB_MENU_ID, VIEW_MENU_ID, ViewMode,
-    WINDOW_MENU_ID,
+    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, TAB_MENU_ID,
+    VIEW_MENU_ID, ViewMode, WINDOW_MENU_ID,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -43,7 +43,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // Credits the open-source libraries Cmdr ships. Sits next to About and the
     // license: it's app metadata, not a help topic, which is also where macOS
     // apps that ship one put it.
-    let acknowledgements_item = MenuItem::with_id(app, ACKNOWLEDGEMENTS_ID, menu_t("menu.app.acknowledgements"), true, None::<&str>)?;
+    let acknowledgements_item = MenuItem::with_id(
+        app,
+        ACKNOWLEDGEMENTS_ID,
+        menu_t("menu.app.acknowledgements"),
+        true,
+        None::<&str>,
+    )?;
     // Only one of these takes input, so only one gets the ellipsis: entering a key
     // asks for the key, seeing the details just shows them.
     let license_label = if has_existing_license {
@@ -64,7 +70,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // Re-entry to the onboarding wizard. Placed under "Check for updates…".
     // Linux gets no menu entry (palette-only) by design — see
     // `lib/onboarding/CLAUDE.md` § "Re-entry points".
-    let open_onboarding_item = MenuItem::with_id(app, OPEN_ONBOARDING_ID, menu_t("menu.app.onboarding"), true, None::<&str>)?;
+    let open_onboarding_item = MenuItem::with_id(
+        app,
+        OPEN_ONBOARDING_ID,
+        menu_t("menu.app.onboarding"),
+        true,
+        None::<&str>,
+    )?;
     let settings_item = MenuItem::with_id(app, SETTINGS_ID, menu_t("menu.app.settings"), true, Some("Cmd+,"))?;
 
     let app_menu = Submenu::with_id_and_items(
@@ -102,9 +114,22 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let edit_item = MenuItem::with_id(app, EDIT_ID, menu_t("menu.file.edit"), true, Some("F4"))?;
     let file_copy_item = MenuItem::with_id(app, FILE_COPY_ID, menu_t("menu.file.copy"), true, Some("F5"))?;
     let file_move_item = MenuItem::with_id(app, FILE_MOVE_ID, menu_t("menu.file.move"), true, Some("F6"))?;
-    let file_duplicate_item = MenuItem::with_id(app, FILE_DUPLICATE_ID, menu_t("menu.file.duplicate"), true, Some("Cmd+D"))?;
-    let file_compress_item = MenuItem::with_id(app, FILE_COMPRESS_ID, menu_t("menu.file.compress"), true, Some("Alt+F5"))?;
-    let file_new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, menu_t("menu.file.newFolder"), true, Some("F7"))?;
+    let file_duplicate_item = MenuItem::with_id(
+        app,
+        FILE_DUPLICATE_ID,
+        menu_t("menu.file.duplicate"),
+        true,
+        Some("Cmd+D"),
+    )?;
+    let file_compress_item = MenuItem::with_id(
+        app,
+        FILE_COMPRESS_ID,
+        menu_t("menu.file.compress"),
+        true,
+        Some("Alt+F5"),
+    )?;
+    let file_new_folder_item =
+        MenuItem::with_id(app, FILE_NEW_FOLDER_ID, menu_t("menu.file.newFolder"), true, Some("F7"))?;
     let file_delete_item = MenuItem::with_id(app, FILE_DELETE_ID, menu_t("menu.file.delete"), true, Some("F8"))?;
     let file_delete_permanently_item = MenuItem::with_id(
         app,
@@ -126,7 +151,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // accelerators before the webview can capture them, so the menu actually
     // fires. Plain Space was dead — the webview's Tier-2 selection-toggle
     // handler ate the keydown before AppKit's menu dispatcher saw it.
-    let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, menu_t("menu.file.quickLook"), true, Some("Shift+Space"))?;
+    let quick_look_item = MenuItem::with_id(
+        app,
+        QUICK_LOOK_ID,
+        menu_t("menu.file.quickLook"),
+        true,
+        Some("Shift+Space"),
+    )?;
 
     let file_menu = Submenu::with_id_and_items(
         app,
@@ -163,10 +194,34 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let edit_cut_item = MenuItem::with_id(app, EDIT_CUT_ID, menu_t("menu.edit.cut"), true, Some("Cmd+X"))?;
     let edit_copy_item = MenuItem::with_id(app, EDIT_COPY_ID, menu_t("menu.edit.copy"), true, Some("Cmd+C"))?;
     let edit_paste_item = MenuItem::with_id(app, EDIT_PASTE_ID, menu_t("menu.edit.paste"), true, Some("Cmd+V"))?;
-    let edit_paste_move_item = MenuItem::with_id(app, EDIT_PASTE_MOVE_ID, menu_t("menu.edit.moveHere"), true, Some("Alt+Cmd+V"))?;
-    let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, menu_t("menu.edit.copyPath"), true, Some(copy_path_accelerator()))?;
-    let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, menu_t("menu.edit.copyFilename"), true, None::<&str>)?;
-    let search_files_item = MenuItem::with_id(app, SEARCH_FILES_ID, menu_t("menu.edit.searchFiles"), true, Some("Cmd+F"))?;
+    let edit_paste_move_item = MenuItem::with_id(
+        app,
+        EDIT_PASTE_MOVE_ID,
+        menu_t("menu.edit.moveHere"),
+        true,
+        Some("Alt+Cmd+V"),
+    )?;
+    let copy_path_item = MenuItem::with_id(
+        app,
+        COPY_PATH_ID,
+        menu_t("menu.edit.copyPath"),
+        true,
+        Some(copy_path_accelerator()),
+    )?;
+    let copy_filename_item = MenuItem::with_id(
+        app,
+        COPY_FILENAME_ID,
+        menu_t("menu.edit.copyFilename"),
+        true,
+        None::<&str>,
+    )?;
+    let search_files_item = MenuItem::with_id(
+        app,
+        SEARCH_FILES_ID,
+        menu_t("menu.edit.searchFiles"),
+        true,
+        Some("Cmd+F"),
+    )?;
 
     let edit_menu = Submenu::with_id_and_items(
         app,
@@ -197,9 +252,21 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // a modifier (Cmd), and the bare `+` / `-` keystrokes are bound in FilePane's keydown
     // handler instead. The labels show no accelerator badge as a result.
     let select_all_item = MenuItem::with_id(app, SELECT_ALL_ID, menu_t("menu.select.all"), true, Some("Cmd+A"))?;
-    let deselect_all_item = MenuItem::with_id(app, DESELECT_ALL_ID, menu_t("menu.select.deselectAll"), true, Some("Cmd+Shift+A"))?;
+    let deselect_all_item = MenuItem::with_id(
+        app,
+        DESELECT_ALL_ID,
+        menu_t("menu.select.deselectAll"),
+        true,
+        Some("Cmd+Shift+A"),
+    )?;
     let select_files_item = MenuItem::with_id(app, SELECT_FILES_ID, menu_t("menu.select.files"), true, None::<&str>)?;
-    let deselect_files_item = MenuItem::with_id(app, DESELECT_FILES_ID, menu_t("menu.select.deselectFiles"), true, None::<&str>)?;
+    let deselect_files_item = MenuItem::with_id(
+        app,
+        DESELECT_FILES_ID,
+        menu_t("menu.select.deselectFiles"),
+        true,
+        None::<&str>,
+    )?;
 
     let select_menu = Submenu::with_id_and_items(
         app,
@@ -273,15 +340,33 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // Default ⌘⌥Q (rendered ⌥⌘Q by macOS). Sits next to "Operation log" so the present-tense
     // and past-tense views of the same work read as a pair. The accelerator syncs from the
     // `queue.show` registry shortcut; this is the initial label.
-    let queue_show_item = MenuItem::with_id(app, QUEUE_SHOW_ID, menu_t("menu.view.operationQueue"), true, Some("Cmd+Alt+Q"))?;
+    let queue_show_item = MenuItem::with_id(
+        app,
+        QUEUE_SHOW_ID,
+        menu_t("menu.view.operationQueue"),
+        true,
+        Some("Cmd+Alt+Q"),
+    )?;
     // Default ⌘⌥L (Cmd+Opt+L). ⌥⌘O — the plan's first choice — is taken by "Show in Finder".
     // The accelerator syncs from the `log.operationLog` registry shortcut; this is the initial label.
-    let operation_log_item = MenuItem::with_id(app, OPERATION_LOG_ID, menu_t("menu.view.operationLog"), true, Some("Cmd+Alt+L"))?;
+    let operation_log_item = MenuItem::with_id(
+        app,
+        OPERATION_LOG_ID,
+        menu_t("menu.view.operationLog"),
+        true,
+        Some("Cmd+Alt+L"),
+    )?;
     // No default accelerator: the status-corner indicator is the everyday way in, and a
     // suggestion waits indefinitely, so this isn't a key anyone reaches for mid-task. A user
     // who wants one binds it, and the accelerator then syncs from the `suggestedOps.show`
     // registry shortcut like every other item here.
-    let suggested_ops_item = MenuItem::with_id(app, SUGGESTED_OPS_ID, menu_t("menu.view.suggestedOps"), true, None::<&str>)?;
+    let suggested_ops_item = MenuItem::with_id(
+        app,
+        SUGGESTED_OPS_ID,
+        menu_t("menu.view.suggestedOps"),
+        true,
+        None::<&str>,
+    )?;
     // Default ⌘⌥A (rendered ⌥⌘A by macOS). The accelerator syncs from the `askCmdr.toggle`
     // registry shortcut; this is the initial label.
     let ask_cmdr_item = MenuItem::with_id(app, ASK_CMDR_ID, menu_t("menu.view.askCmdr"), true, Some("Cmd+Alt+A"))?;
@@ -329,7 +414,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let go_home_item = MenuItem::with_id(app, GO_HOME_ID, menu_t("menu.go.home"), true, Some("Shift+Cmd+H"))?;
     // No default accelerator: `favorites.add` ships without a default shortcut. The
     // accelerator-sync pass picks up whatever the user later binds in Settings > Keyboard shortcuts.
-    let favorites_add_item = MenuItem::with_id(app, FAVORITES_ADD_ID, menu_t("menu.go.addToFavorites"), true, None::<&str>)?;
+    let favorites_add_item = MenuItem::with_id(
+        app,
+        FAVORITES_ADD_ID,
+        menu_t("menu.go.addToFavorites"),
+        true,
+        None::<&str>,
+    )?;
 
     let go_menu = Submenu::with_id_and_items(
         app,
@@ -364,9 +455,21 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         Some("Cmd+Shift+T"),
     )?;
     let next_tab_item = MenuItem::with_id(app, NEXT_TAB_ID, menu_t("menu.tab.nextTab"), true, Some("Ctrl+Tab"))?;
-    let prev_tab_item = MenuItem::with_id(app, PREV_TAB_ID, menu_t("menu.tab.previousTab"), true, Some("Ctrl+Shift+Tab"))?;
+    let prev_tab_item = MenuItem::with_id(
+        app,
+        PREV_TAB_ID,
+        menu_t("menu.tab.previousTab"),
+        true,
+        Some("Ctrl+Shift+Tab"),
+    )?;
     let pin_tab_item = MenuItem::with_id(app, PIN_TAB_MENU_ID, menu_t("menu.tab.pinTab"), true, None::<&str>)?;
-    let close_other_tabs_item = MenuItem::with_id(app, CLOSE_OTHER_TABS_ID, menu_t("menu.tab.closeOtherTabs"), true, None::<&str>)?;
+    let close_other_tabs_item = MenuItem::with_id(
+        app,
+        CLOSE_OTHER_TABS_ID,
+        menu_t("menu.tab.closeOtherTabs"),
+        true,
+        None::<&str>,
+    )?;
 
     let tab_menu = Submenu::with_id_and_items(
         app,
@@ -402,7 +505,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
 
     // --- Help menu ---
     // macOS auto-adds a search field to any menu named "Help"
-    let shortcuts_item = MenuItem::with_id(app, HELP_SHORTCUTS_ID, menu_t("menu.help.keyboardShortcuts"), true, None::<&str>)?;
+    let shortcuts_item = MenuItem::with_id(
+        app,
+        HELP_SHORTCUTS_ID,
+        menu_t("menu.help.keyboardShortcuts"),
+        true,
+        None::<&str>,
+    )?;
     let whats_new_item = MenuItem::with_id(app, HELP_WHATS_NEW_ID, menu_t("menu.help.whatsNew"), true, None::<&str>)?;
     let send_feedback_item = MenuItem::with_id(
         app,

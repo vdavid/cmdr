@@ -23,7 +23,7 @@ use crate::file_system::sync_status::SyncStatus;
 use crate::intl::{menu_t, menu_t_with};
 
 use super::menu_items::{
-    APP_MENU_TITLE, pin_tab_label, COPY_FILENAME_MAX_CHARS, copy_path_accelerator, show_in_file_manager_accelerator,
+    APP_MENU_TITLE, COPY_FILENAME_MAX_CHARS, copy_path_accelerator, pin_tab_label, show_in_file_manager_accelerator,
     show_in_file_manager_label, truncate_for_menu_label,
 };
 #[cfg(target_os = "macos")]
@@ -165,7 +165,13 @@ pub fn build_context_menu<R: Runtime>(
     menu.append(&copy_item)?;
     menu.append(&move_item)?;
     if !restrict_destination_actions {
-        let duplicate_item = MenuItem::with_id(app, FILE_DUPLICATE_ID, menu_t("menu.file.duplicate"), true, Some("Cmd+D"))?;
+        let duplicate_item = MenuItem::with_id(
+            app,
+            FILE_DUPLICATE_ID,
+            menu_t("menu.file.duplicate"),
+            true,
+            Some("Cmd+D"),
+        )?;
         menu.append(&duplicate_item)?;
         let rename_item = MenuItem::with_id(app, RENAME_ID, menu_t("menu.file.rename"), true, Some("F2"))?;
         menu.append(&rename_item)?;
@@ -175,7 +181,8 @@ pub fn build_context_menu<R: Runtime>(
     // New folder — also omitted on search-results panes (no destination folder
     // to create into; the pane IS the snapshot, not a directory).
     if !restrict_destination_actions {
-        let new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, menu_t("menu.file.newFolder"), true, Some("F7"))?;
+        let new_folder_item =
+            MenuItem::with_id(app, FILE_NEW_FOLDER_ID, menu_t("menu.file.newFolder"), true, Some("F7"))?;
         menu.append(&new_folder_item)?;
         menu.append(&PredefinedMenuItem::separator(app)?)?;
     }
@@ -203,7 +210,13 @@ pub fn build_context_menu<R: Runtime>(
         true,
         Some("Cmd+C"),
     )?;
-    let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, menu_t("menu.edit.copyPath"), true, Some(copy_path_accelerator()))?;
+    let copy_path_item = MenuItem::with_id(
+        app,
+        COPY_PATH_ID,
+        menu_t("menu.edit.copyPath"),
+        true,
+        Some(copy_path_accelerator()),
+    )?;
     menu.append(&show_in_finder_item)?;
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;
@@ -362,10 +375,22 @@ pub fn build_breadcrumb_context_menu<R: Runtime>(
     } else {
         Some(accelerator)
     };
-    let copy_path_item = MenuItem::with_id(app, COPY_CURRENT_DIR_PATH_ID, menu_t("menu.breadcrumb.copyPath"), true, accel)?;
+    let copy_path_item = MenuItem::with_id(
+        app,
+        COPY_CURRENT_DIR_PATH_ID,
+        menu_t("menu.breadcrumb.copyPath"),
+        true,
+        accel,
+    )?;
     menu.append(&copy_path_item)?;
     if let Some(name) = eject_volume_name {
-        let eject_item = MenuItem::with_id(app, EJECT_VOLUME_ID, eject_label(name, eject_busy), !eject_busy, None::<&str>)?;
+        let eject_item = MenuItem::with_id(
+            app,
+            EJECT_VOLUME_ID,
+            eject_label(name, eject_busy),
+            !eject_busy,
+            None::<&str>,
+        )?;
         menu.append(&eject_item)?;
     }
     Ok(menu)
@@ -414,7 +439,10 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
         app,
         menu_t("menu.bar.file"),
         true,
-        &[&PredefinedMenuItem::close_window(app, Some(&menu_t("menu.viewer.close")))?],
+        &[&PredefinedMenuItem::close_window(
+            app,
+            Some(&menu_t("menu.viewer.close")),
+        )?],
     )?;
     menu.append(&file_menu)?;
 
@@ -517,7 +545,13 @@ pub fn build_network_host_context_menu(
     let menu = Menu::new(app)?;
 
     // "Disconnect" is always shown. If nothing is mounted, the backend handles it gracefully.
-    let disconnect = MenuItem::with_id(app, NETWORK_HOST_DISCONNECT_ID, menu_t("menu.network.disconnect"), true, None::<&str>)?;
+    let disconnect = MenuItem::with_id(
+        app,
+        NETWORK_HOST_DISCONNECT_ID,
+        menu_t("menu.network.disconnect"),
+        true,
+        None::<&str>,
+    )?;
     menu.append(&disconnect)?;
 
     if is_manual {
@@ -564,12 +598,30 @@ pub fn build_volume_row_context_menu<R: Runtime>(
     let menu = Menu::new(app)?;
 
     if is_favorite {
-        let rename_item = MenuItem::with_id(app, FAVORITE_RENAME_ID, menu_t("menu.volume.renameFavorite"), true, None::<&str>)?;
+        let rename_item = MenuItem::with_id(
+            app,
+            FAVORITE_RENAME_ID,
+            menu_t("menu.volume.renameFavorite"),
+            true,
+            None::<&str>,
+        )?;
         menu.append(&rename_item)?;
-        let remove_item = MenuItem::with_id(app, FAVORITE_REMOVE_ID, menu_t("menu.volume.removeFavorite"), true, None::<&str>)?;
+        let remove_item = MenuItem::with_id(
+            app,
+            FAVORITE_REMOVE_ID,
+            menu_t("menu.volume.removeFavorite"),
+            true,
+            None::<&str>,
+        )?;
         menu.append(&remove_item)?;
     } else if let Some(name) = eject_volume_name {
-        let eject_item = MenuItem::with_id(app, EJECT_VOLUME_ID, eject_label(name, eject_busy), !eject_busy, None::<&str>)?;
+        let eject_item = MenuItem::with_id(
+            app,
+            EJECT_VOLUME_ID,
+            eject_label(name, eject_busy),
+            !eject_busy,
+            None::<&str>,
+        )?;
         menu.append(&eject_item)?;
     }
 

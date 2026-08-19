@@ -163,7 +163,8 @@ Overlap between the two costs nothing, because the watcher applies two filters i
 
 What survives both filters is an `OsLocalesChanged` event carrying the fresh pair. The emit site is the ONE place that
 knows the answer moved, which makes it the seam for anything else that has to be rebuilt in the new language: the
-native menu bar hooks in beside the emit once its labels are localized.
+native menu bar rebuilds there, on the main thread, guarded by `refresh_active_locale` so a region-only change (or a
+language change under a pinned `appearance.language`) costs nothing.
 
 Linux gets a no-op. The desktop language lives in the session's environment (`LANG` / `LC_MESSAGES`), fixed for the
 life of the process, and no portal or D-Bus name broadcasts a change; a user who changes their language gets it at
@@ -194,3 +195,53 @@ through it. Startup pays no serialized round-trip: the main window fires the fet
 so the two overlap. The backend side of the call measures ~65 µs (debug build, 1,000 iterations, dominated by the
 `NSUserDefaults` read), so there's nothing to cache here; keeping it uncached is also what lets the live observer
 re-read it.
+
+## The strings Rust draws itself
+
+Three surfaces never pass through the webview, so they can't use `t()`:
+
+- the **native menu bar** and every native context menu, built during `setup` and redrawn by AppKit whenever it likes;
+- the **main window's title** (`licensing::get_window_title`), set before the frontend has loaded;
+- the **already-running alert** (`instance_lock.rs`), which fires before a webview exists at all. That one is the
+  strongest argument for the whole arrangement: no IPC hand-off could ever reach it.
+
+They still live in the same message catalogs as everything else, so translators work one pile and one set of checks
+covers the lot. `apps/desktop/scripts/gen-native-strings.ts` lifts the subset Rust needs into `native_strings.gen.rs`,
+choosing it by KEY PREFIX (`NATIVE_KEY_PREFIXES`: `menu.`, `licensing.windowTitle.`, `main.instanceLock.`). Adding a
+native string is adding a catalog key under one of those prefixes and regenerating; nothing hand-maintains a second
+list. `pnpm intl:native-strings` regenerates, and `native-strings-fresh` diffs it the way `shipped-locales-fresh` does.
+
+### Why `menu_t` is deliberately dumb
+
+`menu_t(key)` finds the locale's row, binary-searches its sorted `(key, value)` pairs, and falls back to English, then
+to the key itself. That's the whole thing. No ICU, no plurals, no formatting:
+
+- **No panic, ever.** The menu is built inside AppKit callbacks that abort the process on a panic, so a typo has to cost
+  a visibly wrong label rather than a crash. The typo is caught at test time instead, by
+  `menu_t_literals_exist_in_the_english_catalog`, which parses every `menu_t` / `menu_t_with` call site in the crate and
+  checks the key against the English table.
+- **No ICU engine in the app process.** A menu label that seems to want a plural is a label to reshape. The one
+  concession is `menu_t_with`, which does literal `{token}` replacement for the four labels that name what they act on
+  (`Copy "photo.jpg"`, `Eject (Backup)` and its `(busy)` twin, `Preview (default)`); reshaping those would cost the user
+  real information. It's the same raw substitution the `errors.*` family uses on the frontend, which is why
+  `isRawKey()` classifies `menu.*` alongside it: an ICU-doubled `''` would render as two apostrophes on a real menu.
+- **The active locale is cached**, because one menu build asks ~150 times in a row and the macOS half of the answer is
+  an `NSUserDefaults` read each time. `refresh_active_locale()` is the only thing that moves it, and it reports whether
+  it moved, which is exactly the signal a rebuild needs.
+
+### Which locale, and who decides
+
+`LANGUAGE_PREFERENCE` holds the raw `appearance.language` SETTING, not a resolved tag, so `'system'` keeps meaning "the
+language the user reads now": every refresh re-reads the OS. A pinned tag carries NO script guard (that guard exists to
+stop auto-selection landing a Traditional-Chinese reader on the Simplified catalog; a user who picked a language picked
+it), and an unrecognized pin falls back to English rather than to the OS, because "I picked something we don't ship" is
+a broken setting, not a request to follow the system.
+
+Two writers, and they agree by construction: `lib.rs` seeds it from `settings.json` during `setup` (before the menu is
+built), and the frontend pushes the same value through `set_ui_language` once it loads and on every change. The push is
+idempotent, since a rebuild only happens when the resolved answer moves.
+
+The `en-XA` pseudolocale is absent from the table on purpose. It's gitignored and regenerated, so including it would
+make the generated file differ between a fresh clone and a machine that ran `pnpm i18n:pseudo` — permanent phantom
+drift for the freshness check. A developer running in `en-XA` therefore sees an English menu bar over an accented app,
+which is the honest and harmless outcome.

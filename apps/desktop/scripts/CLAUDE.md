@@ -7,25 +7,25 @@ launch boundary, plus the llama-server fetch and the type-drift check.
 
 - **`tauri-wrapper.ts`**: what `pnpm dev` / `pnpm build` actually call. Resolves `CMDR_INSTANCE_ID`, reserves ephemeral
   ports (Vite + tauri-MCP bridge), writes the generated `tauri.instance.json` to `$TMPDIR`, exports env, spawns Tauri.
-  Dev-only: with `CMDR_VIRTUAL_MTP` set, appends `--features virtual-mtp` (see `docs/tooling/virtual-mtp.md`)
-- **`instance-id.ts`**: pure helpers (slug sanitization, instance resolution, per-OS data-dir, bundle-id + productName +
-  config-payload composition, port reservation, port-file write)
+  Dev-only: with `CMDR_VIRTUAL_MTP` set, appends `--features virtual-mtp` (`docs/tooling/virtual-mtp.md`)
+- **`instance-id.ts`**: pure helpers (slug sanitization, instance resolution, per-OS data-dir, bundle-id + productName
+  + config-payload composition, port reservation, port-file write)
 - **`instance-id.test.ts`**: Vitest suite (~45 cases) for `instance-id.ts`
 - **`download-llama-server.go`**: build-time llama-server downloader, invoked from `src-tauri/build.rs`
-- **`check-type-drift.ts`**: fast-lane check for hand-written types drifting from `bindings.ts`; runs in
-  `pnpm check --fast`
-- **`gen-shipped-locales.ts`** (+ `gen-shipped-locales-lib.ts`): emits the Rust locale resolver's table of shipped
-  catalogs and their CLDR scripts (`pnpm intl:shipped-locales`). The output carries `#[rustfmt::skip]`, so this script
-  owns its layout and needs no Rust toolchain; guarded by `shipped-locales-fresh`
-- **`marketing-shots.ts`** (+ `marketing-shots-thread.ts`): reshoots the brand masters (`pnpm marketing:shots`); guide
-  in `docs/guides/screenshots.md`. Needs ImageMagick (the masters are written as lossless WebP), checked up front so a
-  missing `magick` fails before the app launches rather than 30 s into a run
+- **`check-type-drift.ts`**: fast-lane check for hand-written types drifting from `bindings.ts`
+- **`gen-shipped-locales.ts`** (+ `-lib.ts`): the Rust locale resolver's table of shipped catalogs and their CLDR
+  scripts (`pnpm intl:shipped-locales`, guarded by `shipped-locales-fresh`). Both generators emit `#[rustfmt::skip]`, so
+  they own their layout and need no Rust toolchain
+- **`gen-native-strings.ts`** (+ `-lib.ts`): the catalog subset Rust draws itself (`menu.`, the window title, the
+  already-running alert), read by `menu_t`. `pnpm intl:native-strings`, guarded by `native-strings-fresh`
+- **`marketing-shots.ts`** (+ `-thread.ts`): reshoots the brand masters (`pnpm marketing:shots`); guide in
+  `docs/guides/screenshots.md`. Needs ImageMagick (lossless WebP masters), checked up front so a missing `magick` fails
+  before the app launches rather than 30 s in
 - **`capture-runtime.ts`**: launch primitives shared by the two capture orchestrators, plus `createTrackedArtifactGuard`
-  (only a run that finishes green keeps its rewrite of tracked artifacts; DETAILS § "The capture guard")
-- **`e2e-linux.sh`**: Linux Docker E2E launcher (`playwright-e2e,virtual-mtp` features, single shard, legacy shared
-  fixture path)
+  (only a green run keeps its rewrite of tracked artifacts; DETAILS § "The capture guard")
+- **`e2e-linux.sh`**: Linux Docker E2E launcher (`playwright-e2e,virtual-mtp`, single shard, legacy fixture path)
 
-Wrapper architecture, decisions, and the full instance-isolation reference: `DETAILS.md` and
+Wrapper architecture, decisions, and the instance-isolation reference: `DETAILS.md` and
 `docs/tooling/instance-isolation.md`.
 
 ## Must-knows
@@ -37,7 +37,7 @@ Wrapper architecture, decisions, and the full instance-isolation reference: `DET
   properties/decorators (plain types only). `console` is allowed here (CLI tools) via an `eslint.config.js` override.
   The Go check runner invokes these by path (`exec.Command("node", "scripts/foo.ts")`), so renaming a script means
   updating its caller there and in `package.json`.
-- **Don't bypass the wrapper.** Raw `cargo tauri dev` or raw `cargo build` skips the env composition AND the
+- **Don't bypass the wrapper.** Raw `cargo tauri dev` / `cargo build` skips the env composition AND the
   `beforeBuildCommand` chain (llama-server download + frontend build), so the app launches with the prod identifier or
   no embedded frontend. See the `rust` rule in `.claude/rules/`.
 - **`pnpm dev` refuses to run in the main clone** (a dev launch regenerates `bindings.ts` and runs the wrong instance;
@@ -51,7 +51,7 @@ Wrapper architecture, decisions, and the full instance-isolation reference: `DET
 - **`download-llama-server.go` takes the binaries from the main clone in a worktree when `.version` matches**, as a
   COPY, ❌ never a symlink: the Linux-E2E container bind-mounts only the worktree, where such a symlink dangles. CI
   release builds codesign each one. DETAILS § "The llama-server fetch".
-- **`--worktree` slug isn't validated against the actual worktree directory name.** The wrapper just sanitizes whatever
-  slug you pass, so you can pin isolation from a non-worktree shell.
-- **`instance-id.ts` is stdlib-only** (`node:net`/`fs`/`os`/`path`/`child_process`, no npm deps) and is imported by both
+- **`--worktree` slug isn't validated against the worktree's directory name.** The wrapper sanitizes whatever slug you
+  pass, so you can pin isolation from a non-worktree shell.
+- **`instance-id.ts` is stdlib-only** (`node:net`/`fs`/`os`/`path`/`child_process`) and is imported by both
   `tauri-wrapper.ts` and the test. New helpers need a default-arg shape so existing wrapper code keeps working.

@@ -36,6 +36,56 @@ window focus context.
   `MenuState.context.open_with_apps` so `on_menu_event` can resolve dynamic `open-with:<bundle-id>`
   click targets.
 - `linux.rs`: `build_menu_linux` (full Linux/GTK menu bar with mnemonics, no F-key accelerators).
+- `rebuild.rs`: `rebuild_menu_bar`, which throws the bar away and builds a new one in the current UI language.
+
+## Labels come from the message catalog
+
+Every user-facing string in this module is a `menu.*` key resolved through `crate::intl::menu_t`, which reads the
+`native_strings.gen.rs` table (generated from `messages/<locale>/menu.json` by `pnpm intl:native-strings`) plus the
+active UI locale. Why the lookup lives in Rust rather than being handed over IPC: `src-tauri/src/intl/DETAILS.md`.
+
+Three shapes are worth knowing here:
+
+- **`menu_t_with` for the three labels that name what they act on** (`Copy "photo.jpg"`, `Eject (Backup)`, and the
+  `(busy)` variant, plus `Open with`'s `{app} (default)`). It's a literal `{token}` replacement, the same raw pipeline
+  the `errors.*` family uses on the frontend, NOT ICU: there is no ICU engine in the app process and importing one for
+  four labels would be a bad trade. ❌ Don't add a fifth without asking whether the label can be reshaped instead.
+- **`APP_MENU_TITLE` stays the literal `cmdr`.** macOS names the app menu after the application, so translating it would
+  make the one item every macOS user navigates by unrecognizable, and it would earn a `sameAsSourceJustification` in
+  every locale for nothing.
+- **Every `PredefinedMenuItem` gets explicit text.** muda hardcodes English titles (`"Undo"`, `"Hide Others"`,
+  `"Show All"`, `"Zoom"`, …) and only interpolates the app name into `About`/`Hide`/`Quit`; macOS does NOT localize them
+  for us, because these are plain `NSMenuItem`s muda creates, not system-provided ones. (Verified by reading muda
+  0.19.3's predefined-item source, 2026-08-19.) So a `None` text argument ships an English label into a translated menu.
+
+### Rebuilding on a language change
+
+A label can't be translated in place (muda has no `set_text` for a `Submenu` title, and the AppKit passes resolve items
+through the live bar anyway), so `rebuild_menu_bar` builds the whole thing again. Two callers: the `set_ui_language`
+command (the user picked a language in Settings) and `intl/live_locale.rs`'s emit site (the OS moved under a `'system'`
+setting). Both first ask `refresh_active_locale` whether the answer actually MOVED, because a rebuild is a visible
+flicker plus a round of frontend re-pushes.
+
+What survives is what Rust knows: the show-hidden tick (read off the live item), the per-pane view modes and their
+accelerator (`rebuild_view_mode_items` runs again afterwards), the licence wording (cached in
+`MenuState.has_existing_license`, since the licence lookup isn't generic over the runtime), and which of the two macOS
+bars is installed (`active_menu_kind`, so a focused viewer isn't yanked back to the main bar). Then `cleanup_macos_menus`
+and `set_macos_menu_icons` run exactly as the focus-swap path does.
+
+What does NOT survive is everything the frontend had pushed onto the old items: custom accelerators, the pin/unpin
+label, the "Reopen closed tab" enabled flag, and the file-scoped enable/disable state. The `menu-bar-rebuilt` event
+carries that news to `DualPaneExplorer.svelte`, which re-pushes all four. Re-pushing everything beats tracking what
+moved: the event is rare, and a missed re-push is invisible until a user reaches for a shortcut.
+
+### Linux mnemonics are allocated, not authored
+
+A GTK mnemonic has to be unique within its submenu, and which letters are free depends on the words in the menu — so it
+depends on the LANGUAGE. A hand-picked English set couldn't survive nine translations, and a translator can't be handed
+a per-submenu uniqueness puzzle on top of translating. So `menu_items::Mnemonics` allocates them at build time from the
+translated labels, in menu order: word-initial letters first (what people scan for), then any other letter or digit,
+then no marker at all if everything is taken (which costs one keystroke and nothing else). The menu bar's own titles get
+one allocator; each submenu gets its own. It's a no-op on macOS, but the call sites are identical on both platforms so a
+new item can't be given a mnemonic on one and not the other.
 
 ## Key concepts
 
