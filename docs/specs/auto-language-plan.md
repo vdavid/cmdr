@@ -19,10 +19,13 @@ Do not re-derive these; they're the reason the plan starts where it does.
   `Nincs kijelölés, 0 fájl és 16 mappa`). This was expected to fail (the bundle declares no `CFBundleLocalizations`, so
   `NSLocale.current` should have resolved to `en-HU`); it did not. WebKit's default locale follows the preference list,
   not the bundle's declared localizations.
-  - **Caveat, and the first task of M1**: `-AppleLanguages` is an app-domain override, which is not identical to a
-    global preference. Whether a user whose _global_ `AppleLanguages` is `hu-HU` (with no per-app override) gets the
-    same result is unconfirmed. M1's design makes the question moot, but confirm it anyway so we know what today's users
-    see.
+  - **Confirmed with a GLOBAL preference too** (2026-08-19): with `defaults write -g AppleLanguages -array hu-HU en-US`
+    and no per-app override, a relaunched production Cmdr came up Hungarian. So this is not an artifact of the
+    app-domain `-AppleLanguages` argument, and auto-detection genuinely reaches real users today.
+  - **Which makes the English menu bar a live shipping defect, not a hypothetical.** In both runs the menu bar stayed
+    `File / Edit / Select / View / Go / Tab / Window / Help` over a fully Hungarian app. Every Hungarian, German,
+    Spanish, French, Dutch, Portuguese, Swedish, Vietnamese, and Chinese macOS user running Cmdr sees this right now.
+    That's the strongest argument for M4 and it belongs in the release note.
 - **Nine non-`en` locales ship**, all at 100% coverage: `de`, `es`, `fr`, `hu`, `nl`, `pt`, `sv`, `vi`, `zh`.
 - **`desktop-i18n-coverage` is already an error-level check** that fails on any missing key or any value byte-identical
   to English without a `@key.sameAsSourceJustification`. "Never ship a partial locale" is therefore already an enforced
@@ -152,10 +155,10 @@ wherever the resolver lands)
 - `apple_languages()` already has `apple_languages_returns_at_least_one_entry`; add one asserting order is preserved end
   to end, since the whole feature rests on the list being ordered.
 
-**Validation task (do this first, it's five minutes)**: `defaults write -g AppleLanguages -array hu-HU en-US`, relaunch
-only Cmdr, observe, then `defaults write -g AppleLanguages -array en-US sv-SE` to restore David's exact prior value
-(recorded here so it can't be lost). This settles whether today's users already get auto-detection from a _global_
-preference. It changes nothing about the design; it changes what we say in the release notes.
+**Validation task: DONE** (2026-08-19). Flipping the global `AppleLanguages` to `[hu-HU, en-US]` and relaunching brought
+production Cmdr up in Hungarian with an English menu bar; `[en-US, sv-SE]` restored afterwards. Recorded at the top of
+this plan. The upshot for M1: this milestone is a correctness fix to a feature that already ships, ❌ not the switch
+that turns it on, so there's no "first exposure" risk to manage and no staged rollout to design.
 
 **Docs**: `apps/desktop/src/lib/intl/CLAUDE.md` (one guardrail line: the OS list is the source, not the webview tag),
 `DETAILS.md` (the walk, the script guard, and why the second preference matters). `apps/desktop/src-tauri/src/menu/`
