@@ -894,8 +894,8 @@ up. And `register_known_dialogs` clears the backend's open list, since a reloade
 its pairs and one orphaned entry would refuse every MCP file operation until restart.
 
 **A menu-bar rebuild resets the chrome layer too.** Changing the UI language throws every menu item away and builds new
-ones (`src-tauri/src/menu/rebuild.rs`), which come up enabled. `DualPaneExplorer`'s `menu-bar-rebuilt` listener re-pushes
-what only this window knows: the custom accelerators, the pin/unpin label, the "Reopen closed tab" flag, and
+ones (`src-tauri/src/menu/rebuild.rs`), which come up enabled. `DualPaneExplorer`'s `menu-bar-rebuilt` listener
+re-pushes what only this window knows: the custom accelerators, the pin/unpin label, the "Reopen closed tab" flag, and
 `activateWindowMenu('main')`, which is what re-applies the greying above. Checked states and the per-pane view modes
 survive the rebuild on the Rust side, so they aren't in that list.
 
