@@ -11,7 +11,7 @@
  */
 
 import type { FileSizeFormat } from '$lib/settings/types'
-import { getLocale } from '$lib/intl/locale'
+import { getFormatLocale, getUiLocale } from '$lib/intl/locale'
 import { tString } from '$lib/intl/messages.svelte'
 import { unitLabel } from '$lib/units'
 
@@ -183,10 +183,14 @@ export interface DynamicDatePreset {
 }
 
 export function buildDatePresets(now: Date = new Date(), language?: string): DynamicDatePreset[] {
-  // Default to the single locale source so the calendar names match the rest of
-  // the app; an explicit `language` arg still overrides (tests pass one).
-  const lang = language ?? getLocale()
-  const firstDay = resolveFirstDayOfWeek(lang)
+  // Two locales, because these labels mix two kinds of thing. Which day the week
+  // starts on is a calendar convention the user set in System Settings >
+  // Language & Region, so it follows the FORMATTING locale. The weekday and
+  // month NAMES are words inside translated sentences ("Ez a hónap (május)"), so
+  // they follow the UI language. An explicit `language` pins both (tests).
+  const nameLang = language ?? getUiLocale()
+  const calendarLang = language ?? getFormatLocale()
+  const firstDay = resolveFirstDayOfWeek(calendarLang)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const ms = 24 * 60 * 60 * 1000
 
@@ -204,9 +208,9 @@ export function buildDatePresets(now: Date = new Date(), language?: string): Dyn
   const lastMonthFirst = new Date(today.getFullYear(), today.getMonth() - 1, 1)
   const yearStartFirst = new Date(today.getFullYear(), 0, 1)
 
-  const weekdayLabel = weekdayName(firstDay, lang)
-  const thisMonthMonth = monthName(thisMonthFirst.getMonth(), lang)
-  const lastMonthMonth = monthName(lastMonthFirst.getMonth(), lang)
+  const weekdayLabel = weekdayName(firstDay, nameLang)
+  const thisMonthMonth = monthName(thisMonthFirst.getMonth(), nameLang)
+  const lastMonthMonth = monthName(lastMonthFirst.getMonth(), nameLang)
 
   // Start-of-day time shown on every preset label. Fixed at midnight today; passed
   // as a param so it's single-sourced and translators don't hardcode it.

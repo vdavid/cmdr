@@ -9,11 +9,12 @@
  * locale changes. Mirrors the lazy-singleton shape of
  * `getSystemLocaleFormatter()` in `$lib/settings/format-utils`.
  *
- * The locale always comes from {@link getLocale}; this module never resolves a
- * locale itself.
+ * The locale always comes from {@link getFormatLocale}, which follows the OS
+ * rather than the UI-language setting; this module never resolves a locale
+ * itself.
  */
 
-import { getLocale } from './locale'
+import { getFormatLocale } from './locale'
 
 /** Cache keyed by `${locale} ${JSON.stringify(options)}`. */
 const formatterCache = new Map<string, Intl.NumberFormat>()
@@ -24,7 +25,7 @@ const formatterCache = new Map<string, Intl.NumberFormat>()
  * (locale, options) pairs share one instance.
  */
 export function getNumberFormatter(options: Intl.NumberFormatOptions): Intl.NumberFormat {
-  const locale = getLocale()
+  const locale = getFormatLocale()
   const key = `${locale} ${JSON.stringify(options)}`
   let formatter = formatterCache.get(key)
   if (formatter === undefined) {
@@ -53,7 +54,7 @@ const groupSeparatorCache = new Map<string, string>()
  * counts. Memoized per locale.
  */
 export function getGroupSeparator(): string {
-  const locale = getLocale()
+  const locale = getFormatLocale()
   let separator = groupSeparatorCache.get(locale)
   if (separator === undefined) {
     // 11111 is large enough to force one group boundary in every locale.

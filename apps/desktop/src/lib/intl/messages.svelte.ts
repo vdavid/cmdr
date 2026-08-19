@@ -1,7 +1,7 @@
 /**
  * The thin i18n runtime: resolve user-facing text from JSON message catalogs,
  * format it through `intl-messageformat` (ICU MessageFormat 1), reading the
- * active locale from `$lib/intl`'s single `getLocale()` source.
+ * UI language from `$lib/intl`'s `getUiLocale()` source.
  *
  * Two entry points:
  *  - `t(key, params?)`: resolve + ICU-format. The path for ordinary copy,
@@ -14,7 +14,7 @@
  *
  * Reactivity (load-bearing): a module-level locale-version `$state` rune
  * (`.svelte.ts` is required for `$state`). It is a re-render SIGNAL, not a
- * second locale source. `getLocale()` stays the single source of truth for the
+ * second locale source. `getUiLocale()` stays the single source of truth for the
  * VALUE. `t()` and `getMessage()` MUST read the version rune UNCONDITIONALLY at
  * the top, BEFORE any compiled-message cache lookup; otherwise the reactive
  * dependency isn't tracked and `{t('key')}` won't re-run on a locale change.
@@ -28,7 +28,7 @@
  */
 
 import { IntlMessageFormat, type PrimitiveType, type FormatXMLElementFn } from 'intl-messageformat'
-import { getLocale, setLocaleOverride } from './locale'
+import { getUiLocale, setUiLocaleOverride } from './locale'
 import type { MessageKey } from './keys.gen'
 
 const BASE_LOCALE = 'en'
@@ -114,7 +114,7 @@ export function availableLocales(): string[] {
 
 /**
  * Re-render signal. Bumped by `setLocale()` so markup that read it re-runs.
- * NOT the locale value: that always comes from `getLocale()`.
+ * NOT the locale value: that always comes from `getUiLocale()`.
  */
 let localeVersion = $state(0)
 
@@ -196,7 +196,7 @@ interface I18nCaptureApi {
    * Forces every reactive `t()`/`getMessage()`/`<Trans>` in mounted markup to
    * re-run WITHOUT changing the locale, so the keys an already-mounted surface
    * renders get recorded under the current surface. Bumps the locale-version
-   * rune via `setLocale(getLocale())`; the resolved text is identical, so
+   * rune via `setLocale(getUiLocale())`; the resolved text is identical, so
    * there's no visible change.
    */
   rerender: () => void
@@ -244,7 +244,7 @@ if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
       captureSink.clear()
     },
     rerender() {
-      setLocale(getLocale())
+      setLocale(getUiLocale())
     },
     setLocale(tag: string | null) {
       setLocale(tag)
@@ -282,7 +282,7 @@ export function getMessage(key: MessageKey): string {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- load-bearing rune read: tracks the reactive dependency before any cache lookup; see header.
   localeVersion
   if (__CMDR_I18N_CAPTURE__ && captureActive) recordCapturedKey(key)
-  const locale = getLocale()
+  const locale = getUiLocale()
   return resolveRaw(locale, key)
 }
 
@@ -320,7 +320,7 @@ export function t(key: MessageKey, params?: TranslationParams): TranslationResul
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- load-bearing rune read: tracks the reactive dependency before any cache lookup; see header.
   localeVersion
   if (__CMDR_I18N_CAPTURE__ && captureActive) recordCapturedKey(key)
-  const locale = getLocale()
+  const locale = getUiLocale()
   return getCompiled(locale, key).format(params)
 }
 
@@ -337,15 +337,18 @@ export function tString(key: MessageKey, params?: TranslationParams): string {
 }
 
 /**
- * The locale-switch seam, driven by the Settings > Appearance > Language picker
- * (and by tests). Writes the locale VALUE into the single `getLocale()` source
- * AND bumps the version rune so open `t()`/`<Trans>` usages re-render (and the
- * number/date formatters, which read the same source, reformat). Pass `null` to
- * revert to the OS default. Clears the compiled cache so a re-resolve picks up
- * the new locale.
+ * The language-switch seam, driven by the Settings > Appearance > Language
+ * picker (and by tests). Writes the value into the `getUiLocale()` source AND
+ * bumps the version rune so open `t()`/`<Trans>` usages re-render. Pass `null`
+ * to revert to the OS default. Clears the compiled cache so a re-resolve picks
+ * up the new locale.
+ *
+ * Reaches the UI half ONLY. Numbers, sizes, and dates keep following the OS
+ * through `getFormatLocale()`, so a Hungarian speaker in Sweden keeps their
+ * Swedish dates (`locale.ts`).
  */
 export function setLocale(locale: string | null): void {
-  setLocaleOverride(locale)
+  setUiLocaleOverride(locale)
   compiledCache.clear()
   localeVersion += 1
 }

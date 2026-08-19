@@ -8,7 +8,7 @@ earlier error-text-to-frontend work shipped before these.
 ## The message runtime
 
 `messages.svelte.ts` is a thin (~180-line) runtime over `intl-messageformat` (ICU MessageFormat 1, BSD-3-Clause). It
-resolves user-facing text from JSON catalogs under `messages/<locale>/`, reading the locale from `getLocale()`.
+resolves user-facing text from JSON catalogs under `messages/<locale>/`, reading the language from `getUiLocale()`.
 
 ### Two accessors, two pipelines
 
@@ -47,9 +47,9 @@ pseudolocale is globbed when present and simply absent in prod (gitignored). The
 
 `resolveRaw(locale, key)` resolves with BCP-47 fallback: `catalog[locale]` → `catalog[baseLanguage]` (`de-DE` → `de`) →
 `catalog.en` (the base, always present) → the key string itself. A missing key renders as its own key (visible, never a
-crash). The active locale is `getLocale()`. `en` is the only TRANSLATED catalog that ships today; the base-language and
-exact-locale rungs are real (any added locale dir resolves through them) and also exercised by the `_setCatalogForTests`
-seam (a synthetic test-only locale).
+crash). The active locale is `getUiLocale()`. `en` is the only TRANSLATED catalog that ships today; the base-language
+and exact-locale rungs are real (any added locale dir resolves through them) and also exercised by the
+`_setCatalogForTests` seam (a synthetic test-only locale).
 
 `availableLocales()` returns the loaded catalog tags (sorted, `en` first) and drives the Settings > Appearance >
 Language picker, so a newly-added locale dir auto-appears with no code edit. The non-locale `screenshots/` dir never
@@ -58,24 +58,27 @@ shows up there (the same `BCP47_DIR` gate).
 ### Reactivity (load-bearing)
 
 A module-level `localeVersion = $state(0)` rune (hence `.svelte.ts`) is a re-render SIGNAL, not a second locale source:
-`getLocale()` stays the single source of truth for the VALUE. Every `t()`/`getMessage()` call reads the rune
+`getUiLocale()` stays the single source of truth for the VALUE. Every `t()`/`getMessage()` call reads the rune
 UNCONDITIONALLY and FIRST, before any compiled-message cache lookup; otherwise Svelte doesn't track the dependency and a
-markup `{t('key')}` won't re-run on a locale switch. `setLocale(locale)` writes the value into `locale.ts`'s override
-(the same single source the formatters read) AND bumps the rune AND clears the compiled cache. `_setLocaleForTests`
+markup `{t('key')}` won't re-run on a locale switch. `setLocale(locale)` writes the value into `locale.ts`'s UI-language
+override (leaving the formatters' locale alone) AND bumps the rune AND clears the compiled cache. `_setLocaleForTests`
 writes the value only: use it for non-reactive snapshot tests; use `setLocale()` for reactivity tests. The pattern
 mirrors `system-strings.svelte.ts`. Reactivity holds only inside a reactive context (markup / `$derived`); a `t()` in a
 plain `.ts` computation is a snapshot, which is the right semantics for transient strings (toasts, error copy).
 
 No SSR/prerender concern: the app is a pure SPA (`+layout.ts` has `ssr = false`), so route components are never
-server/build-rendered; the catalog merge (a `import.meta.glob` over `messages/*/*.json`) and `getLocale()` touch no
-`window`.
+server/build-rendered; the catalog merge (a `import.meta.glob` over `messages/*/*.json`) and both locale readers touch
+no `window`.
 
 ### The ICU-vs-`$lib/intl` formatting split
 
 Numbers/sizes/dates format through `$lib/intl` + `format-utils` (the formatting layer, below), NOT through ICU
 `number`/`date` skeletons. `t()` embeds ALREADY-formatted count STRINGS as `*Text` params (e.g. `transfer.movedPhrase`'s
 `filesText`), keeping formatting single-sourced. The raw integer is passed alongside ONLY to drive ICU `plural`
-selection (noun + was/were agreement), never for display. Don't reformat inside messages with ICU `{n, number}`.
+selection (noun + was/were agreement), never for display. Don't reformat inside messages with ICU `{n, number}`. A
+second reason to keep that line: `IntlMessageFormat` is constructed with the UI language (plural rules have to match the
+words around them), so a number formatted INSIDE a message would group by language while every number outside it groups
+by region.
 
 ### Generated keys, codegen, checks
 
@@ -96,10 +99,10 @@ message-key construction. New English keys require translated catalog entries an
 
 ## What this layer owns vs. doesn't
 
-Owns: the locale decision (`getLocale`), and number/size grouping + decimals (`number-format.ts`). The DATE formatter
-lives in `$lib/settings/format-utils.ts` (`formatDateForDisplay` + the cached `getSystemLocaleFormatter`) because dates
-carry per-component age-tier coloring that belongs with the date-color settings; it reads `getLocale()` from here, so
-the locale source is still single.
+Owns: the locale decision (`getUiLocale` / `getFormatLocale`), and number/size grouping + decimals (`number-format.ts`).
+The DATE formatter lives in `$lib/settings/format-utils.ts` (`formatDateForDisplay` + the cached
+`getSystemLocaleFormatter`) because dates carry per-component age-tier coloring that belongs with the date-color
+settings; it reads `getFormatLocale()` from here, so the locale source is still single per job.
 
 Doesn't own (deliberately out of scope for the formatting layer):
 
@@ -107,24 +110,24 @@ Doesn't own (deliberately out of scope for the formatting layer):
   transfer toasts). Locale-correct plurals (`Intl.PluralRules`, 6 categories) and whole-template messages belong to step
   2, where a catalog can hold the variants.
 - A reactive locale STORE. Live locale switching IS supported (the Settings > Appearance > Language picker, below), but
-  it rides the `setLocale()` seam + the message rune, not a `$store`. Don't add a reactive locale store; the single
-  `getLocale()` source plus the rune is the whole mechanism.
+  it rides the `setLocale()` seam + the message rune, not a `$store`. Don't add a reactive locale store; the
+  `getUiLocale()` source plus the rune is the whole mechanism.
 - The deliberately-fixed date formats: the `iso`/`short`/`custom` modes (`format-utils.ts::applyTokens`) and the ISO
   `formatDate` helper in `selection-info-utils.ts` (`YYYY-MM-DD hh:mm:ss`). These are user-chosen fixed formats,
   locale-independent by design. Only the `'system'` date mode is locale-driven.
 - The backend. Rust emits raw numbers, byte counts, and Unix timestamps; formatting is and stays a frontend concern.
 
-## Why `getLocale()` is uncached
+## Why the locale readers are uncached
 
 A plain function call returning the live runtime default keeps the locale-switching seam (`setLocale()`) able to change
-the answer observably. Caching the resolved locale here would freeze it for the page's life and make a switch invisible.
+the answer observably. Caching a resolved locale here would freeze it for the page's life and make a switch invisible.
 The cost is one cheap `Intl.NumberFormat().resolvedOptions().locale` resolve per formatter construction, and the
 formatters themselves are memoized (keyed on the returned locale), so the hot paths don't pay it per format call.
 
 ## Memoization shape
 
-`getNumberFormatter(options)` caches by `${locale} ${JSON.stringify(options)}` and rebuilds only when `getLocale()`
-changes. `getGroupSeparator()` caches the group character per locale (derived from
+`getNumberFormatter(options)` caches by `${locale} ${JSON.stringify(options)}` and rebuilds only when
+`getFormatLocale()` changes. `getGroupSeparator()` caches the group character per locale (derived from
 `Intl.NumberFormat(locale).formatToParts(11111)`). Both mirror the lazy-singleton `getSystemLocaleFormatter()` in
 `format-utils.ts`, which now also keys its single cached `Intl.DateTimeFormat` on the active locale.
 
@@ -158,8 +161,8 @@ correct. Never add a second formatting path for measurement.
 
 ## The locale source seam + the Language picker
 
-`getLocale()` is intentionally a single function, not a locale-management system: `setLocale()` (in
-`messages.svelte.ts`) writes its override and bumps the message rune, so a locale switch is observable everywhere
+`getUiLocale()` is intentionally a single function, not a locale-management system: `setLocale()` (in
+`messages.svelte.ts`) writes its override and bumps the message rune, so a language switch is observable everywhere
 without a store. Keep the seam minimal.
 
 The in-app picker rides this seam. **Settings > Appearance > Language** is the `appearance.language` enum setting
@@ -181,7 +184,7 @@ following the OS, and would silently turn "I didn't care" into "I decided". So i
 walk and the script guard).
 
 **The OS preference LIST is the source, not the webview's tag.** macOS hands out an ORDERED list of languages the user
-reads; `getLocale()` exposes exactly one tag, so a user whose preferences are `[hu-HU, sv-SE]` could never reach Swedish
+reads; the webview exposes exactly one tag, so a user whose preferences are `[hu-HU, sv-SE]` could never reach Swedish
 while Hungarian isn't shipped. Their own second choice was structurally unreachable. Reading the list in Rust also
 removes any dependence on what WebKit decides to do with bundle metadata, which we can't control or test cheaply.
 
@@ -203,9 +206,20 @@ applies the persisted value synchronously and re-applies when the OS answer land
 on any platform with no preference list (Linux), and when the read fails, so a broken read degrades to a reasonable
 language rather than a broken app.
 
-⚠️ **One value drives both halves.** `setLocale()` writes the single locale source that the message runtime AND the
-number/date formatters read, and the tag Rust picks is the CATALOG's, not the user's regional variant. So a `[en-GB]`
-machine in `'system'` mode renders dates as `8/19/2026` rather than `19/08/2026`, and `[pt-PT]` groups thousands the
-Brazilian way (`1.234.567,89`, not `1 234 567,89`). Keeping the UI language from overwriting the number and date
-conventions the user chose in System Settings takes a second, format-only locale that always reads the OS; while there's
-one value, the two move together.
+## Language and region are two settings
+
+macOS keeps them apart (System Settings > General > Language & Region), and so does `locale.ts`. A person can read
+Hungarian and live in Sweden, and picking a UI language is not permission to overwrite the conventions they chose:
+
+- **`getUiLocale()`** follows `appearance.language`. Catalog text reads it: `t()`, `getMessage()`, `<Trans>`, and the
+  weekday/month NAMES in `query-ui/filter-chips/filter-popover-helpers.ts` (they're words inside translated sentences).
+- **`getFormatLocale()`** always follows the OS. Numbers and sizes (`number-format.ts`), the `'system'` date
+  (`format-utils.ts::getSystemLocaleFormatter`), and calendar facts read it: `resolveFirstDayOfWeek` is in the SAME
+  function as those month names and takes the other locale, because which day the week starts on is a region decision.
+  Production has no way to override it; only `_setFormatLocaleForTests` writes it.
+
+`setLocale()` therefore reaches the UI half only. Without the split, a Hungarian pick would rewrite Swedish dates and
+number grouping, and an English pick on a Swedish Mac would impose US conventions.
+
+**The seam Rust's answer is a language, not a region.** The tag the resolver picks is the CATALOG's, so `'system'` mode
+never carries the user's regional variant into the UI half. That's fine now that formatting doesn't ride along.

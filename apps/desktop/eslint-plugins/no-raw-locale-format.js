@@ -3,8 +3,9 @@
  * locale-aware formatter layer; don't hardcode a locale or build a one-off
  * `Intl` formatter in feature code.
  *
- * Rationale: the app has ONE locale source (`$lib/intl/locale.ts`) feeding ONE
- * formatting layer (`$lib/intl/number-format.ts` for numbers/sizes, and the
+ * Rationale: the app resolves the FORMATTING locale in ONE place
+ * (`getFormatLocale()` in `$lib/intl/locale.ts`) feeding ONE formatting layer
+ * (`$lib/intl/number-format.ts` for numbers/sizes, and the
  * `$lib/settings/format-utils.ts` date formatter). Counts go through
  * `formatInteger`/`formatNumber`, sizes through `formatFileSizeWithFormat`/
  * `formatSizeForDisplay`, dates through `formatDateForDisplay`. A stray
@@ -19,7 +20,7 @@
  *
  * Exempt by path: the `lib/intl/` layer itself, the central `format-utils.ts`,
  * and the calendar helper `filter-popover-helpers.ts` (legitimately builds
- * locale-aware weekday/month names; it already reads the chokepoint).
+ * locale-aware weekday/month names; it already reads both chokepoints).
  *
  * Opt out per-line if you truly must:
  *   // eslint-disable-next-line cmdr/no-raw-locale-format -- <reason>
@@ -47,7 +48,7 @@ export default {
         'See `docs/specs/i18n-formatter-layer-plan.md`.',
       rawIntlFormatter:
         "Don't construct `new Intl.{{ ctor }}(...)` in feature code. Use the memoized factory in `$lib/intl/number-format` " +
-        'or the date formatter in `$lib/settings/format-utils`, both keyed on the single `getLocale()` source.',
+        'or the date formatter in `$lib/settings/format-utils`, both keyed on the single `getFormatLocale()` source.',
     },
     schema: [],
   },

@@ -8,7 +8,7 @@
 
 import type { DateTimeFormat } from './types'
 import { tierForYear, tierForMonth, tierForDay, tierForTime, type AgeTierClass } from './age-tier-utils'
-import { getLocale } from '$lib/intl/locale'
+import { getFormatLocale } from '$lib/intl/locale'
 
 /**
  * One rendered fragment of a formatted date. Components carry the age-tier
@@ -220,8 +220,9 @@ function ageClassForIntlPart(type: Intl.DateTimeFormatPartTypes, tiers: Componen
 
 /**
  * Lazily constructed `Intl.DateTimeFormat` for the `'system'` format, keyed on
- * the active locale from the `lib/intl` chokepoint. One formatter serves every
- * call for a given locale; it rebuilds only when the locale changes.
+ * the FORMATTING locale from the `lib/intl` chokepoint (the OS's date
+ * conventions, never the UI-language setting). One formatter serves every call
+ * for a given locale; it rebuilds only when the locale changes.
  * Constructing one per call is ~10× the cost of `formatToParts` itself, which
  * adds up across virtualized file-list re-renders, so the cache is load-bearing
  * for hot scroll.
@@ -237,7 +238,7 @@ let systemLocaleFormatter: Intl.DateTimeFormat | null = null
 let systemLocaleFormatterLocale: string | null = null
 
 function getSystemLocaleFormatter(): Intl.DateTimeFormat {
-  const locale = getLocale()
+  const locale = getFormatLocale()
   if (systemLocaleFormatter === null || systemLocaleFormatterLocale !== locale) {
     systemLocaleFormatter = new Intl.DateTimeFormat(locale, {
       year: 'numeric',

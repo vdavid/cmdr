@@ -135,6 +135,11 @@ lives in `query-shortcuts.ts::matchKey`, which the mode-chip ⌥A / ⌥F / ⌥R 
   colliding cell at once. The first-match key keeps exactly one cell selected.
 - Size > Custom input lives INSIDE the Custom cell (one click selects + focuses).
 - Modified presets are dynamic ("today 0:00", "1st of May 0:00", …) — see `filter-popover-helpers.ts::buildDatePresets`.
+- `buildDatePresets` reads TWO locales on purpose. The weekday and month NAMES follow the UI language (`getUiLocale()`),
+  because they're words inside translated sentences; the first-day-of-week beside them follows the formatting locale
+  (`getFormatLocale()`), because which day the week starts on is a region convention the user set in System Settings.
+  Don't "consistency-fix" them onto one locale. The explicit `language` argument pins both, which is what the tests
+  want.
 - Value + unit cells in the Size and Modified popovers stay clickable while comparator = `any`; they render with
   `.is-disabled-look` (dimmed) and clicking auto-promotes the comparator to `gte` / `after` plus applies the clicked
   value.

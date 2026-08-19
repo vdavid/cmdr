@@ -4,7 +4,7 @@
  * Pins the EXACT strings the four formatter families produced for an en-US
  * runtime BEFORE this work, so the reviewer can trust "current users see no
  * change". Every literal below was captured against the pre-change code. After
- * counts, sizes, and the `system` date are routed through `getLocale()`, these
+ * counts, sizes, and the `system` date are routed through `getFormatLocale()`, these
  * assertions must still hold byte-for-byte under en-US; localization only shows
  * up for other regions (covered by the de-DE behavior tests next to each
  * formatter).
@@ -75,7 +75,7 @@ describe('en-US parity: raw-byte triads (formatSizeTriads)', () => {
 describe('en-US parity: human-friendly sizes (formatFileSizeWithFormat)', () => {
   // No locale stub here on purpose: pre-change this function hardcoded `.` and
   // produced these literals regardless of locale. Post-change it reads
-  // `getLocale()`; en-US must reproduce these EXACT strings (no grouping on the
+  // `getFormatLocale()`; en-US must reproduce these EXACT strings (no grouping on the
   // 1073.21 / 1000000.00 cases, `.` decimal).
   beforeEach(() => {
     _setLocaleForTests('en-US')

@@ -18,7 +18,9 @@
  * Queue window.
  */
 
-import { getUiLocale } from '$lib/tauri-commands'
+// Aliased: `getUiLocale` is also the sync reader in `locale.ts` (the language
+// the app currently speaks). This one is the IPC round-trip that asks the OS.
+import { getUiLocale as fetchOsUiLocale } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('ui-locale')
@@ -43,7 +45,7 @@ let pending: Promise<string | null> | null = null
  * all.
  */
 export function loadSystemUiLocale(): Promise<string | null> {
-  pending ??= getUiLocale()
+  pending ??= fetchOsUiLocale()
     .then((locale) => {
       systemUiLocale = locale ?? null
       log.debug('OS-resolved UI locale: {locale}', { locale: systemUiLocale ?? '(none)' })

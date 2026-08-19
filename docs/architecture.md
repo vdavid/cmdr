@@ -48,9 +48,10 @@ All under `apps/desktop/src/lib/`.
   `write-progress`; route at `routes/queue/`. See `apps/desktop/src/lib/file-operations/queue/CLAUDE.md`
 - `file-viewer/`: Read-only file viewer (separate window, virtual scrolling)
 - `settings/`: Settings UI + registry-based architecture, reactive state
-- `intl/`: The single locale source (`getLocale`) + memoized locale-aware number/size formatters; counts, file sizes,
-  and the `'system'` date all read it (dates formatted in `settings/format-utils.ts`). `ui-locale.ts` resolves the
-  `'system'` UI language from the backend's answer
+- `intl/`: The two locale sources (`getUiLocale` for catalog text, `getFormatLocale` for the OS's number/date
+  conventions) + memoized locale-aware number/size formatters; counts, file sizes, and the `'system'` date read the
+  formatting one (dates formatted in `settings/format-utils.ts`). `ui-locale.ts` resolves the `'system'` UI language
+  from the backend's answer
 - `shortcuts/`: Keyboard shortcut customization, scope hierarchy, conflict detection, plus the read-only Help > Keyboard
   shortcuts window (`shortcuts-window.ts` + `ShortcutsList.svelte` + pure `shortcut-diff.ts`, route at
   `routes/shortcuts/`)

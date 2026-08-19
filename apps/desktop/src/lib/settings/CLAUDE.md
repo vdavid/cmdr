@@ -42,8 +42,8 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
   never `initializeSettings()` directly: it seeds the reactive layer and picks full vs restricted access. Skip it and
   that window renders every reactive setting at its default. DETAILS § Per-window initialization.
 - **Date formatting has one source of truth**: `formatDateForDisplay()` (pure) → `formattedDate()` (reactive) →
-  `<DateLabel>` (render); coloring only in `age-tier-utils.ts`. `'system'` mode reads `$lib/intl`'s `getLocale()`; don't
-  hardcode a locale or add a formatter. DETAILS § Date display.
+  `<DateLabel>` (render); coloring only in `age-tier-utils.ts`. `'system'` mode reads `$lib/intl`'s `getFormatLocale()`;
+  don't hardcode a locale or add a formatter. DETAILS § Date display.
 - **AI hot-apply** routes `ai.provider` / `ai.cloudProvider` / `ai.cloudProviderConfigs` through `settings-applier.ts`
   to `ai-config.ts::pushConfigToBackend()`, which re-reads every setting fresh; never pass cached values (callers just
   `setSetting(...)`). Those three plus `askCmdr.interactiveModel` also nudge `noteModelSettingChanged()`;

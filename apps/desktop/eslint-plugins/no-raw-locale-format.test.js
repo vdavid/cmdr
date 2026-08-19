@@ -19,7 +19,7 @@ ruleTester.run('no-raw-locale-format', rule, {
     },
     // The central date formatter is exempt.
     {
-      code: `const f = new Intl.DateTimeFormat(getLocale(), opts)`,
+      code: `const f = new Intl.DateTimeFormat(getFormatLocale(), opts)`,
       filename: 'src/lib/settings/format-utils.ts',
     },
     // The calendar helper legitimately builds locale-aware names.
