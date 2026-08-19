@@ -90,6 +90,7 @@ pub use write_operations::{
 pub use write_operations::{VolumeCopyConfig, VolumeCopyScanResult, scan_for_volume_copy};
 pub(crate) use write_operations::{
     resolve_dest_path, resolve_source_volume, start_volume_compress, start_volume_copy, start_volume_move,
+    transfer_would_land_on_its_source,
 };
 
 /// Whether to auto-upgrade SMB mounts to direct smb2 connections.

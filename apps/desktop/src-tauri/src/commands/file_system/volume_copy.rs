@@ -9,8 +9,10 @@ use crate::file_system::{
     OperationEventSink, ScanConflict, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationError,
     WriteOperationStartResult, resolve_dest_path, resolve_source_volume,
     scan_for_volume_copy as ops_scan_for_volume_copy, start_volume_compress, start_volume_copy, start_volume_move,
+    transfer_would_land_on_its_source,
 };
-use std::path::PathBuf;
+use cmdr_fs::volume::Volume;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::time::Duration;
 
@@ -226,6 +228,12 @@ pub(crate) async fn scan_volume_for_conflicts_within(
         })
         .collect();
 
+    // The source side of the self-collision filter below. Both halves come from
+    // the same resolve the batch stat pays for, and both stay `None`/empty when
+    // the caller sent no source volume: the filter is then inert and the scan
+    // keeps its name-only behaviour.
+    let mut resolved_source: Option<(Arc<dyn Volume>, Vec<PathBuf>)> = None;
+
     // Resolve real per-item types and sizes from the source volume when the
     // caller supplied it. One batched stat, O(top-level items). `resolve_source`
     // routes an archive-inner source through its ArchiveVolume.
@@ -237,6 +245,7 @@ pub(crate) async fn scan_volume_for_conflicts_within(
         })
         .await;
         if let Ok(Some((src_volume, _))) = resolved {
+            resolved_source = Some((Arc::clone(&src_volume), paths.clone()));
             // Detached (see `timeout_detached`): the batch stat reaches the
             // source device, so the deadline must not drop it.
             let batch = timeout_detached_within(&deadline, async move {
@@ -263,6 +272,7 @@ pub(crate) async fn scan_volume_for_conflicts_within(
 
     // Run conflict scan (now async), detached so the destination device isn't
     // left mid-transaction if the scan overruns.
+    let dest_volume = Arc::clone(&volume);
     let found = timeout_detached_within(&deadline, async move {
         volume
             .scan_for_conflicts(&source_items, &dest_path)
@@ -270,16 +280,56 @@ pub(crate) async fn scan_volume_for_conflicts_within(
             .map_err(|e| e.to_string())
     })
     .await;
-    match &found {
-        Ok(conflicts) => log::debug!(
-            target: CONFLICT_LOG_TARGET,
-            "found {} collision(s) in {:.1}s",
-            conflicts.len(),
-            deadline.elapsed().as_secs_f64()
-        ),
-        Err(e) => log_conflict_outcome(&deadline, "couldn't read the destination", e),
+    match found {
+        Ok(conflicts) => {
+            let total = conflicts.len();
+            let conflicts = drop_self_collisions(conflicts, resolved_source.as_ref(), &dest_volume);
+            log::debug!(
+                target: CONFLICT_LOG_TARGET,
+                "found {} collision(s) in {:.1}s, {} of them the sources themselves",
+                total,
+                deadline.elapsed().as_secs_f64(),
+                total - conflicts.len()
+            );
+            Ok(conflicts)
+        }
+        Err(e) => {
+            log_conflict_outcome(&deadline, "couldn't read the destination", &e);
+            Err(e)
+        }
     }
-    found
+}
+
+/// Drops the collisions that name a source itself, which the engines duplicate
+/// silently instead of asking about.
+///
+/// The per-backend `scan_for_conflicts` can't do this: it gets `SourceItemInfo`,
+/// a name and a size with no source path in it, so widening it would mean
+/// touching three backends and every test double for a question one place can
+/// answer. `transfer_would_land_on_its_source` is that one place, and it gives
+/// the answer the engine that will actually run gives.
+///
+/// Every source is tried against every collision rather than pairing them by
+/// name: the name a backend reports is the DESTINATION entry's, which a
+/// case-insensitive share or an NFC/NFD-normalizing one can spell differently
+/// from the source it came from.
+fn drop_self_collisions(
+    conflicts: Vec<ScanConflict>,
+    resolved_source: Option<&(Arc<dyn Volume>, Vec<PathBuf>)>,
+    dest_volume: &Arc<dyn Volume>,
+) -> Vec<ScanConflict> {
+    let Some((source_volume, source_paths)) = resolved_source else {
+        return conflicts;
+    };
+    conflicts
+        .into_iter()
+        .filter(|conflict| {
+            let dest_path = Path::new(&conflict.dest_path);
+            !source_paths.iter().any(|source_path| {
+                transfer_would_land_on_its_source(source_volume, source_path, dest_volume, dest_path)
+            })
+        })
+        .collect()
 }
 
 /// The one line a check that couldn't answer leaves behind. WARN, because the
@@ -355,10 +405,10 @@ pub struct SourceItemInput {
 mod tests {
     use super::{Deadline, SourceItemInput, merge_source_types_from_batch, scan_volume_for_conflicts_within};
     use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
-    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo};
+    use crate::file_system::{BatchScanResult, CopyScanResult, InMemoryVolume, LocalPosixVolume, SourceItemInfo};
     use crate::test_support::WedgedVolume;
     use cmdr_fs::volume::Volume;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::sync::Arc;
     use std::time::Duration;
 
@@ -408,6 +458,179 @@ mod tests {
             "the whole check owes one budget, not one per leg: took {:?}",
             started.elapsed()
         );
+    }
+
+    /// A source pasted into the folder it already lives in is a request to
+    /// DUPLICATE it, and both engines answer it by silently auto-renaming
+    /// (`write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in
+    /// place)"). The pre-flight matches destination entries by NAME, so without
+    /// the filter every source of a same-folder copy comes back as its own
+    /// conflict, and the dialog announces a conflict count, shows the
+    /// overwrite/skip/rename radios, and hands the backend a pre-known-conflict
+    /// list naming every source.
+    #[tokio::test]
+    async fn a_same_folder_copy_finds_no_conflicts() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        std::fs::write(dir.path().join("photo.jpg"), b"bytes").expect("write source");
+        std::fs::create_dir(dir.path().join("docs")).expect("create source dir");
+        let _volume = TestVolumeRegistration::install(
+            "self-collision-scan",
+            Arc::new(LocalPosixVolume::new("Duplicates", dir.path())) as Arc<dyn Volume>,
+        );
+
+        let conflicts = scan_volume_for_conflicts_within(
+            Deadline::new(Duration::from_secs(5)),
+            String::from("self-collision-scan"),
+            vec![input("photo.jpg"), input("docs")],
+            dir.path().to_string_lossy().into_owned(),
+            Some(String::from("self-collision-scan")),
+            Some(vec![
+                dir.path().join("photo.jpg").to_string_lossy().into_owned(),
+                dir.path().join("docs").to_string_lossy().into_owned(),
+            ]),
+        )
+        .await
+        .expect("the scan answers");
+
+        assert!(
+            conflicts.is_empty(),
+            "an item landing on itself is a duplicate, not a conflict, but the scan reported {conflicts:?}"
+        );
+    }
+
+    /// The other half of the same rule: a DIFFERENT file of the same name is
+    /// still in the way, and the dialog still has to say so.
+    #[tokio::test]
+    async fn a_different_file_of_the_same_name_is_still_a_conflict() {
+        let source_dir = tempfile::tempdir().expect("source dir");
+        let dest_dir = tempfile::tempdir().expect("dest dir");
+        std::fs::write(source_dir.path().join("photo.jpg"), b"mine").expect("write source");
+        std::fs::write(dest_dir.path().join("photo.jpg"), b"theirs").expect("write dest");
+        let _source = TestVolumeRegistration::install(
+            "self-collision-scan-source",
+            Arc::new(LocalPosixVolume::new("Source", source_dir.path())) as Arc<dyn Volume>,
+        );
+        let _dest = TestVolumeRegistration::install(
+            "self-collision-scan-dest",
+            Arc::new(LocalPosixVolume::new("Dest", dest_dir.path())) as Arc<dyn Volume>,
+        );
+
+        let conflicts = scan_volume_for_conflicts_within(
+            Deadline::new(Duration::from_secs(5)),
+            String::from("self-collision-scan-dest"),
+            vec![input("photo.jpg")],
+            dest_dir.path().to_string_lossy().into_owned(),
+            Some(String::from("self-collision-scan-source")),
+            Some(vec![source_dir.path().join("photo.jpg").to_string_lossy().into_owned()]),
+        )
+        .await
+        .expect("the scan answers");
+
+        assert_eq!(conflicts.len(), 1, "a real clash still reaches the dialog");
+        assert_eq!(conflicts[0].source_path, "photo.jpg");
+    }
+
+    /// A source reached through a symlinked parent is the same file, and the
+    /// LOCAL engine (which a both-local transfer routes to) settles it with
+    /// `dev+ino`. A folded-path comparison would miss it and the dialog would
+    /// invent a conflict the engine then silently duplicates past.
+    #[tokio::test]
+    async fn a_source_reached_through_a_symlinked_parent_finds_no_conflicts() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let real = dir.path().join("real");
+        std::fs::create_dir(&real).expect("create real dir");
+        std::fs::write(real.join("photo.jpg"), b"bytes").expect("write source");
+        let link = dir.path().join("link");
+        std::os::unix::fs::symlink(&real, &link).expect("symlink the parent");
+        let _volume = TestVolumeRegistration::install(
+            "self-collision-scan-symlink",
+            Arc::new(LocalPosixVolume::new("Duplicates", dir.path())) as Arc<dyn Volume>,
+        );
+
+        let conflicts = scan_volume_for_conflicts_within(
+            Deadline::new(Duration::from_secs(5)),
+            String::from("self-collision-scan-symlink"),
+            vec![input("photo.jpg")],
+            real.to_string_lossy().into_owned(),
+            Some(String::from("self-collision-scan-symlink")),
+            Some(vec![link.join("photo.jpg").to_string_lossy().into_owned()]),
+        )
+        .await
+        .expect("the scan answers");
+
+        assert!(
+            conflicts.is_empty(),
+            "the symlinked route names the same file, so it is a duplicate: got {conflicts:?}"
+        );
+    }
+
+    /// The cross-volume arm of the same rule. No backend out here offers an
+    /// inode, so identity is one volume plus a folded path, and the fold is what
+    /// makes a case-differing route (an SMB share, a macOS volume) count.
+    #[tokio::test]
+    async fn a_same_folder_copy_on_a_remote_volume_finds_no_conflicts() {
+        let volume = Arc::new(InMemoryVolume::new("Device")) as Arc<dyn Volume>;
+        volume.create_directory(Path::new("/photos")).await.expect("create dir");
+        volume
+            .create_file(Path::new("/photos/photo.jpg"), b"pixels")
+            .await
+            .expect("create file");
+        let _registered = TestVolumeRegistration::install("self-collision-scan-device", Arc::clone(&volume));
+
+        let conflicts = scan_volume_for_conflicts_within(
+            Deadline::new(Duration::from_secs(5)),
+            String::from("self-collision-scan-device"),
+            vec![input("photo.jpg")],
+            String::from("/photos"),
+            Some(String::from("self-collision-scan-device")),
+            Some(vec![String::from("/PHOTOS/Photo.JPG")]),
+        )
+        .await
+        .expect("the scan answers");
+
+        assert!(
+            conflicts.is_empty(),
+            "the folded path names the same item, so it is a duplicate: got {conflicts:?}"
+        );
+    }
+
+    /// Two volumes that happen to spell a path the same way hold two different
+    /// items, so the clash is real and the dialog still has to say so.
+    #[tokio::test]
+    async fn the_same_path_on_two_volumes_is_still_a_conflict() {
+        let source = Arc::new(InMemoryVolume::new("Source")) as Arc<dyn Volume>;
+        let dest = Arc::new(InMemoryVolume::new("Dest")) as Arc<dyn Volume>;
+        for volume in [&source, &dest] {
+            volume.create_directory(Path::new("/photos")).await.expect("create dir");
+            volume
+                .create_file(Path::new("/photos/photo.jpg"), b"pixels")
+                .await
+                .expect("create file");
+        }
+        let _source_reg = TestVolumeRegistration::install("self-collision-scan-two-source", source);
+        let _dest_reg = TestVolumeRegistration::install("self-collision-scan-two-dest", dest);
+
+        let conflicts = scan_volume_for_conflicts_within(
+            Deadline::new(Duration::from_secs(5)),
+            String::from("self-collision-scan-two-dest"),
+            vec![input("photo.jpg")],
+            String::from("/photos"),
+            Some(String::from("self-collision-scan-two-source")),
+            Some(vec![String::from("/photos/photo.jpg")]),
+        )
+        .await
+        .expect("the scan answers");
+
+        assert_eq!(conflicts.len(), 1, "two volumes, two items, one real clash");
+    }
+
+    fn input(name: &str) -> SourceItemInput {
+        SourceItemInput {
+            name: name.to_string(),
+            size: 0,
+            modified: None,
+            is_directory: false,
+        }
     }
 
     fn scan(is_dir: bool, bytes: u64) -> CopyScanResult {

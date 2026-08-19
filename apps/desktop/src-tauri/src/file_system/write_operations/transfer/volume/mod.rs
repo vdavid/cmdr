@@ -37,6 +37,7 @@ pub use r#move::move_between_volumes;
 pub(in crate::file_system::write_operations) use cleanup::{TreeRemoval, remove_tree};
 /// The cross-volume copy body, reused as the extract phase of an out-of-zip
 /// move (`archive_edit`).
+pub(crate) use conflict::is_the_same_item;
 pub(crate) use copy::copy_volumes_with_progress;
 /// Pull a remote path down to a local scratch copy (remote zip edits).
 pub(in crate::file_system::write_operations) use strategy::pull_path_to_local;

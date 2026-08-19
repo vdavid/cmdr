@@ -55,6 +55,39 @@ pub(crate) fn resolve_dest_path(dest_volume: &Arc<dyn Volume>, dest_path: String
     cmdr_fs::volume::root_anchored(dest_volume.root(), Path::new(&expanded))
 }
 
+/// Whether transferring `source_path` to `dest_path` would land it on that very
+/// item, which both engines answer by duplicating rather than by asking
+/// (`transfer/DETAILS.md` § "Self-collision (duplicating in place)").
+///
+/// The pre-flight conflict scan asks this AHEAD of the engines, so it has to
+/// give the answer the engine that will actually run gives, and the two engines
+/// answer identity differently. Same fork as `copy_between_volumes` makes: a
+/// both-local transfer is handed to the local engine, whose rule is `dev+ino`
+/// (`validation::is_same_file`, which settles a symlinked parent and a
+/// case- or NFC/NFD-differing route); everything else stays on the cross-volume
+/// engine, whose rule is one volume plus a folded path (`is_the_same_item`).
+/// Answering it here rather than in each backend's `scan_for_conflicts` is what
+/// keeps `SourceItemInfo` a name-and-size DTO with no source path in it.
+///
+/// The local arm anchors both sides the way that fork does: `join` for the
+/// source (an absolute clipboard path wins over the volume root) and
+/// `root_anchored` for the destination (idempotent, so an already-absolute
+/// listing path passes through).
+pub(crate) fn transfer_would_land_on_its_source(
+    source_volume: &Arc<dyn Volume>,
+    source_path: &Path,
+    dest_volume: &Arc<dyn Volume>,
+    dest_path: &Path,
+) -> bool {
+    match (source_volume.local_path(), dest_volume.local_path()) {
+        (Some(source_root), Some(dest_root)) => super::validation::is_same_file(
+            &source_root.join(source_path),
+            &cmdr_fs::volume::root_anchored(&dest_root, dest_path),
+        ),
+        _ => super::transfer::volume::is_the_same_item(source_volume, source_path, dest_volume, dest_path),
+    }
+}
+
 /// Resolves a batch's source volume, routing a source INSIDE an archive to its
 /// `ArchiveVolume` (extract-out is a supported source). One `source_volume_id` per
 /// batch means no straddle risk — every path shares the same archive or none — so

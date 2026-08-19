@@ -644,9 +644,10 @@ pub(super) async fn finalize_safe_replace(
 /// already means by it (the dest-inside-source guard included): the command
 /// layer hands one `Arc` for a same-volume-id transfer.
 ///
-/// `pub(super)` because `copy.rs` asks it too, to keep the sources it covers out
-/// of the pre-known-conflict bulk skip.
-pub(super) fn is_the_same_item(
+/// `copy.rs` asks it too, to keep the sources it covers out of the pre-known-conflict
+/// bulk skip, and so does `routing::transfer_would_land_on_its_source`, which
+/// gives the pre-flight conflict scan the answer this engine will give.
+pub(crate) fn is_the_same_item(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     dest_volume: &Arc<dyn Volume>,

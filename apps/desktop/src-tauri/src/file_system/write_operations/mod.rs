@@ -130,6 +130,7 @@ pub(crate) use rename::{
 // reachable by a backend caller and not only the IPC edge. `routing.rs`.
 pub(crate) use routing::{
     resolve_dest_path, resolve_source_volume, start_volume_compress, start_volume_copy, start_volume_move,
+    transfer_would_land_on_its_source,
 };
 #[cfg(not(test))]
 use source_binding::retain_bound_sources;

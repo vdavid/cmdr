@@ -384,3 +384,61 @@ fn with_scan_meta_handles_missing_expected_totals() {
     assert_eq!(event.expected_files_total, None);
     assert_eq!(event.expected_bytes_total, None);
 }
+
+/// A dry run of a same-folder copy must report no conflicts.
+///
+/// The engines answer a source landing on ITSELF by duplicating it under a free
+/// name (`transfer/DETAILS.md` § "Self-collision (duplicating in place)"), so
+/// there is nothing in the way and nothing to ask about. A dry run that reports
+/// one conflict per file describes an operation that never happens.
+#[test]
+fn a_dry_run_of_a_same_folder_copy_reports_no_conflicts() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    fs::write(dir.path().join("photo.jpg"), b"pixels").expect("write file");
+    fs::create_dir(dir.path().join("docs")).expect("create dir");
+    fs::write(dir.path().join("docs/a.txt"), b"notes").expect("write nested file");
+
+    let events = crate::file_system::write_operations::types::CollectorEventSink::new();
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+    let result = dry_run_scan(
+        &[dir.path().join("photo.jpg"), dir.path().join("docs")],
+        dir.path(),
+        &state,
+        &events,
+        "dry-run-self-collision",
+        WriteOperationType::Copy,
+        Duration::from_secs(3600),
+    )
+    .expect("the dry run completes");
+
+    assert!(
+        result.conflicts.is_empty(),
+        "duplicating in place clashes with nothing, but the dry run reported {:?}",
+        result.conflicts
+    );
+    assert_eq!(result.file_count, 2, "both files are still copied, and still counted");
+}
+
+/// The other half: a genuine clash at a different destination is still reported.
+#[test]
+fn a_dry_run_of_a_copy_onto_a_different_file_still_reports_the_conflict() {
+    let source_dir = tempfile::tempdir().expect("source dir");
+    let dest_dir = tempfile::tempdir().expect("dest dir");
+    fs::write(source_dir.path().join("photo.jpg"), b"mine").expect("write source");
+    fs::write(dest_dir.path().join("photo.jpg"), b"theirs").expect("write dest");
+
+    let events = crate::file_system::write_operations::types::CollectorEventSink::new();
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+    let result = dry_run_scan(
+        &[source_dir.path().join("photo.jpg")],
+        dest_dir.path(),
+        &state,
+        &events,
+        "dry-run-real-conflict",
+        WriteOperationType::Copy,
+        Duration::from_secs(3600),
+    )
+    .expect("the dry run completes");
+
+    assert_eq!(result.conflicts.len(), 1, "a real clash still reaches the caller");
+}

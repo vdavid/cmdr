@@ -878,6 +878,16 @@ fn dry_run_scan_internal(
     let mut visited = HashSet::new();
 
     for source in sources {
+        // A source that would land on ITSELF is a request to duplicate it, and
+        // both engines answer that by writing the whole subtree under a name
+        // nobody holds (`transfer/DETAILS.md` § "Self-collision (duplicating in
+        // place)"). Nothing in it can be in the way, so reporting its own files
+        // as conflicts would describe work the copy never does. Asked per
+        // top-level source, the altitude the engines ask it at: every LEAF of a
+        // same-folder folder copy is its own self-collision, and a per-leaf
+        // question would be answering about `docs/a.txt` instead of `docs/`.
+        let lands_on_itself = calculate_dest_path(source, source, destination)
+            .is_ok_and(|dest_path| super::validation::is_same_file(source, &dest_path));
         dry_run_scan_recursive(
             source,
             source,
@@ -892,6 +902,7 @@ fn dry_run_scan_internal(
             &progress_interval,
             &mut last_progress_time,
             &mut visited,
+            lands_on_itself,
         )?;
     }
 
@@ -931,6 +942,10 @@ fn dry_run_scan_recursive(
     progress_interval: &Duration,
     last_progress_time: &mut Instant,
     visited: &mut HashSet<PathBuf>,
+    // `true` when this subtree's top-level source lands on itself, so the whole
+    // of it is a duplicate under a fresh name and none of it can clash. Decided
+    // once by the caller and carried down, never re-asked per leaf.
+    lands_on_itself: bool,
 ) -> Result<(), WriteOperationError> {
     // Check cancellation
     if super::state::is_cancelled(&state.intent) {
@@ -950,7 +965,8 @@ fn dry_run_scan_recursive(
         *files_found += 1;
 
         // Check for conflict
-        if (dest_path.exists() || fs::symlink_metadata(&dest_path).is_ok())
+        if !lands_on_itself
+            && (dest_path.exists() || fs::symlink_metadata(&dest_path).is_ok())
             && let Some(conflict) = create_conflict_info(path, &dest_path, &metadata)?
         {
             // Emit conflict event for streaming
@@ -971,7 +987,8 @@ fn dry_run_scan_recursive(
         }
 
         // Check if destination exists and is not a directory (type conflict)
-        if dest_path.exists()
+        if !lands_on_itself
+            && dest_path.exists()
             && !dest_path.is_dir()
             && let Some(conflict) = create_conflict_info(path, &dest_path, &metadata)?
         {
@@ -997,6 +1014,7 @@ fn dry_run_scan_recursive(
                 progress_interval,
                 last_progress_time,
                 visited,
+                lands_on_itself,
             )?;
         }
     } else {
