@@ -65,7 +65,8 @@ pub(crate) fn resolve_dest_path(dest_volume: &Arc<dyn Volume>, dest_path: String
 /// both-local transfer is handed to the local engine, whose rule is `dev+ino`
 /// (`validation::is_same_file`, which settles a symlinked parent and a
 /// case- or NFC/NFD-differing route); everything else stays on the cross-volume
-/// engine, whose rule is one volume plus a folded path (`is_the_same_item`).
+/// engine, whose rule is one volume, the same parent, and a folded leaf
+/// (`is_the_same_item`).
 /// Answering it here rather than in each backend's `scan_for_conflicts` is what
 /// keeps `SourceItemInfo` a name-and-size DTO with no source path in it.
 ///

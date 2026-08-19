@@ -78,7 +78,7 @@ mod safety_grid_tests;
 )]
 pub(crate) use faulty_volume::{FaultyOp, FaultyVolume};
 
-/// Duplicating in place at the volume seam: both engines, plus the folded-path
+/// Duplicating in place at the volume seam: both engines, plus the folded-leaf
 /// identity rule that stands in for `dev+ino` out here.
 #[cfg(test)]
 mod self_collision_tests;

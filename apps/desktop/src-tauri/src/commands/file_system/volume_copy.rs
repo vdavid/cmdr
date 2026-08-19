@@ -567,8 +567,10 @@ mod tests {
     }
 
     /// The cross-volume arm of the same rule. No backend out here offers an
-    /// inode, so identity is one volume plus a folded path, and the fold is what
-    /// makes a case-differing route (an SMB share, a macOS volume) count.
+    /// inode, so identity is one volume, the same parent, and a folded LEAF, and
+    /// that fold is what makes a case-differing name (an SMB share, a macOS
+    /// volume) count. A case-differing PARENT deliberately does not: see
+    /// `transfer/volume/conflict.rs::is_the_same_volume_path`.
     #[tokio::test]
     async fn a_same_folder_copy_on_a_remote_volume_finds_no_conflicts() {
         let volume = Arc::new(InMemoryVolume::new("Device")) as Arc<dyn Volume>;
@@ -585,14 +587,48 @@ mod tests {
             vec![input("photo.jpg")],
             String::from("/photos"),
             Some(String::from("self-collision-scan-device")),
-            Some(vec![String::from("/PHOTOS/Photo.JPG")]),
+            Some(vec![String::from("/photos/Photo.JPG")]),
         )
         .await
         .expect("the scan answers");
 
         assert!(
             conflicts.is_empty(),
-            "the folded path names the same item, so it is a duplicate: got {conflicts:?}"
+            "the folded leaf names the same item, so it is a duplicate: got {conflicts:?}"
+        );
+    }
+
+    /// The dialog and the engine have to agree, so the pre-flight draws the
+    /// parent line in the same place: a source from a differently-cased folder is
+    /// a real clash, not a duplicate. Dropping it here would announce "no
+    /// conflicts" for a transfer the engine then prompts about.
+    #[tokio::test]
+    async fn a_source_from_a_case_differing_folder_is_still_a_conflict() {
+        let volume = Arc::new(InMemoryVolume::new("Device")) as Arc<dyn Volume>;
+        for dir in ["/photos", "/PHOTOS"] {
+            volume.create_directory(Path::new(dir)).await.expect("create dir");
+            volume
+                .create_file(&Path::new(dir).join("photo.jpg"), b"pixels")
+                .await
+                .expect("create file");
+        }
+        let _registered = TestVolumeRegistration::install("self-collision-scan-case-parent", Arc::clone(&volume));
+
+        let conflicts = scan_volume_for_conflicts_within(
+            Deadline::new(Duration::from_secs(5)),
+            String::from("self-collision-scan-case-parent"),
+            vec![input("photo.jpg")],
+            String::from("/photos"),
+            Some(String::from("self-collision-scan-case-parent")),
+            Some(vec![String::from("/PHOTOS/photo.jpg")]),
+        )
+        .await
+        .expect("the scan answers");
+
+        assert_eq!(
+            conflicts.len(),
+            1,
+            "a differently-cased parent is another folder as far as we may say: got {conflicts:?}"
         );
     }
 

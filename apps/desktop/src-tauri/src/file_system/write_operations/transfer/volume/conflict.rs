@@ -677,20 +677,38 @@ pub(crate) fn is_the_same_item(
     Arc::ptr_eq(source_volume, dest_volume) && is_the_same_volume_path(source_path, dest_path)
 }
 
-/// Whether two paths on ONE volume name the same item.
+/// Whether two paths on ONE volume name the same item: the SAME parent
+/// directory, and a final component the destination's backend would resolve onto
+/// one entry.
 ///
-/// Folded (NFC + lowercase), the same key `DestNameIndex` buckets destination
-/// names under, so a case-differing route (SMB shares, macOS volumes) or an
-/// NFC/NFD-differing one (macOS and SMB move paths between the two routinely)
-/// counts. That fold IS this project's answer to "would this backend treat these
-/// two as the same". A non-UTF-8 path can't be folded the way a backend would,
-/// so there only a byte-exact match counts — the same stance
-/// `DestNameIndex::lookup` takes.
+/// The leaf is compared folded (NFC + lowercase), the key `DestNameIndex` buckets
+/// destination names under, so a case-differing route (SMB shares, macOS
+/// volumes) or an NFC/NFD-differing one (macOS and SMB move paths between the two
+/// routinely) counts. That fold answers exactly one question — "would this
+/// backend treat these two NAMES as the same, in one listing" — and the leaf is
+/// the only component we ever have a listing for.
+///
+/// ❌ The parents are NOT folded. Whether `/DCIM` and `/dcim` are one directory
+/// is the backend's call, and a case-sensitive one (MTP is; an SMB share can be)
+/// says no, so folding them turns a genuine cross-folder transfer into a
+/// self-collision: the move writes nothing, reports `Done`, and the user is told
+/// an item moved that didn't. Being wrong the other way costs the ordinary
+/// conflict path on a case-insensitive backend reached by a differently-cased
+/// route, which is where such a transfer landed before this rule existed.
+///
+/// A non-UTF-8 leaf can't be folded the way a backend would, so there only a
+/// byte-exact match counts — the same stance `DestNameIndex::lookup` takes.
 ///
 /// The same-volume move drops its self-colliding sources with this before any
 /// engine runs (`move_same.rs`), which is why it isn't private to the resolver.
 pub(super) fn is_the_same_volume_path(source_path: &Path, dest_path: &Path) -> bool {
-    match (source_path.to_str(), dest_path.to_str()) {
+    if source_path.parent() != dest_path.parent() {
+        return false;
+    }
+    match (
+        source_path.file_name().and_then(|name| name.to_str()),
+        dest_path.file_name().and_then(|name| name.to_str()),
+    ) {
         (Some(source), Some(dest)) => fold(source) == fold(dest),
         _ => source_path == dest_path,
     }

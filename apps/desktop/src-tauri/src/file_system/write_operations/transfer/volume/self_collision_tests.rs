@@ -3,7 +3,7 @@
 //!
 //! The rule is the one `../DETAILS.md` § "Self-collision (duplicating in place)"
 //! states; what's volume-specific is how identity is answered (no `dev+ino` out
-//! here, so it's one volume plus a folded-path comparison) and that a renamed
+//! here, so it's one volume, one parent directory, and a folded leaf) and that a renamed
 //! directory needs no remap, because `merge_level` threads the destination down
 //! through its own recursion.
 //!
@@ -381,10 +381,10 @@ async fn a_genuine_conflict_on_one_volume_still_raises_the_normal_flow() {
 // Identity at the resolver seam
 // ============================================================================
 //
-// A volume has no `dev+ino`, so identity is one volume plus a folded path
-// (`dest_name_index::fold`, NFC + lowercase — the project's answer to "would
-// this backend treat these two names as the same"). `InMemoryVolume` is
-// case- and normalization-sensitive, so the folding cases are pinned here at
+// A volume has no `dev+ino`, so identity is one volume, the same parent, and a
+// folded leaf (`dest_name_index::fold`, NFC + lowercase — the project's answer
+// to "would this backend treat these two names as the same"). `InMemoryVolume`
+// is case- and normalization-sensitive, so the folding cases are pinned here at
 // the resolver rather than through a whole copy.
 
 /// Resolve one clash under `policy` and hand back the write path the resolver
@@ -479,6 +479,45 @@ async fn an_nfd_path_on_one_volume_is_the_same_item_as_its_nfc_twin() {
     assert!(events.conflicts.lock_ignore_poison().is_empty());
 }
 
+/// A case-differing PARENT is a different folder as far as we're allowed to say.
+/// The leaf is the question `fold` answers (one destination listing, one
+/// backend's name resolution); whether `/DCIM` and `/dcim` are one directory is
+/// the backend's call, and a case-sensitive one (MTP is, and an SMB share can
+/// be) says no. Claiming otherwise turns a real cross-folder transfer into a
+/// self-collision.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_case_differing_parent_is_not_the_same_item() {
+    let volume = one_volume();
+    volume.create_directory(Path::new("/DCIM")).await.unwrap();
+    volume.create_directory(Path::new("/dcim")).await.unwrap();
+    volume
+        .create_file(Path::new("/DCIM/photo.jpg"), b"upper")
+        .await
+        .unwrap();
+    volume
+        .create_file(Path::new("/dcim/photo.jpg"), b"lower")
+        .await
+        .unwrap();
+
+    let events = CollectorEventSink::new();
+    let write_path = resolve(
+        &volume,
+        "/DCIM/photo.jpg",
+        &volume,
+        "/dcim/photo.jpg",
+        ConflictResolution::Skip,
+        &events,
+    )
+    .await;
+
+    // `Skip` is the sharp pin: a self-collision would have handed back
+    // `/dcim/photo (1).jpg` without consulting any policy.
+    assert_eq!(
+        write_path, None,
+        "two same-named files in differently-cased folders are an ordinary clash, and `Skip` skips it"
+    );
+}
+
 /// The volume half of the rule. The same path on two DIFFERENT volumes names two
 /// different files, so it stays an ordinary conflict.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -559,6 +598,57 @@ async fn moving_a_file_into_its_own_folder_on_one_volume_leaves_it_alone() {
     let complete = events.inner.complete.lock_ignore_poison();
     assert_eq!(complete[0].files_processed, 1, "the item counts toward the total");
     assert_eq!(complete[0].files_skipped, 0, "it wasn't skipped, it was already there");
+}
+
+/// The user-visible half of the same question: on a case-sensitive backend,
+/// moving `/DCIM/photo.jpg` into `/dcim/` is a genuine cross-folder move. Calling
+/// it already-in-place reports the item done, leaves it where it was, and tells
+/// the user it moved.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn moving_into_a_case_differing_folder_on_one_volume_really_moves() {
+    let volume = one_volume();
+    volume.create_directory(Path::new("/DCIM")).await.unwrap();
+    volume.create_directory(Path::new("/dcim")).await.unwrap();
+    volume
+        .create_file(Path::new("/DCIM/photo.jpg"), b"pixels")
+        .await
+        .unwrap();
+
+    let state = make_state();
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Rename, true));
+
+    move_within_same_volume_with_progress(
+        events.clone(),
+        "op-volume-move-case-differing-folder",
+        &state,
+        Arc::clone(&volume),
+        &[PathBuf::from("/DCIM/photo.jpg")],
+        Path::new("/dcim"),
+        &duplicate_config(),
+    )
+    .await
+    .expect("moving between differently-cased folders must succeed");
+
+    assert_eq!(
+        children(&volume, "/dcim").await,
+        vec!["photo.jpg"],
+        "the file arrives in the destination folder"
+    );
+    assert_eq!(read_all(&volume, "/dcim/photo.jpg").await, b"pixels");
+    assert!(
+        children(&volume, "/DCIM").await.is_empty(),
+        "and it leaves the folder it came from"
+    );
+    // The already-in-place branch is the only thing on this path that speaks per
+    // source (`move_same.rs`), so a real move passing through it silently is
+    // exactly the regression: its `Done` / `source_removed: false` pair would be
+    // the only word the user got about a file that never moved.
+    assert!(
+        events.inner.source_items_done.lock_ignore_poison().is_empty(),
+        "nothing may report this item already in place"
+    );
+    let complete = events.inner.complete.lock_ignore_poison();
+    assert_eq!(complete[0].files_processed, 1, "the move counts as work done");
 }
 
 /// A folder moved into its own parent must never reach `rename_merge_directory`,

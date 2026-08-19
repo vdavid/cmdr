@@ -56,10 +56,12 @@ pub(super) struct DestNameIndex {
 /// identity there, and `char::to_lowercase` is ASCII lowercase) without
 /// allocating through the normalizer for the overwhelmingly common case.
 ///
-/// `pub(super)` because the volume conflict resolver folds a whole PATH with it
-/// to ask whether two paths name one item (`volume/conflict.rs`). Folding a path
-/// and folding each of its components agree: `/` survives both NFC and
-/// lowercasing untouched. One folding rule for the whole transfer layer.
+/// `pub(super)` because the volume conflict resolver asks it about the final
+/// component of two paths, to tell a duplicate from a clash
+/// (`volume/conflict.rs::is_the_same_volume_path`). ❌ It is never asked about a
+/// whole path: this rule speaks for names inside ONE listing, and no listing
+/// says whether two differently-cased parent directories are one directory.
+/// One folding rule for the whole transfer layer, one question it answers.
 pub(super) fn fold(name: &str) -> String {
     if name.is_ascii() {
         return name.to_ascii_lowercase();

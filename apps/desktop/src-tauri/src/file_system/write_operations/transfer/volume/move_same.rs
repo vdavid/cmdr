@@ -304,7 +304,8 @@ pub(crate) async fn move_within_same_volume_with_progress(
     // otherwise reach `rename_merge_directory`, which threads the destination
     // down through its recursion and would rename every leaf onto itself or
     // shuffle it aside to `name (1)`. One volume by construction on this path,
-    // so only the folded-path half of the identity question is left to ask.
+    // so only the same-parent-plus-folded-leaf half of the identity question is
+    // left to ask.
     // `../DETAILS.md` § "Self-collision (duplicating in place)".
     let (already_in_place, remaining): (Vec<PathBuf>, Vec<PathBuf>) =
         source_paths.iter().cloned().partition(|source| {
