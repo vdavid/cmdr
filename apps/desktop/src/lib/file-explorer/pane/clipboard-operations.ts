@@ -44,6 +44,29 @@ function isMtpClipboardRefusal(volumeId: string): boolean {
 }
 
 /**
+ * True when a move of `sourcePaths` into `destination` has nothing to do,
+ * because every one of them already sits directly in it.
+ *
+ * A copy there is a different thing entirely (it duplicates each item under a
+ * free ` (N)` name), so this is asked for moves only. A PARTIAL set still
+ * dispatches: the backend leaves the ones already there alone and moves the
+ * rest.
+ *
+ * Lexical, and deliberately so: the frontend holds paths and nothing else, and
+ * the backend answers identity properly (`dev+ino` locally, a folded path on a
+ * volume) for everything this misses. Missing a case costs a transfer that
+ * moves nothing; the backend then does nothing, which is the same outcome one
+ * step later.
+ */
+function everySourceIsAlreadyIn(sourcePaths: string[], destination: string): boolean {
+  const normDest = destination.replace(/\/+$/, '')
+  return sourcePaths.every((path) => {
+    const normSource = path.replace(/\/+$/, '')
+    return normSource.substring(0, normSource.lastIndexOf('/')) === normDest
+  })
+}
+
+/**
  * Resolves the file/folder split from `readClipboardFiles`'s per-path kind
  * flags. Returns the per-type counts only when the flags are present, length-
  * aligned with the paths, and every entry is known (no `null`). Otherwise
@@ -275,6 +298,13 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       }
 
       const operationType: TransferOperationType = result.isCut || forceMove ? 'move' : 'copy'
+
+      // A move of items that are ALL already here does nothing at all: no
+      // dialog, no transfer, no "Moved 0 files". The clipboard survives, so a
+      // paste somewhere that matters still works. A copy takes the opposite
+      // route and duplicates them.
+      if (operationType === 'move' && everySourceIsAlreadyIn(result.paths, destPath)) return
+
       const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())
       const destVolId = access.getPaneVolumeId(access.getFocusedPane())
       const sourceFolderPath = getCommonParentPath(result.paths)

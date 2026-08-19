@@ -40,15 +40,19 @@ describe('getPathValidationError', () => {
     )
   })
 
-  it('rejects a destination that is the source own parent (already in this location)', () => {
-    expect(getPathValidationError(['/a/photos'], '/a', 'copy')).toBe(`"photos" is already in this location`)
+  it('accepts copying into the source own parent, which duplicates it', () => {
+    expect(getPathValidationError(['/a/photos'], '/a', 'copy')).toBeNull()
+  })
+
+  it('still rejects moving into the source own parent, which would do nothing', () => {
+    expect(getPathValidationError(['/a/photos'], '/a', 'move')).toBe(`"photos" is already in this location`)
   })
 
   it('normalizes trailing slashes on both sides before comparing', () => {
     expect(getPathValidationError(['/a/photos/'], '/a/photos', 'copy')).toBe(
       `Can't copy "photos" into its own subfolder`,
     )
-    expect(getPathValidationError(['/a/photos'], '/a/', 'copy')).toBe(`"photos" is already in this location`)
+    expect(getPathValidationError(['/a/photos'], '/a/', 'move')).toBe(`"photos" is already in this location`)
   })
 
   it('flags any matching source when several are given', () => {
@@ -66,7 +70,13 @@ describe('getPathValidationError', () => {
     // The destination equals the source AND (vacuously) is its own parent path
     // only in the subfolder branch; assert the subfolder branch wins for an
     // exact match.
-    expect(getPathValidationError(['/a/photos'], '/a/photos', 'copy')).toContain('into its own subfolder')
+    expect(getPathValidationError(['/a/photos'], '/a/photos', 'move')).toContain('into its own subfolder')
+  })
+
+  it('keeps the subfolder rejection for a copy, which is the real hazard', () => {
+    // Copying a folder into its own subtree recurses until the disk fills, so
+    // that guard stays even though the same-folder one is gone.
+    expect(getPathValidationError(['/a/photos'], '/a/photos/sub', 'copy')).toContain('into its own subfolder')
   })
 
   describe('compress mode', () => {

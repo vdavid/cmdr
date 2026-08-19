@@ -381,6 +381,70 @@ describe('pasteFromClipboard', () => {
     expect(clearClipboardCutStateSpy).toHaveBeenCalledTimes(1)
   })
 
+  it('does nothing at all when a move-paste names only items already in the destination', async () => {
+    // They are where the move was asked to put them. No dialog, no transfer, no
+    // "Moved 0 files" toast, and the clipboard survives so the next paste
+    // somewhere that matters still works.
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/dest/a.txt', '/dest/sub'], isCut: true })
+    getCommonParentPathSpy.mockReturnValue('/dest')
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
+    expect(addToastSpy).not.toHaveBeenCalled()
+    expect(clearClipboardCutStateSpy).not.toHaveBeenCalled()
+  })
+
+  it('still dispatches a move-paste when only SOME sources are already in the destination', async () => {
+    // The backend leaves the one already there alone and moves the other.
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/dest/a.txt', '/x/b.txt'], isCut: true })
+    getCommonParentPathSpy.mockReturnValue('/')
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(dialogsStub.startTransferProgress).toHaveBeenCalledTimes(1)
+    expect(dialogsStub.startTransferProgress.mock.calls[0][0]).toMatchObject({ operationType: 'move' })
+  })
+
+  it('still dispatches a COPY-paste of items already in the destination, which duplicates them', async () => {
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/dest/a.txt'], isCut: false })
+    getCommonParentPathSpy.mockReturnValue('/dest')
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(dialogsStub.startTransferProgress).toHaveBeenCalledTimes(1)
+    expect(dialogsStub.startTransferProgress.mock.calls[0][0]).toMatchObject({
+      operationType: 'copy',
+      sourcePaths: ['/dest/a.txt'],
+      destinationPath: '/dest',
+    })
+  })
+
+  it('does nothing for a forceMove paste of items already in the destination either', async () => {
+    // ⌘⌥V takes the same fast path: the operation type decides, not how it was asked for.
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/dest/a.txt'], isCut: false })
+    getCommonParentPathSpy.mockReturnValue('/dest')
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(true)
+
+    expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
+  })
+
+  it('does not mistake a nested source for one already in the destination', async () => {
+    // `/dest/sub/a.txt` lives a level down, so the move is real work.
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/dest/sub/a.txt'], isCut: true })
+    getCommonParentPathSpy.mockReturnValue('/dest/sub')
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(dialogsStub.startTransferProgress).toHaveBeenCalledTimes(1)
+  })
+
   it('forces a move when forceMove is set even for a non-cut clipboard', async () => {
     readClipboardFilesSpy.mockResolvedValue({ paths: ['/x/a.txt'], isCut: false })
     getCommonParentPathSpy.mockReturnValue('/x')

@@ -26,6 +26,32 @@ describe('composeTransferCompleteToast', () => {
       ).toBe('Copied 2 files.')
     })
 
+    it('reads as an ordinary copy when the item was duplicated in place', () => {
+      // Copying an item into the folder it already lives in duplicates it under
+      // a free ` (N)` name. That never enters the skip or conflict counters
+      // (pinned backend-side in `self_collision_tests.rs`), so the toast is the
+      // plain one. Without this, a future counter change could quietly turn a
+      // duplicate into "Copied 0 files."
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'copy',
+          filesProcessed: 1,
+          filesSkipped: 0,
+          fileCount: 1,
+          folderCount: 0,
+        }),
+      ).toBe('Copied 1 file.')
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'copy',
+          filesProcessed: 12,
+          filesSkipped: 0,
+          fileCount: 12,
+          folderCount: 0,
+        }),
+      ).toBe('Copied 12 files.')
+    })
+
     it('single file, all copied', () => {
       expect(
         composeTransferCompleteToast({

@@ -166,6 +166,14 @@ fn duplicating_a_file_in_place_lands_a_numbered_copy_beside_it() {
         events.inner.conflicts.lock_ignore_poison().is_empty(),
         "a self-collision is not a conflict, so nothing may prompt"
     );
+    // What the completion toast is composed from. A duplicate enters neither
+    // the skip nor the conflict counter, so the user reads an ordinary
+    // "Copied 1 file." rather than "Copied 0 files." — pinned here as well as
+    // at the composer (`transfer-complete-toast.test.ts`), because this is the
+    // half a counter change could break silently.
+    let complete = events.inner.complete.lock_ignore_poison();
+    assert_eq!(complete[0].files_processed, 1, "the duplicate counts as work done");
+    assert_eq!(complete[0].files_skipped, 0, "and nothing about it was skipped");
 }
 
 /// Duplicating the same file twice continues the series instead of nesting into

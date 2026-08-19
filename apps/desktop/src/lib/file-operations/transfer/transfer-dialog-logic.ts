@@ -14,9 +14,13 @@ import { tString } from '$lib/intl/messages.svelte'
  * Checks whether the destination path is invalid relative to the source paths.
  *
  * Two rejection cases, in order:
- *  - the destination IS a source or sits inside one (can't move a folder into
- *    its own subfolder), and
- *  - the destination is the source's own parent (the item is already there).
+ *  - the destination IS a source or sits inside one (copying a folder into its
+ *    own subtree recurses until the disk fills), and
+ *  - **for a move only**, the destination is the source's own parent, so the
+ *    move would do nothing. A COPY there is a request to duplicate the item,
+ *    which the backend answers with a free ` (N)` name and no prompt
+ *    (`src-tauri/src/file_system/write_operations/transfer/DETAILS.md`
+ *    § "Self-collision (duplicating in place)").
  *
  * Trailing slashes are normalized off both sides before comparison. Returns the
  * user-facing error string, or `null` when the path is acceptable. The verb
@@ -53,12 +57,14 @@ export function getPathValidationError(
     }
   }
 
-  for (const source of sources) {
-    const normSource = source.replace(/\/+$/, '')
-    const sourceParent = normSource.substring(0, normSource.lastIndexOf('/'))
-    if (normDest === sourceParent) {
-      const fileName = normSource.split('/').pop() ?? normSource
-      return tString('fileOperations.transferDialog.pathErrorAlreadyThere', { name: fileName })
+  if (operationType === 'move') {
+    for (const source of sources) {
+      const normSource = source.replace(/\/+$/, '')
+      const sourceParent = normSource.substring(0, normSource.lastIndexOf('/'))
+      if (normDest === sourceParent) {
+        const fileName = normSource.split('/').pop() ?? normSource
+        return tString('fileOperations.transferDialog.pathErrorAlreadyThere', { name: fileName })
+      }
     }
   }
 
