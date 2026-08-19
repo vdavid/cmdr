@@ -11,6 +11,10 @@
   "@settings.appearance.language.opt.system": {
     "sourceHash": "b045921"
   },
+  "settings.appearance.language.opt.systemWithLanguage": "Systeemstandaard ({language})",
+  "@settings.appearance.language.opt.systemWithLanguage": {
+    "sourceHash": "ab10534"
+  },
   "settings.theme.mode.label": "Themamodus",
   "@settings.theme.mode.label": {
     "sourceHash": "0f79f19"

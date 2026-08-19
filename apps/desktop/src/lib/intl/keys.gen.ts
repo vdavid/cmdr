@@ -2327,6 +2327,7 @@ export type MessageKey =
   | 'settings.appearance.language.description'
   | 'settings.appearance.language.label'
   | 'settings.appearance.language.opt.system'
+  | 'settings.appearance.language.opt.systemWithLanguage'
   | 'settings.appearance.showFormatHelp'
   | 'settings.appearance.showFunctionKeyBar.description'
   | 'settings.appearance.showFunctionKeyBar.label'

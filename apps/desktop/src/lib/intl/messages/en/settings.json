@@ -11,7 +11,15 @@
   },
   "settings.appearance.language.opt.system": "System default",
   "@settings.appearance.language.opt.system": {
-    "description": "Language-picker option: follow the Mac's system language instead of forcing a specific one. The other options in this picker are each language's own name (auto-generated, not translated here). This is the only translatable option label.",
+    "description": "Language-picker option: follow the Mac's system language instead of forcing a specific one. The other options in this picker are each language's own name (auto-generated, not translated here). This is the only translatable option label. Shown when following the Mac lands on English or when the Mac has no answer; otherwise the settings.appearance.language.opt.systemWithLanguage variant below is shown instead, so keep the two openings identical.",
+    "screenshot": "settings-appearance.png"
+  },
+  "settings.appearance.language.opt.systemWithLanguage": "System default ({language})",
+  "@settings.appearance.language.opt.systemWithLanguage": {
+    "description": "The same language-picker option as settings.appearance.language.opt.system, naming the language that following the Mac currently lands on: \"System default (Svenska)\". Shown in the Settings picker and in the compact language control in the onboarding wizard's header. Word order is yours: put the language name wherever it reads best, and use your language's own bracketing convention. Keep the opening words identical to settings.appearance.language.opt.system, since the two labels swap places in the same row.",
+    "placeholders": {
+      "language": "the resolved language's name in that language's own words, never translated (for example \"Svenska\", \"Magyar\", \"Deutsch\"). Capitalized already."
+    },
     "screenshot": "settings-appearance.png"
   },
 

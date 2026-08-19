@@ -167,14 +167,21 @@ without a store. Keep the seam minimal.
 
 The in-app picker rides this seam. **Settings > Appearance > Language** is the `appearance.language` enum setting
 (`settings-registry.ts`), default `'system'`. Its options are built by `languageOptions()` from `availableLocales()`:
-`'system'` (the only translatable option label, `settings.appearance.language.opt.system`) plus one option per loaded
-locale, each labeled with the locale's own endonym via `Intl.DisplayNames` (`de` → "Deutsch"), so the list is
-self-describing and no language names are hardcoded. `settings-applier.ts`'s `applyLanguage` maps the value to the seam
-through `os-locales.ts`'s `pickUiLocale`: a tag → `setLocale(tag)`, `'system'` → the OS answer (below). It runs in
-`applyAllSettings` at startup (so a persisted choice survives restart) and on every `appearance.language` change (live,
-no Apply button, no restart, no Tauri command: locale is frontend-only). A persisted tag with no loaded catalog (e.g.
-`en-XA` chosen in a dev build, then opened in prod) fails enum validation in the store and degrades to the `'system'`
-default with a warn.
+`'system'` (the only translatable option label) plus one option per loaded locale, each labeled with the locale's own
+endonym via `Intl.DisplayNames` (`de` → "Deutsch"), so the list is self-describing and no language names are hardcoded.
+That endonym is resolved in the option's OWN locale, so the `en` row reads "English" whatever the app currently speaks:
+the way out for a user who can't read the current language.
+
+The `'system'` row names what it resolves to — "System default (Svenska)"
+(`settings.appearance.language.opt.systemWithLanguage`, with `…opt.system` as the bare fallback for English and for no
+answer at all). It's a `get label()` on a literal-label option, which `resolveOption` passes through untouched, so it
+re-reads on every access and needs nothing from the registry; both branches go through `tString()`, so the locale rune
+makes it reactive to a live OS change as well as to a language switch. `settings-applier.ts`'s `applyLanguage` maps the
+value to the seam through `os-locales.ts`'s `pickUiLocale`: a tag → `setLocale(tag)`, `'system'` → the OS answer
+(below). It runs in `applyAllSettings` at startup (so a persisted choice survives restart) and on every
+`appearance.language` change (live, no Apply button, no restart, no Tauri command: locale is frontend-only). A persisted
+tag with no loaded catalog (e.g. `en-XA` chosen in a dev build, then opened in prod) fails enum validation in the store
+and degrades to the `'system'` default with a warn.
 
 ## What `'system'` resolves to
 

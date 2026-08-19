@@ -5,7 +5,8 @@
 
 import type { EnumOption, EnumOptionSource, SettingDefinitionSource } from '../types'
 import { VOLUME_TINT_COLORS } from '../types'
-import { availableLocales } from '$lib/intl/messages.svelte'
+import { availableLocales, tString } from '$lib/intl/messages.svelte'
+import { pickUiLocale } from '$lib/intl/os-locales'
 import type { MessageKey } from '$lib/intl/keys.gen'
 
 /**
@@ -30,15 +31,48 @@ function localeDisplayName(tag: string): string {
 }
 
 /**
+ * The `'system'` option's label, naming what "System default" resolves to right
+ * now: "System default (Svenska)". Bare "System default" tells the user nothing
+ * about which language they'd actually get, and this option is the one they land
+ * on by default.
+ *
+ * The name comes from the same `pickUiLocale('system')` the applier feeds
+ * `setLocale()`, so the label can't drift from what the app would speak. It
+ * degrades to the bare label on English (the parenthetical would only restate
+ * the copy around it) and on no answer at all (Linux, or a read that failed).
+ *
+ * Both paths go through `tString()`, which reads the locale-version rune, so the
+ * getter this feeds re-runs on a language change AND on a live OS locale change
+ * (`watchSystemLocales` → `applyLanguage` → `setLocale` bumps the rune).
+ */
+function systemOptionLabel(): string {
+  const resolved = pickUiLocale('system')
+  if (resolved === null || resolved.split('-')[0] === 'en') {
+    return tString('settings.appearance.language.opt.system')
+  }
+  return tString('settings.appearance.language.opt.systemWithLanguage', { language: localeDisplayName(resolved) })
+}
+
+/**
  * The language-picker options: "System default" (value `'system'`, follows the
  * OS locale) plus one option per AVAILABLE catalog locale, derived live from
  * `availableLocales()` so a newly-added locale dir auto-appears with no edit
  * here. Per-locale options carry a literal `label` (the locale's endonym, not
  * catalogued copy), so they pass through `resolveOption` unchanged.
+ *
+ * That pass-through is what makes the `'system'` option's GETTER work: the
+ * registry hands a literal-label option straight through, getter and all, so the
+ * label re-evaluates on every read with no registry change (`settings-registry.ts`
+ * § resolveOption).
  */
 function languageOptions(): (EnumOptionSource | EnumOption)[] {
   return [
-    { value: 'system', labelKey: 'settings.appearance.language.opt.system' },
+    {
+      value: 'system',
+      get label() {
+        return systemOptionLabel()
+      },
+    },
     ...availableLocales().map((tag) => ({ value: tag, label: localeDisplayName(tag) })),
   ]
 }

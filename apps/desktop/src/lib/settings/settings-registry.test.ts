@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
+import { _setSystemLocalesForTests } from '$lib/intl/os-locales'
 import {
   settingsRegistry,
   getSettingDefinition,
@@ -474,6 +475,44 @@ describe('appearance.language (the UI language picker)', () => {
     expect(() => {
       validateSettingValue('appearance.language', 'zz-NOPE')
     }).toThrow()
+  })
+
+  describe('the System default option names what it resolved to', () => {
+    /** The `'system'` option's label as the picker renders it right now. */
+    function systemLabel(): string | undefined {
+      const options = getSettingDefinition('appearance.language')?.constraints?.options ?? []
+      return options.find((o) => o.value === 'system')?.label
+    }
+
+    afterEach(() => {
+      _setSystemLocalesForTests({ ui: null, format: null })
+    })
+
+    it("names the resolved language in that language's own words", () => {
+      _setSystemLocalesForTests({ ui: 'sv', format: 'sv-SE' })
+      expect(systemLabel()).toBe('System default (Svenska)')
+    })
+
+    it('re-reads on every access, so a live OS change moves the label', () => {
+      _setSystemLocalesForTests({ ui: 'sv', format: 'sv-SE' })
+      expect(systemLabel()).toBe('System default (Svenska)')
+      // The user switches their Mac to Hungarian while the picker is open.
+      _setSystemLocalesForTests({ ui: 'hu', format: 'hu-HU' })
+      expect(systemLabel()).toBe('System default (Magyar)')
+    })
+
+    it('degrades to a bare label when the OS resolution lands on English, parenthetical and all', () => {
+      _setSystemLocalesForTests({ ui: 'en', format: 'en-US' })
+      expect(systemLabel()).toBe('System default')
+      // A regional English is the same non-answer: the app speaks English either way.
+      _setSystemLocalesForTests({ ui: 'en-GB', format: 'en-GB' })
+      expect(systemLabel()).toBe('System default')
+    })
+
+    it('degrades to a bare label when there is no OS answer at all (Linux, or a failed read)', () => {
+      _setSystemLocalesForTests({ ui: null, format: null })
+      expect(systemLabel()).toBe('System default')
+    })
   })
 })
 
