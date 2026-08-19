@@ -51,7 +51,8 @@ user shortcuts, and enables/disables items by focus context.
   whether it runs (`Delete` confirms). Same label in menu bar and context menu; always U+2026, never `...` (enforced by
   `menu_labels_use_the_ellipsis_character`). Per-item verdicts and why: `DETAILS.md`.
 - **Menus and items are keyed by ID, never title** (titles get translated): `macos_appkit.rs` resolves IDs to live
-  titles only at the AppKit boundary; SF Symbols sit in `MENU_BAR_ICONS`.
+  titles only at the AppKit boundary. Rebinding a shortcut replaces an item, so `update_menu_accelerator` re-applies
+  its icon.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

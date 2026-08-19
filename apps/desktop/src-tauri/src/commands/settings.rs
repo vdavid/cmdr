@@ -313,6 +313,11 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
             if let Some(menu_id) = command_id_to_menu_id(command_id) {
                 update_menu_item_accelerator(&app, &menu_state, menu_id, accelerator.as_deref())
                     .map_err(|e| format!("Failed to update {command_id} accelerator: {e}"))?;
+                // Tauri has no `set_accelerator()`, so the update replaced the item with a fresh
+                // one, and a fresh NSMenuItem carries no image. Without this, rebinding a shortcut
+                // silently strips that item's SF Symbol until the next menu-bar swap.
+                #[cfg(target_os = "macos")]
+                crate::menu::set_macos_menu_icons_from_command(&app);
             }
             // Silently succeed for commands that don't have menu items
             Ok(())

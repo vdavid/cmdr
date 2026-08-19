@@ -268,6 +268,9 @@ symbol, because the failure is otherwise invisible: the menu builds fine, just w
 `menu_icon_ids_are_built_by_the_menu_bar` (in `macos.rs`) is the compile-time-ish guard, parsing
 `macos.rs` and `menu_items.rs` for the IDs the menu bar actually constructs.
 
+**Gotcha**: an accelerator update replaces the menu item (see "Accelerator sync"), and the fresh
+`NSMenuItem` carries no image, so `update_menu_accelerator` re-applies the icons afterwards.
+
 Context menus don't get SF Symbols for our own items because Tauri doesn't expose the raw `NSMenu`
 pointer for context menus, and rasterized SF Symbol bitmaps via `IconMenuItem` look poor (no
 template auto-tinting). However, **full-color non-template images do render correctly** through
