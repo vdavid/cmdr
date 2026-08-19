@@ -73,11 +73,12 @@ Hungarian dialog is a bug report; a whole English menu bar is a broken promise (
 resolved tag back into the setting. _Intent_: writing back would freeze the user out of following the OS, and would
 silently convert "I didn't care" into "I decided".
 
-**6. The escape hatch appears where the user already is.** A first-launch user meets `OnboardingWizard` before anything
-else, already in the detected language, so the language control belongs in the wizard. An already-onboarded user whose
-resolved language changes because of _this work_ gets a one-time persistent toast instead. _Intent_: don't build a nag
-for new users who have a perfectly good place to decide, and don't silently flip an existing user's app without an
-immediate, obvious undo.
+**6. The escape hatch appears where the user already is, and nowhere else.** A first-launch user meets
+`OnboardingWizard` before anything else, already in the detected language, so the language control belongs in the wizard
+frame. Already-onboarded users get NO notice: the settings picker is the escape hatch, and it's the same one they'd
+reach for to change any other preference. _Intent_: an app that switches to your own language and says nothing about it
+is behaving normally, not doing something that needs announcing. Interrupting to explain would make an ordinary act feel
+like an incident.
 
 ### Explicitly not wanted (David, 2026-08-19)
 
@@ -87,7 +88,9 @@ immediate, obvious undo.
 
 ## Milestones
 
-Sequential unless stated. Each ends green, committed, and documented.
+Run them in order, one at a time. Each ends green, committed, and documented. ❌ No parallel subagents: a harness bug
+bleeds the working directory across agents in parallel sessions, which in a worktree means an agent can write to the
+wrong checkout.
 
 ---
 
@@ -96,7 +99,7 @@ Sequential unless stated. Each ends green, committed, and documented.
 **Intent**: make `'system'` mean "walk the user's ordered preferences and take the first language we fully ship",
 instead of "take whatever single tag the webview happens to resolve".
 
-**Where the resolver lives — decide this before writing code.** It reads like a detail and isn't.
+**Where the resolver lives: RUST** (decided; the argument is kept because the reasoning constrains the design).
 
 Three consumers need the answer, and two of them run before the webview exists: the native menu bar (built in `setup`),
 the "Cmdr is already running" alert (fires before any window), and the webview UI. That plus the project's smart-backend
@@ -104,12 +107,12 @@ the "Cmdr is already running" alert (fires before any window), and the webview U
 that the script guard needs CLDR likely-subtags data, which the webview gets free from `Intl.Locale.maximize()` and Rust
 does not.
 
-**Recommendation: resolve in Rust**, and get the likely-script data from a small build-time generator that asks Node's
-`Intl` for it (the same generator M4 extends to carry menu strings). It only has to cover the languages we ship, so the
-generated table is small and needs no hand-maintenance. The alternative — resolve in TS and have Rust ask the frontend —
-means a second resolver in Rust anyway for the pre-webview alert, which is the drift risk this whole decision is trying
-to avoid. `docs/i18n/script-decisions.md` records nine languages with a script split (`zh`, `sr`, `uz`, `kk`, `mn`,
-`az`, `pa`, `bs`, `be`), so the guard is not a one-off for Chinese and a hand-written table would rot.
+Resolving in Rust means getting the likely-script data from a small build-time generator that asks Node's `Intl` for it
+(the same generator M4 extends to carry menu strings). It only has to cover the languages we ship, so the generated
+table is small and needs no hand-maintenance. The alternative — resolve in TS and have Rust ask the frontend — means a
+second resolver in Rust anyway for the pre-webview alert, which is the drift risk this whole decision is trying to
+avoid. `docs/i18n/script-decisions.md` records nine languages with a script split (`zh`, `sr`, `uz`, `kk`, `mn`, `az`,
+`pa`, `bs`, `be`), so the guard is not a one-off for Chinese and a hand-written table would rot.
 
 **No startup gate.** `routes/(main)/show-main-on-mount.ts` documents, at length, a paint gate that was removed because
 it cost a fixed second of startup for no signal. ❌ Don't reintroduce one here: the resolved locale must ride the
@@ -258,9 +261,17 @@ tests green, so that a later icon regression can't be blamed on the translation.
 1. **Refactor first**: re-key icon assignment and AppKit cleanup off menu item ids (`command_map.rs` already holds the
    id constants) instead of titles. Existing tests stay green; `register_item_positions_match_submenu_order` is
    unaffected (it parses binding names, not titles — confirmed).
-2. Add `menu.*` keys to the `en` catalog with full `@key` metadata (surface, trigger, do-not-translate tokens), per
-   `apps/desktop/src/lib/intl/messages/DETAILS.md`. Roughly 150–200 keys once duplicates across `macos.rs`/`linux.rs`
-   collapse.
+2. Add `menu.*` keys to the `en` catalog with full `@key` metadata, per `apps/desktop/src/lib/intl/messages/DETAILS.md`.
+   Roughly 150–200 keys once duplicates across `macos.rs`/`linux.rs` collapse.
+
+   **This metadata is the milestone's real deliverable, not paperwork** (David's explicit rider on approving M4: set the
+   translators up for success). A menu label is one or two words with no sentence around it, so the description carries
+   all the context there is. Every key needs: which menu it sits in, what activating it does, whether the word is a VERB
+   or a NOUN in English (`Open`, `View`, `Copy`, `Move`, `Search` are all ambiguous, and they resolve differently in
+   most target languages), any do-not-translate token, and a width note where the item sits in a tight submenu. Where
+   the reference pile has an obvious counterpart, name it: "Finder's File > Open" tells a translator more than three
+   sentences of prose. A bare `"Open"` with no description is a coin flip.
+
 3. A generator emits a Rust-side lookup for the `menu.*` subset of each catalog (mirroring how `keys.gen.ts` is
    generated; never hand-edited, and wired into the same regeneration path). Rust gets a `menu_t(key)` reading a static
    map plus the active UI locale. Static labels only: no ICU in Rust, no plurals, no parameters. If a menu label ever
@@ -327,33 +338,27 @@ elsewhere, since the string-matching they forbid is what we deleted.
 **Intent**: a user who lands in a language they don't read must be able to get out without navigating a settings tree
 whose every label is in that language.
 
+**Scope**: the onboarding control only. The one-time notice for already-onboarded users is **cut** (David, 2026-08-19:
+silent is fine). ❌ Don't build it speculatively.
+
 **Changes**
 
-1. **First-launch (new users)**: a compact language control in `OnboardingWizard`'s shell, visible from step 1. Not a
-   new step (the wizard's step contract is deliberate and step 3 is non-skippable — don't disturb it); a small control
-   in the frame. It writes `appearance.language` like the settings picker does, reusing `setSetting()` per the module's
+1. A compact language control in `OnboardingWizard`'s shell, visible from step 1. ❌ Not a new step: the wizard's step
+   contract is deliberate and step 3 is non-skippable, so don't disturb the sequence. A small control in the frame. It
+   writes `appearance.language` through `setSetting()`, the same wiring the settings picker uses, per the module's
    "don't fork the existing wiring" rule.
-2. **Already-onboarded users whose language moves because of M1**: a one-time notice. ❌ Don't build a new banner
-   primitive — this is a **persistent toast** with a custom content component, exactly the shape the app already uses
-   (`MtpConnectedToastContent.svelte`, `FirstConnectIndexToastContent.svelte`, `PasteClipboardToastContent.svelte`). The
-   store already supports `dismissal: 'persistent'` with `timeoutMs: 0`, which is precisely "stays until they deal with
-   it". Sentence in the detected language, plus a plain `English` button writing `appearance.language = 'en'`. Shown
-   once; dismissal or any explicit language pick retires it forever, stored as a `hidden: true` setting alongside the
-   other internal flags.
-3. The toast copy is a catalog key like everything else, so it renders in the detected language. The `English` button
-   label stays the literal string `English` in every locale (that's the point of it) — mark it
-   `@key.sameAsSourceJustification` so the coverage check accepts an identical value.
+2. The `English` option label stays the literal string `English` in every locale — that's the entire point of it, since
+   someone who can't read the current language has to recognize the way out. Mark it `@key.sameAsSourceJustification` so
+   the coverage check accepts a value identical to English.
 
 **Tests**
 
-- Unit: the toast shows exactly once for a user whose resolved language changed; never for an `en` resolution; never
-  again after dismissal; never for a user with an explicit `appearance.language`.
-- Unit: the `English` button writes the setting and retires the toast in one action.
+- Unit: the control writes `appearance.language` and the UI switches in place, no restart.
+- Unit: picking a language in onboarding retires `'system'` for good (decision 5: an explicit choice is permanent).
 - a11y test alongside the component, per the module convention (`*.a11y.test.ts` sits next to every UI component here).
 - E2E: worth one spec, since "can the user escape" is the safety property of this whole feature.
 
-**Docs**: `apps/desktop/src/lib/onboarding/CLAUDE.md` (the control's existence and why it isn't a step), and the intl
-`DETAILS.md` for the one-time-bar trigger condition.
+**Docs**: `apps/desktop/src/lib/onboarding/CLAUDE.md` (the control's existence and why it isn't a step).
 
 ---
 
@@ -390,7 +395,10 @@ the existing consent gate:
 
 - `language_resolved` on startup: props `detected` (the first shipped-language match, or `none`), `active` (what the app
   is actually running in), and `source` (`auto` / `explicit` / `fallback`).
-- `language_reverted` when the escape hatch is used: props `from` (the language they left).
+- `language_changed` when the user picks a language by hand, from onboarding or from settings: props `from` (what they
+  left) and `surface` (`onboarding` / `settings`). This is the honest quality signal, and it's the only one we get:
+  nothing in the UI asks how the translation reads, so a user walking away from their own language is the strongest
+  evidence we have that a locale is bad.
 
 Send the **base language subtag only** (`hu`, not `hu-HU`). A rare language plus a region narrows a population more than
 we need to; the base subtag answers David's question completely. Add `appearance.language` to `CATEGORICAL_STRING_KEYS`
@@ -447,13 +455,20 @@ Mostly sequential, which is fine. Two genuinely safe overlaps:
 
 Everything else shares `locale.ts` / `messages.svelte.ts` and should stay in order.
 
-## Open questions for David
+## Decisions (David, 2026-08-19)
 
-1. **M4 in or out?** It's the difference between "auto-language, done properly" and "auto-language, with an English menu
-   bar". Recommendation: in — it's already a live gap, and it's the one thing that makes the feature honest.
-2. **Resolver in Rust or in TS?** (M1, argued above.) Recommendation: Rust, because two of the three consumers run
-   before the webview exists and the smart-backend principle points the same way. The cost is a generated likely-script
-   table instead of a free `Intl.Locale.maximize()`.
-3. **The one-time bar for existing users (M5.2)**: worth it, or is the onboarding control plus the settings picker
-   enough? It only fires for people whose language actually moves because of M1's ordered walk, which may be a very
-   small group.
+All four questions the plan opened with are answered; nothing here is pending.
+
+1. **M4 is IN.** The native menu bar gets localized. Explicit rider: **the new strings must carry enough `@key` context
+   that a translator is set up for success** — surface, trigger, what the item does, constraints, do-not-translate
+   tokens. A menu label is two words with no sentence around it, so the metadata IS the context; a bare `"Open"` with no
+   description is a coin flip between a verb and an adjective in half the target languages.
+2. **The resolver lives in Rust.** The likely-script data comes from the build-time generator, as argued in M1.
+3. **No one-time notice for already-onboarded users.** Silent is fine. M5 keeps only the onboarding control; the
+   persistent-toast half is cut. (Keep the toast idea out of the code entirely — don't build it "just in case".)
+4. **The M1 validation may flip the global `AppleLanguages` to Hungarian**, then restore `[en-US, sv-SE]`.
+
+**Execution constraint**: work SEQUENTIALLY, no parallel subagents. There's a harness bug where the current working
+directory bleeds across agents in parallel sessions, which in a worktree means an agent can write to the wrong checkout.
+The parallelism notes above stand as descriptions of what is logically independent, ❌ not as licence to run agents
+concurrently.
