@@ -355,8 +355,14 @@ whose every label is in that language.
 self-describing, and it costs one string.
 
 **Changes**: `languageOptions()` in `definitions/appearance.ts` composes the resolved endonym into the `'system'`
-option's label using the existing `localeDisplayName()`. The label must re-derive when the resolution changes (M3), so
-it can't be computed once at module load the way the current options array is — that's the only real subtlety here.
+option's label via the existing `localeDisplayName()`.
+
+The re-derivation worry turns out to be a non-issue, and the milestone is smaller than it looks: `resolveOption`
+(`settings-registry.ts:71`) passes an option with a literal `label` through **unchanged**, and "unchanged" includes a
+getter. So the `'system'` option can carry `get label() { return tString('…opt.system', { language: … }) }` and it
+re-evaluates on every read, already reactive through the locale rune, with **zero changes to the settings registry**.
+Give the message key a `{language}` placeholder rather than concatenating strings, so word order stays the translator's
+decision.
 
 **Tests**: unit, extending `settings-registry.test.ts`'s existing `appearance.language` block: the system option's label
 names the resolved language; it updates when the resolution changes; it degrades to a bare "System default" when
