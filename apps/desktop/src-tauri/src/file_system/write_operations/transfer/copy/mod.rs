@@ -230,10 +230,11 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
         let unique_dest = if source.is_dir() {
             // A directory claims its name eagerly, and the `create_dir` loop IS
             // the reservation. Recorded so rollback owns it.
-            let claimed = create_unique_dir(&original_dest).map_err(|e| WriteOperationError::IoError {
-                path: original_dest.display().to_string(),
-                message: format!("Couldn't create the copy's folder: {e}"),
-            })?;
+            let claimed =
+                create_unique_dir(&original_dest, &state.claimed_names).map_err(|e| WriteOperationError::IoError {
+                    path: original_dest.display().to_string(),
+                    message: format!("Couldn't create the copy's folder: {e}"),
+                })?;
             transaction.record_dir(claimed.clone());
             created_dirs.insert(claimed.clone());
             claimed
@@ -243,8 +244,10 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             // (`RENAME_EXCL`), so a racing writer produces a loud failure rather
             // than a clobber. ❌ Not `find_unique_name`: its 0-byte placeholder
             // would occupy the destination and raise the very conflict prompt
-            // this rule exists to remove.
-            next_available_name(&original_dest)
+            // this rule exists to remove. The op's `claimed_names` ledger stands
+            // in for the missing reservation WITHIN the batch: the probe can't
+            // see a name an earlier source in this same loop already took.
+            next_available_name(&original_dest, &state.claimed_names)
         };
         log::info!(
             "copy: {} is already in the destination, duplicating it as {}",

@@ -165,6 +165,8 @@ pub struct WriteOperationState {
     /// Cloning one event per emit is cheap next to the IPC hop it is already
     /// making.
     last_progress: std::sync::Mutex<Option<WriteProgressEvent>>,
+    /// The names it handed out but hasn't written yet: [`super::unique_name::ClaimedNames`].
+    pub(crate) claimed_names: super::unique_name::ClaimedNames,
     /// "This operation is still going." Dropped by [`end_liveness`](Self::end_liveness)
     /// when it settles.
     ///
@@ -198,6 +200,7 @@ impl WriteOperationState {
             in_flight_temps: std::sync::Mutex::new(Vec::new()),
             last_progress: std::sync::Mutex::new(None),
             liveness: std::sync::Mutex::new(Some(Arc::new(()))),
+            claimed_names: super::unique_name::ClaimedNames::default(),
         }
     }
 

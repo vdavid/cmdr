@@ -20,7 +20,7 @@ use super::super::super::types::{
     ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent,
     WriteOperationError,
 };
-use super::super::super::unique_name::NameCandidates;
+use super::super::super::unique_name::{ClaimedNames, NameCandidates};
 use super::super::dest_name_index::fold;
 use super::transfer_error::map_volume_error;
 use crate::file_system::volume::{Volume, VolumeError};
@@ -91,6 +91,9 @@ pub(super) async fn resolve_volume_conflict(
             .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?,
     };
 
+    // The op's ledger of names already handed out, for every namer below.
+    let claimed = &state.claimed_names;
+
     // A source that would land on ITSELF is a request to DUPLICATE it, never a
     // conflict: hand back a free ` (N)` name, and neither the policy nor the
     // person is consulted. Answered before the destination probe and before the
@@ -101,7 +104,7 @@ pub(super) async fn resolve_volume_conflict(
     // child onto the destination it was handed, so a renamed root carries its
     // whole subtree. `../DETAILS.md` § "Self-collision (duplicating in place)".
     if is_the_same_item(source_volume, source_path, dest_volume, dest_path) {
-        let unique_path = find_unique_volume_name(dest_volume, dest_path, source_is_directory).await;
+        let unique_path = find_unique_volume_name(dest_volume, dest_path, source_is_directory, claimed).await;
         log::info!(
             "resolve_volume_conflict: {} is already in the destination, duplicating it as {}",
             source_path.display(),
@@ -180,7 +183,14 @@ pub(super) async fn resolve_volume_conflict(
                     dest_size_hint,
                 )
                 .await;
-                return apply_volume_conflict_resolution(effective, dest_volume, dest_path, source_is_directory).await;
+                return apply_volume_conflict_resolution(
+                    effective,
+                    dest_volume,
+                    dest_path,
+                    source_is_directory,
+                    claimed,
+                )
+                .await;
             }
 
             // Need to prompt user - gather metadata for the conflict event.
@@ -308,7 +318,8 @@ pub(super) async fn resolve_volume_conflict(
                         dest_size,
                     )
                     .await;
-                    apply_volume_conflict_resolution(effective, dest_volume, dest_path, source_is_directory).await
+                    apply_volume_conflict_resolution(effective, dest_volume, dest_path, source_is_directory, claimed)
+                        .await
                 }
                 Err(_) => {
                     // Sender dropped = operation cancelled
@@ -326,12 +337,19 @@ pub(super) async fn resolve_volume_conflict(
                 dest_volume,
                 dest_path,
                 source_is_directory,
+                claimed,
             )
             .await
         }
         ConflictResolution::Rename => {
-            apply_volume_conflict_resolution(ConflictResolution::Rename, dest_volume, dest_path, source_is_directory)
-                .await
+            apply_volume_conflict_resolution(
+                ConflictResolution::Rename,
+                dest_volume,
+                dest_path,
+                source_is_directory,
+                claimed,
+            )
+            .await
         }
         ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {
             let effective = reduce_volume_conditional_resolution(
@@ -344,7 +362,7 @@ pub(super) async fn resolve_volume_conflict(
                 dest_size_hint,
             )
             .await;
-            apply_volume_conflict_resolution(effective, dest_volume, dest_path, source_is_directory).await
+            apply_volume_conflict_resolution(effective, dest_volume, dest_path, source_is_directory, claimed).await
         }
     }
 }
@@ -456,6 +474,8 @@ async fn apply_volume_conflict_resolution(
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     source_is_directory: bool,
+    // The operation's ledger of names already handed out, for the `Rename` arm.
+    claimed: &ClaimedNames,
 ) -> Result<Option<ResolvedConflict>, WriteOperationError> {
     match resolution {
         ConflictResolution::Stop => {
@@ -548,7 +568,7 @@ async fn apply_volume_conflict_resolution(
         }
         ConflictResolution::Rename => {
             // Find a unique name - we need to check what exists on the volume
-            let unique_path = find_unique_volume_name(dest_volume, dest_path, source_is_directory).await;
+            let unique_path = find_unique_volume_name(dest_volume, dest_path, source_is_directory, claimed).await;
             Ok(Some(ResolvedConflict {
                 write_path: unique_path,
                 replace_after_write: None,
@@ -695,23 +715,40 @@ pub(super) fn is_the_same_volume_path(source_path: &Path, dest_path: &Path) -> b
 /// the residual window as narrow as the backend allows.
 ///
 /// A **directory** takes that probe branch on every backend, local-FS dest
-/// included. The placeholder is a FILE, and a file sitting where the copy is
-/// about to create a directory makes `merge.rs::merge_level`'s
-/// `create_directory` report `AlreadyExists`, so the walk would try to merge
-/// into it and list it. Letting the merge walker create the directory itself is
-/// also what records it in `CreatedPaths`, which a pre-created one would miss
-/// and rollback would then leave behind.
+/// included. The placeholder is a FILE, and one sitting where the copy is about
+/// to create a directory makes `merge.rs::merge_level`'s `create_directory`
+/// report `AlreadyExists`, so the walk would try to merge into it and list it.
+/// Letting the merge walker create the directory itself is also what records it
+/// in `CreatedPaths`, which a pre-created one would miss and rollback would then
+/// leave behind.
+///
+/// Both branches record the pick in the operation's `ClaimedNames` ledger and
+/// walk past what's already there, which is what the probe alone can't do for a
+/// directory (never reserved) or for the concurrent driver resolving several
+/// top-level sources at once. Without it `photo.jpg` and `photo (1).jpg`
+/// duplicated together both land on `photo (2).jpg`.
 ///
 /// Naming itself is not this function's business: the candidates come from
 /// `unique_name::NameCandidates`, the same sequence the local-FS namer walks, so a
 /// volume dest numbers identically and `photo (1).jpg` continues to
 /// `photo (2).jpg` here too. This function owns only the reservation.
-async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path, is_directory: bool) -> PathBuf {
+async fn find_unique_volume_name(
+    dest_volume: &Arc<dyn Volume>,
+    path: &Path,
+    is_directory: bool,
+    claimed: &ClaimedNames,
+) -> PathBuf {
     let local_root = dest_volume.local_path().filter(|_| !is_directory);
     let mut candidates = NameCandidates::for_path(path);
 
     loop {
         let new_path = candidates.current();
+
+        if !claimed.claim(&new_path) {
+            // Spoken for by another source of this same operation.
+            candidates.advance();
+            continue;
+        }
 
         if let Some(root) = &local_root {
             // Local-FS dest: reserve the name with an O_CREAT|O_EXCL placeholder

@@ -87,6 +87,13 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
 - **Reach for the non-reserving `next_available_name` when a file placeholder would be in the way**: a directory claims
   its name with `create_dir` instead, and an ordinary non-overwrite write would otherwise find `find_unique_name`'s own
   placeholder sitting at the destination and raise a conflict against it.
+- **`unique_name.rs::ClaimedNames` is what a probe can't have: a record of the names this operation already handed out**,
+  before their bytes land. Every non-reserving picker (`next_available_name`, `create_unique_dir`, and both branches of
+  the volume namer) consults it and records its own pick in one step, so two sources of one ` (N)` family duplicated
+  together (`photo.jpg` and `photo (1).jpg`, which continues its series at exactly the name the first one took) can't
+  both arrive at `photo (2).jpg` and turn two requested copies into one. It lives on `state::WriteOperationState`, so
+  the ledger's lifetime is the operation's and both engines read the same one; interior-mutable because the volume
+  engine's concurrent driver resolves several top-level sources at once.
 - **`create.rs` co-locates the synthetic listing-cache diff** (`should_emit_synthetic_diff` /
   `emit_synthetic_entry_diff`, both `pub(super)`) that lands a brand-new entry in the pane on local-FS-backed volumes.
   `paste_clipboard.rs` reuses both so a pasted file cursor-lands exactly like mkfile.

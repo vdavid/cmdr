@@ -211,6 +211,105 @@ fn duplicating_a_file_twice_continues_the_series() {
     );
 }
 
+/// Two sources from ONE ` (N)` family, duplicated in the same operation, get one
+/// destination name each. The pick only PROBES the filesystem and the bytes land
+/// later, so the pre-loop pass has to remember what it already handed out:
+/// `photo.jpg` skips the taken `photo (1).jpg` and takes `photo (2).jpg`, and
+/// `photo (1).jpg` continues its series into the same `photo (2).jpg` unless the
+/// first pick is on record. Both landing there turns two requested copies into
+/// one (the second finds its destination occupied and falls into the ordinary
+/// conflict path).
+#[test]
+fn two_sources_in_one_series_duplicated_together_get_a_name_each() {
+    let tmp = create_temp_dir("series_pair");
+    let folder = tmp.join("folder");
+    fs::create_dir_all(&folder).unwrap();
+    let first = folder.join("photo.jpg");
+    let second = folder.join("photo (1).jpg");
+    fs::write(&first, b"first").unwrap();
+    fs::write(&second, b"second").unwrap();
+
+    let state = make_state();
+    let events = ConflictResponderSink::new(&state, ConflictResolution::Rename, true);
+    copy_files_with_progress_inner(
+        &events,
+        "op-duplicate-series-pair",
+        &state,
+        &[first.clone(), second.clone()],
+        &folder,
+        &WriteOperationConfig::default(),
+    )
+    .expect("duplicating a whole series must succeed");
+
+    assert_eq!(
+        dir_children(&folder),
+        vec!["photo (1).jpg", "photo (2).jpg", "photo (3).jpg", "photo.jpg"],
+        "each source gets its own name, so two requested copies stay two"
+    );
+    assert_eq!(fs::read(&first).unwrap(), b"first", "the originals keep their bytes");
+    assert_eq!(fs::read(&second).unwrap(), b"second");
+    // Source order decides which name goes where: `photo.jpg` takes the first
+    // free name, and `photo (1).jpg` continues past it.
+    assert_eq!(fs::read(folder.join("photo (2).jpg")).unwrap(), b"first");
+    assert_eq!(fs::read(folder.join("photo (3).jpg")).unwrap(), b"second");
+    assert!(
+        events.inner.conflicts.lock_ignore_poison().is_empty(),
+        "no source may collide with another source's duplicate"
+    );
+    let complete = events.inner.complete.lock_ignore_poison();
+    assert_eq!(complete[0].files_processed, 2, "both duplicates count as work done");
+}
+
+/// The same rule with a longer family and the selection handed over in reverse,
+/// so the answer can't come from the sources happening to arrive in ascending
+/// order: whichever one is asked first, every source still ends up somewhere of
+/// its own.
+#[test]
+fn a_whole_series_duplicated_in_reverse_order_still_gives_each_source_its_own_name() {
+    let tmp = create_temp_dir("series_reverse");
+    let folder = tmp.join("folder");
+    fs::create_dir_all(&folder).unwrap();
+    for (name, bytes) in [("photo.jpg", b"a"), ("photo (1).jpg", b"b"), ("photo (2).jpg", b"c")] {
+        fs::write(folder.join(name), bytes).unwrap();
+    }
+
+    let state = make_state();
+    let events = ConflictResponderSink::new(&state, ConflictResolution::Rename, true);
+    copy_files_with_progress_inner(
+        &events,
+        "op-duplicate-series-reverse",
+        &state,
+        &[
+            folder.join("photo (2).jpg"),
+            folder.join("photo (1).jpg"),
+            folder.join("photo.jpg"),
+        ],
+        &folder,
+        &WriteOperationConfig::default(),
+    )
+    .expect("duplicating a whole series must succeed");
+
+    assert_eq!(
+        dir_children(&folder),
+        vec![
+            "photo (1).jpg",
+            "photo (2).jpg",
+            "photo (3).jpg",
+            "photo (4).jpg",
+            "photo (5).jpg",
+            "photo.jpg",
+        ],
+        "three sources produce three new names, none of them shared"
+    );
+    assert_eq!(fs::read(folder.join("photo (3).jpg")).unwrap(), b"c");
+    assert_eq!(fs::read(folder.join("photo (4).jpg")).unwrap(), b"b");
+    assert_eq!(fs::read(folder.join("photo (5).jpg")).unwrap(), b"a");
+    assert!(
+        events.inner.conflicts.lock_ignore_poison().is_empty(),
+        "no source may collide with another source's duplicate"
+    );
+}
+
 /// A folder duplicated in place becomes a sibling `docs (1)/` holding the whole
 /// subtree. This is the case that forces the question to be asked per TOP-LEVEL
 /// source: every leaf of a same-folder folder copy is its own self-collision, so

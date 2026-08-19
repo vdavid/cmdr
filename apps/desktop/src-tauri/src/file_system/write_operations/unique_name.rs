@@ -5,16 +5,51 @@
 //! [`NameCandidates`] walks the sequence. The three claim strategies differ only
 //! in how they TEST a candidate: [`find_unique_name`] reserves it with
 //! `O_CREAT|O_EXCL`, [`next_available_name`] only probes, and
-//! [`create_unique_dir`] claims it with `mkdir(2)`.
+//! [`create_unique_dir`] claims it with `mkdir(2)`. Whatever the filesystem
+//! can't answer on its own — a name one operation has picked but not yet
+//! written — is what [`ClaimedNames`] remembers.
 //!
 //! The volume namer (`transfer/volume/conflict.rs::find_unique_volume_name`)
 //! and the clipboard-paste writer (`paste_clipboard.rs`) walk these same
 //! candidates, so the numbering can't drift between backends.
 
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+
+use crate::ignore_poison::IgnorePoison;
 
 use super::validation::path_exists_or_is_symlink;
+
+/// The destination names ONE operation has already handed out but whose bytes
+/// haven't landed yet.
+///
+/// [`next_available_name`] and the volume namer only PROBE the destination, and
+/// the caller writes later, so the filesystem can't answer "is this name spoken
+/// for" on its own. Two sources from one ` (N)` family duplicated together
+/// (`photo.jpg` and `photo (1).jpg`) otherwise both arrive at `photo (2).jpg`:
+/// `photo.jpg` skips the taken `(1)`, `photo (1).jpg` continues its series into
+/// the same `(2)`, and two requested copies become one.
+///
+/// Interior-mutable and shareable, because the volume engine's concurrent driver
+/// resolves several top-level sources at once. Lives on the op state
+/// (`state::WriteOperationState::claimed_names`), so the ledger is per operation
+/// and both engines read the same one.
+///
+// DEFAULT-OK: an empty ledger is the truth about a fresh operation, which has
+// handed out no names yet.
+#[derive(Debug, Default)]
+pub(crate) struct ClaimedNames(Mutex<HashSet<PathBuf>>);
+
+impl ClaimedNames {
+    /// Records `path` as spoken for, answering whether it was still free. The
+    /// test and the record are one step, so two tasks racing on one name can't
+    /// both be told yes.
+    pub(crate) fn claim(&self, path: &Path) -> bool {
+        self.0.lock_ignore_poison().insert(path.to_path_buf())
+    }
+}
 
 /// Builds the `counter`-th candidate name under the shared ` (N)` dedup
 /// convention: `counter == 0` is the bare `stem[.ext]`, `1..` appends ` (N)`
@@ -165,13 +200,16 @@ pub(super) fn find_unique_name(path: &Path) -> PathBuf {
 ///
 /// Occupancy uses `path_exists_or_is_symlink`, so a dangling symlink counts as
 /// taken; handing that name back would let the caller's write follow the
-/// symlink to wherever it points.
-pub(super) fn next_available_name(path: &Path) -> PathBuf {
+/// symlink to wherever it points. A name the operation already handed out counts
+/// as taken too, and the pick is recorded in `claimed` before it's returned:
+/// nothing else stands between two sources of one ` (N)` family and one shared
+/// destination. See [`ClaimedNames`].
+pub(super) fn next_available_name(path: &Path, claimed: &ClaimedNames) -> PathBuf {
     let mut candidates = NameCandidates::for_path(path);
 
     loop {
         let new_path = candidates.current();
-        if !path_exists_or_is_symlink(&new_path) {
+        if !path_exists_or_is_symlink(&new_path) && claimed.claim(&new_path) {
             return new_path;
         }
         candidates.advance();
@@ -186,11 +224,19 @@ pub(super) fn next_available_name(path: &Path) -> PathBuf {
 /// Separate from [`find_unique_name`] because a placeholder FILE is precisely
 /// what a directory destination can't have sitting at its name. The caller
 /// records the returned path so rollback can remove it.
-pub(super) fn create_unique_dir(path: &Path) -> std::io::Result<PathBuf> {
+///
+/// `mkdir(2)` can't see a name an earlier [`next_available_name`] pick has only
+/// spoken for, so this walks past those too and records its own claim
+/// ([`ClaimedNames`]).
+pub(super) fn create_unique_dir(path: &Path, claimed: &ClaimedNames) -> std::io::Result<PathBuf> {
     let mut candidates = NameCandidates::for_path(path);
 
     loop {
         let new_path = candidates.current();
+        if !claimed.claim(&new_path) {
+            candidates.advance();
+            continue;
+        }
         match fs::create_dir(&new_path) {
             Ok(()) => return Ok(new_path),
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => candidates.advance(),

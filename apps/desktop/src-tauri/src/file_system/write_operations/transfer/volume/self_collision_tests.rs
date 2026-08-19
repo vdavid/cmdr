@@ -137,6 +137,80 @@ async fn duplicating_a_file_in_place_on_one_volume_renames_it_and_never_prompts(
     );
 }
 
+/// A whole ` (N)` family duplicated in one operation: three sources, three new
+/// names, none of them shared. Three top-level sources is also what puts this on
+/// the CONCURRENT driver, where the picks happen at the same time, so the only
+/// thing keeping two of them apart is the operation's claimed-name ledger: the
+/// namer's `exists()` probe can't see a name whose bytes haven't landed yet.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn duplicating_a_whole_series_at_once_gives_every_source_its_own_name() {
+    let volume = one_volume();
+    volume.create_directory(Path::new("/photos")).await.unwrap();
+    for (name, bytes) in [("photo.jpg", b"a"), ("photo (1).jpg", b"b"), ("photo (2).jpg", b"c")] {
+        volume
+            .create_file(&Path::new("/photos").join(name), bytes)
+            .await
+            .unwrap();
+    }
+
+    let state = make_state();
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Rename, true));
+
+    copy_volumes_with_progress(
+        events.clone(),
+        "op-volume-duplicate-series",
+        &state,
+        Arc::clone(&volume),
+        &[
+            PathBuf::from("/photos/photo.jpg"),
+            PathBuf::from("/photos/photo (1).jpg"),
+            PathBuf::from("/photos/photo (2).jpg"),
+        ],
+        Arc::clone(&volume),
+        Path::new("/photos"),
+        &duplicate_config(),
+    )
+    .await
+    .expect("duplicating a whole series must succeed");
+
+    assert_eq!(
+        children(&volume, "/photos").await,
+        vec![
+            "photo (1).jpg",
+            "photo (2).jpg",
+            "photo (3).jpg",
+            "photo (4).jpg",
+            "photo (5).jpg",
+            "photo.jpg",
+        ],
+        "three requested copies stay three, each under a name of its own"
+    );
+    assert_eq!(
+        read_all(&volume, "/photos/photo.jpg").await,
+        b"a",
+        "originals untouched"
+    );
+    assert_eq!(read_all(&volume, "/photos/photo (1).jpg").await, b"b");
+    assert_eq!(read_all(&volume, "/photos/photo (2).jpg").await, b"c");
+    // Which copy lands under which new name is up to the concurrent driver's
+    // ordering; that all three arrived, exactly once each, is the rule.
+    let mut copies = vec![
+        read_all(&volume, "/photos/photo (3).jpg").await,
+        read_all(&volume, "/photos/photo (4).jpg").await,
+        read_all(&volume, "/photos/photo (5).jpg").await,
+    ];
+    copies.sort();
+    assert_eq!(
+        copies,
+        vec![b"a".to_vec(), b"b".to_vec(), b"c".to_vec()],
+        "every source is copied once, and no copy overwrites another"
+    );
+    assert!(
+        events.inner.conflicts.lock_ignore_poison().is_empty(),
+        "a self-collision is not a conflict, so nothing may be asked"
+    );
+}
+
 /// The propagation claim: the volume engine threads the destination down through
 /// `merge_level`, so renaming the top-level folder carries the whole subtree with
 /// it. Nothing inside the original may be touched, and no ` (N)` may appear there.

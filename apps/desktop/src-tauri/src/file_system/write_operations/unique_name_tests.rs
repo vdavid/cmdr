@@ -175,12 +175,60 @@ fn picks_the_next_free_name_without_creating_anything() {
     let target = temp.path().join("notes.txt");
     fs::write(&target, b"original").unwrap();
 
-    let picked = next_available_name(&target);
+    let picked = next_available_name(&target, &ClaimedNames::default());
 
     assert_eq!(picked.file_name().unwrap().to_string_lossy(), "notes (1).txt");
     assert!(!picked.exists(), "the probe must not reserve the name");
-    // Nothing was reserved, so a second call answers the same.
-    assert_eq!(next_available_name(&target), picked);
+    // Nothing was reserved on disk, so another operation answers the same.
+    assert_eq!(next_available_name(&target, &ClaimedNames::default()), picked);
+}
+
+/// The ledger is what a probe can't have: nothing lands on disk between the two
+/// picks, so only the record of the first keeps the second off it.
+#[test]
+fn a_second_pick_in_one_operation_walks_past_the_first() {
+    let temp = TempDir::new().unwrap();
+    let target = temp.path().join("notes.txt");
+    fs::write(&target, b"original").unwrap();
+    let claimed = ClaimedNames::default();
+
+    let first = next_available_name(&target, &claimed);
+    let second = next_available_name(&target, &claimed);
+
+    assert_eq!(first.file_name().unwrap().to_string_lossy(), "notes (1).txt");
+    assert_eq!(second.file_name().unwrap().to_string_lossy(), "notes (2).txt");
+}
+
+/// Two sources of one ` (N)` family, the shape that made this a bug: the second
+/// source's sequence starts exactly where the first source's pick landed.
+#[test]
+fn two_sources_of_one_family_never_pick_the_same_name() {
+    let temp = TempDir::new().unwrap();
+    fs::write(temp.path().join("photo.jpg"), b"x").unwrap();
+    fs::write(temp.path().join("photo (1).jpg"), b"x").unwrap();
+    let claimed = ClaimedNames::default();
+
+    let from_plain = next_available_name(&temp.path().join("photo.jpg"), &claimed);
+    let from_first = next_available_name(&temp.path().join("photo (1).jpg"), &claimed);
+
+    assert_eq!(from_plain.file_name().unwrap().to_string_lossy(), "photo (2).jpg");
+    assert_eq!(from_first.file_name().unwrap().to_string_lossy(), "photo (3).jpg");
+}
+
+/// A directory claims with `mkdir(2)`, which can't see a name only spoken for,
+/// so it consults the ledger as well.
+#[test]
+fn a_directory_claim_walks_past_a_name_a_file_pick_spoke_for() {
+    let temp = TempDir::new().unwrap();
+    fs::write(temp.path().join("notes"), b"x").unwrap();
+    let claimed = ClaimedNames::default();
+
+    let spoken_for = next_available_name(&temp.path().join("notes"), &claimed);
+    let created = create_unique_dir(&temp.path().join("notes"), &claimed).unwrap();
+
+    assert_eq!(spoken_for.file_name().unwrap().to_string_lossy(), "notes (1)");
+    assert_eq!(created.file_name().unwrap().to_string_lossy(), "notes (2)");
+    assert!(created.is_dir(), "the directory claim creates what it returns");
 }
 
 #[test]
@@ -190,7 +238,7 @@ fn skips_names_already_taken_and_continues_a_sequence() {
     fs::write(&target, b"x").unwrap();
     fs::write(temp.path().join("photo (2).jpg"), b"x").unwrap();
 
-    let picked = next_available_name(&target);
+    let picked = next_available_name(&target, &ClaimedNames::default());
     assert_eq!(picked.file_name().unwrap().to_string_lossy(), "photo (3).jpg");
 }
 
@@ -200,7 +248,7 @@ fn works_for_a_directory_source() {
     let target = temp.path().join("docs");
     fs::create_dir(&target).unwrap();
 
-    let picked = next_available_name(&target);
+    let picked = next_available_name(&target, &ClaimedNames::default());
     assert_eq!(picked.file_name().unwrap().to_string_lossy(), "docs (1)");
     assert!(!picked.exists());
 }
@@ -215,6 +263,6 @@ fn a_dangling_symlink_counts_as_taken() {
     fs::write(&target, b"x").unwrap();
     std::os::unix::fs::symlink(temp.path().join("gone"), temp.path().join("notes (1).txt")).unwrap();
 
-    let picked = next_available_name(&target);
+    let picked = next_available_name(&target, &ClaimedNames::default());
     assert_eq!(picked.file_name().unwrap().to_string_lossy(), "notes (2).txt");
 }
