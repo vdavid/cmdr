@@ -17,7 +17,6 @@ use tokio::sync::oneshot;
 use crate::indexing::IndexFailureSignal;
 use crate::indexing::events::EventSink;
 use crate::indexing::store::{self, EntryRow, IndexStore, IndexStoreError, UnreadableCause};
-#[cfg(test)]
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
@@ -785,8 +784,7 @@ impl IndexWriter {
     /// After this call further sends will fail.
     pub fn shutdown(&self) {
         let _ = self.sender.send(WriteMessage::Shutdown);
-        if let Ok(mut guard) = self.thread_handle.lock()
-            && let Some(handle) = guard.take()
+        if let Some(handle) = self.thread_handle.lock_ignore_poison().take()
             && let Err(e) = handle.join()
         {
             log::warn!("Index writer thread panicked on shutdown: {e:?}");

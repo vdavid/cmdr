@@ -8,6 +8,7 @@
 //! looks the handle up in the registry, `apply_freshness_event_on` takes the
 //! handle directly and never touches the registry at all.
 
+use cmdr_fs::ignore_poison::IgnorePoison;
 use std::sync::Arc;
 
 use super::{INDEX_REGISTRY, get_writer_and_scanning_for};
@@ -36,7 +37,7 @@ pub(crate) fn apply_freshness_event(volume_id: &str, event: FreshnessEvent) {
     // itself never needs the registry, so holding it across the report is both
     // unnecessary and a re-entrancy hazard for any caller already under the lock.
     let Some((freshness, events)) = ({
-        let Ok(reg) = INDEX_REGISTRY.lock() else { return };
+        let reg = INDEX_REGISTRY.lock_ignore_poison();
         reg.get(volume_id).map(|instance| {
             (
                 Arc::clone(&instance.signals.freshness),
@@ -73,7 +74,7 @@ pub(crate) fn apply_freshness_event_on(
     // change, so the FE's one-time stale dialog sees the exact Fresh→Stale
     // transition (subscribe-don't-poll).
     let changed_to = {
-        let Ok(mut f) = freshness.lock() else { return };
+        let mut f = freshness.lock_ignore_poison();
         let previous = *f;
         let next = f.unwrap_or(Freshness::Scanning).on(event);
         *f = Some(next);
@@ -120,8 +121,7 @@ pub(crate) fn bump_current_epoch_for(volume_id: &str) {
 /// Read a volume's current freshness, if it has a registered instance.
 pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
     INDEX_REGISTRY
-        .lock()
-        .ok()?
+        .lock_ignore_poison()
         .get(volume_id)
-        .and_then(|i| i.signals.freshness.lock().ok().and_then(|f| *f))
+        .and_then(|i| *i.signals.freshness.lock_ignore_poison())
 }

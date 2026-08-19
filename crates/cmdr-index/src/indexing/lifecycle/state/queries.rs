@@ -7,6 +7,8 @@
 
 use std::sync::atomic::Ordering;
 
+use cmdr_fs::ignore_poison::IgnorePoison;
+
 use super::{INDEX_REGISTRY, IndexPhase};
 use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::store::{IndexFailure, IndexStore};
@@ -41,9 +43,7 @@ pub(crate) fn ready_volumes_with_kind() -> Vec<(VolumeId, IndexVolumeKind)> {
                 let fresh = instance
                     .signals
                     .freshness
-                    .lock()
-                    .ok()
-                    .and_then(|f| *f)
+                    .lock_ignore_poison()
                     .is_some_and(|f| f == Freshness::Fresh);
                 (vid.clone(), instance.kind, fresh)
             })
@@ -71,10 +71,7 @@ fn has_covered_home(volume_id: &str) -> bool {
 /// Snapshot every registered volume id. Used by the global memory watchdog to
 /// stop EVERY volume's index (not just `root`) when the global budget is hit.
 pub(crate) fn all_registered_volume_ids() -> Vec<VolumeId> {
-    INDEX_REGISTRY
-        .lock()
-        .map(|reg| reg.keys().cloned().collect())
-        .unwrap_or_default()
+    INDEX_REGISTRY.lock_ignore_poison().keys().cloned().collect()
 }
 
 /// The typed kind of a registered volume, or `None` if it has no index instance.
@@ -83,7 +80,7 @@ pub(crate) fn all_registered_volume_ids() -> Vec<VolumeId> {
 /// visit for a Local/SMB volume, skip an MTP one — without inspecting the
 /// volume-id string.
 pub(crate) fn volume_kind(volume_id: &str) -> Option<IndexVolumeKind> {
-    INDEX_REGISTRY.lock().ok()?.get(volume_id).map(|i| i.kind)
+    INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| i.kind)
 }
 
 /// All registered MTP volume ids belonging to `device_id` (one device hosts N
@@ -112,7 +109,7 @@ pub(crate) fn registered_mtp_volume_ids_for_device(device_id: &str) -> Vec<Strin
 /// activity alone would swallow the very request that asks for one.
 pub(crate) fn awaits_its_first_scan(volume_id: &str) -> bool {
     let db_path = {
-        let Ok(reg) = INDEX_REGISTRY.lock() else { return false };
+        let reg = INDEX_REGISTRY.lock_ignore_poison();
         match reg.get(volume_id).map(|i| &i.phase) {
             // `Initializing` is a start already in flight, and a scanning manager
             // is a walk already running: neither needs another. A volume the phase
@@ -139,7 +136,6 @@ pub(crate) fn awaits_its_first_scan(volume_id: &str) -> bool {
 /// but unwatched", which the branch set deliberately no longer says.
 #[cfg(test)]
 pub(crate) fn is_watching_for_test(volume_id: &str) -> bool {
-    use cmdr_fs::ignore_poison::IgnorePoison;
     match INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| &i.phase) {
         Some(IndexPhase::Running(mgr)) => mgr.is_watching(),
         _ => false,
@@ -154,15 +150,10 @@ pub(crate) fn is_watching_for_test(volume_id: &str) -> bool {
 /// `enabled: false` next to a live freshness color — a shape the badge's own doc
 /// comment says can't occur.
 pub fn is_active(volume_id: &str) -> bool {
-    INDEX_REGISTRY
-        .lock()
-        .map(|reg| {
-            matches!(
-                reg.get(volume_id).map(|i| &i.phase),
-                Some(IndexPhase::Initializing { .. } | IndexPhase::Running(_) | IndexPhase::Detached { .. })
-            )
-        })
-        .unwrap_or(false)
+    matches!(
+        INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| &i.phase),
+        Some(IndexPhase::Initializing { .. } | IndexPhase::Running(_) | IndexPhase::Detached { .. })
+    )
 }
 
 /// Whether a volume's index is in the `Failed` phase (its DB died with a fatal
@@ -170,17 +161,17 @@ pub fn is_active(volume_id: &str) -> bool {
 /// registered so the badge is honest. Used by the recovery commands to rebuild
 /// from scratch instead of a no-op resume.
 pub fn is_failed(volume_id: &str) -> bool {
-    INDEX_REGISTRY
-        .lock()
-        .map(|reg| matches!(reg.get(volume_id).map(|i| &i.phase), Some(IndexPhase::Failed { .. })))
-        .unwrap_or(false)
+    matches!(
+        INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| &i.phase),
+        Some(IndexPhase::Failed { .. })
+    )
 }
 
 /// The typed fatal-storage reason if the volume is in the `Failed` phase, else
 /// `None`. Surfaced on `VolumeIndexStatus` so logs and any detailed tooltip can be
 /// specific.
 pub(crate) fn index_failure(volume_id: &str) -> Option<IndexFailure> {
-    match INDEX_REGISTRY.lock().ok()?.get(volume_id).map(|i| &i.phase) {
+    match INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| &i.phase) {
         Some(IndexPhase::Failed { reason, .. }) => Some(*reason),
         _ => None,
     }

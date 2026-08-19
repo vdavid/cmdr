@@ -32,6 +32,7 @@
 //! from having to reach back into this registry. See `read/handles.rs` and the
 //! `DETAILS.md` registry section.
 
+use cmdr_fs::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -338,7 +339,7 @@ pub(crate) fn resolved_index_db_path(volume_id: &str) -> Result<PathBuf, String>
 /// apply in the gap would insert rows the `TruncateData` a few lines later blanks,
 /// or worse, rows that land after it with ids the walk is about to allocate.
 pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(crate::indexing::writer::IndexWriter, bool)> {
-    let reg = INDEX_REGISTRY.lock().ok()?;
+    let reg = INDEX_REGISTRY.lock_ignore_poison();
     match reg.get(volume_id).map(|i| &i.phase) {
         Some(IndexPhase::Running(mgr)) => Some((mgr.writer.clone(), mgr.scanning.load(Ordering::Relaxed))),
         Some(IndexPhase::Detached { writer, .. }) => Some((writer.clone(), true)),
@@ -369,7 +370,7 @@ pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(crate::ind
 /// blocking call in `start_scan`), so this is belt over braces rather than the
 /// protection itself.
 pub(crate) fn cover_context_for(volume_id: &str) -> Option<crate::indexing::lifecycle::cover::CoverContext> {
-    let reg = INDEX_REGISTRY.lock().ok()?;
+    let reg = INDEX_REGISTRY.lock_ignore_poison();
     match reg.get(volume_id).map(|i| &i.phase) {
         Some(IndexPhase::Running(mgr)) if !mgr.scanning.load(Ordering::Relaxed) => {
             Some(crate::indexing::lifecycle::cover::CoverContext {
@@ -434,9 +435,7 @@ pub(crate) fn branch_coverage_buffered_events(volume_id: &str, paths: &[String])
 /// Run something against a volume's `Running` manager, or nothing if it has
 /// none. Non-blocking work only — the registry lock is held throughout.
 fn with_running_manager(volume_id: &str, f: impl FnOnce(&mut IndexManager)) {
-    let Ok(mut reg) = INDEX_REGISTRY.lock() else {
-        return;
-    };
+    let mut reg = INDEX_REGISTRY.lock_ignore_poison();
     if let Some(IndexPhase::Running(mgr)) = reg.get_mut(volume_id).map(|i| &mut i.phase) {
         f(mgr);
     }

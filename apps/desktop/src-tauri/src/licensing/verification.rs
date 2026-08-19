@@ -1,5 +1,6 @@
 //! License key verification using Ed25519 signatures.
 
+use crate::ignore_poison::IgnorePoison;
 use crate::licensing::LicenseData;
 use crate::licensing::app_status;
 use crate::licensing::redact_email;
@@ -253,9 +254,7 @@ pub fn get_license_info(app: &tauri::AppHandle) -> Option<LicenseInfo> {
 
 /// Clear the in-memory license cache. Called when the license is reset.
 pub fn clear_license_cache() {
-    if let Ok(mut cache) = LICENSE_CACHE.lock() {
-        *cache = None;
-    }
+    *LICENSE_CACHE.lock_ignore_poison() = None;
 }
 
 /// Validate a license key and extract the data.

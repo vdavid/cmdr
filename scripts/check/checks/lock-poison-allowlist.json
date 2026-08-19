@@ -23,7 +23,7 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/state.rs": 2,
     "apps/desktop/src-tauri/src/file_system/write_operations/status_cache.rs": 6,
     "apps/desktop/src-tauri/src/file_viewer/session.rs": 5,
-    "apps/desktop/src-tauri/src/licensing/verification.rs": 4,
+    "apps/desktop/src-tauri/src/licensing/verification.rs": 3,
     "apps/desktop/src-tauri/src/mcp/auth.rs": 2,
     "apps/desktop/src-tauri/src/mcp/listing_errors.rs": 1,
     "apps/desktop/src-tauri/src/mcp/server.rs": 9,
@@ -40,10 +40,6 @@
     "crates/cmdr-fs/src/entry.rs": 4,
     "crates/cmdr-fs/src/volume/in_memory.rs": 1,
     "crates/cmdr-index/src/indexing/events/mod.rs": 8,
-    "crates/cmdr-index/src/indexing/lifecycle/manager.rs": 3,
-    "crates/cmdr-index/src/indexing/lifecycle/state.rs": 3,
-    "crates/cmdr-index/src/indexing/lifecycle/state/freshness_bridge.rs": 4,
-    "crates/cmdr-index/src/indexing/lifecycle/state/queries.rs": 7,
-    "crates/cmdr-index/src/indexing/writer/mod.rs": 1
+    "crates/cmdr-index/src/indexing/lifecycle/manager.rs": 3
   }
 }
