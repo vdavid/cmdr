@@ -229,9 +229,9 @@ pub(crate) async fn scan_volume_for_conflicts_within(
         .collect();
 
     // The source side of the self-collision filter below. Both halves come from
-    // the same resolve the batch stat pays for, and both stay `None`/empty when
-    // the caller sent no source volume: the filter is then inert and the scan
-    // keeps its name-only behaviour.
+    // the same resolve the batch stat pays for, and it stays `None` when the
+    // caller sent no source volume: the filter is then inert and the scan keeps
+    // its name-only behavior.
     let mut resolved_source: Option<(Arc<dyn Volume>, Vec<PathBuf>)> = None;
 
     // Resolve real per-item types and sizes from the source volume when the
@@ -309,10 +309,12 @@ pub(crate) async fn scan_volume_for_conflicts_within(
 /// answer. `transfer_would_land_on_its_source` is that one place, and it gives
 /// the answer the engine that will actually run gives.
 ///
-/// Every source is tried against every collision rather than pairing them by
-/// name: the name a backend reports is the DESTINATION entry's, which a
-/// case-insensitive share or an NFC/NFD-normalizing one can spell differently
-/// from the source it came from.
+/// Every source is tried against every collision, rather than paired by the name
+/// each collision carries. Identity is what the engines redirect on, and a batch
+/// whose sources share a basename lands in ONE redirected destination, so a
+/// collision is gone the moment ANY source turns out to be the item sitting
+/// there. The cost is bounded by `max_conflicts` (100 by default) times the
+/// batch, and the expensive `dev+ino` arm only runs when both sides are local.
 fn drop_self_collisions(
     conflicts: Vec<ScanConflict>,
     resolved_source: Option<&(Arc<dyn Volume>, Vec<PathBuf>)>,

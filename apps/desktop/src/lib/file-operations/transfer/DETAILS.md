@@ -237,6 +237,16 @@ The paste path keeps its MTP-specific refusal ("Use F5 to copy files to MTP devi
 guard, because that toast points the user at the F5/F6 flow paste lacks; the shared guard then handles read-only /
 search-results destinations uniformly.
 
+**A transfer into the folder the sources already live in is asymmetric between copy and move**, and both halves live on
+this side. A COPY there duplicates each item under a free ` (N)` name, so
+`transfer-dialog-logic.ts::getPathValidationError` accepts it (the subfolder rejection above it stays: copying a folder
+into its own subtree recurses until the disk fills). A MOVE there is already done, so the validator still rejects it,
+and `clipboard-operations.ts::pasteWouldMoveNothing` short-circuits a cut-paste whose sources are ALL already in the
+destination to nothing at all: no dialog, no transfer, no "Moved 0 files", and the clipboard survives so the next paste
+still works. A PARTIAL set dispatches normally and the backend drops the ones already there. That frontend check is
+lexical because the frontend holds paths and nothing else; the backend settles identity properly
+(`src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in place)").
+
 ### Unified components for Copy + Move
 
 Copy and Move share 95%+ of UI/flow. Differences:

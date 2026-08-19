@@ -13,6 +13,13 @@
  * move cancel the deep preview while still surfacing "N folders will merge" and
  * the file-policy radios.
  *
+ * It matches by NAME, so a copy into the folder the sources already live in
+ * would report every one of them as its own conflict. The backend drops those
+ * before answering (`commands/file_system/volume_copy.rs`, and
+ * `src-tauri/src/file_system/write_operations/transfer/DETAILS.md`
+ * § "Self-collision (duplicating in place)"), so a same-folder copy correctly
+ * arrives here as zero conflicts. Nothing to do on this side.
+ *
  * The factory takes its reactive inputs via getter callbacks (matching the
  * codebase's factory pattern) and exposes state through getters the dialog reads
  * in its markup.
