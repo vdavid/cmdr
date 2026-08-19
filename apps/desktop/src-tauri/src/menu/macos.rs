@@ -10,7 +10,7 @@ use tauri::{
 
 use super::menu_items::{
     ViewModeItems, build_sort_submenu, build_view_mode_items, build_zoom_submenu, copy_path_accelerator, register_item,
-    show_in_file_manager_accelerator, show_in_file_manager_label,
+    register_sort_items, show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 use super::{
     ABOUT_ID, ACKNOWLEDGEMENTS_ID, ASK_CMDR_ID, CHANGELOG_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID,
@@ -21,8 +21,7 @@ use super::{
     HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID,
     NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID,
     QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID,
-    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID,
-    SORT_BY_SIZE_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, ViewMode,
+    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, ViewMode,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -456,26 +455,8 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, SUGGESTED_OPS_ID, &suggested_ops_item, &view_submenu, 13);
     register_item(&mut items, ASK_CMDR_ID, &ask_cmdr_item, &view_submenu, 14);
 
-    // Sort by submenu positions: name(0), extension(1), modified(2), size(3), created(4),
-    // sep(5), ascending(6), descending(7). Only the four shortcut-bound columns are
-    // registered for accelerator updates; date-created and the asc/desc items have no
-    // accelerator and no user-customizable shortcut.
-    register_item(&mut items, SORT_BY_NAME_ID, &sort_items.by_name, &sort_submenu, 0);
-    register_item(
-        &mut items,
-        SORT_BY_EXTENSION_ID,
-        &sort_items.by_extension,
-        &sort_submenu,
-        1,
-    );
-    register_item(
-        &mut items,
-        SORT_BY_MODIFIED_ID,
-        &sort_items.by_modified,
-        &sort_submenu,
-        2,
-    );
-    register_item(&mut items, SORT_BY_SIZE_ID, &sort_items.by_size, &sort_submenu, 3);
+    // Sort by: the positions live with the layout in `menu_items::register_sort_items`.
+    register_sort_items(&mut items, &sort_items);
 
     // Go menu positions: back(0), forward(1), sep(2), parent(3), home(4), sep(5), go_to_path(6),
     // go_latest_download(7), sep(8), favorites_add(9)

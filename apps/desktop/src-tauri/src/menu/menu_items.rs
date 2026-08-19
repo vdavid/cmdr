@@ -225,6 +225,26 @@ pub(crate) fn build_sort_submenu<R: Runtime>(
     })
 }
 
+/// Registers the four shortcut-bound Sort by items for accelerator updates.
+///
+/// The positions live here, beside the `Submenu::with_items` call that sets them.
+/// `register_item_positions_match_submenu_order` can only cross-check a submenu whose
+/// item array a platform file spells out itself, so indices hardcoded over there against
+/// this layout would go stale unnoticed the moment the order changes.
+///
+/// Date created and the ascending / descending items carry no accelerator and no
+/// user-customizable shortcut, so nothing needs to reinsert them.
+pub(crate) fn register_sort_items<R: Runtime>(
+    items: &mut HashMap<String, MenuItemEntry<R>>,
+    sort_items: &SortSubmenuItems<R>,
+) {
+    let submenu = &sort_items.submenu;
+    register_item(items, SORT_BY_NAME_ID, &sort_items.by_name, submenu, 0);
+    register_item(items, SORT_BY_EXTENSION_ID, &sort_items.by_extension, submenu, 1);
+    register_item(items, SORT_BY_MODIFIED_ID, &sort_items.by_modified, submenu, 2);
+    register_item(items, SORT_BY_SIZE_ID, &sort_items.by_size, submenu, 3);
+}
+
 /// Builds the View > Zoom submenu (shared between macOS and Linux).
 ///
 /// Each preset item writes `appearance.textSize` directly via the unified
