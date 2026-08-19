@@ -181,6 +181,10 @@ Settings.
 4. **Investigate and record**: what `Intl.DateTimeFormat().resolvedOptions()` reports on a machine with a region
    override (`en_US@rg=sezzzz`), i.e. whether the `-u-rg-` extension survives into the webview. If it doesn't, note it
    in `DETAILS.md` with the evidence-anchor format; don't build around it in this milestone.
+   - ❌ **Don't infer the answer from Cmdr's own date column.** It looks like free evidence (ISO dates on a US-English
+     machine would suggest the Swedish region override is getting through) and it is not: David's settings carry
+     `appearance.dateTimeFormat: 'iso'`, so the column proves nothing about the locale. Read `resolvedOptions()`
+     directly in the webview.
 
 **Tests** (unit; written after the split, since this is a mechanical repoint with one behavioral assertion)
 
