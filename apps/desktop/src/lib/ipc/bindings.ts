@@ -1643,6 +1643,16 @@ export const commands = {
    *  the result for the session and substitutes the placeholders itself.
    */
   getLocalizedSystemStrings: () => __TAURI_INVOKE<LocalizedSystemStrings>('get_localized_system_strings'),
+  /**
+   *  Tauri command: the locale the UI should run in while the language setting is
+   *  `'system'`, or `None` when there's no OS preference list to read.
+   *
+   *  `None` is a platform answer, not a "nothing matched" answer: off macOS the
+   *  webview's own default stands, which is the right behavior on Linux. On macOS
+   *  we always answer, falling back to English, because that IS the answer when
+   *  the user reads no language we ship.
+   */
+  getUiLocale: () => __TAURI_INVOKE<string | null>('get_ui_locale'),
   // Cancels an in-progress download.
   cancelAiDownload: () => __TAURI_INVOKE<void>('cancel_ai_download'),
   /**

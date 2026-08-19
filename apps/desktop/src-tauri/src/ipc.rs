@@ -292,6 +292,7 @@ macro_rules! ipc_command_manifest {
                     crate::ai::connection_check::check_ai_connection,
                     crate::system_memory::get_system_memory_info,
                     crate::system_strings::get_localized_system_strings,
+                    crate::intl::get_ui_locale,
                     crate::ai::install::cancel_ai_download,
                     crate::ai::install::uninstall_ai,
                     crate::ai::api_keys::save_ai_api_key,

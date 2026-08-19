@@ -354,6 +354,24 @@ var AllChecks = []CheckDefinition{
 		Run:               RunDesktopMessageKeysFresh,
 	},
 	{
+		ID:          "desktop-shipped-locales-fresh",
+		Nickname:    "shipped-locales-fresh",
+		DisplayName: "shipped-locales-fresh",
+		App:         AppDesktop,
+		// Filed under Rust because the artifact is Rust: the generator reads the
+		// catalog dirs, but what goes stale is the table the resolver compiles in.
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs: inputs([]string{
+			"apps/desktop/src/lib/intl/messages/**",
+			"apps/desktop/scripts/gen-shipped-locales*.ts",
+			"apps/desktop/src-tauri/src/intl/**",
+		}),
+		Run: RunDesktopShippedLocalesFresh,
+	},
+	{
 		ID:                "desktop-message-key-naming",
 		Nickname:          "message-key-naming",
 		DisplayName:       "message-key-naming",

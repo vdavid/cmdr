@@ -286,8 +286,12 @@ pub(crate) fn preferred_language() -> Option<String> {
     None
 }
 
+/// The user's UI languages, most-preferred first, straight from
+/// `NSUserDefaults.AppleLanguages`. The ORDER is the user's own fallback plan,
+/// so keep it: [`crate::intl::resolve_ui_locale`] walks it to find the first
+/// language we ship.
 #[cfg(target_os = "macos")]
-fn apple_languages() -> Vec<String> {
+pub(crate) fn apple_languages() -> Vec<String> {
     use objc2_foundation::{NSString, NSUserDefaults};
 
     let defaults = NSUserDefaults::standardUserDefaults();
@@ -383,5 +387,15 @@ mod tests {
         // misfired and we'd silently always pick the English fallback.
         let langs = apple_languages();
         assert!(!langs.is_empty(), "AppleLanguages should never be empty on macOS");
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn apple_languages_preserves_the_users_order() {
+        // The whole auto-language feature rests on this list being the user's
+        // ordered fallback plan: sorting or deduping it would quietly turn
+        // "Hungarian, then Swedish" into "whatever comes first alphabetically".
+        let langs = apple_languages();
+        assert_eq!(langs.first().cloned(), preferred_language());
     }
 }
