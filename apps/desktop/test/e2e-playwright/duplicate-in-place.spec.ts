@@ -44,6 +44,15 @@ test.afterEach(() => {
 
 test.describe('Duplicate in place', () => {
   test('⌘C then ⌘V in one pane lands "file-a (1).txt" beside the original', async ({ tauriPage }) => {
+    // macOS only: every clipboard FILE command is `#[cfg(target_os = "macos")]`
+    // (`src-tauri/src/commands/clipboard.rs`), and the others answer "not yet
+    // supported on this platform", so ⌘C never reaches a pasteboard on Linux.
+    // The E2E clipboard fake replaces the pasteboard INSIDE that macOS
+    // implementation, so it doesn't make the commands exist elsewhere. Nothing
+    // about duplicating is macOS-only: ⌘D, the Duplicate command, and F5 all
+    // cover the same backend path on both platforms.
+    test.skip(process.platform !== 'darwin', 'Clipboard file operations are implemented on macOS only.')
+
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
