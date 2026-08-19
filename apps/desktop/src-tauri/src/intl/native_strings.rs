@@ -246,6 +246,37 @@ mod tests {
         assert_eq!(shipped_tag("HU"), Some("hu"), "the tag is matched case-insensitively");
     }
 
+    /// Setting the preference and reading back what it resolved to.
+    ///
+    /// One test rather than several, because the statics are process-wide: two
+    /// tests writing them would race under the default parallel runner. It ends
+    /// by restoring `'system'`, so nothing after it sees a pinned language.
+    #[test]
+    fn the_preference_decides_the_catalog_and_says_when_it_moved() {
+        // A pinned language the app ships.
+        assert!(set_language_preference(Some("hu".to_string())));
+        assert_eq!(active_locale(), "hu");
+        // Setting the same thing again is not a move, so nothing rebuilds.
+        assert!(!set_language_preference(Some("hu".to_string())));
+
+        // A language we don't ship is a broken setting, not a request to follow
+        // the OS, so it lands on English.
+        assert!(set_language_preference(Some("kl".to_string())));
+        assert_eq!(active_locale(), "en");
+
+        // `'system'` and `None` mean the same thing, and both hand the answer
+        // back to the OS. Whether that MOVES anything depends on the machine
+        // running the test, so only the resolved value is asserted.
+        set_language_preference(Some("system".to_string()));
+        let from_sentinel = active_locale();
+        set_language_preference(None);
+        assert_eq!(active_locale(), from_sentinel);
+        assert!(
+            shipped_tag(&from_sentinel).is_some(),
+            "the OS answer has to be a catalog we ship, got {from_sentinel}"
+        );
+    }
+
     #[test]
     fn tokens_are_replaced_literally_with_no_icu_in_sight() {
         assert_eq!(
