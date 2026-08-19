@@ -1,6 +1,6 @@
 /**
  * File-action handlers: the viewer / rename / copy / move / new-folder/file /
- * delete dialog openers, the MCP `dialog.confirm`, and the
+ * delete dialog openers, the dialog-less Duplicate, the MCP `dialog.confirm`, and the
  * get-entry-under-cursor-then-act arms (edit / show in Finder / copy filename /
  * get info / the cloud offline pair). The repeated "read the entry under the
  * cursor, act on it if present" shape is the `withEntryUnderCursor` helper, so the
@@ -105,6 +105,12 @@ export const fileHandlers = {
       copyArgs?.mcpRequestId,
       copyArgs?.initiator,
     )
+  },
+
+  'file.duplicate': ({ explorerRef }) => {
+    // Arg-less by design: Duplicate has no destination to choose and no conflict
+    // policy to pre-answer, so there's nothing an MCP payload could say.
+    void explorerRef?.duplicateInPlace()
   },
 
   'file.move': ({ explorerRef, dispatchArgs }) => {

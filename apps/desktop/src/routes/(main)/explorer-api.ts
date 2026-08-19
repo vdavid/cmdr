@@ -142,6 +142,9 @@ export interface ExplorerAPI {
     mcpRequestId?: string,
     initiator?: Initiator,
   ) => Promise<void>
+  /** Copies the focused pane's selection (or cursor item) into the folder it
+   *  already lives in. No dialog, no rename editor: `file-operation-commands.ts`. */
+  duplicateInPlace: () => Promise<void>
   openMoveDialog: (
     autoConfirm?: boolean,
     onConflict?: string,

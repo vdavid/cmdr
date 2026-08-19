@@ -801,6 +801,11 @@
         await fileOps.openCopyDialog(autoConfirm, onConflict, mcpRequestId, initiator)
     }
 
+    /** Duplicates the focused pane's selection (or cursor item) in place (⌘D). */
+    export async function duplicateInPlace() {
+        await fileOps.duplicateInPlace()
+    }
+
     /** Opens the move dialog (convenience wrapper for MCP/key binding). */
     export async function openMoveDialog(
         autoConfirm?: boolean,

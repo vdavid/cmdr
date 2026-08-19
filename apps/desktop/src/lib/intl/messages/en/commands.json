@@ -460,6 +460,15 @@
     "description": "Command name for the F6 move-to-other-pane operation. Appears in the command palette. A terse control label. Distinct from \"Cut to clipboard\".",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "commands.fileDuplicate.label": "Duplicate",
+  "@commands.fileDuplicate.label": {
+    "description": "Command name for the Duplicate operation, which copies each selected file or folder into the folder it already lives in. Appears in the command palette, the right-click menu, and the File menu. A terse control label.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.fileDuplicate.description": "Make a copy of the selected files in the same folder",
+  "@commands.fileDuplicate.description": {
+    "description": "Longer help text for the \"Duplicate\" command, shown as a secondary line in the command palette. \"The same folder\" means the folder the files are already in, as opposed to the other pane."
+  },
   "commands.fileCompress.label": "Compress",
   "@commands.fileCompress.label": {
     "description": "Command name for the ⌥F5 compress operation that packs the cursor item or selection into a new zip archive in the other pane. Appears in the command palette. A terse control label.",

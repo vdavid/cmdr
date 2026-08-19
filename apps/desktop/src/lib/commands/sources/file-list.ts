@@ -187,6 +187,17 @@ export const fileListCommands: CommandSource[] = [
     shortcuts: ['F6'],
   },
   {
+    // ⌘D is Finder's Duplicate. The error screen's ⌘D (a capture-phase listener,
+    // `fixedKey` above) shows INSTEAD of the file list and shadows this one there
+    // on purpose, which `scope-hierarchy.ts` documents as a non-conflict.
+    id: 'file.duplicate',
+    nameKey: 'commands.fileDuplicate.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌘D'],
+    descriptionKey: 'commands.fileDuplicate.description',
+  },
+  {
     id: 'file.compress',
     nameKey: 'commands.fileCompress.label',
     scope: 'Main window/File list',

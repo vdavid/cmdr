@@ -28,10 +28,11 @@ use super::menu_items::{
 use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, QUICK_LOOK_ID};
 use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
-    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
-    FILE_VIEW_ID, ImageIndexMenuState, MenuItems, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID,
-    NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
-    TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems, image_index_menu_items,
+    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID, FILE_MOVE_ID,
+    FILE_NEW_FOLDER_ID, FILE_VIEW_ID, ImageIndexMenuState, MenuItems, NETWORK_HOST_DISCONNECT_ID,
+    NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID,
+    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
+    image_index_menu_items,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -145,15 +146,19 @@ pub fn build_context_menu<R: Runtime>(
     #[cfg(target_os = "macos")]
     append_tag_color_group(app, &menu, info)?;
 
-    // Copy / Move / Rename group. Rename is omitted on the search-results virtual
-    // pane: the underlying file CAN be renamed, but doing it from the snapshot view
-    // splits the file (snapshot keeps the old name, disk has the new) which is
-    // confusing. The user can navigate to the real folder and rename there.
+    // Copy / Move / Duplicate / Rename group. Rename and Duplicate are omitted on the
+    // search-results virtual pane: the underlying file CAN be renamed, but doing it from
+    // the snapshot view splits the file (snapshot keeps the old name, disk has the new)
+    // which is confusing, and a duplicate would have to land in each item's own real
+    // folder, which one transfer can't express. The user can navigate to the real folder
+    // and do either there.
     let copy_item = MenuItem::with_id(app, FILE_COPY_ID, "Copy\u{2026}", true, Some("F5"))?;
     let move_item = MenuItem::with_id(app, FILE_MOVE_ID, "Move\u{2026}", true, Some("F6"))?;
     menu.append(&copy_item)?;
     menu.append(&move_item)?;
     if !restrict_destination_actions {
+        let duplicate_item = MenuItem::with_id(app, FILE_DUPLICATE_ID, "Duplicate", true, Some("Cmd+D"))?;
+        menu.append(&duplicate_item)?;
         let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
         menu.append(&rename_item)?;
     }

@@ -100,6 +100,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'file.edit': 'Edit in default editor',
   'file.copy': 'Copy',
   'file.move': 'Move',
+  'file.duplicate': 'Duplicate',
   'file.compress': 'Compress',
   'edit.copy': 'Copy to clipboard',
   'edit.cut': 'Cut to clipboard',
@@ -171,6 +172,7 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
     'Open the left pane’s location on the right. When the left pane is focused and the cursor is on a folder, that folder opens on the right instead.',
   'pane.copyPathRightToLeft':
     'Open the right pane’s location on the left. When the right pane is focused and the cursor is on a folder, that folder opens on the left instead.',
+  'file.duplicate': 'Make a copy of the selected files in the same folder',
   'edit.copy': 'Copy selected files to clipboard for pasting',
   'edit.cut': 'Cut selected files (paste will move them)',
   'edit.paste': 'Paste files from clipboard into current folder',

@@ -479,6 +479,31 @@ the backend registers the operation at confirm and its own task waits for the pr
 threading is `previewId`, and the archive-password retry MUST keep clearing it: that retry is a new operation, a preview
 accepts exactly one claimant, so a carried-over id would silently downgrade to a full re-walk.
 
+### The Duplicate command
+
+`duplicate-command.ts::duplicateInPlace` is the whole body of `file.duplicate` (⌘D, the palette, the right-click menu,
+and the File menu). It copies the focused pane's selection, or the item under its cursor when nothing is selected, into
+the folder that pane is already showing, and the backend gives each copy a free ` (N)` name.
+
+- **It builds on the F5 builders**, handing `buildTransferPropsFromSelection` / `FromCursor` a `TransferContext` whose
+  `sourcePath` and `destPath` are the same folder. That one substitution is the entire difference from F5.
+- **It skips the confirmation dialog** and calls `dialogs.startTransferProgress` directly, the way paste does: there is
+  no destination to pick and no conflict to answer, since a self-collision resolves before the conflict machinery is
+  consulted (`src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in
+  place)").
+- **It sets `direction` and `sourcePaneSide` to the FOCUSED pane**, not to the props the builders return: those name the
+  other pane, which is right for a transfer across the panes and wrong for one that lands where it came from. The
+  settled tail then refreshes the pane the copy appeared in and clears the selection it consumed.
+- **`duplicateFollowUp: 'nothing'`** — no rename editor. `$lib/file-operations/transfer/DETAILS.md` § "Only paste and F5
+  end a duplicate in the rename editor".
+- **The shared destination guard runs against the pane's own folder**, so a read-only volume gets the same alert F5
+  gives it. A search-results pane gets the same "not a folder" refusal, and the native context menu omits Duplicate
+  there outright (`menu/menu_structure.rs`, `restrict_destination_actions`): a duplicate of snapshot rows would have to
+  land in each row's own real folder, which one transfer can't express.
+
+**Decision: no F-key bar button.** The bar's ten slots are full, and Duplicate is an F-key idiom in neither Finder nor
+Total Commander. It's reachable by ⌘D, the palette, the right-click menu, and the File menu.
+
 ### Naming a duplicate
 
 A transfer that duplicated ONE item in the folder it already lived in can end by opening the inline rename editor on the

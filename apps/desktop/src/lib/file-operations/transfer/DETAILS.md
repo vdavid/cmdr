@@ -265,9 +265,9 @@ Who answers what, and why:
   in front of whoever is watching.
 - **Drag and drop** (`drag-drop-controller.svelte.ts::DROP_DUPLICATE_FOLLOW_UP`) says `nothing`. A drag ends with the
   mouse, and stealing focus into a text field on mouse-release is the wrong shape.
-- **The Duplicate command** says `nothing` when it lands. ⌘D _is_ Finder's Duplicate, and the familiarity that justifies
-  the key rests on it asking nothing; an editor would also break stamping out several copies in a row, since after the
-  first ⌘D focus sits in an editor and the second does nothing until Esc.
+- **The Duplicate command** (`pane/duplicate-command.ts`) says `nothing`. ⌘D _is_ Finder's Duplicate, and the
+  familiarity that justifies the key rests on it asking nothing; an editor would also break stamping out several copies
+  in a row, since after the first ⌘D focus sits in an editor and the second does nothing until Esc.
 
 No setting gates this. The same reasoning that rejects a modal "name the copy" prompt rejects a toggle: two gestures
 that ask and two that don't already cover both preferences.

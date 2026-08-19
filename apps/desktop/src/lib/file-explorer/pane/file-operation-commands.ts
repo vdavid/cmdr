@@ -26,6 +26,7 @@ import {
 import { capabilitiesFor, capabilitiesForPane, pathInsideArchive } from './volume-capabilities'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import { operationStartIsBlocked } from './operation-start-gate'
+import { duplicateInPlace } from './duplicate-command'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { DuplicateFollowUp } from './duplicate-rename'
 import type { FilePaneAPI, StartRenameOptions } from './types'
@@ -38,8 +39,8 @@ const log = getAppLogger('fileExplorer')
 type DialogState = ReturnType<typeof createDialogState>
 
 /**
- * Rename, new-folder / new-file, viewer, transfer (copy / move), and delete
- * command bodies for the focused pane. Lifted out of `DualPaneExplorer` so the
+ * Rename, new-folder / new-file, viewer, transfer (copy / move / duplicate), and
+ * delete command bodies for the focused pane. Lifted out of `DualPaneExplorer` so the
  * read-only-volume, search-results-destination, and snapshot-pane guard chains
  * are headless-testable. Reads pane state through `PaneAccess`; opens dialogs
  * through the explorer's dialog state.
@@ -706,6 +707,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     openViewerForCursor,
     openTransferDialog,
     openCopyDialog,
+    duplicateInPlace: () => duplicateInPlace(access, dialogs),
     openMoveDialog,
     openCompressDialog,
     openDeleteDialog,

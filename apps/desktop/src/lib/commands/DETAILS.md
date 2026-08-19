@@ -125,9 +125,14 @@ Two special cases:
    keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`). For a palette-visible command,
    also add its id to `EXPECTED_PALETTE_IDS` in `command-registry.test.ts` (the palette-visible-set pin fails
    otherwise).
-6. For a native menu item, add a mapping in `menu.rs` (`menu_id_to_command` and `command_id_to_menu_id`) and add the id
-   to `menuCommands` in `shortcuts-store.ts`. `rust-command-id-drift.test.ts` fails if `menu_id_to_command` emits an id
-   not in `COMMAND_IDS`.
+6. Pin its English in `command-registry.parity.test.ts` (`EXPECTED_NAMES`, plus `EXPECTED_DESCRIPTIONS` when it has a
+   description). The test asserts every registry command appears there, so a new command fails it until pinned.
+7. For a native menu item: add the id const and both map directions in `src-tauri/src/menu/command_map.rs`, build the
+   item in the platform menu builders (`menu/macos.rs` + `menu/linux.rs` for the menu bar, `menu/menu_structure.rs` for
+   the right-click menu), `register_item` it in `MenuState.items` so accelerator rebinding can reach it, and add the id
+   to `menuCommands` in `shortcuts-store.ts`. Menu-bar items are positional: inserting one shifts every `register_item`
+   index after it. `rust-command-id-drift.test.ts` fails if `menu_id_to_command` emits an unknown id, or if
+   `menuCommands` and the reverse map disagree.
 
 ## Fuzzy search
 

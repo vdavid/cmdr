@@ -105,6 +105,7 @@ export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
     'getPathToCopyUnderCursor',
     'toggleTagOnFocusedSelection',
     'openCopyDialog',
+    'duplicateInPlace',
     'openMoveDialog',
     'openCompressDialog',
     'openNewFolderDialog',
@@ -446,6 +447,13 @@ export const DELEGATE_ROWS: DelegateRow[] = [
     expect: (e) => {
       // The MCP `initiator` rides the same handler path as autoConfirm/onConflict.
       expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(true, 'overwrite_all', undefined, 'aiClient')
+    },
+  },
+  {
+    id: 'file.duplicate',
+    expect: (e) => {
+      // Arg-less: Duplicate takes no destination and no conflict policy.
+      expect(e.duplicateInPlace).toHaveBeenCalledExactlyOnceWith()
     },
   },
   {

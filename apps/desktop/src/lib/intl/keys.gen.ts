@@ -316,6 +316,8 @@ export type MessageKey =
   | 'commands.fileCopyPath.label'
   | 'commands.fileDelete.label'
   | 'commands.fileDeletePermanently.label'
+  | 'commands.fileDuplicate.description'
+  | 'commands.fileDuplicate.label'
   | 'commands.fileEdit.label'
   | 'commands.fileGetInfo.mac.label'
   | 'commands.fileGetInfo.other.label'

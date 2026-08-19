@@ -266,6 +266,7 @@ export const menuCommands = [
   'file.edit',
   'file.copy',
   'file.move',
+  'file.duplicate',
   'file.compress',
   'file.newFolder',
   'file.delete',
