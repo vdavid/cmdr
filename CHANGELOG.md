@@ -5,6 +5,136 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Besides bug fixes, here are the three most important changes:
+
+- The AI chat can now suggest file operations (then you approve/reject; agent can't do anything without your approval)
+- Drive indexing now prioritizes your most important folders
+- Localization improvements, and automatic switching if you prefer a non-English language
+
+### Added
+
+- Add Suggested ops: Ask Cmdr proposes file operations, and you review each one beside what Cmdr knows about the file
+  before approving it or turning it down (c4b03d90, 8debc2fd, 3ded61cb, 43d74fee, 426fb8d3, 99cc049b, 862aeb7c,
+  b94169e8, 0d3af79c, 47c56b4b)
+- Ask Cmdr wakes itself when something worth noticing lands on your disk, and opens a thread you can read back
+  (d574f4a5, e2e091fc, e435b473, be9027bb)
+- Add the native menu bar, the right-click menus, and the startup alerts in all nine shipped languages (f8f3c935,
+  42c4c20f, 09e6d676)
+- Switch Cmdr's language the moment you switch your Mac's, no restart (0154a1a1)
+- Follow the region you set for dates, times, and number grouping, separately from the language you read (35d55dd3,
+  047ced55)
+- Walk your whole macOS language preference list, so your second choice is reachable and a Traditional-Chinese reader
+  never lands in a Simplified app (d61d1699, a6f90968, 18d892c3)
+- Name the language it landed on in the picker's "System default" option (cce3a236)
+- Add a language picker to the onboarding wizard, so a first launch in a language you can't read has a way out
+  (abb9604d)
+- Add Duplicate on ⌘D, in the command palette, the right-click menu, and the File menu, on phones and network shares too
+  (42384c92, bda49c75, e067e6d2, a4fca37b, 2b4328bd)
+- Duplicate a selection in place by dropping it on its own pane with ⌥ held (6b90b515)
+- Land in the rename editor after duplicating one item with ⌘V or F5 (fea31cba)
+- Index a drive folder by folder in the order you care about, starting where you last were, keeping every second of it
+  across a quit (9fe0d3ec, 87fbb496, b2450af4, 9687d2fe, 1d3d7001)
+- Index a folder you open next, instead of behind whatever big folder is in front of it (befd144b)
+- Say which folder a first index is on, and which of its three stages it's in (24662e55, 950e2f8b, 9d7db4ce, 88562dd2,
+  278039ff, 3be2e2ee)
+- Admit the folders a finished index couldn't read, in the drive badge's tooltip (6b0b8db9)
+- Search a mount that comes back without a rescan, because Cmdr retries the ground it gave up on (aab59ecd, cc430db2)
+- Rename a run of files in one keyboard flow: ArrowUp and ArrowDown carry the editor to the next file (1ae0a978,
+  10137090, d7ff3c75)
+- Bring a backgrounded operation back to the progress dialog from the queue, with its bars, ETA, Pause, Cancel, and
+  Rollback (6b9c9c15, 0ad26f6d, 1c4acfbd, cd3543f4, 267e1108, 24ab591c)
+- Background, pause, cancel, and hold ⌘Q against a transfer that is still counting its files (5b7ca55f)
+- Escalate an F8 trash to a permanent delete by holding Shift (fff2e576)
+- Add "Show hidden files" to Settings > Appearance (4b0ff78c)
+- Open a fresh install on home and Downloads, once ever (6980d0e7)
+
+### Changed
+
+- Hide dotfiles by default on a fresh install (57d6862d)
+- Resume a half-covered drive 7× faster: 185 seconds down to 26 on the benchmark tree (cadd8b81)
+- Settle a drive somebody keeps writing to in minutes, instead of waiting for the next launch (14dc2e6d, 1e0c1add)
+- Cut what a search costs on a drive that is still being covered, and what tracking a walk costs while it runs
+  (542718f2, 0a524e6b, e6d8c8fe, 12658b90, 7d1f910d, 898f5634)
+- Copy a folder with the concurrency window it always advertised (4b9f2e1d)
+- Grey out Copy, Move, and Delete in the File menu while a dialog is up or Ask Cmdr has focus (40514a26, fcc35395)
+- Name which file a clash prompt is asking about, and both ends of a transfer opened from the queue (ab61144e, d6c9f9c0)
+- Open the operation queue with one query instead of one per row (8cc38847)
+- Tell a screen reader what the scanning chip does and which chip it is (8f5ed6ab)
+
+### Fixed
+
+- Fix copying, moving, or compressing into a subfolder of a network share failing outright (e518a456)
+- Fix a destination Cmdr can't reach being reported as your own file going missing (ceb71910)
+- Fix a crash mid bulk-rename leaving renamed files with no undo (7bde003e)
+- Fix a stored search listing files that are gone, or hiding files that are still there (616184c9)
+- Fix a share macOS mounted twice losing its watcher, and uploading an error report every time (272e9753)
+- Fix a folder on a sleeping NAS costing every later search a two-minute listing (baa1f4f2, 07ddef4c, 25a1ffbe)
+- Fix opening a folder mid-index stranding the first index for up to an hour on a wide directory (0bb0eb95)
+- Fix a rescan blanking the index underneath a search that is still writing to it (cb9568d0, 9747c16a, 94b4c59a,
+  e9036364, 56858da8)
+- Fix "Rescan now" reporting success and doing nothing during a scan or a search walk (af133ef2, 6b69f14d, 4a3468a5,
+  aa4a6b8c)
+- Fix a drive you turned on being forgotten after an interrupted first index (57ae8157, 0e97d09d, ea8a3148, 5ed425bd)
+- Fix a poisoned lock permanently killing the MTP watcher, the space poller, the verifier, and the volume registry
+  (cdfdcacd, f1ea3cc5, 4130904d)
+- Fix a transfer parking forever when the next clash arrives while you're answering the last one (56ebb8db)
+- Fix a paused transfer claiming a speed and hiding its time left (df1aed7b, 496e3399, 83274f03, 3c19b678, 42a61d18)
+- Fix two progress dialogs stacking over one transfer, and closing a dialog killing the transfer behind it (d0387471,
+  018f4e4c, 5f61f6ea, ac675359, 2dc6e473)
+- Fix a scan preview on a dead volume spinning forever, and a wedged archive holding the scan dialog open (ee996316,
+  74c837b4, bb0173ac, 117cc65f, d0eeb4a9)
+- Fix a copy started while another operation is running starting nothing and saying nothing (df42f7f0, 1cb9a554)
+- Fix the queue reading "Running" over a frozen copy, Rollback deleting on one click, and a view that attaches late
+  showing a scan that isn't happening (f40ac1ac, 1778b146, 2f3be6a1, 78b8a704, c463808e)
+- Fix a folder scan over SMB reporting 0/0/0 until it finished (5e80b5e9)
+- Fix a guest share listing and the share browser waiting forever on a server that stopped answering (15ff0999,
+  00c1ad22)
+- Fix duplicating `photo (1).jpg` nesting into `photo (1) (1).jpg`, and a folder with a dot in its name being numbered
+  mid-name (f770d3a5, 5d9de4e3, b1abd601, 53a5c33c, ff21a4f1)
+- Fix a move into a differently-cased folder on a case-sensitive drive being counted done without moving (8c43edf2)
+- Fix holding an arrow during a chained rename skipping files, and the editor vanishing three rows in (368f9d97,
+  25f9fc85, e8890e46, 135d2ea8)
+- Fix a chained rename the volume refuses losing its name silently, and its toasts naming files from folders you've left
+  (c173fd07, 3863158a, 7d9d49d8, 78659dc5)
+- Fix the French and Swedish rollback buttons promising to restore files rollback can't bring back (0ae5d9c6)
+- Fix ⌘C in the viewer copying the search query instead of the text you selected (6be268f7)
+- Fix double-clicking a number in the viewer selecting the word before it (a4595023)
+- Fix a stray green line under the title bar when a dialog opens at startup (ba1c9508)
+- Fix rebinding a shortcut stripping that menu item's icon (13eb0e0b)
+- Fix the first-run layout not surviving the session it was applied in (919840ee)
+- Fix a search over ground another walk holds sitting silent instead of saying so (5d187522, 6d04b410, 92be35ee)
+- Fix Escape not closing a search dialog whose run never answers (a29bc77c)
+- Fix the onboarding wizard quoting a drive-indexing cost you don't actually pay (b7f4c581)
+- Fix a favorite on a wedged share stalling the order the index walks in (92d11c66)
+- Fix a trash waiting out a scan preview it never reads (a8d56440)
+- Fix MCP reporting a pause that never happened, and a false "queue is idle" (aba3d0e2, 8cd18287, 23edcb9f, 5acc1569,
+  13576b84, 65261dbf)
+- Fix an error report losing everything a log line says after a volume path (c3d28f72)
+
+### Security
+
+- Update `h2` to close an advisory letting a peer keep a connection busy for free (e2187223)
+
+### Non-app
+
+- Add `lock-poison`, which sees the 203 places a poisoned lock is silently swallowed, the shape behind two shipped bugs
+  (ce317da1, 22b27b7b, 52e96cd2)
+- Name the copy-pasted file pairs in the duplication check instead of hiding them behind a percentage, and point it at
+  the frontend too (144907e3)
+- Count every ❌ rule a subsystem's docs carry, as a number that can only go down (1acf1555, bf56603c, 04be43ef)
+- Add `discarded-outcome`, catching the next function that throws away an answer its caller needs (a8b9d6eb)
+- Say when a check run reformatted an already-committed file, so a green local check stops shipping a red CI (85859d88)
+- Cut 172 seconds per run off the Playwright lane, and 15% of the frontend lane's invalidations (7663c42f, 55360dc8)
+- Pin the language of the E2E suite and the screenshot pipeline, so neither answers to whoever's machine they run on
+  (858e5501)
+- Drive a one-file-at-a-time conflict answer over MCP, the state that hid a months-old wedge (917abbed)
+- Refresh the AlternativeTo listing, which had been describing a v0.24 app (42442a80, 95d25b59, 0cc77fee, 9bd60d10)
+- Move the Go toolchain to 1.26.6, clearing four stdlib advisories the check runner reaches (ce1147c6)
+- Report which language people run Cmdr in, and whether covering a drive in phases delivers what it promises (c280f33d,
+  a25b5d20, 5d83a7bc)
+
 ## [0.38.1] - 2026-08-12
 
 - Double-mounted SMB volumes used to break stuff. Now they are not.

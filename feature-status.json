@@ -41,7 +41,7 @@
       "id": "ask-cmdr",
       "name": "Ask Cmdr",
       "status": "alpha",
-      "note": "Chat with an AI agent about your files. It reads names, paths, sizes, and history, plus any files you attach, and shows what each reply costs. It can propose changes like a bulk rename, but only you can approve them. Early, with rough edges. On-device or Cloud via API key, your choice."
+      "note": "Chat with an AI agent about your files. It reads names, paths, sizes, and history, plus any files you attach, and shows what each reply costs. It can suggest file operations and bulk renames, which you review one by one and approve/reject. Early, with rough edges. On-device or Cloud via API key, your choice."
     },
     {
       "id": "network-drives",
@@ -119,7 +119,7 @@
       "id": "full-disk-index",
       "name": "Full-disk index",
       "status": "stable",
-      "note": "Indexes your whole drive once, then stays current through file system events. Powers search and folder sizes."
+      "note": "Covers your drive folder by folder, starting with the folders you use most, then stays current through file system events. Powers search and folder sizes."
     },
     {
       "id": "drag-and-drop",
@@ -136,7 +136,7 @@
     {
       "id": "ai-batch",
       "name": "AI file organization",
-      "status": "planned",
+      "status": "alpha",
       "note": "Say \"clean up my Downloads folder\" and approve or reject each suggested move."
     },
     {

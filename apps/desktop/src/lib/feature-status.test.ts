@@ -33,7 +33,7 @@ describe('feature-status', () => {
     expect(getBadgeStatus('image-search')).toBe('alpha')
     expect(getBadgeStatus('network-drives')).toBe('beta')
     expect(getBadgeStatus('file-operations')).toBeUndefined() // stable: no badge by policy
-    expect(getBadgeStatus('ai-batch')).toBeUndefined() // planned: no in-app surface
+    expect(getBadgeStatus('plugins')).toBeUndefined() // planned: no in-app surface
     expect(getBadgeStatus('not-a-feature')).toBeUndefined()
   })
 })
