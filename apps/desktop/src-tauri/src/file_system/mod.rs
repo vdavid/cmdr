@@ -67,7 +67,6 @@ pub use watcher::flush_all_watchers;
 pub use watcher::{init_watcher_manager, update_debounce_ms};
 // Diff types for file watching (used by MTP module for unified diff events)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use watcher::compute_diff;
 // Re-export write operation types
 pub use write_operations::{
     OperationEventSink, OperationStatus, OperationSummary, TauriEventSink, WriteOperationConfig, WriteOperationError,

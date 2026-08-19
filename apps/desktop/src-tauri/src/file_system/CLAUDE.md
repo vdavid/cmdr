@@ -33,6 +33,8 @@ Directory listing, file writing, sync status, volume management, and file watchi
     every event.
   - A created, removed, or renamed watch ROOT forces a full re-read; ❌ don't add `Modify(Metadata(_))` to that
     trigger, since every child change bumps the dir's mtime.
+  - A row that jumped its sorted position is one `DiffChangeType::Move`, not a remove plus an add: the pane rides the
+    cursor and the selection along a move by identity. § "Reordered rows".
 - **A watch on an OS-mounted network share is `WatchCoverage::ThisMachineOnly`, never `EveryWriter`**: FSEvents on
   `smbfs` sees this machine's writes only. ❌ Don't refuse to arm the watch over that; what it must not do is let a
   delete walker or copy scan skip a read. `volume/DETAILS.md` § "Trait capability model".

@@ -7,7 +7,7 @@ import {
   onWriteSourceItemDone,
 } from '$lib/tauri-commands'
 import { resolveValidPath } from '../navigation/path-resolution'
-import { adjustSelectionIndices } from '../operations/adjust-selection-indices'
+import { movesByPreviousIndex, remapIndicesAcrossDiff } from '../operations/adjust-selection-indices'
 import { buildFrontendIndices, extractFilename } from '../operations/selection-adjustment'
 import { getAppLogger } from '$lib/logging/logger'
 import { createThrottle } from '$lib/utils/timing'
@@ -35,9 +35,16 @@ export const INDEX_LISTING_UPDATE_MIN_INTERVAL_MS = 250
  * `..` row when `hasParent`. Off-by-one here lands the cursor a row off or
  * shifts the selection, so the `offset` bookkeeping is load-bearing.
  *
- * Returns the new frontend cursor index, and the new selection indices when
- * they need replacing (`null` = leave the selection untouched, which is the
- * case during an active operation or when nothing is selected).
+ * The cursor and the selection FOLLOW their rows across a reorder: watch a big
+ * folder being deleted in a date-sorted pane and it keeps bumping itself to the
+ * top, and a cursor that stayed on its old index would sit on a neighbour,
+ * reading as if the wrong folder were vanishing.
+ *
+ * Returns the new frontend cursor index, whether it got there by following its
+ * row rather than by sliding with the listing (the caller scrolls that row back
+ * into view), and the new selection indices when they need replacing (`null` =
+ * leave the selection untouched, which is the case during an active operation or
+ * when nothing is selected).
  */
 export function reconcileCursorAndSelection(input: {
   changes: DiffChange[]
@@ -46,22 +53,26 @@ export function reconcileCursorAndSelection(input: {
   selectedIndices: number[]
   operationSelectedNames: string[] | 'all' | null
   count: number
-}): { cursorIndex: number; selectedIndices: number[] | null } {
+}): { cursorIndex: number; cursorFollowedMove: boolean; selectedIndices: number[] | null } {
   const { changes, hasParent, cursorIndex, selectedIndices, operationSelectedNames, count } = input
 
-  const hasStructuralChanges = changes.some((c) => c.type === 'add' || c.type === 'remove')
+  const moves = movesByPreviousIndex(changes)
+  const hasStructuralChanges = moves.size > 0 || changes.some((c) => c.type === 'add' || c.type === 'remove')
   if (!hasStructuralChanges) {
-    return { cursorIndex, selectedIndices: null }
+    return { cursorIndex, cursorFollowedMove: false, selectedIndices: null }
   }
 
-  const removeIndices = changes.filter((c) => c.type === 'remove').map((c) => c.index)
-  const addIndices = changes.filter((c) => c.type === 'add').map((c) => c.index)
+  // A move vacates its old position and fills its new one, so it shifts the rows
+  // it jumped over exactly like a removal plus an insertion would.
+  const removeIndices = [...changes.filter((c) => c.type === 'remove').map((c) => c.index), ...moves.keys()]
+  const addIndices = [...changes.filter((c) => c.type === 'add').map((c) => c.index), ...moves.values()]
 
   const offset = hasParent ? 1 : 0
 
   // Cursor: always adjust (no operation-specific cursor handling exists)
   const backendCursor = cursorIndex - offset
-  const adjustedCursor = adjustSelectionIndices([backendCursor], removeIndices, addIndices)
+  const cursorFollowedMove = moves.has(backendCursor)
+  const adjustedCursor = remapIndicesAcrossDiff([backendCursor], removeIndices, addIndices, moves)
   let newCursorIndex: number
   if (adjustedCursor.length > 0) {
     newCursorIndex = adjustedCursor[0] + offset
@@ -73,11 +84,12 @@ export function reconcileCursorAndSelection(input: {
   let newSelectedIndices: number[] | null = null
   if (operationSelectedNames === null && selectedIndices.length > 0) {
     const backendSelected = selectedIndices.map((i) => i - offset)
-    const adjusted = adjustSelectionIndices(backendSelected, removeIndices, addIndices)
-    newSelectedIndices = adjusted.map((i) => i + offset)
+    newSelectedIndices = remapIndicesAcrossDiff(backendSelected, removeIndices, addIndices, moves).map(
+      (i) => i + offset,
+    )
   }
 
-  return { cursorIndex: newCursorIndex, selectedIndices: newSelectedIndices }
+  return { cursorIndex: newCursorIndex, cursorFollowedMove, selectedIndices: newSelectedIndices }
 }
 
 export interface ListingDiffSyncDeps {
@@ -193,7 +205,14 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
           operationSelectedNames,
           count,
         })
-        deps.applyCursorIndex(reconciled.cursorIndex)
+        // A row that jumped its sorted position takes the cursor with it, which can
+        // carry it clean out of the viewport; scroll it back. An ordinary shift
+        // leaves the row where it was on screen, so it gets the side-effect-free write.
+        if (reconciled.cursorFollowedMove) {
+          await deps.setCursorIndex(reconciled.cursorIndex)
+        } else {
+          deps.applyCursorIndex(reconciled.cursorIndex)
+        }
         if (reconciled.selectedIndices !== null) {
           deps.selection.setSelectedIndices(reconciled.selectedIndices)
         }

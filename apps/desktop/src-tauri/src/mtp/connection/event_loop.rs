@@ -14,7 +14,7 @@ use mtp_rs::ObjectHandle;
 
 use super::cache::{EVENT_DEBOUNCE_MS, EventDebouncer};
 use super::{MtpConnectionManager, connection_manager, normalize_mtp_path};
-use crate::file_system::compute_diff;
+use crate::file_system::listing::compute_diff;
 use crate::file_system::listing::{get_listings_by_volume_prefix, update_listing_entries};
 use crate::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::entry::FileEntry;

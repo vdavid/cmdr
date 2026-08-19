@@ -4575,15 +4575,28 @@ export type DialogGalleryFixtures = {
 
 // A single directory diff change
 export type DiffChange = {
-  // `"add"`, `"remove"`, or `"modify"`.
-  type: string
+  type: DiffChangeType
   entry: FileEntry
-  /**
-   *  Position in the sorted listing: old listing for `"remove"`, new listing for
-   *  `"add"`/`"modify"`.
-   */
+  // Position in the sorted listing: old listing for `Remove`, new listing for the rest.
   index: number
+  // Where the row sat before it moved. `Some` exactly on `Move`.
+  previousIndex: number | null
 }
+
+// What happened to one row of a listing.
+export type DiffChangeType =
+  | 'add'
+  | 'remove'
+  // The row's contents changed but its sorted position didn't.
+  | 'modify'
+  /**
+   *  The row's own sort key changed (an mtime bump under sort-by-date, a size change
+   *  under sort-by-size), so it jumped to a new position. It carries the fresh entry,
+   *  which is why it replaces rather than accompanies a [`DiffChangeType::Modify`].
+   *  The frontend rides the cursor and the selection along; reporting the jump as a
+   *  remove plus an add would instead leave them on whoever took the vacated row.
+   */
+  | 'move'
 
 /**
  *  Dir stats keyed by path string. Used at the IPC boundary and by

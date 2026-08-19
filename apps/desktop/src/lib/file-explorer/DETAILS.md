@@ -87,7 +87,11 @@ fallback contract, and the snapshot-pane note.
 - **Diff-driven adjustment**: on each `directory-diff` during an operation, selection is re-resolved via
   `findFileIndices` batch IPC. A `diffGeneration` counter discards stale async results.
 - **Cursor adjustment**: cursor index is also adjusted on structural diffs using the same `adjustSelectionIndices`
-  mechanism (treating cursor as a single-element selection)
+  mechanism (treating cursor as a single-element selection). A row the backend reports as `move`d takes its cursor and
+  its selection with it, so a pane sorted by date doesn't leave the cursor behind when a folder bumps its own mtime. A
+  followed row can land off-screen, so that case (and only that case, `cursorFollowedMove`) also scrolls it back into
+  view; an ordinary index shift leaves the row where it already was on screen. Rust's side of the contract:
+  `src-tauri/src/file_system/DETAILS.md` § "Reordered rows".
 - **Source-item-done deselection**: `write-source-item-done` events individually deselect completed items (for copy and
   other ops that don't trigger diffs)
 - **Clear on complete/error**: safety net clears all selection on the source pane
@@ -290,9 +294,10 @@ For the dialog-side wiring see `../search/CLAUDE.md`.
 
 ## Operations (`operations/`)
 
-- **apply-diff.ts**: applies file-watcher diffs (add/remove/modify events) to a cached listing in-place
 - **adjust-selection-indices.ts**: pure function that maps selected indices from an old listing to their positions in a
-  new listing, given removed and added indices. Also used for cursor index adjustment on structural diffs.
+  new listing, given removed and added indices. `pane/listing-diff-sync.svelte.ts` wraps it for both the selection and
+  the cursor, feeding each `move` in as a removal from where the row left plus an insertion where it arrived, and
+  landing the row's own tracker on the new position by identity.
 
 ## TCC-restricted treatment
 

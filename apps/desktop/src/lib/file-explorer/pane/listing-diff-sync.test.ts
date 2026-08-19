@@ -34,6 +34,10 @@ function modify(index: number, name = `f${String(index)}`): DiffChange {
   return { type: 'modify', entry: entry(name), index }
 }
 
+function move(previousIndex: number, index: number, name = `f${String(previousIndex)}`): DiffChange {
+  return { type: 'move', entry: entry(name), index, previousIndex }
+}
+
 describe('reconcileCursorAndSelection', () => {
   it('leaves cursor and selection untouched when the diff has no structural changes', () => {
     const result = reconcileCursorAndSelection({
@@ -44,7 +48,7 @@ describe('reconcileCursorAndSelection', () => {
       operationSelectedNames: null,
       count: 10,
     })
-    expect(result).toEqual({ cursorIndex: 3, selectedIndices: null })
+    expect(result).toEqual({ cursorIndex: 3, cursorFollowedMove: false, selectedIndices: null })
   })
 
   it('shifts the cursor down by the number of removals before it (no parent row)', () => {
@@ -140,5 +144,108 @@ describe('reconcileCursorAndSelection', () => {
       count: 7,
     })
     expect(result.selectedIndices).toEqual([4, 5])
+  })
+
+  it('follows the row under the cursor when it moves to a new sorted position', () => {
+    // Sorted by modification date, the folder being deleted keeps bumping its own
+    // mtime and jumps to the top. The cursor has to ride along, or it silently
+    // lands on a neighbour and looks like the wrong folder is disappearing.
+    const result = reconcileCursorAndSelection({
+      changes: [move(3, 0)],
+      hasParent: false,
+      cursorIndex: 3,
+      selectedIndices: [],
+      operationSelectedNames: null,
+      count: 5,
+    })
+    expect(result.cursorIndex).toBe(0)
+  })
+
+  it('reports that the cursor followed its row, so the caller can scroll it back into view', () => {
+    const followed = reconcileCursorAndSelection({
+      changes: [move(3, 0)],
+      hasParent: false,
+      cursorIndex: 3,
+      selectedIndices: [],
+      operationSelectedNames: null,
+      count: 5,
+    })
+    expect(followed.cursorFollowedMove).toBe(true)
+
+    // A cursor the same move merely slid over stays where it is on screen.
+    const slid = reconcileCursorAndSelection({
+      changes: [move(3, 0)],
+      hasParent: false,
+      cursorIndex: 0,
+      selectedIndices: [],
+      operationSelectedNames: null,
+      count: 5,
+    })
+    expect(slid.cursorFollowedMove).toBe(false)
+  })
+
+  it('applies the parent-row offset when the cursor follows a move', () => {
+    // With a `..` row, frontend cursor 4 == backend 3, which moves to backend 0.
+    const result = reconcileCursorAndSelection({
+      changes: [move(3, 0)],
+      hasParent: true,
+      cursorIndex: 4,
+      selectedIndices: [],
+      operationSelectedNames: null,
+      count: 5,
+    })
+    expect(result.cursorIndex).toBe(1)
+  })
+
+  it('shifts a cursor the move displaced', () => {
+    // Backend 3 moves to the top, so everything it jumped over slides down one.
+    const result = reconcileCursorAndSelection({
+      changes: [move(3, 0)],
+      hasParent: false,
+      cursorIndex: 0,
+      selectedIndices: [],
+      operationSelectedNames: null,
+      count: 5,
+    })
+    expect(result.cursorIndex).toBe(1)
+  })
+
+  it('keeps a moved row selected at its new position and slides the rest', () => {
+    // Backend [A0, B1, C2, D3, E4]; D moves to the top -> [D, A, B, C, E].
+    const result = reconcileCursorAndSelection({
+      changes: [move(3, 0)],
+      hasParent: false,
+      cursorIndex: 0,
+      selectedIndices: [3, 4],
+      operationSelectedNames: null,
+      count: 5,
+    })
+    expect(result.selectedIndices).toEqual([0, 4])
+  })
+
+  it('treats a move as a structural change even with nothing added or removed', () => {
+    const result = reconcileCursorAndSelection({
+      changes: [modify(1), move(2, 0)],
+      hasParent: false,
+      cursorIndex: 2,
+      selectedIndices: [2],
+      operationSelectedNames: null,
+      count: 5,
+    })
+    expect(result.cursorIndex).toBe(0)
+    expect(result.selectedIndices).toEqual([0])
+  })
+
+  it('follows a move that happens alongside a removal', () => {
+    // Backend [A0, B1, C2, D3]; A is deleted and D jumps to the top -> [D, B, C].
+    const result = reconcileCursorAndSelection({
+      changes: [remove(0), move(3, 0)],
+      hasParent: false,
+      cursorIndex: 3,
+      selectedIndices: [],
+      operationSelectedNames: null,
+      count: 3,
+    })
+    expect(result.cursorIndex).toBe(0)
   })
 })

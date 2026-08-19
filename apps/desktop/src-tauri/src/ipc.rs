@@ -89,7 +89,8 @@ use crate::ai::{
 use crate::downloads::global_shortcut::GlobalShortcutFired;
 use crate::downloads::watcher::DownloadDetectedEvent;
 use crate::error_reporter::auto_dispatcher::ErrorReportAutoSent;
-use crate::file_system::watcher::{DirectoryDeletedEvent, DirectoryDiff};
+use crate::file_system::listing::DirectoryDiff;
+use crate::file_system::watcher::DirectoryDeletedEvent;
 use crate::menu::{MediaIndexFolderChoice, MediaIndexFolderExclusion, MenuSort, SettingsChanged, ViewModeChanged};
 use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
 use crate::quit::QuitRequested;

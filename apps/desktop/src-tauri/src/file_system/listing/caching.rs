@@ -478,8 +478,8 @@ pub fn carry_forward_tags(listing_id: &str, entry: &mut FileEntry) {
 /// Emits a diff only for rows whose tags genuinely changed, so re-enriching an
 /// unchanged visible range is silent (no diff storm on every scroll).
 pub fn apply_tags_to_listing(listing_id: &str, updates: Vec<(String, Vec<TagRef>)>) {
+    use crate::file_system::listing::diff::DiffChange;
     use crate::file_system::listing::diff_emitter::enqueue_diff;
-    use crate::file_system::watcher::DiffChange;
 
     let mut changes: Vec<DiffChange> = Vec::new();
     {
@@ -496,11 +496,7 @@ pub fn apply_tags_to_listing(listing_id: &str, updates: Vec<(String, Vec<TagRef>
                 && listing.entries[idx].tags != tags
             {
                 listing.entries[idx].tags = tags;
-                changes.push(DiffChange {
-                    change_type: "modify".to_string(),
-                    entry: listing.entries[idx].clone(),
-                    index: idx,
-                });
+                changes.push(DiffChange::modified(listing.entries[idx].clone(), idx));
             }
         }
     }
@@ -616,8 +612,8 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
 /// mid-write, self-notify lost the race against `insert_entry_sorted`'s
 /// duplicate guard).
 pub(super) fn notify_added(listing_id: &str, entry: FileEntry) {
+    use crate::file_system::listing::diff::DiffChange;
     use crate::file_system::listing::diff_emitter::enqueue_diff;
-    use crate::file_system::watcher::DiffChange;
 
     if has_entry(listing_id, &entry.path) {
         notify_modified(listing_id, entry);
@@ -628,14 +624,7 @@ pub(super) fn notify_added(listing_id: &str, entry: FileEntry) {
         return; // Listing gone (or, harmless: lost a TOCTOU race against another add — Modified would no-op).
     };
 
-    enqueue_diff(
-        listing_id,
-        vec![DiffChange {
-            change_type: "add".to_string(),
-            entry,
-            index,
-        }],
-    );
+    enqueue_diff(listing_id, vec![DiffChange::added(entry, index)]);
 }
 
 /// Removes an entry from the cache and queues a single-remove change.
@@ -645,8 +634,8 @@ pub(super) fn notify_added(listing_id: &str, entry: FileEntry) {
 /// the notifier's resolved parent (MTP: inner `/Dir/file` entries vs `mtp://…`
 /// parent). See `remove_entry_by_name`.
 pub(super) fn notify_removed(listing_id: &str, full_path: &Path) {
+    use crate::file_system::listing::diff::DiffChange;
     use crate::file_system::listing::diff_emitter::enqueue_diff;
-    use crate::file_system::watcher::DiffChange;
 
     let Some(name) = full_path.file_name() else {
         return;
@@ -655,20 +644,13 @@ pub(super) fn notify_removed(listing_id: &str, full_path: &Path) {
         return; // Not in cache or listing gone
     };
 
-    enqueue_diff(
-        listing_id,
-        vec![DiffChange {
-            change_type: "remove".to_string(),
-            entry: removed_entry,
-            index,
-        }],
-    );
+    enqueue_diff(listing_id, vec![DiffChange::removed(removed_entry, index)]);
 }
 
-/// Updates an entry in the cache and queues a modify (or remove+add) change.
+/// Updates an entry in the cache and queues a modify (or, when its sort key changed, a move) change.
 fn notify_modified(listing_id: &str, mut entry: FileEntry) {
+    use crate::file_system::listing::diff::DiffChange;
     use crate::file_system::listing::diff_emitter::enqueue_diff;
-    use crate::file_system::watcher::DiffChange;
 
     // Preserve already-loaded Finder tags across this re-stat (see `carry_forward_tags`).
     carry_forward_tags(listing_id, &mut entry);
@@ -679,27 +661,8 @@ fn notify_modified(listing_id: &str, mut entry: FileEntry) {
     };
 
     let changes = match result {
-        ModifyResult::UpdatedInPlace { index } => {
-            vec![DiffChange {
-                change_type: "modify".to_string(),
-                entry,
-                index,
-            }]
-        }
-        ModifyResult::Moved { old_index, new_index } => {
-            vec![
-                DiffChange {
-                    change_type: "remove".to_string(),
-                    entry: entry.clone(),
-                    index: old_index,
-                },
-                DiffChange {
-                    change_type: "add".to_string(),
-                    entry,
-                    index: new_index,
-                },
-            ]
-        }
+        ModifyResult::UpdatedInPlace { index } => vec![DiffChange::modified(entry, index)],
+        ModifyResult::Moved { old_index, new_index } => vec![DiffChange::moved(entry, old_index, new_index)],
     };
 
     enqueue_diff(listing_id, changes);
@@ -727,9 +690,9 @@ async fn notify_full_refresh(
     parent_path: PathBuf,
     listings: Vec<(String, SortColumn, SortOrder, DirectorySortMode)>,
 ) {
+    use crate::file_system::listing::diff::compute_diff;
     use crate::file_system::listing::diff_emitter::enqueue_diff;
     use crate::file_system::listing::sorting::sort_entries;
-    use crate::file_system::watcher::compute_diff;
 
     // Re-resolve from `(volume_id, parent_path)` so a `.zip`-crossing listing hits
     // the same `ArchiveVolume` the read used (the cache keys on the parent drive

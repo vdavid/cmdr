@@ -207,6 +207,8 @@ directory changed on a volume. `DirectoryChange` variants:
 - `FullRefresh`: re-reads via the Volume trait, computes a diff against the cache.
 
 All variants enrich entries with index data and queue `directory-diff` events through `diff_emitter::enqueue_diff`.
+A re-stat whose sort-relevant fields changed re-inserts the entry at its new sorted position and reports one
+`DiffChangeType::Move` (`../DETAILS.md` § "Reordered rows"), which is what lets the pane cursor follow the row.
 Natural deduplication: `insert_entry_sorted` returns `None` for duplicates, `remove_entry_by_name` returns `None` if
 already removed. Callers: `Volume::notify_mutation()` (after each successful create/delete/rename on all volume types)
 and the `rename_file` command (local FS renames). `emit_synthetic_entry_diff` remains a legacy fallback for

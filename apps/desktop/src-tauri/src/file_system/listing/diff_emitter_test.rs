@@ -8,7 +8,7 @@
 use super::caching_test_support::{TestListing, TestListingGuard};
 use super::diff_emitter::{drop_pending, enqueue_diff, flush_now_for_test, pending_count};
 use super::metadata::FileEntry;
-use crate::file_system::watcher::DiffChange;
+use crate::file_system::listing::diff::DiffChange;
 
 /// A cached listing under a unique id. Dropping the guard runs the production
 /// teardown, which also drops the listing's pending diff buffer.
@@ -17,11 +17,10 @@ fn install_listing(tag: &str) -> TestListingGuard {
 }
 
 fn make_change(name: &str, index: usize) -> DiffChange {
-    DiffChange {
-        change_type: "remove".to_string(),
-        entry: FileEntry::new(name.to_string(), format!("/test/{}", name), false, false),
+    DiffChange::removed(
+        FileEntry::new(name.to_string(), format!("/test/{}", name), false, false),
         index,
-    }
+    )
 }
 
 #[test]

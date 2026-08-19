@@ -26,13 +26,14 @@ carry live here:
   the side gutter: each list view owns that, because the column header has to keep spanning edge to edge while the rows
   inset. See `views/DETAILS.md`.
 - **`listing-diff-sync.svelte.ts` runs the `directory-diff` handler at two rates.** Cursor/selection reconciliation
-  fires IMMEDIATELY (it has to stay exact), while the visible-listing refetch (soft-refresh tick, `totalCount`, stats,
-  brief column widths) is coalesced by a leading + trailing `createThrottle` at `INDEX_LISTING_UPDATE_MIN_INTERVAL_MS`
-  (250 ms, ≤4/sec). Under heavy churn the backend `diff_emitter` only collapses to ~50 ms (~20/sec), and each
-  unthrottled refetch re-renders the range into fresh WebKit compositor surfaces (1+ GB GPU under a storm), so the
-  throttle is the demand-side cap. The index-SIZE refresh path (`index-dir-updated` → `refreshIndexSizes`) is a separate
-  source, already leading-throttled at 2 s per pane in `index-events.ts`, which also resolves the well-known macOS
-  `/private/` symlinks before matching paths.
+  fires IMMEDIATELY (it has to stay exact; it also follows `move`d rows by identity, see `../DETAILS.md` § Operation
+  lifecycle), while the visible-listing refetch (soft-refresh tick, `totalCount`, stats, brief column widths) is
+  coalesced by a leading + trailing `createThrottle` at `INDEX_LISTING_UPDATE_MIN_INTERVAL_MS` (250 ms, ≤4/sec). Under
+  heavy churn the backend `diff_emitter` only collapses to ~50 ms (~20/sec), and each unthrottled refetch re-renders the
+  range into fresh WebKit compositor surfaces (1+ GB GPU under a storm), so the throttle is the demand-side cap. The
+  index-SIZE refresh path (`index-dir-updated` → `refreshIndexSizes`) is a separate source, already leading-throttled at
+  2 s per pane in `index-events.ts`, which also resolves the well-known macOS `/private/` symlinks before matching
+  paths.
 - **`git-browser-sync.svelte.ts::cleanup()` has to drop the SETTING listeners too**, not just the repo subscription, or
   they leak per pane.
 - **Two independent MCP mirrors, so a change to one doesn't cover the other**: `pane-mcp-sync.svelte.ts` mirrors pane

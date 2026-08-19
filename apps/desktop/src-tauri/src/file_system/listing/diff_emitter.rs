@@ -17,8 +17,9 @@ use std::time::Duration;
 
 use tauri_specta::Event as _;
 
+use crate::file_system::listing::diff::{DiffChange, DirectoryDiff};
 use crate::file_system::listing::increment_sequence;
-use crate::file_system::watcher::{DiffChange, DirectoryDiff, WATCHER_MANAGER};
+use crate::file_system::watcher::WATCHER_MANAGER;
 
 /// Trailing flush window. Below human perception for single events; at high
 /// event rates collapses bursts into at most 1000 / `FLUSH_WINDOW_MS` emits per

@@ -163,6 +163,25 @@ matches against the `canonicalize`d watch dir. This bit Google Drive, whose `My 
 rename/create/delete never refreshed the pane; iCloud and Dropbox mount real directories and hit the firmlink path
 instead.
 
+## Reordered rows
+
+A row whose own sort key changes (an mtime bump under sort-by-date, a size change under sort-by-size) jumps to a new
+position while every other row merely slides over. `DiffChangeType::Move` reports that jump with `previous_index` and
+`index`, and it carries the fresh entry, so it replaces the `Modify` rather than accompanying it.
+
+**Why a dedicated variant rather than a remove plus an add**: the frontend rides the pane cursor and the selection along
+a move by identity (`listing-diff-sync.svelte.ts::reconcileCursorAndSelection`). Reported as a remove plus an add, the
+cursor instead stays on the vacated index, which now holds a neighbour. Watch a big folder being deleted in a
+date-sorted pane and that reads as if the wrong folder were disappearing, which is exactly how it was found.
+
+Both watcher paths produce it: the incremental path from `ModifyResult::Moved` (the cache re-inserts the entry at its
+new sorted position and knows both indices), and the full re-read path from `compute_diff`.
+
+`compute_diff` has to separate a real jump from the index shift every row below an add or a remove takes, or an ordinary
+delete would make the pane chase the cursor around. It reads the surviving rows' old positions in new order and keeps
+the longest increasing subsequence of them (patience sorting, O(n log n)); those rows held their relative order, and the
+rest are the minimal set that genuinely moved.
+
 ## Replacing a watch root
 
 The incremental watcher path classifies each event against the cached listing, so it can only learn about entries the OS

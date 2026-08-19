@@ -2,6 +2,7 @@
 
 pub(crate) mod brief_columns;
 pub(crate) mod caching;
+pub(crate) mod diff;
 pub(crate) mod diff_emitter;
 pub(crate) mod fuzzy_jump;
 pub(crate) mod listing_host;
@@ -14,6 +15,7 @@ pub(crate) mod streaming;
 // Re-export types so they're available both externally and locally in this module
 // (call sites import them from `crate::file_system::listing` directly).
 pub use brief_columns::{BriefColumnWidths, BriefColumnsIpcError, compute_brief_column_text_widths};
+pub use diff::{DiffChange, DirectoryDiff, compute_diff};
 pub use fuzzy_jump::fuzzy_find_first_match_in_listing;
 // `FileEntry` and its siblings moved to `cmdr-fs` (the `Volume` trait exchanges
 // them, and that trait is the crate's centrepiece). Aliased, not just
@@ -54,6 +56,8 @@ mod caching_test;
 pub(crate) mod caching_test_support;
 #[cfg(test)]
 mod diff_emitter_test;
+#[cfg(test)]
+mod diff_test;
 #[cfg(test)]
 mod hidden_files_test;
 #[cfg(test)]

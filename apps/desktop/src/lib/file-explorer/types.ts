@@ -152,13 +152,20 @@ export interface FriendlyError {
 
 /**
  * A single change in a directory diff.
+ *
+ * `move` is a row that kept existing but changed its sorted position (its mtime
+ * or size changed under a sort that reads it). It carries the fresh entry, so it
+ * subsumes `modify`, and it's what lets the cursor and the selection follow the
+ * row they were on instead of staying on an index that now holds someone else.
  */
 export interface DiffChange {
-  type: 'add' | 'remove' | 'modify'
+  type: 'add' | 'remove' | 'modify' | 'move'
   /** The affected file entry */
   entry: FileEntry
-  /** Position in the sorted listing: old listing for `remove`, new listing for `add`/`modify`. */
+  /** Position in the sorted listing: old listing for `remove`, new listing for the rest. */
   index: number
+  /** Where the row sat before it moved. Set exactly on `move`. */
+  previousIndex?: number | null
 }
 
 /**

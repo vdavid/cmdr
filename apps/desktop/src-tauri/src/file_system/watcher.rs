@@ -23,8 +23,9 @@ use tauri::AppHandle;
 use tauri_specta::Event as _;
 
 use crate::file_system::listing::{
-    FileEntry, ModifyResult, get_listing_entries, get_listing_volume_id_and_path, get_single_entry, has_entry,
-    insert_entry_sorted, list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
+    DiffChange, FileEntry, ModifyResult, compute_diff, get_listing_entries, get_listing_volume_id_and_path,
+    get_single_entry, has_entry, insert_entry_sorted, list_directory_core, remove_entry_by_path, update_entry_sorted,
+    update_listing_entries,
 };
 use crate::index_host::index;
 use cmdr_fs::firmlinks;
@@ -51,29 +52,6 @@ fn get_debounce_ms() -> u64 {
 /// Global watcher manager
 pub(crate) static WATCHER_MANAGER: LazyLock<RwLock<WatcherManager>> =
     LazyLock::new(|| RwLock::new(WatcherManager::new()));
-
-/// A single directory diff change
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct DiffChange {
-    /// `"add"`, `"remove"`, or `"modify"`.
-    #[serde(rename = "type")]
-    pub change_type: String,
-    pub entry: FileEntry,
-    /// Position in the sorted listing: old listing for `"remove"`, new listing for
-    /// `"add"`/`"modify"`.
-    pub index: usize,
-}
-
-/// `directory-diff` event sent to the frontend.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-pub struct DirectoryDiff {
-    pub listing_id: String,
-    /// Monotonic.
-    pub sequence: u64,
-    pub changes: Vec<DiffChange>,
-}
 
 /// `directory-deleted` event: the watched directory itself was deleted.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
@@ -487,21 +465,13 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
     for (original_index, path) in &remove_items {
         if let Some((_mutated_index, removed_entry)) = remove_entry_by_path(listing_id, path) {
             // Emit the original (pre-mutation) index, not the mutated one
-            changes.push(DiffChange {
-                change_type: "remove".to_string(),
-                entry: removed_entry,
-                index: *original_index,
-            });
+            changes.push(DiffChange::removed(removed_entry, *original_index));
         }
     }
 
     for entry in adds {
         if let Some(new_index) = insert_entry_sorted(listing_id, entry.clone()) {
-            changes.push(DiffChange {
-                change_type: "add".to_string(),
-                entry,
-                index: new_index,
-            });
+            changes.push(DiffChange::added(entry, new_index));
         }
     }
 
@@ -511,24 +481,10 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
         crate::file_system::listing::caching::carry_forward_tags(listing_id, &mut entry);
         match update_entry_sorted(listing_id, entry.clone()) {
             Some(ModifyResult::UpdatedInPlace { index }) => {
-                changes.push(DiffChange {
-                    change_type: "modify".to_string(),
-                    entry,
-                    index,
-                });
+                changes.push(DiffChange::modified(entry, index));
             }
             Some(ModifyResult::Moved { old_index, new_index }) => {
-                // A moved entry is a remove + add from the frontend's perspective
-                changes.push(DiffChange {
-                    change_type: "remove".to_string(),
-                    entry: entry.clone(),
-                    index: old_index,
-                });
-                changes.push(DiffChange {
-                    change_type: "add".to_string(),
-                    entry,
-                    index: new_index,
-                });
+                changes.push(DiffChange::moved(entry, old_index, new_index));
             }
             None => {}
         }
@@ -688,60 +644,4 @@ pub async fn flush_all_watchers() {
     // handle_directory_change now enqueues into the coalescer; flush so the
     // emit happens before this returns (E2E callers expect synchronous flush).
     crate::file_system::listing::diff_emitter::flush_all_pending();
-}
-
-/// Computes the diff between old and new directory listings.
-///
-/// Used by both local file watcher and MTP file watcher to generate
-/// incremental updates for the frontend.
-pub fn compute_diff(old: &[FileEntry], new: &[FileEntry]) -> Vec<DiffChange> {
-    let mut changes = Vec::new();
-
-    // Create lookup maps by path
-    let old_map: HashMap<&str, &FileEntry> = old.iter().map(|e| (e.path.as_str(), e)).collect();
-    let new_map: HashSet<&str> = new.iter().map(|e| e.path.as_str()).collect();
-
-    // Find additions and modifications (index refers to position in new listing)
-    for (new_index, new_entry) in new.iter().enumerate() {
-        match old_map.get(new_entry.path.as_str()) {
-            None => {
-                changes.push(DiffChange {
-                    change_type: "add".to_string(),
-                    entry: new_entry.clone(),
-                    index: new_index,
-                });
-            }
-            Some(old_entry) => {
-                if is_entry_modified(old_entry, new_entry) {
-                    changes.push(DiffChange {
-                        change_type: "modify".to_string(),
-                        entry: new_entry.clone(),
-                        index: new_index,
-                    });
-                }
-            }
-        }
-    }
-
-    // Find removals (index refers to position in old listing)
-    for (old_index, old_entry) in old.iter().enumerate() {
-        if !new_map.contains(old_entry.path.as_str()) {
-            changes.push(DiffChange {
-                change_type: "remove".to_string(),
-                entry: old_entry.clone(),
-                index: old_index,
-            });
-        }
-    }
-
-    changes
-}
-
-/// Check if a file entry has been modified.
-fn is_entry_modified(old: &FileEntry, new: &FileEntry) -> bool {
-    old.size != new.size
-        || old.modified_at != new.modified_at
-        || old.permissions != new.permissions
-        || old.is_directory != new.is_directory
-        || old.is_symlink != new.is_symlink
 }

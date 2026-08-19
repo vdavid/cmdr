@@ -1,3 +1,5 @@
+import type { DiffChange } from '../types'
+
 /**
  * Maps selected indices from an old listing to their positions in a new listing,
  * given the diff (removed and added indices). Operates in backend index space.
@@ -47,4 +49,41 @@ function countLessThan(sorted: number[], target: number): number {
     else hi = mid
   }
   return lo
+}
+
+/**
+ * Where each backend row the diff moved ended up, keyed by the position it left.
+ * A `move` is a row whose own sort key changed (an mtime bump under sort-by-date,
+ * a size change under sort-by-size), so it jumped to a new position while every
+ * other row merely slid over.
+ */
+export function movesByPreviousIndex(changes: DiffChange[]): Map<number, number> {
+  const moves = new Map<number, number>()
+  for (const change of changes) {
+    if (change.type === 'move' && typeof change.previousIndex === 'number')
+      moves.set(change.previousIndex, change.index)
+  }
+  return moves
+}
+
+/**
+ * Remaps backend indices across a diff. Rows the diff moved land on their new
+ * position by IDENTITY; the rest shift by the removals and insertions around
+ * them, counting each move as a removal from where it left and an insertion
+ * where it arrived. Rows whose position was removed outright drop out.
+ */
+export function remapIndicesAcrossDiff(
+  indices: number[],
+  removes: number[],
+  adds: number[],
+  moves: ReadonlyMap<number, number>,
+): number[] {
+  const moved: number[] = []
+  const stationary: number[] = []
+  for (const index of indices) {
+    const destination = moves.get(index)
+    if (destination === undefined) stationary.push(index)
+    else moved.push(destination)
+  }
+  return [...adjustSelectionIndices(stationary, removes, adds), ...moved].sort((a, b) => a - b)
 }
