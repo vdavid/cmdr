@@ -519,12 +519,12 @@ Three things hold it together:
 - **The operation id is read while the progress dialog still owns it.** The dialog releases the foreground slot as it
   unmounts, a few lines further down `handleTransferComplete`, and the journal read needs that id. Same handover shape
   as `handleTransferError`'s failure id.
-- **The journal read waits for `write-settled`, and reading it on the terminal event does not work.** Every
-  single-item duplicate has an EMPTY journal page at complete time; the mechanism is
-  `src-tauri/src/operation_log/DETAILS.md` § "Why a reader waits for `write-settled`". The tail waits through
-  `whenOperationSettled(id)` (`$lib/file-operations/settled-operations.ts`), which answers immediately for the common
-  case where the settle already landed. `duplicate-rename.test.ts` pins the ordering so a move back to the terminal
-  event fails loudly instead of silently never opening an editor.
+- **The journal read waits for `write-settled`, and reading it on the terminal event does not work.** Every single-item
+  duplicate has an EMPTY journal page at complete time; the mechanism is `src-tauri/src/operation_log/DETAILS.md` § "Why
+  a reader waits for `write-settled`". The tail waits through `whenOperationSettled(id)`
+  (`$lib/file-operations/settled-operations.ts`), which answers immediately for the common case where the settle already
+  landed. `duplicate-rename.test.ts` pins the ordering so a move back to the terminal event fails loudly instead of
+  silently never opening an editor.
 - **The new name is read out of the operation journal, never recomputed.** No terminal event carries it:
   `WriteCompleteEvent` and `WriteSettledEvent` are counts and ids, and `WriteProgressEvent.currentFile` is a mid-flight
   filename with no promise of being the last. `getOperationLogDetail(id, 1, 0)` gives the resolved `destPath`, and the
