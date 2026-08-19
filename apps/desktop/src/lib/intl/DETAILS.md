@@ -221,5 +221,22 @@ Hungarian and live in Sweden, and picking a UI language is not permission to ove
 `setLocale()` therefore reaches the UI half only. Without the split, a Hungarian pick would rewrite Swedish dates and
 number grouping, and an English pick on a Swedish Mac would impose US conventions.
 
-**The seam Rust's answer is a language, not a region.** The tag the resolver picks is the CATALOG's, so `'system'` mode
-never carries the user's regional variant into the UI half. That's fine now that formatting doesn't ride along.
+**Rust's answer is a language, not a region.** The tag the resolver picks is the CATALOG's, so `'system'` mode never
+carries the user's regional variant into the UI half. That's fine now that formatting doesn't ride along.
+
+⚠️ **`getFormatLocale()` is only as good as what WebKit exposes, and WebKit drops the region override.** On a machine
+set to US English with a Swedish region (`AppleLocale = en_US@rg=sezzzz`), the native and web sides disagree flatly:
+
+- Foundation: `Locale.current.identifier` = `en_US@rg=sezzzz`, region `SE`, short date `2026-08-19, 14:05`, number
+  `1 234 567,89`, `firstWeekday` 2 (Monday).
+- The webview: `Intl.DateTimeFormat().resolvedOptions().locale` = plain `en-US`, date `08/19/2026, 02:05 PM`, number
+  `1,234,567.89`, `weekInfo.firstDay` 7 (Sunday). Only the time zone (`Europe/Stockholm`) reflects the region.
+- Passing the extension explicitly doesn't help either: `en-US-u-rg-sezzzz` resolves back to `en-US` with US output.
+  Naming the region as a real tag DOES work: `en-SE` yields `2026-08-19, 14:05` and `1 234 567,89`, matching Foundation
+  exactly.
+
+So this user sees US conventions today, and the fix (whenever it's wanted) is to compose a language+region tag from
+`Locale.current.region` in Rust and hand it over. Passing a `-u-rg-` tag won't do it, and don't re-derive this from
+Cmdr's own date column, where `appearance.dateTimeFormat: 'iso'` makes it prove nothing. (Verified on macOS 26.5.2 /
+Safari 26.5.2 (21624.2.5.11.8), 2026-08-19, by reading `Intl` in a bare `WKWebView` and Foundation's `Locale` /
+`DateFormatter` in the same process.)
