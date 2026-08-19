@@ -48,6 +48,17 @@ export function isSameVolume(sourcePath: string, targetPath: string, volumes: re
 }
 
 /**
+ * True when the user forced Copy with Option, rather than Copy merely being what
+ * the rules resolved to. `pickDropOperation` folds this into its answer, so the
+ * two can't drift; the distinction matters where a drop needs the user's stated
+ * intent, because Copy is also the fallback for an unresolvable source volume
+ * (`pane/drag-drop-controller.svelte.ts::isSamePaneNoOpDrop`).
+ */
+export function isForcedCopyDrag(modifiers: ModifierState): boolean {
+  return modifiers.altHeld
+}
+
+/**
  * Picks the drop operation. The `sourcePath` should be the first path in the drag (volume affinity is
  * deterministic and matches the common case of single-volume selections). When the source can't be
  * resolved to a volume, falls back to Copy (the safer default).
@@ -58,8 +69,8 @@ export function pickDropOperation(opts: {
   volumes: readonly VolumeInfo[]
   modifiers: ModifierState
 }): 'move' | 'copy' {
-  const { altHeld, cmdHeld, shiftHeld } = opts.modifiers
-  if (altHeld) return 'copy'
+  const { cmdHeld, shiftHeld } = opts.modifiers
+  if (isForcedCopyDrag(opts.modifiers)) return 'copy'
   if (cmdHeld || shiftHeld) return 'move'
   if (opts.sourcePath && opts.targetPath && isSameVolume(opts.sourcePath, opts.targetPath, opts.volumes)) {
     return 'move'

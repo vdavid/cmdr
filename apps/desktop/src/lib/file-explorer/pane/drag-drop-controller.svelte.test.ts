@@ -19,6 +19,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { DropTarget } from '../drag/drop-target-hit-testing'
 import type { DragFileInfo } from '../drag/drag-drop'
+import type { VolumeInfo } from '../types'
 import {
   type DragDropPayload,
   type AccessConfig,
@@ -158,6 +159,16 @@ vi.mock('../modifier-key-tracker.svelte', () => ({
 // end-to-end through the actual builder.
 
 import { createDragDropController } from './drag-drop-controller.svelte'
+
+/**
+ * Outlasts every await a dispatched drop would take (`handleFileDrop` awaits the
+ * backend volume resolver, then the kind probe). A "nothing was dispatched"
+ * assertion needs this: `flushDrop`'s two turns end before the dialog would open,
+ * so a suppression test would pass against a broken guard.
+ */
+async function flushSettled(): Promise<void> {
+  for (let i = 0; i < 20; i++) await Promise.resolve()
+}
 
 /** Returns the args of the most recent `updateOverlay` call: [x, y, targetName, canDrop, operation]. */
 function lastOverlayArgs(): [number, number, string | null, boolean, 'copy' | 'move'] {
@@ -331,6 +342,19 @@ describe('drag-drop-controller', () => {
       expect(lastCall[3]).toBe(false) // self-pane no-op disallows drop
     })
 
+    it('highlights the source pane for an Option-held self-drag, which duplicates', () => {
+      resolveDropTargetSpy.mockReturnValue(paneTarget('left'))
+      getIsDraggingFromSelfSpy.mockReturnValue(true)
+      getModifierStateSpy.mockReturnValue({ altHeld: true, cmdHeld: false, shiftHeld: false })
+      const { controller } = create({ focusedPane: 'left' })
+
+      controller.handleDragOver({ x: 5, y: 5 })
+
+      // The overlay has to promise exactly what the drop delivers.
+      expect(controller.getDropTargetPane()).toBe('left')
+      expect(lastOverlayArgs()[3]).toBe(true)
+    })
+
     it('clears targets when nothing resolves', () => {
       resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
       const { controller } = create()
@@ -413,12 +437,81 @@ describe('drag-drop-controller', () => {
       expect(stopModifierTrackingSpy).toHaveBeenCalled()
     })
 
-    it('bails on a same-pane self-drop (pane-level, dragging from self)', () => {
-      resolveDropTargetSpy.mockReturnValue(paneTarget('left'))
-      getIsDraggingFromSelfSpy.mockReturnValue(true)
-      const { controller, showTransfer } = create({ focusedPane: 'left' })
-      controller.handleDrop(['/a/file'], { x: 1, y: 1 })
-      expect(showTransfer).not.toHaveBeenCalled()
+    // The three-case rule for a background drop, spelled out in `../drag/DETAILS.md`
+    // § "A background drop duplicates only when it means to".
+    describe('a background drop duplicates only when it means to', () => {
+      // Both panes sit on the folder the dragged item lives in, so every case
+      // below is the same self-collision and only the gesture differs.
+      const SOURCE_FOLDER = '/Users/x'
+      const DRAGGED = SAME_VOL_PATH_A // '/Users/x/a', an item of SOURCE_FOLDER
+
+      function dropFromLeftPane(opts: { onto: 'left' | 'right'; optionHeld?: boolean; volumes?: VolumeInfo[] }) {
+        resolveDropTargetSpy.mockReturnValue(paneTarget(opts.onto))
+        getIsDraggingFromSelfSpy.mockReturnValue(true)
+        if (opts.optionHeld) getModifierStateSpy.mockReturnValue({ altHeld: true, cmdHeld: false, shiftHeld: false })
+        const created = create({
+          focusedPane: 'left',
+          paths: { left: SOURCE_FOLDER, right: SOURCE_FOLDER },
+          volumes: opts.volumes ?? [ROOT_VOLUME],
+        })
+        created.controller.handleDrop([DRAGGED], { x: 1, y: 1 })
+        return created
+      }
+
+      it('stays silent when a plain drag ends on the background of the pane it started in', async () => {
+        const { showTransfer } = dropFromLeftPane({ onto: 'left' })
+        await flushSettled()
+        expect(showTransfer).not.toHaveBeenCalled()
+      })
+
+      it('stays silent when the source volume is unresolvable, which resolves Copy by fallback', async () => {
+        // `pickDropOperation` answers Copy for an unknown source volume, so a
+        // verdict keyed on the resolved operation would turn this slip into a
+        // duplicate. Only Option says the user meant it.
+        const { showTransfer } = dropFromLeftPane({ onto: 'left', volumes: [EXT_VOLUME] })
+        await flushSettled()
+        expect(showTransfer).not.toHaveBeenCalled()
+      })
+
+      it('duplicates when an Option-held drag ends on the background of its own pane', async () => {
+        const { showTransfer } = dropFromLeftPane({ onto: 'left', optionHeld: true })
+        await flushDrop()
+
+        expect(showTransfer).toHaveBeenCalledTimes(1)
+        const props = showTransfer.mock.calls[0][0]
+        expect(props.operationType).toBe('copy')
+        expect(props.sourcePaths).toEqual([DRAGGED])
+        expect(props.destinationPath).toBe(SOURCE_FOLDER)
+        expect(props.direction).toBe('left')
+        // A drop ends with the mouse, so even the same-folder duplicate it now
+        // allows never steals focus into the rename editor.
+        expect(props.duplicateFollowUp).toBe('nothing')
+      })
+
+      it('reaches the transfer dialog when the drag crosses into the other pane showing the same folder', async () => {
+        const { showTransfer } = dropFromLeftPane({ onto: 'right' })
+        await flushDrop()
+
+        expect(showTransfer).toHaveBeenCalledTimes(1)
+        const props = showTransfer.mock.calls[0][0]
+        expect(props.destinationPath).toBe(SOURCE_FOLDER)
+        expect(props.direction).toBe('right')
+        // Crossing panes is deliberate, so it dispatches. With no modifier the
+        // same-volume rule preselects Move, which the backend counts as done and
+        // writes nothing for an item already in the destination.
+        expect(props.operationType).toBe('move')
+      })
+
+      it('duplicates when an Option-held drag crosses into the other pane showing the same folder', async () => {
+        const { showTransfer } = dropFromLeftPane({ onto: 'right', optionHeld: true })
+        await flushDrop()
+
+        expect(showTransfer).toHaveBeenCalledTimes(1)
+        const props = showTransfer.mock.calls[0][0]
+        expect(props.operationType).toBe('copy')
+        expect(props.destinationPath).toBe(SOURCE_FOLDER)
+        expect(props.duplicateFollowUp).toBe('nothing')
+      })
     })
 
     it('bails on a descendant drop', () => {

@@ -15,7 +15,7 @@ import {
 } from '../drag/drag-drop'
 import { resolveDropTarget } from '../drag/drop-target-hit-testing'
 import { isInvalidSelfDescendantDrop } from '../drag/drop-target-validation'
-import { pickDropOperation } from '../drag/drop-operation'
+import { isForcedCopyDrag, pickDropOperation, type ModifierState } from '../drag/drop-operation'
 import { showOverlay, updateOverlay, hideOverlay, type OverlayFileInfo } from '../drag/drag-overlay.svelte.js'
 import { getCachedIcon } from '$lib/icon-cache'
 import {
@@ -358,11 +358,28 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     return resolved?.type === 'pane' && getIsDraggingFromSelf() && resolved.paneId === access.getFocusedPane()
   }
 
-  function canDropOnResolvedTarget(resolved: ResolvedDropTarget, isInvalidSelfDrop: boolean): boolean {
-    return resolved !== null && !isSamePaneSelfDrop(resolved) && !isInvalidSelfDrop
+  /**
+   * True when a background drop inside the pane the drag started in does nothing.
+   * An aborted drag lands exactly there and is common, so a plain one stays
+   * silent, the way Finder does; an Option-held drag is a deliberate duplicate in
+   * place and goes through. Keyed on the FORCED copy, never on the resolved
+   * operation: Copy is also what `pickDropOperation` falls back to when the
+   * source volume can't be resolved, and that must not turn a slip into a copy.
+   * The three cases and why: `../drag/DETAILS.md`.
+   */
+  function isSamePaneNoOpDrop(resolved: ResolvedDropTarget, modifiers: ModifierState): boolean {
+    return !isForcedCopyDrag(modifiers) && isSamePaneSelfDrop(resolved)
   }
 
-  function updateDropTargetState(resolved: ResolvedDropTarget, isInvalidSelfDrop: boolean) {
+  function canDropOnResolvedTarget(
+    resolved: ResolvedDropTarget,
+    isInvalidSelfDrop: boolean,
+    modifiers: ModifierState,
+  ): boolean {
+    return resolved !== null && !isSamePaneNoOpDrop(resolved, modifiers) && !isInvalidSelfDrop
+  }
+
+  function updateDropTargetState(resolved: ResolvedDropTarget, isInvalidSelfDrop: boolean, modifiers: ModifierState) {
     if (isInvalidSelfDrop) {
       clearDropTargets()
       return
@@ -374,7 +391,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
       return
     }
     if (resolved?.type === 'pane') {
-      dropTargetPane = isSamePaneSelfDrop(resolved) ? null : resolved.paneId
+      dropTargetPane = isSamePaneNoOpDrop(resolved, modifiers) ? null : resolved.paneId
       dropTargetFolderPath = null
       dropTargetFolderEl = null
       return
@@ -395,15 +412,18 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     const effectiveTarget = targetPathOf(resolved)
     const isInvalidSelfDrop =
       effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, currentDragSourcePaths)
-    updateDropTargetState(resolved, isInvalidSelfDrop)
+    // One modifier read for the highlight, the overlay, and the resolved op, so
+    // the highlight can only promise what `handleDrop` will actually do.
+    const modifiers = getModifierState()
+    updateDropTargetState(resolved, isInvalidSelfDrop, modifiers)
 
-    const canDrop = canDropOnResolvedTarget(resolved, isInvalidSelfDrop)
+    const canDrop = canDropOnResolvedTarget(resolved, isInvalidSelfDrop, modifiers)
     const targetName = resolveTargetDisplayName(resolved, dropTargetFolderPath)
     const operation = pickDropOperation({
       sourcePath: currentDragSourcePaths[0] ?? null,
       targetPath: effectiveTarget,
       volumes: access.getVolumes(),
-      modifiers: getModifierState(),
+      modifiers,
     })
 
     updateOverlay(position.x, position.y, targetName, canDrop, operation)
@@ -445,12 +465,13 @@ export function createDragDropController(deps: DragDropControllerDeps) {
 
     // Read modifiers BEFORE stopping the tracker (which resets state).
     // Same source-of-truth as the overlay (`handleDragOver`) so the displayed
-    // operation matches what we actually run.
+    // operation, and the same-pane verdict, match what we actually run.
+    const modifiers = getModifierState()
     const operation = pickDropOperation({
       sourcePath: operationSourcePath(recordedIdentity, paths),
       targetPath: effectiveTarget,
       volumes: access.getVolumes(),
-      modifiers: getModifierState(),
+      modifiers,
     })
 
     clearDropTargets()
@@ -460,8 +481,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
 
     if (!resolved) return
     const targetPane = resolved.paneId
-    // For same-pane pane-level drops (not folder), suppress (no-op)
-    if (resolved.type === 'pane' && getIsDraggingFromSelf() && targetPane === access.getFocusedPane()) return
+    if (isSamePaneNoOpDrop(resolved, modifiers)) return
 
     // Guard against drops onto the source itself or into its descendants. Uses
     // the recorded source paths for a self-drag (the pasteboard paths may be

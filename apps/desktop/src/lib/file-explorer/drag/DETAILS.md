@@ -197,9 +197,24 @@ Key files:
 
 - **Decision**: Always show confirmation dialog on drop
   - **Why**: Drag-and-drop is imprecise. The dialog is the safety net regardless of which operation is preselected.
-- **Decision**: Same-pane pane-level drops are no-ops
-  - **Why**: Dropping onto a subfolder within the same pane is valid. The controller still keeps drag auto-scroll alive
-    for same-pane pane-level no-ops, because scrolling is how the user reveals that valid subfolder target.
+- **Decision**: A background drop in the pane the drag started in does nothing unless Option forces a copy
+  - **Why**: three cases, one rule. A plain drag that starts and ends inside its own pane is most often an aborted drag,
+    so it stays silent, the way Finder does. An Option-held drag says the user meant it, so it duplicates the selection
+    in place. A drop that crosses into the OTHER pane is deliberate by itself and always dispatches, even when both
+    panes show the same folder: with no modifier the same-volume rule preselects Move there, which the backend counts as
+    done and writes nothing for an item already in its destination. What the backend does with a copy that lands on its
+    own source: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Self-collision
+    (duplicating in place)".
+  - **Gotcha**: the verdict keys on the FORCED copy (`drop-operation.ts::isForcedCopyDrag`), never on the operation
+    `pickDropOperation` resolved. Copy is also that function's fallback when the source path matches no registered
+    volume root, so reading the resolved operation as intent would turn a slip into a duplicate.
+  - Dropping onto a subfolder ROW inside the same pane was always valid, and the controller keeps drag auto-scroll alive
+    through a background no-op, because scrolling is how the user reveals that subfolder target.
+  - A drop never opens the rename editor a paste or an F5 duplicate ends in (`DROP_DUPLICATE_FOLLOW_UP`); a drag ends
+    with the mouse. The split between the gestures that ask for a name and the ones that don't lives in
+    `$lib/file-operations/transfer/DETAILS.md`.
+  - No E2E covers the verdict, and the adjacent infrastructure only looks like it does: `triggerFileDrop` /
+    `triggerSelfFileDrop` enter at `handleFileDrop`, downstream of the hit test, the modifier read, and this gate.
 - **Decision**: Native drag auto-scroll is controller-driven and list-executed
   - **Why**: The controller owns drag lifecycle (`enter` / `over` / `drop` / `leave`) and can stop the
     `requestAnimationFrame` loop on every terminal path. The list owns layout-specific scroll state. FullList scrolls
