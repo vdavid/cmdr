@@ -20,6 +20,7 @@ use super::super::super::types::{
     ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent,
     WriteOperationError,
 };
+use super::super::dest_name_index::fold;
 use super::transfer_error::map_volume_error;
 use crate::file_system::volume::{Volume, VolumeError};
 
@@ -88,6 +89,29 @@ pub(super) async fn resolve_volume_conflict(
             .await
             .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?,
     };
+
+    // A source that would land on ITSELF is a request to DUPLICATE it, never a
+    // conflict: hand back a free ` (N)` name, and neither the policy nor the
+    // person is consulted. Answered before the destination probe and before the
+    // dir/dir short-circuit below, because both of those are wrong for this
+    // shape — "merging" an item into itself walks its own tree shuffling leaves
+    // aside, and every policy answer either destroys the original or refuses
+    // what was asked. Nothing propagates the new name: `merge_level` joins each
+    // child onto the destination it was handed, so a renamed root carries its
+    // whole subtree. `../DETAILS.md` § "Self-collision (duplicating in place)".
+    if is_the_same_item(source_volume, source_path, dest_volume, dest_path) {
+        let unique_path = find_unique_volume_name(dest_volume, dest_path, source_is_directory).await;
+        log::info!(
+            "resolve_volume_conflict: {} is already in the destination, duplicating it as {}",
+            source_path.display(),
+            unique_path.display()
+        );
+        return Ok(Some(ResolvedConflict {
+            write_path: unique_path,
+            replace_after_write: None,
+        }));
+    }
+
     let destination_is_directory = resolve_dest_is_directory(dest_volume, dest_path).await?;
     let is_file_to_folder = !source_is_directory && destination_is_directory;
 
@@ -523,7 +547,7 @@ async fn apply_volume_conflict_resolution(
         }
         ConflictResolution::Rename => {
             // Find a unique name - we need to check what exists on the volume
-            let unique_path = find_unique_volume_name(dest_volume, dest_path).await;
+            let unique_path = find_unique_volume_name(dest_volume, dest_path, source_is_directory).await;
             Ok(Some(ResolvedConflict {
                 write_path: unique_path,
                 replace_after_write: None,
@@ -612,6 +636,44 @@ pub(super) async fn finalize_safe_replace(
     dest_volume.rename(temp, orig, false).await
 }
 
+/// Whether `source_path` and `dest_path` name the same item: the question
+/// `validation::is_same_file` settles with `dev+ino` on the local-FS side, asked
+/// the only way a volume can answer it.
+///
+/// Same volume is `Arc::ptr_eq`, which is what every path in this directory
+/// already means by it (the dest-inside-source guard included): the command
+/// layer hands one `Arc` for a same-volume-id transfer.
+///
+/// `pub(super)` because `copy.rs` asks it too, to keep the sources it covers out
+/// of the pre-known-conflict bulk skip.
+pub(super) fn is_the_same_item(
+    source_volume: &Arc<dyn Volume>,
+    source_path: &Path,
+    dest_volume: &Arc<dyn Volume>,
+    dest_path: &Path,
+) -> bool {
+    Arc::ptr_eq(source_volume, dest_volume) && is_the_same_volume_path(source_path, dest_path)
+}
+
+/// Whether two paths on ONE volume name the same item.
+///
+/// Folded (NFC + lowercase), the same key `DestNameIndex` buckets destination
+/// names under, so a case-differing route (SMB shares, macOS volumes) or an
+/// NFC/NFD-differing one (macOS and SMB move paths between the two routinely)
+/// counts. That fold IS this project's answer to "would this backend treat these
+/// two as the same". A non-UTF-8 path can't be folded the way a backend would,
+/// so there only a byte-exact match counts — the same stance
+/// `DestNameIndex::lookup` takes.
+///
+/// The same-volume move drops its self-colliding sources with this before any
+/// engine runs (`move_same.rs`), which is why it isn't private to the resolver.
+pub(super) fn is_the_same_volume_path(source_path: &Path, dest_path: &Path) -> bool {
+    match (source_path.to_str(), dest_path.to_str()) {
+        (Some(source), Some(dest)) => fold(source) == fold(dest),
+        _ => source_path == dest_path,
+    }
+}
+
 /// Finds a unique filename on a volume by appending " (1)", " (2)", etc.
 ///
 /// On a **local-FS-backed** destination volume (`local_path().is_some()`) the
@@ -630,12 +692,20 @@ pub(super) async fn finalize_safe_replace(
 /// `exists()` probe and re-check existence immediately before returning to keep
 /// the residual window as narrow as the backend allows.
 ///
+/// A **directory** takes that probe branch on every backend, local-FS dest
+/// included. The placeholder is a FILE, and a file sitting where the copy is
+/// about to create a directory makes `merge.rs::merge_level`'s
+/// `create_directory` report `AlreadyExists`, so the walk would try to merge
+/// into it and list it. Letting the merge walker create the directory itself is
+/// also what records it in `CreatedPaths`, which a pre-created one would miss
+/// and rollback would then leave behind.
+///
 /// Naming itself is not this function's business: the candidates come from
 /// `conflict::NameCandidates`, the same sequence the local-FS namer walks, so a
 /// volume dest numbers identically and `photo (1).jpg` continues to
 /// `photo (2).jpg` here too. This function owns only the reservation.
-async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> PathBuf {
-    let local_root = dest_volume.local_path();
+async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path, is_directory: bool) -> PathBuf {
+    let local_root = dest_volume.local_path().filter(|_| !is_directory);
     let mut candidates = NameCandidates::for_path(path);
 
     loop {

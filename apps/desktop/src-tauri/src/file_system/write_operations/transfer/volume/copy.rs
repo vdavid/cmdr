@@ -44,6 +44,7 @@ use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
 
 use super::cleanup::{clean_partial_writes, volume_rollback_with_progress};
+use super::conflict::is_the_same_item;
 use super::transfer_error::{WriteFailure, write_error_event_from};
 
 /// How long a cancelled or rolled-back operation waits for its in-flight copy
@@ -740,12 +741,25 @@ pub(crate) async fn copy_volumes_with_progress(
     // dropping the whole subtree would lose non-conflicting files. Top-level
     // directory paths come from `preflight.known_directory_paths()` (computed
     // from the batched scan's `is_directory` hints).
-    let pre_skip_paths: HashSet<PathBuf> = build_pre_skip_set(
+    let mut pre_skip_paths: HashSet<PathBuf> = build_pre_skip_set(
         source_paths,
         config.conflict_resolution,
         &config.pre_known_conflicts,
         &known_directory_paths,
     );
+
+    // A duplicate is never bulk-skipped. The pre-flight matches by NAME, so a
+    // copy into the folder the sources already live in lists every one of them
+    // as conflicting, and under `Skip` this prelude would drop them all and the
+    // duplicate would silently do nothing. `resolve_volume_conflict` redirects
+    // these to a free ` (N)` name instead of ever asking. Local twin:
+    // `../copy/mod.rs`. `DETAILS.md` § "Self-collision".
+    pre_skip_paths.retain(|source| {
+        source
+            .file_name()
+            .map(|name| !is_the_same_item(&source_volume, source, &dest_volume, &dest_path.join(name)))
+            .unwrap_or(true)
+    });
 
     let mut bulk_skip_files = 0usize;
     let mut bulk_skip_bytes = 0u64;

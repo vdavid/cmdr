@@ -613,7 +613,7 @@ async fn local_fs_rename_reserves_the_chosen_name_on_disk() {
 
     let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
 
-    let unique = find_unique_volume_name(&vol, &target).await;
+    let unique = find_unique_volume_name(&vol, &target, false).await;
 
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (1).txt");
     // The O_EXCL placeholder must already exist on disk after the call.
@@ -622,7 +622,7 @@ async fn local_fs_rename_reserves_the_chosen_name_on_disk() {
         "reservation must create the placeholder on a local-FS dest"
     );
     // A second call escalates to (2), proving the first reservation persisted.
-    let next = find_unique_volume_name(&vol, &target).await;
+    let next = find_unique_volume_name(&vol, &target, false).await;
     assert_eq!(next.file_name().unwrap().to_string_lossy(), "notes (2).txt");
 }
 
@@ -634,7 +634,7 @@ async fn local_fs_rename_keeps_extension_in_the_right_place() {
     std::fs::write(&target, b"x").unwrap();
 
     let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
-    let unique = find_unique_volume_name(&vol, &target).await;
+    let unique = find_unique_volume_name(&vol, &target, false).await;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "report (1).pdf");
     assert!(unique.exists(), "reservation must create the placeholder");
 }
@@ -649,7 +649,7 @@ async fn non_local_dest_does_not_reserve_a_placeholder() {
     dst.create_file(Path::new("/notes.txt"), b"old").await.unwrap();
     let dst_dyn: Arc<dyn Volume> = dst.clone();
 
-    let unique = find_unique_volume_name(&dst_dyn, Path::new("/notes.txt")).await;
+    let unique = find_unique_volume_name(&dst_dyn, Path::new("/notes.txt"), false).await;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (1).txt");
     // No placeholder was created on the in-memory volume.
     assert!(
@@ -670,7 +670,7 @@ async fn local_fs_rename_continues_a_trailing_sequence() {
 
     let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
 
-    let unique = find_unique_volume_name(&vol, &target).await;
+    let unique = find_unique_volume_name(&vol, &target, false).await;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (2).txt");
 }
 
@@ -682,8 +682,30 @@ async fn non_local_dest_continues_a_trailing_sequence_too() {
     dst.create_file(Path::new("/notes (1).txt"), b"old").await.unwrap();
     let dst_dyn: Arc<dyn Volume> = dst.clone();
 
-    let unique = find_unique_volume_name(&dst_dyn, Path::new("/notes (1).txt")).await;
+    let unique = find_unique_volume_name(&dst_dyn, Path::new("/notes (1).txt"), false).await;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (2).txt");
+}
+
+/// A DIRECTORY never takes the `O_CREAT|O_EXCL` reservation, even on a local-FS
+/// destination: the placeholder is a file, and one sitting where the copy is
+/// about to create a directory makes the merge walker's `create_directory`
+/// report `AlreadyExists` and try to merge into it.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_directory_name_is_never_reserved_with_a_file_placeholder() {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    let temp = tempfile::TempDir::new().unwrap();
+    let target = temp.path().join("docs");
+    std::fs::create_dir(&target).unwrap();
+
+    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
+
+    let unique = find_unique_volume_name(&vol, &target, true).await;
+
+    assert_eq!(unique.file_name().unwrap().to_string_lossy(), "docs (1)");
+    assert!(
+        !unique.exists(),
+        "the picked directory name must be left free for the merge walker to create"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -692,7 +714,7 @@ async fn a_non_numeric_parenthetical_is_not_a_sequence_on_a_volume() {
     dst.create_file(Path::new("/Report (final).pdf"), b"old").await.unwrap();
     let dst_dyn: Arc<dyn Volume> = dst.clone();
 
-    let unique = find_unique_volume_name(&dst_dyn, Path::new("/Report (final).pdf")).await;
+    let unique = find_unique_volume_name(&dst_dyn, Path::new("/Report (final).pdf"), false).await;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "Report (final) (1).pdf");
 }
 

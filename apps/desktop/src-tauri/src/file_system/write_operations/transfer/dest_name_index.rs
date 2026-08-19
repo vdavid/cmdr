@@ -55,7 +55,12 @@ pub(super) struct DestNameIndex {
 /// lowercase. The ASCII fast path is the same answer for ASCII input (NFC is
 /// identity there, and `char::to_lowercase` is ASCII lowercase) without
 /// allocating through the normalizer for the overwhelmingly common case.
-fn fold(name: &str) -> String {
+///
+/// `pub(super)` because the volume conflict resolver folds a whole PATH with it
+/// to ask whether two paths name one item (`volume/conflict.rs`). Folding a path
+/// and folding each of its components agree: `/` survives both NFC and
+/// lowercasing untouched. One folding rule for the whole transfer layer.
+pub(super) fn fold(name: &str) -> String {
     if name.is_ascii() {
         return name.to_ascii_lowercase();
     }

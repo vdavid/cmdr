@@ -19,14 +19,14 @@ use super::super::super::journal;
 use super::super::super::manager;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
-    OperationEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
-    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
+    OperationEventSink, SourceItemOutcome, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
+    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteSourceItemDoneEvent,
 };
 use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
     build_pre_skip_set, drive_transfer_serial_async,
 };
-use super::conflict::resolve_volume_conflict;
+use super::conflict::{is_the_same_volume_path, resolve_volume_conflict};
 use super::r#move::{FetchFut, ResolveFut, TransferFut};
 use super::preflight::{SourceHint, top_level_move_hints};
 use super::rename_merge::{RenameMergeCtx, rename_merge_directory};
@@ -298,6 +298,37 @@ pub(crate) async fn move_within_same_volume_with_progress(
         .await
         .map_err(|e| map_volume_error(&dest_path.display().to_string(), e))?;
 
+    // An item asked to move into the folder it already lives in is already where
+    // it was asked to go: nothing to rename, and it reports itself done. Dropped
+    // HERE, before the driver, so nothing below can see one — a folder would
+    // otherwise reach `rename_merge_directory`, which threads the destination
+    // down through its recursion and would rename every leaf onto itself or
+    // shuffle it aside to `name (1)`. One volume by construction on this path,
+    // so only the folded-path half of the identity question is left to ask.
+    // `../DETAILS.md` § "Self-collision (duplicating in place)".
+    let (already_in_place, remaining): (Vec<PathBuf>, Vec<PathBuf>) =
+        source_paths.iter().cloned().partition(|source| {
+            source
+                .file_name()
+                .map(|name| is_the_same_volume_path(source, &dest_path.join(name)))
+                .unwrap_or(false)
+        });
+    for source in &already_in_place {
+        log::info!(
+            "move_within_same_volume: {} is already in the destination, nothing to do",
+            source.display()
+        );
+        events.emit_source_item_done(WriteSourceItemDoneEvent {
+            operation_id: operation_id.to_string(),
+            source_path: source.display().to_string(),
+            // Nothing moved, so the source is exactly where it always was.
+            source_removed: false,
+            outcome: SourceItemOutcome::Done,
+        });
+    }
+    let already_in_place = already_in_place.len();
+    let source_paths = &remaining[..];
+
     // Top-level hints, NOT a deep pre-flight scan. A same-volume move is a
     // rename — it transfers zero bytes, so there's no Size bar to feed (the FE
     // hides it on `bytes_total == 0`). We need only the per-source
@@ -310,7 +341,9 @@ pub(crate) async fn move_within_same_volume_with_progress(
     // count of selected top-level items (each counts 1 when its rename / merge
     // completes); `bytes_total` is 0.
     let top_level = top_level_move_hints(&volume, source_paths, config).await?;
-    let total_files = source_paths.len();
+    // Dropped items wrote nothing, but the person asked for them, so they belong
+    // in what the dialog counts down.
+    let total_files = source_paths.len() + already_in_place;
     let total_bytes = 0u64;
     let known_directory_paths = top_level.known_directory_paths();
     let source_hints: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(top_level.source_hints);
@@ -645,7 +678,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
             events.emit_complete(WriteCompleteEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
-                files_processed: files_moved,
+                files_processed: files_moved + already_in_place,
                 files_skipped,
                 bytes_processed: bytes_moved,
             });
