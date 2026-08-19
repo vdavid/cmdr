@@ -26,7 +26,7 @@ specific to retrofitting an existing backend:
   loop, which is the whole payoff.
 - **The host is a constructor argument, kept as a field.** `ArchiveVolume::new(parent, path, format, host)`. Production
   passes the app's one host; every test passes `VolumeHost::detached()`, which answers everything with a no-op, so
-  nothing needs an `Option<VolumeHost>`. ❌ Never a static of the backend's own.
+  nothing needs an `Option<VolumeHost>`, and nothing needs a static of the backend's own (the rule is in `CLAUDE.md`).
 - **A `testing` feature, turned on through a self dev-dependency.** That's what publishes `test_fixtures` to the host's
   tests while keeping it (and the 7z encoder it needs) out of every shipped build. `cfg(test)` cannot do this job: it's
   set only while a crate builds its OWN test target.

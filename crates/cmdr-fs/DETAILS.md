@@ -89,8 +89,8 @@ and elegant, but unbounded, and it renders a mount path with spaces unreadable a
 
 Nothing enforces the funnel in the type system. An ID crosses IPC as a `String` in ~3,600 Rust and ~1,600 TypeScript
 sites, so a `VolumeId` newtype would be a very large refactor for a property one module already guarantees; the
-guardrail is instead "❌ never build an ID by hand" in each caller's `CLAUDE.md`, plus `VolumeManager::register` logging
-an error whenever one ID does end up covering two mount roots.
+guardrail is instead the never-build-an-ID-by-hand rule in each caller's `CLAUDE.md`, plus `VolumeManager::register`
+logging an error whenever one ID does end up covering two mount roots.
 
 ## The four cuts that made the closure finite
 
