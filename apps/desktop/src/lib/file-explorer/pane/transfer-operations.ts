@@ -1,6 +1,7 @@
 import { getFileAt, getListingStats, getPathsAtIndices, type Initiator } from '$lib/tauri-commands'
 import { toBackendIndices, toBackendCursorIndex } from '$lib/file-operations/transfer/transfer-dialog-utils'
 import type { SortColumn, SortOrder, TransferOperationType, VolumeInfo } from '../types'
+import type { DuplicateFollowUp } from './duplicate-rename'
 import type { FilePaneAPI } from './types'
 
 export interface TransferContext {
@@ -36,7 +37,23 @@ export interface TransferDialogPropsData {
   /** Who triggered this operation (`aiClient` for MCP-originated writes). Carried
    *  into the progress dialog's write config so the backend records provenance. */
   initiator?: Initiator
+  /**
+   * What happens when this transfer duplicates ONE item in the folder it already
+   * lived in. Forwarded to the progress dialog's config on confirm; see
+   * `dialog-props.ts` for why every trigger has to answer it.
+   */
+  duplicateFollowUp: DuplicateFollowUp
 }
+
+/**
+ * Dialog props before the TRIGGER has had its say.
+ *
+ * The builders below describe the transfer (what, from where, to where); only
+ * the gesture that asked for it knows whether a single-item duplicate should end
+ * in the rename editor. Leaving that field out here is what makes each call site
+ * state it, rather than inheriting a default nobody chose.
+ */
+export type TransferDialogPropsDraft = Omit<TransferDialogPropsData, 'duplicateFollowUp'>
 
 export async function getSelectedFilePaths(
   listingId: string,
@@ -54,7 +71,7 @@ export async function buildTransferPropsFromSelection(
   hasParent: boolean,
   isLeft: boolean,
   context: TransferContext,
-): Promise<TransferDialogPropsData | null> {
+): Promise<TransferDialogPropsDraft | null> {
   const backendIndices = toBackendIndices(selectedIndices, hasParent)
   if (backendIndices.length === 0) return null
 
@@ -85,7 +102,7 @@ export async function buildTransferPropsFromCursor(
   hasParent: boolean,
   isLeft: boolean,
   context: TransferContext,
-): Promise<TransferDialogPropsData | null> {
+): Promise<TransferDialogPropsDraft | null> {
   const cursorIndex = paneRef?.getCursorIndex()
   const backendIndex = toBackendCursorIndex(cursorIndex ?? -1, hasParent)
   if (backendIndex === null) return null
@@ -115,7 +132,7 @@ export async function buildTransferPropsFromCursor(
  * don't apply: each entry already carries an absolute `path`. We compute the
  * common parent for display ("From …"), count files vs. folders so the
  * confirmation dialog shows accurate totals, and route everything else through
- * the same `TransferDialogPropsData` shape used by normal panes. See plan §3.7
+ * the same `TransferDialogPropsDraft` shape used by normal panes. See plan §3.7
  * (`isSourceOK: true`) and `search/CLAUDE.md` § "Snapshot store".
  *
  * `sourceVolumeId` is `'root'` because snapshot entries are always real local
@@ -132,7 +149,7 @@ export function buildTransferPropsFromSnapshot(
   destVolumeId: string,
   sortColumn: SortColumn,
   sortOrder: SortOrder,
-): TransferDialogPropsData | null {
+): TransferDialogPropsDraft | null {
   if (sourcePaths.length === 0) return null
   if (sourcePaths.length !== isDirectoryFlags.length) {
     // Defensive: a length mismatch means the caller resolved paths and flags
@@ -220,7 +237,7 @@ export function buildTransferPropsFromDroppedPaths(
   sortColumn: SortColumn,
   sortOrder: SortOrder,
   isDirectoryFlags?: (boolean | null)[],
-): TransferDialogPropsData {
+): TransferDialogPropsDraft {
   const sourceFolderPath = getCommonParentPath(droppedPaths)
 
   const split = computeDroppedSplit(droppedPaths.length, isDirectoryFlags)

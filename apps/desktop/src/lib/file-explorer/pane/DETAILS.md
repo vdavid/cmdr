@@ -479,6 +479,32 @@ the backend registers the operation at confirm and its own task waits for the pr
 threading is `previewId`, and the archive-password retry MUST keep clearing it: that retry is a new operation, a preview
 accepts exactly one claimant, so a carried-over id would silently downgrade to a full re-walk.
 
+### Naming a duplicate
+
+A transfer that duplicated ONE item in the folder it already lived in can end by opening the inline rename editor on the
+copy. `handleTransferComplete` runs that tail last and unawaited, through `duplicate-rename.ts`, and only there: a
+cancel and a failure reach their own handlers, so "a duplicate that didn't complete gets no editor" needs no check.
+
+Three things hold it together:
+
+- **The trigger decides, and has to say so.** `duplicateFollowUp` is a required field on the dispatch config, because
+  every gesture that duplicates dispatches the same operation. Who answers what, and why paste and F5 differ from drag
+  and the Duplicate command: `$lib/file-operations/transfer/DETAILS.md` § "Only paste and F5 end a duplicate in the
+  rename editor".
+- **The operation id is read while the progress dialog still owns it.** The dialog releases the foreground slot as it
+  unmounts, a few lines further down `handleTransferComplete`, and the journal read needs that id. Same handover shape
+  as `handleTransferError`'s failure id.
+- **The new name is read out of the operation journal, never recomputed.** No terminal event carries it:
+  `WriteCompleteEvent` and `WriteSettledEvent` are counts and ids, and `WriteProgressEvent.currentFile` is a mid-flight
+  filename with no promise of being the last. `getOperationLogDetail(id, 1, 0)` gives the resolved `destPath`, and the
+  top-level name is its first segment below the destination — which is also what makes a duplicated FOLDER work, since
+  its rows are the leaves inside it. An absent, skipped, or unreadable row means no editor, never an error and never a
+  retry loop.
+
+Activation itself is the `paste-clipboard-as-file` pattern: `moveCursorToNewFolder` arms the pending cursor name, then
+`startRename({ suppressExtensionWarning: true, expectedName })` refuses to open on anything but the new item.
+`rename/DETAILS.md` § "Programmatic activation".
+
 ### Birth context
 
 The progress dialog can show an operation this window never started (Show, on a queue row:

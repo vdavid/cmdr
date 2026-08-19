@@ -81,6 +81,7 @@ function copyProps(): TransferProgressPropsData {
     sourceVolumeId: 'root',
     destVolumeId: 'root',
     conflictResolution: 'stop',
+    duplicateFollowUp: 'nothing',
   }
 }
 

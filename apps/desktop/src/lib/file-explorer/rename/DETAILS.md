@@ -63,6 +63,25 @@ renamed to a dot-prefixed name while hidden files are off, show "Your file disap
 aren't shown." The `moveCursorToNewFolder()` pattern: subscribe to `directory-diff`, wait 50 ms after the event for the
 listing cache to update, query `findFileIndex()`, clean up the listener after a 3 s timeout.
 
+## Programmatic activation
+
+Some code opens the editor on a file the user has not pointed at yet, right after creating it. `startRename(options)`
+(`pane/types.ts::StartRenameOptions`) is the one entry point, and such a caller passes two things:
+
+- **`expectedName`**: the editor refuses to activate unless the entry under the cursor is exactly this name, polls at 50
+  ms while the synthetic `directory-diff` lands, and gives up silently after 2 s (file kept, no rename). Without it the
+  optimistic cursor move can beat the diff and the next keystroke would rename a DIFFERENT file. Omit it for F2 and
+  click-to-rename, which activate on whatever the cursor is on.
+- **`suppressExtensionWarning`**: editing a name the app generated must not raise the extension-change confirm. Scoped
+  to that one session, and reset when it ends.
+
+Both callers pair it with `moveCursorToNewFolder` (§ "Post-rename cursor tracking") to land the cursor first:
+
+- **Pasting clipboard content as a file** (`pane/paste-clipboard-as-file.ts`), under the
+  `fileOperations.pasteClipboardAsFile = createFileAndRename` setting.
+- **Duplicating one item in place** from a paste or F5 (`pane/duplicate-rename.ts`), where the name comes out of the
+  operation journal. `pane/DETAILS.md` § "Naming a duplicate".
+
 ## Rename sessions
 
 One session is one activation of the editor, from the moment it opens until the save it sent comes back.

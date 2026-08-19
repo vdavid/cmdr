@@ -31,6 +31,7 @@ import {
   fileExistsInPane,
   moveCursorToFile,
   pressKey,
+  renameEditorValue,
   setRenameInput,
   executeViaCommandPalette,
   MKDIR_DIALOG,
@@ -129,6 +130,17 @@ test.describe('Duplicate in place', () => {
 
     expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
+
+    // Paste is one of the two gestures that end a single-item duplicate in the
+    // rename editor, seeded with the name the backend generated (read from the
+    // operation journal, never recomputed here).
+    await tauriPage.waitForSelector('.rename-input', 5000)
+    await expect.poll(async () => renameEditorValue(tauriPage), { timeout: 3000 }).toBe('file-a (1).txt')
+
+    // Esc keeps the generated name: the copy stays exactly where the paste put it.
+    await tauriPage.press('.rename-input', 'Escape')
+    await expect.poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: 5000 }).toBeTruthy()
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a (1).txt'))).toBe(true)
   })
 
   test('F5 with both panes on one folder reports no conflict and asks no policy', async ({ tauriPage }) => {
@@ -164,6 +176,15 @@ test.describe('Duplicate in place', () => {
     await expect.poll(() => fs.existsSync(path.join(leftDir, 'file-b (1).txt')), { timeout: 8000 }).toBeTruthy()
     expect(fs.existsSync(path.join(leftDir, 'file-b.txt'))).toBe(true)
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
+
+    // F5 is the other gesture that opts in, and the editor opens in the pane the
+    // user is looking at rather than the one the dialog called the destination.
+    await tauriPage.waitForSelector('.rename-input', 5000)
+    await expect.poll(async () => renameEditorValue(tauriPage), { timeout: 3000 }).toBe('file-b (1).txt')
+
+    await tauriPage.press('.rename-input', 'Escape')
+    await expect.poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: 5000 }).toBeTruthy()
+    expect(fs.existsSync(path.join(leftDir, 'file-b (1).txt'))).toBe(true)
   })
 })
 

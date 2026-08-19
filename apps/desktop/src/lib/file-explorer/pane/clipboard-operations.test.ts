@@ -362,6 +362,10 @@ describe('pasteFromClipboard', () => {
       destinationPath: '/dest',
       direction: 'left',
       sourcePaneSide: 'right',
+      // Paste is one of the two gestures that end a single-item duplicate in the
+      // rename editor. The Duplicate command and drag dispatch the same copy and
+      // must answer `nothing` at their own call sites.
+      duplicateFollowUp: 'openRenameEditor',
     })
     expect(clearClipboardCutStateSpy).not.toHaveBeenCalled()
   })

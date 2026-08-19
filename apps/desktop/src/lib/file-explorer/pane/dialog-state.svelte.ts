@@ -34,6 +34,7 @@ import { transferOpLabel } from './transfer-op-label'
 import { createTransferPaneEffects } from './transfer-pane-effects'
 import { createAdoptedOperation } from './adopted-operation.svelte'
 import { createArchivePasswordFlow } from './archive-password-flow.svelte'
+import { openRenameOnDuplicate } from './duplicate-rename'
 import { conflictPolicyFromMcpName } from '$lib/file-operations/transfer/conflict-policy'
 import type { TransferDialogPropsData } from './transfer-operations'
 import type { TransferOperationType, ConflictResolution, WriteOperationError } from '../types'
@@ -353,6 +354,7 @@ export function createDialogState(deps: DialogStateDeps) {
         folderCount: transferDialogProps.folderCount,
         mcpRequestId: transferDialogProps.mcpRequestId,
         initiator: transferDialogProps.initiator,
+        duplicateFollowUp: transferDialogProps.duplicateFollowUp,
       })
 
       showTransferDialog = false
@@ -392,6 +394,8 @@ export function createDialogState(deps: DialogStateDeps) {
         itemSizes,
         mcpRequestId: deleteDialogProps.mcpRequestId,
         initiator: deleteDialogProps.initiator,
+        // A delete creates nothing, so there is never a copy to name.
+        duplicateFollowUp: 'nothing',
       })
 
       showDeleteDialog = false
@@ -408,6 +412,11 @@ export function createDialogState(deps: DialogStateDeps) {
       const props = transferProgressProps
       const op = props?.operationType ?? 'copy'
       const opLabel = transferOpLabel(op)
+      // Read the foreground slot NOW, while the progress dialog still holds it:
+      // it releases the slot as it unmounts, below. The operation's journal is
+      // where the duplicate's generated name comes from, so an id read too late
+      // costs the rename editor.
+      const settledOperationId = getForegroundOperationId()
 
       // ❌ No search-snapshot purge here. A dialog knows what the operation was
       // ASKED to do, which is the wrong input: it misses a skip, misses a cancel,
@@ -442,6 +451,16 @@ export function createDialogState(deps: DialogStateDeps) {
       showTransferProgressDialog = false
       transferProgressProps = null
       deps.onRefocus()
+
+      // A duplicate the trigger asked to name ends in the inline rename editor.
+      // Last, and unawaited: it reads the journal, so it settles a round trip
+      // after everything above, and it must not hold the dialog open meanwhile.
+      void openRenameOnDuplicate({
+        context: props,
+        operationId: settledOperationId,
+        paneRef: deps.getFocusedPaneRef(),
+        showHiddenFiles: deps.getShowHiddenFiles(),
+      })
     },
 
     /** The four outcomes of a dialog that ADOPTED its operation. Separate from

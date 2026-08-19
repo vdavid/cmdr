@@ -247,6 +247,31 @@ still works. A PARTIAL set dispatches normally and the backend drops the ones al
 lexical because the frontend holds paths and nothing else; the backend settles identity properly
 (`src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in place)").
 
+#### Only paste and F5 end a duplicate in the rename editor
+
+A transfer that duplicates ONE item in the folder it already lived in can end by opening the inline rename editor on the
+copy, stem selected, so naming it costs one keystroke sequence and Esc keeps the generated ` (N)` name. Which gestures
+ask for that is carried by `duplicateFollowUp`, a REQUIRED field on both `TransferDialogPropsData` and
+`TransferProgressPropsData`: every gesture dispatches the same backend copy, so a trigger that said nothing would
+inherit whatever the last one wanted. The mechanism is `pane/duplicate-rename.ts`; the settled tail that runs it is
+`pane/DETAILS.md` § "Naming a duplicate".
+
+Who answers what, and why:
+
+- **Paste** (`clipboard-operations.ts`) and **F5** (`file-operation-commands.ts::openUnifiedTransferDialog`) say
+  `openRenameEditor`. They're the gestures where a person has just DIRECTED a copy somewhere, and they're what issue #50
+  actually asked for ("all file managers I used so far would ask for a new name **when pasting**").
+- **An auto-confirmed F5 is MCP**, and says `nothing`: an agent's copy has no business pulling focus into a text field
+  in front of whoever is watching.
+- **Drag and drop** (`drag-drop-controller.svelte.ts::DROP_DUPLICATE_FOLLOW_UP`) says `nothing`. A drag ends with the
+  mouse, and stealing focus into a text field on mouse-release is the wrong shape.
+- **The Duplicate command** says `nothing` when it lands. ⌘D _is_ Finder's Duplicate, and the familiarity that justifies
+  the key rests on it asking nothing; an editor would also break stamping out several copies in a row, since after the
+  first ⌘D focus sits in an editor and the second does nothing until Esc.
+
+No setting gates this. The same reasoning that rejects a modal "name the copy" prompt rejects a toggle: two gestures
+that ask and two that don't already cover both preferences.
+
 ### Unified components for Copy + Move
 
 Copy and Move share 95%+ of UI/flow. Differences:

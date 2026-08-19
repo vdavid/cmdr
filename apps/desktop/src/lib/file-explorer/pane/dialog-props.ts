@@ -12,6 +12,7 @@ import type { Initiator } from '$lib/tauri-commands'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
+import type { DuplicateFollowUp } from './duplicate-rename'
 import type { FilePaneAPI } from './types'
 
 /**
@@ -54,6 +55,17 @@ export interface TransferProgressPropsData {
   mcpRequestId?: string
   /** Who triggered this operation (`aiClient` for MCP-originated writes). */
   initiator?: Initiator
+  /**
+   * What happens when this operation duplicates ONE item in the folder it
+   * already lived in: `openRenameEditor` (paste and F5) or `nothing`.
+   *
+   * Required on purpose. Every gesture that duplicates dispatches this same
+   * operation, so a trigger that says nothing would inherit whatever the last
+   * one wanted; here it can't compile without answering. `duplicate-rename.ts`,
+   * and `file-operations/transfer/DETAILS.md` § "One transfer entry seam" for
+   * why the answer differs per gesture.
+   */
+  duplicateFollowUp: DuplicateFollowUp
 }
 
 /**

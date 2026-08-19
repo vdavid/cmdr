@@ -44,6 +44,7 @@ function moveProps(): TransferProgressPropsData {
     sortOrder: 'ascending',
     previewId: null,
     sourceVolumeId: 'root',
+    duplicateFollowUp: 'nothing',
   }
 }
 

@@ -79,6 +79,7 @@ function copyProps(overrides: Partial<TransferProgressPropsData> = {}): Transfer
     previewId: 'preview-1',
     sourceVolumeId: 'root',
     destVolumeId: 'root',
+    duplicateFollowUp: 'nothing',
     ...overrides,
   }
 }
@@ -99,6 +100,7 @@ function transferConfirmationProps(mcpRequestId?: string): TransferDialogPropsDa
     sourceVolumeId: 'root',
     destVolumeId: 'root',
     mcpRequestId,
+    duplicateFollowUp: 'nothing',
   }
 }
 

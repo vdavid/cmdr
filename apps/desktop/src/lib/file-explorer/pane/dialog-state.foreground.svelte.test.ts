@@ -83,6 +83,7 @@ function moveProps(): TransferProgressPropsData {
     destVolumeId: 'root',
     fileCount: 2,
     folderCount: 0,
+    duplicateFollowUp: 'nothing',
   }
 }
 
@@ -101,6 +102,7 @@ function archiveCopyProps(): TransferProgressPropsData {
     previewId: 'preview-1',
     sourceVolumeId: 'root',
     destVolumeId: 'root',
+    duplicateFollowUp: 'nothing',
   }
 }
 

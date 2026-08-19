@@ -27,6 +27,7 @@ import {
 import { addToast } from '$lib/ui/toast'
 import { statPathsKinds, resolvePathVolume } from '$lib/tauri-commands'
 import { buildTransferPropsFromDroppedPaths } from './transfer-operations'
+import type { DuplicateFollowUp } from './duplicate-rename'
 import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
 import { operationStartIsBlocked } from './operation-start-gate'
 import type { SelfDragIdentity } from '../drag/drag-drop'
@@ -38,6 +39,17 @@ import type { DragAutoScrollFrameResult } from '../drag/drag-auto-scroll'
 
 type DialogState = ReturnType<typeof createDialogState>
 type ResolvedDropTarget = ReturnType<typeof resolveDropTarget>
+
+/**
+ * A drop never opens the rename editor, even when it duplicates one item in the
+ * folder that item already lived in.
+ *
+ * A drag ends with the mouse, and pulling focus into a text field on
+ * mouse-release is the wrong shape for a gesture the hand is still finishing.
+ * Paste and F5 are the two that do; the reasoning per gesture lives in
+ * `file-operations/transfer/DETAILS.md` § "One transfer entry seam".
+ */
+const DROP_DUPLICATE_FOLLOW_UP: DuplicateFollowUp = 'nothing'
 
 export interface DragDropControllerDeps {
   access: PaneAccess
@@ -183,8 +195,8 @@ export function createDragDropController(deps: DragDropControllerDeps) {
       // In-app self-drag: trust the recorded identity wholesale; skip the
       // resolver and the local kind probe (a volume-relative path can't be
       // stat'd here). The approximate count shape is the honest fallback.
-      dialogs.showTransfer(
-        buildTransferPropsFromDroppedPaths(
+      dialogs.showTransfer({
+        ...buildTransferPropsFromDroppedPaths(
           operation,
           sourcePaths,
           destPath,
@@ -195,7 +207,8 @@ export function createDragDropController(deps: DragDropControllerDeps) {
           sortOrder,
           undefined,
         ),
-      )
+        duplicateFollowUp: DROP_DUPLICATE_FOLLOW_UP,
+      })
       return
     }
 
@@ -210,8 +223,8 @@ export function createDragDropController(deps: DragDropControllerDeps) {
       isDirectoryFlags = undefined
     }
 
-    dialogs.showTransfer(
-      buildTransferPropsFromDroppedPaths(
+    dialogs.showTransfer({
+      ...buildTransferPropsFromDroppedPaths(
         operation,
         sourcePaths,
         destPath,
@@ -222,7 +235,8 @@ export function createDragDropController(deps: DragDropControllerDeps) {
         sortOrder,
         isDirectoryFlags,
       ),
-    )
+      duplicateFollowUp: DROP_DUPLICATE_FOLLOW_UP,
+    })
   }
 
   /** Extracts the last path component as a display name. */

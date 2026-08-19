@@ -560,7 +560,7 @@ describe('openTransferDialog', () => {
     await create(access, dialogs).openTransferDialog('copy')
 
     expect(dialogs.showAlert).not.toHaveBeenCalled()
-    expect(dialogs.showTransfer).toHaveBeenCalledWith({ operationType: 'copy' })
+    expect(dialogs.showTransfer).toHaveBeenCalledWith(expect.objectContaining({ operationType: 'copy' }))
   })
 
   it('builds transfer props from the selection when items are selected', async () => {
@@ -588,6 +588,26 @@ describe('openTransferDialog', () => {
     expect(buildFromSelectionSpy).not.toHaveBeenCalled()
     expect(buildFromCursorSpy).toHaveBeenCalled()
     expect(dialogs.showTransfer).toHaveBeenCalledTimes(1)
+  })
+
+  it('F5 asks for the rename editor on a single-item duplicate; an MCP copy does not', async () => {
+    // The whole trigger split rests on this field. F5 is a person at the keyboard
+    // who may want to name the copy; an auto-confirmed copy is an agent's, and an
+    // agent must not pull focus into a text field in front of whoever is watching.
+    // The Duplicate command and drag answer for themselves at their own call sites.
+    buildFromCursorSpy.mockResolvedValue({ operationType: 'copy' })
+    const paneRef = buildPaneRef({ listingId: 'lst-1', selectedIndices: [], cursorIndex: 1 })
+    const access = buildAccess({ focusedPane: 'left', paneRefs: { left: paneRef }, volumes: [volume()] })
+    const dialogs = buildDialogs()
+    const commands = create(access, dialogs)
+
+    await commands.openTransferDialog('copy')
+    expect(dialogs.showTransfer).toHaveBeenLastCalledWith(
+      expect.objectContaining({ duplicateFollowUp: 'openRenameEditor' }),
+    )
+
+    await commands.openTransferDialog('copy', true, 'overwrite_all', 'mcp-1', 'aiClient')
+    expect(dialogs.showTransfer).toHaveBeenLastCalledWith(expect.objectContaining({ duplicateFollowUp: 'nothing' }))
   })
 
   it('bails on a non-snapshot pane without a listing id', async () => {

@@ -339,6 +339,10 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
         destVolumeId: destVolId,
         fileCount: split?.fileCount,
         folderCount: split?.folderCount,
+        // Paste is one of the two gestures that end a single-item duplicate in
+        // the rename editor: the user just directed this copy here, so naming the
+        // copy is one keystroke sequence away and Esc keeps the generated name.
+        duplicateFollowUp: 'openRenameEditor',
       })
 
       if (result.isCut) {

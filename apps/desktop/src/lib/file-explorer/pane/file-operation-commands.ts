@@ -27,6 +27,7 @@ import { capabilitiesFor, capabilitiesForPane, pathInsideArchive } from './volum
 import { checkTransferDestinationGuard } from './transfer-entry'
 import { operationStartIsBlocked } from './operation-start-gate'
 import type { MessageKey } from '$lib/intl/keys.gen'
+import type { DuplicateFollowUp } from './duplicate-rename'
 import type { FilePaneAPI, StartRenameOptions } from './types'
 import type { TransferOperationType } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
@@ -356,6 +357,12 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // `volumeId === 'search-results'` string compare. Among kinds that reach
     // this transfer opener, search-results is the only `!hasBackendListing` one
     // (a network pane can't be a transfer source — `canBeSource: false`).
+    // F5/F6 is a person at the keyboard directing this transfer, so a single-item
+    // duplicate ends in the rename editor. An auto-confirmed one is MCP: an agent's
+    // copy has no business pulling focus into a text field in front of whoever is
+    // watching, so it takes the same route every other trigger does.
+    const duplicateFollowUp: DuplicateFollowUp = autoConfirm ? 'nothing' : 'openRenameEditor'
+
     if (!capabilitiesFor(access.getPaneVolumeId(pane)).hasBackendListing) {
       const snapshotProps = buildSnapshotTransferProps(operationType, sourcePaneRef, pane)
       if (snapshotProps) {
@@ -365,7 +372,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
           snapshotProps.mcpRequestId = mcpRequestId
         }
         snapshotProps.initiator = initiator
-        dialogs.showTransfer(snapshotProps)
+        dialogs.showTransfer({ ...snapshotProps, duplicateFollowUp })
       }
       return
     }
@@ -398,7 +405,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
         props.mcpRequestId = mcpRequestId
       }
       props.initiator = initiator
-      dialogs.showTransfer(props)
+      dialogs.showTransfer({ ...props, duplicateFollowUp })
     }
   }
 

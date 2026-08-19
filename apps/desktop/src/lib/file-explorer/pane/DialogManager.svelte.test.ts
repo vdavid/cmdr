@@ -172,6 +172,7 @@ describe('DialogManager progress dialog', () => {
     sortOrder: 'ascending',
     previewId: null,
     sourceVolumeId: 'local',
+    duplicateFollowUp: 'nothing',
   }
 
   function markers(): NodeListOf<Element> {

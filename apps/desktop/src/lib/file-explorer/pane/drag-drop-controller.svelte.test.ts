@@ -445,6 +445,9 @@ describe('drag-drop-controller', () => {
       expect(props.sourcePaths).toEqual([SAME_VOL_PATH_A])
       expect(props.destinationPath).toBe(EXT_VOL_PATH)
       expect(props.direction).toBe('right')
+      // A drop ends with the mouse, so it never asks for the rename editor a
+      // paste or an F5 duplicate ends in.
+      expect(props.duplicateFollowUp).toBe('nothing')
     })
 
     it('picks move for a same-volume drop into a folder target', async () => {
