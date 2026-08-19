@@ -7,11 +7,18 @@ Optional (4); Linux skips step 1 and resumes at step 2.
 ## Module map
 
 `OnboardingWizard.svelte` (shell), `OnboardingStepShell.svelte` (per-step frame), `StepFda` / `StepAi` / `StepBeta` /
-`StepOptional`, `CloudProviderPicker` / `CloudProviderSetup` (AI step), and `onboarding-state.svelte.ts` (the state
-machine: step cursor, variants, banner mode, `resumeStepFor()`).
+`StepOptional`, `CloudProviderPicker` / `CloudProviderSetup` (AI step), `OnboardingLanguagePicker` (the header's
+language control), and `onboarding-state.svelte.ts` (the state machine: step cursor, variants, banner mode,
+`resumeStepFor()`).
 
 ## Must-knows
 
+- **The language picker in the header is FRAME, ❌ never a step, and ❌ never gets a companion notice.** Cmdr follows
+  the Mac's language preferences, so a first launch can land in a language the user can't read while every other way out
+  is labeled in it. `OnboardingLanguagePicker` is `SettingSelect` on `appearance.language` (the Settings wiring, not a
+  fork), portaled into the wizard OVERLAY so the menu escapes the panel's `overflow: hidden` without leaving the focus
+  trap. David cut the one-time banner for already-onboarded users: silent is fine, Settings is their way out. DETAILS §
+  "The language escape hatch".
 - **The Open beta page (step 3) is non-skippable, and the AI step has no skip-to-finish.** Every first-launch user has
   to see the usage-stats disclosure once: the opt-out default only reads as fair consent if it was shown. ❌ Don't
   re-add a skip-to-finish on the AI step.

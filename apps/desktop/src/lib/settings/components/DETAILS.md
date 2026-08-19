@@ -11,7 +11,9 @@ shape:
 - `SettingSwitch`: the primary boolean, wrapping `lib/ui/Switch`.
 - `SettingCheckbox`: a secondary boolean, for one hanging off a switch or in a denser layout.
 - `SettingSelect`: enum dropdown, wrapping `lib/ui/Select`. It owns the `allowCustom` inline-number flow and its
-  `__custom__` sentinel, which `ui/Select` never sees.
+  `__custom__` sentinel, which `ui/Select` never sees. Rendering one OUTSIDE a settings page — the onboarding wizard's
+  language picker does — means passing `portalContainer`, so the menu lands in that modal's overlay rather than under
+  its scrim (`ui/DETAILS.md` § Select).
 - `SettingToggleGroup`: segmented control for a short enum list.
 - `SettingRadioGroup`: vertical radio for a longer list, an option needing a `customContent` snippet, or an option
   carrying a control on its own line (`itemTrailing`, as Brief mode's "Limit to" does).

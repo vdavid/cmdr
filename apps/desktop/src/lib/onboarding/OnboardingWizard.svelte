@@ -22,6 +22,7 @@
     import StepAi from './StepAi.svelte'
     import StepBeta from './StepBeta.svelte'
     import StepOptional from './StepOptional.svelte'
+    import OnboardingLanguagePicker from './OnboardingLanguagePicker.svelte'
 
     const log = getAppLogger('onboarding')
 
@@ -39,6 +40,12 @@
      * the shared `use:trapFocus` action on this element.
      */
     let panelEl: HTMLDivElement | undefined = $state()
+    /**
+     * The overlay, handed to the header's language picker as its portal target: the
+     * open menu has to escape `.wizard-panel`'s `overflow: hidden` without leaving the
+     * focus trap (which lives on this element) or the modal stacking context.
+     */
+    let overlayEl: HTMLDivElement | undefined = $state()
     /**
      * Element that had focus when the wizard opened. Restored on destroy so
      * keyboard input flows back to wherever it came from after close.
@@ -185,7 +192,14 @@
 </script>
 
 <!-- No `onEscape` on the trap: the wizard must swallow Escape (see `handleKeydown`). -->
-<div class="wizard-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-wizard-title" use:trapFocus>
+<div
+    bind:this={overlayEl}
+    class="wizard-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="onboarding-wizard-title"
+    use:trapFocus
+>
     <!-- Panel takes focus on mount so Esc routing lands here; trapFocus keeps Tab inside. -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
@@ -197,6 +211,9 @@
     >
         <header class="wizard-header">
             <h2 id="onboarding-wizard-title" class="sr-only">{tString('onboarding.wizard.title')}</h2>
+            <!-- Empty left cell: the three-column grid is what keeps the dots centred
+                 while the language picker sits at the right edge. -->
+            <div class="header-slot"></div>
             <ol class="step-dots" aria-label={tString('onboarding.wizard.progressLabel')}>
                 {#each stepDots as dot (dot.index)}
                     <li
@@ -215,6 +232,16 @@
                     </li>
                 {/each}
             </ol>
+            <!-- The escape hatch, in the frame from step 1 on. See
+                 `OnboardingLanguagePicker.svelte` for why it isn't a step. -->
+            <div class="header-slot header-slot-end">
+                <!-- Rendered only once the overlay ref is bound, so the portal target is stable
+                     from the picker's first render. Without the guard the menu mounts into
+                     `document.body` for one pass and Ark's Portal then re-mounts it. -->
+                {#if overlayEl}
+                    <OnboardingLanguagePicker portalContainer={overlayEl} />
+                {/if}
+            </div>
         </header>
 
         <div class="wizard-body">
@@ -302,10 +329,24 @@
         outline-offset: -2px;
     }
 
+    /* Three columns so the step dots stay centred on the panel however wide the
+       language picker's current value renders. */
     .wizard-header {
         padding: var(--spacing-lg) var(--spacing-2xl) 0;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+
+    .header-slot {
         display: flex;
-        justify-content: center;
+        align-items: center;
+        min-width: 0;
+    }
+
+    .header-slot-end {
+        justify-content: flex-end;
     }
 
     .step-dots {

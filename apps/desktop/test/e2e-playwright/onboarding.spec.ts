@@ -178,6 +178,75 @@ test.describe('Onboarding wizard re-entry', () => {
   })
 })
 
+/**
+ * The escape hatch. Cmdr follows the Mac's language preferences, so a first launch can
+ * land someone in a language they can't read, and every other way out is labeled in
+ * that same language. "Can the user get out from the screen they're already on" is the
+ * safety property of the whole auto-language feature, so it gets a real spec: the
+ * control lives in the wizard's own header and switches the running app in place.
+ */
+test.describe('Onboarding wizard language escape hatch', () => {
+  const TRIGGER = `${WIZARD_SELECTOR} .language-picker .select-trigger`
+  /** The wizard's own sr-only heading: present on every step, so the assertion doesn't care which one is up. */
+  const TITLE = `${WIZARD_SELECTOR} #onboarding-wizard-title`
+
+  /** The wizard title as rendered right now, the cheapest proof of the UI's language. */
+  async function wizardTitle(tauriPage: PageLike): Promise<string> {
+    return tauriPage.evaluate<string>(`(function() {
+      var el = document.querySelector('${TITLE}');
+      return el ? el.textContent.trim() : '';
+    })()`)
+  }
+
+  /** Opens the header picker and clicks one language row (the menu portals into the wizard overlay). */
+  async function pickLanguage(tauriPage: PageLike, value: string): Promise<void> {
+    await tauriPage.evaluate(`(function() {
+      var trigger = document.querySelector('${TRIGGER}');
+      if (!trigger) throw new Error('the onboarding language picker is not in the wizard frame');
+      trigger.click();
+    })()`)
+    await tauriPage.waitForSelector(`.wizard-overlay [data-part="item"][data-value="${value}"]`, 3000)
+    await tauriPage.evaluate(`(function() {
+      var item = document.querySelector('.wizard-overlay [data-part="item"][data-value="${value}"]');
+      if (!item) throw new Error('no ${value} row in the language menu');
+      item.click();
+    })()`)
+  }
+
+  test.beforeEach(async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await closeWizardIfOpen(tauriPage)
+  })
+
+  test.afterEach(async ({ tauriPage }) => {
+    // Restore first, then close: the app is shared, and a wizard left speaking Hungarian
+    // would hand every later spec a UI it can't read.
+    const { initMcpClient, mcpCall } = await import('../e2e-shared/mcp-client.js')
+    await initMcpClient(tauriPage)
+    await mcpCall('set_setting', { id: 'appearance.language', value: 'system' })
+    await closeWizardIfOpen(tauriPage)
+  })
+
+  test('the picker is in the frame from the first step, and switches the app in place', async ({ tauriPage }) => {
+    await dispatchMenuCommand(tauriPage, 'cmdr.openOnboarding')
+    await tauriPage.waitForSelector(WIZARD_SELECTOR, 3000)
+    // The control is reachable without advancing: it's part of the frame, not a step.
+    await tauriPage.waitForSelector(TRIGGER, 3000)
+    expect(await wizardTitle(tauriPage)).toBe('Cmdr onboarding')
+
+    await pickLanguage(tauriPage, 'hu')
+
+    // No restart, no reload: the open wizard re-renders in Hungarian.
+    await expect.poll(async () => wizardTitle(tauriPage), { timeout: 3000 }).toBe('Cmdr bevezető')
+    expect(await wizardIsOpen(tauriPage)).toBe(true)
+
+    // And the way back is the same control, still recognizable: the `English` row reads
+    // "English" whatever the app happens to be speaking.
+    await pickLanguage(tauriPage, 'en')
+    await expect.poll(async () => wizardTitle(tauriPage), { timeout: 3000 }).toBe('Cmdr onboarding')
+  })
+})
+
 test.describe('Onboarding wizard via MCP', () => {
   test.beforeEach(async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)

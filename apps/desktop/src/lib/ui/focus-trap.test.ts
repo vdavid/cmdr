@@ -95,6 +95,41 @@ describe('trapFocus: Tab wrapping', () => {
     expect(document.activeElement).toBe(buttons[0])
   })
 
+  it('skips a natively-focusable control that opted out with tabindex="-1"', () => {
+    // Ark's `Select` renders a visually-hidden `<select tabindex="-1">` alongside the
+    // real trigger, to mirror the value for form submission. Pre-fix the wrap landed on
+    // it, so Tab in the onboarding wizard went nowhere the user could see.
+    const { container, buttons } = buildDialog(2)
+    const hidden = document.createElement('select')
+    hidden.tabIndex = -1
+    hidden.setAttribute('aria-hidden', 'true')
+    container.appendChild(hidden)
+    trapFocus(container)
+    buttons[1].focus()
+
+    const event = pressTab(buttons[1])
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(buttons[0])
+  })
+
+  it('skips a tabbable inside a [hidden] wrapper (a closed dropdown menu)', () => {
+    const { container, buttons } = buildDialog(2)
+    const closedMenu = document.createElement('div')
+    closedMenu.hidden = true
+    const listbox = document.createElement('div')
+    listbox.tabIndex = 0
+    closedMenu.appendChild(listbox)
+    container.appendChild(closedMenu)
+    trapFocus(container)
+    buttons[1].focus()
+
+    const event = pressTab(buttons[1])
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(buttons[0])
+  })
+
   it('swallows Tab when the container has no tabbables', () => {
     const { container } = buildDialog(0)
     trapFocus(container)

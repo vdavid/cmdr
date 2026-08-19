@@ -238,6 +238,11 @@ Tab-Tab bug: Esc, ⌘⇧P, and Tab all dead, mouse-only recovery). The action do
 
 1. **Tab wrapping**: Tab on the last tabbable wraps to the first; Shift+Tab mirrors. The tabbable list is queried fresh
    on every keypress, so dialogs whose controls mount and unmount (the onboarding wizard, filter popovers) stay trapped.
+   It excludes `[disabled]`, an explicit `tabindex="-1"`, and anything under `[hidden]` — a control can be natively
+   focusable AND out of the tab order, and Ark's `Select` ships both shapes (a visually-hidden `<select tabindex="-1">`
+   mirroring the value, and a `[hidden]` `tabindex="0"` listbox when closed). Focusing either is a silent no-op in a
+   real browser, which strands the wrap on something the user can't see. There's no computed-style filtering, though:
+   jsdom/happy-dom return `null` for every `offsetParent`, which would empty the list in tests.
 2. **Leak guard**: a document-level capture `focusin` listener pulls focus back if it lands outside the container anyway
    (a programmatic `.focus()` from background code). The pull-back is deferred by one microtask so a closing dialog's
    own focus-restore (`onDestroy` → `previousActiveElement.focus()`) wins — the action's destroy unregisters the trap
@@ -436,6 +441,7 @@ Props:
 - `contentClass?: string` — extra class on the `.select-content` element (`SettingSelect` sets `custom-highlighted` to
   suppress the checked state on other items while its "Custom…" row is highlighted).
 - `portal?: boolean` (default `false`) — teleport the open menu to `document.body`. See "Portal" below.
+- `portalContainer?: HTMLElement` — portal somewhere other than `document.body` (implies `portal`). See "Portal" below.
 
 **macOS pop-up-button look.** The trigger is borderless and hugs its content: value text + a rounded chevron square
 (`chevrons-up-down`), not a full-width bezel. The menu is a frosted-glass surface (shared `--color-bg-glass` /
@@ -470,6 +476,11 @@ menu floats above all of it, macOS-style; zag still anchors to the trigger, and 
 body-level content keeps full theming. `SettingSelect` sets `portal`. **Leave it `false` in the viewer window**, whose
 restricted capability set assumes no portal-to-body (`ViewModePicker` / `EncodingPicker`); `Combobox` is non-portaled
 for the same reason.
+
+**Inside a modal, portal to the modal's overlay (`portalContainer`), not to body.** Body is wrong twice over there:
+`--z-dropdown` (100) sits under `--z-modal` (300), so the menu paints behind the scrim, and `use:trapFocus`'s leak guard
+yanks focus straight back out of the open menu, because zag focuses the content element on open. Passing the overlay
+element fixes both while still escaping the panel's `overflow: hidden`. `OnboardingLanguagePicker` is the live example.
 
 **Stable class contract (load-bearing, don't rename):** `.select-trigger`, `.select-item`, `.select-content`,
 `.option-description`. `SettingSelect`'s `handleCustomSubmit` focuses `.select-trigger` via `querySelector`, and the

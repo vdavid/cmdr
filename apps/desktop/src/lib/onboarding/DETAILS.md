@@ -17,6 +17,8 @@ finishes onboarding.
   button, Escape-swallow. Tab containment via the shared `use:trapFocus` (no `onEscape` — dismissal requires committing
   to a step).
 - **`OnboardingStepShell.svelte`**: Per-step inner frame (padding, scroll container). Steps render their body inside.
+- **`OnboardingLanguagePicker.svelte`**: The language escape hatch in the wizard header's right cell (a globe glyph plus
+  `SettingSelect` on `appearance.language`). See "The language escape hatch" below.
 - **`StepFda.svelte`**: Step 1 (macOS only): Full Disk Access. Three variants: first-ask, revoked, already-granted.
 - **`StepAi.svelte`**: Step 2: AI provider picker. FDA-outcome banner (or none), comparison table (Without AI / With
   AI), three radio choices, single "Next" forward button.
@@ -399,6 +401,37 @@ Conventions specific to this area:
   in `onboarding.json` — they migrate with those areas.
 - **Banner titles / footer labels moved out of the JS objects** (`bannerTitleByMode`, the `setFooterOverride([{label}])`
   arrays) into `tString()` calls so they translate too.
+
+## The language escape hatch
+
+Cmdr resolves the UI language from the Mac's ordered language preferences (`docs/specs/auto-language-plan.md`), so a
+first launch can open in a language the user doesn't read. Every other way to change it — Settings > Appearance >
+Language, the command palette — is labeled in that same language, so the way out has to be on the screen they're already
+looking at. That screen is the wizard.
+
+**It's frame, not a step.** The header is a three-column grid (empty cell, step dots, picker), which keeps the dots
+centred and leaves the step sequence untouched: step 3's consent page is non-skippable, and a language step would have
+been one more thing between a user and the app.
+
+**Nothing about it needs reading.** The globe glyph carries the meaning, and every row is its own endonym, resolved in
+the option's OWN locale by `languageOptions()` (`settings/definitions/appearance.ts`): the `en` row reads "English"
+whatever the app currently speaks, with no untranslated-string exception to maintain. The `'system'` row names what it
+resolves to ("System default (Svenska)").
+
+**Wiring is `SettingSelect` on `appearance.language`**, the same control the Settings picker uses, so a pick goes
+through `setSetting()` → `settings-applier.ts` → `setLocale()` and the open wizard re-renders in place. No restart, no
+special case. An explicit pick retires `'system'` permanently, which is the point: decision 5 of the plan says an
+implicit choice stays implicit and an explicit one is permanent, so a resolved tag is never written back.
+
+**The menu portals into the wizard OVERLAY, not into `document.body`.** Body would put it under the scrim
+(`--z-dropdown` < `--z-modal`) and outside `use:trapFocus`, whose leak guard would yank focus back out of the menu the
+moment zag focuses its content. The overlay is inside the trap and above the panel, and still escapes the panel's
+`overflow: hidden`, which would otherwise clip a menu whose selected row sits near the bottom of the list.
+`ui/DETAILS.md` § Select covers the `portalContainer` prop.
+
+**No notice for already-onboarded users.** David cut the one-time banner/toast half deliberately (2026-08-19): an app
+that switches to your own language and says nothing is behaving normally, not doing something that needs announcing.
+Don't build it "just in case"; the `CLAUDE.md` bullet is the enforcing line.
 
 ## Key decisions
 

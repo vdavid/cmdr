@@ -687,6 +687,16 @@ Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), o
 
 ## Gotchas
 
+**Gotcha**: an OCCLUDED app window suspends `requestAnimationFrame`, so anything positioned on a rAF looks broken.
+**Why**: WKWebView reports `document.hidden === true` and stops firing rAF when the window is behind another (a manual
+run with the terminal in front is the normal case). Ark/zag position every dropdown through
+`getPlacement(..., { defer: true })`, which is a rAF, so an open `Select` menu sits at its container's top-left with
+`--x` / `--y` never written, and any measurement of it is a lie. Verified on macOS 15, zag 1.41.2, 2026-08-19 (rAF fired
+0 times occluded, 1 time after `plugin:window|set_focus`). So: raise the window before measuring anything geometric
+(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_focus', {})` from the page, then wait a beat and confirm
+`document.hidden === false`), and ❌ never conclude a positioning bug from an occluded run. Hit-testing lies the same
+way: `elementFromPoint` happily returns an element at `opacity: 0`.
+
 **Gotcha**: a spec that MEASURES a dialog has to gate on the dialog's CONTENT, not on `.modal-dialog`. **Why**: a panel
 whose body loads over IPC mounts in a spinner state (the trigger flips `open` and `loading` in one synchronous block),
 so the panel element exists for as long as the read takes and its height is the spinner's. The rows then land and the

@@ -18,9 +18,15 @@
     interface Props {
         id: SettingId
         disabled?: boolean
+        /**
+         * Where the open menu lands, when `document.body` is the wrong place: pass a
+         * focus-trapped modal's overlay element to render this row inside one. See
+         * `ui/Select.svelte`'s `portalContainer`.
+         */
+        portalContainer?: HTMLElement
     }
 
-    const { id, disabled = false }: Props = $props()
+    const { id, disabled = false, portalContainer }: Props = $props()
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
@@ -179,6 +185,7 @@
             contentClass={customHighlighted ? 'custom-highlighted' : ''}
             ariaLabel={label}
             portal
+            {portalContainer}
             {disabled}
         />
     {/if}

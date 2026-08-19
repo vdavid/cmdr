@@ -59,6 +59,15 @@
          * `false` in the viewer window, whose restricted capability set assumes no portal-to-body.
          */
         portal?: boolean
+        /**
+         * Where the portaled menu lands, when `document.body` is the wrong place. Inside a modal
+         * that's `use:trapFocus`'d, body is: the trap's leak guard would yank focus straight back
+         * out of the open menu (zag focuses the content element on open), and `--z-dropdown` sits
+         * under `--z-modal` so the menu would paint behind the scrim. Pass the modal's own overlay
+         * element and both problems go away, while still escaping the panel's `overflow: hidden`.
+         * Implies `portal`.
+         */
+        portalContainer?: HTMLElement
     }
 
     const {
@@ -71,6 +80,7 @@
         ariaLabel,
         contentClass = '',
         portal = false,
+        portalContainer,
     }: Props = $props()
 
     const resolvedPlaceholder = $derived(placeholder ?? tString('ui.select.placeholder'))
@@ -221,10 +231,11 @@
                 <span class="select-indicator"><Icon name="chevrons-up-down" size={14} aria-hidden="true" /></span>
             </Select.Trigger>
         </Select.Control>
-        <!-- Always wrap the menu in `Portal`, disabled (rendered inline) unless `portal` is set; when
-             enabled it teleports to body so the open menu escapes ancestor `overflow`/`mask`. Ark's
-             Portal forwards the Select context, and the content's `bind:ref` works either way. -->
-        <Portal disabled={!portal}>
+        <!-- Always wrap the menu in `Portal`, disabled (rendered inline) unless `portal` (or a
+             `portalContainer`) is set; when enabled it teleports to `portalContainer ?? body` so the
+             open menu escapes ancestor `overflow`/`mask`. Ark's Portal forwards the Select context,
+             and the content's `bind:ref` works either way. -->
+        <Portal disabled={!portal && portalContainer === undefined} container={portalContainer}>
             <Select.Positioner>
                 <Select.Content
                     bind:ref={contentEl}

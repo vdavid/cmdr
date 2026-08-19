@@ -40,11 +40,26 @@ export interface TrapFocusOptions {
 /**
  * No `offsetParent` visibility filtering: jsdom/happy-dom return `null` for every
  * element, which would empty the list in tests. Conditionally rendered controls
- * aren't in the DOM at all, and `[disabled]` is excluded here, so the unfiltered
- * list matches what a real user can tab to.
+ * aren't in the DOM at all, and `[disabled]`, an explicit `tabindex="-1"`, and
+ * `[hidden]` are excluded, so the list matches what a real user can tab to.
+ *
+ * ❌ Don't drop the `:not([tabindex="-1"])` from the natively-focusable clauses:
+ * a control that opted OUT of the tab order is still a `<button>` / `<select>`.
+ * Ark's `Select` renders exactly that (a visually-hidden `<select tabindex="-1">`
+ * mirroring the value for form submission), and its closed menu is a `[hidden]`
+ * `tabindex="0"` listbox. Without both guards a wizard's Tab wrap lands on one of
+ * them and focus goes nowhere the user can see.
  */
-const FOCUSABLE_SELECTOR =
-  '[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+const FOCUSABLE_SELECTOR = [
+  '[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]',
+]
+  .map((clause) => `${clause}:not([tabindex="-1"])`)
+  .join(', ')
 
 interface TrapEntry {
   node: HTMLElement
@@ -57,7 +72,12 @@ const stack: TrapEntry[] = []
 let listenersInstalled = false
 
 function getTabbables(node: HTMLElement): HTMLElement[] {
-  return Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+  // `[hidden]` is checked on ancestors too: a closed Ark dropdown hides the wrapper,
+  // not always the tabbable inside it. A `.focus()` on any of them is a silent no-op in
+  // a real browser, which would strand the wrap on an element the user can't see.
+  return Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (el) => el.closest('[hidden]') === null,
+  )
 }
 
 /** Last-focused element inside the trap, falling back to the first tabbable, then the container. */
