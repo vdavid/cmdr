@@ -243,7 +243,7 @@ fn skips_names_already_taken_and_continues_a_sequence() {
 }
 
 #[test]
-fn works_for_a_directory_source() {
+fn works_for_a_name_with_no_extension() {
     let temp = TempDir::new().unwrap();
     let target = temp.path().join("docs");
     fs::create_dir(&target).unwrap();
@@ -251,6 +251,41 @@ fn works_for_a_directory_source() {
     let picked = next_available_name(&target, &ClaimedNames::default());
     assert_eq!(picked.file_name().unwrap().to_string_lossy(), "docs (1)");
     assert!(!picked.exists());
+}
+
+// ============================================================================
+// create_unique_dir
+// ============================================================================
+//
+// A directory has no extension. Everything after a dot in `my.dir` or
+// `backup.2024` is part of its name, so the number goes at the END.
+
+#[test]
+fn a_dot_in_a_directory_name_is_part_of_the_name() {
+    let temp = TempDir::new().unwrap();
+    for name in ["my.dir", "backup.2024", "v1.2.3"] {
+        let target = temp.path().join(name);
+        fs::create_dir(&target).unwrap();
+
+        let created = create_unique_dir(&target, &ClaimedNames::default()).unwrap();
+
+        assert_eq!(
+            created.file_name().unwrap().to_string_lossy(),
+            format!("{name} (1)"),
+            "a directory numbers whole, never mid-name"
+        );
+    }
+}
+
+#[test]
+fn a_directory_continues_its_sequence_past_the_dot() {
+    let temp = TempDir::new().unwrap();
+    fs::create_dir(temp.path().join("my.dir")).unwrap();
+    fs::create_dir(temp.path().join("my.dir (1)")).unwrap();
+
+    let created = create_unique_dir(&temp.path().join("my.dir (1)"), &ClaimedNames::default()).unwrap();
+
+    assert_eq!(created.file_name().unwrap().to_string_lossy(), "my.dir (2)");
 }
 
 #[test]

@@ -77,7 +77,10 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   `photo (+1).jpg` are plain text); zero padding isn't preserved (`photo (007)` continues at `(8)`); and a number with
   no `u32` successor is plain text too, which keeps the returned counter always advanceable.
 - **`unique_name.rs::NameCandidates` is the whole of what the ` (N)` searches share**: the parent, the base to number from,
-  and the counter to try next, walked with `current()` / `advance()`. Every search walks the same candidates and differs
+  and the counter to try next, walked with `current()` / `advance()`. Built per item KIND, and the kind is not cosmetic:
+  `for_file` keeps the extension at the end (`photo.jpg` → `photo (1).jpg`), while `for_directory` numbers the whole name,
+  because a directory has none (`my.dir` → `my.dir (1)`, ❌ never `my (1).dir`; likewise `backup.2024` and `v1.2.3`).
+  `create_unique_dir` and the volume namer's `is_directory` branch pick the second, everything else the first. Every search walks the same candidates and differs
   only in how it TESTS one. `find_unique_name` RESERVES its pick with an `O_CREAT|O_EXCL` placeholder and must keep
   advancing when it loses that race; `next_available_name` only probes (`path_exists_or_is_symlink`, so a dangling
   symlink counts as taken) and creates nothing; `transfer/volume/conflict.rs::find_unique_volume_name` does one or the

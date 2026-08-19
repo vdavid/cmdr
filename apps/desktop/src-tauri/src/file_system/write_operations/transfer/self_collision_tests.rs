@@ -357,6 +357,38 @@ fn duplicating_a_folder_in_place_lands_a_sibling_copy_and_never_touches_the_orig
     );
 }
 
+/// A folder whose name holds a dot numbers whole. `backup.2024` is a folder
+/// called `backup.2024`, not a `backup` with a `2024` extension, so the copy is
+/// `backup.2024 (1)`.
+#[test]
+fn duplicating_a_folder_whose_name_holds_a_dot_numbers_the_whole_name() {
+    let tmp = create_temp_dir("dotted_folder");
+    let folder = tmp.join("folder");
+    let dotted = folder.join("backup.2024");
+    fs::create_dir_all(&dotted).unwrap();
+    fs::write(dotted.join("a.txt"), b"alpha").unwrap();
+
+    let state = make_state();
+    let events = ConflictResponderSink::new(&state, ConflictResolution::Rename, true);
+    copy_files_with_progress_inner(
+        &events,
+        "op-duplicate-dotted-folder",
+        &state,
+        std::slice::from_ref(&dotted),
+        &folder,
+        &WriteOperationConfig::default(),
+    )
+    .expect("duplicating a dotted folder must succeed");
+
+    assert_eq!(
+        dir_children(&folder),
+        vec!["backup.2024", "backup.2024 (1)"],
+        "the number lands at the end of the name, never inside it"
+    );
+    assert_eq!(subtree(&folder.join("backup.2024 (1)")), vec!["a.txt"]);
+    assert!(events.inner.conflicts.lock_ignore_poison().is_empty());
+}
+
 /// An empty folder has no files at all, so nothing in the per-file loop speaks
 /// for it: the redirect has to be in place before the scanned-dirs pass runs.
 #[test]

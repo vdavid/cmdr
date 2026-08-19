@@ -748,8 +748,9 @@ pub(super) fn is_the_same_volume_path(source_path: &Path, dest_path: &Path) -> b
 ///
 /// Naming itself is not this function's business: the candidates come from
 /// `unique_name::NameCandidates`, the same sequence the local-FS namer walks, so a
-/// volume dest numbers identically and `photo (1).jpg` continues to
-/// `photo (2).jpg` here too. This function owns only the reservation.
+/// volume dest numbers identically (`photo (1).jpg` continues to `photo (2).jpg`,
+/// and `is_directory` also picks the candidate KIND, so `my.dir` numbers whole).
+/// This function owns only the reservation.
 async fn find_unique_volume_name(
     dest_volume: &Arc<dyn Volume>,
     path: &Path,
@@ -757,7 +758,11 @@ async fn find_unique_volume_name(
     claimed: &ClaimedNames,
 ) -> PathBuf {
     let local_root = dest_volume.local_path().filter(|_| !is_directory);
-    let mut candidates = NameCandidates::for_path(path);
+    let mut candidates = if is_directory {
+        NameCandidates::for_directory(path)
+    } else {
+        NameCandidates::for_file(path)
+    };
 
     loop {
         let new_path = candidates.current();

@@ -714,6 +714,18 @@ async fn a_directory_name_is_never_reserved_with_a_file_placeholder() {
     );
 }
 
+/// A directory has no extension, so `is_directory` picks the candidate KIND too:
+/// the number goes after the whole name, never inside it.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_dot_in_a_directory_name_is_part_of_the_name_on_a_volume() {
+    let dst = Arc::new(InMemoryVolume::new("dst"));
+    dst.create_directory(Path::new("/backup.2024")).await.unwrap();
+    let dst_dyn: Arc<dyn Volume> = dst.clone();
+
+    let unique = find_unique_volume_name(&dst_dyn, Path::new("/backup.2024"), true, &ClaimedNames::default()).await;
+    assert_eq!(unique.file_name().unwrap().to_string_lossy(), "backup.2024 (1)");
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_non_numeric_parenthetical_is_not_a_sequence_on_a_volume() {
     let dst = Arc::new(InMemoryVolume::new("dst"));

@@ -96,7 +96,8 @@ pub(super) fn split_sequence(stem: &str) -> (&str, u32) {
 
 /// The ` (N)` candidate sequence for a path: where to put the result, the base
 /// to number from (any trailing sequence already split off by
-/// [`split_sequence`]), and the counter to try next.
+/// [`split_sequence`]), and the counter to try next. Built per item KIND, since
+/// a file's extension has to stay at the end and a directory has none.
 ///
 /// This is the whole of what the ` (N)` searches share. Each walks the same
 /// candidates and differs only in how it TESTS one: [`find_unique_name`]
@@ -117,16 +118,28 @@ pub(super) struct NameCandidates<'a> {
 }
 
 impl<'a> NameCandidates<'a> {
-    pub(super) fn for_path(path: &'a Path) -> Self {
-        let stem = path
-            .file_stem()
-            .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_default();
+    /// Candidates for a FILE: the trailing extension stays put and the ` (N)`
+    /// goes in front of it, `photo.jpg` → `photo (1).jpg`.
+    pub(super) fn for_file(path: &'a Path) -> Self {
+        let stem = path.file_stem().map(|s| s.to_string_lossy().to_string());
+        let extension = path.extension().map(|s| s.to_string_lossy().to_string());
+        Self::from_parts(path, stem.unwrap_or_default(), extension)
+    }
+
+    /// Candidates for a DIRECTORY, which has no extension: everything after a
+    /// dot is part of its name, so the number goes at the END. `my.dir` →
+    /// `my.dir (1)`, ❌ never `my (1).dir`; `backup.2024` and `v1.2.3` likewise.
+    pub(super) fn for_directory(path: &'a Path) -> Self {
+        let name = path.file_name().map(|s| s.to_string_lossy().to_string());
+        Self::from_parts(path, name.unwrap_or_default(), None)
+    }
+
+    fn from_parts(path: &'a Path, stem: String, extension: Option<String>) -> Self {
         let (base, counter) = split_sequence(&stem);
         Self {
             parent: path.parent().unwrap_or(Path::new("")),
             base: base.to_string(),
-            extension: path.extension().map(|s| s.to_string_lossy().to_string()),
+            extension,
             counter,
             start: counter,
         }
@@ -168,7 +181,7 @@ impl<'a> NameCandidates<'a> {
 /// empty file before the caller writes), the caller's write still succeeds
 /// (creating fresh).
 pub(super) fn find_unique_name(path: &Path) -> PathBuf {
-    let mut candidates = NameCandidates::for_path(path);
+    let mut candidates = NameCandidates::for_file(path);
 
     loop {
         let new_path = candidates.current();
@@ -189,8 +202,10 @@ pub(super) fn find_unique_name(path: &Path) -> PathBuf {
     }
 }
 
-/// Picks the next free ` (N)` name **without reserving it** — same convention
-/// and same sequence rule as [`find_unique_name`], but a probe and no create.
+/// Picks the next free ` (N)` name for a FILE **without reserving it** — same
+/// convention and same sequence rule as [`find_unique_name`], but a probe and no
+/// create. A directory goes through [`create_unique_dir`], which numbers its
+/// name whole.
 ///
 /// For callers that reserve the name themselves in a way an `O_CREAT|O_EXCL`
 /// *file* placeholder would get in the way of: a directory claims its name with
@@ -205,7 +220,7 @@ pub(super) fn find_unique_name(path: &Path) -> PathBuf {
 /// nothing else stands between two sources of one ` (N)` family and one shared
 /// destination. See [`ClaimedNames`].
 pub(super) fn next_available_name(path: &Path, claimed: &ClaimedNames) -> PathBuf {
-    let mut candidates = NameCandidates::for_path(path);
+    let mut candidates = NameCandidates::for_file(path);
 
     loop {
         let new_path = candidates.current();
@@ -229,7 +244,7 @@ pub(super) fn next_available_name(path: &Path, claimed: &ClaimedNames) -> PathBu
 /// spoken for, so this walks past those too and records its own claim
 /// ([`ClaimedNames`]).
 pub(super) fn create_unique_dir(path: &Path, claimed: &ClaimedNames) -> std::io::Result<PathBuf> {
-    let mut candidates = NameCandidates::for_path(path);
+    let mut candidates = NameCandidates::for_directory(path);
 
     loop {
         let new_path = candidates.current();
