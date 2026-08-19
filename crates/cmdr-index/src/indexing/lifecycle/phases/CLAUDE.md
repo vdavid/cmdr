@@ -10,35 +10,32 @@ takes; `visits.rs` where the user is looking; `completion.rs` the two stamps. Th
 
 Each of these fails SILENTLY when ignored.
 
-- **The stitch is what makes phases compose; ❌ never skip it** (the next phase re-walks everything, each root taking
-  the SERIAL repair). It marks ONE directory at a time, files included, flushes between the upserts and the mark, stamps
-  the CURRENT epoch, and ❌ never marks a directory it couldn't read.
-- **A phased start prepares its database through writer MESSAGES**, ❌ never a second write connection. No
-  `EXCLUSION_POLICY_KEY` stamp ⇒ every coverage query answers "walk everything" and nothing EVER converges.
-- **Completion is DERIVED** ("the frontier under this root is empty"), ❌ never remembered, ❌ never a "didn't shrink
-  twice" rule. Abandoned ground leaves the frontier, so one wedged directory can't hold it open. A run that stops short
-  asks for another pass (`../completion_retry.rs`), which moves WHEN the marker lands, ❌ never what earns it.
-- **The completion ORDER is enforced by a flush, stamp before collapse**, and ❌ `AggregationComplete` never moves ahead
-  of that flush: collapsing early lets a shallow anchor truncate the index that just finished, and a terminal ahead of
-  the heal's progress ticks leaves every hourglass lit until relaunch.
+- **The stitch is what makes phases compose; ❌ never skip it**, or the next phase re-walks everything and each root
+  takes the SERIAL repair. It marks ONE readable directory at a time, files included, flushes between the upserts and
+  the mark, and stamps the CURRENT epoch.
+- **A phased start prepares its database through writer MESSAGES**, ❌ never a second write connection. Miss the
+  `EXCLUSION_POLICY_KEY` stamp and every coverage query answers "walk everything", so nothing EVER converges.
+- **Completion is DERIVED** ("the frontier under this root is empty"), ❌ never remembered. Abandoned ground leaves the
+  frontier, so one wedged directory can't hold it open, and a run that stops short asks for another pass
+  (`../completion_retry.rs`), which moves WHEN the marker lands, not what earns it.
+- **The completion ORDER is a flush, then the stamp, then the collapse.** Collapse early and a shallow anchor can
+  truncate the index that just finished; a terminal ahead of the heal's progress ticks leaves every hourglass lit until
+  relaunch.
 - **`working` (a phase queued or running) is what scan entries refuse against; `walking` (reading the disk now) is only
   the verifier's.** ❌ Never `mgr.scanning`: `cover_context_for` returns `None` under it, so our own walks fail.
-- **One `cover()` per GROUP of frontier roots, joined**, sized from what the last group cost (`grouping.rs`), draining
-  per phase and taking stock per DRAIN, ❌ never per root, ❌ never a whole frontier in one call, ❌ never a fixed size.
-  ⚠️ **A group is also STOPPED for a folder somebody opened**: the gaps are too coarse when a root is 1.58M entries. A
-  PEEK over EVERY remembered folder, ❌ never a take, ❌ never just the front. It earns another PASS and ❌ never sizes
-  the next group.
-- **The phase is a typed `CoveragePhase` on ONE event AND on the status response** (transition-only leaves a reloaded
-  window blank). ❌ Never off the branch events, ❌ never derived host-side, ❌ not one-shot: an interlude makes the
-  outer phase re-announce, via the coverage event alone.
+- **One `cover()` per GROUP of frontier roots**, joined, sized from what the last group cost (`grouping.rs`), draining
+  per phase and taking stock per DRAIN. ⚠️ A group also STOPS for a folder somebody opened, through a PEEK over every
+  remembered folder; that earns another PASS and ❌ never sizes the next group.
+- **The phase is a typed `CoveragePhase`, on ONE event AND on the status response**, since a transition-only signal
+  leaves a reloaded window blank. ❌ Never derived host-side, and an interlude makes the outer phase re-announce.
 - **Every walk is bracketed by `CoverageBranchStarted` / `CoverageBranchEnded`**, the end on EVERY exit path, cancels
-  included. A whole-volume scan reports the same way, so ❌ nothing downstream branches on the kind of run. ❌ No
-  debounce here; how long the UI waits is the app's call.
+  included. A whole-volume scan reports the same way, so nothing downstream branches on the kind of run, and how long
+  the UI waits is the app's call.
 - **`home_covered_at` drives exactly ONE subscriber** (the media + importance early kick), ❌ not freshness, the badge,
   or rescan routing.
 - **Ask the host through the seams it already has**: `priority_roots` (an ORDER, never a scope) and `open_listings` on
-  the reporter's tick. ❌ Not `verify_directory`, which fires for the opposite pane and every refresh.
-- **A rescan before full coverage RESTARTS the phases**, ❌ never truncates, ❌ never errors; the deferred-rescan
+  the reporter's tick, ❌ not `verify_directory`, which fires for the opposite pane and every refresh.
+- **A rescan before full coverage RESTARTS the phases**, never truncating and never erroring; the deferred-rescan
   mechanism answers for COMPLETED volumes only.
 
 Depth on every bullet (with the incident behind each), the escape hatch, and the measurements behind the flush batching
