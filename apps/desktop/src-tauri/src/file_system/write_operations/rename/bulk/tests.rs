@@ -604,6 +604,13 @@ fn a_skipped_row_reaches_the_journal_instead_of_vanishing() {
 /// journaled, a crash between the two renames leaves the file at a
 /// `.cmdr-bulk-rename-*` name that no journal, no ledger, and no sweep knows about,
 /// so nothing can ever find it again.
+///
+/// macOS-only, like `execution_plan_keeps_a_temporary_step_for_case_only_renames`
+/// above: `normalize_for_comparison` folds case only where the filesystem does, so
+/// off macOS `screenshot.png` and `Screenshot.png` are two distinct names and the
+/// plan is an ordinary `Direct` step with one hop and no temp. There's no temp hop to
+/// journal there, and asserting for one describes a filesystem Cmdr doesn't run on.
+#[cfg(target_os = "macos")]
 #[test]
 fn a_case_only_rename_journals_its_temp_hop_so_a_crash_leaves_it_findable() {
     let bed = LandingJournal::new("case_only_temp");
