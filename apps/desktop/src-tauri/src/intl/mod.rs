@@ -30,6 +30,11 @@ use shipped_locales::SHIPPED_LOCALES;
 
 mod format_locale;
 mod live_locale;
+// `pub(crate)` only so a test in another module can take the locale lock; the
+// module's real surface is the re-export below.
+#[cfg(test)]
+pub(crate) mod native_strings;
+#[cfg(not(test))]
 mod native_strings;
 
 pub use live_locale::observe_os_locale_changes;

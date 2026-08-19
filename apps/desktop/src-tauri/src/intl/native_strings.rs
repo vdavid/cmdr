@@ -176,6 +176,23 @@ fn shipped_tag(tag: &str) -> Option<&'static str> {
         .map(|candidate| candidate.tag)
 }
 
+/// Serializes tests that depend on which catalog is active.
+///
+/// [`LANGUAGE_PREFERENCE`] and [`ACTIVE_LOCALE`] are process-wide, and cargo runs
+/// a crate's tests as parallel threads in ONE process, so a test that pins a
+/// language races every test that reads a translated string — including ones in
+/// other modules, which is easy to miss. Any test on either side of that takes
+/// this lock.
+///
+/// Returns the guard, and it must be held for the whole test: dropping it early
+/// re-opens the window it exists to close.
+#[cfg(test)]
+pub(crate) fn lock_active_locale_for_tests() -> std::sync::MutexGuard<'static, ()> {
+    use crate::IgnorePoison;
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    LOCK.lock_ignore_poison()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -281,8 +298,14 @@ mod tests {
     /// One test rather than several, because the statics are process-wide: two
     /// tests writing them would race under the default parallel runner. It ends
     /// by restoring `'system'`, so nothing after it sees a pinned language.
+    ///
+    /// Writers aren't the only racers: every test that reads a translated string
+    /// is one too, wherever it lives. [`lock_active_locale_for_tests`] is what
+    /// both sides hold.
     #[test]
     fn the_preference_decides_the_catalog_and_says_when_it_moved() {
+        let _guard = lock_active_locale_for_tests();
+
         // Start from a known state: earlier tests in this process may have
         // resolved the locale already.
         set_language_preference(Some("en".to_string()));

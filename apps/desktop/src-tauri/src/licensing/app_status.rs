@@ -538,8 +538,15 @@ fn get_mock_status(_app: &tauri::AppHandle) -> Option<AppStatus> {
 mod tests {
     use super::*;
 
+    /// The title's words live in the catalog now, so these three pin the part
+    /// this function still owns: WHICH key each licence status maps to. They also
+    /// hold the locale lock and pin English, because `menu_t` reads a
+    /// process-wide catalog that another test writes — unpinned, they'd assert
+    /// English on a contributor's Hungarian Mac and fail.
     #[test]
     fn test_get_window_title_personal() {
+        let _guard = crate::intl::native_strings::lock_active_locale_for_tests();
+        crate::intl::set_language_preference(Some("en".to_string()));
         let status = AppStatus::Personal {
             show_commercial_reminder: false,
         };
@@ -548,6 +555,8 @@ mod tests {
 
     #[test]
     fn test_get_window_title_personal_with_reminder() {
+        let _guard = crate::intl::native_strings::lock_active_locale_for_tests();
+        crate::intl::set_language_preference(Some("en".to_string()));
         let status = AppStatus::Personal {
             show_commercial_reminder: true,
         };
@@ -576,6 +585,8 @@ mod tests {
 
     #[test]
     fn test_get_window_title_expired() {
+        let _guard = crate::intl::native_strings::lock_active_locale_for_tests();
+        crate::intl::set_language_preference(Some("en".to_string()));
         let status = AppStatus::Expired {
             organization_name: Some("Old Corp".to_string()),
             expired_at: "2026-01-01".to_string(),
