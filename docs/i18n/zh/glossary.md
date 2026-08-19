@@ -1184,3 +1184,32 @@ macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "cou
 - **"Make a copy of the selected files in the same folder" → `在当前文件夹中为选中的文件创建副本`** · 沿用目录里已有的
   `当前文件夹`（`commands.editPaste.description`）和 `副本`（`commands.cloudRemoveDownload.description` 的 `本地副本`）·
   `high`。
+
+## 原生菜单：菜单栏、右键菜单、窗口标题（`menu.*`、`licensing.windowTitle.*`、`main.instanceLock.*`，2026-08-19）
+
+这一组的证据来源：macOS 26.5.2 Finder（`Finder.app/Contents/Resources/zh_CN.lproj` 的 `MenuBar.strings` 与
+`LocalizableMerged.strings`）是 Tier 1，几乎决定了全部选词；英文一侧读 `en_GB.lproj`，因为 `Base.lproj`
+里只有编译过的nib。Safari
+26（`MainMenu.strings`）提供标签页词汇，Microsoft 术语库补上 Apple 没有命名的概念。RAW 家族：**用单个撇号**， `''`
+会在菜单里显示成两个。
+
+- **菜单栏 → `文件`、`编辑`、`显示`、`前往`、`窗口`、`帮助`、`服务`** · macOS Finder 与 Safari `zh-CN` · high。
+- **Select 菜单（选择文件）→ `选择`** · Nautilus/Dolphin `zh-CN` · high。Finder 没有对应菜单。
+- **⚠️ Apple 的简体中文把 Finder 叫作「访达」，Cmdr 仍写 `Finder`。** Finder `zh-CN` 的 `A34`
+  是「在访达中显示」，但整个 zh 目录（`commands.fileShowInFinder.mac.label` 等）一直用拉丁字母的
+  `Finder`，`menu.file.showInFinder` 因此保持
+  `在 Finder 中显示`。这是有意的一致性取舍，不是漏译；若以后决定跟随 Apple，需要整目录一起改。
+- **Quick Look → `快速查看`** · macOS Finder（`TL14`）·
+  high。Apple 会翻译这个功能名，所以它不在 don't-translate 列表里。
+- **Get Info → `显示简介`、Enclosing Folder → `上层文件夹`、Go > Home → `个人`、Sort By → `排序方式`、Duplicate →
+  `复制`、Copy → `拷贝`** · macOS Finder Tier 1 · high。注意 `复制` 是 Duplicate，`拷贝` 才是 Copy，两者不能互换。
+- **pane → `窗格`** · Microsoft 术语库 `zh-Hans`，Double Commander `zh-CN`（「左侧面板」）· high。目录里一直用 `窗格`。
+- **ascending / descending → `升序` / `降序`** · Thunar + Dolphin `zh-CN` · high。
+- **changelog → `更改日志`** · Microsoft 术语库 `zh-Hans` · high。与帮助 > `新增功能` 区分：一个指文档，一个指消息。
+- **word wrap → `自动换行`** · Microsoft 术语库 `zh-Hans`，Double Commander `zh-CN` · high。
+- **pin / unpin tab → `固定标签页` / `取消固定标签页`** · Safari `zh-CN`（「固定标签页」）· high。
+- **Finder 标签颜色 → `红色、橙色、黄色、绿色、蓝色、紫色、灰色`** · macOS Finder（`TG_COLOR_*`）· high。
+- **busy（宗卷正在使用）→ `（占用中）`** · Microsoft 术语库（`忙碌`）· high。磁盘用「占用中」比「忙碌」自然。
+- **Eject → `推出`、Disconnect → `断开连接`、Remove（从列表中移除）→ `移除`** · macOS Finder · high。
+- **括号与引号用全角**：`{app}（默认）`、`推出（{name}）`、`拷贝“{name}”`。占位符本身保持半角原样。
+- **有意与英文相同**（已写 `sameAsSourceJustification`）：`menu.zoom.percent*` 与 `menu.view.askCmdr`。

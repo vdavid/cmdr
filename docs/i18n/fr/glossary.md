@@ -1557,3 +1557,38 @@ doit jamais laisser entendre que le nom est resté inchangé.
 - **« Make a copy of the selected files in the same folder » →
   `Créer une copie des fichiers sélectionnés dans le même dossier`** · infinitif, comme les descriptions voisines («
   Copier les fichiers sélectionnés… ») ; « le même dossier » = celui où les fichiers se trouvent déjà · high.
+
+## Menus natifs : barre de menus, menus contextuels, titres de fenêtre (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+
+Sources de tout ce lot : macOS 26.5.2 Finder (`Finder.app/Contents/Resources/fr.lproj`, `MenuBar.strings` +
+`LocalizableMerged.strings`) est le Tier 1 et tranche presque tout ; le côté anglais se lit dans `en_GB.lproj`, car
+`Base.lproj` ne contient que des nibs compilés. Safari 26 (`MainMenu.strings`) donne le vocabulaire des onglets, la
+terminologie Microsoft ce qu'Apple ne nomme pas. Famille RAW : **apostrophes simples**, un `''` s'afficherait en double
+dans le menu.
+
+- **Titres de la barre → `Fichier`, `Édition`, `Présentation`, `Aller`, `Fenêtre`, `Aide`, `Services`** · macOS Finder
+  et Safari `fr` · high.
+- **Menu Select (sélection de fichiers) → `Sélectionner`** · Nautilus/Thunar/Dolphin `fr` · high. Le Finder n'a pas
+  d'équivalent ; l'infinitif s'accorde avec `Tout sélectionner` du même menu.
+- **Quick Look → `Coup d'œil`** (avec l'apostrophe typographique U+2019, comme Apple) · macOS Finder (`TL14`) · high.
+  Apple localise ce nom de fonction, d'où son absence de la liste ne-pas-traduire.
+- **Get Info → `Lire les informations`, Enclosing Folder → `Dossier parent`, Go > Home → `Départ`, Sort By →
+  `Trier par`, Default → `Par défaut`, Other… → `Autre…`** · macOS Finder Tier 1 · high.
+- **Window > Zoom → `Réduire/agrandir`** vs **sous-menu de zoom du texte → `Zoom`** · macOS Finder (`300667.title`) ·
+  high. L'anglais dit deux fois « Zoom » ; le français distingue les deux, ce qui est un gain, pas une perte.
+- **ascending / descending → `Croissant` / `Décroissant`** · Thunar + Dolphin `fr` · high.
+- **changelog → `Journal des modifications`** · terminologie Microsoft · high. À distinguer d'Aide > `Nouveautés` : l'un
+  nomme le document, l'autre la nouvelle.
+- **word wrap → `Retour à la ligne automatique`** · terminologie Microsoft · high.
+- **pin / unpin tab → `Épingler l'onglet` / `Désépingler l'onglet`** · Safari `fr` · high.
+- **vue complète / vue abrégée (les deux modes d'affichage d'un panneau) → `Présentation complète` /
+  `Présentation brève`** · `présentation` est le terme macOS pour un mode d'affichage (« Présentation par liste ») ·
+  high.
+- **Couleurs de tag du Finder → `Rouge, Orange, Jaune, Vert, Bleu, Violet, Gris`** · macOS Finder (`TG_COLOR_*`) · high.
+- **busy (volume occupé) → `(occupé)`** · terminologie Microsoft · high.
+- **Eject → `Éjecter`, Disconnect → `Se déconnecter`, Remove (d'une liste) → `Retirer`** · macOS Finder · high.
+  `Retirer` évite que le retrait d'un favori se lise comme une suppression de fichiers.
+- **`{name}` entre guillemets → `« {name} »`**, avec l'espace ASCII normale des deux côtés, conformément au réglage
+  typographique du catalogue `fr`.
+- **Identiques à l'anglais à dessein** (avec `sameAsSourceJustification`) : `menu.app.services`, `menu.sort.extension`,
+  `menu.view.zoom`, `menu.tag.orange`, `menu.view.askCmdr`.

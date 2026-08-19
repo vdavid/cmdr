@@ -307,10 +307,19 @@ FRAGMENT KEYS: Some keys are sentence fragments assembled at runtime by a named 
 assembler). Translate each fragment so the assembled phrase reads naturally in your language, and mind word order: if
 your language orders the parts differently, the *Join key is where the order is expressed.
 
-ERRORS ARE RAW: Any key under errors.* does NOT use ICU. There, use NORMAL apostrophes (doesn't, not doesn''t),
+RAW FAMILIES (no ICU): errors.* plus the NATIVE ones Rust draws (menu.*, licensing.windowTitle.*, main.instanceLock.*).
+In all of them, use NORMAL apostrophes (doesn't, not doesn''t — a doubled '' renders as TWO apostrophes on a real menu),
 keep {token} verbatim as a literal replacement target (never add ICU formatting), treat <…> as literal text, and pass
 markdown (#, **, backticks) through untouched. The catalog's @key context flags these. Full note: i18n.md § Error
-pipeline.
+pipeline; the native split is isRawKey() in apps/desktop/scripts/i18n-catalog-lib.ts.
+
+NATIVE MENU LABELS: a menu.* key has no screenshot (no capture can photograph a native surface), so its @key
+description is the whole aid: it says VERB or NOUN, which menu the item sits in, what it does, and where macOS Finder
+has a counterpart. Read it for every key. Mine the label from the localized OS itself — the Finder and Safari menu bars
+live in per-nib .strings files whose English side is en_GB.lproj (recipe: docs/i18n/reference-pile/how-to-mine.md §
+Menu-bar labels). Keep the trailing … (U+2026) wherever the English has one. On Linux the underline mnemonics are
+allocated from the TRANSLATED labels per submenu, so don't write & or _ markers yourself; just say in your report if a
+submenu ends up with two items you couldn't keep distinct.
 
 ARIA LABELS: A *Aria key is the accessible name of a control whose VISIBLE label is another key. Its value must CONTAIN
 that label's words, verbatim and in order (WCAG 2.5.3, Label in Name) — case may differ, wording and order may not.

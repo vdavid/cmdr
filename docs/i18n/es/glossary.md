@@ -1250,3 +1250,40 @@ nombre.
 - **"Make a copy of the selected files in the same folder" →
   `Crea una copia de los archivos seleccionados en la misma carpeta`** · tercera persona, como las descripciones vecinas
   ("Copia los archivos seleccionados…"); se mantiene `archivos` del catálogo en lugar del `ítems` de Finder · high.
+
+## Menús nativos: barra de menús, menús contextuales, títulos de ventana (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+
+Fuentes de todo este grupo: macOS 26.5.2 Finder (`Finder.app/Contents/Resources/es.lproj`, `MenuBar.strings` +
+`LocalizableMerged.strings`) es Tier 1 y decide casi todo; el lado inglés está en `en_GB.lproj`, porque `Base.lproj`
+solo trae nibs compilados. Safari 26 (`MainMenu.strings`) aporta el vocabulario de pestañas, y la terminología de
+Microsoft lo que Apple no nombra. Familia RAW: **apóstrofos simples**, un `''` saldría duplicado en el menú.
+
+- **Títulos de la barra → `Archivo`, `Edición`, `Visualización`, `Ir`, `Ventana`, `Ayuda`, `Servicios`** · macOS Finder
+  y Safari `es` · high.
+- **Menú Select (selección de archivos) → `Seleccionar`** · Nautilus/Thunar/Dolphin `es` · high. El Finder no tiene
+  equivalente; el infinitivo encaja con `Seleccionar todo` del mismo menú.
+- **Hide Others → `Ocultar otras apps`** · macOS Finder (`300729.title`) · high. Más claro que el `Ocultar los demás`
+  del catálogo, y es lo que el usuario ve en su Mac.
+- **Quick Look → `Vista rápida`** · macOS Finder (`TL14`) · high. Apple sí localiza este nombre de función, por eso no
+  está en la lista de no-traducir.
+- **Get Info → `Obtener información`, Enclosing Folder → `Carpeta contenedora`, Go > Home → `Inicio`, Sort By →
+  `Ordenar por`, Default → `Por omisión`** · macOS Finder Tier 1 · high. `Por omisión` (no `Predeterminado`, que es la
+  convención de Windows) ya se usa en `commands.fileEdit.label`.
+- **zoom in / out → `Ampliar` / `Reducir`** · Safari `es` (menú Visualización) · high. Más corto y más natural que el
+  `Aumentar/Reducir el zoom` del catálogo, que se queda en la paleta de comandos.
+- **ascending / descending → `Ascendente` / `Descendente`** · Dolphin `es` (Thunar dice `Orden ascendente`) · high.
+- **changelog → `Registro de cambios`** · terminología de Microsoft · high. Se distingue de Ayuda > `Novedades`: uno
+  nombra el documento, el otro la noticia.
+- **word wrap → `Ajuste de línea`** · terminología de Microsoft · high.
+- **pin / unpin tab → `Fijar pestaña` / `Desfijar pestaña`** · el catálogo (`commands.tabTogglePin.label`) y la mayoría
+  de navegadores en español · high. Nota: Safari `es` dice `Anclar pestaña`; se mantiene `fijar` por coherencia con el
+  resto del catálogo, y `anclar` queda registrado como la variante Tier 1.
+- **Colores de etiqueta del Finder → `Rojo, Naranja, Amarillo, Verde, Azul, Morado, Gris`** · macOS Finder
+  (`TG_COLOR_*`) · high.
+- **busy (volumen en uso) → `(ocupado)`** · terminología de Microsoft · high.
+- **Eject → `Expulsar`, Disconnect → `Desconectar`, Remove (de una lista) → `Quitar`** · macOS Finder · high. `Quitar`
+  evita que borrar un favorito suene a borrar archivos.
+- **forget (servidor, contraseña) → `olvidar`** · ya en el catálogo (`fileExplorer.network.share.forgetPassword`) ·
+  high.
+- **Idénticos al inglés a propósito** (con `sameAsSourceJustification`): `menu.view.zoom`, `menu.window.zoom`,
+  `menu.zoom.percent*` y `menu.view.askCmdr`.

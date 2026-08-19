@@ -36,8 +36,9 @@ Format: each line is `English: chosen · sources · confidence`. Confidence is `
 (authoritative sources agree), or `tentative` (sources conflict or none had it). Sources: mac = macOS Finder/AppKit, ms
 = Microsoft terminology/style guide, gn = GNOME Nautilus, xf = Xfce Thunar. Contested terms get a short block.
 
-- pane: `panel` · no Tier-1 source (macOS Finder is single-pane; macOS "panel" means a Settings pane) · tentative. The
-  two file lists. Microsoft's literal term is "ablaktábla"; "panel" is cleaner and idiomatic for a UI region. Flagged.
+- pane: `panel` · Double Commander hu ("Bal panel", "Jobb panel"), Total Commander hu ("a célpanelben") · high. The two
+  file lists. There is no Tier-1 source (macOS Finder is single-pane), but the orthodox two-pane pair is Cmdr's own UI
+  family and both members agree, which settles it; Microsoft's literal "ablaktábla" is the Windows term and stays out.
 - tab: `lap` · mac ("Új lap"), ms ("lap") · high. "fül" is the colloquial alternative; "lap" is the macOS/MS standard.
 - volume: `kötet` · mac ("Kötet"), ms · high.
 - drive: `meghajtó` · mac, ms · high.
@@ -127,6 +128,9 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 
 ## Notes and decisions
 
+- **A natív menük a Finder szóhasználatát követik, nem a katalógusét.** Ahol a macOS-nak van megfelelője, az nyer
+  (`Nézet`, `Saját`, `Kijelölés törlése`, `Méretezés`), mert a felhasználó a Cmdr menüsorát közvetlenül a Finderé
+  mellett látja. Bizonyítékok és kivételek: `glossary.md` § Natív menük.
 - **Agglutination + vowel harmony makes suffixed placeholders dangerous.** Hungarian attaches case suffixes that must
   harmonize with the word's vowels (`-ban`/`-ben`, `-ról`/`-ről`, `-hoz`/`-hez`/`-höz`) and sometimes double a final
   consonant. A `{path}` or `{name}` whose value is unknown can't take a correct suffix ("{path}-ban" may be wrong).
@@ -166,9 +170,11 @@ best-evidenced fit, record residual confidence. No Hungarian-specific input.
 
 - **Address style: `te` (informal), high** — consumer-brand evidence; see Formality and
   `../formal-informal-decisions.md`.
-- **pane, bookmark, viewer, listing — still tentative.** No Tier-1 source (Finder is single-pane and has no own viewer
-  term), so these need the file-manager sources to settle. The next glossary pass mines them like any language; until
-  then they stay open, not parked for David.
+- **pane — settled to `panel`, `high`** (2026-08-19, native-menu pass): Double Commander hu and Total Commander hu both
+  say "panel", and the orthodox pair is Cmdr's own UI family. Resolved by evidence, exactly as intended.
+- **bookmark, viewer, listing — still tentative.** No Tier-1 source (Finder has no own viewer term), so these need the
+  file-manager sources to settle. The next glossary pass mines them like any language; until then they stay open, not
+  parked for David.
 
 ## Glossary
 

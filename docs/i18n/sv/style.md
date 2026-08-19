@@ -161,6 +161,9 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 
 ## Notes and decisions
 
+- **Inbyggda menyer följer Finders ordval, inte katalogens.** Där macOS har en motsvarighet vinner den — inklusive det
+  överraskande `Innehåll` för View-menyn, som både Finder och Safari använder. Belägg och undantag: `glossary.md` §
+  Inbyggda menyer.
 - **Sentence case is native.** Swedish doesn't capitalize common nouns, days, or months, so the app's sentence-case rule
   applies without friction. Don't title-case.
 - **Quotation marks: `”…”`** (right double quote both sides) is the standard Swedish form. Avoid English `"…"`.

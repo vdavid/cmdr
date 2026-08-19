@@ -89,6 +89,10 @@ Duplicating the whole sentence per branch works too but rots twice as fast.
 
 ## Notes and decisions
 
+- **Native menu's volgen de Finder-formulering, niet die van de catalogus.** Waar macOS een equivalent heeft, wint dat
+  (`Archief`, `Voorzieningen`, `Geef snel weer`, `Vergroot/verklein`), omdat de gebruiker Cmdrs menubalk naast die van
+  de Finder ziet. De ene uitzondering is `eject`, waar Apples `Verwijder` met _delete_ zou botsen. Bewijs en
+  uitzonderingen: `glossary.md` § Native menu's.
 - **Sentence case, not title case.** Dutch capitalizes only the first word and proper nouns, which fits the app's
   sentence-case rule directly. "Verstuur crashrapport?" not "Verstuur Crashrapport?".
 - **Quotation marks:** macOS Dutch uses single curly quotes `‘…’` for quoted UI strings ("Klik op 'Ga door' …", and

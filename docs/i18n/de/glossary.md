@@ -1129,3 +1129,46 @@ rename may well have gone through. The German must never let the two blur.
   `Eine Kopie der ausgewählten Dateien im selben Ordner erstellen`** · Infinitiv wie die Nachbarbeschreibungen
   (`commands.editCopy.description`: „… kopieren“); „im selben Ordner“ meint den Ordner, in dem die Dateien schon liegen
   · high.
+
+## Native Menüs: Menüleiste, Kontextmenüs, Fenstertitel (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+
+Quellenlage für diese ganze Gruppe: macOS 26.5.2 Finder (`Finder.app/Contents/Resources/de.lproj`, `MenuBar.strings` +
+`LocalizableMerged.strings`) ist Tier 1 und entscheidet fast alles; die englische Seite steht in `en_GB.lproj`, weil
+`Base.lproj` nur kompilierte Nibs enthält. Safari 26 (`MainMenu.strings`) liefert die Browser-Tab-Wörter,
+MS-Terminologie die Begriffe, die Apple gar nicht hat. Rohfamilie: **einfache Apostrophe**, `''` würde im Menü doppelt
+erscheinen.
+
+- **File-Menü → `Ablage`** · macOS Finder + Safari `de` (`300764.title`, `83.title`) · high. Nicht „Datei“: Apple nennt
+  das Menü seit jeher „Ablage“, und das ist es, was Nutzende in jedem Mac-Programm sehen.
+- **View-Menü → `Darstellung`**, **Go → `Gehe zu`**, **Window → `Fenster`**, **Help → `Hilfe`**, **Services →
+  `Dienste`** · macOS Finder Tier 1 · high.
+- **Select-Menü (Dateiauswahl) → `Auswählen`** · Nautilus/Thunar/Dolphin `de` („Auswählen“) · high. Finder hat kein
+  Gegenstück; das Verb passt zu `Alles auswählen` im selben Menü.
+- **Minimize → `Im Dock ablegen`** · macOS Finder `de` (`300666.title`) · high. Überraschend, aber genau das steht im
+  deutschen Fenstermenü; „Minimieren“ ist die AppKit-Variante und nicht das, was der Finder zeigt.
+- **Window-Zoom → `Zoomen` (Verb)** vs. **Text-Zoom-Untermenü → `Zoom` (Substantiv)** · macOS Finder (`300667.title`)
+  bzw. Browserüblich · high. Die beiden Bedeutungen bleiben so unterscheidbar, obwohl das Englische zweimal „Zoom“ sagt.
+- **Quick Look → `Übersicht`** · macOS Finder (`TL14`) · high. Apple lokalisiert diesen Feature-Namen, deshalb steht er
+  NICHT auf der Don't-translate-Liste.
+- **Get Info → `Informationen`**, **Show in Finder → `Im Finder zeigen`**, **Enclosing Folder →
+  `Übergeordneter Ordner`**, **Go > Home → `Benutzerordner`**, **Sort By → `Sortieren nach`** · macOS Finder Tier 1 ·
+  high. `Im Finder zeigen` weicht minimal von `commands.fileShowInFinder.mac.label` („Im Finder anzeigen“) ab; im
+  nativen Menü gewinnt der Finder-Wortlaut, weil der Nutzer beide Menüs nebeneinander sieht.
+- **Undo → `Widerrufen`, Redo → `Wiederholen`, Paste → `Einsetzen`** · macOS Finder `de` · high. Nicht „Rückgängig“ /
+  „Einfügen“ (Windows-Konvention).
+- **ascending / descending → `Aufsteigend` / `Absteigend`** · Thunar + Dolphin `de` · high. Der Finder sortiert über
+  „Sortieren nach“ ohne eigene Richtungswörter.
+- **changelog → `Änderungsprotokoll`** · MS-Terminologie („change log“) · high. Abgegrenzt von Help > `Neuigkeiten`
+  (What's new): das eine nennt das Dokument, das andere die Nachricht.
+- **word wrap → `Zeilenumbruch`** · MS-Terminologie · high. `Textumbruch` ist die zweite MS-Variante; `Zeilenumbruch`
+  ist im Editor-Kontext das gängigere Wort.
+- **pin / unpin tab → `Tab fixieren` / `Tab lösen`** · Safari `de` („Tab fixieren“) · high. Das Gegenstück ist bei Apple
+  nicht belegt; `lösen` ist die natürliche Umkehrung und deckt sich mit `commands.tabTogglePin.label` („Tab
+  fixieren/lösen“).
+- **Finder-Tag-Farben → `Rot, Orange, Gelb, Grün, Blau, Lila, Grau`** · macOS Finder (`TG_COLOR_*`) · high.
+- **busy (Volume in Benutzung) → `(in Benutzung)`** · beschreibend · tentative. MS bietet nur `beschäftigt`/`besetzt`
+  (Person bzw. Telefon); für eine Festplatte liest sich beides falsch.
+- **„Eject“ → `Auswerfen`, „Disconnect“ → `Trennen`, „Remove“ (aus einer Liste) → `Entfernen`** · macOS Finder · high.
+- **forget (Server, Passwort) → `vergessen`** · bereits im Katalog (`fileExplorer.network.share.forgetPassword`) · high.
+- **Deliberately identical to English** (`sameAsSourceJustification` gesetzt): `menu.bar.tab` (Tab), `menu.view.zoom`
+  (Zoom), `menu.sort.name` (Name), `menu.tag.orange` (Orange), `menu.view.askCmdr` (Produktname).

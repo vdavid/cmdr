@@ -191,6 +191,9 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
 
 ## Notes and decisions
 
+- **Les menus natifs suivent la formulation du Finder, pas celle du catalogue.** Là où macOS a un équivalent, il
+  l'emporte (`Présentation`, `Départ`, `Réduire/agrandir`, `Coup d'œil`), parce que l'utilisateur voit la barre de menus
+  de Cmdr à côté de celle du Finder. Preuves et exceptions : `glossary.md` § Menus natifs.
 - **Accents on capitals are mandatory.** "État", "Éjecter", "À propos", "Écraser", never strip the accent on a capital
   (see Decision points → Capitalization). macOS French keeps them.
 - **Punctuation spacing**: French typography puts a thin space before `: ; ! ? %`. The standard permits a real narrow

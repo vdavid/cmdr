@@ -103,9 +103,13 @@ Tentative / needs a native check:
 
 - **volume: `ổ đĩa` / `phân vùng`** · no clean macOS "volume" string in the pile; "ổ đĩa" (drive) reads natural for a
   mounted volume, "phân vùng" = partition. `tentative`.
-- **tab (UI tab): `tab` (loanword) / `thẻ`** · Vietnamese UI commonly keeps "tab" or uses "thẻ"; the keyboard Tab key is
-  separate. `tentative`.
-- **pane: `khung`** · the two file lists are "khung" (panel/frame); no direct macOS "pane" string. `tentative`.
+- **tab (UI tab): the catalog ships `thẻ`; Tier 1 says `tab`.** macOS Finder vi ("Tab mới", "Hiển thị Tất cả Tab") and
+  Safari vi ("Tab mới", "Đóng tab", "Ghim tab") both use the loanword (verified on macOS 26.5.2, 2026-08-19), so the
+  evidence points at `tab`. The shipped catalog uses `thẻ` in 36 places across six files, so the native-menu pass kept
+  `thẻ` rather than leave the app half-and-half. **Owed:** one sweep changing every UI-tab `thẻ` → `tab`, after which
+  this entry becomes `high`. Don't switch a single key on its own. `tentative`.
+- **pane: `khung`** · three sources, three words: Total Commander vi says `bảng`, Microsoft says `ngăn`, and the Cmdr
+  catalog uses `khung`. No macOS "pane" string exists. `khung` stays for catalog consistency. `tentative`.
 - **bookmark: `dấu trang`** · GNOME phrasing for bookmarking; "đánh dấu" is the verb. `tentative`.
 - **listing: `danh sách tệp`** · reads natural for the file list; no single canonical source term. `tentative`.
 - **progress (advancement, in a negated "no progress"): `tiến triển`** · shared-root pick over macOS `tiến trình` (which
@@ -131,6 +135,8 @@ Vietnamese has no grammatical number, so one form covers all counts.
 
 ## Notes and decisions
 
+- **Menu gốc theo cách dùng từ của Finder, không theo catalog.** Chỗ nào macOS có tương ứng thì lấy của macOS
+  (`Thư mục chứa`, `Nhà`, `Trở lại`, `Kích cỡ`). Ngoại lệ đã ghi: `tab` vs `thẻ`, xem `glossary.md` § Menu gốc.
 - **Quotation marks: `"…"`** (curly double quotes, U+201C/U+201D) are standard; guillemets `«…»` also appear in some
   formal text. Prefer the curly doubles to match macOS. Avoid straight ASCII `"`.
 - **Numbers and dates come from the formatter layer.** Vietnamese uses a comma decimal and a period (or space) thousands

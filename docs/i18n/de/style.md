@@ -144,6 +144,9 @@ Dateien".
 
 ## Notes and decisions
 
+- **Native Menüs folgen dem Finder-Wortlaut, nicht dem Katalog-Wortlaut.** Wo macOS ein Gegenstück hat, gewinnt es
+  (`Ablage`, `Darstellung`, `Im Dock ablegen`, `Widerrufen`, `Einsetzen`), weil der Nutzer Cmdrs Menüleiste direkt neben
+  der des Finders sieht. Belege und die Ausnahmen: `glossary.md` § Native Menüs.
 - **Nouns are always capitalized.** This is grammar, not title case. The app's sentence-case rule still holds (only the
   first word and nouns are capitalized), so "Datei umbenennen" but "Save"→"Speichern" at sentence start. Don't
   title-case adjectives/verbs.

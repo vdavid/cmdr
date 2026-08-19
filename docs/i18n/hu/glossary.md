@@ -1476,3 +1476,46 @@ JELENTÉSE ellentétes, ezért a nyitó tagmondat szándékosan más.
   `Másolat készítése a kijelölt fájlokról ugyanabban a mappában`** · a szomszédos leírások névszói alakja („Kijelölt
   fájlok másolása…”); a `másolatot készít valamiről` vonzat a természetes magyar szerkezet, az „ugyanabban a mappában”
   pedig arra a mappára utal, amelyben a fájlok már benne vannak · high.
+
+## Natív menük: menüsor, helyi menük, ablakcímek (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+
+A csoport forrásai: macOS 26.5.2 Finder (`Finder.app/Contents/Resources/hu.lproj`, `MenuBar.strings` +
+`LocalizableMerged.strings`) a Tier 1, és szinte mindent eldönt; az angol oldal az `en_GB.lproj`-ban van, mert a
+`Base.lproj` csak lefordított nibeket tartalmaz. A Safari 26 (`MainMenu.strings`) adja a lapokra vonatkozó
+szóhasználatot, a Microsoft-terminológia azt, aminek az Apple-nél nincs neve. RAW család: **egyszeres aposztróf**, a
+`''` a menüben kettőnek látszana.
+
+- **Menüsor: `Fájl`, `Szerkesztés`, `Nézet`, `Ugrás`, `Ablak`, `Súgó`, `Szolgáltatások`** · macOS Finder és Safari `hu`
+  · high.
+- **pane → `panel`, immár `high` (eddig `tentative`)** · Double Commander `hu` („Bal panel”, „Jobb panel”) és Total
+  Commander `hu` („a célpanelben”, `WCMD.INC` 911) · high. Az ortodox kétpaneles pár a Cmdr közvetlen rokona, tehát ez a
+  megfelelő családból származó bizonyíték; a `style.md` nyitott kérdései közül ez lezárult.
+- **Select menü (fájlkijelölés) → `Kijelölés`** · Nautilus `hu` („Kijelölés”), és illeszkedik az `Összes kijelölése`
+  sorhoz · high.
+- **Deselect all → `Kijelölés törlése`** · macOS Finder `hu` (`300488.title`) · high. A Finder szóhasználata, nem a
+  katalógus korábbi `Kijelölés megszüntetése` alakja; a `Fájlok kijelölésének törlése…` ennek a párja.
+- **Go > Home → `Saját`** · macOS Finder `hu` (`253.title`) · high. Rövid, és pontosan ezt látja a felhasználó a
+  Finderben.
+- **Window > Zoom → `Méretezés`, Minimize → `Minimalizálás`** · macOS Finder `hu` · high.
+- **zoom in / out → `Felnagyítás` / `Lekicsinyítés`** · Safari `hu` (Nézet menü) · high. Így a `Nagyítás` szabadon marad
+  a zoom-almenü címének, és nem ütközik a saját elemével.
+- **Quick Look → `Gyorsnézet`** · macOS Finder (`TL14`) · high. Az Apple lefordítja ezt a funkciónevet, ezért nincs a
+  ne-fordítsd listán.
+- **ascending / descending → `Növekvő` / `Csökkenő`** · Thunar + Dolphin `hu` · high.
+- **changelog → `Módosítási napló`** · Microsoft-terminológia · high. Elkülönül a Súgó > `Újdonságok` elemtől: az egyik
+  a dokumentumot nevezi meg, a másik a hírt.
+- **word wrap → `Sortörés`** · Microsoft-terminológia · high.
+- **pin / unpin tab → `Lap rögzítése` / `Lap rögzítésének feloldása`** · Safari `hu` („Lap rögzítése”) · high.
+- **„Edit in editor” → `Megnyitás szerkesztésre`** · leíró · tentative. A szó szerinti „Szerkesztés szerkesztőben”
+  ismétlődik, mert magyarul az `edit` és az `editor` ugyanabból a tőből jön; a megnyitás-szerkesztésre szerkezet
+  idiomatikus, és megkülönböztethető a fölötte álló `Megtekintés`-től.
+- **„Don't index images in this folder” / „Index images here again” → `Képek indexelésének tiltása itt` /
+  `Képek indexelésének engedélyezése itt`** · névszói címkealak, a magyar UI-konvenció szerint · tentative. A tiltó
+  felszólító mód (`Ne indexeld…`) tegező közvetlen megszólítás lenne, amit a címkéknél a `style.md` kerül.
+- **Finder-címkeszínek → `Piros, Narancs, Sárga, Zöld, Kék, Bíbor, Szürke`** · macOS Finder (`TG_COLOR_*`) · high.
+- **busy (használatban lévő kötet) → `(foglalt)`** · Microsoft-terminológia (`foglalt` = vonal foglalt) · high.
+- **Eject → `Kiadás`, Disconnect → `Leválasztás`, Remove (listából) → `Eltávolítás`** · macOS Finder · high.
+- **A márkanév toldalékolása: `Kilépés a cmdrből`** · a `style.md` kötőjel nélküli, kiejtés szerinti szabálya
+  („commander” → elöl képzett magánhangzók → `-ből`) · high. Az `en` érték szándékosan kisbetűs `cmdr`, ezért a magyar
+  is az marad.
+- **Szándékosan azonos az angollal** (`sameAsSourceJustification`): `menu.zoom.percent*` és `menu.view.askCmdr`.

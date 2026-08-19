@@ -1272,3 +1272,38 @@ Cặp `unconfirmed*` là anh em của cặp `chainKeptOriginalName*` (cùng dạ
 - **"Make a copy of the selected files in the same folder" → `Tạo bản sao của các tệp đã chọn trong cùng thư mục`** ·
   theo các mô tả lân cận ("Sao chép các tệp đã chọn…"); `bản sao` là từ đã chốt cho "copy" (danh từ), và "cùng thư mục"
   là thư mục các tệp đang nằm sẵn · high.
+
+## Menu gốc: thanh menu, menu chuột phải, tiêu đề cửa sổ (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+
+Nguồn cho cả nhóm này: macOS 26.5.2 Finder (`Finder.app/Contents/Resources/vi.lproj`, `MenuBar.strings` +
+`LocalizableMerged.strings`) là Tier 1 và quyết định gần như mọi thứ; phía tiếng Anh đọc từ `en_GB.lproj`, vì
+`Base.lproj` chỉ chứa nib đã biên dịch. Safari 26 (`MainMenu.strings`) cung cấp từ vựng về tab, còn thuật ngữ Microsoft
+bù vào chỗ Apple không đặt tên. Họ RAW: **dấu nháy đơn**, một `''` sẽ hiện thành hai dấu trên menu.
+
+- **Thanh menu → `Tệp`, `Sửa`, `Xem`, `Đi`, `Cửa sổ`, `Trợ giúp`, `Dịch vụ`** · macOS Finder và Safari `vi` · high.
+- **⚠️ tab (thẻ giao diện): Tier 1 dùng từ mượn `tab`, không phải `thẻ`.** macOS Finder `vi` viết „Tab mới”, „Hiển thị
+  Tất cả Tab”, và Safari `vi` viết „Tab mới”, „Đóng tab”, „Ghim tab” (kiểm chứng trên macOS 26.5.2, 2026-08-19). Catalog
+  Cmdr hiện dùng `thẻ` ở 36 chỗ trong 6 tệp, nên đợt này giữ `thẻ` cho nhất quán toàn ứng dụng. **Việc cần làm:** một
+  đợt riêng nên đổi toàn bộ `thẻ` → `tab` và nâng mục này trong `style.md` từ `tentative` lên `high`. Không tự ý đổi lẻ
+  một chỗ.
+- **pane → `khung`, vẫn `tentative`** · Total Commander `vi` dùng `bảng` (`WCMD.INC` 104, 531), Microsoft dùng `ngăn`,
+  catalog Cmdr dùng `khung`. Ba nguồn, ba từ; giữ `khung` vì catalog đã dùng, và ghi lại hai lựa chọn kia.
+- **Quick Look → `Xem nhanh`** · macOS Finder (`TL14`) · high. Apple có dịch tên tính năng này nên nó KHÔNG nằm trong
+  danh sách không-dịch.
+- **Get Info → `Lấy thông tin`, Enclosing Folder → `Thư mục chứa`, Go > Home → `Nhà`, Sort By → `Sắp xếp theo`,
+  Back/Forward → `Trở lại` / `Tiếp theo`, Size → `Kích cỡ`, Default → `Mặc định`, Other… → `Khác…`** · macOS Finder Tier
+  1 · high.
+- **Minimize → `Thu nhỏ`, Window > Zoom → `Thu phóng`** · macOS Finder (`300666`, `300667`) · high. Hai giá trị này
+  trùng với `menu.zoom.out` và `menu.view.zoom`, nhưng chúng nằm ở hai menu khác nhau nên không gây nhầm lẫn, và cả bốn
+  đều là từ Tier 1.
+- **ascending / descending → `Tăng dần` / `Giảm dần`** · Thunar + Dolphin `vi` · high.
+- **changelog → `Nhật ký thay đổi`** · thuật ngữ Microsoft · high. Khác với Trợ giúp > `Có gì mới`: một bên gọi tên tài
+  liệu, một bên gọi tên tin tức.
+- **word wrap → `Tự ngắt dòng`** · thuật ngữ Microsoft · high.
+- **pin / unpin tab → `Ghim thẻ` / `Bỏ ghim thẻ`** · Safari `vi` („Ghim tab”), chuyển sang thuật ngữ `thẻ` của catalog ·
+  high.
+- **Màu nhãn Finder → `Đỏ, Cam, Vàng, Lục, Lam, Tía, Xám`** · macOS Finder (`TG_COLOR_*`) · high.
+- **busy (ổ đĩa đang được dùng) → `(đang bận)`** · thuật ngữ Microsoft (`bận`) · high.
+- **Eject → `Tháo`, Disconnect → `Ngắt kết nối`, Remove (khỏi một danh sách) → `Gỡ bỏ`** · macOS Finder và Thunar `vi` ·
+  high. `Gỡ bỏ` tránh nghe giống `Xóa` (xóa tệp).
+- **Giống hệt tiếng Anh có chủ đích** (`sameAsSourceJustification`): `menu.zoom.percent*` và `menu.view.askCmdr`.

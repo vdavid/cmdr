@@ -1509,3 +1509,35 @@ bestand zijn naam heeft gehouden: dat is precies wat we niet weten. Daarmee staa
 - **'Make a copy of the selected files in the same folder' →
   `Maak een kopie van de geselecteerde bestanden in dezelfde map`** · gebiedende wijs, zoals de naburige beschrijvingen
   ('Kopieer geselecteerde bestanden…'); 'dezelfde map' is de map waar de bestanden al staan · high.
+
+## Native menu's: menubalk, contextmenu's, venstertitels (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+
+Bronnen voor deze hele groep: macOS 26.5.2 Finder (`Finder.app/Contents/Resources/nl.lproj`, `MenuBar.strings` +
+`LocalizableMerged.strings`) is Tier 1 en beslist bijna alles; de Engelse kant staat in `en_GB.lproj`, omdat
+`Base.lproj` alleen gecompileerde nibs bevat. Safari 26 (`MainMenu.strings`) levert de tabblad-woorden, de
+Microsoft-terminologie wat Apple niet benoemt. RAW-familie: **enkele apostroffen**, een `''` zou in het menu dubbel
+verschijnen.
+
+- **Menubalk → `Archief`, `Wijzig`, `Weergave`, `Ga`, `Venster`, `Help`, `Voorzieningen`** · macOS Finder en Safari `nl`
+  · high. Niet „Bestand” en niet „Diensten”: Apple gebruikt al jaren `Archief` en `Voorzieningen`.
+- **Select-menu (bestandsselectie) → `Selecteer`** · bare-stem imperatief volgens `style.md`, met Nautilus/Dolphin `nl`
+  („Selecteren”) als bron voor het werkwoord · high.
+- **Quick Look → `Geef snel weer`** · macOS Finder (`TL14`) · high. Apple vertaalt deze functienaam, dus hij staat NIET
+  op de niet-vertalen-lijst.
+- **Get Info → `Toon info`, Enclosing Folder → `Bovenliggende map`, Go > Home → `Thuismap`, Sort By → `Sorteer op`,
+  Default → `Standaard`, Minimize → `Minimaliseer`, Window > Zoom → `Vergroot/verklein`** · macOS Finder Tier 1 · high.
+- **eject → `Werp uit`** · Nautilus, Thunar én Double Commander `nl` („Uitwerpen”), omgezet naar de bare-stem imperatief
+  · high. ❗ macOS `nl` zegt hier `Verwijder`, maar dat is in Cmdr al de vertaling van _delete_; die botsing zou een
+  uitwerpactie op een verwijderactie doen lijken, dus wint hier de Tier-3-consensus van de bestandsbeheerders.
+- **remove (uit een lijst, bv. een favoriet) → `Verwijder`** · macOS Finder `nl` („Verwijder uit navigatiekolom”) ·
+  high. Hier is de context (het favorietenmenu) wél voldoende: er staat geen bestand op het spel.
+- **ascending / descending → `Oplopend` / `Aflopend`** · Thunar + Dolphin `nl` · high.
+- **changelog → `Wijzigingenlogboek`** · Microsoft-terminologie · high. Onderscheiden van Help > `Wat is er nieuw`: het
+  ene noemt het document, het andere het nieuws.
+- **word wrap → `Tekstterugloop`** · Microsoft-terminologie · high.
+- **pin / unpin tab → `Maak tabblad vast` / `Maak tabblad los`** · Safari `nl` („Maak tabblad vast”) · high.
+- **Finder-tagkleuren → `Rood, Oranje, Geel, Groen, Blauw, Paars, Grijs`** · macOS Finder (`TG_COLOR_*`) · high.
+- **busy (volume in gebruik) → `(bezet)`** · Microsoft-terminologie · high.
+- **disconnect → `Verbreek verbinding`** · macOS Finder `nl` („Verbreek”), aangevuld tot een begrijpelijk label · high.
+- **Bewust gelijk aan het Engels** (met `sameAsSourceJustification`): `menu.bar.help`, `menu.app.onboarding`,
+  `menu.file.open`, `menu.view.zoom`, `menu.zoom.in`, `menu.zoom.percent*`, `menu.view.askCmdr`.

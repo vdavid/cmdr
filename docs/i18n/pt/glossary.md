@@ -1091,3 +1091,36 @@ embaralhe os dois sentidos.
 - **"Make a copy of the selected files in the same folder" → `Faça uma cópia dos arquivos selecionados na mesma pasta`**
   · imperativo, como as descrições vizinhas ("Copie os arquivos selecionados…"); "mesma pasta" é a pasta onde os
   arquivos já estão · high.
+
+## Menus nativos: barra de menus, menus de contexto, títulos de janela (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+
+Fontes de todo este grupo: macOS 26.5.2 Finder (`Finder.app/Contents/Resources/pt_BR.lproj`, `MenuBar.strings` +
+`LocalizableMerged.strings`) é Tier 1 e decide quase tudo; o lado inglês está em `en_GB.lproj`, porque `Base.lproj` só
+traz nibs compilados. O Safari 26 (`MainMenu.strings`, pasta `pt.lproj` = brasileiro) dá o vocabulário de abas, e a
+terminologia da Microsoft o que a Apple não nomeia. Família RAW: **apóstrofos simples**, um `''` apareceria duplicado no
+menu.
+
+- **Barra de menus → `Arquivo`, `Editar`, `Visualizar`, `Ir`, `Janela`, `Ajuda`, `Serviços`** · macOS Finder e Safari
+  `pt-BR` · high.
+- **Menu Select (seleção de arquivos) → `Selecionar`** · Nautilus/Thunar/Dolphin `pt-BR` · high. O Finder não tem
+  equivalente.
+- **O Finder brasileiro usa Title Case nos menus („Nova Pasta”, „Mover para o Lixo”); o Cmdr NÃO.** O catálogo `pt`
+  inteiro já está em sentence case, e a regra do `docs/style-guide.md` vale para todos os idiomas, então os rótulos são
+  `Nova pasta…`, `Fechar aba`, `Mostrar arquivos ocultos`. Só o TERMO vem do Finder, não a capitalização.
+- **Quick Look → `Visualização rápida`** · macOS Finder (`TL14`) · high. A Apple traduz esse nome de recurso, por isso
+  ele não está na lista de não-traduzir.
+- **Get Info → `Obter informações`, Go > Home → `Pasta pessoal`, Sort By → `Ordenar por`, Default → `Padrão`, Other… →
+  `Outro…`** · macOS Finder Tier 1 · high.
+- **zoom in / out → `Ampliar` / `Reduzir`** · Safari `pt-BR` (menu Visualizar) · high.
+- **ascending / descending → `Crescente` / `Decrescente`** · Thunar + Dolphin `pt-BR` · high.
+- **changelog → `Log de alterações`** · terminologia da Microsoft · high. Distinto de Ajuda > `Novidades`: um nomeia o
+  documento, o outro a notícia.
+- **word wrap → `Quebra automática de linha`** · terminologia da Microsoft · high.
+- **pin / unpin tab → `Fixar aba` / `Desafixar aba`** · Safari `pt-BR` („Fixar Aba”) · high.
+- **Cores de etiqueta do Finder → `Vermelho, Laranja, Amarelo, Verde, Azul, Roxo, Cinza`** · macOS Finder (`TG_COLOR_*`)
+  · high.
+- **busy (volume em uso) → `(ocupado)`** · terminologia da Microsoft · high.
+- **Eject → `Ejetar`, Disconnect → `Desconectar`, Remove (de uma lista) → `Remover`** · macOS Finder · high. `Apagar`
+  fica reservado para arquivos, como manda o `style.md`.
+- **Idênticos ao inglês de propósito** (com `sameAsSourceJustification`): `menu.view.zoom`, `menu.window.zoom`,
+  `menu.zoom.percent*`, `menu.view.askCmdr`.

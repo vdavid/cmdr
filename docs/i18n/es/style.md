@@ -122,6 +122,9 @@ strings are counted, so no plural branches are needed there.
 
 ## Notes and decisions
 
+- **Los menús nativos siguen el texto del Finder, no el del catálogo.** Donde macOS tiene un equivalente, gana
+  (`Visualización`, `Ocultar otras apps`, `Carpeta contenedora`, `Por omisión`), porque el usuario ve la barra de menús
+  de Cmdr junto a la del Finder. Evidencia y excepciones: `glossary.md` § Menús nativos.
 - Roster: Cmdr ships one pan-regional Spanish (archivo not fichero, avoid ordenador, ustedes-safe); a Spain variant
   (es-ES) is deferred. See `../language-selection-decisions.md`.
 - **Quotation marks: macOS Spanish uses `“…”`** (curly), not `«…»`, in its UI strings (verified in `es/macOS/Finder/`,

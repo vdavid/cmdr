@@ -90,6 +90,32 @@ plutil -convert json -o - sv.lproj/LocalizableMerged.strings | jq -r '."N154"'  
 `/System/Library/Frameworks/AppKit.framework/Resources/<lang>.lproj/`. Anchor what you find with the OS version
 (`sw_vers`), since Apple rewords between releases.
 
+### Menu-bar labels: read the per-nib `.strings`, with `en_GB.lproj` as the English side
+
+The Finder menu bar (and every other nib-driven surface: the Get Info window, the compress sheet, the bulk-rename
+window) is NOT in `LocalizableMerged.strings`. Each nib has its own sibling file — `MenuBar.strings`,
+`ArrangeByMenu.strings`, `ViewOptionsWindow.strings`, … — keyed by the nib's object ids (`300764.title`,
+`TCC-xb-ldB.title`), and those ids are stable across languages. This is where "File", "Go", "Minimise", "Enclosing
+Folder", "Sort By", and the tag colours actually live.
+
+**The English side is `en_GB.lproj`, not `en.lproj` or `Base.lproj`.** `en.lproj` holds only six files (none of them nib
+strings) and `Base.lproj` holds the compiled `.nib`s themselves, which `plutil` and `ibtool` both refuse. `en_GB` is a
+full localization, so it has every nib `.strings` file with English values — British spellings included, so grep for
+`Minimise`, `Grey`, `Colour`. Same trick works on any localized `.app`: Safari's `MainMenu.strings` is the Tier-1 source
+for browser-tab wording (`Pin Tab`, `Close Other Tabs`, `Show Next Tab`), and Safari uses `pt.lproj` for Brazilian
+Portuguese while Finder uses `pt_BR.lproj`.
+
+```sh
+cd /System/Library/CoreServices/Finder.app/Contents/Resources
+# 1. Find the id for an English label (mind the British spelling):
+plutil -convert json -o - en_GB.lproj/MenuBar.strings | jq -r 'to_entries[]|select(.value|test("^Minimise$"))|.key'
+# -> 300666.title
+# 2. Read the same id in every target language:
+for l in de es fr hu nl pt_BR sv vi zh_CN; do
+  printf '%s=%s\n' "$l" "$(plutil -convert json -o - $l.lproj/MenuBar.strings | jq -r '."300666.title"')"
+done   # -> de=Im Dock ablegen, sv=Minimera, hu=Minimalizálás, ...
+```
+
 ## Microsoft terminology (Tier 2) — `<tag>/microsoft-terminology/<LANG>.tbx`
 
 Pretty-printed TBX XML, no namespace. Each `<termEntry>` has two `<langSet>`: `en-US` first, then the target. So in a

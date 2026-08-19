@@ -124,6 +124,9 @@ Two mechanics that bite in Portuguese specifically:
 
 ## Notes and decisions
 
+- **Os menus nativos seguem o texto do Finder, mas NÃO a capitalização dele.** O Finder brasileiro usa Title Case („Nova
+  Pasta”); o Cmdr fica em sentence case („Nova pasta…”), como o resto do catálogo e o `docs/style-guide.md`. Só o termo
+  vem do Finder. Evidência e exceções: `glossary.md` § Menus nativos.
 - Roster: Cmdr ships pt-BR for wave 1; pt-PT is a separate wave-2 variant (vocabulary, você/tu, spelling). See
   `../language-selection-decisions.md`.
 - Quotation marks: pt-BR commonly uses curly "" (like English); pt-PT traditionally uses guillemets «». Match the chosen

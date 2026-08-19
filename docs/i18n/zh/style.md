@@ -163,6 +163,9 @@ inflection.
 
 ## Notes and decisions
 
+- **原生菜单跟随 Finder 的用词，而不是目录里的旧用词。**
+  macOS 有对应项时以它为准（`显示`、`上层文件夹`、`个人`、`显示简介`）。唯一有意保留的分歧是 Apple 的「访达」，Cmdr 仍写
+  `Finder`。证据与例外见 `glossary.md` 里的「原生菜单」一节。
 - **No letter case; the sentence-case rule is moot for Chinese text.** Han characters are unicameral. Just keep Latin
   brand words (Cmdr, macOS) as-is.
 - **Each script is its own pass.** Never machine-convert Simplified↔Traditional (one-to-many mappings + divergent

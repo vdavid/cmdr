@@ -1270,3 +1270,40 @@ ihop.
 - **"Make a copy of the selected files in the same folder" → `Skapa en kopia av de markerade filerna i samma mapp`** ·
   imperativ, som systerbeskrivningarna ("Kopiera markerade filer…"); `markerade filer` är katalogens term för selected
   files, och "samma mapp" är den mapp filerna redan ligger i · `high`.
+
+## Inbyggda menyer: menyrad, snabbmenyer, fönstertitlar (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+
+Källor för hela gruppen: macOS 26.5.2 Finder (`Finder.app/Contents/Resources/sv.lproj`, `MenuBar.strings` +
+`LocalizableMerged.strings`) är Tier 1 och avgör nästan allt; den engelska sidan läses i `en_GB.lproj`, eftersom
+`Base.lproj` bara innehåller kompilerade nib-filer. Safari 26 (`MainMenu.strings`) ger flikorden, Microsofts terminologi
+det Apple inte namnger. RAW-familj: **enkla apostrofer**, ett `''` skulle synas dubbelt i menyn.
+
+- **View-menyn → `Innehåll`** · macOS Finder (`206.title`) OCH Safari (`200.title`) `sv` · high. Överraskande men
+  konsekvent: Apples svenska View-meny heter `Innehåll`, inte `Visa`. Två Tier-1-appar säger samma sak, så det är Apples
+  standard och inte en Finder-egenhet.
+- **Övriga menyrubriker → `Arkiv`, `Redigera`, `Gå`, `Fönster`, `Hjälp`, `Tjänster`** · macOS Finder och Safari `sv` ·
+  high.
+- **Select-menyn (filmarkering) → `Markera`** · macOS Finder (`Markera allt`) och Dolphin `sv` · high. `Markera` är
+  ordet för att markera objekt; `Välj` reserveras för att välja ett alternativ.
+- **Quick Look → `Överblick`** · macOS Finder (`TL14`) · high. Apple översätter funktionsnamnet, därför står det INTE på
+  don't-translate-listan.
+- **Get Info → `Visa info`, Enclosing Folder → `Överordnad mapp`, Go > Home → `Hem`, Sort By → `Sortera efter`, Date
+  Created → `Skapelsedatum`, Default → `Förval`, Other… → `Annan…`, Hide Others → `Göm övriga`** · macOS Finder Tier 1 ·
+  high.
+- **Window > Zoom → `Zooma` (verb)** vs **textzoom-undermenyn → `Zoom` (substantiv)** · macOS Finder (`300667.title`) ·
+  high. Engelskan säger `Zoom` båda gångerna; svenskan skiljer dem åt.
+- **ascending / descending → `Stigande` / `Fallande`** · Thunar + Dolphin `sv` · high.
+- **changelog → `Ändringslogg`** · Microsofts terminologi · high. Skilt från Hjälp > `Nyheter`: det ena namnger
+  dokumentet, det andra nyheten.
+- **word wrap → `Automatiskt radbyte`** · Microsofts terminologi · high.
+- **pin / unpin tab → `Fäst flik` / `Lossa flik`** · Microsofts terminologi (`fästa`) plus katalogens
+  `commands.tabTogglePin.label` (`Växla fäst flik`) · high. Safari `sv` säger `Nåla fast flik`; `fäst` väljs för att
+  motsatsen (`lossa`) blir naturlig och för att katalogen redan använder den stammen.
+- **„Edit in editor” → `Öppna i redigeraren`** · beskrivande · tentative. Den ordagranna `Redigera i redigeraren`
+  upprepar samma stam; `öppna i` läser naturligt och skiljer sig från `Visa` raden ovanför.
+- **Finder-etikettfärger → `Röd, Orange, Gul, Grön, Blå, Lila, Grå`** · macOS Finder (`TG_COLOR_*`) · high.
+- **busy (volym som används) → `(upptagen)`** · Microsofts terminologi · high.
+- **Eject → `Mata ut`, Disconnect → `Koppla från`, Remove (ur en lista) → `Ta bort`** · macOS Finder · high. `Radera` är
+  fortfarande reserverat för permanent radering, enligt `style.md`.
+- **Avsiktligt identiska med engelskan** (med `sameAsSourceJustification`): `menu.view.zoom`, `menu.tag.orange`,
+  `menu.view.askCmdr`.
