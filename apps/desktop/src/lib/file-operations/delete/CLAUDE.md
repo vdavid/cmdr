@@ -42,8 +42,8 @@ progress. Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_ope
   were removed from the registry. Items trashed via `NSFileManager.trashItemAtURL` support Finder's "Put back".
 - **`TransferProgressDialog` is shared** (`operationType: 'delete' | 'trash'`); transfer-only props (`destinationPath`,
   `direction`, `conflictResolution`) are optional and hidden. Progress dialog stays visible ≥400 ms to avoid flashes.
-- **After delete, the cursor keeps its row**, falling back to the same position index (clamped) when that row is the
-  one that went away (`pane/listing-diff-sync.svelte.ts`). Selection is cleared; both panes refresh.
+- **After delete, the cursor keeps its row**, falling back to the same position index (clamped) when that row is the one
+  that went away (`pane/listing-diff-sync.svelte.ts`). Selection is cleared; both panes refresh.
 - **Existence checks use `symlink_metadata()`, not `path.exists()`** so a dangling symlink is still a valid item to
   trash/delete.
 

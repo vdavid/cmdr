@@ -205,16 +205,17 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
           operationSelectedNames,
           count,
         })
+        if (reconciled.selectedIndices !== null) {
+          deps.selection.setSelectedIndices(reconciled.selectedIndices)
+        }
         // A row that jumped its sorted position takes the cursor with it, which can
-        // carry it clean out of the viewport; scroll it back. An ordinary shift
-        // leaves the row where it was on screen, so it gets the side-effect-free write.
+        // carry it clean out of the viewport; scroll it back. An ordinary shift leaves
+        // the row where it was on screen, so it gets the side-effect-free write. The
+        // selection lands first, because the scrolling write awaits a tick.
         if (reconciled.cursorFollowedMove) {
           await deps.setCursorIndex(reconciled.cursorIndex)
         } else {
           deps.applyCursorIndex(reconciled.cursorIndex)
-        }
-        if (reconciled.selectedIndices !== null) {
-          deps.selection.setSelectedIndices(reconciled.selectedIndices)
         }
 
         deps.fetchEntryUnderCursor()
