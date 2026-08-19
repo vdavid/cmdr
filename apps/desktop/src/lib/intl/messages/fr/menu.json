@@ -1,0 +1,523 @@
+{
+  "menu.bar.file": "Fichier",
+  "@menu.bar.file": {
+    "sourceHash": "50009ce"
+  },
+  "menu.bar.edit": "Édition",
+  "@menu.bar.edit": {
+    "sourceHash": "464c4ff"
+  },
+  "menu.bar.select": "Sélectionner",
+  "@menu.bar.select": {
+    "sourceHash": "2a78025"
+  },
+  "menu.bar.view": "Présentation",
+  "@menu.bar.view": {
+    "sourceHash": "dcc839a"
+  },
+  "menu.bar.go": "Aller",
+  "@menu.bar.go": {
+    "sourceHash": "6cc8519"
+  },
+  "menu.bar.tab": "Onglet",
+  "@menu.bar.tab": {
+    "sourceHash": "90ddf19"
+  },
+  "menu.bar.window": "Fenêtre",
+  "@menu.bar.window": {
+    "sourceHash": "19734a1"
+  },
+  "menu.bar.help": "Aide",
+  "@menu.bar.help": {
+    "sourceHash": "b79cac9"
+  },
+  "menu.app.about": "À propos de cmdr",
+  "@menu.app.about": {
+    "sourceHash": "e72f09a"
+  },
+  "menu.app.acknowledgements": "Remerciements",
+  "@menu.app.acknowledgements": {
+    "sourceHash": "c9015d5"
+  },
+  "menu.app.licenseDetails": "Voir les détails de la licence",
+  "@menu.app.licenseDetails": {
+    "sourceHash": "0e660e8"
+  },
+  "menu.app.licenseEnter": "Saisir la clé de licence…",
+  "@menu.app.licenseEnter": {
+    "sourceHash": "24a8d77"
+  },
+  "menu.app.checkForUpdates": "Rechercher les mises à jour…",
+  "@menu.app.checkForUpdates": {
+    "sourceHash": "52d6f7d"
+  },
+  "menu.app.changelog": "Journal des modifications",
+  "@menu.app.changelog": {
+    "sourceHash": "ead07c8"
+  },
+  "menu.app.onboarding": "Prise en main…",
+  "@menu.app.onboarding": {
+    "sourceHash": "c4cc4aa"
+  },
+  "menu.app.settings": "Réglages…",
+  "@menu.app.settings": {
+    "sourceHash": "7a04083"
+  },
+  "menu.app.services": "Services",
+  "@menu.app.services": {
+    "sourceHash": "604dce4",
+    "sameAsSourceJustification": "macOS French names the system Services submenu \"Services\", identical to English (Finder app menu)."
+  },
+  "menu.app.hide": "Masquer cmdr",
+  "@menu.app.hide": {
+    "sourceHash": "941e961"
+  },
+  "menu.app.hideOthers": "Masquer les autres",
+  "@menu.app.hideOthers": {
+    "sourceHash": "1753e22"
+  },
+  "menu.app.showAll": "Tout afficher",
+  "@menu.app.showAll": {
+    "sourceHash": "e1c3264"
+  },
+  "menu.app.quit": "Quitter cmdr",
+  "@menu.app.quit": {
+    "sourceHash": "5ea1779"
+  },
+  "menu.file.open": "Ouvrir",
+  "@menu.file.open": {
+    "sourceHash": "ed077f3"
+  },
+  "menu.file.view": "Visualiser",
+  "@menu.file.view": {
+    "sourceHash": "dcc839a"
+  },
+  "menu.file.edit": "Modifier dans l'éditeur",
+  "@menu.file.edit": {
+    "sourceHash": "691ca0f"
+  },
+  "menu.file.copy": "Copier…",
+  "@menu.file.copy": {
+    "sourceHash": "7f743d4"
+  },
+  "menu.file.move": "Déplacer…",
+  "@menu.file.move": {
+    "sourceHash": "cd799da"
+  },
+  "menu.file.duplicate": "Dupliquer",
+  "@menu.file.duplicate": {
+    "sourceHash": "02cdaab"
+  },
+  "menu.file.compress": "Compresser…",
+  "@menu.file.compress": {
+    "sourceHash": "66b9d2c"
+  },
+  "menu.file.newFolder": "Nouveau dossier…",
+  "@menu.file.newFolder": {
+    "sourceHash": "6cca529"
+  },
+  "menu.file.delete": "Supprimer",
+  "@menu.file.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "menu.file.deletePermanently": "Supprimer définitivement",
+  "@menu.file.deletePermanently": {
+    "sourceHash": "280b10c"
+  },
+  "menu.file.rename": "Renommer",
+  "@menu.file.rename": {
+    "sourceHash": "3064d79"
+  },
+  "menu.file.showInFinder": "Afficher dans le Finder",
+  "@menu.file.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "menu.file.showInFileManager": "Afficher dans le gestionnaire de fichiers",
+  "@menu.file.showInFileManager": {
+    "sourceHash": "3ca4dad"
+  },
+  "menu.file.getInfo": "Lire les informations",
+  "@menu.file.getInfo": {
+    "sourceHash": "91c64ca"
+  },
+  "menu.file.quickLook": "Coup d’œil",
+  "@menu.file.quickLook": {
+    "sourceHash": "f5616ce"
+  },
+  "menu.edit.undo": "Annuler",
+  "@menu.edit.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "menu.edit.redo": "Rétablir",
+  "@menu.edit.redo": {
+    "sourceHash": "7427398"
+  },
+  "menu.edit.cut": "Couper",
+  "@menu.edit.cut": {
+    "sourceHash": "1f45f02"
+  },
+  "menu.edit.copy": "Copier",
+  "@menu.edit.copy": {
+    "sourceHash": "e21f935"
+  },
+  "menu.edit.paste": "Coller",
+  "@menu.edit.paste": {
+    "sourceHash": "f3380f7"
+  },
+  "menu.edit.moveHere": "Déplacer ici",
+  "@menu.edit.moveHere": {
+    "sourceHash": "56f1247"
+  },
+  "menu.edit.copyPath": "Copier le chemin",
+  "@menu.edit.copyPath": {
+    "sourceHash": "720ff41"
+  },
+  "menu.edit.copyFilename": "Copier le nom du fichier",
+  "@menu.edit.copyFilename": {
+    "sourceHash": "5cdf7f8"
+  },
+  "menu.edit.searchFiles": "Rechercher des fichiers…",
+  "@menu.edit.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.select.all": "Tout sélectionner",
+  "@menu.select.all": {
+    "sourceHash": "1fc9a38"
+  },
+  "menu.select.deselectAll": "Tout désélectionner",
+  "@menu.select.deselectAll": {
+    "sourceHash": "9675494"
+  },
+  "menu.select.files": "Sélectionner des fichiers…",
+  "@menu.select.files": {
+    "sourceHash": "b7f202e"
+  },
+  "menu.select.deselectFiles": "Désélectionner des fichiers…",
+  "@menu.select.deselectFiles": {
+    "sourceHash": "6fb10d5"
+  },
+  "menu.view.leftPane": "Panneau de gauche",
+  "@menu.view.leftPane": {
+    "sourceHash": "1c5078a"
+  },
+  "menu.view.rightPane": "Panneau de droite",
+  "@menu.view.rightPane": {
+    "sourceHash": "b2d98e6"
+  },
+  "menu.view.fullView": "Présentation complète",
+  "@menu.view.fullView": {
+    "sourceHash": "93f9dde"
+  },
+  "menu.view.briefView": "Présentation brève",
+  "@menu.view.briefView": {
+    "sourceHash": "7bfd572"
+  },
+  "menu.view.showHiddenFiles": "Afficher les fichiers cachés",
+  "@menu.view.showHiddenFiles": {
+    "sourceHash": "b5ede7f"
+  },
+  "menu.view.sortBy": "Trier par",
+  "@menu.view.sortBy": {
+    "sourceHash": "c912902"
+  },
+  "menu.view.zoom": "Zoom",
+  "@menu.view.zoom": {
+    "sourceHash": "509c517",
+    "sameAsSourceJustification": "French keeps \"zoom\" for interface and page zoom, the noun French browsers use; the window action stays \"Réduire/agrandir\" (macOS), so the two remain distinct."
+  },
+  "menu.view.switchPane": "Changer de panneau",
+  "@menu.view.switchPane": {
+    "sourceHash": "377471f"
+  },
+  "menu.view.swapPanes": "Permuter les panneaux",
+  "@menu.view.swapPanes": {
+    "sourceHash": "cc29396"
+  },
+  "menu.view.commandPalette": "Palette de commandes…",
+  "@menu.view.commandPalette": {
+    "sourceHash": "6b1c93d"
+  },
+  "menu.view.operationQueue": "File d'attente des opérations",
+  "@menu.view.operationQueue": {
+    "sourceHash": "fa91417"
+  },
+  "menu.view.operationLog": "Historique des opérations",
+  "@menu.view.operationLog": {
+    "sourceHash": "2c97965"
+  },
+  "menu.view.suggestedOps": "Opérations suggérées",
+  "@menu.view.suggestedOps": {
+    "sourceHash": "4f24ca6"
+  },
+  "menu.view.askCmdr": "Ask Cmdr",
+  "@menu.view.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (the built-in AI panel); kept verbatim in every locale, matching commands.askCmdrToggle.label."
+  },
+  "menu.sort.name": "Nom",
+  "@menu.sort.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "menu.sort.extension": "Extension",
+  "@menu.sort.extension": {
+    "sourceHash": "395aeb9",
+    "sameAsSourceJustification": "French for a filename extension is \"extension\", the same spelling as English (Double Commander French, MS terminology FRA)."
+  },
+  "menu.sort.dateModified": "Date de modification",
+  "@menu.sort.dateModified": {
+    "sourceHash": "eb5e7a5"
+  },
+  "menu.sort.size": "Taille",
+  "@menu.sort.size": {
+    "sourceHash": "1af8519"
+  },
+  "menu.sort.dateCreated": "Date de création",
+  "@menu.sort.dateCreated": {
+    "sourceHash": "fa91f76"
+  },
+  "menu.sort.ascending": "Croissant",
+  "@menu.sort.ascending": {
+    "sourceHash": "7718459"
+  },
+  "menu.sort.descending": "Décroissant",
+  "@menu.sort.descending": {
+    "sourceHash": "79479a6"
+  },
+  "menu.zoom.percent75": "75 %",
+  "@menu.zoom.percent75": {
+    "sourceHash": "10963ac"
+  },
+  "menu.zoom.percent100": "100 %",
+  "@menu.zoom.percent100": {
+    "sourceHash": "32e4899"
+  },
+  "menu.zoom.percent125": "125 %",
+  "@menu.zoom.percent125": {
+    "sourceHash": "38cb31c"
+  },
+  "menu.zoom.percent150": "150 %",
+  "@menu.zoom.percent150": {
+    "sourceHash": "00a4e80"
+  },
+  "menu.zoom.in": "Zoom avant",
+  "@menu.zoom.in": {
+    "sourceHash": "0e47f09"
+  },
+  "menu.zoom.out": "Zoom arrière",
+  "@menu.zoom.out": {
+    "sourceHash": "bc7b631"
+  },
+  "menu.go.back": "Précédent",
+  "@menu.go.back": {
+    "sourceHash": "76900f1"
+  },
+  "menu.go.forward": "Suivant",
+  "@menu.go.forward": {
+    "sourceHash": "f1c65e1"
+  },
+  "menu.go.parentFolder": "Dossier parent",
+  "@menu.go.parentFolder": {
+    "sourceHash": "158f5a0"
+  },
+  "menu.go.home": "Départ",
+  "@menu.go.home": {
+    "sourceHash": "3a78695"
+  },
+  "menu.go.goToPath": "Aller au chemin…",
+  "@menu.go.goToPath": {
+    "sourceHash": "936edc5"
+  },
+  "menu.go.goToLatestDownload": "Aller au dernier téléchargement",
+  "@menu.go.goToLatestDownload": {
+    "sourceHash": "492d0b6"
+  },
+  "menu.go.addToFavorites": "Ajouter aux favoris",
+  "@menu.go.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.tab.newTab": "Nouvel onglet",
+  "@menu.tab.newTab": {
+    "sourceHash": "1e08fda"
+  },
+  "menu.tab.closeTab": "Fermer l'onglet",
+  "@menu.tab.closeTab": {
+    "sourceHash": "50a3f95"
+  },
+  "menu.tab.reopenClosedTab": "Rouvrir l'onglet fermé",
+  "@menu.tab.reopenClosedTab": {
+    "sourceHash": "5ca5397"
+  },
+  "menu.tab.nextTab": "Onglet suivant",
+  "@menu.tab.nextTab": {
+    "sourceHash": "1ef9522"
+  },
+  "menu.tab.previousTab": "Onglet précédent",
+  "@menu.tab.previousTab": {
+    "sourceHash": "c88d5e7"
+  },
+  "menu.tab.pinTab": "Épingler l'onglet",
+  "@menu.tab.pinTab": {
+    "sourceHash": "bf5083a"
+  },
+  "menu.tab.unpinTab": "Désépingler l'onglet",
+  "@menu.tab.unpinTab": {
+    "sourceHash": "20553dd"
+  },
+  "menu.tab.closeOtherTabs": "Fermer les autres onglets",
+  "@menu.tab.closeOtherTabs": {
+    "sourceHash": "0ddc2c5"
+  },
+  "menu.window.minimize": "Minimiser",
+  "@menu.window.minimize": {
+    "sourceHash": "d72e311"
+  },
+  "menu.window.zoom": "Réduire/agrandir",
+  "@menu.window.zoom": {
+    "sourceHash": "509c517"
+  },
+  "menu.help.keyboardShortcuts": "Raccourcis clavier",
+  "@menu.help.keyboardShortcuts": {
+    "sourceHash": "e9bef0b"
+  },
+  "menu.help.whatsNew": "Nouveautés",
+  "@menu.help.whatsNew": {
+    "sourceHash": "135e912"
+  },
+  "menu.help.sendFeedback": "Envoyer un retour…",
+  "@menu.help.sendFeedback": {
+    "sourceHash": "60e1072"
+  },
+  "menu.help.sendErrorReport": "Envoyer un rapport d'incident…",
+  "@menu.help.sendErrorReport": {
+    "sourceHash": "063c94e"
+  },
+  "menu.context.edit": "Modifier",
+  "@menu.context.edit": {
+    "sourceHash": "464c4ff"
+  },
+  "menu.context.toggleSelection": "Inverser la sélection",
+  "@menu.context.toggleSelection": {
+    "sourceHash": "6cb5515"
+  },
+  "menu.context.copyNamed": "Copier « {name} »",
+  "@menu.context.copyNamed": {
+    "sourceHash": "e2cc661"
+  },
+  "menu.context.addToFavorites": "Ajouter aux favoris",
+  "@menu.context.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.context.makeAvailableOffline": "Rendre disponible hors connexion",
+  "@menu.context.makeAvailableOffline": {
+    "sourceHash": "b75c09f"
+  },
+  "menu.context.removeDownload": "Retirer le téléchargement",
+  "@menu.context.removeDownload": {
+    "sourceHash": "5dfc369"
+  },
+  "menu.context.openWith": "Ouvrir avec",
+  "@menu.context.openWith": {
+    "sourceHash": "fe94d58"
+  },
+  "menu.context.openWithDefault": "{app} (par défaut)",
+  "@menu.context.openWithDefault": {
+    "sourceHash": "32a7cca"
+  },
+  "menu.context.openWithOther": "Autre…",
+  "@menu.context.openWithOther": {
+    "sourceHash": "1e37529"
+  },
+  "menu.tag.red": "Rouge",
+  "@menu.tag.red": {
+    "sourceHash": "ba19e9c"
+  },
+  "menu.tag.orange": "Orange",
+  "@menu.tag.orange": {
+    "sourceHash": "78e7771",
+    "sameAsSourceJustification": "macOS French shows the Finder tag colour as \"Orange\", the same spelling as English."
+  },
+  "menu.tag.yellow": "Jaune",
+  "@menu.tag.yellow": {
+    "sourceHash": "19dd83f"
+  },
+  "menu.tag.green": "Vert",
+  "@menu.tag.green": {
+    "sourceHash": "d486dfb"
+  },
+  "menu.tag.blue": "Bleu",
+  "@menu.tag.blue": {
+    "sourceHash": "ec7d56a"
+  },
+  "menu.tag.purple": "Violet",
+  "@menu.tag.purple": {
+    "sourceHash": "7d465fb"
+  },
+  "menu.tag.gray": "Gris",
+  "@menu.tag.gray": {
+    "sourceHash": "0d5adda"
+  },
+  "menu.mediaIndex.addFolder": "Ajouter aux dossiers indexés",
+  "@menu.mediaIndex.addFolder": {
+    "sourceHash": "c0a87cd"
+  },
+  "menu.mediaIndex.addFolderExcluded": "Ajouter aux dossiers indexés (exclu)",
+  "@menu.mediaIndex.addFolderExcluded": {
+    "sourceHash": "fc7c7ce"
+  },
+  "menu.mediaIndex.coveredByParent": "Indexé via un dossier parent",
+  "@menu.mediaIndex.coveredByParent": {
+    "sourceHash": "9dffdcd"
+  },
+  "menu.mediaIndex.removeFolder": "Retirer des dossiers indexés",
+  "@menu.mediaIndex.removeFolder": {
+    "sourceHash": "7079859"
+  },
+  "menu.mediaIndex.excludeFolder": "Ne pas indexer les images de ce dossier",
+  "@menu.mediaIndex.excludeFolder": {
+    "sourceHash": "811f28c"
+  },
+  "menu.mediaIndex.includeFolder": "Indexer de nouveau les images ici",
+  "@menu.mediaIndex.includeFolder": {
+    "sourceHash": "0a8a3a0"
+  },
+  "menu.breadcrumb.copyPath": "Copier le chemin",
+  "@menu.breadcrumb.copyPath": {
+    "sourceHash": "720ff41"
+  },
+  "menu.volume.eject": "Éjecter ({name})",
+  "@menu.volume.eject": {
+    "sourceHash": "913d6ea"
+  },
+  "menu.volume.ejectBusy": "Éjecter ({name}) (occupé)",
+  "@menu.volume.ejectBusy": {
+    "sourceHash": "e2145a6"
+  },
+  "menu.volume.renameFavorite": "Renommer",
+  "@menu.volume.renameFavorite": {
+    "sourceHash": "3064d79"
+  },
+  "menu.volume.removeFavorite": "Retirer",
+  "@menu.volume.removeFavorite": {
+    "sourceHash": "c3812fc"
+  },
+  "menu.network.disconnect": "Se déconnecter",
+  "@menu.network.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "menu.network.forgetServer": "Oublier le serveur",
+  "@menu.network.forgetServer": {
+    "sourceHash": "e43c85d"
+  },
+  "menu.network.forgetSavedPassword": "Oublier le mot de passe enregistré",
+  "@menu.network.forgetSavedPassword": {
+    "sourceHash": "ed68566"
+  },
+  "menu.viewer.close": "Fermer",
+  "@menu.viewer.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "menu.viewer.wordWrap": "Retour à la ligne automatique",
+  "@menu.viewer.wordWrap": {
+    "sourceHash": "9e210f3"
+  }
+}

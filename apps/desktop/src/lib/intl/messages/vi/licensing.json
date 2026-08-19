@@ -1,4 +1,8 @@
 {
+  "licensing.windowTitle.personalUse": "Cmdr – Chỉ dùng cá nhân",
+  "@licensing.windowTitle.personalUse": {
+    "sourceHash": "2b855d7"
+  },
   "licensing.acknowledgements.srTitle": "Lời cảm ơn",
   "@licensing.acknowledgements.srTitle": {
     "sourceHash": "c9015d5"

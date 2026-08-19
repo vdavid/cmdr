@@ -1,4 +1,8 @@
 {
+  "licensing.windowTitle.personalUse": "Cmdr – 仅限个人使用",
+  "@licensing.windowTitle.personalUse": {
+    "sourceHash": "2b855d7"
+  },
   "licensing.acknowledgements.srTitle": "致谢",
   "@licensing.acknowledgements.srTitle": {
     "sourceHash": "c9015d5"

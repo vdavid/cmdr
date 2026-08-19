@@ -1,4 +1,12 @@
 {
+  "main.instanceLock.alertTitle": "A Cmdr már fut",
+  "@main.instanceLock.alertTitle": {
+    "sourceHash": "7c8f09d"
+  },
+  "main.instanceLock.alertBody": "A Cmdr egy másik példánya használja ezt az adatmappát. Válts át a futó alkalmazásra, vagy lépj ki belőle, és próbáld újra.",
+  "@main.instanceLock.alertBody": {
+    "sourceHash": "140c57d"
+  },
   "main.upgradeNudge.mac": "Új bevezető beállításokat adtunk hozzá. Nézd át őket itt: Cmdr > Bevezető….",
   "@main.upgradeNudge.mac": {
     "sourceHash": "477f3a5"

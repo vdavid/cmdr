@@ -1,4 +1,8 @@
 {
+  "licensing.windowTitle.personalUse": "Cmdr – Endast personligt bruk",
+  "@licensing.windowTitle.personalUse": {
+    "sourceHash": "2b855d7"
+  },
   "licensing.acknowledgements.srTitle": "Tack till",
   "@licensing.acknowledgements.srTitle": {
     "sourceHash": "c9015d5"

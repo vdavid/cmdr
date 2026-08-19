@@ -1,4 +1,12 @@
 {
+  "main.instanceLock.alertTitle": "Cmdr est déjà ouvert",
+  "@main.instanceLock.alertTitle": {
+    "sourceHash": "7c8f09d"
+  },
+  "main.instanceLock.alertBody": "Une autre copie de Cmdr utilise ce dossier de données. Passez à l'app en cours, ou quittez-la et réessayez.",
+  "@main.instanceLock.alertBody": {
+    "sourceHash": "140c57d"
+  },
   "main.upgradeNudge.mac": "Nous avons ajouté de nouvelles options de configuration. Ouvrez Cmdr > Prise en main… pour les découvrir.",
   "@main.upgradeNudge.mac": {
     "sourceHash": "477f3a5"

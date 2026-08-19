@@ -1,0 +1,528 @@
+{
+  "menu.bar.file": "Archief",
+  "@menu.bar.file": {
+    "sourceHash": "50009ce"
+  },
+  "menu.bar.edit": "Wijzig",
+  "@menu.bar.edit": {
+    "sourceHash": "464c4ff"
+  },
+  "menu.bar.select": "Selecteer",
+  "@menu.bar.select": {
+    "sourceHash": "2a78025"
+  },
+  "menu.bar.view": "Weergave",
+  "@menu.bar.view": {
+    "sourceHash": "dcc839a"
+  },
+  "menu.bar.go": "Ga",
+  "@menu.bar.go": {
+    "sourceHash": "6cc8519"
+  },
+  "menu.bar.tab": "Tabblad",
+  "@menu.bar.tab": {
+    "sourceHash": "90ddf19"
+  },
+  "menu.bar.window": "Venster",
+  "@menu.bar.window": {
+    "sourceHash": "19734a1"
+  },
+  "menu.bar.help": "Help",
+  "@menu.bar.help": {
+    "sourceHash": "b79cac9",
+    "sameAsSourceJustification": "macOS Dutch names the Help menu \"Help\", the same word as English (Finder menu bar); Dutch borrowed it wholesale."
+  },
+  "menu.app.about": "Over cmdr",
+  "@menu.app.about": {
+    "sourceHash": "e72f09a"
+  },
+  "menu.app.acknowledgements": "Dankbetuigingen",
+  "@menu.app.acknowledgements": {
+    "sourceHash": "c9015d5"
+  },
+  "menu.app.licenseDetails": "Toon licentiegegevens",
+  "@menu.app.licenseDetails": {
+    "sourceHash": "0e660e8"
+  },
+  "menu.app.licenseEnter": "Voer licentiesleutel in…",
+  "@menu.app.licenseEnter": {
+    "sourceHash": "24a8d77"
+  },
+  "menu.app.checkForUpdates": "Zoek naar updates…",
+  "@menu.app.checkForUpdates": {
+    "sourceHash": "52d6f7d"
+  },
+  "menu.app.changelog": "Wijzigingenlogboek",
+  "@menu.app.changelog": {
+    "sourceHash": "ead07c8"
+  },
+  "menu.app.onboarding": "Onboarding…",
+  "@menu.app.onboarding": {
+    "sourceHash": "c4cc4aa",
+    "sameAsSourceJustification": "Dutch product copy keeps the English \"onboarding\"; no native noun for a first-run wizard is in use, and the rest of the nl catalog already ships commands.cmdrOpenOnboarding.label as \"Onboarding…\"."
+  },
+  "menu.app.settings": "Instellingen…",
+  "@menu.app.settings": {
+    "sourceHash": "7a04083"
+  },
+  "menu.app.services": "Voorzieningen",
+  "@menu.app.services": {
+    "sourceHash": "604dce4"
+  },
+  "menu.app.hide": "Verberg cmdr",
+  "@menu.app.hide": {
+    "sourceHash": "941e961"
+  },
+  "menu.app.hideOthers": "Verberg andere",
+  "@menu.app.hideOthers": {
+    "sourceHash": "1753e22"
+  },
+  "menu.app.showAll": "Toon alles",
+  "@menu.app.showAll": {
+    "sourceHash": "e1c3264"
+  },
+  "menu.app.quit": "Stop cmdr",
+  "@menu.app.quit": {
+    "sourceHash": "5ea1779"
+  },
+  "menu.file.open": "Open",
+  "@menu.file.open": {
+    "sourceHash": "ed077f3",
+    "sameAsSourceJustification": "The Dutch bare-stem imperative of \"openen\" is \"Open\", which happens to be spelt like English; macOS Dutch Finder shows exactly this."
+  },
+  "menu.file.view": "Toon",
+  "@menu.file.view": {
+    "sourceHash": "dcc839a"
+  },
+  "menu.file.edit": "Bewerk in editor",
+  "@menu.file.edit": {
+    "sourceHash": "691ca0f"
+  },
+  "menu.file.copy": "Kopieer…",
+  "@menu.file.copy": {
+    "sourceHash": "7f743d4"
+  },
+  "menu.file.move": "Verplaats…",
+  "@menu.file.move": {
+    "sourceHash": "cd799da"
+  },
+  "menu.file.duplicate": "Dupliceer",
+  "@menu.file.duplicate": {
+    "sourceHash": "02cdaab"
+  },
+  "menu.file.compress": "Comprimeer…",
+  "@menu.file.compress": {
+    "sourceHash": "66b9d2c"
+  },
+  "menu.file.newFolder": "Nieuwe map…",
+  "@menu.file.newFolder": {
+    "sourceHash": "6cca529"
+  },
+  "menu.file.delete": "Verwijder",
+  "@menu.file.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "menu.file.deletePermanently": "Verwijder permanent",
+  "@menu.file.deletePermanently": {
+    "sourceHash": "280b10c"
+  },
+  "menu.file.rename": "Wijzig naam",
+  "@menu.file.rename": {
+    "sourceHash": "3064d79"
+  },
+  "menu.file.showInFinder": "Toon in Finder",
+  "@menu.file.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "menu.file.showInFileManager": "Toon in bestandsbeheer",
+  "@menu.file.showInFileManager": {
+    "sourceHash": "3ca4dad"
+  },
+  "menu.file.getInfo": "Toon info",
+  "@menu.file.getInfo": {
+    "sourceHash": "91c64ca"
+  },
+  "menu.file.quickLook": "Geef snel weer",
+  "@menu.file.quickLook": {
+    "sourceHash": "f5616ce"
+  },
+  "menu.edit.undo": "Herstel",
+  "@menu.edit.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "menu.edit.redo": "Opnieuw",
+  "@menu.edit.redo": {
+    "sourceHash": "7427398"
+  },
+  "menu.edit.cut": "Knip",
+  "@menu.edit.cut": {
+    "sourceHash": "1f45f02"
+  },
+  "menu.edit.copy": "Kopieer",
+  "@menu.edit.copy": {
+    "sourceHash": "e21f935"
+  },
+  "menu.edit.paste": "Plak",
+  "@menu.edit.paste": {
+    "sourceHash": "f3380f7"
+  },
+  "menu.edit.moveHere": "Verplaats hierheen",
+  "@menu.edit.moveHere": {
+    "sourceHash": "56f1247"
+  },
+  "menu.edit.copyPath": "Kopieer pad",
+  "@menu.edit.copyPath": {
+    "sourceHash": "720ff41"
+  },
+  "menu.edit.copyFilename": "Kopieer bestandsnaam",
+  "@menu.edit.copyFilename": {
+    "sourceHash": "5cdf7f8"
+  },
+  "menu.edit.searchFiles": "Zoek bestanden…",
+  "@menu.edit.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.select.all": "Selecteer alles",
+  "@menu.select.all": {
+    "sourceHash": "1fc9a38"
+  },
+  "menu.select.deselectAll": "Deselecteer alles",
+  "@menu.select.deselectAll": {
+    "sourceHash": "9675494"
+  },
+  "menu.select.files": "Selecteer bestanden…",
+  "@menu.select.files": {
+    "sourceHash": "b7f202e"
+  },
+  "menu.select.deselectFiles": "Deselecteer bestanden…",
+  "@menu.select.deselectFiles": {
+    "sourceHash": "6fb10d5"
+  },
+  "menu.view.leftPane": "Linkerpaneel",
+  "@menu.view.leftPane": {
+    "sourceHash": "1c5078a"
+  },
+  "menu.view.rightPane": "Rechterpaneel",
+  "@menu.view.rightPane": {
+    "sourceHash": "b2d98e6"
+  },
+  "menu.view.fullView": "Volledige weergave",
+  "@menu.view.fullView": {
+    "sourceHash": "93f9dde"
+  },
+  "menu.view.briefView": "Beknopte weergave",
+  "@menu.view.briefView": {
+    "sourceHash": "7bfd572"
+  },
+  "menu.view.showHiddenFiles": "Toon verborgen bestanden",
+  "@menu.view.showHiddenFiles": {
+    "sourceHash": "b5ede7f"
+  },
+  "menu.view.sortBy": "Sorteer op",
+  "@menu.view.sortBy": {
+    "sourceHash": "c912902"
+  },
+  "menu.view.zoom": "Zoom",
+  "@menu.view.zoom": {
+    "sourceHash": "509c517",
+    "sameAsSourceJustification": "Dutch keeps \"zoom\" for interface and page zoom, the noun Dutch browsers use; the window action stays \"Vergroot/verklein\" (macOS), so the two remain distinct."
+  },
+  "menu.view.switchPane": "Wissel paneel",
+  "@menu.view.switchPane": {
+    "sourceHash": "377471f"
+  },
+  "menu.view.swapPanes": "Verwissel panelen",
+  "@menu.view.swapPanes": {
+    "sourceHash": "cc29396"
+  },
+  "menu.view.commandPalette": "Opdrachtenpalet…",
+  "@menu.view.commandPalette": {
+    "sourceHash": "6b1c93d"
+  },
+  "menu.view.operationQueue": "Bewerkingenwachtrij",
+  "@menu.view.operationQueue": {
+    "sourceHash": "fa91417"
+  },
+  "menu.view.operationLog": "Bewerkingenlogboek",
+  "@menu.view.operationLog": {
+    "sourceHash": "2c97965"
+  },
+  "menu.view.suggestedOps": "Voorgestelde bewerkingen",
+  "@menu.view.suggestedOps": {
+    "sourceHash": "4f24ca6"
+  },
+  "menu.view.askCmdr": "Ask Cmdr",
+  "@menu.view.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (the built-in AI panel); kept verbatim in every locale, matching commands.askCmdrToggle.label."
+  },
+  "menu.sort.name": "Naam",
+  "@menu.sort.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "menu.sort.extension": "Extensie",
+  "@menu.sort.extension": {
+    "sourceHash": "395aeb9"
+  },
+  "menu.sort.dateModified": "Bewerkingsdatum",
+  "@menu.sort.dateModified": {
+    "sourceHash": "eb5e7a5"
+  },
+  "menu.sort.size": "Grootte",
+  "@menu.sort.size": {
+    "sourceHash": "1af8519"
+  },
+  "menu.sort.dateCreated": "Aanmaakdatum",
+  "@menu.sort.dateCreated": {
+    "sourceHash": "fa91f76"
+  },
+  "menu.sort.ascending": "Oplopend",
+  "@menu.sort.ascending": {
+    "sourceHash": "7718459"
+  },
+  "menu.sort.descending": "Aflopend",
+  "@menu.sort.descending": {
+    "sourceHash": "79479a6"
+  },
+  "menu.zoom.percent75": "75%",
+  "@menu.zoom.percent75": {
+    "sourceHash": "10963ac",
+    "sameAsSourceJustification": "Placeholder-free percentage; Dutch writes the sign tight against the number exactly as English does, so only the number would ever change."
+  },
+  "menu.zoom.percent100": "100%",
+  "@menu.zoom.percent100": {
+    "sourceHash": "32e4899",
+    "sameAsSourceJustification": "Placeholder-free percentage; Dutch writes the sign tight against the number exactly as English does, so only the number would ever change."
+  },
+  "menu.zoom.percent125": "125%",
+  "@menu.zoom.percent125": {
+    "sourceHash": "38cb31c",
+    "sameAsSourceJustification": "Placeholder-free percentage; Dutch writes the sign tight against the number exactly as English does, so only the number would ever change."
+  },
+  "menu.zoom.percent150": "150%",
+  "@menu.zoom.percent150": {
+    "sourceHash": "00a4e80",
+    "sameAsSourceJustification": "Placeholder-free percentage; Dutch writes the sign tight against the number exactly as English does, so only the number would ever change."
+  },
+  "menu.zoom.in": "Zoom in",
+  "@menu.zoom.in": {
+    "sourceHash": "0e47f09",
+    "sameAsSourceJustification": "Dutch uses the English particle verb for zooming (\"zoom in\" / \"zoom uit\"); the paired zoom-out value differs, so only this half coincides."
+  },
+  "menu.zoom.out": "Zoom uit",
+  "@menu.zoom.out": {
+    "sourceHash": "bc7b631"
+  },
+  "menu.go.back": "Vorige",
+  "@menu.go.back": {
+    "sourceHash": "76900f1"
+  },
+  "menu.go.forward": "Volgende",
+  "@menu.go.forward": {
+    "sourceHash": "f1c65e1"
+  },
+  "menu.go.parentFolder": "Bovenliggende map",
+  "@menu.go.parentFolder": {
+    "sourceHash": "158f5a0"
+  },
+  "menu.go.home": "Thuismap",
+  "@menu.go.home": {
+    "sourceHash": "3a78695"
+  },
+  "menu.go.goToPath": "Ga naar pad…",
+  "@menu.go.goToPath": {
+    "sourceHash": "936edc5"
+  },
+  "menu.go.goToLatestDownload": "Ga naar laatste download",
+  "@menu.go.goToLatestDownload": {
+    "sourceHash": "492d0b6"
+  },
+  "menu.go.addToFavorites": "Voeg toe aan favorieten",
+  "@menu.go.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.tab.newTab": "Nieuw tabblad",
+  "@menu.tab.newTab": {
+    "sourceHash": "1e08fda"
+  },
+  "menu.tab.closeTab": "Sluit tabblad",
+  "@menu.tab.closeTab": {
+    "sourceHash": "50a3f95"
+  },
+  "menu.tab.reopenClosedTab": "Heropen gesloten tabblad",
+  "@menu.tab.reopenClosedTab": {
+    "sourceHash": "5ca5397"
+  },
+  "menu.tab.nextTab": "Volgend tabblad",
+  "@menu.tab.nextTab": {
+    "sourceHash": "1ef9522"
+  },
+  "menu.tab.previousTab": "Vorig tabblad",
+  "@menu.tab.previousTab": {
+    "sourceHash": "c88d5e7"
+  },
+  "menu.tab.pinTab": "Maak tabblad vast",
+  "@menu.tab.pinTab": {
+    "sourceHash": "bf5083a"
+  },
+  "menu.tab.unpinTab": "Maak tabblad los",
+  "@menu.tab.unpinTab": {
+    "sourceHash": "20553dd"
+  },
+  "menu.tab.closeOtherTabs": "Sluit andere tabbladen",
+  "@menu.tab.closeOtherTabs": {
+    "sourceHash": "0ddc2c5"
+  },
+  "menu.window.minimize": "Minimaliseer",
+  "@menu.window.minimize": {
+    "sourceHash": "d72e311"
+  },
+  "menu.window.zoom": "Vergroot/verklein",
+  "@menu.window.zoom": {
+    "sourceHash": "509c517"
+  },
+  "menu.help.keyboardShortcuts": "Sneltoetsen",
+  "@menu.help.keyboardShortcuts": {
+    "sourceHash": "e9bef0b"
+  },
+  "menu.help.whatsNew": "Wat is er nieuw",
+  "@menu.help.whatsNew": {
+    "sourceHash": "135e912"
+  },
+  "menu.help.sendFeedback": "Verstuur feedback…",
+  "@menu.help.sendFeedback": {
+    "sourceHash": "60e1072"
+  },
+  "menu.help.sendErrorReport": "Verstuur foutrapport…",
+  "@menu.help.sendErrorReport": {
+    "sourceHash": "063c94e"
+  },
+  "menu.context.edit": "Bewerk",
+  "@menu.context.edit": {
+    "sourceHash": "464c4ff"
+  },
+  "menu.context.toggleSelection": "Selectie aan/uit",
+  "@menu.context.toggleSelection": {
+    "sourceHash": "6cb5515"
+  },
+  "menu.context.copyNamed": "Kopieer ‘{name}’",
+  "@menu.context.copyNamed": {
+    "sourceHash": "e2cc661"
+  },
+  "menu.context.addToFavorites": "Voeg toe aan favorieten",
+  "@menu.context.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.context.makeAvailableOffline": "Maak offline beschikbaar",
+  "@menu.context.makeAvailableOffline": {
+    "sourceHash": "b75c09f"
+  },
+  "menu.context.removeDownload": "Verwijder download",
+  "@menu.context.removeDownload": {
+    "sourceHash": "5dfc369"
+  },
+  "menu.context.openWith": "Open met",
+  "@menu.context.openWith": {
+    "sourceHash": "fe94d58"
+  },
+  "menu.context.openWithDefault": "{app} (standaard)",
+  "@menu.context.openWithDefault": {
+    "sourceHash": "32a7cca"
+  },
+  "menu.context.openWithOther": "Andere…",
+  "@menu.context.openWithOther": {
+    "sourceHash": "1e37529"
+  },
+  "menu.tag.red": "Rood",
+  "@menu.tag.red": {
+    "sourceHash": "ba19e9c"
+  },
+  "menu.tag.orange": "Oranje",
+  "@menu.tag.orange": {
+    "sourceHash": "78e7771"
+  },
+  "menu.tag.yellow": "Geel",
+  "@menu.tag.yellow": {
+    "sourceHash": "19dd83f"
+  },
+  "menu.tag.green": "Groen",
+  "@menu.tag.green": {
+    "sourceHash": "d486dfb"
+  },
+  "menu.tag.blue": "Blauw",
+  "@menu.tag.blue": {
+    "sourceHash": "ec7d56a"
+  },
+  "menu.tag.purple": "Paars",
+  "@menu.tag.purple": {
+    "sourceHash": "7d465fb"
+  },
+  "menu.tag.gray": "Grijs",
+  "@menu.tag.gray": {
+    "sourceHash": "0d5adda"
+  },
+  "menu.mediaIndex.addFolder": "Voeg toe aan geïndexeerde mappen",
+  "@menu.mediaIndex.addFolder": {
+    "sourceHash": "c0a87cd"
+  },
+  "menu.mediaIndex.addFolderExcluded": "Voeg toe aan geïndexeerde mappen (uitgesloten)",
+  "@menu.mediaIndex.addFolderExcluded": {
+    "sourceHash": "fc7c7ce"
+  },
+  "menu.mediaIndex.coveredByParent": "Geïndexeerd via een bovenliggende map",
+  "@menu.mediaIndex.coveredByParent": {
+    "sourceHash": "9dffdcd"
+  },
+  "menu.mediaIndex.removeFolder": "Verwijder uit geïndexeerde mappen",
+  "@menu.mediaIndex.removeFolder": {
+    "sourceHash": "7079859"
+  },
+  "menu.mediaIndex.excludeFolder": "Indexeer geen afbeeldingen in deze map",
+  "@menu.mediaIndex.excludeFolder": {
+    "sourceHash": "811f28c"
+  },
+  "menu.mediaIndex.includeFolder": "Indexeer afbeeldingen hier weer",
+  "@menu.mediaIndex.includeFolder": {
+    "sourceHash": "0a8a3a0"
+  },
+  "menu.breadcrumb.copyPath": "Kopieer pad",
+  "@menu.breadcrumb.copyPath": {
+    "sourceHash": "720ff41"
+  },
+  "menu.volume.eject": "Werp uit ({name})",
+  "@menu.volume.eject": {
+    "sourceHash": "913d6ea"
+  },
+  "menu.volume.ejectBusy": "Werp uit ({name}) (bezet)",
+  "@menu.volume.ejectBusy": {
+    "sourceHash": "e2145a6"
+  },
+  "menu.volume.renameFavorite": "Wijzig naam",
+  "@menu.volume.renameFavorite": {
+    "sourceHash": "3064d79"
+  },
+  "menu.volume.removeFavorite": "Verwijder",
+  "@menu.volume.removeFavorite": {
+    "sourceHash": "c3812fc"
+  },
+  "menu.network.disconnect": "Verbreek verbinding",
+  "@menu.network.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "menu.network.forgetServer": "Vergeet server",
+  "@menu.network.forgetServer": {
+    "sourceHash": "e43c85d"
+  },
+  "menu.network.forgetSavedPassword": "Vergeet opgeslagen wachtwoord",
+  "@menu.network.forgetSavedPassword": {
+    "sourceHash": "ed68566"
+  },
+  "menu.viewer.close": "Sluit",
+  "@menu.viewer.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "menu.viewer.wordWrap": "Tekstterugloop",
+  "@menu.viewer.wordWrap": {
+    "sourceHash": "9e210f3"
+  }
+}

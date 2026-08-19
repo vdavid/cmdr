@@ -1,4 +1,12 @@
 {
+  "main.instanceLock.alertTitle": "Cmdr đang chạy rồi",
+  "@main.instanceLock.alertTitle": {
+    "sourceHash": "7c8f09d"
+  },
+  "main.instanceLock.alertBody": "Một bản Cmdr khác đang dùng thư mục dữ liệu này. Hãy chuyển sang ứng dụng đang chạy, hoặc thoát nó rồi thử lại.",
+  "@main.instanceLock.alertBody": {
+    "sourceHash": "140c57d"
+  },
   "main.upgradeNudge.mac": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở Cmdr > Thiết lập ban đầu… để xem qua.",
   "@main.upgradeNudge.mac": {
     "sourceHash": "477f3a5"

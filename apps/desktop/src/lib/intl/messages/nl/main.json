@@ -1,4 +1,12 @@
 {
+  "main.instanceLock.alertTitle": "Cmdr draait al",
+  "@main.instanceLock.alertTitle": {
+    "sourceHash": "7c8f09d"
+  },
+  "main.instanceLock.alertBody": "Een andere kopie van Cmdr gebruikt deze gegevensmap. Ga naar de app die al draait, of stop die en probeer het opnieuw.",
+  "@main.instanceLock.alertBody": {
+    "sourceHash": "140c57d"
+  },
   "main.upgradeNudge.mac": "We hebben nieuwe onboardingopties toegevoegd. Open Cmdr > Onboarding… om ze te bekijken.",
   "@main.upgradeNudge.mac": {
     "sourceHash": "477f3a5"
