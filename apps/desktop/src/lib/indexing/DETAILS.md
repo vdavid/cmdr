@@ -77,9 +77,10 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
   create/replace the volume's `activity` entry (`phase: 'scanning'`, `scanStartedAt = Date.now()`, stash the
   calibration), and stamp the volume's `scanRunKind` from the payload. The prior totals are the backend's PER-KIND
   calibration (a change check is timed off the last change check), so the tier-1 ETA no longer mixes the two walks.
-  `coveredInPhases` seeds the volume's walked ground: `false` marks the WHOLE drive in flux for the run (a full rebuild,
-  every SMB/MTP scan, and nothing else follows), `true` marks nothing until a branch event names ground. The same field
-  rides `get_index_status`, so a mid-run window reload recovers it instead of falling back to the whole drive.
+  `coveredInPhases` names which FAMILY of checklist steps this run produces and says nothing about the size hourglass:
+  the ground under the walker arrives on the branch events below, whichever kind of run this is. A mid-run window reload
+  recovers both from `get_index_status`, which carries `walkedRoots` beside `coveredInPhases` rather than inferring
+  either from the other.
 - **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update that volume's counters
   (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
 - **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry
