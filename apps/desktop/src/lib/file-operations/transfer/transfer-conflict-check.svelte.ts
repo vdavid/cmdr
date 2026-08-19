@@ -18,7 +18,10 @@
  * before answering (`commands/file_system/volume_copy.rs`, and
  * `src-tauri/src/file_system/write_operations/transfer/DETAILS.md`
  * § "Self-collision (duplicating in place)"), so a same-folder copy correctly
- * arrives here as zero conflicts. Nothing to do on this side.
+ * arrives here as zero conflicts. Nothing to do on this side EXCEPT forward what
+ * the backend needs to decide it: `sourceVolumeId` and `sourcePaths`. Without
+ * them the filter goes inert, the count comes back, and the radios with it —
+ * pinned by `transfer-conflict-check.svelte.test.ts`.
  *
  * The factory takes its reactive inputs via getter callbacks (matching the
  * codebase's factory pattern) and exposes state through getters the dialog reads
