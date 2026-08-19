@@ -1262,3 +1262,13 @@ Cặp `unconfirmed*` là anh em của cặp `chainKeptOriginalName*` (cùng dạ
 - reject → `Từ chối` · macOS Finder, cặp Chấp nhận/Từ chối trong bảng AirDrop (Tier 1) · high
 - "This can't be undone" → `Bạn không thể hoàn tác việc này` · macOS Finder ("Bạn không thể hoàn tác tác vụ này") · high
 - pattern → `mẫu` · đã có trong `queryUi.json` · high
+
+## Nhân bản: lệnh sao chép ngay trong cùng thư mục (`commands.fileDuplicate.*`, 2026-08-19)
+
+- **duplicate (lệnh sao chép mục đã chọn ngay trong thư mục của nó) → `Nhân bản`** · macOS Finder `vi`, menu "Tệp > Nhân
+  bản" (`N154`), cùng "Nhân bản các mục" và "Nhân bản các mục trong vị trí hiện tại của chúng" (kiểm chứng trên macOS
+  26.6.1, `Finder.app/Contents/Resources/vi.lproj`, 2026-08-19) · high. Không trùng với `Sao chép` (F5) hay `Di chuyển`
+  (F6).
+- **"Make a copy of the selected files in the same folder" → `Tạo bản sao của các tệp đã chọn trong cùng thư mục`** ·
+  theo các mô tả lân cận ("Sao chép các tệp đã chọn…"); `bản sao` là từ đã chốt cho "copy" (danh từ), và "cùng thư mục"
+  là thư mục các tệp đang nằm sẵn · high.

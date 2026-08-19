@@ -1082,3 +1082,12 @@ embaralhe os dois sentidos.
 - reject → `Recusar` · padrão; a pilha só traz `Aceitar` (Nautilus/Dolphin) e nenhum par para "reject" · tentative
 - "This can't be undone" → `Esta ação não pode ser desfeita` · macOS, palavra por palavra · high
 - suggestion → `sugestão` · já no catálogo (`askCmdr`) · high
+
+## Duplicar: o comando que copia na mesma pasta (`commands.fileDuplicate.*`, 2026-08-19)
+
+- **duplicate (comando que copia a seleção dentro da própria pasta) → `Duplicar`** · macOS Finder pt-BR, menu "Arquivo >
+  Duplicar" (`N154`), além de "Duplicar Itens" e "Duplica itens nas suas localizações atuais" (verificado no macOS
+  26.6.1, `Finder.app/Contents/Resources/pt_BR.lproj`, 2026-08-19) · high. Convive com `Copiar` (F5) e `Mover` (F6).
+- **"Make a copy of the selected files in the same folder" → `Faça uma cópia dos arquivos selecionados na mesma pasta`**
+  · imperativo, como as descrições vizinhas ("Copie os arquivos selecionados…"); "mesma pasta" é a pasta onde os
+  arquivos já estão · high.

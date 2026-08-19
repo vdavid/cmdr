@@ -1173,3 +1173,14 @@ macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "cou
 - reject → `拒绝` · macOS Finder AirDrop 面板的 接受/拒绝 词对（Tier 1）· high
 - "This can't be undone" → `此操作无法撤销` · macOS Finder 原句（立即删除警告）· high
 - pattern → `模式` · 已在 `queryUi.json` 中 · high
+
+## 复制（Duplicate）：在同一文件夹内拷贝的命令（`commands.fileDuplicate.*`，2026-08-19）
+
+- **duplicate（把所选项目拷贝到它自己所在文件夹的命令）→ `复制`** · macOS Finder
+  zh-CN 的“文件 > 复制”（`N154`），另有“复制项目”和“在当前位置复制项目”（在 macOS 26.6.1 的
+  `Finder.app/Contents/Resources/zh_CN.lproj` 中核实，2026-08-19）· `high`。**记住这对术语的分工**：`拷贝` =
+  Copy（F5 传输与剪贴板），`复制` = Duplicate。这正是 macOS
+  Finder 自己的区分，用户在 Finder 里看到的就是这一对，所以两个命令挨着出现也不算冲突。
+- **"Make a copy of the selected files in the same folder" → `在当前文件夹中为选中的文件创建副本`** · 沿用目录里已有的
+  `当前文件夹`（`commands.editPaste.description`）和 `副本`（`commands.cloudRemoveDownload.description` 的 `本地副本`）·
+  `high`。

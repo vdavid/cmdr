@@ -380,6 +380,14 @@
   "@commands.fileMove.label": {
     "sourceHash": "6ecc3df"
   },
+  "commands.fileDuplicate.label": "Duplicera",
+  "@commands.fileDuplicate.label": {
+    "sourceHash": "02cdaab"
+  },
+  "commands.fileDuplicate.description": "Skapa en kopia av de markerade filerna i samma mapp",
+  "@commands.fileDuplicate.description": {
+    "sourceHash": "2c038a2"
+  },
   "commands.fileCompress.label": "Komprimera",
   "@commands.fileCompress.label": {
     "sourceHash": "033fc04"

@@ -380,6 +380,14 @@
   "@commands.fileMove.label": {
     "sourceHash": "6ecc3df"
   },
+  "commands.fileDuplicate.label": "Dupliquer",
+  "@commands.fileDuplicate.label": {
+    "sourceHash": "02cdaab"
+  },
+  "commands.fileDuplicate.description": "Créer une copie des fichiers sélectionnés dans le même dossier",
+  "@commands.fileDuplicate.description": {
+    "sourceHash": "2c038a2"
+  },
   "commands.fileCompress.label": "Compresser",
   "@commands.fileCompress.label": {
     "sourceHash": "033fc04"

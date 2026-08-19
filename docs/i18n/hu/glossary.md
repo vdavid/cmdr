@@ -1465,3 +1465,14 @@ JELENTÉSE ellentétes, ezért a nyitó tagmondat szándékosan más.
   tegező-semleges alakra hozva, mert a Cmdr tegez · high
 - pattern → `minta` · már a katalógusban (`queryUi.json`) · high
 - undo → `visszavonás` · már a katalógusban (`askCmdr.renameUndo`) · high
+
+## Megkettőzés: a parancs, amely ugyanabba a mappába másol (`commands.fileDuplicate.*`, 2026-08-19)
+
+- **duplicate (a kijelölést a saját mappájába másoló parancs) → `Megkettőzés`** · macOS Finder `hu`, „Fájl >
+  Megkettőzés” (`N154`), valamint „Elemek megkettőzése” és „Megkettőzi az elemeket a jelenlegi helyükön” (ellenőrizve
+  macOS 26.6.1 alatt, `Finder.app/Contents/Resources/hu.lproj`, 2026-08-19) · high. A névszói alak illeszkedik a
+  `Másolás` / `Áthelyezés` / `Átnevezés` sorhoz, és egyikkel sem keveredik.
+- **„Make a copy of the selected files in the same folder” →
+  `Másolat készítése a kijelölt fájlokról ugyanabban a mappában`** · a szomszédos leírások névszói alakja („Kijelölt
+  fájlok másolása…”); a `másolatot készít valamiről` vonzat a természetes magyar szerkezet, az „ugyanabban a mappában”
+  pedig arra a mappára utal, amelyben a fájlok már benne vannak · high.

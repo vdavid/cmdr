@@ -1499,3 +1499,13 @@ bestand zijn naam heeft gehouden: dat is precies wat we niet weten. Daarmee staa
 - "This can't be undone" → `Dit kun je niet ongedaan maken` · macOS Finder, woord voor woord (waarschuwing bij direct
   verwijderen) · high
 - suggestion → `suggestie` · al in de catalogus · high
+
+## Dupliceer: de opdracht die in dezelfde map kopieert (`commands.fileDuplicate.*`, 2026-08-19)
+
+- **duplicate (opdracht die de selectie in haar eigen map kopieert) → `Dupliceer`** · macOS Finder `nl`, menu 'Archief >
+  Dupliceer' (`N154`), plus 'Dupliceer onderdelen' en 'Dupliceert onderdelen op huidige locatie' (gecontroleerd op macOS
+  26.6.1, `Finder.app/Contents/Resources/nl.lproj`, 2026-08-19) · high. Gebiedende wijs, net als de zusters `Kopieer`
+  (F5) en `Verplaats` (F6).
+- **'Make a copy of the selected files in the same folder' →
+  `Maak een kopie van de geselecteerde bestanden in dezelfde map`** · gebiedende wijs, zoals de naburige beschrijvingen
+  ('Kopieer geselecteerde bestanden…'); 'dezelfde map' is de map waar de bestanden al staan · high.

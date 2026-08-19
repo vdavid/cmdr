@@ -1118,3 +1118,14 @@ rename may well have gone through. The German must never let the two blur.
   mirrors the source's deictic "That"; the passive matches the English's own passive and the sibling validation keys'
   register (`Der Dateiname darf nicht leer sein`, `… ist zu lang`). No closing period: the value is composed into
   `fileExplorer.rename.keptOriginalName` / `.chainKeptOriginalName`, which supply it.
+
+## Duplizieren: der Befehl, der im selben Ordner kopiert (`commands.fileDuplicate.*`, 2026-08-19)
+
+- **duplicate (Befehl, der die Auswahl in ihren eigenen Ordner kopiert) → `Duplizieren`** · macOS Finder `de`, Menü
+  „Ablage > Duplizieren“ (`N154`), dazu „Objekte duplizieren“ und „Dupliziert Objekte an ihrem aktuellen Ort“ (geprüft
+  auf macOS 26.6.1, `Finder.app/Contents/Resources/de.lproj`, 2026-08-19) · high. Steht neben `Kopieren` (F5) und
+  `Bewegen` (F6) und bleibt davon klar unterscheidbar.
+- **„Make a copy of the selected files in the same folder“ →
+  `Eine Kopie der ausgewählten Dateien im selben Ordner erstellen`** · Infinitiv wie die Nachbarbeschreibungen
+  (`commands.editCopy.description`: „… kopieren“); „im selben Ordner“ meint den Ordner, in dem die Dateien schon liegen
+  · high.

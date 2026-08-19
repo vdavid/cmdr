@@ -1261,3 +1261,12 @@ ihop.
 - "This can't be undone" → `Det här går inte att ångra` · macOS Finder ("Den här åtgärden går inte att ångra"),
   förkortat till en etikettrad · high
 - "Ask Cmdr's reason" → `Ask Cmdrs skäl` · genitiv på varumärket, enligt regeln om att märkesnamn får böjas · high
+
+## Duplicera: kommandot som kopierar i samma mapp (`commands.fileDuplicate.*`, 2026-08-19)
+
+- **duplicate (kommandot som kopierar markeringen i dess egen mapp) → `Duplicera`** · macOS Finder `sv`, menyn "Arkiv >
+  Duplicera" (`N154`), plus "Duplicera objekt" och "Duplicerar objekt där de befinner sig" (verifierat på macOS 26.6.1,
+  `Finder.app/Contents/Resources/sv.lproj`, 2026-08-19) · `high`. Krockar inte med `Kopiera` (F5) eller `Flytta` (F6).
+- **"Make a copy of the selected files in the same folder" → `Skapa en kopia av de markerade filerna i samma mapp`** ·
+  imperativ, som systerbeskrivningarna ("Kopiera markerade filer…"); `markerade filer` är katalogens term för selected
+  files, och "samma mapp" är den mapp filerna redan ligger i · `high`.

@@ -1547,3 +1547,13 @@ doit jamais laisser entendre que le nom est resté inchangé.
   immédiate) · high
 - "Ask Cmdr's reason" → `Raison donnée par Ask Cmdr` · composé ; `motif` est déjà pris par pattern, d'où `raison` · high
 - "Matched by a pattern" → `Correspond à un motif` · reprend `motif` du glossaire · high
+
+## Dupliquer : la commande qui copie dans le même dossier (`commands.fileDuplicate.*`, 2026-08-19)
+
+- **duplicate (commande qui copie la sélection dans son propre dossier) → `Dupliquer`** · macOS Finder `fr`, menu «
+  Fichier > Dupliquer » (`N154`), plus « Dupliquer des éléments » et « Duplique des éléments dans leurs emplacements
+  actuels » (vérifié sur macOS 26.6.1, `Finder.app/Contents/Resources/fr.lproj`, 2026-08-19) · high. Ne chevauche ni
+  `Copier` (F5) ni `Déplacer` (F6).
+- **« Make a copy of the selected files in the same folder » →
+  `Créer une copie des fichiers sélectionnés dans le même dossier`** · infinitif, comme les descriptions voisines («
+  Copier les fichiers sélectionnés… ») ; « le même dossier » = celui où les fichiers se trouvent déjà · high.

@@ -1240,3 +1240,13 @@ nombre.
 - "Undo by deleting what it writes" → `Deshacer eliminando lo creado` · compuesto; se evita "lo que crea" porque se lee
   como el verbo "creer" · tentative
 - suggestion → `sugerencia` · ya en el catálogo (`ui.combobox`, `askCmdr`) · high
+
+## Duplicar: el comando que copia en la misma carpeta (`commands.fileDuplicate.*`, 2026-08-19)
+
+- **duplicate (comando que copia la selección dentro de su propia carpeta) → `Duplicar`** · macOS Finder `es`, menú
+  "Archivo > Duplicar" (`N154`), más "Duplicar ítems" y "Duplica los ítems en las ubicaciones actuales" (verificado en
+  macOS 26.6.1, `Finder.app/Contents/Resources/es.lproj`, 2026-08-19) · high. Convive con `Copiar` (F5) y `Mover` (F6)
+  sin solaparse.
+- **"Make a copy of the selected files in the same folder" →
+  `Crea una copia de los archivos seleccionados en la misma carpeta`** · tercera persona, como las descripciones vecinas
+  ("Copia los archivos seleccionados…"); se mantiene `archivos` del catálogo en lugar del `ítems` de Finder · high.

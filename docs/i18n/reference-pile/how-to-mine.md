@@ -70,6 +70,26 @@ jq -r 'to_entries[]|select((.value|type)=="string" and (.value|test("eject";"i")
 
 macOS is the highest-authority source: it's what a user literally sees in Finder. Prefer it when sources disagree.
 
+### No pile on this machine? Mine the live macOS bundles instead
+
+The pile's `macOS/` folders are extracted from the OS itself, so on any Mac you can read the same Tier-1 evidence
+straight from the installed bundle, whichever machine you're on. `Finder.app` ships one `.lproj` per language, and the
+keys are stable across them, so the English-key-then-target-value flow above works unchanged:
+
+```sh
+cd /System/Library/CoreServices/Finder.app/Contents/Resources
+ls -d *.lproj                                       # which languages ship (de, es, fr, hu, nl, pt_BR, sv, vi, zh_CN, ...)
+# 1. Find the key for an English term (`.strings` files are binary plists, so convert first):
+plutil -convert json -o - en.lproj/LocalizableMerged.strings | jq -r 'to_entries[]|select(.value|test("duplicat";"i"))|"\(.key)\t\(.value)"'
+# 2. Read the same key in the target language:
+plutil -convert json -o - sv.lproj/LocalizableMerged.strings | jq -r '."N154"'   # -> Duplicera
+```
+
+`LocalizableMerged.strings` holds the short menu and progress strings (opaque keys like `N154`, `DU3_V1`);
+`Localizable.strings` holds the English-sentence-keyed ones. AppKit lives at
+`/System/Library/Frameworks/AppKit.framework/Resources/<lang>.lproj/`. Anchor what you find with the OS version
+(`sw_vers`), since Apple rewords between releases.
+
 ## Microsoft terminology (Tier 2) — `<tag>/microsoft-terminology/<LANG>.tbx`
 
 Pretty-printed TBX XML, no namespace. Each `<termEntry>` has two `<langSet>`: `en-US` first, then the target. So in a
