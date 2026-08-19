@@ -75,9 +75,9 @@ silently convert "I didn't care" into "I decided".
 
 **6. The escape hatch appears where the user already is.** A first-launch user meets `OnboardingWizard` before anything
 else, already in the detected language, so the language control belongs in the wizard. An already-onboarded user whose
-resolved language changes because of _this work_ gets a one-time inline bar instead. _Intent_: don't build a nag for new
-users who have a perfectly good place to decide, and don't silently flip an existing user's app without an immediate,
-obvious undo.
+resolved language changes because of _this work_ gets a one-time persistent toast instead. _Intent_: don't build a nag
+for new users who have a perfectly good place to decide, and don't silently flip an existing user's app without an
+immediate, obvious undo.
 
 ### Explicitly not wanted (David, 2026-08-19)
 
@@ -329,18 +329,22 @@ whose every label is in that language.
    new step (the wizard's step contract is deliberate and step 3 is non-skippable — don't disturb it); a small control
    in the frame. It writes `appearance.language` like the settings picker does, reusing `setSetting()` per the module's
    "don't fork the existing wiring" rule.
-2. **Already-onboarded users whose language moves because of M1**: a one-time dismissible inline bar. Sentence in the
-   detected language, plus a plain `English` button that writes `appearance.language = 'en'`. Shown once; dismissal or
-   any explicit language pick retires it forever, stored as a `hidden: true` setting alongside the other internal flags.
-3. The bar's own copy is a catalog key like everything else, so it renders in the detected language. The `English`
-   button label stays the literal string `English` in every locale (that's the point of it) — mark it
+2. **Already-onboarded users whose language moves because of M1**: a one-time notice. ❌ Don't build a new banner
+   primitive — this is a **persistent toast** with a custom content component, exactly the shape the app already uses
+   (`MtpConnectedToastContent.svelte`, `FirstConnectIndexToastContent.svelte`, `PasteClipboardToastContent.svelte`). The
+   store already supports `dismissal: 'persistent'` with `timeoutMs: 0`, which is precisely "stays until they deal with
+   it". Sentence in the detected language, plus a plain `English` button writing `appearance.language = 'en'`. Shown
+   once; dismissal or any explicit language pick retires it forever, stored as a `hidden: true` setting alongside the
+   other internal flags.
+3. The toast copy is a catalog key like everything else, so it renders in the detected language. The `English` button
+   label stays the literal string `English` in every locale (that's the point of it) — mark it
    `@key.sameAsSourceJustification` so the coverage check accepts an identical value.
 
 **Tests**
 
-- Unit: the bar shows exactly once for a user whose resolved language changed; never for an `en` resolution; never again
-  after dismissal; never for a user with an explicit `appearance.language`.
-- Unit: the `English` button writes the setting and retires the bar in one action.
+- Unit: the toast shows exactly once for a user whose resolved language changed; never for an `en` resolution; never
+  again after dismissal; never for a user with an explicit `appearance.language`.
+- Unit: the `English` button writes the setting and retires the toast in one action.
 - a11y test alongside the component, per the module convention (`*.a11y.test.ts` sits next to every UI component here).
 - E2E: worth one spec, since "can the user escape" is the safety property of this whole feature.
 
