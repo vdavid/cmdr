@@ -202,3 +202,10 @@ applies the persisted value synchronously and re-applies when the OS answer land
 `null` from `pickUiLocale` means "no override": the webview default stands. That's the answer before the fetch settles,
 on any platform with no preference list (Linux), and when the read fails, so a broken read degrades to a reasonable
 language rather than a broken app.
+
+⚠️ **One value drives both halves.** `setLocale()` writes the single locale source that the message runtime AND the
+number/date formatters read, and the tag Rust picks is the CATALOG's, not the user's regional variant. So a `[en-GB]`
+machine in `'system'` mode renders dates as `8/19/2026` rather than `19/08/2026`, and `[pt-PT]` groups thousands the
+Brazilian way (`1.234.567,89`, not `1 234 567,89`). Keeping the UI language from overwriting the number and date
+conventions the user chose in System Settings takes a second, format-only locale that always reads the OS; while there's
+one value, the two move together.
