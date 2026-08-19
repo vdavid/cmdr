@@ -13,12 +13,18 @@
 //! answer actually changed. Both halves matter downstream, where an
 //! announcement re-renders every open `t()` in every window.
 
+// The watcher itself is macOS-only (nothing else posts a locale notification),
+// so everything it needs comes in under the same gate as the tests that exercise
+// it on every platform.
+#[cfg(any(target_os = "macos", test))]
 use std::sync::{
     Arc, Mutex,
     atomic::{AtomicBool, Ordering},
 };
+#[cfg(any(target_os = "macos", test))]
 use std::time::Duration;
 
+#[cfg(any(target_os = "macos", test))]
 use crate::ignore_poison::IgnorePoison as _;
 
 #[cfg(target_os = "macos")]
@@ -44,6 +50,7 @@ const SETTLE_WINDOW: Duration = Duration::from_millis(300);
 /// Generic in the answer so the comparison is the whole answer, not a piece of
 /// it: production watches [`crate::intl::OsLocales`], where a region change with
 /// the language untouched still has to reach the formatters.
+#[cfg(any(target_os = "macos", test))]
 pub(crate) struct LocaleWatcher<T> {
     /// How long to wait for a burst to settle before re-reading.
     settle_window: Duration,
@@ -58,6 +65,7 @@ pub(crate) struct LocaleWatcher<T> {
     settling: AtomicBool,
 }
 
+#[cfg(any(target_os = "macos", test))]
 impl<T: PartialEq + Clone + Send + Sync + 'static> LocaleWatcher<T> {
     /// Builds a watcher seeded with the CURRENT resolution, so the first
     /// notification is compared against what the app is already running on
@@ -152,7 +160,7 @@ pub fn observe_os_locale_changes<R: Runtime>(app_handle: AppHandle<R>) {
         // webview does, so it's rebuilt here. Only when the catalog the native
         // side reads actually moved: a region change (or a language change under
         // a pinned `appearance.language`) leaves every label as it was.
-        if super::refresh_active_locale() {
+        if super::native_strings::refresh_active_locale() {
             let for_rebuild = app_handle.clone();
             if let Err(e) = app_handle.run_on_main_thread(move || {
                 if let Err(e) = crate::menu::rebuild_menu_bar(&for_rebuild) {

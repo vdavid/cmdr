@@ -22,8 +22,10 @@ use crate::file_system::sync_status::SyncStatus;
 
 use crate::intl::{menu_t, menu_t_with};
 
+#[cfg(target_os = "macos")]
+use super::menu_items::APP_MENU_TITLE;
 use super::menu_items::{
-    APP_MENU_TITLE, COPY_FILENAME_MAX_CHARS, copy_path_accelerator, pin_tab_label, show_in_file_manager_accelerator,
+    COPY_FILENAME_MAX_CHARS, copy_path_accelerator, pin_tab_label, show_in_file_manager_accelerator,
     show_in_file_manager_label, truncate_for_menu_label,
 };
 #[cfg(target_os = "macos")]

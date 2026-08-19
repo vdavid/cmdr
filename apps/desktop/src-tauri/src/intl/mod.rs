@@ -33,7 +33,10 @@ mod live_locale;
 mod native_strings;
 
 pub use live_locale::observe_os_locale_changes;
-pub use native_strings::{menu_t, menu_t_with, refresh_active_locale, set_language_preference};
+// `refresh_active_locale` is deliberately NOT re-exported: its only caller is
+// `live_locale.rs`, one module down, and re-exporting it would leave a dead
+// public name on every platform that has no live-locale observer.
+pub use native_strings::{menu_t, menu_t_with, set_language_preference};
 
 /// One catalog we ship, plus the script facts the resolver's guard needs.
 ///
@@ -102,9 +105,16 @@ pub(crate) fn resolved_os_locales() -> OsLocales {
 /// Off macOS there's no preference list and no region override, so the webview's
 /// own default stands for both halves. That's the right answer on Linux, where
 /// WebKit reads the same session environment the desktop does.
+///
+/// The format half goes through `format_locale` rather than writing `None`
+/// inline, so that module keeps ONE answer per platform instead of having its
+/// off-macOS branch shadowed here.
 #[cfg(not(target_os = "macos"))]
 pub(crate) fn resolved_os_locales() -> OsLocales {
-    OsLocales { ui: None, format: None }
+    OsLocales {
+        ui: None,
+        format: format_locale::resolved_format_locale(),
+    }
 }
 
 /// The macOS answer to "which catalog should the app open", read fresh from the

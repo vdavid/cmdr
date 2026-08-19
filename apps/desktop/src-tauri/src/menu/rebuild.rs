@@ -24,9 +24,9 @@ use super::MenuState;
 /// Rebuilds the whole native menu bar in the currently active UI language and
 /// re-stores every item reference in [`MenuState`].
 ///
-/// Call it after [`crate::intl::refresh_active_locale`] reports that the active
-/// catalog moved; calling it when nothing moved costs a visible flicker for
-/// nothing.
+/// Call it after `intl::native_strings::refresh_active_locale` reports that the
+/// active catalog moved; calling it when nothing moved costs a visible flicker
+/// for nothing.
 ///
 /// ❗ Must run on the main thread (it installs a menu, which is AppKit work).
 /// The two callers that aren't already there hop via `run_on_main_thread`.

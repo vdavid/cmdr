@@ -56,6 +56,10 @@ pub(crate) fn show_in_file_manager_accelerator() -> &'static str {
 /// application, and the application is called `cmdr`. Translating it would make
 /// the one item every macOS user navigates by unrecognizable, and it would earn
 /// a `sameAsSourceJustification` in all nine locales for nothing.
+///
+/// macOS-only, because only macOS has an app menu: Linux puts About under Help
+/// and Settings under Edit.
+#[cfg(target_os = "macos")]
 pub(crate) const APP_MENU_TITLE: &str = "cmdr";
 
 /// The Tab menu / tab context-menu label, which flips with the tab's state.

@@ -52,6 +52,10 @@ pub(crate) fn resolved_format_locale() -> Option<String> {
 /// dropping it would change the answer (`zh-Hans` and `zh-Hant` format dates
 /// differently). Foundation leaves it `nil` for every locale whose script is
 /// implied by its language, so the common tag stays the short one.
+/// Composed only on macOS; the tests exercise it on every platform, which is
+/// where the interesting cases live (this is pure string work with no Foundation
+/// in it).
+#[cfg(any(target_os = "macos", test))]
 fn compose_format_locale(language: &str, script: Option<&str>, region: &str) -> Option<String> {
     let language = language.trim();
     let region = region.trim();
@@ -73,22 +77,26 @@ fn compose_format_locale(language: &str, script: Option<&str>, region: &str) -> 
 
 /// Two or three letters, and not the `und` that means "no language here".
 /// Composing `und-SE` would be a tag we can't defend; no answer is better.
+#[cfg(any(target_os = "macos", test))]
 fn is_language_subtag(part: &str) -> bool {
     matches!(part.len(), 2 | 3) && part.chars().all(|c| c.is_ascii_alphabetic()) && !part.eq_ignore_ascii_case("und")
 }
 
 /// Four letters (`Hans`, `Latn`).
+#[cfg(any(target_os = "macos", test))]
 fn is_script_subtag(part: &str) -> bool {
     part.len() == 4 && part.chars().all(|c| c.is_ascii_alphabetic())
 }
 
 /// Two letters (`SE`) or three digits (the UN M49 codes, `419`).
+#[cfg(any(target_os = "macos", test))]
 fn is_region_subtag(part: &str) -> bool {
     (part.len() == 2 && part.chars().all(|c| c.is_ascii_alphabetic()))
         || (part.len() == 3 && part.chars().all(|c| c.is_ascii_digit()))
 }
 
 /// `hans` → `Hans`, the casing BCP-47 writes scripts in.
+#[cfg(any(target_os = "macos", test))]
 fn titlecase(part: &str) -> String {
     let mut chars = part.chars();
     match chars.next() {
