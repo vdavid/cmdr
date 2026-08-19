@@ -192,32 +192,32 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 
 At-a-glance view of which capabilities each current volume opts into. Use this when picking a reference implementation for your new volume.
 
-| Capability                  | Local                | MTP                     | SMB                       | InMemory           | Archive                  |
-| --------------------------- | -------------------- | ----------------------- | ------------------------- | ------------------ | ------------------------ |
-| `list_directory` / metadata | ✅                   | ✅                      | ✅                        | ✅                 | ✅                       |
-| Mutations (create/delete/rename) | ✅              | ✅                      | ✅                        | ✅                 | ❌ read-only (mutation planned) |
-| `supports_export`           | ✅                   | ✅                      | ✅                        | ✅                 | ✅                       |
-| `supports_streaming`        | ✅                   | ✅                      | ✅                        | ✅                 | ✅                       |
-| `open_read_stream`          | ✅ spawn_blocking    | ✅ owned download       | ✅ channel-backed         | ✅ in-memory       | ✅ core `ArchiveEntryReader` |
-| `write_from_stream`         | ✅ spawn_blocking    | ✅ streaming            | ✅ streaming              | ✅ in-memory       | ❌ (mutation planned)    |
-| `can_watch_listings`         | ✅ FSEvents/inotify  | ❌ (own USB watcher)    | ❌ (own smb2 CHANGE_NOTIFY watcher) | ❌       | ❌ (own content watch on the `.zip`) |
-| `listing_watch_coverage`        | path-level (WATCHER_MANAGER); `ThisMachineOnly` on a network mount | volume-level `EveryWriter` (device connected) | volume-level `EveryWriter` (watcher + Direct) | `None` (default) | `EveryWriter` while the content watch lives |
-| `supports_local_fs_access`  | ✅ (default)         | ❌                      | ❌                        | ❌                 | ❌ (inner paths)         |
-| `paths_are_os_visible`      | ✅ (inherited)       | ❌ (inherited)          | ✅ OVERRIDE while its mount lives | ❌ (inherited)    | ❌ (inherited)           |
-| `local_path`                | ✅ `Some(root)`      | `None`                  | `None`                    | `None`             | `None`                   |
-| `notify_mutation`           | default (std::fs)    | ✅ MTP `get_metadata`   | ✅ smb2 `get_metadata`    | ✅ in-memory       | n/a (read-only)          |
-| `create_directory_errors_on_existing_dir` | ✅ (default) | ❌ (protocol allows dup names) | ✅ (default) | ✅ (default) | n/a (read-only)  |
-| `scanner` / `watcher` (indexing) | ✅ / ✅          | ❌                      | ❌                        | ❌                 | ❌                       |
-| `rerooted`                  | ✅ new instance      | `None` (device-anchored) | ✅ new instance, shared session | `None` (default) | `None` (inner paths)     |
-| `on_unmount`                | default              | default                 | ✅ drops smb2 session     | default            | default                  |
-| `on_superseded`             | default              | default                 | ✅ retires id, keeps session | default         | default                  |
-| `smb_connection_state`      | `None`               | `None`                  | ✅                        | `None`             | `None`                   |
-| `space_poll_interval`       | 2 s (default)        | 5 s                     | 5 s                       | `None`             | `None`                   |
+| Capability | Local | MTP | SMB | InMemory | Archive |
+| --- | --- | --- | --- | --- | --- |
+| `list_directory` / metadata | yes | yes | yes | yes | yes |
+| Mutations (create/delete/rename) | yes | yes | yes | yes | no: read-only (mutation planned) |
+| `supports_export` | yes | yes | yes | yes | yes |
+| `supports_streaming` | yes | yes | yes | yes | yes |
+| `open_read_stream` | yes: spawn_blocking | yes: owned download | yes: channel-backed | yes: in-memory | yes: core `ArchiveEntryReader` |
+| `write_from_stream` | yes: spawn_blocking | yes: streaming | yes: streaming | yes: in-memory | no (mutation planned) |
+| `can_watch_listings` | yes: FSEvents/inotify | no (own USB watcher) | no (own smb2 CHANGE_NOTIFY watcher) | no | no (own content watch on the `.zip`) |
+| `listing_watch_coverage` | path-level (WATCHER_MANAGER); `ThisMachineOnly` on a network mount | volume-level `EveryWriter` (device connected) | volume-level `EveryWriter` (watcher + Direct) | `None` (default) | `EveryWriter` while the content watch lives |
+| `supports_local_fs_access` | yes (default) | no | no | no | no (inner paths) |
+| `paths_are_os_visible` | yes (inherited) | no (inherited) | yes: OVERRIDE while its mount lives | no (inherited) | no (inherited) |
+| `local_path` | yes: `Some(root)` | `None` | `None` | `None` | `None` |
+| `notify_mutation` | default (std::fs) | yes: MTP `get_metadata` | yes: smb2 `get_metadata` | yes: in-memory | n/a (read-only) |
+| `create_directory_errors_on_existing_dir` | yes (default) | no (protocol allows dup names) | yes (default) | yes (default) | n/a (read-only) |
+| `scanner` / `watcher` (indexing) | yes / yes | no | no | no | no |
+| `rerooted` | yes: new instance | `None` (device-anchored) | yes: new instance, shared session | `None` (default) | `None` (inner paths) |
+| `on_unmount` | default | default | yes: drops smb2 session | default | default |
+| `on_superseded` | default | default | yes: retires id, keeps session | default | default |
+| `smb_connection_state` | `None` | `None` | yes | `None` | `None` |
+| `space_poll_interval` | 2 s (default) | 5 s | 5 s | `None` | `None` |
 | `lane_key` / `get_space_info` | mount root / statvfs+NSURL | device serial / device | server+share / smb2 | root or override / configured | **parent's** / **parent's** |
-| `max_concurrent_ops`        | 4..=16 (core-based)  | 1 (USB bulk serial)     | `network.smbConcurrency`  | 32                 | 1 (initial cap)          |
-| `operations_are_local`      | ✅ `true`            | `false`                 | `false`                   | ✅ `true`          | `false`                  |
+| `max_concurrent_ops` | 4..=16 (core-based) | 1 (USB bulk serial) | `network.smbConcurrency` | 32 | 1 (initial cap) |
+| `operations_are_local` | yes: `true` | `false` | `false` | yes: `true` | `false` |
 
-Legend: ✅ = implemented, ❌ = opted out (default or explicitly), ⚠️ = implemented but suboptimal (memory-heavy or otherwise worth revisiting).
+Legend: `yes` = implemented, `no` = opted out (default or explicitly), ⚠️ = implemented but suboptimal (memory-heavy or otherwise worth revisiting).
 
 `ArchiveVolume` is the read-only zip backend (`crates/cmdr-archive/CLAUDE.md`); its `lane_key` and
 `get_space_info` uniquely delegate to a **parent** volume (the volume storing the `.zip`), so archive work shares the

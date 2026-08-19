@@ -91,17 +91,17 @@ An SMB share and an MTP phone never reach it: `resume_or_scan` routes `is_trait_
 first. For everything the local guarded walker reads, in the order the function asks:
 
 - **journal replayable, gap too wide** ⇒ `start_scan("stale index: journal gap too large")`. Unchanged, and reachable
-  ONLY on a volume that completed a scan, since replaying at all requires one, so NO volume being covered in phases
-  can take it. Its phased counterpart is `ensure_branch_watch`'s conditional epoch bump: a resume that can't replay the
-  gap keeps the rows and says they're stale (`a_relaunch_with_no_replayable_journal_bumps_the_epoch`).
+  ONLY on a volume that completed a scan, since replaying at all requires one, so NO volume being covered in phases can
+  take it. Its phased counterpart is `ensure_branch_watch`'s conditional epoch bump: a resume that can't replay the gap
+  keeps the rows and says they're stale (`a_relaunch_with_no_replayable_journal_bumps_the_epoch`).
 - **journal replayable** ⇒ `start_replay`. An install that already finished its first index loses nothing.
 - **`scan_completed_at` set** ⇒ `start_scan("rescan of existing index")`, which reconciles in place. ⚠️ This is the path
   a `LocalExternal` drive takes at EVERY mount (`has_event_journal()` is `Local`-only) and the Linux boot disk's normal
   launch. ❌ The phased answers must never swallow it, or a finished external drive is treated as one nobody indexed.
 - **phased first index switched off** ⇒ `start_scan("incomplete previous scan")`. The escape hatch's own row: with no
   phase machine to resume into, a phased partial takes today's truncating rebuild. Self-healing, and what the person who
-  flipped it asked for. It never costs a COMPLETED volume its replay: the switch restores the BUILD path, not a
-  rescan of everything already indexed. Shape and who flips it: `phases/DETAILS.md` § "The escape hatch".
+  flipped it asked for. It never costs a COMPLETED volume its replay: the switch restores the BUILD path, not a rescan
+  of everything already indexed. Shape and who flips it: `phases/DETAILS.md` § "The escape hatch".
 - **rows, and no record of which ground they cover** ⇒ truncate, then the phase machine. This is the discriminator, and
   it is **the persisted branch set** (`branches::any_persisted`): `start_scan` clears the set before a whole-volume
   walk, so a first BULK scan somebody interrupted has none while a phased (or search-walked) volume does. Resuming into
@@ -110,9 +110,9 @@ first. For everything the local guarded walker reads, in the order the function 
 - **anything else** ⇒ the phase machine, adding to what is there. A fresh install, a phased partial, a volume a search
   walked.
 
-Two more truncate decisions sit one level below and are NOT part of this table: `start_scan`'s own
-reconcile-vs-truncate rule (`local_rescan_reconciles`), and `register_a_phased_start`'s exclusion-policy rebuild (an
-index whose rows were written under a policy this build doesn't apply counts as covering nothing).
+Two more truncate decisions sit one level below and are NOT part of this table: `start_scan`'s own reconcile-vs-truncate
+rule (`local_rescan_reconciles`), and `register_a_phased_start`'s exclusion-policy rebuild (an index whose rows were
+written under a policy this build doesn't apply counts as covering nothing).
 
 ### Every other way a full walk starts
 
@@ -311,12 +311,12 @@ tail (`volume_used_bytes` on `/` is ~6.5 ms median, 26 ms max) — before a trun
 behind `TruncateData` and has NO upper bound (2,613 ms measured on a real root index). Evidence and method:
 `docs/notes/manager-custody-spike-2026-08-18.md`.
 
-**Why its own phase rather than `ShuttingDown`.** One transient state served both, and every reader that met it answered as
-though the volume had gone away. Benign for most, a bug for three: `stop_indexing`, `clear_index`, and `fail_index` each
-had an arm that put a non-`Running` phase back and returned SUCCESS, so a teardown landing in the window was reported as
-done and then lost. The `fail_index` case is the data-safety one — the failure signal is one-shot, so a swallowed trip
-left the volume restored as `Running` over a DEAD writer, badge normal, dropping every write for the rest of the
-session, with nothing to retry.
+**Why its own phase rather than `ShuttingDown`.** One transient state served both, and every reader that met it answered
+as though the volume had gone away. Benign for most, a bug for three: `stop_indexing`, `clear_index`, and `fail_index`
+each had an arm that put a non-`Running` phase back and returned SUCCESS, so a teardown landing in the window was
+reported as done and then lost. The `fail_index` case is the data-safety one — the failure signal is one-shot, so a
+swallowed trip left the volume restored as `Running` over a DEAD writer, badge normal, dropping every write for the rest
+of the session, with nothing to retry.
 
 **A teardown CLAIMS it rather than bouncing off it.** `IndexPhase::claim_the_teardown(TeardownClaim)` records the
 request on the phase and reports that it took it; the caller returns success, truthfully. Whoever hands the manager back
@@ -630,8 +630,8 @@ bound is that the volume waits for at most one walk, so five impatient clicks ar
   the way out of a refusal reads more naturally and has a hole: the holder can end between the guard answering and the
   request landing, and its `run_if_owed` would carry nothing out, leaving a promise waiting on a walk that already
   finished.
-- **Nothing assumes the coast is clear.** The fire re-asks every guard by going through `force_scan`, so a holder
-  still on the volume re-defers the request behind ITS ending. That's what makes a truncating scan under a live walk
+- **Nothing assumes the coast is clear.** The fire re-asks every guard by going through `force_scan`, so a holder still
+  on the volume re-defers the request behind ITS ending. That's what makes a truncating scan under a live walk
   unreachable however many walks are in flight
   (`cover::cold_drive_tests::rescans::a_remembered_rescan_waits_for_the_last_walk_out`).
 - **One request per volume, memory only.** It carries nothing but "this volume wants a full walk", so a second click
@@ -769,8 +769,8 @@ runs with the master off and on a `user_disabled` drive alike: it stands up a wr
 scheduled and no watcher starts, and the alternative isn't "less work" — it's a search that silently omits files on a
 drive the user can see. The veto keeps real teeth anyway, and this is where they are: a vetoed drive gets no watcher
 (`master::branch_watch_allowed`), so what a search walked there stays covered and served but stops being kept current
-the moment the app stops. It is NOT re-walked: the walk marked those directories listed, so the frontier never
-offers them again and Decision 5 trusts them as covered-but-stale. ❌ Don't turn either switch back into a gate on
+the moment the app stops. It is NOT re-walked: the walk marked those directories listed, so the frontier never offers
+them again and Decision 5 trusts them as covered-but-stale. ❌ Don't turn either switch back into a gate on
 `WriterOnly`; `cover::cold_drive_tests::switches::a_search_walks_a_drive_with_the_master_switch_off` guards it, and
 `a_vetoed_drive_is_walked_and_left_unwatched` guards the other half.
 
