@@ -259,7 +259,7 @@ func formatLockSwallows(sites []lockSwallowSite, allowlist lockPoisonAllowlist) 
 		}
 	}
 	return fmt.Sprintf(
-		"%d %s discard more poisoned-lock results than allowed "+
+		"%d %s over budget for silently discarded poisoned-lock results "+
 			"(on poison the block is skipped and the caller sees empty or default data; recover with "+
 			"`lock_ignore_poison()`, hand the failure to the caller, or abort with `.expect(\"<lock> poisoned: <why>\")`; "+
 			"`%s <reason>` opts one site out):\n%s",
