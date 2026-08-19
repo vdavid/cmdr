@@ -8,6 +8,7 @@ use std::path::Path;
 use std::sync::{LazyLock, Mutex};
 use std::time::Instant;
 
+use cmdr_fs::ignore_poison::IgnorePoison;
 use tokio_util::sync::CancellationToken;
 
 use crate::indexing::IndexPathSpace;
@@ -50,11 +51,21 @@ struct InFlightGuard {
 
 impl Drop for InFlightGuard {
     fn drop(&mut self) {
-        if let Ok(mut state) = VERIFIER_STATE.lock() {
-            state.in_flight.remove(&self.dir_path);
-            state.recent.push((self.dir_path.clone(), Instant::now()));
-        }
+        release_in_flight_slot(&VERIFIER_STATE, &self.dir_path);
     }
+}
+
+/// Frees `dir_path`'s slot and records it as recently verified.
+///
+/// Takes the state mutex rather than reaching for the static, so a test can
+/// drive it against a poisoned lock of its own. That case is the reason the
+/// poison is ignored: the panic that poisoned the mutex is usually the very
+/// panic this guard is unwinding from, and skipping the removal there would
+/// leak the slot forever — exactly what the guard exists to prevent.
+fn release_in_flight_slot(state: &Mutex<VerifierState>, dir_path: &str) {
+    let mut state = state.lock_ignore_poison();
+    state.in_flight.remove(dir_path);
+    state.recent.push((dir_path.to_string(), Instant::now()));
 }
 
 // ── Public API ───────────────────────────────────────────────────────
@@ -80,10 +91,7 @@ pub(crate) fn maybe_verify(
         return;
     }
 
-    let mut state = match VERIFIER_STATE.lock() {
-        Ok(s) => s,
-        Err(_) => return,
-    };
+    let mut state = VERIFIER_STATE.lock_ignore_poison();
 
     // Prune expired recent entries
     let now = Instant::now();
@@ -131,10 +139,9 @@ pub(crate) fn maybe_verify(
 
 /// Clear all dedup/debounce state. Called on shutdown and clear_index.
 pub(crate) fn invalidate() {
-    if let Ok(mut state) = VERIFIER_STATE.lock() {
-        state.in_flight.clear();
-        state.recent.clear();
-    }
+    let mut state = VERIFIER_STATE.lock_ignore_poison();
+    state.in_flight.clear();
+    state.recent.clear();
 }
 
 // ── Core verification ────────────────────────────────────────────────

@@ -76,10 +76,7 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
     let volume_id = volume_id.to_string();
     let dir_path = dir_path.to_string();
     crate::indexing::host::runtime::spawn(async move {
-        let reg = match INDEX_REGISTRY.lock() {
-            Ok(g) => g,
-            Err(_) => return,
-        };
+        let reg = INDEX_REGISTRY.lock_ignore_poison();
         if let Some(IndexInstance {
             phase: IndexPhase::Running(mgr),
             signals,

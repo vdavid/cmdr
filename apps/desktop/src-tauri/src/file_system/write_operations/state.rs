@@ -2,7 +2,7 @@
 //!
 //! Contains state tracking for in-progress operations and status caches for query APIs.
 
-use crate::ignore_poison::IgnorePoison;
+use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU8, Ordering};
@@ -435,16 +435,14 @@ impl WriteOperationRegistry {
     /// Registers `state` under `operation_id`, so cancel / pause / conflict
     /// resolution can reach it by id.
     pub(super) fn insert(&self, operation_id: String, state: Arc<WriteOperationState>) {
-        if let Ok(mut entries) = self.entries.write() {
-            entries.insert(operation_id, state);
-        }
+        self.entries.write_ignore_poison().insert(operation_id, state);
     }
 
     /// The live state for `operation_id`, if it's still registered. Returns an
     /// `Arc` rather than a guard so callers don't hold the registry lock while
     /// they touch the operation.
     pub(super) fn get(&self, operation_id: &str) -> Option<Arc<WriteOperationState>> {
-        Some(Arc::clone(self.entries.read().ok()?.get(operation_id)?))
+        Some(Arc::clone(self.entries.read_ignore_poison().get(operation_id)?))
     }
 
     /// Whether `operation_id` still has a state entry.
@@ -468,9 +466,7 @@ impl WriteOperationRegistry {
     /// abandoned still holds an `Arc` to the state, so the map entry going away
     /// doesn't drop it): `WriteOperationState::end_liveness`.
     pub(super) fn forget(&self, operation_id: &str) {
-        let Ok(mut entries) = self.entries.write() else {
-            return;
-        };
+        let mut entries = self.entries.write_ignore_poison();
         if let Some(state) = entries.remove(operation_id) {
             state.end_liveness();
         }
@@ -484,9 +480,7 @@ impl WriteOperationRegistry {
     /// its waiter, and wakes a paused op so it observes the cancel. Already-
     /// `Stopped` operations are left alone.
     pub(super) fn cancel_all(&self) {
-        let Ok(entries) = self.entries.read() else {
-            return;
-        };
+        let entries = self.entries.read_ignore_poison();
         for (id, state) in entries.iter() {
             let current = load_intent(&state.intent);
             if current != OperationIntent::Stopped {
@@ -509,9 +503,7 @@ impl WriteOperationRegistry {
         // cooperative signal that gives its backends the chance to wind down
         // cleanly in the moments before the process goes.
         self.cancel_all();
-        let Ok(entries) = self.entries.read() else {
-            return;
-        };
+        let entries = self.entries.read_ignore_poison();
         for (id, state) in entries.iter() {
             if !state.backend_abort.is_cancelled() {
                 log::info!("abort_all_write_operations: no longer waiting for op={id}");

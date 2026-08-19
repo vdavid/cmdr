@@ -5,6 +5,7 @@
 //! and updates reactively from `git-state-changed` events. Debounce is 200 ms
 //! per repo, matching the existing listing watcher in `file_system/listing/`.
 
+use crate::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
@@ -133,7 +134,7 @@ impl GitWatcherRegistry {
     #[cfg(test)]
     #[allow(dead_code, reason = "Used by integration tests")]
     pub fn active_repo_count(&self) -> usize {
-        self.inner.lock().map(|i| i.len()).unwrap_or(0)
+        self.inner.lock_ignore_poison().len()
     }
 }
 
@@ -237,10 +238,7 @@ pub(crate) fn refresh_local_listings_under(prefixes: &[PathBuf]) {
 /// active subscription have no open listings to invalidate.
 pub fn refresh_all_virtual_listings_after_toggle() {
     let registry = get_watcher_registry();
-    let roots: Vec<PathBuf> = match registry.inner.lock() {
-        Ok(inner) => inner.keys().cloned().collect(),
-        Err(_) => return,
-    };
+    let roots: Vec<PathBuf> = registry.inner.lock_ignore_poison().keys().cloned().collect();
     let mut prefixes = Vec::new();
     for root in roots {
         let dot_git = root.join(".git");

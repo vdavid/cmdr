@@ -3,6 +3,7 @@
 //! Persists metadata about network shares the user has connected to.
 //! Enables username pre-fill, auth change detection, and quick reconnect.
 
+use crate::ignore_poison::IgnorePoison;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -94,9 +95,7 @@ pub fn load_known_shares<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
         KnownSharesStore::default()
     };
 
-    if let Ok(mut cache) = get_known_shares_mutex().lock() {
-        *cache = store;
-    }
+    *get_known_shares_mutex().lock_ignore_poison() = store;
 }
 
 /// Saves known shares from memory to disk.
@@ -105,10 +104,7 @@ fn save_known_shares<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
         return;
     };
 
-    let store = match get_known_shares_mutex().lock() {
-        Ok(cache) => cache.clone(),
-        Err(_) => return,
-    };
+    let store = get_known_shares_mutex().lock_ignore_poison().clone();
 
     // Ensure parent directory exists
     if let Some(parent) = path.parent() {
@@ -130,17 +126,16 @@ fn share_key(server_name: &str, share_name: &str) -> String {
 /// Gets all known network shares.
 pub fn get_all_known_shares() -> Vec<KnownNetworkShare> {
     get_known_shares_mutex()
-        .lock()
-        .map(|cache| cache.known_network_shares.clone())
-        .unwrap_or_default()
+        .lock_ignore_poison()
+        .known_network_shares
+        .clone()
 }
 
 /// Gets a specific known share by server and share name.
 pub fn get_known_share(server_name: &str, share_name: &str) -> Option<KnownNetworkShare> {
     let key = share_key(server_name, share_name);
     get_known_shares_mutex()
-        .lock()
-        .ok()?
+        .lock_ignore_poison()
         .known_network_shares
         .iter()
         .find(|s| share_key(&s.server_name, &s.share_name) == key)
@@ -152,7 +147,8 @@ pub fn get_known_share(server_name: &str, share_name: &str) -> Option<KnownNetwo
 pub fn update_known_share<R: tauri::Runtime>(app: &tauri::AppHandle<R>, share: KnownNetworkShare) {
     let key = share_key(&share.server_name, &share.share_name);
 
-    if let Ok(mut cache) = get_known_shares_mutex().lock() {
+    {
+        let mut cache = get_known_shares_mutex().lock_ignore_poison();
         // Find and update, or add new
         if let Some(existing) = cache
             .known_network_shares
@@ -171,20 +167,16 @@ pub fn update_known_share<R: tauri::Runtime>(app: &tauri::AppHandle<R>, share: K
 /// Builds a map of server names to their last known usernames.
 /// Useful for pre-filling login forms.
 pub fn get_username_hints() -> HashMap<String, String> {
-    get_known_shares_mutex()
-        .lock()
-        .map(|cache| {
-            let mut hints = HashMap::new();
-            // Group by server, use most recently connected share's username
-            for share in cache.known_network_shares.iter() {
-                if let Some(ref username) = share.username {
-                    // Keep the newest entry per server (shares are in order of addition/update)
-                    hints.insert(share.server_name.to_lowercase(), username.clone());
-                }
-            }
-            hints
-        })
-        .unwrap_or_default()
+    let cache = get_known_shares_mutex().lock_ignore_poison();
+    let mut hints = HashMap::new();
+    // Group by server, use most recently connected share's username
+    for share in cache.known_network_shares.iter() {
+        if let Some(ref username) = share.username {
+            // Keep the newest entry per server (shares are in order of addition/update)
+            hints.insert(share.server_name.to_lowercase(), username.clone());
+        }
+    }
+    hints
 }
 
 #[cfg(test)]

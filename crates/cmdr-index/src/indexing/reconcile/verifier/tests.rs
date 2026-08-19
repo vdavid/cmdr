@@ -727,3 +727,40 @@ fn verify_empty_directory() {
     remove_read_pool();
     writer.shutdown();
 }
+
+#[test]
+fn in_flight_slot_is_freed_even_when_the_panic_poisoned_the_state_lock() {
+    // The realistic shape of the panic the guard defends against: it happens
+    // while the verifier state lock is held, so the lock is POISONED by the time
+    // the guard unwinds. Skipping the removal there leaks the path against
+    // `MAX_CONCURRENT_VERIFICATIONS` for the rest of the session, and the
+    // verifier eventually stops verifying anything.
+    //
+    // A local mutex, not `VERIFIER_STATE`: poisoning a process-global static
+    // would break every sibling test that touches it.
+    let state = Mutex::new(VerifierState {
+        in_flight: HashSet::new(),
+        recent: Vec::new(),
+    });
+    let dir_path = "/fake/poisoned/slot";
+    state.lock_ignore_poison().in_flight.insert(dir_path.to_string());
+
+    let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _held = state.lock_ignore_poison();
+        panic!("simulated panic while holding the verifier state lock");
+    }));
+    assert!(panicked.is_err(), "the closure must have panicked");
+    assert!(state.is_poisoned(), "the panic must have poisoned the lock");
+
+    release_in_flight_slot(&state, dir_path);
+
+    let state = state.lock_ignore_poison();
+    assert!(
+        !state.in_flight.contains(dir_path),
+        "the slot must be freed through a poisoned lock, not leaked"
+    );
+    assert!(
+        state.recent.iter().any(|(p, _)| p == dir_path),
+        "the path must still be recorded as recently verified"
+    );
+}

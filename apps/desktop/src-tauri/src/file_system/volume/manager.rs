@@ -5,6 +5,7 @@
 //! The one instance the app runs on lives here too, behind [`get_volume_manager`].
 
 use super::Volume;
+use crate::ignore_poison::RwLockIgnorePoison;
 use std::collections::{HashMap, VecDeque};
 use std::path::Path;
 use std::sync::{Arc, LazyLock, Mutex, RwLock};
@@ -94,18 +95,17 @@ impl VolumeManager {
     /// those mounts before they get here (`volumes::mounts::collapse_by_volume_id`);
     /// this is the registry's own guard, and it stays loud either way.
     pub fn register(&self, id: &str, volume: Arc<dyn Volume>) {
-        if let Ok(mut volumes) = self.volumes.write() {
-            if let Some(existing) = volumes.get_mut(id) {
-                report_identity_conflict(id, &existing.volume, &volume, ROOT_RECORDED_RESOLUTION);
-                if is_identity_conflict(&existing.volume, &volume) {
-                    existing.record_root(volume.root());
-                    return;
-                }
-                existing.replace_volume(volume);
+        let mut volumes = self.volumes.write_ignore_poison();
+        if let Some(existing) = volumes.get_mut(id) {
+            report_identity_conflict(id, &existing.volume, &volume, ROOT_RECORDED_RESOLUTION);
+            if is_identity_conflict(&existing.volume, &volume) {
+                existing.record_root(volume.root());
                 return;
             }
-            volumes.insert(id.to_string(), Registration::new(volume));
+            existing.replace_volume(volume);
+            return;
         }
+        volumes.insert(id.to_string(), Registration::new(volume));
     }
 
     /// Registers a volume under `id`, replacing whatever is there even across a
@@ -119,9 +119,9 @@ impl VolumeManager {
     /// [`register`]: Self::register
     #[cfg(test)]
     pub(crate) fn force_register(&self, id: &str, volume: Arc<dyn Volume>) {
-        if let Ok(mut volumes) = self.volumes.write() {
-            volumes.insert(id.to_string(), Registration::new(volume));
-        }
+        self.volumes
+            .write_ignore_poison()
+            .insert(id.to_string(), Registration::new(volume));
     }
 
     /// Registers a volume only if no volume with this ID exists yet.
@@ -133,22 +133,18 @@ impl VolumeManager {
     /// already-registered filesystem arrives here: the incumbent keeps the ID
     /// and the new mount point is recorded as a fallback root.
     pub fn register_if_absent(&self, id: &str, volume: Arc<dyn Volume>) -> bool {
-        if let Ok(mut volumes) = self.volumes.write() {
-            use std::collections::hash_map::Entry;
-            match volumes.entry(id.to_string()) {
-                Entry::Occupied(mut existing) => {
-                    let entry = existing.get_mut();
-                    report_identity_conflict(id, &entry.volume, &volume, ROOT_RECORDED_RESOLUTION);
-                    entry.record_root(volume.root());
-                    false
-                }
-                Entry::Vacant(e) => {
-                    e.insert(Registration::new(volume));
-                    true
-                }
+        use std::collections::hash_map::Entry;
+        match self.volumes.write_ignore_poison().entry(id.to_string()) {
+            Entry::Occupied(mut existing) => {
+                let entry = existing.get_mut();
+                report_identity_conflict(id, &entry.volume, &volume, ROOT_RECORDED_RESOLUTION);
+                entry.record_root(volume.root());
+                false
             }
-        } else {
-            false
+            Entry::Vacant(e) => {
+                e.insert(Registration::new(volume));
+                true
+            }
         }
     }
 
@@ -156,28 +152,24 @@ impl VolumeManager {
     ///
     /// If this was the default volume, the default is cleared.
     pub fn unregister(&self, id: &str) {
-        if let Ok(mut volumes) = self.volumes.write() {
-            volumes.remove(id);
-        }
+        self.volumes.write_ignore_poison().remove(id);
         self.clear_default_if(id);
     }
 
     /// Clears the default volume when it was `id`. Touches only
     /// `default_volume_id`, so it's safe to call while holding `volumes`.
     fn clear_default_if(&self, id: &str) {
-        if let Ok(default) = self.default_volume_id.read()
-            && default.as_deref() == Some(id)
-        {
-            drop(default); // Release read lock
-            if let Ok(mut default) = self.default_volume_id.write() {
-                *default = None;
-            }
+        // The read guard is a temporary of this statement, so it's released
+        // before the write below asks for the same lock.
+        let is_default = self.default_volume_id.read_ignore_poison().as_deref() == Some(id);
+        if is_default {
+            *self.default_volume_id.write_ignore_poison() = None;
         }
     }
 
     /// Gets a volume by ID.
     pub fn get(&self, id: &str) -> Option<Arc<dyn Volume>> {
-        Some(self.volumes.read().ok()?.get(id)?.volume.clone())
+        Some(self.volumes.read_ignore_poison().get(id)?.volume.clone())
     }
 
     /// Finds a registered volume by a mount path, matching ANY known root of an
@@ -195,8 +187,7 @@ impl VolumeManager {
     /// hit is rooted somewhere else. Callers that care compare `volume.root()`.
     pub fn find_by_root(&self, root: &Path) -> Option<(String, Arc<dyn Volume>)> {
         self.volumes
-            .read()
-            .ok()?
+            .read_ignore_poison()
             .iter()
             .find(|(_, entry)| entry.knows_root(root))
             .map(|(id, entry)| (id.clone(), Arc::clone(&entry.volume)))
@@ -204,13 +195,13 @@ impl VolumeManager {
 
     /// Gets the default volume.
     pub fn default_volume(&self) -> Option<Arc<dyn Volume>> {
-        let default_id = self.default_volume_id.read().ok()?.clone()?;
+        let default_id = self.default_volume_id.read_ignore_poison().clone()?;
         self.get(&default_id)
     }
 
     /// Gets the default volume ID.
     pub fn default_volume_id(&self) -> Option<String> {
-        self.default_volume_id.read().ok()?.clone()
+        self.default_volume_id.read_ignore_poison().clone()
     }
 
     /// Sets the default volume by ID.
@@ -218,26 +209,20 @@ impl VolumeManager {
     /// Returns true if the volume exists and was set as default.
     pub fn set_default(&self, id: &str) -> bool {
         // Verify the volume exists
-        let exists = self.volumes.read().map(|v| v.contains_key(id)).unwrap_or(false);
-
-        if exists && let Ok(mut default) = self.default_volume_id.write() {
-            *default = Some(id.to_string());
-            return true;
+        if !self.volumes.read_ignore_poison().contains_key(id) {
+            return false;
         }
-        false
+        *self.default_volume_id.write_ignore_poison() = Some(id.to_string());
+        true
     }
 
     /// Lists all registered volumes as (id, name) pairs.
     pub fn list_volumes(&self) -> Vec<(String, String)> {
         self.volumes
-            .read()
-            .map(|volumes| {
-                volumes
-                    .iter()
-                    .map(|(id, entry)| (id.clone(), entry.volume.name().to_string()))
-                    .collect()
-            })
-            .unwrap_or_default()
+            .read_ignore_poison()
+            .iter()
+            .map(|(id, entry)| (id.clone(), entry.volume.name().to_string()))
+            .collect()
     }
 
     /// Returns all registered volumes as (id, handle) pairs. Unlike [`list_volumes`]
@@ -248,19 +233,15 @@ impl VolumeManager {
     /// [`list_volumes`]: Self::list_volumes
     pub fn list_volumes_with_handles(&self) -> Vec<(String, Arc<dyn Volume>)> {
         self.volumes
-            .read()
-            .map(|volumes| {
-                volumes
-                    .iter()
-                    .map(|(id, entry)| (id.clone(), entry.volume.clone()))
-                    .collect()
-            })
-            .unwrap_or_default()
+            .read_ignore_poison()
+            .iter()
+            .map(|(id, entry)| (id.clone(), entry.volume.clone()))
+            .collect()
     }
 
     /// Returns the number of registered volumes.
     pub fn count(&self) -> usize {
-        self.volumes.read().map(|v| v.len()).unwrap_or(0)
+        self.volumes.read_ignore_poison().len()
     }
 }
 

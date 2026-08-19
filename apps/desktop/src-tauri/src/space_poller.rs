@@ -184,20 +184,17 @@ pub fn configure_low_disk_space(enabled: bool, threshold_percent: u64) {
 /// `watcher_id` is typically a pane ID ("left"/"right"). Multiple watchers
 /// can watch the same volume without interfering with each other.
 pub fn watch(watcher_id: String, volume_id: String, path: String) {
-    if let Some(w) = WATCHED.get()
-        && let Ok(mut map) = w.lock()
-    {
-        map.insert(watcher_id, WatchEntry { volume_id, path });
+    if let Some(w) = WATCHED.get() {
+        w.lock_ignore_poison()
+            .insert(watcher_id, WatchEntry { volume_id, path });
     }
 }
 
 /// Stops watching. Only removes this watcher's entry; other watchers on the
 /// same volume are unaffected.
 pub fn unwatch(watcher_id: &str) {
-    if let Some(w) = WATCHED.get()
-        && let Ok(mut map) = w.lock()
-    {
-        map.remove(watcher_id);
+    if let Some(w) = WATCHED.get() {
+        w.lock_ignore_poison().remove(watcher_id);
     }
     // Note: we don't clear LAST_SPACE here. Another watcher may still be on
     // the same volume, and clearing the cache would force a spurious re-emit.
@@ -247,7 +244,7 @@ async fn poll_loop() {
 
         // Snapshot the watch list and deduplicate by volume_id.
         // Multiple panes on the same volume produce one poll.
-        let unique_volumes: HashMap<String, String> = match WATCHED.get().and_then(|w| w.lock().ok()) {
+        let unique_volumes: HashMap<String, String> = match WATCHED.get().map(|w| w.lock_ignore_poison()) {
             Some(map) => {
                 let mut deduped = HashMap::new();
                 for entry in map.values() {
@@ -426,10 +423,7 @@ fn exceeds_threshold(volume_id: &str, new: &CachedSpace, threshold: u64) -> bool
         Some(c) => c,
         None => return true,
     };
-    let map = match cache.lock() {
-        Ok(m) => m,
-        Err(_) => return true,
-    };
+    let map = cache.lock_ignore_poison();
     match map.get(volume_id) {
         Some(old) => {
             let diff = (old.available_bytes as i64 - new.available_bytes as i64).unsigned_abs();
@@ -440,10 +434,8 @@ fn exceeds_threshold(volume_id: &str, new: &CachedSpace, threshold: u64) -> bool
 }
 
 fn update_cache(volume_id: &str, space: &CachedSpace) {
-    if let Some(cache) = LAST_SPACE.get()
-        && let Ok(mut map) = cache.lock()
-    {
-        map.insert(volume_id.to_string(), space.clone());
+    if let Some(cache) = LAST_SPACE.get() {
+        cache.lock_ignore_poison().insert(volume_id.to_string(), space.clone());
     }
 }
 

@@ -86,3 +86,53 @@ impl<T> RwLockIgnorePoison<T> for RwLock<T> {
         self.write().unwrap_or_else(|e| e.into_inner())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::panic::{AssertUnwindSafe, catch_unwind};
+
+    /// Panics while holding `lock`, leaving it poisoned.
+    fn poison<T>(lock: &Mutex<T>) {
+        let panicked = catch_unwind(AssertUnwindSafe(|| {
+            let _held = lock.lock().unwrap();
+            panic!("poisoning the mutex on purpose");
+        }));
+        assert!(panicked.is_err());
+    }
+
+    #[test]
+    fn a_poisoned_mutex_still_hands_over_its_data() {
+        let lock = Mutex::new(vec![1, 2, 3]);
+        poison(&lock);
+        assert!(lock.is_poisoned());
+
+        // The whole point: the value under a poisoned lock is intact, and the
+        // next acquirer gets it instead of a second, app-killing panic.
+        assert_eq!(*lock.lock_ignore_poison(), vec![1, 2, 3]);
+        lock.lock_ignore_poison().push(4);
+        assert_eq!(*lock.lock_ignore_poison(), vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn a_poisoned_rwlock_still_reads_and_writes() {
+        let lock = RwLock::new(String::from("before"));
+        let panicked = catch_unwind(AssertUnwindSafe(|| {
+            let _held = lock.write().unwrap();
+            panic!("poisoning the rwlock on purpose");
+        }));
+        assert!(panicked.is_err());
+        assert!(lock.is_poisoned());
+
+        assert_eq!(*lock.read_ignore_poison(), "before");
+        *lock.write_ignore_poison() = String::from("after");
+        assert_eq!(*lock.read_ignore_poison(), "after");
+    }
+
+    #[test]
+    fn an_unpoisoned_lock_behaves_exactly_as_lock_does() {
+        let lock = Mutex::new(7);
+        *lock.lock_ignore_poison() += 1;
+        assert_eq!(*lock.lock().unwrap(), 8);
+    }
+}

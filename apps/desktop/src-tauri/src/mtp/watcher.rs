@@ -5,6 +5,7 @@
 //! `mtp-device-disconnected` events (via the connection manager). The frontend
 //! is a passive consumer. It never orchestrates connections.
 
+use crate::ignore_poison::IgnorePoison;
 use log::{debug, error, info, warn};
 use mtp_rs::mtp::HotplugEvent;
 use std::collections::HashSet;
@@ -75,10 +76,8 @@ pub async fn set_mtp_enabled(enabled: bool) {
         }
 
         // Clear known devices so re-enable detects everything as new
-        if let Some(known) = KNOWN_DEVICES.get()
-            && let Ok(mut guard) = known.lock()
-        {
-            guard.clear();
+        if let Some(known) = KNOWN_DEVICES.get() {
+            known.lock_ignore_poison().clear();
         }
 
         // Restore ptpcamerad on macOS
@@ -108,10 +107,7 @@ fn check_for_device_changes() {
         None => return,
     };
 
-    let mut known_guard = match known.lock() {
-        Ok(g) => g,
-        Err(_) => return,
-    };
+    let mut known_guard = known.lock_ignore_poison();
 
     let new_devices: Vec<_> = current_devices.difference(&known_guard).cloned().collect();
     let removed_devices: Vec<_> = known_guard.difference(&current_devices).cloned().collect();
@@ -210,10 +206,10 @@ pub fn start_mtp_watcher(app: &AppHandle) {
     let enabled = MTP_ENABLED.load(Ordering::SeqCst);
     let initial_devices = get_current_mtp_devices();
     let known = KNOWN_DEVICES.get_or_init(|| Mutex::new(HashSet::new()));
-    if let Ok(mut known_guard) = known.lock() {
-        *known_guard = initial_known_devices(enabled, &initial_devices);
-        debug!("Initial MTP devices: {:?}", known_guard);
-    }
+    let mut known_guard = known.lock_ignore_poison();
+    *known_guard = initial_known_devices(enabled, &initial_devices);
+    debug!("Initial MTP devices: {:?}", known_guard);
+    drop(known_guard);
 
     debug!(
         "Starting MTP device watcher (found {} initial device(s))",

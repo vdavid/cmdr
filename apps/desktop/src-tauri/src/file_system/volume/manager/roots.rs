@@ -9,6 +9,7 @@
 //! `../DETAILS.md` § "A volume ID owns a set of mount roots".
 
 use super::{Volume, VolumeManager};
+use crate::ignore_poison::RwLockIgnorePoison;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -166,9 +167,7 @@ impl Registration {
 impl VolumeManager {
     /// Every mount root known to reach `id`, active one first.
     pub fn known_roots(&self, id: &str) -> Vec<PathBuf> {
-        let Ok(volumes) = self.volumes.read() else {
-            return Vec::new();
-        };
+        let volumes = self.volumes.read_ignore_poison();
         let Some(entry) = volumes.get(id) else {
             return Vec::new();
         };
@@ -186,9 +185,7 @@ impl VolumeManager {
     /// write lock: teardown (`on_unmount`, stopping an index) belongs to the
     /// caller, which is why [`RootRemoval::Unregistered`] hands the volume back.
     pub fn remove_root(&self, root: &Path) -> RootRemoval {
-        let Ok(mut volumes) = self.volumes.write() else {
-            return RootRemoval::Unknown;
-        };
+        let mut volumes = self.volumes.write_ignore_poison();
         let Some((id, entry)) = volumes.iter_mut().find(|(_, entry)| entry.knows_root(root)) else {
             return RootRemoval::Unknown;
         };
@@ -237,9 +234,7 @@ impl VolumeManager {
     /// so the evidence arrives as a failed operation and the promotion rides on
     /// it. A root already known stale re-reports cheaply and changes nothing.
     pub fn mark_root_stale(&self, id: &str, root: &Path) -> StaleRootOutcome {
-        let Ok(mut volumes) = self.volumes.write() else {
-            return StaleRootOutcome::Unchanged;
-        };
+        let mut volumes = self.volumes.write_ignore_poison();
         let Some(entry) = volumes.get_mut(id) else {
             return StaleRootOutcome::Unchanged;
         };
@@ -272,8 +267,7 @@ impl VolumeManager {
     pub fn mount_id_for_path(&self, path: &str) -> Option<String> {
         let target = Path::new(path);
         self.volumes
-            .read()
-            .ok()?
+            .read_ignore_poison()
             .iter()
             .map(|(id, entry)| (id, &entry.volume))
             .filter(|(_, v)| v.root() != Path::new("/"))

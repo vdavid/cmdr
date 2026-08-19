@@ -6,6 +6,7 @@
 //! in-place via cache helpers) and full re-read fallback (> 500 events or unknown
 //! event kinds).
 
+use crate::ignore_poison::RwLockIgnorePoison;
 use notify_debouncer_full::{
     DebounceEventResult, DebouncedEvent, Debouncer, NoCache, new_debouncer_opt,
     notify::{
@@ -119,9 +120,7 @@ impl WatcherManager {
 /// Initialize the watcher manager with the app handle.
 /// Must be called during app setup.
 pub fn init_watcher_manager(app: AppHandle) {
-    if let Ok(mut manager) = WATCHER_MANAGER.write() {
-        manager.app_handle = Some(app);
-    }
+    WATCHER_MANAGER.write_ignore_poison().app_handle = Some(app);
 }
 
 /// Whether the app handle is registered yet (set once during app setup).
@@ -133,7 +132,7 @@ pub fn init_watcher_manager(app: AppHandle) {
 /// oversubscribing FSEvents. Production sets the handle at startup, before any
 /// browsing, so archive watches always start when a user opens a `.zip`.
 pub fn app_handle_present() -> bool {
-    WATCHER_MANAGER.read().ok().and_then(|m| m.app_handle.clone()).is_some()
+    WATCHER_MANAGER.read_ignore_poison().app_handle.is_some()
 }
 
 /// Start watching a directory for a given listing.
@@ -218,9 +217,7 @@ fn coverage_for_watched_path(path: &Path) -> WatchCoverage {
 /// Backs `LocalPosixVolume::listing_watch_coverage`, so it must stay a pure
 /// in-memory read: it runs once per directory inside recursive scan walkers.
 pub(crate) fn coverage_for_listings(listing_ids: &[String]) -> WatchCoverage {
-    let Ok(manager) = WATCHER_MANAGER.read() else {
-        return WatchCoverage::None;
-    };
+    let manager = WATCHER_MANAGER.read_ignore_poison();
     let mut best = WatchCoverage::None;
     for id in listing_ids {
         match manager.watches.get(id.as_str()).map(|w| w.coverage) {
@@ -288,10 +285,7 @@ pub(super) fn arm_and_reconcile(listing_id: &str, path: &Path) {
 
 /// Stop watching a directory for a given listing.
 pub fn stop_watching(listing_id: &str) {
-    let removed = match WATCHER_MANAGER.write() {
-        Ok(mut manager) => manager.watches.remove(listing_id),
-        Err(_) => None,
-    };
+    let removed = WATCHER_MANAGER.write_ignore_poison().watches.remove(listing_id);
 
     // Drop OUTSIDE the lock. Dropping a `WatchedDirectory` tears an FSEvents run loop
     // down, and notify's teardown busy-spins on `CFRunLoopIsWaiting` before it joins the
@@ -584,13 +578,7 @@ pub async fn handle_directory_change(listing_id: &str) {
         .volume;
 
     // Get app handle for emitting events
-    let app_handle = {
-        let manager = match WATCHER_MANAGER.read() {
-            Ok(m) => m,
-            Err(_) => return,
-        };
-        manager.app_handle.clone()
-    };
+    let app_handle = { WATCHER_MANAGER.read_ignore_poison().app_handle.clone() };
 
     // Re-read the directory via the Volume trait (works for all volume types).
     // Falls back to list_directory_core for listings whose volume was unregistered.
@@ -692,10 +680,7 @@ pub async fn handle_directory_change(listing_id: &str) {
 /// tests don't need that: they need determinism).
 #[cfg(feature = "playwright-e2e")]
 pub async fn flush_all_watchers() {
-    let listing_ids: Vec<String> = match WATCHER_MANAGER.read() {
-        Ok(m) => m.watches.keys().cloned().collect(),
-        Err(_) => return,
-    };
+    let listing_ids: Vec<String> = WATCHER_MANAGER.read_ignore_poison().watches.keys().cloned().collect();
     log::debug!("flush_all_watchers: flushing {} watches", listing_ids.len());
     for id in listing_ids {
         handle_directory_change(&id).await;
