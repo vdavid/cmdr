@@ -595,14 +595,14 @@ async fn volume_non_conditional_variants_pass_through_unchanged() {
 // find_unique_volume_name — TOCTOU reservation on local-FS dest volumes
 // ======================================================================
 //
-// Volume-side sibling of `conflict::find_unique_name`. For a Rename
+// Volume-side sibling of `unique_name::find_unique_name`. For a Rename
 // resolution the chosen `name (N)` must be atomically RESERVED with an
 // `O_CREAT|O_EXCL` placeholder when the destination volume is backed by a
 // local filesystem (`local_path().is_some()`), so a concurrent writer
 // (second Cmdr op, cloud-sync agent, backup tool) can't land a file at the
 // same name between our pick and the streaming write. Pre-fix the function
 // only probed `dest_volume.exists()` (non-atomic) and returned the path,
-// leaving a TOCTOU window. Mirrors `conflict.rs::find_unique_name_tests`.
+// leaving a TOCTOU window. Mirrors the reservation suite in `unique_name_tests.rs`.
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn local_fs_rename_reserves_the_chosen_name_on_disk() {
@@ -660,7 +660,7 @@ async fn non_local_dest_does_not_reserve_a_placeholder() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn local_fs_rename_continues_a_trailing_sequence() {
-    // The volume namer shares `conflict::{split_sequence, numbered_name}` with
+    // The volume namer shares `unique_name::{split_sequence, numbered_name}` with
     // the local-FS namer, so a name that already ends in ` (N)` continues the
     // series here too instead of nesting into `notes (1) (1).txt`.
     use crate::file_system::volume::backends::LocalPosixVolume;

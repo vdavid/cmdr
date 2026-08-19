@@ -182,7 +182,7 @@ pub(super) fn conditional_overwrites(
 /// Finds a unique inner path by appending ` (1)`, ` (2)`, … before the extension,
 /// avoiding both existing archive entries and already-planned paths.
 ///
-/// Deliberately its own numbering rather than `conflict::NameCandidates`: that
+/// Deliberately its own numbering rather than `unique_name::NameCandidates`: that
 /// walks candidates as a `Path` on a filesystem, this works
 /// on a slash-joined inner-path string that has to split its own stem and
 /// extension and check an `ArchiveIndex` plus a planned set. It also doesn't

@@ -7,7 +7,7 @@
 //! Tauri runtime or `MainThreadMarker`. The command layer
 //! (`commands/clipboard.rs`) reads the payload on the main thread and calls in.
 //!
-//! Naming/dedup reuses the ONE ` (N)` convention via `conflict::numbered_name`
+//! Naming/dedup reuses the ONE ` (N)` convention via `unique_name::numbered_name`
 //! (the same helper `find_unique_name` uses), and writes atomically through
 //! `Volume::create_file` (`O_CREAT|O_EXCL`): the loop tries `pasted.<ext>`,
 //! `pasted (1).<ext>`, … retrying on the TYPED `VolumeError::AlreadyExists`, so
@@ -21,15 +21,15 @@ use crate::file_system::VolumeError;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::{EntryType, Initiator, OpKind};
 
-use super::conflict::numbered_name;
 use super::manager;
 use super::types::WriteOperationType;
+use super::unique_name::numbered_name;
 
 /// Writes the clipboard `payload` into `dir` as `pasted.<ext>` (unique-named on
 /// collision), returning the created file's name + kind. `payload` resolving to
 /// nothing pasteable → `Ok(None)`. `dir` is already tilde-expanded by the caller.
 ///
-/// The write loops candidate names from `conflict::numbered_name`, calling
+/// The write loops candidate names from `unique_name::numbered_name`, calling
 /// `Volume::create_file` (atomic O_EXCL create+write) and retrying on the typed
 /// `AlreadyExists`. Emits the create synthetic listing diff on success so the new
 /// file lands in the pane and the cursor-land plumbing works like mkfile.

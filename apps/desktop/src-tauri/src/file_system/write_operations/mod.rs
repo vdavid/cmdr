@@ -52,6 +52,7 @@ mod state;
 mod status_cache;
 mod transfer;
 mod types;
+mod unique_name;
 mod validation;
 
 // Re-export `trash` at this level so `crate::file_system::write_operations::trash`

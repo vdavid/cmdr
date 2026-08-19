@@ -14,12 +14,13 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::super::conflict::{ApplyToAll, NameCandidates, apply_to_all_effective, apply_to_all_record};
+use super::super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
     ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent,
     WriteOperationError,
 };
+use super::super::super::unique_name::NameCandidates;
 use super::super::dest_name_index::fold;
 use super::transfer_error::map_volume_error;
 use crate::file_system::volume::{Volume, VolumeError};
@@ -679,7 +680,7 @@ pub(super) fn is_the_same_volume_path(source_path: &Path, dest_path: &Path) -> b
 ///
 /// On a **local-FS-backed** destination volume (`local_path().is_some()`) the
 /// chosen name is atomically RESERVED with an `O_CREAT|O_EXCL` placeholder, the
-/// same TOCTOU guard `conflict::find_unique_name` uses for the local-FS copy
+/// same TOCTOU guard `unique_name::find_unique_name` uses for the local-FS copy
 /// path. Without it, a concurrent writer (a second Cmdr op, a cloud-sync agent,
 /// a backup tool) could land a real file at `name (N)` between our non-atomic
 /// `exists()` probe and the streaming writer's create+truncate, and the copy
@@ -702,7 +703,7 @@ pub(super) fn is_the_same_volume_path(source_path: &Path, dest_path: &Path) -> b
 /// and rollback would then leave behind.
 ///
 /// Naming itself is not this function's business: the candidates come from
-/// `conflict::NameCandidates`, the same sequence the local-FS namer walks, so a
+/// `unique_name::NameCandidates`, the same sequence the local-FS namer walks, so a
 /// volume dest numbers identically and `photo (1).jpg` continues to
 /// `photo (2).jpg` here too. This function owns only the reservation.
 async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path, is_directory: bool) -> PathBuf {

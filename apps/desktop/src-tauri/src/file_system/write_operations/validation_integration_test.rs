@@ -4,7 +4,7 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
-use super::conflict::find_unique_name;
+use super::unique_name::find_unique_name;
 use super::*;
 use crate::test_support::TestDir;
 

@@ -35,7 +35,8 @@ The full top-level inventory is here:
   `list_active_operations` / `get_operation_status`), `operation_intent.rs` (`OperationIntent`, `PauseGate`), `human_wait.rs` (how long a person has kept the operation waiting),
   `archive_edit/` (the zip-edit driver).
 - Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `compress_estimate.rs`. Conflicts and overwrite:
-  `conflict.rs`, `conflict_slot.rs` (the one-answer-wins slot behind `resolve_write_conflict`), `overwrite.rs`. Cancellation and durability: `cancellable.rs`, `rollback.rs`, `durability.rs`.
+  `conflict.rs` (policy), `unique_name.rs` (the ` (N)` namer), `conflict_slot.rs` (the one-answer-wins slot behind
+  `resolve_write_conflict`), `overwrite.rs`. Cancellation and durability: `cancellable.rs`, `rollback.rs`, `durability.rs`.
 - Vocabulary and edges: `types.rs`, `event_sinks.rs`, `error_classification.rs`, `validation.rs`, `analytics.rs`,
   `eta.rs`. Journaling: `journal.rs`, `journal_search.rs`. Remote archive I/O: `archive_remote_edit.rs`,
   `scratch_dir.rs`. Entry points: `create/` + `create.rs`, `rename/` + `rename.rs`, `paste_clipboard.rs`. Fixtures:
@@ -64,18 +65,18 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   missing destination (and its ancestors) can never materialize a folder inside a source. The volume-aware pipelines
   mirror both the behavior and the order with `Volume::create_directory_all(dest)`; see `../volume/DETAILS.md`
   § "Recursive destination create".
-- **`conflict.rs::numbered_name(stem, ext, counter)` is the ONE ` (N)` formatter** (`counter 0` = bare, `1..` = ` (N)`).
+- **`unique_name.rs::numbered_name(stem, ext, counter)` is the ONE ` (N)` formatter** (`counter 0` = bare, `1..` = ` (N)`).
   `find_unique_name`, `next_available_name`, `paste_clipboard.rs`, and the volume namer
   (`transfer/volume/conflict.rs::find_unique_volume_name`) all go through it, so the numbering paths can't drift.
   `archive_edit/conflicts.rs::find_unique_inner` is deliberately outside this: it numbers slash-joined inner-path
   strings against an `ArchiveIndex`, and its doc comment says so.
-- **`conflict.rs::split_sequence(stem) -> (base, next_counter)` is the ONE sequence rule.** It reads a trailing ` (N)`
+- **`unique_name.rs::split_sequence(stem) -> (base, next_counter)` is the ONE sequence rule.** It reads a trailing ` (N)`
   off a stem so a search continues the series instead of nesting: duplicating `photo (1).jpg` gives `photo (2).jpg`,
   never `photo (1) (1).jpg`. What counts as a sequence is narrow on purpose, because everything else is somebody's
   filename: the separating space is required and the digits must be ASCII (`Report (final).pdf`, `photo(1).jpg`, and
   `photo (+1).jpg` are plain text); zero padding isn't preserved (`photo (007)` continues at `(8)`); and a number with
   no `u32` successor is plain text too, which keeps the returned counter always advanceable.
-- **`conflict.rs::NameCandidates` is the whole of what the ` (N)` searches share**: the parent, the base to number from,
+- **`unique_name.rs::NameCandidates` is the whole of what the ` (N)` searches share**: the parent, the base to number from,
   and the counter to try next, walked with `current()` / `advance()`. Every search walks the same candidates and differs
   only in how it TESTS one. `find_unique_name` RESERVES its pick with an `O_CREAT|O_EXCL` placeholder and must keep
   advancing when it loses that race; `next_available_name` only probes (`path_exists_or_is_symlink`, so a dangling
@@ -173,7 +174,7 @@ An operation waiting on a person emits nothing: it is holding still on purpose, 
 - **A pause needs no announcement**, because a pause changes the registry snapshot's `LifecycleStatus` and `operations-changed` carries that to every window on its own. A clash leaves the operation `Running`, which is exactly why it needs a voice.
 - **`last_progress` is the one copy of "the newest tick", and it is stored WITHOUT its activity.** The transfer probe's stall heartbeat reads the same field (filtering to the phases where a stall means anything) rather than keeping a second one. Activity is stripped on the way in because a re-send exists precisely because what the operation is doing has changed: a stored `waiting_on: You` replayed after the answer would hide the speed for the rest of the transfer.
 
-❌ A new way to park an operation on a person must open the human-wait clock (§ "ETA + throughput") AND announce itself. Miss the first and the estimate collapses on resume; miss the second and every surface lies about the speed until the person answers. Pinned by `conflict.rs::stop_branch_park_tests`.
+❌ A new way to park an operation on a person must open the human-wait clock (§ "ETA + throughput") AND announce itself. Miss the first and the estimate collapses on resume; miss the second and every surface lies about the speed until the person answers. Pinned by `conflict_stop_tests.rs`.
 
 ## Key patterns and gotchas (shared)
 
@@ -188,7 +189,7 @@ An operation waiting on a person emits nothing: it is holding still on purpose, 
 
 **Two-layer cancellation.** `AtomicU8` (`OperationIntent`) for fast in-loop checks in local file operations. Volume operations (MTP, SMB) use the same `AtomicU8` checks but run on the async executor (no `spawn_blocking`). `run_cancellable` wraps blocking local operations (for example, network-mount copies that may block indefinitely) in a separate thread, polling the flag every 100 ms via `mpsc::channel`.
 
-**Stop-mode conflict resolution.** Creates a per-conflict `tokio::sync::oneshot` channel, **arms `state.conflict_slot` with the sender BEFORE emitting the `write-conflict` event**, then blocks on the receiver (`blocking_recv()` inside `spawn_blocking`; the volume path `await`s instead). Arm-before-emit is load-bearing: a responder can only answer a conflict it has observed, so if the event reached `resolve_write_conflict` (or a test responder sink) before the slot was armed, the answer would land on nothing and the recv would hang. Both the local-FS branch (`conflict.rs`) and the volume branch (`transfer/volume/conflict.rs`) order it this way. Arming also MINTS the clash's `ConflictId`, which is why every emit site arms before it builds the event: the id rides out on it. Frontend calls `resolve_write_conflict(operation_id, conflict_id, resolution, apply_to_all)`, which answers through the slot. `cancel_write_operation` calls `conflict_slot.abandon()`, dropping the sender so the receiver returns `Err` (interpreted as cancellation). No polling, no safety timeout, immediate unblock on cancel. Pinned by `conflict.rs::stop_branch_park_tests` (local) and the `ConflictResponderSink` suites (volume).
+**Stop-mode conflict resolution.** Creates a per-conflict `tokio::sync::oneshot` channel, **arms `state.conflict_slot` with the sender BEFORE emitting the `write-conflict` event**, then blocks on the receiver (`blocking_recv()` inside `spawn_blocking`; the volume path `await`s instead). Arm-before-emit is load-bearing: a responder can only answer a conflict it has observed, so if the event reached `resolve_write_conflict` (or a test responder sink) before the slot was armed, the answer would land on nothing and the recv would hang. Both the local-FS branch (`conflict.rs`) and the volume branch (`transfer/volume/conflict.rs`) order it this way. Arming also MINTS the clash's `ConflictId`, which is why every emit site arms before it builds the event: the id rides out on it. Frontend calls `resolve_write_conflict(operation_id, conflict_id, resolution, apply_to_all)`, which answers through the slot. `cancel_write_operation` calls `conflict_slot.abandon()`, dropping the sender so the receiver returns `Err` (interpreted as cancellation). No polling, no safety timeout, immediate unblock on cancel. Pinned by `conflict_stop_tests.rs` (local) and the `ConflictResponderSink` suites (volume).
 
 **Answering a conflict is arbitrated, the answer NAMES the conflict it is for, and the arbitration is REPORTED.** `write-conflict` broadcasts to every webview, so several surfaces can render one prompt and each of them can be answered (the progress dialog and the main window's `operation-conflict.svelte.ts` host today). `conflict_slot.rs` is a three-state machine — `Idle` / `Awaiting { id, sender, prompt }` / `Answered { id }` — under one `std::sync::Mutex`, and `answer(conflict_id, response)` performs the whole transition inside it, so exactly one answer reaches the parked operation.
 

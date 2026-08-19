@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::super::cancellable::run_cancellable;
-use super::super::conflict::{ApplyToAll, create_unique_dir, next_available_name};
+use super::super::conflict::ApplyToAll;
 use super::super::durability::flush_created_destinations;
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, top_level_source_path};
 use super::super::scan_cache::take_cached_scan_result;
@@ -24,6 +24,7 @@ use super::super::types::{
     WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
     WriteProgressEvent, WriteSourceItemDoneEvent,
 };
+use super::super::unique_name::{create_unique_dir, next_available_name};
 use super::super::validation::{is_same_file, validate_disk_space, validate_file_sizes_for_filesystem};
 use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};
 
