@@ -621,6 +621,14 @@ else
             export CMDR_DATA_DIR="/tmp/cmdr-e2e-data"
             mkdir -p "$CMDR_DATA_DIR"
 
+            # Pin the UI language before the app reads its settings: it resolves the
+            # language from the machine otherwise, so a container (or a runner) with a
+            # non-English locale would quietly rewrite every asserted string. The macOS
+            # harness pins the same value in desktop-svelte-e2e-playwright.go; keep them
+            # in sync. Its companion `-AppleLocale` launch args are macOS-only and have
+            # no meaning here: Linux has no NSUserDefaults.
+            npx tsx -e "import { pinUiLanguage } from \"./test/e2e-shared/pin-locale.js\"; pinUiLanguage(\"$CMDR_DATA_DIR\")"
+
             # Create fixtures via the shared helper
             export CMDR_E2E_START_PATH
             CMDR_E2E_START_PATH=$(npx tsx -e "import { createFixtures } from \"./test/e2e-shared/fixtures.js\"; console.log(createFixtures())" | tail -1)

@@ -361,6 +361,40 @@ changes nothing they observe. The mechanism lives at the code: `test_mode::is_e2
 `commands::ui::{show_main_window, order_window_to_back}` (per-window `orderBack:`), called from the openers via
 `app-mode.ts`'s `orderChildWindowToBackInE2e`.
 
+## The locale pin
+
+Cmdr reads BOTH locale answers from the OS: the UI language from the machine's ordered language preferences, and the
+number/date conventions from its region (`src-tauri/src/intl/`). Right for a user, wrong for a suite, and they need two
+different pins, both applied by every harness before the binary launches. `../e2e-shared/pin-locale.ts` owns both:
+
+- **`pinUiLanguage(dataDir)`** writes `appearance.language: "en"` into the instance's `settings.json`. Cross-platform,
+  and a plain settings write rather than a test hook: `'en'` is what a user who picked English in Settings > Appearance
+  has, so the app under test runs production code all the way down. Before launch, since `settings.json` is read once at
+  startup. It MERGES, because the marketing-shots instance keeps a hand-adjusted data dir between runs.
+- **`EN_US_LOCALE_ARGS`** are macOS process arguments (`-AppleLocale en_US -AppleLanguages "(en-US)"`). `NSUserDefaults`
+  reads its argument domain first, so they outrank System Settings for that process alone and nothing global changes.
+  This is the only lever for the FORMATTING half: it follows the OS region and no setting overrides it, deliberately
+  (`src/lib/intl/CLAUDE.md`). Inert on Linux, which has no `NSUserDefaults`.
+
+Callers: `apps/desktop/scripts/e2e-linux.sh` (settings half only), `apps/desktop/scripts/i18n-capture.ts`, and
+`apps/desktop/scripts/marketing-shots.ts`. The checker launches its shards itself, so
+`scripts/check/checks/e2e-locale-pin.go` carries a Go twin of both; keep the two in sync.
+
+**Measured on this machine, both halves** (verified 2026-08-19, release Playwright binary):
+
+- **Language.** Launched with `-AppleLanguages "(hu-HU)"` and no settings pin, six of `settings.spec.ts`'s eleven tests
+  go red, asserting `"Appearance"` against `"Megjelenés"` and failing every `clickSectionByTextJs` that steers by an
+  English label. With the pin, all eleven pass under the same preference.
+- **Formatting.** A US-English Mac set to the Swedish region (`AppleLocale = en_US@rg=sezzzz`, a shape a developer
+  really has) composes `en-SE`, and the copy dialog renders `1,00 KB` where `file-operations.spec.ts` asserts `1.00 KB`:
+  four specs red on a machine nobody would call non-English. With `-AppleLocale en_US`, all seventeen
+  `file-operations.spec.ts` tests pass on that same machine.
+
+Both failure modes read as product regressions, which is what makes them worth pinning rather than documenting.
+
+The pseudolocale pass is a separate path: `pnpm i18n:overflow` drives `setLocale('en-XA')` against the RUNNING app and
+touches neither pin, so they don't meet.
+
 ## App modes and their title bars
 
 `app-mode.ts` resolves one of `prod` / `dev` / `e2e` / `capture`, which the main window turns into a tinted title bar

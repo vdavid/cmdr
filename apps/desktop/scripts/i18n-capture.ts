@@ -57,6 +57,7 @@ import {
   warnIfForeignCmdr,
   createTrackedArtifactGuard,
 } from './capture-runtime.ts'
+import { EN_US_LOCALE_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const desktopDir = join(here, '..')
@@ -137,7 +138,12 @@ let captureDataDir: string | null = null
 function ensureCaptureDataDir() {
   if (captureDataDir == null) {
     captureDataDir = mkdtempSync(join(tmpdir(), 'cmdr-i18n-capture-data-'))
-    console.log(`[i18n-capture] isolated data dir at ${captureDataDir} (fresh default settings)`)
+    // Default settings except the language, which is pinned: the app resolves it
+    // from the machine's preference list, so a capture on a non-English Mac would
+    // photograph every coupling screenshot in that language. The overflow pass
+    // switches locale on the RUNNING app and is unaffected.
+    pinUiLanguage(captureDataDir)
+    console.log(`[i18n-capture] isolated data dir at ${captureDataDir} (default settings, language pinned to en)`)
   }
   return captureDataDir
 }
@@ -458,7 +464,10 @@ async function launchAndCapture(
   const mcpEnv = { CMDR_MCP_PORT: String(mcpPort), CMDR_MCP_ENABLED: '1' }
 
   console.log(`[i18n-capture] launching app (${passLabel}); MCP port ${String(mcpPort)}…`)
-  appProc = spawn(binary, [], {
+  // The locale args make this an en-US machine for this process alone, so the
+  // shots carry US dates and number grouping whatever the developer's region is.
+  // See `test/e2e-shared/pin-locale.ts`.
+  appProc = spawn(binary, [...EN_US_LOCALE_ARGS], {
     cwd: desktopDir,
     stdio: 'inherit',
     env: {

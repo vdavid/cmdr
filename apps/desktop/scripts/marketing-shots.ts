@@ -39,6 +39,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { frontmostApp, hostTriple, reserveFreePort, waitForSocket, warnIfForeignCmdr } from './capture-runtime.ts'
 import { buildThreadSql } from './marketing-shots-thread.ts'
+import { EN_US_LOCALE_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.ts'
 
 const LOG = '[marketing-shots]'
 
@@ -338,6 +339,11 @@ async function main(): Promise<void> {
   mkdirSync(dataDir, { recursive: true })
   mkdirSync(outDir, { recursive: true })
   seedSettingsIfNew()
+  // Every run, not just the first: the language is something a master is JUDGED on,
+  // and the app would otherwise resolve it from whatever the machine's preference
+  // list says. The masters are English. Merges, so a hand-adjusted instance keeps
+  // its pane paths, tabs, and favorites.
+  pinUiLanguage(dataDir)
   // Before the launch: the app opens its index at startup, so a copy afterwards is a copy
   // the running instance never reads.
   cloneProdIndex()
@@ -352,7 +358,9 @@ async function main(): Promise<void> {
   }
 
   console.log(`${LOG} launching the app; data dir ${dataDir}, MCP port ${String(mcpPort)}…`)
-  appProc = spawn(binary, [], {
+  // en-US for this process alone, so a master never shows the developer's own
+  // region's dates and number grouping. See `test/e2e-shared/pin-locale.ts`.
+  appProc = spawn(binary, [...EN_US_LOCALE_ARGS], {
     cwd: desktopDir,
     stdio: 'inherit',
     env: {

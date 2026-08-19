@@ -470,6 +470,9 @@ func createE2EFixtures(desktopDir, instanceID string) (string, error) {
 // startTauriApp launches the Tauri binary in the background for one shard.
 // Returns the appHandle (cmd + an exited channel that closes on process exit).
 func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
+	if err := pinUiLanguage(s.dataDir); err != nil {
+		return nil, err
+	}
 	lf, err := os.Create(s.logFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create log file %s: %w", s.logFile, err)
@@ -484,7 +487,7 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		fmt.Fprintln(lf, "=== RUST_LOG unset (default warn level) ===")
 	}
 
-	cmd := exec.Command(binaryPath)
+	cmd := exec.Command(binaryPath, enUsLocaleArgs()...)
 	cmd.Env = append(os.Environ(),
 		// CMDR_INSTANCE_ID drives the macOS Keychain SERVICE_NAME suffix
 		// ("Cmdr-<instance>") and the Dock label ("Cmdr (E2E <kind>)") so parallel shards
