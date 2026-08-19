@@ -1085,22 +1085,6 @@
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
-  "errors.write.sameLocation.title.copy": "Kan niet naar dezelfde locatie kopiëren",
-  "@errors.write.sameLocation.title.copy": {
-    "sourceHash": "7492839"
-  },
-  "errors.write.sameLocation.title.move": "Kan niet naar dezelfde locatie verplaatsen",
-  "@errors.write.sameLocation.title.move": {
-    "sourceHash": "46b6a41"
-  },
-  "errors.write.sameLocation.message": "De bron en bestemming zijn hetzelfde.",
-  "@errors.write.sameLocation.message": {
-    "sourceHash": "d163db2"
-  },
-  "errors.write.sameLocation.suggestion": "Kies een andere bestemmingsmap.",
-  "@errors.write.sameLocation.suggestion": {
-    "sourceHash": "a41f65a"
-  },
   "errors.write.destinationInsideSource.title.copy": "Kan een map niet in zichzelf kopiëren",
   "@errors.write.destinationInsideSource.title.copy": {
     "sourceHash": "40c58ea"

@@ -519,7 +519,6 @@ export type WriteOperationError =
   | { type: 'destination_exists'; path: string }
   | { type: 'permission_denied'; path: string; message: string }
   | { type: 'insufficient_space'; required: number; available: number; volumeName: string | null }
-  | { type: 'same_location'; path: string }
   | { type: 'destination_inside_source'; source: string; destination: string }
   | { type: 'symlink_loop'; path: string }
   | { type: 'cancelled'; message: string }

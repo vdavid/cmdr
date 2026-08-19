@@ -44,11 +44,11 @@ function isMtpClipboardRefusal(volumeId: string): boolean {
 }
 
 /**
- * True when a move of `sourcePaths` into `destination` has nothing to do,
- * because every one of them already sits directly in it.
+ * True when this paste has nothing to do: a MOVE whose sources already sit
+ * directly in the destination.
  *
  * A copy there is a different thing entirely (it duplicates each item under a
- * free ` (N)` name), so this is asked for moves only. A PARTIAL set still
+ * free ` (N)` name), so only a move can answer yes. A PARTIAL set still
  * dispatches: the backend leaves the ones already there alone and moves the
  * rest.
  *
@@ -58,7 +58,12 @@ function isMtpClipboardRefusal(volumeId: string): boolean {
  * moves nothing; the backend then does nothing, which is the same outcome one
  * step later.
  */
-function everySourceIsAlreadyIn(sourcePaths: string[], destination: string): boolean {
+function pasteWouldMoveNothing(
+  operationType: TransferOperationType,
+  sourcePaths: string[],
+  destination: string,
+): boolean {
+  if (operationType !== 'move') return false
   const normDest = destination.replace(/\/+$/, '')
   return sourcePaths.every((path) => {
     const normSource = path.replace(/\/+$/, '')
@@ -303,7 +308,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       // dialog, no transfer, no "Moved 0 files". The clipboard survives, so a
       // paste somewhere that matters still works. A copy takes the opposite
       // route and duplicates them.
-      if (operationType === 'move' && everySourceIsAlreadyIn(result.paths, destPath)) return
+      if (pasteWouldMoveNothing(operationType, result.paths, destPath)) return
 
       const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())
       const destVolId = access.getPaneVolumeId(access.getFocusedPane())

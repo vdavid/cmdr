@@ -1085,22 +1085,6 @@
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
-  "errors.write.sameLocation.title.copy": "Không thể sao chép vào cùng một vị trí",
-  "@errors.write.sameLocation.title.copy": {
-    "sourceHash": "7492839"
-  },
-  "errors.write.sameLocation.title.move": "Không thể di chuyển vào cùng một vị trí",
-  "@errors.write.sameLocation.title.move": {
-    "sourceHash": "46b6a41"
-  },
-  "errors.write.sameLocation.message": "Nguồn và đích là một.",
-  "@errors.write.sameLocation.message": {
-    "sourceHash": "d163db2"
-  },
-  "errors.write.sameLocation.suggestion": "Chọn một thư mục đích khác.",
-  "@errors.write.sameLocation.suggestion": {
-    "sourceHash": "a41f65a"
-  },
   "errors.write.destinationInsideSource.title.copy": "Không thể sao chép một thư mục vào chính nó",
   "@errors.write.destinationInsideSource.title.copy": {
     "sourceHash": "40c58ea"

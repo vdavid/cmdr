@@ -1085,22 +1085,6 @@
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
-  "errors.write.sameLocation.title.copy": "无法拷贝到相同位置",
-  "@errors.write.sameLocation.title.copy": {
-    "sourceHash": "7492839"
-  },
-  "errors.write.sameLocation.title.move": "无法移动到相同位置",
-  "@errors.write.sameLocation.title.move": {
-    "sourceHash": "46b6a41"
-  },
-  "errors.write.sameLocation.message": "来源和目标是同一个。",
-  "@errors.write.sameLocation.message": {
-    "sourceHash": "d163db2"
-  },
-  "errors.write.sameLocation.suggestion": "选择一个不同的目标文件夹。",
-  "@errors.write.sameLocation.suggestion": {
-    "sourceHash": "a41f65a"
-  },
   "errors.write.destinationInsideSource.title.copy": "无法把文件夹拷贝到它自身里",
   "@errors.write.destinationInsideSource.title.copy": {
     "sourceHash": "40c58ea"

@@ -1085,22 +1085,6 @@
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
-  "errors.write.sameLocation.title.copy": "Não dá para copiar para o mesmo local",
-  "@errors.write.sameLocation.title.copy": {
-    "sourceHash": "7492839"
-  },
-  "errors.write.sameLocation.title.move": "Não dá para mover para o mesmo local",
-  "@errors.write.sameLocation.title.move": {
-    "sourceHash": "46b6a41"
-  },
-  "errors.write.sameLocation.message": "A origem e o destino são o mesmo.",
-  "@errors.write.sameLocation.message": {
-    "sourceHash": "d163db2"
-  },
-  "errors.write.sameLocation.suggestion": "Escolha uma pasta de destino diferente.",
-  "@errors.write.sameLocation.suggestion": {
-    "sourceHash": "a41f65a"
-  },
   "errors.write.destinationInsideSource.title.copy": "Não dá para copiar uma pasta para dentro dela mesma",
   "@errors.write.destinationInsideSource.title.copy": {
     "sourceHash": "40c58ea"

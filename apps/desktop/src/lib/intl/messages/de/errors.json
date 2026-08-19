@@ -1085,22 +1085,6 @@
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
-  "errors.write.sameLocation.title.copy": "Kopieren an denselben Ort nicht möglich",
-  "@errors.write.sameLocation.title.copy": {
-    "sourceHash": "7492839"
-  },
-  "errors.write.sameLocation.title.move": "Bewegen an denselben Ort nicht möglich",
-  "@errors.write.sameLocation.title.move": {
-    "sourceHash": "46b6a41"
-  },
-  "errors.write.sameLocation.message": "Quelle und Ziel sind identisch.",
-  "@errors.write.sameLocation.message": {
-    "sourceHash": "d163db2"
-  },
-  "errors.write.sameLocation.suggestion": "Wähle einen anderen Zielordner.",
-  "@errors.write.sameLocation.suggestion": {
-    "sourceHash": "a41f65a"
-  },
   "errors.write.destinationInsideSource.title.copy": "Ordner kann nicht in sich selbst kopiert werden",
   "@errors.write.destinationInsideSource.title.copy": {
     "sourceHash": "40c58ea"

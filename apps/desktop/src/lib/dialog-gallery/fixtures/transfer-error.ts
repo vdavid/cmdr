@@ -63,10 +63,6 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       volumeName: 'Naspolya media (SMB)',
     },
   },
-  same_location: {
-    operationType: 'move',
-    error: { type: 'same_location', path: '/Users/david/projects-git/vdavid/cmdr' },
-  },
   destination_inside_source: {
     operationType: 'move',
     error: {

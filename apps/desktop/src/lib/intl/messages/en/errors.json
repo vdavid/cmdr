@@ -1657,28 +1657,6 @@
     "screenshot": "transfer-error-destination_exists.png"
   },
 
-  "errors.write.sameLocation.title.copy": "Can't copy to the same location",
-  "errors.write.sameLocation.title.move": "Can't move to the same location",
-  "errors.write.sameLocation.message": "The source and destination are the same.",
-  "errors.write.sameLocation.suggestion": "Choose a different destination folder.",
-  "@errors.write.sameLocation.title.copy": {
-    "description": "Title of the copy/move error dialog when source and destination are identical (copy variant). Plain text. Uses a contraction (\"Can't\"). This is a raw errors.* string (no ICU). Only copy and move reach this error (delete and trash have no destination).",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.sameLocation.title.move": {
-    "description": "Title of the copy/move error dialog when source and destination are identical (move variant). Plain text. Uses a contraction (\"Can't\"). This is a raw errors.* string (no ICU). Only copy and move reach this error (delete and trash have no destination).",
-    "screenshot": "transfer-error-same_location.png"
-  },
-  "@errors.write.sameLocation.message": {
-    "description": "Body of the copy/move error dialog when source and destination are identical. Plain text.",
-    "screenshot": "transfer-error-same_location.png"
-  },
-  "@errors.write.sameLocation.suggestion": {
-    "description": "Recovery suggestion when source and destination are identical. Plain text.",
-    "screenshot": "transfer-error-same_location.png"
-  },
-
   "errors.write.destinationInsideSource.title.copy": "Can't copy a folder into itself",
   "errors.write.destinationInsideSource.title.move": "Can't move a folder into itself",
   "errors.write.destinationInsideSource.message.copy": "You're trying to copy a folder into one of its own subfolders.",

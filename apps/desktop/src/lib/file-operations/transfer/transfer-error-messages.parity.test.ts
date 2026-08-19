@@ -90,16 +90,6 @@ const cases: Case[] = [
     },
   },
   {
-    name: 'same_location (move)',
-    error: { type: 'same_location', path: '/p' },
-    op: 'move',
-    expected: {
-      title: "Can't move to the same location",
-      message: 'The source and destination are the same.',
-      suggestion: 'Choose a different destination folder.',
-    },
-  },
-  {
     name: 'destination_inside_source (move)',
     error: { type: 'destination_inside_source', source: '/a', destination: '/a/b' },
     op: 'move',
@@ -352,16 +342,6 @@ const cases: Case[] = [
       title: "Couldn't find the file",
       message: 'The file or folder you tried to delete no longer exists.',
       suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
-    },
-  },
-  {
-    name: 'same_location (copy)',
-    error: { type: 'same_location', path: '/p' },
-    op: 'copy',
-    expected: {
-      title: "Can't copy to the same location",
-      message: 'The source and destination are the same.',
-      suggestion: 'Choose a different destination folder.',
     },
   },
   {

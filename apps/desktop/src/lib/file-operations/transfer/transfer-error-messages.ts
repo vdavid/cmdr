@@ -62,13 +62,6 @@ const simpleMessageFactories: Partial<
     message: w('destinationExists.message'),
     suggestion: w('destinationExists.suggestion'),
   }),
-  // sameLocation can only happen on copy/move (delete/trash have no destination),
-  // so `${op}` only ever resolves to `.copy` or `.move` here.
-  same_location: (op) => ({
-    title: w(`sameLocation.title.${op}`),
-    message: w('sameLocation.message'),
-    suggestion: w('sameLocation.suggestion'),
-  }),
   // destinationInsideSource can only happen on copy/move (delete/trash have no
   // destination), so `${op}` only ever resolves to `.copy` or `.move` here.
   destination_inside_source: (op) => ({
@@ -158,7 +151,6 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   io_error: { category: 'serious', retryHint: true },
   symlink_loop: { category: 'serious', retryHint: false },
   source_not_found: { category: 'needs_action', retryHint: false },
-  same_location: { category: 'needs_action', retryHint: false },
   destination_exists: { category: 'needs_action', retryHint: false },
   permission_denied: { category: 'needs_action', retryHint: false },
   insufficient_space: { category: 'needs_action', retryHint: false },
@@ -293,7 +285,6 @@ export function getUserFriendlyMessage(
 const pathOnlyTypes = new Set<WriteOperationError['type']>([
   'source_not_found',
   'destination_exists',
-  'same_location',
   'symlink_loop',
   'device_disconnected',
   'file_locked',

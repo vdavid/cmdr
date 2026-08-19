@@ -59,13 +59,6 @@ describe('getUserFriendlyMessage', () => {
       expect(result.message).toContain('512.00 MB')
     })
 
-    it('returns user-friendly message for same_location error', () => {
-      const error: WriteOperationError = { type: 'same_location', path: '/same/path' }
-      const result = getUserFriendlyMessage(error)
-
-      expect(result.title).toBe("Can't copy to the same location")
-    })
-
     it('returns user-friendly message for destination_inside_source error', () => {
       const error: WriteOperationError = {
         type: 'destination_inside_source',
@@ -118,13 +111,6 @@ describe('getUserFriendlyMessage', () => {
       const result = getUserFriendlyMessage(error, 'move')
 
       expect(result.message).toContain('move')
-    })
-
-    it('uses "Move" in same_location title', () => {
-      const error: WriteOperationError = { type: 'same_location', path: '/same/path' }
-      const result = getUserFriendlyMessage(error, 'move')
-
-      expect(result.title).toBe("Can't move to the same location")
     })
 
     it('uses "Move" in destination_inside_source title', () => {
@@ -541,7 +527,6 @@ describe('getErrorDisplayMeta', () => {
   // assigned per `WriteOperationError` variant (now derived on the FE).
   const cases: Array<{ error: WriteOperationError; category: string; retryHint: boolean }> = [
     { error: { type: 'source_not_found', path: '/p' }, category: 'needs_action', retryHint: false },
-    { error: { type: 'same_location', path: '/p' }, category: 'needs_action', retryHint: false },
     { error: { type: 'destination_exists', path: '/p' }, category: 'needs_action', retryHint: false },
     { error: { type: 'permission_denied', path: '/p', message: 'm' }, category: 'needs_action', retryHint: false },
     { error: { type: 'cancelled', message: 'm' }, category: 'transient', retryHint: true },
