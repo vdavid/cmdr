@@ -12,12 +12,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { OperationItemView } from '$lib/tauri-commands'
 import type { FilePaneAPI } from './types'
 
-const { getOperationLogDetailSpy, moveCursorSpy, findFileIndexSpy, onDirectoryDiffSpy } = vi.hoisted(() => ({
-  getOperationLogDetailSpy: vi.fn(),
-  moveCursorSpy: vi.fn<() => Promise<void>>(),
-  findFileIndexSpy: vi.fn(),
-  onDirectoryDiffSpy: vi.fn(),
-}))
+const { getOperationLogDetailSpy, moveCursorSpy, findFileIndexSpy, onDirectoryDiffSpy, whenSettledSpy } = vi.hoisted(
+  () => ({
+    getOperationLogDetailSpy: vi.fn(),
+    moveCursorSpy: vi.fn<() => Promise<void>>(),
+    findFileIndexSpy: vi.fn(),
+    onDirectoryDiffSpy: vi.fn(),
+    whenSettledSpy: vi.fn<(operationId: string) => Promise<boolean>>(),
+  }),
+)
 
 vi.mock('$lib/tauri-commands', () => ({
   getOperationLogDetail: getOperationLogDetailSpy,
@@ -25,6 +28,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onDirectoryDiff: onDirectoryDiffSpy,
 }))
 vi.mock('$lib/file-operations/mkdir/new-folder-operations', () => ({ moveCursorToNewFolder: moveCursorSpy }))
+vi.mock('$lib/file-operations/settled-operations', () => ({ whenOperationSettled: whenSettledSpy }))
 
 import {
   duplicateRenameDestination,
@@ -77,6 +81,7 @@ function makePane(currentPath = FOLDER) {
 beforeEach(() => {
   vi.clearAllMocks()
   moveCursorSpy.mockResolvedValue(undefined)
+  whenSettledSpy.mockResolvedValue(true)
   getOperationLogDetailSpy.mockResolvedValue({ operation: {}, items: [item()], totalItems: 1 })
 })
 
@@ -222,6 +227,49 @@ describe('openRenameOnDuplicate — the settled tail', () => {
 
     await openRenameOnDuplicate({ context: context(), operationId: 'op-1', paneRef: pane.ref, showHiddenFiles: false })
 
+    expect(pane.spies.startRename).not.toHaveBeenCalled()
+  })
+
+  it('does NOT read the journal until the operation has SETTLED', async () => {
+    // The regression anchor. The journal batches item rows in memory and flushes
+    // them inside its finalize barrier, which runs AFTER the handler emitted
+    // `write-complete`, so a single-item duplicate has no readable row at
+    // complete time. Reading there returns an empty page and the editor silently
+    // never opens: green stubs, dead feature. Move this read back to the
+    // terminal event and this test says so.
+    const pane = makePane()
+    let releaseSettle: (settled: boolean) => void = () => {}
+    whenSettledSpy.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        releaseSettle = resolve
+      }),
+    )
+
+    const running = openRenameOnDuplicate({
+      context: context(),
+      operationId: 'op-1',
+      paneRef: pane.ref,
+      showHiddenFiles: false,
+    })
+    await Promise.resolve()
+
+    expect(whenSettledSpy).toHaveBeenCalledExactlyOnceWith('op-1')
+    expect(getOperationLogDetailSpy).not.toHaveBeenCalled()
+
+    releaseSettle(true)
+    await running
+
+    expect(getOperationLogDetailSpy).toHaveBeenCalledExactlyOnceWith('op-1', 1, 0)
+    expect(pane.spies.startRename).toHaveBeenCalledTimes(1)
+  })
+
+  it('an operation that never settles keeps the generated name, silently', async () => {
+    whenSettledSpy.mockResolvedValue(false)
+    const pane = makePane()
+
+    await openRenameOnDuplicate({ context: context(), operationId: 'op-1', paneRef: pane.ref, showHiddenFiles: false })
+
+    expect(getOperationLogDetailSpy).not.toHaveBeenCalled()
     expect(pane.spies.startRename).not.toHaveBeenCalled()
   })
 

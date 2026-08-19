@@ -1,23 +1,30 @@
 /**
  * The settled-transfer tail that names a duplicate, wired through the real
- * `createDialogState`.
+ * `createDialogState` AND the real settle watch.
  *
- * `duplicate-rename.test.ts` pins the decision itself; this file pins the two
- * things only the dialog state can answer: that the operation id is read while
- * the progress dialog still owns it (it releases the slot as it unmounts, so an
- * id read a beat later is `null` and there is no editor), and that a duplicate
- * only ever gets an editor on the route that COMPLETED.
+ * `duplicate-rename.test.ts` pins the decision itself; this file pins what only
+ * the wiring can answer:
+ *
+ * - The operation id is read while the progress dialog still owns it (it
+ *   releases the slot as it unmounts, so an id read a beat later is `null`).
+ * - The journal is asked only after `write-settled` for that operation, which is
+ *   when its rows become readable at all. The settle watch is the REAL module
+ *   here, driven off a fake event stream, because a stub for it is exactly what
+ *   would hide a read that happens too early.
+ * - Only the route that COMPLETED gets an editor.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createDialogState } from './dialog-state.svelte'
 import { setForegroundOperationId } from '$lib/file-operations/foreground-operation.svelte'
+import { initSettledOperationsWatch, destroySettledOperationsWatch } from '$lib/file-operations/settled-operations'
 import type { TransferProgressPropsData } from './dialog-props'
 import type { FilePaneAPI } from './types'
 
-const { getOperationLogDetail, moveCursorToNewFolder } = vi.hoisted(() => ({
+const { getOperationLogDetail, moveCursorToNewFolder, onWriteSettled } = vi.hoisted(() => ({
   getOperationLogDetail: vi.fn(),
   moveCursorToNewFolder: vi.fn(() => Promise.resolve()),
+  onWriteSettled: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -28,6 +35,7 @@ vi.mock('$lib/tauri-commands', () => ({
   clearArchivePassword: vi.fn(() => Promise.resolve()),
   dismissFailedOperation: vi.fn(() => Promise.resolve()),
   getOperationLogDetail,
+  onWriteSettled,
 }))
 
 vi.mock('$lib/ui/toast', () => ({ addToast: vi.fn() }))
@@ -81,16 +89,22 @@ function pasteDuplicateProps(overrides: Partial<TransferProgressPropsData> = {})
   }
 }
 
-/** Lets the unawaited journal read and cursor land settle. */
-async function settle(): Promise<void> {
-  await Promise.resolve()
-  await Promise.resolve()
-  await Promise.resolve()
+/** Feeds the settle watch, the way the backend's `write-settled` stream would. */
+let emitSettled: (event: { operationId: string; operationType: 'copy' }) => void = () => {}
+
+/** Lets the unawaited settle wait, journal read, and cursor land drain. */
+async function drain(): Promise<void> {
+  for (let i = 0; i < 6; i++) await Promise.resolve()
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks()
   setForegroundOperationId(null)
+  onWriteSettled.mockImplementation((callback: (event: { operationId: string; operationType: 'copy' }) => void) => {
+    emitSettled = callback
+    return Promise.resolve(() => {})
+  })
+  await initSettledOperationsWatch()
   getOperationLogDetail.mockResolvedValue({
     operation: {},
     items: [
@@ -113,16 +127,44 @@ beforeEach(() => {
   })
 })
 
+afterEach(() => {
+  destroySettledOperationsWatch()
+})
+
 describe('a completed duplicate the trigger asked to name', () => {
-  it('opens the editor on the name the journal reports', async () => {
+  it('waits for the settle, then opens the editor on the name the journal reports', async () => {
     const { dialogs, startRename } = makeState()
     dialogs.startTransferProgress(pasteDuplicateProps())
     setForegroundOperationId('op-1')
 
     dialogs.handleTransferComplete(1, 0, 1024)
-    await settle()
+    await drain()
+
+    // The journal has nothing readable for this op until it settles, so nothing
+    // has been asked yet.
+    expect(getOperationLogDetail).not.toHaveBeenCalled()
+
+    emitSettled({ operationId: 'op-1', operationType: 'copy' })
+    await drain()
 
     expect(getOperationLogDetail).toHaveBeenCalledExactlyOnceWith('op-1', 1, 0)
+    expect(startRename).toHaveBeenCalledExactlyOnceWith({
+      suppressExtensionWarning: true,
+      expectedName: 'photo (1).jpg',
+    })
+  })
+
+  it('opens the editor when the settle landed BEFORE the completion handling did', async () => {
+    // The ordinary case: `write-settled` follows its terminal event by
+    // microseconds while the dialog holds its completion for `MIN_DISPLAY_MS`.
+    const { dialogs, startRename } = makeState()
+    dialogs.startTransferProgress(pasteDuplicateProps())
+    setForegroundOperationId('op-1')
+    emitSettled({ operationId: 'op-1', operationType: 'copy' })
+
+    dialogs.handleTransferComplete(1, 0, 1024)
+    await drain()
+
     expect(startRename).toHaveBeenCalledExactlyOnceWith({
       suppressExtensionWarning: true,
       expectedName: 'photo (1).jpg',
@@ -135,7 +177,8 @@ describe('a completed duplicate the trigger asked to name', () => {
     setForegroundOperationId('op-1')
 
     dialogs.handleTransferComplete(1, 0, 1024)
-    await settle()
+    emitSettled({ operationId: 'op-1', operationType: 'copy' })
+    await drain()
 
     expect(getOperationLogDetail).not.toHaveBeenCalled()
     expect(startRename).not.toHaveBeenCalled()
@@ -147,7 +190,8 @@ describe('a completed duplicate the trigger asked to name', () => {
     setForegroundOperationId('op-1')
 
     dialogs.handleTransferCancelled(0)
-    await settle()
+    emitSettled({ operationId: 'op-1', operationType: 'copy' })
+    await drain()
 
     expect(getOperationLogDetail).not.toHaveBeenCalled()
     expect(startRename).not.toHaveBeenCalled()
@@ -159,7 +203,8 @@ describe('a completed duplicate the trigger asked to name', () => {
     setForegroundOperationId('op-1')
 
     dialogs.handleTransferError({ type: 'permission_denied', path: `${FOLDER}/photo.jpg`, message: 'nope' })
-    await settle()
+    emitSettled({ operationId: 'op-1', operationType: 'copy' })
+    await drain()
 
     expect(getOperationLogDetail).not.toHaveBeenCalled()
     expect(startRename).not.toHaveBeenCalled()

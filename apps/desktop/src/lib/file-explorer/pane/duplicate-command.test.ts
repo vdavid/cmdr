@@ -63,11 +63,14 @@ function access(config: { ref?: FilePaneAPI; path?: string; volumes?: VolumeInfo
   } as unknown as PaneAccess
 }
 
+/** The dialog surface, plus the two spies under `.spies`. They're read from there
+ *  rather than off the object: on the `Dialogs` interface both are METHODS, and a
+ *  bare `d.spies.showAlert` is an unbound method reference (`@typescript-eslint/unbound-method`). */
 function dialogs() {
-  return { startTransferProgress: vi.fn(), showAlert: vi.fn() } as unknown as Dialogs & {
-    startTransferProgress: ReturnType<typeof vi.fn>
-    showAlert: ReturnType<typeof vi.fn>
-  }
+  const startTransferProgress = vi.fn()
+  const showAlert = vi.fn()
+  const api = { startTransferProgress, showAlert } as unknown as Dialogs
+  return Object.assign(api, { spies: { startTransferProgress, showAlert } })
 }
 
 function volume(overrides: Partial<VolumeInfo> = {}): VolumeInfo {
@@ -95,7 +98,7 @@ describe('duplicateInPlace', () => {
     const context = buildFromSelectionSpy.mock.calls[0]?.[5] as { sourcePath: string; destPath: string }
     expect(context.sourcePath).toBe('/Users/x/dir')
     expect(context.destPath).toBe('/Users/x/dir')
-    expect(d.startTransferProgress).toHaveBeenCalledExactlyOnceWith(
+    expect(d.spies.startTransferProgress).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         operationType: 'copy',
         sourcePaths: ['/Users/x/dir/a.txt', '/Users/x/dir/b.txt'],
@@ -116,7 +119,7 @@ describe('duplicateInPlace', () => {
     await duplicateInPlace(access({ ref: paneRef({ selectedIndices: [], cursorIndex: 3 }) }), d)
 
     expect(buildFromSelectionSpy).not.toHaveBeenCalled()
-    expect(d.startTransferProgress).toHaveBeenCalledExactlyOnceWith(
+    expect(d.spies.startTransferProgress).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ sourcePaths: ['/Users/x/dir/photo.jpg'], destinationPath: '/Users/x/dir' }),
     )
   })
@@ -129,7 +132,7 @@ describe('duplicateInPlace', () => {
 
     await duplicateInPlace(access(), d)
 
-    expect(d.startTransferProgress).toHaveBeenCalledExactlyOnceWith(
+    expect(d.spies.startTransferProgress).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ duplicateFollowUp: 'nothing' }),
     )
   })
@@ -139,11 +142,11 @@ describe('duplicateInPlace', () => {
 
     await duplicateInPlace(access({ volumes: [volume({ mountIsReadOnly: true })] }), d)
 
-    expect(d.showAlert).toHaveBeenCalledWith(
+    expect(d.spies.showAlert).toHaveBeenCalledWith(
       'Read-only device',
       '"Macintosh HD" is read-only. You can copy files from it, but not to it.',
     )
-    expect(d.startTransferProgress).not.toHaveBeenCalled()
+    expect(d.spies.startTransferProgress).not.toHaveBeenCalled()
   })
 
   it('starts nothing when the pane has no listing to read', async () => {
@@ -151,7 +154,7 @@ describe('duplicateInPlace', () => {
 
     await duplicateInPlace(access({ ref: paneRef({ listingId: null }) }), d)
 
-    expect(d.startTransferProgress).not.toHaveBeenCalled()
+    expect(d.spies.startTransferProgress).not.toHaveBeenCalled()
   })
 
   it('starts nothing when there is nothing under the cursor', async () => {
@@ -162,6 +165,6 @@ describe('duplicateInPlace', () => {
 
     await duplicateInPlace(access(), d)
 
-    expect(d.startTransferProgress).not.toHaveBeenCalled()
+    expect(d.spies.startTransferProgress).not.toHaveBeenCalled()
   })
 })

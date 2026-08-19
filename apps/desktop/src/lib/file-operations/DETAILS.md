@@ -27,6 +27,11 @@ Umbrella-level files:
   no name yet, so ambient main-window surfaces stay quiet about all three (§ below).
 - `foreground-request.ts`: `adoptedOperationFor(rows, id)`, the pure half of the queue's Show button, resolving the id
   that crossed the window boundary against the MAIN window's own snapshot.
+- `settled-operations.ts`: one `write-settled` subscription per window plus `whenOperationSettled(id)`, the wait a
+  follow-up takes before reading an operation's journal rows. It REMEMBERS recent settles, because the event lands
+  before anyone asks: it follows its terminal event by microseconds while the completion handling is held for
+  `MIN_DISPLAY_MS`. Why the journal can't be read any earlier: `src-tauri/src/operation_log/DETAILS.md` § "Per-op
+  accumulator".
 - `operation-conflict.svelte.ts` + `OperationConflictDialog.svelte`: the main window's conflict prompt for an operation
   no progress dialog is showing; its two rules are pure, in `operation-conflict-rules.ts` (§ below).
 - `RollbackConfirmDialog.svelte`: the question every Rollback goes through (§ below).

@@ -40,6 +40,10 @@
     } from '$lib/file-operations/queue/main-window-operations.svelte'
     import { initSnapshotPurge, destroySnapshotPurge } from '$lib/search/snapshot-purge'
     import {
+        initSettledOperationsWatch,
+        destroySettledOperationsWatch,
+    } from '$lib/file-operations/settled-operations'
+    import {
         initOperationSessions,
         destroyOperationSessions,
     } from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
@@ -436,6 +440,12 @@
         // the per-path outcome stream. Independent of any pane or dialog: a
         // snapshot outlives both. See `$lib/search/snapshot-purge.ts`.
         await initSnapshotPurge()
+        // Remembers which operations have finished tearing down, so a follow-up
+        // that reads an operation's journal rows knows when they became
+        // readable. Armed here because the settle for an operation routinely
+        // lands before anything thinks to wait for it. See
+        // `$lib/file-operations/settled-operations.ts`.
+        await initSettledOperationsWatch()
         // Watches that store for operations that stopped before they were done,
         // and says so. After the store, so the first snapshot has somewhere to
         // land before anything reads it.
@@ -484,6 +494,7 @@
         destroyMainWindowOperations()
         destroyOperationSessions()
         destroySnapshotPurge()
+        destroySettledOperationsWatch()
         stopMenuOperationGate?.()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)

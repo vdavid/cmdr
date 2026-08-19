@@ -17,10 +17,17 @@
  *   it comes out of the operation journal. A frontend reimplementation of the
  *   backend's ` (N)` picker would rot the moment the sequence rule changes. An
  *   absent row means no editor: never an error, never a retry loop.
+ * - **The journal is read on `write-settled`, ❌ never on `write-complete`.** The
+ *   journal batches item rows in memory and flushes them inside its finalize
+ *   barrier, which runs after the handler emitted the terminal event, so a
+ *   single-item duplicate has NO readable row at complete time. Reading there
+ *   returns an empty page and the editor silently never opens.
+ *   `$lib/file-operations/settled-operations.ts`.
  */
 
 import { findFileIndex, getOperationLogDetail, onDirectoryDiff, type OperationItemView } from '$lib/tauri-commands'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
+import { whenOperationSettled } from '$lib/file-operations/settled-operations'
 import { getAppLogger } from '$lib/logging/logger'
 import type { TransferOperationType } from '../types'
 import type { FilePaneAPI } from './types'
@@ -123,6 +130,15 @@ export async function openRenameOnDuplicate(request: DuplicateRenameRequest): Pr
   if (!paneRef || normalizeDir(paneRef.getCurrentPath()) !== destination) return
   const listingId = paneRef.getListingId()
   if (!listingId) return
+
+  // The operation's rows only become readable at `write-settled`, so wait for it
+  // before asking. A settle that never arrives means no editor, not a retry.
+  if (!(await whenOperationSettled(request.operationId))) {
+    log.warn('op={operationId} never settled, so its duplicate kept the generated name', {
+      operationId: request.operationId,
+    })
+    return
+  }
 
   let items: OperationItemView[]
   try {

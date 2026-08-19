@@ -9,7 +9,8 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   `mkfile/`, `operation-session/` (per-`operationId` event fan-out + the refcounted session registry), `queue/` (the
   standalone operation-queue window).
 - Umbrella-level files: `TransferProgressReadout.svelte`, `scan-throughput.ts`, `foreground-operation.svelte.ts`,
-  `foreground-request.ts`, `operation-conflict.svelte.ts`. What each one is: DETAILS § File map.
+  `foreground-request.ts`, `operation-conflict.svelte.ts`, `settled-operations.ts`. What each one is: DETAILS § File
+  map.
 
 ## Must-knows
 
@@ -42,6 +43,9 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   `session.resolveConflict(conflictId, ...)` with the id off the event on screen: anything but `resolved` means the
   question is settled without us, so take that prompt down and release the hold, ❌ never surface it as a failure. Only
   `null` (the call never landed) keeps it up, and a clash that arrived DURING the answer stays up.
+- **Journal rows become readable at `write-settled`, not at an operation's terminal event** (the buffered tail flushes
+  in the later finalize barrier). Reading on complete hands back an EMPTY page, silently. Wait through
+  `whenOperationSettled(id)` (`settled-operations.ts`).
 - **`ScanThroughput` is SCAN-phase only** (the backend `EtaEstimator` owns every write phase), returns nulls until two
   samples land, and must be `reset()` between scans.
 

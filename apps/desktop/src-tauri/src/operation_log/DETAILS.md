@@ -172,6 +172,15 @@ cache that the same record points already write, and the `manager()` operation-m
 The `WriterJournal` also **batches** rows (a per-op buffer flushed at `RECORD_BATCH` or finalize, so a huge op coalesces
 into batched writer transactions) and **auto-assigns `seq`** in recording order, so record points never track it.
 
+**A reader can only trust an op's rows once `write-settled` has fired**, and that is a consequence of the batching
+above, not a nicety. An op smaller than `RECORD_BATCH` (512 rows) has its whole tail sitting in the in-memory buffer
+until `finalize` flushes it, and every write path emits its terminal event (`write-complete` / `write-cancelled` /
+`write-error`) from inside the handler, BEFORE `journal::finalize_op` runs. `finalize_operation` then blocks on the
+writer thread's reply, so it doubles as the durability barrier, and only after it returns does the `WriteSettledGuard`
+drop and emit `write-settled`. So a frontend reading `get_operation_log_detail` on a terminal event sees an EMPTY page
+for any ordinary-sized op. The frontend side of this contract lives in
+`apps/desktop/src/lib/file-operations/settled-operations.ts`.
+
 ### Per-kind record points and granularity (D-granularity)
 
 Each point is where the op already stats the item, so journaling is near-zero marginal cost (no new syscalls):
