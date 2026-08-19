@@ -548,7 +548,15 @@ fn db_child_size(db_path: &Path, parent: &str, name: &str) -> Option<u64> {
 /// Rapid sub-floor rewrites of ONE file collapse to a single index write within
 /// the window (leading edge), and the trailing sweep applies the LAST-seen size.
 /// This exercises the real live path: `process_live_event` → the throttle, then
-/// `sweep_throttle`. Uses a short window so no real 60 s sleep is needed.
+/// `sweep_throttle`.
+///
+/// **Gotcha**: the window has to outlast the rewrite loop by a wide margin, and the
+/// sweep has to be driven by an injected `now`. The live path stamps `last_applied_at`
+/// from the wall clock, so with a short window a slow machine finishes the loop AFTER
+/// the window elapses, one mid-loop rewrite re-applies as a fresh leading edge, and the
+/// suppression assertion fails on timing rather than on behavior. A production-length
+/// window plus a synthetic sweep instant makes both halves independent of how long the
+/// loop takes.
 #[test]
 fn live_throttle_collapses_rapid_rewrites_and_trailing_flushes_last_size() {
     let (writer, dir, conn) = setup_test_writer();
@@ -559,7 +567,7 @@ fn live_throttle_collapses_rapid_rewrites_and_trailing_flushes_last_size() {
     let file = test_dir.path().join("hot.log");
     ensure_path_in_db(&db_path, &parent, &writer);
 
-    let window = Duration::from_millis(150);
+    let window = Duration::from_secs(60);
     let mut reconciler = EventReconciler::new_with_throttle_window(window);
     reconciler.switch_to_live();
     let mut pending = HashSet::<String>::new();
@@ -603,10 +611,12 @@ fn live_throttle_collapses_rapid_rewrites_and_trailing_flushes_last_size() {
     );
 
     // After the window, the trailing sweep applies the LAST-seen size (no re-stat).
-    // allowed-test-sleep: outliving the throttle window is the subject. `sweep_throttle` compares
-    // the passed `Instant::now()` against the per-path window, so only real elapsed time crosses it
-    std::thread::sleep(window + Duration::from_millis(50));
-    let affected = reconciler.sweep_throttle(&writer, Instant::now());
+    // `sweep_throttle` takes its clock as an argument, so a `now` past the window is
+    // what "the window elapsed" means here: no sleeping, and no dependence on how long
+    // the rewrites above took (this `now` is computed after them, so it's past the
+    // window whatever the loop cost).
+    let past_the_window = Instant::now() + window + Duration::from_secs(1);
+    let affected = reconciler.sweep_throttle(&writer, past_the_window);
     assert!(
         !affected.is_empty(),
         "trailing flush surfaces ancestor paths for the UI"
