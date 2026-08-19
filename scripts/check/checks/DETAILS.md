@@ -966,7 +966,9 @@ Checks by app and tech:
   ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return type, a method
   call — because a check people learn to ignore is worse than none. Opt out with
   `// allowed-discarded-outcome: <why nobody above needs the answer>`), mtp-dropping-timeout, mtp-no-transport-reset,
-  bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
+  bindings-fresh, ipc-enum-camelcase, shipped-locales-fresh (regenerate-and-diff `intl/shipped_locales.gen.rs` from the
+  message-catalog dirs, so the locale resolver's CLDR script table can't go stale and leave a new locale both
+  unreachable and unguarded), tests, integration-tests (Docker SMB), tests-linux (slow)
 
 The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in
 opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test module, derive-default and

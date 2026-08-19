@@ -6,7 +6,7 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
 
 - `settings-registry.ts` (logic; data in `definitions/*.ts`), `settings-store.ts` (persistence + cache + cross-window
   sync), `settings-applier.ts` (side effects), `reactive-settings.svelte.ts` (`$state` for rendering),
-  `window-settings.ts` (per-window init).
+  `window-settings.ts` (per-window init, plus `initWindowLanguageSync()`).
 - `sections/` (UI sections) and `components/` (row primitives) carry their own CLAUDE.md.
 - Shortcuts are a separate subsystem (`shortcuts.json`); see `lib/shortcuts/CLAUDE.md`.
 
@@ -24,8 +24,8 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
   `$lib/tauri-commands/settings.ts` wrapper, AND an `onSettingChange` case in `settings-applier.ts`. Restart-required is
   a bug, even for "structural" ones.
 - **Every `tauri-plugin-store` reader goes through `resolveStorePath(storeName)`** (`store-path.ts`): the plugin
-  resolves bare names against `app_data_dir()`, ignoring `CMDR_DATA_DIR`, so isolated instances (dev, worktree, E2E)
-  would read the production store.
+  resolves bare names against `app_data_dir()`, ignoring `CMDR_DATA_DIR`, so an isolated instance would read the
+  production store.
 - **The viewer and queue windows have NO store capability by design.** Restricted mode seeds from
   `get_restricted_window_settings`, a FIXED typed allowlist, so a setting missing from it reads as its default there.
   Rendering something new in one means extending `settings/loader.rs::RestrictedWindowSettings`, the bindings, AND the

@@ -119,8 +119,9 @@ func init() { memberCoverageRegistry = AllChecks }
 // so "which members do you reach?" isn't a question they answer. Each entry says
 // what it does instead.
 var rustMetaChecks = map[string]string{
-	"workspace-member-coverage": "this check; it reads the member list and the registry, not the sources",
-	"index-crate-isolation":     "it reads the `cargo metadata` graph and counts `cmdr-index`'s public surface; both are about two named crates, not a sweep",
+	"workspace-member-coverage":     "this check; it reads the member list and the registry, not the sources",
+	"index-crate-isolation":         "it reads the `cargo metadata` graph and counts `cmdr-index`'s public surface; both are about two named crates, not a sweep",
+	"desktop-shipped-locales-fresh": "it regenerates ONE file in the app crate from the message-catalog dirs and diffs it; the inputs are catalog directories, not workspace sources",
 }
 
 // rustCheckClassification is the partition of the Rust checks: each is a cargo

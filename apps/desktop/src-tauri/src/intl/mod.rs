@@ -75,7 +75,9 @@ pub fn get_ui_locale() -> Option<String> {
 /// NOT the same as matching `en`, which stops the walk deliberately: a user who
 /// listed English above Swedish wants English, not the next-best translation.
 pub(crate) fn resolve_ui_locale(preferences: &[String], shipped: &[ShippedLocale]) -> Option<String> {
-    preferences.iter().find_map(|pref| match_shipped(&normalize(pref), shipped))
+    preferences
+        .iter()
+        .find_map(|pref| match_shipped(&normalize(pref), shipped))
 }
 
 /// A preference tag in a shape we can compare: lowercase, `_` separators folded
@@ -256,7 +258,10 @@ mod tests {
     #[test]
     fn the_guard_does_not_block_the_common_simplified_case() {
         assert_eq!(resolve_ui_locale(&prefs(&["zh-CN"]), SHIPPED), Some("zh".to_string()));
-        assert_eq!(resolve_ui_locale(&prefs(&["zh-Hans-CN"]), SHIPPED), Some("zh".to_string()));
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["zh-Hans-CN"]), SHIPPED),
+            Some("zh".to_string())
+        );
         assert_eq!(resolve_ui_locale(&prefs(&["zh-SG"]), SHIPPED), Some("zh".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["zh"]), SHIPPED), Some("zh".to_string()));
     }
@@ -271,7 +276,10 @@ mod tests {
         assert_eq!(resolve_ui_locale(&prefs(&["en-GB"]), SHIPPED), Some("en".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["de-AT"]), SHIPPED), Some("de".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["es-419"]), SHIPPED), Some("es".to_string()));
-        assert_eq!(resolve_ui_locale(&prefs(&["fr-Latn-CA"]), SHIPPED), Some("fr".to_string()));
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["fr-Latn-CA"]), SHIPPED),
+            Some("fr".to_string())
+        );
     }
 
     #[test]
@@ -290,7 +298,10 @@ mod tests {
             resolve_ui_locale(&prefs(&["zh-Hant-TW"]), ZH_HANT),
             Some("zh-Hant".to_string())
         );
-        assert_eq!(resolve_ui_locale(&prefs(&["zh-TW"]), ZH_HANT), Some("zh-Hant".to_string()));
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["zh-TW"]), ZH_HANT),
+            Some("zh-Hant".to_string())
+        );
     }
 
     #[test]
@@ -362,7 +373,11 @@ mod tests {
     fn the_pseudolocale_is_not_selectable() {
         // `en-XA` is accented, inflated English for overflow testing. A tester
         // whose app came up in it would file a very confusing bug.
-        assert!(!SHIPPED_LOCALES.iter().any(|entry| entry.tag.eq_ignore_ascii_case("en-XA")));
+        assert!(
+            !SHIPPED_LOCALES
+                .iter()
+                .any(|entry| entry.tag.eq_ignore_ascii_case("en-XA"))
+        );
         assert_eq!(resolve_ui_locale(&prefs(&["en-XA"]), SHIPPED), Some("en".to_string()));
     }
 }

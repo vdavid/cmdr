@@ -14,6 +14,9 @@ launch boundary, plus the llama-server fetch and the type-drift check.
 - **`download-llama-server.go`**: build-time llama-server downloader, invoked from `src-tauri/build.rs`
 - **`check-type-drift.ts`**: fast-lane check for hand-written types drifting from `bindings.ts`; runs in
   `pnpm check --fast`
+- **`gen-shipped-locales.ts`** (+ `gen-shipped-locales-lib.ts`): emits the Rust locale resolver's table of shipped
+  catalogs and their CLDR scripts (`pnpm intl:shipped-locales`). The output carries `#[rustfmt::skip]`, so this script
+  owns its layout and needs no Rust toolchain; guarded by `shipped-locales-fresh`
 - **`marketing-shots.ts`** (+ `marketing-shots-thread.ts`): reshoots the brand masters (`pnpm marketing:shots`); guide
   in `docs/guides/screenshots.md`. Needs ImageMagick (the masters are written as lossless WebP), checked up front so a
   missing `magick` fails before the app launches rather than 30 s into a run

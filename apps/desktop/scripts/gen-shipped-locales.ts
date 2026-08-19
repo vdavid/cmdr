@@ -13,13 +13,13 @@
  * Run via `pnpm intl:shipped-locales` from the desktop app dir, or through the
  * `shipped-locales-fresh` check in the pipeline. Never hand-edit the output.
  *
- * The rustfmt pass runs HERE rather than in the `package.json` script, because
- * the freshness check invokes this file directly: formatting anywhere else
- * would make the check's regenerate-and-diff report permanent phantom drift.
+ * The emitted table carries `#[rustfmt::skip]`, so this script owns its layout
+ * end to end and needs no Rust toolchain. Without that, rustfmt would rewrap the
+ * table and the freshness check would report permanent phantom drift, each tool
+ * undoing the other.
  */
 
 import { writeFileSync } from 'node:fs'
-import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import { listLocales } from './i18n-catalog-lib.ts'
 import { buildShippedLocales, emitRustModule } from './gen-shipped-locales-lib.ts'
@@ -29,15 +29,6 @@ const outFile = join(desktopDir, 'src-tauri', 'src', 'intl', 'shipped_locales.ge
 
 const entries = buildShippedLocales(listLocales())
 writeFileSync(outFile, emitRustModule(entries))
-
-// rustfmt picks up the workspace `rustfmt.toml` by walking up from the file, so
-// no flags are needed. A missing rustfmt is fatal: silently skipping it would
-// leave the file failing `cargo fmt --check` with no hint why.
-const fmt = spawnSync('rustfmt', [outFile], { stdio: 'inherit' })
-if (fmt.error || fmt.status !== 0) {
-  console.error(`\nrustfmt failed on ${outFile}. Is the Rust toolchain installed?`)
-  process.exit(1)
-}
 
 const withSplits = entries.filter((entry) => entry.regionScripts.length > 0).map((entry) => entry.tag)
 console.log(

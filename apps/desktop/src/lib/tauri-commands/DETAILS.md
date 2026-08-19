@@ -53,7 +53,7 @@ commands, and notable non-obvious placements.
   (`onAi{DownloadProgress,Starting,ServerReady,Verifying,Installing,InstallComplete,Extracting}`) over the `events.ai*`
   helpers.
 - **`appearance.ts`**: one-shot OS environment reads (`getAccentColor`, `getShouldReduceTransparency`,
-  `getSystemTextSizeMultiplier`, `getLocalizedSystemStrings`) plus `onAccentColorChanged` /
+  `getSystemTextSizeMultiplier`, `getLocalizedSystemStrings`, `getUiLocale`) plus `onAccentColorChanged` /
   `onReduceTransparencyChanged` / `onSystemTextSizeChanged` over the OS appearance / text-size events.
 - **`menu-events.ts`**: `onViewModeChanged` / `onMenuSort` / `onMediaIndexFolderExclusion` / `onMediaIndexFolderChoice`
   over the direct (non-`execute-command`) native-menu events. The two media-index ones carry the right-clicked folder

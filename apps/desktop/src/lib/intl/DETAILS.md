@@ -166,8 +166,39 @@ The in-app picker rides this seam. **Settings > Appearance > Language** is the `
 (`settings-registry.ts`), default `'system'`. Its options are built by `languageOptions()` from `availableLocales()`:
 `'system'` (the only translatable option label, `settings.appearance.language.opt.system`) plus one option per loaded
 locale, each labeled with the locale's own endonym via `Intl.DisplayNames` (`de` → "Deutsch"), so the list is
-self-describing and no language names are hardcoded. `settings-applier.ts`'s `applyLanguage` maps the value to the seam:
-`'system'` → `setLocale(null)` (follow the OS), a tag → `setLocale(tag)`. It runs in `applyAllSettings` at startup (so a
-persisted choice survives restart) and on every `appearance.language` change (live, no Apply button, no restart, no
-Tauri command: locale is frontend-only). A persisted tag with no loaded catalog (e.g. `en-XA` chosen in a dev build,
-then opened in prod) fails enum validation in the store and degrades to the `'system'` default with a warn.
+self-describing and no language names are hardcoded. `settings-applier.ts`'s `applyLanguage` maps the value to the seam
+through `ui-locale.ts`'s `pickUiLocale`: a tag → `setLocale(tag)`, `'system'` → the OS answer (below). It runs in
+`applyAllSettings` at startup (so a persisted choice survives restart) and on every `appearance.language` change (live,
+no Apply button, no restart, no Tauri command: locale is frontend-only). A persisted tag with no loaded catalog (e.g.
+`en-XA` chosen in a dev build, then opened in prod) fails enum validation in the store and degrades to the `'system'`
+default with a warn.
+
+## What `'system'` resolves to
+
+`'system'` is a sentinel we never write a resolved tag back into: writing one back would freeze the user out of
+following the OS, and would silently turn "I didn't care" into "I decided". So it's resolved on every read, by
+`pickUiLocale()` in `ui-locale.ts`, against an answer the Rust resolver computed (`src-tauri/src/intl/`, which owns the
+walk and the script guard).
+
+**The OS preference LIST is the source, not the webview's tag.** macOS hands out an ORDERED list of languages the user
+reads; `getLocale()` exposes exactly one tag, so a user whose preferences are `[hu-HU, sv-SE]` could never reach Swedish
+while Hungarian isn't shipped. Their own second choice was structurally unreachable. Reading the list in Rust also
+removes any dependence on what WebKit decides to do with bundle metadata, which we can't control or test cheaply.
+
+**Regional fallback is deliberate; a script boundary is not.** `pt-PT` lands on the Brazilian `pt` catalog and `en-GB`
+on US `en` ("Trash", `-ize`): reading a sibling dialect is a small friction next to reading a language you don't speak,
+and a fast-follow catalog fixes it. `zh-Hant-TW` does NOT land on the Simplified `zh` catalog, because that's not a
+dialect difference, it's a wall — and English is at least a language the user chose to list. ❌ Don't "fix" the guard by
+blocking regional fallback: the two cases pull in opposite directions on purpose. The rule and its data live in Rust;
+`apps/desktop/src-tauri/src/intl/DETAILS.md` is the canonical description.
+
+**Every window resolves for itself.** Each Cmdr window is its own webview with its own i18n runtime instance, so the
+main window's answer doesn't reach the Settings or Queue window. The main window awaits the answer inside
+`initSettingsApplier` (the fetch is fired BEFORE the settings store is awaited, so the two IPC round-trips overlap
+rather than stack: ❌ no serialized round-trip, and no paint gate — `routes/(main)/show-main-on-mount.ts` records why we
+removed the last one). Secondary windows use `initWindowLanguageSync()` from `$lib/settings/window-settings`, which
+applies the persisted value synchronously and re-applies when the OS answer lands, so nothing gates a first paint.
+
+`null` from `pickUiLocale` means "no override": the webview default stands. That's the answer before the fetch settles,
+on any platform with no preference list (Linux), and when the read fails, so a broken read degrades to a reasonable
+language rather than a broken app.

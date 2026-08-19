@@ -11,6 +11,11 @@
 use super::ShippedLocale;
 
 /// Every catalog we ship, sorted by tag. See [`ShippedLocale`] for the fields.
+//
+// `rustfmt::skip`: layout here is the GENERATOR's output, and the freshness
+// check diffs that output byte for byte. Letting rustfmt rewrap the table would
+// make the two disagree forever, one reformatting what the other regenerates.
+#[rustfmt::skip]
 pub(crate) const SHIPPED_LOCALES: &[ShippedLocale] = &[
     ShippedLocale {
         tag: "de",

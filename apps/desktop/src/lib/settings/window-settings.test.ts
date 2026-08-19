@@ -111,3 +111,77 @@ describe('initWindowSettings', () => {
     expect(initReactiveSettings).toHaveBeenCalledWith({ restrictedWindow: false })
   })
 })
+
+describe('initWindowLanguageSync', () => {
+  /** The change listener the sync registers, so a test can fire it. */
+  let changeListener: ((id: string, value: string) => void) | undefined
+  let language = 'system'
+  const unsubscribe = vi.fn()
+  const setLocale = vi.fn()
+
+  beforeEach(() => {
+    vi.resetModules()
+    changeListener = undefined
+    language = 'system'
+    unsubscribe.mockClear()
+    setLocale.mockClear()
+    vi.doMock('./settings-store', () => ({
+      getSetting: () => language,
+      onSpecificSettingChange: (_id: string, listener: (id: string, value: string) => void) => {
+        changeListener = listener
+        return unsubscribe
+      },
+    }))
+    // Partial: the settings registry (pulled in transitively) calls
+    // `availableLocales()` to build the Language picker's options.
+    vi.doMock('$lib/intl/messages.svelte', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('$lib/intl/messages.svelte')>()),
+      setLocale,
+    }))
+  })
+
+  afterEach(() => {
+    vi.doUnmock('./settings-store')
+    vi.doUnmock('$lib/intl/messages.svelte')
+    vi.doUnmock('$lib/intl/ui-locale')
+  })
+
+  /** Loads the module with a controllable OS answer behind `loadSystemUiLocale`. */
+  async function loadWith(systemLocale: string | null) {
+    vi.doMock('$lib/intl/ui-locale', () => ({
+      loadSystemUiLocale: () => Promise.resolve(systemLocale),
+      pickUiLocale: (setting: string) => (setting === 'system' ? systemLocale : setting),
+    }))
+    return import('./window-settings')
+  }
+
+  it('applies an explicit language without waiting for the OS answer', async () => {
+    language = 'hu'
+    const { initWindowLanguageSync } = await loadWith('sv')
+    initWindowLanguageSync()
+    // Synchronously, before any await: a secondary window must not gate its
+    // first paint on an IPC round-trip.
+    expect(setLocale).toHaveBeenCalledWith('hu')
+  })
+
+  it('re-applies once the OS answer lands, so `system` stops being the webview default', async () => {
+    const { initWindowLanguageSync } = await loadWith('sv')
+    initWindowLanguageSync()
+    await vi.waitFor(() => {
+      expect(setLocale).toHaveBeenCalledWith('sv')
+    })
+  })
+
+  it('follows a live language change', async () => {
+    const { initWindowLanguageSync } = await loadWith(null)
+    initWindowLanguageSync()
+    setLocale.mockClear()
+    changeListener?.('appearance.language', 'de')
+    expect(setLocale).toHaveBeenCalledWith('de')
+  })
+
+  it('hands back the listener unsubscribe, so a closing window stops following', async () => {
+    const { initWindowLanguageSync } = await loadWith(null)
+    expect(initWindowLanguageSync()).toBe(unsubscribe)
+  })
+})
