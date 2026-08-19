@@ -176,6 +176,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     note: 'One state per WriteOperationError variant: the dialog derives its title, explanation, suggestion, icon, container tint, and Retry button entirely from the typed error. Retry just closes the preview, since there is nothing to retry.',
     states: [
       { id: 'source_not_found', label: 'Source not found' },
+      { id: 'destination_not_found', label: 'Destination not found' },
       { id: 'destination_exists', label: 'Destination exists' },
       { id: 'permission_denied', label: 'Permission denied' },
       { id: 'insufficient_space', label: 'Not enough space' },

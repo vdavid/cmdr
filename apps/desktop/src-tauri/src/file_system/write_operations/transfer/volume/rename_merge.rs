@@ -46,7 +46,7 @@ use super::super::super::conflict::ApplyToAll;
 use super::super::super::state::{WriteOperationState, is_cancelled};
 use super::super::super::types::{OperationEventSink, VolumeCopyConfig, WriteOperationError};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
-use super::transfer_error::map_volume_error;
+use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
@@ -415,5 +415,5 @@ async fn volume_list(volume: &Arc<dyn Volume>, path: &Path) -> Result<Vec<FileEn
 /// `map_volume_error`, which keeps `VolumeError::Cancelled` as the typed
 /// `WriteOperationError::Cancelled`.
 fn map_rename_error(path: &Path, e: VolumeError) -> WriteOperationError {
-    map_volume_error(&path.display().to_string(), e)
+    map_volume_error(&path.display().to_string(), PathRole::Source, e)
 }

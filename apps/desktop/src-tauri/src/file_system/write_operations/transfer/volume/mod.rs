@@ -44,7 +44,7 @@ pub(crate) use copy::copy_volumes_with_progress;
 pub(in crate::file_system::write_operations) use strategy::pull_path_to_local;
 /// The one place a `VolumeError` becomes a typed `WriteOperationError`; the
 /// delete walker maps its own volume failures through it too.
-pub(in crate::file_system::write_operations) use transfer_error::map_volume_error;
+pub(in crate::file_system::write_operations) use transfer_error::{PathRole, map_volume_error};
 
 // Driven directly by the SMB/MTP integration suites and the volume-journal
 // capture tests, which bypass the Tauri command layer.

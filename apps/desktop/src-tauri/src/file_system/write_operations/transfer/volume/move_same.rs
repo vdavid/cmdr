@@ -30,7 +30,7 @@ use super::conflict::{is_the_same_volume_path, resolve_volume_conflict};
 use super::r#move::{FetchFut, ResolveFut, TransferFut};
 use super::preflight::{SourceHint, top_level_move_hints};
 use super::rename_merge::{RenameMergeCtx, rename_merge_directory};
-use super::transfer_error::map_volume_error;
+use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
@@ -296,7 +296,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
     volume
         .create_directory_all(dest_path)
         .await
-        .map_err(|e| map_volume_error(&dest_path.display().to_string(), e))?;
+        .map_err(|e| map_volume_error(&dest_path.display().to_string(), PathRole::Destination, e))?;
 
     // An item asked to move into the folder it already lives in is already where
     // it was asked to go: nothing to rename, and it reports itself done. Dropped
@@ -492,7 +492,13 @@ pub(crate) async fn move_within_same_volume_with_progress(
                                     match volume.delete(&orig).await {
                                         Ok(()) => {}
                                         Err(VolumeError::NotFound(_)) => {}
-                                        Err(e) => return Err(map_volume_error(&orig.display().to_string(), e)),
+                                        Err(e) => {
+                                            return Err(map_volume_error(
+                                                &orig.display().to_string(),
+                                                PathRole::Destination,
+                                                e,
+                                            ));
+                                        }
                                     }
                                     ConflictDecision::Proceed {
                                         dest_path: orig,
@@ -554,7 +560,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
                         hint.map(|h| h.is_directory),
                     )
                     .await
-                    .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
+                    .map_err(|e| map_volume_error(&source_path.display().to_string(), PathRole::Source, e))?;
 
                     // Operation-log: a same-volume move is a same-FS-style move, so
                     // the top-level item is the `rollback_unit` row and the subtree's
@@ -594,7 +600,13 @@ pub(crate) async fn move_within_same_volume_with_progress(
                     let dest_item_is_dir = match volume.is_directory(&dest_item_path).await {
                         Ok(is_dir) => is_dir,
                         Err(VolumeError::NotFound(_)) => false,
-                        Err(e) => return Err(map_volume_error(&dest_item_path.display().to_string(), e)),
+                        Err(e) => {
+                            return Err(map_volume_error(
+                                &dest_item_path.display().to_string(),
+                                PathRole::Destination,
+                                e,
+                            ));
+                        }
                     };
                     if source_is_dir && dest_item_is_dir {
                         let merge_ctx = RenameMergeCtx {
@@ -640,7 +652,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
                     volume
                         .rename(&source_path, &dest_item_path, false)
                         .await
-                        .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
+                        .map_err(|e| map_volume_error(&source_path.display().to_string(), PathRole::Source, e))?;
 
                     journal_same_volume_moved_item(
                         &operation_id,

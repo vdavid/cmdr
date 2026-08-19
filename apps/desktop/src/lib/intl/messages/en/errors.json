@@ -1641,6 +1641,23 @@
     "screenshot": "transfer-error-source_not_found.png"
   },
 
+  "errors.write.destinationNotFound.title": "Couldn't find the destination folder",
+  "errors.write.destinationNotFound.message.copy": "The folder you're copying into isn't there any more, so there was nowhere to put your files. The originals are untouched.",
+  "errors.write.destinationNotFound.message.move": "The folder you're moving into isn't there any more, so there was nowhere to put your files. The originals are untouched.",
+  "errors.write.destinationNotFound.suggestion": "It may have been renamed or removed, or the drive may have disconnected. Pick another destination, or open the folder again and retry.",
+  "@errors.write.destinationNotFound.title": {
+    "description": "Title of the copy/move error dialog when the DESTINATION folder is missing (or the drive can't address it), so nothing could be written. Plain text. Uses a contraction (\"Couldn't\"). Keep it clearly distinct from errors.write.sourceNotFound.title, which is about the file being copied: confusing the two sends someone hunting for data loss that didn't happen. Only copy and move reach this error (delete and trash have no destination)."
+  },
+  "@errors.write.destinationNotFound.message.copy": {
+    "description": "Body of the copy error dialog when the destination folder is missing (copy variant). Plain text, a raw errors.* string (no ICU), so phrase the copy action naturally for this language. The last sentence is load-bearing reassurance: the user's own files were never at risk, so keep that promise explicit."
+  },
+  "@errors.write.destinationNotFound.message.move": {
+    "description": "Body of the move error dialog when the destination folder is missing (move variant). Plain text, a raw errors.* string (no ICU), so phrase the move action naturally for this language. The last sentence is load-bearing reassurance: nothing was moved and the originals are all still there, so keep that promise explicit."
+  },
+  "@errors.write.destinationNotFound.suggestion": {
+    "description": "Recovery suggestion when the destination folder is missing, shown in the copy/move error dialog. Plain text. Names the three things that actually cause it (renamed, removed, drive disconnected) and the two ways out."
+  },
+
   "errors.write.destinationExists.title": "File already exists",
   "errors.write.destinationExists.message": "There's already a file with this name at the destination.",
   "errors.write.destinationExists.suggestion": "Choose a different name or location, or delete the existing file first.",

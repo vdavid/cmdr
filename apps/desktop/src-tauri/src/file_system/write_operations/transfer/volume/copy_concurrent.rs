@@ -42,7 +42,7 @@ use super::conflict::resolve_volume_conflict;
 use super::copy::drain_deadline as drain_deadline_for;
 use super::preflight::SourceHint;
 use super::strategy::{copy_single_path, resolve_source_is_directory};
-use super::transfer_error::{WriteFailure, map_volume_error};
+use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -339,7 +339,13 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
             let source_is_dir =
                 resolve_source_is_directory(&source_volume, source_path, source_hint.map(|hint| hint.is_directory))
                     .await
-                    .map_err(|e| WriteFailure::synthetic(map_volume_error(&source_path.display().to_string(), e)))?;
+                    .map_err(|e| {
+                        WriteFailure::synthetic(map_volume_error(
+                            &source_path.display().to_string(),
+                            PathRole::Source,
+                            e,
+                        ))
+                    })?;
             // Sizes stay hint-only: a missing size just means no SMB compound
             // fast path, never a wrong branch, so it isn't worth a probe.
             let source_size_hint = source_hint.and_then(|hint| (!hint.is_directory).then_some(hint.size));
@@ -938,7 +944,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                     // loss.
                     last_dest_path = Some(failed_dest.clone());
                 }
-                copy_error = Some(WriteFailure::from_volume(&reported_path, e));
+                copy_error = Some(WriteFailure::from_volume(&reported_path, PathRole::Source, e));
                 // Drop remaining in-flight tasks; their streams close,
                 // temp files get cleaned up by the per-backend write
                 // abort + delete path. Partial cleanup is done below.

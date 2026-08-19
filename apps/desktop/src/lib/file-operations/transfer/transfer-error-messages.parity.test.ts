@@ -81,6 +81,33 @@ const cases: Case[] = [
     },
   },
   {
+    // The wording here is the whole point of the variant: it must read as a
+    // DESTINATION problem and promise the originals are fine. Reported as a
+    // missing source (which it was until this variant existed), the same
+    // failure reads as data loss.
+    name: 'destination_not_found (copy)',
+    error: { type: 'destination_not_found', path: '/photos' },
+    expected: {
+      title: "Couldn't find the destination folder",
+      message:
+        "The folder you're copying into isn't there any more, so there was nowhere to put your files. The originals are untouched.",
+      suggestion:
+        'It may have been renamed or removed, or the drive may have disconnected. Pick another destination, or open the folder again and retry.',
+    },
+  },
+  {
+    name: 'destination_not_found (move)',
+    error: { type: 'destination_not_found', path: '/photos' },
+    op: 'move',
+    expected: {
+      title: "Couldn't find the destination folder",
+      message:
+        "The folder you're moving into isn't there any more, so there was nowhere to put your files. The originals are untouched.",
+      suggestion:
+        'It may have been renamed or removed, or the drive may have disconnected. Pick another destination, or open the folder again and retry.',
+    },
+  },
+  {
     name: 'destination_exists',
     error: { type: 'destination_exists', path: '/p' },
     expected: {

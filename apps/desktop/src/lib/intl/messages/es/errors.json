@@ -1073,6 +1073,22 @@
   "@errors.write.sourceNotFound.suggestion": {
     "sourceHash": "1a6cd17"
   },
+  "errors.write.destinationNotFound.title": "No se pudo encontrar la carpeta de destino",
+  "@errors.write.destinationNotFound.title": {
+    "sourceHash": "215ddfe"
+  },
+  "errors.write.destinationNotFound.message.copy": "La carpeta a la que estás copiando ya no existe, así que no había dónde poner tus archivos. Los originales están intactos.",
+  "@errors.write.destinationNotFound.message.copy": {
+    "sourceHash": "cc637e2"
+  },
+  "errors.write.destinationNotFound.message.move": "La carpeta a la que estás moviendo ya no existe, así que no había dónde poner tus archivos. Los originales están intactos.",
+  "@errors.write.destinationNotFound.message.move": {
+    "sourceHash": "1726290"
+  },
+  "errors.write.destinationNotFound.suggestion": "Puede que se haya renombrado o eliminado, o que la unidad se haya desconectado. Elige otro destino, o vuelve a abrir la carpeta e inténtalo de nuevo.",
+  "@errors.write.destinationNotFound.suggestion": {
+    "sourceHash": "2e99059"
+  },
   "errors.write.destinationExists.title": "El archivo ya existe",
   "@errors.write.destinationExists.title": {
     "sourceHash": "ae71a9a"

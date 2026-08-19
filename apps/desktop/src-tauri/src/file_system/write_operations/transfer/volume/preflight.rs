@@ -36,7 +36,7 @@ use super::super::super::types::{
     OperationEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteOperationError, WriteOperationPhase,
     WriteOperationType, WriteProgressEvent,
 };
-use super::transfer_error::WriteFailure;
+use super::transfer_error::{PathRole, WriteFailure};
 use crate::file_system::volume::{ListingProgress, Volume};
 use crate::ignore_poison::IgnorePoison;
 
@@ -226,7 +226,7 @@ pub(super) async fn scan_volume_sources(
         .await
         .map_err(|e| {
             let path = source_paths.first().cloned().unwrap_or_default();
-            WriteFailure::from_volume(&path, e)
+            WriteFailure::from_volume(&path, PathRole::Source, e)
         })?;
 
     // Final Scanning event with the aggregate totals. Bypasses the throttle

@@ -560,6 +560,16 @@ pub enum WriteOperationError {
     SourceNotFound {
         path: String,
     },
+    /// The destination folder isn't there (or the volume can't address it), so
+    /// there was nowhere to put anything. Kept SEPARATE from `SourceNotFound`
+    /// because the two send the user to opposite places: a missing source reads
+    /// as "your file is gone" and starts a hunt for data loss, when the file is
+    /// sitting untouched and it's the target folder that's missing. Which one a
+    /// `VolumeError::NotFound` becomes is decided by the `PathRole` the caller
+    /// passes to `map_volume_error`, never guessed from the path.
+    DestinationNotFound {
+        path: String,
+    },
     /// Overwrite not enabled.
     DestinationExists {
         path: String,

@@ -23,7 +23,7 @@ use super::super::super::types::{
 use super::super::super::unique_name::ClaimedNames;
 use super::super::dest_name_index::fold;
 use super::naming::find_unique_volume_name;
-use super::transfer_error::map_volume_error;
+use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::volume::{Volume, VolumeError};
 
 /// Outcome of resolving a volume conflict.
@@ -89,7 +89,7 @@ pub(super) async fn resolve_volume_conflict(
         None => source_volume
             .is_directory(source_path)
             .await
-            .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?,
+            .map_err(|e| map_volume_error(&source_path.display().to_string(), PathRole::Source, e))?,
     };
 
     // The op's ledger of names already handed out, for every namer below.
@@ -466,7 +466,7 @@ async fn resolve_dest_is_directory(dest_volume: &Arc<dyn Volume>, path: &Path) -
     match dest_volume.is_directory(path).await {
         Ok(is_dir) => Ok(is_dir),
         Err(VolumeError::NotFound(_)) => Ok(false),
-        Err(e) => Err(map_volume_error(&path.display().to_string(), e)),
+        Err(e) => Err(map_volume_error(&path.display().to_string(), PathRole::Destination, e)),
     }
 }
 

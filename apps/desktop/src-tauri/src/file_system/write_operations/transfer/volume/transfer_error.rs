@@ -11,6 +11,22 @@ use std::path::{Path, PathBuf};
 use super::super::super::types::{WriteErrorEvent, WriteOperationError, WriteOperationType};
 use crate::file_system::volume::VolumeError;
 
+/// Which side of a transfer a failing path belongs to.
+///
+/// A `VolumeError::NotFound` carries no clue about this, and the two sides mean
+/// opposite things to the user: a missing SOURCE says "your file is gone", a
+/// missing DESTINATION says "there was nowhere to put it". Only the call site
+/// knows which volume it asked, so the role travels WITH the path from there —
+/// ❌ never inferred downstream from the path's shape, which is how a NAS
+/// destination once got reported as a vanished source file.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::file_system::write_operations) enum PathRole {
+    /// The path came from the volume being read (or from a walk over it).
+    Source,
+    /// The path came from the volume being written to.
+    Destination,
+}
+
 /// A write-operation failure carrying the typed `WriteOperationError` the FE renders
 /// from. The two volume-aware constructors map an originating `VolumeError + path`
 /// into the typed error; `synthetic` wraps an already-typed error (cancellation,
@@ -23,8 +39,9 @@ pub(crate) struct WriteFailure {
 impl WriteFailure {
     /// Construct a `WriteFailure` from an originating `VolumeError + path`, mapping it
     /// to a `WriteOperationError`. One spot to map, replacing per-call-site boilerplate.
-    pub(super) fn from_volume(path: &Path, e: VolumeError) -> Self {
-        let error = map_volume_error(&path.display().to_string(), e);
+    /// `role` says which volume the path came from (see `PathRole`).
+    pub(super) fn from_volume(path: &Path, role: PathRole, e: VolumeError) -> Self {
+        let error = map_volume_error(&path.display().to_string(), role, e);
         Self { error }
     }
 
@@ -40,7 +57,7 @@ impl WriteFailure {
 impl From<(VolumeError, PathBuf)> for WriteFailure {
     fn from(ctx: (VolumeError, PathBuf)) -> Self {
         let (volume_error, path) = ctx;
-        let error = map_volume_error(&path.display().to_string(), volume_error);
+        let error = map_volume_error(&path.display().to_string(), PathRole::Source, volume_error);
         Self { error }
     }
 }
@@ -66,10 +83,15 @@ pub(in crate::file_system::write_operations) struct PathedVolumeError {
     pub error: VolumeError,
 }
 
+/// `PathRole::Source` isn't a default here, it's what the carried path IS: every
+/// `at()` site labels the error with the SOURCE item the walker was on (that's the
+/// type's whole purpose), so the path a `PathedVolumeError` holds is a source path
+/// even when the failing call was a write. Naming it a destination would attach a
+/// destination verdict to a source path, which is worse than the mismatch it fixes.
 impl From<PathedVolumeError> for WriteFailure {
     fn from(e: PathedVolumeError) -> Self {
         Self {
-            error: map_volume_error(&e.path.display().to_string(), e.error),
+            error: map_volume_error(&e.path.display().to_string(), PathRole::Source, e.error),
         }
     }
 }
@@ -104,12 +126,22 @@ pub(super) fn write_error_event_from(
 
 /// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks
 /// one.
+///
+/// `role` decides what a `NotFound` means: the error itself doesn't say which
+/// volume answered, and only the caller knows. ❌ Never guess it here.
 pub(in crate::file_system::write_operations) fn map_volume_error(
     context_path: &str,
+    role: PathRole,
     e: VolumeError,
 ) -> WriteOperationError {
     match e {
-        VolumeError::NotFound(path) => WriteOperationError::SourceNotFound { path },
+        // The same errno, two different stories for the user. Reporting a
+        // destination that couldn't be addressed as a missing SOURCE is what sent
+        // a NAS user hunting for a file that had never moved.
+        VolumeError::NotFound(path) => match role {
+            PathRole::Source => WriteOperationError::SourceNotFound { path },
+            PathRole::Destination => WriteOperationError::DestinationNotFound { path },
+        },
         VolumeError::PermissionDenied(msg) => WriteOperationError::PermissionDenied {
             path: context_path.to_string(),
             message: msg,

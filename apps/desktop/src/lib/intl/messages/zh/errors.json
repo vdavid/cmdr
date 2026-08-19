@@ -1073,6 +1073,22 @@
   "@errors.write.sourceNotFound.suggestion": {
     "sourceHash": "1a6cd17"
   },
+  "errors.write.destinationNotFound.title": "找不到目标文件夹",
+  "@errors.write.destinationNotFound.title": {
+    "sourceHash": "215ddfe"
+  },
+  "errors.write.destinationNotFound.message.copy": "你要拷贝到的文件夹已经不存在了，所以没有地方放你的文件。原文件没有被动过。",
+  "@errors.write.destinationNotFound.message.copy": {
+    "sourceHash": "cc637e2"
+  },
+  "errors.write.destinationNotFound.message.move": "你要移动到的文件夹已经不存在了，所以没有地方放你的文件。原文件没有被动过。",
+  "@errors.write.destinationNotFound.message.move": {
+    "sourceHash": "1726290"
+  },
+  "errors.write.destinationNotFound.suggestion": "它可能被重命名或删除了，也可能是驱动器断开了。换一个目标位置，或者重新打开这个文件夹再试一次。",
+  "@errors.write.destinationNotFound.suggestion": {
+    "sourceHash": "2e99059"
+  },
   "errors.write.destinationExists.title": "文件已存在",
   "@errors.write.destinationExists.title": {
     "sourceHash": "ae71a9a"

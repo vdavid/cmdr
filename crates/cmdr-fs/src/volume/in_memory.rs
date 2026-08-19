@@ -71,6 +71,13 @@ pub struct InMemoryVolume {
     /// failure never fails the surrounding edit (the edit commits via a
     /// rename-overwrite swap, which doesn't call `delete`). Default `false`.
     delete_fails: bool,
+    /// When `true`, [`Volume::create_directory`] returns `NotFound` for the path it
+    /// was handed instead of creating it. Models a backend that can't ADDRESS the
+    /// destination at all (a share answering `NotFound` for a path outside its
+    /// mount), which is the one shape that makes a destination failure look
+    /// exactly like a missing source. Default `false`. Set via
+    /// [`Self::with_create_directory_not_found`].
+    create_directory_not_found: bool,
     /// Paths whose [`Volume::is_directory`] and [`Volume::get_metadata`] fail with
     /// an `IoError` instead of answering, modeling a stat that couldn't complete
     /// (a dropped MTP session, a hung mount) rather than a path that isn't there.
@@ -102,6 +109,7 @@ impl InMemoryVolume {
             read_range_unsupported: false,
             sibling_duplicates_allowed: false,
             delete_fails: false,
+            create_directory_not_found: false,
             stat_failing: RwLock::new(HashSet::new()),
             smb_connection_state: None,
             #[cfg(feature = "playwright-e2e")]
@@ -138,6 +146,16 @@ impl InMemoryVolume {
     /// delete failure never fails or blocks the edit.
     pub fn with_delete_failing(mut self) -> Self {
         self.delete_fails = true;
+        self
+    }
+
+    /// Makes [`Volume::create_directory`] fail with `NotFound`, modeling a backend
+    /// that can't address the path at all rather than one that tried and couldn't
+    /// write. A share answers this way for a path outside its mount, and it's the
+    /// case that decides whether a DESTINATION failure gets reported as a missing
+    /// SOURCE.
+    pub fn with_create_directory_not_found(mut self) -> Self {
+        self.create_directory_not_found = true;
         self
     }
 
@@ -537,6 +555,10 @@ impl Volume for InMemoryVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            if self.create_directory_not_found {
+                return Err(VolumeError::NotFound(self.normalize(path).display().to_string()));
+            }
+
             let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
                 message: "Lock poisoned".into(),
                 raw_os_error: None,

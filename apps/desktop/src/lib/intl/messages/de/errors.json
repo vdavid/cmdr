@@ -1073,6 +1073,22 @@
   "@errors.write.sourceNotFound.suggestion": {
     "sourceHash": "1a6cd17"
   },
+  "errors.write.destinationNotFound.title": "Zielordner nicht gefunden",
+  "@errors.write.destinationNotFound.title": {
+    "sourceHash": "215ddfe"
+  },
+  "errors.write.destinationNotFound.message.copy": "Der Ordner, in den du kopierst, existiert nicht mehr, also konnte nichts abgelegt werden. Die Originale sind unberührt.",
+  "@errors.write.destinationNotFound.message.copy": {
+    "sourceHash": "cc637e2"
+  },
+  "errors.write.destinationNotFound.message.move": "Der Ordner, in den du bewegst, existiert nicht mehr, also konnte nichts abgelegt werden. Die Originale sind unberührt.",
+  "@errors.write.destinationNotFound.message.move": {
+    "sourceHash": "1726290"
+  },
+  "errors.write.destinationNotFound.suggestion": "Er wurde vielleicht umbenannt oder entfernt, oder das Laufwerk wurde getrennt. Wähle ein anderes Ziel, oder öffne den Ordner erneut und versuche es nochmal.",
+  "@errors.write.destinationNotFound.suggestion": {
+    "sourceHash": "2e99059"
+  },
   "errors.write.destinationExists.title": "Datei existiert bereits",
   "@errors.write.destinationExists.title": {
     "sourceHash": "ae71a9a"

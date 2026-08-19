@@ -34,7 +34,7 @@ use super::conflict::resolve_volume_conflict;
 use super::move_same::move_within_same_volume;
 use super::preflight::{SourceHint, scan_volume_sources};
 use super::strategy::{copy_single_path, resolve_source_is_directory};
-use super::transfer_error::{AtPath, WriteFailure, map_volume_error, write_error_event_from};
+use super::transfer_error::{AtPath, PathRole, WriteFailure, map_volume_error, write_error_event_from};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
@@ -318,7 +318,7 @@ pub(crate) async fn move_volumes_with_progress(
     dest_volume
         .create_directory_all(dest_path)
         .await
-        .map_err(|e| WriteFailure::from_volume(dest_path, e))?;
+        .map_err(|e| WriteFailure::from_volume(dest_path, PathRole::Destination, e))?;
 
     // Phase 1: Preflight scan. Same helper the copy pipeline uses; we need
     // it for `total_bytes` (so the FE's Size progress bar isn't pinned at
@@ -588,7 +588,7 @@ pub(crate) async fn move_volumes_with_progress(
                             .await
                         {
                             Ok(is_dir) => is_dir,
-                            Err(e) => return Err(map_volume_error(&source_path.display().to_string(), e)),
+                            Err(e) => return Err(map_volume_error(&source_path.display().to_string(), PathRole::Source, e)),
                         };
                     let source_size_hint = hint.and_then(|h| (!h.is_directory).then_some(h.size));
 
@@ -682,7 +682,7 @@ pub(crate) async fn move_volumes_with_progress(
                                 dest_item_path.display(),
                                 e.error
                             );
-                            return Err(map_volume_error(&e.path.display().to_string(), e.error));
+                            return Err(map_volume_error(&e.path.display().to_string(), PathRole::Source, e.error));
                         }
                     };
                     // Past the last byte. Set directly on the handle rather than
@@ -723,7 +723,7 @@ pub(crate) async fn move_volumes_with_progress(
                                 source_path.display(),
                                 e
                             );
-                            return Err(map_volume_error(&source_path.display().to_string(), e));
+                            return Err(map_volume_error(&source_path.display().to_string(), PathRole::Source, e));
                         }
 
                     // Delete source. `Volume::delete` is contractually for
@@ -764,7 +764,7 @@ pub(crate) async fn move_volumes_with_progress(
                             source_path.display(),
                             e.error
                         );
-                        return Err(map_volume_error(&e.path.display().to_string(), e.error));
+                        return Err(map_volume_error(&e.path.display().to_string(), PathRole::Source, e.error));
                     }
 
                     // Journal the moved leaves under the REAL volume ids: a file

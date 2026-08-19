@@ -45,7 +45,7 @@ use crate::operation_log::types::OpKind;
 
 use super::cleanup::{clean_partial_writes, volume_rollback_with_progress};
 use super::conflict::is_the_same_item;
-use super::transfer_error::{WriteFailure, write_error_event_from};
+use super::transfer_error::{PathRole, WriteFailure, write_error_event_from};
 
 /// How long a cancelled or rolled-back operation waits for its in-flight copy
 /// tasks to wind down before abandoning them.
@@ -579,7 +579,7 @@ pub(crate) async fn copy_volumes_with_progress(
     let dest_dir_creation = dest_volume
         .create_directory_all(dest_path)
         .await
-        .map_err(|e| WriteFailure::from_volume(dest_path, e))?;
+        .map_err(|e| WriteFailure::from_volume(dest_path, PathRole::Destination, e))?;
 
     // How many top-level sources ride at once, and whether the concurrent driver
     // runs at all. Both are decided before Phase 0.6 because the destination
@@ -650,7 +650,7 @@ pub(crate) async fn copy_volumes_with_progress(
     let dest_space = dest_volume
         .get_space_info()
         .await
-        .map_err(|e| WriteFailure::from_volume(dest_path, e))?;
+        .map_err(|e| WriteFailure::from_volume(dest_path, PathRole::Destination, e))?;
     if dest_space.available_bytes < total_bytes {
         return Err(WriteFailure::synthetic(WriteOperationError::InsufficientSpace {
             required: total_bytes,

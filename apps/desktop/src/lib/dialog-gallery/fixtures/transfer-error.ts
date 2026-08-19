@@ -40,6 +40,12 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: { type: 'source_not_found', path: LONG_PATH },
   },
+  destination_not_found: {
+    operationType: 'copy',
+    // A share subfolder, the shape this actually shows up in: the destination
+    // is on a NAS that stopped being able to address the folder mid-transfer.
+    error: { type: 'destination_not_found', path: '/Volumes/Naspolya/media/photos/2026' },
+  },
   destination_exists: {
     operationType: 'move',
     error: { type: 'destination_exists', path: '/Users/david/Documents/invoices/2026-Q2-summary.numbers' },

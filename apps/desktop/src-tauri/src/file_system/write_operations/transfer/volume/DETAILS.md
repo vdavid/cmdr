@@ -454,6 +454,26 @@ the folder's own name. That is undiagnosable — the folder is fine, one leaf is
 content of the report. The originating path exists only inside the walker; once the error leaves without it, it cannot
 be reconstructed.
 
+**Which SIDE the path came from travels with it too** (`PathRole`, same module). A `VolumeError::NotFound` says nothing
+about which volume answered, and the two readings are opposites for the user: `SourceNotFound` means "your file is
+gone", `DestinationNotFound` means "there was nowhere to put it". `map_volume_error` takes the role as an argument, so
+every call site has to decide; inferring it downstream is impossible anyway, since the only signal available is the
+path's shape and a volume-relative destination (`/photos`) looks exactly like a source path. The destination-side sites
+are the three `create_directory_all(dest_path)`
+calls (`copy.rs` Phase 0.5, `move.rs`, `move_same.rs`), the dest space query, and the dest `is_directory` probes;
+everything else is source-side.
+
+**Why it matters**: with one shared `SourceNotFound`, a share that couldn't address the destination reported the user's
+intact source file as missing. A NAS user hit exactly that (`v0.38.1`): the dialog claimed the destination folder
+didn't exist, then the transfer claimed the source file didn't either, naming a file they had never touched. Two
+opposite diagnoses for one destination fault, and the alarming one was the wrong one.
+
+**`From<PathedVolumeError>` is `PathRole::Source` by construction, not by default**: every `at()` site labels the error
+with the SOURCE item the walker was on (that IS the type's purpose above), so the path it carries is a source path even
+when the failing call wrote to the destination. Naming that a destination would attach a destination verdict to a
+source path. A dest-side caller that needs the other verdict maps explicitly through
+`WriteFailure::from_volume(path, PathRole::Destination, e)`.
+
 **Where each driver attaches it**:
 
 - Cross-volume move (`move.rs`) and serial copy (`copy_serial.rs`) map with `e.path`, never the loop's

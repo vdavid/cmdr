@@ -516,6 +516,7 @@ export interface OversizedFile {
 /** Error types for write operations (discriminated union). */
 export type WriteOperationError =
   | { type: 'source_not_found'; path: string }
+  | { type: 'destination_not_found'; path: string }
   | { type: 'destination_exists'; path: string }
   | { type: 'permission_denied'; path: string; message: string }
   | { type: 'insufficient_space'; required: number; available: number; volumeName: string | null }

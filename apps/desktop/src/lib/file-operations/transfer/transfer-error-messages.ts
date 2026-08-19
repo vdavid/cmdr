@@ -62,6 +62,17 @@ const simpleMessageFactories: Partial<
     message: w('destinationExists.message'),
     suggestion: w('destinationExists.suggestion'),
   }),
+  // The destination folder is gone, so nothing was written. Deliberately worded
+  // nothing like `source_not_found`: the two used to share that variant, and
+  // telling someone their source file vanished when it's sitting untouched is
+  // the one wrong answer that starts a data-loss panic. Only copy and move
+  // reach it (delete/trash have no destination), so `${op}` never resolves past
+  // `.copy` / `.move`.
+  destination_not_found: (op) => ({
+    title: w('destinationNotFound.title'),
+    message: w(`destinationNotFound.message.${op}`),
+    suggestion: w('destinationNotFound.suggestion'),
+  }),
   // destinationInsideSource can only happen on copy/move (delete/trash have no
   // destination), so `${op}` only ever resolves to `.copy` or `.move` here.
   destination_inside_source: (op) => ({
@@ -151,6 +162,9 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   io_error: { category: 'serious', retryHint: true },
   symlink_loop: { category: 'serious', retryHint: false },
   source_not_found: { category: 'needs_action', retryHint: false },
+  // No Retry: the folder is missing, so the identical request can only fail
+  // again. The way out is picking another destination or restoring the folder.
+  destination_not_found: { category: 'needs_action', retryHint: false },
   destination_exists: { category: 'needs_action', retryHint: false },
   permission_denied: { category: 'needs_action', retryHint: false },
   insufficient_space: { category: 'needs_action', retryHint: false },
@@ -284,6 +298,7 @@ export function getUserFriendlyMessage(
 /** Error types where technical details are just the path. */
 const pathOnlyTypes = new Set<WriteOperationError['type']>([
   'source_not_found',
+  'destination_not_found',
   'destination_exists',
   'symlink_loop',
   'device_disconnected',

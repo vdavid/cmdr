@@ -38,7 +38,7 @@ use super::super::transfer_probe::OperationProbe;
 use super::conflict::resolve_volume_conflict;
 use super::preflight::SourceHint;
 use super::strategy::copy_single_path;
-use super::transfer_error::{WriteFailure, map_volume_error};
+use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 
@@ -356,7 +356,13 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     .await
                     {
                         Ok(is_dir) => is_dir,
-                        Err(e) => return Err(map_volume_error(&source_path.display().to_string(), e)),
+                        Err(e) => {
+                            return Err(map_volume_error(
+                                &source_path.display().to_string(),
+                                PathRole::Source,
+                                e,
+                            ));
+                        }
                     };
                     let source_size_hint = hint.and_then(|h| (!h.is_directory).then_some(h.size));
 
@@ -474,7 +480,16 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                         super::conflict::finalize_safe_replace(&dest_volume, &dest_item_path, &orig)
                                             .await
                                     {
-                                        return Err(map_volume_error(&source_path.display().to_string(), e));
+                                        // The rename that failed is entirely on the
+                                        // destination, so it names the destination
+                                        // entry: the source is already fully read and
+                                        // untouched, and reporting it here would point
+                                        // the user at an intact file.
+                                        return Err(map_volume_error(
+                                            &dest_item_path.display().to_string(),
+                                            PathRole::Destination,
+                                            e,
+                                        ));
                                     }
                                     orig
                                 }
@@ -565,7 +580,11 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             // Report the path the walker actually failed on (for a
                             // directory source, a file deep inside), ❌ never the
                             // top-level `source_path` the user selected.
-                            Err(map_volume_error(&e.path.display().to_string(), e.error))
+                            Err(map_volume_error(
+                                &e.path.display().to_string(),
+                                PathRole::Source,
+                                e.error,
+                            ))
                         }
                     }
                 })

@@ -1073,6 +1073,22 @@
   "@errors.write.sourceNotFound.suggestion": {
     "sourceHash": "1a6cd17"
   },
+  "errors.write.destinationNotFound.title": "Det gick inte att hitta målmappen",
+  "@errors.write.destinationNotFound.title": {
+    "sourceHash": "215ddfe"
+  },
+  "errors.write.destinationNotFound.message.copy": "Mappen du kopierar till finns inte längre, så det fanns ingenstans att lägga filerna. Originalen är orörda.",
+  "@errors.write.destinationNotFound.message.copy": {
+    "sourceHash": "cc637e2"
+  },
+  "errors.write.destinationNotFound.message.move": "Mappen du flyttar till finns inte längre, så det fanns ingenstans att lägga filerna. Originalen är orörda.",
+  "@errors.write.destinationNotFound.message.move": {
+    "sourceHash": "1726290"
+  },
+  "errors.write.destinationNotFound.suggestion": "Den kan ha döpts om eller tagits bort, eller så kopplades enheten från. Välj ett annat mål, eller öppna mappen igen och försök igen.",
+  "@errors.write.destinationNotFound.suggestion": {
+    "sourceHash": "2e99059"
+  },
   "errors.write.destinationExists.title": "Filen finns redan",
   "@errors.write.destinationExists.title": {
     "sourceHash": "ae71a9a"

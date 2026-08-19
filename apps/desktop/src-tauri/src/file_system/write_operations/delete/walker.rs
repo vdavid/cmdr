@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 use super::super::scan::{SourceItemTracker, scan_sources};
 use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{WriteOperationState, update_operation_status};
-use super::super::transfer::volume::map_volume_error;
+use super::super::transfer::volume::{PathRole, map_volume_error};
 use super::super::types::{
     DryRunResult, IoResultExt, OperationEventSink, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
@@ -363,7 +363,7 @@ async fn scan_volume_recursive(
         None => volume
             .is_directory(path)
             .await
-            .map_err(|e| map_volume_error(&path.display().to_string(), e))?,
+            .map_err(|e| map_volume_error(&path.display().to_string(), PathRole::Source, e))?,
     };
 
     if is_dir {
@@ -440,7 +440,7 @@ async fn scan_volume_recursive(
             None => volume
                 .list_directory_with_cancel(path, Some(&on_progress), Some(&state.backend_cancel))
                 .await
-                .map_err(|e| map_volume_error(&path.display().to_string(), e))?,
+                .map_err(|e| map_volume_error(&path.display().to_string(), PathRole::Source, e))?,
         };
 
         // Recurse into children first. list_directory returns FileEntry with size,
@@ -882,7 +882,7 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
                     message: "Operation cancelled by user".to_string(),
                 });
             }
-            Err(e) => return Err(map_volume_error(&entry.path.display().to_string(), e)),
+            Err(e) => return Err(map_volume_error(&entry.path.display().to_string(), PathRole::Source, e)),
         }
 
         // Journal the deleted leaf under the REAL volume id so "when did I delete
