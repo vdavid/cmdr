@@ -94,6 +94,42 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   the first, a `duration_bucket` on the other two. See below.
 - `first_folder_size_shown` (frontend, `$lib/indexing/first-size-timing.ts`, once per launch): `seconds_bucket` +
   `covering` bool. See below for its population.
+- `language_resolved` / `language_changed` (frontend, `$lib/intl/language-analytics.ts`): base language subtags only.
+  See below.
+
+## The language events, in detail
+
+Two questions: which language does an install run in, and does auto-selection land somewhere the user wants to stay?
+Both events live in `$lib/intl/language-analytics.ts`.
+
+- `language_resolved` fires once per launch, from `settings-applier.ts::initSettingsApplier` right after the settings
+  apply, so `active` is what the user is actually looking at rather than the webview's guess while the OS answers were
+  in flight. Props: `detected` (what the Rust resolver matched in the OS preference list against the shipped catalogs,
+  or `none`), `active` (what the app runs in), and `source` (`explicit` when `appearance.language` names a tag, `auto`
+  when it's `system` and a catalog matched, `fallback` when it's `system` and nothing did).
+- `language_changed` fires per deliberate pick, from the two pickers (`OnboardingLanguagePicker` and
+  `AppearanceSection`'s row) through `SettingSelect`'s `onPicked`. Props: `from` (the language they left) and `surface`
+  (`onboarding` / `settings`).
+
+**Both send the BASE subtag only** (`hu`, never `hu-HU`; `pt-BR` → `pt`). A rare language plus a region narrows a
+population further than the question needs, and the base subtag answers it completely.
+
+**`language_changed` is the only quality signal we get.** Nothing in the UI asks how a translation reads, and nothing
+will (David: no machine-translation notice anywhere), so a user walking away from their own language is the strongest
+evidence that a locale is bad. That's what makes `from` load-bearing, and it's why two things are the way they are:
+
+- ❌ **The hook is the pick, never a settings subscription.** `SettingSelect` writes the setting on every HIGHLIGHTED
+  row (the live preview, keyboard and hover alike) and the store mirrors it into every open window, so a subscription
+  would report each row the user skimmed past, from each window at once.
+- **A pick that lands on the language already running sends nothing.** Pinning "System default (Magyar)" to an explicit
+  `hu` is not a walk-away, and counting it as one would put phantom evidence against Hungarian.
+
+The `from` of the first pick comes from a per-window seed: the main window's is set by `language_resolved`, and
+secondary windows (the Settings window hosts the picker and never sends that event) seed through `noteStartupLanguage()`
+in `initWindowLanguageSync`. First seed wins, so a late startup seed can't rewrite a pick that already happened.
+
+The setting itself also rides the heartbeat: `appearance.language` is on `config_shape.rs`'s `CATEGORICAL_STRING_KEYS`,
+since its vocabulary is a fixed set of shipped tags plus the `system` sentinel.
 
 ## The search events, in detail
 

@@ -12,8 +12,9 @@ sections compose).
 
 ## File map
 
-- **`AppearanceSection.svelte`**: `Appearance > Colors and formats`: theme mode, app color, size/date palettes,
-  date/time format, striped rows
+- **`AppearanceSection.svelte`**: `Appearance > Colors and formats`: language, theme mode, app color, size/date
+  palettes, date/time format, striped rows. The language row passes `onPicked` so a hand pick reports `language_changed`
+  (`src-tauri/src/analytics/DETAILS.md`); the onboarding wizard's picker is the other caller
 - **`AppearanceZoomSection.svelte`**: `Appearance > Zoom and density`: text size slider and UI density
 - **`AppearanceSizesSection.svelte`**: `Appearance > File and folder sizes`: size display, size unit (binary/SI drives
   `kB`↔`KB` label override), file size format, size mismatch warning

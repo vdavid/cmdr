@@ -16,6 +16,7 @@
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import { systemStrings } from '$lib/system-strings.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { trackLanguageChanged } from '$lib/intl/language-analytics'
 
     interface Props {
         searchQuery: string
@@ -102,7 +103,10 @@
                     split
                     {searchQuery}
                 >
-                    <SettingSelect id="appearance.language" />
+                    <SettingSelect
+                        id="appearance.language"
+                        onPicked={(value: string) => { trackLanguageChanged('settings', value); }}
+                    />
                 </SettingRow>
             {/if}
         </SectionCard>

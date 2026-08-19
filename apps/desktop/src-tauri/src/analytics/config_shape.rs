@@ -25,6 +25,7 @@ use serde_json::{Map, Value};
 /// `analytics.email` (PII). Those stay out by being absent from this list.
 const CATEGORICAL_STRING_KEYS: &[&str] = &[
     "theme.mode",
+    "appearance.language",
     "appearance.appColor",
     "appearance.sizeColors",
     "appearance.dateColors",
@@ -109,6 +110,18 @@ mod tests {
         assert_eq!(shape["theme.mode"], json!("dark"));
         assert_eq!(shape["ai.provider"], json!("cloud"));
         assert_eq!(shape["listing.directorySortMode"], json!("name"));
+    }
+
+    #[test]
+    fn includes_the_ui_language_setting() {
+        // A BCP-47 tag or the `system` sentinel: a fixed vocabulary drawn from the
+        // shipped catalogs, so it belongs on the allowlist rather than being dropped
+        // with the free-text strings.
+        let picked = build_config_shape(&json!({ "appearance.language": "hu" }), false);
+        assert_eq!(picked["appearance.language"], json!("hu"));
+
+        let following_the_os = build_config_shape(&json!({ "appearance.language": "system" }), false);
+        assert_eq!(following_the_os["appearance.language"], json!("system"));
     }
 
     #[test]

@@ -41,6 +41,7 @@ import {
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { tString, setLocale } from '$lib/intl/messages.svelte'
 import { loadSystemLocales, pickUiLocale, watchSystemLocales } from '$lib/intl/os-locales'
+import { trackLanguageResolved } from '$lib/intl/language-analytics'
 import { pushConfigToBackend } from './ai-config'
 import { noteModelSettingChanged } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
@@ -346,6 +347,11 @@ export async function initSettingsApplier(): Promise<void> {
 
     // Apply current settings
     applyAllSettings()
+
+    // Report the language this launch came up in, once. After the apply, so it
+    // describes what the user is actually looking at rather than what the webview
+    // guessed while the OS answers were in flight.
+    trackLanguageResolved()
 
     // Subscribe to future changes
     unsubscribe = onSettingChange(handleSettingChange)

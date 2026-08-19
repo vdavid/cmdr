@@ -24,9 +24,16 @@
          * `ui/Select.svelte`'s `portalContainer`.
          */
         portalContainer?: HTMLElement
+        /**
+         * Runs when the user COMMITS a pick (clicks a row, or presses Enter on one),
+         * with the value they landed on. ❌ Not called for the keyboard/hover preview
+         * that `handleHighlightChange` applies as they move through the list, so a
+         * caller can treat one call as one deliberate choice.
+         */
+        onPicked?: (value: string) => void
     }
 
-    const { id, disabled = false, portalContainer }: Props = $props()
+    const { id, disabled = false, portalContainer, onPicked }: Props = $props()
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
@@ -112,6 +119,7 @@
         }
         showCustomInput = false
         applyValue(newValue)
+        onPicked?.(newValue)
     }
 
     // Track if "Custom…" is highlighted so the content can hide the checked state on other items.

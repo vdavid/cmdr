@@ -1,6 +1,7 @@
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
     import SettingSelect from '$lib/settings/components/SettingSelect.svelte'
+    import { trackLanguageChanged } from '$lib/intl/language-analytics'
 
     /**
      * The escape hatch: a compact language picker in the onboarding wizard's frame,
@@ -39,7 +40,11 @@
 
 <div class="language-picker">
     <span class="globe"><Icon name="globe" size={16} aria-hidden="true" /></span>
-    <SettingSelect id="appearance.language" {portalContainer} />
+    <SettingSelect
+        id="appearance.language"
+        {portalContainer}
+        onPicked={(value: string) => { trackLanguageChanged('onboarding', value); }}
+    />
 </div>
 
 <style>

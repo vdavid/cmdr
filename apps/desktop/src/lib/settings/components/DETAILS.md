@@ -13,7 +13,10 @@ shape:
 - `SettingSelect`: enum dropdown, wrapping `lib/ui/Select`. It owns the `allowCustom` inline-number flow and its
   `__custom__` sentinel, which `ui/Select` never sees. Rendering one OUTSIDE a settings page — the onboarding wizard's
   language picker does — means passing `portalContainer`, so the menu lands in that modal's overlay rather than under
-  its scrim (`ui/DETAILS.md` § Select).
+  its scrim (`ui/DETAILS.md` § Select). The optional `onPicked(value)` fires on a COMMITTED pick (click, or Enter on a
+  row) and not on the highlight preview `handleHighlightChange` applies while the user moves through the list, so one
+  call means one deliberate choice: that's the seam the two language pickers report `language_changed` from
+  (`src-tauri/src/analytics/DETAILS.md` § The language events).
 - `SettingToggleGroup`: segmented control for a short enum list.
 - `SettingRadioGroup`: vertical radio for a longer list, an option needing a `customContent` snippet, or an option
   carrying a control on its own line (`itemTrailing`, as Brief mode's "Limit to" does).

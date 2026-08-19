@@ -429,6 +429,12 @@ moment zag focuses its content. The overlay is inside the trap and above the pan
 `overflow: hidden`, which would otherwise clip a menu whose selected row sits near the bottom of the list.
 `ui/DETAILS.md` § Select covers the `portalContainer` prop.
 
+**A pick here reports itself.** The picker passes `SettingSelect`'s `onPicked` to
+`trackLanguageChanged('onboarding', …)`, which is half the population of the `language_changed` event (the Settings
+picker is the other half). Somebody reaching for this control on first launch is the strongest evidence we get that
+auto-selection landed badly, since nothing in the UI asks how a translation reads. Prop shapes and the rules that keep
+the signal honest: `src-tauri/src/analytics/DETAILS.md` § The language events.
+
 **No notice for already-onboarded users.** David cut the one-time banner/toast half deliberately (2026-08-19): an app
 that switches to your own language and says nothing is behaving normally, not doing something that needs announcing.
 Don't build it "just in case"; the `CLAUDE.md` bullet is the enforcing line.

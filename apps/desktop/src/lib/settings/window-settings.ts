@@ -17,6 +17,7 @@
 
 import { setLocale } from '$lib/intl/messages.svelte'
 import { loadSystemLocales, pickUiLocale, watchSystemLocales } from '$lib/intl/os-locales'
+import { noteStartupLanguage } from '$lib/intl/language-analytics'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { initReactiveSettings } from './reactive-settings.svelte'
 import { getSetting, onSpecificSettingChange } from './settings-store'
@@ -104,6 +105,11 @@ export function initWindowLanguageSync(): () => void {
   apply(getSetting('appearance.language'))
   void loadSystemLocales().then(() => {
     apply(getSetting('appearance.language'))
+    // Remember what this window came up in, so a pick in the Settings picker can
+    // say what the user left. Here, not before the first apply: under `'system'`
+    // that one still runs on the webview default. `language_resolved` is the main
+    // window's event and never fires here.
+    noteStartupLanguage()
   })
 
   // The subscription lands a tick later than the teardown could be called (a
