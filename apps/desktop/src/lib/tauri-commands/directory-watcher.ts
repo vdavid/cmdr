@@ -1,6 +1,6 @@
 // Directory-watcher event listeners. Typed `on*` wrappers over the
 // `tauri-specta` `events.directoryDiff` / `events.directoryDeleted` helpers.
-// `directory-diff` carries coalesced add/remove/modify changes for a watched
+// `directory-diff` carries coalesced add/remove/modify/move changes for a watched
 // listing; `directory-deleted` fires when the watched directory itself is gone.
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
@@ -8,7 +8,7 @@ import { events } from '$lib/ipc/bindings'
 import type { DirectoryDeletedEvent, DirectoryDiff } from '$lib/file-explorer/types'
 
 /**
- * A batched set of add/remove/modify changes for one watched listing.
+ * A batched set of add/remove/modify/move changes for one watched listing.
  *
  * The generated payload nests the typed `FileEntry`; we hand back the FE
  * `DirectoryDiff` (whose `entry` is the FE `FileEntry` with its extra
