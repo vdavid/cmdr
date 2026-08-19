@@ -240,12 +240,33 @@ mod tests {
 
     #[test]
     fn a_locale_without_native_strings_falls_back_to_english() {
-        // The nine translated locales ship before their menu translations do.
-        assert_eq!(lookup("hu", "menu.bar.file"), None);
+        // A tag with no table of its own (an unshipped language, or a locale
+        // whose native strings aren't translated yet) lands on English rather
+        // than on the raw key.
+        assert_eq!(lookup("kl", "menu.bar.file"), None);
         assert_eq!(
-            lookup("hu", "menu.bar.file").or_else(|| lookup(BASE_LOCALE, "menu.bar.file")),
+            lookup("kl", "menu.bar.file").or_else(|| lookup(BASE_LOCALE, "menu.bar.file")),
             Some("File")
         );
+    }
+
+    #[test]
+    fn every_shipped_locale_speaks_its_own_menu_bar() {
+        // All nine translated locales carry the native strings, so no user reads
+        // a Cmdr menu bar in English while the rest of the app is translated.
+        for locale in NATIVE_STRINGS {
+            assert!(
+                !locale.entries.is_empty(),
+                "{} has no native strings; run `pnpm intl:native-strings`",
+                locale.tag
+            );
+            assert_ne!(
+                lookup(locale.tag, "menu.bar.file"),
+                None,
+                "{} is missing menu.bar.file",
+                locale.tag
+            );
+        }
     }
 
     #[test]
