@@ -163,6 +163,12 @@ wait_until_async(Duration::from_secs(5), "recovery to reopen the device", || {
   carries an `// allowed-test-sleep: <reason>` comment on the line directly above (or trailing) the sleep. The
   `test-sleep` check enforces this: an undirectived sleep in test code fails, and an `// allowed-test-sleep:` that
   excuses nothing fails as an orphan.
+- **If the subject takes its clock as an argument, pass a future instant; ❌ never shrink a window to sleep less.** An
+  `allowed-test-sleep` is only earned once no clock seam exists. Shortening a production window so the test outlives it
+  quickly makes the SETUP race too: the live throttle test ran a 150 ms window and 50 rewrites, and on a loaded CI
+  runner the window elapsed mid-loop, one rewrite re-applied as a fresh leading edge, and a correct throttle read as a
+  broken one. Keep the production-length window and move the clock instead (`reconciler::sweep_throttle(&writer, now)`),
+  so both halves are independent of how long the setup took.
 - **The predicate must be a pure, cheap READ** — the helper runs it every 5 ms. A predicate that takes write locks can
   sabotage the very work it waits for: `media_index/scheduler/kick_tests.rs::has_enriched_row` used to re-open a full
   `MediaStore` (a write connection: WAL conversion + `CREATE TABLE IF NOT EXISTS`) per poll, and SQLite's lock-upgrade
