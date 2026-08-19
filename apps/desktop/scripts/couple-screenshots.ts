@@ -55,6 +55,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { type RepresentativeMapping, REPRESENTATIVE_SCREENSHOTS } from './representative-screenshots.ts'
+import { isNativeKey } from './gen-native-strings-lib.ts'
 
 export { type RepresentativeMapping, REPRESENTATIVE_SCREENSHOTS }
 
@@ -180,6 +181,14 @@ export interface AreaCoverage {
   representative: number
   /** Keys with no screenshot at all. */
   uncoupled: number
+  /**
+   * Keys drawn by the OS, not the webview (the native menu bar, the window
+   * title, the already-running alert). Counted apart from `uncoupled` because
+   * the capture harness drives a webview and structurally cannot reach them: a
+   * screenshot here would have to be faked, and a fake is worse for a translator
+   * than an honest gap. See `isNativeKey`.
+   */
+  nativeOnly: number
 }
 
 export interface CoverageReport {
@@ -193,6 +202,8 @@ export interface CoverageReport {
   representative: number
   /** Uncoupled keys across all areas. */
   uncoupled: number
+  /** Native-surface keys across all areas (see `AreaCoverage.nativeOnly`). */
+  nativeOnly: number
 }
 
 /**
@@ -216,25 +227,39 @@ export function buildCoverageReport(
   let direct = 0
   let representative = 0
   let uncoupled = 0
+  let nativeOnly = 0
 
   for (const area of [...keysByArea.keys()].sort()) {
     const keys = keysByArea.get(area) ?? []
     let areaDirect = 0
     let areaRep = 0
     let areaUncoupled = 0
+    let areaNative = 0
     for (const key of keys) {
       if (directKeys.has(key)) areaDirect++
       else if (representativeKeys.has(key)) areaRep++
+      // Checked AFTER the two coupling passes, so a native key that somehow did
+      // render in the webview keeps its real screenshot rather than being
+      // written off as unreachable.
+      else if (isNativeKey(key)) areaNative++
       else areaUncoupled++
     }
-    areas.push({ area, total: keys.length, direct: areaDirect, representative: areaRep, uncoupled: areaUncoupled })
+    areas.push({
+      area,
+      total: keys.length,
+      direct: areaDirect,
+      representative: areaRep,
+      uncoupled: areaUncoupled,
+      nativeOnly: areaNative,
+    })
     total += keys.length
     direct += areaDirect
     representative += areaRep
     uncoupled += areaUncoupled
+    nativeOnly += areaNative
   }
 
-  return { areas, total, direct, representative, uncoupled }
+  return { areas, total, direct, representative, uncoupled, nativeOnly }
 }
 
 /**
@@ -257,20 +282,24 @@ export function renderCoverageReport(report: CoverageReport): string {
     '  `@key.screenshotNote` explaining the mapping. Honest-by-design: it is NOT a precise capture, but it shows the right',
     '  layout and position so a translator loads one image for a whole family of strings.',
     '- **Uncoupled**: no screenshot yet (a surface the capture driver does not visit, or one with no honest representative).',
+    '- **Native**: drawn by the operating system, not the webview (the menu bar, the window title, the already-running',
+    '  alert). The capture harness drives a webview, so it can never reach these; the `@key` description is the whole',
+    '  translator aid there, which is why those descriptions carry the menu, the verb-or-noun call, and the Finder',
+    '  counterpart. Counted apart from Uncoupled so a permanent structural gap never reads as a missing capture.',
     '',
     `Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.`,
     '',
     `**Total: ${String(anyCoverage)} / ${String(report.total)} keys have a screenshot (${pct(anyCoverage, report.total)}):** ` +
       `${String(report.direct)} direct (${pct(report.direct, report.total)}) and ` +
       `${String(report.representative)} representative (${pct(report.representative, report.total)}). ` +
-      `${String(report.uncoupled)} remain uncoupled.`,
+      `${String(report.uncoupled)} remain uncoupled, and ${String(report.nativeOnly)} are native surfaces a webview capture cannot reach.`,
     '',
-    '| Area | Direct | Representative | Uncoupled | Total | Any % |',
-    '| --- | ---: | ---: | ---: | ---: | ---: |',
+    '| Area | Direct | Representative | Uncoupled | Native | Total | Any % |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: |',
   ]
   for (const a of report.areas) {
     lines.push(
-      `| ${a.area} | ${String(a.direct)} | ${String(a.representative)} | ${String(a.uncoupled)} | ${String(a.total)} | ${pct(a.direct + a.representative, a.total)} |`,
+      `| ${a.area} | ${String(a.direct)} | ${String(a.representative)} | ${String(a.uncoupled)} | ${String(a.nativeOnly)} | ${String(a.total)} | ${pct(a.direct + a.representative, a.total)} |`,
     )
   }
   lines.push('')

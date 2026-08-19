@@ -1,4 +1,14 @@
 {
+  "main.instanceLock.alertTitle": "Cmdr is already running",
+  "@main.instanceLock.alertTitle": {
+    "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. Title of the native macOS alert shown when someone launches a second Cmdr against the same data folder, which the app refuses because two copies writing one index would corrupt it. It is drawn by the operating system BEFORE any Cmdr window exists, so it is the very first thing that user sees. \"Cmdr\" is the product name and must stay verbatim. It states a fact rather than blaming anyone; the way out is in main.instanceLock.alertBody."
+  },
+
+  "main.instanceLock.alertBody": "Another copy of Cmdr is using this data folder. Switch to the running app, or quit it and try again.",
+  "@main.instanceLock.alertBody": {
+    "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. Body of the native macOS alert under main.instanceLock.alertTitle, drawn before any Cmdr window exists. It says what is happening (another Cmdr owns this data folder) and gives the two ways out: go to the copy that is already running, or quit it and launch again. \"data folder\" is where Cmdr keeps its index and settings; \"Cmdr\" is the product name and must stay verbatim. The alert has a single OK button, so this text is the whole explanation."
+  },
+
   "main.upgradeNudge.mac": "We''ve added new onboarding options. Open Cmdr > Onboarding… to review them.",
   "@main.upgradeNudge.mac": {
     "description": "Info toast (macOS) shown once to existing users after an update, pointing them at the new onboarding options. \"Cmdr > Onboarding…\" is a menu path the user follows; \"Cmdr\" is the brand name and \"Onboarding…\" is the menu item label (keep its trailing ellipsis). Paired with main.upgradeNudge.other for non-macOS."

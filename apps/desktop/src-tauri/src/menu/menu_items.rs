@@ -11,6 +11,8 @@ use tauri::{
     menu::{CheckMenuItem, MenuItem, PredefinedMenuItem, Submenu},
 };
 
+use crate::intl::menu_t;
+
 use super::{
     MenuItemEntry, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MENU_ID, SORT_BY_MODIFIED_ID,
     SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
@@ -46,57 +48,125 @@ pub(crate) fn show_in_file_manager_accelerator() -> &'static str {
     "Alt+Ctrl+O"
 }
 
-/// Platform-aware label for the "Show in Finder" / "Show in file manager" action.
-#[cfg(target_os = "macos")]
-pub(crate) fn show_in_file_manager_label() -> &'static str {
-    "Show in Finder"
+/// The macOS app menu's title, and the viewer bar's.
+///
+/// Deliberately NOT a catalog key: macOS names the app menu after the
+/// application, and the application is called `cmdr`. Translating it would make
+/// the one item every macOS user navigates by unrecognizable, and it would earn
+/// a `sameAsSourceJustification` in all nine locales for nothing.
+pub(crate) const APP_MENU_TITLE: &str = "cmdr";
+
+/// The Tab menu / tab context-menu label, which flips with the tab's state.
+///
+/// Shared by the two places that set it (the context menu builds it, the
+/// frontend pushes it onto the menu-bar item through `update_pin_tab_label`), so
+/// the two can't drift into different words for one command.
+pub fn pin_tab_label(is_pinned: bool) -> String {
+    menu_t(if is_pinned {
+        "menu.tab.unpinTab"
+    } else {
+        "menu.tab.pinTab"
+    })
 }
 
-#[cfg(not(target_os = "macos"))]
-pub(crate) fn show_in_file_manager_label() -> &'static str {
-    "Show in &file manager"
+/// The label for the "Show in Finder" / "Show in file manager" action.
+///
+/// Two catalog keys rather than one with a platform token: "Finder" is Apple's
+/// app name and stays English everywhere, while the Linux wording names a
+/// generic kind of program, so the two don't have the same shape in every
+/// language.
+pub(crate) fn show_in_file_manager_label() -> String {
+    #[cfg(target_os = "macos")]
+    {
+        menu_t("menu.file.showInFinder")
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        menu_t("menu.file.showInFileManager")
+    }
 }
 
-/// Platform-aware label for the per-pane view-mode CheckMenuItems.
-/// Linux uses GTK mnemonics; macOS doesn't.
-#[cfg(target_os = "macos")]
-pub(crate) fn full_view_label() -> &'static str {
-    "Full view"
+/// GTK mnemonic assignment for the items of ONE submenu.
+///
+/// Linux menus underline one letter per item so it can be reached from the
+/// keyboard, and that letter has to be unique within its submenu. Which letters
+/// are free depends on the words in the menu, so it depends on the LANGUAGE: a
+/// hand-picked English set can't survive translation into nine more, and a
+/// translator can't be asked to solve a per-submenu uniqueness puzzle. So the
+/// letters are allocated here, from the translated labels, in menu order.
+///
+/// Word-initial letters are offered first (that's what people scan for), then
+/// every other letter or digit in the label. A label that finds nothing free
+/// keeps no mnemonic, which costs one keystroke and nothing else.
+///
+/// A no-op on macOS, which has no mnemonics. The call sites stay identical on
+/// both platforms, so a new menu item can't be given one and not the other.
+#[derive(Default)]
+pub(crate) struct Mnemonics {
+    /// Lowercased letters already handed out in this submenu.
+    taken: Vec<char>,
 }
 
-#[cfg(not(target_os = "macos"))]
-pub(crate) fn full_view_label() -> &'static str {
-    "&Full view"
+impl Mnemonics {
+    /// A fresh allocator, for one submenu.
+    pub(crate) fn new() -> Self {
+        Self::default()
+    }
+
+    /// `label` with a mnemonic marker if this platform uses them, unchanged
+    /// otherwise.
+    pub(crate) fn assign(&mut self, label: &str) -> String {
+        if cfg!(target_os = "macos") {
+            return label.to_string();
+        }
+        self.mark(label)
+    }
+
+    /// `label` with `&` inserted before the first letter still free in this
+    /// submenu, or unchanged when every letter it offers is taken.
+    ///
+    /// Compiled on every platform even though only Linux calls it, so its tests
+    /// run in the same suite everyone runs. Splitting the decision
+    /// ([`Self::assign`]) from the mechanism is what makes that possible.
+    fn mark(&mut self, label: &str) -> String {
+        let chars: Vec<char> = label.chars().collect();
+        for index in mnemonic_candidates(&chars) {
+            let letter = chars[index].to_lowercase().next().unwrap_or(chars[index]);
+            if self.taken.contains(&letter) {
+                continue;
+            }
+            self.taken.push(letter);
+            let mut marked: String = chars[..index].iter().collect();
+            marked.push('&');
+            marked.extend(chars[index..].iter());
+            return marked;
+        }
+        label.to_string()
+    }
 }
 
-#[cfg(target_os = "macos")]
-pub(crate) fn brief_view_label() -> &'static str {
-    "Brief view"
-}
-
-#[cfg(not(target_os = "macos"))]
-pub(crate) fn brief_view_label() -> &'static str {
-    "&Brief view"
-}
-
-#[cfg(target_os = "macos")]
-pub(crate) fn left_pane_label() -> &'static str {
-    "Left pane"
-}
-
-#[cfg(not(target_os = "macos"))]
-pub(crate) fn left_pane_label() -> &'static str {
-    "&Left pane"
-}
-
-#[cfg(target_os = "macos")]
-pub(crate) fn right_pane_label() -> &'static str {
-    "Right pane"
-}
-
-#[cfg(not(target_os = "macos"))]
-pub(crate) fn right_pane_label() -> &'static str {
-    "&Right pane"
+/// Character indices in `label` that could carry the mnemonic, best first:
+/// every word's first letter in order, then every remaining letter or digit.
+/// Non-alphanumerics are never offered, because GTK underlines a character and
+/// an underlined comma helps nobody.
+fn mnemonic_candidates(label: &[char]) -> Vec<usize> {
+    let usable: Vec<usize> = label
+        .iter()
+        .enumerate()
+        .filter(|(_, character)| character.is_alphanumeric())
+        .map(|(index, _)| index)
+        .collect();
+    let word_initial: Vec<usize> = usable
+        .iter()
+        .copied()
+        .filter(|&index| index == 0 || !label[index - 1].is_alphanumeric())
+        .collect();
+    let rest: Vec<usize> = usable
+        .into_iter()
+        .filter(|index| !word_initial.contains(index))
+        .collect();
+    word_initial.into_iter().chain(rest).collect()
 }
 
 /// The View menu's per-pane view-mode block: four `CheckMenuItem`s and the two
@@ -123,11 +193,18 @@ pub(crate) struct ViewModeItems<R: Runtime> {
 pub(crate) fn build_view_mode_items<R: Runtime>(
     app: &AppHandle<R>,
     view_mode: ViewMode,
+    left_pane_label: &str,
+    right_pane_label: &str,
 ) -> tauri::Result<ViewModeItems<R>> {
+    // Each pane submenu holds the same two items, so each gets its own
+    // mnemonic allocator: the letters only have to be unique within one submenu.
+    let mut left_mnemonics = Mnemonics::new();
+    let mut right_mnemonics = Mnemonics::new();
+
     let full_left = CheckMenuItem::with_id(
         app,
         VIEW_MODE_FULL_LEFT_ID,
-        full_view_label(),
+        left_mnemonics.assign(&menu_t("menu.view.fullView")),
         true,
         view_mode == ViewMode::Full,
         Some("Cmd+1"),
@@ -135,7 +212,7 @@ pub(crate) fn build_view_mode_items<R: Runtime>(
     let brief_left = CheckMenuItem::with_id(
         app,
         VIEW_MODE_BRIEF_LEFT_ID,
-        brief_view_label(),
+        left_mnemonics.assign(&menu_t("menu.view.briefView")),
         true,
         view_mode == ViewMode::Brief,
         Some("Cmd+2"),
@@ -143,7 +220,7 @@ pub(crate) fn build_view_mode_items<R: Runtime>(
     let full_right = CheckMenuItem::with_id(
         app,
         VIEW_MODE_FULL_RIGHT_ID,
-        full_view_label(),
+        right_mnemonics.assign(&menu_t("menu.view.fullView")),
         true,
         false,
         None::<&str>,
@@ -151,14 +228,14 @@ pub(crate) fn build_view_mode_items<R: Runtime>(
     let brief_right = CheckMenuItem::with_id(
         app,
         VIEW_MODE_BRIEF_RIGHT_ID,
-        brief_view_label(),
+        right_mnemonics.assign(&menu_t("menu.view.briefView")),
         true,
         true,
         None::<&str>,
     )?;
 
-    let left_submenu = Submenu::with_items(app, left_pane_label(), true, &[&full_left, &brief_left])?;
-    let right_submenu = Submenu::with_items(app, right_pane_label(), true, &[&full_right, &brief_right])?;
+    let left_submenu = Submenu::with_items(app, left_pane_label, true, &[&full_left, &brief_left])?;
+    let right_submenu = Submenu::with_items(app, right_pane_label, true, &[&full_right, &brief_right])?;
 
     Ok(ViewModeItems {
         full_left,
@@ -192,13 +269,56 @@ pub(crate) fn build_sort_submenu<R: Runtime>(
     accel_modified: Option<&str>,
     accel_size: Option<&str>,
 ) -> tauri::Result<SortSubmenuItems<R>> {
-    let sort_by_name = MenuItem::with_id(app, SORT_BY_NAME_ID, "Name", true, accel_name)?;
-    let sort_by_ext = MenuItem::with_id(app, SORT_BY_EXTENSION_ID, "Extension", true, accel_extension)?;
-    let sort_by_modified = MenuItem::with_id(app, SORT_BY_MODIFIED_ID, "Date modified", true, accel_modified)?;
-    let sort_by_size = MenuItem::with_id(app, SORT_BY_SIZE_ID, "Size", true, accel_size)?;
-    let sort_by_created = MenuItem::with_id(app, SORT_BY_CREATED_ID, "Date created", true, None::<&str>)?;
-    let sort_asc = MenuItem::with_id(app, SORT_ASCENDING_ID, "Ascending", true, None::<&str>)?;
-    let sort_desc = MenuItem::with_id(app, SORT_DESCENDING_ID, "Descending", true, None::<&str>)?;
+    let mut mnemonics = Mnemonics::new();
+    let sort_by_name = MenuItem::with_id(
+        app,
+        SORT_BY_NAME_ID,
+        mnemonics.assign(&menu_t("menu.sort.name")),
+        true,
+        accel_name,
+    )?;
+    let sort_by_ext = MenuItem::with_id(
+        app,
+        SORT_BY_EXTENSION_ID,
+        mnemonics.assign(&menu_t("menu.sort.extension")),
+        true,
+        accel_extension,
+    )?;
+    let sort_by_modified = MenuItem::with_id(
+        app,
+        SORT_BY_MODIFIED_ID,
+        mnemonics.assign(&menu_t("menu.sort.dateModified")),
+        true,
+        accel_modified,
+    )?;
+    let sort_by_size = MenuItem::with_id(
+        app,
+        SORT_BY_SIZE_ID,
+        mnemonics.assign(&menu_t("menu.sort.size")),
+        true,
+        accel_size,
+    )?;
+    let sort_by_created = MenuItem::with_id(
+        app,
+        SORT_BY_CREATED_ID,
+        mnemonics.assign(&menu_t("menu.sort.dateCreated")),
+        true,
+        None::<&str>,
+    )?;
+    let sort_asc = MenuItem::with_id(
+        app,
+        SORT_ASCENDING_ID,
+        mnemonics.assign(&menu_t("menu.sort.ascending")),
+        true,
+        None::<&str>,
+    )?;
+    let sort_desc = MenuItem::with_id(
+        app,
+        SORT_DESCENDING_ID,
+        mnemonics.assign(&menu_t("menu.sort.descending")),
+        true,
+        None::<&str>,
+    )?;
 
     let submenu = Submenu::with_id_and_items(
         app,
@@ -255,20 +375,52 @@ pub(crate) fn register_sort_items<R: Runtime>(
 /// intercepts these keys at the toolkit level).
 pub(crate) fn build_zoom_submenu<R: Runtime>(
     app: &AppHandle<R>,
+    zoom_label: &str,
     accel_100: Option<&str>,
     accel_in: Option<&str>,
     accel_out: Option<&str>,
 ) -> tauri::Result<Submenu<R>> {
-    let zoom_75 = MenuItem::with_id(app, VIEW_ZOOM_75_ID, "75%", true, None::<&str>)?;
-    let zoom_100 = MenuItem::with_id(app, VIEW_ZOOM_100_ID, "100%", true, accel_100)?;
-    let zoom_125 = MenuItem::with_id(app, VIEW_ZOOM_125_ID, "125%", true, None::<&str>)?;
-    let zoom_150 = MenuItem::with_id(app, VIEW_ZOOM_150_ID, "150%", true, None::<&str>)?;
-    let zoom_in = MenuItem::with_id(app, VIEW_ZOOM_IN_ID, "Zoom in", true, accel_in)?;
-    let zoom_out = MenuItem::with_id(app, VIEW_ZOOM_OUT_ID, "Zoom out", true, accel_out)?;
+    let mut mnemonics = Mnemonics::new();
+    let zoom_75 = MenuItem::with_id(
+        app,
+        VIEW_ZOOM_75_ID,
+        mnemonics.assign(&menu_t("menu.zoom.percent75")),
+        true,
+        None::<&str>,
+    )?;
+    let zoom_100 = MenuItem::with_id(
+        app,
+        VIEW_ZOOM_100_ID,
+        mnemonics.assign(&menu_t("menu.zoom.percent100")),
+        true,
+        accel_100,
+    )?;
+    let zoom_125 = MenuItem::with_id(
+        app,
+        VIEW_ZOOM_125_ID,
+        mnemonics.assign(&menu_t("menu.zoom.percent125")),
+        true,
+        None::<&str>,
+    )?;
+    let zoom_150 = MenuItem::with_id(
+        app,
+        VIEW_ZOOM_150_ID,
+        mnemonics.assign(&menu_t("menu.zoom.percent150")),
+        true,
+        None::<&str>,
+    )?;
+    let zoom_in = MenuItem::with_id(app, VIEW_ZOOM_IN_ID, mnemonics.assign(&menu_t("menu.zoom.in")), true, accel_in)?;
+    let zoom_out = MenuItem::with_id(
+        app,
+        VIEW_ZOOM_OUT_ID,
+        mnemonics.assign(&menu_t("menu.zoom.out")),
+        true,
+        accel_out,
+    )?;
 
     Submenu::with_items(
         app,
-        "Zoom",
+        zoom_label,
         true,
         &[
             &zoom_75,
@@ -430,9 +582,69 @@ mod tests {
         assert_eq!(truncate_for_menu_label("anything.txt", 0), "");
     }
 
+    #[test]
+    fn a_mnemonic_lands_on_the_first_free_word_initial() {
+        let mut mnemonics = Mnemonics::new();
+        assert_eq!(mnemonics.mark("New folder…"), "&New folder…");
+        // `N` is taken, so the next label's own initial wins.
+        assert_eq!(mnemonics.mark("Delete"), "&Delete");
+    }
+
+    #[test]
+    fn a_clash_moves_to_the_next_word_before_falling_back_to_a_letter() {
+        let mut mnemonics = Mnemonics::new();
+        assert_eq!(mnemonics.mark("Copy path"), "&Copy path");
+        // `C` is gone, so "Copy filename" takes its SECOND word's initial.
+        assert_eq!(mnemonics.mark("Copy filename"), "Copy &filename");
+        // Every word initial gone: fall back to a later letter inside the label.
+        assert_eq!(mnemonics.mark("Copy"), "C&opy");
+    }
+
+    #[test]
+    fn the_case_of_the_letter_does_not_decide_uniqueness() {
+        // GTK matches the mnemonic case-insensitively, so "Open" and "open" would
+        // be the same keystroke.
+        let mut mnemonics = Mnemonics::new();
+        assert_eq!(mnemonics.mark("Open"), "&Open");
+        assert_eq!(mnemonics.mark("orange"), "o&range");
+    }
+
+    #[test]
+    fn a_label_with_nothing_free_keeps_no_mnemonic() {
+        // Costs one keystroke and nothing else; a duplicate marker would cost
+        // correctness, since two items would answer the same key.
+        let mut mnemonics = Mnemonics::new();
+        assert_eq!(mnemonics.mark("ab"), "&ab");
+        assert_eq!(mnemonics.mark("ba"), "&ba");
+        assert_eq!(mnemonics.mark("aabb"), "aabb");
+    }
+
+    #[test]
+    fn punctuation_never_carries_the_marker() {
+        // GTK underlines the marked character, and an underlined ellipsis or
+        // percent sign is unreachable and meaningless.
+        let mut mnemonics = Mnemonics::new();
+        assert_eq!(mnemonics.mark("75%"), "&75%");
+        assert_eq!(mnemonics.mark("…"), "…");
+    }
+
+    #[test]
+    fn a_non_latin_label_still_gets_a_marker() {
+        // The allocator runs on TRANSLATED labels, so it has to work in every
+        // script we ship, not just the one it was written in.
+        let mut mnemonics = Mnemonics::new();
+        assert_eq!(mnemonics.mark("Új mappa…"), "&Új mappa…");
+        assert_eq!(mnemonics.mark("打开"), "&打开");
+    }
+
     /// Menu labels end with the U+2026 ellipsis character, never three periods.
     /// macOS kerns `...` visibly worse next to system items, and the SF Symbol pass finds an
     /// `NSMenuItem` by its title, so a stray `...` costs the item its icon.
+    ///
+    /// Labels themselves live in the message catalog now, so the catalog is where
+    /// the real guard is (`native_strings::menu_labels_end_with_the_ellipsis_character`).
+    /// This one keeps watch over the literals still written in these files, so a
+    /// new one can't slip in with `...`.
     #[test]
     fn menu_labels_use_the_ellipsis_character() {
         const SOURCES: [(&str, &str); 4] = [

@@ -34,14 +34,24 @@ var unusedKeyDynamicPrefixes = []string{
 }
 
 // RunDesktopMessageKeysUnused fails if any key in the `messages/en/*.json`
-// catalogs is never referenced anywhere in the frontend source: an orphan key is
+// catalogs is never referenced anywhere in the app's source: an orphan key is
 // dead translation work that costs real money once human translators are
 // involved. A key counts as referenced if its literal dotted string appears in
 // any `.ts`/`.svelte` file under `apps/desktop/src/` (covering direct accessor
 // calls, `<Trans key>`, and indirection like registry `*Key` fields and Record
-// maps that store the literal). Keys under an allowlisted dynamic prefix
+// maps that store the literal) OR in any `.rs` file under
+// `apps/desktop/src-tauri/src/`. Keys under an allowlisted dynamic prefix
 // (`unusedKeyDynamicPrefixes`) are treated as referenced, since they're built at
 // runtime and never appear verbatim.
+//
+// The Rust half exists because three surfaces resolve their copy in Rust, not
+// the webview: the native menu bar (built during `setup`), the main window's
+// title, and the already-running alert (which fires before a webview exists).
+// Their keys reach `menu_t` as literals, so a scanner that reads only TypeScript
+// sees ~130 orphans. ❌ Allowlisting `menu.` instead would have been wrong: these
+// keys aren't built at runtime, they're used from a language the scanner
+// couldn't read, and the allowlist would then hide a genuinely dead menu key
+// forever.
 //
 // Test references count as references on purpose: a key used only in a test is
 // rare, and counting it avoids false positives that would block the build on a
@@ -51,6 +61,7 @@ var unusedKeyDynamicPrefixes = []string{
 func RunDesktopMessageKeysUnused(ctx *CheckContext) (CheckResult, error) {
 	messagesDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src", "lib", "intl", "messages", "en")
 	srcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src")
+	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
 
 	catalogKeys, err := collectUnusedCheckCatalogKeys(messagesDir)
 	if err != nil {
@@ -70,10 +81,16 @@ func RunDesktopMessageKeysUnused(ctx *CheckContext) (CheckResult, error) {
 		)
 	}
 
-	sources, scanned, err := readUnusedCheckSources(srcDir)
+	sources, scanned, err := readUnusedCheckSources(srcDir, ".ts", ".svelte")
 	if err != nil {
 		return CheckResult{}, err
 	}
+	rustSources, rustScanned, err := readUnusedCheckSources(rustSrcDir, ".rs")
+	if err != nil {
+		return CheckResult{}, err
+	}
+	sources = append(sources, rustSources...)
+	scanned += rustScanned
 
 	unused := findUnusedMessageKeys(catalogKeys, sources, unusedKeyDynamicPrefixes)
 	if len(unused) > 0 {
@@ -136,11 +153,20 @@ func collectUnusedCheckCatalogKeys(messagesDir string) ([]string, error) {
 	return keys, nil
 }
 
-// readUnusedCheckSources reads every `.ts`/`.svelte` file under srcDir (skipping
-// node_modules / build dirs and the generated `keys.gen.ts`, whose content lists
-// the catalog keys rather than using them) and returns their contents plus the
-// count scanned. Test files ARE included (test references count as references).
-func readUnusedCheckSources(srcDir string) ([]string, int, error) {
+// readUnusedCheckSources reads every file under srcDir with one of `exts`
+// (skipping node_modules / build dirs and the generated `keys.gen.ts`, whose
+// content lists the catalog keys rather than using them) and returns their
+// contents plus the count scanned. Test files ARE included (test references
+// count as references).
+//
+// Called twice: once for the frontend (`.ts` / `.svelte`) and once for the Rust
+// crate (`.rs`), whose `menu_t` call sites are the only reference the native
+// menu-bar keys have.
+func readUnusedCheckSources(srcDir string, exts ...string) ([]string, int, error) {
+	wanted := map[string]bool{}
+	for _, ext := range exts {
+		wanted[ext] = true
+	}
 	var sources []string
 	scanned := 0
 	err := filepath.WalkDir(srcDir, func(path string, d os.DirEntry, walkErr error) error {
@@ -153,8 +179,7 @@ func readUnusedCheckSources(srcDir string) ([]string, int, error) {
 			}
 			return nil
 		}
-		ext := filepath.Ext(d.Name())
-		if ext != ".ts" && ext != ".svelte" {
+		if !wanted[filepath.Ext(d.Name())] {
 			return nil
 		}
 		if d.Name() == "keys.gen.ts" {

@@ -738,6 +738,13 @@ pub fn run() {
             // Check if there's an existing license (for menu text)
             let has_existing_license = licensing::get_license_info(app.handle()).is_some();
 
+            // The menu bar is built next, and it reads the catalog through
+            // `menu_t`, so the language the user pinned (or `'system'`, meaning
+            // the OS's answer) has to be known first. `settings.json` is already
+            // on hand; the frontend re-pushes the same value when it loads, and
+            // `set_ui_language` rebuilds the bar if the two ever disagree.
+            intl::set_language_preference(saved_settings.appearance_language.clone());
+
             // Build and set the application menu with persisted showHiddenFiles
             // Note: view mode is per-pane and managed by frontend, so we default to Brief here
             let menu_items = menu::build_menu(
@@ -770,6 +777,11 @@ pub fn run() {
 
             // Store the CheckMenuItem references in app state
             let menu_state = MenuState::default();
+            // Cached so a language-change rebuild puts the same licence wording
+            // back without repeating the lookup.
+            menu_state
+                .has_existing_license
+                .store(has_existing_license, std::sync::atomic::Ordering::Relaxed);
             *menu_state.show_hidden_files.lock_ignore_poison() = Some(menu_items.show_hidden_files);
             *menu_state.view_mode_full_left.lock_ignore_poison() = Some(menu_items.view_mode_full_left);
             *menu_state.view_mode_brief_left.lock_ignore_poison() = Some(menu_items.view_mode_brief_left);

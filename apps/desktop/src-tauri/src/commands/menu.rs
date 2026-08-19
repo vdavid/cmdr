@@ -415,8 +415,38 @@ pub fn update_pin_tab_menu<R: Runtime>(app: AppHandle<R>, is_pinned: bool) -> Re
     let Some(item) = guard.as_ref() else {
         return Err("Menu not initialized".to_string());
     };
-    let label = if is_pinned { "Unpin tab" } else { "Pin tab" };
-    item.set_text(label).map_err(|e| e.to_string())
+    item.set_text(crate::menu::pin_tab_label(is_pinned))
+        .map_err(|e| e.to_string())
+}
+
+/// Tells Rust which language the UI speaks, and rebuilds the native menu bar if
+/// that moved it.
+///
+/// `language` is the raw `appearance.language` setting: a catalog tag the user
+/// pinned, or `None` / `"system"` for "follow the OS". The frontend pushes it on
+/// startup and on every change, because the native surfaces (menu bar, window
+/// title, the already-running alert) resolve their own copy and can't read the
+/// webview's.
+///
+/// Rebuilding is skipped when the resolved catalog didn't actually move: going
+/// from `'system'` to the language the OS already reported changes nothing
+/// visible, and a rebuild is a flicker plus a round of frontend re-pushes.
+#[tauri::command]
+#[specta::specta]
+pub fn set_ui_language<R: Runtime>(app: AppHandle<R>, language: Option<String>) -> Result<(), String> {
+    if !crate::intl::set_language_preference(language) {
+        return Ok(());
+    }
+    // Installing a menu is AppKit work, and a command handler runs on a worker
+    // thread. Fire-and-forget past the hop: a failed dispatch leaves the old
+    // language on the bar, never a half-built one.
+    let handle = app.clone();
+    app.run_on_main_thread(move || {
+        if let Err(e) = crate::menu::rebuild_menu_bar(&handle) {
+            log::warn!(target: "menu", "Couldn't rebuild the menu bar in the new language: {e}");
+        }
+    })
+    .map_err(|e| e.to_string())
 }
 
 /// Enables or disables the Tab menu "Reopen closed tab" item based on whether the

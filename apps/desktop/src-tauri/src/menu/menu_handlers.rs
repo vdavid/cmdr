@@ -15,7 +15,9 @@ use tauri::{
 
 use crate::ignore_poison::IgnorePoison;
 
-use super::menu_items::{brief_view_label, full_view_label};
+use crate::intl::menu_t;
+
+use super::menu_items::Mnemonics;
 use super::{
     CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
     FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID,
@@ -210,8 +212,11 @@ pub fn rebuild_view_mode_items<R: Runtime>(app: &AppHandle<R>, menu_state: &Menu
     let brief_accel = menu_state.view_mode_brief_accel.lock_ignore_poison().clone();
 
     let left_active = active_pane == "left";
-    let full_label = full_view_label();
-    let brief_label = brief_view_label();
+    // Each pane submenu holds only these two items, so one allocation serves
+    // both panes and reproduces exactly what `build_view_mode_items` assigned.
+    let mut mnemonics = Mnemonics::new();
+    let full_label = mnemonics.assign(&menu_t("menu.view.fullView"));
+    let brief_label = mnemonics.assign(&menu_t("menu.view.briefView"));
 
     // Helper: replace one CheckMenuItem inside its pane submenu, preserving its position.
     let swap = |slot: &Mutex<Option<CheckMenuItem<R>>>,
@@ -237,7 +242,7 @@ pub fn rebuild_view_mode_items<R: Runtime>(app: &AppHandle<R>, menu_state: &Menu
         left_submenu,
         0,
         VIEW_MODE_FULL_LEFT_ID,
-        full_label,
+        &full_label,
         left_mode == ViewMode::Full,
         if left_active { full_accel.as_deref() } else { None },
     )?;
@@ -246,7 +251,7 @@ pub fn rebuild_view_mode_items<R: Runtime>(app: &AppHandle<R>, menu_state: &Menu
         left_submenu,
         1,
         VIEW_MODE_BRIEF_LEFT_ID,
-        brief_label,
+        &brief_label,
         left_mode == ViewMode::Brief,
         if left_active { brief_accel.as_deref() } else { None },
     )?;
@@ -255,7 +260,7 @@ pub fn rebuild_view_mode_items<R: Runtime>(app: &AppHandle<R>, menu_state: &Menu
         right_submenu,
         0,
         VIEW_MODE_FULL_RIGHT_ID,
-        full_label,
+        &full_label,
         right_mode == ViewMode::Full,
         if !left_active { full_accel.as_deref() } else { None },
     )?;
@@ -264,7 +269,7 @@ pub fn rebuild_view_mode_items<R: Runtime>(app: &AppHandle<R>, menu_state: &Menu
         right_submenu,
         1,
         VIEW_MODE_BRIEF_RIGHT_ID,
-        brief_label,
+        &brief_label,
         right_mode == ViewMode::Brief,
         if !left_active { brief_accel.as_deref() } else { None },
     )?;

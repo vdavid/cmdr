@@ -21,6 +21,7 @@ export {
   flushPendingSave,
   isNativeShortcutCommand,
   isFixedKeyCommand,
+  resyncMenuAccelerators,
 } from './shortcuts-store'
 
 // Conflict detection

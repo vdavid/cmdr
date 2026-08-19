@@ -47,6 +47,18 @@ pub struct OsLocalesChanged {
     pub locales: crate::intl::OsLocales,
 }
 
+/// `menu-bar-rebuilt`: the native menu bar was thrown away and built again in a
+/// new language, so every item is a NEW object.
+///
+/// The rebuild restores what Rust knows (checked states, the view-mode pair), but
+/// the things only the frontend knows are gone with the old items: the user's
+/// custom accelerators, the pin/unpin label, and whether "Reopen closed tab" is
+/// live. The listener in `lib/intl/menu-bar-sync.ts` pushes all three back.
+/// Rare (a language change), so re-pushing everything beats tracking what moved.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct MenuBarRebuilt {}
+
 /// `drag-image-size`: the OS drag image's pixel dimensions, read on drag enter
 /// (macOS swizzle in `drag_image_detection.rs`). Used to size / suppress the
 /// DOM drag overlay.

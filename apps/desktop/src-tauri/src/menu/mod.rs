@@ -31,6 +31,7 @@ mod media_index_items;
 mod menu_handlers;
 mod menu_items;
 mod menu_structure;
+mod rebuild;
 #[cfg(target_os = "macos")]
 pub mod open_with;
 #[cfg(target_os = "macos")]
@@ -51,6 +52,8 @@ use tauri::{
 // `command_map`; the glob keeps every existing `crate::menu::…` / `super::…` import path valid.
 pub use command_map::*;
 pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};
+pub use menu_items::pin_tab_label;
+pub use rebuild::rebuild_menu_bar;
 #[cfg(target_os = "macos")]
 pub use menu_handlers::{
     cleanup_macos_menus, cleanup_macos_menus_from_command, set_macos_menu_icons, set_macos_menu_icons_from_command,
@@ -232,6 +235,11 @@ pub struct MenuState<R: Runtime> {
     pub view_mode_full_right: Mutex<Option<CheckMenuItem<R>>>,
     pub view_mode_brief_right: Mutex<Option<CheckMenuItem<R>>>,
     pub context: Mutex<MenuContext>,
+    /// Whether the user already had a licence key when the bar was last built,
+    /// which decides between the "See license details" and "Enter license key…"
+    /// wording. Cached so `rebuild_menu_bar` can put the same label back without
+    /// a second licence lookup (which isn't generic over the runtime).
+    pub has_existing_license: AtomicBool,
     /// Whether the main file explorer owns the menu right now (`activate_window_menu`).
     /// Stored so the operation-item state can be recomputed from BOTH inputs; without
     /// it, a focus round-trip through Settings would re-enable Copy while a dialog is
@@ -303,6 +311,7 @@ impl<R: Runtime> Default for MenuState<R> {
             view_mode_full_right: Mutex::new(None),
             view_mode_brief_right: Mutex::new(None),
             context: Mutex::new(MenuContext::default()),
+            has_existing_license: AtomicBool::new(false),
             explorer_menu_active: AtomicBool::new(true),
             file_operations_blocked: AtomicBool::new(false),
             view_left_pane_submenu: Mutex::new(None),

@@ -1,0 +1,658 @@
+{
+  "menu.bar.file": "File",
+  "@menu.bar.file": {
+    "description": "NOUN. Title of the first menu in the native menu bar, the one holding the file commands (Open, Copy…, Move…, Delete, Rename, Get info). Use the exact word the macOS Finder uses for its own \"File\" menu in this language; a menu-bar title has almost no room, so keep it to one short word."
+  },
+
+  "menu.bar.edit": "Edit",
+  "@menu.bar.edit": {
+    "description": "NOUN. Title of the menu-bar menu holding the text and clipboard commands (Undo, Redo, Cut, Copy, Paste, Copy path, Search files…). Use the exact word Finder uses for its own \"Edit\" menu in this language. One short word; a menu-bar title has almost no room."
+  },
+
+  "menu.bar.select": "Select",
+  "@menu.bar.select": {
+    "description": "VERB (imperative), title of the menu-bar menu holding the FILE-selection commands (Select all, Deselect all, Select files…). It selects files in the two panes, never text: Cmdr keeps text-selection commands in Edit on purpose. Finder has no counterpart menu, so pick the imperative verb your language would use on a button that selects items in a list. One short word; a menu-bar title has almost no room."
+  },
+
+  "menu.bar.view": "View",
+  "@menu.bar.view": {
+    "description": "NOUN, not the verb: this menu changes how the panes LOOK (full/brief columns, sort order, zoom, which panels are open). Use the exact word Finder uses for its own \"View\" menu in this language. One short word; a menu-bar title has almost no room."
+  },
+
+  "menu.bar.go": "Go",
+  "@menu.bar.go": {
+    "description": "VERB (imperative), title of the menu-bar menu holding the navigation commands (Back, Forward, Parent folder, Home, Go to path…). Use the exact word Finder uses for its own \"Go\" menu in this language. One short word; a menu-bar title has almost no room."
+  },
+
+  "menu.bar.tab": "Tab",
+  "@menu.bar.tab": {
+    "description": "NOUN, title of the menu-bar menu holding the tab commands (New tab, Close tab, Next tab). A tab here is a browser-style tab inside a file pane, each showing one folder. Use the word your language's browsers use for a browser tab. One short word; a menu-bar title has almost no room."
+  },
+
+  "menu.bar.window": "Window",
+  "@menu.bar.window": {
+    "description": "NOUN, title of the macOS menu-bar menu holding Minimize and Zoom. Use the exact word Finder uses for its own \"Window\" menu in this language. One short word; a menu-bar title has almost no room."
+  },
+
+  "menu.bar.help": "Help",
+  "@menu.bar.help": {
+    "description": "NOUN, title of the menu-bar menu holding Keyboard shortcuts, What's new, and the feedback items. macOS attaches its own search field to whichever menu is registered as the help menu, so use the exact word Finder uses for its \"Help\" menu in this language. One short word; a menu-bar title has almost no room."
+  },
+
+  "menu.app.about": "About cmdr",
+  "@menu.app.about": {
+    "description": "First item of the macOS app menu (and, on Linux, the first item under Help). Opens the About window with the version, credits, and links. \"cmdr\" is the app name and must stay verbatim and lowercase, exactly as written. Match how Finder phrases \"About Finder\" in this language."
+  },
+
+  "menu.app.acknowledgements": "Acknowledgements",
+  "@menu.app.acknowledgements": {
+    "description": "NOUN (plural). App-menu item that opens a window crediting the open-source libraries Cmdr ships. Sits between About and the license item, so it reads as app metadata rather than a help topic. No dialog input follows, hence no trailing ellipsis."
+  },
+
+  "menu.app.licenseDetails": "See license details",
+  "@menu.app.licenseDetails": {
+    "description": "App-menu item shown when the user ALREADY has a license key entered. Opens a read-only view of what their license covers. \"See\" is a VERB. No ellipsis on purpose: it only shows information, it asks for nothing. Its counterpart for users without a license is menu.app.licenseEnter."
+  },
+
+  "menu.app.licenseEnter": "Enter license key…",
+  "@menu.app.licenseEnter": {
+    "description": "App-menu item shown when the user has NO license key yet. Opens a dialog asking them to paste a license key. \"Enter\" is a VERB (type in), not \"enter a room\". The trailing … is U+2026 and must stay: in Cmdr it marks a command whose dialog can change what the command acts on. Its counterpart for licensed users is menu.app.licenseDetails."
+  },
+
+  "menu.app.checkForUpdates": "Check for updates…",
+  "@menu.app.checkForUpdates": {
+    "description": "App-menu item that asks the update server whether a newer Cmdr exists and offers to install it. \"Check\" is a VERB. The trailing … is U+2026 and must stay; this label is the one deliberate exception to Cmdr's ellipsis rule, kept because Sparkle-style updaters made it near-universal on macOS. Match the phrasing macOS apps in this language use for the same item."
+  },
+
+  "menu.app.changelog": "Changelog",
+  "@menu.app.changelog": {
+    "description": "NOUN. App-menu item directly below \"Check for updates…\" that opens the \"What's new\" popup listing the latest releases. Same destination as Help > What's new (menu.help.whatsNew), so the two should read as clearly different doors to the same room: this one names the document, that one names the news."
+  },
+
+  "menu.app.onboarding": "Onboarding…",
+  "@menu.app.onboarding": {
+    "description": "NOUN. App-menu item that reopens the first-run welcome wizard (the multi-step setup a new user sees once). macOS only. The trailing … is U+2026 and must stay. If your language has no natural noun for this, phrase it as the welcome or setup guide rather than inventing a loanword."
+  },
+
+  "menu.app.settings": "Settings…",
+  "@menu.app.settings": {
+    "description": "NOUN (plural). Opens Cmdr's Settings window. ⌘, on macOS. Use the exact word macOS uses for the same app-menu item in this language (recent macOS says \"Settings\", older versions said \"Preferences\"); matching the system is what makes it findable. The trailing … is U+2026 and must stay."
+  },
+
+  "menu.app.services": "Services",
+  "@menu.app.services": {
+    "description": "NOUN (plural). Title of the macOS Services submenu in the app menu, which the system fills with actions other apps offer. Use the exact word macOS uses for this submenu in this language; a made-up translation makes a system feature unrecognizable."
+  },
+
+  "menu.app.hide": "Hide cmdr",
+  "@menu.app.hide": {
+    "description": "VERB. macOS app-menu item that hides all of Cmdr's windows (⌘H). \"cmdr\" is the app name and must stay verbatim and lowercase. Match how macOS phrases \"Hide Finder\" in this language."
+  },
+
+  "menu.app.hideOthers": "Hide Others",
+  "@menu.app.hideOthers": {
+    "description": "VERB. macOS app-menu item that hides every OTHER app's windows, leaving only Cmdr visible (⌥⌘H). \"Others\" means the other applications. Match macOS's own wording for this item in this language, capitalization included; these three items sit in the block macOS users read as system-standard."
+  },
+
+  "menu.app.showAll": "Show All",
+  "@menu.app.showAll": {
+    "description": "VERB. macOS app-menu item that unhides every hidden app. \"All\" means all applications, NOT all files. Match macOS's own wording for this item in this language, capitalization included."
+  },
+
+  "menu.app.quit": "Quit cmdr",
+  "@menu.app.quit": {
+    "description": "VERB. Last item of the macOS app menu; closes Cmdr (⌘Q). \"cmdr\" is the app name and must stay verbatim and lowercase. Match how macOS phrases \"Quit Finder\" in this language."
+  },
+
+  "menu.file.open": "Open",
+  "@menu.file.open": {
+    "description": "VERB (imperative). First item of the File menu and of a file's right-click menu: hands the selected file to whichever app the system opens that kind of file with, or enters the folder. This is Finder's File > Open. ❗ Not \"open\" as in unlocking or unsealing, and not the adjective."
+  },
+
+  "menu.file.view": "View",
+  "@menu.file.view": {
+    "description": "VERB (imperative), unlike the View MENU title (menu.bar.view) which is a noun: this item OPENS the selected file in Cmdr's own built-in read-only viewer (F3). It never modifies the file. Classic two-pane file managers call this key \"View\"; if your language distinguishes viewing from editing, pick the viewing verb."
+  },
+
+  "menu.file.edit": "Edit in editor",
+  "@menu.file.edit": {
+    "description": "VERB phrase. File-menu item (F4) that opens the selected file in the user's configured text EDITOR, an external app, so it can be changed. The wording spells out \"in editor\" to separate it from the plain \"View\" above it and from the Edit menu; keep that distinction, however your language expresses it. Tight submenu: aim for roughly the English length."
+  },
+
+  "menu.file.copy": "Copy…",
+  "@menu.file.copy": {
+    "description": "VERB (imperative). The classic two-pane copy (F5): opens a dialog pre-filled with the other pane's folder and copies the selected files there. ❗ Not clipboard copy, that's menu.edit.copy. The trailing … is U+2026 and must stay: the dialog can change WHERE the files go."
+  },
+
+  "menu.file.move": "Move…",
+  "@menu.file.move": {
+    "description": "VERB (imperative). The classic two-pane move (F6): opens a dialog pre-filled with the other pane's folder and moves the selected files there. The trailing … is U+2026 and must stay: the dialog can change WHERE the files go."
+  },
+
+  "menu.file.duplicate": "Duplicate",
+  "@menu.file.duplicate": {
+    "description": "VERB (imperative). Copies each selected item into the folder it already sits in, giving the copy a new name (⌘D). This is Finder's File > Duplicate; use the same word your macOS Finder uses. No ellipsis on purpose: it asks nothing, because the destination is fixed."
+  },
+
+  "menu.file.compress": "Compress…",
+  "@menu.file.compress": {
+    "description": "VERB (imperative). Packs the selected files into one archive (zip, tar, 7z). This is Finder's \"Compress\" item; use the same word your macOS Finder uses. The trailing … is U+2026 and must stay: the dialog picks the archive name, format, and destination."
+  },
+
+  "menu.file.newFolder": "New folder…",
+  "@menu.file.newFolder": {
+    "description": "NOUN phrase, not a verb: it names what gets created (F7). Creates a directory in the active pane. Use whichever word for a directory your macOS Finder uses in this language, so it matches what people see everywhere else. The trailing … is U+2026 and must stay: the dialog takes the name."
+  },
+
+  "menu.file.delete": "Delete",
+  "@menu.file.delete": {
+    "description": "VERB (imperative). Moves the selected files to the system Trash, recoverably (F8). No ellipsis: the confirmation it shows cannot change which files it acts on. Its permanent counterpart is menu.file.deletePermanently, so the two must read as clearly different in strength."
+  },
+
+  "menu.file.deletePermanently": "Delete permanently",
+  "@menu.file.deletePermanently": {
+    "description": "VERB phrase (imperative). Erases the selected files without going through the Trash; nothing can bring them back (⇧F8). Sits directly under menu.file.delete, so the wording has to make the difference unmistakable at a glance. Being emphatic matters more than being short here."
+  },
+
+  "menu.file.rename": "Rename",
+  "@menu.file.rename": {
+    "description": "VERB (imperative). Starts renaming the file under the cursor in place, right in the list (F2). No dialog, so no ellipsis. This is Finder's File > Rename."
+  },
+
+  "menu.file.showInFinder": "Show in Finder",
+  "@menu.file.showInFinder": {
+    "description": "VERB phrase (imperative). Opens a macOS Finder window with the selected file highlighted. ❗ \"Finder\" is Apple's app name and Apple keeps it English in every language, so it must stay verbatim as \"Finder\". macOS itself calls this \"Show in Finder\" or \"Reveal in Finder\" depending on the app; use whichever your Finder's own menus use. The Linux wording is menu.file.showInFileManager."
+  },
+
+  "menu.file.showInFileManager": "Show in file manager",
+  "@menu.file.showInFileManager": {
+    "description": "VERB phrase (imperative). The Linux counterpart of menu.file.showInFinder: opens the desktop's own file manager with the selected file highlighted. \"file manager\" is generic here (the app varies by desktop), so translate it as a common noun rather than naming a specific program."
+  },
+
+  "menu.file.getInfo": "Get info",
+  "@menu.file.getInfo": {
+    "description": "VERB phrase (imperative). Opens the macOS Get Info panel for the selected file: size, kind, dates, permissions (⌘I). This is Finder's File > Get Info; use the exact wording your macOS Finder uses in this language. No dialog input follows, hence no ellipsis."
+  },
+
+  "menu.file.quickLook": "Quick look",
+  "@menu.file.quickLook": {
+    "description": "Opens macOS's Quick Look preview of the selected file (⇧Space). ❗ Quick Look is an Apple FEATURE name that Apple DOES localize (French \"Coup d'œil\", German \"Übersicht\", Spanish \"Vista rápida\"), so use whatever your macOS calls it rather than keeping the English. Look it up in your Finder's File menu."
+  },
+
+  "menu.edit.undo": "Undo",
+  "@menu.edit.undo": {
+    "description": "VERB (imperative). Standard macOS text-editing Undo (⌘Z), applying to whatever text field has focus. It does NOT undo file operations. Use the exact word macOS uses for Undo in this language."
+  },
+
+  "menu.edit.redo": "Redo",
+  "@menu.edit.redo": {
+    "description": "VERB (imperative). Standard macOS text-editing Redo (⇧⌘Z), the counterpart of menu.edit.undo. Use the exact word macOS uses for Redo in this language."
+  },
+
+  "menu.edit.cut": "Cut",
+  "@menu.edit.cut": {
+    "description": "VERB (imperative). Cuts to the clipboard (⌘X). Does double duty: with a text field focused it cuts text, otherwise it marks the selected FILES to be moved on the next paste. Use the exact word macOS uses for Cut in this language, since the text meaning is the one people recognize."
+  },
+
+  "menu.edit.copy": "Copy",
+  "@menu.edit.copy": {
+    "description": "VERB (imperative). Copies to the clipboard (⌘C): text when a text field has focus, otherwise the selected FILES. ❗ Different command from menu.file.copy, which is the two-pane copy-to-the-other-pane. Use the exact word macOS uses for the Edit menu's Copy in this language."
+  },
+
+  "menu.edit.paste": "Paste",
+  "@menu.edit.paste": {
+    "description": "VERB (imperative). Pastes the clipboard into the active folder or text field (⌘V). Use the exact word macOS uses for Paste in this language."
+  },
+
+  "menu.edit.moveHere": "Move here",
+  "@menu.edit.moveHere": {
+    "description": "VERB phrase (imperative). Pastes the files on the clipboard into the active folder by MOVING them, so they leave their old folder (⌥⌘V). \"here\" means the folder open in the active pane. This is what macOS calls \"Move Item Here\"; match that phrasing if your Finder has it."
+  },
+
+  "menu.edit.copyPath": "Copy path",
+  "@menu.edit.copyPath": {
+    "description": "VERB phrase (imperative). Puts the full filesystem path of the selected file or folder on the clipboard, as text (⌃⌘C). \"path\" is the location string like /Users/me/photo.jpg; use the word your macOS Finder uses in \"Copy as Pathname\". Its breadcrumb-menu sibling is menu.breadcrumb.copyPath."
+  },
+
+  "menu.edit.copyFilename": "Copy filename",
+  "@menu.edit.copyFilename": {
+    "description": "VERB phrase (imperative). Puts just the NAME of the selected file on the clipboard, without any folders around it. Sits directly under menu.edit.copyPath, so the two must read as clearly different: the name alone versus the whole path."
+  },
+
+  "menu.edit.searchFiles": "Search files…",
+  "@menu.edit.searchFiles": {
+    "description": "VERB phrase (imperative). Opens the search dialog to find files by name and content under the current folder (⌘F). \"Search\" is the verb and \"files\" is its object. The trailing … is U+2026 and must stay: the dialog decides what gets searched."
+  },
+
+  "menu.select.all": "Select all",
+  "@menu.select.all": {
+    "description": "VERB phrase (imperative). Selects every file and folder in the active pane (⌘A). ❗ In a focused text field the same key selects the text instead, so the wording should work for both. Use the exact phrasing macOS uses for \"Select All\" in this language."
+  },
+
+  "menu.select.deselectAll": "Deselect all",
+  "@menu.select.deselectAll": {
+    "description": "VERB phrase (imperative). Clears the selection in the active pane, leaving nothing selected (⇧⌘A). The direct opposite of menu.select.all, and it should read as its mirror image."
+  },
+
+  "menu.select.files": "Select files…",
+  "@menu.select.files": {
+    "description": "VERB phrase (imperative). Opens a dialog that ADDS files to the selection by matching a pattern, like *.jpg. The trailing … is U+2026 and must stay: the pattern decides what gets selected. Its opposite is menu.select.deselectFiles, and the pair should read as mirror images."
+  },
+
+  "menu.select.deselectFiles": "Deselect files…",
+  "@menu.select.deselectFiles": {
+    "description": "VERB phrase (imperative). Opens a dialog that REMOVES files from the selection by matching a pattern, like *.jpg. The trailing … is U+2026 and must stay. The mirror image of menu.select.files, and the pair should read that way."
+  },
+
+  "menu.view.leftPane": "Left pane",
+  "@menu.view.leftPane": {
+    "description": "NOUN phrase. Title of the View submenu holding the left pane's view modes. Cmdr shows two file lists side by side; each is a \"pane\". Use the same word for a pane throughout Cmdr, and keep it clearly distinct from a window and from a tab. Its mirror is menu.view.rightPane."
+  },
+
+  "menu.view.rightPane": "Right pane",
+  "@menu.view.rightPane": {
+    "description": "NOUN phrase. Title of the View submenu holding the right pane's view modes. The mirror of menu.view.leftPane; the two must read as an obvious pair."
+  },
+
+  "menu.view.fullView": "Full view",
+  "@menu.view.fullView": {
+    "description": "NOUN phrase naming a layout, not a command. One of the two per-pane view modes (⌘1): one file per row with columns for size, date, and so on. Its opposite is menu.view.briefView (many short columns, names only), so the pair has to read as detailed versus compact. Tight submenu, so keep both short."
+  },
+
+  "menu.view.briefView": "Brief view",
+  "@menu.view.briefView": {
+    "description": "NOUN phrase naming a layout, not a command. The compact per-pane view mode (⌘2): several narrow columns of names only, no details. The opposite of menu.view.fullView; the pair has to read as compact versus detailed. Tight submenu, so keep both short."
+  },
+
+  "menu.view.showHiddenFiles": "Show hidden files",
+  "@menu.view.showHiddenFiles": {
+    "description": "VERB phrase (imperative) on a checkable item: ticked, the panes also list dot-files and system-hidden files (⇧⌘.). Because it toggles, some languages read better as a state than a command; either works as long as it's clear the tick means the files ARE shown."
+  },
+
+  "menu.view.sortBy": "Sort by",
+  "@menu.view.sortBy": {
+    "description": "VERB phrase, title of the submenu holding the sort columns (Name, Extension, Date modified, Size, Date created) and the direction. It reads as the opening of a sentence its children finish: \"Sort by\" → \"Name\". Use the exact phrasing your macOS Finder uses for its own \"Sort By\" submenu, so the same grammatical trick works in this language."
+  },
+
+  "menu.view.zoom": "Zoom",
+  "@menu.view.zoom": {
+    "description": "NOUN, title of the View submenu holding the text-size presets and the zoom in/out steps. It scales Cmdr's own interface text, NOT an image and not the window. If your language would confuse it with picture zoom, prefer the wording browsers use for page zoom."
+  },
+
+  "menu.view.switchPane": "Switch pane",
+  "@menu.view.switchPane": {
+    "description": "VERB phrase (imperative). Moves the keyboard focus to the other of the two file panes (Tab). Nothing moves or changes on disk; only which pane is active. Use the same word for \"pane\" as in menu.view.leftPane."
+  },
+
+  "menu.view.swapPanes": "Swap panes",
+  "@menu.view.swapPanes": {
+    "description": "VERB phrase (imperative). Exchanges the two panes' contents, so the left folder appears on the right and vice versa (⌘U). ❗ Different from menu.view.switchPane, which only moves focus: this one moves the folders. Use the same word for \"pane\" as in menu.view.leftPane."
+  },
+
+  "menu.view.commandPalette": "Command palette…",
+  "@menu.view.commandPalette": {
+    "description": "NOUN phrase. Opens a Spotlight-style popup that finds and runs any Cmdr command by typing part of its name (⇧⌘P). \"palette\" here is the code-editor sense of a searchable command list, nothing to do with colors; VS Code's translation in this language is the best reference. The trailing … is U+2026 and must stay."
+  },
+
+  "menu.view.operationQueue": "Operation queue",
+  "@menu.view.operationQueue": {
+    "description": "NOUN phrase. Opens the panel listing file operations that are running or waiting to run (⌥⌘Q). \"Operation\" means a copy, move, or delete job. Sits next to menu.view.operationLog so the pair reads as now versus already finished; keep the same word for \"operation\" in both."
+  },
+
+  "menu.view.operationLog": "Operation log",
+  "@menu.view.operationLog": {
+    "description": "NOUN phrase. Opens the history of file operations that already finished, with what each one did (⌥⌘L). The past-tense counterpart of menu.view.operationQueue; keep the same word for \"operation\" in both so they read as a pair."
+  },
+
+  "menu.view.suggestedOps": "Suggested ops",
+  "@menu.view.suggestedOps": {
+    "description": "NOUN phrase. Opens the panel where Cmdr's assistant parks file operations it suggests, waiting for the user to approve or discard them. \"ops\" is a casual short form of \"operations\", matching the panel's own name; if your language has no natural short form, the full word is better than an invented abbreviation."
+  },
+
+  "menu.view.askCmdr": "Ask Cmdr",
+  "@menu.view.askCmdr": {
+    "description": "VERB phrase (imperative). Opens the built-in AI assistant panel, where the user types a request in their own words (⌥⌘A). ❗ \"Cmdr\" is the product name and must stay verbatim with its capital C. \"Ask\" is the verb, addressed to the app."
+  },
+
+  "menu.sort.name": "Name",
+  "@menu.sort.name": {
+    "description": "NOUN. Item in View > Sort by: sorts the pane alphabetically by filename (⌘3). It completes the sentence the submenu title starts (\"Sort by\" → \"Name\"), so give it whatever case and form that sentence needs in this language. It is also the name of a column header, so keep it short."
+  },
+
+  "menu.sort.extension": "Extension",
+  "@menu.sort.extension": {
+    "description": "NOUN. Item in View > Sort by: sorts by file extension, the bit after the last dot such as jpg or pdf (⌘4). Completes the \"Sort by\" sentence. Use the same word your macOS Finder uses for a filename extension. Short: it doubles as a column header."
+  },
+
+  "menu.sort.dateModified": "Date modified",
+  "@menu.sort.dateModified": {
+    "description": "NOUN phrase. Item in View > Sort by: sorts by when each file was last changed (⌘5). Completes the \"Sort by\" sentence. Use the exact wording your macOS Finder uses for its \"Date Modified\" column, since the same words head a column in Cmdr's full view. Keep it short; the column is narrow."
+  },
+
+  "menu.sort.size": "Size",
+  "@menu.sort.size": {
+    "description": "NOUN. Item in View > Sort by: sorts by how many bytes each file holds (⌘6). Completes the \"Sort by\" sentence. Short: it doubles as a column header in a narrow column."
+  },
+
+  "menu.sort.dateCreated": "Date created",
+  "@menu.sort.dateCreated": {
+    "description": "NOUN phrase. Item in View > Sort by: sorts by when each file was first made. Completes the \"Sort by\" sentence. Use the exact wording your macOS Finder uses for its \"Date Created\" column, and keep it parallel with menu.sort.dateModified, which sits right above it."
+  },
+
+  "menu.sort.ascending": "Ascending",
+  "@menu.sort.ascending": {
+    "description": "Sort DIRECTION, below a separator in View > Sort by: smallest to largest, A to Z, oldest first. Use the exact word your macOS Finder uses for ascending sort order. Its opposite is menu.sort.descending, and the pair must read as mirror images."
+  },
+
+  "menu.sort.descending": "Descending",
+  "@menu.sort.descending": {
+    "description": "Sort DIRECTION, below a separator in View > Sort by: largest to smallest, Z to A, newest first. The opposite of menu.sort.ascending; the two must read as mirror images."
+  },
+
+  "menu.zoom.percent75": "75%",
+  "@menu.zoom.percent75": {
+    "description": "Text-size preset in View > Zoom: shrinks Cmdr's interface text to 75% of normal. Keep the number 75; change ONLY the percent formatting your language uses, such as adding the non-breaking space French writes before the sign (\"75 %\")."
+  },
+
+  "menu.zoom.percent100": "100%",
+  "@menu.zoom.percent100": {
+    "description": "Text-size preset in View > Zoom: the normal interface text size (⌘0). Keep the number 100; change ONLY the percent formatting your language uses, such as the space French writes before the sign."
+  },
+
+  "menu.zoom.percent125": "125%",
+  "@menu.zoom.percent125": {
+    "description": "Text-size preset in View > Zoom: enlarges Cmdr's interface text to 125%. Keep the number 125; change ONLY the percent formatting your language uses."
+  },
+
+  "menu.zoom.percent150": "150%",
+  "@menu.zoom.percent150": {
+    "description": "Text-size preset in View > Zoom: enlarges Cmdr's interface text to 150%. Keep the number 150; change ONLY the percent formatting your language uses."
+  },
+
+  "menu.zoom.in": "Zoom in",
+  "@menu.zoom.in": {
+    "description": "VERB phrase (imperative). Steps Cmdr's interface text one size larger (⌘+). Its opposite is menu.zoom.out; the two must read as mirror images. Use the wording browsers in this language use for page zoom, since this scales the interface, not a picture."
+  },
+
+  "menu.zoom.out": "Zoom out",
+  "@menu.zoom.out": {
+    "description": "VERB phrase (imperative). Steps Cmdr's interface text one size smaller (⌘-). The mirror image of menu.zoom.in."
+  },
+
+  "menu.go.back": "Back",
+  "@menu.go.back": {
+    "description": "VERB (imperative) or adverb, whichever your language uses on a browser's Back button: returns to the folder visited before this one (⌘[). Use the exact word your macOS Finder uses for Go > Back. Very short label."
+  },
+
+  "menu.go.forward": "Forward",
+  "@menu.go.forward": {
+    "description": "VERB (imperative) or adverb, mirroring menu.go.back: returns to the folder the user came back from (⌘]). Use the exact word your macOS Finder uses for Go > Forward. Very short label."
+  },
+
+  "menu.go.parentFolder": "Parent folder",
+  "@menu.go.parentFolder": {
+    "description": "NOUN phrase naming a destination: goes up one level, to the folder that contains the current one (⌘↑). \"Parent\" is the containing folder, nothing to do with people. Use the word for a directory your macOS Finder uses in this language."
+  },
+
+  "menu.go.home": "Home",
+  "@menu.go.home": {
+    "description": "NOUN naming a destination: the user's own home folder, the one holding Documents and Downloads (⇧⌘H). Use the exact word your macOS Finder uses for Go > Home. Very short label."
+  },
+
+  "menu.go.goToPath": "Go to path…",
+  "@menu.go.goToPath": {
+    "description": "VERB phrase (imperative). Opens a dialog where the user types or pastes a folder path to jump straight to it (⌘G). \"path\" is the location string like /Users/me/Documents. The trailing … is U+2026 and must stay: the typed path decides where it goes. Closest counterpart is Finder's Go > Go to Folder."
+  },
+
+  "menu.go.goToLatestDownload": "Go to latest download",
+  "@menu.go.goToLatestDownload": {
+    "description": "VERB phrase (imperative). Jumps the active pane to the most recently downloaded file and puts the cursor on it (⌘J). \"latest\" means most recent in time, and \"download\" is the downloaded FILE, not the act of downloading. No ellipsis: it acts immediately."
+  },
+
+  "menu.go.addToFavorites": "Add to favorites",
+  "@menu.go.addToFavorites": {
+    "description": "VERB phrase (imperative). Pins the current folder to Cmdr's own favorites list in the volume dropdown, for one-click return later. \"favorites\" is Cmdr's list, not macOS's sidebar Favorites, but using the same word your macOS Finder uses keeps it recognizable. No ellipsis: nothing is asked."
+  },
+
+  "menu.tab.newTab": "New tab",
+  "@menu.tab.newTab": {
+    "description": "NOUN phrase naming what gets created, not a verb: opens another tab in the active pane, showing the same folder (⌘T). A tab here is a browser-style tab; use the word your language's browsers use, and match the phrasing they use for their own New Tab item."
+  },
+
+  "menu.tab.closeTab": "Close tab",
+  "@menu.tab.closeTab": {
+    "description": "VERB phrase (imperative). Closes the active tab (⌘W); if a viewer or settings window has focus, it closes that window instead. Use the phrasing your language's browsers use for closing a tab."
+  },
+
+  "menu.tab.reopenClosedTab": "Reopen closed tab",
+  "@menu.tab.reopenClosedTab": {
+    "description": "VERB phrase (imperative). Brings back the tab that was closed most recently (⇧⌘T), and stays greyed out until something has been closed. Use the phrasing your language's browsers use for reopening a closed tab; people already know that wording."
+  },
+
+  "menu.tab.nextTab": "Next tab",
+  "@menu.tab.nextTab": {
+    "description": "NOUN phrase naming a destination: moves to the tab one to the right in the active pane (⌃Tab). Its mirror is menu.tab.previousTab, and the pair must read as a pair."
+  },
+
+  "menu.tab.previousTab": "Previous tab",
+  "@menu.tab.previousTab": {
+    "description": "NOUN phrase naming a destination: moves to the tab one to the left in the active pane (⌃⇧Tab). The mirror of menu.tab.nextTab."
+  },
+
+  "menu.tab.pinTab": "Pin tab",
+  "@menu.tab.pinTab": {
+    "description": "VERB phrase (imperative). Pins the active tab so it can't be closed by accident and keeps its place. \"Pin\" is the browser sense of fastening a tab in place. The same menu item flips to menu.tab.unpinTab once the tab is pinned, so the two must be obvious opposites. Use your language's browser wording."
+  },
+
+  "menu.tab.unpinTab": "Unpin tab",
+  "@menu.tab.unpinTab": {
+    "description": "VERB phrase (imperative). Releases a pinned tab, letting it be closed and moved again. The label this menu item shows while the tab IS pinned; menu.tab.pinTab is the other half. The two must be obvious opposites."
+  },
+
+  "menu.tab.closeOtherTabs": "Close other tabs",
+  "@menu.tab.closeOtherTabs": {
+    "description": "VERB phrase (imperative). Closes every unpinned tab in the pane EXCEPT the active one. \"other\" means all the rest. Use your language's browser wording for the same item."
+  },
+
+  "menu.window.minimize": "Minimize",
+  "@menu.window.minimize": {
+    "description": "VERB (imperative). macOS Window-menu item that sends the window down to the Dock (⌘M). Use the exact word macOS uses for Minimize in this language; this menu is one users read as system-standard."
+  },
+
+  "menu.window.zoom": "Zoom",
+  "@menu.window.zoom": {
+    "description": "VERB (imperative). macOS Window-menu item that grows the window to fit its content, the green traffic-light button's action. ❗ Nothing to do with text zoom (menu.view.zoom): macOS calls this window action \"Zoom\", so use the exact word macOS uses HERE, even if it differs from the text-size wording."
+  },
+
+  "menu.help.keyboardShortcuts": "Keyboard shortcuts",
+  "@menu.help.keyboardShortcuts": {
+    "description": "NOUN phrase (plural). Help-menu item that opens the window listing every key binding, grouped by area. Use the standard term for keyboard shortcuts in this language, the one macOS itself uses in System Settings."
+  },
+
+  "menu.help.whatsNew": "What's new",
+  "@menu.help.whatsNew": {
+    "description": "NOUN phrase. Help-menu item that opens the popup listing the latest releases and what changed in each. Same destination as menu.app.changelog, so the two should read as clearly different doors to the same room: this one names the news, that one names the document. The apostrophe here is a plain ASCII one and is literal text, not a formatting character."
+  },
+
+  "menu.help.sendFeedback": "Send feedback…",
+  "@menu.help.sendFeedback": {
+    "description": "VERB phrase (imperative). Opens a form for writing to Cmdr's maker with thoughts, praise, or a request. ❗ Different from menu.help.sendErrorReport, which is for things that went wrong; the two sit next to each other, so keep them clearly apart. The trailing … is U+2026 and must stay."
+  },
+
+  "menu.help.sendErrorReport": "Send error report…",
+  "@menu.help.sendErrorReport": {
+    "description": "VERB phrase (imperative). Opens a form for reporting something that went wrong, attaching recent logs. Sits right under menu.help.sendFeedback, so the two must read as clearly different purposes. The trailing … is U+2026 and must stay."
+  },
+
+  "menu.context.edit": "Edit",
+  "@menu.context.edit": {
+    "description": "VERB (imperative). A file's right-click menu, third item: opens the file in the user's external text editor so it can be changed. The menu-bar version spells this out as \"Edit in editor\" (menu.file.edit) because it sits next to an Edit MENU; here there's room for the short verb, but it must still read as a command, not as the name of a menu."
+  },
+
+  "menu.context.toggleSelection": "Toggle selection",
+  "@menu.context.toggleSelection": {
+    "description": "VERB phrase (imperative). A file's right-click menu: selects the file under the cursor if it isn't selected, unselects it if it is (Space). \"Toggle\" is the flip-either-way sense. It sits in its own group so the Space shortcut is discoverable."
+  },
+
+  "menu.context.copyNamed": "Copy \"{name}\"",
+  "@menu.context.copyNamed": {
+    "description": "VERB (imperative). A file's right-click menu: puts that one file's name on the clipboard, showing the name so the user sees exactly what they'll get. This is Finder's own \"Copy \"photo.jpg\"\" item; match your Finder's phrasing and its quotation marks. Keep the {name} token exactly as written, braces included; it is replaced literally, with no formatting.",
+    "placeholders": {
+      "name": "the file's name, possibly shortened in the middle with an ellipsis if it's very long (e.g. \"holiday-photo.jpg\")"
+    }
+  },
+
+  "menu.context.addToFavorites": "Add to favorites",
+  "@menu.context.addToFavorites": {
+    "description": "VERB phrase (imperative). A folder's right-click menu: pins that folder to Cmdr's favorites list in the volume dropdown. Same wording as the Go menu's item (menu.go.addToFavorites) and it should stay identical, since it does the same thing to a different folder."
+  },
+
+  "menu.context.makeAvailableOffline": "Make available offline",
+  "@menu.context.makeAvailableOffline": {
+    "description": "VERB phrase (imperative). Right-click menu on an iCloud Drive file that currently lives only in the cloud: downloads it so it works without a network. Use the exact wording your macOS Finder uses for the same iCloud item. Its opposite is menu.context.removeDownload."
+  },
+
+  "menu.context.removeDownload": "Remove download",
+  "@menu.context.removeDownload": {
+    "description": "VERB phrase (imperative). Right-click menu on an iCloud Drive file that is fully downloaded: frees the local copy, leaving the file in the cloud. Nothing is deleted. Use the exact wording your macOS Finder uses for the same iCloud item. The opposite of menu.context.makeAvailableOffline."
+  },
+
+  "menu.context.openWith": "Open with",
+  "@menu.context.openWith": {
+    "description": "VERB phrase, title of the submenu listing the apps that can open the right-clicked file. It reads as the opening of a sentence its children finish: \"Open with\" → \"Preview\". Use the exact wording your macOS Finder uses for its own \"Open With\" submenu, so the same grammatical trick works in this language."
+  },
+
+  "menu.context.openWithDefault": "{app} (default)",
+  "@menu.context.openWithDefault": {
+    "description": "First entry of the \"Open with\" submenu, marking the app the system would use for this kind of file. Only the \"(default)\" part is translated; keep the {app} token exactly as written, braces included, since the app's own name goes there untouched. Use the wording your macOS Finder puts in the same position, parentheses included.",
+    "placeholders": {
+      "app": "the application's own display name, supplied by the system and never translated (e.g. \"Preview\", \"Xcode\")"
+    }
+  },
+
+  "menu.context.openWithOther": "Other…",
+  "@menu.context.openWithOther": {
+    "description": "Last entry of the \"Open with\" submenu: opens a file picker so the user can choose an app that isn't listed. \"Other\" means another application. Use the exact word your macOS Finder uses in the same position. The trailing … is U+2026 and must stay."
+  },
+
+  "menu.tag.red": "Red",
+  "@menu.tag.red": {
+    "description": "COLOR NAME. One of the seven macOS Finder tag colors in a file's right-click menu; clicking it tags or untags the selection. The item shows a colored circle, and this text is what a screen reader announces. Use the exact name macOS uses for this tag color in this language, so it matches what Finder shows."
+  },
+
+  "menu.tag.orange": "Orange",
+  "@menu.tag.orange": {
+    "description": "COLOR NAME. One of the seven macOS Finder tag colors in a file's right-click menu. Use the exact name macOS uses for this tag color in this language."
+  },
+
+  "menu.tag.yellow": "Yellow",
+  "@menu.tag.yellow": {
+    "description": "COLOR NAME. One of the seven macOS Finder tag colors in a file's right-click menu. Use the exact name macOS uses for this tag color in this language."
+  },
+
+  "menu.tag.green": "Green",
+  "@menu.tag.green": {
+    "description": "COLOR NAME. One of the seven macOS Finder tag colors in a file's right-click menu. Use the exact name macOS uses for this tag color in this language."
+  },
+
+  "menu.tag.blue": "Blue",
+  "@menu.tag.blue": {
+    "description": "COLOR NAME. One of the seven macOS Finder tag colors in a file's right-click menu. Use the exact name macOS uses for this tag color in this language."
+  },
+
+  "menu.tag.purple": "Purple",
+  "@menu.tag.purple": {
+    "description": "COLOR NAME. One of the seven macOS Finder tag colors in a file's right-click menu. Use the exact name macOS uses for this tag color in this language."
+  },
+
+  "menu.tag.gray": "Gray",
+  "@menu.tag.gray": {
+    "description": "COLOR NAME. The last of the seven macOS Finder tag colors in a file's right-click menu. Use the exact name macOS uses for this tag color in this language (note that macOS's British English says \"Grey\")."
+  },
+
+  "menu.mediaIndex.addFolder": "Add to indexed folders",
+  "@menu.mediaIndex.addFolder": {
+    "description": "VERB phrase (imperative). A folder's right-click menu: adds this folder to the list Cmdr scans so its photos become searchable. \"indexed\" means catalogued for search. Its opposite is menu.mediaIndex.removeFolder, and the two must read as a pair."
+  },
+
+  "menu.mediaIndex.addFolderExcluded": "Add to indexed folders (excluded)",
+  "@menu.mediaIndex.addFolderExcluded": {
+    "description": "The greyed-out form of menu.mediaIndex.addFolder, shown when the user has told Cmdr never to index this folder: adding it would do nothing, so the item names the blocker in parentheses instead of pretending to work. Keep the base wording identical to menu.mediaIndex.addFolder so the two read as one item in two states, and keep the parenthetical short. The way out sits directly below it (menu.mediaIndex.includeFolder)."
+  },
+
+  "menu.mediaIndex.coveredByParent": "Indexed through a parent folder",
+  "@menu.mediaIndex.coveredByParent": {
+    "description": "The greyed-out form of menu.mediaIndex.addFolder, shown when a folder ABOVE this one is already on the indexed list, so this folder is covered and adding it would change nothing. It states a fact, not a command. \"parent folder\" is the containing folder."
+  },
+
+  "menu.mediaIndex.removeFolder": "Remove from indexed folders",
+  "@menu.mediaIndex.removeFolder": {
+    "description": "VERB phrase (imperative). A folder's right-click menu: takes this folder off the list Cmdr scans for photos. The opposite of menu.mediaIndex.addFolder; the two must read as a pair, since the same slot shows one or the other."
+  },
+
+  "menu.mediaIndex.excludeFolder": "Don't index images in this folder",
+  "@menu.mediaIndex.excludeFolder": {
+    "description": "VERB phrase (imperative, negative). A folder's right-click menu: the privacy veto, telling Cmdr never to scan this folder's images even if a folder above it is indexed. Being unambiguous matters more than being short; a user reaches for this to keep private photos out. Its opposite is menu.mediaIndex.includeFolder. The apostrophe is a plain ASCII one and is literal text."
+  },
+
+  "menu.mediaIndex.includeFolder": "Index images here again",
+  "@menu.mediaIndex.includeFolder": {
+    "description": "VERB phrase (imperative). A folder's right-click menu: lifts the privacy veto, so this folder's images can be scanned again. \"Index\" is the VERB (catalogue for search), and \"again\" says the veto is being undone. The opposite of menu.mediaIndex.excludeFolder; the same slot shows one or the other."
+  },
+
+  "menu.breadcrumb.copyPath": "Copy path",
+  "@menu.breadcrumb.copyPath": {
+    "description": "VERB phrase (imperative). Right-click menu on the path bar above a pane: puts the CURRENT FOLDER's full path on the clipboard. Its sibling menu.edit.copyPath does the same for the selected files, and the two should normally read identically; this key exists so a language that must distinguish the two can."
+  },
+
+  "menu.volume.eject": "Eject ({name})",
+  "@menu.volume.eject": {
+    "description": "VERB (imperative). Right-click item on a disk in the path bar or the volume dropdown: safely unmounts it so it can be unplugged. Use the exact word your macOS Finder uses for Eject. Keep the {name} token exactly as written, braces included; it is replaced literally, with no formatting, and can be any length. Its busy form is menu.volume.ejectBusy.",
+    "placeholders": {
+      "name": "the disk's own name as the system reports it, uncontrolled and possibly long (e.g. \"Backup Drive\", \"NO NAME\")"
+    }
+  },
+
+  "menu.volume.ejectBusy": "Eject ({name}) (busy)",
+  "@menu.volume.ejectBusy": {
+    "description": "The greyed-out form of menu.volume.eject, shown while a copy or move is still reading from or writing to that disk, so ejecting now would break it. \"busy\" means occupied with work. Keep the base wording identical to menu.volume.eject so the two read as one item in two states, and keep the trailing parenthetical short. Keep the {name} token exactly as written.",
+    "placeholders": {
+      "name": "the disk's own name as the system reports it, uncontrolled and possibly long (e.g. \"Backup Drive\")"
+    }
+  },
+
+  "menu.volume.renameFavorite": "Rename",
+  "@menu.volume.renameFavorite": {
+    "description": "VERB (imperative). Right-click item on a favorite in the volume dropdown: lets the user give that saved folder a different display name. It renames the SHORTCUT, not the folder on disk. Very short label in a narrow dropdown."
+  },
+
+  "menu.volume.removeFavorite": "Remove",
+  "@menu.volume.removeFavorite": {
+    "description": "VERB (imperative). Right-click item on a favorite in the volume dropdown: takes it off the favorites list. Nothing on disk is deleted, so avoid a word that sounds like deleting files. Very short label in a narrow dropdown."
+  },
+
+  "menu.network.disconnect": "Disconnect",
+  "@menu.network.disconnect": {
+    "description": "VERB (imperative). Right-click item on a network server in the volume dropdown: unmounts its shares and drops the connection. Use the exact word your macOS Finder uses for disconnecting from a server. Very short label in a narrow dropdown."
+  },
+
+  "menu.network.forgetServer": "Forget server",
+  "@menu.network.forgetServer": {
+    "description": "VERB phrase (imperative). Right-click item on a server the user added by hand: removes it from the list so it stops appearing. \"Forget\" is the same sense as forgetting a Wi-Fi network, and \"server\" is the machine sharing folders over the network. Its sibling is menu.network.forgetSavedPassword; the two must read as clearly different in scope."
+  },
+
+  "menu.network.forgetSavedPassword": "Forget saved password",
+  "@menu.network.forgetSavedPassword": {
+    "description": "VERB phrase (imperative). Right-click item on a server whose password is stored in the keychain: deletes the stored password, so the next connection asks for it again. The server itself stays in the list, which is what separates this from menu.network.forgetServer."
+  },
+
+  "menu.viewer.close": "Close",
+  "@menu.viewer.close": {
+    "description": "VERB (imperative). The only item in the File menu of a viewer window (the window that previews one file): closes that window. Use the exact word macOS uses for the File > Close item in this language."
+  },
+
+  "menu.viewer.wordWrap": "Word wrap",
+  "@menu.viewer.wordWrap": {
+    "description": "NOUN phrase on a checkable item in a viewer window's View menu: ticked, long lines fold onto the next line instead of running off to the right. Use the term text editors in this language use for line wrapping."
+  }
+}

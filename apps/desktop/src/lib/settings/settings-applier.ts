@@ -14,6 +14,7 @@ import {
 } from '$lib/settings'
 import { getAppLogger, setVerboseLogging } from '$lib/logging/logger'
 import {
+  setUiLanguage,
   updateFileWatcherDebounce,
   updateServiceResolveTimeout,
   setIndexingEnabled,
@@ -95,10 +96,18 @@ function applyDensity(density: UiDensity): void {
  * list; any other value is a BCP-47 tag. `setLocale()` writes the single locale
  * source AND bumps the message rune, so every open `t()`/`<Trans>` re-renders
  * and the number/date formatters (which read the same source) reformat: fully
- * live, no restart. Locale is frontend-only, so there's no Tauri command to push.
+ * live, no restart.
+ *
+ * The webview isn't the whole app, though: the native menu bar, the window
+ * title, and the already-running alert are drawn by the OS from Rust's own
+ * catalog lookup, so the setting is pushed there too. `setUiLanguage` sends the
+ * RAW setting (`'system'` included) rather than the resolved tag, because
+ * `'system'` has to keep meaning "follow the OS" on the Rust side as well; it
+ * rebuilds the menu bar only when its answer actually moves.
  */
 function applyLanguage(value: string): void {
   setLocale(pickUiLocale(value))
+  void setUiLanguage(value)
   log.debug('Applied language: {value}', { value })
 }
 

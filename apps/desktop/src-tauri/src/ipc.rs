@@ -95,7 +95,7 @@ use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
 use crate::quit::QuitRequested;
 use crate::restricted_paths::RestrictedPathsChangedPayload;
 use crate::system_events::{
-    AccentColorChanged, DragImageSize, DragModifiers, OsLocalesChanged, ReduceTransparencyChanged,
+    AccentColorChanged, DragImageSize, DragModifiers, MenuBarRebuilt, OsLocalesChanged, ReduceTransparencyChanged,
     SessionCompleteEvent, SessionStartedEvent, SystemTextSizeChanged,
 };
 
@@ -229,7 +229,7 @@ macro_rules! ipc_command_manifest {
                     // show_parent_row_context_menu, update_pin_tab_menu, set_reopen_closed_tab_enabled,
                     // set_file_operations_blocked,
                     // update_menu_context, activate_window_menu, toggle_hidden_files,
-                    // sync_menu_show_hidden, update_view_mode_menu}`,
+                    // sync_menu_show_hidden, update_view_mode_menu, set_ui_language}`,
                     // `window_ordering::{show_main_window, order_window_to_back}`, and
                     // `file_actions::copy_to_clipboard`.
                     crate::commands::menu::show_tab_context_menu,
@@ -456,6 +456,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::menu::toggle_hidden_files,
                     crate::commands::menu::sync_menu_show_hidden,
                     crate::commands::menu::update_view_mode_menu,
+                    crate::commands::menu::set_ui_language,
                     crate::commands::window_ordering::show_main_window,
                     crate::commands::window_ordering::order_window_to_back,
                     crate::commands::file_actions::copy_to_clipboard,
@@ -924,6 +925,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             AccentColorChanged,
             ReduceTransparencyChanged,
             SystemTextSizeChanged,
+            MenuBarRebuilt,
             OsLocalesChanged,
             SettingsChanged,
             ViewModeChanged,           // emit_to("main")

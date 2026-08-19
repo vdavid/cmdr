@@ -372,6 +372,25 @@ var AllChecks = []CheckDefinition{
 		Run: RunDesktopShippedLocalesFresh,
 	},
 	{
+		ID:          "desktop-native-strings-fresh",
+		Nickname:    "native-strings-fresh",
+		DisplayName: "native-strings-fresh",
+		App:         AppDesktop,
+		// Filed under Rust for the same reason as `shipped-locales-fresh`: the
+		// generator reads the catalogs, but what goes stale is the table the
+		// native menu bar compiles in.
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs: inputs([]string{
+			"apps/desktop/src/lib/intl/messages/**",
+			"apps/desktop/scripts/gen-native-strings*.ts",
+			"apps/desktop/src-tauri/src/intl/**",
+		}),
+		Run: RunDesktopNativeStringsFresh,
+	},
+	{
 		ID:                "desktop-message-key-naming",
 		Nickname:          "message-key-naming",
 		DisplayName:       "message-key-naming",

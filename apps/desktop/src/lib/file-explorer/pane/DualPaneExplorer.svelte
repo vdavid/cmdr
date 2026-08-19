@@ -101,7 +101,8 @@
     import { loadPersistedState } from './initialization'
     import { getDirectorySortMode, getShowHiddenFiles } from '$lib/settings/reactive-settings.svelte'
     import { getSetting, onSettingChange } from '$lib/settings'
-    import { setReopenClosedTabEnabled } from '$lib/tauri-commands'
+    import { setReopenClosedTabEnabled, onMenuBarRebuilt, activateWindowMenu } from '$lib/tauri-commands'
+    import { resyncMenuAccelerators } from '$lib/shortcuts'
     import DragOverlay from '../drag/DragOverlay.svelte'
     import { addToast, addToastForPane } from '$lib/ui/toast'
     import { tString } from '$lib/intl/messages.svelte'
@@ -172,6 +173,7 @@
     let unlistenVolumeContextAction: UnlistenFn | undefined
     let unlistenIndexEvents: UnlistenFn | undefined
     let unlistenIndexAggregationComplete: UnlistenFn | undefined
+    let unlistenMenuBarRebuilt: UnlistenFn | undefined
 
     // Debounced mirror of both panes' tab structure into the MCP backend store.
     // Owns its own reactive $effect + debounce timer; `syncTabsToBackend` is
@@ -674,6 +676,19 @@
             getPaneRef('right')?.refreshIndexSizes()
         })
 
+        // The menu bar is thrown away and rebuilt when the UI language changes, so
+        // every item is a new object and everything this window had pushed onto the
+        // old ones is gone. Rust restores what it knows (checked states, the
+        // view-mode pair); these four are the ones only the frontend knows.
+        unlistenMenuBarRebuilt = await onMenuBarRebuilt(() => {
+            resyncMenuAccelerators()
+            syncPinTabMenu()
+            syncReopenMenuState()
+            // Re-applies the file-scoped enable/disable state, including the
+            // operation-start gate, which a fresh bar comes up without.
+            void activateWindowMenu('main')
+        })
+
         // Register the native drag-and-drop listeners (drag-image-size, drag-modifiers,
         // onDragDropEvent). The controller owns the band; the folder-highlight effect
         // was already created synchronously in the factory body.
@@ -685,6 +700,7 @@
         unlistenVolumeContextAction?.()
         unlistenIndexEvents?.()
         unlistenIndexAggregationComplete?.()
+        unlistenMenuBarRebuilt?.()
         tabMcpSync.cleanup()
         quickLookFollow.cleanup()
         // No cleanup needed for throttle (no pending timers)

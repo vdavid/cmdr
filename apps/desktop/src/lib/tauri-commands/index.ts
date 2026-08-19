@@ -140,6 +140,7 @@ export {
   getChildWindowRect,
   setChildWindowRect,
   updateMenuAccelerator,
+  setUiLanguage,
 } from './app-state'
 export type { PaneFileEntry, PaneState, McpTabInfo } from './app-state'
 
@@ -435,7 +436,13 @@ export {
 } from './appearance'
 
 // Native-menu events
-export { onViewModeChanged, onMenuSort, onMediaIndexFolderExclusion, onMediaIndexFolderChoice } from './menu-events'
+export {
+  onViewModeChanged,
+  onMenuSort,
+  onMediaIndexFolderExclusion,
+  onMediaIndexFolderChoice,
+  onMenuBarRebuilt,
+} from './menu-events'
 
 // Directory-watcher events
 export { onDirectoryDiff, onDirectoryDeleted } from './directory-watcher'

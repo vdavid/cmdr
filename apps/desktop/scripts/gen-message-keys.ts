@@ -31,10 +31,20 @@ const here = dirname(fileURLToPath(import.meta.url))
 const desktopDir = join(here, '..')
 const messagesDir = join(desktopDir, 'src', 'lib', 'intl', 'messages', 'en')
 const srcDir = join(desktopDir, 'src')
+/**
+ * The Rust crate, scanned for MENTIONS only. The native menu bar, the window
+ * title, and the already-running alert resolve their copy through Rust's
+ * `menu_t`, so their keys never appear in a `.ts` file and would otherwise read
+ * as dead. Rust can't ADD a missing key (the `MessageKey` union is a frontend
+ * type), so this scan feeds `literalKeys`, never `usedKeys`.
+ */
+const rustSrcDir = join(desktopDir, 'src-tauri', 'src')
 const outFile = join(desktopDir, 'src', 'lib', 'intl', 'keys.gen.ts')
 
 /** Source extensions to scan for key references. */
 const SCANNED_EXTS = new Set(['.ts', '.svelte'])
+/** Source extensions scanned for key MENTIONS only (see `rustSrcDir`). */
+const MENTION_ONLY_EXTS = new Set(['.rs'])
 /** Directories to skip when walking for key usages. */
 const SKIP_DIRS = new Set(['node_modules', 'target', '.svelte-kit'])
 /**
@@ -79,7 +89,13 @@ function scanUsedKeys(dir: string, acc: Set<string>, mentioned: Set<string>, cat
       if (!SKIP_DIRS.has(entry.name)) scanUsedKeys(join(dir, entry.name), acc, mentioned, catalogKeys)
       continue
     }
-    if (!SCANNED_EXTS.has(extname(entry.name))) continue
+    const ext = extname(entry.name)
+    if (MENTION_ONLY_EXTS.has(ext)) {
+      const source = readFileSync(join(dir, entry.name), 'utf8')
+      for (const key of findCatalogKeyMentions(source, catalogKeys)) mentioned.add(key)
+      continue
+    }
+    if (!SCANNED_EXTS.has(ext)) continue
     if (entry.name === 'keys.gen.ts' || isScanExcluded(entry.name)) continue
     const source = readFileSync(join(dir, entry.name), 'utf8')
     for (const key of extractUsedKeys(source)) acc.add(key)
@@ -94,6 +110,7 @@ const usedKeys = new Set<string>()
 /** Catalog keys whose literal text appears in source, for dead-key suppression. */
 const literalKeys = new Set<string>()
 scanUsedKeys(srcDir, usedKeys, literalKeys, catalogKeys)
+scanUsedKeys(rustSrcDir, usedKeys, literalKeys, catalogKeys)
 const { missing, dead } = diffKeys({ catalogKeys, usedKeys, literalKeys })
 
 console.log(`Wrote ${String(catalogKeys.length)} message keys to keys.gen.ts`)

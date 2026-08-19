@@ -148,6 +148,20 @@ pub fn observe_os_locale_changes<R: Runtime>(app_handle: AppHandle<R>) {
             "OS locales changed: language {:?}, formats {:?}",
             locales.ui, locales.format
         );
+        // The native menu bar can't re-render itself off a rune the way the
+        // webview does, so it's rebuilt here. Only when the catalog the native
+        // side reads actually moved: a region change (or a language change under
+        // a pinned `appearance.language`) leaves every label as it was.
+        if super::refresh_active_locale() {
+            let for_rebuild = app_handle.clone();
+            if let Err(e) = app_handle.run_on_main_thread(move || {
+                if let Err(e) = crate::menu::rebuild_menu_bar(&for_rebuild) {
+                    warn!("Couldn't rebuild the menu bar in the new language: {e}");
+                }
+            }) {
+                warn!("Couldn't reach the main thread to rebuild the menu bar: {e}");
+            }
+        }
         if let Err(e) = (OsLocalesChanged { locales }).emit(&app_handle) {
             warn!("Failed to emit os-locales-changed event: {e}");
         }

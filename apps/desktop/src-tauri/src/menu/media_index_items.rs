@@ -38,11 +38,15 @@ pub struct ImageIndexMenuState {
     pub covered_by_parent: bool,
 }
 
-/// One item of the image-search group: a menu id, its label, and whether it's clickable.
+/// One item of the image-search group: a menu id, its label's catalog KEY, and
+/// whether it's clickable.
+///
+/// The key rather than the text, so this decider stays pure and testable without
+/// a catalog: `menu_structure` resolves it through `menu_t` at build time.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ImageIndexMenuItem {
     pub id: &'static str,
-    pub label: &'static str,
+    pub label_key: &'static str,
     pub enabled: bool,
 }
 
@@ -58,25 +62,25 @@ pub fn image_index_menu_items(state: ImageIndexMenuState) -> Vec<ImageIndexMenuI
         // Removing works even under the veto: it takes a real entry off the list.
         ImageIndexMenuItem {
             id: MEDIA_INDEX_REMOVE_FOLDER_ID,
-            label: "Remove from indexed folders",
+            label_key: "menu.mediaIndex.removeFolder",
             enabled: true,
         }
     } else if state.excluded {
         ImageIndexMenuItem {
             id: MEDIA_INDEX_ADD_FOLDER_ID,
-            label: "Add to indexed folders (excluded)",
+            label_key: "menu.mediaIndex.addFolderExcluded",
             enabled: false,
         }
     } else if state.covered_by_parent {
         ImageIndexMenuItem {
             id: MEDIA_INDEX_ADD_FOLDER_ID,
-            label: "Indexed through a parent folder",
+            label_key: "menu.mediaIndex.coveredByParent",
             enabled: false,
         }
     } else {
         ImageIndexMenuItem {
             id: MEDIA_INDEX_ADD_FOLDER_ID,
-            label: "Add to indexed folders",
+            label_key: "menu.mediaIndex.addFolder",
             enabled: true,
         }
     };
@@ -84,13 +88,13 @@ pub fn image_index_menu_items(state: ImageIndexMenuState) -> Vec<ImageIndexMenuI
     let exclusion = if state.excluded {
         ImageIndexMenuItem {
             id: MEDIA_INDEX_INCLUDE_FOLDER_ID,
-            label: "Index images here again",
+            label_key: "menu.mediaIndex.includeFolder",
             enabled: true,
         }
     } else {
         ImageIndexMenuItem {
             id: MEDIA_INDEX_EXCLUDE_FOLDER_ID,
-            label: "Don't index images in this folder",
+            label_key: "menu.mediaIndex.excludeFolder",
             enabled: true,
         }
     };
@@ -149,7 +153,7 @@ mod tests {
             !items[0].enabled,
             "the veto beats the list, so the add must not look live"
         );
-        assert!(items[0].label.contains("excluded"));
+        assert_eq!(items[0].label_key, "menu.mediaIndex.addFolderExcluded");
         // The way out sits right below it.
         assert_eq!(items[1].id, MEDIA_INDEX_INCLUDE_FOLDER_ID);
         assert!(items[1].enabled);

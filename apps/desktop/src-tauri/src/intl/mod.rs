@@ -30,8 +30,10 @@ use shipped_locales::SHIPPED_LOCALES;
 
 mod format_locale;
 mod live_locale;
+mod native_strings;
 
 pub use live_locale::observe_os_locale_changes;
+pub use native_strings::{menu_t, menu_t_with, refresh_active_locale, set_language_preference};
 
 /// One catalog we ship, plus the script facts the resolver's guard needs.
 ///
@@ -114,6 +116,45 @@ pub(crate) fn resolved_os_locales() -> OsLocales {
 pub(crate) fn resolved_ui_locale() -> String {
     let preferences = crate::system_strings::apple_languages();
     resolve_ui_locale(&preferences, SHIPPED_LOCALES).unwrap_or_else(|| "en".to_string())
+}
+
+/// The catalog the NATIVE surfaces should open while the user hasn't pinned a
+/// language, on whichever platform we're running.
+///
+/// Distinct from [`get_os_locales`], which answers `None` off macOS to say "no
+/// OS answer, the webview's own default stands". The native menu bar has no
+/// webview to defer to, so it needs a real answer everywhere; on Linux that
+/// answer comes from the same session environment WebKit itself reads.
+pub(crate) fn os_ui_locale() -> String {
+    #[cfg(target_os = "macos")]
+    {
+        resolved_ui_locale()
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        posix_ui_locale()
+    }
+}
+
+/// The catalog a POSIX session asks for, read from the locale environment in the
+/// order POSIX itself resolves messages: `LC_ALL` beats `LC_MESSAGES` beats
+/// `LANG`.
+///
+/// The values are POSIX locale names (`hu_HU.UTF-8`, `C`), so the codeset suffix
+/// is dropped and [`normalize`] folds the rest into a comparable tag. There's no
+/// ordered preference LIST here the way macOS has one: the session exposes one
+/// answer, and it's the same one WebKit hands the webview, so the two halves of
+/// the app agree.
+#[cfg(not(target_os = "macos"))]
+fn posix_ui_locale() -> String {
+    ["LC_ALL", "LC_MESSAGES", "LANG"]
+        .iter()
+        .filter_map(|name| std::env::var(name).ok())
+        .map(|value| value.split('.').next().unwrap_or_default().to_string())
+        .filter(|value| !value.is_empty())
+        .find_map(|value| resolve_ui_locale(&[value], SHIPPED_LOCALES))
+        .unwrap_or_else(|| "en".to_string())
 }
 
 /// The locale the UI should use, or `None` to stay on English.

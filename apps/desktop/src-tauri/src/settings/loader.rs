@@ -28,6 +28,11 @@ pub enum FullDiskAccessChoice {
 pub struct Settings {
     #[serde(alias = "listing.showHiddenFiles", default = "default_show_hidden")]
     pub show_hidden_files: bool,
+    /// The UI language the user pinned, or `None` for `'system'` (follow the OS).
+    /// Read at startup so the native menu bar, which is built before the frontend
+    /// exists, comes up in the same language the webview will.
+    #[serde(alias = "appearance.language", default)]
+    pub appearance_language: Option<String>,
     #[serde(alias = "onboarding.fullDiskAccessChoice", alias = "fullDiskAccessChoice", default)]
     pub full_disk_access_choice: FullDiskAccessChoice,
     #[serde(alias = "developer.mcpEnabled", default)]
@@ -176,6 +181,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             show_hidden_files: DEFAULT_SHOW_HIDDEN_FILES,
+            appearance_language: None,
             full_disk_access_choice: FullDiskAccessChoice::NotAskedYet,
             developer_mcp_enabled: None,
             developer_mcp_port: None,
@@ -239,6 +245,14 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         .get("listing.showHiddenFiles")
         .and_then(|v| v.as_bool())
         .unwrap_or(DEFAULT_SHOW_HIDDEN_FILES);
+
+    // `'system'` is the registry default and means "follow the OS", so it maps to
+    // `None` here rather than to a tag nothing ships.
+    let appearance_language = json
+        .get("appearance.language")
+        .and_then(|v| v.as_str())
+        .filter(|v| *v != "system")
+        .map(String::from);
 
     // The registry key, falling back to the pre-migration top-level name. The frontend's
     // schema-4 migration moves the value, but Rust reads `settings.json` at startup,
@@ -307,6 +321,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
 
     Ok(Settings {
         show_hidden_files,
+        appearance_language,
         full_disk_access_choice,
         developer_mcp_enabled,
         developer_mcp_port,

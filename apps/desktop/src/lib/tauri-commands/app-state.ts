@@ -211,3 +211,16 @@ export async function updateMenuAccelerator(commandId: string, shortcut: string)
   const res = await commands.updateMenuAccelerator(commandId, shortcut)
   if (res.status === 'error') throwIpcError(res.error)
 }
+
+/**
+ * Tells Rust which language the UI speaks, so the native menu bar, the window
+ * title, and the already-running alert follow the webview.
+ *
+ * `language` is the RAW `appearance.language` setting: a catalog tag, or
+ * `'system'` to follow the OS. Rust rebuilds the menu bar only when its own
+ * answer moves, so calling this with an unchanged value is free.
+ */
+export async function setUiLanguage(language: string): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from typed bindings (see the `ipc.rs` manifest)
+  await invoke('set_ui_language', { language })
+}

@@ -20,9 +20,11 @@ use crate::file_system::open_with::OpenWithChoices;
 #[cfg(target_os = "macos")]
 use crate::file_system::sync_status::SyncStatus;
 
+use crate::intl::{menu_t, menu_t_with};
+
 use super::menu_items::{
-    COPY_FILENAME_MAX_CHARS, copy_path_accelerator, show_in_file_manager_accelerator, show_in_file_manager_label,
-    truncate_for_menu_label,
+    APP_MENU_TITLE, pin_tab_label, COPY_FILENAME_MAX_CHARS, copy_path_accelerator, show_in_file_manager_accelerator,
+    show_in_file_manager_label, truncate_for_menu_label,
 };
 #[cfg(target_os = "macos")]
 use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, HELP_MENU_ID, QUICK_LOOK_ID};
@@ -116,9 +118,9 @@ pub fn build_context_menu<R: Runtime>(
     #[cfg(target_os = "macos")]
     let mut open_with_apps: HashMap<String, PathBuf> = HashMap::new();
     if !is_directory {
-        let open_item = MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
-        let view_item = MenuItem::with_id(app, FILE_VIEW_ID, "View", true, Some("F3"))?;
-        let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit", true, Some("F4"))?;
+        let open_item = MenuItem::with_id(app, OPEN_ID, menu_t("menu.file.open"), true, None::<&str>)?;
+        let view_item = MenuItem::with_id(app, FILE_VIEW_ID, menu_t("menu.file.view"), true, Some("F3"))?;
+        let edit_item = MenuItem::with_id(app, EDIT_ID, menu_t("menu.context.edit"), true, Some("F4"))?;
         menu.append(&open_item)?;
         #[cfg(target_os = "macos")]
         {
@@ -137,7 +139,13 @@ pub fn build_context_menu<R: Runtime>(
     // a visual hint for the context menu and never fires globally. Placing it in its
     // own group makes the Space shortcut discoverable without crowding the activation
     // (Open / View / Edit) or operations (Copy / Move / Rename) groups.
-    let toggle_selection_item = MenuItem::with_id(app, TOGGLE_SELECTION_ID, "Toggle selection", true, Some("Space"))?;
+    let toggle_selection_item = MenuItem::with_id(
+        app,
+        TOGGLE_SELECTION_ID,
+        menu_t("menu.context.toggleSelection"),
+        true,
+        Some("Space"),
+    )?;
     menu.append(&toggle_selection_item)?;
     menu.append(&PredefinedMenuItem::separator(app)?)?;
 
@@ -152,14 +160,14 @@ pub fn build_context_menu<R: Runtime>(
     // which is confusing, and a duplicate would have to land in each item's own real
     // folder, which one transfer can't express. The user can navigate to the real folder
     // and do either there.
-    let copy_item = MenuItem::with_id(app, FILE_COPY_ID, "Copy\u{2026}", true, Some("F5"))?;
-    let move_item = MenuItem::with_id(app, FILE_MOVE_ID, "Move\u{2026}", true, Some("F6"))?;
+    let copy_item = MenuItem::with_id(app, FILE_COPY_ID, menu_t("menu.file.copy"), true, Some("F5"))?;
+    let move_item = MenuItem::with_id(app, FILE_MOVE_ID, menu_t("menu.file.move"), true, Some("F6"))?;
     menu.append(&copy_item)?;
     menu.append(&move_item)?;
     if !restrict_destination_actions {
-        let duplicate_item = MenuItem::with_id(app, FILE_DUPLICATE_ID, "Duplicate", true, Some("Cmd+D"))?;
+        let duplicate_item = MenuItem::with_id(app, FILE_DUPLICATE_ID, menu_t("menu.file.duplicate"), true, Some("Cmd+D"))?;
         menu.append(&duplicate_item)?;
-        let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
+        let rename_item = MenuItem::with_id(app, RENAME_ID, menu_t("menu.file.rename"), true, Some("F2"))?;
         menu.append(&rename_item)?;
     }
     menu.append(&PredefinedMenuItem::separator(app)?)?;
@@ -167,13 +175,13 @@ pub fn build_context_menu<R: Runtime>(
     // New folder — also omitted on search-results panes (no destination folder
     // to create into; the pane IS the snapshot, not a directory).
     if !restrict_destination_actions {
-        let new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "New folder\u{2026}", true, Some("F7"))?;
+        let new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, menu_t("menu.file.newFolder"), true, Some("F7"))?;
         menu.append(&new_folder_item)?;
         menu.append(&PredefinedMenuItem::separator(app)?)?;
     }
 
     // Delete
-    let delete_item = MenuItem::with_id(app, FILE_DELETE_ID, "Delete", true, Some("F8"))?;
+    let delete_item = MenuItem::with_id(app, FILE_DELETE_ID, menu_t("menu.file.delete"), true, Some("F8"))?;
     menu.append(&delete_item)?;
     menu.append(&PredefinedMenuItem::separator(app)?)?;
 
@@ -188,14 +196,14 @@ pub fn build_context_menu<R: Runtime>(
     let copy_filename_item = MenuItem::with_id(
         app,
         COPY_FILENAME_ID,
-        format!(
-            "Copy \"{}\"",
-            truncate_for_menu_label(filename, COPY_FILENAME_MAX_CHARS)
+        menu_t_with(
+            "menu.context.copyNamed",
+            &[("name", &truncate_for_menu_label(filename, COPY_FILENAME_MAX_CHARS))],
         ),
         true,
         Some("Cmd+C"),
     )?;
-    let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Copy path", true, Some(copy_path_accelerator()))?;
+    let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, menu_t("menu.edit.copyPath"), true, Some(copy_path_accelerator()))?;
     menu.append(&show_in_finder_item)?;
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;
@@ -204,8 +212,13 @@ pub fn build_context_menu<R: Runtime>(
     // snapshot pane (its rows aren't a stable folder to favorite). Favorites the right-clicked
     // folder's path, which `on_menu_event` reads from `MenuState.context.path`.
     if is_directory && !restrict_destination_actions {
-        let add_favorite_item =
-            MenuItem::with_id(app, FAVORITES_ADD_CONTEXT_ID, "Add to favorites", true, None::<&str>)?;
+        let add_favorite_item = MenuItem::with_id(
+            app,
+            FAVORITES_ADD_CONTEXT_ID,
+            menu_t("menu.context.addToFavorites"),
+            true,
+            None::<&str>,
+        )?;
         menu.append(&PredefinedMenuItem::separator(app)?)?;
         menu.append(&add_favorite_item)?;
     }
@@ -219,7 +232,7 @@ pub fn build_context_menu<R: Runtime>(
         if !items.is_empty() {
             menu.append(&PredefinedMenuItem::separator(app)?)?;
             for item in items {
-                let menu_item = MenuItem::with_id(app, item.id, item.label, item.enabled, None::<&str>)?;
+                let menu_item = MenuItem::with_id(app, item.id, menu_t(item.label_key), item.enabled, None::<&str>)?;
                 menu.append(&menu_item)?;
             }
         }
@@ -233,14 +246,14 @@ pub fn build_context_menu<R: Runtime>(
             SyncStatus::OnlineOnly => Some(MenuItem::with_id(
                 app,
                 CLOUD_MAKE_OFFLINE_ID,
-                "Make available offline",
+                menu_t("menu.context.makeAvailableOffline"),
                 true,
                 None::<&str>,
             )?),
             SyncStatus::Synced => Some(MenuItem::with_id(
                 app,
                 CLOUD_REMOVE_DOWNLOAD_ID,
-                "Remove download",
+                menu_t("menu.context.removeDownload"),
                 true,
                 None::<&str>,
             )?),
@@ -257,8 +270,8 @@ pub fn build_context_menu<R: Runtime>(
     // Quick Look and Get Info are macOS-only
     #[cfg(target_os = "macos")]
     {
-        let get_info_item = MenuItem::with_id(app, GET_INFO_ID, "Get info", true, Some("Cmd+I"))?;
-        let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, None::<&str>)?;
+        let get_info_item = MenuItem::with_id(app, GET_INFO_ID, menu_t("menu.file.getInfo"), true, Some("Cmd+I"))?;
+        let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, menu_t("menu.file.quickLook"), true, None::<&str>)?;
         menu.append(&PredefinedMenuItem::separator(app)?)?;
         menu.append(&get_info_item)?;
         menu.append(&quick_look_item)?;
@@ -276,31 +289,32 @@ pub fn build_context_menu<R: Runtime>(
 /// Each item is an `IconMenuItem` showing its color circle (open_with.rs pattern); the
 /// "applied" colors (every selected file already carries them) get the checkmark-
 /// composited variant. IDs are `tag-color:<index>`, prefix-routed in
-/// `handle_menu_event`. Colors run in Finder's order (Red … Gray). Labels are the
-/// English color names so the items stay accessible (screen readers read the text;
-/// the circle is the icon). macOS-only — Linux menus carry no icons.
+/// `handle_menu_event`. Colors run in Finder's order (Red … Gray). The label carries
+/// the color's NAME so the items stay accessible (screen readers read the text; the
+/// circle is the icon), which is why the names are translated alongside everything
+/// else. macOS-only — Linux menus carry no icons.
 #[cfg(target_os = "macos")]
 fn append_tag_color_group<R: Runtime>(app: &AppHandle<R>, menu: &Menu<R>, info: &FileContextInfo) -> tauri::Result<()> {
     use tauri::menu::IconMenuItem;
 
-    // (color index, English system name), in Finder's color-row order.
+    // (color index, catalog key), in Finder's color-row order.
     const COLORS: [(u8, &str); 7] = [
-        (6, "Red"),
-        (7, "Orange"),
-        (5, "Yellow"),
-        (2, "Green"),
-        (4, "Blue"),
-        (3, "Purple"),
-        (1, "Gray"),
+        (6, "menu.tag.red"),
+        (7, "menu.tag.orange"),
+        (5, "menu.tag.yellow"),
+        (2, "menu.tag.green"),
+        (4, "menu.tag.blue"),
+        (3, "menu.tag.purple"),
+        (1, "menu.tag.gray"),
     ];
 
-    for (color, name) in COLORS {
+    for (color, name_key) in COLORS {
         let id = format!("{}{}", super::TAG_COLOR_ID_PREFIX, color);
         let checked = info.applied_tag_colors[color as usize];
         // `IconMenuItem` with `Some(image)` falls back to a text-only item if the image
         // build fails, so the menu still works without the circle.
         let icon = super::tag_icons::tag_circle_image(color, checked);
-        let item = IconMenuItem::with_id(app, &id, name, true, icon, None::<&str>)?;
+        let item = IconMenuItem::with_id(app, &id, menu_t(name_key), true, icon, None::<&str>)?;
         menu.append(&item)?;
     }
     menu.append(&PredefinedMenuItem::separator(app)?)?;
@@ -313,7 +327,13 @@ fn append_tag_color_group<R: Runtime>(app: &AppHandle<R>, menu: &Menu<R>, info: 
 /// `MenuState.context.path`; `on_menu_event` reads it back for the `FAVORITES_ADD_CONTEXT_ID` click.
 pub fn build_parent_row_context_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let menu = Menu::new(app)?;
-    let add_favorite_item = MenuItem::with_id(app, FAVORITES_ADD_CONTEXT_ID, "Add to favorites", true, None::<&str>)?;
+    let add_favorite_item = MenuItem::with_id(
+        app,
+        FAVORITES_ADD_CONTEXT_ID,
+        menu_t("menu.context.addToFavorites"),
+        true,
+        None::<&str>,
+    )?;
     menu.append(&add_favorite_item)?;
     Ok(menu)
 }
@@ -342,18 +362,25 @@ pub fn build_breadcrumb_context_menu<R: Runtime>(
     } else {
         Some(accelerator)
     };
-    let copy_path_item = MenuItem::with_id(app, COPY_CURRENT_DIR_PATH_ID, "Copy path", true, accel)?;
+    let copy_path_item = MenuItem::with_id(app, COPY_CURRENT_DIR_PATH_ID, menu_t("menu.breadcrumb.copyPath"), true, accel)?;
     menu.append(&copy_path_item)?;
     if let Some(name) = eject_volume_name {
-        let label = if eject_busy {
-            format!("Eject ({}) (busy)", name)
-        } else {
-            format!("Eject ({})", name)
-        };
-        let eject_item = MenuItem::with_id(app, EJECT_VOLUME_ID, &label, !eject_busy, None::<&str>)?;
+        let eject_item = MenuItem::with_id(app, EJECT_VOLUME_ID, eject_label(name, eject_busy), !eject_busy, None::<&str>)?;
         menu.append(&eject_item)?;
     }
     Ok(menu)
+}
+
+/// The "Eject (Backup)" label, in its busy variant while a write op still touches
+/// the volume. Shared by the breadcrumb and volume-row menus so the two can't
+/// drift; the volume name is uncontrolled, so it rides in as a literal token.
+fn eject_label(name: &str, busy: bool) -> String {
+    let key = if busy {
+        "menu.volume.ejectBusy"
+    } else {
+        "menu.volume.eject"
+    };
+    menu_t_with(key, &[("name", name)])
 }
 
 /// Builds a menu for viewer windows (built from scratch on all platforms).
@@ -369,14 +396,14 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
         // --- cmdr app menu (minimal for viewer) ---
         let viewer_app_menu = Submenu::with_items(
             app,
-            "cmdr",
+            APP_MENU_TITLE,
             true,
             &[
-                &PredefinedMenuItem::hide(app, None)?,
-                &PredefinedMenuItem::hide_others(app, None)?,
-                &PredefinedMenuItem::show_all(app, None)?,
+                &PredefinedMenuItem::hide(app, Some(&menu_t("menu.app.hide")))?,
+                &PredefinedMenuItem::hide_others(app, Some(&menu_t("menu.app.hideOthers")))?,
+                &PredefinedMenuItem::show_all(app, Some(&menu_t("menu.app.showAll")))?,
                 &PredefinedMenuItem::separator(app)?,
-                &PredefinedMenuItem::quit(app, None)?,
+                &PredefinedMenuItem::quit(app, Some(&menu_t("menu.app.quit")))?,
             ],
         )?;
         menu.append(&viewer_app_menu)?;
@@ -385,9 +412,9 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
     // --- File menu ---
     let file_menu = Submenu::with_items(
         app,
-        "File",
+        menu_t("menu.bar.file"),
         true,
-        &[&PredefinedMenuItem::close_window(app, Some("Close"))?],
+        &[&PredefinedMenuItem::close_window(app, Some(&menu_t("menu.viewer.close")))?],
     )?;
     menu.append(&file_menu)?;
 
@@ -402,14 +429,14 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
     let edit_menu = Submenu::with_id_and_items(
         app,
         EDIT_MENU_ID,
-        "Edit",
+        menu_t("menu.bar.edit"),
         true,
         &[
-            &PredefinedMenuItem::cut(app, None)?,
-            &PredefinedMenuItem::copy(app, None)?,
-            &PredefinedMenuItem::paste(app, None)?,
+            &PredefinedMenuItem::cut(app, Some(&menu_t("menu.edit.cut")))?,
+            &PredefinedMenuItem::copy(app, Some(&menu_t("menu.edit.copy")))?,
+            &PredefinedMenuItem::paste(app, Some(&menu_t("menu.edit.paste")))?,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::select_all(app, None)?,
+            &PredefinedMenuItem::select_all(app, Some(&menu_t("menu.select.all")))?,
         ],
     )?;
     menu.append(&edit_menu)?;
@@ -417,8 +444,15 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
     // --- View menu ---
     // `word_wrap` is returned so the caller (and `viewer_set_word_wrap`) can flip its checked state
     // directly without a tree walk.
-    let word_wrap = CheckMenuItem::with_id(app, VIEWER_WORD_WRAP_ID, "Word wrap", true, false, None::<&str>)?;
-    let view_submenu = Submenu::with_items(app, "View", true, &[&word_wrap])?;
+    let word_wrap = CheckMenuItem::with_id(
+        app,
+        VIEWER_WORD_WRAP_ID,
+        menu_t("menu.viewer.wordWrap"),
+        true,
+        false,
+        None::<&str>,
+    )?;
+    let view_submenu = Submenu::with_items(app, menu_t("menu.bar.view"), true, &[&word_wrap])?;
     menu.append(&view_submenu)?;
 
     #[cfg(target_os = "macos")]
@@ -426,11 +460,11 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
         // --- Window menu ---
         let window_menu = Submenu::with_items(
             app,
-            "Window",
+            menu_t("menu.bar.window"),
             true,
             &[
-                &PredefinedMenuItem::minimize(app, None)?,
-                &PredefinedMenuItem::maximize(app, None)?,
+                &PredefinedMenuItem::minimize(app, Some(&menu_t("menu.window.minimize")))?,
+                &PredefinedMenuItem::maximize(app, Some(&menu_t("menu.window.zoom")))?,
             ],
         )?;
         menu.append(&window_menu)?;
@@ -438,7 +472,7 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
         // --- Help menu ---
         // Empty, but it still needs the ID: `cleanup_macos_menus` hands it to
         // `NSApplication.setHelpMenu:` so the viewer bar gets the search field too.
-        let help_menu = Submenu::with_id_and_items(app, HELP_MENU_ID, "Help", true, &[])?;
+        let help_menu = Submenu::with_id_and_items(app, HELP_MENU_ID, menu_t("menu.bar.help"), true, &[])?;
         menu.append(&help_menu)?;
     }
 
@@ -454,16 +488,15 @@ pub fn build_tab_context_menu(
 ) -> tauri::Result<Menu<Wry>> {
     let menu = Menu::new(app)?;
 
-    let pin_label = if is_pinned { "Unpin tab" } else { "Pin tab" };
-    let pin_item = MenuItem::with_id(app, TAB_PIN_ID, pin_label, true, None::<&str>)?;
+    let pin_item = MenuItem::with_id(app, TAB_PIN_ID, pin_tab_label(is_pinned), true, None::<&str>)?;
     let close_others_item = MenuItem::with_id(
         app,
         TAB_CLOSE_OTHERS_ID,
-        "Close other tabs",
+        menu_t("menu.tab.closeOtherTabs"),
         has_other_unpinned_tabs,
         None::<&str>,
     )?;
-    let close_item = MenuItem::with_id(app, TAB_CLOSE_ID, "Close tab", can_close, None::<&str>)?;
+    let close_item = MenuItem::with_id(app, TAB_CLOSE_ID, menu_t("menu.tab.closeTab"), can_close, None::<&str>)?;
 
     menu.append(&pin_item)?;
     menu.append(&PredefinedMenuItem::separator(app)?)?;
@@ -484,12 +517,18 @@ pub fn build_network_host_context_menu(
     let menu = Menu::new(app)?;
 
     // "Disconnect" is always shown. If nothing is mounted, the backend handles it gracefully.
-    let disconnect = MenuItem::with_id(app, NETWORK_HOST_DISCONNECT_ID, "Disconnect", true, None::<&str>)?;
+    let disconnect = MenuItem::with_id(app, NETWORK_HOST_DISCONNECT_ID, menu_t("menu.network.disconnect"), true, None::<&str>)?;
     menu.append(&disconnect)?;
 
     if is_manual {
         menu.append(&PredefinedMenuItem::separator(app)?)?;
-        let forget_server = MenuItem::with_id(app, NETWORK_HOST_FORGET_SERVER_ID, "Forget server", true, None::<&str>)?;
+        let forget_server = MenuItem::with_id(
+            app,
+            NETWORK_HOST_FORGET_SERVER_ID,
+            menu_t("menu.network.forgetServer"),
+            true,
+            None::<&str>,
+        )?;
         menu.append(&forget_server)?;
     }
 
@@ -500,7 +539,7 @@ pub fn build_network_host_context_menu(
         let forget_password = MenuItem::with_id(
             app,
             NETWORK_HOST_FORGET_PASSWORD_ID,
-            "Forget saved password",
+            menu_t("menu.network.forgetSavedPassword"),
             true,
             None::<&str>,
         )?;
@@ -525,17 +564,12 @@ pub fn build_volume_row_context_menu<R: Runtime>(
     let menu = Menu::new(app)?;
 
     if is_favorite {
-        let rename_item = MenuItem::with_id(app, FAVORITE_RENAME_ID, "Rename", true, None::<&str>)?;
+        let rename_item = MenuItem::with_id(app, FAVORITE_RENAME_ID, menu_t("menu.volume.renameFavorite"), true, None::<&str>)?;
         menu.append(&rename_item)?;
-        let remove_item = MenuItem::with_id(app, FAVORITE_REMOVE_ID, "Remove", true, None::<&str>)?;
+        let remove_item = MenuItem::with_id(app, FAVORITE_REMOVE_ID, menu_t("menu.volume.removeFavorite"), true, None::<&str>)?;
         menu.append(&remove_item)?;
     } else if let Some(name) = eject_volume_name {
-        let label = if eject_busy {
-            format!("Eject ({}) (busy)", name)
-        } else {
-            format!("Eject ({})", name)
-        };
-        let eject_item = MenuItem::with_id(app, EJECT_VOLUME_ID, &label, !eject_busy, None::<&str>)?;
+        let eject_item = MenuItem::with_id(app, EJECT_VOLUME_ID, eject_label(name, eject_busy), !eject_busy, None::<&str>)?;
         menu.append(&eject_item)?;
     }
 

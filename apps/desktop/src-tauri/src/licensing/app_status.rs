@@ -444,12 +444,18 @@ pub fn update_cached_status(
     }
 }
 
-/// Get the window title based on license status.
+/// The main window's title, from the licence status.
+///
+/// Reads the catalog through [`crate::intl::menu_t`] rather than the webview's
+/// `t()`: `lib.rs` sets this title during `setup`, before any frontend code
+/// runs. A commercial licence gets the bare product name, which is a brand and
+/// so carries no catalog key.
 pub fn get_window_title(status: &AppStatus) -> String {
     match status {
-        AppStatus::Personal { .. } => "Cmdr – Personal use only".to_string(),
+        AppStatus::Personal { .. } | AppStatus::Expired { .. } => {
+            crate::intl::menu_t("licensing.windowTitle.personalUse")
+        }
         AppStatus::Commercial { .. } => "Cmdr".to_string(),
-        AppStatus::Expired { .. } => "Cmdr – Personal use only".to_string(),
     }
 }
 

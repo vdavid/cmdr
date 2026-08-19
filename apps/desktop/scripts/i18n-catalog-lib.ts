@@ -42,6 +42,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { IntlMessageFormat } from 'intl-messageformat'
+import { isNativeKey } from './gen-native-strings-lib.ts'
 
 /** AST element `type` constants (the `@formatjs` `TYPE` enum, inlined to avoid a deep import). */
 const TYPE = Object.freeze({
@@ -373,18 +374,26 @@ export function hasBrandPresent(value: string, word: string): boolean {
 }
 
 /**
- * Whether a message key renders RAW (no ICU) at runtime. The `errors.*` family
- * is resolved through `getMessage()` (a raw lookup), NOT `t()`/`intl-messageformat`:
- * its `{system_settings}` substitution tokens, literal `<…>` text (e.g.
- * `<folder-path>`), markdown, and lone apostrophes deliberately bypass ICU grammar,
- * and several such values don't even parse as ICU. So the locale checks must NOT
- * run these through `parseMessage` (it would false-flag valid raw copy as invalid
- * ICU); they compare the raw `{token}` set instead. Single source of truth for the
- * raw/ICU split, reused by the pseudolocale generator and the locale checks.
+ * Whether a message key renders RAW (no ICU) at runtime. Two families qualify,
+ * for the same reason: neither reaches `intl-messageformat`.
+ *
+ * - The `errors.*` family resolves through `getMessage()` (a raw lookup): its
+ *   `{system_settings}` substitution tokens, literal `<…>` text (e.g.
+ *   `<folder-path>`), markdown, and lone apostrophes deliberately bypass ICU
+ *   grammar, and several such values don't even parse as ICU.
+ * - The NATIVE families (`isNativeKey`: `menu.*` and the two pre-webview strings)
+ *   are read by Rust's `menu_t`, which is a table lookup plus literal `{token}`
+ *   replacement. There is no ICU engine in the Rust process, so a doubled `''`
+ *   would render as two apostrophes on a real menu.
+ *
+ * So the locale checks must NOT run either family through `parseMessage` (it
+ * would false-flag valid raw copy as invalid ICU); they compare the raw `{token}`
+ * set instead. Single source of truth for the raw/ICU split, reused by the
+ * pseudolocale generator and the locale checks.
  * See `src/lib/error-messages/CLAUDE.md` + `src/lib/intl/CLAUDE.md`.
  */
 export function isRawKey(key: string): boolean {
-  return key.startsWith('errors.')
+  return key.startsWith('errors.') || isNativeKey(key)
 }
 
 /**

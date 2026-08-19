@@ -9,45 +9,51 @@ Per catalog area, each renderable key is one of three:
   `@key.screenshotNote` explaining the mapping. Honest-by-design: it is NOT a precise capture, but it shows the right
   layout and position so a translator loads one image for a whole family of strings.
 - **Uncoupled**: no screenshot yet (a surface the capture driver does not visit, or one with no honest representative).
+- **Native**: drawn by the operating system, not the webview (the menu bar, the window title, the already-running
+  alert). The capture harness drives a webview, so it can never reach these; the `@key` description is the whole
+  translator aid there, which is why those descriptions carry the menu, the verb-or-noun call, and the Finder
+  counterpart. Counted apart from Uncoupled so a permanent structural gap never reads as a missing capture.
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2097 / 2793 keys have a screenshot (75%):** 1203 direct (43%) and 894 representative (32%). 696 remain
-uncoupled.
+**Total: 2097 / 2984 keys have a screenshot (70%):** 1200 direct (40%) and 897 representative (30%). 755 remain
+uncoupled, and 132 are native surfaces a webview capture cannot reach.
 
-| Area           | Direct | Representative | Uncoupled | Total | Any % |
-| -------------- | -----: | -------------: | --------: | ----: | ----: |
-| ai             |      0 |            102 |         0 |   102 |  100% |
-| askCmdr        |     73 |              0 |        76 |   149 |   49% |
-| commandPalette |      3 |              0 |         3 |     6 |   50% |
-| commands       |    134 |              0 |        40 |   174 |   77% |
-| common         |      0 |              0 |         2 |     2 |    0% |
-| crashReporter  |      9 |              5 |         0 |    14 |  100% |
-| downloads      |     10 |              0 |        26 |    36 |   28% |
-| errorReporter  |     10 |              0 |        24 |    34 |   29% |
-| errors         |     68 |            293 |         0 |   361 |  100% |
-| feedback       |      7 |              0 |         6 |    13 |   54% |
-| fileExplorer   |    112 |             89 |       151 |   352 |   57% |
-| fileOperations |    101 |             45 |        32 |   178 |   82% |
-| goToPath       |      5 |              0 |         5 |    10 |   50% |
-| indexing       |     31 |              0 |        28 |    59 |   53% |
-| licensing      |     47 |             35 |        25 |   107 |   77% |
-| lowDiskSpace   |      0 |              0 |         5 |     5 |    0% |
-| main           |      7 |              0 |         2 |     9 |   78% |
-| mtp            |     18 |              4 |         0 |    22 |  100% |
-| notifications  |      0 |              0 |         1 |     1 |    0% |
-| onboarding     |     83 |             33 |        14 |   130 |   89% |
-| operationLog   |     22 |             15 |         0 |    37 |  100% |
-| queryUi        |     44 |            122 |         0 |   166 |  100% |
-| queue          |     25 |              1 |         5 |    31 |   84% |
-| search         |      9 |             44 |         0 |    53 |  100% |
-| settings       |    312 |              0 |       230 |   542 |   58% |
-| shortcuts      |     27 |             28 |         0 |    55 |  100% |
-| transfer       |      2 |              0 |        10 |    12 |   17% |
-| ui             |     13 |              0 |         9 |    22 |   59% |
-| updates        |      0 |             10 |         0 |    10 |  100% |
-| viewer         |     25 |             68 |         0 |    93 |  100% |
-| whatsNew       |      6 |              0 |         2 |     8 |   75% |
+| Area           | Direct | Representative | Uncoupled | Native | Total | Any % |
+| -------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
+| ai             |      0 |            102 |         0 |      0 |   102 |  100% |
+| askCmdr        |     73 |              0 |        82 |      0 |   155 |   47% |
+| commandPalette |      3 |              0 |         3 |      0 |     6 |   50% |
+| commands       |    134 |              0 |        44 |      0 |   178 |   75% |
+| common         |      0 |              0 |         2 |      0 |     2 |    0% |
+| crashReporter  |      9 |              5 |         0 |      0 |    14 |  100% |
+| downloads      |     10 |              0 |        26 |      0 |    36 |   28% |
+| errorReporter  |     10 |              0 |        24 |      0 |    34 |   29% |
+| errors         |     65 |            292 |         0 |      0 |   357 |  100% |
+| feedback       |      7 |              0 |         6 |      0 |    13 |   54% |
+| fileExplorer   |    112 |             89 |       160 |      0 |   361 |   56% |
+| fileOperations |    101 |             45 |        37 |      0 |   183 |   80% |
+| goToPath       |      5 |              0 |         5 |      0 |    10 |   50% |
+| indexing       |     31 |              0 |        33 |      0 |    64 |   48% |
+| licensing      |     47 |             35 |        25 |      1 |   108 |   76% |
+| lowDiskSpace   |      0 |              0 |         5 |      0 |     5 |    0% |
+| main           |      7 |              0 |         2 |      2 |    11 |   64% |
+| menu           |      0 |              0 |         0 |    129 |   129 |    0% |
+| mtp            |     18 |              4 |         0 |      0 |    22 |  100% |
+| notifications  |      0 |              0 |         1 |      0 |     1 |    0% |
+| onboarding     |     83 |             33 |        14 |      0 |   130 |   89% |
+| operationLog   |     22 |             15 |         0 |      0 |    37 |  100% |
+| queryUi        |     44 |            123 |         0 |      0 |   167 |  100% |
+| queue          |     25 |              1 |         6 |      0 |    32 |   81% |
+| search         |      9 |             47 |         0 |      0 |    56 |  100% |
+| settings       |    312 |              0 |       230 |      0 |   542 |   58% |
+| shortcuts      |     27 |             28 |         0 |      0 |    55 |  100% |
+| suggestedOps   |      0 |              0 |        29 |      0 |    29 |    0% |
+| transfer       |      2 |              0 |        10 |      0 |    12 |   17% |
+| ui             |     13 |              0 |         9 |      0 |    22 |   59% |
+| updates        |      0 |             10 |         0 |      0 |    10 |  100% |
+| viewer         |     25 |             68 |         0 |      0 |    93 |  100% |
+| whatsNew       |      6 |              0 |         2 |      0 |     8 |   75% |
 
 ## Surfaces to review
 

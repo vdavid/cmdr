@@ -593,6 +593,20 @@ export function onShortcutChange(listener: ShortcutChangeListener): () => void {
   return () => listeners.delete(listener)
 }
 
+/**
+ * Pushes every customized shortcut back onto the native menu, for after the menu
+ * bar has been rebuilt in a new language.
+ *
+ * A rebuild replaces every menu item, so the accelerators the user customized
+ * are back at their registry defaults on brand-new objects. Only the customized
+ * ones need re-pushing: the fresh items already carry the defaults.
+ */
+export function resyncMenuAccelerators(): void {
+  for (const commandId of customShortcuts.keys()) {
+    void updateMenuAccelerator(commandId)
+  }
+}
+
 function notifyListeners(commandId: string): void {
   for (const listener of listeners) {
     try {

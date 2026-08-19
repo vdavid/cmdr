@@ -3594,6 +3594,7 @@ export const events = {
   mediaEnrichTerminal: makeEvent<MediaEnrichTerminalEvent>('media-enrich-terminal'),
   mediaIndexFolderChoice: makeEvent<MediaIndexFolderChoice>('media-index-folder-choice'),
   mediaIndexFolderExclusion: makeEvent<MediaIndexFolderExclusion>('media-index-folder-exclusion'),
+  menuBarRebuilt: makeEvent<MenuBarRebuilt>('menu-bar-rebuilt'),
   menuSort: makeEvent<MenuSort>('menu-sort'),
   mtpDeviceConnected: makeEvent<MtpDeviceConnected>('mtp-device-connected'),
   mtpDeviceDisconnected: makeEvent<MtpDeviceDisconnected>('mtp-device-disconnected'),
@@ -6732,6 +6733,18 @@ export type MemoryWatchdogAction =
   | 'stoppedIndexing'
   // Memory kept climbing after that stop, so the growth isn't (only) indexing.
   | 'stillGrowingAfterStop'
+
+/**
+ *  `menu-bar-rebuilt`: the native menu bar was thrown away and built again in a
+ *  new language, so every item is a NEW object.
+ *
+ *  The rebuild restores what Rust knows (checked states, the view-mode pair), but
+ *  the things only the frontend knows are gone with the old items: the user's
+ *  custom accelerators, the pin/unpin label, and whether "Reopen closed tab" is
+ *  live. The listener in `lib/intl/menu-bar-sync.ts` pushes all three back.
+ *  Rare (a language change), so re-pushing everything beats tracking what moved.
+ */
+export type MenuBarRebuilt = Record<string, never>
 
 /**
  *  `menu-sort`: a Sort-by menu item (column or order) clicked. `action` is

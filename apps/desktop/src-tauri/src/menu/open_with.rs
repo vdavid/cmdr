@@ -28,6 +28,7 @@ use tauri::{
 };
 
 use crate::file_system::open_with::AppCandidate;
+use crate::intl::{menu_t, menu_t_with};
 
 /// Menu item ID prefix for "Open with" candidate apps. Followed by the app's bundle ID.
 pub const OPEN_WITH_ID_PREFIX: &str = "open-with:";
@@ -42,7 +43,7 @@ pub fn build_open_with_submenu<R: Runtime>(
     app: &AppHandle<R>,
     candidates: &[AppCandidate],
 ) -> tauri::Result<(Submenu<R>, HashMap<String, PathBuf>)> {
-    let submenu = Submenu::new(app, "Open with", true)?;
+    let submenu = Submenu::new(app, menu_t("menu.context.openWith"), true)?;
     let mut bundle_to_path: HashMap<String, PathBuf> = HashMap::new();
 
     if candidates.is_empty() {
@@ -51,7 +52,7 @@ pub fn build_open_with_submenu<R: Runtime>(
     } else {
         for (idx, candidate) in candidates.iter().enumerate() {
             let label = if idx == 0 {
-                format!("{} (default)", candidate.display_name)
+                menu_t_with("menu.context.openWithDefault", &[("app", &candidate.display_name)])
             } else {
                 candidate.display_name.clone()
             };
@@ -69,7 +70,7 @@ pub fn build_open_with_submenu<R: Runtime>(
         submenu.append(&PredefinedMenuItem::separator(app)?)?;
     }
 
-    let other_item = MenuItem::with_id(app, OPEN_WITH_OTHER_ID, "Other\u{2026}", true, None::<&str>)?;
+    let other_item = MenuItem::with_id(app, OPEN_WITH_OTHER_ID, menu_t("menu.context.openWithOther"), true, None::<&str>)?;
     submenu.append(&other_item)?;
 
     Ok((submenu, bundle_to_path))

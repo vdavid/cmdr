@@ -44,12 +44,16 @@ const RETRY_INTERVAL: Duration = Duration::from_millis(50);
 /// a second Cmdr could otherwise walk in mid-session and start writing the same index.
 static HELD_LOCK: OnceLock<File> = OnceLock::new();
 
-/// Alert title shown when another instance owns the data dir.
-const ALERT_TITLE: &str = "Cmdr is already running";
+/// Catalog key for the alert title shown when another instance owns the data dir.
+///
+/// Resolved through [`crate::intl::menu_t`] rather than the webview's `t()`,
+/// because this alert is the strongest reason the catalog lookup lives in Rust
+/// at all: it fires BEFORE a webview exists, so a frontend-supplied string could
+/// never reach it.
+const ALERT_TITLE_KEY: &str = "main.instanceLock.alertTitle";
 
-/// Alert body shown when another instance owns the data dir.
-const ALERT_BODY: &str =
-    "Another copy of Cmdr is using this data folder. Switch to the running app, or quit it and try again.";
+/// Catalog key for the alert body. See [`ALERT_TITLE_KEY`].
+const ALERT_BODY_KEY: &str = "main.instanceLock.alertBody";
 
 /// How long the refusal alert waits for a click before giving up and letting the process exit.
 ///
@@ -219,8 +223,10 @@ fn show_already_running_alert() {
 
     spawn_exit_watchdog(ALERT_TIMEOUT + ALERT_WATCHDOG_GRACE);
 
-    let header = CFString::from_str(ALERT_TITLE);
-    let message = CFString::from_str(ALERT_BODY);
+    // The catalog lookup is safe here: it reads a compiled-in table plus the OS
+    // preference, with no Tauri app, no webview, and no settings store needed.
+    let header = CFString::from_str(&crate::intl::menu_t(ALERT_TITLE_KEY));
+    let message = CFString::from_str(&crate::intl::menu_t(ALERT_BODY_KEY));
     let mut response: CFOptionFlags = 0;
     // SAFETY: every pointer argument is either `None` (the icon, sound, localization, and button
     // titles are documented as nullable, meaning "system defaults", which is the single "OK" button
@@ -264,7 +270,12 @@ fn spawn_exit_watchdog(after: Duration) {
 /// the non-zero exit are the whole story.
 #[cfg(not(target_os = "macos"))]
 fn show_already_running_alert() {
-    log::warn!(target: "instance_lock", "{ALERT_TITLE}. {ALERT_BODY}");
+    log::warn!(
+        target: "instance_lock",
+        "{}. {}",
+        crate::intl::menu_t(ALERT_TITLE_KEY),
+        crate::intl::menu_t(ALERT_BODY_KEY)
+    );
 }
 
 #[cfg(test)]

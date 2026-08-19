@@ -313,11 +313,44 @@ describe('buildCoverageReport', () => {
     expect(r.direct).toBe(2)
     expect(r.representative).toBe(1)
     expect(r.uncoupled).toBe(2)
+    expect(r.nativeOnly).toBe(0)
 
     // Areas are sorted by name.
     expect(r.areas.map((a) => a.area)).toEqual(['about', 'common', 'errors'])
     const errors = r.areas.find((a) => a.area === 'errors')
-    expect(errors).toEqual({ area: 'errors', total: 2, direct: 1, representative: 1, uncoupled: 0 })
+    expect(errors).toEqual({ area: 'errors', total: 2, direct: 1, representative: 1, uncoupled: 0, nativeOnly: 0 })
+  })
+
+  it('counts a native-surface key apart from an uncoupled one', () => {
+    // A `menu.*` key is drawn by the OS, so no webview capture can ever show it.
+    // Filing it under "uncoupled" would read as a surface the driver forgot,
+    // and someone would eventually go looking for it.
+    const r = buildCoverageReport(
+      new Set(),
+      new Set(),
+      new Map([
+        ['menu', ['menu.bar.file', 'menu.file.open']],
+        ['common', ['common.ok']],
+      ]),
+    )
+    expect(r.nativeOnly).toBe(2)
+    expect(r.uncoupled).toBe(1)
+    expect(r.areas.find((a) => a.area === 'menu')).toEqual({
+      area: 'menu',
+      total: 2,
+      direct: 0,
+      representative: 0,
+      uncoupled: 0,
+      nativeOnly: 2,
+    })
+  })
+
+  it('lets a real capture beat the native exemption', () => {
+    // The exemption is a fallback, not an override: if a native key somehow DID
+    // render on a captured surface, the real screenshot is the better answer.
+    const r = buildCoverageReport(new Set(['menu.bar.file']), new Set(), new Map([['menu', ['menu.bar.file']]]))
+    expect(r.direct).toBe(1)
+    expect(r.nativeOnly).toBe(0)
   })
 })
 
@@ -334,7 +367,7 @@ describe('renderCoverageReport', () => {
     expect(md).toContain('2 / 3 keys have a screenshot (67%)')
     expect(md).toContain('1 direct')
     expect(md).toContain('1 representative')
-    expect(md).toContain('| common | 1 | 1 | 1 | 3 | 67% |')
+    expect(md).toContain('| common | 1 | 1 | 1 | 0 | 3 | 67% |')
     expect(md.toLowerCase()).toContain('partial')
     // It explains what a representative coupling is (honesty).
     expect(md.toLowerCase()).toContain('representative')
