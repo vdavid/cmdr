@@ -17,9 +17,23 @@ import { ensureAppReady, dismissOverlay, CTRL_OR_META, MKDIR_DIALOG, type PageLi
 
 const PALETTE = '.palette-overlay'
 const PALETTE_INPUT = '.palette-overlay input.text-field-control'
-// Mirrors FOCUSABLE_SELECTOR in `src/lib/ui/focus-trap.ts`. Single-quote-free so it
-// can sit inside single-quoted JS strings passed to `evaluate()`.
-const TABBABLE = '[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+// Mirrors FOCUSABLE_SELECTOR in `src/lib/ui/focus-trap.ts`, which applies
+// `:not([tabindex="-1"])` to EVERY clause, not just to `[tabindex]`. That matters:
+// `ModalDialog`'s × carries `tabindex="-1"` on purpose (mouse and Escape are its
+// affordances), so a mirror that only excludes it from the `[tabindex]` clause
+// counts it as the first tab stop and every wrap assertion is off by one.
+// Single-quote-free so it can sit inside single-quoted JS strings passed to
+// `evaluate()`.
+const TABBABLE = [
+  '[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]',
+]
+  .map((clause) => `${clause}:not([tabindex="-1"])`)
+  .join(', ')
 
 async function openCommandPalette(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
