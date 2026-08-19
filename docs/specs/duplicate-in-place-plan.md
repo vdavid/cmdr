@@ -1,7 +1,7 @@
 # Duplicate in place
 
-Copying an item into the folder it already lives in produces a copy under a new name, instead of the
-"Can't copy to the same location" refusal Cmdr shows today.
+Copying an item into the folder it already lives in produces a copy under a new name, instead of the "Can't copy to the
+same location" refusal Cmdr shows today.
 
 From [#50](https://github.com/vdavid/cmdr/issues/50) ("Should allow copy / pasting to same location") and a separate
 in-app report about dragging onto the folder an item is already in. Duplicating a file is a common thing to want, and
@@ -9,7 +9,7 @@ every mainstream file manager offers it.
 
 ## The product decision
 
-Both mainstream conventions agree that a same-folder paste is an intent, never an error. They disagree about *when* the
+Both mainstream conventions agree that a same-folder paste is an intent, never an error. They disagree about _when_ the
 name is chosen:
 
 - **Finder**: naming happens after. ⌘V or ⌘D creates `photo copy.jpg` instantly, no prompt. Rename it later if you care.
@@ -31,24 +31,26 @@ What we do instead serves both camps:
 
 ### Which gestures open the rename editor, and why not all of them
 
-**Paste and F5 do. Duplicate (⌘D) and drag don't.** This is a deliberate split, not an oversight, and getting it backwards
-would undercut the whole feature:
+**Paste and F5 do. Duplicate (⌘D) and drag don't.** This is a deliberate split, not an oversight, and getting it
+backwards would undercut the whole feature:
 
-- ⌘D *is* Finder's Duplicate, and the reason M6 wants that binding is precisely that Finder's ⌘D asks nothing. Popping an
-  editor on it would ship the opposite of the behavior whose familiarity justifies the key. It would also break stamping
-  out several copies in a row: after the first ⌘D, focus sits in an editor and the second ⌘D does nothing until Esc.
+- ⌘D _is_ Finder's Duplicate, and the reason M6 wants that binding is precisely that Finder's ⌘D asks nothing. Popping
+  an editor on it would ship the opposite of the behavior whose familiarity justifies the key. It would also break
+  stamping out several copies in a row: after the first ⌘D, focus sits in an editor and the second ⌘D does nothing until
+  Esc.
 - A drag ends with the mouse, not the keyboard. Stealing focus into a text field on mouse-release is the wrong shape.
-- Paste and F5 are the gestures where the user has just *directed* a copy somewhere, and they're the ones #50 is actually
-  about ("all file managers I used so far would ask for a new name **when pasting**").
+- Paste and F5 are the gestures where the user has just _directed_ a copy somewhere, and they're the ones #50 is
+  actually about ("all file managers I used so far would ask for a new name **when pasting**").
 
 **No setting gates this.** The same reasoning that rejects a modal rejects a toggle: two gestures that ask and two that
 don't already covers both preferences, so a preference to configure would be a preference nobody needs to find.
 
 ### Why not one prompt per item
 
-A same-folder paste of 30 files must not raise 30 conflict prompts. **A self-collision is not a conflict**: a conflict is
-"something else is in the way, what do you want", and this is "the thing in the way is the file itself, which is exactly
-what duplicating means". It gets resolved before the conflict machinery is consulted, and never reaches the user.
+A same-folder paste of 30 files must not raise 30 conflict prompts. **A self-collision is not a conflict**: a conflict
+is "something else is in the way, what do you want", and this is "the thing in the way is the file itself, which is
+exactly what duplicating means". It gets resolved before the conflict machinery is consulted, and never reaches the
+user.
 
 ### The generated name: `photo (1).jpg`
 
@@ -58,10 +60,11 @@ operation. It's also language-neutral, which matters: Cmdr is translated, so a `
 reviewed word, and then owe the sequence parser every one of those words when continuing a series.
 
 **The tension worth naming**: `docs/design-principles.md` says platform-native over generic, and macOS Finder says
-`photo copy.jpg` (localized: Hungarian Finder writes `photo másolata`). That's a real argument for `copy`, and the reason
-to take it seriously is that Cmdr is macOS-only today. It loses to the consistency argument here only because switching
-just the duplicate path would leave Cmdr generating `photo copy.jpg` on a duplicate and `photo (1).jpg` on a conflict,
-which is worse than either scheme alone; and switching *both* means re-reviewing the suffix in every shipped language.
+`photo copy.jpg` (localized: Hungarian Finder writes `photo másolata`). That's a real argument for `copy`, and the
+reason to take it seriously is that Cmdr is macOS-only today. It loses to the consistency argument here only because
+switching just the duplicate path would leave Cmdr generating `photo copy.jpg` on a duplicate and `photo (1).jpg` on a
+conflict, which is worse than either scheme alone; and switching _both_ means re-reviewing the suffix in every shipped
+language.
 
 So the decision is `(1)`, and the hedge is that **M1 collapses the three current numbering implementations into one**.
 Changing the scheme later becomes a one-place edit plus its tests, not a hunt.
@@ -85,11 +88,11 @@ The replacement asks the question where the answer is actionable: at the moment 
 **is this destination the same file as the source?** Answered by comparing `dev+ino` rather than paths, which settles
 case-insensitivity, normalization, symlinked parents, and hardlinks in one shot.
 
-`validation.rs:308` already has exactly this as `is_same_file`, written for this hazard ("prevents data loss when copying
-a file over itself via a symlink"). **Reuse it as-is, and note that it uses `fs::metadata`, which follows symlinks** —
-that is the correct choice here and it's what makes the symlinked-parent case work. Don't "fix" it to `symlink_metadata`;
-that would break the very case the plan tests for. (The rename module answers a narrower question with `symlink_metadata`
-because it must treat a symlink as its own entry; the two are deliberately different.)
+`validation.rs:308` already has exactly this as `is_same_file`, written for this hazard ("prevents data loss when
+copying a file over itself via a symlink"). **Reuse it as-is, and note that it uses `fs::metadata`, which follows
+symlinks** — that is the correct choice here and it's what makes the symlinked-parent case work. Don't "fix" it to
+`symlink_metadata`; that would break the very case the plan tests for. (The rename module answers a narrower question
+with `symlink_metadata` because it must treat a symlink as its own entry; the two are deliberately different.)
 
 On a self-collision:
 
@@ -107,16 +110,16 @@ answer that machinery can give is wrong for this shape**:
 
 - `Overwrite` (reachable today via an apply-to-all latch from an earlier real conflict in the same batch, or a
   configured default) sends the item through `stage_and_land_file`, whose replace path renames the existing destination
-  aside and deletes it afterwards. When destination *is* the source, that deletes the original: same name, same bytes,
+  aside and deletes it afterwards. When destination _is_ the source, that deletes the original: same name, same bytes,
   **new inode**. Hard links to the original break, birth-time resets, inode-keyed metadata can drop, for zero benefit.
-- `Overwrite` on a *directory* is worse: `safe_overwrite_dir` sets the source directory aside and recreates it empty,
+- `Overwrite` on a _directory_ is worse: `safe_overwrite_dir` sets the source directory aside and recreates it empty,
   then the copy walks a file list whose paths point at the vanished original and fails mid-operation. Nothing tests this
   today.
 - `Stop` shows a nonsensical "this file conflicts with itself" prompt, with identical size and mtime on both sides.
 - `Skip` silently does nothing, which is the opposite of what the user asked for.
 
-**Consequence for sequencing: removing the guard and adding the self-collision rule must be the same commit.** Never land
-the removal on its own, not even briefly.
+**Consequence for sequencing: removing the guard and adding the self-collision rule must be the same commit.** Never
+land the removal on its own, not even briefly.
 
 ### What stays untouched
 
@@ -125,8 +128,8 @@ subtree, which recurses until the disk fills) and stays exactly as it is. Duplic
 `docs (1)/`, never a child, so the two never interact.
 
 Rollback is already correct and needs no change: `copy/rollback.rs` deletes only `transaction.created_files` /
-`created_dirs`, which are paths the operation itself created, so rolling back a duplicate removes `photo (1).jpg` and can
-never touch the original. Pin it with a test anyway (M2), because it's exactly the kind of claim this plan otherwise
+`created_dirs`, which are paths the operation itself created, so rolling back a duplicate removes `photo (1).jpg` and
+can never touch the original. Pin it with a test anyway (M2), because it's exactly the kind of claim this plan otherwise
 insists on anchoring.
 
 ### Explicitly out of scope
@@ -145,18 +148,18 @@ Sequential. Each ends green with the checks named, and is its own commit.
 **Why first**: it's pure logic, it's self-contained, and the feature feels broken without the sequence rule. Duplicating
 twice must give `photo (1).jpg` then `photo (2).jpg`, not `photo (1) (1).jpg`.
 
-**(a) Collapse the duplicated numbering.** `conflict.rs::numbered_name:356` is documented as the one ` (N)` formatter, but
-`transfer/volume/conflict.rs::find_unique_volume_name:632` hand-rolls the same format string inline instead of calling
-it. Point it at `numbered_name`. Without this, part (b) fixes the local path and silently leaves the volume path
-generating `photo (1) (1)`. It's a clean drop-in: `numbered_name` is `pub(super)` on `write_operations::conflict` and the
-volume module is a descendant, it's sync and called from non-async code inside the loop, and the volume loop starts at
-counter 1 so `numbered_name`'s `counter == 0` branch is simply never taken.
+**(a) Collapse the duplicated numbering.** `conflict.rs::numbered_name:356` is documented as the one ` (N)` formatter,
+but `transfer/volume/conflict.rs::find_unique_volume_name:632` hand-rolls the same format string inline instead of
+calling it. Point it at `numbered_name`. Without this, part (b) fixes the local path and silently leaves the volume path
+generating `photo (1) (1)`. It's a clean drop-in: `numbered_name` is `pub(super)` on `write_operations::conflict` and
+the volume module is a descendant, it's sync and called from non-async code inside the loop, and the volume loop starts
+at counter 1 so `numbered_name`'s `counter == 0` branch is simply never taken.
 
-(`archive_edit/conflicts.rs::find_unique_inner` is the third copy; it works on zip inner-path strings and is out of scope
-per above, but leave a comment there so the next reader knows it's deliberate.)
+(`archive_edit/conflicts.rs::find_unique_inner` is the third copy; it works on zip inner-path strings and is out of
+scope per above, but leave a comment there so the next reader knows it's deliberate.)
 
-**(b) Continue a trailing sequence.** Teach the ` (N)` search to split a trailing ` (<digits>)` off the stem and continue
-from there.
+**(b) Continue a trailing sequence.** Teach the ` (N)` search to split a trailing ` (<digits>)` off the stem and
+continue from there.
 
 The shared piece is a pure `split_sequence(stem) -> (base, next_counter)`, **not** a shared search loop:
 `find_unique_name` has to keep advancing when its `O_CREAT|O_EXCL` create loses a race, so its loop and a non-reserving
@@ -171,8 +174,8 @@ The sequence rules:
 - No zero-padding preservation: `photo (007).jpg` → `photo (8).jpg`.
 - `photo (0).jpg` → `photo (1).jpg`.
 
-This changes the existing conflict-rename path too, which is intended: copying `photo (1).jpg` into a folder that already
-holds one gives `photo (2).jpg`, which is the better answer there as well.
+This changes the existing conflict-rename path too, which is intended: copying `photo (1).jpg` into a folder that
+already holds one gives `photo (2).jpg`, which is the better answer there as well.
 
 **Tests (TDD, real red first)**: unit tests beside the function in `conflict.rs` (`mod find_unique_name_tests:1174`
 already exists), covering each bullet plus the existing no-sequence cases unchanged; and the volume-side naming, to pin
@@ -195,10 +198,10 @@ copy through `copyBetweenVolumes`, and `transfer/volume/copy.rs:142-175` delegat
 `copy_files_start` (`move.rs:121` likewise). Paste, F5, drag, and MCP all land here. MCP is not a bypass: its copy/move
 executors drive the same frontend dialog and the same Tauri commands a person does.
 
-**Ask it per top-level source, once, before the copy loop — never per file.** The copy loop iterates the scan's *leaf*
+**Ask it per top-level source, once, before the copy loop — never per file.** The copy loop iterates the scan's _leaf_
 files (`docs/a.txt`, `docs/sub/b.txt`), and for a same-folder duplicate every one of those leaves is its own
-self-collision. Checking per leaf would scatter `a (1).txt` through the original `docs/` instead of producing `docs (1)/`.
-The question belongs to the top-level source.
+self-collision. Checking per leaf would scatter `a (1).txt` through the original `docs/` instead of producing
+`docs (1)/`. The question belongs to the top-level source.
 
 The reason a top-level rename doesn't propagate on its own: `FileInfo::dest_path()` (`scan_cache.rs:629`) recomputes
 `destination.join(relative)` from the original relative path on every call, with no memory of any rename. The mechanism
@@ -215,17 +218,18 @@ same rule (its top level is itself, and `starts_with` matches a path against its
 **Three things to get right:**
 
 - **Don't pre-seed with `find_unique_name`.** It's tempting, since it's the existing name picker, but it reserves the
-  name by creating an `O_CREAT|O_EXCL` 0-byte **file**. Pre-seeding with it means the copy then finds its own placeholder
-  sitting at `dest_path`, `path_exists_or_is_symlink` says occupied, and `copy_single_item` raises a conflict prompt
-  against the placeholder — the exact prompt this feature exists to remove, and under the default `Stop` policy the user
-  sees it every time.
+  name by creating an `O_CREAT|O_EXCL` 0-byte **file**. Pre-seeding with it means the copy then finds its own
+  placeholder sitting at `dest_path`, `path_exists_or_is_symlink` says occupied, and `copy_single_item` raises a
+  conflict prompt against the placeholder — the exact prompt this feature exists to remove, and under the default `Stop`
+  policy the user sees it every time.
 
   Use the **non-reserving** `next_available_name(path)` from M1 for the remap instead. Then:
-  - a **file** source needs nothing further: `dest_path` doesn't exist, the normal write path runs, and the non-overwrite
-    landing already refuses an occupied destination via `RENAME_EXCL` (`transfer/CLAUDE.md` § Streaming). A concurrent
-    writer that steals the name between the pick and the landing produces a loud, safe failure rather than a clobber.
+  - a **file** source needs nothing further: `dest_path` doesn't exist, the normal write path runs, and the
+    non-overwrite landing already refuses an occupied destination via `RENAME_EXCL` (`transfer/CLAUDE.md` § Streaming).
+    A concurrent writer that steals the name between the pick and the landing produces a loud, safe failure rather than
+    a clobber.
   - a **directory** source claims its name eagerly with `create_dir` (not `create_dir_all`), advancing to the next
-    candidate on `AlreadyExists` — that loop *is* the atomic reservation, and it's the directory analogue of what
+    candidate on `AlreadyExists` — that loop _is_ the atomic reservation, and it's the directory analogue of what
     `find_unique_name` does for files. Record it on the transaction and in `created_dirs`.
 
   The alternative (keep `find_unique_name` and thread a reserved-paths set into `copy_single_item` so it skips the
@@ -234,8 +238,8 @@ same rule (its top level is itself, and `starts_with` matches a path against its
 
 - **Empty directories.** An empty folder produces no `FileInfo` at all, and `create_scanned_dirs_at_destination`
   (`scanned_dirs.rs:51`) treats an existing destination as nothing to do. It only works because the pre-seed happens
-  before the loop and `scanned_dirs.rs:50` already applies the remap. Pin it with a test; this is invisible today because
-  the up-front guard rejects it first.
+  before the loop and `scanned_dirs.rs:50` already applies the remap. Pin it with a test; this is invisible today
+  because the up-front guard rejects it first.
 
 - **Move must skip before it recurses.** `dest_path` is computed at `move_op.rs:190` and the dir/dir merge branch is at
   `:217`. `merge_move_directory` (`:393-483`) threads `dest_dir` down through recursion, so a self-collision would
@@ -250,8 +254,8 @@ same rule (its top level is itself, and `starts_with` matches a path against its
 - A file duplicated in place lands as `photo (1).jpg`, original untouched and byte-identical, **same inode** (the
   regression anchor for the aside-and-delete hazard).
 - Duplicating it again gives `photo (2).jpg`; both earlier copies survive.
-- A folder duplicated in place lands as `docs (1)/` with the full subtree inside, `docs/` unchanged. Pin the failure this
-  design exists to prevent: no `a (1).txt` anywhere inside the original `docs/`, and no conflict event.
+- A folder duplicated in place lands as `docs (1)/` with the full subtree inside, `docs/` unchanged. Pin the failure
+  this design exists to prevent: no `a (1).txt` anywhere inside the original `docs/`, and no conflict event.
 - An **empty** folder duplicated in place produces an empty `docs (1)/`.
 - A move into the same folder leaves the item alone and reports it done, with no conflict event and no `name (1)`
   anywhere.
@@ -281,8 +285,8 @@ showing identical size and mtime on both sides. This milestone replaces that pro
 Add the identity check at the top of `resolve_volume_conflict` (`transfer/volume/conflict.rs:50`), before the dir/dir
 merge short-circuit at `:103`. **No `dir_remap` equivalent is needed here**: the volume engine threads `dest_path` down
 through `merge_level` (`volume/merge.rs:363`, with `child_dest = dest_path.join(&entry.name)` at `:444`; note it's
-`merge_level` that recurses, not its caller `copy_directory_streaming:305`), so a top-level rename propagates through the
-subtree on its own. That asymmetry with the local path is worth a line in the docs.
+`merge_level` that recurses, not its caller `copy_directory_streaming:305`), so a top-level rename propagates through
+the subtree on its own. That asymmetry with the local path is worth a line in the docs.
 
 If the folded-path comparison ends up needing `dest_name_index.rs::fold`, that function is currently a private `fn` and
 its visibility has to widen.
@@ -310,7 +314,7 @@ This affects **F5/F6 and drag and drop**, both of which go through `TransferDial
 (`clipboard-operations.ts:236`) calls `dialogs.startTransferProgress(...)` directly and never runs this precheck.
 
 **Where to fix it.** The per-backend `scan_for_conflicts` implementations (`local_posix.rs:714`, `smb/scan.rs:445`,
-`mtp/scan.rs:208`) can't answer this: they receive `SourceItemInfo`, which carries a *name* and no source path
+`mtp/scan.rs:208`) can't answer this: they receive `SourceItemInfo`, which carries a _name_ and no source path
 (`cmdr-fs/src/volume/types.rs:303`). Rather than widen that DTO across three backends and their test doubles, filter one
 level up in `scan_volume_for_conflicts_within` (`commands/file_system/volume_copy.rs:186`), which already receives
 `source_paths: Option<Vec<String>>`: drop any returned `ScanConflict` whose `dest_path` is the same file as one of the
@@ -324,8 +328,8 @@ the filter is inert without it.
 - Remove the "already there" rejection from `transfer-dialog-logic.ts:56-63` (`normDest === sourceParent` →
   `pathErrorAlreadyThere`) **for copy**. Keep the subfolder rejection at `:52`, which is the real hazard, and keep
   "already there" for move.
-- Add the paste fast path: a move-paste whose sources are all already in the destination does nothing at all — no dialog,
-  no toast, no "moved 0 files". A partial set still runs, and the backend skips the ones already there.
+- Add the paste fast path: a move-paste whose sources are all already in the destination does nothing at all — no
+  dialog, no toast, no "moved 0 files". A partial set still runs, and the backend skips the ones already there.
 
 **Retire the `sameLocation` strings from every locale, not just English.** `errors.write.sameLocation.*` exists in
 `en/errors.json:1660-1677` **and** in the de, es, fr, hu, nl, pt, sv, vi, and zh catalogs. Nothing automates this:
@@ -333,18 +337,18 @@ the filter is inert without it.
 from `en`. Deleting only the English keys passes every check and leaves nine orphaned translations shipping forever.
 Delete all ten by hand, plus `transfer-error-messages.ts` and the parity tests pinning them, then run `pnpm intl:keys`.
 
-**The completion toast needs no change**, and that's worth stating rather than discovering: a self-collision never enters
-the skip or conflict counters, so `transfer-complete-toast.ts` composes an ordinary "Copied 1 file" / "Copied 12 files".
-Assert it once so a future counter change can't quietly turn a duplicate into "Copied 0 files".
+**The completion toast needs no change**, and that's worth stating rather than discovering: a self-collision never
+enters the skip or conflict counters, so `transfer-complete-toast.ts` composes an ordinary "Copied 1 file" / "Copied 12
+files". Assert it once so a future counter change can't quietly turn a duplicate into "Copied 0 files".
 
 **Cursor and selection after a multi-item duplicate are unchanged** — the same behavior as any multi-item paste today.
 Only the single-item case (M5) moves the cursor.
 
-**Tests**: a backend unit test that the conflict scan returns zero for a same-folder source set; a frontend test that the
-dialog shows no conflict count and sends an empty `preKnownConflicts`; `clipboard-operations.test.ts` (move-all-already-
-there is a no-op; copy is not; a partial move still dispatches); `transfer-dialog-logic.test.ts` (copy into the source's
-own parent validates clean; move and the subfolder case still reject); the toast assertion above. E2E in
-`file-operations.spec.ts`: ⌘C then ⌘V in one pane produces the numbered copy.
+**Tests**: a backend unit test that the conflict scan returns zero for a same-folder source set; a frontend test that
+the dialog shows no conflict count and sends an empty `preKnownConflicts`; `clipboard-operations.test.ts`
+(move-all-already- there is a no-op; copy is not; a partial move still dispatches); `transfer-dialog-logic.test.ts`
+(copy into the source's own parent validates clean; move and the subfolder case still reject); the toast assertion
+above. E2E in `file-operations.spec.ts`: ⌘C then ⌘V in one pane produces the numbered copy.
 
 **Checks**: `pnpm check`, then the E2E spec.
 
@@ -358,8 +362,8 @@ plumbed explicitly rather than inferred from "this was a same-folder copy".
 and `WriteSettledEvent` are counts and ids only, and `WriteProgressEvent.currentFile` is a filename mid-flight with no
 promise of being the last one. Read it from the operation journal instead: `getOperationLogDetail(operationId, 1, 0)`
 returns `items[0].destPath` (`tauri-commands/operation-log.ts:41-49`). One extra IPC round-trip after settle, and it's
-the real resolved name rather than a frontend reimplementation of `numbered_name` that would rot the moment M1's sequence
-rule changes.
+the real resolved name rather than a frontend reimplementation of `numbered_name` that would rot the moment M1's
+sequence rule changes.
 
 Journal capture is synchronous per item during the write, so the row is durable by the time the terminal event fires.
 That ordering isn't written down as a contract anywhere, so **treat an empty or missing `destPath` as "skip the
@@ -367,20 +371,20 @@ rename"**, never as an error, and never as a reason to retry in a loop.
 
 **The activation pattern is fully precedented** — copy `pane/paste-clipboard-as-file.ts:67-88`:
 
-1. `moveCursorToNewFolder(...)` (`file-operations/mkdir/new-folder-operations.ts:32-77`) arms `setPendingCursorName(name)`,
-   which `listing-diff-sync.svelte.ts:173-176` consumes on the next directory diff, with an immediate `findFileIndex`
-   attempt and a bounded retry for the diff that already fired.
-2. `paneRef.startRename({ suppressExtensionWarning: true, expectedName })`. `expectedName` refuses to activate unless the
-   entry under the cursor is exactly that name, retries briefly while the diff lands, then gives up silently
-   (`pane/types.ts:20-30`) — exactly the "don't rename the wrong file" guarantee this needs.
-   `suppressExtensionWarning` matters: editing an auto-numbered stem must not raise the extension-change confirm.
+1. `moveCursorToNewFolder(...)` (`file-operations/mkdir/new-folder-operations.ts:32-77`) arms
+   `setPendingCursorName(name)`, which `listing-diff-sync.svelte.ts:173-176` consumes on the next directory diff, with
+   an immediate `findFileIndex` attempt and a bounded retry for the diff that already fired.
+2. `paneRef.startRename({ suppressExtensionWarning: true, expectedName })`. `expectedName` refuses to activate unless
+   the entry under the cursor is exactly that name, retries briefly while the diff lands, then gives up silently
+   (`pane/types.ts:20-30`) — exactly the "don't rename the wrong file" guarantee this needs. `suppressExtensionWarning`
+   matters: editing an auto-numbered stem must not raise the extension-change confirm.
 
 Don't fire when more than one item resulted, when the operation was cancelled, or when the user navigated away. The
 `expectedName` guard covers navigation on its own, but check the first two explicitly rather than leaning on it.
 
 **Tests**: unit tests on the activation decision (single item from paste opens the editor; multiple don't; cancelled
-doesn't; missing `destPath` doesn't; **a ⌘D duplicate doesn't**). E2E: ⌘V in the same folder leaves the editor open on the
-new file, and Esc keeps the generated name.
+doesn't; missing `destPath` doesn't; **a ⌘D duplicate doesn't**). E2E: ⌘V in the same folder leaves the editor open on
+the new file, and Esc keeps the generated name.
 
 **Docs**: `file-explorer/rename/DETAILS.md` (programmatic activation entry point), `file-operations/DETAILS.md` (the
 settle tail, and which triggers opt in).
@@ -395,8 +399,8 @@ when nothing is selected). No rename editor; see M5.
 **Files a new command has to touch** (`file.rename` / `file.copy` are the templates; this list is the result of tracing
 `file.rename` end to end):
 
-- `commands/command-ids.ts` (add `file.duplicate` to `COMMAND_IDS`), `commands/sources/file-list.ts` (the `CommandSource`
-  entry), `routes/(main)/command-handlers/file-handlers.ts` (the handler).
+- `commands/command-ids.ts` (add `file.duplicate` to `COMMAND_IDS`), `commands/sources/file-list.ts` (the
+  `CommandSource` entry), `routes/(main)/command-handlers/file-handlers.ts` (the handler).
 - `shortcuts/shortcuts-store.ts`'s `menuCommands` array, which its own docs require to stay in sync with the Rust menu
   items.
 - `routes/(main)/mcp-listeners.ts`, which carries a typed const and dispatch per command.
@@ -414,12 +418,12 @@ Duplicate isn't an F-key idiom in either Finder or Total Commander — but rule 
 **On ⌘D**: it's the Finder-native binding and it's free wherever the file list is actually showing, but
 `errorPane.toggleTechnicalDetails` claims it as a `fixedKey` command via a capture-phase listener
 (`commands/sources/file-list.ts:103-108`, `command-registry.ts:69` "Family 4 — deliberate override"). The two never
-overlap in practice: the error screen shows *instead of* the file list, and there's nothing to duplicate there. The catch
-is that `fixedKey` commands are exempt from conflict detection, so a second claim on the chord wouldn't be flagged by
-anything.
+overlap in practice: the error screen shows _instead of_ the file list, and there's nothing to duplicate there. The
+catch is that `fixedKey` commands are exempt from conflict detection, so a second claim on the chord wouldn't be flagged
+by anything.
 
-Bind ⌘D and run `registry-conflicts.test.ts`. **If it objects, ship the command unbound** (palette and context menu only)
-and leave the binding to David: a shortcut collision is his call, not one to resolve unilaterally.
+Bind ⌘D and run `registry-conflicts.test.ts`. **If it objects, ship the command unbound** (palette and context menu
+only) and leave the binding to David: a shortcut collision is his call, not one to resolve unilaterally.
 
 🧑 **New user-facing copy needs David's sign-off**: the command label ("Duplicate") and its palette description are the
 only new strings this effort ships. Per AGENTS.md principle 4 they're a draft until he's looked at them. Flag it in the
@@ -437,22 +441,22 @@ milestone touches; update them if the new command changes anything they state. I
 ### M7. Drag and drop
 
 A drop that **crosses into the other pane** duplicates, even when both panes show the same folder: that's a deliberate
-act. A plain drag that **starts and ends inside its own pane** stays a no-op, silently, because an aborted drag is common
-and Finder deliberately does nothing there. An explicit copy-drag (⌥ held) duplicates either way. No rename editor; see
-M5.
+act. A plain drag that **starts and ends inside its own pane** stays a no-op, silently, because an aborted drag is
+common and Finder deliberately does nothing there. An explicit copy-drag (⌥ held) duplicates either way. No rename
+editor; see M5.
 
 The change is one condition: `pane/drag-drop-controller.svelte.ts:449-450` suppresses every same-pane background drop
 unconditionally today. It becomes conditional on the resolved operation being `copy`, which `pickDropOperation`
 (`drag/drop-operation.ts:55-68`) already derives from `getModifierState()` (⌥ held → copy). The narrower
-`isInvalidSelfDescendantDrop` guard (`drag/drop-target-validation.ts:5-7`) stays as it is: dropping an item *onto itself*
-is still nothing.
+`isInvalidSelfDescendantDrop` guard (`drag/drop-target-validation.ts:5-7`) stays as it is: dropping an item _onto
+itself_ is still nothing.
 
 **Tests**: unit tests on the drop decision for each of the three cases.
 
-E2E can't reach this one, and the reason is specific rather than general: `drag-drop-entry.spec.ts`'s `triggerFileDrop` /
-`triggerSelfFileDrop` helpers call `dragDrop.handleFileDrop(...)` directly, which is *downstream* of the suppression gate
-this milestone modifies. The adjacent infrastructure looks like free coverage and isn't. Say that in the commit so the
-next reader doesn't re-derive it.
+E2E can't reach this one, and the reason is specific rather than general: `drag-drop-entry.spec.ts`'s `triggerFileDrop`
+/ `triggerSelfFileDrop` helpers call `dragDrop.handleFileDrop(...)` directly, which is _downstream_ of the suppression
+gate this milestone modifies. The adjacent infrastructure looks like free coverage and isn't. Say that in the commit so
+the next reader doesn't re-derive it.
 
 **Docs**: `file-explorer/drag/DETAILS.md`.
 
@@ -474,19 +478,19 @@ next reader doesn't re-derive it.
 
 - **Nothing here runs in parallel.** M2 depends on M1's naming, M4-M7 depend on the backend accepting the operation, and
   M5 depends on M4. The work is small enough that sequential costs little.
-- **M1, M2, and M4 are load-bearing.** M4 is easy to mistake for polish; without it F5 and drag duplicates still show the
-  conflict radios and can silently no-op. M5 is the one most likely to be dropped, and dropping it leaves a coherent
+- **M1, M2, and M4 are load-bearing.** M4 is easy to mistake for polish; without it F5 and drag duplicates still show
+  the conflict radios and can silently no-op. M5 is the one most likely to be dropped, and dropping it leaves a coherent
   feature.
-- **Don't let the F5 dialog grow a target-name field.** It looks deceptively close: the field is a free-text `editedPath`
-  passed straight to `onConfirm`, and compress already pre-fills a full path ending in a new `.zip` leaf
-  (`transfer-dialog-utils.ts:181-198`). But copy's backend treats the destination as a *folder*: `ensure_destination_dir`
-  creates it and requires it to be a directory, so a leaf-named target would produce a **folder** called `photo (1).jpg`.
-  Making it work needs per-item target names across every transfer engine. Inline rename gives the Total Commander user
-  the same outcome with one keystroke sequence and no new API. If it ever becomes worth it, the extension is a per-source
-  name map on the copy command, not a special case for the single-source path.
+- **Don't let the F5 dialog grow a target-name field.** It looks deceptively close: the field is a free-text
+  `editedPath` passed straight to `onConfirm`, and compress already pre-fills a full path ending in a new `.zip` leaf
+  (`transfer-dialog-utils.ts:181-198`). But copy's backend treats the destination as a _folder_:
+  `ensure_destination_dir` creates it and requires it to be a directory, so a leaf-named target would produce a
+  **folder** called `photo (1).jpg`. Making it work needs per-item target names across every transfer engine. Inline
+  rename gives the Total Commander user the same outcome with one keystroke sequence and no new API. If it ever becomes
+  worth it, the extension is a per-source name map on the copy command, not a special case for the single-source path.
 - **Duplicating on APFS is free and instant.** Same-volume copies already go through `copyfile(3)` with `COPYFILE_CLONE`
-  (`transfer/copy_strategy.rs`), so duplicating a 10 GB video costs no space and no wait. Worth not breaking, and worth a
-  line in the release notes.
+  (`transfer/copy_strategy.rs`), so duplicating a 10 GB video costs no space and no wait. Worth not breaking, and worth
+  a line in the release notes.
 - **Watch the `❌` budget.** `invariant-density` only goes down. If a rule here wants writing, prefer encoding it in a
   type: an outcome enum the caller must match on beats a comment saying don't forget the remap. Don't hand-edit any
   allowlist; run the check and commit its rewrite.
