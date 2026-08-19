@@ -1644,15 +1644,13 @@ export const commands = {
    */
   getLocalizedSystemStrings: () => __TAURI_INVOKE<LocalizedSystemStrings>('get_localized_system_strings'),
   /**
-   *  Tauri command: the locale the UI should run in while the language setting is
-   *  `'system'`, or `None` when there's no OS preference list to read.
+   *  Tauri command: both locale answers, read fresh from the OS.
    *
-   *  `None` is a platform answer, not a "nothing matched" answer: off macOS the
-   *  webview's own default stands, which is the right behavior on Linux. On macOS
-   *  we always answer, falling back to English, because that IS the answer when
-   *  the user reads no language we ship.
+   *  One command rather than two, because the frontend wants both at the same
+   *  moment (startup, and again whenever the OS moves) and a second round-trip on
+   *  the startup path would buy nothing.
    */
-  getUiLocale: () => __TAURI_INVOKE<string | null>('get_ui_locale'),
+  getOsLocales: () => __TAURI_INVOKE<OsLocales>('get_os_locales'),
   // Cancels an in-progress download.
   cancelAiDownload: () => __TAURI_INVOKE<void>('cancel_ai_download'),
   /**
@@ -3612,6 +3610,7 @@ export const events = {
   openFileViewer: makeEvent<OpenFileViewer>('open-file-viewer'),
   openSettings: makeEvent<OpenSettings>('open-settings'),
   operationsChanged: makeEvent<OperationsChanged>('operations-changed'),
+  osLocalesChanged: makeEvent<OsLocalesChanged>('os-locales-changed'),
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
   quickLookClosed: makeEvent<QuickLookClosed>('quick-look-closed'),
   quickLookKey: makeEvent<QuickLookKeyEvent>('quick-look-key'),
@@ -3633,7 +3632,6 @@ export const events = {
   suggestionsChanged: makeEvent<SuggestionsChanged>('suggestions-changed'),
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
-  uiLocaleChanged: makeEvent<UiLocaleChanged>('ui-locale-changed'),
   viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
   viewerWordWrapToggled: makeEvent<ViewerWordWrapToggled>('viewer-word-wrap-toggled'),
   volumeConnectionChanged: makeEvent<VolumeConnectionChanged>('volume-connection-changed'),
@@ -7429,6 +7427,40 @@ export type OperationsChanged = {
 }
 
 /**
+ *  Everything the OS has to say about locale, in the two halves the app keeps
+ *  apart.
+ *
+ *  `None` on either half means "no OS answer here, use the webview's own
+ *  default" — the right behavior off macOS, and on macOS the honest answer when
+ *  the region is missing or unreadable.
+ */
+export type OsLocales = {
+  /**
+   *  The catalog the UI should open while `appearance.language` is `'system'`
+   *  (`hu`, `en`). A language, never a region: `resolve_ui_locale` picks a
+   *  catalog, and the catalogs aren't regional.
+   */
+  ui: string | null
+  /**
+   *  The tag whose conventions dates, numbers, and calendars follow (`en-SE`).
+   *  Follows the OS and ❌ never the `appearance.language` setting: a
+   *  Hungarian UI on a US-English/Swedish-region Mac still formats `en-SE`.
+   */
+  format: string | null
+}
+
+/**
+ *  `os-locales-changed`: the user changed their macOS language or region while
+ *  the app was running, and one of the two answers actually moved. `locales` is
+ *  the fresh pair, exactly what `get_os_locales` would return now. Only emitted
+ *  when it differs from the pair the app is running on, so a listener can act on
+ *  every one it receives (`intl/live_locale.rs`).
+ */
+export type OsLocalesChanged = {
+  locales: OsLocales
+}
+
+/**
  *  A file that exceeds the destination filesystem's per-file size limit.
  *  Carried by [`WriteOperationError::FilesTooLargeForFilesystem`] so the dialog
  *  can list the offenders.
@@ -9487,17 +9519,6 @@ export type TypeToJumpInfo = {
    *  `cursor_index` + `files`.
    */
   lastMatchedName?: string | null
-}
-
-/**
- *  `ui-locale-changed`: the user changed their macOS language preferences while
- *  the app was running, and the catalog we resolve to actually moved. `locale`
- *  is the fresh answer (`hu`, `en`), the same value `get_ui_locale` would return
- *  now. Only emitted when the answer differs from the one the app is running on,
- *  so a listener can act on every one it receives (`intl/live_locale.rs`).
- */
-export type UiLocaleChanged = {
-  locale: string
 }
 
 /**

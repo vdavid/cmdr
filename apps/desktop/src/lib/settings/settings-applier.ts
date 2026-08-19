@@ -39,7 +39,7 @@ import {
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { tString, setLocale } from '$lib/intl/messages.svelte'
-import { loadSystemUiLocale, pickUiLocale, watchSystemUiLocale } from '$lib/intl/ui-locale'
+import { loadSystemLocales, pickUiLocale, watchSystemLocales } from '$lib/intl/os-locales'
 import { pushConfigToBackend } from './ai-config'
 import { noteModelSettingChanged } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
@@ -320,15 +320,16 @@ export async function initSettingsApplier(): Promise<void> {
   log.debug('Initializing settings applier')
 
   try {
-    // Ask the OS which language to speak BEFORE awaiting the settings store, so
-    // the two IPC round-trips overlap instead of stacking. Startup pays the
-    // slower of the two, not their sum: ❌ no serialized round-trip and no paint
-    // gate (see `routes/(main)/show-main-on-mount.ts` for why we don't gate).
-    const systemUiLocale = loadSystemUiLocale()
+    // Ask the OS which language to speak and which conventions to format in
+    // BEFORE awaiting the settings store, so the two IPC round-trips overlap
+    // instead of stacking. Startup pays the slower of the two, not their sum:
+    // ❌ no serialized round-trip and no paint gate (see
+    // `routes/(main)/show-main-on-mount.ts` for why we don't gate).
+    const systemLocales = loadSystemLocales()
 
     // Ensure settings store is initialized
     await initializeSettings()
-    await systemUiLocale
+    await systemLocales
 
     // Seed the last-observed log-storage cap so the first change event can distinguish
     // `0 ↔ non-zero` transitions from routine cap changes.
@@ -340,12 +341,12 @@ export async function initSettingsApplier(): Promise<void> {
     // Subscribe to future changes
     unsubscribe = onSettingChange(handleSettingChange)
 
-    // Follow the OS language while we run: `'system'` means the language the
-    // user reads NOW, so re-applying the setting against the fresh OS answer
-    // re-localizes the window in place. Not awaited: nothing downstream waits
-    // on the subscription, and a language change is minutes away, not
-    // milliseconds.
-    void watchSystemUiLocale(() => {
+    // Follow the OS while we run: `'system'` means the language the user reads
+    // NOW, and the formatters follow the region they set NOW, so re-applying the
+    // setting against the fresh OS answers re-localizes the window in place. Not
+    // awaited: nothing downstream waits on the subscription, and a language
+    // change is minutes away, not milliseconds.
+    void watchSystemLocales(() => {
       applyLanguage(getSetting('appearance.language'))
     }).then((unlisten) => {
       unlistenOsLocale = unlisten

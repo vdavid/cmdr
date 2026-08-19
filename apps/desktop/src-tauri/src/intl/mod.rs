@@ -1,16 +1,23 @@
-//! Which language the app speaks, resolved from the user's OS preferences.
+//! What the OS says about language and region, answered for the whole app.
 //!
-//! macOS hands us an ORDERED list of languages the user reads
-//! ([`crate::system_strings::apple_languages`]). This module answers the one
-//! question that list is for: given the catalogs we actually ship, which one
-//! should the app run in?
+//! Two questions, because macOS asks the user two: which LANGUAGE should the app
+//! speak, and whose CONVENTIONS should it format dates and numbers in? A person
+//! can read US English and live in Sweden, and System Settings keeps those apart
+//! on purpose.
 //!
-//! The answer lives in Rust rather than in the frontend because two of its three
-//! consumers run before the webview exists: the native menu bar (built during
-//! `setup`) and the already-running-instance alert (fires before any window).
-//! A second resolver in Rust for those, with the real one in TypeScript, would
-//! be two implementations of one rule, drifting apart.
+//! The language half is this file: macOS hands us an ORDERED list of languages
+//! the user reads ([`crate::system_strings::apple_languages`]), and given the
+//! catalogs we actually ship, one of them is the answer. The region half is
+//! `format_locale.rs`, which composes the tag the webview can't work out for
+//! itself. [`get_os_locales`] hands both over at once.
+//!
+//! The answers live in Rust rather than in the frontend because two of the
+//! language half's three consumers run before the webview exists: the native
+//! menu bar (built during `setup`) and the already-running-instance alert (fires
+//! before any window). A second resolver in Rust for those, with the real one in
+//! TypeScript, would be two implementations of one rule, drifting apart.
 
+use serde::{Deserialize, Serialize};
 use std::cmp::Reverse;
 
 // The catalog table is generated from the message-catalog directories. The
@@ -21,9 +28,10 @@ mod shipped_locales;
 
 use shipped_locales::SHIPPED_LOCALES;
 
+mod format_locale;
 mod live_locale;
 
-pub use live_locale::observe_ui_locale_changes;
+pub use live_locale::observe_os_locale_changes;
 
 /// One catalog we ship, plus the script facts the resolver's guard needs.
 ///
@@ -48,24 +56,53 @@ pub(crate) struct ShippedLocale {
     pub(crate) region_scripts: &'static [(&'static str, &'static str)],
 }
 
-/// Tauri command: the locale the UI should run in while the language setting is
-/// `'system'`, or `None` when there's no OS preference list to read.
+/// Everything the OS has to say about locale, in the two halves the app keeps
+/// apart.
 ///
-/// `None` is a platform answer, not a "nothing matched" answer: off macOS the
-/// webview's own default stands, which is the right behavior on Linux. On macOS
-/// we always answer, falling back to English, because that IS the answer when
-/// the user reads no language we ship.
+/// `None` on either half means "no OS answer here, use the webview's own
+/// default" — the right behavior off macOS, and on macOS the honest answer when
+/// the region is missing or unreadable.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct OsLocales {
+    /// The catalog the UI should open while `appearance.language` is `'system'`
+    /// (`hu`, `en`). A language, never a region: `resolve_ui_locale` picks a
+    /// catalog, and the catalogs aren't regional.
+    pub ui: Option<String>,
+    /// The tag whose conventions dates, numbers, and calendars follow (`en-SE`).
+    /// Follows the OS and ❌ never the `appearance.language` setting: a
+    /// Hungarian UI on a US-English/Swedish-region Mac still formats `en-SE`.
+    pub format: Option<String>,
+}
+
+/// Tauri command: both locale answers, read fresh from the OS.
+///
+/// One command rather than two, because the frontend wants both at the same
+/// moment (startup, and again whenever the OS moves) and a second round-trip on
+/// the startup path would buy nothing.
 #[tauri::command]
 #[specta::specta]
-pub fn get_ui_locale() -> Option<String> {
-    #[cfg(target_os = "macos")]
-    {
-        Some(resolved_ui_locale())
+pub fn get_os_locales() -> OsLocales {
+    resolved_os_locales()
+}
+
+/// The macOS answers. Both halves are read fresh on every call, which is what
+/// makes a live change visible; the reads are `NSUserDefaults`-cheap (~65 µs for
+/// the language half).
+#[cfg(target_os = "macos")]
+pub(crate) fn resolved_os_locales() -> OsLocales {
+    OsLocales {
+        ui: Some(resolved_ui_locale()),
+        format: format_locale::resolved_format_locale(),
     }
-    #[cfg(not(target_os = "macos"))]
-    {
-        None
-    }
+}
+
+/// Off macOS there's no preference list and no region override, so the webview's
+/// own default stands for both halves. That's the right answer on Linux, where
+/// WebKit reads the same session environment the desktop does.
+#[cfg(not(target_os = "macos"))]
+pub(crate) fn resolved_os_locales() -> OsLocales {
+    OsLocales { ui: None, format: None }
 }
 
 /// The macOS answer to "which catalog should the app open", read fresh from the

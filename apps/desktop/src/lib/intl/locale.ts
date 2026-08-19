@@ -9,20 +9,25 @@
  * permission to overwrite the number, size, and date conventions they chose:
  *
  *  - {@link getUiLocale} follows the `appearance.language` setting (`'system'`
- *    resolves through `ui-locale.ts`). Catalog text reads this.
+ *    resolves through `os-locales.ts`). Catalog text reads this.
  *  - {@link getFormatLocale} always follows the OS, whatever the setting says.
  *    Numbers, sizes, dates, and calendar conventions read this.
  *
- * `getFormatLocale()` reads what WebKit exposes, which is the OS's LANGUAGE
- * with its region override dropped; `DETAILS.md` records the measurement and
- * what it costs.
+ * Both answers arrive from Rust, which reads the OS directly (`os-locales.ts`
+ * fetches them). The webview can't work the formatting one out for itself: it
+ * drops the region override macOS keeps on the locale, so a US-English Mac set
+ * to the Swedish region formats US dates here and Swedish ones everywhere else.
+ * `DETAILS.md` has the measurement.
  */
 
 /** Test override for the UI half; also written by `setLocale()`. `null` = runtime default. */
 let uiLocaleOverride: string | null = null
 
-/** Test-only override for the formatting half. Production never writes this. */
+/** Test-only override for the formatting half, ahead of the OS answer. */
 let formatLocaleOverride: string | null = null
+
+/** The OS's own formatting tag, composed in Rust. `null` until (or unless) it answers. */
+let osFormatLocale: string | null = null
 
 /** Fallback when the runtime can't resolve a locale (defensive; `Intl` is always present in our targets). */
 const FALLBACK_LOCALE = 'en-US'
@@ -62,15 +67,35 @@ export function getUiLocale(): string {
  * file sizes, dates, and calendar facts (which day the week starts on) read
  * this. It follows the OS and ❌ never the `appearance.language` setting.
  *
+ * Prefers the tag Rust composed from the OS's language and REGION, because the
+ * webview's own locale silently drops the region override. Falls back to that
+ * webview locale when there's no OS answer: before the fetch settles, off
+ * macOS, and when the region is missing or unreadable. It's a working answer,
+ * which a malformed composed tag would not be.
+ *
  * SSR-safe on the same terms as {@link getUiLocale}.
  *
- * Not cached: returns the live runtime answer on every call so a locale change
- * is observable. The formatters that call this ARE cached (keyed on the
- * returned locale), so the per-call cost here is a single cheap `Intl` resolve,
- * not formatter construction. See `number-format.ts`.
+ * Not cached: returns the live answer on every call so a locale change is
+ * observable. The formatters that call this ARE cached (keyed on the returned
+ * locale), so the per-call cost here is a string read or a single cheap `Intl`
+ * resolve, not formatter construction. See `number-format.ts`.
  */
 export function getFormatLocale(): string {
-  return formatLocaleOverride ?? runtimeLocale()
+  return formatLocaleOverride ?? osFormatLocale ?? runtimeLocale()
+}
+
+/**
+ * Adopts (or drops, with `null`) the OS's formatting tag. Called by
+ * `os-locales.ts` when Rust answers and whenever the OS moves underneath us;
+ * ❌ nothing else should write it, and no setting feeds it.
+ *
+ * Value only, like {@link setUiLocaleOverride}: the re-render comes from the
+ * caller re-applying `appearance.language`, which bumps the message runtime's
+ * version rune. So adopt the new tag BEFORE that call, or the re-render reads
+ * the old conventions.
+ */
+export function setOsFormatLocale(locale: string | null): void {
+  osFormatLocale = locale
 }
 
 /**

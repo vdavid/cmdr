@@ -12,7 +12,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { _setFormatLocaleForTests, _setLocaleForTests, getFormatLocale, getUiLocale } from './locale'
+import { _setFormatLocaleForTests, _setLocaleForTests, getFormatLocale, getUiLocale, setOsFormatLocale } from './locale'
 import { setLocale, tString } from './messages.svelte'
 import { formatDateForDisplay } from '$lib/settings/format-utils'
 import { formatFileSizeWithFormat } from '$lib/units'
@@ -60,6 +60,53 @@ describe('a Hungarian speaker on a Swedish Mac', () => {
       .map((p) => p.value)
       .join('')
     expect(formatDateForDisplay(ts, 'system', '').text).toBe(swedish)
+  })
+})
+
+describe('a US-English Mac with a Swedish region', () => {
+  // David's own machine, and the case that motivated composing the tag in Rust:
+  // `AppleLocale = en_US@rg=sezzzz`. Finder writes `2026-08-19` and
+  // `1 234 567,89`; the webview, left to itself, resolves the same machine to
+  // plain `en-US` and writes `08/19/2026` and `1,234,567.89`, because WebKit
+  // drops the `-u-rg-` override. Rust hands us `en-SE`, which reproduces
+  // Foundation exactly. The grouping character below is U+00A0.
+  beforeEach(() => {
+    setOsFormatLocale('en-SE')
+  })
+  afterEach(() => {
+    setOsFormatLocale(null)
+    _setLocaleForTests(null)
+  })
+
+  it('formats in the region the user set, not the one their language implies', () => {
+    expect(getFormatLocale()).toBe('en-SE')
+    expect(formatNumber(1234567)).toBe('1 234 567')
+    expect(formatNumber(1234567)).not.toBe('1,234,567')
+  })
+
+  it('writes the date Finder writes', () => {
+    const ts = new Date(2024, 2, 15, 14, 30, 45).getTime() / 1000
+    expect(formatDateForDisplay(ts, 'system', '').text).toBe('2024-03-15, 14:30')
+  })
+
+  it('keeps formatting Swedish however the UI language is set', () => {
+    // Decision 2, from the other direction: the OS owns the conventions, so an
+    // explicit Hungarian UI must not drag the dates and numbers to `hu`.
+    setLocale('hu')
+
+    expect(getUiLocale()).toBe('hu')
+    expect(tString('fileExplorer.columns.size')).toBe('Méret')
+    expect(getFormatLocale()).toBe('en-SE')
+    expect(formatNumber(1234567)).toBe('1 234 567')
+  })
+
+  it('falls back to the webview default when the OS has no answer', () => {
+    // An unreadable or missing region composes nothing rather than a malformed
+    // tag, and off macOS there's no answer at all. Either way the webview's own
+    // locale stands, which is a working answer.
+    setOsFormatLocale(null)
+
+    expect(getFormatLocale()).toBe(new Intl.NumberFormat().resolvedOptions().locale)
   })
 })
 

@@ -11,7 +11,8 @@ import {
   type LocalizedSystemStrings,
   type ReduceTransparencyChanged,
   type SystemTextSizeChanged,
-  type UiLocaleChanged,
+  type OsLocales,
+  type OsLocalesChanged,
 } from '$lib/ipc/bindings'
 
 /** Reads the current OS accent color as `#rrggbb`. */
@@ -35,12 +36,14 @@ export function getLocalizedSystemStrings(): Promise<LocalizedSystemStrings> {
 }
 
 /**
- * Reads the UI language the OS preference list points at: the first catalog we
- * ship that the user can read. `null` off macOS, where there's no preference
- * list and the webview's own default stands.
+ * Reads both OS locale answers: the UI language the preference list points at
+ * (the first catalog we ship that the user can read), and the tag whose
+ * conventions dates and numbers follow, composed from the OS's language and
+ * region. Either half is `null` when the OS has no answer, which is both halves
+ * off macOS, where the webview's own default stands.
  */
-export function getUiLocale(): Promise<string | null> {
-  return commands.getUiLocale()
+export function getOsLocales(): Promise<OsLocales> {
+  return commands.getOsLocales()
 }
 
 /**
@@ -64,14 +67,14 @@ export function onSystemTextSizeChanged(handler: (payload: SystemTextSizeChanged
 }
 
 /**
- * Subscribes to a live OS language change: the user reordered their macOS
- * language preferences and the catalog we resolve to actually moved. The
- * payload's `locale` is the fresh answer, the same value `getUiLocale()` would
- * return now. Backend-deduplicated, so every event carries a real change
- * (`src-tauri/src/intl/live_locale.rs`).
+ * Subscribes to a live OS locale change: the user reordered their macOS
+ * language preferences, or moved their region, and one of the two answers
+ * actually moved. The payload's `locales` is the fresh pair, the same value
+ * `getOsLocales()` would return now. Backend-deduplicated, so every event
+ * carries a real change (`src-tauri/src/intl/live_locale.rs`).
  */
-export function onUiLocaleChanged(handler: (payload: UiLocaleChanged) => void): Promise<UnlistenFn> {
-  return events.uiLocaleChanged.listen((event) => {
+export function onOsLocalesChanged(handler: (payload: OsLocalesChanged) => void): Promise<UnlistenFn> {
+  return events.osLocalesChanged.listen((event) => {
     handler(event.payload)
   })
 }

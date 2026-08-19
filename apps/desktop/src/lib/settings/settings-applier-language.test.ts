@@ -9,7 +9,7 @@
  * from the OS preference list, a real tag → `setLocale(tag)`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { _setSystemUiLocaleForTests } from '$lib/intl/ui-locale'
+import { _setSystemLocalesForTests } from '$lib/intl/os-locales'
 
 const setLocale = vi.fn()
 
@@ -17,8 +17,8 @@ const setLocale = vi.fn()
 let changeListener: ((id: string, value: unknown) => void) | undefined
 // The startup value `getSetting('appearance.language')` returns.
 let startupLanguage = 'system'
-// The OS-language-change handler the applier subscribes with.
-let osLocaleChanged: ((payload: { locale: string }) => void) | undefined
+// The OS-locale-change handler the applier subscribes with.
+let osLocalesChanged: ((payload: { locales: { ui: string | null; format: string | null } }) => void) | undefined
 
 vi.mock('$lib/intl/messages.svelte', async (importOriginal) => {
   const actual = await importOriginal<typeof import('$lib/intl/messages.svelte')>()
@@ -44,9 +44,11 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
   for (const key of Object.keys(actual)) {
     stubbed[key] = typeof actual[key] === 'function' ? noop : actual[key]
   }
-  // Except the live-language-change subscription, which this test drives.
-  stubbed.onUiLocaleChanged = (handler: (payload: { locale: string }) => void) => {
-    osLocaleChanged = handler
+  // Except the live-locale-change subscription, which this test drives.
+  stubbed.onOsLocalesChanged = (
+    handler: (payload: { locales: { ui: string | null; format: string | null } }) => void,
+  ) => {
+    osLocalesChanged = handler
     return Promise.resolve(() => {})
   }
   return stubbed
@@ -75,9 +77,9 @@ import { initSettingsApplier, cleanupSettingsApplier } from './settings-applier'
 beforeEach(() => {
   setLocale.mockClear()
   changeListener = undefined
-  osLocaleChanged = undefined
+  osLocalesChanged = undefined
   startupLanguage = 'system'
-  _setSystemUiLocaleForTests(null)
+  _setSystemLocalesForTests({ ui: null, format: null })
 })
 
 afterEach(() => {
@@ -95,7 +97,7 @@ describe('settings-applier: appearance.language', () => {
     // The point of the whole feature: `'system'` means the first language we
     // ship out of the user's ORDERED preference list, which only Rust can see.
     startupLanguage = 'system'
-    _setSystemUiLocaleForTests('sv')
+    _setSystemLocalesForTests({ ui: 'sv', format: 'sv-SE' })
     await initSettingsApplier()
     expect(setLocale).toHaveBeenCalledWith('sv')
   })
@@ -118,7 +120,7 @@ describe('settings-applier: appearance.language', () => {
   })
 
   it('live-applies a switch back to System default as the OS-resolved locale', async () => {
-    _setSystemUiLocaleForTests('hu')
+    _setSystemLocalesForTests({ ui: 'hu', format: 'hu-HU' })
     await initSettingsApplier()
     setLocale.mockClear()
     changeListener?.('appearance.language', 'system')
@@ -127,29 +129,45 @@ describe('settings-applier: appearance.language', () => {
   })
 })
 
-describe('settings-applier: a live OS language change', () => {
+describe('settings-applier: a live OS locale change', () => {
   it("re-applies `'system'` against the fresh OS answer, so the main window follows without a restart", async () => {
-    _setSystemUiLocaleForTests('en')
+    _setSystemLocalesForTests({ ui: 'en', format: 'en-US' })
     await initSettingsApplier()
     await vi.waitFor(() => {
-      expect(osLocaleChanged).toBeDefined()
+      expect(osLocalesChanged).toBeDefined()
     })
     setLocale.mockClear()
 
-    osLocaleChanged?.({ locale: 'hu' })
+    osLocalesChanged?.({ locales: { ui: 'hu', format: 'hu-HU' } })
+
+    expect(setLocale).toHaveBeenCalledWith('hu')
+  })
+
+  it('re-applies on a region-only change, so the formatters re-key', async () => {
+    // The user moves System Settings > Region and leaves their language alone.
+    // No copy changes, so it's tempting to do nothing; every date and grouped
+    // number in the window is stale until the rune bump re-renders them.
+    _setSystemLocalesForTests({ ui: 'hu', format: 'hu-HU' })
+    await initSettingsApplier()
+    await vi.waitFor(() => {
+      expect(osLocalesChanged).toBeDefined()
+    })
+    setLocale.mockClear()
+
+    osLocalesChanged?.({ locales: { ui: 'hu', format: 'hu-SE' } })
 
     expect(setLocale).toHaveBeenCalledWith('hu')
   })
 
   it('does nothing on an answer the app is already running on', async () => {
-    _setSystemUiLocaleForTests('hu')
+    _setSystemLocalesForTests({ ui: 'hu', format: 'hu-HU' })
     await initSettingsApplier()
     await vi.waitFor(() => {
-      expect(osLocaleChanged).toBeDefined()
+      expect(osLocalesChanged).toBeDefined()
     })
     setLocale.mockClear()
 
-    osLocaleChanged?.({ locale: 'hu' })
+    osLocalesChanged?.({ locales: { ui: 'hu', format: 'hu-HU' } })
 
     expect(setLocale).not.toHaveBeenCalled()
   })

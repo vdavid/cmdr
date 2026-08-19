@@ -1,15 +1,16 @@
-//! Following the OS language while the app runs.
+//! Following the OS's language and region while the app runs.
 //!
 //! `appearance.language: 'system'` means the language the user reads NOW, not
-//! the one they read when Cmdr launched. macOS nudges people to restart their
-//! apps after a language change; an app that just does the right thing is
-//! better than one that asks.
+//! the one they read when Cmdr launched, and the same goes for the region their
+//! dates and numbers follow. macOS nudges people to restart their apps after a
+//! change like that; an app that just does the right thing is better than one
+//! that asks.
 //!
 //! macOS posts locale changes in bursts (System Settings writes language,
 //! region, and calendar as separate preferences), and most of those bursts don't
-//! move the answer at all. So [`LocaleWatcher`] sits between the notification and
+//! move either answer. So [`LocaleWatcher`] sits between the notification and
 //! the app: it collapses a burst into one re-read and stays silent unless the
-//! resolved catalog actually changed. Both halves matter downstream, where an
+//! answer actually changed. Both halves matter downstream, where an
 //! announcement re-renders every open `t()` in every window.
 
 use std::sync::{
@@ -33,34 +34,38 @@ use tauri::{AppHandle, Runtime};
 const SETTLE_WINDOW: Duration = Duration::from_millis(300);
 
 /// Turns a stream of "something locale-ish changed" notifications into the rare
-/// event the app actually cares about: the UI language moved.
+/// event the app actually cares about: the OS's answer moved.
 ///
 /// Two filters, in order. A burst collapses into ONE re-read (the first
 /// notification arms a settle timer; the rest ride on it, because the timer
 /// re-reads live state when it fires anyway). Then the fresh answer is compared
 /// against what everyone already has, and a match announces nothing.
-pub(crate) struct LocaleWatcher {
+///
+/// Generic in the answer so the comparison is the whole answer, not a piece of
+/// it: production watches [`crate::intl::OsLocales`], where a region change with
+/// the language untouched still has to reach the formatters.
+pub(crate) struct LocaleWatcher<T> {
     /// How long to wait for a burst to settle before re-reading.
     settle_window: Duration,
-    /// Re-reads the OS preference list and resolves it against our catalogs.
-    resolve: Box<dyn Fn() -> String + Send + Sync>,
+    /// Re-reads the OS preferences and resolves the app's answer from them.
+    resolve: Box<dyn Fn() -> T + Send + Sync>,
     /// Tells the app the answer moved. Never called with an answer the app has.
-    announce: Box<dyn Fn(String) + Send + Sync>,
+    announce: Box<dyn Fn(T) + Send + Sync>,
     /// The answer the app is running on: the startup resolution, then whatever
     /// we last announced.
-    announced: Mutex<String>,
+    announced: Mutex<T>,
     /// Whether a settle timer is already counting down for the current burst.
     settling: AtomicBool,
 }
 
-impl LocaleWatcher {
+impl<T: PartialEq + Clone + Send + Sync + 'static> LocaleWatcher<T> {
     /// Builds a watcher seeded with the CURRENT resolution, so the first
     /// notification is compared against what the app is already running on
     /// rather than announcing a change that never happened.
     pub(crate) fn new(
         settle_window: Duration,
-        resolve: impl Fn() -> String + Send + Sync + 'static,
-        announce: impl Fn(String) + Send + Sync + 'static,
+        resolve: impl Fn() -> T + Send + Sync + 'static,
+        announce: impl Fn(T) + Send + Sync + 'static,
     ) -> Arc<Self> {
         let current = resolve();
         Arc::new(Self {
@@ -104,30 +109,30 @@ impl LocaleWatcher {
     }
 }
 
-/// Starts following live macOS language changes, emitting
-/// [`crate::system_events::UiLocaleChanged`] whenever the resolved UI language
-/// moves.
+/// Starts following live macOS language and region changes, emitting
+/// [`crate::system_events::OsLocalesChanged`] whenever either answer moves.
 ///
 /// Called from the Tauri `setup` hook, which runs on the main thread; the
 /// observer registration itself has no main-thread requirement, but keeping it
 /// beside the other system observers is what makes it discoverable.
 ///
-/// Two notification names feed one watcher, and only the first one carries a
-/// language change today. `AppleLanguagePreferencesChangedNotification` is the
-/// distributed notification the System Settings pane posts when the language
-/// order moves; it's undocumented in the same way `text_size.rs`'s accessibility
-/// notification is, with the same fallback story (if Apple stops posting it, the
-/// language still resolves correctly on the next launch).
-/// `NSCurrentLocaleDidChangeNotification` is the documented signal, kept as the
-/// fallback, but it tracks `AppleLocale` (region and formats) rather than
-/// `AppleLanguages`. Duplicates cost nothing, since a burst collapses into one
-/// re-read and an unchanged answer announces nothing. The evidence for both
-/// claims, and why `defaults write` alone can't test this, is in `DETAILS.md`.
+/// Two notification names feed one watcher, and they carry different halves of
+/// the answer. `AppleLanguagePreferencesChangedNotification` is the distributed
+/// notification the System Settings pane posts when the LANGUAGE order moves;
+/// it's undocumented in the same way `text_size.rs`'s accessibility notification
+/// is, with the same fallback story (if Apple stops posting it, the language
+/// still resolves correctly on the next launch).
+/// `NSCurrentLocaleDidChangeNotification` is the documented signal and tracks
+/// `AppleLocale`, which is where the REGION override lives, so it's what carries
+/// a region change to the formatters. Overlap costs nothing, since a burst
+/// collapses into one re-read and an unchanged answer announces nothing. The
+/// evidence for both claims, and why `defaults write` alone can't test this, is
+/// in `DETAILS.md`.
 ///
 /// This is also the seam for anything else that has to be rebuilt in the new
 /// language: the emit site below is the one place that knows the answer moved.
 #[cfg(target_os = "macos")]
-pub fn observe_ui_locale_changes<R: Runtime>(app_handle: AppHandle<R>) {
+pub fn observe_os_locale_changes<R: Runtime>(app_handle: AppHandle<R>) {
     use std::ptr::NonNull;
 
     use objc2_foundation::{
@@ -136,12 +141,15 @@ pub fn observe_ui_locale_changes<R: Runtime>(app_handle: AppHandle<R>) {
     };
     use tauri_specta::Event as _;
 
-    use crate::system_events::UiLocaleChanged;
+    use crate::system_events::OsLocalesChanged;
 
-    let watcher = LocaleWatcher::new(SETTLE_WINDOW, super::resolved_ui_locale, move |locale| {
-        info!("OS UI language changed: {locale}");
-        if let Err(e) = (UiLocaleChanged { locale }).emit(&app_handle) {
-            warn!("Failed to emit ui-locale-changed event: {e}");
+    let watcher = LocaleWatcher::new(SETTLE_WINDOW, super::resolved_os_locales, move |locales| {
+        info!(
+            "OS locales changed: language {:?}, formats {:?}",
+            locales.ui, locales.format
+        );
+        if let Err(e) = (OsLocalesChanged { locales }).emit(&app_handle) {
+            warn!("Failed to emit os-locales-changed event: {e}");
         }
     });
 
@@ -181,13 +189,13 @@ pub fn observe_ui_locale_changes<R: Runtime>(app_handle: AppHandle<R>) {
 
 /// No-op off macOS.
 ///
-/// Linux has no equivalent signal: the desktop language lives in the session's
-/// environment (`LANG` / `LC_MESSAGES`), which is fixed for the life of the
-/// process, and no portal or D-Bus name broadcasts a change. A logged-in user
-/// changing their language gets it at their next login, which is also when Cmdr
-/// restarts. ❌ Don't go looking for a watcher here; there isn't one.
+/// Linux has no equivalent signal: the desktop language and formats live in the
+/// session's environment (`LANG` / `LC_MESSAGES` / `LC_NUMERIC`), which is fixed
+/// for the life of the process, and no portal or D-Bus name broadcasts a change.
+/// A logged-in user changing either gets it at their next login, which is also
+/// when Cmdr restarts. ❌ Don't go looking for a watcher here; there isn't one.
 #[cfg(not(target_os = "macos"))]
-pub fn observe_ui_locale_changes<R: tauri::Runtime>(_app_handle: tauri::AppHandle<R>) {}
+pub fn observe_os_locale_changes<R: tauri::Runtime>(_app_handle: tauri::AppHandle<R>) {}
 
 #[cfg(test)]
 mod tests {
@@ -225,7 +233,7 @@ mod tests {
             self.announcements.lock_ignore_poison().clone()
         }
 
-        fn watcher(self: &Arc<Self>) -> Arc<LocaleWatcher> {
+        fn watcher(self: &Arc<Self>) -> Arc<LocaleWatcher<String>> {
             let reader = Arc::clone(self);
             let announcer = Arc::clone(self);
             LocaleWatcher::new(
@@ -284,6 +292,43 @@ mod tests {
 
         wait_until(PATIENCE, "the watcher to re-read the preferences", || os.reads() >= 2);
         assert!(os.announcements().is_empty(), "an unchanged answer must stay quiet");
+    }
+
+    #[test]
+    fn a_region_change_is_announced_even_though_the_language_stayed() {
+        // The user moves System Settings > Region from United States to Sweden
+        // and leaves their language alone. Nothing about the copy changes, and
+        // everything about the dates and number grouping does, so the watcher
+        // has to compare the WHOLE answer rather than its language half.
+        use crate::intl::OsLocales;
+
+        let answer = Arc::new(Mutex::new(OsLocales {
+            ui: Some("en".to_string()),
+            format: Some("en-US".to_string()),
+        }));
+        let announcements = Arc::new(Mutex::new(Vec::new()));
+
+        let reader = Arc::clone(&answer);
+        let announcer = Arc::clone(&announcements);
+        let watcher = LocaleWatcher::new(
+            SETTLE,
+            move || reader.lock_ignore_poison().clone(),
+            move |locales: OsLocales| announcer.lock_ignore_poison().push(locales),
+        );
+
+        answer.lock_ignore_poison().format = Some("en-SE".to_string());
+        watcher.notify();
+
+        wait_until(PATIENCE, "the region change to be announced", || {
+            !announcements.lock_ignore_poison().is_empty()
+        });
+        assert_eq!(
+            announcements.lock_ignore_poison().clone(),
+            vec![OsLocales {
+                ui: Some("en".to_string()),
+                format: Some("en-SE".to_string()),
+            }]
+        );
     }
 
     #[test]

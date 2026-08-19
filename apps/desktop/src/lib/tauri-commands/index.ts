@@ -427,11 +427,11 @@ export {
   getShouldReduceTransparency,
   getSystemTextSizeMultiplier,
   getLocalizedSystemStrings,
-  getUiLocale,
+  getOsLocales,
   onAccentColorChanged,
   onReduceTransparencyChanged,
   onSystemTextSizeChanged,
-  onUiLocaleChanged,
+  onOsLocalesChanged,
 } from './appearance'
 
 // Native-menu events

@@ -95,8 +95,8 @@ use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
 use crate::quit::QuitRequested;
 use crate::restricted_paths::RestrictedPathsChangedPayload;
 use crate::system_events::{
-    AccentColorChanged, DragImageSize, DragModifiers, ReduceTransparencyChanged, SessionCompleteEvent,
-    SessionStartedEvent, SystemTextSizeChanged, UiLocaleChanged,
+    AccentColorChanged, DragImageSize, DragModifiers, OsLocalesChanged, ReduceTransparencyChanged,
+    SessionCompleteEvent, SessionStartedEvent, SystemTextSizeChanged,
 };
 
 /// Public greeting used by the example webview surface; kept here as the
@@ -292,7 +292,7 @@ macro_rules! ipc_command_manifest {
                     crate::ai::connection_check::check_ai_connection,
                     crate::system_memory::get_system_memory_info,
                     crate::system_strings::get_localized_system_strings,
-                    crate::intl::get_ui_locale,
+                    crate::intl::get_os_locales,
                     crate::ai::install::cancel_ai_download,
                     crate::ai::install::uninstall_ai,
                     crate::ai::api_keys::save_ai_api_key,
@@ -924,7 +924,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             AccentColorChanged,
             ReduceTransparencyChanged,
             SystemTextSizeChanged,
-            UiLocaleChanged,
+            OsLocalesChanged,
             SettingsChanged,
             ViewModeChanged,           // emit_to("main")
             MenuSort,                  // emit_to("main")

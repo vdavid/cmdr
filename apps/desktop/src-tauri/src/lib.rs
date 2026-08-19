@@ -669,10 +669,11 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             text_size::observe_system_text_size_changes(app.handle().clone());
 
-            // Follow a live macOS language change, so `appearance.language: 'system'`
-            // means the language the user reads NOW, not the one they read at launch.
-            // No-op off macOS (no equivalent signal exists; see the module doc).
-            intl::observe_ui_locale_changes(app.handle().clone());
+            // Follow a live macOS language or region change, so `'system'` means the
+            // language the user reads NOW and the conventions they format in NOW,
+            // not the ones they had at launch. No-op off macOS (no equivalent signal
+            // exists; see the module doc).
+            intl::observe_os_locale_changes(app.handle().clone());
 
             // Initialize font metrics. Loads the default 12px set plus any other
             // sizes the user has previously picked via the text-size slider.

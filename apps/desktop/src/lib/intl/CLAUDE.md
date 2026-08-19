@@ -1,21 +1,22 @@
 # Locale-aware formatting and message runtime
 
-Two locale sources, each read from one place here: the UI LANGUAGE for the message runtime (catalog text via ICU), and
-the OS's FORMATTING locale for numbers, sizes, and dates.
+Two locale sources, each read from one place: the UI LANGUAGE for catalog text (via ICU), and the OS's FORMATTING locale
+for numbers, sizes, and dates.
 
 ## Module map
 
-- `locale.ts`: `getUiLocale()` (what we speak) + `getFormatLocale()` (what we format in, always the OS).
-  `_setLocaleForTests` pins both, `_setFormatLocaleForTests` splits them; `setLocale()` in `messages.svelte.ts` is the
-  reactive switch.
-- `ui-locale.ts`: what `'system'` resolves to. `loadSystemUiLocale()` fetches the Rust answer once per window;
-  `pickUiLocale(setting)` maps it (`null` = no override); `watchSystemUiLocale()` follows a live OS language change.
+- `locale.ts`: `getUiLocale()` (what we speak), `getFormatLocale()` (what we format in, always the OS), and
+  `setOsFormatLocale()` (the OS's tag arriving). `_setLocaleForTests` pins both, `_setFormatLocaleForTests` splits them;
+  `setLocale()` (in `messages.svelte.ts`) is the reactive switch.
+- `os-locales.ts`: the OS's two answers. `loadSystemLocales()` fetches the Rust pair per window, `pickUiLocale(setting)`
+  maps the language half (`null` = no override), `watchSystemLocales()` follows a live change. The formatting half goes
+  straight to `locale.ts`.
 - `number-format.ts`: memoized `Intl.NumberFormat` factory (`getNumberFormatter`), plus `formatInteger` (counts) and
   `getGroupSeparator` (byte-triad separator).
 - `messages.svelte.ts`: the runtime: `t(key, params?)` (catalog + ICU), `getMessage(key)` (raw), `setLocale()`,
-  `availableLocales()` (drives the Language picker), the catalog map + BCP-47 resolver, the locale-version rune, the
+  `availableLocales()` (drives the Language picker), the catalog map, BCP-47 resolver, locale-version rune, and
   compiled-message cache. `Trans.svelte`: inline-component sentences. `keys.gen.ts`: the generated `MessageKey` union
-  (never hand-edit). `messages/`: the JSON catalogs (`messages/CLAUDE.md`).
+  (never hand-edit). `messages/`: the catalogs (`messages/CLAUDE.md`).
 
 ## Must-knows
 
@@ -24,12 +25,12 @@ the OS's FORMATTING locale for numbers, sizes, and dates.
   suppressed, so the compiler won't warn; `messages.svelte.test.ts`'s reactivity test is the only guard.
 - **The resolver loads ALL locale dirs (`messages/*/*.json`) by dir tag, BCP-47 fallback** (locale → base → `en` → key).
   `screenshots/` sits among them and is NOT a locale: a glob/gate change must keep excluding it or it shows up as a fake
-  language in the Settings > Appearance > Language picker.
-- **`'system'` resolves from the OS preference LIST in Rust, ❌ never from the webview tag**, which exposes ONE tag: so
-  `[hu-HU, sv-SE]` never reaches Swedish and `zh-Hant-TW` slides into Simplified `zh`. Go through `pickUiLocale()`;
-  secondary windows call `initWindowLanguageSync()`. It tracks the OS LIVE (`watchSystemUiLocale()` adopts the pushed
-  answer, ignoring one that doesn't move it). The walk and the script guard:
-  `apps/desktop/src-tauri/src/intl/DETAILS.md`.
+  language in the Language picker.
+- **Both locale answers come from Rust, ❌ never from the webview tag.** It exposes ONE language tag (so
+  `[hu-HU, sv-SE]` never reaches Swedish, and `zh-Hant-TW` slides into Simplified `zh`) and it drops the region override
+  (so a Swedish-region Mac formats US-style). Go through `pickUiLocale()`; secondary windows call
+  `initWindowLanguageSync()`. Both track the OS live through `watchSystemLocales()`. The walk, the guard, and the
+  composition: `apps/desktop/src-tauri/src/intl/DETAILS.md`.
 - **Error copy uses `getMessage()` (raw), NOT `t()`/ICU.** The pipeline's `{system_settings}` tokens and `esc()` HTML
   entities collide with ICU's brace/apostrophe grammar. Only real plural/select sentences go through `t()`.
 - **Catalog messages double apostrophes (`''`).** ICU reads a lone `'` before `{`/`<`/`#` as an escape and swallows the
@@ -38,19 +39,19 @@ the OS's FORMATTING locale for numbers, sizes, and dates.
   `invalid_snippet_arguments`). No `{@html}` → XSS-safe by construction. An unmatched tag renders NOTHING;
   `i18n-trans-snippets` enforces the pairing.
 - **UI copy reads `getUiLocale()`, formatters read `getFormatLocale()`, nothing else resolves a locale.** `setLocale()`
-  writes the UI half only: a `hu` pick must NOT move dates or number grouping off the OS. Classify per call site: month
-  NAMES are UI language, the first-day-of-week beside them is formatting
-  (`query-ui/filter-chips/filter-popover-helpers.ts` does both).
+  writes the UI half only: a `hu` pick must NOT move dates or grouping off the OS. Classify per call site: month NAMES
+  are UI language, the first-day-of-week beside them is formatting (`query-ui/filter-chips/filter-popover-helpers.ts`
+  does both).
 - **Format ONLY through this layer + `$lib/settings/format-utils`**: `formatInteger`/`formatNumber` for counts,
   `formatSizeForDisplay` for sizes, `formatDateForDisplay` for dates. Don't hardcode a locale or build an `Intl`
-  formatter in feature code (`cmdr/no-raw-locale-format`, off for `*.test.ts`); `Intl.Segmenter`/`Intl.Locale` aren't
+  formatter in feature code (`cmdr/no-raw-locale-format`, off for tests); `Intl.Segmenter`/`Intl.Locale` aren't
   formatters.
-- **Both readers stay SSR-safe** (no `window`/DOM, never throw: the SvelteKit Node pass and the viewer window call them)
-  **and uncached** (the formatters they feed are cached, so a locale cache here would hide a switch).
+- **Both readers stay SSR-safe** (no `window`/DOM, never throw: the Node pass and the viewer window call them) **and
+  uncached** (the formatters they feed are cached, so a locale cache here would hide a switch).
 - **Keep `Intl` formatters memoized by (locale, options).** They run per-visible-entry in render AND in the
   column-measurement fold; per-call construction (~10× a format call) regresses scroll/measure on big directories.
 - **Raw-byte triads are comma-grouped; human-friendly sizes are NOT** (`useGrouping: false`), so a forced `10000.00 MB`
   must not become `10,000.00`. Net: `en-us-parity.test.ts`.
 
 Depth (runtime design, the error-pipeline boundary, the ICU split, what `'system'` resolves to, language vs region, the
-region override WebKit drops, the en-US triad change): `DETAILS.md`.
+composed formatting tag, the en-US triad change): `DETAILS.md`.

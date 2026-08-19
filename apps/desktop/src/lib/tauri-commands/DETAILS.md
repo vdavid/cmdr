@@ -53,9 +53,9 @@ commands, and notable non-obvious placements.
   (`onAi{DownloadProgress,Starting,ServerReady,Verifying,Installing,InstallComplete,Extracting}`) over the `events.ai*`
   helpers.
 - **`appearance.ts`**: one-shot OS environment reads (`getAccentColor`, `getShouldReduceTransparency`,
-  `getSystemTextSizeMultiplier`, `getLocalizedSystemStrings`, `getUiLocale`) plus `onAccentColorChanged` /
-  `onReduceTransparencyChanged` / `onSystemTextSizeChanged` / `onUiLocaleChanged` over the OS appearance, text-size, and
-  live-language-change events.
+  `getSystemTextSizeMultiplier`, `getLocalizedSystemStrings`, `getOsLocales`) plus `onAccentColorChanged` /
+  `onReduceTransparencyChanged` / `onSystemTextSizeChanged` / `onOsLocalesChanged` over the OS appearance, text-size,
+  and live language/region-change events.
 - **`menu-events.ts`**: `onViewModeChanged` / `onMenuSort` / `onMediaIndexFolderExclusion` / `onMediaIndexFolderChoice`
   over the direct (non-`execute-command`) native-menu events. The two media-index ones carry the right-clicked folder
   plus its target state; `listener-setup.ts` routes each into the ONE FE helper that also backs the Settings list.

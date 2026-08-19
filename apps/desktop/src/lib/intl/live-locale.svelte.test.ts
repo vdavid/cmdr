@@ -1,5 +1,5 @@
 /**
- * Following a live OS language change: the user switches their macOS language
+ * Following a live OS change: the user switches their macOS language or region
  * while Cmdr is running, and the app follows without a restart.
  *
  * `.svelte.` infix: the point of the feature is that open markup re-renders, so
@@ -10,22 +10,23 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, unmount, flushSync } from 'svelte'
+import type { OsLocales } from '$lib/ipc/bindings'
 
-/** The handler `watchSystemUiLocale` registered, so a test can post an event. */
-let onEvent: ((payload: { locale: string }) => void) | undefined
+/** The handler `watchSystemLocales` registered, so a test can post an event. */
+let onEvent: ((payload: { locales: OsLocales }) => void) | undefined
 const unlisten = vi.fn()
 
 vi.mock('$lib/tauri-commands', () => ({
-  getUiLocale: () => Promise.resolve('en'),
-  onUiLocaleChanged: (handler: (payload: { locale: string }) => void) => {
+  getOsLocales: () => Promise.resolve({ ui: 'en', format: 'en-US' }),
+  onOsLocalesChanged: (handler: (payload: { locales: OsLocales }) => void) => {
     onEvent = handler
     return Promise.resolve(unlisten)
   },
 }))
 
-import { pickUiLocale, watchSystemUiLocale, _setSystemUiLocaleForTests } from './ui-locale'
+import { pickUiLocale, watchSystemLocales, _setSystemLocalesForTests } from './os-locales'
 import { setLocale, _setCatalogForTests, _clearCompiledCacheForTests } from './messages.svelte'
-import { _setLocaleForTests } from './locale'
+import { _setLocaleForTests, getFormatLocale } from './locale'
 import Fixture from './messages-reactivity-fixture.svelte'
 
 /** A test-only catalog, so a switch actually CHANGES the rendered text. */
@@ -43,7 +44,7 @@ async function mountFollowing(language: string) {
   flushSync()
 
   const applied = vi.fn()
-  await watchSystemUiLocale(() => {
+  await watchSystemLocales(() => {
     applied()
     setLocale(pickUiLocale(language))
   })
@@ -55,14 +56,14 @@ async function mountFollowing(language: string) {
 beforeEach(() => {
   onEvent = undefined
   unlisten.mockClear()
-  _setSystemUiLocaleForTests('en')
+  _setSystemLocalesForTests({ ui: 'en', format: 'en-US' })
   _setCatalogForTests(TEST_LANG, { 'transfer.trash': 'SWITCHED {countText}' })
 })
 
 afterEach(() => {
   setLocale(null)
   _setLocaleForTests(null)
-  _setSystemUiLocaleForTests(null)
+  _setSystemLocalesForTests({ ui: null, format: null })
   _setCatalogForTests(TEST_LANG, null)
   _clearCompiledCacheForTests()
 })
@@ -72,7 +73,7 @@ describe('a live OS language change', () => {
     const { component, applied, text } = await mountFollowing('system')
     expect(text()).toBe('Moved 1 file to trash')
 
-    onEvent?.({ locale: TEST_LANG })
+    onEvent?.({ locales: { ui: TEST_LANG, format: 'en-US' } })
     flushSync()
 
     expect(applied).toHaveBeenCalledTimes(1)
@@ -86,7 +87,7 @@ describe('a live OS language change', () => {
     // or replayed event from re-rendering every open `t()` for nothing.
     const { component, applied, text } = await mountFollowing('system')
 
-    onEvent?.({ locale: 'en' })
+    onEvent?.({ locales: { ui: 'en', format: 'en-US' } })
     flushSync()
 
     expect(applied).not.toHaveBeenCalled()
@@ -99,7 +100,7 @@ describe('a live OS language change', () => {
     // for the formatters, which follow the OS whatever the setting says.
     const { component, applied, text } = await mountFollowing('en')
 
-    onEvent?.({ locale: TEST_LANG })
+    onEvent?.({ locales: { ui: TEST_LANG, format: 'en-US' } })
     flushSync()
 
     expect(applied).toHaveBeenCalledTimes(1)
@@ -107,8 +108,23 @@ describe('a live OS language change', () => {
     await unmount(component)
   })
 
+  it('follows a region change too, with the copy left alone', async () => {
+    // Moving System Settings > Region while the language stays put: no copy
+    // changes, and every date and grouped number does. The re-apply is what
+    // bumps the rune, and the bump is what re-renders the formatters.
+    const { component, applied, text } = await mountFollowing('system')
+
+    onEvent?.({ locales: { ui: 'en', format: 'en-SE' } })
+    flushSync()
+
+    expect(applied).toHaveBeenCalledTimes(1)
+    expect(getFormatLocale()).toBe('en-SE')
+    expect(text()).toBe('Moved 1 file to trash')
+    await unmount(component)
+  })
+
   it('hands back an unlisten, so a closing window stops following', async () => {
-    const stop = await watchSystemUiLocale(() => {})
+    const stop = await watchSystemLocales(() => {})
     expect(stop).toBe(unlisten)
   })
 })

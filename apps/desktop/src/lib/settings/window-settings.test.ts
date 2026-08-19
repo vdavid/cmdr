@@ -148,15 +148,15 @@ describe('initWindowLanguageSync', () => {
   afterEach(() => {
     vi.doUnmock('./settings-store')
     vi.doUnmock('$lib/intl/messages.svelte')
-    vi.doUnmock('$lib/intl/ui-locale')
+    vi.doUnmock('$lib/intl/os-locales')
   })
 
-  /** Loads the module with a controllable OS answer behind `loadSystemUiLocale`. */
+  /** Loads the module with a controllable OS answer behind `loadSystemLocales`. */
   async function loadWith(systemLocale: string | null) {
-    vi.doMock('$lib/intl/ui-locale', () => ({
-      loadSystemUiLocale: () => Promise.resolve(systemLocale),
+    vi.doMock('$lib/intl/os-locales', () => ({
+      loadSystemLocales: () => Promise.resolve({ ui: systemLocale, format: null }),
       pickUiLocale: (setting: string) => (setting === 'system' ? systemLocale : setting),
-      watchSystemUiLocale: (onMoved: () => void) => {
+      watchSystemLocales: (onMoved: () => void) => {
         osLocaleMoved = onMoved
         return Promise.resolve(unlistenOsLocale)
       },

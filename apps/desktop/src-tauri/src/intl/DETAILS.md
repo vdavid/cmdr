@@ -1,9 +1,10 @@
-# UI-language resolution details
+# OS locale resolution details
 
-Depth behind `CLAUDE.md`. This module answers one question: given the message catalogs we ship and the user's macOS
-language preferences, which catalog should the app open?
+Depth behind `CLAUDE.md`. This module answers the two questions macOS asks its users separately: given the message
+catalogs we ship and the user's language preferences, which catalog should the app open, and whose conventions should
+it format dates and numbers in?
 
-## Why the resolver lives in Rust
+## Why the resolvers live in Rust
 
 Three consumers need the answer and two of them run before the webview exists: the native menu bar (built during
 `setup`) and the "Cmdr is already running" alert (fires before any window). Putting the real resolver in TypeScript
@@ -12,6 +13,8 @@ the project's smart-backend / thin-frontend principle: the frontend consumes the
 
 The cost is that the script guard needs CLDR likely-subtags data, which the webview gets free from
 `Intl.Locale.maximize()` and Rust does not. That's what the generated table buys.
+
+The formatting half has a blunter reason: the webview CAN'T answer it. See "The formatting tag" below.
 
 ## The walk
 
@@ -96,10 +99,35 @@ The `en-XA` pseudolocale (accented, inflated English for overflow testing) is dr
 filtered in Rust. Auto-selection draws only from the table, so its absence is what makes it unreachable, and there's no
 runtime check that a later refactor could quietly remove.
 
-## Following a live language change
+## The formatting tag
 
-`'system'` tracks the CURRENT system language. macOS nudges people to restart their apps after a language change; doing
-the right thing without asking is better, and it costs one observer.
+`format_locale.rs` composes `<language>[-Script]-REGION` from `NSLocale`, because WebKit hands the webview a locale
+with the user's region override stripped out. On a Mac set to US English with a Swedish region
+(`AppleLocale = en_US@rg=sezzzz`) Foundation writes `2026-08-19, 14:05` and `1 234 567,89` while the webview resolves
+to plain `en-US` and writes `08/19/2026, 02:05 PM` and `1,234,567.89`. Handing the extension back explicitly doesn't
+help (`en-US-u-rg-sezzzz` resolves straight to `en-US`); naming the region as a real SUBTAG does, and `en-SE`
+reproduces Foundation exactly. The full measurement and its evidence anchor live once, in
+`apps/desktop/src/lib/intl/DETAILS.md`.
+
+The three parts come from `NSLocale::autoupdatingCurrentLocale`, whose `regionCode` is documented to return the `rg`
+subtag's value when there is one (`SE` here, not `US`), and which this machine confirms (`languageCode` `en`,
+`regionCode` `SE`, `scriptCode` nil; macOS 26.5.2, 2026-08-19). The AUTOUPDATING locale rather than `currentLocale`:
+this is read from a live-change path, and the autoupdating one is the locale Foundation documents as tracking the
+user's preferences, so there's no question of a cached snapshot outliving the change that triggered the read.
+
+The script rides along only when Foundation names one, which is exactly when dropping it would change the answer
+(`zh-Hans` and `zh-Hant` format dates differently). It's nil for every locale whose script its language implies, so the
+everyday tag stays the short one.
+
+Any part we don't recognize (not 2-3 letters for a language, not 4 for a script, not 2 letters or 3 digits for a
+region, or the `und` that means Foundation doesn't know) composes `None`. The frontend then falls back to the webview's
+own locale, which is at least a working answer; a malformed tag is not, since `Intl` would either throw or quietly
+resolve to something nobody chose.
+
+## Following a live language or region change
+
+`'system'` tracks the CURRENT system language, and the formatters track the CURRENT region. macOS nudges people to
+restart their apps after a change like that; doing the right thing without asking is better, and it costs one observer.
 
 `live_locale.rs` registers two notification observers from the Tauri `setup` hook, both feeding one `LocaleWatcher`:
 
@@ -108,19 +136,20 @@ the right thing without asking is better, and it costs one observer.
   stops posting it the language still resolves correctly at the next launch. The System Settings pane that owns the
   setting posts it (`/System/Library/ExtensionKit/Extensions/Localization.appex` carries the literal name, next to its
   `AppleDate…` / `AppleNumber…` / `AppleTime…` siblings; verified on macOS 26.5.2, `strings`, 2026-08-19).
-- `NSCurrentLocaleDidChangeNotification` on the default `NSNotificationCenter`. The documented signal, kept as the
-  fallback if the undocumented one ever goes away. It tracks `AppleLocale` (the REGION and format settings), not
-  `AppleLanguages`: with `AppleLanguages` flipped to `[de-DE, en-US]`, `Locale.current` stayed `en_US@rg=sezzzz`
-  (verified on macOS 26.5.2, Swift observer on both centres, 2026-08-19). So on today's macOS it fires for a region
-  change and not for a language one.
+- `NSCurrentLocaleDidChangeNotification` on the default `NSNotificationCenter`. **This is the one that carries a REGION
+  change**, and it doubles as the documented fallback if the undocumented one above ever goes away. It tracks
+  `AppleLocale` (the region and format settings), not `AppleLanguages`: with `AppleLanguages` flipped to
+  `[de-DE, en-US]`, `Locale.current` stayed `en_US@rg=sezzzz` (verified on macOS 26.5.2, Swift observer on both
+  centres, 2026-08-19). So on today's macOS each notification carries one half of the answer, and both halves matter.
 
 **Gotcha: `defaults write -g AppleLanguages` posts NOTHING.** The value changes and a re-read sees it immediately, but
 no notification reaches either centre (same measurement as above), so `defaults write` alone can't test this path. To
 exercise it, write the preference and then post the distributed notification the way System Settings does:
 `DistributedNotificationCenter.default().postNotificationName(...)` from a throwaway Swift script.
 
-A region-only change re-reads and then emits nothing, because the UI language didn't move. Formatters therefore don't
-re-key until the next launch on a pure region change; that's a known gap, not an oversight.
+A region-only change is exactly what `NSCurrentLocaleDidChangeNotification` is for, and it reaches the app: the watcher
+compares the whole `OsLocales` pair, so a moved formatting tag announces even though the language half is untouched.
+Nothing in the copy changes; every date and grouped number in the window does.
 
 Overlap between the two costs nothing, because the watcher applies two filters in order:
 
@@ -132,7 +161,7 @@ Overlap between the two costs nothing, because the watcher applies two filters i
    registration, then updated per announcement), and a match emits nothing. Most locale notifications don't move the UI
    language at all.
 
-What survives both filters is a `UiLocaleChanged` event carrying the fresh tag. The emit site is the ONE place that
+What survives both filters is an `OsLocalesChanged` event carrying the fresh pair. The emit site is the ONE place that
 knows the answer moved, which makes it the seam for anything else that has to be rebuilt in the new language: the
 native menu bar hooks in beside the emit once its labels are localized.
 
@@ -142,20 +171,26 @@ their next login, which is also when Cmdr restarts.
 
 ## The frontend contract
 
-`get_ui_locale` is the only way out of this module. It returns `Option<String>`:
+`get_os_locales` is the only way out of this module. It returns an `OsLocales` pair, `{ ui, format }`, each half an
+`Option<String>`:
 
-- **macOS**: always `Some`, falling back to `"en"` when the walk finds nothing, because English IS the answer when the
-  user reads no language we ship.
-- **anything else**: `None`, meaning "no OS preference list here". The frontend reads that as "no override" and lets the
-  webview default stand, which is the right behavior on Linux.
+- **`ui`, macOS**: always `Some`, falling back to `"en"` when the walk finds nothing, because English IS the answer when
+  the user reads no language we ship. **Off macOS**: `None`, meaning "no OS preference list here".
+- **`format`, macOS**: `Some` unless the region is missing or unreadable. **Off macOS**: `None`.
 
-`ui-locale-changed` is the same answer, pushed. `watchSystemUiLocale` (`src/lib/intl/ui-locale.ts`) adopts it into the
-cached OS answer and re-applies `appearance.language`, which re-renders the window through the message runtime's version
-rune. It drops an event whose locale matches the cached answer, a second guard behind the backend's, because a needless
-bump re-renders every open `t()` in the window.
+A `None` half means "no OS answer": the frontend reads it as "no override" and lets the webview default stand, which is
+the right behavior on Linux.
 
-The frontend half (`src/lib/intl/ui-locale.ts`) fetches this once per window and resolves the `'system'` setting through
-it. Startup pays no serialized round-trip: the main window fires the fetch before awaiting the settings store, so the
-two overlap. The backend side of the call measures ~65 µs (debug build, 1,000 iterations, dominated by the
-`NSUserDefaults` read), so there's nothing to cache here; keeping it uncached is also what lets the live
-observer re-read it.
+One command rather than two, because the frontend wants both at the same moment and a second round-trip on the startup
+path would buy nothing.
+
+`os-locales-changed` is the same pair, pushed. `watchSystemLocales` (`src/lib/intl/os-locales.ts`) adopts it (the
+language into its own cache, the formatting tag straight into `locale.ts`) and re-applies `appearance.language`, which
+re-renders the window through the message runtime's version rune. It drops an event whose pair matches the cached one,
+a second guard behind the backend's, because a needless bump re-renders every open `t()` in the window.
+
+The frontend half (`src/lib/intl/os-locales.ts`) fetches this once per window and resolves the `'system'` setting
+through it. Startup pays no serialized round-trip: the main window fires the fetch before awaiting the settings store,
+so the two overlap. The backend side of the call measures ~65 µs (debug build, 1,000 iterations, dominated by the
+`NSUserDefaults` read), so there's nothing to cache here; keeping it uncached is also what lets the live observer
+re-read it.

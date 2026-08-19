@@ -36,15 +36,15 @@ pub struct SystemTextSizeChanged {
     pub multiplier: f32,
 }
 
-/// `ui-locale-changed`: the user changed their macOS language preferences while
-/// the app was running, and the catalog we resolve to actually moved. `locale`
-/// is the fresh answer (`hu`, `en`), the same value `get_ui_locale` would return
-/// now. Only emitted when the answer differs from the one the app is running on,
-/// so a listener can act on every one it receives (`intl/live_locale.rs`).
+/// `os-locales-changed`: the user changed their macOS language or region while
+/// the app was running, and one of the two answers actually moved. `locales` is
+/// the fresh pair, exactly what `get_os_locales` would return now. Only emitted
+/// when it differs from the pair the app is running on, so a listener can act on
+/// every one it receives (`intl/live_locale.rs`).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
-pub struct UiLocaleChanged {
-    pub locale: String,
+pub struct OsLocalesChanged {
+    pub locales: crate::intl::OsLocales,
 }
 
 /// `drag-image-size`: the OS drag image's pixel dimensions, read on drag enter

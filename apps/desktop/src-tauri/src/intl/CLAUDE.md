@@ -1,13 +1,15 @@
-# Which language the app speaks
+# What the OS says about language and region
 
-Resolves the UI language from the user's ORDERED macOS language preferences against the catalogs we actually ship.
+Two answers, one seam: which catalog the UI speaks (resolved from the user's ORDERED macOS language preferences against
+the catalogs we ship), and which tag the app FORMATS in (composed from the OS's language and region).
 
 ## Module map
 
-- `mod.rs`: `resolve_ui_locale(preferences, shipped)` (the walk + the script guard) and the `get_ui_locale` IPC command
-  the frontend reads at startup.
-- `live_locale.rs`: `observe_ui_locale_changes`, which follows the OS language while the app runs and emits
-  `ui-locale-changed`. macOS only.
+- `mod.rs`: `resolve_ui_locale(preferences, shipped)` (the walk + the script guard), the `OsLocales` pair, and the
+  `get_os_locales` IPC command the frontend reads at startup.
+- `format_locale.rs`: `resolved_format_locale()`, composing `<language>[-Script]-REGION` from `NSLocale`.
+- `live_locale.rs`: `observe_os_locale_changes`, following both answers while the app runs and emitting
+  `os-locales-changed`. macOS only, like `format_locale.rs`.
 - `shipped_locales.gen.rs`: the catalog table with its CLDR script facts. Generated, never hand-edited.
 
 ## Must-knows
@@ -25,17 +27,22 @@ Resolves the UI language from the user's ORDERED macOS language preferences agai
   next to it: `docs/i18n/script-decisions.md` lists nine languages with a script split, so it would rot.
 - **The `en-XA` pseudolocale is excluded by the GENERATOR, not filtered here.** Auto-selection draws only from the
   table, so leaving it out is what makes it unreachable. Keep it that way rather than adding a runtime check.
-- **`'system'` means the language the user reads NOW, not at launch.** Two macOS notifications feed one
-  `LocaleWatcher`, which collapses a burst into ONE re-read and emits `ui-locale-changed` only when the resolved catalog
-  moved (an unchanged answer would re-render every open `t()` in every window for nothing; the unit tests pin both).
-  The emit site is also the seam for anything else that must be rebuilt in the new language (the native menu bar).
-  Linux has no equivalent signal and the no-op says so.
+- **The formatting tag is COMPOSED here, ❌ never read off the webview**, which drops the `-u-rg-` region override: a
+  Swedish-region US-English Mac formats US-style there and Swedish everywhere else. Only a real region subtag fixes
+  that (`en-SE`); handing the extension back doesn't. It follows the OS, never `appearance.language`. An unrecognized
+  part composes `None` rather than a half-built tag. Measurements: `DETAILS.md`.
+- **`'system'` means the language the user reads NOW and the region they set NOW, not at launch.** Two macOS
+  notifications feed one `LocaleWatcher`, which collapses a burst into ONE re-read and emits `os-locales-changed` only
+  when the PAIR moved (an unchanged answer would re-render every open `t()` in every window for nothing; the unit tests
+  pin both). Compare the whole pair: a region change with the language untouched still has to reach the formatters. The
+  emit site is also the seam for anything else that must be rebuilt in the new language (the native menu bar). Linux
+  has no equivalent signal and the no-op says so.
 - **`defaults write -g AppleLanguages` posts NO notification**, so it can't test the observer on its own: write the
   preference, then post `AppleLanguagePreferencesChangedNotification` on the distributed centre the way System Settings
   does. Measurement and the recipe: `DETAILS.md`.
-- **`get_ui_locale` returns `None` off macOS**, meaning "no OS answer, the webview default stands" — the right behavior
-  on Linux. On macOS it always answers, falling back to `en`, because that IS the answer when the user reads no
-  language we ship.
+- **`get_os_locales` returns two `None`s off macOS**, meaning "no OS answer, the webview default stands" — the right
+  behavior on Linux. On macOS the language half always answers, falling back to `en`, because that IS the answer when
+  the user reads no language we ship.
 
-The walk, the script data, the specificity rule, the live-change path, and the frontend contract: `DETAILS.md`. The frontend half:
-`apps/desktop/src/lib/intl/`.
+The walk, the script data, the specificity rule, the composition, the live-change path, and the frontend contract:
+`DETAILS.md`. The frontend half: `apps/desktop/src/lib/intl/`.

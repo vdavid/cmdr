@@ -16,7 +16,7 @@
  */
 
 import { setLocale } from '$lib/intl/messages.svelte'
-import { loadSystemUiLocale, pickUiLocale, watchSystemUiLocale } from '$lib/intl/ui-locale'
+import { loadSystemLocales, pickUiLocale, watchSystemLocales } from '$lib/intl/os-locales'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { initReactiveSettings } from './reactive-settings.svelte'
 import { getSetting, onSpecificSettingChange } from './settings-store'
@@ -73,7 +73,8 @@ export async function initWindowSettings(pathname?: string): Promise<void> {
 }
 
 /**
- * Keeps a SECONDARY window's UI language in sync with `appearance.language`.
+ * Keeps a SECONDARY window's language and formats in sync with the OS and with
+ * `appearance.language`.
  *
  * Each window is its own webview with its own i18n runtime instance, so the
  * main window's settings applier doesn't reach the Settings or Queue window:
@@ -82,16 +83,17 @@ export async function initWindowSettings(pathname?: string): Promise<void> {
  * store) so the whole window re-localizes live.
  *
  * Applies twice on purpose. The persisted value is available synchronously, so
- * an explicit language is right from the first paint; the `'system'` answer
- * comes from Rust over IPC, so it lands a tick later and the second apply is
- * what picks it up. ❌ Don't await the OS answer before the first apply: that
- * would gate the window's paint on a round-trip for a case (`'system'`) where
- * the webview default is already a close guess.
+ * an explicit language is right from the first paint; the OS answers come from
+ * Rust over IPC, so they land a tick later and the second apply is what picks
+ * them up. ❌ Don't await them before the first apply: that would gate the
+ * window's paint on a round-trip for a case (`'system'`) where the webview
+ * default is already a close guess.
  *
  * Then it follows two sources of change for the rest of the window's life: the
- * user's own pick in the settings picker, and the OS's language preferences
- * moving underneath us (`'system'` tracks the CURRENT system language, so a
- * switch in System Settings re-localizes the window without a restart).
+ * user's own pick in the settings picker, and the OS moving underneath us
+ * (`'system'` tracks the CURRENT system language, and the formatters track the
+ * CURRENT region, so a switch in System Settings re-localizes the window
+ * without a restart).
  *
  * @returns a teardown that stops following both
  */
@@ -100,7 +102,7 @@ export function initWindowLanguageSync(): () => void {
     setLocale(pickUiLocale(value))
   }
   apply(getSetting('appearance.language'))
-  void loadSystemUiLocale().then(() => {
+  void loadSystemLocales().then(() => {
     apply(getSetting('appearance.language'))
   })
 
@@ -109,7 +111,7 @@ export function initWindowLanguageSync(): () => void {
   // arrival rather than leaving a listener behind.
   let unlistenOsLocale: UnlistenFn | undefined
   let stopped = false
-  void watchSystemUiLocale(() => {
+  void watchSystemLocales(() => {
     apply(getSetting('appearance.language'))
   }).then((unlisten) => {
     if (stopped) unlisten()

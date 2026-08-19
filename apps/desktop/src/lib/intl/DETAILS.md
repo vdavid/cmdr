@@ -170,7 +170,7 @@ The in-app picker rides this seam. **Settings > Appearance > Language** is the `
 `'system'` (the only translatable option label, `settings.appearance.language.opt.system`) plus one option per loaded
 locale, each labeled with the locale's own endonym via `Intl.DisplayNames` (`de` → "Deutsch"), so the list is
 self-describing and no language names are hardcoded. `settings-applier.ts`'s `applyLanguage` maps the value to the seam
-through `ui-locale.ts`'s `pickUiLocale`: a tag → `setLocale(tag)`, `'system'` → the OS answer (below). It runs in
+through `os-locales.ts`'s `pickUiLocale`: a tag → `setLocale(tag)`, `'system'` → the OS answer (below). It runs in
 `applyAllSettings` at startup (so a persisted choice survives restart) and on every `appearance.language` change (live,
 no Apply button, no restart, no Tauri command: locale is frontend-only). A persisted tag with no loaded catalog (e.g.
 `en-XA` chosen in a dev build, then opened in prod) fails enum validation in the store and degrades to the `'system'`
@@ -180,7 +180,7 @@ default with a warn.
 
 `'system'` is a sentinel we never write a resolved tag back into: writing one back would freeze the user out of
 following the OS, and would silently turn "I didn't care" into "I decided". So it's resolved on every read, by
-`pickUiLocale()` in `ui-locale.ts`, against an answer the Rust resolver computed (`src-tauri/src/intl/`, which owns the
+`pickUiLocale()` in `os-locales.ts`, against an answer the Rust resolver computed (`src-tauri/src/intl/`, which owns the
 walk and the script guard).
 
 **The OS preference LIST is the source, not the webview's tag.** macOS hands out an ORDERED list of languages the user
@@ -203,8 +203,8 @@ removed the last one). Secondary windows use `initWindowLanguageSync()` from `$l
 applies the persisted value synchronously and re-applies when the OS answer lands, so nothing gates a first paint.
 
 **`'system'` means the language the user reads NOW, not the one they read at launch.** Rust observes the macOS language
-preferences and pushes `ui-locale-changed` when the resolved catalog moves (`src-tauri/src/intl/DETAILS.md` has the
-observer, the burst collapsing, and why Linux gets nothing). Every window subscribes through `watchSystemUiLocale()`,
+preferences and pushes `os-locales-changed` when the resolved catalog moves (`src-tauri/src/intl/DETAILS.md` has the
+observer, the burst collapsing, and why Linux gets nothing). Every window subscribes through `watchSystemLocales()`,
 which adopts the fresh answer and re-applies `appearance.language`, so the `setLocale()` rune bump re-renders the window
 in place. It drops an event whose locale matches the answer it already has, a second guard behind the backend's, because
 a needless bump re-runs every open `t()` for nothing. Under an EXPLICIT language the re-apply still happens and is still
@@ -224,27 +224,36 @@ Hungarian and live in Sweden, and picking a UI language is not permission to ove
 - **`getFormatLocale()`** always follows the OS. Numbers and sizes (`number-format.ts`), the `'system'` date
   (`format-utils.ts::getSystemLocaleFormatter`), and calendar facts read it: `resolveFirstDayOfWeek` is in the SAME
   function as those month names and takes the other locale, because which day the week starts on is a region decision.
-  Production has no way to override it; only `_setFormatLocaleForTests` writes it.
+  No setting can move it: the only production writer is `setOsFormatLocale()`, which carries the OS's own answer, and
+  `_setFormatLocaleForTests` is the test seam.
 
 `setLocale()` therefore reaches the UI half only. Without the split, a Hungarian pick would rewrite Swedish dates and
 number grouping, and an English pick on a Swedish Mac would impose US conventions.
 
-**Rust's answer is a language, not a region.** The tag the resolver picks is the CATALOG's, so `'system'` mode never
-carries the user's regional variant into the UI half. That's fine now that formatting doesn't ride along.
+**The UI answer is a language, never a region.** The tag the catalog resolver picks is a catalog's, so `'system'` mode
+never carries the user's regional variant into the copy. The region lives entirely in the formatting half, below.
 
-⚠️ **`getFormatLocale()` is only as good as what WebKit exposes, and WebKit drops the region override.** On a machine
-set to US English with a Swedish region (`AppleLocale = en_US@rg=sezzzz`), the native and web sides disagree flatly:
+**The formatting tag is composed in Rust, because WebKit can't answer the question.** `getFormatLocale()` prefers the
+tag Rust hands over (`<language>[-Script]-REGION`, e.g. `en-SE`) and falls back to the webview's own locale when there
+isn't one: before the fetch settles, off macOS, and when the region is missing or unreadable. `os-locales.ts` adopts it
+through `setOsFormatLocale()` the moment it arrives, so no call site had to change.
+
+The composition exists because the webview's locale silently loses the user's region. On a machine set to US English
+with a Swedish region (`AppleLocale = en_US@rg=sezzzz`), the two sides disagreed flatly:
 
 - Foundation: `Locale.current.identifier` = `en_US@rg=sezzzz`, region `SE`, short date `2026-08-19, 14:05`, number
   `1 234 567,89`, `firstWeekday` 2 (Monday).
 - The webview: `Intl.DateTimeFormat().resolvedOptions().locale` = plain `en-US`, date `08/19/2026, 02:05 PM`, number
-  `1,234,567.89`, `weekInfo.firstDay` 7 (Sunday). Only the time zone (`Europe/Stockholm`) reflects the region.
-- Passing the extension explicitly doesn't help either: `en-US-u-rg-sezzzz` resolves back to `en-US` with US output.
-  Naming the region as a real tag DOES work: `en-SE` yields `2026-08-19, 14:05` and `1 234 567,89`, matching Foundation
-  exactly.
+  `1,234,567.89`, `weekInfo.firstDay` 7 (Sunday). Only the time zone (`Europe/Stockholm`) reflected the region.
+- Passing the extension explicitly doesn't help: `en-US-u-rg-sezzzz` resolves back to `en-US` with US output. Naming the
+  region as a real tag DOES work: `en-SE` yields `2026-08-19, 14:05` and `1 234 567,89`, matching Foundation exactly.
 
-So this user sees US conventions today, and the fix (whenever it's wanted) is to compose a language+region tag from
-`Locale.current.region` in Rust and hand it over. Passing a `-u-rg-` tag won't do it, and don't re-derive this from
-Cmdr's own date column, where `appearance.dateTimeFormat: 'iso'` makes it prove nothing. (Verified on macOS 26.5.2 /
-Safari 26.5.2 (21624.2.5.11.8), 2026-08-19, by reading `Intl` in a bare `WKWebView` and Foundation's `Locale` /
-`DateFormatter` in the same process.)
+(Verified on macOS 26.5.2 / Safari 26.5.2 (21624.2.5.11.8), 2026-08-19, by reading `Intl` in a bare `WKWebView` and
+Foundation's `Locale` / `DateFormatter` in the same process.)
+
+So this user now sees Swedish conventions under English copy, which is what System Settings says they asked for, and a
+machine with no region override composes the tag it already had (`en-US` stays `en-US`; `en-us-parity.test.ts` is the
+net). ❌ Don't try to re-derive any of this from Cmdr's own date column: `appearance.dateTimeFormat: 'iso'` makes it
+prove nothing about the locale. Read `resolvedOptions()` directly, or the Rust side's tests. The Rust half (which
+`NSLocale` fields, why the autoupdating locale, what makes a part unusable) is canonical in
+`apps/desktop/src-tauri/src/intl/DETAILS.md`.

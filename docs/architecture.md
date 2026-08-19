@@ -50,8 +50,8 @@ All under `apps/desktop/src/lib/`.
 - `settings/`: Settings UI + registry-based architecture, reactive state
 - `intl/`: The two locale sources (`getUiLocale` for catalog text, `getFormatLocale` for the OS's number/date
   conventions) + memoized locale-aware number/size formatters; counts, file sizes, and the `'system'` date read the
-  formatting one (dates formatted in `settings/format-utils.ts`). `ui-locale.ts` resolves the `'system'` UI language
-  from the backend's answer
+  formatting one (dates formatted in `settings/format-utils.ts`). `os-locales.ts` fetches both from the backend: the
+  `'system'` UI language and the composed formatting tag
 - `shortcuts/`: Keyboard shortcut customization, scope hierarchy, conflict detection, plus the read-only Help > Keyboard
   shortcuts window (`shortcuts-window.ts` + `ShortcutsList.svelte` + pure `shortcut-diff.ts`, route at
   `routes/shortcuts/`)
@@ -188,8 +188,9 @@ All under `apps/desktop/src-tauri/src/`.
   `system-text-size-changed`
 - `system_strings.rs`: Localized macOS pane labels from `.loctable` system bundles (loctable catalog + risks in source).
   Also the ordered `AppleLanguages` read that `intl/` walks
-- `intl/`: Which language the app speaks. Walks the user's ordered macOS language preferences against the catalogs we
-  ship, refusing to cross a script boundary, and answers the frontend over `get_ui_locale`. See its `CLAUDE.md`
+- `intl/`: What the OS says about language and region. Walks the user's ordered macOS language preferences against the
+  catalogs we ship (refusing to cross a script boundary), composes the formatting tag WebKit can't see (the `-u-rg-`
+  region override), and answers the frontend over `get_os_locales`. See its `CLAUDE.md`
 - `favorites/`: User-editable favorites. Ordered `favorites.json` store (`{ id, path, name }`) backing the volume
   switcher's "Favorites" section. Seed-once-on-absence, dedup-by-path, pure testable core. Read by `get_favorites()` in
   both `volumes/` twins; mutated via `commands/favorites.rs` (which re-emits `volumes-changed`)
