@@ -30,6 +30,7 @@ import {
   fileExistsInFocusedPane,
   fileExistsInPane,
   moveCursorToFile,
+  pressKey,
   setRenameInput,
   executeViaCommandPalette,
   MKDIR_DIALOG,
@@ -101,6 +102,67 @@ test.describe('Copy round-trip', () => {
 
     // F5 of a single cursored file fires the selection-split toast. Asserting on
     // it pins the user-facing confirmation (we ship the wording on purpose).
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.')
+  })
+})
+
+test.describe('Duplicate in place', () => {
+  test('⌘C then ⌘V in one pane lands "file-a (1).txt" beside the original', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    const found = await moveCursorToFile(tauriPage, 'file-a.txt')
+    expect(found).toBe(true)
+
+    await pressKey(tauriPage, `${CTRL_OR_META}+c`)
+    await expectAndDismissToast(tauriPage, 'Copied 1 item', { timeout: 5000 })
+
+    // Paste into the pane the file is already in. No conflict dialog may appear:
+    // an item landing on itself is a request to duplicate it.
+    await pressKey(tauriPage, `${CTRL_OR_META}+v`)
+
+    await expect
+      .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'file-a (1).txt')), { timeout: 8000 })
+      .toBeTruthy()
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(true)
+    await expect.poll(async () => fileExistsInPane(tauriPage, 'file-a (1).txt', 0), { timeout: 5000 }).toBeTruthy()
+
+    expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.')
+  })
+
+  test('F5 with both panes on one folder reports no conflict and asks no policy', async ({ tauriPage }) => {
+    // The gesture that used to be worst: the dialog's conflict check is a
+    // destination listing matched by NAME, so with both panes on `left/` it saw
+    // the source itself sitting at the destination and announced a conflict,
+    // showed the overwrite/skip/rename radios, and sent the backend a pre-known
+    // conflict naming the source. Both panes on one folder is the only way F5
+    // reaches a same-folder copy: the check runs once, against the destination
+    // the dialog opened with.
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    const leftDir = path.join(fixtureRoot, 'left')
+    await mcpNavToPath('right', leftDir)
+
+    const found = await moveCursorToFile(tauriPage, 'file-b.txt')
+    expect(found).toBe(true)
+
+    await tauriPage.keyboard.press('F5')
+    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+
+    await expect
+      .poll(async () => !(await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflicts-checking`)), { timeout: 10000 })
+      .toBeTruthy()
+    expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflicts-summary`)).toBe(false)
+    expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`)).toBe(false)
+    expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .path-error`)).toBe(false)
+
+    await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
+
+    await expect.poll(() => fs.existsSync(path.join(leftDir, 'file-b (1).txt')), { timeout: 8000 }).toBeTruthy()
+    expect(fs.existsSync(path.join(leftDir, 'file-b.txt'))).toBe(true)
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
   })
 })
