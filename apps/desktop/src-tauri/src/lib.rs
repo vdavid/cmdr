@@ -113,6 +113,7 @@ pub mod icons;
 mod index_host;
 mod install_id;
 mod instance_lock;
+mod intl;
 pub mod licensing;
 #[cfg(target_os = "linux")]
 pub(crate) mod linux_distro;
