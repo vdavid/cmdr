@@ -243,6 +243,14 @@ template auto-tinting). However, **full-color non-template images do render corr
 
 Both platforms share: File, Edit, Select, View (with Sort by and Zoom submenus), Go, Tab, Help.
 
+The **File** submenu's transfer group runs `Copy…` (F5), `Move…` (F6), `Duplicate` (⌘D), `Compress…` (⌥F5). `Duplicate`
+carries no ellipsis because it picks nothing: it copies the selection into the folder it already sits in, and the
+backend resolves the self-collision per item. The context menu (`menu_structure.rs`) offers it only when
+`restrict_destination_actions` is false, so it is absent on the search-results virtual pane alongside `Rename`: each
+selected item would have to land in its own real folder, which one transfer can't express. Its macOS SF Symbol is
+`plus.square.on.square`, the Linux mnemonic is `D&uplicate`. What the command does once dispatched:
+`apps/desktop/src/lib/file-explorer/pane/DETAILS.md`.
+
 The **Select** submenu (between Edit and View) holds the four selection commands: `Select all` (⌘A), `Deselect all`
 (⌘⇧A), `Select files…` (no menu accelerator), and `Deselect files…` (no menu accelerator). The two `…` items open the
 Selection dialog (see `apps/desktop/src/lib/selection-dialog/CLAUDE.md`); their keystrokes (bare `+` / `-`) are bound in

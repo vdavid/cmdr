@@ -24,7 +24,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   same routing (`../file_system/write_operations/DETAILS.md` § "Routing a transfer"). `scan_volume_for_conflicts` optionally takes a
   source volume id + source paths and resolves each item's real `is_directory` + size from the source volume via ONE
   batched `scan_for_copy_batch` (O(top-level items), never a subtree walk), overriding the FE's name-only placeholders
-  so dir-vs-dir collisions classify as silent merges; back-compatible when omitted. `stat.rs`:
+  so dir-vs-dir collisions classify as silent merges; back-compatible when omitted. The source paths also drive
+  `drop_self_collisions`, which removes the collisions naming a source itself so a same-folder paste doesn't announce
+  every item as its own conflict (canonical:
+  `../file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in place)"). `stat.rs`:
   `stat_paths_kinds(paths) -> TimedOut<Vec<Option<bool>>>`, a batched top-level "is this a directory?" probe for the
   drag-and-drop transfer path (`Some(true)` = dir, `Some(false)` = file, `None` = unknown / non-local / vanished). One
   `spawn_blocking` under the read timeout, never a subtree walk; per-item failures map to `None` so a virtual MTP/SMB

@@ -78,7 +78,9 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
    - The segmented Copy/Move toggle is always shown so the user can flip the operation regardless of how the dialog was
      triggered (F5/F6, command palette, drag-and-drop).
    - Validates path structure via `validateDirectoryPath()` from `$lib/utils/filename-validation` (empty, absolute, null
-     bytes, length limits), then checks logical constraints (subfolder, same location).
+     bytes, length limits), then checks logical constraints (a folder into its own subfolder). A destination that IS the
+     source's own folder is allowed: it duplicates, and the backend resolves that per item
+     (`src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in place)").
    - Optional dry-run scan to detect conflicts upfront. Shows sampled conflicts (max 200) with streaming progress.
    - User makes conflict decisions before operation starts, inside a `warning`-toned `SectionCard`: the count and the
      question it raises ("3 files already exist. What do you want to do with them?") in normal text color, over five

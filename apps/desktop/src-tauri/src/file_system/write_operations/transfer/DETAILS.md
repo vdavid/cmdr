@@ -379,7 +379,7 @@ local-FS engine (`chunked_copy.rs`) is likewise untouched: a local write that fa
 dying disk or a network mount the volume layer should be handling, and neither is improved by retrying inside the sync
 chunk loop.
 
-### The watchdog ACTS (M4.2)
+### The watchdog ACTS
 
 **Decision**: the mechanism to end a wedged wait is built and wired, and its trigger is **gated on positive evidence
 that the connection is dead** — `Volume::connection_liveness() == Some(Dead)`, AND `STALL_ABORT_AFTER` (180 s) of zero

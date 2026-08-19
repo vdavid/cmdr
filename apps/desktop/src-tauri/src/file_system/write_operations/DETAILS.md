@@ -123,7 +123,7 @@ Frontend
   → operationId returned to frontend immediately (dialog opens, cancel is possible)
   → tokio::spawn (async wrapper)
       → tokio::task::spawn_blocking (local I/O) or direct async (volume ops)
-          → validate (sources exist, dest writable, not same location, dest not inside source)
+          → validate (sources exist, dest writable, dest not inside source)
           → scan phase: walk_dir_recursive, emit scan-progress events
               (delete on a volume also: `take_cached_scan_result(preview_id)` first;
                on hit, build the entry list from `per_path` — top-level files come
