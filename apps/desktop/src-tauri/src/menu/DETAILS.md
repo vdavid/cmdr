@@ -37,6 +37,7 @@ window focus context.
   click targets.
 - `linux.rs`: `build_menu_linux` (full Linux/GTK menu bar with mnemonics, no F-key accelerators).
 - `rebuild.rs`: `rebuild_menu_bar`, which throws the bar away and builds a new one in the current UI language.
+- `mnemonics.rs`: `Mnemonics`, the per-submenu allocator for the Linux underline letter.
 
 ## Labels come from the message catalog
 
@@ -81,7 +82,7 @@ moved: the event is rare, and a missed re-push is invisible until a user reaches
 
 A GTK mnemonic has to be unique within its submenu, and which letters are free depends on the words in the menu — so it
 depends on the LANGUAGE. A hand-picked English set couldn't survive nine translations, and a translator can't be handed
-a per-submenu uniqueness puzzle on top of translating. So `menu_items::Mnemonics` allocates them at build time from the
+a per-submenu uniqueness puzzle on top of translating. So `mnemonics::Mnemonics` allocates them at build time from the
 translated labels, in menu order: word-initial letters first (what people scan for), then any other letter or digit,
 then no marker at all if everything is taken (which costs one keystroke and nothing else). The menu bar's own titles get
 one allocator; each submenu gets its own. It's a no-op on macOS, but the call sites are identical on both platforms so a

@@ -31,6 +31,7 @@ mod media_index_items;
 mod menu_handlers;
 mod menu_items;
 mod menu_structure;
+mod mnemonics;
 #[cfg(target_os = "macos")]
 pub mod open_with;
 mod rebuild;

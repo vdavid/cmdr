@@ -9,7 +9,7 @@ launch boundary, plus the llama-server fetch and the type-drift check.
   ports (Vite + tauri-MCP bridge), writes the generated `tauri.instance.json` to `$TMPDIR`, exports env, spawns Tauri.
   Dev-only: with `CMDR_VIRTUAL_MTP` set, appends `--features virtual-mtp` (`docs/tooling/virtual-mtp.md`)
 - **`instance-id.ts`**: pure helpers (slug sanitization, instance resolution, per-OS data-dir, bundle-id + productName
-  + config-payload composition, port reservation, port-file write)
+  - config-payload composition, port reservation, port-file write)
 - **`instance-id.test.ts`**: Vitest suite (~45 cases) for `instance-id.ts`
 - **`download-llama-server.go`**: build-time llama-server downloader, invoked from `src-tauri/build.rs`
 - **`check-type-drift.ts`**: fast-lane check for hand-written types drifting from `bindings.ts`

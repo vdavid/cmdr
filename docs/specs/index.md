@@ -15,18 +15,18 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       one, since every answer the conflict machinery can give for a self-collision is wrong (an `Overwrite` latch sends
       the original through set-aside-and-delete, replacing its inode for nothing). Also unifies the three ` (N)`
       numbering implementations, teaches the sequence to continue rather than nest, opens inline rename on a single-item
-      duplicate, and adds a Duplicate command.- [ ] 2026-08-19 `auto-language-plan.md` - Pick the user's UI language from their ordered macOS language preferences and
-      switch to it when we ship that language 100%, otherwise stay English. Verified that auto-detection ALREADY ships
-      crudely (prod app launched with `-AppleLanguages "(hu-HU)"` came up Hungarian, contradicting the
-      `CFBundleLocalizations` theory) and that the native menu bar (~295 hardcoded English literals in
-      `src-tauri/src/menu/`) is not localized at all, so every non-English user today gets a translated app under an
-      English menu bar. Design: read the ordered list in Rust (`apple_languages()`) instead of the single webview `Intl`
-      tag, so a `[hu-HU, sv-SE]` user can reach Swedish; split UI language from formatting locale so a hu speaker in
-      Sweden keeps `sv-SE` dates and numbers (macOS models language and region separately); never auto-cross a script
-      boundary (`zh-Hant` must not land on the Simplified `zh` catalog); follow `NSCurrentLocaleDidChangeNotification`
-      live. Menu localization is the prerequisite milestone and hides two landmines: SF Symbol icons and AppKit cleanup
-      both key off English menu TITLES today. NOT wanted: no machine-translation notice, no "coming soon" picker rows,
-      no partial locales. IN PROGRESS.
+      duplicate, and adds a Duplicate command.- [ ] 2026-08-19 `auto-language-plan.md` - Pick the user's UI language
+      from their ordered macOS language preferences and switch to it when we ship that language 100%, otherwise stay
+      English. Verified that auto-detection ALREADY ships crudely (prod app launched with `-AppleLanguages "(hu-HU)"`
+      came up Hungarian, contradicting the `CFBundleLocalizations` theory) and that the native menu bar (~295 hardcoded
+      English literals in `src-tauri/src/menu/`) is not localized at all, so every non-English user today gets a
+      translated app under an English menu bar. Design: read the ordered list in Rust (`apple_languages()`) instead of
+      the single webview `Intl` tag, so a `[hu-HU, sv-SE]` user can reach Swedish; split UI language from formatting
+      locale so a hu speaker in Sweden keeps `sv-SE` dates and numbers (macOS models language and region separately);
+      never auto-cross a script boundary (`zh-Hant` must not land on the Simplified `zh` catalog); follow
+      `NSCurrentLocaleDidChangeNotification` live. Menu localization is the prerequisite milestone and hides two
+      landmines: SF Symbol icons and AppKit cleanup both key off English menu TITLES today. NOT wanted: no
+      machine-translation notice, no "coming soon" picker rows, no partial locales. IN PROGRESS.
 - [ ] 2026-08-18 `agent-suggested-ops-plan.md` - The agent proposes file operations (move, copy, trash, delete, rename,
       compress, extract), the user approves them in GROUPS from a review dialog, and approved groups become ordinary
       queued operations. Ships as one release. **The guiding principle, from David, resolves most design questions

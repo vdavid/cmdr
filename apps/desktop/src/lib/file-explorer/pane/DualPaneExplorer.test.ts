@@ -115,6 +115,10 @@ vi.mock('$lib/tauri-commands', () => ({
   setReopenClosedTabEnabled: vi.fn().mockResolvedValue(undefined),
   showTabContextMenu: vi.fn().mockResolvedValue(null),
   updateViewModeMenu: vi.fn().mockResolvedValue(undefined),
+  // The menu bar was rebuilt in a new language, so this window re-pushes what
+  // only it knows (accelerators, the pin label, the reopen flag, the enable state).
+  onMenuBarRebuilt: vi.fn().mockResolvedValue(() => {}),
+  activateWindowMenu: vi.fn().mockResolvedValue(undefined),
   // Volume space polling
   watchVolumeSpace: vi.fn().mockResolvedValue(undefined),
   // Eject

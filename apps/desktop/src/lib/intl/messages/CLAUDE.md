@@ -44,7 +44,7 @@ boundary: `../CLAUDE.md`.
   add/remove/rename. The `desktop-message-keys-fresh` check fails if it's stale.
 - **A new key needs a real call site, or it fails `desktop-message-keys-unused`.** A catalog key referenced in neither
   `apps/desktop/src/` nor `src-tauri/src/` is an orphan (dead translation work) and an ERROR, not just the codegen's
-  dead-key warning. Runtime-built keys are carried by that check's closed dynamic-prefix allowlist; don't add a key
-  with no call site expecting it to cover you. `DETAILS.md` § Dead-key honesty.
+  dead-key warning. Runtime-built keys are carried by that check's closed dynamic-prefix allowlist; don't add a key with
+  no call site expecting it to cover you. `DETAILS.md` § Dead-key honesty.
 
 Depth (the `@key` schema, screenshots-by-filename, the dead-key honesty caveat, parity rules): `DETAILS.md`.

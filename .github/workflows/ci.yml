@@ -330,12 +330,16 @@ jobs:
       - name: Check message-keys freshness
         run: ./scripts/check/check --check desktop-message-keys-fresh --ci
 
-      # Lives in the Svelte job, not the Rust one, even though the artifact is
-      # Rust: the thing that goes stale is a catalog directory being added under
-      # `apps/desktop/src/lib/intl/messages/`, which only the `svelte` filter
-      # sees. The generator is dependency-light Node, so it runs fine here.
+      # These two live in the Svelte job, not the Rust one, even though both
+      # artifacts are Rust: what goes stale is a change under
+      # `apps/desktop/src/lib/intl/messages/` (a catalog directory added, or a
+      # `menu.*` label edited), which only the `svelte` filter sees. Both
+      # generators are dependency-light Node, so they run fine here.
       - name: Check shipped-locales freshness
         run: ./scripts/check/check --check desktop-shipped-locales-fresh --ci
+
+      - name: Check native-strings freshness
+        run: ./scripts/check/check --check desktop-native-strings-fresh --ci
 
       - name: Check message-key naming
         run: ./scripts/check/check --check desktop-message-key-naming --ci
