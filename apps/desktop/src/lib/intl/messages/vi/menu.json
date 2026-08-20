@@ -31,9 +31,9 @@
   "@menu.bar.help": {
     "sourceHash": "b79cac9"
   },
-  "menu.app.about": "Giới thiệu về cmdr",
+  "menu.app.about": "Giới thiệu về Cmdr",
   "@menu.app.about": {
-    "sourceHash": "e72f09a"
+    "sourceHash": "efe010f"
   },
   "menu.app.acknowledgements": "Lời cảm ơn",
   "@menu.app.acknowledgements": {
@@ -67,9 +67,9 @@
   "@menu.app.services": {
     "sourceHash": "604dce4"
   },
-  "menu.app.hide": "Ẩn cmdr",
+  "menu.app.hide": "Ẩn Cmdr",
   "@menu.app.hide": {
-    "sourceHash": "941e961"
+    "sourceHash": "8f86f89"
   },
   "menu.app.hideOthers": "Ẩn các ứng dụng khác",
   "@menu.app.hideOthers": {
@@ -79,9 +79,9 @@
   "@menu.app.showAll": {
     "sourceHash": "e1c3264"
   },
-  "menu.app.quit": "Thoát cmdr",
+  "menu.app.quit": "Thoát Cmdr",
   "@menu.app.quit": {
-    "sourceHash": "5ea1779"
+    "sourceHash": "b3455b4"
   },
   "menu.file.open": "Mở",
   "@menu.file.open": {

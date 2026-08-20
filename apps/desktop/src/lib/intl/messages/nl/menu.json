@@ -32,9 +32,9 @@
     "sourceHash": "b79cac9",
     "sameAsSourceJustification": "macOS Dutch names the Help menu \"Help\", the same word as English (Finder menu bar); Dutch borrowed it wholesale."
   },
-  "menu.app.about": "Over cmdr",
+  "menu.app.about": "Over Cmdr",
   "@menu.app.about": {
-    "sourceHash": "e72f09a"
+    "sourceHash": "efe010f"
   },
   "menu.app.acknowledgements": "Dankbetuigingen",
   "@menu.app.acknowledgements": {
@@ -69,9 +69,9 @@
   "@menu.app.services": {
     "sourceHash": "604dce4"
   },
-  "menu.app.hide": "Verberg cmdr",
+  "menu.app.hide": "Verberg Cmdr",
   "@menu.app.hide": {
-    "sourceHash": "941e961"
+    "sourceHash": "8f86f89"
   },
   "menu.app.hideOthers": "Verberg andere",
   "@menu.app.hideOthers": {
@@ -81,9 +81,9 @@
   "@menu.app.showAll": {
     "sourceHash": "e1c3264"
   },
-  "menu.app.quit": "Stop cmdr",
+  "menu.app.quit": "Stop Cmdr",
   "@menu.app.quit": {
-    "sourceHash": "5ea1779"
+    "sourceHash": "b3455b4"
   },
   "menu.file.open": "Open",
   "@menu.file.open": {

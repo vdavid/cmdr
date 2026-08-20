@@ -39,9 +39,9 @@
     "description": "NOUN, title of the menu-bar menu holding Keyboard shortcuts, What's new, and the feedback items. macOS attaches its own search field to whichever menu is registered as the help menu, so use the exact word Finder uses for its \"Help\" menu in this language. One short word; a menu-bar title has almost no room."
   },
 
-  "menu.app.about": "About cmdr",
+  "menu.app.about": "About Cmdr",
   "@menu.app.about": {
-    "description": "First item of the macOS app menu (and, on Linux, the first item under Help). Opens the About window with the version, credits, and links. \"cmdr\" is the app name and must stay verbatim and lowercase, exactly as written. Match how Finder phrases \"About Finder\" in this language."
+    "description": "First item of the macOS app menu (and, on Linux, the first item under Help). Opens the About window with the version, credits, and links. \"Cmdr\" is the app name and must stay verbatim, capital C included. Match how Finder phrases \"About Finder\" in this language."
   },
 
   "menu.app.acknowledgements": "Acknowledgements",
@@ -84,9 +84,9 @@
     "description": "NOUN (plural). Title of the macOS Services submenu in the app menu, which the system fills with actions other apps offer. Use the exact word macOS uses for this submenu in this language; a made-up translation makes a system feature unrecognizable."
   },
 
-  "menu.app.hide": "Hide cmdr",
+  "menu.app.hide": "Hide Cmdr",
   "@menu.app.hide": {
-    "description": "VERB. macOS app-menu item that hides all of Cmdr's windows (⌘H). \"cmdr\" is the app name and must stay verbatim and lowercase. Match how macOS phrases \"Hide Finder\" in this language."
+    "description": "VERB. macOS app-menu item that hides all of Cmdr's windows (⌘H). \"Cmdr\" is the app name and must stay verbatim, capital C included. Match how macOS phrases \"Hide Finder\" in this language."
   },
 
   "menu.app.hideOthers": "Hide Others",
@@ -99,9 +99,9 @@
     "description": "VERB. macOS app-menu item that unhides every hidden app. \"All\" means all applications, NOT all files. Match macOS's own wording for this item in this language, capitalization included."
   },
 
-  "menu.app.quit": "Quit cmdr",
+  "menu.app.quit": "Quit Cmdr",
   "@menu.app.quit": {
-    "description": "VERB. Last item of the macOS app menu; closes Cmdr (⌘Q). \"cmdr\" is the app name and must stay verbatim and lowercase. Match how macOS phrases \"Quit Finder\" in this language."
+    "description": "VERB. Last item of the macOS app menu; closes Cmdr (⌘Q). \"Cmdr\" is the app name and must stay verbatim, capital C included. Match how macOS phrases \"Quit Finder\" in this language."
   },
 
   "menu.file.open": "Open",

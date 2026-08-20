@@ -31,9 +31,9 @@
   "@menu.bar.help": {
     "sourceHash": "b79cac9"
   },
-  "menu.app.about": "À propos de cmdr",
+  "menu.app.about": "À propos de Cmdr",
   "@menu.app.about": {
-    "sourceHash": "e72f09a"
+    "sourceHash": "efe010f"
   },
   "menu.app.acknowledgements": "Remerciements",
   "@menu.app.acknowledgements": {
@@ -68,9 +68,9 @@
     "sourceHash": "604dce4",
     "sameAsSourceJustification": "macOS French names the system Services submenu \"Services\", identical to English (Finder app menu)."
   },
-  "menu.app.hide": "Masquer cmdr",
+  "menu.app.hide": "Masquer Cmdr",
   "@menu.app.hide": {
-    "sourceHash": "941e961"
+    "sourceHash": "8f86f89"
   },
   "menu.app.hideOthers": "Masquer les autres",
   "@menu.app.hideOthers": {
@@ -80,9 +80,9 @@
   "@menu.app.showAll": {
     "sourceHash": "e1c3264"
   },
-  "menu.app.quit": "Quitter cmdr",
+  "menu.app.quit": "Quitter Cmdr",
   "@menu.app.quit": {
-    "sourceHash": "5ea1779"
+    "sourceHash": "b3455b4"
   },
   "menu.file.open": "Ouvrir",
   "@menu.file.open": {

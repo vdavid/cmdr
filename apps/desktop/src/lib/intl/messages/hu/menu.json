@@ -31,9 +31,9 @@
   "@menu.bar.help": {
     "sourceHash": "b79cac9"
   },
-  "menu.app.about": "A cmdr névjegye",
+  "menu.app.about": "A Cmdr névjegye",
   "@menu.app.about": {
-    "sourceHash": "e72f09a"
+    "sourceHash": "efe010f"
   },
   "menu.app.acknowledgements": "Köszönetnyilvánítás",
   "@menu.app.acknowledgements": {
@@ -67,9 +67,9 @@
   "@menu.app.services": {
     "sourceHash": "604dce4"
   },
-  "menu.app.hide": "cmdr elrejtése",
+  "menu.app.hide": "Cmdr elrejtése",
   "@menu.app.hide": {
-    "sourceHash": "941e961"
+    "sourceHash": "8f86f89"
   },
   "menu.app.hideOthers": "Többi elrejtése",
   "@menu.app.hideOthers": {
@@ -79,9 +79,9 @@
   "@menu.app.showAll": {
     "sourceHash": "e1c3264"
   },
-  "menu.app.quit": "Kilépés a cmdrből",
+  "menu.app.quit": "Kilépés a Cmdrből",
   "@menu.app.quit": {
-    "sourceHash": "5ea1779"
+    "sourceHash": "b3455b4"
   },
   "menu.file.open": "Megnyitás",
   "@menu.file.open": {
