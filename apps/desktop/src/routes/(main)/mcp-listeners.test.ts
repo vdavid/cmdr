@@ -364,12 +364,10 @@ describe('mcp-nav-to-path listener', () => {
 
   it('does NOT shift focus when the navigate is refused', async () => {
     resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'network', path: 'smb://h/s' } })
-    const navigate = vi.fn(
-      (): NavigateResult => ({
-        status: 'refused',
-        reason: { kind: 'on-network-volume', message: 'nope' },
-      }),
-    )
+    const navigate = vi.fn((): NavigateResult => ({
+      status: 'refused',
+      reason: { kind: 'on-network-volume', message: 'nope' },
+    }))
     const handlers = await setupWithExplorer(navigate)
 
     getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'right', path: 'smb://h/s', requestId: 'req-r' } })
@@ -398,15 +396,13 @@ describe('mcp-nav-to-path listener', () => {
     // An smb:// target maps back to the virtual `network` id, so a network pane
     // still refuses it — and the exact string is the byte-for-byte contract.
     resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'network', path: 'smb://h/s' } })
-    const navigate = vi.fn(
-      (): NavigateResult => ({
-        status: 'refused',
-        reason: {
-          kind: 'on-network-volume',
-          message: 'Pane is on the Network volume. Use select_volume to switch to a local volume first.',
-        },
-      }),
-    )
+    const navigate = vi.fn((): NavigateResult => ({
+      status: 'refused',
+      reason: {
+        kind: 'on-network-volume',
+        message: 'Pane is on the Network volume. Use select_volume to switch to a local volume first.',
+      },
+    }))
     const handlers = await setupWithExplorer(navigate)
 
     getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'left', path: 'smb://h/s', requestId: 'req-3' } })
