@@ -395,6 +395,33 @@ Both failure modes read as product regressions, which is what makes them worth p
 The pseudolocale pass is a separate path: `pnpm i18n:overflow` drives `setLocale('en-XA')` against the RUNNING app and
 touches neither pin, so they don't meet.
 
+## The Full Disk Access pin
+
+The shard launch sets `CMDR_MOCK_FDA=granted` (`scripts/check/checks/desktop-svelte-e2e-playwright.go`), so the FDA
+probe answers the same on every Mac. The suite has always ASSUMED a granted machine (`onboarding.spec.ts`,
+`accessibility.spec.ts`); until this was set, what granted it was the machine, not the harness.
+
+**What a pending gate costs, measured on the M1 agent box** (verified 2026-08-20, release Playwright binary, a Mac that
+never granted Full Disk Access to the process launching the run): 88 of 290 tests red. Two separate cascades, one cause:
+
+- **All 35 MTP specs die in `beforeEach`** on `Virtual MTP device not found`. `lib.rs` skips `start_mtp_watcher` while
+  the gate is pending, and that watcher's startup auto-connect is the only thing that opens a session with the virtual
+  device. `mtp_rs::rescan_virtual_device` looks the device up in the ACTIVE-transport registry, which only an open
+  session fills: registered is not connected.
+- **The onboarding wizard opens on its not-granted step-1 variant**, whose primary button opens System Settings instead
+  of advancing. `accessibility.spec.ts`'s `advanceTo(2)` times out, the wizard is left standing, and a modal on screen
+  swallows every later keystroke on that shard: rename (`F2` never opens `.rename-input`), the dialog specs, and the MCP
+  specs all fall over behind it. That reads exactly like a product regression, which is what makes it worth pinning.
+
+Granting FDA to the launching process is the alternative, and on a headless box it's the awkward one: a bare
+`target/…/release/Cmdr` isn't a bundle, so TCC attributes the grant to the responsible parent (the terminal app, or
+`/usr/libexec/sshd-keygen-wrapper` for an SSH session), and adding it needs a GUI visit. The env var needs none, and it
+makes the suite say out loud what it depends on.
+
+The four per-FDA-state banner branches stay covered where they can be driven properly: tier-3 Vitest (`StepFda.test.ts`,
+`StepAi.test.ts`, `onboarding-state.test.ts`), plus the i18n capture run, which relaunches per pass with its own
+`CMDR_MOCK_FDA` value.
+
 ## App modes and their title bars
 
 `app-mode.ts` resolves one of `prod` / `dev` / `e2e` / `capture`, which the main window turns into a tinted title bar

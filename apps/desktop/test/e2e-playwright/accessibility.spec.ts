@@ -422,7 +422,8 @@ for (const mode of ['light', 'dark'] as const) {
 
     test(`Onboarding wizard (re-entry)`, async ({ tauriPage }) => {
       // The wizard is mounted via the same re-entry path the menu / palette use.
-      // On macOS the E2E fixture grants FDA so re-entry shows step 1 (already-granted variant);
+      // On macOS the shard launch pins FDA to granted (`CMDR_MOCK_FDA`, DETAILS.md § "The Full Disk
+      // Access pin") so re-entry shows step 1 (already-granted variant);
       // on Linux re-entry lands directly on step 2 (the Linux skip-step-1 path).
       // We walk the full 4-step flow (FDA → AI → Open beta → Optional), scanning each
       // reachable step for a11y violations. Per-FDA-branch banner coverage stays in tier-3

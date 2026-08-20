@@ -505,6 +505,11 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		// Canonical "we're under E2E" marker; soft test hooks gate on this.
 		// See docs/testing.md § "E2E env-var hooks" and src-tauri/src/test_mode.rs.
 		"CMDR_E2E_MODE=1",
+		// Answer the FDA probe the same way on every Mac, which is what the suite already
+		// assumes. On a machine that never granted Full Disk Access the gate stays pending,
+		// and that costs 88 of 290 tests: every MTP spec plus an onboarding-wizard cascade.
+		// Why, and the alternative: e2e-playwright/DETAILS.md § "The Full Disk Access pin".
+		"CMDR_MOCK_FDA=granted",
 		// Drive Ask Cmdr's send path through the deterministic scripted fake LLM
 		// (commands/agent.rs::resolve_agent_llm gates on this), so ask-cmdr.spec.ts can
 		// assert send-and-render with no provider. It MUST live on the APP process env:

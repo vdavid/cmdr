@@ -2,8 +2,8 @@
  * E2E tests for onboarding wizard re-entry.
  *
  * Covers the user-visible re-entry surfaces: the macOS menu item, the command
- * palette command (both platforms), and the MCP `dialog open onboarding` path. Walks the resume rule's already-granted variant (FDA is
- * already granted in the E2E fixture, so menu re-entry shows step 1 with the
+ * palette command (both platforms), and the MCP `dialog open onboarding` path. Walks the resume rule's already-granted variant (the
+ * shard launch pins FDA to granted, DETAILS.md § "The Full Disk Access pin", so menu re-entry shows step 1 with the
  * single-Next variant on macOS, or step 2 directly on Linux).
  *
  * Scope notes:
@@ -18,7 +18,7 @@
  *    suites can't model.
  *
  * 2. The wizard is mounted in `routes/(main)/+page.svelte`. Once
- *    `notifyOnboardingComplete()` has fired (the E2E fixture grants FDA, so it
+ *    `notifyOnboardingComplete()` has fired (the shard launch pins FDA to granted, so it
  *    fires on first launch), `showOnboarding` stays `false` until the user
  *    re-opens via menu or palette. This spec triggers the re-entry surfaces
  *    and asserts the wizard appears with the expected starting step.
