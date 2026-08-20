@@ -2,8 +2,8 @@
 //! join of registry membership/status and the live progress cache).
 
 use crate::file_system::write_operations::{
-    ConflictId, LifecycleStatus, OperationSnapshot, OperationStatus, WriteConflictEvent, WriteOperationError,
-    WriteOperationPhase, WriteOperationType,
+    ConflictId, LifecycleStatus, OperationSnapshot, OperationStatus, TransferActivity, TransferWaitReason,
+    WriteConflictEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
 };
 use crate::mcp::resources::operations::{OperationRow, build_operations_yaml};
 
@@ -60,6 +60,21 @@ fn progress(
         started_at: 10_000,
         activity: None,
     }
+}
+
+/// The same snapshot, carrying the live wait the backend classified.
+fn waiting(
+    mut op: OperationStatus,
+    waiting_on: TransferWaitReason,
+    still_for_seconds: u32,
+    in_flight: u32,
+) -> OperationStatus {
+    op.activity = Some(TransferActivity {
+        in_flight,
+        still_for_seconds,
+        waiting_on,
+    });
+    op
 }
 
 #[test]
@@ -225,6 +240,79 @@ fn an_operation_that_is_not_asking_anything_carries_no_conflict_block() {
         pending_conflict: None,
     }];
     assert!(!build_operations_yaml(&rows, 12_000).contains("pendingConflict"));
+}
+
+// ---- the wait, on the row (why isn't this moving?) ----
+
+/// A `running` row with frozen counters, for the wait tests below.
+fn stalled_row(waiting_on: TransferWaitReason, still_for_seconds: u32, in_flight: u32) -> Vec<OperationRow> {
+    let mb = 1_024 * 1_024;
+    vec![OperationRow {
+        snapshot: snapshot("op-1", LifecycleStatus::Running),
+        progress: Some(waiting(
+            progress("op-1", LifecycleStatus::Running, 50 * mb, 100 * mb, 2, 4),
+            waiting_on,
+            still_for_seconds,
+            in_flight,
+        )),
+        pending_conflict: None,
+    }]
+}
+
+#[test]
+fn a_transfer_parked_on_the_destination_says_so_and_says_for_how_long() {
+    // Without the wait an agent can't tell a busy share from a slow copy, and
+    // both look exactly like a dead mount.
+    let yaml = build_operations_yaml(&stalled_row(TransferWaitReason::Destination, 47, 4), 12_000);
+    assert!(yaml.contains("waitingOn: destination"), "yaml: {yaml}");
+    assert!(yaml.contains("stillForSeconds: 47"), "yaml: {yaml}");
+    assert!(yaml.contains("inFlight: 4"), "yaml: {yaml}");
+}
+
+#[test]
+fn a_wedge_reads_as_unknown_rather_than_as_something_explained() {
+    // The 2026-07-31 shape: nothing is moving and no task explains why. It has to
+    // stay distinguishable from every wait that DOES have a reason, because it's
+    // the only one an agent should escalate on.
+    let yaml = build_operations_yaml(&stalled_row(TransferWaitReason::Unknown, 310, 2), 12_000);
+    assert!(yaml.contains("waitingOn: unknown"), "yaml: {yaml}");
+    assert!(yaml.contains("stillForSeconds: 310"), "yaml: {yaml}");
+}
+
+#[test]
+fn a_moving_transfer_says_it_is_moving_and_claims_no_stillness() {
+    let yaml = build_operations_yaml(&stalled_row(TransferWaitReason::Moving, 0, 6), 12_000);
+    assert!(yaml.contains("waitingOn: moving"), "yaml: {yaml}");
+    assert!(
+        !yaml.contains("stillForSeconds"),
+        "zero stillness is noise, not a finding: {yaml}"
+    );
+}
+
+#[test]
+fn an_operation_parked_on_a_clash_names_the_wait_and_the_clash_together() {
+    // `waitingOn: conflict` says there IS a question; `pendingConflict` says
+    // which one, and carries the `conflictId` an answer has to name. One read,
+    // both halves.
+    let mut rows = stalled_row(TransferWaitReason::Conflict, 0, 0);
+    rows[0].pending_conflict = Some(clash(7, Some(4_096)));
+    let yaml = build_operations_yaml(&rows, 12_000);
+    assert!(yaml.contains("waitingOn: conflict"), "yaml: {yaml}");
+    assert!(yaml.contains("conflictId: 7"), "yaml: {yaml}");
+    assert!(yaml.contains("answerWith: resolve_conflict"), "yaml: {yaml}");
+}
+
+#[test]
+fn a_backend_that_cannot_classify_its_wait_says_nothing_rather_than_moving() {
+    // A local copy keeps no in-flight table. Rendering `waitingOn: moving` for it
+    // would be an invention an agent would act on.
+    let mb = 1_024 * 1_024;
+    let rows = vec![OperationRow {
+        snapshot: snapshot("op-1", LifecycleStatus::Running),
+        progress: Some(progress("op-1", LifecycleStatus::Running, 50 * mb, 100 * mb, 2, 4)),
+        pending_conflict: None,
+    }];
+    assert!(!build_operations_yaml(&rows, 12_000).contains("waitingOn"));
 }
 
 #[test]

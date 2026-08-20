@@ -137,6 +137,22 @@ What this means for automation:
 
 Architecture details: `apps/desktop/src-tauri/src/mcp/executor/DETAILS.md` § "Ack contract".
 
+## Why isn't this operation moving?
+
+A `running` row with counters that never move has four very different causes, and `waitingOn` on the row tells them
+apart without subscribing to anything:
+
+- `moving`: bytes are flowing. It's a slow copy, not a stuck one.
+- `paused`: somebody paused it. `queue resume` starts it again.
+- `destination` / `source`: every in-flight file is parked waiting on that side. `stillForSeconds` says for how long,
+  `inFlight` how many files are open. A busy share recovers; a dead mount doesn't.
+- `conflict`: the operation is parked on a name clash. The `pendingConflict` block on the same row carries the
+  `conflictId` to answer with (next section).
+- `unknown`: nothing is moving and nothing explains it. This is the wedge shape, and the one worth escalating on.
+
+A row with no `waitingOn` at all means the backend can't classify itself (a local copy keeps no in-flight table). Read
+that as "can't tell", never as "it's fine".
+
 ## Answering a name clash one file at a time
 
 A transfer confirmed with `onConflict: "stop"` decides nothing upfront: it parks on each clashing file and waits for an
@@ -151,6 +167,7 @@ answer, which is what a person gets by leaving the dialog on "Ask for each". Dri
 ./scripts/mcp-call.sh --read-resource 'cmdr://state?include=operations'
 #   - operationId: op-7
 #     status: running
+#     waitingOn: conflict
 #     pendingConflict:
 #       conflictId: 1
 #       destination: "/Users/…/photos/dsc-1.raw"

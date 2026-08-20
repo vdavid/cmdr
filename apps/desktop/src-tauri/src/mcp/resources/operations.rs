@@ -19,10 +19,17 @@
 //! Speed and ETA are whole-run averages (`bytes_done / elapsed`), not the
 //! progress dialog's EWMA — good enough for an agent's "is it moving, roughly
 //! when is it done" questions.
+//!
+//! **A read alone answers "why isn't this moving?".** `status` separates queued
+//! / running / paused / failed, `waitingOn` separates the ways a RUNNING row can
+//! be stopped (destination, source, an unanswered clash, or the wedge shape that
+//! explains itself with nothing), and `pendingConflict` carries the `conflictId`
+//! an answer needs. No `write-progress` subscription required: the wait rides
+//! `OperationStatus` and is classified at read time.
 
 use crate::file_system::write_operations::{
-    LifecycleStatus, OperationSnapshot, OperationStatus, WriteConflictEvent, get_operation_status, list_operations,
-    pending_write_conflict,
+    LifecycleStatus, OperationSnapshot, OperationStatus, TransferActivity, WriteConflictEvent, get_operation_status,
+    list_operations, pending_write_conflict,
 };
 use crate::search::query::format_size;
 
@@ -122,13 +129,48 @@ pub(crate) fn build_operations_yaml(rows: &[OperationRow], now_ms: u64) -> Strin
                 }
             }
             yaml.push_str(&format!("    elapsedSeconds: {elapsed_s}\n"));
+            yaml.push_str(&activity_lines(op.activity.as_ref()));
         }
-        // The operation is parked on a person. Without this an agent sees a
-        // `running` row whose counters never move and no way to learn why, let
-        // alone which clash to answer.
+        // The clash the operation is parked on. `waitingOn: conflict` above says
+        // there IS a question; this says which one, and carries the id an answer
+        // has to name.
         if let Some(conflict) = &row.pending_conflict {
             yaml.push_str(&pending_conflict_yaml(conflict));
         }
+    }
+    yaml
+}
+
+/// The `waitingOn:` line and its two supporting numbers: the answer to "this row
+/// says `running` and nothing is moving — why?".
+///
+/// `status: running` alone can't separate a slow copy, a wedged mount, a
+/// transfer parked on a conflict prompt, and an operation queued behind a lane;
+/// they all poll identically. `waitingOn` splits the first three (`queued` is
+/// already the row's `status`), and `unknown` keeps the fourth shape — nothing
+/// moving, nothing explaining it — from hiding among the waits that DO have a
+/// reason.
+///
+/// Absent when the backend can't classify itself (a local copy keeps no
+/// in-flight table). ❌ Never rendered as a stand-in `moving`: an agent acts on
+/// this.
+fn activity_lines(activity: Option<&TransferActivity>) -> String {
+    let Some(activity) = activity else {
+        return String::new();
+    };
+    let mut yaml = format!(
+        "    waitingOn: {}\n",
+        enum_str(serde_json::to_value(activity.waiting_on).ok())
+    );
+    // Both only when they carry a finding. A zero stillness is what a moving
+    // transfer always reports, and a zero in-flight count is what an operation
+    // with no table reports — rendering either would be noise an agent reads as
+    // a measurement.
+    if activity.still_for_seconds > 0 {
+        yaml.push_str(&format!("    stillForSeconds: {}\n", activity.still_for_seconds));
+    }
+    if activity.in_flight > 0 {
+        yaml.push_str(&format!("    inFlight: {}\n", activity.in_flight));
     }
     yaml
 }
