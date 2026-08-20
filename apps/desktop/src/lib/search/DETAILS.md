@@ -189,6 +189,10 @@ promises, and falling through to the "Cmdr can't index this right now" answer wo
 A search of ground the index doesn't cover walks it, so the answer arrives over seconds or minutes. The shared dialog
 carries the streaming machinery (`query-ui/DETAILS.md` § Streaming); everything Search-flavoured stops here.
 
+The goal is that a drive being indexed or not costs speed and nothing else. Where that isn't reached, numbered and
+complete, is `src-tauri/src/search/DETAILS.md` § The accepted differences: the register every "accepted difference N"
+below cites.
+
 **Two run paths, one query builder.** `buildRunQuery()` builds the payload (bar + filters + AI pattern + the scope,
 whose parse is async) and both paths call it, or an auto-applied answer and an Enter-run one could differ for reasons
 nobody could see. `runQuery` (`runSearch`) is the one-shot index answer the DEBOUNCE takes; `streamingSource` is every
@@ -536,6 +540,13 @@ while nobody was listening, or the dialog would show a count the list can't acco
 
 **Appends need the mutation tick.** `appendSnapshotEntries` bumps it; snapshots aren't `$state`, so without it the rows
 land in the store and never reach the screen.
+
+⚠️ **The toast counts far past what the pane can hold, and nothing says so.** The dialog asks for `limit: 30`;
+`ResultStream` stops emitting rows at that cap while `match_count` keeps climbing, and `labelFor` only annotates "(first
+N of M)" once M passes 10,000. So a handed-off walk can report "35,287 matches so far" over 30 rows. Nothing is lost and
+both numbers are true (a stopped walk would freeze the count at a number that never becomes true), but the two disagree
+by orders of magnitude in silence. Whether the handoff raises its limit, labels the gap sooner, or says "showing the
+first 30" is a product call for David, so ❌ don't pick one on your own.
 
 ## Snapshot store
 

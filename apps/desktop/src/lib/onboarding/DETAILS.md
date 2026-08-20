@@ -404,10 +404,10 @@ Conventions specific to this area:
 
 ## The language escape hatch
 
-Cmdr resolves the UI language from the Mac's ordered language preferences (`docs/specs/auto-language-plan.md`), so a
-first launch can open in a language the user doesn't read. Every other way to change it — Settings > Appearance >
-Language, the command palette — is labeled in that same language, so the way out has to be on the screen they're already
-looking at. That screen is the wizard.
+Cmdr resolves the UI language from the Mac's ordered language preferences
+(`apps/desktop/src-tauri/src/intl/DETAILS.md`), so a first launch can open in a language the user doesn't read. Every
+other way to change it — Settings > Appearance > Language, the command palette — is labeled in that same language, so
+the way out has to be on the screen they're already looking at. That screen is the wizard.
 
 **It's frame, not a step.** The header is a three-column grid (empty cell, step dots, picker), which keeps the dots
 centred and leaves the step sequence untouched: step 3's consent page is non-skippable, and a language step would have
@@ -420,8 +420,9 @@ resolves to ("System default (Svenska)").
 
 **Wiring is `SettingSelect` on `appearance.language`**, the same control the Settings picker uses, so a pick goes
 through `setSetting()` → `settings-applier.ts` → `setLocale()` and the open wizard re-renders in place. No restart, no
-special case. An explicit pick retires `'system'` permanently, which is the point: decision 5 of the plan says an
-implicit choice stays implicit and an explicit one is permanent, so a resolved tag is never written back.
+special case. An explicit pick retires `'system'` permanently, which is the point: an implicit choice stays implicit and
+an explicit one is permanent, so a resolved tag is never written back (`$lib/intl/DETAILS.md` § What `'system'` resolves
+to).
 
 **The menu portals into the wizard OVERLAY, not into `document.body`.** Body would put it under the scrim
 (`--z-dropdown` < `--z-modal`) and outside `use:trapFocus`, whose leak guard would yank focus back out of the menu the

@@ -11,7 +11,7 @@
 //! The full walk is the oracle: it is the implementation these transitions were
 //! correct under before the scoped one existed, and it stays the fallback path. The
 //! scenarios then assert the semantics on top, so a bug that both walks share still
-//! gets caught. See `docs/specs/scoped-incremental-walk.md`.
+//! gets caught. Depth: `DETAILS.md` § The scoped walk.
 
 use std::collections::{HashMap, HashSet};
 

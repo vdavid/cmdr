@@ -262,8 +262,8 @@ it. Unknown keys sort last in both directions (`sort_indices`), ties break on en
 `select_nth_unstable_by` so a broad query pays a partition rather than a full sort.
 
 **Over live-walked ground this filter can't apply**: a walked directory has no `dir_stats` row yet, which is Accepted
-difference 5 in `docs/specs/unindexed-search-plan.md`. The index half is exact; the walked half doesn't match
-directories on size.
+difference 5 (§ The accepted differences below). The index half is exact; the walked half doesn't match directories on
+size.
 
 ### Honesty: `hidden_by_excludes`
 
@@ -445,15 +445,73 @@ half-covered ground is still `Mixed`, and `WalkEnding` says the rest.
 It exists to be counted: "how often does a search still have to walk" is the measure of this whole effort, and the
 frontend ships it as the `coverage` prop on `search_used` (`analytics/DETAILS.md` § "The search events, in detail").
 Nothing branches on it, which is why it's a field on the coverage report rather than a second signal.
-### Known gaps, both narrow
+### There is no way to turn live walking off
 
-- **A non-virgin frontier root's rows don't stream.** The local repair path (`lifecycle/cover/mod.rs::repair_non_virgin`) writes
-  through the serial reconcile, which takes no live consumer, so rows it ADDS appear on the next query rather than this
-  one. Rare (it takes an FSEvents verification pass writing children under a directory nothing listed), and the arena
-  mark is what makes "the next query" true.
-- **A count-only live search can double-count.** The row path dedupes against the emitted rows, bounded by the cap;
-  a count has no such bound, so a file that is both in the arena and inside a frontier subtree counts twice. It takes
-  rows under an unlisted directory to happen at all.
+Search is a deliberate action and a walk is what it means, so ❌ don't add a setting, a per-drive opt-out, or a "search
+index only" mode. A half-answer behind a preference is the confident-looking wrong answer this whole path exists to
+remove. Neither indexing switch is that setting either: both govern BACKGROUND work only, so a search walks a drive
+whose indexing the user turned off (`lifecycle/cover/DETAILS.md`, `src/lib/settings/sections/DETAILS.md`).
+
+### The accepted differences: where indexed and live still diverge
+
+The governing principle: **a drive being indexed or not must not produce a behavioral difference, only a speed one.**
+This register is where the code does not reach that, kept complete so the gaps stay visible rather than buried, and
+numbered stably because tests, module docs, and code comments across both crates cite an item by its number. Anything
+found later belongs here. Each item names its canonical doc rather than restating the mechanism.
+
+1. **An interrupted walk is narrower.** Cancel, drive disconnect, and app quit each end a walk early. The one people
+   meet most, so the result list says it is a lower bound: `live/DETAILS.md` § Terminal states.
+2. **Unreadable subtrees are narrower.** A refusal, a standing policy over a snapshot tree, or ground the walker gave
+   up on: `crates/cmdr-index/src/indexing/read/DETAILS.md` § The descent rule.
+3. **Auto-apply works on indexed drives and not on uncovered ground.** Crossing into a frontier needs Enter, because
+   six keystrokes would otherwise start and abandon five multi-minute walks: `src/lib/search/DETAILS.md` § The live
+   search.
+4. **Ranking is not preserved.** Importance weights come from the index, so live rows rank by match quality and recency
+   alone; results are capped, so at the boundary a different order is a different visible set, and the completion
+   re-rank reorders what survived without recovering what the cap dropped: `src/lib/search/DETAILS.md`
+   (`rankLiveResults`).
+5. **Directory size filters behave differently.** A walked directory has no `dir_stats` row yet, so a "folders over
+   100 MB" filter returns a different set than the indexed run: § Directory size filters and `sortBy` above.
+6. **A covered-but-stale subtree is trusted, not re-walked.** A volume disconnected while its watcher was down can
+   return a deleted file until `reconcile/` catches up. It applies equally to indexed and walk-covered volumes, since
+   both are watched, so it is a property of the index rather than a gap between the two:
+   `crates/cmdr-index/src/indexing/read/DETAILS.md` § The descent rule, and
+   `crates/cmdr-index/src/indexing/watch/DETAILS.md` for why walk-written coverage carries no expiry.
+7. **The walk indexes what the user will never see in results.** `excludeSystemDirs` is a MATCH-time filter, so a live
+   search of `~/projects` walks and writes every `node_modules` and `.git` under it. That is the multiplier on "a
+   search of an unindexed drive can take minutes", and it is deliberate:
+   `crates/cmdr-index/src/indexing/scanner/DETAILS.md`.
+8. **Media, OCR, and semantic search stay empty.** The walk writes the drive index only, never `media_index`, so photo
+   and OCR search over walked-but-unindexed ground returns nothing. The existing `search.imageResults.notIndexed` copy
+   is what signals it.
+9. **A walk that ran to completion can still be short.** Ground the walker abandoned rides alongside the ending rather
+   than inside it: `live/DETAILS.md` § Terminal states.
+10. **A size filter treats hardlinks differently live than indexed.** A walk emits each entry's OWN size, before
+    hardlink dedup, because that is what a listing shows; the index stores the deduplicated size, `NULL` for the 2nd+
+    link. So "files over 1 MB" keeps a hardlinked duplicate in a live result and drops it from an indexed one. Bounded
+    (multiply-linked files under a size bound only) and the live answer is the truthful one, so ❌ don't "fix" it by
+    teaching the walk to dedupe.
+11. **The master-switch settings note is deliberately inaccurate** once a search has written coverage:
+    `src/lib/settings/sections/DETAILS.md`.
+12. **A live count-only search can count a file twice.** The row path dedupes a walked entry against the rows already
+    emitted, bounded by the result cap; a count has no such bound, so a file that is BOTH in the arena and inside a
+    frontier subtree is counted by each half. It takes rows under an unlisted directory to happen at all (a
+    verification pass, or an interrupted walk), and the row path is unaffected.
+13. **A non-virgin frontier root's newly found rows arrive one search late.** The local repair path
+    (`lifecycle/cover/mod.rs::repair_non_virgin`) writes through the serial reconcile, which takes no live consumer, so
+    rows it ADDS appear on the next query rather than this one. Rare (it takes an FSEvents verification pass writing
+    children under a directory nothing listed), and the arena mark is what makes "the next query" true.
+14. **Ground another walk holds answers narrower, and says so.** One walk per patch of ground, so a run with index rows
+    of its own answers with the covered half and reports `still_covering`; those rows reach the index and the next
+    search picks them up: § Decision 11 above.
+15. **A volume mid-full-scan is not walked at all.** The scan owns the writer and is covering that ground anyway, so
+    the search answers from what the index already holds and reports that it is waiting on another walk:
+    `lifecycle/cover/DETAILS.md`.
+16. **A broad query answers on a fully indexed scope and fails the whole RUN on one with any frontier.** The arena
+    evaluator allows a query that narrows nothing below 100k rows; the live evaluator refuses outright, and refusing
+    takes the run with it, deliberately (answering from the index alone over uncovered ground is the
+    confident-looking half-answer this path exists to remove). The starkest item in this register, and the one a user
+    is most likely to read as a bug: § The compiled query below.
 
 ## The compiled query (`matcher.rs`)
 

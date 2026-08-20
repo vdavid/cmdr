@@ -55,6 +55,14 @@ and exact-locale rungs are real (any added locale dir resolves through them) and
 Language picker, so a newly-added locale dir auto-appears with no code edit. The non-locale `screenshots/` dir never
 shows up there (the same `BCP47_DIR` gate).
 
+**The glob is wholesale, and the native strings ride along.** `menu.json` holds the labels only Rust ever draws (the
+menu bar, the window title, the already-running alert), so the frontend loads roughly 55 KB of message values across the
+ten catalogs it will never render (measured over `messages/*/menu.json`, metadata excluded, 2026-08-20). That's an
+accepted cost: one catalog, one `@key` schema, and one set of coverage checks for every string in the app is worth more
+than the bytes, and a translator working one pile beats a translator working two. The tempting fix (split `menu.json`
+out and exclude it from the glob) walks straight into the `screenshots/` gate above, where a glob change that
+misclassifies a directory puts a fake language in the picker, so it needs a real reason rather than a tidiness one.
+
 ### Reactivity (load-bearing)
 
 A module-level `localeVersion = $state(0)` rune (hence `.svelte.ts`) is a re-render SIGNAL, not a second locale source:
@@ -183,6 +191,27 @@ value to the seam through `os-locales.ts`'s `pickUiLocale`: a tag → `setLocale
 tag with no loaded catalog (e.g. `en-XA` chosen in a dev build, then opened in prod) fails enum validation in the store
 and degrades to the `'system'` default with a warn.
 
+### Three things the picker deliberately doesn't do
+
+Product decisions, so a later "we should also…" pass has something to read before it builds one of them (David,
+2026-08-19):
+
+- **No "this translation is machine-made" notice**, anywhere, not even once. A translation the app offers is a
+  translation the app stands behind; hedging it in the UI would make every locale feel provisional. The consequence is
+  that the app never asks how a translation reads, which is what makes the `language_changed` event the only quality
+  signal there is (`src-tauri/src/analytics/DETAILS.md` § The language events).
+- **No "coming soon" rows for languages we don't ship yet.** The picker lists what a user can pick right now; a disabled
+  row is a promise with a date attached, and the roster (`docs/i18n/language-selection-decisions.md`) is a plan, not a
+  commitment.
+- **No partial locales, auto-enabled or otherwise.** `desktop-i18n-coverage` is the enforcement, at error level: a key
+  missing from a locale, or byte-identical to English without a `@key.sameAsSourceJustification`, fails the build
+  (`docs/guides/i18n.md`).
+
+That last one is why auto-selection draws from `availableLocales()` and the resolver from the generated catalog table,
+both of which are the coverage-gated set: switching a user's app to their own language without being asked is a promise
+that the app IS in that language. One English string in a Hungarian dialog is a bug report; a whole English surface is a
+broken promise. An explicit pick in the picker carries no such promise, which is also why it carries no script guard.
+
 ## What `'system'` resolves to
 
 `'system'` is a sentinel we never write a resolved tag back into: writing one back would freeze the user out of
@@ -220,6 +249,14 @@ right: the copy doesn't move, and the bump is what re-renders the formatters aga
 `null` from `pickUiLocale` means "no override": the webview default stands. That's the answer before the fetch settles,
 on any platform with no preference list (Linux), and when the read fails, so a broken read degrades to a reasonable
 language rather than a broken app.
+
+"Reasonable" is measured, not assumed: WebKit's default locale follows the user's macOS preference LIST, and pays no
+attention to what the bundle declares. Cmdr's bundle names no `CFBundleLocalizations` at all, so `NSLocale.current`
+should have resolved a Hungarian-preference machine to `en-HU` and the webview to English; instead the whole app came up
+Hungarian, from a per-app `-AppleLanguages "(hu-HU)"` and from a global `defaults write -g AppleLanguages` alike
+(verified on macOS 26.5.2, production build relaunched under both, 2026-08-19). So the fallback lands on the user's
+first preference rather than on English, which is the right shape for a degraded answer. It's only ever the first one,
+though, which is the whole reason the real resolver reads the list in Rust.
 
 ## Language and region are two settings
 

@@ -9,7 +9,7 @@ policy) is `../DETAILS.md`.
   `SignalContribution` breakdown. `score` delegates here, so there is one formula, not two.
 
 No `rusqlite`, no `Volume`, no filesystem, no clock: "now" is passed in as a `u64` so recency is deterministic in tests.
-Full design: `docs/specs/importance-subsystem-plan.md`.
+Full design: `docs/specs/later/importance-subsystem-plan.md`.
 
 ## Signal catalog
 

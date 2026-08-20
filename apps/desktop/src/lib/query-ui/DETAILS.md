@@ -215,6 +215,11 @@ for `walking` ALONE (any other phase showing "0 folders scanned" reads as a stuc
 "0 so far" back through every phase where it has counted nothing yet. The phases themselves, and which of the run's
 states produce them, are the backend's: `src-tauri/src/search/live/DETAILS.md` § What a run says it's doing.
 
+**Progress is a count and a path, ❌ never a percentage or an ETA.** How much a walk has left is unknown by definition
+(the frontier is exactly the ground nothing has measured), so a bar or a remaining time would be invented, and honest
+progress is a product principle (`docs/design-principles.md`). Directories scanned plus the folder under the walker is
+everything the run actually knows.
+
 **The generation guard is the load-bearing one.** The runner mints the run id and hands it to `start`, so no update can
 arrive against an id it hasn't seen. Superseding a run does NOT cancel the work behind it (Decision 11), so the previous
 run's batches keep arriving; every callback checks the id first and drops anything else. Without it, a refined query

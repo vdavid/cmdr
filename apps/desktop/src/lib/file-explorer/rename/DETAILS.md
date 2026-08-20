@@ -89,6 +89,14 @@ One session is one activation of the editor, from the moment it opens until the 
 NEWER activation has happened since. A plain `cancel()` keeps the id, so ending the editing session (Escape, a blur)
 doesn't make the save that's already on its way a stranger to its own result.
 
+Chaining is what makes supersession the normal case rather than a rare race: a step fires the save for one file and
+reopens the editor on the next in the same tick, so a save, a permission check, or an editor's blur routinely comes back
+to an editor that has moved on. Left unguarded, each of those steers the file on screen instead of the one it was sent
+for, which is the same class of bug as the editor bound to a stale row (see "The inline editor mounts BY PATH, not by
+index" under Decisions). The id is one half of the guard; the captured target is the other. `executeRenameSave` is
+handed the `{path, originalName}` taken when the session activated, so nothing on the way to the backend may re-read
+live state (the cursor, the current editor, an index) to decide which file it is writing to.
+
 Everything that finishes asynchronously carries the id it started with: the save (`executeFlow` captures it beside the
 target), the permission check (`activateRename`), the conflict dialog's follow-up rename, and the editor's own cancel.
 The directory-name read is the one exception, and deliberately so: it answers to the LISTING it was read from, which is
@@ -100,6 +108,11 @@ is typing in), restore focus, shake (that would blame the file now on screen for
 `pendingCursorName` (which makes `listing-diff-sync` jump the cursor to the renamed file and skip index reconciliation
 entirely), or open the conflict / extension dialog (nobody can answer a question about a file they've moved past). Those
 moves aren't guarded inside the superseded branch, they're absent from it.
+
+Read the other way round, that makes the post-rename cursor move (§ "Post-rename cursor tracking") the privilege of the
+session that ENDS a chain: the one settled by Enter, Escape, a click away, or an arrow at a boundary. Every session
+behind it is superseded by the time its save returns, so it leaves the cursor to `reconcileCursorAndSelection`, which is
+the machinery that can keep an editor and a cursor together while the listing re-sorts underneath them.
 
 `InlineRenameEditor` takes its `sessionId` as a prop and reads it ONCE, at mount (`openedForSession`). An editor blurs
 on its way out when another takes over, and that blur cancels; reporting the session live by then would discard an edit

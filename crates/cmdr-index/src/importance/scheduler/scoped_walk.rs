@@ -29,7 +29,7 @@
 //! primary-key lookup, before any of it is read — and an over-budget origin is
 //! rescored ALONE, with its subtree's stored rows left untouched.
 //!
-//! Depth and the accepted lossiness: `DETAILS.md` § The scoped incremental walk.
+//! Depth and the accepted lossiness: `DETAILS.md` § The scoped walk.
 
 use std::collections::{HashMap, HashSet};
 

@@ -70,6 +70,15 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   (`transfer/volume/naming.rs::find_unique_volume_name`) all go through it, so the numbering paths can't drift.
   `archive_edit/conflicts.rs::find_unique_inner` is deliberately outside this: it numbers slash-joined inner-path
   strings against an `ArchiveIndex`, and its doc comment says so.
+- **Decision: the suffix is ` (N)`, everywhere, including a duplicate.** macOS Finder would name a duplicate
+  `photo copy.jpg` with a per-language word for "copy", and `docs/design-principles.md` prefers platform-native over
+  generic, so the pull toward it is real. It loses on two counts. One scheme for what is structurally one operation:
+  numbering the duplicate path differently from the conflict path would have Cmdr generating `photo copy.jpg` on a
+  duplicate and `photo (1).jpg` on a clash, which is worse than either scheme alone, and switching BOTH means
+  re-reviewing the suffix in every shipped locale. And ` (N)` is language-neutral, where a translated word would owe
+  `split_sequence` every one of those words before it could continue a series. Changing the scheme later is a one-place
+  edit here plus its tests, which is the hedge that makes the decision cheap to revisit rather than a reason to revisit
+  it.
 - **`unique_name.rs::split_sequence(stem) -> (base, next_counter)` is the ONE sequence rule.** It reads a trailing ` (N)`
   off a stem so a search continues the series instead of nesting: duplicating `photo (1).jpg` gives `photo (2).jpg`,
   never `photo (1) (1).jpg`. What counts as a sequence is narrow on purpose, because everything else is somebody's
@@ -267,6 +276,8 @@ The four copy mechanisms (`copy_strategy::LocalCopyStrategy`) each hand `stage_a
 **`cancel_all_write_operations` is the quit teardown's first move, and its ONLY caller is the quit gate.** ❌ A window going away is not a reason to stop work: an operation outlives the view watching it, so nothing in the frontend may reach for this. `crate::quit::tear_down_and_exit` calls it with keep-partials semantics, waits up to 1.5 s for the operations to answer, and only then escalates. `crate::quit::DETAILS.md` § "The teardown's order".
 
 **`abort_all_write_operations` is the second tier, and is ❌ NOT this.** It fires `WriteOperationState::backend_abort` on top of a cooperative cancel, which makes the cross-volume streaming path stop WAITING for a backend rather than asking it to stop — buying a bounded wind-down at the cost of the backend's own partial cleanup. That is a trade only a deadline holder may make, so the caller is the quit gate and nothing else; a teardown that can still afford to wait stays on `cancel_all_write_operations`. Mechanism, cost, and the invariant it must not break: `transfer/DETAILS.md` § "Two tiers of cancel". The per-operation `abort_write_operation` is `#[cfg(test)]`: a deadline always aborts everything, so production has no use for the narrower form.
+
+**A local blocking read or write cannot be given a timeout, which is why there is no tier 2 for the local path.** The chunked engine checks the cancel before each 1 MiB read (`transfer/chunked_copy.rs`), which is near-instant on a responsive filesystem and unbounded on a hung one: the `read` and `write_all` themselves are plain blocking calls, and nothing can put a clock on them. `O_NONBLOCK` is specified not to apply to regular files, a hung SMB or NFS client blocks down in the VFS whatever the descriptor says, `pthread_kill`-to-`EINTR` is defeated by macOS restarting most filesystem syscalls, and unwinding a thread mid-`write_all` is not something we can make safe. (Reasoned from POSIX and documented macOS syscall-restart behavior, not measured, 2026-08-20.) ❌ So don't add a "timeout" here. The only available move is to stop WAITING for the thread, which is what the quit deadline does, and what `commands/util.rs::blocking_with_timeout` already does elsewhere: the blocking thread runs on, the caller gives up. Abandoning it costs nothing because every local write stages, so a wedged worker is only ever filling a `.cmdr-tmp-*` nobody will rename.
 
 **Special files skipped.** Sockets, FIFOs, and device files are filtered out during scan.
 

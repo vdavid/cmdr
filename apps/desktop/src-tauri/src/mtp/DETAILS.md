@@ -131,11 +131,12 @@ serves zero callers — every genuine tree delete in the app walks caller-side (
 `preserve` set, neither of which a device-side recursive delete can offer. What catches the class is the shared
 conformance assertion every backend's suite runs (`cmdr_fs::volume::conformance`).
 
-**What changed for users on MTP.** Deleting a folder whose stat failed now reports a per-item failure with the folder
-still there, instead of appearing to delete "one file" and quietly taking the whole tree (`delete/walker.rs` guesses
-"file" when the no-preview `is_directory` probe errors, and a guessed file goes straight to a bare `delete`). That's
-the honest outcome: Cmdr never removes more than it told the user it was removing, and a retry after a transient MTP
-stat failure is cheap. It fires only on a probe error, so no normal delete changes.
+**The refusal is allowed to look like a failure, and that's the honest outcome.** A delete whose top-level source
+couldn't be classified surfaces as a per-item failure with the folder still standing, rather than as a "one file"
+success that quietly took a whole tree. That's the reason not to soften `SingleNode` into a recursive fallback to make
+such a case "just work" (the `CLAUDE.md` guardrail): Cmdr never removes more than it told the user it was removing, and
+a retry after a transient MTP stat failure is cheap. What each delete branch does with a missing or wrong fact is
+`file_system/write_operations/delete/DETAILS.md`.
 
 ## Architecture / data flow
 

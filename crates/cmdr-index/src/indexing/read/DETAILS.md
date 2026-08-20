@@ -215,8 +215,13 @@ patch of ground, so a caller that would otherwise commit to a walk taking NOTHIN
 "nobody has been here" and "somebody is here already", and wait rather than answer empty (`search/DETAILS.md` § The
 shape).
 
-Read `docs/specs/unindexed-search-plan.md` § "The core mechanism" for the product intent this serves. The WALK half —
-what actually fills a frontier in, and why it may never delete — is `../lifecycle/cover/DETAILS.md`.
+**The product intent this serves**: indexing stays optional, so a search that runs to completion returns the same files
+with or without an index, only slower, on every volume kind. The walk that fills the gap writes what it finds into the
+drive index and watches the branches it covered, so a drive converges toward instant through use and stays there. That
+is why a frontier is a durable answer rather than a per-search one, and why a cut may never claim ground nothing read.
+Where the two halves still diverge, and what was accepted rather than fixed:
+`apps/desktop/src-tauri/src/search/DETAILS.md` § The accepted differences. The WALK half, what actually fills a frontier
+in and why it may never delete, is `../lifecycle/cover/DETAILS.md`.
 
 ### The descent rule
 

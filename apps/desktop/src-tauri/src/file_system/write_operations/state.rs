@@ -589,11 +589,17 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
     state.pause_gate.wake();
 }
 
-/// Stops all in-progress write operations without rollback.
+/// TIER 1 for every live operation: stops them all, keeping partials.
 ///
-/// Used as a safety net when the frontend is tearing down (beforeunload, hot-reload).
-/// Transitions to `Stopped` (not `RollingBack`) because teardown must never silently
-/// delete files in the background without visual feedback.
+/// Transitions to `Stopped` rather than `RollingBack` because a teardown must
+/// never silently delete files with no visual feedback.
+///
+/// **The quit gate is the only caller** (`crate::quit::tear_down_and_exit`, step
+/// one). A window going away is not a reason to stop work: an operation outlives
+/// the view watching it, and a frontend unload handler calling this is the exact
+/// defect the gate replaced. Pinned from the other side by
+/// `src/lib/quit/no-teardown-cancel.test.ts`; the full rule is in `DETAILS.md`
+/// § "Key patterns and gotchas (shared)".
 pub fn cancel_all_write_operations() {
     WRITE_OPERATION_STATE.cancel_all();
 }

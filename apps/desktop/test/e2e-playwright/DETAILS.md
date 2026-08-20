@@ -479,7 +479,9 @@ currently `"main"`, `"settings"`, `"viewer-*"`, `"shortcuts"`, and `"queue"`. Th
 through its own `plugin:playwright|pw_result` IPC command, and Tauri gates IPC per window through the capability ACL. A
 window missing from that list can receive the script but can never answer, so the plugin waits out its full 30 s ceiling
 and even `1+1` reads as a hang: the failure looks like a broken window, not a missing permission. The `shortcuts` window
-sat "known-broken" for weeks on exactly this. Add the label when you add the window.
+sat "known-broken" for weeks on exactly this, its skip blaming an eval hang while the capability fix had already landed
+and every run since had been driving the window fine. Add the label when you add the window, and re-check a skip's
+stated cause before trusting it: a wrong diagnosis written down outlives the bug it describes.
 
 ## Key decisions
 

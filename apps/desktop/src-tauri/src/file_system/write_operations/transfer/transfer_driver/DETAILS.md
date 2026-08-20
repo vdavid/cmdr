@@ -31,3 +31,16 @@ the operation's total must not double-count. Both paths therefore report a file'
   size once, so the end number is exact whatever the attempt count.
 
 The file counter needs nothing: `on_file_complete` fires only after `stream_pipe_file` returns `Ok`.
+
+### The file counter counts COMPLETED files, and the gap that opens is real
+
+`on_file_complete` fires after the write returns, so with a window of `W` the destination can legitimately hold up to
+`W - 1` more files than the counter shows. On 2026-07-31 that read as "5 of 764" against 10 files already on the NAS,
+and the counter was right both times: five tasks had returned, the rest had bytes on the share but had not.
+
+❌ **Don't "fix" the counter by crediting a file before its write returns.** Counting a file that a wedge, a cancel, or
+a failed landing can still take away turns an honest bar into an optimistic one, and it would have claimed both of the
+byte-incomplete phone backups the incident left behind as done. There is also no honest frontend-only fix: the
+`write-progress` payload carries one `currentFile` and no in-flight set, so the gap cannot be reconstructed there. What
+closes it is SURFACING the window — `TransferActivity::in_flight` on the same event, rendered by the stall notice's
+in-flight line (`apps/desktop/src/lib/file-operations/transfer/DETAILS.md` § "The stalled-transfer notice").

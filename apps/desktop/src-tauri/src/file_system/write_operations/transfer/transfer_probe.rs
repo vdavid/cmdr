@@ -54,10 +54,12 @@ pub(super) const STALL_AFTER: Duration = Duration::from_secs(20);
 /// the watchdog stops reporting and ends the wait itself.
 ///
 /// This is the layer of last resort, and its length says so. Every backend that
-/// can bound its own waits already does, sooner: `smb2` gives a frame 60 s to
-/// reach the socket (`SendTimeout`) and a response 180 s to arrive, so a dead SMB
-/// session surfaces as a typed error on its own and the file's retry picks it up
-/// without the watchdog ever being involved. What is left for this constant is
+/// can bound its own waits already does, sooner: `smb2` gives a frame 20 s to
+/// reach the socket (`SEND_TIMEOUT`) and a response 30 s of silence
+/// (`RESPONSE_TIMEOUT`, extended on a connection an ECHO has just proven alive),
+/// so a dead SMB session surfaces as a typed error on its own and the file's
+/// retry picks it up without the watchdog ever being involved (verified against
+/// `smb2` 0.18.1, `client/connection.rs`, 2026-08-20). What is left for this constant is
 /// the case that has no deadline anywhere — an OS-mounted share, a USB stack, a
 /// future backend that forgot — which is precisely the shape that cost a user two
 /// files and a force-quit on 2026-07-31.
@@ -67,7 +69,8 @@ pub(super) const STALL_AFTER: Duration = Duration::from_secs(20);
 /// needs a link under 6 KB/s to take this long, and an 8 MiB MTP window needs USB
 /// to run at 45 KB/s. Neither is a transfer anyone is waiting on. ❌ Don't tighten
 /// this toward a plausible slow link: killing a healthy transfer to catch a wedge
-/// sooner is the trade Decision 3 of the spec exists to refuse.
+/// sooner is the trade this gate exists to refuse (`DETAILS.md`
+/// § "The watchdog ACTS").
 pub(super) const STALL_ABORT_AFTER: Duration = Duration::from_secs(180);
 
 /// The stall-abort window in force, honoring a test override.

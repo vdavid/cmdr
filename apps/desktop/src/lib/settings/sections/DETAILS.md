@@ -59,7 +59,11 @@ sections compose).
   index's FOOTPRINT off disk (`get_index_disk_usage`, every `index-*.db` plus sidecars, `root` included) instead of the
   live `root` instance's `db_file_size`, which answers `None` on exactly the machine that most needs the number.
   Clearing goes just as wide (`clear_drive_index` → `Index::forget_all_volumes`): a walk's disk can belong to a share
-  nobody ever enabled, and per-drive clearing has its own action in the drive's badge menu.
+  nobody ever enabled, and per-drive clearing has its own action in the drive's badge menu. ❌ **Don't "fix"
+  `settings.indexing.masterOffNote` without asking David.** It says no drive is indexed and folder sizes stay hidden,
+  which stops being strictly true the moment a search writes coverage for a branch it walked; he read it against that
+  and chose to leave it, since it describes what the switch does rather than what a search may have left behind. It is
+  accepted difference 11 in `apps/desktop/src-tauri/src/search/DETAILS.md`.
 - **`NotificationsSection.svelte`**: `Behavior > Notifications`: two `SectionCard` card groups — Downloads (BOTH
   Downloads-folder features in one card: the 4-option `downloadsNotifications` ToggleGroup, plus the on/off go-to-latest
   `Switch` whose description references the live global binding — the combo is edited under Keyboard shortcuts; anchor

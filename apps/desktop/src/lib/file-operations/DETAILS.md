@@ -174,6 +174,10 @@ that's free to narrow later.
 - **`operationsToPauseFor(conflictOperationId, rows)`** is how wide the pause is: today every `running` id, the asking
   one included. `queued` and `paused` rows stay out, and the ids are remembered so the answer resumes exactly them. ❌
   Never `pauseAll()` / `resumeAll()`: resuming everything restarts an operation the USER paused by hand.
+- **Both rules are pure, and both are seams.** Fleet-wide pausing is David's call for simplicity, not a constraint: the
+  shape it makes room for is "pause the conflicting operation and let the parallel and next-in-line ones carry on", and
+  that is a change to `operationsToPauseFor` alone, as adopting a running operation back into the progress dialog is a
+  change to `conflictOwner` alone. No listener moves either way; each function's own header comment carries the detail.
 - **The asking operation is paused too**, though the backend already has it parked on the oneshot. The pause gate is a
   flag read at the next between-files boundary and the operation isn't at one, so it costs nothing and buys honesty: the
   queue window and the corner chip both read `paused`, instead of one row claiming to run with a frozen bar.

@@ -303,8 +303,9 @@ against 6.4 s / 5.5 s for a full walk.
   `has_marker_below(A) = markerOutside(A) OR M(C)` where `M(C) = has_direct_marker(C) OR has_marker_below(C)` — and
   `M(C)` is precisely the `has_project_marker` the store persists for `C`. `markerOutside` can't move from inside the
   subtree, so `A` can only move when `M(C)` does. `load_previous_markers` reads the stored side, the scoped walk
-  produces the fresh side, and a flip (or an origin with no stored row to compare) takes the full walk this pass.
-  `only_a_marker_transition_costs_the_full_walk` pins both halves.
+  produces the fresh side, and a flip (or an origin with no stored row to compare) takes the full walk this pass. One
+  carve-out: an origin with NEITHER a stored row nor an index row never scored and still doesn't, so it rules its own
+  ancestors out without a fallback. `only_a_marker_transition_costs_the_full_walk` pins both halves.
 
 Nothing else can move for such an ancestor: a deep write changes neither its mtime nor its direct-child aggregate (both
 are direct-listing facts, and a listing change makes the folder an origin itself), and a rename above it reaches it
@@ -323,9 +324,11 @@ of an origin no longer get a rewritten row every pass. Two things go with that, 
 silently wrong. This extends the batch gate's floor-filter decision (below) rather than contradicting it: both accept a
 bounded staleness in a derived, advisory signal that the next full pass heals.
 
-**Reading the subtree.** Per origin: resolve the path to an entry id by descending `resolve_component` from the root
-(indexed point queries, O(depth)); read the ancestor chain upward so paths reconstruct from the index's OWN names (an
-origin can be spelled in another case — see the known gap below); then descend level by level with
+**Reading the subtree.** Each surviving origin is read SEPARATELY, into one shared scoped `DirTree`. ❌ Don't collapse a
+batch into a single walk over the origins' common ancestor: unrelated origins share only `/`, so that re-walks the
+volume. Per origin: resolve the path to an entry id by descending `resolve_component` from the root (indexed point
+queries, O(depth)); read the ancestor chain upward so paths reconstruct from the index's OWN names (an origin can be
+spelled in another case — see the known gap below); then descend level by level with
 `IndexStore::for_each_child_directory_of` and fold the file children with `for_each_child_file_of`, which keeps
 `for_each_file_child_by_parent`'s `ORDER BY parent_id` group contract so ONE reusable extension accumulator serves the
 whole scan. Floored subtrees ARE descended: a marker inside a `node_modules` still raises the folders above it, so
@@ -407,6 +410,11 @@ runs twice, once per walk, and asserts the two stores come out identical.
 `touched_folder_set` compare bytes, so an origin spelled in a different case than the index holds it clears rows that
 nothing re-adds. BOTH walks lose the row identically, so it is pinned as a differential-only scenario
 (`an_origin_spelled_in_another_case_behaves_the_same_under_both_walks`) rather than asserted as desirable.
+
+The fix, when someone takes it: canonicalize every origin against the index BEFORE either walk (resolve it, then rebuild
+the path from the index's own names), which is what `collect_ancestor_chain` already does internally for the rows it
+writes, at one resolve per origin. It has to be its own change, because it moves the FULL walk's behaviour too and the
+full walk is the differential's oracle.
 
 ### Throttle (leading plus trailing)
 

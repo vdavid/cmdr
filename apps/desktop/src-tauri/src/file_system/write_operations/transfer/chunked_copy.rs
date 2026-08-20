@@ -48,7 +48,11 @@ pub fn is_network_filesystem(path: &Path) -> bool {
 ///
 /// This is used for network filesystems where `copyfile()` doesn't respond
 /// to cancellation in a timely manner. The copy checks for cancellation
-/// between each 1MB chunk, allowing near-instant response to cancel requests.
+/// between each 1MB chunk, allowing near-instant response to cancel requests
+/// on a responsive filesystem. Against a hung mount the read and write below
+/// block without bound and no timeout can be put on them, so a deadline holder
+/// abandons the thread instead: `../DETAILS.md` § "A local blocking read or
+/// write cannot be given a timeout".
 ///
 /// After the data copy, all metadata is preserved:
 /// - Extended attributes (includes macOS resource forks, Finder info)

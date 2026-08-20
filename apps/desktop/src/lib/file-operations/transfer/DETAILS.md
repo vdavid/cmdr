@@ -14,9 +14,11 @@ long transfer. Ten seconds of a frozen bar is already long enough that a person 
 countdown is a lie the moment it stops being true. Both read the same `stillForSeconds`, so the two can't contradict
 each other.
 
-**What stays silent.** `paused` and `you` (a conflict prompt is open) are the transfer behaving correctly, and the
-dialog already says so in its title. An operation with no activity at all — local copy, delete, trash, which keep no
-in-flight table — also stays silent rather than guessing.
+**What stays silent.** `paused` and `you` (a conflict prompt is open) are the transfer behaving correctly, and a surface
+is always saying so: the progress dialog in its title, and for an operation no dialog owns, the main window's prompt
+(`../DETAILS.md` § "Conflict prompts for operations with no dialog"). That's what makes the silence honest, so a clash
+that could go unprompted would turn `you` into a wedge with nothing on screen to explain it. An operation with no
+activity at all (local copy, delete, trash, which keep no in-flight table) also stays silent rather than guessing.
 
 **Where it sits, and what it's made of.** A warning-toned `SectionCard` at the FOOT of the dialog body, below the
 current-file line and directly above the button row, at full content width with no inset of its own. It's the reason a
@@ -34,7 +36,10 @@ stalled state, which the tier-3 suite can't reach because it only renders the ju
 **The in-flight line is conditional, not permanent.** It renders only inside the stall notice, and only when
 `inFlight > 0`. During a healthy transfer the file counter plus a speed and an ETA is enough, and "5 files in flight"
 would be noise on every copy. It earns its place exactly when it explains something: a stalled counter reading lower
-than what the person can see at the destination, which is the confusion the 2026-07-31 incident produced.
+than what the person can see at the destination, which is the confusion the 2026-07-31 incident produced. The counter
+itself is honest and ❌ must not be "fixed" to close that gap; why, and what the payload can't express, is
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/transfer_driver/DETAILS.md` § "The file counter counts
+COMPLETED files".
 
 ## File map
 
@@ -106,6 +111,11 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
        `preKnownConflicts` bulk-skip list.
      - The file-policy radios show when there's a real conflict OR a folder merge — a merge can surface file clashes
        mid-operation the upfront (top-level-only) check can't see, and the radios pre-answer them.
+     - **Top-level is where the check stops, deliberately.** Making it recursive means walking the whole destination
+       tree before every copy, and the single listing it does today already runs for minutes on a big remote directory.
+       Deep clashes are meant to surface mid-operation and get answered there, by the progress dialog or by the main
+       window's prompt (`../DETAILS.md` § "Conflict prompts for operations with no dialog"). So a deep clash that nobody
+       answers is a missing listener, never a reason to widen this check.
      - **Cross-type guardrail.** When a real conflict is a type mismatch AND the user selects "Overwrite all", a red
        warning appears (mirrors the per-file dialog's file→folder warning): overwriting replaces items of a different
        type, including folder contents.
@@ -279,8 +289,21 @@ Who answers what, and why:
   familiarity that justifies the key rests on it asking nothing; an editor would also break stamping out several copies
   in a row, since after the first ⌘D focus sits in an editor and the second does nothing until Esc.
 
-No setting gates this. The same reasoning that rejects a modal "name the copy" prompt rejects a toggle: two gestures
-that ask and two that don't already cover both preferences.
+**The modal "name the copy" prompt issue #50 asked for is what this replaces.** A blocking dialog would tax every paste
+for the minority of pastes where the generated name isn't fine, and it's the wrong shape in a keyboard-first app. The
+two mainstream conventions disagree only about WHEN the name is chosen (Finder names it after, with no prompt; Total
+Commander names it before, in the copy dialog's target field), and the split above serves both: the gestures that ask
+land in an editor one keystroke sequence long, the ones that don't are already finished. No setting gates it either, for
+the same reason: two gestures that ask and two that don't already cover both preferences, so a toggle would be a
+preference nobody needs to find.
+
+**So don't give the F5 dialog a target-NAME field.** It looks a short step away, since `editedPath` is free text passed
+straight to `onConfirm` and compress already pre-fills a full path ending in a new `.zip` leaf
+(`transfer-dialog-utils.ts`). Copy's backend treats that string as a FOLDER: `validation.rs::ensure_destination_dir`
+creates it and requires a directory, so a leaf-named target produces a **folder** called `photo (1).jpg`. Making it mean
+what it looks like needs per-item target names across every transfer engine; inline rename reaches the same outcome with
+no new API. If it ever becomes worth it, the shape is a per-source name map on the copy command, not a special case for
+the single-source path.
 
 ### Unified components for Copy + Move
 

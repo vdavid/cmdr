@@ -106,7 +106,27 @@ Whether this contributed to the transfer wedge is **unknown** - different subsys
 - `smb2::client` logs request dispatch only on the `ChangeNotify` path; there is no outstanding-request accounting.
 - `file_system::sync_status` has no logging at all, which is why 23 wedged threads left no trace in the log.
 
-The remediation plan is `docs/specs/transfer-wedge-observability.md`.
+## Where the remediation lives now
+
+Every gap above is closed, and every symptom this record describes has an owner. What replaced each, and why it took the
+shape it did:
+
+- **The four logging gaps**, answered by an in-flight phase table plus a stall watchdog rather than by more log lines:
+  `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "The stall signal". The `smb2` half
+  (outstanding-request accounting for every command) finished as M0 of `docs/specs/smb-transfer-resilience.md`.
+- **No byte-incomplete file at its final name**, the guarantee the two phone backups were owed: same file, § "File
+  writes are staged", extended to local copies in § "Local copies stage".
+- **Cancel and Rollback reaching a parked driver**: same file, § "Cancel and rollback reach a parked driver".
+- **The stall notice that replaces a confident ETA**: `apps/desktop/src/lib/file-operations/transfer/DETAILS.md` § "The
+  stalled-transfer notice". Why the frozen `5/764` counter was honest, and why surfacing the in-flight count was the
+  answer rather than changing it:
+  `apps/desktop/src-tauri/src/file_system/write_operations/transfer/transfer_driver/DETAILS.md` § "The file counter
+  counts COMPLETED files".
+- **The `sync_status` thread pile-up**, the separate defect the samples caught:
+  `apps/desktop/src-tauri/src/file_system/sync_status/DETAILS.md`, with the before/after numbers in
+  `docs/notes/sync-status-pool-bench-2026-07-31.md`.
+- **The two windows disagreeing about the same byte count**: `apps/desktop/src/lib/units/DETAILS.md`, and
+  `apps/desktop/src/lib/settings/DETAILS.md` § "Restricted-window mode" for the settings half of that split.
 
 ## Resolution (2026-08-01)
 

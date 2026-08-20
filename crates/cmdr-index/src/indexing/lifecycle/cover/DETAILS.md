@@ -10,6 +10,12 @@ phase machine owe a walk, and what a walk owes them back, is `../DETAILS.md`.
 volume's real index through its ONE writer (Decision 2 of `docs/specs/unindexed-search-plan.md`), so the work outlives
 the search that paid for it and the next search over the same ground walks less.
 
+**The walk is deliberately caller-agnostic**, and search is the first caller rather than the only one. Getting a
+folder's recursive size on demand (pressing Space on it) is the same question over the same frontier, so it wants a
+trigger and a consumer for the batches, ❌ never a second scoped-walk primitive beside this one. That is why the API is
+"give me a frontier, take batches and an outcome" rather than anything search-shaped, and why nothing here knows what a
+query is.
+
 **Which ground, and which walk reads it** (`Ground`). Every volume kind falls in one of two halves, and that is the ONE
 per-kind branch in the whole coverage concept: a local filesystem is read by the guarded walker, and everything else — a
 share, a phone, whatever backend comes next — through its `Volume` (`../../network_scanner/DETAILS.md` § "The scoped

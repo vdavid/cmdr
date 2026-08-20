@@ -103,6 +103,13 @@ settings and viewer dialogs would show a backdrop they never have in production)
 earlier surface recorded, so the run doesn't write ~90 near-identical PNGs. Both drops land in the tracked
 `capture-skipped.json`.
 
+**A row whose dialog ignores Escape needs its own exit in the driver's `closePreview`.** The capture loop closes each
+preview before staging the next one, and the capture sink's `rerender` re-resolves every MOUNTED string: a dialog still
+up when the next shot happens records ITS keys against the next surface, so the coupler would hand a translator
+onboarding copy pointing at a screenshot of the operation log. The onboarding wizard is the standing case (it refuses
+Escape on purpose, so `closePreview` clicks through its primary slot instead), and a preview that survives its close
+logs a warning naming the culprit. Add the exit in the same change as the dialog, before its row ever runs in a capture.
+
 ## What actually reaches a production bundle
 
 Measured, not assumed (`pnpm build`, re-measured 2026-08-06 after the capture-build gate went in, grep for marker

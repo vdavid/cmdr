@@ -3,7 +3,7 @@
 //!
 //! Its own module rather than part of [`super::recompute`] because it is a
 //! measurement path, not a production one — nothing in the app calls it; the
-//! `importance-diff` dev bin does. See `docs/specs/scoped-incremental-walk.md`.
+//! `importance-diff` dev bin does. Depth: `DETAILS.md` § The scoped walk.
 
 use std::collections::HashMap;
 

@@ -75,7 +75,9 @@ The split exists so the landing discipline is written once instead of once per b
 
 ### Self-collision (duplicating in place)
 
-**Decision.** A top-level source that would land on ITSELF is a request to duplicate, never a conflict. Copy redirects it to a free ` (N)` name and proceeds; move writes nothing and counts the item done. Neither consults the user's conflict policy, and neither prompts.
+**Decision.** A top-level source that would land on ITSELF is a request to duplicate, never a conflict. Copy redirects it to a free ` (N)` name and proceeds; move writes nothing and counts the item done. Neither consults the user's conflict policy, and neither prompts. Why the suffix is ` (N)` rather than Finder's localized `copy` word: `../DETAILS.md`, the `unique_name.rs::numbered_name` bullets.
+
+**A duplicate is same-volume by definition**, so on APFS it takes `LocalCopyStrategy::AppleClone` (§ "Copy strategy selection") and a 10 GB video duplicates instantly, at no extra space. Worth not losing: anything that routes a duplicate through a rewrite rather than the ordinary copy path pays full bytes for what the filesystem gives away.
 
 **Why identity rather than paths.** `validation.rs::is_same_file` compares `dev+ino`, which settles a symlinked parent, a case-differing path on APFS, and NFC/NFD normalization in one comparison. It uses `fs::metadata`, which FOLLOWS symlinks — that is what makes the symlinked-parent case work, so ❌ don't "fix" it to `symlink_metadata`. (`rename/` answers a narrower question with `symlink_metadata` because it must treat a symlink as its own entry; the two are deliberately different.)
 

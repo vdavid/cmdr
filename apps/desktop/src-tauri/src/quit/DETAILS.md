@@ -73,8 +73,10 @@ The 2 s budget is `DRAIN` plus a tier-2 abort (token flips, no I/O), a ledger fl
 **What this deliberately does NOT promise:**
 
 - **That every worker thread observed the cancel.** A thread wedged in `read()` on a dead mount may still be sitting
-  there when the process dies. The user-visible contract is "the app quits in 2 s and nothing on disk is corrupt or
-  misleading", not "every thread wound down politely".
+  there when the process dies, and no amount of tuning here changes that: a blocking regular-file read takes no
+  timeout, so ending the WAIT is the only move available (`write_operations/DETAILS.md` § "A local blocking read or
+  write cannot be given a timeout"). The user-visible contract is "the app quits in 2 s and nothing on disk is corrupt
+  or misleading", not "every thread wound down politely".
 - **That the 2 s covers a wedged Tauri event loop.** Step 5 posts to it, so a main thread that has stopped turning
   would swallow the exit. A wedged WEBVIEW can't cause that — the event loop is Rust's, and the deadline thread doesn't
   touch either — so the case this feature exists for is covered; a wedged event loop is a different bug, and the

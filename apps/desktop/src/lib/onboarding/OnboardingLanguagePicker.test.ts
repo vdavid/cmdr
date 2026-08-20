@@ -9,8 +9,8 @@
  * - picking writes `appearance.language` through `setSetting`, the same wiring the
  *   Settings picker uses (so `settings-applier.ts` live-applies it, no restart);
  * - an explicit pick retires `'system'` for good: the tag itself is written, never a
- *   resolved tag, and a later OS language change doesn't undo it (decision 5 of
- *   `docs/specs/auto-language-plan.md`);
+ *   resolved tag, and a later OS language change doesn't undo it (`$lib/intl/DETAILS.md`
+ *   § What `'system'` resolves to);
  * - the `'system'` row names what it currently resolves to.
  *
  * Axe coverage lives in `OnboardingLanguagePicker.a11y.test.ts`; the picker's place

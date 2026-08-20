@@ -212,6 +212,20 @@ only explanation.
 the spec's 300 s Playwright timeout, so the run dies part-way and `pnpm i18n:shots` never reaches `i18n:couple` (`&&`).
 Both runs above ended in a bare timeout with zero couplings written.
 
+### Three costs of a capture run, none of them obvious
+
+- **The first capture build compiles the whole graph from `libc` up (~15 min).** `i18n-capture.ts` passes
+  `--config profile.release.debug-assertions=true`, which changes the fingerprint of every dependency, so Cargo can
+  reuse nothing from a normal release build. Cargo then KEEPS that fingerprint set, so later capture builds recompile
+  only what changed. Budget the wait once per machine, not once per run.
+- **`pnpm check svelte` (or any lane that rebuilds the app binary) clobbers the capture binary.** Naming a group runs
+  its slow lanes too, and the E2E lane rebuilds `target/<triple>/release/Cmdr` WITHOUT `CMDR_I18N_CAPTURE_BUILD`. The
+  next `pnpm i18n:capture` then dies on every surface with `__cmdrI18nCapture not installed`, which reads like a harness
+  bug and isn't. Run the checks first, or pass `--build` again afterwards.
+- **Piping `pnpm i18n:shots` hides how it ended.** It's `capture && couple`, so a failed capture skips the coupler, and
+  a pipe reports the exit status of whatever you piped INTO. `capture-failed.json` (and `capture-report.json`, rolled
+  back by the guard) is what says how the run really went.
+
 ### Every shot is verified before the run can go green
 
 The harness proves each image instead of assuming it:
@@ -274,6 +288,14 @@ The coupler writes screenshots in two passes:
   never overwrites a precise capture), a key that later gains its own capture sheds its representative note, and a
   representative only points at an image the run actually produced. Add a mapping only where the layout/position
   genuinely matches; otherwise leave the cluster uncoupled (it shows in the coverage report).
+
+❗ **Renaming or splitting a surface silently empties every representative mapping aimed at its old PNG.** "Only points
+at an image the run produced" is the honesty guarantee AND the failure mode: the coupler drops the mapping rather than
+complaining, so the loss shows up only as a coverage number that went down. When Settings > AI split into
+`settings-ai-provider` / `settings-ai-ask-cmdr` / `settings-ai-mcp-server`, `settings-ai.png` stopped existing and all
+101 `ai.*` couplings went with it while the mapping table kept naming the dead file. So after any surface rename or
+split, re-check every `REPRESENTATIVE_SCREENSHOTS` target against the FRESH `capture-report.json`, and read the per-area
+diff in `coverage-report.md` before committing the run.
 
 The coupler is idempotent (a re-run with the same report is a byte-for-byte no-op). The warn-only
 `message-screenshots-fresh` check runs the coupler's `--check` to flag report↔catalog drift without needing the PNGs; it

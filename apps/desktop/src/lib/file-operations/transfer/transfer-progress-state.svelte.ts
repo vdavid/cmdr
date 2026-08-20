@@ -149,10 +149,9 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   /** Last-resort cap on how long we'll keep the dialog open once the operation
    *  starts winding down. The settle gate is supposed to fire `write-cancelled`
    *  + `write-settled` quickly, but if the BE op state was already gone when
-   *  the cancel was issued (e.g. it was cleaned up by
-   *  `cancel_all_write_operations` during a hot-reload or by a previous
-   *  teardown), no events ever fire and the dialog would otherwise stay at
-   *  "Cancelling…" forever.
+   *  the cancel was issued (e.g. a previous teardown already settled it), no
+   *  events ever fire and the dialog would otherwise stay at "Cancelling…"
+   *  forever.
    *
    *  Sits deliberately ABOVE the backend's `CANCEL_DRAIN_DEADLINE` (15 s, in
    *  `transfer/volume/copy.rs`), which is the point by which a cancelled

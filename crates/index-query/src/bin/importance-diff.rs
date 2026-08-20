@@ -1,11 +1,12 @@
 //! Difference the SCOPED incremental walk against the full O(dirs) walk over a REAL
 //! index, and time both.
 //!
-//! The correctness harness for `docs/specs/scoped-incremental-walk.md`: for a sample
-//! of real directories, the rows a scoped walk would write for a subtree have to be
-//! exactly the rows the full walk would write for that same subtree — same paths,
-//! same scores, same signal blobs. Both sides take the SAME fixed `now_secs`, since
-//! the recency signal moves scores with the wall clock.
+//! The correctness harness behind the scoped walk
+//! (`crates/cmdr-index/src/importance/scheduler/DETAILS.md` § The scoped walk): for
+//! a sample of real directories, the rows a scoped walk would write for a subtree
+//! have to be exactly the rows the full walk would write for that same subtree —
+//! same paths, same scores, same signal blobs. Both sides take the SAME fixed
+//! `now_secs`, since the recency signal moves scores with the wall clock.
 //!
 //! Opens the index READ-ONLY (WAL gives a consistent snapshot) and writes nothing.
 //! Reports counts and timings only — never a folder name.

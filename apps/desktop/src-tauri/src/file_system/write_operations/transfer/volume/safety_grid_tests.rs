@@ -53,7 +53,7 @@
 //!   this grid puts it. ❌ Don't add a local cell that "asserts the miss and the
 //!   fresh rescan" either — a per-path-less local cache is still a HIT.
 //! - **remote↔remote against real backends.** Four cells where a real share
-//!   genuinely can't be stood in for live in `backends/smb_transfer_semantics_test.rs`.
+//!   genuinely can't be stood in for live in `backends/smb_transfer_safety_test.rs`.
 //! - **MTP.** The virtual device is an E2E-only fixture, and the driver
 //!   difference MTP exercises (`max_concurrent_ops() == 1`) IS the
 //!   cross-volume-serial column, which is covered.

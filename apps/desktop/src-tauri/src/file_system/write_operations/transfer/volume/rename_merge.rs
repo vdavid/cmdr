@@ -27,6 +27,20 @@
 //! deletes the spine deepest-first. We NEVER delete a source directory while any
 //! content remains.
 //!
+//! **The refusal IS the guarantee, and it's the only one on this path.** A child
+//! the user chose to Skip never reached the destination, so the copy under
+//! `source_dir` is the only one in existence; unlike the cross-volume sweep
+//! (`cleanup.rs::remove_tree`) there is no `preserve` set here and nothing else
+//! re-checks. ❌ Never make this cleanup recursive or forceful, and ❌ never
+//! "tidy up" the directory a skip leaves standing: that deletes exactly the file
+//! the user chose to keep, with no probe error and no race to blame. MTP shipped
+//! a recursive `delete` for months and this is the path that lost data on it, so
+//! the promise is now held by
+//! `cmdr_fs::volume::conformance::assert_delete_leaves_a_non_empty_dir_intact`,
+//! which every backend's suite runs. Pinned by
+//! `move_merge_tests.rs::same_volume_move_folder_merge_never_loses_a_byte_under_every_policy`
+//! and, end to end on a virtual device, `rename_merge_mtp_tests.rs`.
+//!
 //! ## Case-insensitive backends and TOCTOU
 //!
 //! The dest name map is exact-match, but SMB servers and APFS are typically
