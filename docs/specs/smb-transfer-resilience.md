@@ -14,9 +14,11 @@ the dead Rollback, the corrupt files — is a symptom.
 > `docs/notes/incidents/2026-07-31-transfer-wedge/README.md` § Resolution. ❌ Don't re-anchor on credits when reading
 > the milestones below.
 
-The 2026-07-31 incident record is `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`; the observability and
-recovery work that made this diagnosable shipped as `transfer-wedge-observability.md` (M1-M6, all merged) and is what
-turned an undiagnosable hang into a 20-minute read.
+The 2026-07-31 incident record is `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`, and its closing list names
+where each piece of the observability and recovery work now lives. That work is what turned an undiagnosable hang into a
+20-minute read; the two pieces M4 below builds directly on are the in-flight table and stall watchdog
+(`apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "The stall signal") and the staging
+guarantee that makes abandoning a wedged worker safe (same file, § "File writes are staged").
 
 Read before starting: `apps/desktop/src-tauri/src/file_system/volume/backends/CLAUDE.md`, the `smb2` crate's `AGENTS.md`
 and `docs/releasing.md`, and MS-SMB2 §3.2.4.1.5 / §3.3.1.2 on credits.

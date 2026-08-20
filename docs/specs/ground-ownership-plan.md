@@ -605,7 +605,7 @@ prose doesn't anticipate. Whoever picks up swap-scan should read `docs/notes/man
 first.
 
 Independent, no interaction: `sealed-subtrees-plan.md`, `media-ml-index-plan.md`, `index-vacuum-reader-pinning.md`,
-`drive-index-overall-eta.md`, `resource-use-plan.md`, `scoped-incremental-walk.md`, `importance-subsystem-plan.md`.
+`drive-index-overall-eta.md`, `resource-use-plan.md`, and `later/importance-subsystem-plan.md`.
 `later/indexing/out-of-process-indexing.md` would have got easier if M5 landed; it didn't, so that plan keeps the
 extract-reinsert shape to reckon with.
 

@@ -6,31 +6,6 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
-- [ ] 2026-08-19 `duplicate-in-place-plan.md` - Copying an item into the folder it already lives in produces
-      `photo (1).jpg` instead of the "Can't copy to the same location" refusal, from
-      [#50](https://github.com/vdavid/cmdr/issues/50) plus a drag-onto-own-folder report. Replaces the up-front
-      `validate_not_same_location` guard, which is an operation-level lexical verdict on a per-item identity question,
-      with a `dev+ino` self-collision check asked per top-level source at the point its destination is final: copy
-      auto-renames, move no-ops, and neither ever raises a conflict prompt. That's a data-safety change as much as a UX
-      one, since every answer the conflict machinery can give for a self-collision is wrong (an `Overwrite` latch sends
-      the original through set-aside-and-delete, replacing its inode for nothing). Also unifies the three ` (N)`
-      numbering implementations, teaches the sequence to continue rather than nest, opens inline rename on a single-item
-      duplicate, and adds a Duplicate command.
-- [ ] 2026-08-19 `auto-language-plan.md` - Pick the user's UI language from their ordered macOS language preferences and
-      switch to it when we ship that language 100%, otherwise stay English. Verified that auto-detection ALREADY ships
-      crudely (prod app launched with `-AppleLanguages "(hu-HU)"` came up Hungarian, contradicting the
-      `CFBundleLocalizations` theory) and that the native menu bar (~295 hardcoded English literals in
-      `src-tauri/src/menu/`) is not localized at all, so every non-English user today gets a translated app under an
-      English menu bar. Design: read the ordered list in Rust (`apple_languages()`) instead of the single webview `Intl`
-      tag, so a `[hu-HU, sv-SE]` user can reach Swedish; split UI language from formatting locale so a hu speaker in
-      Sweden keeps `sv-SE` dates and numbers (macOS models language and region separately); never auto-cross a script
-      boundary (`zh-Hant` must not land on the Simplified `zh` catalog); follow `NSCurrentLocaleDidChangeNotification`
-      live. Menu localization is the prerequisite milestone and hides two landmines: SF Symbol icons and AppKit cleanup
-      both key off English menu TITLES today. NOT wanted: no machine-translation notice, no "coming soon" picker rows,
-      no partial locales. All eight milestones shipped: the ordered walk, the language/region split, a format locale
-      composed from the OS region (WebKit drops the `-u-rg-` override), live language and region changes with no
-      restart, 129 translated menu keys across nine locales, an onboarding language picker, and the E2E and screenshot
-      pipelines pinned to English. DONE.
 - [ ] 2026-08-18 `agent-suggested-ops-plan.md` - The agent proposes file operations (move, copy, trash, delete, rename,
       compress, extract), the user approves them in GROUPS from a review dialog, and approved groups become ordinary
       queued operations. Ships as one release. **The guiding principle, from David, resolves most design questions
@@ -44,7 +19,13 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       comparing `proposal_ops` to itself is a tautology. No cap and no expiry: 60k-op groups and rule SELECTORS resolved
       server-side against the drive index and frozen at creation, plus whole-folder ops as a single op. Corrections the
       reviews forced: extract is a COPY, not an archive-edit verb; per-source "done" already ships on
-      `OperationEventSink` so the gap is only skip/fail. IN PROGRESS.
+      `OperationEventSink` so the gap is only skip/fail. **IN PROGRESS, and further along than the spec's own build
+      status says**: the dialog, the approval bridge, the status-corner indicator, and all nine locales landed, and
+      `agent/wake/` is built (coalesce, interest, compact, the `Inbox` with its deadlines, `agent_inbox` migration v6,
+      `WakeReadiness`, and `run_wake`, 54 tests). What genuinely remains is the **tap adapter** (mapping the crate-side
+      rollup into an `EventBundle` and calling `Inbox::admit_if_permitted`) and the **scheduler** that fires at
+      `Inbox::next_deadline`: verified 2026-08-20, `run_wake` and `admit_if_permitted` have no production caller
+      anywhere in the tree, only `wake/tests/`. So the pipeline is built and nothing drives it.
 - [ ] 2026-08-17 `ground-ownership-plan.md` - Grow `cover::live::Claim` into the single authority for "who may walk this
       ground right now", retiring the parallel mechanisms that answer the same question in their own vocabulary
       (`mgr.scanning`'s arbitration half, `rescan_request::OWED`, the `phases_have_work` guard). Comes from the finding
@@ -54,8 +35,14 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       give the borrow checker permission to take `Box<IndexManager>` off the registry lock), it hung work off `Drop`
       that `cover/mod.rs:338-342` refuses by name, and its perf case cited a figure `branch-set-cost-2026-08-15.md`
       refutes. Adds `Mode::{Exclusive, Additive}` (Decision 13 needs it), fixes `live.rs:69`'s in-call O(n²), and closes
-      a latent `start_volume_scan` truncate bug. M5 (shareable manager custody) is the honest version of the dropped
-      claim and unblocks `later/indexing/swap-scan-plan.md`; M7 (preemption) is the product win.
+      a latent `start_volume_scan` truncate bug. **M0, M1, M2, M4, and M7 (the product win) are shipped**, M4 with
+      product call 4 (a "Rescan now" during a running scan now QUEUES). **M5 was spiked and DROPPED on its merits**
+      (`docs/notes/manager-custody-spike-2026-08-18.md`): `Arc<Mutex<IndexManager>>` keeps the same exclusion and pays a
+      lock for it, converting a window where no lock is held into one held across blocking I/O. The spike's own finding
+      was the valuable part, a fourth stranding hazard the plan never listed (a teardown landing in the extraction
+      window is silently swallowed, and the `fail_index` case is a principle #1 exposure: a fatal storage error never
+      reaches `Failed` and the volume runs on over a dead writer), and its four-item replacement has since landed too.
+      M3 (a rename) and M6 (optional) are all that remain.
 - [ ] 2026-08-13 `phased-indexing-plan.md` - Replace the first full drive scan with ordered coverage phases: the user's
       own folders (last session's tabs, favorites, standard home dirs, cloud roots), then whatever they open while the
       app runs, then `$HOME`, then the rest of the drive. Every phase is an `Index::cover` walk, so nothing is ever
@@ -63,44 +50,18 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       retrofit. The whole drive still gets indexed and every existing promise stays true; the one addition is a
       `home_covered_at` signal so photo search and importance start when home is done instead of waiting for `/`.
       Carries the hourglass fix (corner and per-folder, keyed to ground actually being walked, with a 1 s debounce).
-      Gated on a benchmark: cover-over-`/` versus today's bulk build, timed to first useful folder as well as to full
-      coverage.
+      **M0 through M5 are built**, plus the `Abandoned` cause with its heal; only M6 (follow-ups) is left: the Spotlight
+      `kMDItemLastUsedDate` recency signal, the verifier MARK, "watch only these folders" as a user setting, and Finder
+      sidebar favorites. The benchmark gate this was written behind has been passed.
 - [ ] 2026-08-12 `marketing-screenshot-pipeline-plan.md` - Turn the hand-driven marketing screenshot round (20–30 min of
       MCP calls) into one Playwright command. The shutter stays `screencapture -l` because the plugin's native capture
       has no macOS shadow; the run leaves `CMDR_E2E_MODE` unset so the window can become key and earn the focused
       shadow; and the shard opts out of the fixture guard, which would otherwise delete the real folders being
-      photographed. Also seeds a fake Ask Cmdr thread so the chat shot needs no provider.
-- [x] 2026-08-10 `quit-and-operation-lifetime.md` - **Done (Q1, Q2, Q3 all landed).** The backend now owns operation
-      lifetime and the quit decision. The `beforeunload` handler that cancelled the GLOBAL registry (killing a
-      backgrounded transfer on a dev reload, and racing un-awaited at quit) is gone, replaced by a Rust-owned quit gate:
-      it prompts when anything non-instant is active, counts down 15 seconds on its own OS thread (so a wedged webview
-      can't block the quit), then cancels with no rollback, keeping completed files and removing only the in-flight
-      partial, inside a hard 2-second budget. Two enabling changes made that budget real: **local copies stage through
-      temp+rename** (they used to write to the FINAL name, so a quit mid-copy left a truncated file looking complete — a
-      crash- and power-loss hole too), and a **hard-abort tier** races the chunk await against a second token so an SMB
-      chunk's 30-second deadline can't hold the quit, with the cooperative cancel path that lets backends clean their
-      own partials still the default. Prerequisite (M0) of `operation-session-plan.md`, now satisfied. Ready to wipe
-      once someone confirms the colocated docs carry everything.
-- [x] 2026-08-09 `operation-session-plan.md` - **Done; spec deleted, the code and its colocated docs carry it.** An
-      operation is now a thing views WATCH rather than something a dialog owns: a per-window event fan-out plus a
-      refcounted session registry keyed by `operationId`, with zero views a legal state. A transfer confirmed mid-scan
-      is a real backend operation from the first frame (backgroundable, pausable, cancellable, and it holds ⌘Q). The
-      corner chip, the queue rows, and the progress dialog all read one session, so one operation has one ETA. Closing
-      the dialog detaches instead of cancelling, and **Show** in the queue window hands a running operation to the main
-      window's dialog. Answering a conflict now reports its own arbitration (`ConflictResolutionOutcome`), so a second
-      surface can't silently swallow the user's click. Adopted views degrade honestly on birth context; the
-      search-snapshot purge stayed scoped out with its real fix described in `file-explorer/pane/DETAILS.md`.
-- [x] 2026-08-09 `background-conflict-prompt.md` (built) - A backgrounded transfer that hits a name clash deep inside a
-      merging folder used to wedge invisibly: the upfront check is top-level only, folders always merge, and the app's
-      only `write-conflict` listener is the progress dialog the Queue button just unmounted, so the operation parked on
-      a oneshot nobody could answer. The fix is a main-window host that owns conflict prompts for operations no
-      foreground dialog is showing: pause what's running (remembered by id, so a resume can't override a pause the user
-      made by hand), raise the same `TransferConflictDialog` through the same `resolveWriteConflict` path, resume on the
-      answer. Ownership is one pure function, and the pause width is another, because "pause only this operation" is
-      where this is going. Carries the claim-race fix the naive version would have shipped with (a conflict can arrive
-      before the start command's response names the operation, so the foreground slot grew a claim counter and the
-      controller defers instead of guessing), a FIFO of one prompt at a time, and three exits for an operation that dies
-      mid-prompt.
+      photographed. Also seeds a fake Ask Cmdr thread so the chat shot needs no provider. **M1 and M2 are done and
+      proven against a live window; M3 is partly done** (the `app-main` pair and `hero-cutouts.json` come out correct at
+      2508x1634, with the measured rectangles matching the hand-measured ones), leaving the pinned-tab arrangement, the
+      pane paths, hidden files, the index-freshness gate, and the `search` / `chat` / `settings` pairs to stage. **M4
+      (seeding the shots data dir) and M5 (docs, retiring the manual path) are not started.**
 - [x] 2026-08-08 `operation-queue-visibility-plan.md` (built; awaiting David's copy review) - Background file operations
       are invisible, and so are their failures: press Queue, close the queue window, and a running transfer leaves no
       trace in the main window; if it then fails, the reason is gone with the progress modal that Queue unmounted. Four
@@ -125,49 +86,6 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       five copy drafts needing David's sign-off, and six flagged risks. BUILT, M1–M11 all landed, including all nine
       locales. What's left is David's pass over the five copy drafts, and one `pnpm i18n:shots` run on an idle machine
       (the new `queue-failed` / `operation-chip` / `operation-failure` capture surfaces are wired but never yet shot).
-- [ ] 2026-08-08 `copy-move-safety-hardening-plan.md` - Generalize the three lessons of `7046e9dbb` + `bf6d896b3` (a
-      cross-volume copy that streamed directories as files and could recursively delete the user's merged destination
-      folder, latent for three months) into types, guards, and checks. **P0 is urgent and goes first**: a claim-by-claim
-      review found `MtpVolume::delete` recursing into non-empty directories, which the `Volume::delete` trait contract
-      forbids in bold and which four reachable guards depend on (a fifth, rollback's created-dirs prune, leans on it in
-      writing but isn't reachable today). The one that loses data is the same-volume move's source cleanup
-      (`rename_merge.rs:186-197`), empty-only BY DESIGN because that refusal is the ONLY thing keeping a Skipped child's
-      single copy alive — so on a phone, merging a folder onto a same-named one and choosing Skip destroys exactly the
-      file the user chose to keep, with no probe error and no race. The fix is nearly free (the MTP code already lists a
-      folder's children before recursing, so refusing costs zero USB roundtrips, and every real tree delete already
-      walks caller-side and deletes leaf-first) plus a shared conformance assertion every backend runs, rather than an
-      opt-in `delete_tree` capability serving zero callers. **P1** makes the preview cache truthful: split `scan.rs`'s
-      1,462 lines with no allowlist bump, bind a cached scan to the sources it was asked for (a `preview_id` currently
-      authorizes deleting whatever the PREVIEW walked — the LOCAL delete never re-reads its own `sources`, while the
-      volume one already does — which is the same unverified-fact shape on the one op with no rollback), make
-      `SCAN_PREVIEW_RESULTS` private so the `files > 0 && per_path == 0` canary is load-bearing, name the two cache
-      shapes with constructors, remove `Default` from `SourceHint`, and decide each of the eight
-      `is_directory(...).unwrap_or(false)` sites — of which `conflict.rs:80` and `rename_merge.rs:333` are destructive,
-      and `walker.rs:749`, contrary to an earlier draft, is an accounting-and-honesty defect rather than a loss. **P2**
-      splits `cleanup.rs`'s recursive delete by INTENT (`delete_written_file` / `prune_created_dir_if_empty` /
-      `remove_tree(why: TreeRemoval)`) so the cleanup path physically cannot recurse, with the prune checking emptiness
-      itself rather than trusting the trait. **P3** extracts the no-byte-lost oracle the merge suites already share
-      (assertion only: the two fixtures are different trees and unifying them would weaken a policy assertion), teaches
-      `InMemoryVolume` to lie about metadata as a first-class fault class, and adds a 3-tier ~39-cell grid plus four
-      real-SMB cells and three new Go checks. Findings that reshape the brief: compress, trash, and rename consume no
-      preview cache at all (only copy, move, delete do); local copy and local move each re-read `sources` in their own
-      way, so one test per pipeline; and the oracle already exists twice. Carries pushbacks with reasoning: the proposed
-      `DirectoryCreation::Created` newtype guards the SAFE case and is itself a backend-supplied belief; the literal
-      coverage grid is ~360 cells of which most are meaningless because `InMemoryVolume` can't distinguish local from
-      SMB from MTP; and `scan_sources_internal` should NOT adopt the per-path helper. One reversal on review: the
-      `unwrap_or_default` check IS worth building, method-scoped rather than variable-scoped, because the compiler
-      catches none of the hand-written probe unwraps. Reviewed twice, claim by claim, against the code. SPECCED, not
-      started.
-- [x] 2026-08-06 `i18n-screenshot-coverage.md` - SHIPPED. Translators see a screenshot per string; coverage went from
-      **1549 / 2743 keys (56%)** to **2046 / 2743 (75%)**, with direct (precise) captures up from 910 to 1178, and the
-      run from 68 surfaces with three dead passes to **133 surfaces, 0 failed**. The lever was driving the capture from
-      `DIALOG_GALLERY_ENTRIES` instead of hand-staging each dialog, which needed the gallery's gate widened from
-      `import.meta.env.DEV` to `DEV || __CMDR_I18N_CAPTURE__` (the capture binary's frontend is a production Vite
-      build). Also added: the transfer-queue window, four Ask Cmdr states, acknowledgements, the pane volume chooser,
-      and representative mappings that took `queryUi`, `search`, `updates`, and `viewer` to 100%. The `shortcuts` window
-      was never broken; its skip blamed a tauri-playwright eval hang when the window was simply missing from the
-      generated `playwright.json` capability. Keep the doc for its gotchas and the remaining gaps (`settings.mediaIndex`
-      first).
 - [ ] 2026-08-03 `resource-use-plan.md` - PARTLY SHIPPED. Cut idle CPU and RAM: prod v0.37.0 burned 110 min of CPU over
       9.1 h (about 20% of a core, sustained) at a 1.78 GB footprint while idle, writing 141,072 log lines in six hours.
       **The plan's value is mostly in what it got WRONG and how**, so read § M0 before trusting any number in it: four
@@ -188,34 +106,14 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       batching (**2.06x**, real writer path, median of three runs each; the 70.2 -> 34.1 us absolutes are DEBUG-build
       numbers and the release path is ~4.6x cheaper, so quote the ratio, never the microseconds — see
       `docs/notes/size-only-subtrees-rejected-2026-08-06.md`); importance passes writing only what moved; and the
-      sync-status poll skipping folders with no cloud files. **Open**: the origin bound and demotion, the M3
-      arrival-rate governor (unchanged in substance: denylists rejected, must engage `cost_budget.rs:37`, the
-      external-volume blind window, the hourglass flicker, and Spike B's over-climb finding), log volume, and the 643 MB
-      `MALLOC_LARGE`, which is the primary memory unknown now that page-cache overflow is shown to land only in
-      `MALLOC_SMALL` and the search arena is shown to drop correctly.
+      sync-status poll skipping folders with no cloud files, and the origin bound and demotion (`0271855aa`, which made
+      an over-budget origin rescore alone off a single `dir_stats.recursive_dir_count` lookup taken BEFORE anything is
+      read, leaving the running descent count as a backstop for a missing or stale row). **Open**: the M3 arrival-rate
+      governor (unchanged in substance: denylists rejected, must engage `cost_budget.rs:37`, the external-volume blind
+      window, the hourglass flicker, and Spike B's over-climb finding), log volume, and the 643 MB `MALLOC_LARGE`, which
+      is the primary memory unknown now that page-cache overflow is shown to land only in `MALLOC_SMALL` and the search
+      arena is shown to drop correctly.
 
-- [x] 2026-08-04 `unindexed-search-plan.md` - SHIPPED (all eleven milestones on local `main`); doc kept for its
-      decisions and its register of accepted indexed-versus-not differences. A search returns the same files indexed or
-      not, only slower, on every volume kind (local, SMB, MTP, and whatever comes next), by walking the uncovered part
-      live and writing what it finds into the drive index. Made reachable by capping a search at ONE volume: fan-out was
-      the only way a search could quietly omit a drive, so removing it deletes machinery (k-way merge, cold-volume
-      deferral, re-run-on-ready) rather than adding any, and the MCP tools collapse to a thin wrapper on the same path.
-      Three findings shape the mechanism. The descent rule needs BOTH epoch fields: `min_subtree_epoch` alone
-      degenerates to "walk everything", since its zero-absorbing min forces zero on every ancestor of any gap.
-      Exclusions are a live-walk concern only, because an excluded dir gets no `entries` row at all, so the walk must
-      index what the scanner does with `excludeSystemDirs` staying a match-time filter. And the convergence it all rests
-      on **does not exist today**: a cancelled `scan_subtree` stamps zero coverage and deletes descendants first, while
-      the non-destructive alternative is measured 9-19× slower on the add-everything delta a frontier walk always is, so
-      the primitive is chosen by measurement and a cold volume needs real bootstrap work. Walked branches get a watcher
-      rather than an expiry, so they stay live like indexed ones. Also fixes why none of it is reachable today: search
-      returns before running at all when root's arena isn't loaded. Carries a 13-item register of accepted
-      indexed-versus-not differences and a record of everything David settled on 2026-08-04.
-- [x] 2026-08-03 `jetbrains-plugin.md` - SHIPPED, and wiped. A private IntelliJ plugin at `tools/intellij-plugin/`
-      carrying Cmdr-specific reading aids: commit hashes in a `CHANGELOG.md` entry render link-colored and ⌘-click to
-      GitHub, and a message key folds to its English text and ⌘-clicks through to its catalog line. The changelog
-      normalization landed with it, taking every commit ref to exactly 8 characters and teaching `changelog-links` to
-      fail on any other length. Decisions, measured platform behavior, and the feedback loop live in
-      `tools/intellij-plugin/DETAILS.md`.
 - [ ] 2026-08-03 `backend-crates-plan.md` - Make "a filesystem backend is its own crate" the shape FTP(S), S3, and SFTP
       get written in, validated first against one mature backend. The `Volume` trait is already the API and already
       lives in `cmdr-fs`, so a crate boundary adds enforcement, not design: `SmbVolume` reaches into the app at 23 sites
@@ -223,12 +121,14 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       (listing cache, runtime handle, typed event emit, credentials, index notification, settings, priority and
       analytics), modelled on `crates/cmdr-index/src/indexing/host/`. Design the seams from SMB's 23 sites, then land
       `cmdr-archive` as the pilot (its whole coupling is three seams, no Tauri types, no `cfg(test)` gates, no Docker in
-      its tests), ending at a real measurement gate that can cancel `cmdr-smb`. Two honest limits recorded up front:
-      **`pnpm check` will not get faster** (every Rust check shares one `rustInputs` set and runs `--workspace`; that
-      needs separate per-crate check lanes), and full app builds get ~11% SLOWER after a backend edit, as measured for
-      the index. `local_posix` is declared permanently app-resident (it's the git portal's host, 6,402 lines behind it)
-      and MTP is out of scope (seven `tauri_specta` derives inside the transport layer, six `cfg(test)` behavior gates,
-      and a `pub(in …)` visibility with no cross-crate equivalent).
+      its tests), ending at a real measurement gate that can cancel `cmdr-smb`. **The pilot SHIPPED** (`6d435cdf7`):
+      `crates/cmdr-archive` exists and is the model a new backend crate copies. What remains is the seam design and the
+      SMB extraction itself, where the reach-through has since grown from the 23 sites measured here to 32. Two honest
+      limits recorded up front: **`pnpm check` will not get faster** (every Rust check shares one `rustInputs` set and
+      runs `--workspace`; that needs separate per-crate check lanes), and full app builds get ~11% SLOWER after a
+      backend edit, as measured for the index. `local_posix` is declared permanently app-resident (it's the git portal's
+      host, 6,402 lines behind it) and MTP is out of scope (seven `tauri_specta` derives inside the transport layer, six
+      `cfg(test)` behavior gates, and a `pub(in …)` visibility with no cross-crate equivalent).
 - [ ] 2026-08-02 `module-cycle-untangling.md` - Cut the two large module dependency cycles in the Rust crates (a
       23-module index-engine SCC and a 17-module `file_system` ↔ `mtp` SCC) plus three small cross-subsystem ones, then
       install a ratcheting `rust-module-cycles` check. The headline finding is that both large components are thin: the
@@ -255,31 +155,6 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       starvation hang. Evidence: `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`. M0-M2, M4.1, M4.3, and M4.4
       shipped; M3 open.
 
-- [x] 2026-07-31 `transfer-wedge-observability.md` - SHIPPED (M1-M6). A 764-file copy to an SMB share wedged after 12
-      files, ignored Rollback, and had to be force-quit, leaving two byte-incomplete files at their FINAL names on the
-      NAS. **The root cause is still unknown**, so M1 was observability first: a live in-flight table where every task
-      records its phase and the driver records its own, a watchdog that dumps the table when bytes stop moving, request
-      accounting in `smb2` (its own repo, reaches Cmdr on the next release), logging in `sync_status`, and every exit
-      from the cancel path. M2 stages every cross-volume write on a `.cmdr-tmp-*` so an interrupted transfer can't leave
-      a truncated file wearing a real name; M3 makes the driver observe intent on its `in_flight.next()` await and
-      abandon what won't wind down, so force-quit stops being the only way out; M4 replaces the per-call thread fan-out
-      that leaked 21-23 wedged threads with a bounded pool plus a cache (300 thread creations and 3 s of sitting on a
-      Dropbox folder became zero and 455 µs); M5 makes a stalled transfer say so instead of showing a confident ETA,
-      which needed the watchdog to re-emit the last event because a wedged transfer emits none; M6 unifies
-      size/speed/ETA behind one formatter each with a lint. Two of the spec's own premises were wrong and are corrected
-      in the doc: the size disagreement needed `get_restricted_window_settings` to carry the field, not just
-      `initReactiveSettings()` in every window, and the file counter was honest all along (the gap was in-flight tasks,
-      now surfaced rather than "fixed"). Evidence: `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`.
-- [x] 2026-07-29 `scoped-incremental-walk.md` - SHIPPED. Make an importance incremental rescore cost O(touched) instead
-      of O(dirs): read only the changed subtrees out of the index instead of walking the whole volume (~5.5 s over a
-      611,699-folder root index, which is essentially the entire cost of every incremental pass). Rests on separating
-      the two whole-tree propagations: `under_floored_ancestor` is exact pure path math over a folder's own prefixes,
-      and `has_marker_below` is exact inside a walked subtree, leaving one cross-boundary signal that a stored-vs-fresh
-      `has_project_marker` comparison detects exactly, falling back to the full walk when it flips. Carries the
-      crossover rule for a wide batch, the accepted lossiness (strict ancestors stop getting their recency term
-      refreshed every pass), and the differential-oracle property the test suite pins. Measured median 98–164 µs per
-      origin over real 391k- and 611k-folder indexes with zero disagreements against the full walk. Also records a
-      pre-existing case-folding gap in the clear that this change neither caused nor fixed.
 - [ ] 2026-07-29 `agent-context-harness-plan.md` - Two problems: the human can't check the agent's rename work (review
       is text against text, which is how 12 real files got fabricated names), and the agent loses grounding on a job too
       big for one prompt. Phase A puts the file in front of the reviewer (thumbnail preview, the evidence quote shown in
@@ -290,7 +165,11 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       shipped weaknesses four review rounds found: the image-tag evidence bypass (FIXED 2026-07-29) and bulk-rename undo
       verifying identity by size alone (OPEN, prerequisite for M3). M9 cut as anti-safety; M11 (per-rule approval for
       large jobs) needs David's policy decision and is a write-engine change, not a spike; M12/M13 deferred behind it.
-      SPECCED, not started.
+      **M1, M2, M3 (plus a per-item skip-reason follow-up), M4, M5, M6, M7, M8, and M10 are all shipped**; M11, M12, and
+      M13 are what remain, and M11 needs David's decision before M12 is worth planning. Execution also found two things
+      the plan lacked: `files_per_batch` sized a batch from the prompt budget alone (a 60,000-token budget advertised
+      145 files while one reply can emit about 101, and past that a plan is cut off mid-JSON and lost), and nothing
+      carried the batch size to the model until the turn envelope started rendering it.
 - [ ] 2026-07-28 `flaky-test-eradication.md` - Make a red `rust-tests` run mean a real regression again. MOSTLY SHIPPED
       (2026-07-29): retry-rescued runs now warn instead of passing silently, failures are sorted by which deadline blew
       (nextest cap vs in-test `wait_until`), and a red run re-runs its failures alone before believing them, so
@@ -299,31 +178,15 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       already on a 20 s cap, not 8 s). All three Rust lanes plus both Playwright lanes now report retry-passes as warns,
       and `rust-integration-tests` gets the contention re-run too. Remaining, needing David's OK: a per-test duration
       budget for the Rust suites, mirroring the 2 s one E2E already enforces (only 16 of ~4,900 tests exceed it today).
-- [x] 2026-07-28 `rename-chaining-arrow-keys.md` - SHIPPED (the toast wording awaits David's copy review).
-      ArrowDown/ArrowUp in the inline rename editor commits the current edit and instantly starts renaming the file
-      below/above, so renaming a run of files is one keyboard flow. Fire and forget (fast on SMB/MTP), neighbour
-      captured by path BEFORE the rename re-sorts the listing, unusable names and conflicts discarded, extension changes
-      committed without a dialog. Carries the data-safety invariants (session ids, superseded-session effects,
-      `pendingCursorName` suppression) that keep a save in flight for file N from corrupting the editor already on N+1.
-      The durable intent lives in `apps/desktop/src/lib/file-explorer/rename/CLAUDE.md` and its `DETAILS.md` §§ Rename
-      sessions and Chaining.
-- [x] 2026-07-25 `index-crate-extraction-plan.md` - SHIPPED, and wiped. Extracted `indexing/` + `media_index/` +
-      `importance/` (93k lines, 28% of `src-tauri/src`) into a Tauri-free `cmdr-index` crate over a `cmdr-fs`
-      foundation, with a designed public API: an owned `Index` handle, five named host seams, typed errors, no
-      user-facing strings, one cancellation primitive, structured progress, and a designed-not-implemented ingest side.
-      The durable intent lives in `crates/cmdr-index/DETAILS.md` (why the crate exists, the eight-point contract it's
-      held to, the gated surfaces, what stayed host-side), `crates/cmdr-index/src/indexing/handle/DETAILS.md` (the
-      public-surface audit, item by item), `crates/cmdr-index/src/indexing/host/DETAILS.md` (the seams), and
-      `crates/cmdr-fs/DETAILS.md` (the compiler-derived closure and the four cuts that made it finite). Two properties
-      are machine-checked rather than remembered: `index-crate-isolation` (no `tauri` in either crate's tree, plus a
-      ceiling on the public surface) and `desktop-rust-rustdoc` (no broken intra-doc links). Measurements, before and
-      after: `docs/notes/index-extraction-baseline.md`.
-
-## Later
-
-Deferred future work. Unchecked by default; the folder name is the status. Each entry notes what shipped and what's
-left, so the durable intent survives the wipe.
-
+- [ ] 2026-08-20 `later/i18n-screenshot-gaps.md` - Translator-screenshot coverage: which catalog families are still
+      uncoupled, why each resists capture, and what closing it takes. Stands at **2,101 / 2,989 keys (70%)**: 1,200
+      direct plus 901 representative, over 132 captured surfaces with none failed. The percentage fell from the shipped
+      plan's 75% only because the catalog grew (the translated menu bar alone added 129 permanently-native `menu.*`
+      keys); absolute coverage rose. Biggest gaps: `settings.mediaIndex` (80, the whole panel body behind the
+      image-indexing master toggle), `askCmdr` (82, needs the scripted fake LLM to emit a tool call),
+      `fileExplorer.navigation` (55, SMB connection and favorites failure states), and four cheap settings surfaces the
+      capture never visits. Live per-area numbers always come from the generated
+      `apps/desktop/src/lib/intl/messages/screenshots/coverage-report.md`, never this doc.
 - [ ] 2026-07-22 `later/indexing/swap-scan-plan.md` - Build-and-swap rescan: run the fast parallel guarded walker into a
       separate `index-{vid}.building.db`, then swap it in atomically (~8.4× faster, 107 s vs 897 s), replacing the
       ~15-minute serial in-place reconcile of a completed LOCAL index. Durable `.swap` marker + idempotent open-time
@@ -347,7 +210,7 @@ left, so the durable intent survives the wipe.
       DEFERRED (each with a settled design or trigger): fast tail-add zip edits (clone+tail-rewrite design validated in
       `docs/notes/m-append-spike.md`; the SMB path needs an smb2 copychunk client API), open-with-external for inner
       files (design spiked), and MTP in-place editing (stretch).
-- [ ] 2026-07-08 `importance-subsystem-plan.md` - Neutral, deterministic folder-importance subsystem (per-volume
+- [ ] 2026-07-08 `later/importance-subsystem-plan.md` - Neutral, deterministic folder-importance subsystem (per-volume
       `importance.db`, a minimal lifecycle bus in `indexing/`, an explain call, offline-unmounted reads), exposed as a
       general read API. SHIPPED (M1–M4); durable intent lives in the `importance/` and `indexing/` `CLAUDE.md`/
       `DETAILS.md`. Open follow-ups: weight tuning, and the `kMDItemLastUsedDate` sampling cost.
@@ -356,9 +219,9 @@ left, so the durable intent survives the wipe.
       on-device by default. SHIPPED: M1/M1.5/M2 (backend + OCR foundation), M3 (natural-language CLIP semantic search;
       the CLIP path is gated dark until the model artifacts are uploaded), M6 (photo-search agent/MCP tool). PARKED:
       M4a/M4b faces (David wants to be closer in the loop), and M5 LLM captions (optional).
-- [ ] 2026-06-28 `colorful-tags-plan.md` - macOS Finder tags: read + show colored dots, and context-menu assign. SHIPPED
-      (M0–M3); durable intent lives in the colocated `CLAUDE.md`/`DETAILS.md`. Remaining is minor polish only: quiet
-      backfill, in-place search-results refresh, a locale native-string pass, and David's visual QA.
+- [ ] 2026-06-28 `later/colorful-tags-plan.md` - macOS Finder tags: read + show colored dots, and context-menu assign.
+      SHIPPED (M0–M3); durable intent lives in the colocated `CLAUDE.md`/`DETAILS.md`. Remaining is minor polish only:
+      quiet backfill, in-place search-results refresh, a locale native-string pass, and David's visual QA.
 - [ ] 2026-03-10 `later/db-first-listings-plan.md` - Serve directory listings from the SQLite index for sub-ms
       navigation.
 - [ ] 2026-03-10 `later/dropbox-sync-status-linux.md` - Detect Dropbox sync status on Linux via command socket.
