@@ -51,14 +51,12 @@ export function createInitialTabState(
 }
 
 export function createTabManagerFromPersisted(paneTabs: PersistedPaneTabs): TabManager {
-  const tabs = paneTabs.tabs.map(
-    (pt): TabState => ({
-      ...pt,
-      history: createHistory(pt.volumeId, pt.path),
-      cursorFilename: null,
-      unreachable: null,
-    }),
-  )
+  const tabs = paneTabs.tabs.map((pt): TabState => ({
+    ...pt,
+    history: createHistory(pt.volumeId, pt.path),
+    cursorFilename: null,
+    unreachable: null,
+  }))
 
   const mgr = createTabManager(tabs[0])
   for (let i = 1; i < tabs.length; i++) {
@@ -70,17 +68,15 @@ export function createTabManagerFromPersisted(paneTabs: PersistedPaneTabs): TabM
 
 export function buildPersistedPaneTabs(mgr: TabManager): PersistedPaneTabs {
   return {
-    tabs: getAllTabs(mgr).map(
-      (tab): PersistedTab => ({
-        id: tab.id,
-        path: tab.path,
-        volumeId: tab.volumeId,
-        sortBy: tab.sortBy,
-        sortOrder: tab.sortOrder,
-        viewMode: tab.viewMode,
-        pinned: tab.pinned,
-      }),
-    ),
+    tabs: getAllTabs(mgr).map((tab): PersistedTab => ({
+      id: tab.id,
+      path: tab.path,
+      volumeId: tab.volumeId,
+      sortBy: tab.sortBy,
+      sortOrder: tab.sortOrder,
+      viewMode: tab.viewMode,
+      pinned: tab.pinned,
+    })),
     activeTabId: mgr.activeTabId,
   }
 }

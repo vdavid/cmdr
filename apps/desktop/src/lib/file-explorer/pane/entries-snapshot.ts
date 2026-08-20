@@ -39,22 +39,20 @@ export async function fetchEntriesSnapshot(input: EntriesSnapshotInput): Promise
     // user sees in the pane.
     const sn = input.searchSnapshot
     if (!sn) return []
-    return sn.entries.map(
-      (e): FileEntry => ({
-        name: e.name,
-        path: e.path,
-        parentPath: e.parentPath,
-        isDirectory: e.isDirectory,
-        isSymlink: false,
-        size: e.size ?? undefined,
-        modifiedAt: e.modifiedAt ?? undefined,
-        permissions: 0,
-        owner: '',
-        group: '',
-        iconId: e.iconId,
-        extendedMetadataLoaded: true,
-      }),
-    )
+    return sn.entries.map((e): FileEntry => ({
+      name: e.name,
+      path: e.path,
+      parentPath: e.parentPath,
+      isDirectory: e.isDirectory,
+      isSymlink: false,
+      size: e.size ?? undefined,
+      modifiedAt: e.modifiedAt ?? undefined,
+      permissions: 0,
+      owner: '',
+      group: '',
+      iconId: e.iconId,
+      extendedMetadataLoaded: true,
+    }))
   }
 
   const canonical = input.canonicalPath

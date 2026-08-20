@@ -356,26 +356,26 @@ export function pristineFixtureEntries(): FixtureSpecEntry[] {
 
   return [
     ...[...dirs].map((rel): FixtureSpecEntry => ({ rel, kind: 'dir' })),
-    ...fixtureLayout.textFiles.map(
-      (file): FixtureSpecEntry => ({ rel: file.rel, kind: 'file', source: { type: 'text', content: file.content } }),
-    ),
-    ...mediaFixtures.map(
-      (file): FixtureSpecEntry => ({
-        rel: file.rel,
-        kind: 'file',
-        source: { type: 'copy', from: path.join(mediaFixturesDir, file.source) },
-      }),
-    ),
-    ...archiveFixtures.map(
-      (file): FixtureSpecEntry => ({
-        rel: file.rel,
-        kind: 'file',
-        source: { type: 'copy', from: path.join(archiveFixturesDir, file.source) },
-      }),
-    ),
-    ...bulkFiles().map(
-      (file): FixtureSpecEntry => ({ rel: file.rel, kind: 'file', source: { type: 'bulk', sizeMb: file.sizeMb } }),
-    ),
+    ...fixtureLayout.textFiles.map((file): FixtureSpecEntry => ({
+      rel: file.rel,
+      kind: 'file',
+      source: { type: 'text', content: file.content },
+    })),
+    ...mediaFixtures.map((file): FixtureSpecEntry => ({
+      rel: file.rel,
+      kind: 'file',
+      source: { type: 'copy', from: path.join(mediaFixturesDir, file.source) },
+    })),
+    ...archiveFixtures.map((file): FixtureSpecEntry => ({
+      rel: file.rel,
+      kind: 'file',
+      source: { type: 'copy', from: path.join(archiveFixturesDir, file.source) },
+    })),
+    ...bulkFiles().map((file): FixtureSpecEntry => ({
+      rel: file.rel,
+      kind: 'file',
+      source: { type: 'bulk', sizeMb: file.sizeMb },
+    })),
   ]
 }
 
