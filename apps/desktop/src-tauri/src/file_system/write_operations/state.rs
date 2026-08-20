@@ -245,23 +245,13 @@ impl WriteOperationState {
     /// copy, volume move, MTP, SMB) so the FE sees uniform rates, ETA, and stall
     /// classification regardless of which backend produced the event.
     pub fn enrich_progress(&self, event: &mut WriteProgressEvent) {
-        // Looked up by operation id rather than threaded through every emit
-        // site's signature. An operation that keeps no in-flight table (local
-        // copy, delete, trash) misses the lookup and answers for itself: the one
-        // thing it can still say is that it has parked on a PERSON, and that is
-        // the one thing a view must not have to guess. § `person_wait`.
-        if let Some(activity) =
-            crate::file_system::write_operations::transfer::transfer_probe::activity_for(&event.operation_id)
-        {
-            event.activity = Some(activity);
-        } else if let Some(waiting_on) = self.person_wait() {
-            event.activity = Some(TransferActivity {
-                // No table, so no honest count; and a parked operation has been
-                // still for nobody's time but the person's.
-                in_flight: 0,
-                still_for_seconds: 0,
-                waiting_on,
-            });
+        // Classified here so no emit site has to remember, EXCEPT for a caller
+        // that already holds the answer: the stall watchdog emits from the probe
+        // it is stepping, and its copy is the one that just decided the transfer
+        // is wedged. Clobbering that with a second lookup is how a re-emitted
+        // event loses the very activity it exists to carry.
+        if event.activity.is_none() {
+            event.activity = self.activity(&event.operation_id);
         }
 
         let now = Instant::now();
@@ -296,20 +286,50 @@ impl WriteOperationState {
         });
     }
 
-    /// Who this operation is waiting on, when the answer is a PERSON.
+    /// What this operation is waiting on right now: the ONE classifier, for the
+    /// progress event and the [`OperationStatus`](super::types::OperationStatus)
+    /// snapshot alike.
+    ///
+    /// Both readers come through here so a poller and a subscriber can't
+    /// disagree about a transfer's state; a snapshot saying `moving` while the
+    /// event stream said `destination` sends an agent down the wrong branch.
+    /// Classified at READ time, never cached: a wait that is over is worth
+    /// nothing.
+    ///
+    /// Looked up by operation id rather than kept on the state, because the
+    /// in-flight table lives in the transfer probe's registry. An operation that
+    /// keeps no table (a local copy, a delete, a trash) misses that lookup and
+    /// answers for itself off its own pause gate and conflict slot: the one
+    /// thing it can still say is that somebody is being asked, and that is the
+    /// one thing a view must not have to guess.
+    ///
+    /// `None` means "can't tell", ❌ never "it's moving".
+    pub(super) fn activity(&self, operation_id: &str) -> Option<TransferActivity> {
+        if let Some(activity) = super::transfer::transfer_probe::activity_for(operation_id) {
+            return Some(activity);
+        }
+        self.decision_wait().map(|waiting_on| TransferActivity {
+            // No table, so no honest count; and a parked operation has been
+            // still for nobody's time but the answerer's.
+            in_flight: 0,
+            still_for_seconds: 0,
+            waiting_on,
+        })
+    }
+
+    /// The wait an operation can name without an in-flight table: the two parks
+    /// that hold for somebody's decision.
     ///
     /// Both sources are the ones the human-wait clock tracks
     /// ([`super::human_wait`]), read in the same order
     /// `transfer_probe::wait_reason` reads them, so an operation with an
     /// in-flight table and one without classify the same wait the same way.
-    /// `None` means nobody is being asked, which is not the same as "it is
-    /// moving": a local operation with no probe genuinely cannot tell.
-    fn person_wait(&self) -> Option<TransferWaitReason> {
+    fn decision_wait(&self) -> Option<TransferWaitReason> {
         if self.pause_gate.is_paused() {
             return Some(TransferWaitReason::Paused);
         }
         if self.conflict_slot.is_awaiting() {
-            return Some(TransferWaitReason::You);
+            return Some(TransferWaitReason::Conflict);
         }
         None
     }

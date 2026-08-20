@@ -10,8 +10,8 @@ use crate::file_system::write_operations::manager::{
     LifecycleStatus, OperationDescriptor, OperationSummaryText, PauseOutcome, manager,
 };
 use crate::file_system::write_operations::state::{OperationIntent, WRITE_OPERATION_STATE, WriteOperationState};
-use crate::file_system::write_operations::test_support::TestOperationGuard;
-use crate::file_system::write_operations::types::{WriteOperationPhase, WriteOperationType};
+use crate::file_system::write_operations::test_support::{TestOperationGuard, placeholder_conflict};
+use crate::file_system::write_operations::types::{TransferWaitReason, WriteOperationPhase, WriteOperationType};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
@@ -180,6 +180,73 @@ fn update_operation_status_overwrites_fields() {
     assert_eq!(status.files_total, 10);
     assert_eq!(status.bytes_done, 500);
     assert_eq!(status.bytes_total, 1000);
+    unregister_operation_status(&id);
+}
+
+// ---- activity on the snapshot (why isn't this moving?) ----
+
+#[test]
+fn a_parked_operation_names_its_wait_on_a_status_read() {
+    // The sharp one: no `write-progress` event in flight, and none ever emitted.
+    // A poller that missed the transient event — an agent reading `cmdr://state`
+    // for the first time — still has to learn that this operation is parked on a
+    // clash, and that it is a clash rather than a dead mount.
+    let op = install_state("parked-conflict", OperationIntent::Running);
+    let id = op.id().to_string();
+    register_operation_status(&id, WriteOperationType::Copy, vec![]);
+
+    // Nobody is being asked anything, and this operation keeps no in-flight
+    // table, so it has nothing to claim. Absent, ❌ never a made-up `moving`.
+    assert!(
+        get_operation_status(&id).unwrap().activity.is_none(),
+        "an operation with no probe and nobody being asked reports no activity"
+    );
+
+    let (tx, _rx) = oneshot::channel();
+    op.state().conflict_slot.arm(tx, placeholder_conflict);
+
+    let activity = get_operation_status(&id)
+        .unwrap()
+        .activity
+        .expect("a parked operation answers for its own wait");
+    assert_eq!(activity.waiting_on, TransferWaitReason::Conflict);
+    assert_eq!(activity.in_flight, 0, "no in-flight table, so no honest count");
+    assert_eq!(
+        activity.still_for_seconds, 0,
+        "a parked operation has been still for nobody's time but the answerer's"
+    );
+
+    unregister_operation_status(&id);
+}
+
+#[test]
+fn a_paused_operation_reads_as_paused_rather_than_stalled() {
+    let op = install_state("parked-pause", OperationIntent::Running);
+    let id = op.id().to_string();
+    register_operation_status(&id, WriteOperationType::Copy, vec![]);
+
+    op.state().pause_gate.pause();
+
+    let activity = get_operation_status(&id).unwrap().activity.expect("paused is a wait");
+    assert_eq!(activity.waiting_on, TransferWaitReason::Paused);
+
+    unregister_operation_status(&id);
+}
+
+#[test]
+fn a_settled_operation_reports_no_activity() {
+    // The status cache outlives `WRITE_OPERATION_STATE`, and once the state entry
+    // is gone there is nothing left to classify.
+    let op = install_state("settled", OperationIntent::Running);
+    let id = op.id().to_string();
+    register_operation_status(&id, WriteOperationType::Copy, vec![]);
+    let (tx, _rx) = oneshot::channel();
+    op.state().conflict_slot.arm(tx, placeholder_conflict);
+    drop(op);
+
+    let status = get_operation_status(&id).expect("the cache row outlives the state");
+    assert!(status.activity.is_none(), "a settled operation waits on nothing");
+
     unregister_operation_status(&id);
 }
 

@@ -191,7 +191,7 @@ impl TaskPhase {
         match self {
             Self::ParkedDestYield => Some(TransferWaitReason::Destination),
             Self::ParkedSourceYield => Some(TransferWaitReason::Source),
-            Self::ResolvingConflict => Some(TransferWaitReason::You),
+            Self::ResolvingConflict => Some(TransferWaitReason::Conflict),
             Self::Spawned
             | Self::OpeningSource
             | Self::Streaming
@@ -717,7 +717,7 @@ impl OperationProbe {
         // below would miss it entirely. The outstanding oneshot sender is the
         // authoritative signal, and it covers deep-merge prompts too.
         if self.awaiting_human() {
-            return TransferWaitReason::You;
+            return TransferWaitReason::Conflict;
         }
         let tasks = self.tasks.lock_ignore_poison();
         let reasons: Vec<TransferWaitReason> = tasks
@@ -727,8 +727,8 @@ impl OperationProbe {
         // A person being asked a question beats any device wait: the transfer
         // isn't stuck, it's waiting for an answer, and the UI says so even
         // while other tasks keep streaming.
-        if reasons.contains(&TransferWaitReason::You) {
-            return TransferWaitReason::You;
+        if reasons.contains(&TransferWaitReason::Conflict) {
+            return TransferWaitReason::Conflict;
         }
         if still_for_seconds == 0 {
             return TransferWaitReason::Moving;

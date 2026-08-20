@@ -242,11 +242,11 @@ alone cannot tell you.
 
 **"A person is deciding" is `awaitingHuman()`**, and it takes TWO signals because the two waits report differently: a
 user pause shows up as `snapshot.status === 'paused'`, while an operation parked on a clash is still `running` and says
-so through the backend's own classification, `progress.activity.waitingOn === 'you'`. Both are known-facts tests (`===`,
-never `!==`), so a session that has heard nothing yet reads as "not waiting" and renders its first frames normally
-instead of blanking a transfer that is running fine. ❌ Don't reach for `conflict !== null` as a third signal: that
-field is this window's own copy of the prompt, cleared only by the surface that answers, so a row that watched somebody
-else answer would hide its speed for the rest of the transfer.
+so through the backend's own classification, `progress.activity.waitingOn === 'conflict'`. Both are known-facts tests
+(`===`, never `!==`), so a session that has heard nothing yet reads as "not waiting" and renders its first frames
+normally instead of blanking a transfer that is running fine. ❌ Don't reach for `conflict !== null` as a third signal:
+that field is this window's own copy of the prompt, cleared only by the surface that answers, so a row that watched
+somebody else answer would hide its speed for the rest of the transfer.
 
 Every path reports the clash wait, including a local copy, which keeps no in-flight table: the backend classifies the
 wait off the operation's own pause gate and conflict slot, and re-sends its last tick on both edges of the wait so a

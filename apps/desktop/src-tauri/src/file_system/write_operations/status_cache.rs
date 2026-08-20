@@ -307,19 +307,35 @@ pub fn get_operation_status(operation_id: &str) -> Option<OperationStatus> {
     // lock, then out), so nesting would close a cycle through data-safety code.
     let lifecycle = super::manager::manager().lifecycle_status(operation_id);
 
-    let cache = OPERATION_STATUS_CACHE.read().ok()?;
-    let status = cache.get(operation_id)?;
+    let mut snapshot = {
+        let cache = OPERATION_STATUS_CACHE.read().ok()?;
+        let status = cache.get(operation_id)?;
+        OperationStatus {
+            operation_id: operation_id.to_string(),
+            operation_type: status.operation_type,
+            phase: status.phase,
+            lifecycle,
+            current_file: status.current_file.clone(),
+            files_done: status.files_done,
+            files_total: status.files_total,
+            bytes_done: status.bytes_done,
+            bytes_total: status.bytes_total,
+            started_at: status.started_at,
+            activity: None,
+        }
+    };
 
-    Some(OperationStatus {
-        operation_id: operation_id.to_string(),
-        operation_type: status.operation_type,
-        phase: status.phase,
-        lifecycle,
-        current_file: status.current_file.clone(),
-        files_done: status.files_done,
-        files_total: status.files_total,
-        bytes_done: status.bytes_done,
-        bytes_total: status.bytes_total,
-        started_at: status.started_at,
-    })
+    // The counters above are a cached echo of the last progress tick; the WAIT is
+    // classified live, off the same `WriteOperationState::activity` the event
+    // stream reads. A reader that never caught an event (an agent polling
+    // `cmdr://state`, a window opened mid-transfer) still has to tell a slow copy
+    // from a wedged mount from a parked conflict prompt, and the cache can't hold
+    // that: it would be stale the moment the operation moved on.
+    //
+    // Outside the cache guard, like `lifecycle` above: the probe registry and the
+    // state map are other locks, and this function keeps them all un-nested.
+    snapshot.activity = super::state::WRITE_OPERATION_STATE
+        .get(operation_id)
+        .and_then(|state| state.activity(operation_id));
+    Some(snapshot)
 }

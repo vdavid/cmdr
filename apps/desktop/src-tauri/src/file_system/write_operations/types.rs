@@ -158,6 +158,12 @@ pub enum ConflictResolutionOutcome {
 /// yield so the app stays responsive) is not the same as stuck, and calling a
 /// deliberate yield a stall would train people to ignore the warning. The
 /// backend classifies; the UI decides how long to wait before speaking.
+///
+/// Each variant names the QUESTION the operation is stuck on, ❌ never who may
+/// answer it: who can answer is a property of which surfaces exist, and it
+/// changes underneath this enum every time one ships (`resolve_conflict` made
+/// [`Conflict`](Self::Conflict) agent-answerable without the operation changing
+/// at all). `write_operations/DETAILS.md` § "Naming a wait".
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum TransferWaitReason {
@@ -170,21 +176,27 @@ pub enum TransferWaitReason {
     Destination,
     /// Every in-flight task is parked waiting for the SOURCE to produce bytes.
     Source,
-    /// A conflict prompt is open: the transfer is waiting for a person.
-    You,
+    /// A conflict prompt is open and unanswered: the operation is parked until
+    /// somebody decides skip / overwrite / rename. The clash itself, with the
+    /// `ConflictId` an answer must name, rides `cmdr://state`'s
+    /// `pendingConflict` block and `WriteConflictEvent`; a hand answers through
+    /// the dialog, an agent through `resolve_conflict`, and the operation is
+    /// indifferent to which.
+    Conflict,
     /// Nothing is moving and no task explains why. This is the shape the
     /// 2026-07-31 wedge took.
     Unknown,
 }
 
-/// The live shape of a running transfer, attached to every progress event so
-/// both windows can render the same answer to "why isn't this moving?" and
-/// "why does the counter say fewer files than I can see at the destination?".
+/// The live shape of a running transfer, on every progress event AND on
+/// [`OperationStatus`], so both windows and an agent polling `cmdr://state` can
+/// answer "why isn't this moving?" and "why does the counter say fewer files
+/// than I can see at the destination?" from whichever one they hold.
 ///
 /// Built from the in-flight table where there is one. An operation without one
-/// still answers for the WAIT ON A PERSON, off its own pause gate and conflict
-/// slot (`WriteOperationState::person_wait`), with no count to report and no
-/// stillness that isn't the person's.
+/// still answers for the wait on a DECISION, off its own pause gate and conflict
+/// slot (`WriteOperationState::activity`), with no count to report and no
+/// stillness that isn't the answerer's.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TransferActivity {
@@ -510,6 +522,12 @@ pub struct DryRunResult {
 /// Two INDEPENDENT axes: [`Self::lifecycle`] is what the operation is doing,
 /// [`Self::phase`] is what KIND of work. A paused op is mid-`Copying`; a scanning
 /// one is `Running`. ❌ Neither may be inferred from the other.
+///
+/// A snapshot, ❌ not an event: a reader that never caught a `write-progress`
+/// (an agent polling `cmdr://state`, a window that opened mid-transfer) gets the
+/// same answers a subscriber does, [`activity`](Self::activity) included.
+/// Otherwise "a slow copy", "a wedged mount", "parked on a conflict prompt", and
+/// "queued behind a lane" all read as `running` with frozen counters.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct OperationStatus {
@@ -534,6 +552,15 @@ pub struct OperationStatus {
     pub bytes_total: u64,
     /// Unix timestamp in milliseconds.
     pub started_at: u64,
+    /// What the operation is waiting on right now, classified live at read time
+    /// (`WriteOperationState::activity`) rather than cached: a stale wait is
+    /// worse than none.
+    ///
+    /// `None` means the operation can't classify itself, ❌ never "it's moving":
+    /// it has settled (the cache row outlives the state entry), or it's a backend
+    /// that keeps no in-flight table and has nobody parked on a decision (a local
+    /// copy, a delete, a trash).
+    pub activity: Option<TransferActivity>,
 }
 
 /// Summary of an active operation for list view.

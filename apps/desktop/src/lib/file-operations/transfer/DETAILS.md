@@ -14,11 +14,12 @@ long transfer. Ten seconds of a frozen bar is already long enough that a person 
 countdown is a lie the moment it stops being true. Both read the same `stillForSeconds`, so the two can't contradict
 each other.
 
-**What stays silent.** `paused` and `you` (a conflict prompt is open) are the transfer behaving correctly, and a surface
-is always saying so: the progress dialog in its title, and for an operation no dialog owns, the main window's prompt
-(`../DETAILS.md` § "Conflict prompts for operations with no dialog"). That's what makes the silence honest, so a clash
-that could go unprompted would turn `you` into a wedge with nothing on screen to explain it. An operation with no
-activity at all (local copy, delete, trash, which keep no in-flight table) also stays silent rather than guessing.
+**What stays silent.** `paused` and `conflict` (a clash is open and unanswered) are the transfer behaving correctly, and
+a surface is always saying so: the progress dialog in its title, and for an operation no dialog owns, the main window's
+prompt (`../DETAILS.md` § "Conflict prompts for operations with no dialog"). That's what makes the silence honest, so a
+clash that could go unprompted would turn `conflict` into a wedge with nothing on screen to explain it. An operation
+with no activity at all (local copy, delete, trash, which keep no in-flight table) also stays silent rather than
+guessing.
 
 **Where it sits, and what it's made of.** A warning-toned `SectionCard` at the FOOT of the dialog body, below the
 current-file line and directly above the button row, at full content width with no inset of its own. It's the reason a

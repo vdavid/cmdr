@@ -322,7 +322,7 @@ describe('derived read state', () => {
         bytesPerSecond: 4096,
         filesPerSecond: 1905,
         etaSeconds: 58,
-        activity: { inFlight: 1, stillForSeconds: 0, waitingOn: 'you' },
+        activity: { inFlight: 1, stillForSeconds: 0, waitingOn: 'conflict' },
       }),
     })
 

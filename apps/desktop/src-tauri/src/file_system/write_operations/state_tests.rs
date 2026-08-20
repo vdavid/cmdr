@@ -11,7 +11,8 @@
 use super::*;
 use crate::file_system::write_operations::test_support::{TestOperationGuard, placeholder_conflict};
 use crate::file_system::write_operations::types::{
-    ConflictId, ConflictResolution, ConflictResolutionOutcome, WriteOperationType,
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, TransferActivity, TransferWaitReason,
+    WriteOperationPhase, WriteOperationType, WriteProgressEvent,
 };
 use std::sync::atomic::Ordering;
 
@@ -20,6 +21,69 @@ fn unique_id(label: &str) -> String {
     static N: AtomicU64 = AtomicU64::new(0);
     let n = N.fetch_add(1, Ordering::Relaxed);
     format!("test-state-{label}-{n}-{:?}", std::thread::current().id())
+}
+
+// ---- the wait classifier ----
+
+/// A progress event mid-copy, for the activity tests below.
+fn copying_event(operation_id: &str) -> WriteProgressEvent {
+    WriteProgressEvent::new(
+        operation_id.to_owned(),
+        WriteOperationType::Copy,
+        WriteOperationPhase::Copying,
+        Some("dsc-1.raw".to_owned()),
+        5,
+        764,
+        83_650_000,
+        900_000_000,
+    )
+}
+
+#[test]
+fn enrich_progress_keeps_an_activity_the_caller_already_decided() {
+    // The stall watchdog emits from the probe it is stepping, and its copy is the
+    // one that just decided the transfer is wedged. A second lookup here would
+    // cost the re-emitted event the very activity it exists to carry: this
+    // operation keeps no in-flight table, so the lookup answers nothing.
+    let op = install_state("keeps-callers-activity", OperationIntent::Running);
+    let mut event = copying_event(op.id());
+    let wedged = TransferActivity {
+        in_flight: 3,
+        still_for_seconds: 310,
+        waiting_on: TransferWaitReason::Unknown,
+    };
+    event.activity = Some(wedged);
+
+    op.state().enrich_progress(&mut event);
+
+    assert_eq!(event.activity, Some(wedged), "the caller's classification survives");
+}
+
+#[test]
+fn enrich_progress_classifies_a_wait_the_caller_left_open() {
+    let op = install_state("classifies-open-wait", OperationIntent::Running);
+    let mut event = copying_event(op.id());
+    let (tx, _rx) = tokio::sync::oneshot::channel();
+    op.state().conflict_slot.arm(tx, placeholder_conflict);
+
+    op.state().enrich_progress(&mut event);
+
+    assert_eq!(
+        event.activity.expect("a parked operation names its wait").waiting_on,
+        TransferWaitReason::Conflict
+    );
+}
+
+#[test]
+fn an_operation_with_nothing_to_say_reports_no_activity() {
+    // No in-flight table and nobody parked on a decision. Absent is the honest
+    // answer; a stand-in `moving` is an invention a poller would act on.
+    let op = install_state("nothing-to-say", OperationIntent::Running);
+    let mut event = copying_event(op.id());
+
+    op.state().enrich_progress(&mut event);
+
+    assert!(event.activity.is_none());
 }
 
 // ---- cancel_write_operation state-machine transitions ----

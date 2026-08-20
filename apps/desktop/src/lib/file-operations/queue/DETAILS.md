@@ -202,8 +202,8 @@ a person, and `transfer-stall.ts` deliberately stays silent for a DELIBERATE wai
 ignore the warning). The status column is also what a person reads DOWN when several operations are listed and one of
 them isn't moving.
 
-**Where it comes from.** `session.awaitingAnswer` — the backend's own classification (`activity.waitingOn === 'you'`),
-reaching every operation including a local copy, which keeps no in-flight table
+**Where it comes from.** `session.awaitingAnswer` — the backend's own classification
+(`activity.waitingOn === 'conflict'`), reaching every operation including a local copy, which keeps no in-flight table
 (`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Parking on a person"). ❌ Never the row's own
 `progress.activity` test and ❌ never `session.conflict`: the first would let two views word the same wait differently,
 and the second is this window's own copy of a prompt it may never have been sent.

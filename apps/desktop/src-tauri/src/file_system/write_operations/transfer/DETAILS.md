@@ -292,7 +292,7 @@ scope closes and a dump taken during them must not still claim it is streaming.
 
 NOT registered, on purpose: the same-volume move (`volume/move_same.rs` + `rename_merge.rs`) is a rename, so it streams
 no bytes and has no wedge of this shape; and the local-FS copy, delete, and trash keep no in-flight table at all, which
-`enrich_progress` handles by falling back to `person_wait()`. Pinned by
+`WriteOperationState::activity` handles by falling back to its own pause gate and conflict slot. Pinned by
 `volume/move_progress_tests.rs::{cross_volume_move_tells_the_dialog_what_it_is_doing,
 a_cross_volume_move_in_flight_shows_its_source_and_phase}`, which sample the live table from inside the destination's
 write — the one window where a row exists.

@@ -58,6 +58,7 @@ fn progress(
         bytes_done,
         bytes_total,
         started_at: 10_000,
+        activity: None,
     }
 }
 

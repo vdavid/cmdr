@@ -50,16 +50,16 @@ export function stallNoticeFor(activity: TransferActivity | null | undefined): S
   if (!activity) return null
   if (activity.stillForSeconds < STALL_NOTICE_SECONDS) return null
 
-  // `paused` and `you` are the transfer behaving correctly: the person paused
-  // it, or the person is being asked a question. The dialog already says so in
-  // its title, and adding "no progress for 5m" would be true and useless.
+  // `paused` and `conflict` are the transfer behaving correctly: somebody
+  // paused it, or somebody is being asked a question. The dialog already says so
+  // in its title, and adding "no progress for 5m" would be true and useless.
   // `moving` can't reach here (stillness would be 0), but it's listed so a new
   // reason has to be classified rather than silently falling through to a
   // stall notice.
   switch (activity.waitingOn) {
     case 'moving':
     case 'paused':
-    case 'you':
+    case 'conflict':
       return null
     case 'destination':
     case 'source':

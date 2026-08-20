@@ -134,7 +134,7 @@ fn activity_names_what_the_transfer_is_waiting_on() {
 
     // A conflict prompt outranks everything: the transfer waits on a person.
     a.probe().set_phase(TaskPhase::ResolvingConflict);
-    assert_eq!(probe.activity().waiting_on, TransferWaitReason::You);
+    assert_eq!(probe.activity().waiting_on, TransferWaitReason::Conflict);
 }
 
 /// The hole this closes: a wedged transfer emits NO progress events, because
@@ -320,7 +320,7 @@ fn a_transfer_waiting_on_a_conflict_answer_is_not_stalled() {
     state.conflict_slot.arm(tx, placeholder_conflict);
 
     let activity = probe.activity();
-    assert_eq!(activity.waiting_on, TransferWaitReason::You);
+    assert_eq!(activity.waiting_on, TransferWaitReason::Conflict);
     assert_eq!(
         activity.still_for_seconds, 0,
         "time spent waiting for a person is not time spent stalled"
@@ -328,7 +328,7 @@ fn a_transfer_waiting_on_a_conflict_answer_is_not_stalled() {
 
     // Answering it hands the transfer back to the device wait.
     state.conflict_slot.abandon();
-    assert_ne!(probe.activity().waiting_on, TransferWaitReason::You);
+    assert_ne!(probe.activity().waiting_on, TransferWaitReason::Conflict);
 }
 
 /// The watchdog must not accrue stall time (or heartbeat) behind a prompt.

@@ -52,7 +52,7 @@ describe('stallNoticeFor', () => {
 
   it('never calls waiting for a person a stall', () => {
     // A conflict prompt is open: the transfer is doing exactly what it should.
-    expect(stallNoticeFor(activity({ stillForSeconds: 300, waitingOn: 'you' }))).toBeNull()
+    expect(stallNoticeFor(activity({ stillForSeconds: 300, waitingOn: 'conflict' }))).toBeNull()
   })
 
   it('names the side that stopped responding, so the message is actionable', () => {

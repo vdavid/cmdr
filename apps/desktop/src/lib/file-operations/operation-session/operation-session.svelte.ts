@@ -206,7 +206,7 @@ export function createOperationSession(operationId: string, fanout: OperationEve
    *  was done. A pause is the other half, and the lifecycle status already
    *  names that one, so a view wanting to say "this one needs you" wants this. */
   function awaitingAnswer(): boolean {
-    return progress?.activity?.waitingOn === 'you'
+    return progress?.activity?.waitingOn === 'conflict'
   }
 
   /** First outcome wins: a cancel that races a completion must not flip the
