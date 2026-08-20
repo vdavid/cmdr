@@ -920,6 +920,19 @@ var AllChecks = []CheckDefinition{
 		Run:         RunWebsiteHTMLValidate,
 	},
 	{
+		ID:          "desktop-bundle-size",
+		DisplayName: "bundle size",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// Runs its own ~6s production-shaped `vite build` into a private dir rather
+		// than depending on another lane, so the number is what a release ships and
+		// not an E2E build carrying the dialog gallery.
+		IsFast:  false,
+		NotInCI: "warn-only metric; it can never fail, so a CI step would be noise",
+		Inputs:  svelteInputs,
+		Run:     RunDesktopBundleSize,
+	},
+	{
 		ID:          "website-bundle-size",
 		Nickname:    "bundle-size",
 		DisplayName: "bundle size",

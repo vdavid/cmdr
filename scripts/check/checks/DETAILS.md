@@ -1005,7 +1005,9 @@ doubles as production code.
   plural covers its locale's required CLDR categories, gated on the English source's plural shape), i18n-coverage
   (ERROR; keys missing from a locale, or byte-identical to English without a `@key.sameAsSourceJustification`, either of
   which ships a half-translated locale), i18n-dont-translate (warn-only; a curated brand/system token English carries
-  but the locale dropped), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
+  but the locale dropped), bundle-size (warn-only; builds a production-shaped frontend into a private dir and compares
+  its total against a committed baseline, since the app embeds this output so every byte ships in each silent update and
+  is parsed before first paint), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
   `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input
