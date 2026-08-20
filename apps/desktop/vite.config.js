@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import { sveltekit } from '@sveltejs/kit/vite'
 import Icons from 'unplugin-icons/vite'
+import { stripCatalogMetadata } from './scripts/vite-strip-catalog-metadata.ts'
 
 const host = process.env.TAURI_DEV_HOST
 
@@ -39,7 +40,12 @@ const e2eBuild = process.env.CMDR_E2E_BUILD === '1'
 const worktreeLabel = process.env.CMDR_WORKTREE_LABEL ?? ''
 
 export default defineConfig(async () => ({
-  plugins: [Icons({ compiler: 'svelte' }), sveltekit()],
+  // `stripCatalogMetadata` runs `pre`, so it sees each locale catalog before
+  // Vite's JSON transform and hands on messages-only JSON. Every build gets it,
+  // dev included, so dev and prod agree on what a catalog contains; only
+  // `vitest.config.ts` omits it, which is what keeps the runtime `stripMetadata`
+  // under test. See that plugin's module doc for the measured saving.
+  plugins: [stripCatalogMetadata(), Icons({ compiler: 'svelte' }), sveltekit()],
 
   define: {
     __CMDR_I18N_CAPTURE__: JSON.stringify(i18nCaptureBuild),

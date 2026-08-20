@@ -66,7 +66,17 @@ the raw `{token}` set instead of an ICU placeholder set for these keys. Translat
 ## `@key` metadata schema
 
 Each message key MAY have a sibling `@`-prefixed entry holding ARB-style metadata, stripped before the runtime or
-codegen ever sees it:
+codegen ever sees it.
+
+**The strip happens at BUILD time, in `apps/desktop/scripts/vite-strip-catalog-metadata.ts`.** Write as much translator
+prose as a key deserves: none of it reaches a user's machine. That was not always true, and the reason is worth knowing
+before anyone "simplifies" the plugin away. `messages.svelte.ts` eagerly globs every catalog into one chunk, and Rollup
+can tree-shake a module's named exports but not properties of a JSON default export, so the runtime `stripMetadata()`
+was discarding bytes that had already shipped, been parsed, and been materialized. Removing it at build time took the
+frontend bundle from 8.3 MB to 5.6 MB (measured 2026-08-21, `pnpm build` with the plugin toggled, pseudolocale absent as
+in a release). `desktop-bundle-size` now holds that line.
+
+The shape:
 
 ```jsonc
 {
