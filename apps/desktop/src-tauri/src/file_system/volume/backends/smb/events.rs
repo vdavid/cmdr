@@ -1,7 +1,8 @@
-//! App-handle registration and `volume-connection-changed` event plumbing.
+//! App-handle registration and SMB session-state event plumbing.
 //!
 //! Holds the global `AppHandle` set once from `lib.rs::setup` so SMB state
-//! transitions can emit `volume-connection-changed` events to the frontend.
+//! transitions can emit `volume-connection-changed` and
+//! `smb-fell-back-to-os-mount` events to the frontend.
 
 use crate::network::VolumeConnection;
 use log::warn;
@@ -34,5 +35,24 @@ pub(super) fn emit_state_change(volume_id: &str, state: VolumeConnection) {
         .emit(&app)
     {
         warn!("Failed to emit volume-connection-changed: {}", e);
+    }
+}
+
+/// Tells the frontend a share is staying on the macOS kernel mount, so it can offer
+/// a retry instead of leaving someone on the slow path with no explanation.
+///
+/// `network::os_mount_notice` decides WHETHER to speak (once per server per run);
+/// this only carries the message. It lives here rather than beside that decision
+/// because this is where the `AppHandle` for SMB events already is.
+pub fn emit_fell_back_to_os_mount(volume_id: &str, share: &str) {
+    use tauri_specta::Event;
+    if let Some(app) = get_app_handle()
+        && let Err(e) = (crate::network::SmbFellBackToOsMount {
+            volume_id: volume_id.to_string(),
+            share: share.to_string(),
+        })
+        .emit(&app)
+    {
+        warn!("Failed to emit smb-fell-back-to-os-mount: {}", e);
     }
 }

@@ -71,7 +71,7 @@ use crate::mtp::{
 };
 use crate::network::{
     NetworkDiscoveryStateChanged, NetworkHostContextAction, NetworkHostFound, NetworkHostLost, NetworkHostResolved,
-    VolumeConnectionChanged,
+    SmbFellBackToOsMount, VolumeConnectionChanged,
 };
 use crate::search::live::events::{SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchProgressEvent};
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
@@ -856,6 +856,10 @@ pub fn builder() -> Builder<tauri::Wry> {
             // reuses it. The type lives in `network/mod.rs` so it resolves on every
             // platform (see its doc comment).
             VolumeConnectionChanged,
+            // A share Cmdr couldn't take over stays on the macOS kernel mount. Same
+            // reason this type lives in `network/mod.rs`: it has to resolve here on
+            // every platform.
+            SmbFellBackToOsMount,
             // Indexing (indexing/, commands/search.rs). Each pins its wire name
             // via `event_name` because the struct names carry an `…Event` suffix
             // (or live in a differently-named module) that wouldn't kebab-case to

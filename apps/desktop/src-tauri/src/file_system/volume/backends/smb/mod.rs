@@ -59,7 +59,7 @@ use streams::{
 
 // External surface: keep these paths stable at
 // `crate::file_system::volume::backends::smb::<name>`.
-pub use events::set_app_handle;
+pub use events::{emit_fell_back_to_os_mount, set_app_handle};
 pub(crate) use reconnect::spawn_watcher_death_reconnect;
 
 /// A volume backed by an SMB share, using smb2 for direct protocol access.

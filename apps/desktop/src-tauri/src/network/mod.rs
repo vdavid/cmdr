@@ -41,6 +41,11 @@ mod smb_types;
 pub(crate) mod smb_upgrade;
 pub(crate) mod smb_util;
 
+// The "we're stuck on the kernel mount" notice's once-per-server ledger. Lives
+// beside `smb_upgrade` (its only caller) rather than inside it, so the ledger is
+// testable without a live volume manager.
+pub(crate) mod os_mount_notice;
+
 #[cfg(feature = "smb-e2e")]
 pub mod virtual_smb_hosts;
 
@@ -215,6 +220,29 @@ pub enum VolumeConnection {
 pub struct VolumeConnectionChanged {
     pub volume_id: String,
     pub state: VolumeConnection,
+}
+
+/// Typed `smb-fell-back-to-os-mount` Tauri event: a share Cmdr tried to take over
+/// with its own smb2 session is staying on the macOS kernel mount instead.
+///
+/// This is the one moment nothing else in the app announces. The yellow
+/// `smbConnectionState` dot shows the resulting STATE, but a fallback that happens
+/// while the user is elsewhere (the startup pass, an auto-remount) is otherwise
+/// silent, and the share keeps working at a fraction of the speed. The frontend
+/// raises a notice with a retry button.
+///
+/// Emitted at most once per server per app run (`network::os_mount_notice`), so a
+/// NAS whose password went stale speaks once rather than once per mounted share.
+/// Lives here beside `VolumeConnectionChanged` for the same reason: `collect_events!`
+/// in `ipc.rs` can't cfg-gate inline, so the type has to resolve on every platform.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct SmbFellBackToOsMount {
+    /// The volume that stayed on the kernel mount. This is what the notice's retry
+    /// button hands to `upgrade_to_smb_volume`.
+    pub volume_id: String,
+    /// The share's name, which is what the notice names (`archive`, not `//nas/archive`).
+    pub share: String,
 }
 
 /// Current network discovery state, accessible globally.

@@ -352,6 +352,9 @@ pub(crate) async fn register_smb_volume(
             // we replace it.
             register_replacing_predecessor(&volume_id, Arc::new(volume)).await;
             log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);
+            // This server is off the slow path, so the next genuine fallback on it is
+            // news again rather than a repeat.
+            crate::network::os_mount_notice::clear_os_mount_notice(server);
             // The session is installed and Direct. If the user had indexing
             // enabled for this volume (a persisted index DB with a completed
             // scan), resume it — the backend-autonomous recovery that keeps a NAS
@@ -360,10 +363,13 @@ pub(crate) async fn register_smb_volume(
             crate::index_host::index().resume_after_reconnect(volume_id.clone());
         }
         Err(e) => {
-            // Log-only path: nothing here reaches a person, so the raw error is
-            // exactly what we want (it's the diagnostic). The volume stays on the
-            // OS mount, which still works, just slower.
+            // The raw error belongs in the log, where it's the diagnostic. The volume
+            // stays on the OS mount, which still works, at a fraction of the speed.
             log_direct_connect_failure(server, share, &e, DirectConnectOutcome::StaysOnKernelMount);
+            // And tell the person, once per server: this is the only path that leaves
+            // someone on the slow connection with nothing but a small yellow dot to
+            // notice it by. The frontend's notice carries a retry button.
+            crate::network::os_mount_notice::announce_os_mount_fallback(server, &volume_id, share);
         }
     }
 }
@@ -426,6 +432,9 @@ pub(crate) async fn try_smb_upgrade(
         Ok(volume) => {
             register_replacing_predecessor(volume_id, Arc::new(volume)).await;
             log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);
+            // Same as the auto path: the server is off the kernel mount, so a later
+            // fallback on it is worth a fresh notice.
+            crate::network::os_mount_notice::clear_os_mount_notice(server);
             // Manual "Connect directly" also installs a Direct session; resume the
             // drive index the same way the auto-upgrade path does (no-op unless the
             // user had it enabled), so the two install paths stay consistent.

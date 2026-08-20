@@ -3641,6 +3641,7 @@ export const events = {
   searchIndexReady: makeEvent<SearchIndexReadyEvent>('search-index-ready'),
   searchProgress: makeEvent<SearchProgressEvent>('search-progress'),
   settingsChanged: makeEvent<SettingsChanged>('settings-changed'),
+  smbFellBackToOsMount: makeEvent<SmbFellBackToOsMount>('smb-fell-back-to-os-mount'),
   suggestionsChanged: makeEvent<SuggestionsChanged>('suggestions-changed'),
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
@@ -9121,6 +9122,31 @@ export type SmbDiagnosticsDto = {
   primary: ConnectionDiagnosticsDto
   extra_connections: ConnectionDiagnosticsDto[]
   dfs_cache: DfsCacheEntryDto[]
+}
+
+/**
+ *  Typed `smb-fell-back-to-os-mount` Tauri event: a share Cmdr tried to take over
+ *  with its own smb2 session is staying on the macOS kernel mount instead.
+ *
+ *  This is the one moment nothing else in the app announces. The yellow
+ *  `smbConnectionState` dot shows the resulting STATE, but a fallback that happens
+ *  while the user is elsewhere (the startup pass, an auto-remount) is otherwise
+ *  silent, and the share keeps working at a fraction of the speed. The frontend
+ *  raises a notice with a retry button.
+ *
+ *  Emitted at most once per server per app run (`network::os_mount_notice`), so a
+ *  NAS whose password went stale speaks once rather than once per mounted share.
+ *  Lives here beside `VolumeConnectionChanged` for the same reason: `collect_events!`
+ *  in `ipc.rs` can't cfg-gate inline, so the type has to resolve on every platform.
+ */
+export type SmbFellBackToOsMount = {
+  /**
+   *  The volume that stayed on the kernel mount. This is what the notice's retry
+   *  button hands to `upgrade_to_smb_volume`.
+   */
+  volumeId: string
+  // The share's name, which is what the notice names (`archive`, not `//nas/archive`).
+  share: string
 }
 
 /**
